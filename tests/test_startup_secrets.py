@@ -30,7 +30,12 @@ def _app(monkeypatch: pytest.MonkeyPatch, config: Config, **env: str):
 
 
 def _basic(**server: object) -> Config:
-    auth = {"enabled": True, "provider": "basic", "username": "op", "password": "pw-1234567890"}
+    auth = {
+        "enabled": True,
+        "provider": "basic",
+        "username": "op",
+        "password": "pw-1234567890",  # gitleaks:allow -- synthetic login
+    }
     return Config(auth=auth, server=server or {})
 
 

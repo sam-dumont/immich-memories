@@ -1,12 +1,12 @@
 """Providers for the exact public annotation generation used by editorial selection."""
 
 from pathlib import Path
-from typing import Literal
+from typing import ClassVar, Literal
 from urllib.parse import urlparse
 
 from pydantic import BaseModel, Field, field_validator
 
-from immich_memories.config_models import expand_env_vars, has_unresolved_env_reference
+from immich_memories.config_models import has_unresolved_env_reference
 
 # The one place the sensitive-content export's host is named; `models fetch`
 # verifies the digest pinned in analysis/editorial_preparation_detectors.py
@@ -35,6 +35,10 @@ def _endpoint(value: str, field: str) -> str:
 
 class EditorialPreparationConfig(BaseModel):
     """Missing facts are acquired; complete facts never contact a provider."""
+
+    ENV_REFERENCE_FIELDS: ClassVar[frozenset[str]] = frozenset(
+        {"head_bundle", "detector_python", "detector_cache_dir", "marqo_onnx", "caption_api_key"}
+    )
 
     tier: PreparationTier = "full"
     caption_provider: Literal["smolvlm", "llm"] = Field(
@@ -86,13 +90,6 @@ class EditorialPreparationConfig(BaseModel):
     )
     allow_model_downloads: bool = False
 
-    @field_validator(
-        "head_bundle", "detector_python", "detector_cache_dir", "marqo_onnx", mode="before"
-    )
-    @classmethod
-    def expand_paths(cls, value: object) -> object:
-        return expand_env_vars(value) if isinstance(value, str) else value
-
     @field_validator("caption_api_key", mode="before")
     @classmethod
     def resolve_caption_key(cls, value: object) -> object:
@@ -104,8 +101,7 @@ class EditorialPreparationConfig(BaseModel):
         """
         if not isinstance(value, str):
             return value
-        expanded = expand_env_vars(value)
-        return "" if has_unresolved_env_reference(expanded) else expanded
+        return "" if has_unresolved_env_reference(value) else value
 
     @field_validator("caption_base_url")
     @classmethod

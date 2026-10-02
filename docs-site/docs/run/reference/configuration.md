@@ -28,6 +28,17 @@ The first source that sets a key wins, key by key: `advanced.llm.model` in the f
 in the database work together. The web UI greys out every setting the environment or the file sets
 and names the variable or the file key; saving under it would do nothing.
 
+`auth.*` and `server.*` are set only in the environment or the file, like `database.*`: they decide
+who can reach the app, so a signed-in user cannot change them from a page. Change them there and
+restart. A saved value cannot reference an environment variable: `${VAR}` expands in `config.yaml`
+only, and a save containing `${` is refused. Rows an older version saved for either case are
+ignored at load with a warning, and `preflight` lists their keys.
+
+A save that changes a URL a credential is sent to (`immich.url`, an `immich.accounts` entry,
+`llm.base_url`, `editorial.preparation.caption_base_url`, `musicgen.base_url`, `ace_step.api_url`)
+is refused unless it carries that credential too, when one is set from any source.
+`render.worker_base_url` always needs `render.worker_token` in the same save.
+
 `immich-memories config show` prints the same report: every key, its value, its source, and the
 exact variable or file key that sets it. Secrets print as `***`. Give prefixes to narrow it:
 
@@ -49,7 +60,7 @@ removed from the file, wherever it was written (top level or under `advanced:`).
 keeps its values and its `${VAR}` references, but not its comments, so the previous file is kept
 as `config.yaml.bak`. A key whose value is a `${VAR}` reference is refused: it already comes from
 the environment. `database.url` and `database.schema` never move, because the app reads them before
-the database opens.
+the database opens; `auth.*` and `server.*` never move either.
 
 ### Secrets in the database
 

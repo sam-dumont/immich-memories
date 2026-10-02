@@ -1085,7 +1085,7 @@ src/immich_memories/
 ├── config_presets.py           # Named presets (`preset: fast`) that fill several knobs at once
 ├── config_tiers.py             # One resolved product tier: reader, preparation producers, Laya
 ├── config_compute.py           # Inference capability discovery, separate from video encoding
-├── config_models.py            # Resources a run uses: Immich server, cache, hardware (+ expand_env_vars)
+├── config_models.py            # Resources a run uses: Immich server, cache, hardware (+ config.yaml `${VAR}` expansion)
 ├── config_models_analysis.py   # Source admission and the expected seconds per clip
 ├── config_models_auth.py       # Authentication config model (basic, OIDC, header)
 ├── config_models_automation.py # Running unattended: trips, automation, notifications, upload
@@ -1129,6 +1129,7 @@ src/immich_memories/
 │                               # Cut (`memory_run.install_refusal`, before the pool loads) refuse to start
 ├── preflight_homebase.py       # Trip setup checks that read no library and expose no coordinates
 ├── preflight_accounts.py       # One row per extra Immich account (`immich.accounts`), no key printed
+├── preflight_settings.py       # Names saved settings the loader ignores (`auth.*`, `server.*`, `${VAR}`)
 ├── preflight_sign_in.py        # Sign-in row: warns on a basic-auth password under 12 characters
 ├── startup_checks.py           # What `ui` refuses to start with (weak session secret/trigger token, unsafe FORWARDED_ALLOW_IPS)
 ├── logging_config.py           # Logging setup
@@ -1212,7 +1213,7 @@ flowchart TD
 - `Config` (config_loader.py): env > `~/.immich-memories/config.yaml` (tiered YAML, see above) > the
   store's `settings` table > defaults. `config.yaml` is operator-owned: the app writes it only for
   `config move-to-db`. The UI and `immich-memories config` save through `settings_edit.save_settings`,
-  which refuses keys env or the file override and bootstrap keys (`database.*`). The database source
+  which refuses keys env or the file override and bootstrap keys (`database.*`, `auth.*`, `server.*`), values with `${VAR}`, and a new credential URL without its credential. The database source
   is opened from env + the file's `database:` block only, so it never recurses into `get_config()`.
   `config_sources.describe_settings` is the per-key source report the settings page and
   `config show` render.

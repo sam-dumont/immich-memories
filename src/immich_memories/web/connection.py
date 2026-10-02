@@ -15,7 +15,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from immich_memories.api.immich import ImmichAPIError
 from immich_memories.config_loader import Config
 from immich_memories.security import sanitize_error_message
-from immich_memories.settings_edit import SettingRefused, save_settings
+from immich_memories.settings_edit import SettingRefused, same_server, save_settings
 from immich_memories.web.dependencies import Greeter, config_file, current_config, immich_greeter
 from immich_memories.web.schemas import Connection, ConnectionEntry, Greeting
 
@@ -24,15 +24,11 @@ router = APIRouter(prefix="/api/v1/connection", tags=["settings"])
 MOVED_WITHOUT_KEY = "The server URL changed: enter the API key for the new server."
 
 
-def _same_server(a: str, b: str) -> bool:
-    return a.strip().rstrip("/") == b.strip().rstrip("/")
-
-
 def _resolved(entry: ConnectionEntry, config: Config) -> tuple[str, str]:
     """The URL and key this entry means, or 422 when it would send the stored key elsewhere."""
     url = entry.url.strip()
     typed_key = entry.api_key.strip()
-    moved = not _same_server(url, config.immich.url)
+    moved = not same_server(url, config.immich.url)
     if moved and config.immich.api_key and not typed_key:
         raise HTTPException(422, MOVED_WITHOUT_KEY)
     key = typed_key or config.immich.api_key
@@ -44,12 +40,16 @@ def _resolved(entry: ConnectionEntry, config: Config) -> tuple[str, str]:
 def connection_changes(config: Config, *, url: str, key: str) -> dict[str, str]:
     """The connection fields that differ from the loaded config, keyed for `save_settings`.
 
-    An unchanged key is left out, so saving a new URL never re-stores (or needs the secret key
-    for) the API key it already has.
+    An unchanged key is left out, so saving the same URL never re-stores (or needs the secret
+    key for) the API key it already has. A new URL keeps its key even when it was retyped
+    unchanged: `save_settings` takes a new URL only with the credential typed for it.
     """
     typed = {"immich.url": url, "immich.api_key": key}
     loaded = {"immich.url": config.immich.url, "immich.api_key": config.immich.api_key}
-    return {name: value for name, value in typed.items() if value != loaded[name]}
+    changes = {name: value for name, value in typed.items() if value != loaded[name]}
+    if "immich.url" in changes and key:
+        changes["immich.api_key"] = key
+    return changes
 
 
 @router.get("", response_model=Connection)

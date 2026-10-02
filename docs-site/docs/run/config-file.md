@@ -44,6 +44,15 @@ Command-specific flags can override these for that command. LLM key shorthands h
 [special rule](./environment-variables.md#shorthands).
 The UI greys out settings controlled by the file or environment and shows their source.
 
+Some keys never come from Settings. Authentication (`auth.*`) and server (`server.*`) settings,
+like the database location, are set in the environment or `config.yaml` and take effect on
+restart. Settings shows them read-only. A value for one of them saved by an older version is
+ignored at startup, and `preflight` names it.
+
+A new URL for a server that receives a credential (Immich, an extra account, the LLM, the caption
+server, MusicGen, ACE-Step) needs that credential typed again in the same save, when one is set.
+A new render worker URL always needs its token, since the worker receives your Immich keys.
+
 ### Keys pinned by Docker
 
 The shipped Compose file and image always set these, so YAML and Settings cannot override them:
@@ -156,8 +165,11 @@ when moving a config between machines: blank uses the app's Python.
 
 ## Environment variable substitution
 
-Use `${VAR_NAME}`, not `$VAR`. Substitution is supported for credentials and selected service/path
-fields; it is not applied to every string. For any config key, the reliable alternative is its
+Use `${VAR_NAME}`, not `$VAR`. Substitution happens only in `config.yaml`, for credentials and
+selected service/path fields; it is not applied to every string. Settings and environment
+variables are always taken as written: a Settings value containing `${` is refused there and by
+the config CLI, and a saved value holding one (from an older version) is ignored at startup, with
+`preflight` naming its key. For any config key, the reliable alternative is its
 [`IMMICH_MEMORIES_SECTION__FIELD` variable](./environment-variables.md#the-pattern).
 
 ## Compute tier

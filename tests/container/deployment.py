@@ -44,10 +44,13 @@ def switch_on_postgres(compose: str) -> str:
         if line.lstrip().startswith("# IMMICH_MEMORIES_DATABASE_URL:")
     ]
     service = [i for i, line in enumerate(lines) if line == "  # postgres:"]
+    dependency = [i for i, line in enumerate(lines) if line == "    # depends_on:"]
     volume = [i for i, line in enumerate(lines) if line == "  # immich-memories-postgres-data:"]
-    if len(url) != 1 or len(service) != 1 or len(volume) != 1:
+    if any(len(block) != 1 for block in (url, service, volume, dependency)):
         raise DeploymentError("docker-compose.yml no longer carries the PostgreSQL example")
     lines[url[0]] = lines[url[0]].replace("# ", "", 1)
+    for index in range(dependency[0], dependency[0] + 3):
+        lines[index] = lines[index].replace("# ", "", 1)
     index = service[0]
     while index < len(lines) and lines[index].startswith("  #"):
         lines[index] = "  " + lines[index][4:]
@@ -116,8 +119,10 @@ class Deployment:
       IMMICH_MEMORIES_SERVER__ALLOWED_HOSTS: '["{APP}"]'
 """
         if self.postgres:
+            # WHY: a slow cold start exposes an app/database readiness race.
             override += f"""  postgres:
     container_name: {self.project}-postgres
+    entrypoint: ["sh", "-c", "sleep 10; exec docker-entrypoint.sh postgres"]
 """
         return override
 
@@ -156,7 +161,10 @@ class Deployment:
         )
 
     def up(self) -> None:
-        self.compose("up", "-d", "--wait", "--wait-timeout", "300", timeout=420)
+        try:
+            self.compose("up", "-d", "--wait", "--wait-timeout", "300", timeout=420)
+        except DeploymentError as error:
+            raise DeploymentError(f"{error}\n{self.logs()[-8000:]}") from error
 
     def down(self) -> None:
         self.compose("down", "--volumes", "--remove-orphans", "--timeout", "10", check=False)

@@ -8,12 +8,11 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Literal
+from typing import ClassVar, Literal
 from urllib.parse import urlsplit
 
 from pydantic import BaseModel, Field, field_serializer, field_validator, model_validator
 
-from immich_memories.config_models import expand_env_vars
 from immich_memories.processing.encoding_plan import HdrMode
 
 logger = logging.getLogger(__name__)
@@ -155,6 +154,8 @@ class OutputConfig(BaseModel):
 class RenderWorkerConfig(BaseModel):
     """An explicitly trusted worker that receives the selected cut and Immich key."""
 
+    ENV_REFERENCE_FIELDS: ClassVar[frozenset[str]] = frozenset({"worker_base_url", "worker_token"})
+
     worker_base_url: str = Field(
         default="", description="Trusted render worker URL; blank renders on this machine"
     )
@@ -175,12 +176,6 @@ class RenderWorkerConfig(BaseModel):
     @property
     def enabled(self) -> bool:
         return bool(self.worker_base_url)
-
-    @field_validator("worker_base_url", "worker_token", mode="before")
-    @classmethod
-    def expand_env(cls, value: str) -> str:
-        """Use the same credential placeholders as the Immich connection."""
-        return expand_env_vars(value) if isinstance(value, str) else value
 
     @field_validator("worker_base_url")
     @classmethod

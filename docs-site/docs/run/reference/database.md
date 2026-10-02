@@ -12,7 +12,9 @@ For everyday backups, start with [Database and backups](../database.md).
 
 `docker-compose.yml` ships a commented `postgres` service (`postgres:16`, pinned by digest), a
 commented `IMMICH_MEMORIES_DATABASE_URL` line on the app service, and a commented
-`immich-memories-postgres-data` volume at the bottom. Uncomment all three, then in `.env`:
+`immich-memories-postgres-data` volume at the bottom. Uncomment these and the app's
+`depends_on` block, which waits for PostgreSQL to accept connections before starting the app.
+Then in `.env`:
 
 ```bash
 POSTGRES_PASSWORD=a-long-random-password

@@ -4,12 +4,11 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Literal
+from typing import ClassVar, Literal
 
 from pydantic import BaseModel, Field, field_validator
 
 from immich_memories.analysis.editorial_description_contract import DESCRIPTION_MODEL
-from immich_memories.config_models import expand_env_vars
 from immich_memories.config_models_editorial_preparation import EditorialPreparationConfig
 from immich_memories.laya_checkpoints import (
     default_laya_path,
@@ -87,6 +86,10 @@ class EditorialConfig(BaseModel):
     Old ``enabled`` and ``story_first`` keys are ignored when loading existing
     configurations. Selection no longer has an alternate route.
     """
+
+    ENV_REFERENCE_FIELDS: ClassVar[frozenset[str]] = frozenset(
+        {"annotation_database", "laya_checkpoint"}
+    )
 
     preparation: EditorialPreparationConfig = Field(default_factory=EditorialPreparationConfig)
     people: EditorialPeopleConfig = Field(default_factory=EditorialPeopleConfig)
@@ -180,12 +183,6 @@ class EditorialConfig(BaseModel):
             "platform default is 0.186 for Apple MLX and 0.185 for ONNX"
         ),
     )
-
-    @field_validator("annotation_database", "laya_checkpoint", mode="before")
-    @classmethod
-    def expand_database_environment(cls, value: object) -> object:
-        """Expand only the project's explicit `${NAME}` configuration form."""
-        return expand_env_vars(value) if isinstance(value, str) else value
 
     @field_validator("description_model", "pixel_producer_key")
     @classmethod

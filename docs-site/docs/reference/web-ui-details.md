@@ -53,7 +53,11 @@ what sets it, and the key is a secret, so saving it needs `IMMICH_MEMORIES_SECRE
 The strongest source wins: environment, then `config.yaml`, then the database, then the default
 ([precedence](../run/config-file.md#where-a-setting-comes-from)). A setting the environment or
 `config.yaml` sets is greyed out: saving under it would change nothing, so change it where the label
-says, or move it out of the file with `immich-memories config move-to-db KEY`. Everything else is
+says, or move it out of the file with `immich-memories config move-to-db KEY`. The **auth** and
+**server** sections are always greyed out: they are set in the environment or `config.yaml` and
+change on restart. Changing a server URL that receives a credential needs that credential typed in
+the same save; otherwise the page says "The server URL changed: enter the credential for the new
+server." A value containing `${` is refused. Everything else is
 editable, and each section's **Save** writes only the keys you changed, to the database. The page never
 writes `config.yaml` or the environment. Lists and mappings are edited as JSON. **Reload from Disk**
 re-reads the file (its path is shown as **Config file**) after a hand edit.

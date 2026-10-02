@@ -9,7 +9,12 @@ from immich_memories.config_loader import Config
 from immich_memories.web.auth import is_rate_limited, record_failed_login, reset_rate_limiter
 
 _PEER = "10.0.0.2"
-_AUTH = {"enabled": True, "provider": "basic", "username": "op", "password": "pw-1234567890"}
+_AUTH = {
+    "enabled": True,
+    "provider": "basic",
+    "username": "op",
+    "password": "pw-1234567890",  # gitleaks:allow -- synthetic login
+}
 
 
 @pytest.fixture(autouse=True)

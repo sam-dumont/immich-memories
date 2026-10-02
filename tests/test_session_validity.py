@@ -171,7 +171,7 @@ def test_get_logout_does_not_end_a_session(monkeypatch):
 def test_post_logout_redirects_to_login_with_get(monkeypatch):
     client = _signed_in(monkeypatch, basic_auth_config())
 
-    response = client.post("/logout", headers={"Origin": "http://testserver"})
+    response = client.post("/logout", headers={"Origin": str(client.base_url).rstrip("/")})
 
     assert response.status_code == 303
     assert response.headers["location"] == "/app/login"

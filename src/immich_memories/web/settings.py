@@ -14,7 +14,7 @@ from immich_memories.config import get_config
 from immich_memories.config_loader import Config
 from immich_memories.config_sources import SettingSource, describe_settings
 from immich_memories.settings_edit import SettingRefused, save_settings
-from immich_memories.settings_store import secret_key_from_env
+from immich_memories.settings_store import is_bootstrap_key, secret_key_from_env
 from immich_memories.web.dependencies import config_file, current_config
 from immich_memories.web.schemas import SettingRow, SettingsForm, SettingsSection, SettingsView
 
@@ -48,12 +48,13 @@ def form_changes(entries: list[SettingSource], values: dict[str, Any]) -> dict[s
     """The form values that differ from what the page showed, ready for `save_settings`.
 
     A blank secret keeps the stored one; lists and mappings are edited as JSON. A setting the
-    environment or config.yaml sets is never saved. Raises `SettingRefused` when a JSON field
-    does not parse.
+    environment or config.yaml sets is never saved. A changed bootstrap key (`auth.*`,
+    `server.*`) is passed on, so the save refuses it out loud instead of dropping it. Raises
+    `SettingRefused` when a JSON field does not parse.
     """
     changes: dict[str, Any] = {}
     for entry in entries:
-        if entry.key not in values or not entry.editable:
+        if entry.key not in values or not (entry.editable or is_bootstrap_key(entry.key)):
             continue
         raw = values[entry.key]
         if entry.secret:

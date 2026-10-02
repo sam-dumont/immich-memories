@@ -25,7 +25,12 @@ from immich_memories.config_loader import (
     get_config_path,
 )
 from immich_memories.db import redact_url
-from immich_memories.settings_store import is_bootstrap_key, is_secret_key, settings_store
+from immich_memories.settings_store import (
+    is_bootstrap_key,
+    is_secret_key,
+    is_store_location_key,
+    settings_store,
+)
 
 Source = Literal["env", "file", "database", "default"]
 
@@ -74,7 +79,7 @@ def _env_override(key: str, env_names: Mapping[str, str], aliases: Mapping[str, 
         name = "IMMICH_MEMORIES_" + "__".join(parts[:depth])
         if name in env_names:
             return env_names[name]
-    if is_bootstrap_key(key):
+    if is_store_location_key(key):
         name = "IMMICH_MEMORIES_" + key.upper().replace(".", "_")
         if os.environ.get(name):
             return name
@@ -107,11 +112,11 @@ def _raw_yaml(path: Path) -> dict:
 
 
 def _stored_keys(config: Config) -> tuple[set[str], set[str]]:
-    """Saved keys, and the saved secrets the current secret key cannot open."""
+    """Saved keys the loader uses, and the saved secrets the current secret key cannot open."""
     store = settings_store(config, create=False)
     if store is None:
         return set(), set()
-    return store.stored_keys(), store.unreadable_keys()
+    return store.stored_keys() - store.ignored().keys(), store.unreadable_keys()
 
 
 def _display(key: str, value: Any, secret: bool) -> Any:

@@ -8,7 +8,7 @@ from immich_memories.config_loader import Config
 from immich_memories.web.auth import is_rate_limited, reset_rate_limiter
 from tests.web_server_fixtures import server_client
 
-_TOKEN = "tok-0123456789abcdef0123456789abcdef"  # noqa: S105
+_TOKEN = "tok-0123456789abcdef0123456789abcdef"  # noqa: S105 -- gitleaks:allow (synthetic token)
 
 
 def _config(password: str = "pw-1234567890") -> Config:  # noqa: S107

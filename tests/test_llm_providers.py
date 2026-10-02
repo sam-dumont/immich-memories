@@ -952,7 +952,7 @@ class TestLiveAnthropicCompatibleHost:
             provider="anthropic",
             base_url=os.environ["ZAI_BASE_URL"],
             model="glm-5.3-flash",
-            api_key="${ZAI_API_KEY}",
+            api_key=os.environ["ZAI_API_KEY"],
             timeout_seconds=120,
         )
 
@@ -975,7 +975,7 @@ class TestLiveAnthropicCompatibleHost:
             provider="zai",
             base_url=os.environ["ZAI_BASE_URL"],
             model="glm-5.3-flash",
-            api_key="${ZAI_API_KEY}",
+            api_key=os.environ["ZAI_API_KEY"],
             timeout_seconds=120,
         )
 

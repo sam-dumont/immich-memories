@@ -70,11 +70,12 @@ def test_obsolete_route_flags_cannot_choose_another_selector() -> None:
 
 def test_editorial_database_expands_environment_variables(monkeypatch, tmp_path: Path) -> None:
     monkeypatch.setenv("EDITORIAL_STORE_ROOT", str(tmp_path))
-
-    config = EditorialConfig(
-        enabled=True,
-        annotation_database="${EDITORIAL_STORE_ROOT}/annotations.sqlite",
+    source = tmp_path / "config.yaml"
+    source.write_text(
+        'editorial:\n  annotation_database: "${EDITORIAL_STORE_ROOT}/annotations.sqlite"\n'
     )
+
+    config = Config.from_yaml(source, stored={}).editorial
 
     assert config.annotation_database_path == tmp_path / "annotations.sqlite"
 
