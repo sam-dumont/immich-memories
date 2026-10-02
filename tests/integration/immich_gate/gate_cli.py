@@ -42,7 +42,9 @@ def gate_env() -> dict[str, str]:
     return env
 
 
-def run_cli(*args: str, timeout: int = 600) -> subprocess.CompletedProcess[str]:
+def run_cli(
+    *args: str, timeout: int = 600, api_key: str | None = None
+) -> subprocess.CompletedProcess[str]:
     """`immich-memories --config <gate config> <args>`, output captured, never raising."""
     command = [
         str(Path(sys.executable).parent / "immich-memories"),
@@ -50,6 +52,9 @@ def run_cli(*args: str, timeout: int = 600) -> subprocess.CompletedProcess[str]:
         str(Config.get_default_path()),
         *args,
     ]
+    env = gate_env()
+    if api_key is not None:
+        env["IMMICH_API_KEY"] = api_key
     return subprocess.run(  # noqa: S603 -- our own CLI, fixed argv
-        command, capture_output=True, text=True, timeout=timeout, env=gate_env(), check=False
+        command, capture_output=True, text=True, timeout=timeout, env=env, check=False
     )

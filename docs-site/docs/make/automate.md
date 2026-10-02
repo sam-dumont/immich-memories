@@ -24,7 +24,7 @@ Change the time there, then recreate the container:
 docker compose up -d
 ```
 
-The time uses the container's timezone (`TZ`). Upload is a separate choice: either `automation.upload_to_immich: true` or `upload.enabled: true` enables delivery for automatic films. Set `upload.album_name` for the destination. Confirmed delivery removes the local copy; leave both switches false to keep films on disk.
+The time uses the container's timezone (`TZ`). Upload is a separate choice: either `automation.upload_to_immich: true` or `upload.enabled: true` enables delivery for automatic films. Set `upload.album_name` for the destination. Complete upload, provenance tagging and requested album delivery remove the local copy. If the key lacks any of the five upload permissions (including album rights when no new album is needed), generation still completes: the local film stays, the run names the missing permission, and automatic retries stop for that film. Temporary tagging or album failures stay pending for the existing bounded retry process. Permitted steps still run, so a film may be uploaded while tagging or album delivery remains incomplete. A key without `asset.delete` keeps the previous uploaded version and records why. Leave both upload switches false to keep films on disk.
 
 Or leave those Compose lines commented and save **Settings > Automation > enabled** and
 **daily_at**. Settings also holds the other automation options; file and environment values win.

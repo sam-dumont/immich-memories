@@ -13,6 +13,7 @@ import pytest
 from click.testing import CliRunner, Result
 
 from immich_memories.api.models import Asset, MetadataSearchResult
+from immich_memories.api.permissions import READ_PERMISSIONS, ApiKeyCapabilities
 from immich_memories.config_models_editorial import EditorialConfig
 from immich_memories.db import open_store
 from immich_memories.free_text.lexicon import WordNetLexicon
@@ -68,7 +69,17 @@ def _asset(asset_id: str, at: datetime) -> Asset:
     )
 
 
-class _InventedImmich:
+class _ReadableKey:
+    """The invented API key grants exactly the film's required read permissions."""
+
+    def get_key_capabilities(self) -> ApiKeyCapabilities:
+        return ApiKeyCapabilities(frozenset(READ_PERMISSIONS))
+
+    def require_read_permissions(self) -> None:
+        self.get_key_capabilities().require_read()
+
+
+class _InventedImmich(_ReadableKey):
     """WHY: replaces the Immich HTTP API; it answers for the invented library and counts calls."""
 
     def __init__(self) -> None:
@@ -273,7 +284,7 @@ def test_a_request_the_library_cannot_show_makes_no_film_and_says_why(ask) -> No
     assert "Not possible, no film" in result.output
 
 
-class _RecordingImmich:
+class _RecordingImmich(_ReadableKey):
     """WHY: replaces the Immich HTTP API, keeping the windows the run asked for."""
 
     def __init__(self) -> None:

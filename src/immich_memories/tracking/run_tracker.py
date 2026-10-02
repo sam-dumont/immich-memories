@@ -327,16 +327,52 @@ class RunTracker:
         logger.info("Completed artifact for run %s", self.run_id)
         return run
 
-    def mark_delivery_pending(self, error: str, *, attempted: bool = True) -> RunMetadata:
+    def mark_delivery_pending(
+        self,
+        error: str,
+        *,
+        attempted: bool = True,
+        asset_id: str | None = None,
+        warnings: list[str] | None = None,
+    ) -> RunMetadata:
         """Record one failed Immich call and refresh durable metadata."""
         self._require_started()
-        self.db.mark_delivery_pending(self.run_id, error, attempted=attempted)
+        if asset_id or warnings:
+            self.db.mark_delivery_pending(
+                self.run_id,
+                error,
+                attempted=attempted,
+                asset_id=asset_id,
+                warnings=warnings,
+            )
+        else:
+            self.db.mark_delivery_pending(self.run_id, error, attempted=attempted)
         return self._reload_and_refresh_sidecar()
 
-    def mark_delivered(self, asset_id: str) -> RunMetadata:
+    def mark_delivery_abandoned(
+        self,
+        error: str,
+        *,
+        asset_id: str | None = None,
+        warnings: list[str] | None = None,
+    ) -> RunMetadata:
+        """Keep the completed film when the configured key cannot finish delivery."""
+        self._require_started()
+        self.db.mark_delivery_abandoned(
+            self.run_id,
+            error,
+            asset_id=asset_id,
+            warnings=warnings,
+        )
+        return self._reload_and_refresh_sidecar()
+
+    def mark_delivered(self, asset_id: str, *, warnings: list[str] | None = None) -> RunMetadata:
         """Record one successful Immich call and refresh durable metadata."""
         self._require_started()
-        self.db.mark_delivered(self.run_id, asset_id)
+        if warnings:
+            self.db.mark_delivered(self.run_id, asset_id, warnings=warnings)
+        else:
+            self.db.mark_delivered(self.run_id, asset_id)
         return self._reload_and_refresh_sidecar()
 
     def _reload_and_refresh_sidecar(self) -> RunMetadata:

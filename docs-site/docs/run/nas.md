@@ -10,6 +10,9 @@ first preparation is a bigger job.
 
 ## Install
 
+Create an Immich key with the [ten read permissions](./docker.md#the-api-key), adding the
+upload set only if you want films sent back to Immich. Leave **All** unchecked.
+
 Import `docker-compose.yml` as a project in your NAS's container manager. For a file-based
 project, put `.env` and an `output` folder beside it. Fill in the Immich URL/key, home coordinates
 and timezone as in [Docker step 2](./docker.md#2-connect-immich).

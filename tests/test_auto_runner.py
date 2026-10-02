@@ -115,7 +115,7 @@ class TestSuggestReturnsCandidates:
         with (
             # WHY: skips the real HTTP call to Immich's preflight/health endpoint
             patch(
-                "immich_memories.preflight.check_immich",
+                "immich_memories.preflight_immich.check_immich",
                 return_value=MagicMock(status=CheckStatus.OK),
             ),
             patch(
@@ -178,7 +178,7 @@ class TestSuggestReturnsCandidates:
         with (
             # WHY: preflight's real health probe against the Immich server
             patch(
-                "immich_memories.preflight.check_immich",
+                "immich_memories.preflight_immich.check_immich",
                 return_value=MagicMock(status=CheckStatus.OK),
             ),
             patch("immich_memories.api.accounts.SyncImmichClient", return_value=client),
@@ -273,7 +273,7 @@ class TestSuggestReturnsCandidates:
             ),
             # WHY: external Immich server (preflight check)
             patch(
-                "immich_memories.preflight.check_immich",
+                "immich_memories.preflight_immich.check_immich",
                 return_value=MagicMock(status=CheckStatus.OK),
             ),
             patch("immich_memories.automation.candidate_discovery.date") as mock_date,
@@ -310,7 +310,7 @@ class TestSuggestReturnsCandidates:
                 return_value=client,
             ),
             patch(
-                "immich_memories.preflight.check_immich",
+                "immich_memories.preflight_immich.check_immich",
                 return_value=MagicMock(status=CheckStatus.OK),
             ),
             patch("immich_memories.automation.candidate_discovery.date") as mock_date,
@@ -349,7 +349,7 @@ class TestSuggestReturnsCandidates:
                 return_value=client,
             ),
             patch(
-                "immich_memories.preflight.check_immich",
+                "immich_memories.preflight_immich.check_immich",
                 return_value=MagicMock(status=CheckStatus.OK),
             ),
             patch("immich_memories.automation.candidate_discovery.date") as mock_date,
@@ -425,7 +425,7 @@ class TestSuggestReturnsCandidates:
                 return_value=mock_client,
             ),
             patch(
-                "immich_memories.preflight.check_immich",
+                "immich_memories.preflight_immich.check_immich",
                 return_value=MagicMock(status=CheckStatus.OK),
             ),
             patch("immich_memories.automation.candidate_discovery.date") as mock_date,
@@ -476,7 +476,7 @@ class TestSuggestReturnsCandidates:
                 return_value=mock_client,
             ),
             patch(
-                "immich_memories.preflight.check_immich",
+                "immich_memories.preflight_immich.check_immich",
                 return_value=MagicMock(status=CheckStatus.OK),
             ),
             patch("immich_memories.automation.candidate_discovery.date") as mock_date,
@@ -568,7 +568,7 @@ class TestSuggestReturnsCandidates:
                 return_value=mock_client,
             ),
             patch(
-                "immich_memories.preflight.check_immich",
+                "immich_memories.preflight_immich.check_immich",
                 return_value=MagicMock(status=CheckStatus.OK),
             ),
             patch("immich_memories.automation.candidate_discovery.date") as mock_date,
@@ -605,7 +605,7 @@ class TestSuggestEmptyLibrary:
                 return_value=mock_client,
             ),
             patch(
-                "immich_memories.preflight.check_immich",
+                "immich_memories.preflight_immich.check_immich",
                 return_value=MagicMock(status=CheckStatus.OK),
             ),
         ):
@@ -759,7 +759,7 @@ class TestRunOneNoCandidates:
         with (
             # WHY: preflight's real health check against the Immich server
             patch(
-                "immich_memories.preflight.check_immich",
+                "immich_memories.preflight_immich.check_immich",
                 return_value=MagicMock(status=CheckStatus.OK),
             ),
             patch("immich_memories.api.accounts.SyncImmichClient", return_value=client),
@@ -853,7 +853,7 @@ class TestRunOneNoCandidates:
         # WHY: fakes a failed Immich preflight and spies the sqlite attempt write
         with (
             # WHY: replaces the real network probe to Immich with a canned error result
-            patch("immich_memories.preflight.check_immich", return_value=preflight),
+            patch("immich_memories.preflight_immich.check_immich", return_value=preflight),
             patch.object(
                 runner.state, "finish_attempt", wraps=runner.state.finish_attempt
             ) as finish,
@@ -889,13 +889,13 @@ class TestRunOneNoCandidates:
         mock_client.get_all_people.return_value = []
 
         # WHY: simulates the Immich server being unreachable during preflight
-        with patch("immich_memories.preflight.check_immich", return_value=failed):
+        with patch("immich_memories.preflight_immich.check_immich", return_value=failed):
             assert runner.suggest(limit=1) == []
 
         # WHY: now simulates Immich recovering for the following healthy run
         with (
             # WHY: the real preflight probe is replaced with a healthy canned result
-            patch("immich_memories.preflight.check_immich", return_value=healthy),
+            patch("immich_memories.preflight_immich.check_immich", return_value=healthy),
             # WHY: avoids a real HTTP call to Immich for the recovered suggest() run
             patch("immich_memories.api.accounts.SyncImmichClient", return_value=mock_client),
         ):
@@ -1803,7 +1803,7 @@ class TestFailedCandidateBackoff:
             patch("immich_memories.api.accounts.SyncImmichClient", return_value=mock_client),
             # WHY: external Immich server (preflight check)
             patch(
-                "immich_memories.preflight.check_immich",
+                "immich_memories.preflight_immich.check_immich",
                 return_value=MagicMock(status=CheckStatus.OK),
             ),
             # WHY: pins today so the month fixtures stay in range
@@ -1906,7 +1906,8 @@ def test_discovered_store_birthday_reaches_the_generation_command(config, stored
     with (
         patch("immich_memories.api.accounts.SyncImmichClient", return_value=client),
         patch(
-            "immich_memories.preflight.check_immich", return_value=MagicMock(status=CheckStatus.OK)
+            "immich_memories.preflight_immich.check_immich",
+            return_value=MagicMock(status=CheckStatus.OK),
         ),
         patch("immich_memories.automation.candidate_discovery.date") as clock,
     ):

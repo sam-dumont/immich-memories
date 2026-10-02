@@ -397,6 +397,9 @@ def _handler_type(
             if path == "/api/server/version":
                 self._send_json(200, {"major": 3, "minor": 1, "patch": 0})
                 return
+            if path == "/api/api-keys/me":
+                self._send_json(200, {"permissions": ["all"]})
+                return
             if path == "/api/users/me":
                 self._send_json(
                     200,

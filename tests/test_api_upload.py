@@ -443,6 +443,32 @@ class TestGetAlbums:
         assert album_id is None
 
 
+def _upload_key_transport() -> httpx.MockTransport:
+    """Serve introspection and provenance at the HTTP boundary, without network access."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        path = request.url.path
+        if path.endswith("/api-keys/me"):
+            return httpx.Response(200, json={"permissions": ["all"]})
+        if request.method == "GET" and "/assets/" in path:
+            return httpx.Response(
+                200,
+                json={
+                    "exifInfo": {"modifyDate": "2024-06-01"},
+                    "tags": [{"value": "immich-memories/generated"}],
+                },
+            )
+        if request.method == "PUT" and path.endswith("/tags"):
+            return httpx.Response(
+                200, json=[{"id": "generated", "value": "immich-memories/generated"}]
+            )
+        if request.method == "PUT" and path.endswith("/tags/generated/assets"):
+            return httpx.Response(200, json=[])
+        pytest.fail(f"Unexpected upload fixture request: {request.method} {path}")
+
+    return httpx.MockTransport(handler)
+
+
 class TestUploadMemory:
     @pytest.mark.asyncio
     async def test_upload_and_create_album(self, _mock_config, tmp_path):
@@ -450,7 +476,8 @@ class TestUploadMemory:
         video = tmp_path / "memory.mp4"
         video.write_bytes(b"video data")
 
-        client = ImmichClient(_TEST_URL, _TEST_KEY)
+        client = ImmichClient(_TEST_URL, _TEST_KEY, api_version="v3")
+        client._client = httpx.AsyncClient(base_url=_TEST_URL, transport=_upload_key_transport())
         # WHY: mock at service level — upload_memory lives on AlbumService
         client.albums.upload_asset = AsyncMock(return_value="asset-999")
         client.albums.find_album_by_name = AsyncMock(return_value=None)
@@ -472,7 +499,8 @@ class TestUploadMemory:
         video = tmp_path / "memory.mp4"
         video.write_bytes(b"video data")
 
-        client = ImmichClient(_TEST_URL, _TEST_KEY)
+        client = ImmichClient(_TEST_URL, _TEST_KEY, api_version="v3")
+        client._client = httpx.AsyncClient(base_url=_TEST_URL, transport=_upload_key_transport())
         # WHY: mock at service level — upload_memory lives on AlbumService
         client.albums.upload_asset = AsyncMock(return_value="asset-999")
         client.albums.find_album_by_name = AsyncMock(return_value="album-existing")
@@ -491,7 +519,8 @@ class TestUploadMemory:
         video = tmp_path / "memory.mp4"
         video.write_bytes(b"video data")
 
-        client = ImmichClient(_TEST_URL, _TEST_KEY)
+        client = ImmichClient(_TEST_URL, _TEST_KEY, api_version="v3")
+        client._client = httpx.AsyncClient(base_url=_TEST_URL, transport=_upload_key_transport())
         # WHY: mock at service level — upload_memory lives on AlbumService
         client.albums.upload_asset = AsyncMock(return_value="asset-999")
 
@@ -506,7 +535,10 @@ class TestSyncUploadWrappers:
         video = tmp_path / "memory.mp4"
         video.write_bytes(b"video data")
 
-        client = SyncImmichClient(_TEST_URL, _TEST_KEY)
+        client = SyncImmichClient(_TEST_URL, _TEST_KEY, api_version="v3")
+        client._async_client._client = httpx.AsyncClient(
+            base_url=_TEST_URL, transport=_upload_key_transport()
+        )
         # WHY: mock at service level — upload_memory delegates to albums service
         client._async_client.albums.upload_asset = AsyncMock(return_value="asset-123")
         client._async_client.albums.find_album_by_name = AsyncMock(return_value=None)

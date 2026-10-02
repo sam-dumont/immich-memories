@@ -452,3 +452,84 @@ def test_fade_controls_save_a_default_and_submit_a_film_override(
     with page.expect_response("**/api/v1/runs/*/renders"):
         panel.get_by_role("button", name="Render", exact=True).click()
     assert sent[-1]["fade_color"] is None
+
+
+@pytest.mark.parametrize("missing", [[], ["asset.upload"], ["tag.create", "tag.asset"]])
+def test_render_upload_option_explains_permissions_without_disabling_render(
+    page, launch_app_url, launch_workspace, missing
+):
+    _seed(launch_workspace)
+    reason = "Upload unavailable: the key lacks " + ", ".join(missing) if missing else None
+    page.route(
+        "**/api/v1/render/capabilities",
+        lambda route: route.fulfill(
+            json={
+                "upload_available": not missing,
+                "missing_upload": missing,
+                "upload_reason": reason,
+            }
+        ),
+    )
+    page.goto(f"{launch_app_url}/app/runs/20240630_web_cut")
+    panel = page.get_by_role("region", name="Render")
+    option = panel.get_by_label("Upload the film to Immich")
+    if missing:
+        expect(option).to_be_disabled()
+        expect(panel.get_by_text(reason, exact=True)).to_be_visible()
+    else:
+        expect(option).to_be_enabled()
+    expect(panel.get_by_role("button", name="Render", exact=True)).to_be_enabled()
+
+
+def test_incomplete_upload_highlights_an_actual_local_film_download(
+    page, launch_app_url, launch_workspace, tmp_path
+):
+    import re
+
+    from immich_memories.tracking.models import DeliveryStatus
+
+    film = launch_workspace.output_dir / "retained-permission-film.mp4"
+    film.write_bytes(b"synthetic finished film")
+    RunDatabase(launch_workspace.store()).save_run(
+        RunMetadata(
+            run_id="20261002_permission_download",
+            created_at=datetime.now(UTC),
+            status="completed",
+            output_path=str(film),
+            delivery_status=DeliveryStatus.ABANDONED,
+            delivery_error="not uploaded: the key lacks asset.upload",
+        )
+    )
+    page.goto(f"{launch_app_url}/app/runs/20261002_permission_download")
+    download = page.get_by_role("link", name="Download film", exact=True)
+    expect(download).to_have_class(re.compile("bg-primary"))
+    expect(page.get_by_text("not uploaded: the key lacks asset.upload", exact=True)).to_be_visible()
+    with page.expect_download() as event:
+        download.click()
+    destination = tmp_path / event.value.suggested_filename
+    event.value.save_as(destination)
+    assert destination.read_bytes() == film.read_bytes()
+
+
+def test_delivered_film_still_offers_download_after_local_cleanup(
+    page, launch_app_url, launch_workspace
+):
+    from immich_memories.tracking.models import DeliveryStatus
+
+    RunDatabase(launch_workspace.store()).save_run(
+        RunMetadata(
+            run_id="20261002_delivered_download",
+            created_at=datetime.now(UTC),
+            status="completed",
+            output_path=str(launch_workspace.output_dir / "already-reclaimed.mp4"),
+            delivery_status=DeliveryStatus.DELIVERED,
+            immich_asset_id="recorded-delivered-film",
+        )
+    )
+    page.goto(f"{launch_app_url}/app/runs/20261002_delivered_download")
+    expect(page.get_by_role("link", name="Download film", exact=True)).to_have_attribute(
+        "href", "/api/v1/runs/20261002_delivered_download/download"
+    )
+    expect(
+        page.get_by_text("Delivered to Immich. The local file was removed to save disk space.")
+    ).to_be_visible()

@@ -73,12 +73,19 @@ def run_client(immich: ImmichConfig, accounts: Sequence[str]) -> SyncImmichClien
 
     A one-account run keeps the plain primary client it always had.
     """
-    if accounts:
-        return AccessBoundClient(immich)
-    # Looked up on the module at call time, where a test replaces the Immich boundary.
-    return immich_api.SyncImmichClient(
-        base_url=immich.url, api_key=immich.api_key, api_version=immich.api_version
+    client = (
+        AccessBoundClient(immich)
+        if accounts
+        else immich_api.SyncImmichClient(
+            base_url=immich.url, api_key=immich.api_key, api_version=immich.api_version
+        )
     )
+    try:
+        client.require_read_permissions()
+    except Exception:
+        client.close()
+        raise
+    return client
 
 
 def run_windows(client: SyncImmichClient, accounts: Sequence[str]) -> WindowSource:

@@ -114,6 +114,50 @@ class PendingDeliveryRetry:
             and saved.immich_asset_id == asset_id
         )
 
+    def _finish_incomplete(
+        self,
+        attempt: AutomationAttempt,
+        pending: RunMetadata,
+        upload: dict[str, Any],
+        output_path: Path,
+    ) -> AutoRunResult:
+        warnings = [self._safe_error(w) for w in upload.get("warnings", [])]
+        reason = "; ".join(warnings) or "Immich delivery incomplete; local film kept"
+        asset_id = upload.get("asset_id")
+        permanent = bool(upload.get("missing_permissions"))
+        operation = (
+            self._db.mark_delivery_abandoned if permanent else self._db.mark_delivery_pending
+        )
+        persistence_error = self._persist(
+            lambda: operation(pending.run_id, reason, asset_id=asset_id, warnings=warnings),
+            description="Incomplete delivery persistence",
+            already_persisted=(lambda: self._abandonment_is_recorded(pending.run_id, reason))
+            if permanent
+            else lambda: self._pending_is_recorded(
+                pending.run_id, reason, pending.delivery_attempts + 1
+            ),
+            retry_requires_readable_noncommit=not permanent,
+        )
+        outcome = (
+            AutoOutcome.COMPLETED if permanent and not persistence_error else AutoOutcome.FAILED
+        )
+        return self.finish(
+            attempt,
+            outcome,
+            "incomplete delivery persistence failed" if persistence_error else reason,
+            run_id=pending.run_id,
+            output_path=output_path,
+            error=persistence_error or reason,
+        )
+
+    def _abandonment_is_recorded(self, run_id: str, reason: str) -> bool:
+        saved = self._db.get_run(run_id)
+        return (
+            saved is not None
+            and saved.delivery_status is DeliveryStatus.ABANDONED
+            and saved.delivery_error == reason
+        )
+
     def _pending_is_recorded(self, run_id: str, error: str, expected_attempts: int) -> bool:
         saved = self._db.get_run(run_id)
         return (
@@ -219,6 +263,8 @@ class PendingDeliveryRetry:
                     video_path=output_path,
                     album_name=pending.delivery_album,
                 )
+            if upload.get("delivery_complete") is False:
+                return self._finish_incomplete(attempt, pending, upload, output_path)
             asset_id = upload.get("asset_id")
             if not isinstance(asset_id, str) or not asset_id.strip():
                 raise ValueError("Immich upload returned no asset ID")
@@ -258,7 +304,15 @@ class PendingDeliveryRetry:
             )
 
         persistence_error = self._persist(
-            lambda: self._db.mark_delivered(pending.run_id, asset_id),
+            lambda: self._db.mark_delivered(
+                pending.run_id,
+                asset_id,
+                **(
+                    {"warnings": [self._safe_error(w) for w in upload["warnings"]]}
+                    if upload.get("warnings")
+                    else {}
+                ),
+            ),
             description="Delivered asset persistence",
             already_persisted=lambda: self._delivery_is_recorded(pending.run_id, asset_id),
         )

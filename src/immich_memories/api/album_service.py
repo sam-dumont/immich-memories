@@ -10,7 +10,10 @@ from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from immich_memories.api.permissions import ApiKeyCapabilities
 
 from immich_memories.api.compatibility import ResolvedApiVersion
 from immich_memories.api.generated_asset_tags import GENERATED_MEMORY_TAG, generated_asset_ids
@@ -196,9 +199,15 @@ def _album_ref(album: dict) -> AlbumRef:
 class AlbumService:
     """Upload and album management operations against the Immich API."""
 
-    def __init__(self, request_fn: RequestFn, api_version_fn: ApiVersionFn) -> None:
+    def __init__(
+        self,
+        request_fn: RequestFn,
+        api_version_fn: ApiVersionFn,
+        key_capabilities_fn: Callable[[], Awaitable[ApiKeyCapabilities]] | None = None,
+    ) -> None:
         self._request = request_fn
         self._get_api_version = api_version_fn
+        self._get_key_capabilities = key_capabilities_fn
 
     async def upload_asset(self, file_path: Path, *, captured_at: datetime | None = None) -> str:
         """Upload a file to Immich. Returns the asset ID.
@@ -408,7 +417,7 @@ class AlbumService:
         )
         await self._request("PUT", f"/tags/{tag_id}/assets", json={"ids": [asset_id]})
 
-    async def tag_as_generated_once_read(self, asset_id: str) -> None:
+    async def tag_as_generated_once_read(self, asset_id: str) -> bool:
         """Tag a fresh upload as this app's own once Immich has finished reading it.
 
         Tagging sooner loses the tag to Immich's own metadata job, and an untagged
@@ -422,8 +431,9 @@ class AlbumService:
             await self.tag_as_generated(asset_id)
             await asyncio.sleep(_POLL_SECONDS)
             if await self._carries_generated_tag(asset_id):
-                return
+                return True
         logger.warning("The provenance tag did not stay on the uploaded film")
+        return False
 
     async def _read_by_immich(self, asset_id: str) -> bool:
         for _ in range(_READ_WAIT_POLLS):
@@ -442,7 +452,13 @@ class AlbumService:
 
     async def generated_asset_ids(self) -> frozenset[str]:
         """Every asset the library holds under this app's provenance tag."""
-        return await generated_asset_ids(self._request)
+        if self._get_key_capabilities is None:
+            return await generated_asset_ids(self._request)
+        capabilities = await self._get_key_capabilities()
+        return await generated_asset_ids(
+            self._request,
+            can_read_tags=capabilities.allows("tag.read"),
+        )
 
     async def trash_assets(self, asset_ids: list[str]) -> None:
         """Move assets to Immich's trash. Recoverable; never a hard delete."""
@@ -454,43 +470,90 @@ class AlbumService:
         album_name: str | None = None,
         *,
         captured_at: datetime | None = None,
-    ) -> dict[str, str | None]:
+    ) -> dict[str, Any]:
         """Upload a generated memory video, optionally adding it to an album.
 
         Reuses existing album if one with the same name exists.
         """
+        capabilities = await self._get_key_capabilities() if self._get_key_capabilities else None
+        missing = list(capabilities.missing_upload) if capabilities else []
+        if capabilities is not None and not capabilities.allows("asset.upload"):
+            return {
+                "asset_id": None,
+                "album_id": None,
+                "delivery_complete": False,
+                "missing_permissions": missing,
+                "warnings": ["not uploaded: the key lacks " + ", ".join(missing)],
+            }
         asset_id = await self.upload_asset(video_path, captured_at=captured_at)
-        # WHY: the upload has already succeeded; a key without tag scope loses
-        # provenance for this film, not the film itself.
-        try:
-            await self.tag_as_generated_once_read(asset_id)
-        except Exception as exc:
-            logger.warning("Could not tag the uploaded film as this app's own: %s", exc)
+        warnings: list[str] = []
+        if missing:
+            warnings.append("delivery incomplete: the key lacks " + ", ".join(missing))
+        allows = capabilities.allows if capabilities else lambda _permission: True
+        await self._tag_delivery(asset_id, allows, warnings)
+        album_id = await self._album_delivery(asset_id, album_name, allows, warnings)
+        complete = not warnings
+        if not allows("asset.delete"):
+            warnings.append("previous version kept: the key lacks asset.delete")
+        elif not complete:
+            warnings.append("previous version kept: delivery incomplete")
+        else:
+            try:
+                await supersede_previous_renders(
+                    self, album_id=album_id, filename=video_path.name, keep_asset_id=asset_id
+                )
+            except (OSError, RuntimeError, ValueError, KeyError) as exc:
+                warnings.append(f"previous version kept: {exc}")
+        for warning in warnings:
+            logger.warning("%s", warning)
+        return {
+            "asset_id": asset_id,
+            "album_id": album_id,
+            "delivery_complete": complete,
+            "missing_permissions": missing,
+            "warnings": warnings,
+        }
 
+    async def _tag_delivery(
+        self,
+        asset_id: str,
+        allows: Callable[[str], bool],
+        warnings: list[str],
+    ) -> None:
+        tag_missing = [p for p in ("tag.create", "tag.asset") if not allows(p)]
+        if tag_missing:
+            warnings.append("uploaded without provenance: the key lacks " + ", ".join(tag_missing))
+            return
+        try:
+            if not await self.tag_as_generated_once_read(asset_id):
+                warnings.append("uploaded without verified provenance: the tag did not stay")
+        except Exception as exc:
+            warnings.append(f"uploaded without verified provenance: {exc}")
+
+    async def _album_delivery(
+        self,
+        asset_id: str,
+        album_name: str | None,
+        allows: Callable[[str], bool],
+        warnings: list[str],
+    ) -> str | None:
+        if not album_name:
+            return None
         album_id = None
-        if album_name:
+        try:
             album_id = await self.find_album_by_name(album_name)
             if album_id is None:
+                if not allows("album.create"):
+                    warnings.append("album not created: the key lacks album.create")
+                    return None
                 album_id = await self.create_album(album_name)
-            await self.add_assets_to_album(album_id, [asset_id])
-
-        # WHY: the upload has already succeeded. Failing the delivery because the
-        # tidy-up of a previous copy did not work would turn a working memory into
-        # a reported failure, so this never propagates.
-        try:
-            superseded = await supersede_previous_renders(
-                self, album_id=album_id, filename=video_path.name, keep_asset_id=asset_id
-            )
-        except (OSError, RuntimeError, ValueError, KeyError) as exc:
-            logger.warning("Could not supersede earlier renders: %s", exc)
-        else:
-            if superseded:
-                logger.info(
-                    "Superseded %d earlier upload(s) of the same recipe (moved to Immich trash)",
-                    len(superseded),
-                )
-
-        return {"asset_id": asset_id, "album_id": album_id}
+            if allows("albumAsset.create"):
+                await self.add_assets_to_album(album_id, [asset_id])
+            else:
+                warnings.append("film not added to album: the key lacks albumAsset.create")
+        except Exception as exc:
+            warnings.append(f"film not added to album: {exc}")
+        return album_id
 
 
 def _is_our_upload(asset: dict) -> bool:

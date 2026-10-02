@@ -51,8 +51,9 @@ immich:
   api_key: your-api-key
 ```
 
-Create the key in Immich's **Account Settings > API Keys**.
-[Permissions](./docker.md#the-api-key) depend on whether you will upload films.
+Create the key in Immich's **Account Settings > API Keys** with the
+[ten read permissions](./docker.md#the-api-key). Add the upload set only if you send films back
+to Immich. Leave **All** unchecked.
 Then:
 
 ```bash

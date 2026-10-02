@@ -15,6 +15,7 @@ from unittest.mock import patch
 import pytest
 from click.testing import CliRunner
 
+from immich_memories.api.permissions import READ_PERMISSIONS, ApiKeyCapabilities
 from immich_memories.automation.catalogue import SCOPE_FROM_RUN, save_catalogue
 from immich_memories.cli.generate_resolution import name_from_catalogue, resolve_special_day
 from immich_memories.memory_types.factory import create_preset
@@ -66,6 +67,13 @@ class _RecordingImmich:
     def get_videos_for_date_range(self, date_range) -> list:
         self.windows.append(date_range)
         return []
+
+    def get_key_capabilities(self) -> ApiKeyCapabilities:
+        """The invented API key grants the exact required read set."""
+        return ApiKeyCapabilities(frozenset(READ_PERMISSIONS))
+
+    def require_read_permissions(self) -> None:
+        self.get_key_capabilities().require_read()
 
     def __enter__(self) -> _RecordingImmich:
         return self

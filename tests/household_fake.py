@@ -53,6 +53,8 @@ class FakeHousehold:
         key = request.headers["x-api-key"]
         self.requests.append(request.url.path)
         self.reads.append((USERS[key], request.url.path))
+        if request.url.path.endswith("/api-keys/me"):
+            return httpx.Response(200, json={"permissions": ["all"]})
         if request.url.path.endswith("/users/me"):
             return httpx.Response(200, json={"id": USERS[key], "email": f"{USERS[key]}@x.test"})
         if request.url.path.endswith("/people"):

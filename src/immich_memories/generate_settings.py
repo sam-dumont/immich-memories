@@ -447,5 +447,8 @@ def upload_to_immich(
     result = client.upload_memory(
         video_path=video_path, album_name=album_name, captured_at=captured_at
     )
-    logger.info(f"Uploaded to Immich: asset={result.get('asset_id')}, album={album_name}")
+    if result.get("asset_id"):
+        logger.info("Uploaded to Immich: asset=%s, album=%s", result["asset_id"], album_name)
+    for warning in result.get("warnings", []):
+        logger.warning("%s", warning)
     return result

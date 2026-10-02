@@ -6,7 +6,7 @@ import asyncio
 import concurrent.futures
 from collections.abc import Callable, Sequence
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from immich_memories.api.album_service import AlbumRef, FilmScope
 from immich_memories.api.compatibility import ResolvedApiVersion
@@ -20,6 +20,7 @@ from immich_memories.api.models import (
     TimeBucket,
     UserInfo,
 )
+from immich_memories.api.permissions import ApiKeyCapabilities
 
 if TYPE_CHECKING:
     from datetime import datetime
@@ -91,6 +92,14 @@ class SyncImmichClient:
         _exc_tb: object,
     ) -> None:
         self.close()
+
+    def get_key_capabilities(self) -> ApiKeyCapabilities:
+        """Return this key's cached rights using Immich's permission-free introspection route."""
+        return self._run(self._async_client.get_key_capabilities())
+
+    def require_read_permissions(self) -> None:
+        """Refuse a cut whose key cannot read all required source material."""
+        return self._run(self._async_client.require_read_permissions())
 
     def validate_connection(self) -> bool:
         return self._run(self._async_client.validate_connection())
@@ -322,7 +331,7 @@ class SyncImmichClient:
         album_name: str | None = None,
         *,
         captured_at: datetime | None = None,
-    ) -> dict[str, str | None]:
+    ) -> dict[str, Any]:
         return self._run(
             self._async_client.upload_memory(video_path, album_name, captured_at=captured_at)
         )

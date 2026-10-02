@@ -52,6 +52,24 @@ def test_partner_only_and_mixed_cuts_route_metadata_and_originals(tmp_path, monk
 
     def handler(request):
         key = request.headers["x-api-key"]
+        if request.url.path.endswith("/api-keys/me"):
+            return httpx.Response(
+                200,
+                json={
+                    "permissions": [
+                        "user.read",
+                        "asset.read",
+                        "asset.statistics",
+                        "asset.view",
+                        "asset.download",
+                        "face.read",
+                        "person.read",
+                        "person.statistics",
+                        "album.read",
+                        "map.search",
+                    ]
+                },
+            )
         if request.url.path.endswith("/users/me"):
             return httpx.Response(200, json={"id": "partner-id", "email": "partner@example.test"})
         asset_id = request.url.path.split("/assets/")[1].split("/")[0]

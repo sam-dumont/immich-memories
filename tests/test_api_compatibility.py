@@ -18,8 +18,10 @@ from immich_memories.api.compatibility import (
     resolve_api_version,
 )
 from immich_memories.api.immich import ImmichAPIError, ImmichClient
+from immich_memories.api.permissions import READ_PERMISSIONS, UPLOAD_PERMISSIONS, ApiKeyCapabilities
 from immich_memories.config_loader import Config
-from immich_memories.preflight import CheckStatus, check_immich
+from immich_memories.preflight import CheckStatus
+from immich_memories.preflight_immich import check_immich
 
 _TEST_URL = "https://immich.example.com"
 _TEST_KEY = "test-api-key"
@@ -31,6 +33,9 @@ def test_preflight_passes_configured_api_version_to_client() -> None:
     client.__enter__.return_value = client
     client.get_api_version.return_value = ResolvedApiVersion.V2
     client.get_current_user.return_value = SimpleNamespace(name="Sam", email="sam@example.com")
+    client.get_key_capabilities.return_value = ApiKeyCapabilities(
+        frozenset((*READ_PERMISSIONS, *UPLOAD_PERMISSIONS, "asset.delete"))
+    )
 
     with patch(
         "immich_memories.api.immich.SyncImmichClient", return_value=client
@@ -53,6 +58,9 @@ def test_auto_preflight_reports_detected_server_major() -> None:
     client.__enter__.return_value = client
     client.get_api_version.return_value = ResolvedApiVersion.V3
     client.get_current_user.return_value = SimpleNamespace(name="Sam", email="sam@example.com")
+    client.get_key_capabilities.return_value = ApiKeyCapabilities(
+        frozenset((*READ_PERMISSIONS, *UPLOAD_PERMISSIONS, "asset.delete"))
+    )
 
     with patch("immich_memories.api.immich.SyncImmichClient", return_value=client):
         result = check_immich(config)

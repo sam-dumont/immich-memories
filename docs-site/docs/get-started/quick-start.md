@@ -27,7 +27,9 @@ IMMICH_API_KEY=your-api-key-here
 
 Use the address the container can reach, usually your server's LAN address. `localhost` inside the container points at the container itself.
 
-In Immich, create the key under **Account Settings > API Keys > New API Key**. **All** permissions work; the [minimal permissions](../run/docker.md#the-api-key) are listed in the Docker guide.
+In Immich, create the key under **Account Settings > API Keys > New API Key**. Select the
+[ten read permissions](../run/docker.md#the-api-key). Add the five upload permissions only if
+you want to send films back to Immich; leave **All** unchecked.
 
 ## 3. Start and download the local models
 

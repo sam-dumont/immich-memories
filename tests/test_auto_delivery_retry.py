@@ -67,7 +67,7 @@ def _healthy_retry_preflight() -> None:
     from immich_memories.preflight import CheckResult, CheckStatus
 
     with patch(
-        "immich_memories.preflight.check_immich",
+        "immich_memories.preflight_immich.check_immich",
         return_value=CheckResult(name="Immich", status=CheckStatus.OK, message="Connected"),
     ):
         yield
@@ -556,7 +556,7 @@ def test_pending_retry_preflight_failure_stops_before_upload_or_suggest(
     )
 
     with (
-        patch("immich_memories.preflight.check_immich", return_value=failed) as preflight,
+        patch("immich_memories.preflight_immich.check_immich", return_value=failed) as preflight,
         patch("immich_memories.api.immich.SyncImmichClient") as client_factory,
         patch.object(runner, "suggest") as suggest,
     ):
@@ -681,3 +681,37 @@ def test_initial_automation_upload_uses_the_retry_album_provenance(tmp_path: Pat
     assert "--upload-to-immich" in command
     album_index = command.index("--album")
     assert command[album_index + 1] == "Daily Auto Memories"
+
+
+@pytest.mark.parametrize("permanent", [True, False])
+def test_incomplete_upload_retry_preserves_film_and_distinguishes_missing_scopes(
+    tmp_path, permanent
+):
+    runner = AutoRunner(_config(tmp_path), execute=MagicMock())
+    pending = _save_pending_auto_run(runner, tmp_path)
+    client = MagicMock()
+    client.__enter__.return_value = client
+    client.upload_memory.return_value = {
+        "asset_id": None if permanent else "partial-film",
+        "delivery_complete": False,
+        "missing_permissions": ["asset.upload"] if permanent else [],
+        "warnings": [
+            "not uploaded: the key lacks asset.upload" if permanent else "tagging timed out"
+        ],
+    }
+    with patch("immich_memories.api.immich.SyncImmichClient", return_value=client):
+        result = runner.run_one(cooldown_hours=24)
+    assert result.outcome is (AutoOutcome.COMPLETED if permanent else AutoOutcome.FAILED)
+    assert ("asset.upload" if permanent else "tagging timed out") in result.reason
+    saved = runner.db.get_run(pending.run_id)
+    assert saved.delivery_status is (
+        DeliveryStatus.ABANDONED if permanent else DeliveryStatus.PENDING
+    )
+    assert saved.status == "completed"
+    assert Path(saved.output_path).exists()
+    if permanent:
+        assert runner.db.get_oldest_pending_delivery(source="auto") is None
+    else:
+        assert saved.immich_asset_id == "partial-film"
+        assert saved.delivery_attempts == 1
+        assert runner.db.get_oldest_pending_delivery(source="auto").run_id == saved.run_id

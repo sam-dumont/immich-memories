@@ -34,6 +34,12 @@ from immich_memories.operations.run_index import attempt_dir_for_run, run_id_for
 from immich_memories.tracking import RunDatabase
 from immich_memories.web.brief import CutBrief
 from immich_memories.web.dependencies import current_config
+from immich_memories.web.film_downloads import (
+    FinishedFilmFetcher,
+    finished_film,
+    immich_finished_film,
+)
+from immich_memories.web.film_files import FILM_TYPES, local_film
 from immich_memories.web.jobs import JobBusy, JobRunner
 from immich_memories.web.schemas import AskPreview, Job, JobProgress
 
@@ -465,13 +471,27 @@ def film(run_id: str, config: Annotated[Config, Depends(current_config)]) -> Fil
     record = RunDatabase(open_store(config)).get_run(run_id)
     if record is None or not record.output_path:
         raise HTTPException(404, "This run has no film on disk.")
-    if not Path(record.output_path).is_file():
+    path = local_film(record)
+    if path is None:
         if record.delivery_status.value == "delivered":
             raise HTTPException(
                 404, "The local film was removed after delivery; it is in Immich now."
             )
         raise HTTPException(404, "This run has no film on disk.")
-    return FileResponse(record.output_path, media_type="video/mp4")
+    return FileResponse(path, media_type=FILM_TYPES[path.suffix.lower()])
+
+
+@router.get("/runs/{run_id}/download", response_class=FileResponse)
+def download_film(
+    run_id: str,
+    config: Annotated[Config, Depends(current_config)],
+    fetch: Annotated[FinishedFilmFetcher, Depends(immich_finished_film)],
+) -> FileResponse:
+    """Download only this saved run's artifact, locally or from its delivery record."""
+    record = RunDatabase(open_store(config)).get_run(run_id)
+    if record is None:
+        raise HTTPException(404, "Run not found.")
+    return finished_film(config, record, fetch)
 
 
 _AUDIO = {".mp3": "audio/mpeg", ".m4a": "audio/mp4", ".wav": "audio/wav"}
