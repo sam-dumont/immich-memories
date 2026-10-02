@@ -390,7 +390,7 @@ def test_quickstart_compose_publishes_the_ui_on_loopback_only() -> None:
     compose = yaml.safe_load((REPO_ROOT / "docker-compose.yml").read_text())
     published = [str(p) for p in compose["services"]["immich-memories"]["ports"]]
 
-    assert published == ["127.0.0.1:8080:8080"], published
+    assert published == ["${UI_BIND_ADDRESS:-127.0.0.1}:8080:8080"], published
 
 
 def test_quickstart_compose_resolves_to_nas_without_a_second_service() -> None:
@@ -399,8 +399,8 @@ def test_quickstart_compose_resolves_to_nas_without_a_second_service() -> None:
     compose = yaml.safe_load((REPO_ROOT / "docker-compose.yml").read_text())
     environment = compose["services"]["immich-memories"]["environment"]
 
-    assert environment["IMMICH_MEMORIES_TIER"] == "auto"
-    config = Config(tier=environment["IMMICH_MEMORIES_TIER"])
+    assert environment["IMMICH_MEMORIES_DEPLOYMENT_TIER"] == "${TIER:-nas}"
+    config = Config(tier="nas")
     assert config.tier == "nas"
     assert not config.editorial.preparation.demands_captions
 
@@ -587,26 +587,6 @@ CAPTIONER_SERVICE = "immich-memories-captioner"
 HWACCEL_CAPTIONER = REPO_ROOT / "docker" / "hwaccel.captioner.yml"
 
 
-def _commented_block(service: str, first_line: str) -> dict:
-    """A block docker-compose.yml ships commented out inside one service, read as YAML.
-
-    The published file names no `extends:` (#882), so what a checkout gets from
-    docker/hwaccel.*.yml a downloaded file has to get from its own comments. Read
-    back here so the two cannot say different things.
-    """
-    lines = (REPO_ROOT / "docker-compose.yml").read_text().splitlines()
-    start = next(i for i, line in enumerate(lines) if line.strip() == f"{service}:")
-    start = next(i for i in range(start, len(lines)) if lines[i].strip() == f"# {first_line}")
-    indent = lines[start].index("#")
-    block = []
-    for line in lines[start:]:
-        body = line[indent:]
-        if not body.startswith("#"):
-            break
-        block.append(body[1:].removeprefix(" "))
-    return yaml.safe_load("\n".join(block))
-
-
 def test_the_captioner_reaches_a_card_the_way_the_inference_service_does() -> None:
     """One tag and one device, and neither of them restates what the server serves.
 
@@ -615,7 +595,7 @@ def test_the_captioner_reaches_a_card_the_way_the_inference_service_does() -> No
     alias, the projector path and the context size with it. llama-server reads
     the same setting from LLAMA_ARG_N_GPU_LAYERS, and a mapping merges.
     """
-    compose = yaml.safe_load((REPO_ROOT / "docker-compose.yml").read_text())
+    compose = yaml.safe_load((REPO_ROOT / "docker-compose.gpu.yml").read_text())
     cuda = yaml.safe_load(HWACCEL_CAPTIONER.read_text())["services"]["cuda"]
     captioner = compose["services"][CAPTIONER_SERVICE]
 
@@ -623,22 +603,20 @@ def test_the_captioner_reaches_a_card_the_way_the_inference_service_does() -> No
     assert cuda["environment"]["LLAMA_ARG_N_GPU_LAYERS"] == "99"
     device = cuda["deploy"]["resources"]["reservations"]["devices"][0]
     assert device["driver"] == "nvidia" and device["capabilities"] == ["gpu"]
-    # The image is the other half, and it cannot come through `extends`: the
-    # extending service's own `image:` wins, so the tag has to be a variable.
-    assert captioner["image"].endswith(":${CAPTIONER_TAG:-server-b10920}")
+    # The release CUDA file changes the image; the serving command stays in this file.
+    assert captioner["image"].endswith(":server-b10920")
     # One llama.cpp image on the host, not two: the downloader only curls and
     # hashes, so it has no reason to pull the CPU build beside a CUDA one.
     assert compose["services"]["immich-memories-caption-models"]["image"] == captioner["image"]
 
 
-def test_the_captioners_commented_gpu_block_says_what_its_overlay_says() -> None:
-    """The reservation exists twice, for the checkout and for the curled file."""
+def test_released_cuda_override_keeps_the_existing_hardware_contract() -> None:
     cuda = yaml.safe_load(HWACCEL_CAPTIONER.read_text())["services"]["cuda"]
-
-    assert _commented_block(CAPTIONER_SERVICE, "reservations:") == cuda["deploy"]["resources"]
-    assert _commented_block(CAPTIONER_SERVICE, "environment:") == {
-        "environment": cuda["environment"]
-    }
+    released = yaml.safe_load((REPO_ROOT / "docker-compose.cuda.yml").read_text())["services"][
+        CAPTIONER_SERVICE
+    ]
+    assert released["deploy"]["resources"] == cuda["deploy"]["resources"]
+    assert released["environment"] == cuda["environment"]
 
 
 def test_the_captioner_on_a_card_keeps_the_memory_limit_and_takes_no_cpu_quota() -> None:
@@ -648,7 +626,7 @@ def test_the_captioner_on_a_card_keeps_the_memory_limit_and_takes_no_cpu_quota()
     or not a card is attached, and the weights are still mapped into host memory
     while they are copied to the device.
     """
-    compose = yaml.safe_load((REPO_ROOT / "docker-compose.yml").read_text())
+    compose = yaml.safe_load((REPO_ROOT / "docker-compose.gpu.yml").read_text())
     shipped = compose["services"][CAPTIONER_SERVICE]["deploy"]["resources"]
     cuda = yaml.safe_load(HWACCEL_CAPTIONER.read_text())["services"]["cuda"]
 
@@ -788,7 +766,8 @@ def test_every_example_env_variable_reaches_the_app_container() -> None:
         for match in re.findall(r"\$\{([A-Z][A-Z0-9_]*)", str(value))
     }
 
-    names = _example_env_names()
+    interpolated.update(re.findall(r"\$\{([A-Z][A-Z0-9_]*)", str(compose)))
+    names = [name for name in _example_env_names() if name != "COMPOSE_FILE"]
 
     assert {"IMMICH_URL", "IMMICH_API_KEY"} <= set(names)
     assert [name for name in names if name not in interpolated] == []

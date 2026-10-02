@@ -49,6 +49,8 @@ def test_installation_override_pins_app_and_inference(tmp_path, released, infere
                 "-f",
                 str(root / "docker-compose.yml"),
                 "-f",
+                str(root / "docker-compose.gpu.yml"),
+                "-f",
                 str(override_file),
                 "--profile",
                 "inference",

@@ -79,7 +79,7 @@ const sidebars: SidebarsConfig = {
           'reference/automation-contract', 'reference/web-ui-details',
         ]},
         {type: 'category', label: 'Services and performance', items: [
-          'reference/llm-providers', 'reference/caption-service', 'reference/inference-service',
+          'reference/compose-files', 'reference/llm-providers', 'reference/caption-service', 'reference/inference-service',
           'reference/local-audio', 'reference/performance-evidence',
         ]},
         {type: 'category', label: 'Operational details', items: [

@@ -1090,7 +1090,8 @@ src/immich_memories/
 │   └── memory_length.py        # default_duration_for_type(): the length a memory type asks for, one resolver for every surface
 │
 ├── config.py                   # YAML configuration management (re-exports)
-├── config_loader.py            # Config loading: env > config.yaml > database > default (pydantic-settings sources)
+├── config_loader.py            # Config loading: env > config.yaml > database > deployment defaults > schema defaults
+├── deployment_config.py        # Editable tier/service defaults supplied by deployment infrastructure
 ├── config_sources.py           # describe_settings(): every leaf key's value (secrets masked), source and exact override
 ├── settings_store.py           # SettingsStore: the `settings` table, Fernet secrets under IMMICH_MEMORIES_SECRET_KEY;
 │                               # load_stored_settings (bootstrap-safe, never via get_config)
@@ -1136,6 +1137,7 @@ src/immich_memories/
 ├── locales/                    # Fourteen languages: messages.po for films, ui.po for the interface
 ├── preflight.py                # Dependency checks
 ├── setup_capabilities.py       # ACE-Step profile memory advice and synthetic audio validation
+├── preflight_compute.py        # Inference GPU health/device evidence, without changing requested tier
 ├── preflight_network.py        # One row per outside host the config allows; silent when none
 ├── preflight_render.py         # Authenticated worker version and render capability check
 ├── preflight_run.py            # Pinned models + writable output dir; `generate`/`prepare` and the web
@@ -1224,12 +1226,16 @@ flowchart TD
 ## Configuration
 
 - `Config` (config_loader.py): env > `~/.immich-memories/config.yaml` (tiered YAML, see above) > the
-  store's `settings` table > defaults. `config.yaml` is operator-owned: the app writes it only for
+  store's `settings` table > deployment infrastructure defaults > schema defaults. `config.yaml` is operator-owned: the app writes it only for
   `config move-to-db`. The UI and `immich-memories config` save through `settings_edit.save_settings`,
   which refuses keys env or the file override and bootstrap keys (`database.*`, `auth.*`, `server.*`), values with `${VAR}`, and a new credential URL without its credential. The database source
   is opened from env + the file's `database:` block only, so it never recurses into `get_config()`.
   `config_sources.describe_settings` is the per-key source report the settings page and
   `config show` render.
+- `deployment_defaults` (deployment_config.py): `IMMICH_MEMORIES_DEPLOYMENT_*` supplies requested
+  tier and service endpoints below the saved settings source. Compose/Kubernetes wiring therefore
+  stays editable in Settings; normal runtime env and YAML precedence is unchanged. Explicit reader
+  activation is required for Full. Preflight reports inference compute separately from video encoding.
 - `AssemblySettings` (assembly_config.py): video assembly parameters
 - `PipelineConfig` (smart_pipeline.py): the per-run switches the editorial route reads
 

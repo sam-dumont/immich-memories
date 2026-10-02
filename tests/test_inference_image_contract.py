@@ -8,7 +8,6 @@ cpu image, overlapping CPU/GPU runtime packages, and a writable cache mount hidi
 from __future__ import annotations
 
 import re
-import textwrap
 from pathlib import Path
 
 import pytest
@@ -18,6 +17,8 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 DOCKERFILE = REPO_ROOT / "docker" / "Dockerfile.inference"
 HWACCEL = REPO_ROOT / "docker" / "hwaccel.inference.yml"
 COMPOSE = REPO_ROOT / "docker-compose.yml"
+GPU_COMPOSE = REPO_ROOT / "docker-compose.gpu.yml"
+CUDA_COMPOSE = REPO_ROOT / "docker-compose.cuda.yml"
 SERVICE = "immich-memories-inference"
 PORT = "8092"
 
@@ -44,25 +45,12 @@ def stage(name: str) -> list[str]:
 
 
 def compose_service() -> dict:
-    return yaml.safe_load(COMPOSE.read_text())["services"][SERVICE]
-
-
-def commented_gpu_reservation() -> dict:
-    """The GPU block docker-compose.yml ships commented out, read as YAML."""
-    lines = COMPOSE.read_text().splitlines()
-    start = next(i for i, line in enumerate(lines) if line.strip() == "# reservations:")
-    block = []
-    for line in lines[start:]:
-        stripped = line.strip()
-        if not stripped.startswith("#") or stripped == "#":
-            break
-        indent = " " * (len(line) - len(line.lstrip()))
-        block.append(indent + stripped.removeprefix("# "))
-    return yaml.safe_load(textwrap.dedent("\n".join(block)))
+    return yaml.safe_load(GPU_COMPOSE.read_text())["services"][SERVICE]
 
 
 def compose_image(service: str) -> str:
-    return yaml.safe_load(COMPOSE.read_text())["services"][service]["image"]
+    source = COMPOSE if service == "immich-memories" else GPU_COMPOSE
+    return yaml.safe_load(source.read_text())["services"][service]["image"]
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
@@ -240,20 +228,15 @@ def test_the_backends_are_cpu_and_a_cuda_device_reservation() -> None:
 
 
 def test_the_published_compose_file_reads_no_file_beside_itself() -> None:
-    # `extends:` is resolved when compose loads the file, whatever profiles are
-    # on, so naming docker/hwaccel.inference.yml here broke the documented
-    # `curl -O … && docker compose up` in an empty directory before any profile
-    # was considered (#882). `make compose-check` proves the parse; this says
-    # which line would break it again.
+    # Released tier files must work in an empty directory without checkout-only
+    # helpers. The real Compose matrix proves the merge; this rejects extends.
     assert "extends" not in compose_service()
 
 
-def test_the_commented_gpu_block_says_what_the_hwaccel_overlay_says() -> None:
-    # The CUDA reservation now exists twice: the overlay for checkouts, and a
-    # commented block in the published file. They have to stay one answer.
+def test_the_released_cuda_reservation_matches_the_checkout_hwaccel_overlay() -> None:
     cuda = yaml.safe_load(HWACCEL.read_text())["services"]["cuda"]
-
-    assert commented_gpu_reservation() == cuda["deploy"]["resources"]
+    released = yaml.safe_load(CUDA_COMPOSE.read_text())["services"][SERVICE]
+    assert released["deploy"]["resources"] == cuda["deploy"]["resources"]
 
 
 def test_the_compose_service_publishes_inference_on_loopback_only() -> None:
@@ -262,10 +245,9 @@ def test_the_compose_service_publishes_inference_on_loopback_only() -> None:
     assert compose_service()["ports"] == [f"127.0.0.1:{PORT}:{PORT}"]
 
 
-def test_the_quickstart_does_not_start_a_service_nothing_uses_yet() -> None:
-    # The app has no facts_base_url switch until W8, and the models are a
-    # ~500 MB fetch: `docker compose up` must stay one container.
-    assert compose_service()["profiles"] == ["inference"]
+def test_the_quickstart_does_not_start_optional_model_services() -> None:
+    assert set(yaml.safe_load(COMPOSE.read_text())["services"]) == {"immich-memories"}
+    assert "profiles" not in compose_service()
 
 
 def test_compose_pulls_the_inference_image_the_release_actually_publishes() -> None:
@@ -274,7 +256,7 @@ def test_compose_pulls_the_inference_image_the_release_actually_publishes() -> N
     They drifted: compose said `...-generator-inference` where the workflow pushes
     `...-generator/inference`, a path segment rather than a hyphen. Nothing failed
     in CI, because the only thing that resolves the name is a self-hoster running
-    the `--profile inference up` line the file itself prints, against a manifest
+    the optional GPU tier alongside the base file, against a manifest
     that has never existed.
     """
     workflow = yaml.safe_load((REPO_ROOT / ".github/workflows/release.yml").read_text())
@@ -292,7 +274,7 @@ def test_compose_pulls_the_inference_image_the_release_actually_publishes() -> N
 
     assert image == published, f"{reference} is not published; the release pushes {published}"
     # The default and the documented GPU override must both be tags a release moves.
-    assert tag == "${INFERENCE_TAG:-latest}"
+    assert tag == "${IMMICH_MEMORIES_VERSION:-latest}"
     release_tags = set(re.findall(r"-t \$IMAGE:([^\s\"]+)", step["run"]))
     assert {"latest", "latest-cuda"} <= release_tags
 

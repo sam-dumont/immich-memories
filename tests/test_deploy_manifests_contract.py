@@ -162,11 +162,13 @@ def test_every_app_pod_starts_without_a_caption_service() -> None:
 
 
 def test_compose_profiles_have_distinct_host_ports_and_persistent_detector_storage() -> None:
-    services = yaml.safe_load((REPO_ROOT / "docker-compose.yml").read_text())["services"]
+    services = yaml.safe_load((REPO_ROOT / "docker-compose.gpu.yml").read_text())["services"]
     inference = services["immich-memories-inference"]["ports"]
     captioner = services["immich-memories-captioner"]["ports"]
     assert set(inference).isdisjoint(captioner)
-    app = services["immich-memories"]
+    app = yaml.safe_load((REPO_ROOT / "docker-compose.yml").read_text())["services"][
+        "immich-memories"
+    ]
     cache = app["environment"]["IMMICH_MEMORIES_EDITORIAL__PREPARATION__DETECTOR_CACHE_DIR"]
     assert cache.startswith(CONFIG_DIR + "/models/")
     assert any(volume.endswith(":" + CONFIG_DIR) for volume in app["volumes"])
