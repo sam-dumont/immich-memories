@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import logging
 import subprocess
+import sys
+from array import array
+from functools import cache
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
 
@@ -210,6 +213,69 @@ def check_zscale_available() -> bool:
     return _zscale_cache
 
 
+_SDR_PQ_FILTER = (
+    "zscale=tin=bt709:t=smpte2084:pin=bt709:p=bt2020:min=bt709:m=bt2020nc"
+    ":rin=tv:r=tv:npl=203:agamma="
+)
+
+
+@cache
+def _sdr_pq_fast_gamma_qualified() -> bool:
+    # zimg approximation error varies between CPU/build paths. Qualify pixels,
+    # not an OS/version name, and pay for the small probe only once per process.
+    sources = (
+        "testsrc2=size=256x144:rate=1,format=yuv420p10le[a];"
+        "smptehdbars=size=256x144:rate=1,format=yuv420p10le[b];"
+        "nullsrc=size=256x144:rate=1,format=yuv420p10le,"
+        "geq=lum=64+876*X/W:cb=512:cr=512[c];[a][b][c]vstack=inputs=3"
+    )
+    graph = (
+        f"[0:v]split[reference][candidate];[reference]{_SDR_PQ_FILTER}false[r];"
+        f"[candidate]{_SDR_PQ_FILTER}true[c];[r][c]vstack,format=yuv420p10le"
+    )
+    try:
+        result = subprocess.run(
+            [
+                "ffmpeg",
+                "-v",
+                "error",
+                "-f",
+                "lavfi",
+                "-i",
+                sources,
+                "-filter_complex",
+                graph,
+                "-frames:v",
+                "1",
+                "-f",
+                "rawvideo",
+                "-",
+            ],
+            capture_output=True,
+            check=True,
+            timeout=5,
+        )
+        values = array("H", result.stdout)
+    except (OSError, subprocess.SubprocessError, ValueError):
+        return False
+    pixels = 256 * 432
+    if len(values) != pixels * 3:
+        return False
+    if sys.byteorder != "little":
+        values.byteswap()
+    offset = total_error = 0
+    for count in (pixels, pixels // 4, pixels // 4):
+        reference = values[offset : offset + count]
+        candidate = values[offset + count : offset + 2 * count]
+        for original, approximate in zip(reference, candidate, strict=True):
+            error = abs(original - approximate)
+            if error > 8:
+                return False
+            total_error += error
+        offset += 2 * count
+    return total_error / (pixels * 3 // 2) < 0.03
+
+
 def _get_sdr_to_hdr_filter(
     target_type: str,
     source_primaries: str | None,
@@ -235,7 +301,9 @@ def _get_sdr_to_hdr_filter(
         logger.debug(f"Converting SDR ({src_pri}) -> PQ/HDR10")
         # Only the measured BT.709 SDR→PQ path may use the fast approximation.
         # Unknown primaries retain the reference path, even when defaulting to 709.
-        approximate_gamma = "true" if source_primaries == "bt709" else "false"
+        approximate_gamma = (
+            "true" if source_primaries == "bt709" and _sdr_pq_fast_gamma_qualified() else "false"
+        )
         return (
             f",zscale=tin=bt709:t=smpte2084"
             f":pin={src_pri}:p=bt2020:min={src_matrix}:m=bt2020nc"
