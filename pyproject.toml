@@ -85,7 +85,7 @@ mac = [
 ]
 # Audio metadata for local music library
 audio = [
-    "mutagen>=1.47",
+    "mutagen>=1.48.1",
 ]
 # OIDC authentication (only needed for SSO login)
 auth = [
