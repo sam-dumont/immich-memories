@@ -95,6 +95,29 @@ class FrameDecoder:
             width, height = height, width
         return width * self._height == height * self._width
 
+    def _blur_background(self) -> str:
+        # Only the soft background is reduced. Even chroma dimensions and exact
+        # cropping keep its center aligned with the full-resolution foreground.
+        factor = 4 if min(self._width, self._height) >= 2160 else 2
+        if (
+            self._privacy_blur
+            or min(self._width, self._height) < 1080
+            or self._width % (2 * factor)
+            or self._height % (2 * factor)
+        ):
+            factor = 1
+        width, height = self._width // factor, self._height // factor
+        crop = ":exact=1" if factor > 1 else ""
+        chain = (
+            f"[_bg]scale={width}:{height}:force_original_aspect_ratio=increase:flags=lanczos,"
+            f"crop={width}:{height}{crop}"
+        )
+        if not self._privacy_blur:
+            chain += f",gblur=sigma={30 / factor:g}"
+        if factor > 1:
+            chain += f",scale={self._width}:{self._height}:flags=bilinear"
+        return chain + "[_blurred]"
+
     def _fill_filters(self) -> list[str]:
         """Scale to the canvas and fill what the source leaves uncovered."""
         if self._covers_canvas():
@@ -109,15 +132,13 @@ class FrameDecoder:
             # Uses split to avoid re-reading the source.
             # When privacy blur is active, skip the extra sigma=30 on the background
             # because the frame is already blurred — adding more makes it unrecognizable.
-            bg_blur = "" if self._privacy_blur else ",gblur=sigma=30"
             # WHY (#1527): overlay composites in 8-bit yuv420 unless told otherwise,
             # which rounded every HDR frame with a blur fill to multiples of 4.
             overlay_format = ":format=yuv420p10" if self._pix_fmt != "rgb24" else ""
             self._use_filter_complex = True
             return [
                 "split[_bg][_fg]",
-                f"[_bg]scale={self._width}:{self._height}:force_original_aspect_ratio=increase:flags=lanczos,"
-                f"crop={self._width}:{self._height}{bg_blur}[_blurred]",
+                self._blur_background(),
                 f"[_fg]scale={self._width}:{self._height}:force_original_aspect_ratio=decrease:flags=lanczos[_sharp]",
                 f"[_blurred][_sharp]overlay=(W-w)/2:(H-h)/2{overlay_format}",
             ]
