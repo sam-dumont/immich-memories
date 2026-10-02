@@ -241,3 +241,27 @@ def test_concrete_heads_and_unmodified_containers_keep_their_meaning(lexicon):
     found = subject_words(_reading("rainy pictures", what=("rainy pictures",)), NOBODY, lexicon)
     assert found.heads == ("rainy",)
     assert "rain" in found.words
+
+
+@pytest.mark.parametrize("quality", ["sharp", "fuzzy", "blurry"])
+def test_picture_quality_does_not_promote_an_adjectives_noun_sense(tmp_path, quality):
+    from immich_memories.free_text.lexicon import load_wordnet
+    from tests.free_text.wordnet_corpus import write_corpus
+
+    corpus = tmp_path / "wordnet.zip"
+    # WordNet really gives best a noun sense as well as an adjective sense.
+    lexicon = load_wordnet(
+        corpus,
+        sha256=write_corpus(
+            corpus,
+            {
+                "best": ("noun.act", "adj.all"),
+                quality: ("adj.all",),
+                "otter": ("noun.animal",),
+            },
+        ),
+    )
+    text = f"best {quality} pictures"
+    assert subject_words(_reading(text, what=(text,)), NOBODY, lexicon).words == ()
+    concrete = f"best {quality} otter pictures"
+    assert subject_words(_reading(concrete, what=(concrete,)), NOBODY, lexicon).heads == ("otter",)

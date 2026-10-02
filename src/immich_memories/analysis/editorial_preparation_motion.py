@@ -26,7 +26,7 @@ from pathlib import Path
 from typing import Any
 
 import httpx
-from PIL import Image
+from PIL import Image, ImageDraw
 from sqlalchemy.exc import SQLAlchemyError
 
 from immich_memories.analysis.editorial_bound_sample import source_metadata_digest
@@ -45,6 +45,7 @@ from immich_memories.analysis.editorial_structure_budget import RESIDUAL_MIN
 from immich_memories.analysis.editorial_video_motion import VIDEO_RESIDUAL_PRODUCER
 from immich_memories.analysis.llm_caption_identity import LLM_CAPTION_PREFIX
 from immich_memories.analysis.llm_preparation_usage import record_preparation_attempt
+from immich_memories.analysis.strict_json import final_json_object
 from immich_memories.api.models import Asset
 from immich_memories.config_models_llm import LLMConfig
 from immich_memories.db import Store
@@ -69,7 +70,9 @@ PLAYBACK_UNAVAILABLE = "playback unavailable at Immich (HTTP 404)"
 PROMPT = (
     "Return only JSON matching the schema. The image shows frames of one short video, in time "
     "order from left to right. In one concise sentence, describe only the plainly visible "
-    "action across the frames."
+    "action across the frames. Each numbered panel is a later view from the same camera. "
+    "Compare the object position WITHIN each panel, not across the whole strip. "
+    "State the direction when its position changes; say stationary when it does not."
 )
 SCHEMA: dict[str, Any] = {
     "type": "object",
@@ -145,7 +148,7 @@ def read_motion_residuals(store: Store, assets: Iterable[Asset]) -> dict[str, di
 def motion_producer(description_model: str) -> str:
     """Give opt-in LLM motion its own identity; keep the established SmolVLM bank readable."""
     if description_model.startswith(LLM_CAPTION_PREFIX):
-        return f"motion-line-v1@{description_model}/{FRAMES}-keyframes-{TILE}px"
+        return f"motion-line-v2@{description_model}/{FRAMES}-keyframes-{TILE}px/{PROMPT_DIGEST}"
     return MOTION_PRODUCER
 
 
@@ -172,13 +175,18 @@ def missing_motion(
 
 
 def filmstrip(frames: Sequence[bytes]) -> bytes:
-    """The frames side by side, each centred in its own square tile, as one JPEG."""
-    strip = Image.new("RGB", (TILE * len(frames), TILE))
+    """Numbered frames in time order, separated so adjacent views cannot read as one scene."""
+    strip = Image.new("RGB", (TILE * len(frames), TILE + 24), (32, 32, 32))
+    draw = ImageDraw.Draw(strip)
     for index, data in enumerate(frames):
         with Image.open(io.BytesIO(data)) as source:
             image = source.convert("RGB")
         image.thumbnail((TILE, TILE))
-        strip.paste(image, (index * TILE + (TILE - image.width) // 2, (TILE - image.height) // 2))
+        strip.paste(
+            image, (index * TILE + (TILE - image.width) // 2, 24 + (TILE - image.height) // 2)
+        )
+        draw.text((index * TILE + 8, 4), f"Frame {index + 1}", fill="white")
+        draw.line((index * TILE, 24, index * TILE, TILE + 23), fill=(32, 32, 32), width=2)
     buffer = io.BytesIO()
     strip.save(buffer, "JPEG", quality=90)
     return buffer.getvalue()
@@ -235,7 +243,7 @@ class MotionScope:
 
 def motion_text(raw: str) -> str:
     """One plain sentence from the seat's answer, or ValueError."""
-    answer = json.loads(raw)
+    answer = final_json_object(raw)
     if not isinstance(answer, dict) or set(answer) != {"description"}:
         raise ValueError("motion answer has the wrong keys")
     text = answer["description"]

@@ -6,7 +6,7 @@ Generate a title for a personal memory video. Language: {lang}.
 - Write title and subtitle in {lang}. Be creative, varied, and specific to THIS trip.
 - Place names below are English as the camera recorded them; write them as {lang} would (the English name becomes the name {lang} gives that same place; never a place the facts do not name).
 - NEVER start with generic formulas like 'Échos de', 'Voyage en', 'Découverte de'.
-- Title: max 50 chars. Short, punchy, evocative. Use the region name, not the country.
+- Title: max 50 chars. Short, punchy, evocative. Name the recorded Place, even when it is a country. If no Place is recorded, prefer a recorded region; use the country when no region is supplied. Never invent a region.
 - Subtitle: max 50 chars. One short phrase adding context. Can be null.
 - Good: 'Sous le soleil de <lieu>', '<région> à pied', '<île>, été sans fin' (<lieu>, <région>, <île>: a place from the context below; never copy an example's words)
 - Bad: 'Échos de X', 'Voyage en X', 'Une semaine de découverte en X'

@@ -64,3 +64,13 @@ def test_the_model_picks_only_the_requests_own_phrases_in_three_field_orders() -
         ["what", "where", "when", "who"],
         ["when", "where", "what", "who"],
     ]
+
+
+def test_invalid_request_shapes_are_retried_then_fail_visibly():
+    import pytest
+
+    # WHY: a no-schema endpoint returned strings in place of phrase arrays.
+    asker = BankedAsker(*[{"who": "", "when": "", "where": "", "what": "otters"}] * 6)
+    with pytest.raises(ValueError, match="read.*request"):
+        read_request("otters", asker)
+    assert len(asker.questions) == 6

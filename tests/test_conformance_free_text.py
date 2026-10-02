@@ -22,7 +22,14 @@ from immich_memories.conformance.runtime import run_case
     ],
 )
 def test_probe_rejects_wrong_meaning(monkeypatch, name, answer, valid, calls):
-    body = json.dumps({"reason": "synthetic answer", **answer})
+    body = json.dumps(
+        (
+            {"reason": "synthetic answer"}
+            if name not in {"request reading", "calendar dates"}
+            else {}
+        )
+        | answer
+    )
     transport = httpx.MockTransport(
         lambda _: httpx.Response(
             200,
@@ -78,7 +85,9 @@ def test_handoff_probe_selects_the_requested_event(monkeypatch):
                 "choices": [
                     {
                         "finish_reason": "stop",
-                        "message": {"content": json.dumps({"choice": choice})},
+                        "message": {
+                            "content": json.dumps({"reason": "synthetic answer", "choice": choice})
+                        },
                     }
                 ],
                 "usage": {"prompt_tokens": 10, "completion_tokens": 5},

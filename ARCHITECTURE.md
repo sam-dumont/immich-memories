@@ -950,6 +950,7 @@ src/immich_memories/
 │   │                           # young people, time periods, roles through their kinds, verb bases,
 │   │                           # adjectives, derived nouns, relatives() (own kinds/parts, inherited parts),
 │   │                           # synonyms() (the first sense's other everyday names)
+│   ├── answer_contract.py      # Prompt field types/limits and validate free-text replies before voting
 │   ├── reading.py              # read_request(): the model picks who/when/where/what from an enum of the
 │   │                           # request's own n-grams, 3 field orders, 2-of-3 token votes, where+what
 │   │                           # voted as content; choose() (one option, 3 orders), choose_several()

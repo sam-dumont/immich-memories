@@ -322,3 +322,21 @@ class TestATitleMayOnlyNameWhatTheFactsName:
         assert result is not None
         assert result.title == "Lakeside Half 2022"
         assert result.subtitle is None
+
+
+@pytest.mark.parametrize("place,country", [("Norway", "Norway"), ("Brittany", "France")])
+def test_trip_prompt_keeps_the_recorded_place_even_when_it_is_a_country(place, country):
+    from immich_memories.titles.llm_titles import MemoryTitleFacts, build_title_prompt
+
+    prompt = build_title_prompt(
+        memory_type="trip",
+        start_date="2030-06-01",
+        end_date="2030-06-07",
+        duration_days=7,
+        locale="en",
+        country=country,
+        facts=MemoryTitleFacts(place=place),
+    ).text
+    assert f"Place (name it, in the title's language): {place}" in prompt
+    assert "Use the region name, not the country" not in prompt
+    assert "even when it is a country" in prompt

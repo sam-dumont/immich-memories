@@ -17,17 +17,24 @@ from tests.test_editorial_preparation import preview
 
 
 @pytest.mark.parametrize("status", [200, 401, 403])
+@pytest.mark.parametrize("fenced", [False, True])
 def test_explicit_llm_writer_owns_its_caption_identity_and_accounts_for_image_requests(
-    monkeypatch, status
+    monkeypatch, status, fenced
 ):
     requests = []
-    llm = LLMConfig(base_url="http://localhost:43210/v1", model="fixture-vision-model")
+    llm = LLMConfig(
+        base_url="http://localhost:43210/v1", model="fixture-vision-model", structured_output=False
+    )
 
     def reply(request):
         payload = json.loads(request.content)
         requests.append(payload)
         assert str(request.url) == llm.base_url + "/chat/completions"
         assert payload["model"] == llm.model
+        prompt = payload["messages"][0]["content"][0]["text"]
+        assert '"description"' in prompt and '"setting"' in prompt
+        assert '"maxLength": 120' in prompt
+        assert "response_format" not in payload
         assert payload["messages"][0]["content"][1]["type"] == "image_url"
         if status != 200:
             return httpx.Response(status, json={"error": {"message": "Credential rejected"}})
@@ -38,7 +45,9 @@ def test_explicit_llm_writer_owns_its_caption_identity_and_accounts_for_image_re
                     {
                         "finish_reason": "stop",
                         "message": {
-                            "content": '{"description":"A cat sleeps.","setting":"a room"}'
+                            "content": ("```json\n" if fenced else "")
+                            + '{"description":"A cat sleeps.","setting":"a room"}'
+                            + ("\n```" if fenced else "")
                         },
                     }
                 ],

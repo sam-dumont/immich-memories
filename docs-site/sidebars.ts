@@ -93,14 +93,15 @@ const sidebars: SidebarsConfig = {
       items: ['reference/troubleshooting', 'reference/faq', 'how-it-chooses/glossary'],
     },
     {
+      type: 'category', label: 'Project background',
+      items: ['welcome/about', 'welcome/how-this-was-built'],
+    },
+    {
       type: 'category', label: 'Contribute',
       items: [
         'contribute/development-setup', 'contribute/architecture', 'contribute/testing',
         'contribute/ci', 'contribute/releasing', 'contribute/demo-assets',
         'contribute/code-of-conduct',
-        {type: 'category', label: 'Project background', items: [
-          'welcome/about',
-        ]},
       ],
     },
   ],

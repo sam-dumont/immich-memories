@@ -65,7 +65,6 @@ def test_known_bt709_sdr_to_pq_stays_within_color_error_bound(source):
     [
         ("sdr", "hlg", "bt709"),
         ("sdr", "hlg", "smpte432"),
-        ("hlg", "pq", "bt2020"),
         ("pq", "hlg", "bt2020"),
         ("sdr", "pq", None),
         ("sdr", "pq", "smpte432"),
@@ -80,13 +79,24 @@ def test_unqualified_transfers_keep_reference_gamma(source, target, primaries):
     assert "agamma=true" not in conversion
 
 
-def test_hlg_to_pq_keeps_display_referred_pixels():
+@pytest.mark.parametrize(("gib", "max_error"), [(3, 0), (4, 1)])
+def test_hlg_to_pq_keeps_display_referred_pixels(tmp_path, monkeypatch, gib, max_error):
+    from immich_memories.processing import memory_budget
+
+    cgroup = tmp_path / "cgroup"
+    cgroup.mkdir()
+    (cgroup / "memory.max").write_text(str(gib * 2**30))
+    # WHY: Exercise the real resource-file reader for each transfer policy.
+    monkeypatch.setattr(memory_budget, "_CGROUP", cgroup)
     conversion = get_hdr_conversion_filter("hlg", "pq", source_primaries="bt2020", required=True)
     accurate = (
         "zscale=tin=arib-std-b67:t=smpte2084:pin=bt2020:p=bt2020:min=bt2020nc:m=bt2020nc"
         ":npl=203:agamma=false"
     )
-    assert np.array_equal(_render_transfer(conversion), _render_transfer(accurate))
+    assert ("format=gbrpf32le" in conversion) is (gib == 4)
+    delta = np.abs(_render_transfer(conversion) - _render_transfer(accurate))
+    assert delta.size == 256 * 144 * 3 // 2
+    assert delta.max() <= max_error
 
 
 def test_unverified_pq_approximation_keeps_accurate_transfer(monkeypatch, tmp_path):

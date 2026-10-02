@@ -405,7 +405,7 @@ def _dates(
         max_tokens=300,
     )
     if got is None:
-        return None, None
+        raise ValueError("Could not read the requested date bounds; please try again.")
     return _day(got.get("date_from")), _day(got.get("date_to"))
 
 

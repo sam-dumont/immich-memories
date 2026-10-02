@@ -4,5 +4,6 @@
   "compilerOptions": {
     "baseUrl": "."
   },
-  "exclude": [".docusaurus", "build"]
+  // The demo is a separate project, checked by make demo-ui-check.
+  "exclude": [".docusaurus", "build", "remotion"]
 }

@@ -318,10 +318,10 @@ h1, h2, h3, h4, h5, h6 {
   background: var(--im-bg-surface);
 }
 .docs-screenshot a { display: block; }
+/* Let ThemedImage control display so the inactive theme stays hidden before hydration. */
 .docs-screenshot img {
   width: 100%;
   height: auto;
-  display: block;
   margin-inline: auto;
   border-radius: 8px;
 }
