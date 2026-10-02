@@ -1,378 +1,52 @@
 ---
-sidebar_label: "Memory types"
+title: Choose a film
+sidebar_label: Choose a film
+description: Pick the right film for a month, a person, a trip or an occasion.
 ---
 
-import Video from '@site/src/components/Video';
+# Choose a film
 
-# Memory types
+Pick the subject in **Memory type**. Start with **Monthly Highlights** if you are trying the app. Every type works on the default NAS setup; some need a little more context from your library.
 
-Ten types. Most are a date range with a filter on it. Trip, album, holiday and special day are not,
-and those are the ones worth reading about. Every type works on a plain NAS: the default
-install cuts each of them from what Immich already knows (dates, places, faces, favourites).
-
-| Type | Covers | Target | Needs |
-|---|---|---|---|
-| `year_in_review` | one calendar year | 10 min | nothing extra |
-| `monthly_highlights` | one month | 60 s | nothing extra |
-| `season` | one season of one year | about 3 min 15 s | nothing extra |
-| `person_spotlight` | a range, one person | 60 s a month, capped at 10 min | a named face in Immich |
-| `multi_person` | a range, several people | 60 s a month, capped at 10 min | named faces in Immich |
-| `on_this_day` | today's date in every earlier year | 45 s | a few years of library |
-| `holiday` | one recurring date across several years | 60 s | a few years of library |
-| `trip` | one trip found from GPS | 30 s + 10 s an active day | GPS on your pictures, and a home base |
-| `album` | one Immich album | 30 s + 10 s an active day | an album |
-| `special_day` | one day the library says something happened on | 30 s + 6 s an active hour | nothing, or the `discover-days` catalogue |
-
-Two setup steps make every type better, not only trips: a home base, so the editor can tell a week
-away from a week at home, and who's who, so it knows your family from the neighbours. Both take five
-minutes: [Teach it your family](../get-started/who-is-who.md).
+| Make a film of | Choose | Before you start |
+|---|---|---|
+| A month | Monthly Highlights | Pick a year and month |
+| A whole year | Year in Review | Pick a year |
+| Summer or another season | Season | Pick a season and year |
+| One person | Person Spotlight | Name their face in Immich |
+| Several people | Multi-person | Name the faces; choose all together or any of them |
+| This date across the years | On This Day | Have pictures from several years |
+| Christmas or another recurring occasion | Holiday | Pick a holiday and the years to include |
+| A holiday away | Trip | Set home coordinates and have GPS-tagged pictures |
+| Your own collection | Album | Create the album in Immich |
+| One memorable day | Special Day | Pick the day, or use a discovered suggestion |
 
 ## How long a film runs
 
-The target is where the length starts, not a promise. A film never runs longer than the varied
-footage its days can fill, counted a day at a time and capped at 30 s a day, so a month with three
-photographed days gets about 20 s, not a minute. It goes short rather than padding. The run record
-says what set the length:
+Leave the length empty and the app fits it to the material. A busy month can make about a minute; a thin month may be much shorter. A year has a larger budget, not twelve glued-together monthly films.
 
-| What set it | When |
-|---|---|
-| `--duration` | you passed a number (or typed a length under **Length and pictures** in the [web UI](./web-ui.mdx)) |
-| `--short-form` | you picked a short-form preset and passed no `--duration` |
-| the material | neither flag, and the period holds pictures |
-| the preset floor | neither flag, and the period holds nothing to measure |
+Set a length when you have a destination in mind, such as a 30-second portrait film. It is a target, and the app will not pad a period just to reach it. [Exact length rules](../reference/film-types.mdx#how-long-a-film-runs) are available when you need them.
 
-A trip and an album count active days: 30 s plus 10 s a day, held between 60 s and 5 min. A special
-day counts active hours: 30 s plus 6 s an hour, held between 60 s and 3 min, and never fewer than
-30 s of pictures on top of its title and ending, however thin the day. Twelve one-minute months
-do not make a twelve-minute year: the year has its own ten-minute target. How the editor spends
-those seconds is in [Length, quiet weeks and filler](../how-it-chooses/length-and-filler.md).
+## People and birthdays
 
-## Filtering by people
+For one person, choose their name and the period. For several, choose whether pictures need **all of them together** or **any of them**. A person recognised during the same moment can still count when their face is not visible in every frame.
 
-Repeating `--person` means pictures holding **every** name. `--person-match or` makes it a union;
-the web UI's **Pictures with** select (**all of them together** or **any of them**) is the same switch. For anything else,
-`--people-expression` takes the condition directly:
-
-```bash
-immich-memories generate --memory-type multi_person --year 2025 \
-  --people-expression '"Riley" AND ("Casey" OR "Bob")'
-```
-
-`AND` binds tighter than `OR`. A person counts as in every picture of an episode (a block of
-pictures with no 90-minute gap) where Immich recognised their face at least once, so the back of a
-head or a baby asleep on a chest still belongs to a person film. `AND` means everybody recognised
-somewhere in the same episode, not in one frame. The expression replaces `--person` and
-`--person-match`. The web UI has it under **Grouped condition**. Trips, albums, person spotlights and any
-`--birthday` run refuse it.
-
-## Year in review
-
-A whole calendar year, in capture order, with a title card wherever the month changes.
-
-```bash
-immich-memories generate --memory-type year_in_review --year 2025
-```
-
-The editor groups the year into stories (a trip, a birthday, a run of ordinary weeks), weighs them
-against each other and gives each the shots its weight earns. [From library to film](../how-it-chooses/overview.md)
-has the rules. A thin year will not reach 10 minutes and the cut says how far short it landed.
-
-Each month is checked afterwards: a month with worthy material that ends up silent makes the run's
-verdict `coverage_incomplete`. Nothing reserves a slot per month up front. If everything you have is
-one summer trip, a season or trip memory fits the material better.
-
-Month dividers appear only when the range spans four months or more. `--no-photos` takes stills out
-of the pool; they are in it by default.
-
-## Monthly, season, person, multi-person
-
-Same shape, different scope: pick a range, optionally filter by person, cut.
-
-```bash
-immich-memories generate --memory-type monthly_highlights --month 7 --year 2025
-immich-memories generate --memory-type season --season summer --year 2025
-immich-memories generate --memory-type person_spotlight --person "Riley" --year 2025
-immich-memories generate --memory-type multi_person --person "Riley" --person "Bob" --year 2025
-```
-
-Season fits a curve through the date range: about 3 min 15 s for three months, the same from the
-web UI and the CLI. `--duration` overrides it. `--hemisphere south` maps summer onto December to
-February.
-
-Person spotlight needs the person named in Immich's face recognition. What makes it a spotlight is
-the filter: the editor is the same one. Multi-person defaults to AND: an afternoon counts when
-both were recognised somewhere in it, even if never in one frame. Two people who never share an
-episode give an empty memory rather than two solo reels. Each window is read once for videos and
-once for photos, however many people are named. Titles and default filenames say AND or OR, so two
-runs never overwrite each other.
-
-### A people memory with no dates
-
-Leave the dates off a person or multi-person memory and it covers everything up to today, starting
-on the first day one of its pictures could exist:
-
-```bash
-immich-memories generate --memory-type multi_person \
-  --people-expression '("Riley" OR "Bob") AND "Sam"'
-```
-
-The start comes from the birth dates Immich holds, and from `birth_date` in the people registry where
-Immich has none. An AND waits for the youngest person it needs; an OR opens with the oldest it
-accepts, and bounds nothing when one of them has no birth date. Two grandparents AND a child born
-in 2024 covers 2024 onward, because no older picture can hold the child. `runs why` on an earlier
-picture says where the window came from. Dates you do give are never moved.
-
-A spotlight over more than about 18 months is told as the person, one era per calendar year. Every
-year that holds a usable picture of them gets one moment before any story gets a second, so the dense
-recent years cannot take the whole film. Years with no picture of them take no part.
-
-### Birthday compilations
-
-`--birthday` turns a person spotlight into the year of someone's life that **ends** on the birthday,
-plus that birthday in earlier years. For a 21 July birthday and `--year 2025` it runs 22 July 2024 to
-21 July 2025, so this year's party is in this year's film. Target: 10 minutes.
-
-```bash
-immich-memories generate --person "Emma" --year 2025 --birthday
-```
-
-The birth date lives in Immich (**People**, pick the person, edit). Without one a birthday memory
-refuses rather than guessing. `--birthday 07-21` overrides it for one run, month first; slashed forms
-are rejected.
-
-The film reaches back to five earlier birthdays, each ±1 day, for the "look how small you were" cutaways. Most of
-those days hold nothing and the run prints one line (`history: 2 of 5 earlier windows hold material`)
-rather than a warning per year. 29 February is celebrated on the 28th in other years.
-
-In the web UI: **Person Spotlight**, then tick **Birthday to birthday, with earlier birthdays**. The
-**Birthday (MM-DD)** field under it overrides Immich's birth date, and **Years back** sets how many
-earlier birthdays it reaches for (five when left empty). For the rolling year without the cutaways, use **Custom date range**
-from the day after last year's birthday to this year's. Cut it the night before: a year of one person
-is a cold run the first time.
-
-## On this day
-
-Every earlier year, ±1 day around today, in one 45-second cut. It wants three or more years of
-library, and it is the obvious one to schedule.
-
-```bash
-immich-memories generate --memory-type on_this_day --years-back 3
-immich-memories generate --memory-type on_this_day --day 2026-08-31 --years-back 20
-```
-
-`--day` names the anniversary to look back from, so a run can be repeated or compared.
-
-## Holiday
-
-A recurrence, not a period: one window per year, the holiday ±2 days, so five Christmases ask Immich
-for five windows and never for the years between.
-
-```bash
-immich-memories generate --memory-type holiday --holiday christmas --years-back 5
-```
-
-`--holiday` is required, `--years-back` defaults to 5. Ten names resolve for any year:
-
-| Name | Falls on |
-|------|----------|
-| `new_year` | 1 January |
-| `valentines` | 14 February |
-| `easter` | Western Easter Sunday, computed |
-| `mothers_day` | second Sunday of May, or where your home country keeps it |
-| `fathers_day` | third Sunday of June, or where your home country keeps it |
-| `halloween` | 31 October |
-| `thanksgiving` | where the country's public calendar has it (the US: fourth Thursday of November) |
-| `christmas_eve` | 24 December |
-| `christmas` | 25 December |
-| `new_years_eve` | 31 December |
-
-`--holiday` also takes any public holiday of your country by name (see below), and anything else is
-read as `MM-DD`, for a household's own occasion (`--holiday 09-14`, the day you moved in). Without `--year`, the starting year steps back when this year's occasion has not happened
-yet. The title is the occasion's name, subtitled "Through the Years" in the film's language, on both
-the CLI and the web UI.
-
-The holidays follow the country your home base is in (`trips.homebase_latitude` and
-`trips.homebase_longitude`); Immich's own geodata says which country that is, so nothing leaves your
-server. Each country's public holidays come from the [`holidays`](https://github.com/vacanza/holidays)
-library, and `--holiday` accepts their names too (`--holiday "ascension day"` in Belgium). Without a
-home base the US holidays apply, as they always did.
-
-A few family days no public calendar lists are added on top: Valentine's Day, Halloween, Christmas
-Eve, New Year's Eve, and Mother's and Father's Day, which move by country:
-
-| Country | Mother's Day | Father's Day |
-|---|---|---|
-| `US`, and any country not listed | second Sunday of May | third Sunday of June |
-| `BE`, `AT` | second Sunday of May | second Sunday of June |
-| `DE` | second Sunday of May | Ascension Day |
-| `IT` | second Sunday of May | 19 March |
-| `ES`, `PT` | first Sunday of May | 19 March |
-| `FR` | last Sunday of May, a week later on Pentecost | third Sunday of June |
-| `GB`, `IE` | three weeks before Easter | third Sunday of June |
-| `AU`, `NZ` | second Sunday of May | first Sunday of September |
-| `MX` | 10 May | third Sunday of June |
-
-Only national holidays are read: a holiday kept in one region (a German state, a Canadian province)
-is not. A holiday only some families keep, like Eid, is not a public holiday in most countries and
-is not in their calendar; give its date as `MM-DD`.
-
-**Something missing?** A public holiday belongs in the `holidays` library upstream. A family day, or a
-country whose Mother's or Father's Day differs: open a pull request against
-`memory_types/date_builders.py`, one rule per line.
+Set birth dates in Immich to use birthday windows. Confirm [home and relationships](../get-started/who-is-who.md) so the film knows who matters. Advanced grouped conditions, all-years windows and birthday compilations are in the [film type reference](../reference/film-types.mdx#filtering-by-people).
 
 ## Trip
 
-Nothing declares a trip. The GPS on your pictures decides where one starts and ends, and each trip
-gets its own film.
+Set [your home base](../get-started/who-is-who.md) first. Pick **Trip** and a year, then choose one of the detected trips. A trip crossing New Year stays together.
 
-<Video
-  src="/demo/trip-preview.mp4"
-  poster="/img/trip-map-flyover.jpg"
-  controls
-  muted
-  loop
-  playsInline
-  width="100%"
-  style={{borderRadius: '12px', marginBottom: '1.5rem'}}
-/>
+No trip found: check that your pictures have GPS and that home is configured. Detection uses distance, nights away and gaps in activity; [the trip reference](../reference/film-types.mdx#trip) gives the defaults and adjustments.
 
-That film is the real renderer over the CC0 fixture library (`tests/e2e/fixtures/library`, credits
-in its `CREDITS.md`): a week by a lake 590 km from the test home. The satellite fly-over needs
-`network.map_tiles: true`, which is off by default because the tiles come from ArcGIS. With it off,
-the title sits on a flat panel. What that switch sends is on [Privacy](../run/privacy.md).
-
-Detection is three steps:
-
-1. **Away from home**: a picture counts if its GPS is at least `min_distance_km` (50) from home. No
-   GPS, no trip.
-2. **Split on gaps**: a new trip starts wherever more than `max_gap_days` (2) calendar days pass between two
-   pictures, so a rest day does not split a trip. Saturday morning to Monday afternoon is a
-   two-day gap, regardless of the capture times.
-3. **Drop the short ones**: a trip must span `min_duration_days` (2) nights. `1` catches a weekend.
-
-```yaml
-trips:
-  homebase_latitude: 48.8566    # required
-  homebase_longitude: 2.3522    # required
-  min_distance_km: 50
-  min_duration_days: 2
-  max_gap_days: 2
-```
-
-Home base is required. Get it wrong and your own neighbourhood becomes a trip, or real trips
-disappear. Drop `min_distance_km` to about 20 if weekend drives should count.
-
-```bash
-immich-memories generate --memory-type trip --year 2025                     # list what it found
-immich-memories generate --memory-type trip --year 2025 --trip-index 2
-immich-memories generate --memory-type trip --year 2025 --all-trips
-immich-memories generate --memory-type trip --year 2025 --near-date 2025-07-15
-```
-
-Both surfaces read photos and videos, and look a month either side of the year so a trip across New
-Year stays whole. `--person` narrows **detection** (whose pictures are scanned for GPS, useful when
-one phone carries it); the film still takes everything shot in the trip's window. Some cameras strip
-GPS, so a library shot on one can look full of holidays and find none.
-
-The name is the smallest place holding at least 85 % of the trip's located pictures, walking up from
-city to island, region, two regions, country. One step comes before the region: a town holding more
-than half of the pictures names the trip, so a seaside weekend with a walk to the next town is named
-after the town, not the province. It comes from the place Immich already stored on each
-picture, offline:
-
-| The trip | Its name |
-|---|---|
-| A long weekend, nearly every picture in Las Vegas | `Las Vegas, United States` |
-| Two weeks across Heraklion, Rethymno and Chania | `Crete, Greece` (French film: `Crète, Grèce`) |
-| Palma and Pollença | `Mallorca, Spain` |
-| A road trip, mostly Utah and Nevada | `Utah and Nevada, United States` |
-| Four states, none of them most of it | `United States` |
-
-`network.geocoding: true` lets Nominatim name a one-city or one-region trip in the film's language,
-and a trip to a village inside a merged municipality after the village.
-It is off by default: it sends coordinates to a third party.
+Maps are optional and use outside satellite tiles. A trip works with ordinary titles when maps are off. [Enable maps](../reference/output-rendering.md#the-map-fly-over).
 
 ## Album
 
-One Immich album instead of a date range. The album is the selection: nothing outside it is
-considered, nothing inside it is dropped for its date. A shared album counts as your own.
-
-```bash
-immich-memories generate --from-album "Trip 2025"
-immich-memories generate --from-album 59080965-22f0-46a4-be67-135692a9f584
-```
-
-`--from-album` makes it an album memory, and cannot be combined with `--year`, `--start`/`--end`,
-`--period`, `--birthday`, `--season`, `--month`, `--person` or another `--memory-type`. The film is
-titled after the album and named `album_<slug>.mp4` unless `--output` names the file. Two albums with one name stop the CLI with the
-candidates and their IDs; the web UI lists albums largest first and stores the choice by ID.
-
-Smart albums like *Recents* can hold tens of thousands of assets. Album mode reads at most
-`advanced.analysis.max_album_assets` per media type (10,000), newest first, and says so. Past that you
-probably want a date range.
-
-### An album made for one subject
-
-An album you built around one thing (every loaf you baked, every car you drove) can say what that
-thing is:
-
-```bash
-immich-memories generate --from-album "Bread" --subject "bread making along the years"
-```
-
-With `--subject`, every picture in the album stands on that subject. An ordinary film drops a loaf on
-a counter with nobody in frame; this one keeps it. Every year the album holds gets at least one shot.
-Sharing, the family-viewing holds, duplicates and the length still apply, and the run record lists
-each shot that got in on the subject alone ([Picking each shot](../how-it-chooses/picking-shots.md#what-a-frame-must-pass)).
-`--subject` needs `--from-album` and a model reader: the plain NAS reader refuses a written subject.
+Use an Immich album when you already know what belongs together. Choose **Album** and pick it; the app still makes an edit from the collection. A [reader](../better/reader.md) can also use a declared subject for collections such as cars or baking.
 
 ## Special day
 
-The nine types above cover something you named. A special day is one you did not: a day from your
-own library that a scan flagged, wrote down, and offers back when its anniversary comes round.
+Choose a day directly, or let [special-day discovery](./cli/discover-days.md) build a catalogue of occasions. A catalogue title can be edited. Discovery is optional; you can film a day that is not in it.
 
-```bash
-immich-memories discover-days     # build the catalogue once; it resumes
-immich-memories days-due          # what falls within three days of today
-immich-memories generate --memory-type special_day --day 2016-06-12
-```
-
-[`discover-days`](./cli/prepare.md) walks the library a month at a time. On a plain NAS, a day is
-kept when one recorded fact stands out: it was spent away from home, it holds three or more
-favourites, it is mostly video, or it ran long (20 pictures over 6 hours or more) with close family
-in it. Each year keeps its strongest `automation.special_days_per_year` (6), away days first. The
-title comes from the day's own place.
-
-The catalogue lives in the [store](../run/database.md); `days-export` writes it to a JSON file you can
-edit and `days-import` reads it back. A film covers the day's **run**, the stretch
-of pictures the occasion left, split at five hours of silence rather than at midnight, so a long
-night out is not cut at 00:00. It never reaches past its own first and last picture, and a run longer
-than 48 hours is not one occasion. `window_origin` in the run record says what bounded the film.
-
-Three routes bring a day back: `auto run` offers anniversaries within 3 days (round ones first, a
-decade before a seventh), the **Special day** type on the Memory page offers the whole catalogue, and
-`generate --day` takes any day, catalogued or not. An uncatalogued day is scoped to itself and named
-by `--title`, else by its date.
-
-Catalogue titles name real people and places, so they never reach the command line: automation
-passes `--day` alone and `generate` re-reads the title. What automation prints is the evidence:
-
-```
-10 years ago today · 289 photos over 18 hours
-via special-days catalogue
-```
-
-## With a model
-
-A text model adds three things here, and changes nothing else about the types:
-
-- `discover-days` first reads each month's days together, then checks each proposed occasion
-  against that day's own picture descriptions. Both readings must agree it was an occasion;
-  a title alone does not qualify it. No picture is sent. Confirmed occasions need enough varied
-  material for a film, with no six-per-year cap. Unread days remain marked for retry. Run
-  `discover-days --rescan` to check an older catalogue with this confirmation rule.
-- An uncatalogued special day, and people and occasion films, get a title written from their facts.
-  The reader invents no event name the facts do not carry.
-- A month or year gets a light polish on top of the NAS draft. What that polish does and costs
-  is on [What a model adds](../how-it-chooses/what-a-model-adds.md) and
-  [Make it better](../better/overview.md).
+The [complete reference](../reference/film-types.mdx) covers holiday calendars, people expressions, account lookup, birthdays and budgets. [Automatic films](./automate.md) can choose a subject for you.

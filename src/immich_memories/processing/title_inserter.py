@@ -142,6 +142,7 @@ class TitleInserter:
             map_move=map_move_timing_of(title_settings),
             locale=title_settings.locale,
             style_mode=title_settings.style_mode,
+            fade_color=title_settings.fade_color,
             show_month_dividers=title_settings.show_month_dividers,
             month_divider_threshold=title_settings.month_divider_threshold,
             animated_background=title_settings.animated_background,
@@ -186,7 +187,7 @@ class TitleInserter:
         progress_callback: Callable[[float, str], None] | None,
         use_content_bg: bool = True,
     ) -> None:
-        """Generate ending screen (reverse slow-mo or fade-to-white)."""
+        """Generate ending screen with the configured solid-color fade."""
         if progress_callback:
             progress_callback(0.1, "Generating ending screen...")
         ending_clip = None

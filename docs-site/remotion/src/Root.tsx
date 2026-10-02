@@ -7,6 +7,7 @@ export const RemotionRoot: React.FC = () => (
   <Composition
     id="DemoVideo"
     component={DemoVideo}
+    defaultProps={{theme: "light" as const}}
     durationInFrames={TOTAL_FRAMES}
     fps={FPS}
     width={1920}

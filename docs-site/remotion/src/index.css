@@ -1,1 +1,20 @@
 @import "tailwindcss";
+
+@import "../../src/css/immich-ui-tokens.css";
+
+:root, [data-theme='light'] {
+  --demo-stage: #f3f4f6;
+  --demo-gray-100: #f3f4f6;
+  --demo-gray-200: #e5e7eb;
+  --demo-gray-300: #d1d5db;
+  --demo-muted: #4b5563;
+  --demo-neutral-800: #262626;
+}
+[data-theme='dark'] {
+  --demo-stage: #09090b;
+  --demo-gray-100: #171717;
+  --demo-gray-200: #262626;
+  --demo-gray-300: #404040;
+  --demo-muted: #d4d4d4;
+  --demo-neutral-800: #e5e5e5;
+}

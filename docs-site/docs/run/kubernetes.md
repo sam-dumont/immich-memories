@@ -2,367 +2,261 @@
 title: Kubernetes
 ---
 
+import DeploymentDiagram from '@site/src/components/DeploymentDiagram';
+
 # Kubernetes
 
-Kustomize manifests live in `deploy/kubernetes/`. The base boots on any cluster, CPU only; NVIDIA
-scheduling is an overlay. Docker Compose is the primary path, and CI renders these manifests
-without applying them to a live cluster, so read the rendered output before you apply it.
-
-The base uses `tier: auto`; without GPU inference it selects NAS and needs no caption server. Releases attach an
-`immich-memories-deploy-X.Y.Z.tar.gz` bundle after the app and inference images finish
-publishing. Its three image pins match that release. Download it from the release page,
-extract it, then use the `deploy/kubernetes/` directory inside it.
-
-```
-deploy/kubernetes/
-├── base/                    Namespace, Secret, PVCs, Deployment, Service, NetworkPolicy
-│   ├── job.yaml             optional CLI Job + CronJobs (commented out in kustomization.yaml)
-│   └── ingress.yaml.example optional Ingress, only after enabling authentication
-├── overlays/gpu/            the app on an NVIDIA node
-├── overlays/inference/      the inference service alone (+ -cuda, + -lan for outside callers)
-├── overlays/captioner/      the SmolVLM caption service (+ -cuda)
-├── overlays/postgres/       the store on your PostgreSQL instead of SQLite
-├── overlays/render-sidecar/ the render worker in the app's own pod, on a GPU node
-└── overlays/maximalist/     every optional piece composed together
-```
+For an existing cluster with persistent storage. [Docker Compose](./docker.md) is the simpler
+install. The Kustomize manifests live in `deploy/kubernetes/`; CI renders them but does not deploy
+them to a live cluster. [Requirements](./requirements.md) explains platform and memory constraints.
 
 ## Prerequisites
 
-1. A storage class for three `ReadWriteOnce` PVCs: `immich-memories-cache` 20Gi,
-   `immich-memories-output` 50Gi, `immich-memories-models` 5Gi.
-2. Immich reachable from the cluster (`http://immich-server.<ns>.svc.cluster.local:2283`, or
-   external).
-3. GPU overlay only: the [NVIDIA GPU Operator](https://github.com/NVIDIA/gpu-operator), for the
-   `nvidia` RuntimeClass, `nvidia.com/gpu` resources and the `nvidia.com/gpu.present` label.
+- Immich reachable from the cluster, normally port 2283.
+- A storage class for three `ReadWriteOnce` PVCs: data/cache 20Gi, output 50Gi, models 5Gi.
+- For NVIDIA overlays: GPU Operator, `nvidia` RuntimeClass and labelled GPU nodes.
+
+The default is one CPU-only app, with SQLite on the data PVC. Use local/block storage for SQLite,
+not NFS/SMB. Keep `replicas: 1` even with PostgreSQL: the UI has in-process state.
+
+<DeploymentDiagram topology="basic" />
 
 ## Quick start
 
-```bash
-cd deploy/kubernetes
-cp base/secret.yaml.example base/secret.yaml   # Immich URL + API key; every key becomes an env var
-vim base/secret.yaml
-kubectl apply -k base              # CPU only
-kubectl apply -k overlays/gpu      # or, on NVIDIA nodes
-```
-
-`kubectl kustomize base` shows what will be applied.
-
-:::caution Set the tag before you apply
-`base/kustomization.yaml` and the two inference overlays each pin an image tag, and nothing bumps
-those pins on a release, so they trail. Tags carry no `v`: release `vX.Y.Z` is image tag `X.Y.Z`.
-Read the current one off the
-[releases page](https://github.com/sam-dumont/immich-video-memory-generator/releases) and set it:
-
-```bash
-cd deploy/kubernetes/base && kustomize edit set image \
-  ghcr.io/sam-dumont/immich-video-memory-generator=:X.Y.Z
-```
-
-That rewrites the init container with the app container. `kubectl apply -f base/job.yaml` skips
-kustomize entirely and runs `:latest`, so uncomment `- job.yaml` in the kustomization if the jobs
-should follow the Deployment's tag.
-:::
-
-```bash
-kubectl port-forward -n immich-memories svc/immich-memories 8080:80
-```
-
-:::caution One private replica
-Authentication is disabled by default, so do not add an Ingress or expose the Service until it is
-on. The UI keeps workflow state in its own process, so it is single-user, single-replica: leave
-`replicas: 1` even with shared storage.
-:::
-
-Once auth is on (basic-auth keys in the Secret, or [OIDC](./authentication.mdx)),
-copy `base/ingress.yaml.example` to `base/ingress.yaml`, set the host and add it to the
-kustomization.
-
-## Another namespace
-
-Every manifest says `immich-memories`, but the namespace is yours to pick. To deploy under another
-name, set it in each kustomization root you apply, before the first apply:
-
-```bash
-cd deploy/kubernetes
-for d in base overlays/inference overlays/captioner overlays/inference-lan; do
-  (cd "$d" && kustomize edit set namespace photos-memories)
-done
-```
-
-That renames the Namespace object `base/` creates too. `overlays/gpu`, `overlays/inference-cuda`
-and `overlays/captioner-cuda` build on those roots and follow them. Three things do not: the
-`-n immich-memories` in every command on these pages, `base/job.yaml` applied with
-`kubectl apply -f` (that skips kustomize), and the cross-namespace addresses, which become
-`captioner.photos-memories.svc.cluster.local` and so on.
-
-## How the pod is wired
-
-The image runs as `immich`, UID/GID 1000, `HOME=/home/immich`. The manifests set `runAsUser` and
-`fsGroup` 1000, drop all capabilities, use the `RuntimeDefault` seccomp profile and mount the root
-read-only. Four writable paths:
-
-| Mount | Backed by | Holds |
-|---|---|---|
-| `/home/immich/.immich-memories` | PVC `immich-memories-cache` | `config.yaml`, `store.db` (the store when it is SQLite: banked facts, readings, your picture decisions, people, run history, automation state, special days), video cache (a `cache.db` there is a pre-store leftover, imported once) |
-| `/app/output` | PVC `immich-memories-output` | generated videos |
-| `/models` | PVC `immich-memories-models` | the four artifacts `immich-memories models fetch` writes, at `IMMICH_MEMORIES_TRIAGE__ENCODER`, `..._MARQO_ONNX`, `..._DETECTOR_CACHE_DIR` and `IMMICH_MEMORIES_FREE_TEXT__WORDNET` |
-| `/tmp` | emptyDir 4Gi | FFmpeg intermediates; 8Gi for 4K |
-
-A deployment that predates the models claim has to add it before the next apply, or the pod stays
-`Pending` waiting for a volume that does not exist.
-
-Every pod spec here sets `enableServiceLinks: false`. Kubernetes injects one env var per Service
-in the namespace by default (`<NAME>_SERVICE_HOST`, `<NAME>_PORT`, ...), and this app's own
-`IMMICH_MEMORIES_*` prefix collides with its own Service names. A Service named
-`immich-memories-render-worker` injects `IMMICH_MEMORIES_RENDER_WORKER_PORT=tcp://10.x.x.x:8093`,
-which the worker's settings then read as its own `port` field and crash on:
-
-```
-port
-  Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='tcp://…:8093', input_type=str]
-```
-
-The main app carries the same risk from a Service named `immich-memories` (`IMMICH_MEMORIES_PORT`,
-`IMMICH_MEMORIES_SERVICE_HOST`, ...). If you write your own manifest instead of using these, copy
-`enableServiceLinks: false` onto every pod spec too.
-
-There is no ConfigMap. `IMMICH_URL`, `IMMICH_API_KEY` and any other secret setting come from the
-Secret (`envFrom`); everything else is an `IMMICH_MEMORIES_<SECTION>__<KEY>` env var on the
-Deployment, which carries commented examples for the reader and the daily automation. Settings
-saved from the UI go to the store (`store.db` on the PVC by default); env vars override them
-([where a setting comes from](./config-file.md#where-a-setting-comes-from)).
-
-The NetworkPolicy allows egress to DNS, 80 and 443, Immich on 2283, a reader on 11434 (Ollama's
-port; oMLX serves on 8000) and the caption server on 8092. Edit the ports if yours differ.
-
-## The models the first cut needs
-
-The Deployment and the one-off `generate` Job run a `fetch-models` init container first, writing
-the four pinned artifacts onto the `/models` claim, so there is nothing to run by hand. It exits
-without a download when all four are there, so a restart costs nothing. The CronJobs only `curl`
-the Deployment and need no models.
-`kubectl logs -n immich-memories deploy/immich-memories -c fetch-models` shows what it did.
-
-## Automatic product tiers {#set-the-preparation-tier}
-
-The Deployment and the Job set `IMMICH_MEMORIES_TIER` to `auto`, so a CPU-only base runs the
-`nas` tier. `auto` moves to `gpu` once it finds a GPU inference service; that tier then needs a
-caption server and the Laya checkpoint too. Point every pod you run at both services:
-
-```yaml
-            - name: IMMICH_MEMORIES_TIER
-              value: "auto"
-            - name: IMMICH_MEMORIES_INFERENCE__FACTS_BASE_URL
-              value: "http://inference:8092"
-            - name: IMMICH_MEMORIES_EDITORIAL__PREPARATION__CAPTION_BASE_URL
-              value: "http://captioner:8092/v1"
-```
-
-On a running Deployment, `kubectl -n immich-memories set env deployment/immich-memories` takes the
-same pairs. `immich-memories preflight` checks the services, and
-[Laya setup](../better/reader.md#the-laya-audience-pre-screen) covers the checkpoint. How the tier is
-picked: [The three tiers](./requirements.md#the-preparation-tier).
-
-## Check it from outside the pod
-
-The `docker compose exec` lines elsewhere in these docs are `kubectl exec` here:
-
-```bash
-kubectl exec -n immich-memories deploy/immich-memories -- immich-memories config test
-kubectl exec -n immich-memories deploy/immich-memories -- immich-memories preflight
-```
-
-Preflight follows the reader and tier the Deployment sets, so run it after the change above.
-
-## Home base, time zone and the first cut
-
-Set the home base on the Deployment, beside the commented `TZ` example the daily timer reads, so
-trips read as one story and your country's public holidays count:
-
-```bash
-kubectl -n immich-memories set env deployment/immich-memories \
-  IMMICH_MEMORIES_TRIPS__HOMEBASE_LATITUDE=50.8503 \
-  IMMICH_MEMORIES_TRIPS__HOMEBASE_LONGITUDE=4.3517 \
-  TZ=Europe/Brussels
-```
-
-`set env` changes the live object only; put the same pairs in `base/deployment.yaml` so a fresh
-apply has them too. Then port-forward, cut a month ([Your first film](../get-started/first-film.mdx)) and
-confirm who's who once ([Teach it your family](../get-started/who-is-who.md)).
-
-## Getting the films
-
-Films land on the `immich-memories-output` PVC. Either copy them out:
-
-```bash
-kubectl get pods -n immich-memories             # the immich-memories-<hash> pod
-kubectl cp immich-memories/<pod>:/app/output ./output
-```
-
-or have each `generate` and daily film uploaded to Immich (a web UI render has its own upload box):
-`IMMICH_MEMORIES_UPLOAD__ENABLED=true` (and
-`IMMICH_MEMORIES_UPLOAD__ALBUM_NAME`) on the Deployment, with a key that may upload
-([the permissions](./docker.md#the-api-key), [Upload back to Immich](./config-file.md#upload-back-to-immich)).
-
-## GPU
-
-Intel Quick Sync and AMD VA-API need `/dev/dri` in the pod, which takes a device plugin these
-manifests do not ship; without one the encode runs on the CPU.
-`overlays/gpu/deployment-gpu.yaml` patches the Deployment with `runtimeClassName: nvidia`, one
-`nvidia.com/gpu`, the two `NVIDIA_*` env vars, the `nvidia.com/gpu.present=true` node selector and
-the matching toleration. The app uses that card for NVENC encoding and the title kernels and
-nothing else: the editor's models are separate services, each with its own CUDA image. When the card
-cannot start the title kernels, titles still render, on the CPU, and the log says why in one warning
-line.
-
-## Render worker as a sidecar
-
-The [render worker](../better/gpu-render.md) moves the render to an NVIDIA card. Its request carries
-your Immich key, so the app only talks plain HTTP to it over loopback; anywhere else it wants
-HTTPS or `render.allow_insecure_http: true`. `overlays/render-sidecar` sidesteps both: the worker
-runs as a second container in the app's own pod, and the app reaches it at `http://127.0.0.1:8093`.
+Download/extract the deployment bundle from your chosen
+[release](https://github.com/sam-dumont/immich-video-memory-generator/releases). Its image pins
+match that release. If using a source checkout instead, check `base/kustomization.yaml`: committed
+pins can trail releases. Image tags have no `v` prefix.
 
 ```bash
 cd deploy/kubernetes
 cp base/secret.yaml.example base/secret.yaml
-cp overlays/render-sidecar/render-worker-secret.yaml.example overlays/render-sidecar/render-worker-secret.yaml
-vim base/secret.yaml overlays/render-sidecar/render-worker-secret.yaml   # openssl rand -hex 32 for the token
-kubectl apply -k overlays/render-sidecar
+# Edit IMMICH_URL and IMMICH_API_KEY in base/secret.yaml.
+kubectl kustomize base
+kubectl apply -k base
+kubectl rollout status -n immich-memories deploy/immich-memories
 ```
 
-Three things to know:
+For a source checkout, set the image before applying:
 
-- **The whole pod goes to the GPU node**, even though the app container needs no GPU. The overlay
-  sets `runtimeClassName: nvidia` and a `nvidia.com/gpu.present: "true"` node selector: change the
-  selector to the label your GPU node carries.
-- **Keep the two image tags equal.** The overlay pins the worker's tag in its own
-  `kustomization.yaml` (the base pin does not reach a container a patch adds), and the app refuses
-  a worker on another version before it sends any footage.
-- **One Secret, one token, both sides.** `immich-memories-render-worker` holds it; the worker reads
-  it as `IMMICH_MEMORIES_RENDER_WORKER_TOKEN`, the app as `IMMICH_MEMORIES_RENDER__WORKER_TOKEN`
-  (`render.worker_token`). No `config.yaml` change.
+```bash
+(cd base && kustomize edit set image ghcr.io/sam-dumont/immich-video-memory-generator=:X.Y.Z)
+```
 
-The worker binds loopback only, so its probes run inside the container (`exec`) instead of
-`httpGet` or `tcpSocket`, which the kubelet sends to the pod IP. Keep them that way if you edit the
-overlay, or the pod never goes Ready.
+The init container fetches model files needed by its configuration. Before the first film,
+check the running app's actual tier and requirements:
+
+```bash
+kubectl exec -n immich-memories deploy/immich-memories -- immich-memories models fetch
+kubectl exec -n immich-memories deploy/immich-memories -- immich-memories preflight
+kubectl port-forward -n immich-memories svc/immich-memories 8080:80
+```
+
+Open `http://localhost:8080`. Set home coordinates and timezone below, then make
+[your first film](../get-started/first-film.mdx).
+
+:::caution Keep it private until login works
+Authentication is disabled by default. Do not expose the Service or add an Ingress before
+[enabling authentication](./authentication.mdx). Keep one UI replica.
+:::
+
+## Home base, time zone and the first cut
+
+Add these to the Deployment's `env` (or your overlay), so future applies keep them:
+
+```yaml
+- name: IMMICH_MEMORIES_TRIPS__HOMEBASE_LATITUDE
+  value: "50.8503"
+- name: IMMICH_MEMORIES_TRIPS__HOMEBASE_LONGITUDE
+  value: "4.3517"
+- name: TZ
+  value: Europe/Brussels
+```
+
+Home coordinates enable trips and local public holidays. Then
+[confirm your family once](../get-started/who-is-who.md).
+
+## Getting the films
+
+The web Render panel can upload to Immich. To default CLI/daily films to upload, set
+`IMMICH_MEMORIES_UPLOAD__ENABLED=true` and optionally `IMMICH_MEMORIES_UPLOAD__ALBUM_NAME`.
+The key needs [upload permissions](./docker.md#the-api-key).
+
+For local films, copy from the output PVC:
+
+```bash
+kubectl get pods -n immich-memories
+kubectl cp immich-memories/<pod>:/app/output ./output
+```
+
+Confirmed uploads remove their local film; local-only and failed deliveries keep theirs.
+
+## Authentication and Ingress
+
+Add Basic-auth credentials to the Secret, or configure [OIDC](./authentication.mdx#oidc--sso).
+Then copy `base/ingress.yaml.example`, set its host/TLS settings and list it in your kustomization.
+Use the [proxy trust/cookie checklist](./authentication.mdx#behind-a-reverse-proxy-with-tls).
+
+## How the pod is wired
+
+The app runs as UID/GID 1000 with `fsGroup: 1000`, dropped capabilities, RuntimeDefault seccomp
+and a read-only root.
+
+| Path | Storage |
+|---|---|
+| `/home/immich/.immich-memories` | Data/cache PVC: store, settings, session key, previews and clips |
+| `/app/output` | Output PVC: local films |
+| `/models` | Models PVC: encoder, WordNet and tier-dependent model files |
+| `/tmp` | 4Gi emptyDir; allow more for 4K |
+
+Base settings come from environment variables and the Secret. Settings saves go to the store;
+[environment variables win](./config-file.md#where-a-setting-comes-from).
+
+Keep `enableServiceLinks: false` on every custom pod spec. Service names can otherwise inject
+`IMMICH_MEMORIES_*` variables that the app mistakes for configuration and fails to parse.
+
+## NetworkPolicy
+
+The base policy allows DNS and TCP ports 80, 443, 2283, 11434 and 8092. These are port rules,
+not destination allow-lists. Add your actual service ports: oMLX commonly uses 8000,
+PostgreSQL 5432, render services 8093, and your services may differ.
+The CNI must enforce NetworkPolicy for these rules to matter.
+
+## GPU
+
+For **video encoding/title effects**, apply `overlays/gpu` instead of `base`. It reserves one
+NVIDIA GPU for the app. It does not start inference or caption services.
+Intel/AMD device plugins and `/dev/dri` mapping are not supplied by these manifests.
+
+## Automatic product tiers {#set-the-preparation-tier}
+
+For **GPU picture preparation**, deploy the model services and point the app at them:
+
+```bash
+kubectl apply -k overlays/inference-cuda
+kubectl apply -k overlays/captioner-cuda
+```
+
+```yaml
+- name: IMMICH_MEMORIES_INFERENCE__FACTS_BASE_URL
+  value: http://inference:8092
+- name: IMMICH_MEMORIES_EDITORIAL__PREPARATION__CAPTION_BASE_URL
+  value: http://captioner:8092/v1
+```
+
+CPU service variants are `overlays/inference` and `overlays/captioner`.
+The default `tier: auto` sees GPU inference separately from encoding.
+Add a [reader](../better/reader.md) for Full. After changing tier/services, run `models fetch` in
+the app again for required detectors/Laya, then `preflight`.
+[Requirements](./requirements.md#which-tier-you-get) explains the resolver.
+
+## Render worker as a sidecar
+
+`overlays/render-sidecar` puts a worker in the same pod, on an NVIDIA node.
+It receives the Immich API key over pod loopback `http://127.0.0.1:8093`.
+Copy its `render-worker-secret.yaml.example` to `render-worker-secret.yaml`, generate a token
+(`openssl rand -hex 32`), then apply the overlay.
+
+Keep app and worker image tags equal. The worker binds loopback, so its probes must use `exec`,
+not kubelet HTTP/TCP probes to the pod IP. [Render worker](../better/gpu-render.md) covers remote
+workers and transport protection.
 
 ## The two model services
 
-Both apply on their own, with no Secret and no `base/`. On a cluster where `base/` has not run
-yet, create the namespace first (`kubectl create namespace immich-memories`):
-
-```bash
-kubectl apply -k deploy/kubernetes/overlays/inference    # heads and detectors, -cuda for a card
-kubectl apply -k deploy/kubernetes/overlays/captioner    # the caption server the gpu and full tiers need
-```
-
-Point the app at them with `IMMICH_MEMORIES_INFERENCE__FACTS_BASE_URL=http://inference:8092` and
-`IMMICH_MEMORIES_EDITORIAL__PREPARATION__CAPTION_BASE_URL=http://captioner:8092/v1` (two
-underscores between levels); the base NetworkPolicy already allows egress on 8092. What each overlay patches, and what a card is worth per picture, are on
-[the inference service](../better/inference.md) and [Caption server](../better/captions.md).
-
-Two add-ons have no overlay here: the reader (commented env vars on the Deployment,
-[Add a reader](../better/reader.md)) and generated music (a server of your own,
-[Generated music](../better/music.md)). The render worker has two: the sidecar above, or its own
-Deployment from `services/render-worker/kubernetes.yaml` ([Render on a GPU box](../better/gpu-render.md)).
-Each outside service is a URL on the Deployment; open its port in the NetworkPolicy if it is not
-80, 443, 8092 or 11434.
-
-## Batch jobs
-
-`base/job.yaml` holds a one-off `generate` Job and two CronJobs (monthly highlights on the 1st,
-`auto run` daily). Uncomment `- job.yaml` in the kustomization.
-
-The store defaults to a SQLite file on the `immich-memories-cache` PVC, one writer at a time; a second pod on
-another node writing that file over `ReadWriteMany` corrupts it (WAL mode needs shared memory a
-network filesystem does not give two hosts). So the two CronJobs never mount the PVCs: they `curl`
-the Deployment's `POST /api/trigger` route instead, running whatever decision `auto run` would have
-made. Set `IMMICH_MEMORIES_SERVER__TRIGGER_TOKEN` in `base/secret.yaml` first, or use the in-process
-daily timer (`IMMICH_MEMORIES_AUTOMATION__ENABLED=true` on the Deployment) and skip the CronJob
-entirely. The one-off `generate` Job still mounts the PVCs directly, since the trigger route takes
-no `--year`/`--person` parameters: prefer
-`kubectl exec deploy/immich-memories -- immich-memories generate ...` against the running
-Deployment, and keep the Job for a batch cluster where the Deployment stays scaled to 0 between
-runs.
-
-Whichever clock fires it, the daily film stays on the output PVC unless upload is on
-([Getting the films](#getting-the-films)); `IMMICH_MEMORIES_AUTOMATION__UPLOAD_TO_IMMICH=true`
-uploads the daily runs only. The trigger route itself: [Trigger it over HTTP](../make/automate.md#trigger-it-over-http).
-
-## Everything at once
-
-`overlays/maximalist` composes `overlays/render-sidecar` and `overlays/captioner-cuda` with OIDC
-behind a reverse proxy, a declarative `config.yaml`, an LLM on a LAN machine, an ACE-Step API
-server, geocoding, map tiles and cache caps sized to the PVC that holds them: the [reference
-setup](./reference-setup.md), written up from a real two-GPU-node cluster.
+Inference and caption overlays can also run independently for another app deployment. Create the
+namespace first if the base is not deployed. Reader/music servers are not provided by the base.
+See [Inference](../better/inference.md), [Captions](../better/captions.md) and [Music](../better/music.md)
+for model/service configuration.
 
 ## Database
 
-The store defaults to a SQLite file on the cache PVC. `overlays/postgres` is not referenced by
-`base/kustomization.yaml`, so applying `base` alone keeps that default. To put the store on
-PostgreSQL:
+For PostgreSQL, fill in `overlays/postgres/database-secret.yaml` from its example and apply that
+overlay instead of base. It connects to an existing PostgreSQL; it does not deploy one.
+[PostgreSQL modes](./reference/database.md) gives the database/role SQL.
 
-```bash
-cd deploy/kubernetes
-cp overlays/postgres/database-secret.yaml.example overlays/postgres/database-secret.yaml
-vim overlays/postgres/database-secret.yaml   # IMMICH_MEMORIES_DATABASE_URL, and the schema if shared
-kubectl apply -k overlays/postgres           # instead of base, not after it
+Add PostgreSQL egress in your own overlay. For example, build on `../postgres` and add this
+inline patch to `patches:`:
+
+```yaml
+- target:
+    kind: NetworkPolicy
+    name: immich-memories
+  patch: |-
+    - op: add
+      path: /spec/egress/-
+      value:
+        ports:
+          - port: 5432
+            protocol: TCP
 ```
 
-The overlay builds on `base/` and only adds the database Secret to the Deployment; it does not run
-PostgreSQL for you. It and `overlays/gpu` each build on `base/`, so applying one after the other
-drops the first one's patch. For both, make one overlay of your own: copy the two patch files and
-`database-secret.yaml` into it, next to a kustomization whose resources are `../../base` and `database-secret.yaml`, with both
-patches. The one-off `generate` Job in `base/job.yaml` does not get the database Secret either;
-add the second `secretRef` there if you run it. The four modes, and the SQL for a dedicated schema
-in Immich's own database, are on [Database and the store](./database.md).
+Use your server's port. Overlays based on `base` are alternatives: applying GPU after PostgreSQL
+replaces the PostgreSQL patch. For both, compose one overlay based on PostgreSQL and copy in the
+GPU deployment patch. Do not apply sibling app overlays one after another.
+
+## Batch jobs
+
+`base/job.yaml` is optional. Its CronJobs call `POST /api/trigger` on the running app; they do not
+mount SQLite from a second pod. Set `IMMICH_MEMORIES_SERVER__TRIGGER_TOKEN` in the Secret.
+Both schedules invoke the automatic decision, even the job named monthly: they do not force a
+monthly film.
+
+For a fixed recipe, prefer `kubectl exec ... -- immich-memories generate ...`.
+The one-off generate Job mounts the PVCs directly; use it with the Deployment scaled to zero.
+If using PostgreSQL, add its Secret to that Job too. Include `job.yaml` in Kustomize so its app
+image follows the selected tag; a raw `apply -f` bypasses image transformations.
+
+Or enable the app's [daily timer](../make/automate.md) and skip CronJobs entirely.
 
 ## Backups
-
-Back up the cache PVC: `store.db` on it is the expensive part (unless the store is PostgreSQL), and
-losing it means re-reading the library. `immich-memories store backup` writes the whole store to one
-file on that PVC, live, on either backend (the image ships `pg_dump`):
 
 ```bash
 kubectl exec -n immich-memories deploy/immich-memories -- immich-memories store backup
 kubectl cp immich-memories/<pod>:/home/immich/.immich-memories/backups ./backups
 ```
 
-A restore needs the Deployment scaled to 0: [Restore in a container](./database.md#restore-in-a-container).
-Caches on the same PVC (previews, clips) are safe to delete:
-[Caches](./maintenance/health-logs-cache.md#caches). For secrets in git, use
-[sealed-secrets](https://github.com/bitnami-labs/sealed-secrets):
-`kubeseal --format=yaml < base/secret.yaml > base/sealed-secret.yaml`.
+Keep the manifest/encryption key. [Restore](./database.md#restore-in-a-container) needs the
+Deployment stopped. Caches are disposable; the store is not.
 
 ## Probes
 
-`/health/live` (always `200` while the process is up) is the liveness probe. `/health/ready`
-(`200` only with config present and Immich reachable, else `503`) is the readiness probe, every
-15 s, and keeps the pod out of the Service while Immich is down. `/health` always returns `200` and
-is not a probe.
+Liveness uses `/health/live`; readiness uses `/health/ready`, which returns 503 when Immich/config
+is unavailable. `/health` always returns 200 and must not be used as a probe.
+[Diagnostics](./maintenance/health-logs-cache.md#health-endpoints) gives response/access details.
 
 ## Logs
 
 ```bash
-kubectl logs -n immich-memories deploy/immich-memories -f
+kubectl logs -n immich-memories deploy/immich-memories -c immich-memories -f
 ```
 
-The UI and the daily timer log there; a cut's own output is kept per job under `cache/web-jobs/`
-on the cache PVC, a daily run's under `cache/automation-output/`. `IMMICH_MEMORIES_LOG_LEVEL` and
-`IMMICH_MEMORIES_LOG_FORMAT=json` on the Deployment: [Logging](./maintenance/health-logs-cache.md#logging).
+For init failures, use `-c fetch-models`. [Diagnostics](./maintenance/health-logs-cache.md#logging)
+has per-run paths and logging variables.
 
 ## Upgrading and rollback
 
-```bash
-kubectl exec -n immich-memories deploy/immich-memories -- immich-memories store backup
-cd deploy/kubernetes/base && kustomize edit set image \
-  ghcr.io/sam-dumont/immich-video-memory-generator=:X.Y.Z
-kubectl apply -k .                      # or the overlay you applied
-kubectl exec -n immich-memories deploy/immich-memories -- immich-memories models fetch
-```
+Back up, change pins in the base **and any add-on overlays**, render the same kustomization you
+installed, then apply it. Run `models fetch` and `preflight` in the updated app.
+The init guard checks presence only, so existing files do not prove new pins match.
+[Rollback](./maintenance/upgrading.md#rollback) requires the old store backup when its schema changed.
 
-Run the last line on every upgrade. The `fetch-models` init container only checks that the four
-files exist, not that they are the new release's pins, so after a release that moves a pin it skips
-the download and the next cut refuses to start. `models fetch` is a no-op otherwise. Rollback is the
-same `set image` with the old tag, then the store backup you took before:
-[Rollback](./maintenance/upgrading.md#rollback).
+## Another namespace
+
+Set `namespace:` in each kustomization root you apply. Update command `-n` arguments and any
+cross-namespace URLs too. Applying raw YAML bypasses the namespace transformation.
+
+## Check it from outside the pod
+
+Use the quick-start `kubectl exec ... preflight` command after service changes. The
+[distributed-services guide](./reference/cluster-example.md) shows how to compose separate services.
+
+## The models the first cut needs
+
+Model requirements follow the selected tier. [Model files](./maintenance/health-logs-cache.md#model-files)
+lists the fetch options. Run fetch from the app's configuration after adding GPU/Full services.
+
+## Distribute work across services
+
+[Distributed services on Kubernetes](./reference/cluster-example.md) explains GPU allocations,
+service boundaries and the shipped composition example. Use it when you need separate placement;
+start with the basic install first.

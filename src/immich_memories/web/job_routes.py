@@ -10,7 +10,7 @@ import sys
 from collections.abc import AsyncIterator
 from functools import lru_cache
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
@@ -67,6 +67,7 @@ class RenderOptions(BaseModel):
     format: str | None = None
     quality: str | None = None
     scale_mode: str | None = None
+    fade_color: Literal["white", "black"] | None = None
     # "none", "auto" (as configured), or the id of a previewed or uploaded track.
     music: str = "auto"
     music_volume: float | None = None
@@ -91,6 +92,7 @@ class RenderOptions(BaseModel):
             "format",
             "quality",
             "scale_mode",
+            "fade_color",
             "music_volume",
             "album",
         )

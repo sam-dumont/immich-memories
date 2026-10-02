@@ -10,24 +10,22 @@ title: Troubleshooting
 one with the output of `immich-memories report`. It defaults to the latest run, including failed runs.
 Pass a run ID to report an older one. Review the report before pasting it.
 
-The report includes redacted run logs, system details, stage timings, model usage and the selection
-funnel when the run recorded them. Names, places, albums, coordinates, hosts, IP addresses, URLs, paths
-and credentials are removed; IDs become
-randomized hashes that agree inside one report. `--json` prints structured data, and
-`--bundle report.zip` writes the full report and logs as an attachment. Nothing is sent automatically.
-A run keeps its last 5,000 log lines and a count of every line per level. Long pasted logs keep
-their last complete lines; the ZIP keeps all 5,000.
+Start with the connection check and preflight:
 
-Two commands answer most questions: `immich-memories -v <command>` logs at DEBUG for one run, and
-`immich-memories preflight` checks Immich, the model files, the output directory and every configured server in
-one go. In Docker, prefix both with `docker compose exec immich-memories`.
+```bash
+immich-memories config test
+immich-memories preflight
+immich-memories report --bundle report.zip
+```
+
+In Docker, prefix the command with `docker compose exec immich-memories`. The report is redacted and nothing is sent automatically. Review it before attaching it to an issue. [Report details](../make/cli/report.md).
 
 ## When it stops
 
 | What you see | What to do |
 |---|---|
-| `public heads need the pinned DINOv2 ONNX export at …` | Run `immich-memories models fetch` once. It puts the encoder and detectors on the models volume |
-| `nsfw_marqo has no model: …` or `doc_docling has no model: …` | Same: `models fetch` |
+| `public heads need the pinned DINOv2 ONNX export at …` | Run `immich-memories models fetch` once. It puts the encoder and required tier artifacts on the models volume |
+| `nsfw_marqo has no model: …` or `doc_docling has no model: …` | Run `models fetch` with the same tier/config as the failed run, or explicitly use `models fetch --detectors` |
 | `Output directory is not writable` | In Docker the container runs as uid 1000: `mkdir output` before `up`, or `sudo chown 1000:1000 output` |
 | `Story-first selection needs prepared annotations in the store at …` | The store this run opened has no prepared facts for these pictures: check `IMMICH_MEMORIES_DATABASE_URL` / `database.url` names the store you prepared into, or run `prepare` |
 | `tier: full needs an enabled LLM …` | Enable `advanced.llm.enabled`. Leave `base_url` empty for the owned local model and install its weights/server, or set an external endpoint; `tier: gpu` uses the rules reader |
@@ -84,8 +82,7 @@ immich-memories runs why <asset id> --run <run id>
 ```
 
 says where it passed and where it was dropped, and why. To overrule it, tick it on the web UI's pool and
-**Cut again**, or pass `--include <asset id>`: a tick outranks the editor. Neither overrides the family-viewing
-gate, and neither brings back a picture whose preview Immich answers HTTP 404 for. The run logs those as
+**Preview with these choices** to save a revision. Those final edits bypass the automatic sharing and length checks. For a new cut, `--include <asset id>` still passes the sharing gate. Neither can render a picture whose preview Immich answers HTTP 404 for. The run logs those as
 `preview unavailable at Immich (HTTP 404)` and cuts the rest; regenerate that asset's thumbnails in Immich and
 cut again. Every lever is on [Overrule it](../how-it-chooses/overrule-it.md).
 
@@ -113,8 +110,7 @@ four seconds apart, then stops with `Gave up on the reader at host:port`. With a
 
 The source is VP9 or AV1 inside a QuickTime `.MOV` (Android phones and some editors write those), and a lossless
 stream copy into `.mov` is refused. Nothing to do: the cut re-encodes that clip with the same in and out points.
-A clip that still cannot be cut leaves the film by name and the rest is assembled. Only a film whose every
-source failed stops with `No clips could be processed`.
+If a selected clip cannot be prepared, the certified render refuses the changed or incomplete content. Read the named clip failure and the report; do not treat a shorter output as the same cut.
 
 ## A long render spends a while "Checking the finished film" {#a-long-render-ends-with-ffprobe-failed-to-inspect-output-artifact}
 
@@ -134,14 +130,14 @@ already in it).
 
 ## Out of memory
 
-On a NAS, it is almost always a long film's audio mix on a small container: the mixer runs one FFmpeg per clip
+Check the failed stage and the container limit. A long film’s audio mix can exhaust a small container: the mixer runs one FFmpeg per clip
 and the failure names the clip. Raise the container's memory limit.
 
 An idle external model server can still hold gigabytes of RAM. The app-owned reader releases its process
 before local ACE-Step or Demucs; an explicit API endpoint retains its own memory policy. ACE-Step in
 `lib` mode refuses a profile whose weights do not fit. Check `immich-memories capabilities`; stop an
-external server yourself if it is safe, or give it its own machine. On 16 GiB Apple Silicon, a verified
-90-second local run still needed brief cold-start swap; see [music memory measurements](../better/music.md#memory-and-disk).
+external server yourself if it is safe, or give it its own machine. Leave headroom beyond resident weights for generation and decoding; see the
+[audio memory reference](local-audio.md#memory-and-disk).
 
 ## FFmpeg not found
 

@@ -14,7 +14,6 @@ from pathlib import Path
 
 import numpy as np
 from PIL import Image, ImageDraw
-from staticmap import StaticMap
 
 from immich_memories.processing.encoding_plan import EncodingPlan
 from immich_memories.processing.hardware_encode import apply_hardware_encode
@@ -24,6 +23,7 @@ from immich_memories.titles.ffmpeg_pipe import StderrDrain
 from .colors import ceil_rgb_for_hdr
 from .encoding import standalone_title_encoding_plan, title_color_filter, title_encoder_args
 from .map_renderer import _draw_gradient_band, _overlay_composite, _wrap_text
+from .map_tiles import CachedStaticMap, tile_cache
 
 logger = logging.getLogger(__name__)
 
@@ -63,28 +63,6 @@ class _FlyConfig:
     dest_zoom: float = 9.0  # zoom level at destination (pins reference size)
     # Graphics drawn straight onto the tiles, so they need the HDR ceiling (#506)
     hdr: bool = False
-
-
-_tile_cache: dict[str, bytes] = {}
-
-
-class _CachedStaticMap(StaticMap):
-    """StaticMap with shared cross-instance tile cache."""
-
-    def _draw_features(self, image):
-        # Pins and labels are drawn by our renderer, after fractional-zoom resizing.
-        # StaticMap otherwise allocates a 2x RGBA surface even with no features.
-        if self.markers or self.lines or self.polygons:
-            super()._draw_features(image)
-
-    def get(self, url: str, **kwargs):
-        """Return cached tile bytes or fetch + cache."""
-        if url in _tile_cache:
-            return 200, _tile_cache[url]
-        status, content = super().get(url, **kwargs)
-        if status == 200:
-            _tile_cache[url] = content
-        return status, content
 
 
 # -- Web Mercator (zoom-0 pixel space, 256 px = world) ---------------------
@@ -198,7 +176,7 @@ def _render_satellite(lat: float, lon: float, zoom: float, w: int, h: int) -> Im
     rw = int(math.ceil(w * oversample))
     rh = int(math.ceil(h * oversample))
 
-    sm = _CachedStaticMap(rw, rh, url_template=_SAT_URL)
+    sm = CachedStaticMap(rw, rh, url_template=_SAT_URL)
 
     try:
         img = sm.render(zoom=z_int, center=[lon, lat])
@@ -384,13 +362,11 @@ def create_map_fly_video(
     # The title rises with the take-off and stays: the hold is where it is read.
     alphas = [min(1.0, i / title_in) for i in range(len(progress))]
 
-    _tile_cache.clear()
+    tile_cache.clear()
     rendered = _create_map_video(
         cfg, output_path, progress, alphas, fps, encoding_plan, animated_background
     )
-    logger.info(
-        "Map fly done: %d frames (%d rendered), %d tiles", len(progress), rendered, len(_tile_cache)
-    )
+    logger.info("Map fly done: %d frames (%d rendered)", len(progress), rendered)
     return output_path
 
 
@@ -429,7 +405,7 @@ def create_map_move_video(
         hdr=hdr,
     )
     progress = timing.schedule(duration, fps)
-    _tile_cache.clear()
+    tile_cache.clear()
     rendered = _create_map_video(
         cfg,
         output_path,
@@ -440,10 +416,9 @@ def create_map_move_video(
         animated_background,
     )
     logger.info(
-        "Map move card: %d frames (%d rendered), %d tiles, %.1fs",
+        "Map move card: %d frames (%d rendered), %.1fs",
         len(progress),
         rendered,
-        len(_tile_cache),
         duration,
     )
     return output_path
@@ -546,7 +521,7 @@ def _pipe_frames(
                 frame = _overlay_composite(frame, cfg.title_overlay, alpha)
             proc.stdin.write(np.array(frame).tobytes())
             if i % 30 == 0:
-                logger.info("Map fly %d/%d (z=%.1f, %d tiles)", i, total, z, len(_tile_cache))
+                logger.info("Map fly %d/%d (z=%.1f, %d tiles)", i, total, z, len(tile_cache))
 
     proc.stdin.close()
     proc.wait()
@@ -688,4 +663,8 @@ def _create_map_video(
     animated_background: bool,
 ) -> int:
     render = _pipe_frames if animated_background else _pipe_map_plates
-    return render(cfg, output_path, progress, overlay_alphas, fps, encoding_plan)
+    try:
+        return render(cfg, output_path, progress, overlay_alphas, fps, encoding_plan)
+    finally:
+        logger.info("Map tiles: releasing %d cached downloads", len(tile_cache))
+        tile_cache.clear()

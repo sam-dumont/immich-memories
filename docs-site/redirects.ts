@@ -1,9 +1,10 @@
-// Every docs URL that existed before the self-hoster refactor (epic #1276),
-// mapped to where its text lives now, so links from issues, Reddit and old
-// READMEs keep working. A page under being-rewritten/ is the old text kept for
-// the PRs that rewrite it: the PR that deletes one points its entry at the
-// finished page instead. Never remove an entry.
+// Keep existing links working when pages are consolidated.
 export const redirects: {from: string; to: string}[] = [
+  {from: '/docs/run/reference/migration', to: '/docs/run/maintenance/upgrading'},
+  {from: '/docs/run/reference/compatibility', to: '/docs/run/requirements'},
+  {from: '/docs/welcome/how-this-was-built', to: '/docs/contribute/architecture'},
+  {from: '/docs/reference/benchmark-history', to: '/docs/better/measured'},
+  {from: '/docs/contribute/setup-matrix', to: '/docs/better/measured'},
   {from: '/docs/welcome/overview', to: '/docs/'},
   {from: '/docs/welcome/why-immich-memories', to: '/docs/welcome/about'},
   {from: '/docs/create/first-memory', to: '/docs/get-started/first-film'},

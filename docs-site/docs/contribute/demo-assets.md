@@ -5,6 +5,27 @@ title: Demo assets
 
 # Regenerating the demo assets
 
+After changing the UI or fixture, regenerate in this order from the repository root:
+
+```bash
+make screenshots
+make demo-output
+make demo-output-trip
+make demo-cli
+make demo-ui
+make demo-hero
+make demo-ui DEMO_THEME=dark
+make demo-hero DEMO_THEME=dark
+```
+
+The trip preview needs the network for map tiles and place naming. The other demo media use the public fixture. The README’s hosted hero updates when the docs site deploys. The homepage selects matching light/dark screenshots, hero animation and walkthrough video. Finished films have no UI theme and use one shared preview.
+
+The docs use the app’s pinned `@immich/ui` theme tokens. After updating that package in both projects, run `npm --prefix docs-site run ui-theme`; the docs build checks for token drift.
+
+## Fixture and asset contracts
+
+Use only the credited CC0 demo fixture for public visual assets. The private household testlab is separate: its real-person photos stay on the maintainer's laptop and must never appear in screenshots, demos, hosted previews or the public website. Only anonymous aggregate test results may leave it.
+
 Nothing on the docs site or in the README is a screenshot of a real library. The demo is a
 React recreation of the UI rendered with Remotion over a CC0 fixture library, the CLI demo is a
 VHS recording, and the screenshots come from a hermetic run over the same library. The library
@@ -23,9 +44,8 @@ picture of the same moment, removes the garden table and saves that as revision 
 renders. The generated fixture carries the cut's timeline positions, its weighed stories and the
 seconds the titles leave the pictures.
 
-136 files on disk; the setup matrix reports 133 pictures for the same month, because the
-visibility and metadata rules drop a few before selection ever sees them. Both numbers are right
-about different things, so do not reconcile them by editing one.
+The fixture has 136 files on disk. Visibility and metadata rules can reduce the pool before
+selection, so the pool count can differ from the file count.
 
 | Command (repo root) | Produces |
 |---|---|

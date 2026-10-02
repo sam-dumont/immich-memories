@@ -4,7 +4,7 @@ title: FAQ
 
 # FAQ
 
-[Troubleshooting](./troubleshooting.md).
+If something is broken, start with [Troubleshooting](./troubleshooting.md).
 
 ## Before you install
 
@@ -25,14 +25,14 @@ place names in your language and the map fly-over are all opt-in, each one liste
 
 Yes, it works on a plain NAS: the default install cuts films on a NAS CPU from dates, places, favourites,
 people and what small local classifiers measure on each picture. A GPU makes it faster and adds captions,
-and a model on top makes the cut better
+and a text model can refine the draft
 ([What a GPU or a model adds](../get-started/what-a-gpu-or-a-model-adds.md)). Sizes and the one Synology trap are on
 [On a NAS](../run/nas.md) and [Requirements](../run/requirements.md).
 
 **Do I need face recognition?**
 
 No. Without a person, a period covers everyone. Named faces make people films possible and let it keep close
-family in the film ([Teach it your family](../get-started/who-is-who.md)).
+family in the film ([Home and people](../get-started/who-is-who.md)).
 
 **iPhone only?**
 
@@ -47,7 +47,7 @@ Anything FFmpeg decodes. Live Photos are tested on iPhones; Samsung and Pixel mo
 
 **Can I pick pictures myself?**
 
-Yes. Tick or untick on the web UI's pool and cut again, star it in Immich, or pass `--include` / `--exclude`.
+Yes. Tick or untick in the web UI’s pool and select **Preview with these choices**, star it in Immich, or pass `--include` / `--exclude`.
 A tick outranks the editor. See [Overrule it](../how-it-chooses/overrule-it.md).
 
 **Why is the first cut slow and the second fast?**
@@ -67,7 +67,7 @@ Yes, one a day at most: [Automate it](../make/automate.md).
 **Several people on one Immich server?**
 
 The web UI is single-user, single-replica: one Immich API key, one library. Run one instance per library.
-A couple whose phones upload to two accounts can still get one film from both: add the second account under
+People whose pictures use separate accounts can still get one people film from both: add the second account under
 `immich.accounts` and run `generate --accounts primary,partner` on the CLI
 ([A second Immich account](../run/multi-account.mdx)); `automation.accounts` does the same for the daily
 run, and **Immich accounts to read** on the web UI's New memory page for a film made there.

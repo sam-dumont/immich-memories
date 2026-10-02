@@ -1,120 +1,61 @@
 ---
 title: Your first film
-sidebar_label: "Your first film"
+sidebar_label: Your first film
+description: Cut one month, review its shots and render your first memory film.
 ---
 
 import ThemedScreenshot from '@site/src/components/ThemedScreenshot';
 
 # Your first film
 
-One month, start to finish, in the web UI, then the same thing on the CLI. A month is the right
-first cut: about a minute of film, and the slow part (reading each picture once) is bounded by
-what one month holds.
+Start with a month that has a few busy days, some favourites and a few videos. It keeps the first cut manageable and gives you something worth watching.
 
-This page assumes the [Quick start](./quick-start.md) is done: the container is up and
-`models fetch` has run. On pip, it's the same commands without the
-`docker compose exec immich-memories` prefix: [uv or pip](../run/uv-pip.md).
+This assumes [installation](./quick-start.md) is done and `models fetch` has run.
 
 ## Pick a month
 
-Open [http://localhost:8080](http://localhost:8080). With `IMMICH_URL` and `IMMICH_API_KEY` set,
-the page reads Immich on its own and shows the brief. If it doesn't, open **Settings**, fill in
-**Immich Connection** and press **Test Connection**.
+Open [http://localhost:8080](http://localhost:8080). Under **Memory type**, pick **Monthly Highlights**, a year and a month. Leave the length empty: the app fits it to the material.
 
-Skip **Describe the film you want** at the top: it needs a text model
-([A film from a sentence](../make/free-text.md)). Under **Memory type**, choose **Monthly Highlights**,
-a year and a month with a fair number of pictures and a few videos. Leave the length empty: it is
-fitted to what the month can fill.
+<ThemedScreenshot name="first-film-brief" alt="The brief with Monthly Highlights selected" />
 
-<ThemedScreenshot name="memory-brief" alt="The brief, connected to Immich" />
+If Immich does not connect, check the URL and API key in `.env`, then recreate the container with `docker compose up -d`. Values set in the environment cannot be changed in **Settings**.
 
 ## Cut
 
-Press **Cut**. The panel follows the run: reading dates, places and people, then the pictures,
-then the edit. A stage that counts its work draws a bar with an estimate, and the last pictures it
-read go past underneath. The cut runs on the server, so reloading the page mid-cut picks it back up.
-
-If `immich-memories models fetch` has not run on this host, the cut does not start and nothing is
-asked of Immich. The panel shows the command's own last lines, which name the missing model and
-the command to run (`Run immich-memories models fetch`), and they stay there after a reload.
-
-<ThemedScreenshot name="memory-cutting" alt="The cut in progress" />
-
-The first cut reads every picture the film can reach: the month's pictures, their Live Photo clips
-and the bursts around them. Each one goes through the eight context heads once; GPU and Full
-also run Marqo and Docling. The answers are banked. The second cut of the same month reads nothing again.
+Press **Cut**. The app prepares the pictures and builds the edit. The first cut takes longer; compatible preparation results are reused on later cuts. You can reload the page while it works.
 
 ## Read the cut
 
-When the cut finishes, its review opens as a contact sheet in playback order. Open a picture to see
-it larger and the reason it stayed; a video plays the stretch the film uses. **Stories** shows the
-same cut the way the editor weighed it, heaviest story first.
+The contact sheet shows the shots in playback order. Open one to see it larger, watch its video interval and read why it stayed. **Stories** groups the same shots by story.
 
-<ThemedScreenshot name="memory-story" alt="The contact sheet of the first cut" />
-
-A few things to look for on a first cut:
-
-- **It's chronological.** Always. A film never jumps back in time.
-- **Favourites come first.** A picture you starred in Immich wins its moment over the others.
-- **Videos lead.** When a video carries a moment, it beats a still of the same moment.
-- **Quiet weeks can be empty.** A week at home with no favourite, no video, no close family and no
-  unusually busy day gets no shot. The film goes short rather than fill it with a guess.
-
-Why each rule exists, and every number behind it, is on
-[How it chooses](../how-it-chooses/overview.md).
+Favourites help a moment earn its place. Videos often carry it better than a still. Quiet weeks can be empty: the film goes short instead of padding. [How it chooses](../how-it-chooses/overview.md) explains this without requiring you to configure it.
 
 ## Fix it
 
-Two ways, depending on what's wrong.
+For a wrong shot, open its inspector. **Remove from this cut**, trim with **Start here** and **End here**, or choose **Use this picture instead**. Press **Save revision**.
 
-A shot is wrong: edit it in place. In the inspector, **Remove from this cut**, trim a video with
-**Start here** and **End here**, or **Use this picture instead** on another picture of the same
-moment. **Save revision** keeps the edits; nothing is re-selected.
+For a missing shot, open **Pool**, tick the picture and press **Preview with these choices**. These edits make a revision of this cut; they do not rerun selection.
 
-<ThemedScreenshot name="memory-review-edit" alt="A picture removed and one swapped, with the change bar" />
+<ThemedScreenshot name="first-film-edit" alt="Editing a shot and viewing its alternatives" />
 
-A picture is missing: open **Pool**. It shows every picture the cut saw, ticked if the cut kept it.
-Untick one and it's out; tick one and it's in, at the time it was taken. Press **Preview with these
-choices**: your ticks become a revision of the same cut, played as you left them, even past the
-length or a hold. **Never use** is for what you would never show anyone, in any film.
-
-<ThemedScreenshot name="memory-pool-outcomes" alt="The pool after a cut, with the picks ticked" />
-
-More ways to steer it (stars, people, `runs why`) are on
-[Overrule it](../how-it-chooses/overrule-it.md).
+**Never use** is different: it excludes the picture from future films. Undo that decision before trying to add it again. [Improve a cut](../how-it-chooses/overrule-it.md) covers lasting changes.
 
 ## Render and watch
 
-Scroll to **Render**. Pick the cut or a saved revision under **What to render**, and press **Render**.
-Resolution, title and music are all there, each defaulting to your configuration; the defaults are
-fine for a first film. The panel walks through downloading the clips, assembling with titles and
-transitions, the music, and delivery.
+Under **Render**, pick the cut or your revision in **What to render**, then press **Render**. The defaults are fine for a first film.
 
-<ThemedScreenshot name="memory-export" alt="The rendered film playing on the review page" />
+<ThemedScreenshot name="memory-export" alt="The finished film in the player" />
 
-The film plays on the page when it's done. It's in `./output` beside your compose file on Docker,
-`~/Videos/Memories` on pip, one folder per run. With **Upload the film to Immich** ticked, the film
-also goes to the Immich album you named, tagged as this app's own so a later run never films it
-again.
+On Docker, local films land in `./output`. If you select **Upload the film to Immich**, a successful upload removes the web render's local copy. The run remains in **Runs**, with its link to Immich. Leave upload off when you want the file locally.
+
+## Next
+
+Set [home and people](./who-is-who.md), then choose [another kind of film](../make/memory-types.mdx). Titles, format and music can wait until you like the cut.
 
 ## The same on the CLI
 
 ```bash
-alias im='docker compose exec immich-memories immich-memories'
-im generate --memory-type monthly_highlights --year 2025 --month 6
-im runs story        # the storyboard of the last run, in the terminal
-im runs why <asset-id>   # what the run decided about one picture, and why
+immich-memories generate --memory-type monthly_highlights --year 2025 --month 6
 ```
 
-`generate` prepares, cuts and renders in one go. To read a bigger window ahead of time (a whole
-year, overnight on a NAS), run `im prepare --year 2025`: it reads and banks, and cuts nothing.
-Every cut inside that year then starts warm. All flags: [generate](../make/cli/generate.md),
-[prepare](../make/cli/prepare.md).
-
-## Next
-
-- [Teach it your family](./who-is-who.md): home base and who's who. Without them a holiday is
-  three weekly stories and the people who matter most get no guaranteed seat.
-- [Memory types](../make/memory-types.mdx): trips (need GPS), a person's film (needs faces named in
-  Immich), a year.
-- [Automate it](../make/automate.md): one film a day, with no cron.
+In Docker, prefix it with `docker compose exec immich-memories`. [CLI recipes](../make/cli/generate.md) include reviewing a saved cut before rendering.

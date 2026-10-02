@@ -173,3 +173,24 @@ class TestKernelTitleVideo:
         assert with_fade.exists()
         # The fade version should differ in file size (different pixel data)
         assert no_fade.stat().st_size != with_fade.stat().st_size
+
+
+def test_kernel_video_black_edges(_kernels_on_cpu, tmp_path):
+    from tests.integration.titles.conftest import extract_frame_rgb
+
+    output = tmp_path / "black-kernel.mp4"
+    config = KernelTitleConfig(
+        width=160,
+        height=90,
+        fps=10,
+        duration=3.0,
+        enable_bokeh=False,
+        blur_radius=3,
+        use_sdf_text=False,
+    )
+    create_title_video_gpu(
+        "Memory", None, output, config, fade_from_white=True, fade_to_white=True, fade_color="black"
+    )
+    assert extract_frame_rgb(output, 0, 160, 90).mean() < 5
+    assert extract_frame_rgb(output, 12, 160, 90).max() > 100
+    assert extract_frame_rgb(output, 29, 160, 90).mean() < 15

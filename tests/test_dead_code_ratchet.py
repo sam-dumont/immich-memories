@@ -99,7 +99,10 @@ WHITELIST = Path(__file__).resolve().parent.parent / "vulture-whitelist.py"
 # 56: the annotations slice's import_legacy (#871), called by `store import` and the
 # first-open import once the store slices are integrated.
 # 55: they are (the #871 cutover); the importers are reached through the import registry.
-MAX_WHITELISTED_SYMBOLS = 55
+# 56: StaticMap.render calls CachedStaticMap._draw_base_layer in its external
+# package. The real map renderer tests exercise the override on cold and warm
+# frames; vulture scans our source, not that library callback.
+MAX_WHITELISTED_SYMBOLS = 56
 
 
 def test_the_dead_code_whitelist_never_grows() -> None:

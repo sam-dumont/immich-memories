@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Any
 
 from immich_memories.analysis.editorial_people import EditorialPeople
 from immich_memories.analysis.place_names import shown_city
+from immich_memories.analysis.private_token_matcher import private_token_matcher
 from immich_memories.analysis.selection_source_groups import EpisodeMembershipIndex
 
 if TYPE_CHECKING:
@@ -192,7 +193,7 @@ class ProductionMomentWallRenderer:
         self._episodes = self._build_episode_namespace()
         self._places = self._build_place_namespace()
         self._people, self._person_token_by_id = self._build_people_namespace()
-        self._private_fragments = self._collect_private_fragments()
+        self._contains_private_token = private_token_matcher(self._collect_private_fragments())
         self._cache: dict[tuple[str, ...], RenderedMomentWall] = {}
 
     def render(self, cards: tuple[EditorCard, ...]) -> RenderedMomentWall:
@@ -202,12 +203,7 @@ class ProductionMomentWallRenderer:
         if cached is not None:
             return cached
         text = self._render_sources(sources)
-        lowered = text.casefold()
-        leaked = next(
-            (fragment for fragment in self._private_fragments if fragment in lowered),
-            None,
-        )
-        if leaked is not None:
+        if self._contains_private_token(text):
             raise ValueError("normalized moment wall contains a private identifier fragment")
         rows = text.splitlines()
         snapshot = RenderedMomentWall(

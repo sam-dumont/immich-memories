@@ -1,202 +1,84 @@
 ---
-title: Terraform
+title: "Terraform"
 ---
 
 # Terraform
 
-The module lives in `deploy/terraform/` and drives the `hashicorp/kubernetes` provider. CPU only by
-default; NVIDIA scheduling is a variable. Docker Compose is the primary self-hosting path, and what
-CI pins here is the module's contract: writable state volume, `/health/live` and `/health/ready`
-probes, `gpu_enabled = false` by default. Nothing runs `terraform validate` and nothing applies the
-module to a live cluster, so read the plan before you apply it.
-
-:::caution Before enabling Ingress
-Authentication is disabled by default. An enabled Ingress exposes the UI to every client that can
-reach it, so configure authentication first (`secret_env` with `IMMICH_MEMORIES_AUTH_USERNAME` /
-`IMMICH_MEMORIES_AUTH_PASSWORD`, or [OIDC](./authentication.mdx)). The UI is
-single-user, single-replica: do not scale the deployment beyond one pod.
-:::
-
-## What it creates
-
-Namespace (optional), Secret, three `ReadWriteOnce` PVCs, Deployment, Service, Ingress (optional).
-The image runs as `immich`, UID/GID 1000 (`run_as_user` / `fs_group` 1000, all capabilities
-dropped, `RuntimeDefault` seccomp, `read_only_root_filesystem = true`). Four writable mounts:
-
-| Mount | Backed by | Holds |
-|-------|-----------|-------|
-| `/home/immich/.immich-memories` | cache PVC | `config.yaml`, `store.db` (the store when it is SQLite: the editor's banks, your decisions, people, run history, automation state, special days), video cache (a `cache.db` there is a pre-store leftover, imported once) |
-| `/app/output` | output PVC | generated videos (`IMMICH_MEMORIES_OUTPUT__DIRECTORY=/app/output`) |
-| `/models` | models PVC | pinned encoder and detector artifacts; `models_storage_size` defaults to `10Gi` |
-| `/tmp` | emptyDir (`tmp_size`, 4Gi) | FFmpeg intermediates: 8Gi for 4K |
-
-There is no ConfigMap. `immich_url` / `immich_api_key` (plus `llm_api_key`, `musicgen_api_key` and
-anything in `secret_env`) land in the Secret and reach the pod through `envFrom`; every other
-setting is an `IMMICH_MEMORIES_<SECTION>__<KEY>` env var (`env`). Settings saved from the UI go to
-the store (`store.db` on the cache PVC by default); env vars override them. Probes are `/health/live` for liveness and
-`/health/ready` for readiness, which stays `503` until config is present and Immich answers.
-
-## Model preparation and tiers
-
-The `fetch-models` init container fills the models PVC before the app starts. It reuses the pinned
-artifacts already present. Inspect it with:
-
-```bash
-kubectl logs -n immich-memories deploy/immich-memories -c fetch-models
-```
-
-The module sets `IMMICH_MEMORIES_TIER=auto`, so the app picks its tier from what it finds:
-[The three tiers](./requirements.md#the-preparation-tier).
+The module in `deploy/terraform/` deploys the app to Kubernetes. Use it if you already manage
+the cluster with Terraform. The shipped module has not been validated/applied to every live setup:
+read the plan before applying it.
 
 ## Prerequisites
 
-Terraform >= 1.0, the `hashicorp/kubernetes` provider >= 2.20, a kubeconfig pointing at a cluster
-with a storage class, and Immich reachable from it (port 2283 by default). For
-`gpu_enabled = true`, the NVIDIA GPU Operator and the `nvidia` RuntimeClass.
+Terraform 1.0+, Kubernetes provider 2.20+, a working kubeconfig and storage class.
+Immich must be reachable from the pod. For NVIDIA scheduling, add GPU Operator and the `nvidia` RuntimeClass.
 
 ## Quick start
 
+From the release deployment bundle, choose the private CPU example:
+
 ```bash
-cd deploy/terraform/examples/basic        # CPU, no ingress, port-forward
-# or: cd deploy/terraform/examples/production   # pinned tag, basic auth, ingress + TLS, GPU optional
-
+cd deploy/terraform/examples/basic
 cp terraform.tfvars.example terraform.tfvars
-vim terraform.tfvars
+```
 
+Edit the Immich URL, API key and pinned `image_tag`. Then:
+
+```bash
 terraform init
 terraform plan
 terraform apply
-
-$(terraform output -raw port_forward_command)   # http://localhost:8080
+terraform output -raw port_forward_command
 ```
 
-The production example also serves the UI through its Ingress.
+Run the printed port-forward command and open `http://localhost:8080`.
+[Verify the connection and make the first film](./kubernetes.md#check-it-from-outside-the-pod).
+The production example adds ingress/TLS; enable authentication before exposing it.
+Authentication is disabled by default. Keep one UI replica (`replicas = 1`).
+
+## What it creates
+
+Namespace (optional), Secret, three PVCs, Deployment and Service, plus optional ingress.
+`config_yaml` creates a ConfigMap and init container to install the file. Otherwise configuration
+comes from `env`/`secret_env` and saved Settings. The module does **not** create the Kustomize base's
+NetworkPolicy; define one separately if you need an egress boundary.
+
+Terraform state can contain API keys and Secret values even when inputs are marked sensitive.
+Protect the state backend and plan artifacts as credentials.
 
 ## After the apply
 
-The module makes the same Deployment as the Kustomize base, under the same names
-(`deploy/immich-memories` in the `immich-memories` namespace unless you set `namespace`), so the
-`kubectl` lines on [Kubernetes](./kubernetes.md) work as written:
-[preflight](./kubernetes.md#check-it-from-outside-the-pod),
-[home base and the first cut](./kubernetes.md#home-base-time-zone-and-the-first-cut),
-[getting the films](./kubernetes.md#getting-the-films), [backups](./kubernetes.md#backups),
-[logs](./kubernetes.md#logs). Settings go in `env` rather than `kubectl set env`, which the next
-`terraform apply` reverts:
+Manage values in Terraform: a later apply overwrites `kubectl set env` changes.
+The [Kubernetes verification commands](./kubernetes.md#check-it-from-outside-the-pod) work with the
+same deployment and namespace names unless you changed them.
+For home coordinates, timezone and uploads, use the `env` map.
+[Input examples and the variable reference](./reference/terraform.md).
 
-```hcl
-  env = {
-    IMMICH_MEMORIES_TRIPS__HOMEBASE_LATITUDE  = "50.8503"
-    IMMICH_MEMORIES_TRIPS__HOMEBASE_LONGITUDE = "4.3517"
-    TZ                                        = "Europe/Brussels"
-    IMMICH_MEMORIES_UPLOAD__ENABLED           = "true"   # films into Immich too
-  }
-```
+## Model preparation and tiers
+
+The init container fetches pinned files. The app starts with automatic tier selection.
+After adding GPU/Full services, run `models fetch` and `preflight` in the app container.
+[Model preparation caveats](./kubernetes.md#the-models-the-first-cut-needs).
 
 ## Daily automation
 
-The module has no CronJob: the daily run is the in-pod timer, the two `IMMICH_MEMORIES_AUTOMATION__*`
-keys in the `env` example below, read in the `TZ` zone (the production example sets both, with a
-`timezone` variable). To fire it from outside instead, put `IMMICH_MEMORIES_SERVER__TRIGGER_TOKEN` in
-`secret_env` and call [the trigger route](../make/automate.md#trigger-it-over-http).
+The module has no CronJob. Enable the in-process timer in `env`, or use
+[an authenticated external trigger](../make/automate.md#trigger-it-over-http).
 
 ## Upgrading
 
-Take a `store backup` first ([Backups](./kubernetes.md#backups)), set `image_tag` to the new
-release, `terraform apply`, then run `models fetch` once:
-
-```bash
-kubectl exec -n immich-memories deploy/immich-memories -- immich-memories models fetch
-```
-
-The `fetch-models` init container only checks that the files exist, so after a release that moves
-a pin it skips the download and the next cut refuses to start. Rollback is the old `image_tag` plus
-[a store restore](./database.md#restore-in-a-container). With the default `image_tag = "latest"`
-every pod restart can move you to a new release; pin a tag.
+Back up the store, change `image_tag`, plan/apply, fetch current pins and run preflight.
+[Upgrade and rollback](./maintenance/upgrading.md#kubernetes-and-terraform).
 
 ## Module usage
 
-```hcl
-module "immich_memories" {
-  source = "path/to/deploy/terraform"
-
-  # Required
-  immich_url     = "https://photos.example.com"
-  immich_api_key = var.immich_api_key
-
-  # The reader, a separate deployment. It reads text only and must hold 32k of context; `llm_model`
-  # is the tag that server reports at /v1/models.
-  llm_base_url = "http://your-model-host:8000/v1"
-  llm_model    = "gemma-4-e4b-it-6bit"
-
-  # Optional: the in-pod daily run, NVIDIA nodes, bigger claims
-  env = {
-    IMMICH_MEMORIES_AUTOMATION__ENABLED  = "true"
-    IMMICH_MEMORIES_AUTOMATION__DAILY_AT = "09:00"
-  }
-  gpu_enabled         = true
-  output_storage_size = "100Gi"
-  cache_storage_size  = "50Gi"
-}
-```
-
-Which model to serve at `llm_base_url` is on [Readers](../better/reader.md). Preparation goes through the
-same `env` map: [Inference on a GPU box](../better/inference.md) and [Add captions](../better/captions.md).
-So do the [render worker](../better/gpu-render.md) and ACE-Step
-([Generated music](../better/music.md)); MusicGen has its own `musicgen_*` variables. The module
-deploys none of these servers.
-
-`gpu_enabled` schedules on an NVIDIA node for NVENC and the title kernels
-([Hardware encoding](./hardware.md#nvidia)). Intel Quick Sync and AMD VA-API need `/dev/dri` in the
-pod, which the module does not map: those encode on the CPU here.
-
-Setting `database_url` moves the store off the default SQLite file onto PostgreSQL. The four
-modes, and the SQL for a dedicated schema in Immich's own database, are on
-[Database and the store](./database.md).
+[Module example](./reference/terraform.md#module-usage).
 
 ## Variables
 
-`immich_url` and `immich_api_key` are required. Everything else has a default:
-
-| Name | Description | Default |
-|------|-------------|---------|
-| `namespace`, `create_namespace` | Kubernetes namespace, and whether to create it | `"immich-memories"`, `true` |
-| `image_repository`, `image_tag` | Container image. No `v` prefix, so release `vX.Y.Z` is tag `X.Y.Z` | `ghcr.io/sam-dumont/immich-video-memory-generator`, `"latest"` |
-| `replicas` | Keep at 1; the UI is single-replica | `1` |
-| `resources` | Requests/limits object (`requests.memory/cpu`, `limits.memory/cpu`) | `2Gi/1000m` to `8Gi/4000m` |
-| `tmp_size` | `/tmp` emptyDir for FFmpeg intermediates (8Gi for 4K) | `"4Gi"` |
-| `env`, `secret_env` | Extra env vars, the second stored in the Secret | `{}` |
-| `labels` | Extra labels on every resource | `{}` |
-| `gpu_enabled`, `gpu_count` | Schedule on NVIDIA GPU nodes: RuntimeClass, `nvidia.com/gpu`, node selector, toleration, `NVIDIA_*` env | `false`, `1` |
-| `gpu_node_selector`, `runtime_class_name` | how GPU nodes are found | `{"nvidia.com/gpu.present": "true"}`, `"nvidia"` |
-| `output_storage_size`, `cache_storage_size` | PVC sizes | `"50Gi"`, `"20Gi"` |
-| `models_storage_size` | Models PVC size (the Kubernetes manifests ship `5Gi`) | `"10Gi"` |
-| `storage_class_name` | Storage class for all three PVCs | `null` (cluster default) |
-| `ingress_enabled`, `ingress_class_name`, `ingress_host` | Ingress, off by default | `false`, `"nginx"`, `"memories.example.com"` |
-| `ingress_tls_enabled`, `ingress_tls_secret_name`, `ingress_annotations` | TLS and extras for it | `false`, `"immich-memories-tls"`, `{}` |
-| `llm_base_url`, `llm_model`, `llm_api_key` | The reader (Ollama: append `/v1`). Empty leaves the editor without a model | `""` |
-| `musicgen_enabled`, `musicgen_base_url`, `musicgen_api_key` | AI music through a MusicGen server | `false`, the in-cluster service, `""` |
-| `database_url`, `database_schema` | The store on PostgreSQL instead of the default SQLite file. Empty stays SQLite | `""`, `"immich_memories"` |
-| `output_resolution` | `720p`, `1080p` or `4k` | `"1080p"` |
-
-`terraform output` gives the namespace, service name and endpoint, the ingress host, the deployment
-and PVC names, whether GPU is on, and a ready-to-run `port_forward_command`.
+[Supported inputs](./reference/terraform.md#variables), including
+[config, captioner and sidecar inputs](./reference/terraform.md#additional-supported-inputs).
 
 ## Troubleshooting
 
-```bash
-# Pod events: scheduling, PVC binding, GPU
-kubectl describe pod -n immich-memories -l app.kubernetes.io/name=immich-memories
-kubectl get pvc -n immich-memories
-
-# Readiness stays 503 until Immich answers: check the payload
-kubectl port-forward -n immich-memories svc/immich-memories 8080:80
-curl -s localhost:8080/health/ready
-
-# GPU: operator pods, node label, RuntimeClass
-kubectl get pods -n gpu-operator
-kubectl get nodes -L nvidia.com/gpu.present
-kubectl get runtimeclass nvidia
-```
-
-A Pending pod is usually a storage class that does not exist, resource requests the cluster cannot
-meet, or `gpu_enabled = true` without GPU nodes.
+[Pod, storage and GPU checks](./reference/terraform.md#troubleshooting).

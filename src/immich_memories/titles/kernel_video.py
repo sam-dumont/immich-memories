@@ -85,6 +85,7 @@ class _FrameRenderContext:
     subtitle: str | None
     fade_from_white: bool
     fade_to_white: bool
+    fade_color: str
     frame_progress: Callable[[int, int], None] | None
 
 
@@ -101,6 +102,7 @@ def _produce_frames(
             context.subtitle,
             fade_from_white=context.fade_from_white,
             fade_to_white=context.fade_to_white,
+            fade_color=context.fade_color,
         )
         if not _put_while_writer_active(frame_q, bytes(out.data), writer_done):
             break
@@ -134,6 +136,7 @@ def create_title_video_gpu(
     encoding_plan: EncodingPlan | None = None,
     frame_progress: Callable[[int, int], None] | None = None,
     frame_transfer: HdrTransfer = HdrTransfer.NONE,
+    fade_color: str = "white",
 ) -> Path:
     """Create title video using GPU rendering."""
     cfg = config or KernelTitleConfig()
@@ -236,6 +239,7 @@ def create_title_video_gpu(
         subtitle=subtitle,
         fade_from_white=fade_from_white,
         fade_to_white=fade_to_white,
+        fade_color=fade_color,
         frame_progress=frame_progress,
     )
     try:

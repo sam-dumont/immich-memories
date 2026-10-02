@@ -5,6 +5,8 @@ from __future__ import annotations
 from datetime import UTC, date, datetime
 from pathlib import Path
 
+import pytest
+
 from immich_memories.generate_saved_cut import CutRenderRequest, render_saved_cut
 from immich_memories.tracking.models import RunMetadata
 from tests.test_revision_render import cut  # noqa: F401 - the saved-cut fixture
@@ -96,3 +98,21 @@ def test_a_title_typed_at_render_still_wins(cut, monkeypatch):  # noqa: F811
     handed = _render(params, attempt, monkeypatch, CutRenderRequest(title="Winter"))
 
     assert handed.title == "Winter"
+
+
+@pytest.mark.parametrize(("default", "override"), [("white", "black"), ("black", "white")])
+def test_fade_override_affects_this_render_without_changing_the_saved_default(
+    cut,  # noqa: F811
+    monkeypatch,
+    default,
+    override,
+):
+    params, attempt = cut
+
+    params.config.title_screens.fade_color = default
+    handed = _render(params, attempt, monkeypatch, CutRenderRequest(fade_color=override))
+
+    assert handed.config.title_screens.fade_color == override
+    assert params.config.title_screens.fade_color == default
+    next_film = _render(params, attempt, monkeypatch, CutRenderRequest())
+    assert next_film.config.title_screens.fade_color == default

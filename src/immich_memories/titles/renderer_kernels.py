@@ -222,6 +222,7 @@ class KernelTitleRenderer:
         *,
         fade_from_white: bool = False,
         fade_to_white: bool = False,
+        fade_color: str = "white",
     ) -> np.ndarray:
         """Render and optionally fade a frame, with one final device readback."""
         t = frame_number / self.config.fps
@@ -284,7 +285,12 @@ class KernelTitleRenderer:
         if fade_out_frames > 0 and frame_number >= fade_out_start:
             fade_out = ((frame_number - fade_out_start) / fade_out_frames) ** 2
         kernels._finalize_to_output(
-            self.gpu.frame, self.gpu.output, max_val, fade_in=fade_in, fade_out=fade_out
+            self.gpu.frame,
+            self.gpu.output,
+            max_val,
+            fade_in=fade_in,
+            fade_out=fade_out,
+            fade_color=fade_color,
         )
         return self.gpu.read_output()
 

@@ -319,3 +319,41 @@ def test_conflicting_meaning_for_one_episode_fails_closed() -> None:
 
     with pytest.raises(ValueError, match="conflicting meanings"):
         ProductionMomentWallRenderer(prepared, (cards[0], conflicting, cards[2]), people)
+
+
+def test_wall_does_not_search_the_whole_text_once_per_private_identifier():
+    class CountedText(str):
+        searches = 0
+
+        def casefold(self):
+            return CountedText(super().casefold())
+
+        def __contains__(self, fragment):
+            CountedText.searches += 1
+            return super().__contains__(fragment)
+
+    class MeasuredRenderer(ProductionMomentWallRenderer):
+        def _render_sources(self, sources):
+            return CountedText(super()._render_sources(sources))
+
+    prepared, cards, adapted, people, renderer = _fixture()
+    expected = renderer.render(adapted)
+    measured = MeasuredRenderer(prepared, cards, people).render(adapted)
+    assert measured == expected
+    assert CountedText.searches == 0
+
+
+@pytest.mark.parametrize("leak", [_ASSET_IDS[0].upper(), "prefixAAAAAAAAtext", _GROUP_IDS[0]])
+def test_wall_still_refuses_identifiers_in_literal_evidence(leak):
+    prepared, cards, _adapted, people, _renderer = _fixture()
+    leaked = replace(
+        cards[0],
+        evidence=replace(
+            cards[0].evidence,
+            representatives=(RepresentativeEvidence(f"A scene containing {leak}", "grounded"),),
+        ),
+    )
+    selected = (leaked, *cards[1:])
+    adapted, _ = editor._adapt_production_cards(prepared, selected)
+    with pytest.raises(ValueError, match="contains a private identifier fragment"):
+        ProductionMomentWallRenderer(prepared, selected, people).render(adapted)

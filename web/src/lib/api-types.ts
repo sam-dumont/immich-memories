@@ -1680,6 +1680,8 @@ export interface components {
             add_place?: boolean | null;
             /** Album */
             album?: string | null;
+            /** Fade Color */
+            fade_color?: ("white" | "black") | null;
             /** Format */
             format?: string | null;
             /** Llm Title */

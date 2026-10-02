@@ -11,7 +11,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, time
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal
 from uuid import uuid4
 
 from immich_memories.api.access_clients import AccessBoundClient
@@ -50,6 +50,7 @@ class CutRenderRequest:
     subtitle: str | None = None
     llm_title: bool | None = None
     transition: str | None = None
+    fade_color: Literal["white", "black"] | None = None
     output_resolution: str | None = None
     output_orientation: str | None = None
     scale_mode: str | None = None
@@ -133,6 +134,10 @@ def _apply_request(
     saved: CutTitles | None,
 ) -> None:
     config = params.config
+    if request.fade_color is not None:
+        config.title_screens = config.title_screens.model_validate(
+            config.title_screens.model_dump() | {"fade_color": request.fade_color}
+        )
     params.memory_preset_params = dict(saved.preset_params) if saved is not None else {}
     params.transition = request.transition or params.transition
     params.output_resolution = request.output_resolution
@@ -200,7 +205,8 @@ def render_saved_cut(
         client.routes.learn(clip.asset for clip in inputs.clips)
         client.routes.pin(frozen_access(attempt_dir))
     date_range = _date_range(run)
-    params = _params(config, client, run, inputs.binding["policy"])
+    # WHY: per-film output choices must not mutate the process-wide saved defaults.
+    params = _params(config.model_copy(deep=True), client, run, inputs.binding["policy"])
     params.editorial_attempt_dir = attempt_dir
     params.progress_callback = progress_callback
     params.phase_callback = phase_callback

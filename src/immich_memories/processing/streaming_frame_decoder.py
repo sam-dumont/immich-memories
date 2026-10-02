@@ -26,7 +26,7 @@ from immich_memories.processing.hdr_utilities import (
     _resolve_clip_hdr,
     get_colorspace_filter,
 )
-from immich_memories.processing.memory_budget import assembly_decoder_threads
+from immich_memories.processing.memory_budget import assembly_decoder_threads, available_cpus
 from immich_memories.processing.probe_cache import ProbeCache
 
 logger = logging.getLogger(__name__)
@@ -156,13 +156,23 @@ class FrameDecoder:
         # PTS reset — critical for multi-clip concat
         parts.append("setpts=PTS-STARTPTS")
 
+        # Discard surplus frames before paying for output-resolution scale/blur.
+        # Privacy noise is temporal, so preserve its original frame sequence.
+        reduce_fps = (
+            not self._privacy_blur
+            and self._source_frame_rate is not None
+            and self._source_frame_rate > self._fps
+        )
+        if reduce_fps:
+            parts.append(f"fps={self._fps},settb=1/{self._fps}")
+
         # Scale + fill to target resolution
         parts.extend(self._fill_filters())
 
         # A frame-local transfer need only run once per source frame. Duplication
         # before it made a 30 → 60 fps HDR conversion do the same work twice.
         # Keep the original order for privacy noise, unknown/ambiguous cadence,
-        # equal rates and downsampling. Captions still see the final frame grid.
+        # and equal rates. Captions still see the final frame grid.
         defer_fps = (
             self._pix_fmt == "yuv420p10le"
             and not self._privacy_blur
@@ -170,7 +180,7 @@ class FrameDecoder:
             and 0 < self._source_frame_rate < self._fps
             and bool(self._hdr_conversion or self._sdr_to_hdr_filter)
         )
-        if not defer_fps:
+        if not (defer_fps or reduce_fps):
             parts.append(f"fps={self._fps},settb=1/{self._fps}")
 
         # SDR→HDR conversion (only for SDR clips in HDR output)
@@ -231,8 +241,13 @@ class FrameDecoder:
         video_limit = ["-frames:v", str(self._frame_limit)] if self._frame_limit is not None else []
 
         threads = self._threads if self._threads is not None else assembly_decoder_threads()
+        filter_threads = str(available_cpus())
         cmd = [
             "ffmpeg",
+            "-filter_threads",
+            filter_threads,
+            "-filter_complex_threads",
+            filter_threads,
             "-threads",
             str(threads),
             *seek_args,

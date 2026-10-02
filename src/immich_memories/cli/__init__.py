@@ -77,7 +77,10 @@ def main(
     verbose: bool,
     log_level: str | None,
 ) -> None:
-    """Immich Memories - Create video compilations from your Immich library."""
+    """Immich Memories.
+
+    Turn your Immich photos and videos into memory films.
+    """
     from immich_memories import process_start
 
     process_start.mark("imports")

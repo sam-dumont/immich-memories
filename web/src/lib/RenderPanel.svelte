@@ -21,6 +21,7 @@
   let title = $state('');
   let subtitle = $state('');
   let transition = $state('');
+  let fadeColor = $state('');
   let orientation = $state('');
   let resolution = $state('');
   let format = $state('');
@@ -72,6 +73,7 @@
       title: orNull(title),
       subtitle: orNull(subtitle),
       transition: orNull(transition),
+      fade_color: orNull(fadeColor),
       orientation: orNull(orientation),
       resolution: orNull(resolution),
       format: orNull(format),
@@ -145,6 +147,12 @@
         <select class={field} bind:value={transition}>
           <option value="">{t('As configured')}</option><option value="smart">{t('Smart (fades and cuts)')}</option>
           <option value="crossfade">{t('Crossfade')}</option><option value="cut">{t('Cut')}</option><option value="none">{t('None')}</option>
+        </select>
+      </label>
+      <label class={label}>{t('Opening and closing fade')}
+        <select class={field} bind:value={fadeColor}>
+          <option value="">{t('As configured')}</option>
+          <option value="white">{t('White')}</option><option value="black">{t('Black')}</option>
         </select>
       </label>
       <label class={label}>{t('Title (decided as generate decides when empty)')}<input class={field} bind:value={title} /></label>

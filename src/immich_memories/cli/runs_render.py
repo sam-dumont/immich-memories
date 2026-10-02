@@ -34,6 +34,12 @@ def register_render_command(runs: click.Group) -> None:
     @click.option(
         "--transition", type=click.Choice(["smart", "crossfade", "cut", "none"]), default=None
     )
+    @click.option(
+        "--fade-color",
+        type=click.Choice(["white", "black"]),
+        default=None,
+        help="Opening and closing title fade (default: title_screens.fade_color)",
+    )
     @click.option("--resolution", default=None, help="Output resolution, as generate takes it")
     @click.option("--orientation", default=None, help="landscape, portrait, square or auto")
     @click.option("--scale-mode", default=None, help="How sources fit the canvas")
@@ -108,6 +114,7 @@ def register_render_command(runs: click.Group) -> None:
             subtitle=options["subtitle"],
             llm_title=options["llm_title"],
             transition=options["transition"],
+            fade_color=options["fade_color"],
             output_resolution=options["resolution"],
             output_orientation=options["orientation"],
             scale_mode=options["scale_mode"],

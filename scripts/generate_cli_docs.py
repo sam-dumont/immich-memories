@@ -27,14 +27,23 @@ def _format_help(help_text: str) -> str:
     """Render Click help text as Markdown.
 
     Click marks paragraphs that must not be re-wrapped with a leading ``\\b`` line;
-    those are emitted as fenced text blocks so example listings keep their layout.
+    those are emitted as fenced blocks. Command examples use Bash highlighting;
+    output remains plain text.
     """
-    paragraphs = inspect.cleandoc(help_text).split("\n\n")
+    paragraphs = inspect.cleandoc(help_text).replace("—", ":").split("\n\n")
     rendered = []
     for para in paragraphs:
         if para.startswith("\b"):
-            body = para.removeprefix("\b").lstrip("\n")
-            rendered.append(f"```text\n{body}\n```")
+            body = para.replace("\b", "").lstrip("\n")
+            language = "bash" if "immich-memories " in body else "text"
+            if language == "bash":
+                body = "\n".join(
+                    (
+                        line if line.strip().startswith(("immich-memories", "#")) else f"# {line}"
+                    ).rstrip()
+                    for line in body.splitlines()
+                )
+            rendered.append(f"```{language}\n{body}\n```")
         else:
             rendered.append(para.replace("\b", "").strip())
     return "\n\n".join(rendered)
@@ -117,15 +126,16 @@ def generate_reference(group: click.Group) -> str:
         "",
     ]
 
-    # Document top-level commands
-    for name, cmd in sorted(group.commands.items()):
-        if isinstance(cmd, click.Group):
-            lines.append(_document_command(cmd, name, depth=2))
-            # Document subcommands
-            for sub_name, sub_cmd in sorted(cmd.commands.items()):
-                lines.append(_document_command(sub_cmd, f"{name} {sub_name}", depth=3))
-        else:
-            lines.append(_document_command(cmd, name, depth=2))
+    def walk(parent: click.Group, prefix: str = "", depth: int = 2) -> None:
+        for name, cmd in sorted(parent.commands.items()):
+            if cmd.hidden:
+                continue
+            qualified_name = f"{prefix} {name}".strip()
+            lines.append(_document_command(cmd, qualified_name, depth=depth))
+            if isinstance(cmd, click.Group):
+                walk(cmd, qualified_name, min(depth + 1, 6))
+
+    walk(group)
 
     return "\n".join(lines)
 

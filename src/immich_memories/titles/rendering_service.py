@@ -197,6 +197,7 @@ class RenderingService:
             background_image=background_image,
             encoding_plan=encoding_plan,
             fade_to_white=fade_to_white,
+            fade_color=self.config.fade_color,
             frame_progress=frame_progress,
         )
 
@@ -286,6 +287,7 @@ class RenderingService:
                 config,
                 fade_from_white=fade_from_white,
                 fade_to_white=fade_to_white,
+                fade_color=self.config.fade_color,
                 encoding_plan=encoding_plan,
                 frame_progress=frame_progress,
                 frame_transfer=(
@@ -407,6 +409,7 @@ class RenderingService:
                 output_path,
                 config,
                 fade_from_white=True,
+                fade_color=self.config.fade_color,
                 encoding_plan=encoding_plan,
             )
         # PIL fallback
@@ -426,5 +429,6 @@ class RenderingService:
             fps=fps,
             animated_background=False,
             fade_from_white=True,
+            fade_color=self.config.fade_color,
             encoding_plan=encoding_plan,
         )

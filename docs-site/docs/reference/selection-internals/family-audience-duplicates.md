@@ -1,0 +1,267 @@
+---
+title: Family, audience and duplicates
+---
+
+# Family, audience and duplicates
+
+Once the draft is cut, a few passes make sure it is a film you'd show, to the people you cut it for. Your partner, who is on 300
+pictures of the month and starred in none, gets a shot. A picture the family-viewing gate refuses
+leaves and another frame of the same moment takes its place, unless the refused picture was that
+moment's favourite: then the whole moment goes and another moment gets the slot. Two near-identical photos of the same
+sunset, or the same hiking trail filmed twice twenty minutes apart, become one. Then the finished
+cut is checked against everything the passes promised.
+
+NAS runs these passes with rules and the eight shared-DINO heads, including `screen`,
+`frame_kind` and `uncovered_person`. Marqo and Docling are off on NAS. This is a measured cost
+tradeoff, with less detector coverage, not proven equivalence to Full. GPU and Full add both
+detectors and Laya
+over the selected shots' captions. No tier asks the prose LLM to decide sharing.
+
+## After the draft
+
+The order, as `_select` in `editorial_structure_planner.py` runs it:
+
+```mermaid
+flowchart TD
+  n0["Draft and optional refinement"]
+  n1["Family seats and owner includes"]
+  n2["Fit timing"]
+  n3["Sharing and duplicate review"]
+  n4["Finished-cut check"]
+  n0 --> n1
+  n1 --> n2
+  n2 --> n3
+  n3 --> n4
+```
+
+Each pass writes what it did to `derived-decisions/<name>.private.json` in the run's attempt
+directory, and `runs why <asset-id>` reads it back.
+
+## The family seat
+
+Shots follow favourites and stories, so someone photographed all month and starred in none of it can
+end up in no shot. The seat fixes that on every tier (`editorial_family_seat.py`).
+
+- **Who is owed one.** A close family member (partner, child or parent, as confirmed in
+  the people registry) on at least 20 of the period's pictures, or 5 % of them, and in none of its shots.
+  The two numbers are `advanced.editorial.people.seat_min_pictures` and `seat_min_share`. Only
+  pictures the film could show count: someone whose every picture is refused as a shot is owed
+  nothing, and the record says so.
+- **In a film about a person**, close family is relative to that person as well as to you: for example, in a film
+  about a partner, their parents count too. The same set drives big
+  stories, the duplicate review and the model polish.
+- **Which frame.** Their best frame by standing, in the story that holds most of their pictures,
+  that clears the story's standing bar and that no hold refuses. Equal standing favours your
+  starred frame. If admission refuses it, the next eligible frame gets its chance.
+- **Whose place.** Added when the film has a slot and the time for one more shot. Otherwise it
+  replaces the weakest shot of that story, or else the film's weakest shot in a story that keeps
+  another one. A favourite, another seat, or someone's only close-family shot is never displaced.
+
+The seat survives the passes after it. The duplicate review never removes a close family member's
+only shot: of two look-alikes, the other one leaves, and a refill must still show them. When
+everything has run, anyone who lost their only shot anyway (to the gate or the trim) is seated
+again, through the same rules plus the gate's verdict on the new frame. Records:
+`family-seat.private.json` and `family-seat-after-review.private.json`, which name people by
+relation only.
+
+Setting roles takes five minutes: [Home and people](../../get-started/who-is-who.md).
+
+## The family-viewing gate
+
+These are conservative automatic sharing defaults. They do not judge bodies, caregiving or what your household considers private. Review the cut and use per-picture decisions to set what may be shown.
+
+Every shot gets one of four verdicts, and the strictest reading wins:
+
+| Verdict | Meaning |
+|---|---|
+| `share` | eligible for Shareable under the automatic checks |
+| `family_only` | eligible for Family under the automatic checks; held back from Shareable |
+| `just_us` | a private moment of the household: only a just-us film plays it |
+| `do_not_show` | leaves every film |
+
+### Sharing levels
+
+Each film is cut for one of three levels. You pick it per film (**Who may see it** in the web
+brief, `generate --sharing`), and `defaults.sharing` is the default, `family` unless you change it.
+
+| Level | Who watches | Plays |
+|---|---|---|
+| **Just us** (`just-us`) | the household | `share`, `family_only`, `just_us` |
+| **Family** (`family`, the default) | grandparents, siblings, the group chat | `share`, `family_only` |
+| **Shareable** (`shareable`) | anyone | `share` only, with `strict_sharing` |
+
+A caption that explicitly describes a person wearing only underwear holds the picture to
+**Just us**. Swimwear and babies
+in nappies are separate; an uncovered-person flag alone does not identify underwear. A NAS run
+without that caption cannot make this distinction. Use **Never use** for a picture you want out
+of every future film, or clear its hold yourself after reviewing it.
+
+The attempt's `request` records the level, `runs show` and `runs story` print it (`Sharing: family`),
+and `runs why` reads the gate's verdicts against it.
+
+A shot that leaves is replaced from its own moment first, then from a moment of the same story the
+film doesn't show yet, never within five minutes of a shot of the same moment, and each replacement
+is judged by the same gate before it takes the slot. When every offer is refused, the slot stays
+empty.
+
+A moment you starred something in is only ever shown by a favourite. If the gate holds that
+favourite (or every favourite of it, when you starred two), no plain frame of the same moment
+stands in: the moment is dropped and the slot goes to a moment the story doesn't show yet. With two
+favourites and one held, the other one plays. The same rule applies to every later refill: the
+duplicate review, the family seat and the polish.
+
+```mermaid
+flowchart TD
+  n0["Check source eligibility"]
+  n1["Apply owner clearance or existing holds"]
+  n2["Read tier-specific audience evidence"]
+  n3["Use the strictest verdict"]
+  n4["Keep or replace at chosen sharing level"]
+  n0 --> n1
+  n1 --> n2
+  n2 --> n3
+  n3 --> n4
+```
+
+**On GPU and Full**, the `nsfw_marqo` detector on the still, on up to eight frames spread
+across a video, and on a Live Photo's clip; the `uncovered_person` head as a second opinion; and the
+exposure chain: a five-minute capture run is held whole when at least half of it and at least three
+of its captures are flagged (`editorial_exposure_chains.py`). All of these give `family_only`.
+Nothing a later reading says lifts a detector's hold. The holds live in the store's audience bank
+(`audience_holds`), one per picture and per source: a detector's or a rule's is permanent, a text
+reading's lasts as long as the audience prompt it answered. Only you lift one, one picture at a time, after
+looking at it (see [Your word on a picture](#your-word-on-a-picture)). A false positive costs a shot
+in a wider film; a false negative puts the wrong picture in front of the wrong people.
+
+**On NAS**, the answer is `family_only` for every
+shot, with the finding that holds it: the heads can't see the private moments only a written
+description names. So a just-us and a family film on a NAS are the same film, and what leaves them
+is what the carrier rules catch. A shareable film is the one exception, under `strict_sharing` (on by
+default): a shot is `share` when its evidence is clean, which means all of these:
+- every member has clean exposure evidence: a negative Marqo answer, or the complete cheap-head evidence described below;
+- `uncovered_person` didn't say yes;
+- no enabled document detector objected;
+- the venue head didn't place it in a bedroom, a medical room or another private facility;
+- no flag of any kind is on it;
+- no flagged capture run surrounds it.
+
+For the cheap-head route, `uncovered_person` and `screen` must both say no, and `frame_kind` must name a people moment, scenery, a meaningful record or an everyday object.
+
+Anything else stays `family_only` and leaves the shareable film (`clean_evidence` in
+`editorial_shareability_tiers.py`). A private moment that no detector sees and no caption names can
+still pass. Captions and Laya add an activity check, but cannot guarantee that every private
+moment is recognised.
+
+**On GPU and Full**, Laya answers the activity question from each shot's caption, acquired when
+needed and then banked. This works with either reader: a prose LLM is never asked about sharing.
+- Four findings are a household's private moments and give `just_us`: breastfeeding, bathing,
+  toileting or changing, and intimate hygiene. They play in a just-us film automatically.
+- Four give `do_not_show` and never play at any level: a graphic medical procedure, an identifying
+  record, sexual content, and an adult changing.
+
+The v17 checks (`audience-evidence-v17-every-finding-needs-its-activity`) hold a finding only when
+the caption states the activity: a pool or the sea is never a bath, a race bib never an identifying
+record. A detector or exposure flag holds the shot without a further model question. A missing
+caption or missing Laya answer stays `family_only`; nothing falls back to the prose reader.
+
+**Laya** is a 0.4B local text classifier reading the compact caption. GPU and Full enable it
+automatically. `immich-memories models fetch --laya` downloads the pinned checkpoint for the
+platform; see [Laya setup](../llm-providers.md#the-laya-audience-pre-screen) for the runtime.
+It runs on the GPU rules route too, without a polish step. Detector and owner holds still apply.
+
+Cached Laya answers belong to the checkpoint's file contents, runtime and threshold. Changing
+any of those makes the next cut read the captions again. Existing detector, owner and private
+activity holds still apply; a new checkpoint cannot silently clear a previous hold.
+
+**`advanced.editorial.strict_sharing`** (on by default) applies to shareable films: any shot a head
+or an exposure flag marked stays at `family_only` even when the caption suggests `share`. On a NAS it is
+also what allows the clean-evidence `share` above. Just-us and family films don't read it.
+
+**The review list.** Every run writes `review-before-sharing.private.json` in its attempt directory:
+the shots whose exposure probability sits between 0.2 and 0.5 that nothing else already holds.
+Nothing in the cut changes. The run summary prints the count, and `runs why` shows the note.
+
+## Your word on a picture
+
+These decisions govern automatic selection. Editing an existing saved cut is a separate final-owner revision; its selected pictures follow the review choices, subject to renderable media.
+
+You answer a hold per picture, in the media pool, on the storyboard or with `pictures` in the CLI.
+The walkthrough with screenshots is on [Overrule it](../../how-it-chooses/overrule-it.md#your-word-on-a-picture). The
+rules:
+
+- **Clear hold** is offered where something holds the picture: a detector flagged it or its Live
+  clip, or an earlier cut banked a hold (a caption that names a private moment, most of its capture
+  run flagged). You clear it for a level: just us (`just_us`), family (`family_only`, the default) or
+  anyone (`share`). A cleared unit gets that verdict in `AudienceGate.verdict_of` before any check
+  runs, on every tier, and no banked hold or earlier refusal within that level comes back. A unit is
+  cleared only when you cleared every picture it shows, at the strictest of their levels. A carrier
+  rule still refuses first.
+- **Never use** writes `never_auto`: the picture stays evidence that its moment happened and is
+  never a carrier. A tick doesn't bring it back.
+- **Undo** forgets the decision, and the banked holds apply again, since clearing never deleted them.
+
+Nothing clears a hold by itself: no reading, no model, no bulk action. The decisions are
+`source='owner'` rows in the library's annotation store (`store/owner_decisions.py`), one per
+picture, so they last across runs and scopes and the web page and the CLI can't overwrite each
+other's. They stay off the line a reader sees, so a decision re-asks no reading. `runs why ASSET_ID`
+prints yours last.
+
+## Duplicates
+
+Sameness is decided in four places, from what ingest banked (the preview hash and the scene print).
+No tier asks a model to compare two pictures.
+
+1. **Copies, at the source.** A shared album carries no originals, so a curated shot arrives twice:
+   the camera's file and a ~2048 px downscale, same name, same instant to the millisecond. Files
+   with the same camera name, kind and capture instant are one picture. So is a file forwarded
+   back under a UUID name on the same second, when both cached previews sit within 2 bits (a
+   received batch shares a second too, so the pixels have to agree; burst frames hash alike, so
+   the name has to say it was forwarded). The file with the most pixels plays, a star on any copy
+   counts for the picture, and the others are left out as "another file of the same picture". On
+   one real month that was 415 of 2,028 files. Files with the same bytes (an equal SHA-1) are one
+   picture too: your partner's phone uploaded it as well, or a second account of a
+   `generate --accounts` run holds it. A Live Photo copy stands for it before a plain one, then a
+   starred copy, then the primary account's. A video whose bytes are a Live Photo's own motion
+   folds into that Live Photo (`exact_copies.py`).
+2. **Bursts, before the editor.** Photos within `photos.burst_window_seconds` (300) of each other
+   **and** within `photos.burst_hash_threshold` (8) bits on a preview hash are one burst; the
+   favourite survives it, else the best frame. A photo with no hash is kept.
+3. **Inside a story, while the cut is built.** A 10-bit hash check against the shots around it (see
+   [Picking each shot](./picking-shots.md#what-a-frame-must-pass)).
+4. **Over the finished cut** (`review_cut_by_cached_hashes`):
+   - a preview hash within 6 bits, inside the same story or the same day;
+   - a scene print (the pooled DINOv2 vector of the preview, banked in `scene-prints.sqlite`) at a
+     cosine of 0.65 or more, within 14 days, across stories. That catches the same trail at dusk
+     shot twice from different spots, which produces different hashes. On one day it only counts inside
+     one moment (10 minutes): a scene print says what kind of scene a picture is, and a concert or
+     a wedding is one kind all day, so two sets hours apart are two moments of the event, not a
+     repeat. Two favourites are the same scene only within 2 days of each other: the same pose in
+     the same place on consecutive days is one moment you starred twice, and further apart it is
+     two moments.
+
+Which frame stays: one you ticked, then the favourite, then the one that moves (a video before a Live
+Photo), then a close family member's only shot, then (between two favourites) the one with more
+faces Immich found and then the sharper, then the earlier one. A moving frame is never a
+repeat of a still. A scene repeat leaves even when no distinct replacement remains and the film
+is short of its requested duration. Its slot goes to an eligible refill when there is one.
+The one limit for two starred twins: a twin never leaves unreplaced when the film would then hold no shot at all,
+the only point where it makes no film. The record names each such pair under `collapsed_favourites`. Every
+replacement passes the family-viewing gate first. The `final_duplicate_review` record lists each
+removal, the distance or cosine behind it, and who kept the slot.
+
+## The finished-cut check
+
+Each pass keeps its promise when it runs, and a later pass can undo it without knowing. So after
+the last pass the cut is read once against all of them (`editorial_cut_invariants.py`):
+
+1. every close family member the seat owes a shot has one, or the seat recorded why not;
+2. no non-favourite carries a moment whose favourite could have carried it (a favourite folded into
+   its starred twin counts as shown by the twin);
+3. in a film split into years or ranges, every one with a story has a shot;
+4. a Live Photo whose clip measured at least 1.5 with its subject in frame plays as motion;
+5. nothing a carrier rule or the gate refuses, and nothing the gate never judged, is in the cut;
+6. the cut is in capture order.
+
+It changes nothing and asks nothing. Each broken promise is a warning in the log, naming the pass
+that last touched the picture, and a row in `derived-decisions/cut-invariants.private.json`.
+`runs show` prints the count.

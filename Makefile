@@ -238,6 +238,14 @@ benchmark-json-full: benchmark-assembly benchmark-titles-json benchmark-pipeline
 	@echo "Benchmark JSON files:"
 	@ls -la tests/benchmark-*.json 2>/dev/null || echo "  (none found — benchmarks may have been skipped)"
 
+.PHONY: benchmark-preview-reuse
+benchmark-preview-reuse:  ## Measure stage-wise still decode reuse (public JPEG fixtures only)
+	uv run python scripts/benchmark_preview_reuse.py $(BENCHMARK_ARGS)
+
+.PHONY: benchmark-preview-contracts
+benchmark-preview-contracts:  ## Compare existing still decoder contracts on generated images
+	uv run python scripts/benchmark_preview_contracts.py
+
 benchmark-submit:  ## Submit local benchmark results to GitHub (for non-CI runners)
 	@RUNNER_NAME=$${BENCHMARK_RUNNER:-$$(hostname)}; \
 	BRANCH=$$(git rev-parse --abbrev-ref HEAD); \
@@ -798,7 +806,7 @@ launch-check-ci-postgres: ensure-dev
 	@echo "Hermetic launch check (PostgreSQL) passed!"
 
 # Full CI-equivalent pipeline (locally)
-ci: ensure-dev research-data-check lint format-check typecheck file-length complexity cognitive-complexity dead-code security-lint semgrep refurb dep-check arch-check duplication critique docs-cli-check docs-config-check docs-voice notices-check compose-check web-check test
+ci: ensure-dev research-data-check lint format-check typecheck file-length complexity cognitive-complexity dead-code security-lint semgrep refurb dep-check arch-check duplication critique docs-cli-check docs-config-check docs-brand docs-commands docs-voice notices-check compose-check web-check test
 	@echo "Full CI pipeline passed!"
 
 # Self-critique for AI code smells
@@ -993,6 +1001,10 @@ docs-cli-check:
 docs-config-check:
 	uv run python scripts/check_config_docs.py
 
+.PHONY: docs-brand
+docs-brand:  ## Check shared product descriptions across release surfaces
+	uv run python scripts/check_product_copy.py
+
 # Fail when the docs or the README use the words and punctuation the owner's voice bans
 docs-voice:  ## Voice gate: no em dashes, no chatbot words, in README.md and docs-site/docs
 	uv run python scripts/docs_voice_gate.py
@@ -1104,10 +1116,13 @@ demo-ui-install:  ## Install Remotion demo dependencies
 demo-ui-check:  ## Check the Remotion scene types and code
 	cd docs-site/remotion && npm run lint
 
+DEMO_THEME ?= light
+DEMO_VIDEO := $(if $(filter dark,$(DEMO_THEME)),dark-demo,demo)
+DEMO_HERO := $(if $(filter dark,$(DEMO_THEME)),dark-demo-hero,demo-hero)
 DEMO_FRAME ?= 500
 DEMO_STILL ?= /tmp/immich-memories-demo.png
 demo-ui-still:  ## Render one demo frame for visual review
-	cd docs-site/remotion && npx remotion still src/index.ts DemoVideo $(DEMO_STILL) --frame=$(DEMO_FRAME)
+	cd docs-site/remotion && npx remotion still src/index.ts DemoVideo $(DEMO_STILL) --frame=$(DEMO_FRAME) --props='{"theme":"$(DEMO_THEME)"}'
 
 demo-ui-dev: demo-ui-install  ## Start Remotion Studio for live demo preview
 	cd docs-site/remotion && npm run dev
@@ -1128,7 +1143,7 @@ demo-soundtrack:  ## Rebuild the demo's music from a bundled MIT-licensed acoust
 DEMO_RENDER_ARGS ?=
 demo-ui: demo-ui-install demo-fixture demo-soundtrack  ## Render Remotion demo → docs-site/static/demo/demo.mp4
 	@mkdir -p docs-site/static/demo
-	cd docs-site/remotion && npx remotion render src/index.ts DemoVideo ../static/demo/demo.mp4 --codec h264 --crf 18 $(DEMO_RENDER_ARGS)
+	cd docs-site/remotion && npx remotion render src/index.ts DemoVideo ../static/demo/$(DEMO_VIDEO).mp4 --props='{"theme":"$(DEMO_THEME)"}' --codec h264 --crf 18 $(DEMO_RENDER_ARGS)
 
 # The homepage and README hero tells the product's loop without a jump: the brief, the cut
 # and the review (demo 4.0 to 13.6 s), then Render pressed, the film arriving on the page and
@@ -1142,9 +1157,9 @@ demo-ui: demo-ui-install demo-fixture demo-soundtrack  ## Render Remotion demo �
 # hqdn3d. Re-run after `make demo-ui` and re-check the size.
 HERO_FILTER := fps=10,scale=720:405:flags=lanczos,format=yuv420p
 demo-hero:  ## Cut the README hero GIF: brief, cut, review, render, and the film it made
-	ffmpeg -y -loglevel error -i docs-site/static/demo/demo.mp4 -i docs-site/remotion/public/output-preview.mp4 \
+	ffmpeg -y -loglevel error -i docs-site/static/demo/$(DEMO_VIDEO).mp4 -i docs-site/remotion/public/output-preview.mp4 \
 	  -filter_complex "[0:v]trim=4.0:13.6,setpts=PTS-STARTPTS,$(HERO_FILTER)[a];[0:v]trim=29.0:34.43,setpts=PTS-STARTPTS,$(HERO_FILTER)[b];[1:v]trim=20.63:24.13,setpts=PTS-STARTPTS,$(HERO_FILTER)[c];[a][b]xfade=transition=fade:duration=0.3:offset=9.3[ab];[ab][c]xfade=transition=fade:duration=0.5:offset=14.23,hqdn3d,split[x][y];[y]palettegen=max_colors=255:stats_mode=diff[p];[x][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle" \
-	  docs-site/static/img/demo-hero.gif
+	  docs-site/static/img/$(DEMO_HERO).gif
 
 .PHONY: llm-conformance
 llm-conformance:  ## Exercise production LLM features on synthetic evidence: CONFIG=provider.yaml
@@ -1162,3 +1177,7 @@ demucs-locks:  ## Refresh the Linux inference audio locks without changing Mac d
 	uv pip compile docker/demucs-requirements.in --constraint "$$constraints" --python-version 3.12 \
 	  --python-platform linux --torch-backend cu126 --generate-hashes --no-annotate --no-header \
 	  -o docker/demucs-cuda-requirements.txt
+
+.PHONY: docs-commands
+docs-commands:  ## Statically check documented CLI commands and Make targets
+	uv run python scripts/check_docs_commands.py
