@@ -1,0 +1,5 @@
+Keep **Single file for a stack editor** selected. Enter the Immich address your container can reach and its API key. The generated file includes a private Settings encryption key; keep the download with your backups. No `.env` file or hand-written YAML is needed.
+
+The default NAS setup needs no separate model service. Set your home, people and optional service URLs in Settings. The config and output volumes keep settings, cached facts and films across container replacement. Download films through the app or enable [upload-back](/docs/run/docker#films-into-immich). Include both volumes and the encryption key in your [backups](/docs/run/maintenance/storage-backups).
+
+To keep films in a NAS share instead, replace the generated output volume mount with an **absolute** host path after creating that folder and giving UID/GID 1000 write access. See [NAS folder permissions](/docs/run/nas#the-output-folder). That storage change is optional; the generated file works with its named volumes.

@@ -17,12 +17,15 @@ Import `docker-compose.yml` as a project in your NAS's container manager. For a 
 project, put `.env` and an `output` folder beside it. Fill in the Immich URL/key, home coordinates
 and timezone as in [Docker step 2](./docker.md#2-connect-immich).
 
-- **Unraid:** use the [Compose Manager plugin](https://github.com/mstrhakr/compose_plugin/blob/main/docs/getting-started.md) to add a stack, edit its Compose file and start it.
-- **TrueNAS SCALE:** the [Install via YAML editor](https://apps.truenas.com/managing-apps/installing-custom-apps/) has no adjacent `.env` file. Replace the `${...}` values in the service's `environment:` with your values, or use the Custom App wizard's environment fields.
-- **Synology DSM / Portainer:** the container terminal can replace SSH. In [Portainer](https://docs.portainer.io/user/docker/containers/console), select **Containers > immich-memories > Console** and connect with `/bin/sh`.
+For the interface-specific steps, use [Synology DSM](./platforms/synology.md),
+[Unraid](./platforms/unraid.md), [Portainer](./platforms/portainer.md), or
+[TrueNAS](./platforms/truenas.md). These guides include one self-contained Compose file for
+stack editors that do not read a separate `.env` file. Unraid also has a
+[native Docker XML template](https://raw.githubusercontent.com/sam-dumont/immich-video-memory-generator/main/deploy/unraid/immich-memories.xml); see the [Unraid guide](./platforms/unraid.md#native-docker-template).
 
-After starting the project, run these over SSH. The shipped container name works regardless of
-the project name or current folder:
+After starting, use your platform guide's **container console** to run `immich-memories models fetch`
+and `immich-memories preflight`; no SSH is needed for preparation. From a host terminal instead,
+the shipped container name works regardless of the project name or current folder:
 
 ```bash
 sudo docker exec immich-memories immich-memories models fetch
