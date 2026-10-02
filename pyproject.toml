@@ -159,7 +159,7 @@ dev = [
     "types-PyYAML>=6.0",
     # Advanced quality gates
     "refurb>=2.0",
-    "import-linter>=2.0",
+    "import-linter>=2.15",
     "grimp>=3.0",
     "deptry>=0.20",
     "diff-cover>=10.6.0",
