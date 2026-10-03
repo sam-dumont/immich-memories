@@ -2,9 +2,9 @@ import type {ReactNode} from 'react';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import CodeBlock from '@theme/CodeBlock';
 import Link from '@docusaurus/Link';
-import {installationCommands} from './downloads';
+import {installationCommands, deploymentCommands} from './downloads';
 
-export default function InstallationFiles(): ReactNode {
+export default function InstallationFiles({kind = 'compose'}: {kind?: 'compose' | 'bundle'}): ReactNode {
   const {siteConfig} = useDocusaurusContext();
   const version = String(siteConfig.customFields?.version || 'development');
   const released = /^v?\d+\.\d+\.\d+(?:-rc\.\d+)?$/.test(version);
@@ -17,6 +17,9 @@ export default function InstallationFiles(): ReactNode {
       For source builds, use <Link to="/docs/contribute/development-setup">contributor setup</Link>.</p>
     <p>Stop here if you need a prebuilt first installation; the remaining steps require those assets.</p>
   </aside>;
+  if (kind === 'bundle') return <CodeBlock language="bash" title={`Vendor ${version}`}>
+    {deploymentCommands(version)}
+  </CodeBlock>;
   return <>
     <p>{`Download the matching ${version} assets. Candidate versions are marked -rc.N.`}</p>
     <CodeBlock language="bash" title="Download installation files">

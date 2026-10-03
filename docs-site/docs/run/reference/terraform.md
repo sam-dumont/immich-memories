@@ -6,9 +6,11 @@ title: "Terraform module reference"
 
 ## Module usage
 
+First [vendor the pinned release bundle](../gitops.md) at `vendor/immich-memories`.
+
 ```hcl
 module "immich_memories" {
-  source = "path/to/deploy/terraform"
+  source = "./vendor/immich-memories/deploy/terraform"
 
   # Required
   immich_url     = "https://photos.example.com"
@@ -70,8 +72,8 @@ modes, and the SQL for a dedicated schema in Immich's own database, are on
 | `database_url`, `database_schema` | The store on PostgreSQL instead of the default SQLite file. Empty stays SQLite | `""`, `"immich_memories"` |
 | `output_resolution` | `720p`, `1080p` or `4k` | `"1080p"` |
 
-For a local reader, set `IMMICH_MEMORIES_LLM__ENABLED = "true"` in `env` and install
-llama-server and its model files. Follow [reader setup](../../better/reader.md#let-the-app-run-the-local-model).
+For a local-network reader, set `IMMICH_MEMORIES_LLM__ENABLED = "true"` in `env` and provide
+an external server. The app image does not include llama-server. Follow [reader setup](../../better/reader.md#let-the-app-run-the-local-model).
 
 `terraform output` gives the namespace, service name and endpoint, the ingress host, the deployment
 and PVC names, whether GPU is on, and a ready-to-run `port_forward_command`.

@@ -43,7 +43,7 @@ const sidebars: SidebarsConfig = {
             'run/platforms/synology', 'run/platforms/unraid',
             'run/platforms/portainer', 'run/platforms/truenas',
           ]},
-          'run/uv-pip', 'run/kubernetes', 'run/terraform',
+          'run/uv-pip', 'run/kubernetes', 'run/terraform', 'run/gitops',
         ]},
         {type: 'category', label: 'Advanced deployments', items: [
           'run/reference-setup', 'run/reference/cluster-example', 'run/reference/mac-example',
