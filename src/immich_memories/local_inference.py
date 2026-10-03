@@ -121,6 +121,9 @@ class LocalModels:
     @asynccontextmanager
     async def reader(self, config: LLMConfig) -> AsyncIterator[LLMConfig]:
         """Lazily start the configured reader and lease it for the complete HTTP request."""
+        # The owned server is llama.cpp, not an unknown loopback provider such as oMLX.
+        if config.structured_output is None:
+            config = config.model_copy(update={"structured_output": True})
         async with self.exclusive():
             try:
                 yield await self._start(config)

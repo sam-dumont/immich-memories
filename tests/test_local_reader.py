@@ -209,6 +209,47 @@ async def test_warm_reader_keeps_each_requests_schema_policy(local_reader):
         await local_models.release()
 
 
+@pytest.mark.parametrize("override", [None, True, False])
+async def test_owned_episode_schema_reaches_cold_and_warm_reader(local_reader, override):
+    from immich_memories.analysis.prose_shapes import episode_reading_shape
+    from immich_memories.local_inference import local_models
+
+    config = local_reader.model_copy(update={"structured_output": override})
+    shape = episode_reading_shape(2, lean=True)
+    request_file = Path(config.local_server).with_suffix(".request")
+    try:
+        for prompt in ("Cold episodes", "Warm episodes"):
+            await query_llm(prompt, config, response_format=shape)
+            sent = json.loads(request_file.read_text())
+            if override is False:
+                assert "response_format" not in sent
+            else:
+                assert sent["response_format"] == shape
+    finally:
+        await local_models.release()
+
+
+def test_owned_episode_policy_has_distinct_semantic_and_request_cache_keys(local_reader):
+    from immich_memories.analysis.llm_providers import structured_output_enabled
+    from immich_memories.analysis.llm_text_identity import text_judgment_key, text_model_identity
+    from immich_memories.analysis.prose_shapes import episode_reading_shape
+
+    constrained = local_reader.model_copy(update={"structured_output": True})
+    plain = local_reader.model_copy(update={"structured_output": False})
+    shape = episode_reading_shape(1, lean=True)
+    assert structured_output_enabled(local_reader, shape)
+    assert text_model_identity(local_reader, thinking=False) == text_model_identity(
+        constrained, thinking=False
+    )
+    assert text_model_identity(local_reader, thinking=False) != text_model_identity(
+        plain, thinking=False
+    )
+    arguments = {"thinking": False, "max_tokens": 1000, "temperature": 0, "require_complete": True}
+    assert text_judgment_key(local_reader, "An episode", response_format=shape, **arguments) != (
+        text_judgment_key(plain, "An episode", **arguments)
+    )
+
+
 async def test_answers_survive_restart_but_not_changed_model_weights(local_reader):
     from immich_memories.local_inference import local_models
     from tests.annotation_rows import annotation_store

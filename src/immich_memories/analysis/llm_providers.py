@@ -257,13 +257,13 @@ def structured_output_enabled(
 ) -> bool:
     """Choose schema enforcement for this request, retaining explicit endpoint overrides.
 
-    Local episode-reading schemas can stall oMLX after an empty array. Other request
-    types, including free-text answers, retain the schema their parser requires.
+    External local episode-reading schemas can stall oMLX after an empty array. The
+    app-owned llama.cpp reader and other request types retain their required schemas.
     """
     if config.structured_output is not None:
         return config.structured_output
     name = (response_format or {}).get("json_schema", {}).get("name")
-    return not (is_local_endpoint(config) and name == "episode_reading")
+    return config.runs_locally or not (is_local_endpoint(config) and name == "episode_reading")
 
 
 def reader_concurrency(config: LLMConfig) -> int:

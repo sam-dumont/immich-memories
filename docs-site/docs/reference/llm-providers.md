@@ -222,8 +222,9 @@ and `message` go into the log line, cut at 300 characters.
 ## Structured replies
 
 The default selects the mode by request type. Free-text questions, titles and period accounts
-request their JSON schemas on local and hosted endpoints. Local episode readings use prompt-only
-JSON because oMLX can stall on their nested schema; hosted episode readings retain the schema.
+request their JSON schemas on local and hosted endpoints. External local episode readings use prompt-only
+JSON because oMLX can stall on their nested schema. The app-owned llama.cpp reader and hosted
+episode readings retain the schema.
 Both modes work against the same endpoint in one process. `advanced.llm.structured_output` can
 explicitly enable or disable structured output for that endpoint.
 

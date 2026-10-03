@@ -128,8 +128,9 @@ class LLMConfig(BaseModel):
         description=(
             "Ask the server for the request's JSON shape (response_format json_schema; "
             "Ollama's format). Left unset, schemas are enabled except for episode readings "
-            "on this machine or private network, where oMLX can stall under constrained "
-            "decoding. Free-text, title and account requests retain their schemas. Set true "
+            "on external local/private-network servers, where oMLX can stall under constrained "
+            "decoding. The app-owned llama.cpp reader keeps episode schemas. Free-text, title "
+            "and account requests retain their schemas. Set true "
             "or false to override this request-specific policy for an endpoint. Unsupported "
             "schema mode is retried with the provider's compatible mode and remembered."
         ),
