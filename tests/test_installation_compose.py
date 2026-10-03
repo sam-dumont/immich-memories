@@ -28,11 +28,11 @@ def test_installation_commands_select_assets_and_one_version(version):
     )
     assert "docker-compose.override.yml" not in commands
     assert "INFERENCE_TAG" not in commands
-    assert "IMMICH_MEMORIES_VERSION=" + version.removeprefix("v") in commands
     if version == "development":
-        assert "docker build" in commands
-        assert "ghcr.io/sam-dumont/immich-memories:development" in commands
+        assert commands.strip() == ""
     else:
+        assert "IMMICH_MEMORIES_VERSION=" + version.removeprefix("v") in commands
+        assert "docker build" not in commands
         for filename in [
             "docker-compose.yml",
             "example.env",
