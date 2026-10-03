@@ -13,6 +13,12 @@ Use **Container Manager → Project** on a DSM model that supports Container Man
 
 The exact generated NAS file passed a fresh-volume SSH/Compose installation on DSM 7.3: explicit model download, preflight, a default first film, playback, and a Settings URL save/reload/restore. The Container Manager **Project wizard** itself was not exercised. See the [cold-install measurement](../../better/measured.md#generated-cold-installs) and earlier [Synology checks](../../better/measured.md#tested-setups).
 
+A later [stock Docker test](../../better/measured.md#june-docker-install), from source `4b98c19926ec`
+and local image `f62dbfa8d8c8`, also passed with a new volume and fresh models: **28m 56s** for
+the first CLI film, software encoding, bundled music and complete decode. It needed no source
+overlay or dependency repair. This is pre-RC evidence; RC1 follows. It does not exercise the wizard
+or the remote access routes below.
+
 We welcome people to try it and [share their results in #1805](https://github.com/sam-dumont/immich-memories/issues/1805). Please include your platform version, app version, selected tier, and whether preflight and the first film worked. Successful runs are useful too.
 
 :::

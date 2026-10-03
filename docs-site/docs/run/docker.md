@@ -29,12 +29,16 @@ TZ=Europe/Brussels
 ```
 
 Use the address **the container can reach**. `localhost` means the container itself.
-For trips and local public holidays, also set home coordinates:
+For trips and local public holidays, set home coordinates in **Settings** after startup.
+To fix them in the deployment instead, add these entries to the app's `environment:` block
+in `docker-compose.yml`:
 
-```ini
-IMMICH_MEMORIES_TRIPS__HOMEBASE_LATITUDE=50.8503
-IMMICH_MEMORIES_TRIPS__HOMEBASE_LONGITUDE=4.3517
+```yaml
+      IMMICH_MEMORIES_TRIPS__HOMEBASE_LATITUDE: "50.8503"
+      IMMICH_MEMORIES_TRIPS__HOMEBASE_LONGITUDE: "4.3517"
 ```
+
+Putting these coordinates in `.env` alone has no effect with the shipped Compose file.
 
 ### 3. Start and check
 
@@ -61,9 +65,11 @@ and Laya. Files stay on the persistent volume; a recreate keeps them.
 On the Docker host: [http://localhost:8080](http://localhost:8080).
 If the host is your NAS or another server, [tunnel or enable LAN access](#reaching-the-ui-from-another-machine).
 
-Then make [your first film](../get-started/first-film.mdx). Start with the 20–50-item trial album. A real month's first
-preparation can take several hours on a NAS, or about an hour on a Mac or GPU cluster, before
-rendering. See [what to expect](./nas.md#what-to-expect).
+Then make [your first film](../get-started/first-film.mdx). Start with the 20–50-item trial album.
+The [June measurements](../better/measured.md#june-hardware-matrix) record a complete cold
+NAS Basic film in 16m 36s with hardware encoding. A separate [fresh default Docker install](../better/measured.md#june-docker-install)
+on the same NAS completed its first film in **28m 56s** with software encoding and bundled music.
+Both used the same 725-source month, but these separately selected films are not an isolated encoder comparison. See [what to expect](./nas.md#what-to-expect).
 
 ### When a step is missing
 

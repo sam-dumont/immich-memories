@@ -70,9 +70,10 @@ Follow [Your first film](./first-film.mdx): create an Immich album with **20–5
 photos/videos**, choose **Album**, and set the length to **0.5 minutes**. Review the cut and render
 with upload off. Shortening a film alone does not reduce how many inputs need preparation.
 
-Cold setup includes the image pull, model download, input preparation and render. Allow several
-hours for a real month's first preparation on a NAS. Hardware, input count and cache state matter;
-[the phase guide](./first-film.mdx#progress-and-recovery) explains what progress and completion look like.
+Cold setup includes the image pull, model download, input preparation and render. Hardware,
+input count and cache state matter. The [June measurements](../better/measured.md#june-hardware-matrix)
+separate film generation from setup; larger periods can still take hours.
+[The phase guide](./first-film.mdx#progress-and-recovery) explains what progress and completion look like.
 [After install](./after-install.md) covers home, people and backups. Got your first film?
 [Choose your setup](./choose-your-setup.md) explains what more you can get.
 
