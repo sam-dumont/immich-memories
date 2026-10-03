@@ -120,6 +120,11 @@ No 4K/HDR performance or correctness claim comes from this checkpoint.
 
 ## Maximum-resolution follow-up
 
+Basic is capped at 1080p on NAS and M2. Maximum 4K exports apply only to NAS GPU, Kubernetes GPU,
+M5 Full and M2 Full. The harness incorrectly attempted maximum exports on Basic; those attempts
+are excluded. The M2 output was correctly capped by the application at 1920×1080, and its extra
+variant was removed from the comparison album. The NAS attempt was stopped.
+
 The M5 Full saved-cut export completed after the first-pass checkpoint. Full-file decode passed:
 3840×2160, 60 fps, HEVC, 10-bit PQ HDR with BT.2020 primaries, default balanced quality. Local
 ACE-Step generated the soundtrack and local Demucs returned all four stems. The film was uploaded
