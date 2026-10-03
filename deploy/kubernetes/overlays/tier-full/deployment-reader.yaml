@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: immich-memories
+  namespace: immich-memories
+spec:
+  template:
+    spec:
+      containers:
+        - name: immich-memories
+          env:
+            - name: IMMICH_MEMORIES_DEPLOYMENT_TIER
+              value: full
+            - name: IMMICH_MEMORIES_DEPLOYMENT_READER_ENABLED
+              value: "true"
+            - name: IMMICH_MEMORIES_DEPLOYMENT_READER_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: immich-memories-reader
+                  key: url
+            - name: IMMICH_MEMORIES_DEPLOYMENT_READER_MODEL
+              valueFrom:
+                configMapKeyRef:
+                  name: immich-memories-reader
+                  key: model

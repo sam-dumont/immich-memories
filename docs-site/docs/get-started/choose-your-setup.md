@@ -3,10 +3,17 @@ title: Choose your setup
 description: What NAS, GPU and Full add, what they cost, and where to start.
 ---
 
+import SetupBuilder from '@site/src/components/SetupBuilder';
+
 # Choose your setup
 
 A plain NAS makes a complete film: stories, favourites, people, trips, time order, titles and
 bundled music. Start there. Add services for a change you want to see in the film.
+
+<SetupBuilder />
+
+For an existing installation, change service URLs and reader credentials in Settings.
+The generated commands configure reader authentication before preflight.
 
 | Setup | What you gain | What runs |
 |---|---|---|
@@ -42,6 +49,8 @@ NAS month that took 7m 23s with picture facts already prepared. That is not a fi
 Captions add information beyond dates and faces: what is happening, what objects are present,
 and how a picture fits the story. The GPU tier also adds document and sensitive-content checks
 and a family-viewing pre-screen. Review the cut before sharing it; model checks can miss things.
+Watch the [same CC0 month cut at NAS and Full](../better/tier-example.md): 13 of 14 shots overlap,
+with one replacement. It is one real example, not a quality guarantee or speed benchmark.
 
 **Fast path:** on Apple Silicon, use the [native Mac setup](../run/reference/mac-example.md).
 The `all-mac` extra makes Metal available to automatic tier detection; captions still need a

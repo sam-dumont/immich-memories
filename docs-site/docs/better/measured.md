@@ -22,9 +22,10 @@ The finished-film controls below came from later, separate runs with prepared pi
 | RKE2 cluster, NVIDIA T1000 | App and CUDA captions; install and preflight verified | Not recorded in the installation run | No finished film in that docs-only run; isolated rendering timings are below |
 
 The Mac controls used generated music and the NAS used bundled music. They are not matched
-NAS-versus-Full quality comparisons. A published comparison of the same CC0 month is tracked in
-[#1719](https://github.com/sam-dumont/immich-video-memory-generator/issues/1719); do not treat
-these different films as that comparison. Record setup, downloads, preparation and generation
+NAS-versus-Full quality comparisons. The [paired CC0 month films](./tier-example.md) are available
+with selected-shot differences, provenance and warm-cache/dependency/calibration caveats. That
+example is separate from the [#1719 28-case suite](https://github.com/sam-dumont/immich-video-memory-generator/issues/1719); do not treat
+these different films as either comparison. Record setup, downloads, preparation and generation
 separately when repeating the [first-run gate](https://github.com/sam-dumont/immich-video-memory-generator/issues/956).
 
 ## Read one run

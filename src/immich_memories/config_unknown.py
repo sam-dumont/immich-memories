@@ -29,6 +29,7 @@ _PROCESS_KEYS = frozenset(
         "DEPLOYMENT_READER_MODEL",
         "DEPLOYMENT_READER_URL",
         "DEPLOYMENT_TIER",
+        "E2E_DATABASE_URL",
         "FONTS_DIR",
         "IMPORT_FROM",
         "INFERENCE_ALLOW_MODEL_DOWNLOADS",
@@ -62,6 +63,7 @@ _PROCESS_KEYS = frozenset(
         "SELECTION_TRACE",
         "SKIP_STORED_SETTINGS",
         "STORAGE_SECRET",
+        "TEST_DATABASE_URL",
     }
 )
 

@@ -1,0 +1,345 @@
+{
+  "base": {
+    "services": {
+      "immich-memories": {
+        "image": "ghcr.io/sam-dumont/immich-video-memory-generator:${IMMICH_MEMORIES_VERSION:-latest}",
+        "container_name": "immich-memories",
+        "ports": [
+          "${UI_BIND_ADDRESS:-127.0.0.1}:8080:8080"
+        ],
+        "volumes": [
+          "immich-memories-config:/home/immich/.immich-memories",
+          "./output:/app/output"
+        ],
+        "environment": {
+          "IMMICH_URL": "${IMMICH_URL:-http://immich-server:2283}",
+          "IMMICH_API_KEY": "${IMMICH_API_KEY:-}",
+          "TZ": "${TZ:-Etc/UTC}",
+          "IMMICH_MEMORIES_AUTH_USERNAME": "${IMMICH_MEMORIES_AUTH_USERNAME:-}",
+          "IMMICH_MEMORIES_AUTH_PASSWORD": "${IMMICH_MEMORIES_AUTH_PASSWORD:-}",
+          "IMMICH_MEMORIES_SERVER__TRIGGER_TOKEN": "${IMMICH_MEMORIES_SERVER__TRIGGER_TOKEN:-}",
+          "IMMICH_MEMORIES_SECRET_KEY": "${IMMICH_MEMORIES_SECRET_KEY:-}",
+          "IMMICH_MEMORIES_DEPLOYMENT_TIER": "${TIER:-nas}",
+          "IMMICH_MEMORIES_DEPLOYMENT_GPU_BOX": "${GPU_BOX:-}",
+          "IMMICH_MEMORIES_DEPLOYMENT_READER_URL": "${READER_URL:-}",
+          "IMMICH_MEMORIES_DEPLOYMENT_READER_API_KEY": "${READER_API_KEY:-}",
+          "IMMICH_MEMORIES_DEPLOYMENT_READER_MODEL": "${READER_MODEL:-}",
+          "IMMICH_MEMORIES_DEPLOYMENT_READER_ENABLED": "${READER_ENABLED:-false}",
+          "IMMICH_MEMORIES_EDITORIAL__PREPARATION__DETECTOR_CACHE_DIR": "/home/immich/.immich-memories/models/huggingface"
+        },
+        "restart": "unless-stopped",
+        "deploy": {
+          "resources": {
+            "limits": {
+              "memory": "4G"
+            }
+          }
+        }
+      }
+    },
+    "volumes": {
+      "immich-memories-config": {}
+    }
+  },
+  "gpu": {
+    "services": {
+      "immich-memories": {
+        "deploy": {
+          "resources": {
+            "limits": {
+              "memory": "8G"
+            }
+          }
+        },
+        "environment": {
+          "IMMICH_MEMORIES_DEPLOYMENT_TIER": "gpu"
+        },
+        "depends_on": {
+          "immich-memories-inference": {
+            "condition": "service_healthy"
+          },
+          "immich-memories-captioner": {
+            "condition": "service_healthy"
+          }
+        }
+      },
+      "immich-memories-inference": {
+        "image": "ghcr.io/sam-dumont/immich-video-memory-generator/inference:${IMMICH_MEMORIES_VERSION:-latest}",
+        "container_name": "immich-memories-inference",
+        "ports": [
+          "127.0.0.1:8092:8092"
+        ],
+        "volumes": [
+          "immich-memories-model-cache:/cache"
+        ],
+        "environment": {
+          "IMMICH_MEMORIES_INFERENCE_ALLOW_MODEL_DOWNLOADS": "true",
+          "HF_HOME": "/cache/huggingface",
+          "IMMICH_MEMORIES_INFERENCE_IDLE_UNLOAD_SECONDS": "300"
+        },
+        "restart": "unless-stopped",
+        "deploy": {
+          "resources": {
+            "limits": {
+              "memory": "4G"
+            }
+          }
+        },
+        "healthcheck": {
+          "test": [
+            "CMD",
+            "python",
+            "-c",
+            "import urllib.request; urllib.request.urlopen('http://localhost:8092/ping', timeout=5).close()"
+          ],
+          "interval": "30s",
+          "timeout": "10s",
+          "start_period": "60s",
+          "retries": 3
+        }
+      },
+      "immich-memories-caption-models": {
+        "image": "ghcr.io/ggml-org/llama.cpp:server-b10920",
+        "container_name": "immich-memories-caption-models",
+        "entrypoint": [
+          "/bin/sh",
+          "-euc"
+        ],
+        "command": [
+          "cd /models\n{\n  echo \"6f67b8036b2469fcd71728702720c6b51aebd759b78137a8120733b4d66438bc  SmolVLM2-500M-Video-Instruct-Q8_0.gguf\"\n  echo \"921dc7e259f308e5b027111fa185efcbf33db13f6e35749ddf7f5cdb60ef520b  mmproj-SmolVLM2-500M-Video-Instruct-Q8_0.gguf\"\n} > SHA256SUMS\nif sha256sum -c SHA256SUMS >/dev/null 2>&1; then\n  echo \"caption weights already present\"\n  exit 0\nfi\nbase=https://huggingface.co/ggml-org/SmolVLM2-500M-Video-Instruct-GGUF/resolve/ccd7aae53bcb1997355c2f094959e72b3642ce17\ncurl -fL --retry 3 -o SmolVLM2-500M-Video-Instruct-Q8_0.gguf \"$$base/SmolVLM2-500M-Video-Instruct-Q8_0.gguf\"\ncurl -fL --retry 3 -o mmproj-SmolVLM2-500M-Video-Instruct-Q8_0.gguf \"$$base/mmproj-SmolVLM2-500M-Video-Instruct-Q8_0.gguf\"\nsha256sum -c SHA256SUMS\n"
+        ],
+        "volumes": [
+          "immich-memories-caption-models:/models"
+        ],
+        "restart": "no",
+        "deploy": {
+          "resources": {
+            "limits": {
+              "memory": "512M"
+            }
+          }
+        }
+      },
+      "immich-memories-captioner": {
+        "image": "ghcr.io/ggml-org/llama.cpp:server-b10920",
+        "container_name": "immich-memories-captioner",
+        "depends_on": {
+          "immich-memories-caption-models": {
+            "condition": "service_completed_successfully"
+          }
+        },
+        "ports": [
+          "127.0.0.1:8094:8092"
+        ],
+        "volumes": [
+          "immich-memories-caption-models:/models:ro"
+        ],
+        "command": [
+          "--model",
+          "/models/SmolVLM2-500M-Video-Instruct-Q8_0.gguf",
+          "--mmproj",
+          "/models/mmproj-SmolVLM2-500M-Video-Instruct-Q8_0.gguf",
+          "--alias",
+          "smolvlm2-500m-base-public",
+          "--host",
+          "0.0.0.0",
+          "--port",
+          "8092",
+          "--jinja",
+          "--ctx-size",
+          "8192",
+          "--cache-ram",
+          "128",
+          "--parallel",
+          "1",
+          "--threads",
+          "4"
+        ],
+        "healthcheck": {
+          "test": [
+            "CMD",
+            "curl",
+            "-fsS",
+            "http://localhost:8092/health"
+          ],
+          "interval": "30s",
+          "timeout": "5s",
+          "start_period": "180s",
+          "retries": 3
+        },
+        "restart": "unless-stopped",
+        "deploy": {
+          "resources": {
+            "limits": {
+              "memory": "3G"
+            }
+          }
+        }
+      }
+    },
+    "volumes": {
+      "immich-memories-model-cache": {},
+      "immich-memories-caption-models": {}
+    }
+  },
+  "full": {
+    "services": {
+      "immich-memories": {
+        "environment": {
+          "IMMICH_MEMORIES_DEPLOYMENT_TIER": "full"
+        }
+      }
+    }
+  },
+  "cuda": {
+    "services": {
+      "immich-memories-inference": {
+        "image": "ghcr.io/sam-dumont/immich-video-memory-generator/inference:${IMMICH_MEMORIES_VERSION:-latest}-cuda",
+        "deploy": {
+          "resources": {
+            "reservations": {
+              "devices": [
+                {
+                  "driver": "nvidia",
+                  "count": 1,
+                  "capabilities": [
+                    "gpu"
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      },
+      "immich-memories-caption-models": {
+        "image": "ghcr.io/ggml-org/llama.cpp:server-cuda-b10920"
+      },
+      "immich-memories-captioner": {
+        "image": "ghcr.io/ggml-org/llama.cpp:server-cuda-b10920",
+        "environment": {
+          "LLAMA_ARG_N_GPU_LAYERS": "99"
+        },
+        "deploy": {
+          "resources": {
+            "reservations": {
+              "devices": [
+                {
+                  "driver": "nvidia",
+                  "count": 1,
+                  "capabilities": [
+                    "gpu"
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  },
+  "worker": {
+    "services": {
+      "gpu-worker": {
+        "image": "ghcr.io/sam-dumont/immich-video-memory-generator/inference:${IMMICH_MEMORIES_VERSION:-latest}-cuda",
+        "command": [
+          "python",
+          "-m",
+          "immich_memories_inference.gpu_worker"
+        ],
+        "restart": "unless-stopped",
+        "ports": [
+          "${GPU_WORKER_BIND_ADDRESS:-127.0.0.1}:8092:8092"
+        ],
+        "environment": {
+          "IMMICH_MEMORIES_INFERENCE_HOST": "0.0.0.0",
+          "IMMICH_MEMORIES_INFERENCE_CACHE_DIR": "/cache",
+          "IMMICH_MEMORIES_RENDER_WORKER_TOKEN": "${RENDER_WORKER_TOKEN:?Set the shared render token}",
+          "IMMICH_MEMORIES_RENDER_WORKER_IMMICH_URL": "${IMMICH_URL:?Set the app's Immich URL}",
+          "IMMICH_MEMORIES_RENDER_WORKER_DIRECTORY": "/app/output/render-worker",
+          "NVIDIA_VISIBLE_DEVICES": "all",
+          "NVIDIA_DRIVER_CAPABILITIES": "compute,video,utility"
+        },
+        "volumes": [
+          "gpu-model-cache:/cache",
+          "gpu-render-scratch:/app/output"
+        ],
+        "deploy": {
+          "resources": {
+            "reservations": {
+              "devices": [
+                {
+                  "driver": "nvidia",
+                  "count": 1,
+                  "capabilities": [
+                    "gpu"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        "healthcheck": {
+          "test": [
+            "CMD",
+            "python",
+            "-c",
+            "import os, urllib.request; urllib.request.urlopen('http://localhost:8092/ping', timeout=5).close(); request = urllib.request.Request('http://localhost:8092/render/health', headers={'Authorization': 'Bearer ' + os.environ['IMMICH_MEMORIES_RENDER_WORKER_TOKEN']}); urllib.request.urlopen(request, timeout=5).close()"
+          ],
+          "start_period": "60s",
+          "interval": "30s",
+          "timeout": "10s",
+          "retries": 3
+        }
+      }
+    },
+    "volumes": {
+      "gpu-model-cache": null,
+      "gpu-render-scratch": null
+    }
+  },
+  "postgres": {
+    "services": {
+      "immich-memories": {
+        "depends_on": {
+          "postgres": {
+            "condition": "service_healthy"
+          }
+        },
+        "environment": {
+          "IMMICH_MEMORIES_DATABASE_URL": "postgresql+psycopg://immich_memories:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}@postgres:5432/immich_memories"
+        }
+      },
+      "postgres": {
+        "image": "postgres:16@sha256:1a6ab3f5345eb6dbe04a1349529caabdb0ab09293a09590fad07b2246bfa4b54",
+        "environment": {
+          "POSTGRES_USER": "immich_memories",
+          "POSTGRES_PASSWORD": "${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}",
+          "POSTGRES_DB": "immich_memories"
+        },
+        "volumes": [
+          "immich-memories-postgres-data:/var/lib/postgresql/data"
+        ],
+        "healthcheck": {
+          "test": [
+            "CMD-SHELL",
+            "pg_isready -U immich_memories -d immich_memories"
+          ],
+          "interval": "5s",
+          "timeout": "5s",
+          "retries": 10
+        },
+        "restart": "unless-stopped",
+        "deploy": {
+          "resources": {
+            "limits": {
+              "memory": "512M"
+            }
+          }
+        }
+      }
+    },
+    "volumes": {
+      "immich-memories-postgres-data": {}
+    }
+  }
+}

@@ -125,30 +125,23 @@ on its own port. A container does not see the Mac's GPU: configure a
 
 ## Docker and Linux, with llama.cpp
 
-The compose file ships this as a profile: one service downloads and digest-checks the weights, one
-serves them.
-
+The released GPU tier file includes a weight downloader and a caption server. The downloader
+checks both pinned digests before starting the server:
 
 ```bash
-docker compose --profile captioner up -d
+docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
 curl -s localhost:8094/v1/models
 ```
 
-The first `up` downloads about 546 MB of model and projector weights, plus the container
-image layers. Later starts reuse the weights after the digest check.
-Compose publishes captions on host port **8094** and inference on **8092**, so both
-profiles can run together. Inside the Compose network both services still use port 8092.
+The first start downloads about 546 MB of model and projector weights, plus container image
+layers. Subsequent starts verify the cached weights. Compose publishes captions on host port
+**8094** and inference on **8092**. Inside the network, both use port 8092. The GPU preset supplies
+those service URLs as defaults below saved Settings. Existing installs can change the inference
+and caption URLs in Settings; runtime URL environment overrides would pin them above Settings.
 
-Point the app at the captioner and a GPU inference service in `docker-compose.yml`:
-
-```yaml
-IMMICH_MEMORIES_TIER: "auto"
-IMMICH_MEMORIES_INFERENCE__FACTS_BASE_URL: "http://immich-memories-inference:8092"
-IMMICH_MEMORIES_EDITORIAL__PREPARATION__CAPTION_BASE_URL: "http://immich-memories-captioner:8092/v1"
-```
-
-The inference service must report CUDA for automatic GPU selection. A CPU service alone keeps
-selection on NAS. Preparation follows the product tier; do not set a separate preparation tier.
+GPU is a requested tier, not proof of a working device. Run preflight after startup. CPU
+inference does not pass the GPU compute check. Preparation follows the product tier; do not
+set a separate preparation tier.
 
 Running `ghcr.io/ggml-org/llama.cpp:server` by hand works the same way, with the weights
 bind-mounted at `/models` and
@@ -170,39 +163,18 @@ any library picture is sent. Preflight does not validate image responses.
 
 ### On an NVIDIA host
 
-Two halves, neither of which works alone: the tag that carries CUDA
-(`export CAPTIONER_TAG=server-cuda-b10920`) and the device. From a checkout the device comes from
-`docker/hwaccel.captioner.yml`. That file holds `extends:` targets, not services, so it cannot go
-on the command line as `-f` itself; a three-line override pulls its `cuda` block into the
-captioner:
+Add the released CUDA file to the base and GPU files:
 
 ```bash
-cat > captioner.cuda.yml <<'EOF'
-services:
-  immich-memories-captioner:
-    extends: { file: docker/hwaccel.captioner.yml, service: cuda }
-EOF
-CAPTIONER_TAG=server-cuda-b10920 docker compose -f docker-compose.yml -f captioner.cuda.yml --profile captioner up -d
+docker compose -f docker-compose.yml -f docker-compose.gpu.yml -f docker-compose.cuda.yml up -d
 ```
 
-A downloaded `docker-compose.yml` reads no file beside itself, so the same two blocks ship in the
-captioner service commented out. Uncomment both:
+It selects the pinned `server-cuda-b10920` caption runtime, requests the NVIDIA device and sets
+`LLAMA_ARG_N_GPU_LAYERS=99`. No separate captioner version variable or hand-written override is
+needed. The value 99 offloads all 32 layers of the pinned 500M model. Install the NVIDIA driver
+and container toolkit first, then check captions and inference with preflight.
 
-```yaml
-    environment:
-      LLAMA_ARG_N_GPU_LAYERS: "99"
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities:
-                - gpu
-```
-
-99 is "all of them", and a 500M model has 32. By hand that is `--gpus all`, the `server-cuda-b10920` image
-and `--n-gpu-layers 99`. Optional app concurrency, after measuring the server under load:
+Optional app concurrency, after measuring the server under load:
 
 ```yaml
 IMMICH_MEMORIES_EDITORIAL__PREPARATION__CAPTION_CONCURRENCY: "4"

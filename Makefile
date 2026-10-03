@@ -71,10 +71,8 @@ help:
 	@echo "  clean        Remove build artifacts"
 	@echo "  clean-all    Remove everything (build + cache + venv)"
 
-# ======================================================================
-# Development
-# ======================================================================
-
+# ===============================================================# Development
+# ===============================================================
 install:
 	uv sync --no-dev
 
@@ -139,10 +137,8 @@ cli:
 preflight:
 	uv run immich-memories preflight -v
 
-# ======================================================================
-# Testing
-# ======================================================================
-
+# ===============================================================# Testing
+# ===============================================================
 test:
 	uv run pytest -v
 
@@ -443,10 +439,8 @@ test-integration:  ## Run ALL integration tests per-suite (requires FFmpeg/Immic
 	[print(f'    {float(t.get(\"time\",0)):>7.1f}s  {t.get(\"classname\").split(\".\")[-1]}::{t.get(\"name\")}') for t in tests]; \
 	print('═══════════════════════════════════════════════════')"
 
-# ======================================================================
-# E2E Tests (Playwright)
-# ======================================================================
-
+# ===============================================================# E2E Tests (Playwright)
+# ===============================================================
 playwright-install:  ## Install Playwright browsers for E2E tests
 	uv run playwright install chromium
 
@@ -492,10 +486,8 @@ test-one:  ## Run one test file or node id: make test-one T=tests/test_foo.py
 test-scoring:
 	uv run pytest tests/test_scoring.py -v
 
-# ======================================================================
-# Code Quality
-# ======================================================================
-
+# ===============================================================# Code Quality
+# ===============================================================
 # Every Python tree the gates cover. The inference service ships as its own
 # image and is its own top-level package, so naming it once here is what keeps
 # it inside the same lint, type, complexity and dead-code gates as the app.
@@ -836,10 +828,8 @@ critique:  ## Run self-critique checks for AI code smells
 pre-commit:
 	uv run pre-commit run --all-files
 
-# ======================================================================
-# Building
-# ======================================================================
-
+# ===============================================================# Building
+# ===============================================================
 # A wheel carries the built client (hatch_build.py refuses one without it), so build it first.
 build: web-client
 	uv run python scripts/check_web_brand.py --require-bundle
@@ -849,10 +839,8 @@ build-wheel: web-client
 	uv run python scripts/check_web_brand.py --require-bundle
 	uv build --wheel
 
-# ======================================================================
-# Docker
-# ======================================================================
-
+# ===============================================================# Docker
+# ===============================================================
 DOCKER_IMAGE := immich-memories
 DOCKER_TAG := latest
 GIT_SHORT_SHA := $(shell git rev-parse --short HEAD)
@@ -926,10 +914,8 @@ compose-check:  ## Fail when docker-compose.yml needs a file that a curl of it a
 		echo "docker-compose.yml stands alone, all three profiles, and takes example.env as .env"; \
 	fi
 
-# ======================================================================
-# Cleanup
-# ======================================================================
-
+# ===============================================================# Cleanup
+# ===============================================================
 clean:
 	rm -rf build/
 	rm -rf dist/
@@ -963,10 +949,8 @@ clean-all: clean clean-all-cache
 	rm -rf uv.lock
 	@echo "All artifacts removed"
 
-# ======================================================================
-# Utilities
-# ======================================================================
-
+# ===============================================================# Utilities
+# ===============================================================
 # Show project info
 info:
 	@echo "Project: immich-memories"
@@ -985,10 +969,8 @@ release:
 	uv run semantic-release version
 	uv run semantic-release publish
 
-# ======================================================================
-# Documentation (Docusaurus)
-# ======================================================================
-
+# ===============================================================# Documentation (Docusaurus)
+# ===============================================================
 docs-cli:
 	uv run python scripts/generate_cli_docs.py
 
@@ -1075,7 +1057,7 @@ docs-dev:
 docs-build:
 	cd docs-site && npm run build
 
-docs-check:
+docs-check: docs-setup-check
 	@log_file=$$(mktemp "$${TMPDIR:-/tmp}/docs-build.XXXXXX") || exit $$?; \
 	status=0; \
 	(cd docs-site && npm run build) >"$$log_file" 2>&1 || status=$$?; \
@@ -1192,3 +1174,13 @@ docs-commands:  ## Statically check documented CLI commands and Make targets
 	uv run python scripts/check_docs_commands.py
 
 include $(dir $(lastword $(MAKEFILE_LIST)))scripts/image-maintenance.mk
+.PHONY: docs-setup docs-setup-check docs-serve
+docs-setup:  ## Refresh the builder from the shipped Compose templates
+	uv run --no-project --with pyyaml==6.0.3 python scripts/sync_setup_templates.py
+
+docs-setup-check:  ## Refuse drift between setup-builder and release templates
+	uv run --no-project --with pyyaml==6.0.3 python scripts/sync_setup_templates.py --check
+	cd docs-site && node --experimental-strip-types --test src/components/SetupBuilder/recipes.test.mjs
+
+docs-serve:  ## Serve the built site locally for setup-builder browser checks
+	cd docs-site && npm run serve -- --host 127.0.0.1 --port $(or $(DOCS_PORT),3000)

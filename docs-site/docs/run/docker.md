@@ -190,14 +190,14 @@ You can put the `immich-memories` service in Immich's Compose file. Add
 `IMMICH_URL=http://immich-server:2283`, and add `depends_on: [immich-server]`.
 The service then reaches Immich over that stack's internal network.
 
-## Add-ons, as profiles
+## Add-on services
 
 Get the first film working before adding services.
 
 | Want | Setup |
 |---|---|
-| GPU picture preparation | [Inference service](../better/inference.md), Compose profile `inference` |
-| Image captions | [Caption server](../better/captions.md), profile `captioner` |
+| GPU picture preparation | [Inference service](../better/inference.md), `docker-compose.gpu.yml` |
+| Image captions | [Caption server](../better/captions.md), `docker-compose.gpu.yml` |
 | A text model | [Reader](../better/reader.md) |
 | Faster video encoding | [Hardware encoding](./hardware.md) |
 | Rendering on another box | [Render worker](../better/gpu-render.md) |
@@ -207,10 +207,10 @@ Get the first film working before adding services.
 
 A server on the Docker host is `host.docker.internal`, not `localhost`:
 
-```yaml
-      IMMICH_MEMORIES_LLM__BASE_URL: "http://host.docker.internal:8000/v1"
-      IMMICH_MEMORIES_EDITORIAL__PREPARATION__CAPTION_BASE_URL: "http://host.docker.internal:8092/v1"
-```
+For an existing install, set the reader URL to `http://host.docker.internal:8000/v1` and the
+caption URL to `http://host.docker.internal:8092/v1` in Settings. Full also needs the reader's
+served model and explicit enable switch. The [setup builder](/setup) supplies those values as
+editable defaults for a fresh install.
 
 Docker Desktop resolves that name. On Linux, add this to the service and have the model server
 listen on an address reachable from the bridge, such as `0.0.0.0`:
@@ -222,7 +222,9 @@ listen on an address reachable from the bridge, such as `0.0.0.0`:
 
 ## The product tier in compose {#the-preparation-tier-in-compose}
 
-The Compose file sets `IMMICH_MEMORIES_TIER: "auto"`. See [how it chooses the tier](./requirements.md#the-preparation-tier).
+The base requests NAS through `TIER=nas`. The GPU and Full tier files request their respective
+tiers. Preflight checks whether the selected hardware and services can satisfy that request.
+Saved Settings can override these deployment defaults. See [tier requirements](./requirements.md#the-preparation-tier).
 Keep `IMMICH_MEMORIES_EDITORIAL__PREPARATION__DETECTOR_CACHE_DIR` on the persistent volume when
 writing your own service block, so detector downloads survive a recreate.
 

@@ -704,17 +704,19 @@ def test_no_page_passes_an_extends_overlay_to_compose_as_a_file() -> None:
 
 
 def test_the_documented_cuda_override_extends_the_captioner_overlay() -> None:
-    """The heredoc caption-server.md writes, read back: it has to name a real target."""
+    """The documented release files supply the caption runtime and its GPU reservation."""
     page = (REPO_ROOT / "docs-site/docs/reference/caption-service.md").read_text()
-    start = page.index("cat > captioner.cuda.yml <<'EOF'\n") + len(
-        "cat > captioner.cuda.yml <<'EOF'\n"
-    )
-    override = yaml.safe_load(page[start : page.index("\nEOF\n", start)])
-
-    extends = override["services"][CAPTIONER_SERVICE]["extends"]
-
-    assert (REPO_ROOT / extends["file"]).resolve() == HWACCEL_CAPTIONER.resolve()
-    assert extends["service"] in yaml.safe_load(HWACCEL_CAPTIONER.read_text())["services"]
+    command = "docker compose -f docker-compose.yml -f docker-compose.gpu.yml -f docker-compose.cuda.yml up -d"
+    assert command in page
+    gpu = yaml.safe_load((REPO_ROOT / "docker-compose.gpu.yml").read_text())["services"]
+    cuda = yaml.safe_load((REPO_ROOT / "docker-compose.cuda.yml").read_text())["services"]
+    assert "immich-memories-captioner" in gpu
+    captioner = cuda["immich-memories-captioner"]
+    assert captioner["image"] == cuda["immich-memories-caption-models"]["image"]
+    assert "server-cuda-" in captioner["image"]
+    assert captioner["environment"]["LLAMA_ARG_N_GPU_LAYERS"] == "99"
+    device = captioner["deploy"]["resources"]["reservations"]["devices"][0]
+    assert device == {"driver": "nvidia", "count": 1, "capabilities": ["gpu"]}
 
 
 def _example_env_names() -> list[str]:
