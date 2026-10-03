@@ -147,6 +147,27 @@ first-pass selection or count as a clean end-to-end acceptance run. Rendering us
 fix. Keep that revision difference when reading the comparison. The remaining maximum exports and
 the six uninterrupted acceptance runs are still required before the PR becomes ready.
 
+### M2 Full and Kubernetes GPU follow-up
+
+Both saved cuts also produced 3840×2160, 60 fps, HEVC, 10-bit PQ HDR with BT.2020 primaries
+at balanced quality. Full-file decoding passed. These reuse selection; they are export timings.
+
+| Configuration | Export wall | Render | Original music phase | Original output bytes | Music outcome |
+|---|---:|---:|---:|---:|---|
+| M2 Full | 257.069 s | 220.331 s | 15.544 s | 68,882,034 | Bundled fallback: local memory guard |
+| Kubernetes GPU | 999.359 s | 919.246 s | 27.468 s | 106,857,116 | GPU OOM; no added music |
+
+Kubernetes then completed a **music-only repair in 140.068 s**, including ACE-Step generation
+and four-stem Demucs mixing. It reused the existing 4K video; no selection or encoding was repeated.
+The repaired film is 107,715,532 bytes and passed full decoding. The album keeps both versions,
+with the original fallback and the repaired maximum explicitly tagged. The earlier 1080p
+Kubernetes soundtrack repair took 197.506 s and also passed decoding.
+
+M2 Full subsequently completed a saved-cut 1080p render plus local generated music and all four
+stems in 137.184 s. That film passed decoding and was uploaded separately. Its selection is still
+from the first pass. The M2 4K film still carries its bundled soundtrack; generating a track alone
+does not repair that film or establish a clean handoff from a cold selection.
+
 ## Source provenance
 
 The first four attempted configurations (NAS Basic, NAS GPU, M5 Full and M2 Basic) executed
@@ -195,11 +216,20 @@ cgroup OOM events. The music failure was GPU VRAM exhaustion, not that pod's RAM
 - **M2 music:** ACE-Step's local memory guard refused the 7 GB profile with 5–6 GB available on Full;
   Basic also hit the guard. Full used bundled llama.cpp. The reader was absent when checked after
   completion, but no process-by-process memory snapshot exists at the failing handoff. A retained
-  reader, caption service, renderer allocation or host pressure has not been established as the cause.
+  reader, caption service, renderer allocation or host pressure was not established at that handoff.
+  Follow-up measurements found the separate caption server at 2.3 GiB physical footprint. Local
+  music nevertheless completed with that server present. A synthetic Laya load/close probe freed
+  about 780 MiB more after cyclic garbage collection, even after the existing allocator cleanup.
+  The proposed handoff now collects unreachable Python objects before clearing runtime buffers;
+  cold end-to-end verification is pending. The guard remains unchanged.
 - **Single-GPU music:** ACE-Step exhausted the shared T1000 in all three Kubernetes attempts.
   Its error reported only 14.44 MiB free. Existing inference processes later accounted for about
   1.6 GiB, but attribution at the failed handoff is incomplete. Sequential steps alone do not prove
-  that the previous step freed VRAM. Fix and verify the complete one-GPU pipeline in one run.
+  that the previous step freed VRAM. A later 4K attempt also exhausted VRAM. The title runtime
+  retained native allocations after its Python renderers were dropped: a real 4K CUDA probe freed
+  610 MiB by releasing that runtime, then rendered an identical frame after reinitialization.
+  The worker fix releases it before relinquishing the render phase. The music-only repairs passed;
+  a complete cold one-GPU run still needs to verify the entire handoff.
 - **Motion descriptions:** [#1633](https://github.com/sam-dumont/immich-memories/pull/1633) made missing
   optional descriptions fall back to plain facts. Cuts do not acquire those lines; preparation does.
   Motion-description coverage was absent here. Live Photo playback and motion measurement are
