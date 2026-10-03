@@ -30,7 +30,7 @@ retains original revisions, dates, timings and qualifications.
 ## Installation and evidence
 
 No current-candidate Immich patch version is established for these rows. The
-[compatibility table](./requirements.md#supported-and-tested) separates API support, CI targets and verified versions.
+[compatibility table](./compatibility.md) separates API support, CI targets and verified versions.
 “Not recorded” means the old report cannot supply the missing field, not that it was unnecessary.
 A dash is deliberately not used as a substitute for evidence.
 

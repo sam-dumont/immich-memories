@@ -13,6 +13,8 @@ import InstallationFiles from '@site/src/components/InstallationFiles';
 
 See [Can I run this?](../run/tested-deployments.md) for exact platform evidence, candidate versions and untested routes.
 
+[Immich compatibility](../run/compatibility.md) distinguishes API majors, test targets and candidate-tested patch versions.
+
 ## 1. Download the files
 
 <InstallationFiles />

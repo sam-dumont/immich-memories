@@ -18,8 +18,9 @@ import InstallationFiles from '@site/src/components/InstallationFiles';
 
 ### 2. Connect Immich
 
-In Immich, open **Account Settings > API Keys > New API Key**. **All** works; the
-[minimal permissions](#the-api-key) are below. Fill in `.env`:
+In Immich, open **Account Settings > API Keys > New API Key** and select the
+[ten read permissions](#the-api-key). Leave **All** unchecked. An existing All key is a broad
+legacy configuration; replace it with the minimum read set unless you separately enable uploads. Fill in `.env`:
 
 ```ini
 IMMICH_URL=http://192.168.1.10:2283
@@ -324,3 +325,7 @@ docker compose exec immich-memories immich-memories generate --year 2025 --music
 For a source checkout, `make docker` fills in the version and git metadata. The normal install
 uses the published image. `INSTALL_EXTRAS=none make docker` builds a slim image without the
 classifiers needed for films.
+
+## Stop or remove this installation
+
+[Stop, reset and uninstall](./lifecycle.md) separates retaining data for reinstall from deleting app state.

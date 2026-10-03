@@ -96,3 +96,7 @@ Back up the store, change `image_tag`, plan/apply, fetch current pins and run pr
 ## Troubleshooting
 
 [Pod, storage and GPU checks](./reference/terraform.md#troubleshooting).
+
+## Stop or remove this installation
+
+[Stop, reset and uninstall](./lifecycle.md) separates retaining data for reinstall from deleting app state.

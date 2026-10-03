@@ -9,6 +9,8 @@ Start with the machine that already runs Immich.
 
 See [Can I run this?](./tested-deployments.md) for exact platform evidence, candidate versions and untested routes.
 
+[Immich compatibility](./compatibility.md) distinguishes API majors, test targets and candidate-tested patch versions.
+
 ## Hardware
 
 Allow this **in addition to what Immich uses**:

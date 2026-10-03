@@ -150,3 +150,7 @@ uv run immich-memories ui
 On Apple Silicon, use `--extra all-mac`. Add `--extra auth` for OIDC.
 Inside a checkout, use `uv run immich-memories ...`; it does not install a global command.
 The published wheel and Docker image already contain the web client.
+
+## Stop or remove this installation
+
+[Stop, reset and uninstall](./lifecycle.md) separates retaining data for reinstall from deleting app state.
