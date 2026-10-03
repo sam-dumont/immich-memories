@@ -195,7 +195,7 @@ source = "vcs"
 [tool.hatch.version.raw-options]
 # Exact releases have no local suffix. Unreleased builds keep their commit identity.
 local_scheme = "node-and-date"
-tag_regex = '^v(?P<version>\d+\.\d+\.\d+(?:-rc\.\d+)?)$'
+tag_regex = '^v(?P<version>\d+\.\d+\.\d+(?:-(?:rc|dev)\.\d+)?)$'
 scm.git.describe_command = "git describe --dirty --tags --long --match v[0-9]*.[0-9]*.[0-9]*"
 
 [tool.hatch.build.hooks.vcs]

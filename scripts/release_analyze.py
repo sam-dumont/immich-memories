@@ -245,11 +245,31 @@ def format_outputs(decision: Decision) -> dict[str, str]:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--force-version", default=None)
-    parser.add_argument("--channel", choices=("stable", "rc"), default="stable")
+    parser.add_argument("--channel", choices=("stable", "rc", "dev"), default="stable")
     images = parser.add_mutually_exclusive_group()
     images.add_argument("--inference-only", action="store_true")
     images.add_argument("--app-only", action="store_true")
     args = parser.parse_args()
+
+    if args.channel == "dev":
+        run_id = os.environ.get("GITHUB_RUN_ID", "")
+        if not run_id.isdecimal() or int(run_id) < 1:
+            parser.error("dev rehearsal requires a positive GITHUB_RUN_ID")
+        if args.inference_only or args.app_only:
+            parser.error("dev rehearsal publishes the complete artifact set; omit image-only flags")
+        if os.environ.get("GITHUB_RUN_ATTEMPT", "1") != "1":
+            parser.error(
+                "dispatch a new dev rehearsal; reruns must not replace candidate artifacts"
+            )
+        decision = Decision(
+            should_release=True,
+            next_version=f"0.0.0-dev.{run_id}",
+            release_type="development",
+            prerelease=True,
+        )
+        for key, value in format_outputs(decision).items():
+            print(f"{key}={value}")
+        return 0
 
     if args.inference_only or args.app_only:
         sha = os.environ.get("GITHUB_SHA", "")

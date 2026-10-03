@@ -24,7 +24,7 @@ def pin_images(data: bytes, version: str) -> bytes:
 
 
 def package_bundle(root: Path, version: str, destination: Path) -> None:
-    if not re.fullmatch(r"\d+\.\d+\.\d+(-rc\.\d+)?", version):
+    if not re.fullmatch(r"\d+\.\d+\.\d+(-(?:rc|dev)\.\d+)?", version):
         raise ValueError("Expected a release version without the v prefix")
     # Only tracked files: local secrets and terraform state must never enter a release.
     paths = (

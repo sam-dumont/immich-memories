@@ -509,3 +509,14 @@ def test_setup_template_check_does_not_install_application_extras():
         check=False,
     )
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_rehearsal_native_install_uses_the_exact_public_wheel():
+    result = _build(_build_version="0.0.0-dev.12345", version="0.0.0-dev.12345", platform="mac")
+    assert result["error"] is None
+    assert (
+        "immich-memories[all-mac] @ https://github.com/sam-dumont/immich-memories/releases/download/v0.0.0-dev.12345/immich_memories-0.0.0.dev12345-py3-none-any.whl"
+        in result["commands"]
+    )
+    assert "git clone" not in result["commands"]
+    assert "==0.0.0" not in result["commands"]

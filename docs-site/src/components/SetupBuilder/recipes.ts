@@ -22,7 +22,7 @@ const quote = (value: string): string => `'${value.replace(/'/g, "'\\''")}'`;
 const dotenv = (value: string): string => `'${value.replace(/'/g, "\\'")}'`;
 
 function releaseVersion(version: string): string | null {
-  return /^v?\d+\.\d+\.\d+(?:-rc\.\d+)?$/.test(version) ? version.replace(/^v/, '') : null;
+  return /^v?\d+\.\d+\.\d+(?:-(?:rc|dev)\.\d+)?$/.test(version) ? version.replace(/^v/, '') : null;
 }
 
 export function assetBase(version: string): string {
@@ -30,6 +30,16 @@ export function assetBase(version: string): string {
   return release !== null
     ? `${repository}/releases/download/v${release}`
     : `${repository}/releases/latest/download`;
+}
+
+export function nativeInstallCommand(version: string, extras: 'all' | 'all-mac'): string {
+  const release = releaseVersion(version);
+  if (!release) return '';
+  const python = release.replace('-rc.', 'rc').replace('-dev.', '.dev');
+  const spec = release.includes('-dev.')
+    ? `immich-memories[${extras}] @ ${assetBase(version)}/immich_memories-${python}-py3-none-any.whl`
+    : `immich-memories[${extras}]==${python}`;
+  return `uv tool install --prerelease allow "${spec}"${extras === 'all-mac' ? ' --with laya-mlx' : ''}`;
 }
 
 export function validateSetup(setup: Setup): string | null {
@@ -114,9 +124,6 @@ function macRecipe(setup: Setup): Result {
       llm: {enabled: full, base_url: setup.readerUrl, api_key: setup.readerApiKey || '', model: setup.readerModel || 'gemma-4-E4B-it-Q4_0'},
     },
   };
-  const release = releaseVersion(setup.version);
-  const pinned = release !== null;
-  const version = release?.replace('-rc.', 'rc');
   const caption = setup.tier === 'basic' ? [] : [
     'brew install lablup/tap/mlxcel',
     'SNAPSHOT=$(uvx --from huggingface-hub hf download mlx-community/SmolVLM2-500M-Video-Instruct-mlx --revision fa57db46815177fbdfd65cc85a2b3416a8332268)',
@@ -125,7 +132,7 @@ function macRecipe(setup: Setup): Result {
   return {error: null, files: [{name: 'config.yaml', language: 'yaml', content: JSON.stringify(config, null, 2)}], commands: [
     'brew install uv ffmpeg-full llama.cpp',
     'export PATH="$(brew --prefix ffmpeg-full)/bin:$PATH"',
-    `uv tool install ${pinned ? '--prerelease allow ' : ''}"immich-memories[all-mac]${pinned ? `==${version}` : ''}" --with laya-mlx`,
+    nativeInstallCommand(setup.version, 'all-mac'),
     'mkdir -p ~/.immich-memories',
     '# Save the generated config.yaml in ~/.immich-memories.',
     'umask 077',

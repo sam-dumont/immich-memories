@@ -19,7 +19,7 @@ COMPOSE_ASSETS = (
 
 def package_compose_assets(root: Path, version: str, destination: Path) -> list[Path]:
     """Render only public setup templates; local .env/config secrets never enter a release."""
-    if not re.fullmatch(r"\d+\.\d+\.\d+(-rc\.\d+)?", version):
+    if not re.fullmatch(r"\d+\.\d+\.\d+(-(?:rc|dev)\.\d+)?", version):
         raise ValueError("Expected a release version without the v prefix")
     destination.mkdir(parents=True, exist_ok=True)
     outputs = []

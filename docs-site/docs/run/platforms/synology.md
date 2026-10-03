@@ -148,4 +148,4 @@ It does not record a Container Manager version. Its UI access used a custom tran
 **does not verify this authenticated proxy route**, the normal tunnel or the Project wizard.
 These routes need a fresh published-candidate test recording DSM/Container Manager versions,
 CPU, image digest, paths, cold timings, denied anonymous access and a playable film.
-See [#1924](https://github.com/sam-dumont/immich-video-memory-generator/issues/1924).
+See [#1924](https://github.com/sam-dumont/immich-memories/issues/1924).

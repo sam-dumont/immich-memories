@@ -383,3 +383,90 @@ def test_docs_publication_waits_for_matching_deployment_assets():
     jobs = release_workflow()["jobs"]
     assert "deployment-bundle" in jobs["deploy-docs"]["needs"]
     assert "release" in jobs["deployment-bundle"]["needs"]
+
+
+def test_published_installation_inputs_have_matching_checksums_and_image_identity(tmp_path):
+    import hashlib
+    import sys
+
+    step = next(
+        step
+        for step in release_workflow()["jobs"]["deployment-bundle"]["steps"]
+        if step.get("name") == "Package and attach deployment files"
+    )
+    binaries = tmp_path / "bin"
+    binaries.mkdir()
+    # WHY: registry/release I/O is the boundary; packaging and shell execution stay real.
+    fake_gh = binaries / "gh"
+    fake_gh.write_text(
+        f"#!{sys.executable}\n"
+        "import sys\nfrom pathlib import Path\n"
+        "if sys.argv[2] == 'download':\n"
+        "    destination = Path(sys.argv[sys.argv.index('--dir') + 1])\n"
+        "    (destination / 'immich_memories-0.0.0.dev12345-py3-none-any.whl').write_bytes(b'fixture wheel')\n"
+        "else:\n"
+        "    assert all(Path(name).is_file() for name in sys.argv[4:])\n"
+    )
+    fake_gh.chmod(0o700)
+    manifest = {
+        "digest": "sha256:" + "a" * 64,
+        "manifests": [{"platform": {"os": "linux", "architecture": "amd64"}}],
+    }
+    docker = binaries / "docker"
+    docker.write_text(
+        f'#!/bin/sh\nprintf \'%s\\n\' "$4" >> "$RUNNER_TEMP/inspected-images"\n'
+        f"printf '%s' '{json.dumps(manifest)}'\n"
+    )
+    docker.chmod(0o700)
+    if shutil.which("sha256sum") is None:
+        checksum = binaries / "sha256sum"
+        checksum.write_text('#!/bin/sh\nexec shasum -a 256 "$@"\n')
+        checksum.chmod(0o700)
+    subprocess.run(
+        ["bash", "-eu", "-o", "pipefail", "-c", step["run"]],
+        env={
+            **os.environ,
+            "PATH": f"{binaries}:{os.environ['PATH']}",
+            "RUNNER_TEMP": str(tmp_path),
+            "VERSION": "0.0.0-dev.12345",
+            "GITHUB_SHA": "b" * 40,
+        },
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    assert (tmp_path / "inspected-images").read_text().splitlines() == [
+        "ghcr.io/sam-dumont/immich-memories:0.0.0-dev.12345",
+        "ghcr.io/sam-dumont/immich-memories/inference:0.0.0-dev.12345",
+        "ghcr.io/sam-dumont/immich-memories/inference:0.0.0-dev.12345-cuda",
+    ]
+    assets = tmp_path / "immich-memories-compose-0.0.0-dev.12345"
+    identity = json.loads((assets / "installation.json").read_text())
+    assert identity["version"] == "0.0.0-dev.12345"
+    assert identity["source_commit"] == "b" * 40
+    assert set(identity["images"]) == {"app", "inference", "cuda"}
+    assert identity["images"]["app"] == manifest
+    checksums = dict(
+        line.split(maxsplit=1)[::-1] for line in (assets / "SHA256SUMS").read_text().splitlines()
+    )
+    bundle = "immich-memories-deploy-0.0.0-dev.12345.tar.gz"
+    assert {
+        bundle,
+        "example.env",
+        "docker-compose.yml",
+        "installation.json",
+        "immich_memories-0.0.0.dev12345-py3-none-any.whl",
+    } <= checksums.keys()
+    for name, digest in checksums.items():
+        assert digest == hashlib.sha256((assets / name).read_bytes()).hexdigest()
+
+
+def test_versioned_native_docs_wait_for_pypi_except_rehearsals():
+    jobs = release_workflow()["jobs"]
+    docs = jobs["deploy-docs"]
+    assert "pypi-publish" in docs["needs"]
+    assert "needs.pypi-publish.result == 'success'" in docs["if"]
+    assert "inputs.channel == 'dev'" in docs["if"]
+    assert "!cancelled()" in docs["if"]
+    for job in ("pypi-publish", "pypi-publish-music"):
+        assert "inputs.channel != 'dev'" in jobs[job]["if"]

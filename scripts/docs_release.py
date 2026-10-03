@@ -8,7 +8,7 @@ import sys
 
 def final_for_candidate(version: str, tags: list[str]) -> str | None:
     """Return the final site to preserve, or publish this release at the root."""
-    if not re.fullmatch(r"v?\d+\.\d+\.\d+-rc\.\d+", version):
+    if not re.fullmatch(r"v?\d+\.\d+\.\d+-(?:rc|dev)\.\d+", version):
         return None
     finals = [tag for tag in tags if re.fullmatch(r"v?\d+\.\d+\.\d+", tag)]
     finals = [tag for tag in finals if int(tag.removeprefix("v").split(".")[0]) >= 1]
