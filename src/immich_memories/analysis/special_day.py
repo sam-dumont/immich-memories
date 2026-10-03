@@ -501,6 +501,7 @@ def _ask(
             temperature=0.1,
             timeout_seconds=timeout_seconds,
             thinking=thinking,
+            response_format={"type": "json_object"},
         )
     )
 
@@ -805,6 +806,7 @@ def _ask_from_captions(  # noqa: PLR0913 - the day, its text, and where the answ
                 timeout_seconds=timeout_seconds,
                 thinking=False,
                 json_object=True,
+                response_format={"type": "json_object"},
                 json_fields=_DAY_FIELDS,
                 json_optional_fields=_DAY_OPTIONAL_FIELDS,
             )

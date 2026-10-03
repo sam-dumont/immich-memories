@@ -170,3 +170,43 @@ def test_unchanged_modes_keep_their_existing_banked_answers(
     )
     # Persisted producer identities measured on main 9ab1bf52, before request-specific selection.
     assert semantic_text_model_identity(config, thinking=False) == banked_identity
+
+
+@pytest.mark.parametrize("provider", ["openai-compatible", "ollama"])
+@pytest.mark.parametrize("override", [None, True, False])
+@pytest.mark.asyncio
+async def test_json_object_mode_does_not_leak_into_a_prose_request(provider, override):
+    from immich_memories.analysis.llm_query import query_llm
+
+    config = LLMConfig(
+        enabled=True,
+        provider=provider,
+        base_url="http://localhost:9999",
+        model="small",
+        structured_output=override,
+    )
+    sent = []
+    replies = iter(['{"ok":true}', "A short title"])
+
+    async def server(url, **options):
+        sent.append(options["json"])
+        answer = next(replies)
+        body = (
+            {"response": answer, "done": True}
+            if provider == "ollama"
+            else {"choices": [{"message": {"content": answer}, "finish_reason": "stop"}]}
+        )
+        return httpx.Response(200, request=httpx.Request("POST", url), json=body)
+
+    # WHY: inspect the external HTTP contract without replacing mode selection or parsing.
+    with patch("httpx.AsyncClient.post", side_effect=server):
+        assert (
+            await query_llm("Return JSON", config, response_format={"type": "json_object"})
+            == '{"ok":true}'
+        )
+        assert await query_llm("Write a short title", config) == "A short title"
+
+    field = "format" if provider == "ollama" else "response_format"
+    expected = "json" if provider == "ollama" else {"type": "json_object"}
+    assert sent[0].get(field) == (None if override is False else expected)
+    assert field not in sent[1]

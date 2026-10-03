@@ -317,7 +317,13 @@ def _read(prompt: str, llm_config: Any, judgments: Store | None) -> str:
         from immich_memories.analysis.llm_query import query_llm
 
         return asyncio.run(
-            query_llm(prompt, llm_config, temperature=0.1, timeout_seconds=_TIMEOUT_SECONDS)
+            query_llm(
+                prompt,
+                llm_config,
+                temperature=0.1,
+                timeout_seconds=_TIMEOUT_SECONDS,
+                response_format={"type": "json_object"},
+            )
         )
     from immich_memories.analysis.editorial_case import TextRequest
     from immich_memories.analysis.editorial_text_gateway import QueryTextRequester
@@ -329,6 +335,7 @@ def _read(prompt: str, llm_config: Any, judgments: Store | None) -> str:
         max_tokens=_ANSWER_TOKENS,
         timeout_seconds=_TIMEOUT_SECONDS,
         json_object=True,
+        response_format={"type": "json_object"},
         json_fields=("occasions",),
     )
     return asyncio.run(QueryTextRequester().request(request, accepts=_readable)).raw
