@@ -21,3 +21,8 @@ The schema validates JSON, not prose. Research Markdown still needs the same
 manual anonymisation and owner review; a green check does not certify it safe.
 The owner must also maintain the external private-terms file with terms from
 past leaks. Do not put those terms in this repository or its test fixtures.
+
+`anonymous-hosted-readers-v1` admits the October 3 hosted-reader measurements:
+fixed provider/model names, public synthetic feature names, anonymous Requests A through E,
+source commits, numeric usage and costs, and explicit outcome flags. Its CSV is a flat copy
+of the validated `.data.json`; neither format carries private prompts or library inventories.
