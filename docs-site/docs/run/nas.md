@@ -21,7 +21,7 @@ For the interface-specific steps, use [Synology DSM](./platforms/synology.md),
 [Unraid](./platforms/unraid.md), [Portainer](./platforms/portainer.md), or
 [TrueNAS](./platforms/truenas.md). These guides include one self-contained Compose file for
 stack editors that do not read a separate `.env` file. Unraid also has a
-[native Docker XML template](https://raw.githubusercontent.com/sam-dumont/immich-video-memory-generator/main/deploy/unraid/immich-memories.xml); see the [Unraid guide](./platforms/unraid.md#native-docker-template).
+[native Docker XML template](https://raw.githubusercontent.com/sam-dumont/immich-memories/main/deploy/unraid/immich-memories.xml); see the [Unraid guide](./platforms/unraid.md#native-docker-template).
 
 After starting, use your platform guide's **container console** to run `immich-memories models fetch`
 and `immich-memories preflight`; no SSH is needed for preparation. From a host terminal instead,
@@ -90,7 +90,7 @@ pin this app to three cores on a four-core NAS:
 Basic films are capped at 1080p. The default 4 GiB memory limit suits that output.
 Budget several hours for the first preparation of a real month on a NAS. A Mac or GPU cluster
 can take about an hour for the same kind of first run; these are planning estimates from
-[the first-run measurements](https://github.com/sam-dumont/immich-video-memory-generator/issues/956),
+[the first-run measurements](https://github.com/sam-dumont/immich-memories/issues/956),
 not a deadline for every library. This is preparation time, before rendering.
 The first film reads the pictures in its period and saves the results; later films reuse matching
 results. Rendering still happens every time.

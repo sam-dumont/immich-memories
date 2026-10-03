@@ -160,7 +160,7 @@ render locally only with `fallback_to_local: true`; with `false`, the run fails.
 Orientation only sets the canvas; it does not change the selection. Speech detection and cut
 selection run before handoff. Music and Immich upload finish on the app after it checks the returned film.
 
-See [worker deployment](https://github.com/sam-dumont/immich-video-memory-generator/tree/main/services/render-worker)
+See [worker deployment](https://github.com/sam-dumont/immich-memories/tree/main/services/render-worker)
 for Docker Compose and Kubernetes examples.
 
 ## Video analysis
@@ -840,7 +840,7 @@ The video cache is not library-sized: it holds the originals being assembled, te
 ## Store database
 
 Where the store lives: owner decisions, the people registry, model answers, run history, automation
-state, the special-days catalogue and the settings you edit in the UI, as they move out of loose files ([#871](https://github.com/sam-dumont/immich-video-memory-generator/issues/871)).
+state, the special-days catalogue and the settings you edit in the UI, as they move out of loose files ([#871](https://github.com/sam-dumont/immich-memories/issues/871)).
 `cache.database` only names a pre-store `cache.db` for the one-time import, and the directory
 the run lock files sit in.
 

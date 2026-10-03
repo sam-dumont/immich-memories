@@ -16,6 +16,7 @@ on:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  GOOGLE_SITE_VERIFICATION: ${{ vars.GOOGLE_SITE_VERIFICATION }}
 
 concurrency:
   group: docs-deploy
@@ -30,7 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     # Model artifact releases (models-v*) are not app releases, and Pages refuses their tags.
     if: >-
-      github.repository == 'sam-dumont/immich-video-memory-generator'
+      github.repository_id == '1174219883'
       && !(github.event_name == 'release' && startsWith(github.event.release.tag_name, 'models-'))
     # Building only reads the tree; the Pages artifact upload runs on the
     # Actions runtime token, not GITHUB_TOKEN.
@@ -131,7 +132,7 @@ jobs:
 
   deploy:
     name: Deploy to GitHub Pages
-    if: github.repository == 'sam-dumont/immich-video-memory-generator'
+    if: github.repository_id == '1174219883'
     needs: build
     runs-on: ubuntu-latest
     # The deploy-pages contract: pages to publish, id-token to prove which

@@ -18,7 +18,7 @@ SQLite's persistent volume and the model-fetch init container together in the su
 Terraform has its own inputs and resources; its differences are documented on that page.
 
 There is no project Helm chart or maintained `app-template` values file.
-If you need a Helm path, [ask for it](https://github.com/sam-dumont/immich-video-memory-generator/issues/new)
+If you need a Helm path, [ask for it](https://github.com/sam-dumont/immich-memories/issues/new)
 and describe your setup. Helm support will be considered when people request it.
 
 ## Generated tier setup
@@ -72,7 +72,7 @@ set only when this account receives films; leave **All** unchecked. Put that sco
 Secret below.
 
 Download/extract the deployment bundle from your chosen
-[release](https://github.com/sam-dumont/immich-video-memory-generator/releases). Its image pins
+[release](https://github.com/sam-dumont/immich-memories/releases). Its image pins
 match that release. If using a source checkout instead, check `base/kustomization.yaml`: committed
 pins can trail releases. Image tags have no `v` prefix.
 
@@ -372,7 +372,7 @@ Releases attest each platform image digest. Verify the exact platform digest you
 with GitHub CLI (authenticate to GHCR first):
 
 ```bash
-gh attestation verify "oci://ghcr.io/sam-dumont/immich-video-memory-generator@sha256:<digest>" --repo sam-dumont/immich-video-memory-generator
+gh attestation verify "oci://ghcr.io/sam-dumont/immich-video-memory-generator@sha256:<digest>" --repo sam-dumont/immich-memories
 ```
 
 Replace `<digest>` with the platform image's SHA-256 value. Use the inference image's

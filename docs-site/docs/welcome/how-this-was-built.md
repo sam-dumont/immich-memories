@@ -136,7 +136,7 @@ scoring out:
 > "ANY PICTURE IN THIS SHOULD BE ABLE, IN ITSELF, TO BE ON THE MEMORY."
 
 I studied photography, and that is how a photographer edits: cull, group, pick, sequence. Selection
-became an edit ([#764](https://github.com/sam-dumont/immich-video-memory-generator/issues/764)).
+became an edit ([#764](https://github.com/sam-dumont/immich-memories/issues/764)).
 
 ## Training models, and throwing them away
 
@@ -203,7 +203,7 @@ could not finish a first cut: "running on docker compose / nas (what 99% of peop
 currently not ready for prime time". That turned into `models fetch`, an inference service modelled
 on Immich's own machine-learning container, and a matrix of real installs.
 
-Then on [#1033](https://github.com/sam-dumont/immich-video-memory-generator/issues/1033) someone
+Then on [#1033](https://github.com/sam-dumont/immich-memories/issues/1033) someone
 rendered a 75-minute film on a two-core Synology with no model at all. A wrong check marked it failed
 after 25 hours (the file was fine), and they still wrote it was "genuinely impressive how well it
 handles transitions between clips" and "feels smooth and well-paced even with zero LLM involvement,
@@ -258,5 +258,5 @@ circles". The credits went the way you'd expect.
 On September 28, 2026, about ten Claude sessions and a coordinator merged more than 40 pull
 requests into `main`: the store (SQLite or PostgreSQL), the new web UI, and these docs among them. The
 gates in the `Makefile` are what kept that from falling apart;
-[DISCLAIMER.md](https://github.com/sam-dumont/immich-video-memory-generator/blob/main/DISCLAIMER.md)
+[DISCLAIMER.md](https://github.com/sam-dumont/immich-memories/blob/main/DISCLAIMER.md)
 says who does what, and where the approach fell short.

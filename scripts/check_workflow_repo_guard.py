@@ -19,7 +19,8 @@ from pathlib import Path
 import yaml
 
 WORKFLOWS = Path(".github/workflows")
-GUARD = "github.repository == 'sam-dumont/immich-video-memory-generator'"
+# Repository ID survives renames; the private GPU mirror has a different ID.
+GUARD = "github.repository_id == '1174219883'"
 MIRROR_ONLY = {"integration.yml"}
 
 

@@ -33,7 +33,7 @@ key, and that is then all the worker holds.
 
 Use the same app version on both sides: the app refuses a worker on another version before it
 sends any footage. On the GPU box, with the NVIDIA container toolkit installed, copy
-[`services/render-worker/compose.yaml`](https://github.com/sam-dumont/immich-video-memory-generator/blob/main/services/render-worker/compose.yaml)
+[`services/render-worker/compose.yaml`](https://github.com/sam-dumont/immich-memories/blob/main/services/render-worker/compose.yaml)
 into an empty directory with this `.env`:
 
 ```bash
@@ -47,7 +47,7 @@ The worker refuses to start with a token under 32 characters or one with a place
 `change-me`; `openssl rand -hex 32` gives one that passes. `docker compose up -d` starts it on port 8093. For Kubernetes the same folder has
 `kubernetes.yaml`: it wants a Secret with `token` and `immich-url`, one NVIDIA device and the
 `nvidia` runtime class. Every worker setting is in the
-[worker's README](https://github.com/sam-dumont/immich-video-memory-generator/tree/main/services/render-worker).
+[worker's README](https://github.com/sam-dumont/immich-memories/tree/main/services/render-worker).
 
 Then on the NAS:
 

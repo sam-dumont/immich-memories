@@ -4,12 +4,12 @@
 
 Only the latest release receives security fixes. The project follows semantic
 versioning and ships from `main`; upgrade to the newest tag on
-[GitHub Releases](https://github.com/sam-dumont/immich-video-memory-generator/releases)
+[GitHub Releases](https://github.com/sam-dumont/immich-memories/releases)
 before reporting.
 
 | Version | Supported          |
 | ------- | ------------------ |
-| [latest release](https://github.com/sam-dumont/immich-video-memory-generator/releases) | :white_check_mark: |
+| [latest release](https://github.com/sam-dumont/immich-memories/releases) | :white_check_mark: |
 | older   | :x:                |
 
 ## Reporting a Vulnerability
@@ -17,7 +17,7 @@ before reporting.
 If you discover a security vulnerability in Immich Memories, please report it responsibly:
 
 1. **Do NOT** open a public GitHub issue for security vulnerabilities
-2. Use [GitHub's private vulnerability reporting](https://github.com/sam-dumont/immich-video-memory-generator/security/advisories/new) (preferred), or email the maintainer at the address on the [GitHub profile](https://github.com/sam-dumont)
+2. Use [GitHub's private vulnerability reporting](https://github.com/sam-dumont/immich-memories/security/advisories/new) (preferred), or email the maintainer at the address on the [GitHub profile](https://github.com/sam-dumont)
 3. Include:
    - Description of the vulnerability
    - Steps to reproduce
@@ -36,7 +36,7 @@ The [threat model](docs/security/threat-model.md) describes assets, trust bounda
 - Authentication is **off by default**. Outside Docker the UI then binds `127.0.0.1` unless you
   name another address. The container listens on `0.0.0.0:8080` and the shipped compose file
   publishes `127.0.0.1:8080:8080`, so the port mapping is the boundary. Enable
-  [authentication](https://sam-dumont.github.io/immich-video-memory-generator/docs/run/authentication)
+  [authentication](https://sam-dumont.github.io/immich-memories/docs/run/authentication)
   before exposing the port beyond localhost, and put a TLS reverse proxy in front.
 - The UI never sends the saved Immich key to a URL typed into it: a new server URL needs its key
   typed in too. Whoever reaches an unauthenticated UI can still use your library through it.
@@ -46,7 +46,7 @@ The [threat model](docs/security/threat-model.md) describes assets, trust bounda
   hard-deletes. Anything without that upload identity is left alone, unmarked Immich v3
   uploads included.
 - What leaves your network (geocoding, map tiles, LLM, music, notifications) is listed on the
-  [network & privacy page](https://sam-dumont.github.io/immich-video-memory-generator/docs/run/privacy).
+  [network & privacy page](https://sam-dumont.github.io/immich-memories/docs/run/privacy).
 - CI runs five security scans on every change: Bandit, Semgrep, pip-audit, Gitleaks and Hadolint.
   OpenSSF Scorecard runs on its schedule, branch-protection changes and manual dispatch, not pushes to `main`. The Docker image is
   digest-pinned and runs as a non-root user.
@@ -84,7 +84,7 @@ wheel against that bundle; release tags and wheel versions differ for release ca
 TAG=vX.Y.Z
 mkdir release-verification
 cd release-verification
-gh release download "$TAG" --repo sam-dumont/immich-video-memory-generator \
+gh release download "$TAG" --repo sam-dumont/immich-memories \
   --pattern '*.whl' --pattern '*.sigstore.json'
 # Use actual filenames, including Python's normalized RC version.
 set -- ./*.whl
@@ -93,9 +93,14 @@ WHEEL=$1
 set -- ./*.sigstore.json
 [ "$#" -eq 1 ] && [ -f "$1" ] || exit 1
 gh attestation verify "$WHEEL" \
-  --repo sam-dumont/immich-video-memory-generator --bundle "$1" \
-  --signer-workflow sam-dumont/immich-video-memory-generator/.github/workflows/release.yml
+  --repo sam-dumont/immich-memories --bundle "$1" \
+  --signer-workflow sam-dumont/immich-memories/.github/workflows/release.yml
 ```
+
+For releases signed before the repository rename, use
+`sam-dumont/immich-video-memory-generator` for the repository and signer workflow
+checks below. A rename does not rewrite existing attestations. The container
+package address stays the same.
 
 The current Release workflow attests both application and inference platform images, then
 attests the final application, inference CPU and inference CUDA manifests. This applies to
@@ -115,8 +120,8 @@ immutable digest and requires this repository's release workflow as signer:
 
 ```bash
 set -euo pipefail
-REPO=sam-dumont/immich-video-memory-generator
-IMAGE=ghcr.io/$REPO
+REPO=sam-dumont/immich-memories
+IMAGE=ghcr.io/sam-dumont/immich-video-memory-generator
 TAG=X.Y.Z
 DIGEST=$(docker buildx imagetools inspect "$IMAGE:$TAG" --format '{{json .Manifest}}' | \
   jq -er '.digest | select(test("^sha256:[0-9a-f]{64}$"))')
@@ -138,8 +143,8 @@ DIGEST=$(docker buildx imagetools inspect "$IMAGE" --raw | jq -er \
   '[.manifests[] | select(.platform.os == "linux" and .platform.architecture == "amd64")] |
    select(length == 1) | .[0].digest | select(test("^sha256:[0-9a-f]{64}$"))')
 gh attestation verify "oci://${IMAGE%:*}@$DIGEST" \
-  --repo sam-dumont/immich-video-memory-generator \
-  --signer-workflow sam-dumont/immich-video-memory-generator/.github/workflows/release.yml
+  --repo sam-dumont/immich-memories \
+  --signer-workflow sam-dumont/immich-memories/.github/workflows/release.yml
 ```
 
 The `.intoto.jsonl` asset is the same statement as a bare in-toto envelope, for

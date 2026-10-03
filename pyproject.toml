@@ -175,11 +175,11 @@ dev = [
 immich-memories = "immich_memories.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/sam-dumont/immich-video-memory-generator"
-Documentation = "https://sam-dumont.github.io/immich-video-memory-generator/"
-Repository = "https://github.com/sam-dumont/immich-video-memory-generator"
-Issues = "https://github.com/sam-dumont/immich-video-memory-generator/issues"
-Changelog = "https://github.com/sam-dumont/immich-video-memory-generator/releases"
+Homepage = "https://github.com/sam-dumont/immich-memories"
+Documentation = "https://sam-dumont.github.io/immich-memories/"
+Repository = "https://github.com/sam-dumont/immich-memories"
+Issues = "https://github.com/sam-dumont/immich-memories/issues"
+Changelog = "https://github.com/sam-dumont/immich-memories/releases"
 
 # WHY: the bundled-music package lives in this repo. Resolving it from the tree
 # keeps `make dev`, CI and the Docker build working without waiting on a release

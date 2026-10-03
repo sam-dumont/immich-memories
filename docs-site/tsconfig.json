@@ -2,7 +2,8 @@
   // This file is not used in compilation. It is here just for a nice editor experience.
   "extends": "@docusaurus/tsconfig",
   "compilerOptions": {
-    "baseUrl": "."
+    "baseUrl": ".",
+    "allowImportingTsExtensions": true
   },
   // The demo is a separate project, checked by make demo-ui-check.
   "exclude": [".docusaurus", "build", "remotion"]

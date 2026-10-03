@@ -72,9 +72,7 @@ _LOCALITY_KEYS = (
     "hamlet",
     "municipality",
 )
-_USER_AGENT = (
-    f"immich-memories/{__version__} (+https://github.com/sam-dumont/immich-video-memory-generator)"
-)
+_USER_AGENT = f"immich-memories/{__version__} (+https://github.com/sam-dumont/immich-memories)"
 
 
 def cell_of(latitude: float, longitude: float) -> tuple[float, float]:

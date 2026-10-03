@@ -209,7 +209,7 @@ CMD ["immich-memories", "ui", "--host", "0.0.0.0"]
 # declared at the top of this stage would rebuild the FFmpeg layer every time.
 ARG APP_VERSION
 ARG VCS_REF=unknown
-ARG SOURCE_URL=https://github.com/sam-dumont/immich-video-memory-generator
+ARG SOURCE_URL=https://github.com/sam-dumont/immich-memories
 
 LABEL maintainer="Immich Memories Contributors"
 LABEL description="Turn your Immich photos and videos into memory films."

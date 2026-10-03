@@ -46,7 +46,7 @@ for the durable attempt tree and its OS lease. On disk each attempt is
 `<cache>/editorial-runs/<key>/attempts/<id>/`, and the banked facts and
 answers live in the store (the `db/` package, tables in `db/tables/annotations.py` and
 `db/tables/model_answers.py`).
-[ARCHITECTURE.md](https://github.com/sam-dumont/immich-video-memory-generator/blob/main/ARCHITECTURE.md)
+[ARCHITECTURE.md](https://github.com/sam-dumont/immich-memories/blob/main/ARCHITECTURE.md)
 names every port and the file it lives in, with the full module map.
 
 ## Verification

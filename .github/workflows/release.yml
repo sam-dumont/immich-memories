@@ -55,7 +55,7 @@ jobs:
     name: Analyze Commits & Branches
     runs-on: ubuntu-latest
     if: >-
-      github.repository == 'sam-dumont/immich-video-memory-generator' &&
+      github.repository_id == '1174219883' &&
       (github.ref == 'refs/heads/main' || inputs.dry_run || inputs.inference_only || inputs.app_only)
     outputs:
       should_release: ${{ steps.analyze.outputs.should_release }}
@@ -89,7 +89,7 @@ jobs:
   ci:
     name: CI
     needs: [analyze]
-    if: github.repository == 'sam-dumont/immich-video-memory-generator' && (inputs.app_only || needs.analyze.outputs.should_release == 'true')
+    if: github.repository_id == '1174219883' && (inputs.app_only || needs.analyze.outputs.should_release == 'true')
     uses: ./.github/workflows/ci.yml
     secrets: inherit
     permissions:
@@ -101,7 +101,7 @@ jobs:
     name: Create Release
     needs: [analyze, ci, docker-manifest]
     if: >-
-      github.repository == 'sam-dumont/immich-video-memory-generator' &&
+      github.repository_id == '1174219883' &&
       !cancelled() && needs.analyze.outputs.should_release == 'true' &&
       needs.ci.result == 'success' &&
       (inputs.dry_run || needs.docker-manifest.result == 'success')
@@ -300,7 +300,7 @@ jobs:
   pypi-publish:
     name: Publish to PyPI
     needs: [analyze, release, pypi-publish-music]
-    if: github.repository == 'sam-dumont/immich-video-memory-generator' && (!inputs.dry_run && needs.analyze.outputs.should_release == 'true')
+    if: github.repository_id == '1174219883' && (!inputs.dry_run && needs.analyze.outputs.should_release == 'true')
     runs-on: ubuntu-latest
     environment:
       name: pypi
@@ -330,7 +330,7 @@ jobs:
   pypi-publish-music:
     name: Publish bundled music to PyPI
     needs: [analyze, release]
-    if: github.repository == 'sam-dumont/immich-video-memory-generator' && (!inputs.dry_run && needs.analyze.outputs.should_release == 'true')
+    if: github.repository_id == '1174219883' && (!inputs.dry_run && needs.analyze.outputs.should_release == 'true')
     runs-on: ubuntu-latest
     environment:
       name: pypi
@@ -365,7 +365,7 @@ jobs:
     needs: [analyze, release, deployment-bundle]
     # Candidates publish at the root before 1.0, then at /next.
     if: >-
-      github.repository == 'sam-dumont/immich-video-memory-generator' &&
+      github.repository_id == '1174219883' &&
       !inputs.dry_run && needs.analyze.outputs.should_release == 'true'
     uses: ./.github/workflows/docs.yml
     with:
@@ -376,10 +376,11 @@ jobs:
       id-token: write
 
   # Build and push Docker images using native runners per platform
+  # Registry package addresses stay fixed when the GitHub repository is renamed.
   docker-build:
     name: Build Docker Image (${{ matrix.platform }})
     needs: [analyze, ci]
-    if: github.repository == 'sam-dumont/immich-video-memory-generator' && (!inputs.dry_run && (inputs.app_only || needs.analyze.outputs.should_release == 'true'))
+    if: github.repository_id == '1174219883' && (!inputs.dry_run && (inputs.app_only || needs.analyze.outputs.should_release == 'true'))
     runs-on: ${{ matrix.runner }}
     # Keep the existing approval before the first registry write.
     environment:
@@ -436,7 +437,7 @@ jobs:
             SOURCE_URL=https://github.com/${{ github.repository }}
           # No gha layer cache: it never hit (0 CACHED steps, #1272) and each
           # export pushed the main branch's useful caches out of the 10 GB limit.
-          outputs: type=image,name=ghcr.io/${{ github.repository }},push-by-digest=true,name-canonical=true
+          outputs: type=image,name=ghcr.io/sam-dumont/immich-video-memory-generator,push-by-digest=true,name-canonical=true
 
       # Attaches the attestation to the image in GHCR as an OCI referrer, so
       # `gh attestation verify oci://...` and `cosign` can find it without
@@ -444,7 +445,7 @@ jobs:
       - name: Attest image provenance
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4
         with:
-          subject-name: ghcr.io/${{ github.repository }}
+          subject-name: ghcr.io/sam-dumont/immich-video-memory-generator
           subject-digest: ${{ steps.build.outputs.digest }}
           push-to-registry: true
 
@@ -473,7 +474,7 @@ jobs:
     # in front of a real GPU before anyone cuts a version. The tag is then the
     # commit rather than a version, so a test build can never shadow a release.
     if: >-
-      github.repository == 'sam-dumont/immich-video-memory-generator' &&
+      github.repository_id == '1174219883' &&
       !cancelled() && needs.analyze.result == 'success' && !inputs.dry_run &&
       (inputs.inference_only ||
        (needs.release.result == 'success' && needs.analyze.outputs.should_release == 'true'))
@@ -530,12 +531,12 @@ jobs:
             APP_VERSION=${{ needs.analyze.outputs.next_version }}
             VCS_REF=${{ github.sha }}
           # No gha layer cache: it never hit (0 CACHED steps, #1272).
-          outputs: type=image,name=ghcr.io/${{ github.repository }}/inference,push-by-digest=true,name-canonical=true
+          outputs: type=image,name=ghcr.io/sam-dumont/immich-video-memory-generator/inference,push-by-digest=true,name-canonical=true
 
       - name: Attest inference image provenance
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4
         with:
-          subject-name: ghcr.io/${{ github.repository }}/inference
+          subject-name: ghcr.io/sam-dumont/immich-video-memory-generator/inference
           subject-digest: ${{ steps.build.outputs.digest }}
           push-to-registry: true
 
@@ -555,7 +556,7 @@ jobs:
     name: Create Inference Manifest
     needs: [analyze, inference-build]
     if: >-
-      github.repository == 'sam-dumont/immich-video-memory-generator' &&
+      github.repository_id == '1174219883' &&
       !cancelled() && needs.analyze.result == 'success' &&
       needs.inference-build.result == 'success'
     runs-on: ubuntu-latest
@@ -591,7 +592,7 @@ jobs:
       # tag because a GPU image is a deliberate choice rather than a fallback.
       - name: Create and push manifests
         env:
-          IMAGE: ghcr.io/${{ github.repository }}/inference
+          IMAGE: ghcr.io/sam-dumont/immich-video-memory-generator/inference
           VERSION: ${{ needs.analyze.outputs.next_version }}
           INFERENCE_ONLY: ${{ inputs.inference_only }}
           PRERELEASE: ${{ needs.analyze.outputs.prerelease }}
@@ -623,7 +624,7 @@ jobs:
       - name: Attest cpu manifest provenance
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4
         with:
-          subject-name: ghcr.io/${{ github.repository }}/inference
+          subject-name: ghcr.io/sam-dumont/immich-video-memory-generator/inference
           subject-digest: ${{ steps.cpu-manifest.outputs.digest }}
           push-to-registry: true
 
@@ -636,13 +637,13 @@ jobs:
       - name: Attest cuda manifest provenance
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4
         with:
-          subject-name: ghcr.io/${{ github.repository }}/inference
+          subject-name: ghcr.io/sam-dumont/immich-video-memory-generator/inference
           subject-digest: ${{ steps.cuda-manifest.outputs.digest }}
           push-to-registry: true
 
   docker-smoke:
     name: Smoke Test Docker Image
-    if: github.repository == 'sam-dumont/immich-video-memory-generator'
+    if: github.repository_id == '1174219883'
     needs: [analyze, docker-build]
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -680,7 +681,7 @@ jobs:
       - name: Run one CPU-only generation inside the image
         run: |
           digest="sha256:$(ls /tmp/digests | head -1)"
-          image="ghcr.io/${{ github.repository }}@${digest}"
+          image="ghcr.io/sam-dumont/immich-video-memory-generator@${digest}"
           docker pull "$image"
           uv run --no-project --with pillow --with numpy \
             python scripts/docker_smoke.py --image "$image" --timeout 1200
@@ -688,7 +689,7 @@ jobs:
   # Merge per-platform images into a multi-arch manifest
   docker-manifest:
     name: Create Docker Manifest
-    if: github.repository == 'sam-dumont/immich-video-memory-generator'
+    if: github.repository_id == '1174219883'
     needs: [analyze, docker-build, docker-smoke]
     runs-on: ubuntu-latest
     permissions:
@@ -723,7 +724,7 @@ jobs:
       - name: Create and push manifest
         working-directory: /tmp/digests
         env:
-          IMAGE: ghcr.io/${{ github.repository }}
+          IMAGE: ghcr.io/sam-dumont/immich-video-memory-generator
           VERSION: ${{ needs.analyze.outputs.next_version }}
           PRERELEASE: ${{ needs.analyze.outputs.prerelease }}
           APP_ONLY: ${{ inputs.app_only }}
@@ -750,14 +751,14 @@ jobs:
       - name: Attest app manifest provenance
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4
         with:
-          subject-name: ghcr.io/${{ github.repository }}
+          subject-name: ghcr.io/sam-dumont/immich-video-memory-generator
           subject-digest: ${{ steps.app-manifest.outputs.digest }}
           push-to-registry: true
 
   deployment-bundle:
     name: Publish matching deployment manifests
     needs: [analyze, release, docker-manifest, inference-manifest]
-    if: github.repository == 'sam-dumont/immich-video-memory-generator' && (needs.analyze.outputs.should_release == 'true' && !inputs.dry_run)
+    if: github.repository_id == '1174219883' && (needs.analyze.outputs.should_release == 'true' && !inputs.dry_run)
     runs-on: ubuntu-latest
     permissions:
       contents: write

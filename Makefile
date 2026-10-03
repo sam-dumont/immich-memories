@@ -859,7 +859,7 @@ GIT_TRACKED_CHANGES := $(shell git status --porcelain --untracked-files=no)
 APP_VERSION ?= 0+g$(GIT_SHORT_SHA)$(if $(GIT_TRACKED_CHANGES),.dirty)
 INSTALL_EXTRAS ?= all
 VCS_REF ?= $(shell git rev-parse HEAD)
-SOURCE_URL ?= https://github.com/sam-dumont/immich-video-memory-generator
+SOURCE_URL ?= https://github.com/sam-dumont/immich-memories
 IMMICH_CONFIG_VOLUME ?= immich-memories-config
 IMMICH_OUTPUT_VOLUME ?= immich-memories-output
 

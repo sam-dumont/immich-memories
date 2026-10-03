@@ -85,3 +85,44 @@ path), or `~/.config/immich-memories/private-terms.txt`. One term per line, `#` 
 `re:` prefix for a regex. With none of those configured the gate prints a notice and exits clean,
 which is the normal case for a contributor. Matches are masked to their first character, so a hit
 report never contains the term it found.
+
+## Repository name and search indexing
+
+The repository is `sam-dumont/immich-memories`. The package and command remain
+`immich-memories`. Container packages keep their published addresses under
+`ghcr.io/sam-dumont/immich-video-memory-generator`, including `/inference`;
+a repository rename does not migrate registry tags. Pinned model downloads also
+keep their original repository URLs, which GitHub redirects after the rename.
+This keeps image builds working on both sides of the move.
+
+Before the next PyPI release, check the trusted publisher for **both**
+`immich-memories` and `immich-memories-music`: owner `sam-dumont`, repository
+`immich-memories`, workflow `release.yml`, environment `pypi`. Replace the old
+publisher after adding the new one. [PyPI publisher setup](https://docs.pypi.org/trusted-publishers/adding-a-publisher/).
+
+The free docs address is `https://sam-dumont.github.io/immich-memories/`.
+Docusaurus renders HTML, canonical links and `sitemap.xml`; each production build
+checks the sitemap pages. Candidate docs under `/next/` are marked `noindex`.
+
+To verify indexing in [Google Search Console](https://search.google.com/search-console):
+
+1. Add a **URL prefix** property for `https://sam-dumont.github.io/immich-memories/`.
+2. Choose **HTML tag** verification. Save just the tag's `content` value as the
+   GitHub Actions repository variable `GOOGLE_SITE_VERIFICATION`.
+3. Run **Deploy Docs** on `main`, then click **Verify** in Search Console. Keep the variable for future builds.
+4. Submit `https://sam-dumont.github.io/immich-memories/sitemap.xml`.
+5. Inspect the homepage and quick-start URL, run the live test, and request indexing.
+   Check the Page indexing report after Google has crawled them.
+
+A `robots.txt` inside this project's subdirectory would not control crawling:
+Google reads it at `https://sam-dumont.github.io/robots.txt`. No file is required
+to allow crawling. [Google's robots.txt rules](https://developers.google.com/crawling/docs/robots-txt/create-robots-txt).
+
+GitHub redirects old repository links, but not the old Pages path. Update links
+you control. Do not recreate the old repository to host redirects: it would
+replace GitHub's repository redirects. Preserving the old docs paths needs a
+separate redirect setup at the account site. [GitHub rename behavior](https://docs.github.com/en/repositories/creating-and-managing-repositories/renaming-a-repository).
+
+Google decides whether and when to index a page. Submitting a sitemap or an
+indexing request does not guarantee inclusion or ranking. The GitHub repository
+itself is on GitHub's domain; this Search Console property covers the docs only.

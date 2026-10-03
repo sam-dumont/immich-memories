@@ -18,7 +18,7 @@ These were local candidate images, not release-download tests. The DNS-service v
 needs a check on your cluster: in this run the allowed CoreDNS pod answered directly, but
 its Service IP did not. Community validation is welcome; report your platform/version,
 a denied outbound destination and your first film result in
-[#1804](https://github.com/sam-dumont/immich-video-memory-generator/issues/1804).
+[#1804](https://github.com/sam-dumont/immich-memories/issues/1804).
 
 ## Fetch before closing the network
 
@@ -101,7 +101,7 @@ It does not change Immich's other networks. The Memories app must have only this
 network; adding a second ordinary bridge restores outbound routing.
 [Docker documents this distinction](https://docs.docker.com/compose/how-tos/networking/).
 
-Copy [the standalone example](https://github.com/sam-dumont/immich-video-memory-generator/blob/main/deploy/offline/docker-compose.yml.example)
+Copy [the standalone example](https://github.com/sam-dumont/immich-memories/blob/main/deploy/offline/docker-compose.yml.example)
 as `docker-compose.offline.yml`. Use a fresh data volume and set the two Immich values:
 
 ```bash
@@ -134,7 +134,7 @@ inside the app container before calling the setup isolated.
 
 Start with the [Kubernetes installation](./kubernetes.md), let its model init finish,
 and keep the warmed model PVC. The supplied base policy permits ports across destinations;
-it is not an offline policy. Copy [the destination example](https://github.com/sam-dumont/immich-video-memory-generator/blob/main/deploy/offline/networkpolicy.yaml.example)
+it is not an offline policy. Copy [the destination example](https://github.com/sam-dumont/immich-memories/blob/main/deploy/offline/networkpolicy.yaml.example)
 as `networkpolicy.offline.yaml` and edit:
 
 - `192.0.2.10/32` to the actual fixed Immich IP, and `2283` to its actual TCP port. For an

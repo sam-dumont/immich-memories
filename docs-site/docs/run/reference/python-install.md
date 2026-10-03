@@ -31,8 +31,8 @@ parser trips on an unusual file. `brew install exiftool`, or `apt install libima
 ## From a checkout
 
 ```bash
-git clone https://github.com/sam-dumont/immich-video-memory-generator.git
-cd immich-video-memory-generator
+git clone https://github.com/sam-dumont/immich-memories.git
+cd immich-memories
 uv sync --extra editorial      # or --extra all-mac on Apple Silicon
 make web-client                # the web UI, built from web/; needs Node 22
 uv run immich-memories ui

@@ -52,7 +52,7 @@ with `--replace`, so an import cannot silently replace confirmed answers. A scan
 import does.
 
 A second Immich account on the same server gives the same person a different id. You say which ids are the same
-person (the model @Mike7154 laid out in [#703](https://github.com/sam-dumont/immich-video-memory-generator/issues/703)), and `ids:` becomes one list per account, `primary` first:
+person (the model @Mike7154 laid out in [#703](https://github.com/sam-dumont/immich-memories/issues/703)), and `ids:` becomes one list per account, `primary` first:
 
 ```yaml
 people:

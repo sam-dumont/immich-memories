@@ -9,7 +9,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
 from check_workflow_repo_guard import unguarded_jobs  # noqa: E402
 
-GUARD = "github.repository == 'sam-dumont/immich-video-memory-generator'"
+GUARD = "github.repository_id == '1174219883'"
 
 
 def _workflow(tmp_path: Path, name: str, jobs: str) -> None:

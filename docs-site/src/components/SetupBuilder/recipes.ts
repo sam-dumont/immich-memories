@@ -17,7 +17,7 @@ export interface Setup {
 }
 export interface Recipe {name: string; language: string; content: string}
 
-const repository = 'https://github.com/sam-dumont/immich-video-memory-generator';
+const repository = 'https://github.com/sam-dumont/immich-memories';
 const quote = (value: string): string => `'${value.replace(/'/g, "'\\''")}'`;
 const dotenv = (value: string): string => `'${value.replace(/'/g, "\\'")}'`;
 
@@ -186,7 +186,7 @@ export function buildSetup(setup: Setup, sources: Sources, buildVersion: string)
       '# Save the generated files at their labelled paths.',
       '# Before applying: choose local/block storage for immich-memories-cache (SQLite).',
       '# NFS/SMB app-data storage is refused at startup; use PostgreSQL for a network database.',
-      '# Storage choices: https://sam-dumont.github.io/immich-video-memory-generator/docs/run/kubernetes#prerequisites',
+      '# Storage choices: https://sam-dumont.github.io/immich-memories/docs/run/kubernetes#prerequisites',
       `kubectl kustomize deploy/kubernetes/custom`,
       'kubectl apply -k deploy/kubernetes/custom',
       'kubectl rollout status -n immich-memories deploy/immich-memories',

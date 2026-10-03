@@ -99,7 +99,7 @@ def _connected_result(
         warnings.append(
             "This key can delete or change your whole library; create a least-privilege key"
         )
-        details += "; https://sam-dumont.github.io/immich-video-memory-generator/docs/run/docker#the-api-key"
+        details += "; https://sam-dumont.github.io/immich-memories/docs/run/docker#the-api-key"
     if capabilities.missing_upload:
         warnings.append("Upload steps unavailable: " + ", ".join(capabilities.missing_upload))
     if not capabilities.allows(DELETE_PERMISSION):

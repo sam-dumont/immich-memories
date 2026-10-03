@@ -4,14 +4,14 @@ sidebar_label: "Development Setup"
 
 # Development setup
 
-The full contribution guidelines are in [CONTRIBUTING.md](https://github.com/sam-dumont/immich-video-memory-generator/blob/main/CONTRIBUTING.md).
+The full contribution guidelines are in [CONTRIBUTING.md](https://github.com/sam-dumont/immich-memories/blob/main/CONTRIBUTING.md).
 
 You need Python 3.11+, FFmpeg, [uv](https://docs.astral.sh/uv/) and GNU Make. The web UI also
 needs Node 22: a checkout builds its own client (see [The web client](#the-web-client)).
 
 ```bash
-git clone https://github.com/sam-dumont/immich-video-memory-generator.git
-cd immich-video-memory-generator
+git clone https://github.com/sam-dumont/immich-memories.git
+cd immich-memories
 make dev-test
 ```
 
@@ -117,7 +117,7 @@ src/immich_memories/
   memory_types/ # Preset system
 ```
 
-[ARCHITECTURE.md](https://github.com/sam-dumont/immich-video-memory-generator/blob/main/ARCHITECTURE.md)
+[ARCHITECTURE.md](https://github.com/sam-dumont/immich-memories/blob/main/ARCHITECTURE.md)
 has the full module map with class relationships.
 
 ## Interface translations

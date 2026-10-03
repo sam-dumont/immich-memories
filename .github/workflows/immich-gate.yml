@@ -36,7 +36,7 @@ jobs:
   # and the PostgreSQL legs run when the store changes. A push to main runs all.
   changes:
     name: Change Scope
-    if: github.repository == 'sam-dumont/immich-video-memory-generator'
+    if: github.repository_id == '1174219883'
     runs-on: ubuntu-latest
     outputs:
       docs_only: ${{ steps.scope.outputs.docs_only }}
@@ -54,7 +54,7 @@ jobs:
   immich:
     name: Real Immich (${{ matrix.immich }}, ${{ matrix.database }})
     needs: [changes]
-    if: github.repository == 'sam-dumont/immich-video-memory-generator' && needs.changes.outputs.docs_only != 'true'
+    if: github.repository_id == '1174219883' && needs.changes.outputs.docs_only != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     strategy:
@@ -170,7 +170,7 @@ jobs:
   gate:
     name: Immich Gate
     needs: [changes, immich]
-    if: always() && github.repository == 'sam-dumont/immich-video-memory-generator'
+    if: always() && github.repository_id == '1174219883'
     runs-on: ubuntu-latest
     steps:
       - name: Every Immich version passed on every store backend

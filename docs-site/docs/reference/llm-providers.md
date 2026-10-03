@@ -80,7 +80,7 @@ PyTorch nor MLX.
 For the audience ONNX export, set `laya_audience_threshold: 0.185`. This threshold was
 chosen on the public calibration split to retain all 15 MLX holds. On 3,143 held-out
 captions it retained all 23 MLX holds and added one. These are classifier checks. The NVIDIA runtime and image work is recorded in the closed
-[#1385](https://github.com/sam-dumont/immich-video-memory-generator/issues/1385); the counts
+[#1385](https://github.com/sam-dumont/immich-memories/issues/1385); the counts
 here measure classifier holds, not end-to-end film performance.
 
 ## Ollama

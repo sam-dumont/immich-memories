@@ -14,6 +14,9 @@ const config: Config = {
   tagline: productTagline,
   customFields: {version: docsVersion},
   favicon: 'img/favicon.png',
+  trailingSlash: true,
+  // Only the canonical root docs belong in search; /next duplicates the release.
+  noIndex: nextDocs,
 
   future: {
     // Keep the opted-in 3.9 behavior; future releases can add new v4 defaults.
@@ -24,10 +27,10 @@ const config: Config = {
   },
 
   url: 'https://sam-dumont.github.io',
-  baseUrl: nextDocs ? '/immich-video-memory-generator/next/' : '/immich-video-memory-generator/',
+  baseUrl: nextDocs ? '/immich-memories/next/' : '/immich-memories/',
 
   organizationName: 'sam-dumont',
-  projectName: 'immich-video-memory-generator',
+  projectName: 'immich-memories',
 
   onBrokenLinks: 'throw',
   onBrokenAnchors: 'throw',
@@ -54,7 +57,7 @@ const config: Config = {
         docs: {
           sidebarPath: './sidebars.ts',
           editUrl:
-            'https://github.com/sam-dumont/immich-video-memory-generator/tree/main/docs-site/',
+            'https://github.com/sam-dumont/immich-memories/tree/main/docs-site/',
         },
         blog: false,
         theme: {
@@ -65,9 +68,13 @@ const config: Config = {
   ],
 
   themeConfig: {
+    image: 'img/trip-map-flyover.jpg',
+    metadata: process.env.GOOGLE_SITE_VERIFICATION
+      ? [{name: 'google-site-verification', content: process.env.GOOGLE_SITE_VERIFICATION}]
+      : [],
     ...(nextDocs ? {announcementBar: {
       id: 'release-candidate',
-      content: 'Release candidate docs. <a href="/immich-video-memory-generator/">Read the current final release docs</a>.',
+      content: 'Release candidate docs. <a href="/immich-memories/">Read the current final release docs</a>.',
       isCloseable: false,
     }} : {}),
     mermaid: {
@@ -95,12 +102,12 @@ const config: Config = {
           label: 'Start here',
         },
         {
-          href: `https://github.com/sam-dumont/immich-video-memory-generator/tree/${releaseDocs ? (docsVersion.startsWith('v') ? docsVersion : `v${docsVersion}`) : 'main'}`,
+          href: `https://github.com/sam-dumont/immich-memories/tree/${releaseDocs ? (docsVersion.startsWith('v') ? docsVersion : `v${docsVersion}`) : 'main'}`,
           label: releaseDocs ? `Docs ${docsVersion}` : 'Development docs',
           position: 'right',
         },
         {
-          href: 'https://github.com/sam-dumont/immich-video-memory-generator',
+          href: 'https://github.com/sam-dumont/immich-memories',
           label: 'GitHub',
           position: 'right',
         },
@@ -135,7 +142,7 @@ const config: Config = {
             },
             {
               label: 'GitHub Issues',
-              href: 'https://github.com/sam-dumont/immich-video-memory-generator/issues',
+              href: 'https://github.com/sam-dumont/immich-memories/issues',
             },
             {
               label: 'Immich',

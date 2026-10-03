@@ -5,8 +5,8 @@ title: Troubleshooting
 # Troubleshooting
 
 **Help, in four steps:** read the table below and the [FAQ](./faq.md); check the
-[release notes](https://github.com/sam-dumont/immich-video-memory-generator/releases) for your version;
-[search the issues](https://github.com/sam-dumont/immich-video-memory-generator/issues?q=is%3Aissue); then open
+[release notes](https://github.com/sam-dumont/immich-memories/releases) for your version;
+[search the issues](https://github.com/sam-dumont/immich-memories/issues?q=is%3Aissue); then open
 one with the output of `immich-memories report`. It defaults to the latest run, including failed runs.
 Pass a full run ID to report an older one; `report` does not resolve ID prefixes. Review the report before pasting it.
 

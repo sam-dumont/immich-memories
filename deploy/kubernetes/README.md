@@ -59,7 +59,7 @@ kubectl port-forward -n immich-memories svc/immich-memories 8080:80
 `base/kustomization.yaml` pins the image tag (`images: newTag`). Published tags carry no `v`
 prefix — release `vX.Y.Z` is image tag `X.Y.Z` — plus `latest`. The checked-in pin trails the
 current release, so check it against the
-[releases page](https://github.com/sam-dumont/immich-video-memory-generator/releases) before you
+[releases page](https://github.com/sam-dumont/immich-memories/releases) before you
 apply, and bump it when you upgrade. The entry rewrites the `fetch-models` init container too, so
 both move together. `kubectl apply -f base/job.yaml` skips kustomize entirely and runs the
 `:latest` the file names.
@@ -179,7 +179,7 @@ Like the inference overlay it does not list `../../base`: it holds no credential
 to Immich. Point the app at `http://captioner:8092/v1` in the same namespace.
 `caption_concurrency` defaults to 1, which is what a CPU captioner wants; raise it to 4 on a card.
 The recipe, the flags that carry the contract and the measured per-picture cost are on the
-[caption server page](https://sam-dumont.github.io/immich-video-memory-generator/docs/better/captions).
+[caption server page](https://sam-dumont.github.io/immich-memories/docs/better/captions).
 
 ## PostgreSQL
 
@@ -197,7 +197,7 @@ kubectl apply -k .
 ```
 
 The four modes, and the exact SQL for the dedicated-schema one, are on
-[Database and the store](https://sam-dumont.github.io/immich-video-memory-generator/docs/run/database).
+[Database and the store](https://sam-dumont.github.io/immich-memories/docs/run/database).
 
 ## Ingress
 

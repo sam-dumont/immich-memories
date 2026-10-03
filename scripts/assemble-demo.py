@@ -174,7 +174,7 @@ def stage2_intro_outro() -> tuple[Path, Path]:
             "scale=1440:900,gblur=sigma=25,eq=brightness=-0.3,"
             "drawtext=text='Try it yourself':fontsize=48:fontcolor=white:"
             "x=(w-tw)/2:y=(h-th)/2-50,"
-            "drawtext=text='github.com/sam-dumont/immich-video-memory-generator':"
+            "drawtext=text='github.com/sam-dumont/immich-memories':"
             "fontsize=28:fontcolor=0x6C8EBF:x=(w-tw)/2:y=(h-th)/2+10,"
             "drawtext=text='Open source · Self-hosted · Privacy-first':"
             "fontsize=20:fontcolor=0x888888:x=(w-tw)/2:y=(h-th)/2+60",

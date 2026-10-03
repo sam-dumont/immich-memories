@@ -161,7 +161,7 @@ FROM prod-${DEVICE} AS prod
 
 ARG APP_VERSION
 ARG VCS_REF=unknown
-ARG SOURCE_URL=https://github.com/sam-dumont/immich-video-memory-generator
+ARG SOURCE_URL=https://github.com/sam-dumont/immich-memories
 
 LABEL maintainer="Immich Memories Contributors"
 LABEL description="Head and detector facts for Immich Memories, as a service"
