@@ -29,6 +29,9 @@ head is paid for once, at the next run). Compatible facts are reused. See the
 [prepared facts](../run/database.md#prepared-facts) for
 refresh conditions and the `store facts status`, `migrate` and selective `refresh` commands.
 
+The output below illustrates the report format. Its 0.948 s/picture has no recorded hardware
+provenance and is not a NAS benchmark or a cold-install forecast.
+
 ```text
 ℹ Preparing 1,440 pictures over 1 window(s)
 producer        pending   s/picture   share    elapsed
