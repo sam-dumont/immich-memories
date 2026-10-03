@@ -700,6 +700,7 @@ def register_generate_commands(main: click.Group) -> None:
                             **(special_day or {}),
                             "hemisphere": hemisphere,
                             "person_names": person_names,
+                            "person_display_names": run_people.display_names,
                             "person_match": person_match,
                             **window_record,
                             **accounts_record(household),

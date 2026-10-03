@@ -24,6 +24,7 @@ from immich_memories.analysis.person_resolution import (
     ResolvedPeople,
     StorePerson,
     UnknownPersonId,
+    is_person_id,
     resolve_people,
     store_people,
 )
@@ -103,6 +104,7 @@ class RunPeople:
 
     person_ids: list[str] = field(default_factory=list)
     condition: PersonExpression | None = None
+    display_names: dict[str, str] = field(default_factory=dict)
     face_accounts: Mapping[str, str] = field(default_factory=lambda: MappingProxyType({}))
 
 
@@ -139,12 +141,38 @@ def resolve_run_people(
                 roster_ids=lambda: {person.id for person in roster()},
             )
             _warn_merged(resolved)
-            return RunPeople(condition=resolved.condition, face_accounts=resolved.face_accounts)
+            return RunPeople(
+                condition=resolved.condition,
+                display_names=_display_names(expression, held, roster),
+                face_accounts=resolved.face_accounts,
+            )
         return _flat_people(client, held, person_names, person_match, accounts, roster)
     except UnknownPersonId as error:
         raise click.UsageError(
             f"No person with id {error} in the people store or the Immich library"
         ) from None
+
+
+def _display_names(
+    expression: PersonExpression,
+    held: Sequence[StorePerson],
+    roster: Callable[[], Sequence[Person]],
+) -> dict[str, str]:
+    names = {
+        identity: person.name
+        for person in held
+        for identity in (person.person_id, *(alias.face_id for alias in person.aliases))
+    }
+    displayed = {}
+    for leaf in expression.leaf_values:
+        if leaf in names:
+            name = names[leaf]
+        elif is_person_id(leaf):
+            name = next((person.name for person in roster() if person.id == leaf), "")
+        else:
+            name = leaf
+        displayed[leaf] = name.strip()
+    return displayed
 
 
 def _flat_people(
@@ -179,8 +207,16 @@ def _flat_people(
     parts = (resolved.condition,) if named.kind == "person" else resolved.condition.children
     if all(part.kind == "person" and part.value for part in parts):
         ids = [str(part.value) for part in parts]
-        return RunPeople(person_ids=ids, face_accounts=resolved.face_accounts)
-    return RunPeople(condition=resolved.condition, face_accounts=resolved.face_accounts)
+        return RunPeople(
+            person_ids=ids,
+            display_names=_display_names(named, held, roster),
+            face_accounts=resolved.face_accounts,
+        )
+    return RunPeople(
+        condition=resolved.condition,
+        display_names=_display_names(named, held, roster),
+        face_accounts=resolved.face_accounts,
+    )
 
 
 def _warn_merged(resolved: ResolvedPeople) -> None:

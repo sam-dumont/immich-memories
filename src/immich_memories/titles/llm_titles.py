@@ -194,7 +194,13 @@ def _condition_text(preset: Mapping[str, Any]) -> str | None:
     from immich_memories.api.person_expression import PersonExpression
 
     try:
-        return str(PersonExpression.from_dict(raw))
+        expression = PersonExpression.from_dict(raw)
+        display = preset.get("person_display_names")
+        if display is not None:
+            if any(not display.get(leaf) for leaf in expression.leaf_values):
+                return None
+            expression = expression.map_leaves(lambda leaf: display[leaf])
+        return str(expression)
     except (TypeError, ValueError):
         logger.debug("Unreadable people condition; the names carry the film", exc_info=True)
         return None
@@ -250,9 +256,12 @@ def _birth_date(context: PersonPromptContext | None) -> date | None:
 
 def _people_by_name(people_store: Store | None) -> dict[str, PersonPromptContext]:
     by_name: dict[str, PersonPromptContext] = {}
+    ambiguous: set[str] = set()
     for context in load_people_prompt_context(people_store, include_derived=True).values():
-        by_name.setdefault(context.name, context)
-    return by_name
+        if context.name in by_name:
+            ambiguous.add(context.name)
+        by_name[context.name] = context
+    return {name: context for name, context in by_name.items() if name not in ambiguous}
 
 
 def _person_line(name: str, context: PersonPromptContext | None, start: date, end: date) -> str:

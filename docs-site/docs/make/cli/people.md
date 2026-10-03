@@ -62,6 +62,9 @@ immich-memories generate --memory-type multi_person --group kids --year 2025
 immich-memories people group rm kids
 ```
 
+Film titles use the saved people's names, not their internal IDs. Unnamed people still
+filter the film, but do not add an ID to its title.
+
 Removing a group removes the label, not its people. The UI can create groups under **Settings > People**, then select them from **Memory**.
 
 The [people registry reference](../../reference/people-registry.md) documents inference, export format and ID validation. Every flag: [CLI reference](../../reference/cli-reference.md#people).
