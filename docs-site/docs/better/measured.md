@@ -250,8 +250,8 @@ With thinking off, both APIs failed the motion example; the compatible API also
 lost the race from a period summary. Image captioning and the other feature checks
 passed. These were single sequential runs with warm server caches, not a throughput
 comparison with oMLX or an end-to-end film validation. The M2 and SmolVLM2 were not tested.
-The [report and reproducible configs](https://github.com/sam-dumont/immich-video-memory-generator/blob/main/docs/research/2026-10-03-ollama-validation.md)
-and [aggregate CSV](https://github.com/sam-dumont/immich-video-memory-generator/blob/main/docs/research/2026-10-03-ollama-validation.csv)
+The [report and reproducible configs](https://github.com/sam-dumont/immich-memories/blob/main/docs/research/2026-10-03-ollama-validation.md)
+and [aggregate CSV](https://github.com/sam-dumont/immich-memories/blob/main/docs/research/2026-10-03-ollama-validation.csv)
 record all four runs, including failures.
 
 ## LLM contract fixes, 1 October 2026 {#llm-contract-fixes}

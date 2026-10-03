@@ -39,7 +39,7 @@ spec:
       containers:
         - name: inference
           # Tag is set by `images:` in kustomization.yaml
-          image: ghcr.io/sam-dumont/immich-video-memory-generator/inference:latest
+          image: ghcr.io/sam-dumont/immich-memories/inference:latest
           imagePullPolicy: Always
 
           securityContext:

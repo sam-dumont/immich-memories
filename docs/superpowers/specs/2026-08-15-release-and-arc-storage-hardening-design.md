@@ -8,7 +8,7 @@ Fix the failed PyPI publication and stop GPU integration runners from being evic
 
 Only checked-in files in these repositories may change:
 
-- `immich-video-memory-generator`
+- `immich-memories`
 - `rancher-cluster`
 
 No command may mutate the live Kubernetes cluster. Do not apply Terraform, run mutating `kubectl` commands, SSH to workers, edit RKE2 configuration, restart `rke2-agent`, rerun GitHub workflows, publish packages, or push branches as part of this work.

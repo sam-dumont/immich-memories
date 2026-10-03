@@ -4,7 +4,7 @@ Gemma 4 E4B works through Ollama's native and OpenAI-compatible APIs. For the
 text reader, explicitly disable thinking using the API's own setting. Changing
 only the server URL from oMLX leaves a real configuration gap.
 
-[Issue #1918](https://github.com/sam-dumont/immich-video-memory-generator/issues/1918)
+[Issue #1918](https://github.com/sam-dumont/immich-memories/issues/1918)
 tracks the remaining first-request and answer-quality failures.
 
 ## What ran

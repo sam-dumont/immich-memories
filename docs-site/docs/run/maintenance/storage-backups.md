@@ -104,7 +104,7 @@ spec:
         fsGroup: 1000
       containers:
         - name: restore
-          image: ghcr.io/sam-dumont/immich-video-memory-generator:X.Y.Z
+          image: ghcr.io/sam-dumont/immich-memories:X.Y.Z
           command: [immich-memories, store, restore]
           args: [--from, /home/immich/.immich-memories/backups/store.db, --force]
           envFrom:

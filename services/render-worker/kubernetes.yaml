@@ -32,7 +32,7 @@ spec:
       containers:
         - name: worker
           # Pin to the same versioned image as the submitting app before applying.
-          image: ghcr.io/sam-dumont/immich-video-memory-generator:latest
+          image: ghcr.io/sam-dumont/immich-memories:latest
           command: [python, -m, immich_memories_render_worker]
           securityContext:
             allowPrivilegeEscalation: false

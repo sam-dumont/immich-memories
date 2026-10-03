@@ -52,7 +52,7 @@ modes, and the SQL for a dedicated schema in Immich's own database, are on
 | Name | Description | Default |
 |------|-------------|---------|
 | `namespace`, `create_namespace` | Kubernetes namespace, and whether to create it | `"immich-memories"`, `true` |
-| `image_repository`, `image_tag` | Container image. No `v` prefix, so release `vX.Y.Z` is tag `X.Y.Z` | `ghcr.io/sam-dumont/immich-video-memory-generator`, `"latest"` |
+| `image_repository`, `image_tag` | Container image. No `v` prefix, so release `vX.Y.Z` is tag `X.Y.Z` | `ghcr.io/sam-dumont/immich-memories`, `"latest"` |
 | `replicas` | Keep at 1; the UI is single-replica | `1` |
 | `resources` | Requests/limits object (`requests.memory/cpu`, `limits.memory/cpu`) | `2Gi/1000m` to `8Gi/4000m` |
 | `tmp_size` | `/tmp` emptyDir for FFmpeg intermediates (8Gi for 4K) | `"4Gi"` |

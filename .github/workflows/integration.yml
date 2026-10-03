@@ -60,7 +60,7 @@ jobs:
         run: |
           [[ ${#REQUEST_SHA} -eq 40 && "$REQUEST_SHA" != *[!0123456789abcdef]* ]] || exit 2
           git check-ref-format --branch "$BRANCH" >/dev/null
-          case "$PUBLIC_REPO" in sam-dumont/immich-memories|sam-dumont/immich-video-memory-generator) ;; *) exit 2 ;; esac
+          case "$PUBLIC_REPO" in sam-dumont/immich-memories) ;; *) exit 2 ;; esac
           case "$SUITE" in all|assembly|titles|photos|pipeline|live-photos|cli) ;; *) exit 2 ;; esac
           printf 'sha=%s\nbranch=%s\npublic_repo=%s\nsuite=%s\n' \
             "$REQUEST_SHA" "$BRANCH" "$PUBLIC_REPO" "$SUITE" >> "$GITHUB_OUTPUT"

@@ -25,5 +25,5 @@ resources:
 # end. Releases land faster than this pin does: check it against the releases
 # page before you apply, and bump it when you upgrade.
 images:
-  - name: ghcr.io/sam-dumont/immich-video-memory-generator/inference
-    newTag: "0.100.4"
+  - name: ghcr.io/sam-dumont/immich-memories/inference
+    newTag: "0.103.0"

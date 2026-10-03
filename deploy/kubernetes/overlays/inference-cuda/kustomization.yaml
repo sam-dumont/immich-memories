@@ -18,5 +18,5 @@ patches:
 # device reservation does not grow one on the cpu image. Keep this tag and the
 # inference overlay's tag on the same release.
 images:
-  - name: ghcr.io/sam-dumont/immich-video-memory-generator/inference
-    newTag: "0.100.4-cuda"
+  - name: ghcr.io/sam-dumont/immich-memories/inference
+    newTag: "0.103.0-cuda"

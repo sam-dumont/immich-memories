@@ -124,7 +124,7 @@ module "immich_memories" {
 |------|-------------|------|---------|
 | `namespace` | Kubernetes namespace | `string` | `"immich-memories"` |
 | `create_namespace` | Create the namespace | `bool` | `true` |
-| `image_repository` | Container image | `string` | `"ghcr.io/sam-dumont/immich-video-memory-generator"` |
+| `image_repository` | Container image | `string` | `"ghcr.io/sam-dumont/immich-memories"` |
 | `image_tag` | Image tag (no `v` prefix: `vX.Y.Z` ships as `X.Y.Z`, plus `latest`) | `string` | `"latest"` |
 | `replicas` | Keep at 1 | `number` | `1` |
 | `resources` | Requests/limits object | `object` | `2Gi/1000m` – `8Gi/4000m` |

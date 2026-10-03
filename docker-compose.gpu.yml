@@ -13,7 +13,7 @@ services:
       immich-memories-captioner:
         condition: service_healthy
   immich-memories-inference:
-    image: ghcr.io/sam-dumont/immich-video-memory-generator/inference:${IMMICH_MEMORIES_VERSION:-latest}
+    image: ghcr.io/sam-dumont/immich-memories/inference:${IMMICH_MEMORIES_VERSION:-latest}
     container_name: immich-memories-inference
     ports:
     - 127.0.0.1:8092:8092

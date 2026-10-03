@@ -205,7 +205,7 @@ from outside a LAN, and it is not in this issue.
 
 ## 4. The worker
 
-Same app image, `ghcr.io/sam-dumont/immich-video-memory-generator`, different command. The image
+Same app image, `ghcr.io/sam-dumont/immich-memories`, different command. The image
 already carries ffmpeg, the VA-API drivers, the bundled fonts and the title kernels, and
 `overlays/gpu` already claims that image works on an NVIDIA node with
 `NVIDIA_DRIVER_CAPABILITIES=compute,video,utility`.
@@ -256,7 +256,7 @@ Profile `render`, exactly as `inference` does it, on the published `docker-compo
   immich-memories-render:
     # The same image and the same tag as the app service above. /health refuses
     # a job from an app on another version, so keep the two lines in step.
-    image: ghcr.io/sam-dumont/immich-video-memory-generator:latest
+    image: ghcr.io/sam-dumont/immich-memories:latest
     container_name: immich-memories-render
     profiles:
       - render

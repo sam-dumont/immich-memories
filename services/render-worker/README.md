@@ -27,7 +27,7 @@ For Docker with the NVIDIA Container Toolkit installed, copy `compose.yaml` to
 an empty directory. Set these variables in that directory's `.env`:
 
 ```dotenv
-IMMICH_MEMORIES_IMAGE=ghcr.io/sam-dumont/immich-video-memory-generator:YOUR_APP_TAG
+IMMICH_MEMORIES_IMAGE=ghcr.io/sam-dumont/immich-memories:YOUR_APP_TAG
 IMMICH_URL=https://photos.example.com
 RENDER_WORKER_TOKEN=replace-with-a-random-shared-token
 RENDER_BIND_ADDRESS=127.0.0.1

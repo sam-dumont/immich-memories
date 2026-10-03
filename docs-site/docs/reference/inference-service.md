@@ -63,8 +63,8 @@ the image tag alone does not certify GPU execution.
 Use the published release image tag matching your app. The image names are:
 
 ```bash
-docker pull ghcr.io/sam-dumont/immich-video-memory-generator/inference:YOUR_APP_TAG
-docker pull ghcr.io/sam-dumont/immich-video-memory-generator/inference:YOUR_APP_TAG-cuda
+docker pull ghcr.io/sam-dumont/immich-memories/inference:YOUR_APP_TAG
+docker pull ghcr.io/sam-dumont/immich-memories/inference:YOUR_APP_TAG-cuda
 ```
 
 From a checkout, `docker/Dockerfile.inference` builds either one: `--build-arg DEVICE=cpu` or
@@ -167,7 +167,7 @@ For **standalone** inference, a separate caption container can reuse the CUDA im
 The unified worker starts its own child; do not add this container to that setup:
 
 ```bash
-image=ghcr.io/sam-dumont/immich-video-memory-generator/inference:YOUR_APP_TAG-cuda
+image=ghcr.io/sam-dumont/immich-memories/inference:YOUR_APP_TAG-cuda
 docker run --rm --gpus all -p 127.0.0.1:8094:8092 \
   -v immich-memories-model-cache:/cache \
   "$image" immich-memories-captioner --cache-ram 128 --parallel 1

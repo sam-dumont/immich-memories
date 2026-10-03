@@ -15,7 +15,7 @@ Use the CUDA inference image matching the app version, the NVIDIA Container Tool
 private address reachable from the app. From a checkout of that release:
 
 ```bash
-export GPU_WORKER_IMAGE=ghcr.io/sam-dumont/immich-video-memory-generator/inference:YOUR_APP_TAG-cuda
+export GPU_WORKER_IMAGE=ghcr.io/sam-dumont/immich-memories/inference:YOUR_APP_TAG-cuda
 export IMMICH_URL=https://photos.example.com
 export RENDER_WORKER_TOKEN=$(openssl rand -hex 32)
 export GPU_WORKER_BIND_ADDRESS=192.168.1.50

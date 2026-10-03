@@ -23,7 +23,7 @@ def test_release_bundle_pins_all_images_and_omits_untracked_secrets(tmp_path, mo
     ):
         path = tmp_path / "deploy/kubernetes" / directory / "kustomization.yaml"
         path.parent.mkdir(parents=True)
-        image = "ghcr.io/sam-dumont/immich-video-memory-generator" + (
+        image = "ghcr.io/sam-dumont/immich-memories" + (
             "/inference" if "inference" in directory else ""
         )
         tag = "0.1.0-cuda" if "inference-cuda" in directory else "0.1.0"
@@ -53,9 +53,7 @@ def test_release_bundle_accepts_a_release_candidate(tmp_path, monkeypatch):
     subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
     path = tmp_path / "deploy/kubernetes/base/kustomization.yaml"
     path.parent.mkdir(parents=True)
-    path.write_text(
-        'images:\n  - name: ghcr.io/sam-dumont/immich-video-memory-generator\n    newTag: "0.1.0"\n'
-    )
+    path.write_text('images:\n  - name: ghcr.io/sam-dumont/immich-memories\n    newTag: "0.1.0"\n')
     subprocess.run(["git", "add", "deploy"], cwd=tmp_path, check=True)
     destination = tmp_path / "bundle.tgz"
     package_bundle(tmp_path, "1.0.0-rc.1", destination)
@@ -98,7 +96,7 @@ def test_packaged_overlay_keeps_every_app_container_on_the_release(tmp_path, ove
     rendered = subprocess.check_output(
         ["kubectl", "kustomize", str(kubernetes / "overlays" / overlay)], text=True
     )
-    own_repo = "ghcr.io/sam-dumont/immich-video-memory-generator"
+    own_repo = "ghcr.io/sam-dumont/immich-memories"
     images = [
         container["image"]
         for document in yaml.safe_load_all(rendered)
@@ -116,8 +114,8 @@ def test_packaged_overlay_keeps_every_app_container_on_the_release(tmp_path, ove
 @pytest.mark.parametrize(
     "image,current,expected",
     [
-        ("ghcr.io/sam-dumont/immich-video-memory-generator", "0.1.0", "1.2.3"),
-        ("ghcr.io/sam-dumont/immich-video-memory-generator/inference", "0.1.0-cuda", "1.2.3-cuda"),
+        ("ghcr.io/sam-dumont/immich-memories", "0.1.0", "1.2.3"),
+        ("ghcr.io/sam-dumont/immich-memories/inference", "0.1.0-cuda", "1.2.3-cuda"),
     ],
 )
 def test_release_bundle_pins_component_images_without_a_directory_allowlist(

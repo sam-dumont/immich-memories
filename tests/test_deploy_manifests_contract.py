@@ -118,11 +118,7 @@ def test_kustomization_pins_a_published_image_tag() -> None:
     """Published image tags carry no `v` prefix; `v1.0.0` never existed."""
     kustomization = _kustomization()
     images = kustomization["images"]
-    image = next(
-        entry
-        for entry in images
-        if entry["name"] == "ghcr.io/sam-dumont/immich-video-memory-generator"
-    )
+    image = next(entry for entry in images if entry["name"] == "ghcr.io/sam-dumont/immich-memories")
 
     assert re.fullmatch(r"\d+\.\d+\.\d+", str(image["newTag"])), image
     assert "commonLabels" not in kustomization
@@ -524,9 +520,7 @@ def test_kustomize_renders_with_a_secret_created_from_the_example(
     assert "Ingress" not in kinds
     deployment = next(doc for doc in rendered if doc["kind"] == "Deployment")
     container = deployment["spec"]["template"]["spec"]["containers"][0]
-    assert re.fullmatch(
-        r"ghcr\.io/sam-dumont/immich-video-memory-generator:\d+\.\d+\.\d+", container["image"]
-    )
+    assert re.fullmatch(r"ghcr\.io/sam-dumont/immich-memories:\d+\.\d+\.\d+", container["image"])
     has_gpu = "nvidia.com/gpu" in container["resources"]["limits"]
     assert has_gpu == (target == "overlays/gpu")
 
@@ -805,7 +799,7 @@ def test_the_render_sidecar_overlay_pins_both_containers_to_the_same_release(
 
     assert images["immich-memories"] == images["render-worker"]
     assert re.fullmatch(
-        r"ghcr\.io/sam-dumont/immich-video-memory-generator:\d+\.\d+\.\d+",
+        r"ghcr\.io/sam-dumont/immich-memories:\d+\.\d+\.\d+",
         images["render-worker"],
     )
 
@@ -1021,7 +1015,7 @@ def test_the_maximalist_overlay_pins_or_digests_every_third_party_image(tmp_path
     image pinned by digest or a named, documented floating tag -- never `latest`
     on an image this repo does not publish."""
     rendered = _maximalist_rendered(tmp_path)
-    own_repo = "ghcr.io/sam-dumont/immich-video-memory-generator"
+    own_repo = "ghcr.io/sam-dumont/immich-memories"
     for doc in rendered:
         spec = doc.get("spec", {}).get("template", {}).get("spec")
         if not spec:

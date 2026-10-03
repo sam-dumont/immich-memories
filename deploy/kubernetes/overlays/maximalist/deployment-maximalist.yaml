@@ -24,7 +24,7 @@ spec:
     spec:
       initContainers:
         - name: install-config
-          image: ghcr.io/sam-dumont/immich-video-memory-generator:latest
+          image: ghcr.io/sam-dumont/immich-memories:latest
           imagePullPolicy: Always
           command:
             - /bin/sh

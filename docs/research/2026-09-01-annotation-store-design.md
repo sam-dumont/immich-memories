@@ -7,12 +7,12 @@ builds-on: docs/research/2026-08-31-triage-heads-architecture.md (EmbeddingStore
 # The store: SQLite or PostgreSQL, no vector database
 
 This page used to plan PostgreSQL with VectorChord as the only backend for
-[#871](https://github.com/sam-dumont/immich-video-memory-generator/issues/871). The 2026-09-26
+[#871](https://github.com/sam-dumont/immich-memories/issues/871). The 2026-09-26
 review replaced that plan. The contract now lives in
 [the store design](../designs/2026-09-27-the-store.md); the evidence, with file:line, is in
-[the issue's architecture review](https://github.com/sam-dumont/immich-video-memory-generator/issues/871#issuecomment-5848750474).
+[the issue's architecture review](https://github.com/sam-dumont/immich-memories/issues/871#issuecomment-5848750474).
 The VectorChord plan stays in
-[Git history](https://github.com/sam-dumont/immich-video-memory-generator/blob/e0db6c00/docs/research/2026-09-01-annotation-store-design.md).
+[Git history](https://github.com/sam-dumont/immich-memories/blob/e0db6c00/docs/research/2026-09-01-annotation-store-design.md).
 
 ## What changed
 

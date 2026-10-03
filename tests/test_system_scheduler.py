@@ -341,7 +341,7 @@ class TestEphemeralBinaryRefusal:
         self, _plat: object, tmp_path: Path, launcher_shim: Path
     ) -> None:
         """Self-hosters deploy by cloning — only the ephemeral worktree case is rejected."""
-        clone = tmp_path / "immich-video-memory-generator"
+        clone = tmp_path / "immich-memories"
         (clone / ".git").mkdir(parents=True)
         binary = _checkout_binary(clone)
 

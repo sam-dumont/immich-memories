@@ -3,7 +3,7 @@
 # URLs/models stay editable in Settings. Enable auth before exposing the localhost UI.
 services:
   immich-memories:
-    image: ghcr.io/sam-dumont/immich-video-memory-generator:${IMMICH_MEMORIES_VERSION:-latest}
+    image: ghcr.io/sam-dumont/immich-memories:${IMMICH_MEMORIES_VERSION:-latest}
     container_name: immich-memories
     ports:
     - ${UI_BIND_ADDRESS:-127.0.0.1}:8080:8080

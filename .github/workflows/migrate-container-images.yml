@@ -1,0 +1,85 @@
+name: Migrate Container Images
+
+# One-time copy of the last release before the container namespace changed.
+# Keep the old packages: existing installations and attestations still use them.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-publication
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    if: github.repository_id == '1174219883' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - suffix: ''
+            version: '0.103.0'
+            alias: latest
+            digest: sha256:1edbf3b21da665d761d5d7e120e27eaca60a4ac74d592619363adfaf36b8f91a
+          - suffix: /inference
+            version: '0.103.0'
+            alias: latest
+            digest: sha256:9636ddb1907f1ab2a88eebb2ad3596a860529ab7fb8c60a24f4fedcb46a3d4f4
+          - suffix: /inference
+            version: '0.103.0-cuda'
+            alias: latest-cuda
+            digest: sha256:3192c24a9ce653d1e89371fcd1ff8bc6a14d1f179032b683002b92f81fb36cb7
+    steps:
+      - name: Audit publication egress
+        uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2
+        with:
+          egress-policy: audit
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Copy and verify pinned manifests
+        env:
+          SOURCE: ghcr.io/sam-dumont/immich-video-memory-generator${{ matrix.suffix }}
+          TARGET: ghcr.io/sam-dumont/immich-memories${{ matrix.suffix }}
+          VERSION: ${{ matrix.version }}
+          ALIAS: ${{ matrix.alias }}
+          DIGEST: ${{ matrix.digest }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          read_digest() {
+            docker buildx imagetools inspect "$1" --format '{{json .Manifest}}' |
+              jq -er '.digest | select(test("^sha256:[0-9a-f]{64}$"))'
+          }
+          test "$(read_digest "$SOURCE@$DIGEST")" = "$DIGEST"
+          # Check both tags before writing either. Reruns must never roll back a release.
+          for tag in "$VERSION" "$ALIAS"; do
+            if current=$(read_digest "$TARGET:$tag" 2> "$RUNNER_TEMP/inspect-error"); then
+              if [ "$current" != "$DIGEST" ]; then
+                echo "Refusing to overwrite $TARGET:$tag ($current)" >&2
+                exit 1
+              fi
+            elif ! grep -Eiq 'not found|manifest unknown|name unknown' "$RUNNER_TEMP/inspect-error"; then
+              cat "$RUNNER_TEMP/inspect-error" >&2
+              exit 1
+            fi
+          done
+          docker buildx imagetools create --prefer-index=false \
+            -t "$TARGET:$VERSION" -t "$TARGET:$ALIAS" "$SOURCE@$DIGEST"
+          for tag in "$VERSION" "$ALIAS"; do
+            test "$(read_digest "$TARGET:$tag")" = "$DIGEST"
+            printf '%s -> %s\n' "$TARGET:$tag" "$DIGEST" >> "$GITHUB_STEP_SUMMARY"
+          done

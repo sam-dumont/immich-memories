@@ -151,7 +151,7 @@ DEFAULT_IMAGE_TAG = str(
         0
     ]["newTag"]
 )
-IMAGE_REPO = "ghcr.io/sam-dumont/immich-video-memory-generator"
+IMAGE_REPO = "ghcr.io/sam-dumont/immich-memories"
 # The pictures the demo library is built from. The inference warm-up sends one of
 # them: a real photograph, not a synthetic square, so every model the cells will
 # ask for is the one that gets loaded.

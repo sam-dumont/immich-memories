@@ -1,8 +1,8 @@
 <?xml version='1.0' encoding='utf-8'?>
 <Container version="2">
   <Name>immich-memories</Name>
-  <Repository>ghcr.io/sam-dumont/immich-video-memory-generator:latest</Repository>
-  <Registry>https://github.com/sam-dumont/immich-memories/pkgs/container/immich-video-memory-generator</Registry>
+  <Repository>ghcr.io/sam-dumont/immich-memories:latest</Repository>
+  <Registry>https://github.com/sam-dumont/immich-memories/pkgs/container/immich-memories</Registry>
   <Network>bridge</Network>
   <Shell>sh</Shell>
   <Privileged>false</Privileged>

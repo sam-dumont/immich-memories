@@ -42,5 +42,5 @@ patches:
 # this for the same reason: a patch adding a container is not reached by a
 # transformer that ran before the patch existed).
 images:
-  - name: ghcr.io/sam-dumont/immich-video-memory-generator
-    newTag: "0.100.4"
+  - name: ghcr.io/sam-dumont/immich-memories
+    newTag: "0.103.0"
