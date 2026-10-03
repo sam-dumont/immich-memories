@@ -35,7 +35,7 @@ const sidebars: SidebarsConfig = {
       type: 'category', label: 'Operate and configure',
       items: [
         'run/overview',
-        'run/requirements', 'run/tested-deployments',
+        'run/requirements', 'run/tested-deployments', 'run/compatibility',
         {type: 'category', label: 'Install', items: [
           {type: 'doc', id: 'run/docker', label: 'Docker Compose'},
           'run/nas',
@@ -54,7 +54,7 @@ const sidebars: SidebarsConfig = {
         ]},
         {type: 'category', label: 'Storage and maintenance', items: [
           'run/database', 'run/maintenance/storage-backups',
-          'run/maintenance/upgrading', 'run/maintenance/health-logs-cache',
+          'run/maintenance/upgrading', 'run/maintenance/health-logs-cache', 'run/lifecycle',
         ]},
       ],
     },

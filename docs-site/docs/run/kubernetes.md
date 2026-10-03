@@ -508,3 +508,7 @@ app/inference image tags and Terraform example pins. A remote Git URL or a raw s
 skips that substitution and is not the same installation input. The
 [vendoring procedure](./gitops.md) records a real downloadable bundle and distinguishes its
 render/validate check from current-candidate or live-cluster evidence.
+
+## Stop or remove this installation
+
+[Stop, reset and uninstall](./lifecycle.md) separates retaining data for reinstall from deleting app state.

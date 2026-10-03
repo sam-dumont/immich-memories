@@ -160,3 +160,9 @@ Bundled tracks require Docker or the `music` extra; they are absent from a base 
 counts as up only when `/health` returns `{"data": {"status": "ok"}}`; MusicGen needs HTTP 200. For timeouts,
 raise `ace_step.timeout_seconds` (3600) or `musicgen.timeout_seconds` (10800), both capped at 18000. Setup is on
 [Generated music](../better/music.md).
+
+## Start over deliberately
+
+Retrying a failed run normally keeps compatible preparation. If you deliberately want a fresh trial,
+follow [the scoped app-state reset](../run/lifecycle.md#3-reset-app-state-for-a-fresh-trial).
+Back up/export first; do not delete all volumes or anything owned by Immich.

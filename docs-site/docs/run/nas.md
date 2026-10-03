@@ -163,3 +163,7 @@ The Docker instructions cover [API-key permissions](./docker.md#the-api-key),
 [uploads](./docker.md#films-into-immich), [backups](./database.md#managing-the-store) and
 [upgrades](./maintenance/upgrading.md#docker). Prefix container commands with `sudo` if your NAS
 requires it.
+
+## Stop or remove this installation
+
+[Stop, reset and uninstall](./lifecycle.md) separates retaining data for reinstall from deleting app state.
