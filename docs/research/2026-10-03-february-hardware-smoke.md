@@ -118,6 +118,30 @@ required before the documentation PR becomes ready, alongside uninterrupted end-
 for all six configurations. Verify 60 fps and HDR where supported, using default balanced quality.
 No 4K/HDR performance or correctness claim comes from this checkpoint.
 
+## Maximum-resolution follow-up
+
+The M5 Full saved-cut export completed after the first-pass checkpoint. Full-file decode passed:
+3840×2160, 60 fps, HEVC, 10-bit PQ HDR with BT.2020 primaries, default balanced quality. Local
+ACE-Step generated the soundtrack and local Demucs returned all four stems. The film was uploaded
+to the same comparison album with hardware, tier, output and source tags verified.
+
+| M5 Full saved-cut export | Common 1080p | Maximum 4K HDR |
+|---|---:|---:|
+| Export wall time | 67.490 s | 117.880 s |
+| Render span | 36.621 s | 85.682 s |
+| Music span | 25.150 s | 21.684 s |
+| Output bytes | 21,921,671 | 40,086,380 |
+
+The 4K render cost 49.061 s more and the file grew by 18,164,709 bytes (83%). It provides four
+times the output pixels and a 10-bit HDR output instead of 8-bit SDR. Both exports are 60 fps.
+Music is generated separately for each export; its timing difference is not a resolution gain.
+
+This export reused the original selected cut. It does not repair the missing Laya exercise in the
+first-pass selection or count as a clean end-to-end acceptance run. Rendering used main
+`c96b7fb18` plus the tested smoke fixes; the earlier common repair used `288215135` plus the date
+fix. Keep that revision difference when reading the comparison. The remaining maximum exports and
+the six uninterrupted acceptance runs are still required before the PR becomes ready.
+
 ## Source provenance
 
 The first four attempted configurations (NAS Basic, NAS GPU, M5 Full and M2 Basic) executed
