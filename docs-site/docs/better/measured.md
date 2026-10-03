@@ -7,6 +7,15 @@ title: Measure your setup
 Find the slow stage before adding a service. Downloads, picture preparation, captions, selection,
 rendering and music have different costs. A faster picture model does not guarantee a faster film.
 
+## June 2023 follow-up, 3 October 2026 {#june-hardware-matrix}
+
+The [June acceptance report](https://github.com/sam-dumont/immich-memories/blob/main/docs/research/2026-10-03-june-hardware-smoke.md)
+repeats the six configurations on one merged application revision, with empty app and media
+caches, default balanced quality and a common 1080p60 SDR target. GPU and Full also render
+the same cut at 4K60 HDR; Basic stays at 1080p. Validation is in progress; pending rows are
+not passes. The report records phase timings, output sizes, actual music execution and setup
+corrections separately.
+
 ## One month across six configurations, 3 October 2026 {#february-hardware-matrix}
 
 The February 2024 smoke workload requested a 60-second film from the same 2,032-source

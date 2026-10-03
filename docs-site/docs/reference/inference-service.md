@@ -46,6 +46,23 @@ prompt-cache limit or processing-slot count. Phase changes reduce overlapping mo
 they do not impose a hard host-RAM or VRAM budget. The Compose recipe has no RAM limit. Other
 containers and external readers/music backends can still consume the same card.
 
+## Verify the rendering runtime
+
+For the unified worker, keep the `/render` suffix in `render.worker_base_url`. Check
+`http://WORKER:8092/render/health` for render readiness; `/health` checks inference and does
+not establish that the render route has the expected contract or acceleration support.
+
+Use the app and worker images from the same release. When developing with source mounted over
+an older image, install that source revision's declared dependencies too. A source copy does
+not update its Python environment. In the June hardware test an old image lacked `pi-heif`:
+inference succeeded, then remote assembly rejected HEIC photos. The current inference image
+build installs the project dependencies, including that decoder.
+
+Before a long run with a custom image, check `import pi_heif` in the worker's Python environment
+and decode a representative HEIC source. A successful health response does not exercise every
+media decoder. The [June matrix report](https://github.com/sam-dumont/immich-memories/blob/main/docs/research/2026-10-03-june-hardware-smoke.md)
+keeps the failed setup attempt separate from the subsequent cold acceptance timing.
+
 ## The two images
 
 | Tag | Platforms | Provider |
