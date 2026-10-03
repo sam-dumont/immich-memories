@@ -311,8 +311,9 @@ with the provider's rates to calculate cost. A run with missing usage gives only
 
 Use the report to compare passes, failures, call counts and reported-token cost for your endpoint.
 [Measure your setup](performance-evidence.md#cost-and-quality) explains what to record. The
-[contract-fix follow-up](../better/measured.md#llm-contract-fixes) records the tested endpoints
-and the remaining motion and story-ranking limitations.
+[hosted-reader measurements](../better/measured.md#hosted-reader-cost) record tested endpoints,
+elapsed time, token costs and quality limits. The earlier
+[contract-fix follow-up](../better/measured.md#llm-contract-fixes) remains historical evidence.
 
 These checks measure the configured endpoint on small fixtures. They do not replace checking
 the quality of a complete film or testing asynchronous batch delivery.
