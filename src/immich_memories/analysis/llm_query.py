@@ -416,6 +416,8 @@ def _ollama_shape(
 ) -> None:
     """Ollama takes the JSON shape as `format` and the penalty as `repeat_penalty`."""
     schema = (response_format or {}).get("json_schema", {}).get("schema")
+    if (response_format or {}).get("type") == "json_object":
+        schema = "json"
     if schema and structured_output_enabled(config, response_format) and not images:
         payload["format"] = schema
     if config.repetition_penalty is not None:
