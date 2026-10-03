@@ -91,7 +91,9 @@ report never contains the term it found.
 The repository is `sam-dumont/immich-memories`. The package and command remain
 `immich-memories`. Container packages keep their published addresses under
 `ghcr.io/sam-dumont/immich-video-memory-generator`, including `/inference`;
-a repository rename does not migrate registry tags.
+a repository rename does not migrate registry tags. Pinned model downloads also
+keep their original repository URLs, which GitHub redirects after the rename.
+This keeps image builds working on both sides of the move.
 
 Before the next PyPI release, check the trusted publisher for **both**
 `immich-memories` and `immich-memories-music`: owner `sam-dumont`, repository

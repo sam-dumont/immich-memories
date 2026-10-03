@@ -12,7 +12,7 @@ from immich_memories.config_models import has_unresolved_env_reference
 # verifies the digest pinned in analysis/editorial_preparation_detectors.py
 # whatever this points at.
 MARQO_ONNX_URL = (
-    "https://github.com/sam-dumont/immich-memories/"
+    "https://github.com/sam-dumont/immich-video-memory-generator/"
     "releases/download/models-v1/nsfw-marqo-384-924658f1.onnx"
 )
 

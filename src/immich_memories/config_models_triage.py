@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 # The one place the encoder artifact's host is named; `models fetch` verifies the
 # digest pinned in triage/encoder.py whatever this points at.
 DINOV2_SMALL_ONNX_URL = (
-    "https://github.com/sam-dumont/immich-memories/"
+    "https://github.com/sam-dumont/immich-video-memory-generator/"
     "releases/download/models-v1/dinov2-small-478164cd.onnx"
 )
 

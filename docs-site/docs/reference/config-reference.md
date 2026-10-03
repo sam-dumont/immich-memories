@@ -566,7 +566,7 @@ advanced:
     detectors_enabled: false      # derived: Marqo and Docling off for Basic, on for GPU and Full
     # Apple silicon defaults below; elsewhere the ONNX archive and threshold 0.185 are used.
     laya_checkpoint: "~/.immich-memories/models/laya/laya-audience-a79ad9fa.tar"
-    laya_checkpoint_url: "https://github.com/sam-dumont/immich-memories/releases/download/models-v2/laya-audience-a79ad9fa.tar"
+    laya_checkpoint_url: "https://github.com/sam-dumont/immich-video-memory-generator/releases/download/models-v2/laya-audience-a79ad9fa.tar"
     laya_audience_threshold: 0.186 # Laya's hold probability at or above which a carrier is held; 0-1
     description_model: "smolvlm2-500m-base-public@envelope-v3-compact"
     pixel_producer_key: "pixel-facts-v1"  # exact producer of pixel facts and thresholds  # gitleaks:allow
@@ -594,7 +594,7 @@ advanced:
       detector_python: ""          # current Python interpreter
       detector_cache_dir: ""       # normal Hugging Face Hub cache
       marqo_onnx: ~/.immich-memories/models/detectors/nsfw-marqo-384.onnx  # digest-pinned sensitive-content export
-      marqo_onnx_url: https://github.com/sam-dumont/immich-memories/releases/download/models-v1/nsfw-marqo-384-924658f1.onnx
+      marqo_onnx_url: https://github.com/sam-dumont/immich-video-memory-generator/releases/download/models-v1/nsfw-marqo-384-924658f1.onnx
       allow_model_downloads: false
     people:
       seat_min_pictures: 20        # a close family member on this many pictures with no shot gets one; at least 1
