@@ -1,0 +1,106 @@
+{
+  "candidate_source": "d5b4472b8525e82fefdd78143aca62e16e707ce1",
+  "frames": [
+    {
+      "tier": "basic",
+      "source_filename": "IMG_2501.mp4",
+      "frame_time_seconds": 37,
+      "film_sha256": "6e698877536f3b508e56dc7ff698cce820e1fb4a1d8495a903057cc1cd0a8718",
+      "image": "basic-IMG_2501.jpg",
+      "image_sha256": "e3cfeffcd5d6fe9d7bc1cf54efd041a23d41b2727435fdc8ea6e0508225e588e",
+      "method": "FFmpeg seek into actual completed film; one frame, scaled to 960px width"
+    },
+    {
+      "tier": "basic",
+      "source_filename": "IMG_2524.mp4",
+      "frame_time_seconds": 48,
+      "film_sha256": "6e698877536f3b508e56dc7ff698cce820e1fb4a1d8495a903057cc1cd0a8718",
+      "image": "basic-IMG_2524.jpg",
+      "image_sha256": "1ab77a9c85b891b505f7ff39c85fe3ac42767af29df1938408a63254588e030d",
+      "method": "FFmpeg seek into actual completed film; one frame, scaled to 960px width"
+    },
+    {
+      "tier": "gpu",
+      "source_filename": "IMG_2491.mp4",
+      "frame_time_seconds": 37,
+      "film_sha256": "9957abdfb6d8ce7b28fe74ce47fab962967748f30f64760d625d3dd262ecfb72",
+      "image": "gpu-IMG_2491.jpg",
+      "image_sha256": "aa114afa79e061686860e86e3ba1527c1b56d001cfb0bf3cb4278aef6c1a60c8",
+      "method": "FFmpeg seek into actual completed film; one frame, scaled to 960px width"
+    },
+    {
+      "tier": "gpu",
+      "source_filename": "IMG_2521.mp4",
+      "frame_time_seconds": 48,
+      "film_sha256": "9957abdfb6d8ce7b28fe74ce47fab962967748f30f64760d625d3dd262ecfb72",
+      "image": "gpu-IMG_2521.jpg",
+      "image_sha256": "6c17b53a70d97c3aabc391202ae3c1d46d06a1335349b5d7a6c3258f96bcabba",
+      "method": "FFmpeg seek into actual completed film; one frame, scaled to 960px width"
+    }
+  ],
+  "limits": [
+    "Public CC0 fixture with synthetic metadata",
+    "No external grading",
+    "Default titles and bundled tracks differed",
+    "Frames have no audio"
+  ],
+  "music": {
+    "basic": "nostalgic/nostalgic_acoustic_s411.opus",
+    "gpu": "happy/happy_electronic_1.opus",
+    "license": "MIT; package LICENSE-MUSIC is byte-identical to existing demo/tier-music-license.txt",
+    "license_sha256": "eb54462fd475ece2f631c1992688dbb575e746994de47db8cef6b61580fcf4e6",
+    "images_have_audio": false
+  },
+  "visual_observations": [
+    {
+      "basic": "underwater swimmer",
+      "gpu": "mountain lake and tents",
+      "frame_seconds": 37
+    },
+    {
+      "basic": "mountain lake with forested shoreline",
+      "gpu": "waterfall and green rock face",
+      "frame_seconds": 48
+    }
+  ],
+  "comparison": {
+    "difference": {
+      "basic_only": [
+        "IMG_2501.mp4",
+        "IMG_2524.mp4"
+      ],
+      "gpu_only": [
+        "IMG_2491.mp4",
+        "IMG_2521.mp4"
+      ],
+      "overlap": 12
+    },
+    "limits": [
+      "Warm model-only weights; fresh independent stores/facts/output",
+      "Existing caption service unchanged",
+      "Default randomized title styles differed",
+      "GPU motion unavailable for seven clips",
+      "Laya choice:11+ confidence bucket uncalibrated",
+      "No external human grading; no claim Basic shipped unsafe sources"
+    ],
+    "shot_count_per_tier": 14,
+    "favourites_per_tier": 4,
+    "source_exclusions": {
+      "basic": 1,
+      "gpu": 3
+    },
+    "extra_exclusions_present_in_basic_film": false
+  },
+  "validation": {
+    "video": "1920x1080 H264 30fps",
+    "audio": "AAC 48kHz stereo",
+    "full_decode_exit": {
+      "basic": 0,
+      "gpu": 0
+    },
+    "duration_seconds": {
+      "basic": 57,
+      "gpu": 56.5
+    }
+  }
+}

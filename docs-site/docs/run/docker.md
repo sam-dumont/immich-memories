@@ -222,7 +222,7 @@ listen on an address reachable from the bridge, such as `0.0.0.0`:
 
 ## The product tier in compose {#the-preparation-tier-in-compose}
 
-The base requests NAS through `TIER=nas`. The GPU and Full tier files request their respective
+The base requests Basic through `TIER=basic`. Existing `TIER=nas` values remain aliases. The GPU and Full tier files request their respective
 tiers. Preflight checks whether the selected hardware and services can satisfy that request.
 Saved Settings can override these deployment defaults. See [tier requirements](./requirements.md#the-preparation-tier).
 Keep `IMMICH_MEMORIES_EDITORIAL__PREPARATION__DETECTOR_CACHE_DIR` on the persistent volume when
@@ -230,7 +230,7 @@ writing your own service block, so detector downloads survive a recreate.
 
 ## Resources
 
-The default 4 GB limit suits 1080p. Use 8 GB for 4K on GPU/Full; NAS stays capped at 1080p.
+The default 4 GB limit suits 1080p. Use 8 GB for 4K on GPU/Full; Basic stays capped at 1080p.
 The file sets no CPU quota because Synology kernels can refuse `cpus:`. Use
 [`cpuset` if needed](./nas.md#do-not-use-cpus-on-a-synology).
 

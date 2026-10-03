@@ -29,13 +29,13 @@ decode. The [measured run](../better/measured.md#generated-gpu-first-film) recor
 CUDA inference/captions, software encoding and corrected local/block SQLite storage. These checks
 used a locally built candidate; they do not verify a published release download.
 
-Use the [setup builder](/setup), select Kubernetes and a published release version, and enter
-Immich's reachable URL and API key. It generates the Secret, namespace-scoped customization,
+Use the [setup builder](/setup), select Kubernetes, and enter Immich's reachable URL and API key.
+The builder uses the release version displayed on the page. It generates the Secret, namespace-scoped customization,
 reader settings when Full is selected, and egress rules for the supplied endpoint ports.
 Download each file and save it at its labelled path after extracting that release's bundle.
 The generated commands render the exact manifests before applying them.
 
-NAS uses the CPU base. GPU adds the existing CUDA inference and caption deployments through
+Basic uses the CPU base. GPU adds the existing CUDA inference and caption deployments through
 `components/gpu-services`; Full adds an explicitly enabled external reader. These are requested
 tiers. Preflight checks actual compute, captions, Laya and reader availability; a preset name
 does not prove readiness. Service defaults stay below saved Settings. The app init container explicitly fetches the GPU
@@ -103,7 +103,7 @@ The `kustomize edit` command requires the standalone Kustomize CLI; `kubectl kus
 builds. You can also edit `images[].newTag` in `base/kustomization.yaml` by hand.
 
 The init container fetches model files needed by its configuration. Its guard includes GPU
-detector files, so NAS runs fetch again on every start; existing files are digest-checked rather
+detector files, so Basic runs fetch again on every start; existing files are digest-checked rather
 than blindly downloaded. Before the first film,
 check the running app's actual tier and requirements:
 

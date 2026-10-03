@@ -62,6 +62,8 @@ const sidebars: SidebarsConfig = {
       type: 'category', label: 'Optional upgrades',
       items: [
         'get-started/choose-your-setup',
+        {type: 'doc', id: 'better/gpu-example', label: 'Basic and GPU example'},
+        {type: 'doc', id: 'better/tier-example', label: 'Basic and Full example'},
         'better/reader', 'better/captions', 'better/inference',
         'run/hardware', 'better/gpu-render', 'better/music', 'better/measured',
       ],

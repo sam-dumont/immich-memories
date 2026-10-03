@@ -112,7 +112,7 @@ spec:
             - name: IMMICH_MEMORIES_OUTPUT__DIRECTORY
               value: /app/output
             - name: IMMICH_MEMORIES_DEPLOYMENT_TIER
-              value: nas
+              value: basic
             - name: IMMICH_MEMORIES_TRIAGE__ENCODER
               value: /models/triage/dinov2-small.onnx
             - name: IMMICH_MEMORIES_EDITORIAL__PREPARATION__MARQO_ONNX

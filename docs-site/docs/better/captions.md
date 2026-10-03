@@ -6,7 +6,7 @@ title: Add captions
 
 Captions are short descriptions used by selection and sharing checks. They are not the date and place labels printed on the film.
 
-NAS works without them. GPU and Full describe the selected pictures and replacement candidates, then reuse those descriptions on later cuts. You do not need to caption the whole library before making a film.
+Basic works without them. GPU and Full describe the selected pictures and replacement candidates, then reuse those descriptions on later cuts. You do not need to caption the whole library before making a film.
 
 The default captioner is **SmolVLM2 500M**. It receives small picture previews. Keep the service on your private network.
 
@@ -54,7 +54,7 @@ From Docker Desktop, replace `localhost` with `host.docker.internal`. A Docker c
 immich-memories preflight
 ```
 
-Look for **Captions OK Serving smolvlm2-500m-base-public**. The app checks the served model and synthetic control pictures before sending your library’s pictures. GPU and Full need a working caption provider; NAS with default settings skips it.
+Look for **Captions OK Serving smolvlm2-500m-base-public**. The app checks the served model and synthetic control pictures before sending your library’s pictures. GPU and Full need a working caption provider; Basic with default settings skips it.
 
 The [service reference](../reference/caption-service.md#how-preflight-reports-it) explains unreachable, wrong-model and authentication failures.
 

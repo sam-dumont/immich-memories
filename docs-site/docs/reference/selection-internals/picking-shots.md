@@ -105,7 +105,7 @@ at all (face recognition off, or only pets and places). Weights were fitted on a
 against a hosted reader's answers and rounded to half points; nothing in it came from anyone's
 library.
 
-| | Heads only (NAS default) | Heads and caption, faces read | Heads and caption, no faces |
+| | Heads only (Basic default) | Heads and caption, faces read | Heads and caption, no faces |
 |---|---|---|---|
 | Refuses at | 3.0 points | 4.5 points | 4.5 points |
 | `frame_kind` | empty room 4, accidental frame 4, lone object 3.5, body part 2.5, record 2.5, screen or document 2 | the four "nothing" kinds 2, record or screen 1, scenery -1 | the four "nothing" kinds 2.5, record or screen 1.5, scenery -0.5 |
@@ -157,7 +157,7 @@ A video always plays, from 2 seconds long (shorter clips are stubs and never bec
 6-second hold. When someone is mid-sentence at the cut, the end stretches to the end of what they
 say, never more than 12 seconds from the start.
 
-A Live Photo plays as motion on every tier, the plain NAS included, when its clip moves and shows its
+A Live Photo plays as motion on every tier, Basic included, when its clip moves and shows its
 subject. The motion is measured during the cut, for the Live Photos the cut kept, and banked
 per picture so the next cut reads it instead (`store/cut_measurements`).
 

@@ -23,9 +23,9 @@ A day ends when the pictures stop for five hours, not at midnight. Days inside a
 tells that story). A holiday spent at home has its own type, so with a reader it is judged like any day
 and then asked one narrow question: was its occasion the holiday itself? A Father's Day lunch is the
 holiday's, and stays out; a cycling race that happened to fall on that date is a special day. With no
-answer, or on a plain NAS, a holiday spent at home is skipped as before.
+answer, or on Basic, a holiday spent at home is skipped as before.
 
-**On a plain NAS** (the default) nothing is asked. A day counts when one recorded fact is loud: most of its
+**On Basic** (the default) nothing is asked. A day counts when one recorded fact is loud: most of its
 located pictures away from home, at least three favourites, at least three videos making half the day, or a
 long day (20 pictures over six active hours) with your close family on it. Each year keeps its strongest
 `advanced.automation.special_days_per_year` (6): days away first, the furthest first, then favourites, then

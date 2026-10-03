@@ -100,7 +100,7 @@ immich-memories generate --year 2025 --music ~/Music/track.mp3 --music-volume 0.
 
 ## When a model names the film
 
-A text reader can write titles and choose the music mood on the NAS tier too. Those calls use text, not pictures. Your typed title wins; template titles remain the fallback. [Title provenance](../reference/output-rendering.md#where-the-title-came-from) explains the source shown on a run.
+A text reader can write titles and choose the music mood on the Basic tier too. Those calls use text, not pictures. Your typed title wins; template titles remain the fallback. [Title provenance](../reference/output-rendering.md#where-the-title-came-from) explains the source shown on a run.
 
 ## Generated music
 

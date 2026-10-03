@@ -4,7 +4,7 @@ title: Inference service deployment and API
 
 # Inference service deployment and API
 
-On a plain NAS the app runs the DINOv2 encoder and its eight heads in its own process, on the
+On Basic the app runs the DINOv2 encoder and its eight heads in its own process, on the
 CPU, once per picture. GPU and Full also enable Marqo and Docling. The inference service moves
 the active producers to another machine:
 a GPU box, a Kubernetes node, or just a container you can restart on its own. The facts are the
@@ -86,7 +86,7 @@ keeps priority for stems. Neither setting changes the ACE-Step generation endpoi
 
 ## Running it with compose
 
-The base file runs NAS. Add the released GPU tier file to start inference and captions:
+The base file runs Basic. Add the released GPU tier file to start inference and captions:
 
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
@@ -190,7 +190,7 @@ For an offline CPU deployment, provision `/cache/dinov2-small.onnx`,
 `/cache/nsfw-marqo-384.onnx` and the pinned Docling snapshot under
 `/cache/huggingface` before starting the service. Copy the complete Hugging Face
 cache, including snapshot metadata. The [model download command](./cli-reference.md#models-fetch)
-needs `--detectors` to fetch Marqo and Docling on a NAS; its default destination
+needs `--detectors` to fetch Marqo and Docling on Basic; its default destination
 is not the service's `/cache` volume. Match the service's configured paths when
 copying artifacts. With `ALLOW_MODEL_DOWNLOADS=false`, a missing model returns
 503 naming the artifact and expected path.

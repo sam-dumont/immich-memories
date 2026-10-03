@@ -7,7 +7,7 @@ import StackStorage from './_stack-storage.mdx';
 
 # Synology DSM
 
-Use **Container Manager → Project** on a DSM model that supports Container Manager. Start with the NAS setup; it needs no separate GPU or model server. The project steps follow [Synology's documentation](https://kb.synology.com/en-global/DSM/help/ContainerManager/docker_project?version=7).
+Use **Container Manager → Project** on a DSM model that supports Container Manager. Start with the Basic setup; it needs no separate GPU or model server. The project steps follow [Synology's documentation](https://kb.synology.com/en-global/DSM/help/ContainerManager/docker_project?version=7).
 
 :::info Tested on Synology; GUI project wizard not yet exercised
 

@@ -5,7 +5,7 @@ title: Generation and output contract
 # Generation and output contract
 
 `immich-memories generate` reads a period of your Immich library, drafts a film from it and renders the cut.
-A plain NAS processes pictures locally; optional remote services follow your privacy settings. It prepares only the pictures
+Basic processes pictures locally; optional remote services follow your privacy settings. It prepares only the pictures
 the film can reach (the ones selection can pick, their Live Photo clips and the bursts around them), never the
 whole library, and banks what it measured, so later cuts reuse compatible preparation facts. For a
 whole period ahead of time, use [`prepare`](../make/cli/prepare.md).
@@ -46,7 +46,7 @@ immich-memories generate --memory-type monthly_highlights --year 2024 --month 6 
 
 `just-us` plays the household's private moments a caption names (a bath, a nappy change) as well,
 `family` keeps them out, and `shareable` plays only what nothing held back. The planned-run summary
-and `runs show` print the level. NAS uses the encoder context heads; GPU and Full add picture detectors and
+and `runs show` print the level. Basic uses the encoder context heads; GPU and Full add picture detectors and
 Laya over captions, and sharing never asks the prose LLM. The rules:
 [Sharing levels](selection-internals/family-audience-duplicates.md#sharing-levels).
 
@@ -213,7 +213,7 @@ the run attempt directory, and `runs why` names one when you ask about it. A run
 
 ## Output
 
-NAS tier caps the final canvas at 1080p, including an explicit `--resolution 4k` request.
+Basic tier caps the final canvas at 1080p, including an explicit `--resolution 4k` request.
 Portrait output uses 1080×1920; landscape uses 1920×1080.
 
 `--output` names the file you want, not the path you get. The name gains an 8-character recipe hash

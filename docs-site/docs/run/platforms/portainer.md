@@ -44,6 +44,10 @@ immich-memories preflight
 
 Fix any reported connection or storage errors before making a film. Model downloads run once; later starts reuse the config volume.
 
+![Portainer Console showing the tested app preflight: 6 OK, 3 warnings and 9 skipped checks.](/img/screenshots/setup-portainer-console.png)
+
+This capture is from the tested candidate above. Its CPU tier still printed the older name NAS; this guide calls that tier Basic.
+
 ## 4. Open the app
 
 From your computer, tunnel to the **Docker host**:

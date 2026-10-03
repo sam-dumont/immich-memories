@@ -15,7 +15,7 @@ The translation can get your request wrong. Preview the scope and the pictures b
 
 You need the **Full** tier: GPU picture preparation, a caption service and a configured [text reader](../better/reader.md). Run `immich-memories prepare --year 2025 --month 6` for the period you want to search, and `immich-memories models fetch` to install the pinned WordNet dictionary.
 
-A text reader by itself on the NAS tier is enough for titles, but not for this feature.
+A text reader by itself on the Basic tier is enough for titles, but not for this feature.
 
 ## Preview first
 

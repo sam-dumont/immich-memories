@@ -9,7 +9,7 @@ Preparation computes reusable picture facts before a cut. This page covers produ
 ## `prepare`
 
 Preparation is the part of a cut that looks at pixels: a preview, its measurements, the encoder and eight
-context heads. GPU and Full add Marqo, Docling and captions; NAS leaves those two detectors off. Grouping and selection reuse those facts. Rendering still downloads and processes media, encodes frames and mixes audio.
+context heads. GPU and Full add Marqo, Docling and captions; Basic leaves those two detectors off. Grouping and selection reuse those facts. Rendering still downloads and processes media, encodes frames and mixes audio.
 
 A film prepares only the pictures it can reach: the ones selection can pick, their Live Photo clips and the
 shots taken in the same run. `prepare` does the whole scope instead, so every later film over it starts warm:

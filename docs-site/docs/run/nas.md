@@ -33,11 +33,13 @@ sudo docker exec immich-memories immich-memories preflight
 ```
 
 Inside the container terminal, run just `immich-memories models fetch` and
-`immich-memories preflight`; leave off `sudo docker exec immich-memories`. These NAS interface
-routes are guidance, not separately tested installs.
+`immich-memories preflight`; leave off `sudo docker exec immich-memories`.
+The [Portainer Stack and Console route](./platforms/portainer.md) passed preparation checks,
+and [Synology through SSH/Compose](./platforms/synology.md) completed a first film.
+The DSM Project wizard, Unraid and TrueNAS interface routes have not been tested.
 
 Then [reach the UI](#reaching-the-ui) and make [your first film](../get-started/first-film.mdx).
-The default NAS tier needs no caption server or text model.
+The default Basic tier needs no caption server or text model.
 
 ### The output folder
 
@@ -85,7 +87,7 @@ pin this app to three cores on a four-core NAS:
 
 ## What to expect
 
-NAS films are capped at 1080p. The default 4 GiB memory limit suits that output.
+Basic films are capped at 1080p. The default 4 GiB memory limit suits that output.
 Budget several hours for the first preparation of a real month on a NAS. A Mac or GPU cluster
 can take about an hour for the same kind of first run; these are planning estimates from
 [the first-run measurements](https://github.com/sam-dumont/immich-video-memory-generator/issues/956),
@@ -93,7 +95,7 @@ not a deadline for every library. This is preparation time, before rendering.
 The first film reads the pictures in its period and saves the results; later films reuse matching
 results. Rendering still happens every time.
 
-NAS preparation leaves Marqo and Docling off; GPU/Full add those detectors, captions and the
+Basic preparation leaves Marqo and Docling off; GPU/Full add those detectors, captions and the
 Laya pre-screen. Compatible facts already in the store stay banked when you change tiers. See
 [what the upgrades add](../get-started/what-a-gpu-or-a-model-adds.md).
 

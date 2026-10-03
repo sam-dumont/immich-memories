@@ -76,7 +76,7 @@ immich-memories preflight
 immich-memories capabilities
 ```
 
-These report connections, installation and available features; they do not certify the quality of a film. With `tier: auto`, GPU inference plus an enabled reader selects Full. GPU capability includes a remote inference service, a working local CUDA ONNX runtime, or a Mac's Metal GPU. Without these, selection remains NAS and the reader can still write titles and music mood. GPU and Full also require captions and Laya.
+These report connections, installation and available features; they do not certify the quality of a film. With `tier: auto`, GPU inference plus an enabled reader selects Full. GPU capability includes a remote inference service, a working local CUDA ONNX runtime, or a Mac's Metal GPU. Without these, selection remains Basic and the reader can still write titles and music mood. GPU and Full also require captions and Laya.
 
 Review the result. A failed refinement can leave the rules draft and reports that refinement did not run. [Laya](../reference/llm-providers.md#the-laya-audience-pre-screen) handles caption-based sharing separately; sharing never asks the prose reader.
 

@@ -330,7 +330,7 @@ With `--subject`, every picture in the album stands on that subject. An ordinary
 a counter with nobody in frame; this one keeps it. Every year the album holds gets at least one shot.
 Sharing, the family-viewing holds, duplicates and the length still apply, and the run record lists
 each shot that got in on the subject alone ([Picking each shot](selection-internals/picking-shots.md#what-a-frame-must-pass)).
-`--subject` needs `--from-album` and a model reader: the plain NAS reader refuses a written subject.
+`--subject` needs `--from-album` and a model reader: the Basic reader refuses a written subject.
 
 ## Special day
 
@@ -345,7 +345,7 @@ immich-memories days-due          # what falls within three days of today
 immich-memories generate --memory-type special_day --day 2016-06-12
 ```
 
-[`discover-days`](special-days.md#discover-days) walks the library a month at a time. On a plain NAS, a day is
+[`discover-days`](special-days.md#discover-days) walks the library a month at a time. On Basic, a day is
 kept when one recorded fact stands out: it was spent away from home, it holds three or more
 favourites, it is mostly video, or it ran long (20 pictures over 6 hours or more) with close family
 in it. Each year keeps its strongest `advanced.automation.special_days_per_year` (6), away days first. The
@@ -381,6 +381,6 @@ A text model adds three things here, and changes nothing else about the types:
   `discover-days --rescan` to recheck catalogue entries.
 - An uncatalogued special day, and people and occasion films, get a title written from their facts.
   The reader invents no event name the facts do not carry.
-- A month or year gets a light polish on top of the NAS draft. What that polish does and costs
+- A month or year gets a light polish on top of the Basic draft. What that polish does and costs
   is on [What a model adds](../how-it-chooses/what-a-model-adds.md) and
   [Make it better](../better/overview.md).

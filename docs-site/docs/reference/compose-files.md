@@ -9,7 +9,7 @@ release; `example.env` and every image default carry that release's version, inc
 
 | File | Purpose |
 |---|---|
-| `docker-compose.yml` | One NAS app, its persistent config/store volume and output mount |
+| `docker-compose.yml` | One Basic app, its persistent config/store volume and output mount |
 | `example.env` | Immich connection, one `IMMICH_MEMORIES_VERSION`, optional reader/auth inputs |
 | `docker-compose.gpu.yml` | Inference, pinned caption weights and a caption server; requests GPU tier |
 | `docker-compose.full.yml` | Requests Full; add after the GPU file and explicitly enable a reader |
@@ -51,8 +51,8 @@ READER_API_KEY=your-reader-key
 
 A URL/model alone never enables the reader. Docker Full requires an external reader; the shipped
 image does not include the local reader runtime. Native installations can use a blank URL after
-installing that runtime and its model. The same reader inputs work on NAS for titles and music
-mood; they do not turn NAS selection into Full.
+installing that runtime and its model. The same reader inputs work on Basic for titles and music
+mood; they do not turn Basic selection into Full.
 
 Tier files use `IMMICH_MEMORIES_DEPLOYMENT_*` defaults. Saved Settings, YAML and normal runtime
 environment overrides still take priority, so inference URL, caption URL and reader settings

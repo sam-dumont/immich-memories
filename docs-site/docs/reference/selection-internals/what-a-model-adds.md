@@ -7,13 +7,13 @@ sidebar_position: 6
 
 `generate --include` steers a new cut and has the selection protections described here. A web pool tick saves an owner revision without scoring or choosing pictures again.
 
-The NAS tier makes the whole film from metadata, pixels and small CPU classifiers. The `gpu` tier
+The Basic tier makes the whole film from metadata, pixels and small CPU classifiers. The `gpu` tier
 adds captions and Laya for the pictures in the cut and their candidates. The `full` tier adds a text
 model that reads the draft, as annotation lines, and polishes it: this page is how. What each tier
 adds, feature by feature: [What a GPU or a model adds](../../get-started/what-a-gpu-or-a-model-adds.md).
 
 The prose model gets text only and never decides sharing. Rules, picture classifiers and Laya
-own that check. A configured LLM can also write titles and music mood on NAS or GPU without
+own that check. A configured LLM can also write titles and music mood on Basic or GPU without
 changing the selection tier. Costs and setup are on [What a model adds, what it costs](../../better/overview.md).
 
 ## Which route a cut takes
@@ -133,7 +133,7 @@ incomplete model pass, which the run evidence now makes visible.
 
 ## Reading on demand
 
-A model film starts with the NAS draft. Missing captions and clip evidence are acquired for
+A model film starts with the Basic draft. Missing captions and clip evidence are acquired for
 selected shots and actual candidates. The reader may expand a selected shot to its whole episode
 for context, using existing annotations without captioning every neighbour. It asks what happened,
 one representative and the moments worth a record. The period's account combines those readings
@@ -179,7 +179,7 @@ one. Story titles and the storyboard read the same place name.
 
 | Key | Default | What it does |
 |---|---|---|
-| `tier` | `auto` | Resolves NAS, GPU or Full from inference capability and the configured LLM; controls preparation and selection together |
+| `tier` | `auto` | Resolves Basic, GPU or Full from inference capability and the configured LLM; controls preparation and selection together |
 | `advanced.editorial.thin_model_layer` | `true` | `false` makes the model plan every film whole (Route C) |
-| Laya | follows the tier | Enabled on GPU and Full, off on NAS; not a separate preparation choice ([details](./family-audience-duplicates.md#the-family-viewing-gate)) |
+| Laya | follows the tier | Enabled on GPU and Full, off on Basic; not a separate preparation choice ([details](./family-audience-duplicates.md#the-family-viewing-gate)) |
 | `advanced.llm.reader_concurrency` | unset | requests in flight: 1 local, 4 hosted when unset |

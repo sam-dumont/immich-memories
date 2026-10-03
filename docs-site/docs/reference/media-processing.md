@@ -20,7 +20,7 @@ the centre, which suits landscapes, food and the dog. The face boxes come from I
 no face detector of its own.
 
 Photo preparation uses the hardware encoder the app has verified, including NVIDIA and VAAPI.
-On NAS tier, a device with hardware H.264 but no hardware HEVC prepares photos as SDR H.264;
+On Basic tier, a device with hardware H.264 but no hardware HEVC prepares photos as SDR H.264;
 HDR photos are tone-mapped before encoding. Devices with hardware HEVC keep HDR photo
 intermediates. Disabling hardware encoding keeps preparation in software.
 
@@ -119,7 +119,7 @@ agree. With it off, a Live Photo is used as its still, never dropped.
 A shared album can hold a downscaled copy of a Live Photo pointing at the same video. The video
 belongs to both copies, so whichever the cut keeps plays it.
 
-On NAS tier, Live Photo merges fit within 1920×1080 in landscape or 1080×1920 in portrait.
+On Basic tier, Live Photo merges fit within 1920×1080 in landscape or 1080×1920 in portrait.
 If the hardware encodes H.264 but cannot encode HEVC, HDR companions are tone-mapped to SDR
 during preparation. Each companion's HLG or PQ transfer determines its color conversion.
 Changing the tier or hardware settings rebuilds certified merges under the new policy.
