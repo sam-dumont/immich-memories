@@ -134,3 +134,11 @@ permissions and cancellation. Keep the [store backed up](./database.md).
 The [offline Basic recipe](./offline.md) seeds a model volume before restricting the app to
 Immich. It includes Docker's same-host internal bridge and a destination-scoped Kubernetes
 policy, with their routing limits.
+
+## Before using the Basic offline recipe
+
+Basic omits the extra GPU/Full detectors and Laya sharing pre-screen. Choosing **Family**
+instead of **Just us** does not add that missing coverage. Review the film before sharing;
+[the audience guide](../how-it-chooses/family-audience-duplicates.md) explains the limits.
+
+For an additional text service, see [Basic with a local text model](./local-models.md).

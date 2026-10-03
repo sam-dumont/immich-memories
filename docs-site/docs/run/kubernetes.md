@@ -200,6 +200,9 @@ uses 9999. The CNI must enforce NetworkPolicy for any of these rules to matter.
 
 ## GPU
 
+Check the [service/GPU allocation table](./local-models.md#kubernetes-services) before choosing
+a generated or independently managed route.
+
 For **video encoding/title effects**, apply `overlays/gpu` instead of `base`. It reserves one
 NVIDIA GPU for the app. It does not start inference or caption services.
 Intel/AMD device plugins and `/dev/dri` mapping are not supplied by these manifests.

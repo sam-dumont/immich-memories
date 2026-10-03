@@ -49,7 +49,7 @@ A dash is deliberately not used as a substitute for evidence.
 | NAS app + [standalone Docker GPU worker](../better/gpu-render.md) | Candidate/version: not tested | Selection depends on inference; worker encoding separate | **Documented, untested**: the published Kubernetes worker result does not prove Docker-worker installation | Not measured / not measured |
 | NAS app + [Kubernetes GPU worker](../better/measured.md#generated-nas-remote-gpu) | App `75077f27`, image `49cc60a978ce`, worker `d079a0da1633` | GPU facts/captions; NAS software encoding | **Partial**: film passed; cold preflight initially failed, retry used a test overlay; public unmodified candidate pending | Total not measured / generation 6m 53.09s |
 | Basic, [prepared models and blocked internet](./offline.md) | Docker `5466706b` / recipe `00cd41df`; Kubernetes `75077f27` | Basic; software H.264 | **Partial**: isolated runtime and complete decode passed on the named topologies; release-download path and DNS-Service policy variant unverified | Not measured / 19-second outputs, elapsed not recorded |
-| Basic plus [local text model](../better/reader.md) | App candidate: not tested; model conformance evidence linked in recipe | Basic selection, text titles/mood; not Full or vision captions | **Documented, untested**: complete recipe's offline film and provider-stop test pending; conformance is a narrower result | Not measured / not measured |
+| Basic plus [local text model](./local-models.md) | App candidate: not tested; model conformance evidence linked in recipe | Basic selection, text titles/mood; not Full or vision captions | **Documented, untested**: complete recipe's offline film and provider-stop test pending; conformance is a narrower result | Not measured / not measured |
 
 ## What you must provide
 
@@ -61,7 +61,7 @@ local-only runtime requires the separately tested firewall/policy recipe, not ju
 | Route | Supplied infrastructure and budgets | Reader ownership and runtime destinations |
 |---|---|---|
 | Basic Compose and vendor GUI | Docker/Compose or named vendor manager, 2 cores, app 4 GiB, app data 25 GB plus image/output | No reader required; containers need an external server if enabled; Immich only with default features |
-| Generated Kubernetes GPU | Cluster/CNI, storage class, device plugin, two schedulable GPU allocations; app limit 8 GiB/4 CPUs plus [service budgets](./kubernetes.md#gpu) | External reader for Full; Immich plus inference/caption services, reader if enabled |
+| Generated Kubernetes GPU | Cluster/CNI, storage class, device plugin, two schedulable GPU allocations; app limit 8 GiB/4 CPUs plus [service budgets](./local-models.md#kubernetes-services) | External reader for Full; Immich plus inference/caption services, reader if enabled |
 | Independent Kubernetes | Operator supplies compatible model/worker endpoints and their RAM/VRAM/storage; app and init budgets in [Kubernetes](./kubernetes.md) | External readers; operator controls GPU sharing and every service's outbound policy |
 | Native Apple Silicon | Python, FFmpeg, app/model memory; historical M5 had 128 GB, not a measured minimum; existing caption server disclosed | App-owned llama-server possible on native macOS/Linux; external servers retain their own memory and egress |
 | NAS + GPU box | NAS app budget above plus a separate matching worker/model host; historical T1000 had 8 GB VRAM | Inference/caption traffic to that host; rendering moves only when a render endpoint is configured |

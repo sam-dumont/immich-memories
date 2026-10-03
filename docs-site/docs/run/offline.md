@@ -24,6 +24,10 @@ a denied outbound destination and your first film result in
 
 Use the same release image for fetching and rendering. Pull it before isolating the app:
 
+Basic omits the extra GPU/Full detectors and Laya sharing pre-screen. Choosing **Family**
+instead of **Just us** does not add that missing coverage. Review the film before sharing;
+[the audience guide](../how-it-chooses/family-audience-duplicates.md) explains the limits.
+
 ```bash
 export IMMICH_MEMORIES_IMAGE=ghcr.io/sam-dumont/immich-memories:YOUR_RELEASE
 docker pull "$IMMICH_MEMORIES_IMAGE"
@@ -151,6 +155,10 @@ as `networkpolicy.offline.yaml` and edit:
 After preparation, remove the fetch init container from your maintained manifest/overlay
 and pin the same offline feature settings as the Docker example. To make that transition
 on an already running Basic Deployment:
+
+Basic omits the extra GPU/Full detectors and Laya sharing pre-screen. Choosing **Family**
+instead of **Just us** does not add that missing coverage. Review the film before sharing;
+[the audience guide](../how-it-chooses/family-audience-duplicates.md) explains the limits.
 
 ```bash
 kubectl rollout status -n immich-memories deployment/immich-memories
