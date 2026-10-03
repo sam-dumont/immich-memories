@@ -11,7 +11,7 @@ These manifests get less exercise than Docker Compose. They are validated with
 rendered output before you apply it.
 
 ```
-base/                  CPU-only: Namespace, Secret, PVCs, Deployment, Service, NetworkPolicy
+base/                  CPU-only: Namespace, PVCs, Deployment, Service, NetworkPolicy
   job.yaml             optional one-off CLI Job; Deployment must be scaled to zero
   cronjobs.yaml        optional scheduled HTTP triggers; no application PVC mounts
   ingress.yaml.example optional Ingress — only after enabling authentication
@@ -39,8 +39,12 @@ overlays/postgres/     optional: point the store at PostgreSQL instead of the de
 cd deploy/kubernetes
 
 # 1. Secret: Immich URL + API key (every key becomes an env var in the pod)
-cp base/secret.yaml.example base/secret.yaml
-vim base/secret.yaml
+kubectl apply -f base/namespace.yaml
+secret_file=$(mktemp)
+cat base/secret.yaml.example > "$secret_file"
+vim "$secret_file"
+kubectl apply -f "$secret_file"
+rm "$secret_file"
 
 # 2. Deploy — CPU only
 kubectl apply -k base
@@ -88,7 +92,7 @@ is present and Immich answers, otherwise `503`). `/health` always returns `200` 
 ## Batch Jobs
 
 `base/cronjobs.yaml` contains two scheduled HTTP triggers. Set the trigger token in
-`base/secret.yaml`, uncomment `- cronjobs.yaml` in the kustomization, then run
+the existing `immich-memories-secrets` Secret, uncomment `- cronjobs.yaml` in the kustomization, then run
 `kubectl kustomize base` and `kubectl apply -k base`. Both schedules call the normal
 `auto run` decision, even the one named monthly. They mount no application PVCs.
 
@@ -116,9 +120,7 @@ two `NVIDIA_*` env vars into any `base/job.yaml` pod you schedule on a GPU node.
 
 `overlays/inference` is the encoder, the eight heads and the two detectors behind one HTTP port, as
 a separate Deployment: a ClusterIP Service named `inference` on 8092, a 10Gi model-cache PVC and
-its own NetworkPolicy. It deliberately does not list `../../base` in its resources. The base
-refuses to build without a hand-made `secret.yaml`, and this service holds no credential and never
-talks to Immich. The namespace object still comes from the base, so on a cluster running the
+its own NetworkPolicy. It deliberately does not list `../../base` in its resources. This service holds no credential and never talks to Immich. The namespace object still comes from the base, so on a cluster running the
 service alone, `kubectl create namespace immich-memories` first.
 
 ```bash
@@ -207,9 +209,12 @@ OIDC), then `cp base/ingress.yaml.example base/ingress.yaml`, set the host, and 
 
 ```bash
 brew install kubeseal
-cp base/secret.yaml.example base/secret.yaml   # fill in, then seal
-kubeseal --format=yaml < base/secret.yaml > base/sealed-secret.yaml
-kubectl apply -f base/sealed-secret.yaml
+kubectl apply -f base/namespace.yaml
+secret_file=$(mktemp)
+cat base/secret.yaml.example > "$secret_file"   # fill in, then seal
+kubeseal --format=yaml < "$secret_file" > sealed-secret.yaml
+rm "$secret_file"
+kubectl apply -f sealed-secret.yaml
 ```
 
 ## Backups

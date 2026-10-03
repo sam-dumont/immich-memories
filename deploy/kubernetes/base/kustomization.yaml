@@ -7,9 +7,7 @@ namespace: immich-memories
 # For NVIDIA nodes apply the overlay instead:  kubectl apply -k overlays/gpu
 resources:
   - namespace.yaml
-  # cp secret.yaml.example secret.yaml and fill in IMMICH_URL / IMMICH_API_KEY.
-  # kustomize refuses to build until the file exists.
-  - secret.yaml
+  # Create immich-memories-secrets separately; the base never stores credentials.
   - pvc.yaml
   - deployment.yaml
   - service.yaml

@@ -97,6 +97,8 @@ locals {
     var.env,
   )
 
+  secret_name = var.existing_secret_name != "" ? var.existing_secret_name : "immich-memories-secrets"
+
   secret_data = merge(
     {
       IMMICH_URL     = var.immich_url
@@ -138,6 +140,8 @@ resource "kubernetes_namespace_v1" "this" {
 
 # Secret
 resource "kubernetes_secret_v1" "this" {
+  count = var.existing_secret_name == "" ? 1 : 0
+
   metadata {
     name      = "immich-memories-secrets"
     namespace = var.namespace
@@ -357,7 +361,7 @@ resource "kubernetes_deployment_v1" "this" {
 
           env_from {
             secret_ref {
-              name = kubernetes_secret_v1.this.metadata[0].name
+              name = local.secret_name
             }
           }
 
@@ -469,7 +473,7 @@ resource "kubernetes_deployment_v1" "this" {
               name = "IMMICH_MEMORIES_RENDER_WORKER_TOKEN"
               value_from {
                 secret_key_ref {
-                  name = kubernetes_secret_v1.this.metadata[0].name
+                  name = local.secret_name
                   key  = "IMMICH_MEMORIES_RENDER__WORKER_TOKEN"
                 }
               }
@@ -478,7 +482,7 @@ resource "kubernetes_deployment_v1" "this" {
               name = "IMMICH_MEMORIES_RENDER_WORKER_IMMICH_URL"
               value_from {
                 secret_key_ref {
-                  name = kubernetes_secret_v1.this.metadata[0].name
+                  name = local.secret_name
                   key  = "IMMICH_URL"
                 }
               }

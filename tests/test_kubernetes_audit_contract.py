@@ -120,7 +120,12 @@ def test_documented_namespace_recipe_moves_every_overlay_secret(manifests):
     if shutil.which("kustomize") is None:
         pytest.skip("standalone kustomize not installed")
     docs = ROOT.parents[1] / "docs-site" / "docs" / "run" / "reference" / "kubernetes.md"
-    recipe = docs.read_text().split("```bash\n", 1)[1].split("```", 1)[0]
+    recipe = (
+        docs.read_text()
+        .split("## Another namespace", 1)[1]
+        .split("```bash\n", 1)[1]
+        .split("```", 1)[0]
+    )
     recipe = recipe.removeprefix("cd deploy/kubernetes\n")
     result = subprocess.run(
         ["bash", "-c", recipe], cwd=manifests, capture_output=True, text=True, check=False

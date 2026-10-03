@@ -78,12 +78,20 @@ pins can trail releases. Image tags have no `v` prefix.
 
 ```bash
 cd deploy/kubernetes
-cp base/secret.yaml.example base/secret.yaml
-# Edit IMMICH_URL and IMMICH_API_KEY in base/secret.yaml.
+kubectl apply -f base/namespace.yaml
+secret_file=$(mktemp)
+cat base/secret.yaml.example > "$secret_file"
+# Edit IMMICH_URL and IMMICH_API_KEY in "$secret_file" outside Git.
+kubectl apply -f "$secret_file"
+rm "$secret_file"
 kubectl kustomize base
 kubectl apply -k base
 kubectl rollout status -n immich-memories deploy/immich-memories
 ```
+
+The temporary Secret file is private (mode 0600); remove it after applying.
+The base uses an existing `immich-memories-secrets` Secret. GitOps users can skip the plaintext
+copy and use [SOPS or External Secrets](reference/kubernetes.md#bring-your-own-secret).
 
 For a source checkout, set the image before applying:
 

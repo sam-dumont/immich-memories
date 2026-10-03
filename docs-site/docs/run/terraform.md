@@ -5,8 +5,9 @@ title: "Terraform"
 # Terraform
 
 The module in `deploy/terraform/` deploys the app to Kubernetes. Use it if you already manage
-the cluster with Terraform. The shipped module has not been validated/applied to every live setup:
-read the plan before applying it.
+the cluster with Terraform. The [existing-Secret validation runs](./reference/kubernetes.md#verified-terraform-runs)
+include an unmodified-module rollout with a published app release. Read the plan before applying
+it to your cluster.
 
 The project supports this module and the [Kustomize deployment](./kubernetes.md#supported-deployment-paths).
 There is no project Helm chart; request one if your setup needs it.
