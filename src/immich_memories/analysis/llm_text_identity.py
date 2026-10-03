@@ -29,7 +29,11 @@ def text_model_identity(resolved: LLMConfig, *, thinking: bool) -> str:
         "extra_params": resolved.extra_params,
         "structured_output": (
             "request-kind-v1"
-            if resolved.structured_output is None and is_local_endpoint(resolved)
+            if (
+                resolved.structured_output is None
+                and not resolved.runs_locally
+                and is_local_endpoint(resolved)
+            )
             else structured_output_enabled(resolved)
         ),
         "repetition_penalty": resolved.repetition_penalty,

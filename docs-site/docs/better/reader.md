@@ -50,7 +50,9 @@ advanced:
     model: your-server-model-name
 ```
 
-Use the exact name the server advertises. From Docker Desktop, `host.docker.internal` reaches a native server on the host; `localhost` reaches the container itself. Add `api_key` when the server requires one. The app treats loopback, private IP addresses and single-label service names as local: one request at a time, with prompt-only episode JSON and a repetition penalty of 1.0. A dotted hostname counts as hosted: four concurrent requests, episode schemas enabled and no repetition penalty by default. For a LAN server with a dotted name, set `reader_concurrency: 1` and `structured_output: false` if its constrained decoding stalls; the latter disables schemas for every request, not just episode readings.
+The app-owned llama.cpp reader keeps episode JSON schemas enabled; the external-server workaround below does not apply to it.
+
+Use the exact name the server advertises. From Docker Desktop, `host.docker.internal` reaches a native server on the host; `localhost` reaches the container itself. Add `api_key` when the server requires one. For these external servers, the app treats loopback, private IP addresses and single-label service names as local: one request at a time, with prompt-only episode JSON and a repetition penalty of 1.0. A dotted hostname counts as hosted: four concurrent requests, episode schemas enabled and no repetition penalty by default. For a LAN server with a dotted name, set `reader_concurrency: 1` and `structured_output: false` if its constrained decoding stalls; the latter disables schemas for every request, not just episode readings.
 
 The server manages its own model memory. The app does not unload an external server's models, so account for that memory alongside captions and music.
 

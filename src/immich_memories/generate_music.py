@@ -138,8 +138,7 @@ def resolve_music(
             # the only silent video. Fall through to bundled and carry the warning
             # out with the track — a log line alone never reaches the run artifact,
             # the UI or the nightly notification, so a dead backend stayed invisible.
-            warning = f"{optional_music_warning(exc, config)}; used a bundled track instead"
-            logger.warning(warning)
+            warning = optional_music_warning(exc, config)
             generated = None
         if generated:
             return MusicSelection(generated.full_mix, stems=generated.stems)
@@ -160,8 +159,15 @@ def resolve_music(
         ),
     )
     if not bundled:
+        if warning:
+            warning = f"{warning}; no bundled track available; no music added"
+            logger.warning(warning)
         return MusicSelection(None, warning)
-    return MusicSelection(_master(bundled, run_output_dir), warning)
+    mastered = _master(bundled, run_output_dir)
+    if warning:
+        warning = f"{warning}; used a bundled track instead"
+        logger.warning(warning)
+    return MusicSelection(mastered, warning)
 
 
 def _music_evidence(

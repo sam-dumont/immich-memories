@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import atexit
+import gc
 import hashlib
 import os
 import secrets
@@ -120,6 +121,9 @@ class LocalModels:
     @asynccontextmanager
     async def reader(self, config: LLMConfig) -> AsyncIterator[LLMConfig]:
         """Lazily start the configured reader and lease it for the complete HTTP request."""
+        # The owned server is llama.cpp, not an unknown loopback provider such as oMLX.
+        if config.structured_output is None:
+            config = config.model_copy(update={"structured_output": True})
         async with self.exclusive():
             try:
                 yield await self._start(config)
@@ -150,6 +154,9 @@ class LocalModels:
     def prepare_audio(self) -> None:
         """Release the owned reader and unused buffers in already-loaded local runtimes."""
         self.close()
+        # Model loaders can leave cyclic Python owners after their live tensors are dropped.
+        # Collect those owners before asking each allocator to return unused buffers.
+        gc.collect()
         if torch := sys.modules.get("torch"):
             if torch.backends.mps.is_available():
                 torch.mps.empty_cache()

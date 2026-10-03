@@ -633,3 +633,73 @@ def test_caption_readiness_deadline_kills_and_reaps_unresponsive_process(tmp_pat
     assert not captions.running
     with pytest.raises(ProcessLookupError):
         os.kill(int(pid_file.read_text()), 0)
+
+
+async def test_render_keeps_admission_until_idle_cleanup_finishes():
+    import asyncio
+
+    import pytest
+
+    cleaning = threading.Event()
+    finish = threading.Event()
+    released = []
+
+    # WHY: stand in for native GPU cleanup while keeping the actual phase lock and threads.
+    def release(phase):
+        released.append(phase)
+        if phase == "idle":
+            cleaning.set()
+            assert finish.wait(3)
+
+    phases = GpuPhases(release)
+
+    def render():
+        with phases.rendering():
+            pass
+
+    work = asyncio.create_task(asyncio.to_thread(render))
+    try:
+        assert await asyncio.to_thread(cleaning.wait, 2)
+        with pytest.raises(PhaseBusy):
+            async with phases.models("facts"):
+                raise AssertionError("admitted a model before render cleanup")
+    finally:
+        finish.set()
+        await work
+    async with phases.models("facts"):
+        assert released == ["render", "idle", "facts"]
+
+
+async def test_failed_idle_cleanup_does_not_strand_render_admission():
+    import pytest
+
+    def release(phase):
+        if phase == "idle":
+            raise RuntimeError("synthetic native cleanup failure")
+
+    phases = GpuPhases(release)
+    with pytest.raises(RuntimeError, match="native cleanup failure"), phases.rendering():
+        pass
+    async with phases.models("facts"):
+        pass
+
+
+def test_worker_releases_loaded_title_runtime_after_render_health(tmp_path, monkeypatch):
+    import sys
+    from types import SimpleNamespace
+
+    released = []
+    # WHY: the title library is optional and native; exercise real HTTP/phase ownership around it.
+    monkeypatch.setitem(
+        sys.modules,
+        "immich_memories.titles.kernels",
+        SimpleNamespace(release_kernels=lambda: released.append(True)),
+    )
+    app = create_app(
+        InferenceSettings(cache_dir=tmp_path),
+        WorkerSettings(token=WORKER_TOKEN, immich_url="http://immich.invalid", directory=tmp_path),
+        renderer=IdleRenderer(),
+    )
+    with TestClient(app) as client:
+        assert client.get("/render/health", headers=AUTH).status_code == 200
+        assert released

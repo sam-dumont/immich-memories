@@ -9,7 +9,7 @@ from __future__ import annotations
 import logging
 from collections.abc import Callable
 from dataclasses import dataclass, field, replace
-from datetime import date
+from datetime import date, datetime, time
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, overload
 
@@ -30,6 +30,7 @@ from immich_memories.processing.output_contract import (
     publish_validated_output,
     validate_output,
 )
+from immich_memories.timeperiod import DateRange
 
 if TYPE_CHECKING:
     from immich_memories.analysis.editorial_planner import EditorialSelection
@@ -414,6 +415,16 @@ def _clear_run_intermediates(
         logger.debug("Temp dir cleanup failed", exc_info=True)
 
 
+def _requested_date_range(params: GenerationParams) -> DateRange | None:
+    """Persist resolved scope before rendering so failed runs can render their saved cut."""
+    if params.date_start is None or params.date_end is None:
+        return None
+    return DateRange(
+        datetime.combine(params.date_start, time.min),
+        datetime.combine(params.date_end, time.max),
+    )
+
+
 def _generate_memory_inner(
     params: GenerationParams,
     *,
@@ -458,10 +469,11 @@ def _generate_memory_inner(
     )
     requested_output_path = run_output_dir / sanitize_filename(params.output_path.name)
 
+    date_range = _requested_date_range(params)
     if observed_run is None:
         run_tracker.start_run(
             person_name=params.person_name,
-            date_range=None,
+            date_range=date_range,
             target_duration_seconds=estimated_duration_seconds,
             memory_type=params.memory_type,
             memory_key=build_memory_key(params),
@@ -475,6 +487,12 @@ def _generate_memory_inner(
             replace(
                 observed_run,
                 person_name=params.person_name,
+                date_range_start=(
+                    date_range.start.date() if date_range else observed_run.date_range_start
+                ),
+                date_range_end=(
+                    date_range.end.date() if date_range else observed_run.date_range_end
+                ),
                 target_duration_seconds=estimated_duration_seconds,
                 memory_type=params.memory_type,
                 memory_key=build_memory_key(params),

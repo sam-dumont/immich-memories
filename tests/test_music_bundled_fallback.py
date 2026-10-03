@@ -167,3 +167,29 @@ def test_no_music_still_means_no_music(tmp_path: Path, generator_enabled: Config
     )
 
     assert result.path is None
+
+
+def test_missing_bundle_does_not_claim_a_track_was_used(
+    tmp_path: Path, generator_enabled: Config, monkeypatch: pytest.MonkeyPatch, caplog
+) -> None:
+    # WHY: the external generator is unavailable; the supplied library is genuinely absent.
+    def unreachable(*args: object, **kwargs: object) -> Path:
+        raise ConnectionError("All connection attempts failed")
+
+    monkeypatch.setattr("immich_memories.generate_music.auto_generate_music", unreachable)
+    result = resolve_music(
+        generator_enabled,
+        None,
+        no_music=False,
+        assembly_clips=[],
+        run_output_dir=tmp_path,
+        memory_type=None,
+        bundled_library=tmp_path / "absent-library",
+        transition_overlap=0.0,
+    )
+
+    assert result.path is None
+    assert result.warning is not None
+    assert "All connection attempts failed" in result.warning
+    assert "no bundled track available" in result.warning
+    assert "used a bundled track" not in caplog.text

@@ -106,6 +106,17 @@ def init_kernels() -> str | None:
     return None
 
 
+def release_kernels() -> None:
+    """Release idle native buffers; the owner must exclude concurrent title work."""
+    global _kernels_initialized, _kernel_arch
+    if not _kernels_initialized:
+        return
+    ti.sync()
+    ti.reset()
+    _kernels_initialized = False
+    _kernel_arch = None
+
+
 def _note_gpu_failure(name: str, probe_name: str, reason: str) -> None:
     if probe_name != CPU_PROBE_NAME:
         _gpu_failures.append(f"{name}: {reason}")
