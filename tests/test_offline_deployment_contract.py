@@ -40,7 +40,7 @@ def test_offline_runtime_overrides_disable_saved_outbound_features(tmp_path, mon
 
     config = load_config(source)
 
-    assert config.tier == "nas"
+    assert config.tier == "basic"
     assert not config.llm.enabled
     assert not config.render.enabled
     assert not config.inference.enabled

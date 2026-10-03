@@ -45,7 +45,7 @@ captions. Before new picture captions, three synthetic tiles must pass the schem
 LLM caption stays outstanding, with no automatic fallback to another model.
 
 Film generation still captions only the selected shots and actual candidates. `prepare` is the
-explicit job for a wider scope. This choice works on NAS without promoting selection to Full:
+explicit job for a wider scope. This choice works on Basic without promoting selection to Full:
 automatic tiers still follow available GPU inference capability. Sharing decisions remain with
 the rules, classifiers and Laya where enabled.
 
@@ -256,14 +256,14 @@ The standalone overlays pin llama.cpp build b10920: `server-b10920` on CPU and
 | `Caption endpoint serves another model` | a server answered and advertised something else |
 | `Caption endpoint refused the request` | 401 or 403, so set `caption_api_key` |
 
-On NAS with the default caption provider the row reads `SKIPPED`. An explicit LLM-caption
+On Basic with the default caption provider the row reads `SKIPPED`. An explicit LLM-caption
 opt-in prints the image-sharing warning; it does not send a vision request. Preparation validates
 that provider's synthetic control responses before sending library pictures.
 
 ## What a missing captioner costs
 
 On GPU and Full with SmolVLM, prepare stops: the description producer stays outstanding and the
-failure names `caption_base_url`. Default NAS does not require that endpoint. With explicit LLM
+failure names `caption_base_url`. Default Basic does not require that endpoint. With explicit LLM
 captions, a failed image request stays outstanding under that provider's identity.
 What each tier runs: [Requirements and tiers](../run/requirements.md#the-preparation-tier).
 
@@ -331,5 +331,5 @@ Photo; it uses plain facts until a later `prepare` banks that companion's senten
 banked descriptions and never contact the motion-description server. Missing lines remain listed
 in the private preparation record. Required captions and safety facts still gate the cut.
 
-The `nas` tier asks for no motion line. The pick then reads the video's plain
+The `basic` tier asks for no motion line. The pick then reads the video's plain
 facts instead: its length, and the measured motion of a Live Photo that has one.

@@ -630,7 +630,7 @@ def build_merge_command(
         quantize_material=quantize_material,
         segment_frame_holds=segment_frame_holds,
         geometry_filter=burst_geometry_filter(
-            clip_paths, nas=config is not None and config.tier == "nas"
+            clip_paths, nas=config is not None and config.tier == "basic"
         ),
         color_filters=[
             get_hdr_conversion_filter(
@@ -757,7 +757,7 @@ def burst_encoding_plan(
         if hardware_enabled
         else HWAccelCapabilities()
     )
-    nas = config is not None and config.tier == "nas"
+    nas = config is not None and config.tier == "basic"
     preserve_hdr = is_hdr and not (
         nas and capabilities.supports_h264_encode and not capabilities.supports_h265_encode
     )

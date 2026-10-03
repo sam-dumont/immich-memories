@@ -34,28 +34,28 @@ values fail validation at startup.
 One resolved tier controls both preparation and selection. Leave it automatic for normal use.
 
 ```yaml
-tier: auto                         # auto | nas | gpu | full
+tier: auto                         # auto | basic | gpu | full
 ```
 
 | `tier` | Models | Reader | Needs |
 | --- | --- | --- | --- |
-| `nas` | eight shared-DINO CPU heads, no captions | rules | `models fetch` |
+| `basic` | eight shared-DINO CPU heads, no captions | rules | `models fetch` |
 | `gpu` | heads, Marqo, Docling, captions and Laya | rules | a caption server, `models fetch` |
 | `full` | everything in `gpu` | an LLM polishes the rules draft and writes the prose | enable `advanced.llm`; owned local model by default, or an explicit `base_url` and server model |
 
 `auto` is the default. A healthy inference service reporting CUDA, or a local CUDA or MLX/Metal
 runtime, selects `gpu`. An explicitly enabled LLM alongside that capability selects `full`. Without GPU
-inference capability, selection stays on `nas` and reports what is missing. A renderer's GPU
+inference capability, selection stays on `basic` and reports what is missing. A renderer's GPU
 does not establish inference capability. The runtime check loads no model weights and sends no
 pictures; preflight and acquisition still check the actual producers.
 
 `editorial.reader`, `editorial.preparation.tier` and `editorial.laya_audience` are derived from
 the product tier. These values are derived rather than separate user controls. Save omits these
 derived settings and keeps automatic resolution automatic when the file moves to another host.
-An explicit `nas`, `gpu` or `full` pins a tier for a controlled comparison; it does not install or
+An explicit `basic`, `gpu` or `full` pins a tier for a controlled comparison; it does not install or
 start its services. `full` requires an enabled reader: the app-owned local model or a configured API.
 
-Configured LLM titles and music mood work on every tier. NAS and GPU still select with rules,
+Configured LLM titles and music mood work on every tier. Basic and GPU still select with rules,
 and sharing never asks the prose LLM. Captions use their own configured service; a text LLM is
 not an automatic caption fallback. A missing Laya checkpoint or runtime is reported and uses
 the conservative rules fallback; that is a degraded run, not a verified GPU/full comparison.
@@ -561,8 +561,8 @@ advanced:
     thin_model_layer: true         # the model polishes a rules draft; false makes it plan the film
     strict_sharing: true           # anything a head or exposure flag marked stays out of shared films
     annotation_database: ""        # compatibility field; leave blank for the default cache directory
-    laya_audience: false           # derived: off for NAS, on for GPU and Full
-    detectors_enabled: false      # derived: Marqo and Docling off for NAS, on for GPU and Full
+    laya_audience: false           # derived: off for Basic, on for GPU and Full
+    detectors_enabled: false      # derived: Marqo and Docling off for Basic, on for GPU and Full
     # Apple silicon defaults below; elsewhere the ONNX archive and threshold 0.185 are used.
     laya_checkpoint: "~/.immich-memories/models/laya/laya-audience-a79ad9fa.tar"
     laya_checkpoint_url: "https://github.com/sam-dumont/immich-video-memory-generator/releases/download/models-v2/laya-audience-a79ad9fa.tar"
@@ -630,7 +630,7 @@ strict band, baked into its coefficients because the bundle schema holds no thre
 it answered `yes` on 37 of 3,564 photographs and every one of them was a screen. Each of the three
 only adds to a rule another producer already answered, and none of them can clear anything.
 
-The top-level [`tier`](#tier) sets `reader`: `rules` on `nas` and `gpu`, `model` on `full`.
+The top-level [`tier`](#tier) sets `reader`: `rules` on `basic` and `gpu`, `model` on `full`.
 Rules cover the ten standard memory products, including albums and recurring dates,
 from dates, places, favourites, people metadata and whatever preparation facts exist. They reuse
 the normal allocation, spacing, audience and timing checks, omit a thesis, keep unsampled Live
@@ -652,8 +652,8 @@ the whole film even when an account exists.
 
 `strict_sharing` keeps any picture a detector head or an exposure flag marked out of a shareable
 film. Only your own clearance on the picture can lift a detector or exposure hold.
-It is also what lets a NAS with no captions cut a shareable film at all: with it on, a picture every
-active head or detector read as clean and nothing flagged is `share`; with it off, a NAS clears
+It is also what lets Basic without captions cut a shareable film at all: with it on, a picture every
+active head or detector read as clean and nothing flagged is `share`; with it off, Basic clears
 nothing. Just-us
 and family films are unchanged. Turning it off does not let a caption clear an exposure flag.
 
@@ -675,10 +675,10 @@ See [Add a reader](llm-providers.md#the-laya-audience-pre-screen).
 
 ### Preparation tiers
 
-Preparation follows the product tier. NAS acquires pixel facts and the eight shared-DINO heads.
+Preparation follows the product tier. Basic acquires pixel facts and the eight shared-DINO heads.
 GPU and Full add Marqo, Docling, captions and Laya. `detectors_enabled` is tier-owned; a saved
 value does not override the tier. `head_versions` keeps all producer identities, while the active
-view filters out Marqo and Docling on NAS. Banked facts remain available when you switch back.
+view filters out Marqo and Docling on Basic. Banked facts remain available when you switch back.
 Saved review decisions and permanent holds persist across tier changes.
 
 A film starts with a caption-free rules draft, retaining the resolved tier's detector policy, then

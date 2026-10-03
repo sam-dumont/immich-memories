@@ -107,7 +107,7 @@ class EditorialConfig(BaseModel):
     strict_sharing: bool = Field(
         default=True,
         description=(
-            "Allow NAS sharing on clean detector evidence without captions. Detector and "
+            "Allow sharing on clean detector evidence without captions. Detector and "
             "exposure holds remain the floor even when false; only explicit owner clearance "
             "lifts them. Family films are unchanged"
         ),
@@ -140,7 +140,7 @@ class EditorialConfig(BaseModel):
     )
     detectors_enabled: bool = Field(
         default=True,
-        description="Use Marqo and Docling: disabled by the NAS tier, enabled by GPU and Full",
+        description="Use Marqo and Docling: disabled by the Basic tier, enabled by GPU and Full",
     )
 
     @property

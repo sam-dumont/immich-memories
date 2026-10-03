@@ -40,7 +40,7 @@ def photo_encoding_plan(
     if (
         hdr
         and config is not None
-        and config.tier == "nas"
+        and config.tier == "basic"
         and capabilities.supports_h264_encode
         and not capabilities.supports_h265_encode
     ):

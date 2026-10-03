@@ -50,7 +50,7 @@ def register_capabilities_command(main: click.Group) -> None:
         config = ctx.obj["config"]
         tier = str(config.tier)
         summary = {
-            "nas": "Rules selection and CPU classifiers; films capped at 1080p",
+            "basic": "Rules selection and CPU classifiers; films capped at 1080p",
             "gpu": "Rules selection with captions and Laya; rendering follows available hardware",
             "full": "LLM selection with captions and Laya; rendering follows available hardware",
         }.get(tier, "Automatic selection follows detected inference capability")

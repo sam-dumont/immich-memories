@@ -29,7 +29,7 @@ Your library and output settings still affect memory use. See the
 
 A few limits worth knowing before you install:
 
-- **NAS output stops at 1080p**, even if you request 4K. More RAM alone does not change that.
+- **Basic output stops at 1080p**, even if you request 4K. More RAM alone does not change that.
 - **The first film takes longer.** It prepares the pictures in your chosen period. Later films
   reuse that work, but still have to render.
 - **Older Celerons work.** Without AVX, titles use the simpler renderer.
@@ -45,7 +45,7 @@ Leave `tier: auto`. The app chooses from the inference hardware and model config
 
 | Tier | What it adds | What you need |
 |---|---|---|
-| **NAS** | A complete film using metadata, CPU picture classifiers and selection rules | The default install and `models fetch` |
+| **Basic** | A complete film using metadata, CPU picture classifiers and selection rules | The default install and `models fetch` |
 | **GPU** | Image captions, extra document/sensitive-content checks and a family-viewing pre-screen | GPU inference, a caption server and the Laya checkpoint |
 | **Full** | The GPU features, plus a text model's reading of the period and refinement of the draft | The GPU setup and a configured reader with 32k context |
 
@@ -59,14 +59,14 @@ benefits before you set up extra services.
 With one of those it chooses GPU; an explicitly enabled reader makes that Full. It does **not** check
 whether the caption server or Laya files are ready: run `preflight` after adding services.
 
-A reader on NAS still writes titles and chooses the music mood. Selection stays on NAS.
+A reader on Basic still writes titles and chooses the music mood. Selection stays on Basic.
 On Apple Silicon, install the `all-mac` extra for GPU discovery. Captions need their own server;
 an enabled `openai-compatible` or `ollama` reader with blank `base_url` starts locally when
 `llama-server` is installed. Hosted provider presets use their vendor URL instead. The shipped
 Docker and Kubernetes app images need an external reader.
 
 `IMMICH_MEMORIES_TIER` overrides `tier:` in the file. Compose and Kubernetes set it to `auto`.
-You may force `nas`, `gpu` or `full`, but that does not install models or start servers.
+You may force `basic`, `gpu` or `full`, but that does not install models or start servers.
 Forcing `tier: full` without an enabled reader fails configuration loading, before the UI or
 `preflight` can start. Return to `auto` or configure and enable the reader first; setting the
 tier alone cannot supply it. Changing tier keeps compatible prepared facts and your review decisions.

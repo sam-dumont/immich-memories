@@ -3,7 +3,7 @@
 `tier: auto` resolves inference capability and the configured LLM, then sets one contract
 for preparation and selection. Only ``full`` uses an LLM for selection:
 
-* ``nas``: inexpensive CPU heads and rules, no Marqo/Docling, captions or Laya.
+* ``basic``: inexpensive CPU heads and rules, no Marqo/Docling, captions or Laya.
 * ``gpu``: every light model. The caption server, the heads and detectors, and Laya for the
   sharing question. Selection still uses the rules reader.
 * ``full``: the ``gpu`` tier plus an LLM for prose and polish. It refuses to load without the
@@ -28,8 +28,8 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-ProductTier = Literal["nas", "gpu", "full"]
-TierSetting = Literal["auto", ProductTier]
+ProductTier = Literal["basic", "gpu", "full"]
+TierSetting = Literal["auto", "nas", ProductTier]
 
 # (section path, field) -> value, per tier. The section path is walked from the Config.
 _READER = ("editorial",), "reader"
@@ -38,7 +38,7 @@ _LAYA = ("editorial",), "laya_audience"
 _DETECTORS = ("editorial",), "detectors_enabled"
 
 TIERS: dict[str, dict[tuple[tuple[str, ...], str], Any]] = {
-    "nas": {_READER: "rules", _PREPARATION: "no_captions", _LAYA: False, _DETECTORS: False},
+    "basic": {_READER: "rules", _PREPARATION: "no_captions", _LAYA: False, _DETECTORS: False},
     "gpu": {_READER: "rules", _PREPARATION: "full", _LAYA: True, _DETECTORS: True},
     "full": {_READER: "model", _PREPARATION: "full", _LAYA: True, _DETECTORS: True},
 }
@@ -47,7 +47,7 @@ TIERS: dict[str, dict[tuple[tuple[str, ...], str], Any]] = {
 def nas_draft_config(config: Config) -> Config:
     """Keep the film's detector policies while making its first pass without captions or Laya."""
     draft = config.model_copy(deep=True)
-    draft.tier = "nas"
+    draft.tier = "basic"
     draft.editorial.reader = "rules"
     draft.editorial.laya_audience = False
     draft.editorial.preparation.caption_provider = "smolvlm"
@@ -65,10 +65,12 @@ def _section(config: Config, path: tuple[str, ...]) -> Any:
 
 def apply_tier(config: Config) -> dict[str, Any]:
     """Resolve one product tier and apply its preparation and reader contract."""
+    if config.tier == "nas":
+        config.tier = "basic"
     applied = _apply_caption_provider(config)
     if config.tier == "auto":
         accelerated, reason = inference_acceleration(config.inference)
-        config.tier = "nas"
+        config.tier = "basic"
         if accelerated:
             config.tier = "full" if _llm_configured(config) else "gpu"
         applied["tier"] = config.tier

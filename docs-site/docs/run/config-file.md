@@ -269,3 +269,10 @@ A YAML configuration must be a mapping of setting names to values. An empty file
 means no file overrides; scalar values and lists are rejected. Unknown authentication keys
 are errors, so a misspelled `enabled` cannot silently leave authentication off.
 Configured service URLs also follow the [address policy](./network-security.md#configured-service-addresses).
+
+## Product tier names
+
+The product tiers are `basic`, `gpu` and `full`. Basic uses CPU classifiers and rules; it is
+not restricted to NAS hardware. `auto` chooses from available inference capability. Existing
+`nas` values in YAML, environment variables and saved Settings still load as Basic. Config
+and capability output use the canonical value `basic`.

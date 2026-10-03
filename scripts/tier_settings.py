@@ -29,7 +29,7 @@ def tier_settings(tier: str) -> dict[str, Any]:
     config = Config(tier=tier, llm=llm)
     editorial = config.editorial
     return {
-        "tier": tier,
+        "tier": config.tier,
         "reader": editorial.resolve_reader(config.llm.model),
         "preparation_tier": editorial.preparation.tier,
         "laya_audience": editorial.laya_audience,

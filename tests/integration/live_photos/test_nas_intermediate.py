@@ -108,4 +108,4 @@ def test_nas_download_binds_the_policy_and_reuses_the_certified_merge(tmp_path: 
     )
     assert output.stat().st_mtime_ns == before
     record = json.loads(output.with_suffix(".json").read_text())
-    assert record["identity"]["source_policy"]["tier"] == "nas"
+    assert record["identity"]["source_policy"]["tier"] == "basic"

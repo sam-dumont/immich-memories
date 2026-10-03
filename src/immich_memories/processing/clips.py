@@ -237,7 +237,7 @@ class ClipExtractor:
                 hw_caps,
                 operation="decode",
                 codec=codec,
-                for_software_filters=config.tier == "nas",
+                for_software_filters=config.tier == "basic",
             )
             cmd.extend(hwaccel_args)
 
@@ -246,7 +246,7 @@ class ClipExtractor:
         cmd.extend(["-i", str(segment.source_path)])
         cmd.extend(["-t", str(segment.duration)])
 
-        if config.tier == "nas":
+        if config.tier == "basic":
             # Fit the displayed orientation before tone mapping allocates float RGB frames.
             filters = (
                 "scale=w='if(gte(iw,ih),min(iw,1920),min(iw,1080))':"

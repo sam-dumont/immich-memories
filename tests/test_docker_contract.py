@@ -401,7 +401,7 @@ def test_quickstart_compose_resolves_to_nas_without_a_second_service() -> None:
 
     assert environment["IMMICH_MEMORIES_DEPLOYMENT_TIER"] == "${TIER:-nas}"
     config = Config(tier="nas")
-    assert config.tier == "nas"
+    assert config.tier == "basic"
     assert not config.editorial.preparation.demands_captions
 
 

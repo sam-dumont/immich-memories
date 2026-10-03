@@ -65,7 +65,7 @@ def test_tier_files_use_one_version_and_editable_service_defaults(
         if key.startswith("IMMICH_MEMORIES_DEPLOYMENT_"):
             monkeypatch.setenv(key, value)
     config = Config.from_yaml(tmp_path / "missing.yaml", stored={})
-    assert config.tier == tier
+    assert config.tier == ("basic" if tier == "nas" else tier)
     if tier == "nas":
         assert set(services) == {"immich-memories"}
         return

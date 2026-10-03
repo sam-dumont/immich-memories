@@ -6,7 +6,7 @@ from immich_memories.processing.probe_cache import ProbeCache, ProbeError
 
 
 def burst_geometry_filter(paths: list[Path], *, nas: bool = False) -> str:
-    """Fit companions to one canvas, bounded to 1080p for the NAS tier."""
+    """Fit companions to one canvas, bounded to 1080p for the Basic tier."""
     if len(paths) < 2 and not nas:
         return ""
     probes = ProbeCache()

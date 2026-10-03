@@ -9,9 +9,10 @@ from urllib.parse import urlsplit
 
 def deployment_defaults(environ: Mapping[str, str]) -> dict[str, Any]:
     """Wire Compose model services without overriding YAML, env or saved Settings."""
-    preset = environ.get("IMMICH_MEMORIES_DEPLOYMENT_TIER", "nas") or "nas"
-    if preset not in {"nas", "gpu", "full"}:
-        raise ValueError("IMMICH_MEMORIES_DEPLOYMENT_TIER must be nas, gpu or full")
+    preset = environ.get("IMMICH_MEMORIES_DEPLOYMENT_TIER", "basic") or "basic"
+    preset = {"nas": "basic"}.get(preset, preset)
+    if preset not in {"basic", "gpu", "full"}:
+        raise ValueError("IMMICH_MEMORIES_DEPLOYMENT_TIER must be basic, gpu or full")
     defaults: dict[str, Any] = (
         {"tier": preset} if "IMMICH_MEMORIES_DEPLOYMENT_TIER" in environ else {}
     )

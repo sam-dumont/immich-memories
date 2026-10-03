@@ -44,7 +44,7 @@ docker compose up -d
 | `IMMICH_MEMORIES_STORAGE_SECRET` | Optional session signing key, generated when unset; 32+ random characters (`openssl rand -hex 32`) or the app refuses to start |
 | `IMMICH_MEMORIES_SECRET_KEY` | Encrypt credentials saved in Settings; shipped `.env` support |
 | `IMMICH_MEMORIES_UPLOAD__ENABLED`, `IMMICH_MEMORIES_UPLOAD__ALBUM_NAME` | Upload CLI/daily films; add to `environment:` |
-| `IMMICH_MEMORIES_TIER` | `auto` by default; `nas`, `gpu` or `full` override |
+| `IMMICH_MEMORIES_TIER` | `auto` by default; `basic`, `gpu` or `full` override (`nas` remains an alias for `basic`) |
 | `IMMICH_MEMORIES_DATABASE_URL` | Optional PostgreSQL store; commented in Compose |
 
 For service setup, use the [reader](../better/reader.md), [caption](../better/captions.md),

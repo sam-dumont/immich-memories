@@ -21,7 +21,7 @@ def test_gpu_compose_defaults_wire_services_below_saved_settings(monkeypatch, tm
         == "http://immich-memories-captioner:8092/v1"
     )
     assert saved.inference.facts_base_url == "https://model-box.example"
-    assert defaults.tier == "nas"
+    assert defaults.tier == "basic"
 
 
 def test_reader_url_and_model_require_explicit_activation(monkeypatch, tmp_path):
@@ -55,7 +55,7 @@ def test_full_preset_requires_activation_and_saved_tier_wins(monkeypatch, tmp_pa
     saved = Config.from_yaml(path, stored={"tier": "nas"})
 
     assert full.tier == "full"
-    assert saved.tier == "nas"
+    assert saved.tier == "basic"
 
 
 def test_gpu_box_uses_the_combined_worker_address(monkeypatch, tmp_path):
@@ -141,7 +141,7 @@ def test_invalid_gpu_box_is_rejected_before_any_connection(monkeypatch, tmp_path
 def test_invalid_deployment_tier_is_actionable(monkeypatch, tmp_path):
     with monkeypatch.context() as invalid:
         invalid.setenv("IMMICH_MEMORIES_DEPLOYMENT_TIER", "unknown")
-        with pytest.raises(ValueError, match="must be nas, gpu or full"):
+        with pytest.raises(ValueError, match="must be basic, gpu or full"):
             Config.from_yaml(tmp_path / "missing.yaml", stored={})
 
 
