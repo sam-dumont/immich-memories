@@ -5,9 +5,9 @@ description: Install Immich Memories with Docker Compose and make your first pho
 
 # Quick start
 
-Run Immich Memories beside your Immich server, then make a film from one month. No GPU or model server needed.
+Run Immich Memories beside your Immich server, then try a 30-second film from 20–50 photos/videos. No GPU or model server needed.
 
-You need Docker with Compose v2, Immich v2 or v3, and two CPU cores, 4 GiB of RAM for the app and 25 GB for its data, plus the image and finished films. [Full requirements](../run/requirements.md).
+You need Docker with Compose v2, Immich v2 or v3, and two CPU cores, 4 GiB of RAM for this app in addition to Immich/host needs and 25 GB for its data, plus the image and finished films. [Full requirements](../run/requirements.md).
 
 import InstallationFiles from '@site/src/components/InstallationFiles';
 
@@ -35,11 +35,15 @@ you want to send films back to Immich; leave **All** unchecked.
 ## 3. Start and download the local models
 
 ```bash
+docker compose pull
 docker compose up -d
 docker compose exec immich-memories immich-memories models fetch
+docker compose exec immich-memories immich-memories preflight
 ```
 
-The second command downloads the local model and dictionary once. Picture processing runs on your CPU.
+`models fetch` downloads the pinned local model and dictionary. Picture processing runs on your CPU.
+Preflight must pass Immich, required-model and output checks. Basic skips unconfigured optional
+services; a home-coordinate warning does not block an album film.
 
 ## 4. Open the app
 
@@ -53,12 +57,13 @@ ssh -L 8080:localhost:8080 you@your-nas
 
 Then open the same localhost address on your desktop. The default port is available locally; [authentication](../run/authentication.mdx) covers remote access.
 
-Choose **Monthly Highlights**, a year and a month with photos or videos. Press **Cut**, review the result, then **Render**. The first cut reads the month's pictures; later cuts reuse that work.
+Follow [Your first film](./first-film.mdx): create an Immich album with **20–50 supported
+photos/videos**, choose **Album**, and set the length to **0.5 minutes**. Review the cut and render
+with upload off. Shortening a film alone does not reduce how many inputs need preparation.
 
-Allow several hours for a real month's first preparation on a NAS, or about an hour on a Mac
-or GPU cluster, before rendering. Picture counts and hardware change that estimate.
-[The NAS notes](../run/nas.md#what-to-expect) explain what is cached;
-[Your first film](./first-film.mdx) shows the review and editing steps.
+Cold setup includes the image pull, model download, input preparation and render. Allow several
+hours for a real month's first preparation on a NAS. Hardware, input count and cache state matter;
+[the phase guide](./first-film.mdx#progress-and-recovery) explains what progress and completion look like.
 [After install](./after-install.md) covers home, people and backups. Got your first film?
 [Choose your setup](./choose-your-setup.md) explains what more you can get.
 

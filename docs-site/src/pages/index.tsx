@@ -10,7 +10,7 @@ import DemoPreview, {DemoLink} from '../components/DemoPreview';
 import ThemedScreenshot from '../components/ThemedScreenshot';
 
 const journeys = [
-  {label: 'Start here', title: 'Make your first film', body: 'Install, connect Immich, and try one month. Review the cut before rendering.', to: '/docs/get-started/quick-start', action: 'Quick start'},
+  {label: 'Start here', title: 'Make your first film', body: 'Install, connect Immich, and try 20–50 pictures. Review the cut before rendering.', to: '/docs/get-started/quick-start', action: 'Quick start'},
   {label: 'After your first film', title: 'Get a better cut', body: 'Fix a missing person, change the length, swap a shot or choose the music.', to: '/docs/make/improve-a-film', action: 'Improve a film'},
   {label: 'For operators', title: 'Run it your way', body: 'Storage, authentication, networking and optional services. The details live here.', to: '/docs/run/overview', action: 'Operate and configure'},
 ];
@@ -82,10 +82,14 @@ export default function Home(): ReactNode {
           <div className={styles.quickstartGrid}>
             <div>
               <Heading as="h2">A container next to Immich</Heading>
-              <p>You need Immich v2 or v3, its API key, Docker Compose v2 and 4 GB of RAM for this container.</p>
+              <p>You need a reachable Immich server, its read-only API key, Docker Compose v2, two CPU cores,
+                4 GiB for this app in addition to Immich, and 25 GB for app data plus images and output.</p>
+              <p>Cold setup downloads the image and models, then prepares your selected pictures.
+                A real month can take hours on a NAS. Start with 20–50 pictures and a 30-second film;
+                <Link to="/docs/get-started/first-film#progress-and-recovery">follow each phase here</Link>.</p>
               <p>The <Link to="/docs/get-started/quick-start">quick start</Link> supplies the Compose file and walks you through the connection. Once configured:</p>
               <CodeBlock language="bash" title="Start and prepare the app">
-                {'docker compose up -d\ndocker compose exec immich-memories immich-memories models fetch'}
+                {'docker compose up -d\ndocker compose exec immich-memories immich-memories models fetch\ndocker compose exec immich-memories immich-memories preflight'}
               </CodeBlock>
               <p className={styles.quickstartAlt}>Then open <code>http://localhost:8080</code>. For a remote host, follow the access instructions in the quick start.</p>
             </div>
