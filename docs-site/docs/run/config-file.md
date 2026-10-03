@@ -135,7 +135,7 @@ This is separate from the UI's [session signing key](./authentication.mdx#sessio
 | Login or daily schedule | `advanced.auth`, `advanced.automation` | [Authentication](./authentication.mdx), [automation](../make/automate.md) |
 
 Every key/default is in the [config reference](../reference/config-reference.md).
-The [annotated example](https://github.com/sam-dumont/immich-video-memory-generator/blob/main/examples/config.example.yaml)
+The [annotated example](https://github.com/sam-dumont/immich-memories/blob/main/examples/config.example.yaml)
 is there when you need a larger file.
 
 ## Everyday keys and advanced keys

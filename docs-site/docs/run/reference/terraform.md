@@ -111,7 +111,7 @@ meet, or `gpu_enabled = true` without GPU nodes.
 | `cache_video_max_size_gb`, `cache_thumbnail_max_size_mb` | Cache limits |
 
 The exact types and defaults are in
-[variables.tf](https://github.com/sam-dumont/immich-video-memory-generator/blob/main/deploy/terraform/variables.tf).
+[variables.tf](https://github.com/sam-dumont/immich-memories/blob/main/deploy/terraform/variables.tf).
 The module does not deploy an inference or reader server. A caption service and render sidecar are
 available through the explicit inputs above; the app's `gpu_enabled` only schedules encoding/title GPU use.
 

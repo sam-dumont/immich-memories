@@ -1,7 +1,7 @@
 # Publishing research from a private library
 
 Anything derived from the owner's library must undergo the manual anonymisation
-used in [PR #830](https://github.com/sam-dumont/immich-video-memory-generator/pull/830)
+used in [PR #830](https://github.com/sam-dumont/immich-memories/pull/830)
 before entering this repository, a commit message, or a PR description.
 
 Keep raw exports and review material outside the repository. Publish numeric

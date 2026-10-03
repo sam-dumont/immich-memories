@@ -18,7 +18,7 @@ const journeys = [
 export default function Home(): ReactNode {
   const trip = useBaseUrl('/demo/trip-preview.mp4');
   return (
-    <Layout title="Immich Memories" description={productDescription}>
+    <Layout title="Self-hosted video memories for Immich" description={productDescription}>
       <header className={styles.hero}>
         <div className="container">
           <div className={styles.heroInner}>
@@ -39,7 +39,7 @@ export default function Home(): ReactNode {
               <DemoPreview />
               <p className={styles.heroCredit}>
                 <DemoLink>Play the demo with music</DemoLink> · <a href={trip}>Watch a trip film</a><br />
-                CC0 stock pictures. <a href="https://github.com/sam-dumont/immich-video-memory-generator/blob/main/tests/e2e/fixtures/library/CREDITS.md">Credits</a>
+                CC0 stock pictures. <a href="https://github.com/sam-dumont/immich-memories/blob/main/tests/e2e/fixtures/library/CREDITS.md">Credits</a>
               </p>
             </div>
           </div>

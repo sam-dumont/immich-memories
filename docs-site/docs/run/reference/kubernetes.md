@@ -104,7 +104,7 @@ apply this resource, then wait for `kubectl wait --for=condition=Ready externals
 -n immich-memories` before applying the base. Environment-based credentials are read on pod start;
 restart the app Deployment after rotation. These examples are rendered/checked locally, not tested
 against a live secret provider. Share your operator/version and rollout results in
-[#1800](https://github.com/sam-dumont/immich-video-memory-generator/issues/1800).
+[#1800](https://github.com/sam-dumont/immich-memories/issues/1800).
 
 ### Terraform
 

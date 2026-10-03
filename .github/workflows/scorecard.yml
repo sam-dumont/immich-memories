@@ -14,7 +14,7 @@ jobs:
   analysis:
     name: Scorecard analysis
     runs-on: ubuntu-latest
-    if: github.repository == 'sam-dumont/immich-video-memory-generator'
+    if: github.repository_id == '1174219883'
     permissions:
       # A job-level block replaces the top-level read-all, so every read the
       # action needs has to be spelled out again here.

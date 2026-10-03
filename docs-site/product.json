@@ -1,6 +1,6 @@
 {
   "name": "Immich Memories",
   "tagline": "Turn your Immich photos and videos into memory films.",
-  "description": "Turn your Immich photos and videos into memory films. Pick a month, a year, a trip or a person, review the cut, then render with titles and music.",
-  "homepage": "https://sam-dumont.github.io/immich-video-memory-generator/"
+  "description": "Self-hosted video memories for Immich. Turn photos and videos into highlight films with titles and music. Run with Docker on your server or NAS.",
+  "homepage": "https://sam-dumont.github.io/immich-memories/"
 }

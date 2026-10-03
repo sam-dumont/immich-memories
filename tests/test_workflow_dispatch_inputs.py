@@ -58,7 +58,7 @@ def test_invalid_gpu_dispatch_is_refused_before_any_outputs(tmp_path, overrides,
         "REQUEST_SHA": "a" * 40,
         "BRANCH": "main",
         "SUITE": "all",
-        "PUBLIC_REPO": "sam-dumont/immich-video-memory-generator",
+        "PUBLIC_REPO": "sam-dumont/immich-memories",
         "GITHUB_OUTPUT": str(output),
         **overrides,
     }
@@ -67,14 +67,17 @@ def test_invalid_gpu_dispatch_is_refused_before_any_outputs(tmp_path, overrides,
     assert not output.exists() or not output.read_text()
 
 
-def test_valid_gpu_dispatch_outputs_the_exact_requested_commit(tmp_path):
+@pytest.mark.parametrize(
+    "public_repo", ["sam-dumont/immich-memories", "sam-dumont/immich-video-memory-generator"]
+)
+def test_valid_gpu_dispatch_outputs_the_exact_requested_commit(tmp_path, public_repo):
     output = tmp_path / "output"
     env = {
         **os.environ,
         "REQUEST_SHA": "b" * 40,
         "BRANCH": "fix/a-branch",
         "SUITE": "titles",
-        "PUBLIC_REPO": "sam-dumont/immich-video-memory-generator",
+        "PUBLIC_REPO": public_repo,
         "GITHUB_OUTPUT": str(output),
     }
     script = step_script("integration.yml", "integration", "Resolve params")
@@ -84,6 +87,6 @@ def test_valid_gpu_dispatch_outputs_the_exact_requested_commit(tmp_path):
     assert output.read_text().splitlines() == [
         "sha=" + "b" * 40,
         "branch=fix/a-branch",
-        "public_repo=sam-dumont/immich-video-memory-generator",
+        f"public_repo={public_repo}",
         "suite=titles",
     ]

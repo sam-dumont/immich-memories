@@ -28,8 +28,8 @@ I'm a solo maintainer. Here's what helps me most:
 Prerequisites: Python 3.11+, FFmpeg, [uv](https://docs.astral.sh/uv/), GNU Make, and Node 22 for the web client
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/immich-video-memory-generator.git
-cd immich-video-memory-generator
+git clone https://github.com/YOUR_USERNAME/immich-memories.git
+cd immich-memories
 make dev       # Install all dependencies and build the web client
 make check     # Verify everything works
 ```
@@ -209,8 +209,8 @@ your family keeps a day the list lacks, open a PR with the rule and a line in
 
 ## Getting Help
 
-- **Questions**: [GitHub Discussions](https://github.com/sam-dumont/immich-video-memory-generator/discussions)
-- **Bugs**: [GitHub Issues](https://github.com/sam-dumont/immich-video-memory-generator/issues)
+- **Questions**: [GitHub Discussions](https://github.com/sam-dumont/immich-memories/discussions)
+- **Bugs**: [GitHub Issues](https://github.com/sam-dumont/immich-memories/issues)
 - **Security**: See [SECURITY.md](SECURITY.md)
 
 This is a hobby project maintained in spare time: issues and PRs are answered on a best-effort

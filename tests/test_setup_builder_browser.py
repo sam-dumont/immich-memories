@@ -24,7 +24,7 @@ def setup_site(tmp_path_factory):
         listener.bind(("127.0.0.1", 0))
         port = listener.getsockname()[1]
     log = tmp_path_factory.mktemp("setup-site") / "server.log"
-    url = f"http://127.0.0.1:{port}/immich-video-memory-generator/setup"
+    url = f"http://127.0.0.1:{port}/immich-memories/setup"
     with log.open("w") as output:
         process = subprocess.Popen(
             ["make", "docs-serve", f"DOCS_PORT={port}"],

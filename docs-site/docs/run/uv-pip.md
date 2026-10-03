@@ -138,8 +138,8 @@ Use [Upgrading](./maintenance/upgrading.md#uv--pip). Keep the same extras when u
 For development, you also need Node 22 to build the web client:
 
 ```bash
-git clone https://github.com/sam-dumont/immich-video-memory-generator.git
-cd immich-video-memory-generator
+git clone https://github.com/sam-dumont/immich-memories.git
+cd immich-memories
 uv sync --extra editorial
 make web-client
 uv run immich-memories models fetch

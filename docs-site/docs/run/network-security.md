@@ -313,7 +313,7 @@ a nonstandard public port: a browser Origin such as `https://memories.example.co
 then get 403 on writes. Use a public 443 mapping with this recipe; do not strip `Origin` to
 work around it. The local checks retained the public 443 authority while routing connections
 to loopback test ports.
-If you try one, [report your proxy version, host platform and the checks that passed or failed](https://github.com/sam-dumont/immich-video-memory-generator/issues/new).
+If you try one, [report your proxy version, host platform and the checks that passed or failed](https://github.com/sam-dumont/immich-memories/issues/new).
 
 ## Ports and egress
 
@@ -359,5 +359,5 @@ An operator who needs a link-local service can set `IMMICH_MEMORIES_ALLOW_LINK_L
 in the app's process environment and restart it. Settings cannot change this override. This is
 a guard against accidental configuration: it does not resolve DNS names or inspect redirects.
 
-The [project threat model](https://github.com/sam-dumont/immich-video-memory-generator/blob/main/docs/security/threat-model.md)
+The [project threat model](https://github.com/sam-dumont/immich-memories/blob/main/docs/security/threat-model.md)
 lists the trust boundaries and accepted deployment limits.

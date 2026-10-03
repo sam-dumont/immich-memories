@@ -25,8 +25,8 @@ For a source checkout, install uv, FFmpeg and Node 22 first. Use Python 3.12 if 
 local ACE-Step. From your release checkout:
 
 ```bash
-git clone https://github.com/sam-dumont/immich-video-memory-generator.git
-cd immich-video-memory-generator
+git clone https://github.com/sam-dumont/immich-memories.git
+cd immich-memories
 git checkout YOUR_RELEASE_TAG
 make dev
 make dev-mac

@@ -1,6 +1,6 @@
 import {assetBase} from '../SetupBuilder/recipes.ts';
 
-const repository = 'https://github.com/sam-dumont/immich-video-memory-generator';
+const repository = 'https://github.com/sam-dumont/immich-memories';
 export function installationCommands(version: string): string {
   const released = /^v?\d+\.\d+\.\d+(?:-rc\.\d+)?$/.test(version);
   const tag = version.replace(/^v/, '');

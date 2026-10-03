@@ -8,7 +8,7 @@ environment        = "production"
 
 # Image — production pins a release rather than tracking `latest`. Published tags carry no
 # `v` prefix: release `vX.Y.Z` is image tag `X.Y.Z`. Pick the one you want from
-# https://github.com/sam-dumont/immich-video-memory-generator/releases
+# https://github.com/sam-dumont/immich-memories/releases
 image_tag = "replace-with-a-release-tag"
 
 # Immich

@@ -32,7 +32,7 @@ jobs:
   # ── Tier 0: Change scope and cache setup ──────────────────────────────────
   changes:
     name: Change Scope
-    if: github.repository == 'sam-dumont/immich-video-memory-generator'
+    if: github.repository_id == '1174219883'
     runs-on: ubuntu-latest
     outputs:
       docs_only: ${{ steps.scope.outputs.docs_only }}
@@ -52,7 +52,7 @@ jobs:
   setup:
     name: Setup Cache
     runs-on: ubuntu-latest
-    if: github.repository == 'sam-dumont/immich-video-memory-generator'
+    if: github.repository_id == '1174219883'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
@@ -74,7 +74,7 @@ jobs:
   # reports all of them at once, the way thirteen parallel jobs did.
   quality:
     name: Quality Gates
-    if: github.repository == 'sam-dumont/immich-video-memory-generator'
+    if: github.repository_id == '1174219883'
     needs: [setup]
     runs-on: ubuntu-latest
     steps:
@@ -157,7 +157,7 @@ jobs:
   # ── Tier 1: Security (parallel with quality gates) ────────────────────────
   security:
     name: Security Scan
-    if: github.repository == 'sam-dumont/immich-video-memory-generator'
+    if: github.repository_id == '1174219883'
     needs: [setup]
     runs-on: ubuntu-latest
     permissions:
@@ -237,7 +237,7 @@ jobs:
   # ── Tier 2: Tests (after all quality gates pass) ──────────────────────────
   test:
     name: Test (Python ${{ matrix.python-version }}, ${{ matrix.os }})
-    if: github.repository == 'sam-dumont/immich-video-memory-generator'
+    if: github.repository_id == '1174219883'
     needs: [changes, quality, security]
     permissions:
       contents: read
@@ -378,7 +378,7 @@ jobs:
 
   test-extras:
     name: Test Extras (${{ matrix.os }})
-    if: github.repository == 'sam-dumont/immich-video-memory-generator' && needs.changes.outputs.docs_only != 'true'
+    if: github.repository_id == '1174219883' && needs.changes.outputs.docs_only != 'true'
     needs: [changes, quality, security]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
@@ -434,7 +434,7 @@ jobs:
   # repositories are what has to behave the same on both backends.
   test-store:
     name: Test Store (SQLite + PostgreSQL)
-    if: github.repository == 'sam-dumont/immich-video-memory-generator' && needs.changes.outputs.store == 'true'
+    if: github.repository_id == '1174219883' && needs.changes.outputs.store == 'true'
     needs: [changes, quality, security]
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -482,7 +482,7 @@ jobs:
   # ── Tier 3: Build + Docker (most expensive, after tests) ─────────────────
   build:
     name: Build Package
-    if: github.repository == 'sam-dumont/immich-video-memory-generator' && needs.changes.outputs.docs_only != 'true'
+    if: github.repository_id == '1174219883' && needs.changes.outputs.docs_only != 'true'
     needs: [changes, test]
     runs-on: ubuntu-latest
     steps:
@@ -509,7 +509,7 @@ jobs:
     name: Docker (${{ matrix.platform }})
     needs: [changes, test]
     runs-on: ${{ matrix.runner }}
-    if: github.repository == 'sam-dumont/immich-video-memory-generator' && github.event_name == 'pull_request' && needs.changes.outputs.container == 'true'
+    if: github.repository_id == '1174219883' && github.event_name == 'pull_request' && needs.changes.outputs.container == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -550,7 +550,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     if: >-
-      github.repository == 'sam-dumont/immich-video-memory-generator'
+      github.repository_id == '1174219883'
       && github.event_name == 'pull_request'
       && (needs.changes.outputs.container == 'true' || needs.changes.outputs.store == 'true')
     strategy:
@@ -579,7 +579,7 @@ jobs:
 
   docs:
     name: Docs Build
-    if: github.repository == 'sam-dumont/immich-video-memory-generator' && needs.changes.outputs.docs_site == 'true'
+    if: github.repository_id == '1174219883' && needs.changes.outputs.docs_site == 'true'
     needs: [changes]
     runs-on: ubuntu-latest
     steps:
@@ -613,7 +613,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     if: >-
-      github.repository == 'sam-dumont/immich-video-memory-generator'
+      github.repository_id == '1174219883'
       && github.event_name == 'pull_request'
       && needs.changes.outputs.docs_only != 'true'
     strategy:
@@ -697,7 +697,7 @@ jobs:
     name: CI Success
     needs: [changes, setup, quality, security, test, test-extras, test-store, build, docker, container-e2e, docs, launch-check]
     runs-on: ubuntu-latest
-    if: always() && github.repository == 'sam-dumont/immich-video-memory-generator'
+    if: always() && github.repository_id == '1174219883'
     steps:
       - name: Check all jobs passed
         env:

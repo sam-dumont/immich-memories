@@ -5,7 +5,7 @@ sidebar_label: Upgrading
 
 # Upgrading
 
-Read the [release notes](https://github.com/sam-dumont/immich-video-memory-generator/releases),
+Read the [release notes](https://github.com/sam-dumont/immich-memories/releases),
 back up the store, then upgrade. Keep the backup for rollback: a newer release can migrate the
 store to a revision older code will refuse.
 

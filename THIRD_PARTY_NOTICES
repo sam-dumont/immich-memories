@@ -518,7 +518,7 @@ idna 3.18
 
 immich-memories-music 0.1.0
   License: MIT
-  URL: https://github.com/sam-dumont/immich-video-memory-generator
+  URL: https://github.com/sam-dumont/immich-memories
 
 itsdangerous 2.2.0
   License: BSD

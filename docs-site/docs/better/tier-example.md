@@ -34,7 +34,7 @@ Full used real SmolVLM captions, detectors, the cached Laya checkpoint and the c
 | Video and audio | 1280×720 H.264, AAC | 1280×720 H.264, AAC |
 | Complete decode check | Passed | Passed |
 
-The duration is a target, not an exact output length. This is one paired example, not the [#1719 28-case suite](https://github.com/sam-dumont/immich-video-memory-generator/issues/1719), a quality guarantee or a speed benchmark. A changed cut is something you can watch, not proof that one tier always makes a better film.
+The duration is a target, not an exact output length. This is one paired example, not the [#1719 28-case suite](https://github.com/sam-dumont/immich-memories/issues/1719), a quality guarantee or a speed benchmark. A changed cut is something you can watch, not proof that one tier always makes a better film.
 
 ## Limits of this run
 

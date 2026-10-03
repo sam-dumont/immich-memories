@@ -1,5 +1,6 @@
 ---
 title: Quick start
+description: Install Immich Memories with Docker Compose and make your first photo and video highlight film. Runs on a server or NAS; no GPU required.
 ---
 
 # Quick start

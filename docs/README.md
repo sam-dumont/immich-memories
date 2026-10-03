@@ -1,12 +1,12 @@
 # Documentation
 
-The manual is on the [docs site](https://sam-dumont.github.io/immich-video-memory-generator/),
+The manual is on the [docs site](https://sam-dumont.github.io/immich-memories/),
 versioned with the code:
-[quick start](https://sam-dumont.github.io/immich-video-memory-generator/docs/get-started/quick-start),
-[your first memory](https://sam-dumont.github.io/immich-video-memory-generator/docs/get-started/first-film),
-[config reference](https://sam-dumont.github.io/immich-video-memory-generator/docs/reference/config-reference),
-[CLI reference](https://sam-dumont.github.io/immich-video-memory-generator/docs/reference/cli-reference),
-[troubleshooting](https://sam-dumont.github.io/immich-video-memory-generator/docs/reference/troubleshooting).
+[quick start](https://sam-dumont.github.io/immich-memories/docs/get-started/quick-start),
+[your first memory](https://sam-dumont.github.io/immich-memories/docs/get-started/first-film),
+[config reference](https://sam-dumont.github.io/immich-memories/docs/reference/config-reference),
+[CLI reference](https://sam-dumont.github.io/immich-memories/docs/reference/cli-reference),
+[troubleshooting](https://sam-dumont.github.io/immich-memories/docs/reference/troubleshooting).
 
 Authentication is off by default. If the UI binds beyond loopback, anyone who can reach the port can
 use it, so turn auth on before exposing it. The UI is single-user and single-replica: run one

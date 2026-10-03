@@ -1,6 +1,6 @@
 ---
 title: Operate and configure
-description: Install Immich Memories, protect access, manage storage and add services when needed.
+description: Run Immich Memories with Docker, on a NAS, with Python or in Kubernetes. Configure storage, authentication, networking and backups.
 ---
 
 Start with [Quick start](../get-started/quick-start.md) for one container beside Immich. Use this section when you need a different deployment or want to manage it over time.

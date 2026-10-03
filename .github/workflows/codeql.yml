@@ -30,7 +30,7 @@ jobs:
   analyze:
     name: Analyze Python
     runs-on: ubuntu-latest
-    if: github.repository == 'sam-dumont/immich-video-memory-generator'
+    if: github.repository_id == '1174219883'
     timeout-minutes: 45
     permissions:
       contents: read

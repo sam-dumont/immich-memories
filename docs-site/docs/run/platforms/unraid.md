@@ -11,19 +11,19 @@ Use the native Docker template for the Basic setup, or the Compose Manager alter
 
 :::info Not yet tested on Unraid
 
-We have not tested these steps on this platform. Local template, manifest and browser checks do not establish a tested installation. Please [share your results in #1801](https://github.com/sam-dumont/immich-video-memory-generator/issues/1801), including platform/app versions and whether preflight and the first film worked.
+We have not tested these steps on this platform. Local template, manifest and browser checks do not establish a tested installation. Please [share your results in #1801](https://github.com/sam-dumont/immich-memories/issues/1801), including platform/app versions and whether preflight and the first film worked.
 
 :::
 
 ## Native Docker template
 
-[Download the Unraid XML template](https://raw.githubusercontent.com/sam-dumont/immich-video-memory-generator/main/deploy/unraid/immich-memories.xml). This is a distributable Community Applications format template; it is not yet listed in the Community Applications catalog.
+[Download the Unraid XML template](https://raw.githubusercontent.com/sam-dumont/immich-memories/main/deploy/unraid/immich-memories.xml). This is a distributable Community Applications format template; it is not yet listed in the Community Applications catalog.
 
 In Unraid's **Terminal** in the browser, install the unconfigured template:
 
 ```bash
 mkdir -p /boot/config/plugins/dockerMan/templates-user
-curl --fail --location https://raw.githubusercontent.com/sam-dumont/immich-video-memory-generator/main/deploy/unraid/immich-memories.xml -o /boot/config/plugins/dockerMan/templates-user/my-immich-memories.xml
+curl --fail --location https://raw.githubusercontent.com/sam-dumont/immich-memories/main/deploy/unraid/immich-memories.xml -o /boot/config/plugins/dockerMan/templates-user/my-immich-memories.xml
 ```
 
 Open **Docker → Add Container**, select **immich-memories** from **Template**, and fill in the required Immich URL and API key. Choose the published image tag in **Repository** if pinning a release. The default image is `latest`, matching the standalone Compose file.

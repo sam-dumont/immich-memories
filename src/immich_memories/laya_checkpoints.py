@@ -5,9 +5,7 @@ import sys
 
 LAYA_MLX_NAME = "laya-audience-a79ad9fa.tar"
 LAYA_ONNX_NAME = "laya-audience-onnx-90420ef3.tar.gz"
-_RELEASE = (
-    "https://github.com/sam-dumont/immich-video-memory-generator/releases/download/models-v2/"
-)
+_RELEASE = "https://github.com/sam-dumont/immich-memories/releases/download/models-v2/"
 LAYA_MLX_URL = _RELEASE + LAYA_MLX_NAME
 LAYA_ONNX_URL = _RELEASE + LAYA_ONNX_NAME
 

@@ -1,6 +1,6 @@
 # GPU Integration Tests — triggered by public repo mirror
 #
-# This is a PRIVATE mirror of sam-dumont/immich-video-memory-generator.
+# This is a PRIVATE mirror of sam-dumont/immich-memories.
 # Self-hosted runners are safe here.
 #
 # Flow: public repo pushes branch + dispatches → we run tests → post status back
@@ -55,12 +55,12 @@ jobs:
         env:
           REQUEST_SHA: ${{ github.event.client_payload.sha || github.sha }}
           BRANCH: ${{ github.event.client_payload.branch || github.ref_name }}
-          PUBLIC_REPO: ${{ github.event.client_payload.public_repo || 'sam-dumont/immich-video-memory-generator' }}
+          PUBLIC_REPO: ${{ github.event.client_payload.public_repo || 'sam-dumont/immich-memories' }}
           SUITE: ${{ inputs.suite || 'all' }}
         run: |
           [[ ${#REQUEST_SHA} -eq 40 && "$REQUEST_SHA" != *[!0123456789abcdef]* ]] || exit 2
           git check-ref-format --branch "$BRANCH" >/dev/null
-          test "$PUBLIC_REPO" = sam-dumont/immich-video-memory-generator
+          case "$PUBLIC_REPO" in sam-dumont/immich-memories|sam-dumont/immich-video-memory-generator) ;; *) exit 2 ;; esac
           case "$SUITE" in all|assembly|titles|photos|pipeline|live-photos|cli) ;; *) exit 2 ;; esac
           printf 'sha=%s\nbranch=%s\npublic_repo=%s\nsuite=%s\n' \
             "$REQUEST_SHA" "$BRANCH" "$PUBLIC_REPO" "$SUITE" >> "$GITHUB_OUTPUT"

@@ -10,7 +10,7 @@ rendering and music have different costs. A faster picture model does not guaran
 ## Tested setups, 2 October 2026 {#tested-setups}
 
 These are separate checks, not four timed clean installs on the current release.
-The [docs-only installation gate](https://github.com/sam-dumont/immich-video-memory-generator/issues/956)
+The [docs-only installation gate](https://github.com/sam-dumont/immich-memories/issues/956)
 records the Mac, Docker, Synology and Kubernetes preflight runs; those runs stopped before generation.
 The finished-film controls below came from later, separate runs with prepared picture facts.
 
@@ -24,9 +24,9 @@ The finished-film controls below came from later, separate runs with prepared pi
 The Mac controls used generated music and the NAS used bundled music. They are not matched
 NAS-versus-Full quality comparisons. The [paired CC0 month films](./tier-example.md) are available
 with selected-shot differences, provenance and warm-cache/dependency/calibration caveats. That
-example is separate from the [#1719 28-case suite](https://github.com/sam-dumont/immich-video-memory-generator/issues/1719); do not treat
+example is separate from the [#1719 28-case suite](https://github.com/sam-dumont/immich-memories/issues/1719); do not treat
 these different films as either comparison. Record setup, downloads, preparation and generation
-separately when repeating the [first-run gate](https://github.com/sam-dumont/immich-video-memory-generator/issues/956).
+separately when repeating the [first-run gate](https://github.com/sam-dumont/immich-memories/issues/956).
 
 ## Generated cold installs, 2 October 2026 {#generated-cold-installs}
 
@@ -191,8 +191,8 @@ cheaper maps, choose `preset: fast`; [titles and maps](../make/titles-maps-music
 
 ## Rendering improvements, 2 October 2026 {#rendering-performance}
 
-The completed [#1704](https://github.com/sam-dumont/immich-video-memory-generator/issues/1704)
-and [#1702](https://github.com/sam-dumont/immich-video-memory-generator/issues/1702)
+The completed [#1704](https://github.com/sam-dumont/immich-memories/issues/1704)
+and [#1702](https://github.com/sam-dumont/immich-memories/issues/1702)
 work reduced title, map and assembly costs. Final combined checks used synthetic
 portrait 4K HDR10 video at 60 fps, with titles, maps, captions, transitions and audio.
 
@@ -219,16 +219,16 @@ assembly files match the isolated source used for these tests.
 
 Mac read-ahead stays enabled only for the measured HEVC VideoToolbox path with enough
 CPU and memory. It slowed the T1000 down, so Linux and software encoders stay synchronous.
-The [full report](https://github.com/sam-dumont/immich-video-memory-generator/blob/main/docs/research/2026-10-02-render-performance-closeout.md)
+The [full report](https://github.com/sam-dumont/immich-memories/blob/main/docs/research/2026-10-02-render-performance-closeout.md)
 records source revisions, memory, component gains and measurement limits. Separate
-[NAS software-HLG memory work](https://github.com/sam-dumont/immich-video-memory-generator/issues/1767)
+[NAS software-HLG memory work](https://github.com/sam-dumont/immich-memories/issues/1767)
 remains open.
 
 ## LLM contract fixes, 1 October 2026 {#llm-contract-fixes}
 
 The Gemma conformance results use 6-bit MLX on oMLX, rather than the app-owned Q4_0 GGUF.
 
-The follow-up for [#1645–#1660](https://github.com/sam-dumont/immich-video-memory-generator/issues/1645)
+The follow-up for [#1645–#1660](https://github.com/sam-dumont/immich-memories/issues/1645)
 uses fixes based on `b96d7d6a`, the four models listed below, and synthetic inputs only.
 Provider runs overlapped on the shared Mac. Raw request/reply evidence stays private.
 Server schema modes were left unchanged, including Melious's `structured_output: false`.
@@ -242,7 +242,7 @@ The complete 34-feature command was rerun after the fixes:
 | z.ai, glm-5.3-flash | 34/34 | 294.78 s | 85 | None in this run |
 | Melious, deepseek-v4.1-flash | 34/34 | 223.44 s | 85 | None in this run |
 
-The [aggregate CSV](https://github.com/sam-dumont/immich-video-memory-generator/blob/main/docs/research/2026-10-01-llm-contract-fixes.csv)
+The [aggregate CSV](https://github.com/sam-dumont/immich-memories/blob/main/docs/research/2026-10-01-llm-contract-fixes.csv)
 contains the 136 complete-suite rows and 74 separate held-out checks. Blank token counters
 mean unreported. These are single runs with potentially warm server caches; the timings are
 not isolated throughput measurements. The held-out rows are not added to the 34-feature score.
@@ -276,13 +276,13 @@ makes every reader reliable. Five separate controls ask for right, left, up, dow
 All four passed the stationary control in this final set. An earlier Melious run invented leftward
 movement on the same stationary input, so that pass is not a reliability guarantee. Direction
 checks reject orthogonal movement and stationary descriptions of moving frames. The character
-cap remains enforced. [#1650](https://github.com/sam-dumont/immich-video-memory-generator/issues/1650)
+cap remains enforced. [#1650](https://github.com/sam-dumont/immich-memories/issues/1650)
 records the remaining capability gap.
 
 Story comparisons can also vary: z.ai tied the race and routine scene in one complete run,
 although both held-out occasion comparisons passed. Contradictory central/minor answers now
 receive bounded repair; a valid but poor ranking still fails the conformance check
-([#1653](https://github.com/sam-dumont/immich-video-memory-generator/issues/1653)).
+([#1653](https://github.com/sam-dumont/immich-memories/issues/1653)).
 
 ## Compare fairly
 
