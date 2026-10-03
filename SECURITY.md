@@ -99,8 +99,8 @@ gh attestation verify "$WHEEL" \
 
 For releases signed before the repository rename, use
 `sam-dumont/immich-video-memory-generator` for the repository and signer workflow
-checks below. A rename does not rewrite existing attestations. The container
-package address stays the same.
+checks below. A rename does not rewrite existing attestations. Historical
+container addresses remain available after the namespace migration.
 
 The current Release workflow attests both application and inference platform images, then
 attests the final application, inference CPU and inference CUDA manifests. This applies to

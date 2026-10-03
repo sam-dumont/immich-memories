@@ -74,7 +74,7 @@ jobs:
           elif [[ "$EVENT_NAME" == "release" ]]; then
             VERSION="$RELEASE_TAG"
           else
-            VERSION=$(git describe --tags --always 2>/dev/null || echo "dev")
+            VERSION=$(node --experimental-strip-types --input-type=module -e "import {resolveDocsVersion} from './docs-site/build-version.ts'; console.log(resolveDocsVersion());")
           fi
           echo "DOCS_VERSION=${VERSION}" >> $GITHUB_ENV
           echo "Building docs for version: ${VERSION}"

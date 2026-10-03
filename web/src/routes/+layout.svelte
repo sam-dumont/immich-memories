@@ -82,4 +82,7 @@
   {/each}
 </nav>
 {/if}
+{#if data.version}
+  <div class="px-4 pt-2 pb-20 text-center text-xs text-gray-500 md:pb-3" data-testid="build-version">Immich Memories {data.version}</div>
+{/if}
 </TooltipProvider>

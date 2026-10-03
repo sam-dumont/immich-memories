@@ -3,9 +3,11 @@ import type {Config} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 import {redirects} from './redirects';
 import {productTagline} from './src/product';
+import {resolveDocsVersion, releaseVersion} from './build-version';
 
-const docsVersion = process.env.DOCS_VERSION || 'development';
-const releaseDocs = /^v?\d+\.\d+\.\d+(?:-rc\.\d+)?$/.test(docsVersion);
+const docsVersion = resolveDocsVersion();
+const releaseDocs = releaseVersion.test(docsVersion);
+const sourceRevision = docsVersion.match(/-g([0-9a-f]+)(?:-dirty)?$/)?.[1] || 'main';
 
 const nextDocs = process.env.DOCS_NEXT === 'true';
 
@@ -69,12 +71,15 @@ const config: Config = {
 
   themeConfig: {
     image: 'img/trip-map-flyover.jpg',
-    metadata: process.env.GOOGLE_SITE_VERIFICATION
-      ? [{name: 'google-site-verification', content: process.env.GOOGLE_SITE_VERIFICATION}]
-      : [],
+    metadata: [
+      {name: 'application-version', content: docsVersion},
+      ...(process.env.GOOGLE_SITE_VERIFICATION
+        ? [{name: 'google-site-verification', content: process.env.GOOGLE_SITE_VERIFICATION}]
+        : []),
+    ],
     ...(nextDocs ? {announcementBar: {
       id: 'release-candidate',
-      content: 'Release candidate docs. <a href="/immich-memories/">Read the current final release docs</a>.',
+      content: `Docs ${docsVersion}. <a href="/immich-memories/">Read the current final release docs</a>.`,
       isCloseable: false,
     }} : {}),
     mermaid: {
@@ -102,8 +107,8 @@ const config: Config = {
           label: 'Start here',
         },
         {
-          href: `https://github.com/sam-dumont/immich-memories/tree/${releaseDocs ? (docsVersion.startsWith('v') ? docsVersion : `v${docsVersion}`) : 'main'}`,
-          label: releaseDocs ? `Docs ${docsVersion}` : 'Development docs',
+          href: `https://github.com/sam-dumont/immich-memories/tree/${releaseDocs ? (docsVersion.startsWith('v') ? docsVersion : `v${docsVersion}`) : sourceRevision}`,
+          label: `Docs ${docsVersion}`,
           position: 'right',
         },
         {
@@ -160,7 +165,7 @@ const config: Config = {
           ],
         },
       ],
-      copyright: `Copyright © 2025-${new Date().getFullYear()} Immich Memories. Built with Docusaurus.`,
+      copyright: `Copyright © 2025-${new Date().getFullYear()} Immich Memories · ${docsVersion}. Built with Docusaurus.`,
     },
     prism: {
       theme: prismThemes.github,

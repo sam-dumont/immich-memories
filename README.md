@@ -2,10 +2,10 @@
 
 [![CI](https://github.com/sam-dumont/immich-memories/actions/workflows/ci.yml/badge.svg)](https://github.com/sam-dumont/immich-memories/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/sam-dumont/immich-memories/graph/badge.svg)](https://codecov.io/gh/sam-dumont/immich-memories)
-[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/sam-dumont/immich-memories/badge)](https://scorecard.dev/viewer/?uri=github.com/sam-dumont/immich-memories)
+[![OpenSSF Scorecard](https://img.shields.io/ossf-scorecard/github.com/sam-dumont/immich-memories?label=openssf%20scorecard)](https://scorecard.dev/viewer/?uri=github.com/sam-dumont/immich-memories)
 [![Release](https://github.com/sam-dumont/immich-memories/actions/workflows/release.yml/badge.svg)](https://github.com/sam-dumont/immich-memories/actions/workflows/release.yml)
 [![Python](https://img.shields.io/pypi/pyversions/immich-memories)](https://pypi.org/project/immich-memories/)
-[![License](https://img.shields.io/github/license/sam-dumont/immich-memories)](LICENSE)
+[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![Docs](https://img.shields.io/badge/docs-Docusaurus-blue)](https://sam-dumont.github.io/immich-memories/)
 
 **Turn your Immich photos and videos into memory films.**

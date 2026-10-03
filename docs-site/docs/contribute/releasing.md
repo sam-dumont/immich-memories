@@ -86,6 +86,14 @@ path), or `~/.config/immich-memories/private-terms.txt`. One term per line, `#` 
 which is the normal case for a contributor. Matches are masked to their first character, so a hit
 report never contains the term it found.
 
+## Build versions
+
+Release builds stamp the selected version into the wheel, container labels and docs.
+The app displays the packaged server version. Docs show their build version in the
+navigation, footer and page metadata; `/next/` also includes it in the banner.
+Release candidates keep their exact `vX.Y.Z-rc.N` tag. Unreleased builds include
+the source commit, and version discovery ignores the separate `models-v*` tags.
+
 ## Repository name and search indexing
 
 The repository is `sam-dumont/immich-memories`. The package and command remain
