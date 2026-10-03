@@ -55,6 +55,11 @@ For a headless NAS, run this on your desktop first, replacing the SSH account an
 ssh -L 8080:localhost:8080 you@your-nas
 ```
 
+SSH login working does not mean forwarding is permitted. If the tunnel prints
+`open failed: administratively prohibited`, follow the
+[Synology authenticated proxy route](../run/platforms/synology.md#authenticated-proxy)
+before exposing any LAN port. Do not change global SSH policy to make the tunnel work.
+
 Then open the same localhost address on your desktop. The default port is available locally; [authentication](../run/authentication.mdx) covers remote access.
 
 Follow [Your first film](./first-film.mdx): create an Immich album with **20–50 supported
