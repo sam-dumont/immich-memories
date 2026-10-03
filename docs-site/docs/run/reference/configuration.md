@@ -197,4 +197,4 @@ generate a video, create an album, or upload anything.
 ## Output codecs and HDR
 
 `codec: h265` with `hdr_mode: auto` can retain HDR when supported by the selected output path.
-H.264 is always SDR and tone-maps HDR sources. NAS output remains capped at 1080p.
+H.264 is always SDR and tone-maps HDR sources. Basic output remains capped at 1080p.

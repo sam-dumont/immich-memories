@@ -4,7 +4,7 @@ title: Privacy
 
 # Privacy
 
-A default NAS film talks only to your Immich server. Hugging Face Hub telemetry is disabled
+A default Basic film talks only to your Immich server. Hugging Face Hub telemetry is disabled
 before imports in the app and inference service; there are no app analytics or update checks.
 Fetch model files during setup. Explicit download switches and some optional music backends
 can also fetch weights on first use, including during a run.
@@ -131,6 +131,6 @@ permissions and cancellation. Keep the [store backed up](./database.md).
 
 ## Fetch once, then block outbound
 
-The [offline NAS recipe](./offline.md) seeds a model volume before restricting the app to
+The [offline Basic recipe](./offline.md) seeds a model volume before restricting the app to
 Immich. It includes Docker's same-host internal bridge and a destination-scoped Kubernetes
 policy, with their routing limits.

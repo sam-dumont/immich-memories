@@ -7,7 +7,7 @@ import StackStorage from './_stack-storage.mdx';
 
 # Unraid
 
-Use the native Docker template for the NAS setup, or the Compose Manager alternative below. The app needs its own 4 GiB memory budget alongside Immich. These steps follow the Compose Manager documentation; a recorded installation on Unraid is still pending.
+Use the native Docker template for the Basic setup, or the Compose Manager alternative below. The app needs its own 4 GiB memory budget alongside Immich. These steps follow the Compose Manager documentation; a recorded installation on Unraid is still pending.
 
 :::info Not yet tested on Unraid
 

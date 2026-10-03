@@ -1,4 +1,4 @@
-# Standalone NAS runtime after models have been seeded. Not a merge override.
+# Standalone Basic runtime after models have been seeded. Not a merge override.
 services:
   immich-memories:
     image: "${IMMICH_MEMORIES_IMAGE:?Set a release image tag or digest}"
@@ -8,7 +8,7 @@ services:
     environment:
       IMMICH_URL: "${IMMICH_URL:?Use the Immich container alias on the internal network}"
       IMMICH_API_KEY: "${IMMICH_API_KEY:?Set your Immich API key}"
-      IMMICH_MEMORIES_TIER: nas
+      IMMICH_MEMORIES_TIER: basic
       IMMICH_MEMORIES_TRIAGE__ENCODER: /models/triage/dinov2-small.onnx
       IMMICH_MEMORIES_FREE_TEXT__WORDNET: /models/wordnet/wordnet.zip
       IMMICH_MEMORIES_EDITORIAL__PREPARATION__DETECTOR_CACHE_DIR: /models/huggingface

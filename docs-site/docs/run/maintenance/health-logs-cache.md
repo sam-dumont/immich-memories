@@ -116,10 +116,10 @@ Log lines go to stderr. Stdout only carries what a command prints, so `runs stor
 immich-memories models fetch
 ```
 
-Run it on installation and after an upgrade. NAS fetches the encoder and WordNet; GPU/Full also
+Run it on installation and after an upgrade. Basic fetches the encoder and WordNet; GPU/Full also
 fetch detectors and Laya. An enabled owned local reader also fetches its pinned reader/model
 projector; custom GGUF paths remain your responsibility. Matching pinned files are reused. `--force` downloads again;
-`--detectors` fetches detectors even on NAS. `--no-detectors` skips them, but does not make a
+`--detectors` fetches detectors even on Basic. `--no-detectors` skips them, but does not make a
 GPU/Full cut work without required models.
 
 ## Find the run's output

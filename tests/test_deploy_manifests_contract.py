@@ -156,7 +156,7 @@ def test_every_app_pod_starts_without_a_caption_service() -> None:
         for container in pod["containers"]:
             env = {row["name"]: row.get("value") for row in container.get("env", [])}
             tier = env.get("IMMICH_MEMORIES_DEPLOYMENT_TIER", env.get("IMMICH_MEMORIES_TIER"))
-            assert tier in {"nas", "auto"}, name
+            assert tier in {"basic", "auto"}, name
             assert not Config(tier=tier).editorial.preparation.demands_captions
 
 

@@ -42,6 +42,6 @@ Untick **Include Live Photos**, pass `--no-live-photos`, or set `advanced.analys
 
 ## HDR, end to end
 
-HDR preservation depends on the source and encoding hardware. On the NAS tier, Live Photo merges are limited to 1080p. On that tier, a device with hardware H.264 but no hardware HEVC tone-maps HDR photos and companions to SDR during preparation.
+HDR preservation depends on the source and encoding hardware. On the Basic tier, Live Photo merges are limited to 1080p. On that tier, a device with hardware H.264 but no hardware HEVC tone-maps HDR photos and companions to SDR during preparation.
 
 Use [hardware encoding](../run/hardware.md) to check what your machine supports. The [media processing reference](../reference/media-processing.md) covers frame verification, audio alignment, supported devices, HDR formats and gain maps.

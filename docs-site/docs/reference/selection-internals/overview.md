@@ -17,7 +17,7 @@ pictures into moments and the moments into stories, decides which stories earn a
 of that length, picks the best frame of each moment it funds, and checks the finished cut against
 a list of promises before anything renders.
 
-On a plain NAS that is the whole editor: metadata, pixels and small CPU classifiers make the film.
+On Basic that is the whole editor: metadata, pixels and small CPU classifiers make the film.
 A GPU adds a one-line description of every picture in the cut and a second family-viewing check. A
 text model on top of that polishes the draft, swapping out the shots that add nothing
 ([What a model adds](./what-a-model-adds.md)). Facts already banked are reused, and the text model

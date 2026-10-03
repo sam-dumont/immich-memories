@@ -4,7 +4,7 @@ title: "Fetch once, then keep traffic local"
 
 # Fetch once, then keep traffic local
 
-This recipe runs NAS with the rules reader and bundled music. After preparation, the app
+This recipe runs Basic with the rules reader and bundled music. After preparation, the app
 contacts Immich; it does not need a hosted reader, a caption service or a music generator.
 The network boundary enforces that choice. Turning off features alone is not a firewall.
 Both recipes passed real isolated runs with fresh models and a synthetic CC0 Immich library:
@@ -41,13 +41,13 @@ docker run --rm \
 
 Replace `YOUR_RELEASE` with your installed release tag or image digest. The root helper only
 sets ownership on this new model volume; the fetch and running app use UID 1000.
-NAS fetches the digest-pinned DINOv2 ONNX encoder from a GitHub release and WordNet from
+Basic fetches the digest-pinned DINOv2 ONNX encoder from a GitHub release and WordNet from
 `raw.githubusercontent.com`. The public context heads and bundled music ship in the image.
 It does not fetch a reader when `llm.enabled` is false.
 
 `--detectors` additionally fetches the Marqo ONNX export from GitHub and pinned detector
 snapshots from Hugging Face. GPU/Full also fetch Laya; the configured owned default reader
-fetches its model and image projector from Hugging Face. This is more than NAS needs.
+fetches its model and image projector from Hugging Face. This is more than Basic needs.
 `models fetch` does **not** prepare every optional service: captioner startup has its own
 checkpoint fetch; Demucs obtains Torch Hub weights from `dl.fbaipublicfiles.com`; ACE-Step
 has its own pinned snapshot downloader. See the [inventory](reference/privacy-egress.md).
@@ -83,7 +83,7 @@ Do not copy the config/store volume: it can contain credentials and library meta
 Preserve the complete model directory, including Hugging Face snapshot, blob and reference
 files if you fetched detectors. Preserve its paths when mounting it; a cache under a
 new location is not automatically found. Run `models fetch --no-detectors` with the same
-paths on the isolated host to verify NAS artifact digests: it reports “already present”;
+paths on the isolated host to verify Basic artifact digests: it reports “already present”;
 a missing or changed artifact tries a download and fails instead of proving readiness.
 
 ## Docker: one internal bridge
@@ -145,12 +145,12 @@ as `networkpolicy.offline.yaml` and edit:
   For strict DNS isolation, use fixed IP URLs and remove this rule, or a resolver restricted
   to your internal zones.
 - If you enable LAN/in-cluster model services, add exact destination selectors/IPs and
-  ports. NAS needs none. Apply equivalent restrictions to the service pods themselves;
+  ports. Basic needs none. Apply equivalent restrictions to the service pods themselves;
   restricting the app does not stop a model server downloading weights.
 
 After preparation, remove the fetch init container from your maintained manifest/overlay
 and pin the same offline feature settings as the Docker example. To make that transition
-on an already running NAS Deployment:
+on an already running Basic Deployment:
 
 ```bash
 kubectl rollout status -n immich-memories deployment/immich-memories
@@ -182,7 +182,7 @@ your actual Service/pod/LAN addresses. [Kubernetes documents these limits](https
 
 ## What preflight can prove
 
-Expect Immich and encoder checks to pass; LLM and caption checks should be skipped for NAS,
+Expect Immich and encoder checks to pass; LLM and caption checks should be skipped for Basic,
 notifications should have no destinations, and there should be no geocoding/map
 “Outside call” rows. Preflight does authenticated configured-service probes; it is not a
 packet capture or a firewall test. Those outside-call rows cover geocoding/maps, not every

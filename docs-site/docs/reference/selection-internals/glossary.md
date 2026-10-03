@@ -42,7 +42,7 @@ flowchart TD
 | **Heads** | eight small classifiers over one pinned DINOv2 encoder: location, people, children, activity, venue, frame_kind, screen, uncovered_person | `editorial_preparation_heads.py` |
 | **Detectors** | `nsfw_marqo` (exposure, read on up to eight frames of a video) and `doc_docling` (documents) | `editorial_preparation_detectors.py` |
 | **Caption** | a banked description or motion line, acquired for selected shots and candidates by SmolVLM2 500M or an explicitly approved LLM provider | `editorial_description_contract.py` |
-| **Tier** | `nas` (CPU heads), `gpu` (adds Marqo, Docling, captions and Laya), `full` (adds prose refinement); `auto` resolves from GPU inference and LLM configuration | `tier`, `config_tiers.py` |
+| **Tier** | `basic` (CPU heads; legacy `nas` alias), `gpu` (adds Marqo, Docling, captions and Laya), `full` (adds prose refinement); `auto` resolves from GPU inference and LLM configuration | `tier`, `config_tiers.py` |
 | **Scene print** | the pooled DINOv2 vector of a preview; two prints at a cosine of 0.65 or more are the same scene | `editorial_scene_prints.py` |
 | **Residual** | the motion left in a clip once the camera's own movement is removed; 1.5 or more plays as motion | `RESIDUAL_MIN`, `editorial_structure_budget.py` |
 | **Bank** | an answer stored under its exact inputs and producer version, so the next run asks nothing; no row means nobody asked | the store |
@@ -52,7 +52,7 @@ flowchart TD
 
 | Word | Meaning | Where |
 |---|---|---|
-| **Reader** | who plans the film: `rules` (no model) on the `nas` and `gpu` tiers, `model` on `full`. The tier sets it; an explicit value is ignored with a warning | `config_tiers.py` |
+| **Reader** | who plans the film: `rules` (no model) on the `basic` and `gpu` tiers, `model` on `full`. The tier sets it; an explicit value is ignored with a warning | `config_tiers.py` |
 | **Draft** | the film the no-model reader cuts from facts; with no model, it is the film | `editorial_rule_reader.py` |
 | **Worthiness** | remarkable, maybe or background, read per happening from facts | `RuleStructureReader.worthiness` |
 | **Weight** | a story's size: `dominant`, `major`, `minor`, `glimpse`, `none`; `none` gets no shot | `editorial_story_slots.weight_caps` |
@@ -92,4 +92,4 @@ flowchart TD
 | **Block vote** | every model yes or no: at most 12 rows, asked in up to two orders; both orders is firm, one is a maybe | `editorial_block_votes.py` |
 | **Seat** | a slot the polish may fill: N (a record with no shot), R (replaces a voted-out shot), T (replaces a gate refusal), D (a swap) | `editorial_thin_refill.py` |
 | **Fill on demand** | a film reads only the episodes its shots sit in; reading a whole scope ahead is optional | `episode_demand.py`, `prepare --overviews` |
-| **Route** | A: rules only (`nas`, `gpu`); B: the rules draft plus the model's polish (`full`, the default); C: the model plans the whole film (`full` with `thin_model_layer: false`) | [What a model adds](./what-a-model-adds.md) |
+| **Route** | A: rules only (`basic`, `gpu`); B: the rules draft plus the model's polish (`full`, the default); C: the model plans the whole film (`full` with `thin_model_layer: false`) | [What a model adds](./what-a-model-adds.md) |

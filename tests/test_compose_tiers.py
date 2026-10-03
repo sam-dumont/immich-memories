@@ -174,3 +174,28 @@ def test_postgres_download_and_container_harness_keep_database_readiness(compose
     assert "@postgres:5432/immich_memories" in app["environment"]["IMMICH_MEMORIES_DATABASE_URL"]
     assert services["postgres"]["image"].startswith("postgres:16@sha256:")
     assert not services["postgres"].get("ports")
+
+
+@pytest.mark.parametrize("source", ["default", "example", "basic", "nas"])
+def test_compose_cpu_install_uses_canonical_basic(compose_cli, tmp_path, monkeypatch, source):
+    env = {key: value for key, value in os.environ.items() if key != "TIER"}
+    command = [*compose_cli, "--env-file", os.devnull]
+    if source == "example":
+        command = [*compose_cli, "--env-file", str(ROOT / "example.env")]
+    elif source in {"basic", "nas"}:
+        env["TIER"] = source
+    result = subprocess.run(
+        [*command, "-f", str(ROOT / "docker-compose.yml"), "config", "--format", "json"],
+        env=env,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    app = json.loads(result.stdout)["services"]["immich-memories"]
+    tier = app["environment"]["IMMICH_MEMORIES_DEPLOYMENT_TIER"]
+    assert tier == ("nas" if source == "nas" else "basic")
+    monkeypatch.setenv("IMMICH_MEMORIES_DEPLOYMENT_TIER", tier)
+    config = Config.from_yaml(tmp_path / "missing.yaml", stored={})
+    assert config.tier == "basic"
+    assert config.editorial.reader == "rules"
+    assert config.editorial.preparation.tier == "no_captions"

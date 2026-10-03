@@ -14,8 +14,8 @@ moment's favourite: then the whole moment goes and another moment gets the slot.
 sunset, or the same hiking trail filmed twice twenty minutes apart, become one. Then the finished
 cut is checked against everything the passes promised.
 
-NAS runs these passes with rules and the eight shared-DINO heads, including `screen`,
-`frame_kind` and `uncovered_person`. Marqo and Docling are off on NAS. This is a measured cost
+Basic runs these passes with rules and the eight shared-DINO heads, including `screen`,
+`frame_kind` and `uncovered_person`. Marqo and Docling are off on Basic. This is a measured cost
 tradeoff, with less detector coverage, not proven equivalence to Full. GPU and Full add both
 detectors and Laya
 over the selected shots' captions. No tier asks the prose LLM to decide sharing.
@@ -97,7 +97,7 @@ brief, `generate --sharing`), and `defaults.sharing` is the default, `family` un
 
 A caption that explicitly describes a person wearing only underwear holds the picture to
 **Just us**. Swimwear and babies
-in nappies are separate; an uncovered-person flag alone does not identify underwear. A NAS run
+in nappies are separate; an uncovered-person flag alone does not identify underwear. A Basic run
 without that caption cannot make this distinction. Use **Never use** for a picture you want out
 of every future film, or clear its hold yourself after reviewing it.
 
@@ -140,9 +140,9 @@ reading's lasts as long as the audience prompt it answered. Only you lift one, o
 looking at it (see [Your word on a picture](#your-word-on-a-picture)). A false positive costs a shot
 in a wider film; a false negative puts the wrong picture in front of the wrong people.
 
-**On NAS**, the answer is `family_only` for every
+**On Basic**, the answer is `family_only` for every
 shot, with the finding that holds it: the heads can't see the private moments only a written
-description names. So a just-us and a family film on a NAS are the same film, and what leaves them
+description names. So a just-us and a family film on Basic are the same film, and what leaves them
 is what the carrier rules catch. A shareable film is the one exception, under `strict_sharing` (on by
 default): a shot is `share` when its evidence is clean, which means all of these:
 - every member has clean exposure evidence: a negative Marqo answer, or the complete cheap-head evidence described below;
@@ -182,7 +182,7 @@ activity holds still apply; a new checkpoint cannot silently clear a previous ho
 
 Detector and exposure holds apply to shareable films even with
 **`advanced.editorial.strict_sharing: false`**: a caption cannot clear them. Your explicit
-clearance on a picture can lift a hold. `strict_sharing` (on by default) also allows the NAS
+clearance on a picture can lift a hold. `strict_sharing` (on by default) also allows the Basic
 clean-evidence `share` above; turning it off removes that route. Just-us and family films don't read it.
 
 **The review list.** Every run writes `review-before-sharing.private.json` in its attempt directory:

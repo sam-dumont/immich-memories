@@ -393,14 +393,14 @@ def test_quickstart_compose_publishes_the_ui_on_loopback_only() -> None:
     assert published == ["${UI_BIND_ADDRESS:-127.0.0.1}:8080:8080"], published
 
 
-def test_quickstart_compose_resolves_to_nas_without_a_second_service() -> None:
+def test_quickstart_compose_resolves_to_basic_without_a_second_service() -> None:
     from immich_memories.config_loader import Config
 
     compose = yaml.safe_load((REPO_ROOT / "docker-compose.yml").read_text())
     environment = compose["services"]["immich-memories"]["environment"]
 
-    assert environment["IMMICH_MEMORIES_DEPLOYMENT_TIER"] == "${TIER:-nas}"
-    config = Config(tier="nas")
+    assert environment["IMMICH_MEMORIES_DEPLOYMENT_TIER"] == "${TIER:-basic}"
+    config = Config(tier="basic")
     assert config.tier == "basic"
     assert not config.editorial.preparation.demands_captions
 

@@ -18,7 +18,7 @@ Only `enabled: true` enables the reader. A model or endpoint alone leaves it dis
 | `llm.base_url` (titles) | a people or occasion film's opening title, with an enabled reader; trips only with `--llm-title` | text only: first names, birth dates and ages, recorded relationships, the date span, places by day (up to 30), and the album/occasion/holiday name. Trip prompts also include country, clip captions (up to 10) and object labels (up to 20), when available | `--no-llm-title` or `--title` |
 | `llm.base_url` (music, special days) | music selection and special-day scans, with a model | text only: the cut's story labels and captions; for a day, capture times, places, coordinates and recognised names | disabled reader: no call |
 | A hosted reader endpoint | an enabled reader uses a hosted provider or explicit remote `llm.base_url` | the reader rows above, with configured provider credentials | `openai`, `anthropic`, `zai` supply their preset URL when blank; blank `openai-compatible` or `ollama` runs locally |
-| `caption_base_url` | GPU and Full with the default SmolVLM provider, for selected shots and actual candidates; a wider scope only with an explicit `prepare` job | a 400 px JPEG per picture; a strip of three keyframes per video and per playing Live Photo; `caption_api_key` as a bearer token if set | `localhost:8092`; NAS does not call it |
+| `caption_base_url` | GPU and Full with the default SmolVLM provider, for selected shots and actual candidates; a wider scope only with an explicit `prepare` job | a 400 px JPEG per picture; a strip of three keyframes per video and per playing Live Photo; `caption_api_key` as a bearer token if set | `localhost:8092`; Basic does not call it |
 | `llm.base_url` (caption provider) | explicit `advanced.editorial.preparation.caption_provider: llm`, on any tier | synthetic schema controls, then missing picture tiles and candidate video frame strips; configured LLM credentials | off; existing valid SmolVLM captions are reused first |
 | `inference.facts_base_url` | preparation, when set; generated music with stem separation; config load | picture previews and up to eight sampled frames per video or Live Photo companion; the generated WAV mix to `/audio/stems`; a GET `/health` at config load | unset: the app runs these locally |
 | `render.worker_base_url` | rendering on another box | Immich URL, primary API key and every partner key needed by the cut; account routes, asset IDs, selected intervals and Live Photo material; person names, title/subtitle, dates, preset and timing metadata, audio categories/emotions, home coordinates, output/title options and the full `network` configuration | unset: renders here; the worker can make enabled geocoding/map requests itself |
@@ -61,15 +61,15 @@ The LLM caption option is less efficient and can be much more expensive, especia
 infrastructure. Configuring a prose reader alone never enables it.
 
 The heads and detectors run locally or on `advanced.inference.facts_base_url` and bank their facts.
-The rules editor builds the NAS draft first. GPU and Full then acquire missing captions and clip
+The rules editor builds the Basic draft first. GPU and Full then acquire missing captions and clip
 evidence for selected shots and actual candidates. An explicit LLM-caption opt-in permits those
-image requests on NAS too. Later films reuse valid entries under their actual producer;
+image requests on Basic too. Later films reuse valid entries under their actual producer;
 missing facts or a changed producer can require another read. `prepare` can explicitly cover a
 wider scope. The selection reader uses the resulting text and never decides sharing.
 A shareable film keeps detector and exposure holds even with
 `advanced.editorial.strict_sharing: false`; a caption cannot clear them. Only your explicit
 clearance on a picture can lift those holds. `strict_sharing` also permits clean-evidence sharing
-on NAS without captions.
+on Basic without captions.
 
 Two features ask a reader something besides the editor, and both send text only. Music
 selection reads the cut's text (thesis, story titles, ingest captions) and falls back to the clips'

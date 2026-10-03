@@ -106,7 +106,7 @@ four seconds apart, then stops with a message starting `Gave up on the reader at
 `advanced.llm.base_url`, start that server or fix its URL. On a native install with an empty URL, check the configured
 `local_server`, model/projector files and available memory; the app starts its own server. Docker and Kubernetes require an external endpoint: [Reader setup](../better/reader.md). Then
 **Cut again** or rerun: everything already read is banked. To cut without it, set
-`tier: gpu` (or `nas`): selection then uses the rules reader.
+`tier: gpu` (or `basic`; legacy `nas` also works): selection then uses the rules reader.
 
 ## `QuickTime cannot hold: re-encoding this clip instead of copying it`
 

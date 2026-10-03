@@ -85,7 +85,7 @@ immich-memories generate --ask "our cat through the years" --dry-run
 
 Each render writes a new folder under `output.directory`; reruns do not overwrite earlier films. `--output` changes the base name and location, but the actual file gains the recipe hash and run folder.
 
-`--resolution` takes the config value; `auto` matches source clips. When `--resolution` is omitted, the command uses `output.resolution` (1080p by default). `--quality` takes `high`, `medium` or `low`: these map to config quality `high`, `balanced` and `fast`. The same names apply to `runs render`. NAS preparation can still limit source intermediates to 1080p.
+`--resolution` takes the config value; `auto` matches source clips. When `--resolution` is omitted, the command uses `output.resolution` (1080p by default). `--quality` takes `high`, `medium` or `low`: these map to config quality `high`, `balanced` and `fast`. The same names apply to `runs render`. Basic preparation can still limit source intermediates to 1080p.
 
 Use `--upload-to-immich --album "Memories"` to deliver the film to Immich. Setting `upload.enabled: true` also enables delivery without the flag; `upload.album_name` supplies the default album. Once delivery is confirmed, the app removes the local output and keeps the run record and Immich link. Leave upload off to keep the file locally.
 

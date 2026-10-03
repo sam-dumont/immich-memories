@@ -119,7 +119,7 @@ even at the same QP, and will not necessarily speed up a film dominated by CPU f
 
 ## NAS output and HDR
 
-NAS output is capped at 1080p, in the film's orientation. A J4125-class NAS can encode H.264 but
+Basic output is capped at 1080p, in the film's orientation. A J4125-class NAS can encode H.264 but
 not HEVC. With the default hardware preference, auto HDR can become an SDR H.264 film instead
 of forcing slow software HEVC. Strict codec policy or explicit HDR can require software.
 
