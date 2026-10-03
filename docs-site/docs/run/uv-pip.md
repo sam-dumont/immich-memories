@@ -31,15 +31,16 @@ uv tool install "immich-memories[all]"
 
 On Apple Silicon, use `"immich-memories[all-mac]"`. It includes the Metal bindings; add
 `[all-mac,auth]` if you want OIDC. For pip, use the same package spec inside a virtual environment.
-For the 1.0 release candidate, pin the package explicitly:
+For a candidate, use the exact package version published with its application release,
+including the same extras. `vX.Y.Z-rc.N` in GitHub corresponds to `X.Y.ZrcN` on PyPI;
+that spelling is an example, not evidence that a package exists. Never substitute the latest
+stable package when following candidate docs: its CLI and setup may differ.
 
-```bash
-uv tool install --prerelease allow "immich-memories[all]==1.0.0rc1"
-# Or, inside a virtual environment:
-pip install "immich-memories[all]==1.0.0rc1"
-```
-
-Use `[all-mac]` on Apple Silicon. PyPI spells `v1.0.0-rc.1` as `1.0.0rc1`.
+Check the [application release assets](https://github.com/sam-dumont/immich-memories/releases)
+and [PyPI files](https://pypi.org/project/immich-memories/#files) before installation.
+A development documentation build has no matching published native package unless its
+candidate manifest explicitly supplies one. A wheel built on the tester's machine does not
+satisfy the prebuilt first-run gate.
 
 A bare install lacks the ONNX runtime needed for picture classifiers.
 

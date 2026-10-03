@@ -36,6 +36,26 @@ Select **inference_only** instead for the standalone inference images. Choose on
 mode per run. These modes publish commit tags; they create no GitHub or PyPI release, do not
 move `latest`, and do not deploy the docs site.
 
+### Pre-tag onboarding rehearsal
+
+Before creating an RC, complete [the prebuilt onboarding gate (#1922)](https://github.com/sam-dumont/immich-memories/issues/1922).
+Image-only publication above supplies commit-tagged images, but **does not publish** matching
+Compose downloads, a deployment bundle, a native wheel or versioned setup-builder exports.
+It is not yet a complete public onboarding route. Do not label a tester-built image or wheel
+as a published candidate, and do not dispatch an RC merely to work around this missing rehearsal route.
+
+Record one manifest for the rehearsal: full source SHA, docs revision and URL, public asset
+URLs and SHA-256 hashes, app/inference/worker image digests and their platform manifests,
+native package version, and exact external model-service versions. Confirm anonymous downloads
+and pulls on a clean host. Keep model-only `models-v*` tags out of the application version.
+The app's architecture list does not establish CUDA/caption/worker support on those architectures.
+
+The deployment packagers substitute release pins, so a raw Git archive is not the same bundle.
+Publish the generated assets together, then run the docs asset check before enabling exports.
+After tagging, verify the actual RC artifacts again and rerun affected lanes if their runtime
+identities differ. Check Pages, release downloads and GHCR separately after a repository rename;
+a GitHub redirect does not prove a Pages redirect.
+
 ### Release candidates
 
 The **Channel** input picks what a run publishes. `stable` (the default) is a final release; `rc`
