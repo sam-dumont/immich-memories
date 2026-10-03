@@ -56,6 +56,12 @@ published-release wheel comparison. The retained generated package-version file 
 source overlay; the verified application source SHA above identifies the measured code.
 The old inference image also needed its missing declared HEIC dependency installed before acceptance.
 
+This is pre-RC1 validation: RC1 is intended to follow these tests. Publication is not a prerequisite
+for this source-level matrix. Current main's versioned installation component distinguishes
+published installers from unpublished previews. The RC must carry the tested fixes and declared
+dependencies; these existing-runtime measurements do not themselves certify a clean install of
+the eventual release artifacts.
+
 ## Cold 1080p results
 
 Seconds throughout; MB are decimal. Peak RSS samples the CLI process tree once per second;
@@ -66,7 +72,7 @@ It is not total host RAM, a GPU VRAM measurement or a cross-platform memory budg
 | --- | --- | --- | --- | --- | --- |
 | NAS Basic | passed | 995.629 | 993.219 | 104.555 | 0.702 |
 | NAS + GPU service | pending | pending | pending | pending | pending |
-| Kubernetes GPU | pending | pending | pending | pending | pending |
+| Kubernetes GPU | passed | 540.546 | 539.017 | 73.743 | 1.575 |
 | M5 Full | passed | 208.461 | 207.164 | 53.697 | 8.376 |
 | M2 Basic | passed | 202.626 | 202.027 | 80.021 | 10.358 |
 | M2 Full | passed | 575.636 | 574.697 | 79.008 | 11.094 |
@@ -82,11 +88,19 @@ Assembly is inside render; do not add it again. Music is separate from render. T
 spans omit some root-span bookkeeping and do not sum exactly to wall time. The remote render
 path includes source preparation inside assembly.
 
+Music can generate more than one candidate under the same default policy. M2 Full's common
+run generated three candidates before choosing one; its maximum needed one. M5 common needed
+one and maximum needed two. That variation remains in wall time and explains part of the music
+spread; it is not all hardware speed or output-resolution cost. M2 Full's three common candidates
+were flagged by the music scorer, which selected the best available candidate after exhausting
+the configured attempts. Generation and stem mixing succeeded; a decode pass is not a subjective
+soundtrack-quality assessment.
+
 | Configuration | Startup | Discovery | Selection | Render | Assembly | Music |
 | --- | --- | --- | --- | --- | --- | --- |
 | NAS Basic | 12.279 | 0.096 | 430.794 | 492.778 | 256.789 | 36.178 |
 | NAS + GPU service | pending | pending | pending | pending | pending | pending |
-| Kubernetes GPU | pending | pending | pending | pending | pending | pending |
+| Kubernetes GPU | 7.859 | 0.058 | 151.398 | 152.713 | 152.707 | 219.926 |
 | M5 Full | 3.791 | 0.073 | 141.231 | 37.991 | 26.004 | 19.733 |
 | M2 Basic | 4.801 | 0.076 | 68.831 | 64.891 | 45.963 | 60.188 |
 | M2 Full | 4.647 | 0.077 | 344.182 | 61.134 | 42.981 | 155.986 |
@@ -101,7 +115,7 @@ native 4K HDR detail. Music is regenerated, so its timing difference is not a re
 | Configuration | Export wall | 1080p render | 4K render | Extra render | 4K music | 1080p MB | 4K MB | File growth |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | NAS + GPU service | pending | pending | pending | pending | pending | pending | pending | pending |
-| Kubernetes GPU | pending | pending | pending | pending | pending | pending | pending | pending |
+| Kubernetes GPU | 920.430 | 152.713 | 728.983 | 576.270 | 142.690 | 73.743 | 145.709 | 97.6% |
 | M5 Full | 136.071 | 37.991 | 94.962 | 56.971 | 29.581 | 53.697 | 91.379 | 70.2% |
 | M2 Full | 250.127 | 61.134 | 171.135 | 110.001 | 57.538 | 79.008 | 132.121 | 67.2% |
 
@@ -116,7 +130,7 @@ film and its maximum export where applicable; maximum reuses selection.
 | --- | --- | --- | --- |
 | NAS Basic | 0 | 0 | 0 |
 | NAS + GPU service | pending | pending | pending |
-| Kubernetes GPU | pending | pending | pending |
+| Kubernetes GPU | 20 | 16 | 0 |
 | M5 Full | 70 | 21 | 0 |
 | M2 Basic | 0 | 0 | 0 |
 | M2 Full | 81 | 21 | 0 |
@@ -140,7 +154,8 @@ cannot exhaust the same card.
 The first attempt was not trouble-free. These corrections preceded the final cold acceptance;
 no failed work was silently spliced into its phase totals:
 
-- macOS archive metadata produced `._*.py` migration files on Linux. The transport now uses
+- macOS archive metadata produced `._*.py` migration files on Linux; the failed Kubernetes
+  start took 2.001 s. The transport now uses
   `COPYFILE_DISABLE=1 tar --no-xattrs`; the failed starts and logs remain in private evidence.
 - DSM does not provide Docker's CFS quota interface here. The harness uses four-CPU affinity
   with the same 4 GiB memory limit instead of `--cpus`.
@@ -151,11 +166,17 @@ no failed work was silently spliced into its phase totals:
   the renderer correctly rejected it. That Kubernetes attempt took 197.747 s. Correcting both
   GPU configurations and checking `/render/health` preceded a fresh run.
 - The reused inference image lacked `pi-heif`, causing selected HEIC sources to fail remote
-  assembly. Installing declared dependency `pi-heif==1.4.0` and decoding a real rejected HEIC
+  assembly after 167.827 s. Installing declared dependency `pi-heif==1.4.0` and decoding a real rejected HEIC
   fixed the runtime. The current inference Dockerfile already installs the project dependencies;
   copying new source into an older image does not update those dependencies.
 - Pulling the rebuilt ACE image briefly caused node disk pressure; kubelet recovered without
   manual deletion. Image transfer and scheduling time are outside the film timer.
+- NAS GPU's first attempt stopped after 103.103 s because the temporary worker's LoadBalancer
+  timed out. The same worker answered through the endpoint node's NodePort. Setting that test
+  service's `externalTrafficPolicy: Local` moved MetalLB's announcement to the GPU endpoint node;
+  inference then responded from the actual NAS container in 0.01 s and authenticated render
+  health passed. The failed store was archived before another cold run. This is a correction to
+  the temporary deployment, not an application fix or a universal requirement for all clusters.
 
 ## Repeating the workload
 
