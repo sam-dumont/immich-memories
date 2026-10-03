@@ -224,6 +224,36 @@ records source revisions, memory, component gains and measurement limits. Separa
 [NAS software-HLG memory work](https://github.com/sam-dumont/immich-video-memory-generator/issues/1767)
 remains open.
 
+## Ollama on M5 Max, 3 October 2026 {#ollama-validation}
+
+Gemma 4 E4B was tested through both Ollama APIs using the same 34 synthetic
+production-feature checks as the oMLX validation. This run used Ollama 0.35.1,
+`gemma4:e4b-it-q4_K_M`, an M5 Max with 128 GiB RAM, and a 32,768-token context.
+Source: `a3bfc5dbe66efceaf6985abed72c78600a0fbb37`. The model is the same Gemma
+variant; its Q4_K_M GGUF weights differ from the earlier 6-bit MLX weights.
+
+| API and thinking setting | Passed | Summed probe time | HTTP attempts |
+|---|---:|---:|---:|
+| Native, server default | 34/34 | 318.77 s | 85 |
+| Native, `think: false` | 33/34 | 53.01 s | 85 |
+| Compatible, default app settings | 25/34 | 345.19 s | 97 |
+| Compatible, `reasoning_effort: none` | 32/34 | 45.04 s | 85 |
+
+Use the [explicit thinking-off recipes](../reference/llm-providers.md#ollama)
+for the text reader. Both read all 22 episodes and selected eight story moments
+in the separate larger-prompt checks. Native Ollama with server-default thinking
+truncated its first large episode response: earlier requests in the complete suite
+had already taught the app to budget extra tokens. The compatible route ignores
+the default oMLX-style thinking switch and can return empty answers at small token limits.
+
+With thinking off, both APIs failed the motion example; the compatible API also
+lost the race from a period summary. Image captioning and the other feature checks
+passed. These were single sequential runs with warm server caches, not a throughput
+comparison with oMLX or an end-to-end film validation. The M2 and SmolVLM2 were not tested.
+The [report and reproducible configs](https://github.com/sam-dumont/immich-video-memory-generator/blob/main/docs/research/2026-10-03-ollama-validation.md)
+and [aggregate CSV](https://github.com/sam-dumont/immich-video-memory-generator/blob/main/docs/research/2026-10-03-ollama-validation.csv)
+record all four runs, including failures.
+
 ## LLM contract fixes, 1 October 2026 {#llm-contract-fixes}
 
 The Gemma conformance results use 6-bit MLX on oMLX, rather than the app-owned Q4_0 GGUF.
