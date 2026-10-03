@@ -226,6 +226,22 @@ contain ACE-Step music and four stems and passed full decoding. Earlier fallback
 separately labelled in the album. Recovery time is additional work, not a replacement for the
 original failed music timing.
 
+The recorded remote assembly phases were 922.673 s for NAS GPU and 919.246 s for Kubernetes
+GPU at 4K, versus 169.258 s and 215.062 s in their original common runs. Those observed differences
+are 753.415 s and 704.184 s. They include remote source preparation and ran under different shared
+GPU conditions and source revisions; they are **not isolated resolution penalties**. Both maximums
+used NVENC HEVC preset `p4`, 10-bit output and the balanced application preset.
+
+### Upload verification
+
+A delayed check found that individual tag requests triggered overlapping Immich sidecar writes.
+Server logs recorded temporary-file collisions and a subsequent missing-sidecar read; one film
+lost its tags after immediate readback had passed. The benchmark publisher now uses the existing
+bulk-tag endpoint, waits for metadata/sidecar jobs, and verifies album membership, filenames,
+hardware/tier/output tags and the generated-film provenance tag again. No film was re-rendered
+or uploaded twice to repair metadata. This fixes the benchmark publication path, not Immich's
+underlying concurrent sidecar-write behavior.
+
 ### Memory handoffs: fixes and remaining limits
 
 The fixes release the scene-print encoder, reset the native title runtime before releasing the
