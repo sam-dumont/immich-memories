@@ -62,7 +62,7 @@ def test_the_cpu_fallback_says_so_and_warns(config, caplog) -> None:
     ):
         service = RenderingService(config)
 
-    assert not service.use_gpu, "CPU titles use still plates with fades"
+    assert not service.use_gpu, "CPU titles animate raster text through FFmpeg"
     assert service.backend == "CPU"
     assert "on CPU" in caplog.text
     assert any(r.levelno == logging.WARNING for r in caplog.records), (

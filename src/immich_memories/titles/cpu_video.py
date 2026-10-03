@@ -1,4 +1,4 @@
-"""Still title plates with FFmpeg fades for machines without a rendering GPU."""
+"""Rasterize text once and animate with FFmpeg on machines without a rendering GPU."""
 
 from __future__ import annotations
 
@@ -17,6 +17,7 @@ from immich_memories.processing.encoding_plan import EncodingPlan
 from immich_memories.processing.hardware_encode import apply_hardware_encode
 
 from .backgrounds import create_background_for_style
+from .cpu_animation import text_animation
 from .encoding import standalone_title_encoding_plan, title_color_filter, title_encoder_args
 from .renderer_pil import RenderSettings, TitleRenderer
 from .styles import TitleStyle
@@ -41,11 +42,10 @@ def create_title_video(
     frame_progress: Callable[[int, int], None] | None = None,
     fade_color: str = "white",
 ) -> Path:
-    """Render typography once, then encode a static background with text fades.
+    """Render typography once; FFmpeg moves the text over a still background.
 
-    CPU fallback deliberately replaces per-frame bokeh, gradients and text
-    transforms with opacity fades. The resolved encoding plan still owns
-    codec, transfer, hardware upload, frame rate and silent audio.
+    The resolved encoding plan owns codec, transfer, hardware upload, frame rate and
+    silent audio. No full-size background or text is rebuilt in Python per frame.
     """
     started = time.perf_counter()
     plan = encoding_plan or standalone_title_encoding_plan()
@@ -67,8 +67,13 @@ def create_title_video(
         RenderSettings(width, height, fps, duration, False, plan.hdr),
         background_image=background_image,
     )
-    # All preset transforms have settled; only opacity changes during encoding.
-    plate = renderer.render_frame(title, subtitle, frame_number=int(10 * fps))
+    # Rasterize settled typography once; FFmpeg applies the preset transforms.
+    plate = renderer.render_frame(
+        title, subtitle, frame_number=int(10 * fps), transparent_background=True
+    )
+    box = plate.getchannel("A").getbbox() or (0, 0, 1, 1)
+    plate = plate.crop(box)
+    center_x, center_y = (box[0] + box[2]) / 2, (box[1] + box[3]) / 2
 
     with tempfile.TemporaryDirectory(prefix="title-plates-", dir=output_path.parent) as scratch:
         background_path = Path(scratch) / "background.png"
@@ -78,11 +83,16 @@ def create_title_video(
         synthesized = time.perf_counter()
         fade_in = min(0.5, duration / 3)
         fade_out = min(1.0, duration / 3)
+        scale, offset_x, offset_y = text_animation(style.animation_preset, duration)
         graph = (
             f"[0:v]fps={fps},format=rgb24[bg];"
-            f"[1:v]fps={fps},format=rgba,fade=t=in:st=0:d={fade_in}:alpha=1,"
+            f"[1:v]fps={fps},format=rgba,"
+            f"scale=w='max(1,round(iw*{scale}))':h='max(1,round(ih*{scale}))':eval=frame,"
+            f"pad={max(2, plate.width * 2)}:{max(2, plate.height * 2)}:(ow-iw)/2:(oh-ih)/2:color=black@0:eval=frame,"
+            f"fade=t=in:st=0:d={fade_in}:alpha=1,"
             f"fade=t=out:st={duration - fade_out}:d={fade_out}:alpha=1[text];"
-            "[bg][text]overlay=format=rgb"
+            f"[bg][text]overlay=x='(W-w)/2+({center_x - width / 2})*{scale}+{offset_x}':"
+            f"y='(H-h)/2+({center_y - height / 2})*{scale}+{offset_y}':format=rgb"
         )
         if fade_from_white:
             graph += f",fade=t=in:st=0:d={min(0.8, duration / 3)}:color={fade_color}"
@@ -110,7 +120,7 @@ def create_title_video(
             )
     finished = time.perf_counter()
     logger.info(
-        "CPU title plates: synthesis %.2fs; encode %.2fs; %dx%d, %g fps, %.2fs",
+        "CPU animated titles: synthesis %.2fs; encode %.2fs; %dx%d, %g fps, %.2fs",
         synthesized - started,
         finished - synthesized,
         width,

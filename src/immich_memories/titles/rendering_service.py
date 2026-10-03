@@ -93,7 +93,7 @@ class RenderingService:
         """
         if self.backend is None:
             logger.warning(
-                "Title rendering: %s; using static title plates with fades",
+                "Title rendering: %s; using FFmpeg animated titles with raster text",
                 self._no_backend_reason(),
             )
         elif self.backend in _GPU_BACKENDS:
@@ -102,7 +102,7 @@ class RenderingService:
             failures = self._kernels.gpu_failures() if self._kernels is not None else ()
             logger.warning(
                 "Title rendering on CPU: %s; the kernel backend is %s. "
-                "Using static title plates with fades.",
+                "Using FFmpeg animated titles with raster text.",
                 "; ".join(failures) or "the kernel library found no GPU backend",
                 self.backend,
             )
@@ -123,7 +123,7 @@ class RenderingService:
     def use_gpu(self) -> bool:
         """Whether title effects use a Metal, CUDA or Vulkan backend.
 
-        CPU backends use still plates with fades instead of animated kernels.
+        CPU backends animate raster text over a still background through FFmpeg.
         """
         return self._use_gpu
 
@@ -172,9 +172,7 @@ class RenderingService:
                 fade_to_white=fade_to_white,
                 frame_progress=frame_progress,
             )
-        # WHY: PIL fallback can't do animated slow-mo deblur, but it CAN
-        # use a static blurred frame from the content clip as background
-        # instead of falling back to a plain gradient.
+        # Keep the CPU background still: moving it makes NAS software encoding costly.
         if background_image is None and content_clip_path is not None:
             background_image = self._extract_blurred_frame(
                 content_clip_path,
