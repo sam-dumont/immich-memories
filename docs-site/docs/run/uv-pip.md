@@ -36,6 +36,16 @@ For pip, use the same pinned package specification inside the app's virtual envi
 
 A bare install lacks the ONNX runtime needed for picture classifiers.
 
+For GPU or Full on Apple Silicon, append `--with laya-mlx` to the versioned `uv tool install`
+command above. `all-mac` supplies the Metal bindings but does not include this audience-classifier
+runtime. With pip, install `laya-mlx` using the same virtual environment as the app. Downloading
+its checkpoint with `models fetch` does not install the Python runtime. See the
+[Mac recipe](./reference/mac-example.md#install-the-app) for checkout commands.
+
+`pi-heif`, the HEIC decoder, is a base dependency. If an existing installation cannot import it,
+reinstall or sync the selected application version with the same extras before testing another
+film. An old environment with new source files is not an updated install.
+
 Create `~/.immich-memories/config.yaml`:
 
 ```yaml

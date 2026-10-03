@@ -24,7 +24,7 @@ it before any other make target.
 |--------|----------|------|
 | `make dev-test` | dev tools only | Default for contributors (what CI tests with) |
 | `make dev-ci` | dev tools only | Identical to `dev-test` today |
-| `make dev-mac` | dev + `all-mac` (Apple Vision, Metal, the editorial stack) | Apple Silicon, full feature set |
+| `make dev-mac` | dev + `all-mac` (Apple Vision, Metal, the editorial stack) | Apple Silicon app dependencies; Laya and ACE-Step need the installs below |
 | `make dev` | CPU `all` + `mac` + `dev`, and the built web client; includes torch and demucs | Only if you work across all optional backends |
 
 For CUDA editorial development on Linux, use `uv sync --extra dev --extra editorial-cuda`.
@@ -32,6 +32,12 @@ Do not combine it with `editorial`, `all` or `all-mac`: CPU and GPU ONNX distrib
 share an import namespace, and uv refuses these combinations. `--all-extras` is therefore
 unsupported. When running `check` or `ci` in that prepared CUDA environment, set
 `ENSURE_DEV_COMMAND=true` so the CPU setup does not replace it.
+
+**GPU or Full on Apple Silicon also needs Laya.** After `make dev-mac`, run
+`uv pip install --python .venv/bin/python laya-mlx`. It is not part of `all-mac`.
+Use `uv run --no-sync immich-memories ...` to preserve that separately installed runtime;
+repeat its install after an explicit environment sync. The [Mac recipe](../run/reference/mac-example.md)
+also checks HEIC decoding and the effective FFmpeg build before generation.
 
 **Rendering with generated music on a Mac? Also run `make install-acestep`.** None of the targets
 above install ACE-Step: it lives in a sibling `.venv-acestep` next to the checkout, so **every new
