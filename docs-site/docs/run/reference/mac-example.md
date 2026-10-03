@@ -21,20 +21,31 @@ or generate music; the Full and optional music steps below need their own config
 
 ## Install the app
 
-For a source checkout, install uv, FFmpeg and Node 22 first. Use Python 3.12 if you plan to add
+For a source checkout, install uv, `ffmpeg-full`, exiftool and Node 22 first. Use Python 3.12 if you plan to add
 local ACE-Step. From your release checkout:
 
 ```bash
+brew install uv ffmpeg-full exiftool llama.cpp
+export PATH="$(brew --prefix ffmpeg-full)/bin:$PATH"
+ffmpeg -hide_banner -filters | grep zscale
 git clone https://github.com/sam-dumont/immich-memories.git
 cd immich-memories
 git checkout YOUR_RELEASE_TAG
 make dev
 make dev-mac
-brew install llama.cpp
+uv pip install --python .venv/bin/python laya-mlx
+uv run --no-sync python -c "import pi_heif, laya_mlx"
 ```
 
 Replace `YOUR_RELEASE_TAG` with the release tag you intend to run. The Mac extras install the
-Metal bindings. [Development setup](../../contribute/development-setup.md) covers source tools;
+Metal bindings, but **not `laya-mlx`**. The extra install above supplies the audience classifier
+used by GPU and Full. `pi-heif` is already a base dependency for HEIC decoding. Keep the FFmpeg
+PATH export in your shell startup file and in the environment used to launch a service.
+
+After changing checkout revisions, rerun `make dev-mac` and the `laya-mlx` install before
+starting the app. Copying source into an older environment does not update dependencies.
+The `--no-sync` commands below preserve that separately installed runtime; an explicit sync
+may require installing it again. [Development setup](../../contribute/development-setup.md) covers source tools;
 the [requirements page](../requirements.md) covers memory and supported platforms.
 
 Set your Immich connection in Settings or a [small config file](../config-file.md#quick-start-config).
@@ -63,10 +74,10 @@ If you already use one, configure its URL and served model name using
 Fetch the model files required by this configuration, then check it:
 
 ```bash
-uv run immich-memories models fetch
-uv run immich-memories preflight -v
-uv run immich-memories config show tier
-uv run immich-memories ui --host 127.0.0.1
+uv run --no-sync immich-memories models fetch
+uv run --no-sync immich-memories preflight -v
+uv run --no-sync immich-memories config show tier
+uv run --no-sync immich-memories ui --host 127.0.0.1
 ```
 
 Open `http://localhost:8080` and make [your first film](../../get-started/first-film.mdx).

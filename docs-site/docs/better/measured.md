@@ -7,6 +7,33 @@ title: Measure your setup
 Find the slow stage before adding a service. Downloads, picture preparation, captions, selection,
 rendering and music have different costs. A faster picture model does not guarantee a faster film.
 
+## Six-configuration February checkpoint, 3 October 2026
+
+A private February 2024 workload produced six decoded 1080p60 H.264 SDR films at default
+`balanced` quality. Each initial app store and media/analysis cache was empty; installed weights
+and external services were retained. These were reused runtimes, not six clean installations.
+
+| Configuration | Pipeline time | Outcome |
+|---|---:|---|
+| DS423+ Basic | 25m 01s | Bundled music; CPU title fallback |
+| DS423+ with T1000 service, GPU | 16m 40s | Generated music; missing optional motion descriptions |
+| Kubernetes T1000, GPU | 7m 26s | Music generation failed; source audio retained |
+| M5 Max Full | 4m 23s, composite | Saved-cut render retry; generated music; original Laya fallback |
+| M2 Pro Basic | 4m 09s, composite | Saved-cut render retry; bundled music after memory guard |
+| M2 Pro Full | 9m 38s | Bundled music after memory guard; one unread episode |
+
+The composites retain original successful phases and use the resumed render/music tail. They
+are not uninterrupted runs. The two base revisions also differ, and the later runs include a
+local date-persistence fix. Failed music is not a speedup. Both GPU configurations used one
+physical 8 GB T1000; the single-GPU generated-music path still needs an uninterrupted passing run.
+Maximum-resolution exports remain deferred.
+
+The [detailed report and CSV](https://github.com/sam-dumont/immich-memories/blob/main/docs/research/2026-10-03-february-hardware-smoke.md)
+record phase timings, failed work, hardware limits, exact revisions, memory and install gaps.
+The [Mac install recipe](../run/reference/mac-example.md) now makes the separate Laya runtime,
+HEIC import check and full FFmpeg selection explicit. These corrections do not establish that a
+fresh install has been revalidated.
+
 ## Tested setups, 2 October 2026 {#tested-setups}
 
 These are separate checks, not four timed clean installs on the current release.
