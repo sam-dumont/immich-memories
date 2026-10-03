@@ -34,6 +34,73 @@ The [Mac install recipe](../run/reference/mac-example.md) now makes the separate
 HEIC import check and full FFmpeg selection explicit. These corrections do not establish that a
 fresh install has been revalidated.
 
+## One month across six configurations, 3 October 2026 {#february-hardware-matrix}
+
+The February 2024 smoke workload requested a 60-second film from the same 2,032-source
+inventory on six hardware/tier configurations. The common output was **1080p60 SDR**, with
+titles, transitions, photo/video/Live Photo sources and default **balanced** quality. Each
+initial run started with empty app, analysis and media/render caches; installed model files
+and external services were retained. Upload and full-file verification are outside the timer.
+
+| Configuration | Recorded time | What that time covers | Final music |
+|---|---:|---|---|
+| Synology DS423+, J4125, Basic | 25m 04s | Original uninterrupted cold run | Bundled |
+| Same NAS, GPU tier with Kubernetes services | 16m 42s | Original uninterrupted cold run | ACE-Step service + four stems |
+| Kubernetes GPU, one T1000 8 GB | 12m 32s | Final uninterrupted cold confirmation | ACE-Step service + four stems |
+| M5 Max, 128 GiB, Full | 4m 14s | Final uninterrupted cold confirmation | Local ACE-Step + four stems |
+| M2 Pro, 16 GiB, Basic | 4m 59s | Composite: original preparation plus successful render/music phases | Local ACE-Step + four stems |
+| M2 Pro, 16 GiB, Full | 9m 44s | Final uninterrupted cold confirmation | Local ACE-Step + four stems |
+
+All six final films passed complete video/audio decoding. M2 Basic's final saved-cut retry
+itself took **2m 14s**; it was not a new cold run. Its failed render and earlier bundled
+fallback remain in the detailed report. The revisions changed as bugs were repaired, and
+model-driven selection can choose different shots. This is a common-workload checkpoint,
+not six identical cuts on one release or a clean-install speed ranking.
+
+### What the maximum export added
+
+**Basic stayed at 1080p on both NAS and M2.** NAS GPU, Kubernetes GPU, M5 Full and M2 Full
+also delivered 3840×2160, 60 fps, HEVC, 10-bit PQ HDR with BT.2020 primaries. All four passed
+full decoding. The GPU maximums retained their rendered video and needed music-only repairs.
+
+The final Mac pairs reused each machine's selected cut:
+
+| Same-cut comparison | M5 Full | M2 Full |
+|---|---:|---:|
+| 1080p render | 42.5 s | 69.9 s |
+| 4K HDR render | 86.4 s | 180.4 s |
+| Extra render time | **43.9 s** | **110.5 s** |
+| 1080p file | 21.92 MB | 39.18 MB |
+| 4K HDR file | 40.10 MB | 73.37 MB |
+| File growth | **83%** | **87%** |
+
+You gain four times the output pixels and a 10-bit HDR output. Frame rate stays at 60 fps;
+lower-resolution or SDR sources do not acquire native 4K HDR detail. Music was generated
+separately for each export, so its timing is not part of the resolution penalty. The shared
+GPU measurements include changing load and revisions; their larger export times are not
+isolated resolution costs.
+
+### What still limits the claim
+
+- Optional motion descriptions were missing; selection used plain clip facts for those clips.
+  M5 Full also used factual fallback for one demanded episode. Those features are not counted
+  as fully exercised just because a film finished.
+- M2's successful Full run used the bundled llama.cpp reader and a separate llama.cpp caption
+  service. Replacing the earlier caption service reduced its measured footprint from about
+  2.3 GiB to 507 MiB. The [smaller-Mac caption recipe](../reference/caption-service.md) records
+  that setup; the local music memory guard was not lowered.
+- One physical T1000 served the Kubernetes path. GPU Operator time slicing did not evict
+  models or prevent other workloads from using VRAM. Upload-triggered Immich ML work caused
+  interference, and ACE-Step retained VRAM after an OOM. A service restart preceded the
+  successful cold confirmation. Automatic recovery after OOM remains unproven.
+
+The [full timing and recovery report](https://github.com/sam-dumont/immich-memories/blob/main/docs/research/2026-10-03-february-hardware-smoke.md)
+contains phase timings, failed attempts, exact source revisions and installation findings.
+The films use a private library and are not public demo assets. For something you can watch,
+use the [CC0 Basic/GPU example](./gpu-example.md) or [Basic/Full example](./tier-example.md).
+[Choose your setup](../get-started/choose-your-setup.md#what-you-give-up-with-basic) separates
+what each tier adds from optional music and rendering services.
+
 ## Tested setups, 2 October 2026 {#tested-setups}
 
 These are separate checks, not four timed clean installs on the current release.

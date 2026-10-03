@@ -30,6 +30,32 @@ an alias and resolve to `basic`; GPU and Full values are unchanged.
 
 See [Can I run this?](../run/tested-deployments.md) for exact platform evidence, candidate versions and untested routes.
 
+## What you give up with Basic
+
+| Feature | Basic | GPU | Full |
+|---|---|---|---|
+| Dates, favourites, people, trips, rules edit, titles and bundled music | Included | Included | Included |
+| Picture descriptions for selection | No caption model | Included | Included |
+| Additional document/sensitive-content detectors and Laya audience check | Not used | Included | Included |
+| Text-reader refinement of the draft | Not used | Not used | Included; reports factual fallback if a reading fails |
+| Maximum output resolution | **1080p** | 4K when the rendering setup supports it | 4K when the rendering setup supports it |
+| Generated music and stem mixing | Optional, if configured and memory permits | Optional | Optional |
+
+Basic keeps the complete editing pipeline. It omits the extra picture interpretation,
+audience check and reader refinement. Model checks
+are not a guarantee that every selected picture is suitable for sharing.
+
+Rendering has its own limits. HDR, 60 fps, hardware encoding and animated title effects depend
+on the encoder, renderer and output settings. A Basic Mac can use its rendering GPU while
+keeping Basic selection and the 1080p cap. A small CPU-only NAS uses static title plates with
+fades instead of moving kernel effects. Generated music is not a Full-only feature: the
+measured M2 Basic export completed local ACE-Step and four-stem mixing.
+
+The [six-configuration February example](../better/measured.md#february-hardware-matrix)
+records what completed on a NAS, one shared Kubernetes GPU and two Macs, including the extra
+time and file size for 4K HDR. It also names fallbacks and repaired phases; do not compare a
+short render retry with a complete cold run.
+
 ## Basic: start with the film
 
 The app reads your library's dates, favourites, people and locations, prepares picture facts on
