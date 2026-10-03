@@ -24,8 +24,15 @@ def test_old_release_missing_compose_assets_is_refused():
 def test_complete_stable_and_candidate_release_assets_are_accepted():
     from scripts.package_compose import COMPOSE_ASSETS
 
-    for version in ("1.2.3", "1.2.4-rc.1"):
-        names = [*COMPOSE_ASSETS, f"immich-memories-deploy-{version}.tar.gz"]
+    for version in ("1.2.3", "1.2.4-rc.1", "0.0.0-dev.12345"):
+        names = [
+            *COMPOSE_ASSETS,
+            f"immich-memories-deploy-{version}.tar.gz",
+            "SHA256SUMS",
+            "installation.json",
+        ]
+        if "-dev." in version:
+            names.append(f"immich_memories-{version.replace('-dev.', '.dev')}-py3-none-any.whl")
         result = subprocess.run(
             [sys.executable, "scripts/check_docs_release_assets.py", f"v{version}"],
             input=json.dumps(
@@ -84,3 +91,24 @@ def test_named_assets_must_have_finished_nonempty_uploads():
         )
         assert result.returncode == 1
         assert "docker-compose.yml" in result.stderr
+
+
+def test_rc_docs_require_the_checksum_and_identity_used_by_the_install_guide():
+    from scripts.package_compose import COMPOSE_ASSETS
+
+    names = [*COMPOSE_ASSETS, "immich-memories-deploy-1.0.0-rc.1.tar.gz"]
+    result = subprocess.run(
+        [sys.executable, "scripts/check_docs_release_assets.py", "v1.0.0-rc.1"],
+        input=json.dumps(
+            {
+                "tagName": "v1.0.0-rc.1",
+                "assets": [{"name": name, "state": "uploaded", "size": 100} for name in names],
+            }
+        ),
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 1
+    assert "SHA256SUMS" in result.stderr
+    assert "installation.json" in result.stderr

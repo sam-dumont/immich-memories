@@ -56,7 +56,7 @@ def test_docs_main_build_names_the_release_and_commit_even_after_a_model_tag(tag
     assert result.stdout.strip() == f"v1.2.3-1-g{git('rev-parse', '--short=12', 'HEAD')}"
 
 
-@pytest.mark.parametrize("version", ["v1.2.3", "v1.3.0-rc.2"])
+@pytest.mark.parametrize("version", ["v1.2.3", "v1.3.0-rc.2", "v0.0.0-dev.12345"])
 def test_docs_explicit_release_version_is_not_replaced_by_the_checkout(tagged_repo, version):
     result = docs_version(tagged_repo[0], version)
     assert result.returncode == 0, result.stderr
@@ -88,4 +88,7 @@ def test_python_version_discovery_ignores_model_tags_and_retains_commit_identity
     assert description.startswith("v1.2.3-1-g")
     assert options["local_scheme"] == "node-and-date"
     assert re.fullmatch(options["tag_regex"], "v1.3.0-rc.2").group("version") == "1.3.0-rc.2"
+    assert (
+        re.fullmatch(options["tag_regex"], "v0.0.0-dev.12345").group("version") == "0.0.0-dev.12345"
+    )
     assert not re.fullmatch(options["tag_regex"], "models-v99")

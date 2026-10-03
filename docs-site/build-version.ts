@@ -1,7 +1,7 @@
 import {execFileSync} from 'node:child_process';
 
-export const releaseVersion = /^v?\d+\.\d+\.\d+(?:-rc\.\d+)?$/;
-const buildVersion = /^(?:v?\d+\.\d+\.\d+(?:-rc\.\d+)?(?:-\d+-g[0-9a-f]+)?(?:-dirty)?|development(?:-[0-9a-f]+(?:-dirty)?)?)$/;
+export const releaseVersion = /^v?\d+\.\d+\.\d+(?:-(?:rc|dev)\.\d+)?$/;
+const buildVersion = /^(?:v?\d+\.\d+\.\d+(?:-(?:rc|dev)\.\d+)?(?:-\d+-g[0-9a-f]+)?(?:-dirty)?|development(?:-[0-9a-f]+(?:-dirty)?)?)$/;
 
 export function resolveDocsVersion(env: NodeJS.ProcessEnv = process.env, cwd = process.cwd()): string {
   if (env.DOCS_VERSION) {

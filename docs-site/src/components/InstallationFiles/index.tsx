@@ -2,12 +2,13 @@ import type {ReactNode} from 'react';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import CodeBlock from '@theme/CodeBlock';
 import Link from '@docusaurus/Link';
+import {nativeInstallCommand} from '../SetupBuilder/recipes';
 import {installationCommands, deploymentCommands} from './downloads';
 
-export default function InstallationFiles({kind = 'compose'}: {kind?: 'compose' | 'bundle'}): ReactNode {
+export default function InstallationFiles({kind = 'compose'}: {kind?: 'compose' | 'bundle' | 'native'}): ReactNode {
   const {siteConfig} = useDocusaurusContext();
   const version = String(siteConfig.customFields?.version || 'development');
-  const released = /^v?\d+\.\d+\.\d+(?:-rc\.\d+)?$/.test(version);
+  const released = /^v?\d+\.\d+\.\d+(?:-(?:rc|dev)\.\d+)?$/.test(version);
   if (!released) return <aside className="alert alert--warning">
     <p><strong>Prebuilt installation for this preview is not published.</strong> This page
       describes development code. Its matching images, native package and setup downloads
@@ -17,11 +18,14 @@ export default function InstallationFiles({kind = 'compose'}: {kind?: 'compose' 
       For source builds, use <Link to="/docs/contribute/development-setup">contributor setup</Link>.</p>
     <p>Stop here if you need a prebuilt first installation; the remaining steps require those assets.</p>
   </aside>;
+  if (kind === 'native') return <CodeBlock language="bash" title={`Install ${version}: choose your platform`}>
+    {`# Linux / Intel Mac\n${nativeInstallCommand(version, 'all')}\n# Apple Silicon: use this instead\n${nativeInstallCommand(version, 'all-mac')}`}
+  </CodeBlock>;
   if (kind === 'bundle') return <CodeBlock language="bash" title={`Vendor ${version}`}>
     {deploymentCommands(version)}
   </CodeBlock>;
   return <>
-    <p>{`Download the matching ${version} assets. Candidate versions are marked -rc.N.`}</p>
+    <p>{`Download the matching ${version} assets. Pre-tag rehearsals are marked -dev.N; release candidates are marked -rc.N.`}</p>
     <CodeBlock language="bash" title="Download installation files">
       {installationCommands(version)}
     </CodeBlock>

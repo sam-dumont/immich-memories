@@ -38,23 +38,26 @@ move `latest`, and do not deploy the docs site.
 
 ### Pre-tag onboarding rehearsal
 
-Before creating an RC, complete [the prebuilt onboarding gate (#1922)](https://github.com/sam-dumont/immich-memories/issues/1922).
-Image-only publication above supplies commit-tagged images, but **does not publish** matching
-Compose downloads, a deployment bundle, a native wheel or versioned setup-builder exports.
-It is not yet a complete public onboarding route. Do not label a tester-built image or wheel
-as a published candidate, and do not dispatch an RC merely to work around this missing rehearsal route.
+Use **Channel: dev** on `main` to publish a complete pre-tag rehearsal without opening the RC
+series. It produces `v0.0.0-dev.RUN_ID`: matching app/inference image tags, a native wheel,
+Compose files, a deployment bundle, `installation.json` and `SHA256SUMS`. It uses the same CI,
+image smoke, approval and provenance steps as releases. It does not publish to PyPI or move
+`latest`; native setup exports install the wheel from the exact GitHub release URL.
 
-Record one manifest for the rehearsal: full source SHA, docs revision and URL, public asset
-URLs and SHA-256 hashes, app/inference/worker image digests and their platform manifests,
-native package version, and exact external model-service versions. Confirm anonymous downloads
-and pulls on a clean host. Keep model-only `models-v*` tags out of the application version.
-The app's architecture list does not establish CUDA/caption/worker support on those architectures.
+The docs build and setup builder use that exact rehearsal version. Publication waits for the
+matching images/bundle before deploying docs. `installation.json` records the source SHA and
+published image manifests/digests, including architectures. The checksum list covers the wheel,
+deployment files and identity record. Model-only tags are not application versions.
+A rehearsal rerun is refused before building: dispatch a new run to avoid replacing published
+candidate identities. Dispatching this workflow is a separate publication action from merging
+its implementation.
 
-The deployment packagers substitute release pins, so a raw Git archive is not the same bundle.
-Publish the generated assets together, then run the docs asset check before enabling exports.
-After tagging, verify the actual RC artifacts again and rerun affected lanes if their runtime
-identities differ. Check Pages, release downloads and GHCR separately after a repository rename;
-a GitHub redirect does not prove a Pages redirect.
+Run [#956's prebuilt first-install checks](https://github.com/sam-dumont/immich-memories/issues/956)
+against these public inputs. Record anonymous pulls, exact host/service/Immich versions, cold
+versus warm state and the bounded playable film. Publishing artifacts alone is not acceptance.
+After RC tagging, verify the actual RC identities/links and rerun affected lanes if runtime
+artifacts differ. Check Pages, release downloads and GHCR separately after a repository rename;
+a GitHub redirect does not prove a Pages redirect. GHCR keeps the documented package name.
 
 ### Release candidates
 

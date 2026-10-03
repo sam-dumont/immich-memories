@@ -244,3 +244,53 @@ def test_app_only_dispatch_names_a_commit_without_requesting_a_release(tmp_path)
     )
     assert result.returncode == 0, result.stderr
     assert result.stdout.splitlines() == ["should_release=false", "next_version=0+g" + "a" * 40]
+
+
+def test_pre_tag_rehearsal_uses_a_unique_non_rc_identity(tmp_path):
+    import os
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    script = Path(__file__).resolve().parents[1] / "scripts/release_analyze.py"
+    result = subprocess.run(
+        [sys.executable, str(script), "--channel", "dev"],
+        cwd=tmp_path,
+        env={**os.environ, "GITHUB_RUN_ID": "12345", "GITHUB_RUN_ATTEMPT": "1"},
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    assert dict(line.split("=", 1) for line in result.stdout.splitlines()) == {
+        "should_release": "true",
+        "next_version": "0.0.0-dev.12345",
+        "release_type": "development",
+        "prerelease": "true",
+        "previous_tag": "",
+    }
+
+
+def test_rehearsal_refuses_reruns_and_incomplete_artifact_modes(monkeypatch, capsys):
+    import sys
+
+    import pytest
+    from scripts.release_analyze import main
+
+    for run_id, attempt, extra in [
+        ("", "1", []),
+        ("12345", "2", []),
+        ("12345", "1", ["--app-only"]),
+        ("12345", "1", ["--inference-only"]),
+    ]:
+        monkeypatch.setenv("GITHUB_RUN_ID", run_id)
+        monkeypatch.setenv("GITHUB_RUN_ATTEMPT", attempt)
+        monkeypatch.setattr(sys, "argv", ["release_analyze.py", "--channel", "dev", *extra])
+        with pytest.raises(SystemExit) as error:
+            main()
+        assert error.value.code == 2
+        assert capsys.readouterr().out == ""
+    assert sort_version_tags(["v0.0.0-dev.12345", "v1.0.0-rc.1", "v0.103.0"]) == [
+        "v1.0.0-rc.1",
+        "v0.103.0",
+    ]

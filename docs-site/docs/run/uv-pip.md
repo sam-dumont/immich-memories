@@ -23,30 +23,23 @@ Keep the PATH export in your shell's startup file. On Debian/Ubuntu, install FFm
 ffmpeg -hide_banner -filters | grep zscale
 ```
 
-Install the app (quotes matter in zsh):
+Install the package that matches this documentation build. Choose the command for your platform:
 
-```bash
-uv tool install "immich-memories[all]"
-```
+import InstallationFiles from '@site/src/components/InstallationFiles';
 
-On Apple Silicon, use `"immich-memories[all-mac]"`. It includes the Metal bindings; add
-`[all-mac,auth]` if you want OIDC. For pip, use the same package spec inside a virtual environment.
-For a candidate, use the exact package version published with its application release,
-including the same extras. `vX.Y.Z-rc.N` in GitHub corresponds to `X.Y.ZrcN` on PyPI;
-that spelling is an example, not evidence that a package exists. Never substitute the latest
-stable package when following candidate docs: its CLI and setup may differ.
+<InstallationFiles kind="native" />
 
-Check the [application release assets](https://github.com/sam-dumont/immich-memories/releases)
-and [PyPI files](https://pypi.org/project/immich-memories/#files) before installation.
-A development documentation build has no matching published native package unless its
-candidate manifest explicitly supplies one. A wheel built on the tester's machine does not
-satisfy the prebuilt first-run gate.
+Pre-tag rehearsals install a published wheel directly from their GitHub release; they are not
+uploaded to PyPI. RC/final commands pin the matching PyPI version. No source checkout or local
+wheel build is part of either route. A preview without published assets cannot supply this install.
+For pip, use the same pinned package specification inside the app's virtual environment.
 
 A bare install lacks the ONNX runtime needed for picture classifiers.
 
 Create `~/.immich-memories/config.yaml`:
 
 ```yaml
+tier: basic
 immich:
   url: http://192.168.1.10:2283
   api_key: your-api-key
