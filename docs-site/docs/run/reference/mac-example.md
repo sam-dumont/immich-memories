@@ -50,9 +50,11 @@ the [requirements page](../requirements.md) covers memory and supported platform
 
 Set your Immich connection in Settings or a [small config file](../config-file.md#quick-start-config).
 Keep the normal `tier: auto` setting. Start the
-[local caption server](../../reference/caption-service.md#apple-silicon-with-mlxcel) in another
-terminal, using its pinned model and `smolvlm2-500m-base-public` alias. For an app on this same Mac,
-bind that server to `127.0.0.1` rather than the recipe's LAN bind.
+[local caption server](../../reference/caption-service.md#apple-silicon-with-llamacpp) in another
+terminal, using its pinned model and `smolvlm2-500m-base-public` alias. The llama.cpp recipe used
+less resident memory on the 16 GiB M2 smoke host. An existing mlxcel service is a separate process;
+stop it when replacing it, otherwise both models remain loaded. For an app on this same Mac,
+bind the caption server to `127.0.0.1`.
 
 ## Connect captions and the reader
 

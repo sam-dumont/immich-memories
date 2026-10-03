@@ -123,6 +123,37 @@ for the reader, use the separate SmolVLM caption server with its own process
 on its own port. A container does not see the Mac's GPU: configure a
 [GPU inference service](../better/inference.md) as well. A caption URL alone does not select the GPU tier.
 
+## Apple Silicon, with llama.cpp
+
+On the 16 GiB M2 smoke host, the separate mlxcel caption service retained 2.3 GiB after its
+requests. The same pinned SmolVLM2 model served as Q8_0 by llama.cpp used about 507 MiB after
+passing the three caption schema controls. These are measured service footprints, not whole-app
+memory requirements. The reader and music still need their own memory.
+
+Use the `llama-server` executable installed for the local reader and the GGUF files pinned in the
+table above. This is an alternative to the mlxcel caption process, so stop that process before
+using its port; leaving both loaded defeats the memory saving. Keep the same served alias.
+
+```bash
+CAPTION_MODELS="$HOME/.immich-memories/models/captioner-gguf"
+hf download ggml-org/SmolVLM2-500M-Video-Instruct-GGUF \
+  SmolVLM2-500M-Video-Instruct-Q8_0.gguf \
+  mmproj-SmolVLM2-500M-Video-Instruct-Q8_0.gguf \
+  --revision ccd7aae53bcb1997355c2f094959e72b3642ce17 \
+  --local-dir "$CAPTION_MODELS"
+llama-server \
+  --model "$CAPTION_MODELS/SmolVLM2-500M-Video-Instruct-Q8_0.gguf" \
+  --mmproj "$CAPTION_MODELS/mmproj-SmolVLM2-500M-Video-Instruct-Q8_0.gguf" \
+  --alias smolvlm2-500m-base-public --host 127.0.0.1 --port 8092 \
+  --ctx-size 8192 --cache-ram 128 --parallel 1 --threads 4 --n-gpu-layers 99
+```
+
+Reuse these files if they are already installed, checking their hashes against the pinned table.
+This recipe was checked with llama.cpp build 11146 (`7fe450e19`). Point
+`advanced.editorial.preparation.caption_base_url` at `http://127.0.0.1:8092/v1` and run preflight.
+The application checks the real caption schema before sending missing library previews.
+A passing caption check does not certify the whole selection/render/music handoff.
+
 ## Docker and Linux, with llama.cpp
 
 The released GPU tier file includes a weight downloader and a caption server. The downloader
