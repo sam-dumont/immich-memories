@@ -7,33 +7,6 @@ title: Measure your setup
 Find the slow stage before adding a service. Downloads, picture preparation, captions, selection,
 rendering and music have different costs. A faster picture model does not guarantee a faster film.
 
-## Six-configuration February checkpoint, 3 October 2026
-
-A private February 2024 workload produced six decoded 1080p60 H.264 SDR films at default
-`balanced` quality. Each initial app store and media/analysis cache was empty; installed weights
-and external services were retained. These were reused runtimes, not six clean installations.
-
-| Configuration | Pipeline time | Outcome |
-|---|---:|---|
-| DS423+ Basic | 25m 01s | Bundled music; CPU title fallback |
-| DS423+ with T1000 service, GPU | 16m 40s | Generated music; missing optional motion descriptions |
-| Kubernetes T1000, GPU | 7m 26s | Music generation failed; source audio retained |
-| M5 Max Full | 4m 23s, composite | Saved-cut render retry; generated music; original Laya fallback |
-| M2 Pro Basic | 4m 09s, composite | Saved-cut render retry; bundled music after memory guard |
-| M2 Pro Full | 9m 38s | Bundled music after memory guard; one unread episode |
-
-The composites retain original successful phases and use the resumed render/music tail. They
-are not uninterrupted runs. The two base revisions also differ, and the later runs include a
-local date-persistence fix. Failed music is not a speedup. Both GPU configurations used one
-physical 8 GB T1000; the single-GPU generated-music path still needs an uninterrupted passing run.
-Maximum-resolution exports remain deferred.
-
-The [detailed report and CSV](https://github.com/sam-dumont/immich-memories/blob/main/docs/research/2026-10-03-february-hardware-smoke.md)
-record phase timings, failed work, hardware limits, exact revisions, memory and install gaps.
-The [Mac install recipe](../run/reference/mac-example.md) now makes the separate Laya runtime,
-HEIC import check and full FFmpeg selection explicit. These corrections do not establish that a
-fresh install has been revalidated.
-
 ## One month across six configurations, 3 October 2026 {#february-hardware-matrix}
 
 The February 2024 smoke workload requested a 60-second film from the same 2,032-source
@@ -96,7 +69,9 @@ isolated resolution costs.
   models or prevent other workloads from using VRAM. Upload-triggered Immich ML work caused
   interference, and ACE-Step retained VRAM after an OOM. A service restart preceded the
   successful cold confirmation. A separate ACE-Step loading-cleanup fix passed an isolated
-  CUDA failure/recovery control; full API recovery on the patched image remains unverified.
+  API test on that same T1000: after a bounded injected load failure, the same process generated
+  a decoded 88-second track in **148.059 s**, without restarting. The patch was mounted into
+  the test pod; a rebuilt production image and arbitrary competing workloads were not tested.
 
 The [full timing and recovery report](https://github.com/sam-dumont/immich-memories/blob/main/docs/research/2026-10-03-february-hardware-smoke.md)
 contains phase timings, failed attempts, exact source revisions and installation findings.

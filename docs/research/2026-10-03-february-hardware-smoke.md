@@ -11,7 +11,8 @@ M2 Basic retains its original preparation and a successful render/music retry. T
 smoke checkpoint, not six uninterrupted runs on one current-main revision or a clean-install
 qualification. Motion-description gaps remain. M5 Full initially used factual fallback for one
 episode; the reader-schema repair below completed without that fallback.
-Both PRs remain draft pending the remaining feature and installation qualification.
+The completed matrix includes the phase resumes described below; it does not establish a
+clean-install or arbitrary shared-GPU scheduling guarantee.
 
 The workload targets 60 seconds, with titles, transitions, date/place captions, photos, videos,
 Live Photos and music requested. No `high` quality preset was used. NAS Basic uses bundled music;
@@ -273,7 +274,18 @@ loading inside its existing CPU-offload cleanup boundary. The preserved OOM trac
 that loading step. All 12 pinned-source patch tests passed. In an isolated T1000 process, an
 injected error after a real 64-MiB CUDA transfer retained 64 MiB before the fix and zero after;
 the patched context then completed another request. This bounded control did not exhaust the
-shared card or modify the running API. Full API recovery on the patched image remains unverified.
+shared card or modify the production API.
+
+A separate isolated API pod then used the existing image digest with this exact patched module
+mounted into both source and installed-package paths. It retained the same single physical T1000.
+An 88-second warm-up succeeded in **168.039 s**. A test-only hook moved **39,169,024 bytes** of
+real VAE parameters to CUDA, then raised an allocation error: the API reported failure in
+**3.136 s**, returned every affected parameter to CPU, and restored allocated CUDA memory from
+433,357,824 to its prior 394,188,800 bytes. The next 88-second request succeeded in **148.059 s**
+in the same process with **zero pod restarts**. Both WAVs were stereo 48 kHz, finite, non-silent
+and passed full decoding. Receipts, audio checksums and logs were preserved before removing the
+isolated pod. This was bounded fault injection, not deliberate exhaustion of the shared card.
+It validates the mounted code; a rebuilt production image has not been deployed or tested.
 
 ### Memory handoffs: fixes and remaining limits
 
@@ -300,10 +312,11 @@ restarted once. A saved-preparation retry then passed in 474.502 s; the independ
 confirmation above passed in 751.999 s. The earlier failed cold attempt took 215.502 s and is not
 hidden inside either successful timing.
 
-**ACE-Step recovery after OOM remains unresolved.** The successful one-GPU run proves this
-workload can finish in one go with services in a healthy state and without competing upload jobs.
-It does not prove automatic recovery after OOM or reliable co-scheduling with arbitrary GPU jobs.
-GPU Operator time slicing does not unload models on behalf of the application.
+The successful one-GPU run proves this workload can finish in one go with healthy services and
+without competing upload jobs. The separate API control above verifies recovery after a partial
+model-load failure with the patch; the production service still uses the older image. Neither
+control guarantees reliable co-scheduling with arbitrary GPU jobs. GPU Operator time slicing
+does not unload models on behalf of the application.
 
 ## Source provenance
 
