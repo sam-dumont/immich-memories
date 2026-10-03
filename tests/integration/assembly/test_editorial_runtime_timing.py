@@ -8,7 +8,7 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-from immich_memories.analysis.editorial_runtime_ports import production_speech_resolver
+from immich_memories.analysis.editorial_runtime_ports import production_cut_resolvers
 from immich_memories.config_loader import Config
 from immich_memories.db import open_store
 from immich_memories.processing.assembly_config import (
@@ -99,12 +99,14 @@ def test_production_speech_cuts_use_real_detector_and_reuse_facts(
     )
     carrier = {"asset_id": "video", "kind": "video", "seconds": 1.0, "raw_seconds": 3.0}
     with ExitStack() as resources:
-        resolve = production_speech_resolver(source, resources=resources)
+        _windows, resolve = production_cut_resolvers(source, resources=resources)
         first = resolve([carrier])
     assert calls == ["video", "closed"]
-    assert 1.1 < first[0]["seconds"] < 1.7  # The utterance finishes before the known pause.
+    # The fixture's two lines are 0.46 s apart: one exchange since #1950, so the cut runs on
+    # past the first line to the end of the second instead of stopping in the breath.
+    assert first[0]["seconds"] == pytest.approx(3.0, abs=0.05)
     with ExitStack() as resources:
-        resolve = production_speech_resolver(source, resources=resources)
+        _windows, resolve = production_cut_resolvers(source, resources=resources)
         assert resolve([carrier]) == first
     assert calls == ["video", "closed"]
 

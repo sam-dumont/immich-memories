@@ -346,3 +346,57 @@ def test_speech_expanding_to_the_end_of_a_measured_live_burst_stays_inside_it():
     ) == (0.0, material.duration_seconds), (
         "the renderer must accept the interval the speech pass kept"
     )
+
+
+def test_a_breath_between_two_speakers_is_not_a_cut_point():
+    """A conversation runs to its end: the 0.2 s turn between lines is not a pause (#1950)."""
+    from immich_memories.analysis.editorial_speech import resolve_speech_cuts
+
+    exchange = [(0.83, 2.07), (2.28, 3.7), (3.92, 6.76)]
+    talk = {"kind": "video", "asset_id": "talk", "seconds": 6.0, "raw_seconds": 6.76}
+    still = {"kind": "image", "asset_id": "view", "seconds": 6.0}
+
+    [talk] = resolve_speech_cuts([talk], lambda _asset: exchange, buffer=0.08)
+    shave_content_duration([talk, still], 9.0)
+
+    assert talk["seconds"] == pytest.approx(6.76), "the answer stays with the question"
+
+
+def test_a_crowd_heard_all_along_does_not_hold_the_cut_to_its_longest():
+    """Measured on a finish-line clip: the PA and the crowd read as speech for 17 s. That is
+    not one exchange to keep whole; the window stays where it was and the shave still works."""
+    from immich_memories.analysis.editorial_speech import resolve_speech_cuts
+
+    crowd = [(0.0, 1.7), (3.5, 3.8), (4.0, 9.4), (9.9, 12.1), (12.4, 17.3)]
+    clip = {
+        "kind": "video",
+        "asset_id": "caravan",
+        "seconds": 6.0,
+        "raw_seconds": 17.33,
+        "start_time": 10.0,
+        "end_time": 16.0,
+    }
+
+    [clip] = resolve_speech_cuts([clip], lambda _asset: crowd, buffer=0.08)
+
+    assert clip["start_time"] >= 9.8, "the window is not dragged back across the whole crowd"
+    assert clip["seconds"] <= 8.0
+
+
+def test_a_sound_heard_as_one_endless_line_does_not_drag_the_window_back():
+    """Measured on a 49 s clip: the detector heard one unbroken 'utterance' from 9 s to 32 s.
+    No sentence runs 23 s; the window chosen at 30.5 s stays there."""
+    from immich_memories.analysis.editorial_speech import resolve_speech_cuts
+
+    clip = {
+        "kind": "video",
+        "asset_id": "music",
+        "seconds": 6.0,
+        "raw_seconds": 49.2,
+        "start_time": 30.5,
+        "end_time": 36.5,
+    }
+
+    [clip] = resolve_speech_cuts([clip], lambda _asset: [(9.34, 32.1)], buffer=0.08)
+
+    assert clip["start_time"] == 30.5

@@ -6,7 +6,16 @@ title: Picking a shot
 
 Within a moment, your favourite comes first. Without one, the editor looks for motion, recognisable people, good framing and a sharper picture. Near-identical frames compete for one place.
 
-A selected video plays as video, usually up to six seconds. Detected speech can extend the cut to a pause, up to twelve seconds. Clips shorter than two seconds are skipped.
+A selected video plays as video, usually up to six seconds. Clips shorter than two seconds are skipped.
+
+The six seconds don't have to be the first six. Once the film's videos are picked, each one is read once for where to cut, and the answer is saved for every later film:
+
+- **The picture.** Every predicted frame stores only what changed, so frame sizes go up when something crosses a still shot. They're in the file's index (about 64 KB), so nothing gets decoded. From a still camera that's the action: the riders crossing a finish line, not the empty road before them.
+- **The sound.** A handheld clip changes everywhere, so its sound decides next: the loudest moment (the cheer when the candles go out, a squeal) with a second and a half of build-up before it. Without one, the stretch with the most talking wins. Only the sound is fetched, a minute of it at most, so a five-minute clip costs what a one-minute one does: about 1.5 s per clip on a Celeron NAS.
+
+A clip with nothing that stands out keeps its opening.
+
+Detected speech can extend the cut to a pause, up to twelve seconds. A pause means a full second of quiet: the breath between two people trading lines doesn't count, so a joke keeps its punchline and the laugh after it.
 
 A Live Photo plays as motion when its clip moves and keeps its subject in view. Otherwise its still can remain in the film. See [Photos and Live Photos](../make/photos-and-live-photos.md).
 

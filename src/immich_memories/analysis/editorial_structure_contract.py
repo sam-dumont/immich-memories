@@ -223,6 +223,8 @@ class StructurePlannerPorts:
     resolve_motion: (
         Callable[[list[dict[str, Any]]], tuple[list[dict[str, Any]], dict[str, Any]]] | None
     ) = None
+    # Where inside each kept video its hold sits (#1949); None keeps every video's opening.
+    resolve_windows: Callable[[list[dict]], list[dict]] | None = None
     resolve_speech: Callable[[list[dict]], list[dict]] | None = None
     thumbnail_metrics: Callable[[], Mapping[str, Any]] | None = None
     observe_story_motion: Callable[[Mapping[str, Any]], str] | None = None

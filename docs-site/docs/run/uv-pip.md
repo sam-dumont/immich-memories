@@ -34,7 +34,9 @@ uploaded to PyPI. RC/final commands pin the matching PyPI version. No source che
 wheel build is part of either route. A preview without published assets cannot supply this install.
 For pip, use the same pinned package specification inside the app's virtual environment.
 
-A bare install lacks the ONNX runtime needed for picture classifiers.
+A bare install lacks the ONNX runtime needed for picture classifiers and for the speech detector
+(FireRedVAD, bundled in the package). Without it, a video's cut is still chosen from its picture and
+its loudness, but may start or end mid-sentence.
 
 For GPU or Full on Apple Silicon, append `--with laya-mlx` to the versioned `uv tool install`
 command above. `all-mac` supplies the Metal bindings but does not include this audience-classifier

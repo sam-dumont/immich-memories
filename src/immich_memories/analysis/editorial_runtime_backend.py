@@ -24,8 +24,8 @@ from immich_memories.analysis.editorial_planner import EditorialPlan, EditorialS
 from immich_memories.analysis.editorial_product_brief import build_editorial_brief
 from immich_memories.analysis.editorial_runtime_ports import (
     EditorialRuntimePorts,
+    production_cut_resolvers,
     production_live_clock_offsets,
-    production_speech_resolver,
     production_story_motion,
 )
 from immich_memories.analysis.editorial_scene_prints import CachedScenePrints, pinned_encoder
@@ -271,6 +271,7 @@ class ProductionPostCardBackend:
     ) -> StructurePlannerPorts:
         config = source.config
         rules = config.editorial.resolve_reader(config.llm.model) == "rules"
+        resolve_windows, resolve_speech = production_cut_resolvers(source, resources=resources)
         demanded_previews = (
             DemandedPreviewReader(
                 self._thumbnail_cache, self._fetch_preview, allowed_ids=_moment_members(source)
@@ -316,7 +317,8 @@ class ProductionPostCardBackend:
                 thumbnail_metrics=thumbnail_metrics,
                 rules=RuleStructureReader(source, printed=self._printed_near),
                 printed_near=self._printed_near,
-                resolve_speech=production_speech_resolver(source, resources=resources),
+                resolve_windows=resolve_windows,
+                resolve_speech=resolve_speech,
                 resolve_motion=production_motion_resolver(source),
                 clock_offsets=self.clock_offsets(source, resources),
                 live_source_integrity=self.source_integrity(source, resources),
@@ -330,7 +332,8 @@ class ProductionPostCardBackend:
             scene_print=scene_prints,
             thumbnail_metrics=thumbnail_metrics,
             resolve_motion=production_motion_resolver(source),
-            resolve_speech=production_speech_resolver(source, resources=resources),
+            resolve_windows=resolve_windows,
+            resolve_speech=resolve_speech,
             observe_story_motion=story_motion.observe,
             story_motion_metrics=story_motion.metrics,
             clock_offsets=self.clock_offsets(source, resources),
