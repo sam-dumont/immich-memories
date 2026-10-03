@@ -1,6 +1,6 @@
 # HDR assembly: convert once, then duplicate
 
-Investigation for [#1704](https://github.com/sam-dumont/immich-video-memory-generator/issues/1704).
+Investigation for [#1704](https://github.com/sam-dumont/immich-memories/issues/1704).
 Historical component report. The investigation continued after these measurements;
 #1704 is now closed. See the [2 October closeout](2026-10-02-render-performance-closeout.md)
 for the merged changes, final M2/M5/GTX 1070/T1000 results and remaining limitations.

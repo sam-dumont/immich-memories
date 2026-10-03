@@ -3,5 +3,5 @@ kind: Component
 patches:
   - path: deployment-sidecar.yaml
 images:
-  - name: ghcr.io/sam-dumont/immich-video-memory-generator
-    newTag: "0.100.4"
+  - name: ghcr.io/sam-dumont/immich-memories
+    newTag: "0.103.0"

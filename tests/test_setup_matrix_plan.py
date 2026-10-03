@@ -228,7 +228,7 @@ def test_the_service_runs_the_release_the_cells_run_not_the_committed_pin() -> N
 
 def test_nothing_but_the_inference_image_is_rewritten() -> None:
     """A rendered overlay is applied whole, so the rewrite has to be the one line."""
-    app = "          image: ghcr.io/sam-dumont/immich-video-memory-generator:0.84.1\n"
+    app = "          image: ghcr.io/sam-dumont/immich-memories:0.84.1\n"
     assert retag_inference(app, inference_image(TAG, device="cpu")) == app
 
 

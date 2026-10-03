@@ -1,7 +1,7 @@
 # Add after the GPU file on a host with NVIDIA Container Toolkit and a supported GPU.
 services:
   immich-memories-inference:
-    image: ghcr.io/sam-dumont/immich-video-memory-generator/inference:${IMMICH_MEMORIES_VERSION:-latest}-cuda
+    image: ghcr.io/sam-dumont/immich-memories/inference:${IMMICH_MEMORIES_VERSION:-latest}-cuda
     deploy:
       resources:
         reservations:

@@ -1,4 +1,4 @@
-"""Shared test fixtures and factories for immich-video-memory-generator."""
+"""Shared test fixtures and factories for immich-memories."""
 
 from __future__ import annotations
 

@@ -1,7 +1,7 @@
 # Private network only. Set RENDER_WORKER_TOKEN and IMMICH_URL; publish on the GPU box deliberately.
 services:
   gpu-worker:
-    image: ghcr.io/sam-dumont/immich-video-memory-generator/inference:${IMMICH_MEMORIES_VERSION:-latest}-cuda
+    image: ghcr.io/sam-dumont/immich-memories/inference:${IMMICH_MEMORIES_VERSION:-latest}-cuda
     command:
     - python
     - -m

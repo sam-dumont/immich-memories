@@ -1115,7 +1115,7 @@ INFERENCE_SERVICE = "inference"
 # a pin ages: the cluster lane last ran 0.85.0-cuda while the cells ran a 0.86.2
 # app image, so those rows measured a service two releases behind the code they
 # were published as. The matrix renders the overlay and rewrites this reference.
-INFERENCE_IMAGE = "ghcr.io/sam-dumont/immich-video-memory-generator/inference"
+INFERENCE_IMAGE = "ghcr.io/sam-dumont/immich-memories/inference"
 _INFERENCE_IMAGE_LINE = re.compile(
     rf"(?m)^(\s*image:\s*){re.escape(INFERENCE_IMAGE)}(?::\S+)?[ \t]*$"
 )

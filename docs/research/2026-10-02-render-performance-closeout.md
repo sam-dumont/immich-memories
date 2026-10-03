@@ -1,9 +1,9 @@
 # Rendering performance closeout, 2 October 2026
 
-Final report for [#1704](https://github.com/sam-dumont/immich-video-memory-generator/issues/1704)
-and [#1702](https://github.com/sam-dumont/immich-video-memory-generator/issues/1702).
+Final report for [#1704](https://github.com/sam-dumont/immich-memories/issues/1704)
+and [#1702](https://github.com/sam-dumont/immich-memories/issues/1702).
 Both issues are closed. The final fixes, #1757, #1773 and #1770, are merged.
-The [GitHub checkpoint](https://github.com/sam-dumont/immich-video-memory-generator/issues/1704#issuecomment-5947887079)
+The [GitHub checkpoint](https://github.com/sam-dumont/immich-memories/issues/1704#issuecomment-5947887079)
 records the same results. Earlier component profiling remains in
 [the 1 October report](2026-10-01-hdr-assembly-profile.md).
 
@@ -119,7 +119,7 @@ scope. The NAS map treatment also shipped in #1703. #1753, #1744, #1771, #1759,
 Hardware-decode exploration #1747 is closed as not planned after its M2 result was
 slightly slower and used more memory; the wider sweep is deferred.
 
-[NAS software-HLG memory pressure #1767](https://github.com/sam-dumont/immich-video-memory-generator/issues/1767)
+[NAS software-HLG memory pressure #1767](https://github.com/sam-dumont/immich-memories/issues/1767)
 remains separate. The final checks do not close that issue. Native/Cython exploration,
 broader provider/cache sweeps and the larger scenario campaign are also outside this
 closeout. This report does not claim that every possible optimization is exhausted.

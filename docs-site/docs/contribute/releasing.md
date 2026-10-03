@@ -29,7 +29,7 @@ The package build must also pass before the Git tag is pushed. Release runs exec
 
 For a merged container fix, dispatch **Actions → Release → Run workflow** on `main` and select
 **app_only**. It runs CI, builds the main/render app image for both architectures, and renders
-the smoke film before publishing `ghcr.io/sam-dumont/immich-video-memory-generator:sha-<12-character-commit>`.
+the smoke film before publishing `ghcr.io/sam-dumont/immich-memories:sha-<12-character-commit>`.
 Pin that image by digest in your deployment.
 
 Select **inference_only** instead for the standalone inference images. Choose one image-only
@@ -86,14 +86,38 @@ path), or `~/.config/immich-memories/private-terms.txt`. One term per line, `#` 
 which is the normal case for a contributor. Matches are masked to their first character, so a hit
 report never contains the term it found.
 
+## Build versions
+
+Release builds stamp the selected version into the wheel, container labels and docs.
+The app displays the packaged server version. Docs show their build version in the
+navigation, footer and page metadata; `/next/` also includes it in the banner.
+Release candidates keep their exact `vX.Y.Z-rc.N` tag. Unreleased builds include
+the source commit, and version discovery ignores the separate `models-v*` tags.
+
 ## Repository name and search indexing
 
 The repository is `sam-dumont/immich-memories`. The package and command remain
-`immich-memories`. Container packages keep their published addresses under
-`ghcr.io/sam-dumont/immich-video-memory-generator`, including `/inference`;
-a repository rename does not migrate registry tags. Pinned model downloads also
-keep their original repository URLs, which GitHub redirects after the rename.
-This keeps image builds working on both sides of the move.
+`immich-memories`. Container images use `ghcr.io/sam-dumont/immich-memories`
+and `ghcr.io/sam-dumont/immich-memories/inference`. CPU tags are `X.Y.Z` and
+`latest`; CUDA inference tags add `-cuda`. Model downloads use the renamed
+repository with the same release tags, filenames and checksums.
+
+A repository rename does not copy container tags. Run **Migrate Container Images**
+on `main` to copy the existing `0.103.0` app, inference CPU and inference CUDA
+manifests to the new packages, including their `latest` aliases. The workflow
+checks source and destination digests and refuses to replace a different image.
+It shares the release publication lock, so it cannot race a release.
+
+After the first copy, set both new container packages to **Public** in their
+GitHub package settings, then check that they can be pulled without signing in.
+GHCR creates new packages as private, even for public repositories.
+[GitHub package visibility](https://docs.github.com/en/packages/learn-github-packages/configuring-a-packages-access-control-and-visibility).
+
+Old container packages remain available for existing installations and historical
+releases. To switch an installation, download the current Compose files or change
+its image repository to the new name, keeping its version tag. Historical build
+attestations retain the original repository and signer identity; copying an image
+does not create new build provenance. See [Security](https://github.com/sam-dumont/immich-memories/blob/main/SECURITY.md).
 
 Before the next PyPI release, check the trusted publisher for **both**
 `immich-memories` and `immich-memories-music`: owner `sam-dumont`, repository

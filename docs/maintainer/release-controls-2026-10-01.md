@@ -102,13 +102,13 @@ analysis. The M2 Full trip spent 911 s rendering nine maps, about 43% of its who
 trip's nine maps took 39 s with lower resolution and reduced motion. Full and GPU retain smooth
 animation; these are different profiles.
 
-The route zoom and arrow correction in [#1700](https://github.com/sam-dumont/immich-video-memory-generator/pull/1700)
+The route zoom and arrow correction in [#1700](https://github.com/sam-dumont/immich-memories/pull/1700)
 applies to ordinary maps too. The three-view shortcut in
-[#1703](https://github.com/sam-dumont/immich-video-memory-generator/pull/1703) applies only when
+[#1703](https://github.com/sam-dumont/immich-memories/pull/1703) applies only when
 `animated_background` is false. Selection-index reuse in
-[#1706](https://github.com/sam-dumont/immich-video-memory-generator/pull/1706) and the lower-cadence HDR
+[#1706](https://github.com/sam-dumont/immich-memories/pull/1706) and the lower-cadence HDR
 conversion/audio-completion fix in
-[#1709](https://github.com/sam-dumont/immich-video-memory-generator/pull/1709) landed after the listed
+[#1709](https://github.com/sam-dumont/immich-memories/pull/1709) landed after the listed
 Mac and NAS controls. The CUDA worker is frozen at `4913c3892695`, before #1709. No whole-film
 speedup is claimed for those patches.
 
@@ -222,22 +222,22 @@ the measured figures and the earlier hold against 4,000,000,000 bytes were prese
 ## Remaining performance work
 
 Existing traces and source review found repeated full-frame work in smooth 4K maps and HDR titles.
-[#1702](https://github.com/sam-dumont/immich-video-memory-generator/issues/1702#issuecomment-5937777886)
+[#1702](https://github.com/sam-dumont/immich-memories/issues/1702#issuecomment-5937777886)
 records a blank map feature layer of 126.6–506.3 MiB per moving frame, repeated tile decoding and
 CPU frame construction before NVENC. Those are buffer sizes and observed stages, not a measured
 speedup. The map fixes in
-[#1729](https://github.com/sam-dumont/immich-video-memory-generator/pull/1729) and
-[#1741](https://github.com/sam-dumont/immich-video-memory-generator/pull/1741) landed after these
+[#1729](https://github.com/sam-dumont/immich-memories/pull/1729) and
+[#1741](https://github.com/sam-dumont/immich-memories/pull/1741) landed after these
 frozen controls. Their timings do not measure those changes, and no whole-film speedup is claimed.
 #1702 retains profiling and further optimization as follow-up work.
 
-[#1704](https://github.com/sam-dumont/immich-video-memory-generator/issues/1704#issuecomment-5938126498)
+[#1704](https://github.com/sam-dumont/immich-memories/issues/1704#issuecomment-5938126498)
 recorded CPU interpolation for HDR titles, blank-text compositing on textless endings and white-fade
-arithmetic after GPU readback. [#1721](https://github.com/sam-dumont/immich-video-memory-generator/pull/1721)
+arithmetic after GPU readback. [#1721](https://github.com/sam-dumont/immich-memories/pull/1721)
 merged the title implementation after these frozen controls. The accepted timings do not measure
 that change, and no whole-film speedup is claimed for it.
 
 The accepted controls stay evidence for their original revisions. The
-[hosted-provider benchmark (#1718)](https://github.com/sam-dumont/immich-video-memory-generator/issues/1718)
-and [28-by-2 shared-Mac-cache comparison (#1719)](https://github.com/sam-dumont/immich-video-memory-generator/issues/1719)
+[hosted-provider benchmark (#1718)](https://github.com/sam-dumont/immich-memories/issues/1718)
+and [28-by-2 shared-Mac-cache comparison (#1719)](https://github.com/sam-dumont/immich-memories/issues/1719)
 are separate follow-up work. Neither was executed for this closeout.

@@ -31,7 +31,7 @@ def test_installation_commands_select_assets_and_one_version(version):
     assert "IMMICH_MEMORIES_VERSION=" + version.removeprefix("v") in commands
     if version == "development":
         assert "docker build" in commands
-        assert "ghcr.io/sam-dumont/immich-video-memory-generator:development" in commands
+        assert "ghcr.io/sam-dumont/immich-memories:development" in commands
     else:
         for filename in [
             "docker-compose.yml",

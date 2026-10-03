@@ -13,7 +13,7 @@ variable "create_namespace" {
 variable "image_repository" {
   description = "Container image repository"
   type        = string
-  default     = "ghcr.io/sam-dumont/immich-video-memory-generator"
+  default     = "ghcr.io/sam-dumont/immich-memories"
 }
 
 variable "image_tag" {

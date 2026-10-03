@@ -21,6 +21,10 @@ function checkPage(url) {
   assert.ok(description?.trim(), `${url}: missing search description`);
   const noindex = tags.some(tag => tag.name === 'robots' && /noindex/i.test(tag.content));
   assert.equal(noindex, next, `${url}: wrong indexing policy`);
+  const version = tags.find(tag => tag.name === 'application-version')?.content;
+  assert.ok(version, `${url}: missing build version`);
+  if (process.env.DOCS_VERSION) assert.equal(version, process.env.DOCS_VERSION, `${url}: wrong build version`);
+  assert.ok(html.includes(`Docs ${version}`), `${url}: build version missing from navigation`);
   return tags;
 }
 

@@ -20,6 +20,12 @@ from tests.e2e.web_flow import contact_sheet, cut_june, render, the_film
 pytestmark = pytest.mark.e2e
 
 
+def test_client_shows_the_packaged_build_version(page, launch_app_url):
+    version = page.request.get(f"{launch_app_url}/health/live").json()["version"]
+    page.goto(f"{launch_app_url}/app/settings")
+    expect(page.get_by_test_id("build-version")).to_have_text(f"Immich Memories {version}")
+
+
 def test_report_is_previewed_before_copying(page, launch_app_url, launch_workspace):
     _seed(launch_workspace)
     report = "## Immich Memories run report\n\n<details><summary>Logs</summary>redacted</details>"

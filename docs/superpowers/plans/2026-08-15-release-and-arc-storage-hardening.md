@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- [ ] Change only `/Users/sam/Code/perso/immich-video-memory-generator` and `/Users/sam/Code/perso/rancher-cluster` source files.
+- [ ] Change only `/Users/sam/Code/perso/immich-memories` and `/Users/sam/Code/perso/rancher-cluster` source files.
 - [ ] Do not mutate live Kubernetes resources, workers, RKE2 agent configuration, Terraform state, GitHub workflows, releases, or branches.
 - [ ] Do not run `kubectl` mutations, SSH commands, `terraform apply`, workflow reruns, publishing, pushes, or service restarts.
 - [ ] Preserve unrelated untracked files in both repositories.

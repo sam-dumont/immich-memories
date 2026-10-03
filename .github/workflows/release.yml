@@ -376,7 +376,7 @@ jobs:
       id-token: write
 
   # Build and push Docker images using native runners per platform
-  # Registry package addresses stay fixed when the GitHub repository is renamed.
+  # App and inference packages share the immich-memories registry namespace.
   docker-build:
     name: Build Docker Image (${{ matrix.platform }})
     needs: [analyze, ci]
@@ -437,7 +437,7 @@ jobs:
             SOURCE_URL=https://github.com/${{ github.repository }}
           # No gha layer cache: it never hit (0 CACHED steps, #1272) and each
           # export pushed the main branch's useful caches out of the 10 GB limit.
-          outputs: type=image,name=ghcr.io/sam-dumont/immich-video-memory-generator,push-by-digest=true,name-canonical=true
+          outputs: type=image,name=ghcr.io/sam-dumont/immich-memories,push-by-digest=true,name-canonical=true
 
       # Attaches the attestation to the image in GHCR as an OCI referrer, so
       # `gh attestation verify oci://...` and `cosign` can find it without
@@ -445,7 +445,7 @@ jobs:
       - name: Attest image provenance
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4
         with:
-          subject-name: ghcr.io/sam-dumont/immich-video-memory-generator
+          subject-name: ghcr.io/sam-dumont/immich-memories
           subject-digest: ${{ steps.build.outputs.digest }}
           push-to-registry: true
 
@@ -531,12 +531,12 @@ jobs:
             APP_VERSION=${{ needs.analyze.outputs.next_version }}
             VCS_REF=${{ github.sha }}
           # No gha layer cache: it never hit (0 CACHED steps, #1272).
-          outputs: type=image,name=ghcr.io/sam-dumont/immich-video-memory-generator/inference,push-by-digest=true,name-canonical=true
+          outputs: type=image,name=ghcr.io/sam-dumont/immich-memories/inference,push-by-digest=true,name-canonical=true
 
       - name: Attest inference image provenance
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4
         with:
-          subject-name: ghcr.io/sam-dumont/immich-video-memory-generator/inference
+          subject-name: ghcr.io/sam-dumont/immich-memories/inference
           subject-digest: ${{ steps.build.outputs.digest }}
           push-to-registry: true
 
@@ -592,7 +592,7 @@ jobs:
       # tag because a GPU image is a deliberate choice rather than a fallback.
       - name: Create and push manifests
         env:
-          IMAGE: ghcr.io/sam-dumont/immich-video-memory-generator/inference
+          IMAGE: ghcr.io/sam-dumont/immich-memories/inference
           VERSION: ${{ needs.analyze.outputs.next_version }}
           INFERENCE_ONLY: ${{ inputs.inference_only }}
           PRERELEASE: ${{ needs.analyze.outputs.prerelease }}
@@ -624,7 +624,7 @@ jobs:
       - name: Attest cpu manifest provenance
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4
         with:
-          subject-name: ghcr.io/sam-dumont/immich-video-memory-generator/inference
+          subject-name: ghcr.io/sam-dumont/immich-memories/inference
           subject-digest: ${{ steps.cpu-manifest.outputs.digest }}
           push-to-registry: true
 
@@ -637,7 +637,7 @@ jobs:
       - name: Attest cuda manifest provenance
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4
         with:
-          subject-name: ghcr.io/sam-dumont/immich-video-memory-generator/inference
+          subject-name: ghcr.io/sam-dumont/immich-memories/inference
           subject-digest: ${{ steps.cuda-manifest.outputs.digest }}
           push-to-registry: true
 
@@ -681,7 +681,7 @@ jobs:
       - name: Run one CPU-only generation inside the image
         run: |
           digest="sha256:$(ls /tmp/digests | head -1)"
-          image="ghcr.io/sam-dumont/immich-video-memory-generator@${digest}"
+          image="ghcr.io/sam-dumont/immich-memories@${digest}"
           docker pull "$image"
           uv run --no-project --with pillow --with numpy \
             python scripts/docker_smoke.py --image "$image" --timeout 1200
@@ -724,7 +724,7 @@ jobs:
       - name: Create and push manifest
         working-directory: /tmp/digests
         env:
-          IMAGE: ghcr.io/sam-dumont/immich-video-memory-generator
+          IMAGE: ghcr.io/sam-dumont/immich-memories
           VERSION: ${{ needs.analyze.outputs.next_version }}
           PRERELEASE: ${{ needs.analyze.outputs.prerelease }}
           APP_ONLY: ${{ inputs.app_only }}
@@ -751,7 +751,7 @@ jobs:
       - name: Attest app manifest provenance
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4
         with:
-          subject-name: ghcr.io/sam-dumont/immich-video-memory-generator
+          subject-name: ghcr.io/sam-dumont/immich-memories
           subject-digest: ${{ steps.app-manifest.outputs.digest }}
           push-to-registry: true
 

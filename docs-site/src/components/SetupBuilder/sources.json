@@ -2,7 +2,7 @@
   "base": {
     "services": {
       "immich-memories": {
-        "image": "ghcr.io/sam-dumont/immich-video-memory-generator:${IMMICH_MEMORIES_VERSION:-latest}",
+        "image": "ghcr.io/sam-dumont/immich-memories:${IMMICH_MEMORIES_VERSION:-latest}",
         "container_name": "immich-memories",
         "ports": [
           "${UI_BIND_ADDRESS:-127.0.0.1}:8080:8080"
@@ -64,7 +64,7 @@
         }
       },
       "immich-memories-inference": {
-        "image": "ghcr.io/sam-dumont/immich-video-memory-generator/inference:${IMMICH_MEMORIES_VERSION:-latest}",
+        "image": "ghcr.io/sam-dumont/immich-memories/inference:${IMMICH_MEMORIES_VERSION:-latest}",
         "container_name": "immich-memories-inference",
         "ports": [
           "127.0.0.1:8092:8092"
@@ -194,7 +194,7 @@
   "cuda": {
     "services": {
       "immich-memories-inference": {
-        "image": "ghcr.io/sam-dumont/immich-video-memory-generator/inference:${IMMICH_MEMORIES_VERSION:-latest}-cuda",
+        "image": "ghcr.io/sam-dumont/immich-memories/inference:${IMMICH_MEMORIES_VERSION:-latest}-cuda",
         "deploy": {
           "resources": {
             "reservations": {
@@ -240,7 +240,7 @@
   "worker": {
     "services": {
       "gpu-worker": {
-        "image": "ghcr.io/sam-dumont/immich-video-memory-generator/inference:${IMMICH_MEMORIES_VERSION:-latest}-cuda",
+        "image": "ghcr.io/sam-dumont/immich-memories/inference:${IMMICH_MEMORIES_VERSION:-latest}-cuda",
         "command": [
           "python",
           "-m",

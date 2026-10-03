@@ -32,7 +32,7 @@ module "immich_memories" {
   create_namespace = true
 
   # Image
-  image_repository = "ghcr.io/sam-dumont/immich-video-memory-generator"
+  image_repository = "ghcr.io/sam-dumont/immich-memories"
   image_tag        = var.image_tag
 
   # Immich credentials

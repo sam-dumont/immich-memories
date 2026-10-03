@@ -9,7 +9,7 @@ import subprocess
 import tarfile
 from pathlib import Path
 
-_APP_IMAGE = rb"ghcr\.io/sam-dumont/immich-video-memory-generator(?:/inference)?"
+_APP_IMAGE = rb"ghcr\.io/sam-dumont/immich-memories(?:/inference)?"
 _IMAGE_PIN = re.compile(rb"(- name: " + _APP_IMAGE + rb'\s*\n\s*newTag: )"([^"\n]+)"')
 
 

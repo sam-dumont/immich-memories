@@ -37,7 +37,7 @@ sends any footage. On the GPU box, with the NVIDIA container toolkit installed, 
 into an empty directory with this `.env`:
 
 ```bash
-IMMICH_MEMORIES_IMAGE=ghcr.io/sam-dumont/immich-video-memory-generator:YOUR_APP_TAG
+IMMICH_MEMORIES_IMAGE=ghcr.io/sam-dumont/immich-memories:YOUR_APP_TAG
 IMMICH_URL=https://photos.example.com
 RENDER_WORKER_TOKEN=replace-with-openssl-rand-hex-32
 RENDER_BIND_ADDRESS=192.168.1.50    # the worker's LAN address; 127.0.0.1 behind a reverse proxy

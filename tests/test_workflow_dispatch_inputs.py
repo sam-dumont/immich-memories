@@ -67,10 +67,8 @@ def test_invalid_gpu_dispatch_is_refused_before_any_outputs(tmp_path, overrides,
     assert not output.exists() or not output.read_text()
 
 
-@pytest.mark.parametrize(
-    "public_repo", ["sam-dumont/immich-memories", "sam-dumont/immich-video-memory-generator"]
-)
-def test_valid_gpu_dispatch_outputs_the_exact_requested_commit(tmp_path, public_repo):
+def test_valid_gpu_dispatch_outputs_the_exact_requested_commit(tmp_path):
+    public_repo = "sam-dumont/immich-memories"
     output = tmp_path / "output"
     env = {
         **os.environ,

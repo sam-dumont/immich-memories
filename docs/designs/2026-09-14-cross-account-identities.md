@@ -1,10 +1,10 @@
 # Household memories using the existing people model
 
 Status: proposed, design only. Implement after the PostgreSQL people migration in
-[#871](https://github.com/sam-dumont/immich-video-memory-generator/issues/871).
-Refs [#717](https://github.com/sam-dumont/immich-video-memory-generator/issues/717),
-[#718](https://github.com/sam-dumont/immich-video-memory-generator/issues/718) and
-[#720](https://github.com/sam-dumont/immich-video-memory-generator/issues/720).
+[#871](https://github.com/sam-dumont/immich-memories/issues/871).
+Refs [#717](https://github.com/sam-dumont/immich-memories/issues/717),
+[#718](https://github.com/sam-dumont/immich-memories/issues/718) and
+[#720](https://github.com/sam-dumont/immich-memories/issues/720).
 
 ## Decision
 
@@ -94,7 +94,7 @@ and omit nested saved-group references in the first implementation.
 
 ## PostgreSQL sequencing and portability
 
-[#871](https://github.com/sam-dumont/immich-video-memory-generator/issues/871) and the
+[#871](https://github.com/sam-dumont/immich-memories/issues/871) and the
 [current store design](../research/2026-09-01-annotation-store-design.md) own persistence.
 The first implementation waits for its repository and people import/editor path, including
 P1 and P6. Any account connections also depend on its settings and secret handling (P4/P5).
@@ -184,7 +184,7 @@ Multiple servers remain outside this first slice; do not redesign all cache keys
 
 ## Issue slices after PostgreSQL
 
-Credit: [Mike7154's discussion and reference fork](https://github.com/sam-dumont/immich-video-memory-generator/discussions/703)
+Credit: [Mike7154's discussion and reference fork](https://github.com/sam-dumont/immich-memories/discussions/703)
 provided the household use case and Boolean-selection examples. Its configuration proposal
 predates this reassessment; reuse useful behavior tests with attribution, not its duplicate
 subject registry.
@@ -198,7 +198,7 @@ subject registry.
 These revisions need agreement before implementation; this design PR does not close the
 three issues. Their old `identities:` examples should not be treated as the implementation
 contract. Annual birthday windows still depend on
-[#719](https://github.com/sam-dumont/immich-video-memory-generator/issues/719); no second
+[#719](https://github.com/sam-dumont/immich-memories/issues/719); no second
 birth-date authority is introduced here. Merge and release sequencing stays with the owner.
 
 ## Acceptance before calling it supported

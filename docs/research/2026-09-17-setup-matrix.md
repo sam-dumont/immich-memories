@@ -19,7 +19,7 @@ people, no film names, no asset ids, no pictures.
 |---|---|
 | Cluster and NAS | app image `0.102.0`, pinned in every Job and compose file the run wrote |
 | Inference service | image `0.102.0-cuda` |
-| Mac, `mac-local` and `mac-rules` | a working tree at v0.102.0, before [#1071](https://github.com/sam-dumont/immich-video-memory-generator/pull/1071) merged |
+| Mac, `mac-local` and `mac-rules` | a working tree at v0.102.0, before [#1071](https://github.com/sam-dumont/immich-memories/pull/1071) merged |
 | Mac, `mac-hosted-openai-luna` | the same tree with #1071 in it |
 
 The run's own `summary.data.json` records `image: 0.100.4`. That field is wrong: it is the label
@@ -90,7 +90,7 @@ Four cells. Candidates after the scope pass: 1,417 on the Mac, 1,418 on the clus
 
 **The preparation columns are the whole of 2024, not February.** `prepare --year Y --month M` dropped
 the month and prepared the calendar year until
-[#1056](https://github.com/sam-dumont/immich-video-memory-generator/pull/1056) merged on
+[#1056](https://github.com/sam-dumont/immich-memories/pull/1056) merged on
 17 September, after these cells ran. Every preparation figure below is 13,544 pictures of 2024. The
 per-picture rates are unaffected, and `prepare --month` now prepares only that month, so a month
 costs its own picture count at the same rate. Selection and render are February's.
@@ -131,7 +131,7 @@ Neither is a blank row anywhere. Where a table would have carried them, the reas
 
 | Cell | Failure | What it means |
 |---|---|---|
-| February `mac-hosted-openai-luna` | `generate exited 1`, no cut, peak RSS 571 MB | Every hosted reader was broken in v0.102.0 by a config regression: an `OPENAI_API_KEY` alias beat the reader key the config file states. [#1071](https://github.com/sam-dumont/immich-video-memory-generator/pull/1071) fixed it at 21:15 UTC on 17 September. The fixture-month hosted Mac cell was re-run after that and is the one published |
+| February `mac-hosted-openai-luna` | `generate exited 1`, no cut, peak RSS 571 MB | Every hosted reader was broken in v0.102.0 by a config regression: an `OPENAI_API_KEY` alias beat the reader key the config file states. [#1071](https://github.com/sam-dumont/immich-memories/pull/1071) fixed it at 21:15 UTC on 17 September. The fixture-month hosted Mac cell was re-run after that and is the one published |
 | February `k8s-rules-local` | `apply-claims exited 1`, nothing measured | The claims never applied and the pod never started. Not chased, because the cell was not going to be published anyway |
 
 ## Three cells lost their copy-out

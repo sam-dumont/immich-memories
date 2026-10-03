@@ -99,21 +99,24 @@ gh attestation verify "$WHEEL" \
 
 For releases signed before the repository rename, use
 `sam-dumont/immich-video-memory-generator` for the repository and signer workflow
-checks below. A rename does not rewrite existing attestations. The container
-package address stays the same.
+checks below. A rename does not rewrite existing attestations. Historical
+container addresses remain available after the namespace migration.
 
 The current Release workflow attests both application and inference platform images, then
 attests the final application, inference CPU and inference CUDA manifests. This applies to
 images published by that workflow; it does not add attestations to older releases.
+The namespace migration copies existing images without rebuilding them. Copied
+`0.103.0` images retain their historical provenance; use the old-release
+verification example below for that release.
 
 For a release built with that workflow, select the image and tag from this table. Replace
 `X.Y.Z` with its published version, without the leading `v`:
 
 | Image | Repository | Tag |
 |---|---|---|
-| Application | `ghcr.io/sam-dumont/immich-video-memory-generator` | `X.Y.Z` |
-| Inference CPU | `ghcr.io/sam-dumont/immich-video-memory-generator/inference` | `X.Y.Z` |
-| Inference CUDA | `ghcr.io/sam-dumont/immich-video-memory-generator/inference` | `X.Y.Z-cuda` |
+| Application | `ghcr.io/sam-dumont/immich-memories` | `X.Y.Z` |
+| Inference CPU | `ghcr.io/sam-dumont/immich-memories/inference` | `X.Y.Z` |
+| Inference CUDA | `ghcr.io/sam-dumont/immich-memories/inference` | `X.Y.Z-cuda` |
 
 Use Bash, Docker Buildx, jq and GitHub CLI. The tag locates the manifest; verification uses its
 immutable digest and requires this repository's release workflow as signer:
@@ -121,7 +124,7 @@ immutable digest and requires this repository's release workflow as signer:
 ```bash
 set -euo pipefail
 REPO=sam-dumont/immich-memories
-IMAGE=ghcr.io/sam-dumont/immich-video-memory-generator
+IMAGE=ghcr.io/sam-dumont/immich-memories
 TAG=X.Y.Z
 DIGEST=$(docker buildx imagetools inspect "$IMAGE:$TAG" --format '{{json .Manifest}}' | \
   jq -er '.digest | select(test("^sha256:[0-9a-f]{64}$"))')
@@ -143,8 +146,8 @@ DIGEST=$(docker buildx imagetools inspect "$IMAGE" --raw | jq -er \
   '[.manifests[] | select(.platform.os == "linux" and .platform.architecture == "amd64")] |
    select(length == 1) | .[0].digest | select(test("^sha256:[0-9a-f]{64}$"))')
 gh attestation verify "oci://${IMAGE%:*}@$DIGEST" \
-  --repo sam-dumont/immich-memories \
-  --signer-workflow sam-dumont/immich-memories/.github/workflows/release.yml
+  --repo sam-dumont/immich-video-memory-generator \
+  --signer-workflow sam-dumont/immich-video-memory-generator/.github/workflows/release.yml
 ```
 
 The `.intoto.jsonl` asset is the same statement as a bare in-toto envelope, for

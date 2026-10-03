@@ -96,7 +96,7 @@ copy and use [SOPS or External Secrets](reference/kubernetes.md#bring-your-own-s
 For a source checkout, set the image before applying:
 
 ```bash
-(cd base && kustomize edit set image ghcr.io/sam-dumont/immich-video-memory-generator=:X.Y.Z)
+(cd base && kustomize edit set image ghcr.io/sam-dumont/immich-memories=:X.Y.Z)
 ```
 
 The `kustomize edit` command requires the standalone Kustomize CLI; `kubectl kustomize` only
@@ -372,7 +372,7 @@ Releases attest each platform image digest. Verify the exact platform digest you
 with GitHub CLI (authenticate to GHCR first):
 
 ```bash
-gh attestation verify "oci://ghcr.io/sam-dumont/immich-video-memory-generator@sha256:<digest>" --repo sam-dumont/immich-memories
+gh attestation verify "oci://ghcr.io/sam-dumont/immich-memories@sha256:<digest>" --repo sam-dumont/immich-memories
 ```
 
 Replace `<digest>` with the platform image's SHA-256 value. Use the inference image's

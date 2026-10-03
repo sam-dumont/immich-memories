@@ -10,7 +10,7 @@ and the runner would execute it. GitHub's own docs warn against this.
 
 ```mermaid
 flowchart TB
-    subgraph public["Public repo: sam-dumont/immich-video-memory-generator"]
+    subgraph public["Public repo: sam-dumont/immich-memories"]
         ci["ci.yml: unit tests on GitHub-hosted runners,<br/>harden-runner watching network egress"]
         mirror["mirror.yml: git push to the private mirror over an SSH deploy key.<br/>Triggers on push to main and on workflow_dispatch.<br/>Never on pull_request: that is the fork abuse vector"]
     end

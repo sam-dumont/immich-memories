@@ -25,7 +25,7 @@ a denied outbound destination and your first film result in
 Use the same release image for fetching and rendering. Pull it before isolating the app:
 
 ```bash
-export IMMICH_MEMORIES_IMAGE=ghcr.io/sam-dumont/immich-video-memory-generator:YOUR_RELEASE
+export IMMICH_MEMORIES_IMAGE=ghcr.io/sam-dumont/immich-memories:YOUR_RELEASE
 docker pull "$IMMICH_MEMORIES_IMAGE"
 docker volume create immich-memories-offline-models
 docker run --rm --user 0:0 --entrypoint sh \

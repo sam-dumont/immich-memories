@@ -30,7 +30,7 @@ module "immich_memories" {
   namespace        = var.namespace
   create_namespace = true
 
-  image_repository = "ghcr.io/sam-dumont/immich-video-memory-generator"
+  image_repository = "ghcr.io/sam-dumont/immich-memories"
   image_tag        = var.image_tag
 
   immich_url     = var.immich_url
