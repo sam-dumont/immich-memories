@@ -144,7 +144,7 @@ render:
   worker_token: ""             # Or ${RENDER_WORKER_TOKEN}
   allow_insecure_http: false   # Explicitly accept a non-loopback cleartext HTTP worker
   timeout_seconds: 3600        # Wait for rendering and download; maximum 86400; greater than 0, at most 86400 seconds
-  fallback_to_local: false     # Explicitly allow local rendering after a worker failure
+  fallback_to_local: false     # Set true to allow local rendering after a worker failure
 ```
 
 Use the same app version on both machines. The worker receives the selected assets,
@@ -155,9 +155,10 @@ non-loopback `http://` worker URL is refused until `allow_insecure_http: true` s
 meant it; loopback addresses and HTTPS need no opt-in. Preflight names the transport
 before the first render request. Requests require the worker token and do not follow redirects.
 
-Output is H.264 or H.265 MP4. MOV and ProRes use local rendering. Orientation only sets
-the canvas; it does not change the selection. Speech detection and cut selection run
-before handoff. Music and Immich upload finish on the app after it checks the returned film.
+The worker accepts H.264 or H.265 MP4. When a worker is configured, MOV and ProRes
+render locally only with `fallback_to_local: true`; with `false`, the run fails.
+Orientation only sets the canvas; it does not change the selection. Speech detection and cut
+selection run before handoff. Music and Immich upload finish on the app after it checks the returned film.
 
 See [worker deployment](https://github.com/sam-dumont/immich-video-memory-generator/tree/main/services/render-worker)
 for Docker Compose and Kubernetes examples.

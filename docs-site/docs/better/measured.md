@@ -94,6 +94,56 @@ The generated Settings encryption key passed a secret save/masked reload/encrypt
 check; the temporary setting was removed. The test namespace and its volumes were then removed.
 This is one installation and film check, not a matched hardware speed comparison.
 
+## Generated native Mac check, 3 October 2026 {#generated-native-mac}
+
+The generated GPU setup ran on an **Apple M5 Max with 128 GB RAM**, using an isolated
+candidate wheel from `d5b4472b8525e82fefdd78143aca62e16e707ce1`. Installing that local
+`0.0.0rc180503` wheel replaced the generated PyPI install: this was **not a published-release
+installation**. Model-only files and existing Hugging Face snapshots were reused; the app
+configuration, database, picture facts and output were fresh. The existing loopback caption
+server stayed unchanged, so this check does not establish a cold model download or a new
+caption-service installation.
+
+Model verification took **0.90 seconds** and preflight **13.84 seconds**, with 11 OK,
+2 warnings and 5 skipped checks. A June 2024 monthly film from the same 133 public/synthetic
+assets, requested for 20 seconds with photos included, took **35.38 seconds**. It produced
+**19 seconds of 1920×1080 H.264 at 30 fps**, stereo 48 kHz AAC, 5,402,495 bytes.
+FFprobe and complete audio/video decoding passed. Local MLX/Metal picture inference and
+Laya, the existing MLX caption server, Metal title kernels and `h264_videotoolbox` encoding
+were used. The reader and generated music stayed disabled; bundled music remained enabled.
+
+Warnings included unset home coordinates, one clip without motion facts, a Laya confidence
+bucket warning and HDR input tone-mapped to SDR. The loopback UI served the built client;
+its owned process was stopped without changing the caption service or normal app settings.
+The separate ACE-Step setup and import checks passed, but no ACE-Step track was generated.
+This source-informed check is not the source-naive #956 gate or a matched speed comparison.
+
+## NAS app with remote GPU, 3 October 2026 {#generated-nas-remote-gpu}
+
+The physical DSM NAS app used the generated GPU setup against a combined worker on one
+T1000 in an owned Kubernetes namespace. This exercised `GPU_BOX` facts and caption routes;
+it was not a standalone Docker Compose worker deployment. The app used candidate source
+`75077f27` and image `49cc60a978ce`, with matching worker image `d079a0da1633`.
+
+Cold local model acquisition took **26.93 seconds**, including the pinned ONNX Laya file
+(877 MB). The original cold preflight **failed after 20.48 seconds**: its five-second caption
+probe expired while the worker lazily started the caption model. After that model was ready,
+preflight passed in **14.67 seconds**, with 9 OK, 4 warnings and 5 skipped checks.
+
+A separate cold-start check restarted the owned worker and verified that no caption process
+was running. With only the reviewed caption timeout/error changes transplanted into the
+frozen app's preflight file, preflight passed in **32.00 seconds**, with the same check counts
+and no prewarming. This was a single-file test overlay, not a rebuilt current-source image;
+the completed film below used the original candidate.
+
+The film run used `generate --year 2024 --month 6 --duration 20` and took **6m 53.09s**
+from SSH command start through successful exit, including configuration probes, preparation,
+rendering and music. It produced **19 seconds of 1920×1080 H.264/AAC**, with bundled music
+and no upload. Complete FFmpeg audio/video decoding passed. The worker prepared facts for
+133 assets and captions for four selected clips; the NAS encoded in software and used PIL
+title fallback. One clip lacked motion facts. The product tier was GPU; the internal
+captioned preparation mode did not enable a text reader or make this a Full-tier run.
+
 ## Read one run
 
 ```bash

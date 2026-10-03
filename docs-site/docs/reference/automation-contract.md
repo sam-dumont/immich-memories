@@ -27,10 +27,11 @@ advanced:
     daily_at: "09:00"    # the container's local time (set TZ=)
 ```
 
-Or uncomment the two `IMMICH_MEMORIES_AUTOMATION__ENABLED` and `IMMICH_MEMORIES_AUTOMATION__DAILY_AT`
-lines in the app's Compose `environment:` block and set the time there. A line in `.env` alone
+Or add `IMMICH_MEMORIES_AUTOMATION__ENABLED: "true"` and
+`IMMICH_MEMORIES_AUTOMATION__DAILY_AT: "09:00"` to the app's Compose `environment:` block
+and set the time there. A line in `.env` alone
 does not reach the container. Recreate with `docker compose up -d`.
-Settings also exposes **Automation > enabled** and **daily_at** while those Compose lines stay commented.
+Settings also exposes **Automation > enabled** and **daily_at** while those Compose lines are absent.
 Either `automation.upload_to_immich: true` or `upload.enabled: true` requests delivery to Immich; `upload.album_name` names the destination. Confirmed delivery removes the local copy.
 
 The UI process then runs the same `auto run` decision once a day, with the same lock, history, upload retry
