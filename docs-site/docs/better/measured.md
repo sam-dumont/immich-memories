@@ -224,6 +224,61 @@ records source revisions, memory, component gains and measurement limits. Separa
 [NAS software-HLG memory work](https://github.com/sam-dumont/immich-memories/issues/1767)
 remains open.
 
+## Hosted reader time and cost, 3 October 2026 {#hosted-reader-cost}
+
+The [#1718 rerun](https://github.com/sam-dumont/immich-memories/issues/1718)
+uses `870b71cab`, the configured hosted routes and prepared picture facts. A hosted reader
+can cost a few cents per task. It does not remove the time spent reading the library,
+checking pictures or rendering the film locally.
+The production examples use Full tier on an Apple M5 Max with local picture models;
+they do not predict NAS render times or the cost of preparing a new library.
+
+The same monthly request produced these complete films:
+
+| Provider | Whole run | Film produced | Estimated API cost | Same tokens without provider cache discount |
+|---|---:|---|---:|---:|
+| OpenAI | 77.5 s | 60.8 s, 15 pictures | $0.0096 | $0.0169 |
+| z.ai | 120.1 s | 60.9 s, 15 pictures | $0.0126 | $0.0126 |
+| Melious | 180.4 s | 60.9 s, 15 pictures | €0.0663 | €0.0671 |
+
+The OpenAI run followed a discarded setup attempt and used provider cache reads; its
+latency is not a cold-start measurement. The last column changes only the token price,
+not the measured timing. All three films used bundled music because the generated-music
+weights were unavailable offline. Decoding passed; that is not editorial approval.
+
+The complete 34-case synthetic suite exercises titles, free-text requests, captions, music
+mood and editorial decisions through the production client. These repeats use the JSON
+contract fix at `8961ccef7`; the monthly films above retain baseline revision `870b71cab`:
+
+| Provider and exact model | Passed | Suite elapsed | Estimated API cost |
+|---|---:|---:|---:|
+| OpenAI, gpt-5.6-luna | 33/34 | 115 s | $0.0097 |
+| z.ai, glm-5.3-flash | 33/34 | 192 s | $0.0062 |
+| Melious, deepseek-v4.1-flash | 34/34 | 543 s | €0.0317 |
+
+These are single repeats on a shared Mac. OpenAI missed motion; z.ai dropped a subject
+from a synthetic request. Melious still left unread months in annual discovery after
+23m 45s and an estimated €0.152. The full report retains baseline scores and all repeated failures.
+Cost estimates use reported tokens and published pay-as-you-go rates checked on the test
+date. They are not billing receipts or subscription allocations. Unknown usage stays unknown.
+
+Longer requests cost more: z.ai Request B took 18m 53s and about $0.0505 for a
+291-second film, but its sampled subject check failed. Melious Request B took 46m 20s
+and about €0.4216 for a 295-second film. The latter generated music; the former used
+bundled music. Neither is a matched speed comparison or an approved cut.
+
+Motion remains unreliable: the separate five-direction controls passed 2/5 on OpenAI,
+3/5 on z.ai and 2/5 on Melious. HTTP success alone does not establish correctness.
+The [full report](https://github.com/sam-dumont/immich-memories/blob/main/docs/research/2026-10-03-hosted-readers.md)
+records routes, response modes, token counts, rate sources and measurement limits.
+
+The merged [Ollama measurements](https://github.com/sam-dumont/immich-memories/blob/ba5b96e53f38ec35a9d8b92f15c6c15b8f232bcc/docs/research/2026-10-03-ollama-validation.md)
+provide the local comparison: native Gemma with thinking off passed 33/34 checks in
+53.01 seconds of summed probe time; its compatible route passed 32/34 in 45.04 seconds.
+They have no hosted API fee; hardware and electricity were not priced. These separate,
+potentially warm runs did not measure a complete film, so they do not establish a
+local-versus-hosted end-to-end speedup.
+
 ## Ollama on M5 Max, 3 October 2026 {#ollama-validation}
 
 Gemma 4 E4B was tested through both Ollama APIs using the same 34 synthetic

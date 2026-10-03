@@ -58,12 +58,17 @@ The server manages its own model memory. The app does not unload an external ser
 
 A hosted reader receives descriptions, dates, people and place names from your cut. Use a local reader if that text should stay home.
 
+See the [measured hosted-reader time and cost](./measured.md#hosted-reader-cost) for complete
+films, free-text requests and provider quality checks. The prices cover reader calls after
+picture preparation; the local machine still does selection and rendering.
+
 ```yaml
 advanced:
   llm:
     enabled: true
     provider: openai
-    model: gpt-4.1-mini
+    model: gpt-5.6-luna
+    thinking: low
     api_key: ${OPENAI_API_KEY}
 ```
 

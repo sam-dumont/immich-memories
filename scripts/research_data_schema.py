@@ -150,7 +150,100 @@ class CapabilityBenchmark(PublicData):
     ]
 
 
-_PUBLIC_DATA = TypeAdapter(CostBenchmark | HostBenchmark | CapabilityBenchmark)
+class HostedMeasurement(PublicData):
+    source_commit: Annotated[str, Field(pattern=r"^[0-9a-f]{40}$")]
+    provider: Literal["OpenAI", "z.ai", "Melious"]
+    model: Literal["gpt-5.6-luna", "glm-5.3-flash", "deepseek-v4.1-flash"]
+    suite: Literal[
+        "production", "synthetic", "motion", "setup", "production-corrected", "synthetic-corrected"
+    ]
+    path: Literal[
+        "Monthly film",
+        "Monthly overviews",
+        "Request A: dry run",
+        "Request A: film",
+        "Request B: dry run",
+        "Request B: film",
+        "Request C: dry run",
+        "Request C: film",
+        "Request D: dry run",
+        "Request D: film",
+        "Request E: dry run",
+        "Request E: film",
+        "Synthetic caption producer",
+        "Year occasion discovery",
+        "audience activity",
+        "audience exposure",
+        "captioned occasion",
+        "central story confirmation",
+        "episode reading",
+        "free-text age range",
+        "free-text ambiguous person",
+        "free-text calendar dates",
+        "free-text exclusions",
+        "free-text film handoff",
+        "free-text matching pool",
+        "free-text one occasion",
+        "free-text other names",
+        "free-text particular place",
+        "free-text place scope",
+        "free-text printed words",
+        "free-text qualified subject",
+        "free-text request reading",
+        "free-text subject kind",
+        "holiday distinction",
+        "image caption",
+        "lean episode reading",
+        "memory worthiness",
+        "month and year catalogue",
+        "motion down",
+        "motion left",
+        "motion right",
+        "motion stationary",
+        "motion up",
+        "music mood",
+        "occasion sequence",
+        "people title",
+        "period story",
+        "recorded occasion",
+        "recurring activity",
+        "story moment selection",
+        "titles",
+        "trip title and route",
+        "video motion",
+    ]
+    seconds: Number
+    provider_request_seconds: Number | None = None
+    app_end_to_end_seconds: Number | None = None
+    process_exit: Count | None = None
+    semantic_pass: bool | None = None
+    http_attempts: Count
+    http_200: Count
+    input_tokens: Count | None
+    cached_input_tokens: Count | None
+    output_tokens: Count | None
+    reasoning_tokens: Count | None = None
+    empty_answers: Count | None = None
+    truncated_answers: Count | None = None
+    explicit_json_answers: Count | None = None
+    invalid_explicit_json_answers: Count | None = None
+    estimated_list_cost: Number | None
+    uncached_equivalent_cost: Number | None = None
+    currency: Literal["USD", "EUR"]
+    output_seconds: Number | None = None
+    selected_pictures: Count | None = None
+    output_file_present: bool | None = None
+    output_decode_pass: bool | None = None
+    bundled_music_fallback: bool | None = None
+
+
+class HostedBenchmark(PublicData):
+    schema_id: Literal["anonymous-hosted-readers-v1"] = Field(alias="schema")
+    benchmark_date: Literal["2026-10-03"]
+    measurements: list[HostedMeasurement]
+
+
+_PUBLIC_DATA = TypeAdapter(CostBenchmark | HostBenchmark | CapabilityBenchmark | HostedBenchmark)
 
 
 def _unique_object(pairs: list[tuple[str, object]]) -> dict[str, object]:

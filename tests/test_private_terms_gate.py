@@ -514,3 +514,44 @@ def test_main_staged_is_not_redirected_by_an_inherited_git_dir(
     out = capsys.readouterr().out
     assert exit_code == EXIT_HITS_FOUND
     assert "scratch.txt (added line)" in out
+
+
+@pytest.mark.parametrize(
+    "key,value",
+    [
+        ("prompt", "zorblax picnic"),
+        ("capture_date", "2001-02-03"),
+        ("path", "zorblax picnic"),
+        ("source_commit", "zorblax-nas.local"),
+        ("seconds", -1),
+        ("input_tokens", True),
+        ("estimated_list_cost", "0.01"),
+    ],
+)
+def test_hosted_reader_evidence_accepts_only_anonymous_measurements(key, value):
+    from research_data_schema import valid_research_data
+
+    payload = {
+        "schema": "anonymous-hosted-readers-v1",
+        "benchmark_date": "2026-10-03",
+        "measurements": [
+            {
+                "source_commit": "a" * 40,
+                "provider": "OpenAI",
+                "model": "gpt-5.6-luna",
+                "suite": "production",
+                "path": "Monthly film",
+                "seconds": 78.0,
+                "http_attempts": 26,
+                "http_200": 21,
+                "input_tokens": 74000,
+                "cached_input_tokens": 40000,
+                "output_tokens": 1700,
+                "estimated_list_cost": 0.01,
+                "currency": "USD",
+            }
+        ],
+    }
+    assert valid_research_data(json.dumps(payload))
+    payload["measurements"][0][key] = value
+    assert not valid_research_data(json.dumps(payload))
