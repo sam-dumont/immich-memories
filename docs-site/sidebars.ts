@@ -38,7 +38,12 @@ const sidebars: SidebarsConfig = {
         'run/requirements',
         {type: 'category', label: 'Install', items: [
           {type: 'doc', id: 'run/docker', label: 'Docker Compose'},
-          'run/nas', 'run/uv-pip', 'run/kubernetes', 'run/terraform',
+          'run/nas',
+          {type: 'category', label: 'Container managers', items: [
+            'run/platforms/synology', 'run/platforms/unraid',
+            'run/platforms/portainer', 'run/platforms/truenas',
+          ]},
+          'run/uv-pip', 'run/kubernetes', 'run/terraform',
         ]},
         {type: 'category', label: 'Advanced deployments', items: [
           'run/reference-setup', 'run/reference/cluster-example', 'run/reference/mac-example',
