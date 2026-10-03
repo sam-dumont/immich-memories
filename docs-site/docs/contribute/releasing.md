@@ -58,7 +58,7 @@ what it moves:
 | App image | `:1.0.0-rc.1` only | `:1.0.0` and `:latest` |
 | Inference images | `:1.0.0-rc.1`, `:1.0.0-rc.1-cuda` | also `:latest`, `:latest-cuda` |
 | PyPI | `1.0.0rc1`, installed only with `pip install --pre` | default install |
-| Docs site | not deployed | deployed |
+| Docs site | root before the first 1.x final; `/next` afterward, preserving the final site | root |
 
 Testers pin the exact candidate tag. Candidates do not move `latest`; a final release does.
 
