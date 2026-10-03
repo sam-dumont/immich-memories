@@ -194,3 +194,21 @@ def test_kernel_video_black_edges(_kernels_on_cpu, tmp_path):
     assert extract_frame_rgb(output, 0, 160, 90).mean() < 5
     assert extract_frame_rgb(output, 12, 160, 90).max() > 100
     assert extract_frame_rgb(output, 29, 160, 90).mean() < 15
+
+
+def test_released_runtime_can_render_the_next_title(_kernels_on_cpu, small_config):
+    import gc
+
+    from immich_memories.titles import kernels
+
+    renderer = KernelTitleRenderer(small_config)
+    expected = renderer.render_frame(5, "February 2024", "Smoke test")
+    del renderer
+    gc.collect()
+    kernels.release_kernels()
+    assert kernels.initialized_kernel_backend() is None
+    kernels.release_kernels()
+
+    again = KernelTitleRenderer(small_config)
+    actual = again.render_frame(5, "February 2024", "Smoke test")
+    np.testing.assert_array_equal(actual, expected)

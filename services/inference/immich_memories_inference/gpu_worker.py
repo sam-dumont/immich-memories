@@ -45,6 +45,9 @@ def create_app(
         if phase != "caption":
             captions.stop()
         gc.collect()
+        if phase == "idle" and (kernels := sys.modules.get("immich_memories.titles.kernels")):
+            # This callback still owns the render phase; no title work can race the reset.
+            kernels.release_kernels()
         # Torch is optional in the CPU service and must stay unimported there.
         # In the CUDA worker Demucs may leave freed tensors in its allocator.
         torch = sys.modules.get("torch")

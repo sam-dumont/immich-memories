@@ -80,7 +80,11 @@ class GpuPhases:
             self._release("render")
             yield
         finally:
-            self._leave()
+            try:
+                # Retain admission until native title buffers have been returned to the GPU.
+                self._release("idle")
+            finally:
+                self._leave()
 
     def _leave(self):
         with self._condition:
