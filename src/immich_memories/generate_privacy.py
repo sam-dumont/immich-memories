@@ -67,6 +67,11 @@ def pick_fake_city() -> tuple[str, float, float]:
 def anonymize_preset_params(preset_params: dict) -> dict:
     """Move both ends of the trip: the home base and the named destination."""
     result = preset_params.copy()
+    if "person_display_names" in result:
+        result["person_display_names"] = {
+            identity: anonymize_name(name) if name else ""
+            for identity, name in result["person_display_names"].items()
+        }
     fake_name, fake_lat, fake_lon = pick_fake_city()
 
     if result.get("home_lat") is not None:

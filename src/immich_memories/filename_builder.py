@@ -114,35 +114,35 @@ def build_title_person_name(
     Returns:
         Formatted person name string, or None.
     """
+    names = _title_cast_names(preset_params, use_first_name_only)
     if preset_params.get("person_expression") is not None:
-        expression = PersonExpression.from_dict(preset_params["person_expression"])
-        if use_first_name_only:
-            expression = expression.map_leaves(lambda name: name.split()[0])
-        # The opening names the cast; the search UI explains who must co-occur.
-        return " · ".join(expression.leaf_values)
-    # Multi-person: join names from preset params
-    preset_names = preset_params.get("person_names", [])
-    if memory_type == "multi_person" and len(preset_names) >= 2:
-        names = preset_names
-        if use_first_name_only:
-            names = [n.split()[0] for n in names]
-        if preset_params.get("person_match", "and") == "or":
-            return " or ".join(names)
-        if len(names) == 2:
-            return f"{names[0]} & {names[1]}"
-        return f"{', '.join(names[:-1])} & {names[-1]}"
-
-    # Single person from preset or state
-    if preset_names:
-        name = preset_names[0]
-    elif person_name:
-        name = person_name
-    else:
+        return " · ".join(names) or None
+    if memory_type == "multi_person" and len(names) >= 2:
+        return _multi_person_label(names, preset_params.get("person_match", "and"))
+    if names:
+        return names[0]
+    if "person_display_names" in preset_params or not person_name:
         return None
+    return person_name.split()[0] if use_first_name_only else person_name
 
-    if use_first_name_only:
-        return name.split()[0]
-    return name
+
+def _title_cast_names(preset_params: dict, use_first_name_only: bool) -> list[str]:
+    display = preset_params.get("person_display_names")
+    if display is not None:
+        names = [name for name in display.values() if name]
+    elif preset_params.get("person_expression") is not None:
+        names = list(PersonExpression.from_dict(preset_params["person_expression"]).leaf_values)
+    else:
+        names = preset_params.get("person_names", [])
+    return [name.split()[0] for name in names] if use_first_name_only else names
+
+
+def _multi_person_label(names: list[str], person_match: str) -> str:
+    if person_match == "or":
+        return " or ".join(names)
+    if len(names) == 2:
+        return f"{names[0]} & {names[1]}"
+    return f"{', '.join(names[:-1])} & {names[-1]}"
 
 
 def get_divider_mode(

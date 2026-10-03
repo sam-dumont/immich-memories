@@ -103,6 +103,9 @@ def resolve_film_title(
 
     from immich_memories.titles.llm_titles import memory_title_facts
 
+    display = (memory_preset_params or {}).get("person_display_names")
+    if display is not None:
+        person_names = [name for name in display.values() if name]
     facts = memory_title_facts(memory_preset_params)
     if facts.album_name is None and memory_type != "album":
         facts = replace(facts, album_name=_album_of_the_cut(album_lookup))
