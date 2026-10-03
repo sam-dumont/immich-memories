@@ -1,6 +1,7 @@
 """A frame's scene print is read once from its preview and banked, like its hash."""
 
 import io
+import weakref
 
 import numpy as np
 from PIL import Image
@@ -78,3 +79,27 @@ def test_an_install_without_the_encoder_reads_no_scene(tmp_path):
     )
 
     assert prints("red") is None
+
+
+def test_close_releases_the_owned_encoder_and_can_reopen(tmp_path):
+    references = []
+
+    def open_encoder():
+        encoder = _Encoder()
+        references.append(weakref.ref(encoder))
+        return encoder
+
+    prints = CachedScenePrints(
+        tmp_path / "scene-prints.sqlite", PREVIEWS.get, open_encoder=open_encoder
+    )
+    prints("red")
+    assert references[0]() is not None
+
+    prints.close()
+    assert references[0]() is None, "closing must release the encoder's native session"
+    prints.close()
+    prints("blue")
+    assert len(references) == 2
+    assert references[1]() is not None
+    prints.close()
+    assert references[1]() is None

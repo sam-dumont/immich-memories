@@ -78,6 +78,9 @@ class CachedScenePrints:
         return self._encoder
 
     def close(self) -> None:
+        """Release the native encoder as well as the reusable database connections."""
+        self._encoder = None
+        self._encoder_opened = False
         self._connections.close()
 
 
