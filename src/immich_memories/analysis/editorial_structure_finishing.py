@@ -84,6 +84,8 @@ def resolve_motion_and_timing(
     run.carriers = retained_motion(run.carriers)
     run.motion_metrics = retained_motion.metrics
     run.carriers = retire_unprojectable(run.carriers, source, run.cut_carriers)
+    if ports.resolve_windows is not None:
+        run.carriers = ports.resolve_windows(run.carriers)
     if ports.resolve_speech is not None:
         run.carriers = ports.resolve_speech(run.carriers)
     timing = source.render_timing

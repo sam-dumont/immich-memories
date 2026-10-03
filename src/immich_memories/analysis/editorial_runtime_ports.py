@@ -121,6 +121,23 @@ def production_live_clock_offsets(source, *, resources):
     return BankedClockOffsets(store=source.store, companions=source.companion_assets, fetch=fetch)
 
 
+def production_window_resolver(source, *, resources):
+    """Choose where each kept video's hold sits, from its playback index alone (#1949)."""
+    from immich_memories.analysis.editorial_video_windows import PlaybackActivity, place_windows
+
+    client = None
+
+    def read(asset_id: str, start: int, length: int) -> tuple[bytes, int]:
+        nonlocal client
+        if client is None:
+            client = _stage_reads(source)
+            resources.callback(client.close)
+        return client.get_video_playback_range(asset_id, start, length)
+
+    activity = PlaybackActivity(read)
+    return lambda carriers: place_windows(carriers, activity)
+
+
 def production_speech_resolver(source, *, resources):
     """Detect retained speech before final timing, with lazy transport and local inference."""
     import logging

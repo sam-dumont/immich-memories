@@ -21,6 +21,7 @@ import subprocess
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from pathlib import Path
+from statistics import median
 
 from immich_memories.processing.frame_sampling import even_timestamps
 
@@ -138,12 +139,19 @@ def _codec(moov: bytes, stbl: tuple[int, int]) -> str:
     return stsd[8:12].decode("latin-1")
 
 
-def keyframes_of(moov: bytes) -> KeyframeIndex:
-    """The video track's keyframes, its length in seconds and its codec, from a ``moov`` payload.
+@dataclass(frozen=True, slots=True)
+class _Track:
+    """Every video sample's time, byte offset and size, and which ones are keyframes."""
 
-    Edit lists and composition offsets are ignored: the times place a filmstrip, they do not
-    cut the film.
-    """
+    seconds: list[float]
+    offsets: list[int]
+    sizes: list[int]
+    sync: list[int]
+    duration: float
+    codec: str
+
+
+def _track(moov: bytes) -> _Track:
     mdia = _video_track(moov)
     mdhd = _child(moov, mdia, b"mdhd")
     timescale = struct.unpack(">I", moov[mdhd[0] + (20 if moov[mdhd[0]] == 1 else 12) :][:4])[0]
@@ -162,11 +170,22 @@ def keyframes_of(moov: bytes) -> KeyframeIndex:
     )
     offsets = _sample_offsets(moov, stbl, sizes)
     stss = _table(moov, stbl, b"stss")
-    sync = [row[0] for row in _counted(stss, ">I")] if stss else range(1, count + 1)
+    sync = [row[0] - 1 for row in _counted(stss, ">I")] if stss else list(range(count))
     if len(offsets) < count or len(times) < count:
         raise ValueError("MP4 sample tables disagree")
-    keys = tuple(Keyframe(times[n - 1] / timescale, offsets[n - 1], sizes[n - 1]) for n in sync)
-    return KeyframeIndex(keys, clock / timescale, _codec(moov, stbl))
+    seconds = [time / timescale for time in times[:count]]
+    return _Track(seconds, offsets[:count], sizes, sync, clock / timescale, _codec(moov, stbl))
+
+
+def keyframes_of(moov: bytes) -> KeyframeIndex:
+    """The video track's keyframes, its length in seconds and its codec, from a ``moov`` payload.
+
+    Edit lists and composition offsets are ignored: the times place a filmstrip, they do not
+    cut the film.
+    """
+    track = _track(moov)
+    keys = tuple(Keyframe(track.seconds[n], track.offsets[n], track.sizes[n]) for n in track.sync)
+    return KeyframeIndex(keys, track.duration, track.codec)
 
 
 class _Reader:
@@ -307,3 +326,40 @@ def sample_keyframes(read: ReadRange, *, count: int, width: int, workdir: Path) 
     if not frames:
         raise ValueError("playback decoded no frames")
     return SampledKeyframes(frames, seconds, duration, reader.bytes_read, reader.requests)
+
+
+# Fine enough to place a window, coarse enough that a B-frame's spread evens out.
+ACTIVITY_BIN_SECONDS = 0.5
+
+
+@dataclass(frozen=True, slots=True)
+class FrameActivity:
+    """(start second, median predicted-frame bytes) per half second, and what reading cost."""
+
+    bins: tuple[tuple[float, float], ...]
+    duration: float
+    bytes_read: int
+
+
+def frame_activity(read: ReadRange) -> FrameActivity:
+    """How much each half second of a playback changes, read off its MP4 index alone.
+
+    A predicted frame stores only what changed since the frames it refers to, so its size
+    rises when something crosses a still shot. Those sizes sit in the sample table the index
+    already holds: no frame is fetched or decoded, and the cost is the index (about a
+    kilobyte per second of video) whatever the clip shows or its resolution. Keyframes are
+    left out; they hold a whole picture and say nothing about change.
+    """
+    reader = _Reader(read)
+    _pieces, moov = _index(reader)
+    track = _track(moov)
+    keyframes = set(track.sync)
+    by_bin: dict[int, list[int]] = {}
+    for sample, (second, size) in enumerate(zip(track.seconds, track.sizes, strict=False)):
+        if sample not in keyframes:
+            by_bin.setdefault(int(second / ACTIVITY_BIN_SECONDS), []).append(size)
+    bins = tuple(
+        (index * ACTIVITY_BIN_SECONDS, float(median(sizes)))
+        for index, sizes in sorted(by_bin.items())
+    )
+    return FrameActivity(bins, track.duration, reader.bytes_read)

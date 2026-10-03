@@ -27,6 +27,7 @@ from immich_memories.analysis.editorial_runtime_ports import (
     production_live_clock_offsets,
     production_speech_resolver,
     production_story_motion,
+    production_window_resolver,
 )
 from immich_memories.analysis.editorial_scene_prints import CachedScenePrints, pinned_encoder
 from immich_memories.analysis.editorial_structure_contract import (
@@ -316,6 +317,7 @@ class ProductionPostCardBackend:
                 thumbnail_metrics=thumbnail_metrics,
                 rules=RuleStructureReader(source, printed=self._printed_near),
                 printed_near=self._printed_near,
+                resolve_windows=production_window_resolver(source, resources=resources),
                 resolve_speech=production_speech_resolver(source, resources=resources),
                 resolve_motion=production_motion_resolver(source),
                 clock_offsets=self.clock_offsets(source, resources),
@@ -330,6 +332,7 @@ class ProductionPostCardBackend:
             scene_print=scene_prints,
             thumbnail_metrics=thumbnail_metrics,
             resolve_motion=production_motion_resolver(source),
+            resolve_windows=production_window_resolver(source, resources=resources),
             resolve_speech=production_speech_resolver(source, resources=resources),
             observe_story_motion=story_motion.observe,
             story_motion_metrics=story_motion.metrics,
