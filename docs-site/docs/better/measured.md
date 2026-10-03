@@ -7,14 +7,65 @@ title: Measure your setup
 Find the slow stage before adding a service. Downloads, picture preparation, captions, selection,
 rendering and music have different costs. A faster picture model does not guarantee a faster film.
 
-## June 2023 follow-up, 3 October 2026 {#june-hardware-matrix}
+## June 2023: six cold runs, 3 October 2026 {#june-hardware-matrix}
 
-The [June acceptance report](https://github.com/sam-dumont/immich-memories/blob/main/docs/research/2026-10-03-june-hardware-smoke.md)
-repeats the six configurations on one merged application revision, with empty app and media
-caches, default balanced quality and a common 1080p60 SDR target. GPU and Full also render
-the same cut at 4K60 HDR; Basic stays at 1080p. Validation is in progress; pending rows are
-not passes. The report records phase timings, output sizes, actual music execution and setup
-corrections separately.
+All six configurations completed a fresh 1080p60 SDR film on the same merged application
+revision, `4b98c19926ec`, with no phase restart inside the accepted run. The June 2023 inventory
+contained 725 sources. The target was 60 seconds with titles, transitions and default balanced
+quality. Empty app, analysis and media/render caches were required; installed weights and
+external services stayed in place. These are existing-runtime measurements before RC1, not
+six clean installations of the eventual release artifacts.
+
+| Configuration | Cold wall time | Music |
+| --- | --- | --- |
+| NAS Basic | 16m 36s | Bundled |
+| NAS + GPU service | 18m 45s | ACE-Step service + four stems |
+| Kubernetes GPU | 9m 01s | ACE-Step service + four stems |
+| M5 Full | 3m 28s | Local ACE-Step + four stems |
+| M2 Basic | 3m 23s | Local ACE-Step + four stems |
+| M2 Full | 9m 36s | Local ACE-Step + four stems |
+
+Every film passed complete video/audio decoding. Full used the app-owned llama.cpp reader;
+M2 used the smaller llama.cpp caption service and completed generated music without lowering
+the memory guard. The two GPU configurations ran serially on one physical T1000 8 GB with
+the fixed ACE-Step image deployed. NAS GPU still runs Laya on its Celeron CPU.
+
+**Basic stayed at 1080p on both NAS and M2.** The four GPU/Full setups also completed a
+same-cut 4K60 HEVC, 10-bit PQ HDR export. Each used an empty render cache and generated music
+again. The render span isolates that stage; the maximum wall includes its separate music work.
+
+| Configuration | 4K export wall | Extra render vs 1080p | 1080p file | 4K file |
+| --- | --- | --- | --- | --- |
+| NAS + GPU service | 21m 32s | 791.2 s | 73.74 MB | 145.74 MB |
+| Kubernetes GPU | 15m 20s | 576.3 s | 73.74 MB | 145.71 MB |
+| M5 Full | 2m 16s | 57.0 s | 53.70 MB | 91.38 MB |
+| M2 Full | 4m 10s | 110.0 s | 79.01 MB | 132.12 MB |
+
+The gain is four times the output pixels and 10-bit HDR output; both variants remain 60 fps.
+SDR or lower-resolution originals do not gain native 4K HDR detail. Tier/model decisions
+can choose different cuts across machines, and music can need different numbers of candidates.
+These timings are one sample per configuration, not an isolated hardware speed ranking.
+
+The accepted runs still report optional motion-description gaps. NAS Basic falls back to static
+PIL title plates; Basic also recorded a one-frame clip underrun. Those limits remain visible.
+The [detailed June report](https://github.com/sam-dumont/immich-memories/blob/main/docs/research/2026-10-03-june-hardware-smoke.md)
+contains phase times, feature counts, failed setup attempts and installation corrections. Failed
+work is kept separately from the accepted cold totals. The library and comparison album are private.
+
+### Fresh default Docker install {#june-docker-install}
+
+A separate Basic film passed on the J4125 NAS from a new Compose volume and fresh model download,
+using the shipping Dockerfile and Compose recipe. There was no source overlay, added dependency or
+phase restart. The locally built amd64 pre-RC image is `f62dbfa8d8c8`, from the same application
+revision. The 4 GiB container used software encoding and bundled music. Model fetch took
+6.8 s, preflight 19.2 s,
+and the first film 28m 56s. Full-file decoding and the copied
+file's checksum passed. This eleventh film is separate from the six-machine comparison.
+
+The test used the CLI and checked the web app returned HTTP 200. It did not exercise the DSM
+Project wizard, remote UI authentication or a public RC image pull. RC1 follows this validation.
+The [detailed report](https://github.com/sam-dumont/immich-memories/blob/main/docs/research/2026-10-03-june-hardware-smoke.md#separate-fresh-docker-first-film-gate)
+records image identity, install phases and expected preflight warnings.
 
 ## One month across six configurations, 3 October 2026 {#february-hardware-matrix}
 

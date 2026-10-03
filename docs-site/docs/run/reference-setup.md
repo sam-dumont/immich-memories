@@ -72,6 +72,8 @@ The CUDA worker separates Demucs stems but does not generate ACE-Step music. Con
 or Mac checkout. The external music server owns its model lifetime. Configure its model and
 planner on that server; the app's local `model_variant`, `use_lm` and `cpu_offload` settings do not
 change the remote service. Sharing one card still requires room for every resident service.
+The [tested ACE-Step build and single-GPU limits](../better/music.md#sharing-one-gpu-with-the-worker)
+record the service used for the June cold runs. Kubernetes time-slicing does not unload models.
 
 ## Memory and scheduling
 

@@ -51,10 +51,10 @@ keeping Basic selection and the 1080p cap. A small CPU-only NAS uses static titl
 fades instead of moving kernel effects. Generated music is not a Full-only feature: the
 measured M2 Basic export completed local ACE-Step and four-stem mixing.
 
-The [six-configuration February example](../better/measured.md#february-hardware-matrix)
-records what completed on a NAS, one shared Kubernetes GPU and two Macs, including the extra
-time and file size for 4K HDR. It also names fallbacks and repaired phases; do not compare a
-short render retry with a complete cold run.
+The [six-configuration June example](../better/measured.md#june-hardware-matrix)
+records uninterrupted cold runs on a NAS, one shared Kubernetes GPU and two Macs, including
+the extra render time and file size for 4K HDR. It names the features exercised, remaining
+warnings and setup corrections. Basic remains 1080p on both NAS and Mac.
 
 ## Basic: start with the film
 

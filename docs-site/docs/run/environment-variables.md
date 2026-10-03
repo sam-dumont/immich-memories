@@ -17,8 +17,14 @@ All variables in the shipped `example.env` are already wired up.
 IMMICH_URL=http://192.168.1.10:2283
 IMMICH_API_KEY=your-api-key
 TZ=Europe/Brussels
-IMMICH_MEMORIES_TRIPS__HOMEBASE_LATITUDE=50.8503
-IMMICH_MEMORIES_TRIPS__HOMEBASE_LONGITUDE=4.3517
+```
+
+Home coordinates are not in the shipped `.env` contract. Set them in Settings, or add them
+to the app's `environment:` block in `docker-compose.yml`:
+
+```yaml
+      IMMICH_MEMORIES_TRIPS__HOMEBASE_LATITUDE: "50.8503"
+      IMMICH_MEMORIES_TRIPS__HOMEBASE_LONGITUDE: "4.3517"
 ```
 
 After an edit:
@@ -96,8 +102,11 @@ The generic LLM key shorthands above are the exception to environment-first prec
 
 ## Compute tier
 
-`IMMICH_MEMORIES_TIER` overrides `tier:` in YAML. Compose and Kubernetes set it to `auto`.
-[The tier guide](./requirements.md#which-tier-you-get) explains what is detected.
+`IMMICH_MEMORIES_TIER` overrides `tier:` in YAML. The shipped Compose file maps `.env`'s
+`TIER=basic` to `IMMICH_MEMORIES_DEPLOYMENT_TIER`; GPU/Full tier files request their own tier.
+Deployment defaults remain editable through Settings. Use `IMMICH_MEMORIES_TIER` in the
+container environment when you need a fixed override. [The tier guide](./requirements.md#which-tier-you-get)
+explains what is detected.
 
 ### Immich connection
 

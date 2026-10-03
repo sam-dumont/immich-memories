@@ -14,8 +14,9 @@ Create an Immich key with the [ten read permissions](./docker.md#the-api-key), a
 upload set only if you want films sent back to Immich. Leave **All** unchecked.
 
 Import `docker-compose.yml` as a project in your NAS's container manager. For a file-based
-project, put `.env` and an `output` folder beside it. Fill in the Immich URL/key, home coordinates
-and timezone as in [Docker step 2](./docker.md#2-connect-immich).
+project, put `.env` and an `output` folder beside it. Fill in the Immich URL/key and timezone.
+Set home coordinates in Settings or the app's `environment:` block as in
+[Docker step 2](./docker.md#2-connect-immich).
 
 For the interface-specific steps, use [Synology DSM](./platforms/synology.md),
 [Unraid](./platforms/unraid.md), [Portainer](./platforms/portainer.md), or
@@ -88,10 +89,12 @@ pin this app to three cores on a four-core NAS:
 ## What to expect
 
 Basic films are capped at 1080p. The default 4 GiB memory limit suits that output.
-Budget several hours for the first preparation of a real month on a NAS. A Mac or GPU cluster
-can take about an hour for the same kind of first run; these are planning estimates from
-[the first-run measurements](https://github.com/sam-dumont/immich-memories/issues/956),
-not a deadline for every library. This is preparation time, before rendering.
+In the [June cold matrix](../better/measured.md#june-hardware-matrix), a 60-second film from a
+725-source month took 16m 36s on a J4125 NAS with hardware encoding, including preparation,
+bundled music and rendering. A separate [fresh default Docker install](../better/measured.md#june-docker-install)
+completed its first film in **28m 56s** with software encoding and bundled music. It used default
+settings; these separately selected films are not an isolated encoder comparison. Larger periods, slower storage and different media can still take hours; these
+single-run results are not deadlines for every library.
 The first film reads the pictures in its period and saves the results; later films reuse matching
 results. Rendering still happens every time.
 

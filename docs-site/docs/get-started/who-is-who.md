@@ -9,14 +9,16 @@ Two pieces of context make the cut much better: where home is, and who is close 
 
 ## Where home is
 
-A home base helps the app keep a holiday together as a trip, instead of treating it as ordinary weeks at home. Set its coordinates in decimal degrees in Docker's `.env`:
+A home base helps the app keep a holiday together as a trip, instead of treating it as ordinary weeks at home.
+Set its coordinates in decimal degrees in **Settings**. To fix them through Docker instead,
+add these entries to the app's `environment:` block in `docker-compose.yml`:
 
-```bash
-IMMICH_MEMORIES_TRIPS__HOMEBASE_LATITUDE=50.8503
-IMMICH_MEMORIES_TRIPS__HOMEBASE_LONGITUDE=4.3517
+```yaml
+      IMMICH_MEMORIES_TRIPS__HOMEBASE_LATITUDE: "50.8503"
+      IMMICH_MEMORIES_TRIPS__HOMEBASE_LONGITUDE: "4.3517"
 ```
 
-Then apply them:
+The shipped Compose file does not forward these coordinates from `.env` alone. Apply the change:
 
 ```bash
 docker compose up -d

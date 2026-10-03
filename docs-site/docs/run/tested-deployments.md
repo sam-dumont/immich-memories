@@ -11,14 +11,18 @@ alone does not enable GPU selection; a text reader alone does not provide Full.
 
 ## Candidate status
 
-**No row below is a verified first run of the forthcoming RC.** The available evidence uses
-older candidate source trees, locally built artifacts or already prepared services. Matching public
-candidate downloads and the source-naive runs remain required by
-[#1922](https://github.com/sam-dumont/immich-memories/issues/1922) and
-[#956](https://github.com/sam-dumont/immich-memories/issues/956).
-This table describes the documentation baseline at `8764721b37ac090ae0ca58be434b3692de4596d0`;
-it does not give that commit an installation pass. The dated [measurement record](../better/measured.md)
-retains original revisions, dates, timings and qualifications.
+The default **Basic Docker path passed a fresh installation and first CLI film on Synology**
+on 3 October 2026: new persistent volume, fresh models, shipping Dockerfile/Compose, no source
+overlay or runtime dependency repair. The locally built amd64 image is `f62dbfa8d8c8`, from
+merged source `4b98c19926ec`. See [the clean Docker result](../better/measured.md#june-docker-install).
+
+RC1 follows this pre-RC validation. The six-configuration June matrix separately passed cold
+films on existing runtimes; it does not establish six fresh installations. The table keeps the
+stricter **Verified first run** label for a source-naive test of matching public release artifacts,
+as tracked in [#1922](https://github.com/sam-dumont/immich-memories/issues/1922) and
+[#956](https://github.com/sam-dumont/immich-memories/issues/956). That release-artifact follow-up
+does not invalidate the completed pre-RC Docker test. Older evidence retains its original revisions
+and limits in the [measurement record](../better/measured.md).
 
 | Status | Meaning |
 |---|---|
@@ -37,17 +41,17 @@ A dash is deliberately not used as a substitute for evidence.
 | Platform and method | App / docs identity in existing evidence | Capability and encoding | Status, evidence and untested steps | Cold setup / first playable film |
 |---|---|---|---|---|
 | Linux x86-64, [Basic Compose](./docker.md) | Current candidate: not published; matching run: not tested | Basic; CPU encoding unless configured otherwise | **Documented, untested**: fresh anonymous pull through film pending | Not measured / not measured |
-| Synology x86-64, [SSH/Compose](./platforms/synology.md#sshcompose-installation-from-published-files) | App `75077f27`, image `49cc60a978ce`; builder `61fa1154` | Basic; software H.264 | **Partial**: [DSM 7.3 film](../better/measured.md#generated-cold-installs); local candidate, custom UI transport; public assets and authenticated proxy untested; Container Manager version not recorded | Total not measured / generation 16m 38.8s, excludes acquisition |
+| Synology x86-64, [SSH/Compose](./platforms/synology.md#sshcompose-installation-from-published-files) | Source `4b98c19926ec`; local amd64 image `f62dbfa8d8c8` | Basic; software H.264, 4 GiB app limit | **Partial** under the public-artifact definition: [fresh Docker install and first film passed](../better/measured.md#june-docker-install), no source overlay or added dependency; public image pull, DSM wizard and authenticated remote UI untested | Model fetch 6.8s, preflight 19.2s / generation 28m 56s; acquisition separate |
 | Synology, [Container Manager GUI](./platforms/synology.md) | Candidate/version: not tested | Basic; encoding not tested | **Documented, untested**: Project wizard, public artifacts and LAN login pending; SSH evidence does not cover GUI | Not measured / not measured |
 | Unraid x86-64, [GUI/template](./platforms/unraid.md) | Candidate/version: not tested | Basic; encoding not tested | **Documented, untested**: vendor route and film pending | Not measured / not measured |
 | TrueNAS, [custom app](./platforms/truenas.md) | Candidate/version: not tested | Basic; encoding not tested | **Documented, untested**: vendor route and film pending | Not measured / not measured |
 | Linux ARM64, [Compose](./docker.md) | Candidate/version: not tested | Basic; software encoding | **Documented, untested**: Linux ARM64 first run pending; app architecture support does not cover CUDA services | Not measured / not measured |
 | Apple Silicon, [Docker Desktop Basic](./offline.md) | App `5466706b`; Compose `00cd41df` | Basic; software H.264 | **Partial**: [isolated runtime](./offline.md); local candidate, not a public-download first run | Total not measured / 19-second film, elapsed not recorded |
 | RKE2 x86-64 GPU, [generated Kubernetes](./kubernetes.md#generated-tier-setup) | App `75077f27`, inference `d079a0da1633`; generated `5f3de520` | GPU; software H.264 | **Partial**: [RKE2 1.33.4 film](../better/measured.md#generated-gpu-first-film); local images, operator-managed GPU sharing and corrected SQLite placement; public two-allocation route untested | Total not measured / generation 11m 22.8s, excludes init and transfers |
-| Kubernetes, [independently managed services](./kubernetes.md#set-the-preparation-tier) | Current candidate: not tested; historical preflight revisions not recorded | Depends on inference/captions/reader; encoding separate | **Partial**: [older checks](../better/measured.md#tested-setups); current service set, first film and complete setup pending | Not measured / not measured |
+| Kubernetes, [independently managed services](./kubernetes.md#set-the-preparation-tier) | Source `4b98c19926ec`; existing runtime with source overlay | GPU; one T1000 8 GB, NVENC; generated music | **Partial** installation evidence: [June cold film and 4K60 HDR export passed](../better/measured.md#june-hardware-matrix); services retained, setup corrections disclosed | Setup not timed / cold common film 9m 01s |
 | Apple Silicon, [native prebuilt package](./uv-pip.md) | Local wheel `0.0.0rc180503`, source `d5b4472b`; matching published package absent | GPU, MLX/Metal; VideoToolbox H.264 | **Partial**: [M5 Max run](../better/measured.md#generated-native-mac); reused weights/caption server; public-package install and cold service startup pending | Not measured / generation 35.38s, warm models |
 | NAS app + [standalone Docker GPU worker](../better/gpu-render.md) | Candidate/version: not tested | Selection depends on inference; worker encoding separate | **Documented, untested**: the published Kubernetes worker result does not prove Docker-worker installation | Not measured / not measured |
-| NAS app + [Kubernetes GPU worker](../better/measured.md#generated-nas-remote-gpu) | App `75077f27`, image `49cc60a978ce`, worker `d079a0da1633` | GPU facts/captions; NAS software encoding | **Partial**: film passed; cold preflight initially failed, retry used a test overlay; public unmodified candidate pending | Total not measured / generation 6m 53.09s |
+| NAS app + [Kubernetes GPU worker](../better/measured.md#june-hardware-matrix) | Source `4b98c19926ec`; existing NAS/worker runtimes with source overlay | GPU facts/captions and remote NVENC; one T1000 8 GB; generated music | **Partial** installation evidence: cold common film and 4K60 HDR export passed after worker dependency/routing corrections; not a clean service install | Setup not timed / cold common film 18m 45s |
 | Basic, [prepared models and blocked internet](./offline.md) | Docker `5466706b` / recipe `00cd41df`; Kubernetes `75077f27` | Basic; software H.264 | **Partial**: isolated runtime and complete decode passed on the named topologies; release-download path and DNS-Service policy variant unverified | Not measured / 19-second outputs, elapsed not recorded |
 | Basic plus [local text model](./local-models.md) | App candidate: not tested; model conformance evidence linked in recipe | Basic selection, text titles/mood; not Full or vision captions | **Documented, untested**: complete recipe's offline film and provider-stop test pending; conformance is a narrower result | Not measured / not measured |
 

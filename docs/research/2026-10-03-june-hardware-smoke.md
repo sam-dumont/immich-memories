@@ -1,6 +1,6 @@
 # June 2023 hardware smoke test, 3 October 2026
 
-Validation is in progress. The tables distinguish accepted results from pending runs; this draft is not a completed matrix.
+All six configurations completed their cold 1080p60 SDR run without a phase restart. All four eligible configurations also completed a same-cut 4K60 HDR export. Every film passed complete video/audio decoding.
 **Basic remains 1080p only, on NAS and M2.** All exports use default `balanced` quality.
 This repeats the February workload shape on a different month, on one merged application revision:
 `4b98c19926eced1b90bf825f882eae61c723de02`. No application source patches were applied during June.
@@ -14,7 +14,8 @@ same private inventory fingerprint before starting. The workload requested a 60-
 landscape monthly highlights film with titles, transitions, date/place captions and music.
 The application chose its photos, videos and Live Photo material from that inventory.
 Tier and model decisions can select different shots; this is the same workload, not an identical
-edit across six machines. The maximum export uses that machine's exact saved cut.
+edit across six machines. Accepted films run 55.37–59.53 seconds; the 60-second value
+is a target. The maximum export uses that machine's exact saved cut and preserves its duration.
 
 Each common run began without an app database, analysis bank or media/render cache. Installed
 model files stayed in place. OS page caches and existing external services were not flushed.
@@ -71,7 +72,7 @@ It is not total host RAM, a GPU VRAM measurement or a cross-platform memory budg
 | Configuration | Status | Wall s | Pipeline s | File MB | Peak tree RSS GiB |
 | --- | --- | --- | --- | --- | --- |
 | NAS Basic | passed | 995.629 | 993.219 | 104.555 | 0.702 |
-| NAS + GPU service | pending | pending | pending | pending | pending |
+| NAS + GPU service | passed | 1,124.725 | 1,122.426 | 73.745 | 1.944 |
 | Kubernetes GPU | passed | 540.546 | 539.017 | 73.743 | 1.575 |
 | M5 Full | passed | 208.461 | 207.164 | 53.697 | 8.376 |
 | M2 Basic | passed | 202.626 | 202.027 | 80.021 | 10.358 |
@@ -96,10 +97,22 @@ were flagged by the music scorer, which selected the best available candidate af
 the configured attempts. Generation and stem mixing succeeded; a decode pass is not a subjective
 soundtrack-quality assessment.
 
+NAS GPU generated three common candidates and one maximum candidate. Its common music took
+435.226 s, against 36.178 s for NAS Basic's bundled track. Remote rendering fell from 492.778 s
+to 200.024 s, but the extra music work made the complete GPU film slower in this sample.
+The upgrade adds captions, detector checks, Laya answers and generated four-stem music;
+it does not guarantee a shorter end-to-end time.
+
+On the same M2 Pro, Full took 373.010 s longer than Basic. Selection grew by 275.350 s and
+music by 95.798 s, while rendering was 3.757 s shorter. Full adds captions, detector checks,
+Laya audience answers and the reader edit pass; generated music is available to both tiers.
+The different candidate count above means the entire wall-time difference cannot be charged
+to Full's additional selection features. These are different selected films from the same month.
+
 | Configuration | Startup | Discovery | Selection | Render | Assembly | Music |
 | --- | --- | --- | --- | --- | --- | --- |
 | NAS Basic | 12.279 | 0.096 | 430.794 | 492.778 | 256.789 | 36.178 |
-| NAS + GPU service | pending | pending | pending | pending | pending | pending |
+| NAS + GPU service | 13.206 | 0.092 | 451.624 | 200.024 | 200.004 | 435.226 |
 | Kubernetes GPU | 7.859 | 0.058 | 151.398 | 152.713 | 152.707 | 219.926 |
 | M5 Full | 3.791 | 0.073 | 141.231 | 37.991 | 26.004 | 19.733 |
 | M2 Basic | 4.801 | 0.076 | 68.831 | 64.891 | 45.963 | 60.188 |
@@ -114,10 +127,16 @@ native 4K HDR detail. Music is regenerated, so its timing difference is not a re
 
 | Configuration | Export wall | 1080p render | 4K render | Extra render | 4K music | 1080p MB | 4K MB | File growth |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| NAS + GPU service | pending | pending | pending | pending | pending | pending | pending | pending |
+| NAS + GPU service | 1,292.173 | 200.024 | 991.250 | 791.226 | 161.128 | 73.745 | 145.739 | 97.6% |
 | Kubernetes GPU | 920.430 | 152.713 | 728.983 | 576.270 | 142.690 | 73.743 | 145.709 | 97.6% |
 | M5 Full | 136.071 | 37.991 | 94.962 | 56.971 | 29.581 | 53.697 | 91.379 | 70.2% |
 | M2 Full | 250.127 | 61.134 | 171.135 | 110.001 | 57.538 | 79.008 | 132.121 | 67.2% |
+
+The NAS-controlled maximum also spent about 125 s on the application's final full-file playback
+check, included in export wall time; its common check took about 22 s. The Kubernetes maximum's
+check took about 38 s. The extra independent decode after each run is excluded from these timers.
+Both remote variants used the same GPU worker and balanced NVENC policy, but their render times
+still differed. This single shared-service sample does not isolate the cause of that difference.
 
 ## Feature evidence and remaining warnings
 
@@ -129,7 +148,7 @@ film and its maximum export where applicable; maximum reuses selection.
 | Configuration | Caption descriptions | Laya audience answers | Motion descriptions |
 | --- | --- | --- | --- |
 | NAS Basic | 0 | 0 | 0 |
-| NAS + GPU service | pending | pending | pending |
+| NAS + GPU service | 20 | 16 | 0 |
 | Kubernetes GPU | 20 | 16 | 0 |
 | M5 Full | 70 | 21 | 0 |
 | M2 Basic | 0 | 0 | 0 |
@@ -200,3 +219,57 @@ The private evidence retains inventories, exact commands/configs, failed attempt
 phase spans, process-tree samples, full-file decode logs and output checksums. The comparison album
 uses hardware, tier, common/maximum output, source revision and music tags. Household media, raw
 logs, asset IDs, private hostnames, album links and credentials are excluded from this report.
+
+
+## Separate fresh Docker first-film gate
+
+The default Basic Docker path also completed on the Synology NAS with a **new persistent volume,
+fresh model fetch and no source overlay or runtime dependency installation**. This is an eleventh
+film, separately tagged in the private album; it is outside the controlled six-configuration matrix.
+
+The unchanged shipping `docker/Dockerfile` built Linux amd64 with its default `all` extras from
+the same application source. Local candidate package version: `1.0.0.dev20261003+g4b98c1992`.
+Image identity: `sha256:f62dbfa8d8c86c1564f7d504ee5c1d3677fc448a321b731cbb8c76e32e1a43b6`. This locally built pre-RC candidate is not a published RC1 artifact.
+The image contained the installed application, `pi-heif`, ONNX Runtime, Demucs, bundled music and
+the web client. The NAS loaded the exact verified image. No package was added after image creation.
+
+The shipped Compose recipe ran as UID 1000 with its default 4 GiB memory limit. Changes were only
+the local candidate tag, an isolated project/container name and host port 18081 because the NAS
+already uses 8080. The documented output-folder ownership step was applied. No hardware render
+device was passed through; this tests the default software-rendering path. The UI health check
+passed and `/app` returned HTTP 200. Generation below used the CLI; the DSM Project wizard was
+not part of this check.
+
+After `immich-memories models fetch` and `immich-memories preflight`, one command completed:
+
+```bash
+immich-memories generate --year 2023 --month 6 --duration 60 \
+  --output /app/output/june-docker.mp4
+```
+
+The output is 1920×1080, 60/1 fps,
+h264, 59.633 seconds,
+40,975,087 bytes, with audio and bundled music. Complete video/audio decoding
+passed, and the copied file's SHA-256 matched the container's original.
+
+Preflight exited successfully with five OK checks, four warnings and nine skipped optional checks.
+The warnings covered the existing broad Immich key, unset home coordinates, simpler title rendering
+on this CPU and unavailable hardware encoding. Home coordinates are optional for this monthly film;
+new installs should use the documented minimum API-key permissions. Basic used bundled music.
+No missing dependency or runtime repair was needed between startup and the completed film.
+
+| Documented install / validation phase | Wall seconds |
+| --- | --- |
+| load image | 86.444 |
+| output permissions | 3.610 |
+| compose up | 2.300 |
+| models fetch | 6.804 |
+| preflight | 19.197 |
+| generate | 1,735.796 |
+| full decode | 21.339 |
+
+Image build/export and transfer are installation work, not film generation. The local build first
+hit a full Docker Desktop disk; clearing builder space preceded the successful unchanged build.
+This does not require a NAS user to build from source: the intended RC route supplies the image.
+This gate establishes a clean default Docker install and uninterrupted first CLI film for this
+candidate. The matrix above separately exercises the GPU services and native Mac features.
