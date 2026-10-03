@@ -11,6 +11,8 @@ You need Docker with Compose v2, Immich v2 or v3, and two CPU cores, 4 GiB of RA
 
 import InstallationFiles from '@site/src/components/InstallationFiles';
 
+See [Can I run this?](../run/tested-deployments.md) for exact platform evidence, candidate versions and untested routes.
+
 ## 1. Download the files
 
 <InstallationFiles />

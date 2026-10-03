@@ -7,6 +7,8 @@ title: Requirements and tiers
 A plain NAS can make the whole film. No GPU or hosted AI subscription required.
 Start with the machine that already runs Immich.
 
+See [Can I run this?](./tested-deployments.md) for exact platform evidence, candidate versions and untested routes.
+
 ## Hardware
 
 Allow this **in addition to what Immich uses**:

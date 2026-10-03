@@ -105,6 +105,7 @@ export default function SetupBuilder({initialPlatform = 'linux', initialInline =
       Single file for a stack editor
       <small>Includes your credentials and a browser-generated settings key. Store the downloaded file privately.</small>
     </label>}
+    <p className={styles.note}><Link to="/docs/run/tested-deployments">Can I run this? Check the version and topology matrix.</Link></p>
     <p className={styles.note}><strong>Not yet tested as an end-to-end generated installation</strong> on
       {' '}{({linux: 'Linux Docker Compose', synology: 'Synology Container Manager', mac: 'native Mac', kubernetes: 'Kubernetes'})[setup.platform]}.
       {' '}Files are checked with Compose/Kustomize and the form is checked in a browser. Those checks do not run this installation.
