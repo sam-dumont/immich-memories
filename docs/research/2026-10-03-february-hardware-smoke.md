@@ -3,13 +3,14 @@
 All six configurations delivered a 1080p60 SDR film. The four eligible GPU/Full configurations
 also delivered 4K60 HDR films. Every delivered file passed complete video/audio decoding.
 **NAS Basic and M2 Basic remain 1080p only.** Default `balanced` quality was used throughout.
-The private album contains 21 tagged outputs, including earlier fallbacks and repaired versions.
+The private album contains 23 tagged outputs, including earlier fallbacks and repaired versions.
 
 Fresh confirmations completed on M5 Full (253.593 s), M2 Full (583.562 s) and Kubernetes GPU
 (751.999 s on one physical T1000). NAS Basic and NAS GPU retain their original successful runs.
 M2 Basic retains its original preparation and a successful render/music retry. This is a measured
 smoke checkpoint, not six uninterrupted runs on one current-main revision or a clean-install
-qualification. Motion-description gaps remain, and M5 Full used factual fallback for one episode.
+qualification. Motion-description gaps remain. M5 Full initially used factual fallback for one
+episode; the reader-schema repair below completed without that fallback.
 Both PRs remain draft pending the remaining feature and installation qualification.
 
 The workload targets 60 seconds, with titles, transitions, date/place captions, photos, videos,
@@ -241,6 +242,38 @@ bulk-tag endpoint, waits for metadata/sidecar jobs, and verifies album membershi
 hardware/tier/output tags and the generated-film provenance tag again. No film was re-rendered
 or uploaded twice to repair metadata. This fixes the benchmark publication path, not Immich's
 underlying concurrent sidecar-write behavior.
+
+### Owned-reader schema recovery
+
+The M5 episode fallback came from an oMLX workaround that also disabled episode JSON schemas
+for the app-owned llama.cpp reader. The same episode returned an empty list on three attempts.
+With its required schema enabled, that exact request returned a valid reading in 5.163 s.
+The fix scopes the workaround to external servers, retains explicit overrides, and changes the
+semantic cache identity so an earlier unconstrained refusal cannot satisfy the corrected reader.
+The full unit suite passed 11,290 tests; changed executable lines had 100% coverage.
+
+Only selection onward was repeated, against an independent copy of the completed preparation
+store. The corrected 1080p film took **104.739 s** of resumed work: selection 36.144 s,
+render 36.696 s and music 22.566 s. No demanded episode stayed unread. Optional motion lines
+remained unavailable. Local generated music, four stems and full-file decoding passed.
+The original 253.593-second cold run and its preparation timings remain unchanged above;
+104.739 s is not a replacement cold-run total.
+
+Its paired maximum export took **120.863 s**, including render 90.459 s and music 18.916 s.
+It is 4K60 10-bit PQ HDR and passed full decoding. Compared with its corrected 1080p pair,
+rendering cost **53.763 s more** and output grew from **22,307,070 to 40,623,906 bytes (82%)**.
+Both repaired outputs were uploaded separately, with hardware, tier and repair tags.
+
+This pair ran `5970d39ea7446274f9e327c8bd8aa80483e6fc1a` plus production patch SHA-256
+`8b15950a367eaa16a3ca159777d51e50f72204127101fafbcdc3e0f53fb72b73`, matching the production
+changes committed in `80f5fd60a`. It reused preparation rather than claiming another cold run.
+
+The separate [ACE-Step image fix](https://github.com/sam-dumont/ace-step-1.5/pull/4) moves model
+loading inside its existing CPU-offload cleanup boundary. The preserved OOM trace failed in
+that loading step. All 12 pinned-source patch tests passed. In an isolated T1000 process, an
+injected error after a real 64-MiB CUDA transfer retained 64 MiB before the fix and zero after;
+the patched context then completed another request. This bounded control did not exhaust the
+shared card or modify the running API. Full API recovery on the patched image remains unverified.
 
 ### Memory handoffs: fixes and remaining limits
 

@@ -47,7 +47,7 @@ and external services were retained. Upload and full-file verification are outsi
 | Synology DS423+, J4125, Basic | 25m 04s | Original uninterrupted cold run | Bundled |
 | Same NAS, GPU tier with Kubernetes services | 16m 42s | Original uninterrupted cold run | ACE-Step service + four stems |
 | Kubernetes GPU, one T1000 8 GB | 12m 32s | Final uninterrupted cold confirmation | ACE-Step service + four stems |
-| M5 Max, 128 GiB, Full | 4m 14s | Final uninterrupted cold confirmation | Local ACE-Step + four stems |
+| M5 Max, 128 GiB, Full | 4m 14s | Cold confirmation with one reader fallback; repaired below | Local ACE-Step + four stems |
 | M2 Pro, 16 GiB, Basic | 4m 59s | Composite: original preparation plus successful render/music phases | Local ACE-Step + four stems |
 | M2 Pro, 16 GiB, Full | 9m 44s | Final uninterrupted cold confirmation | Local ACE-Step + four stems |
 
@@ -63,16 +63,16 @@ not six identical cuts on one release or a clean-install speed ranking.
 also delivered 3840×2160, 60 fps, HEVC, 10-bit PQ HDR with BT.2020 primaries. All four passed
 full decoding. The GPU maximums retained their rendered video and needed music-only repairs.
 
-The final Mac pairs reused each machine's selected cut:
+The latest Mac pairs reused each machine's selected cut. M5 includes the reader repair below:
 
 | Same-cut comparison | M5 Full | M2 Full |
 |---|---:|---:|
-| 1080p render | 42.5 s | 69.9 s |
-| 4K HDR render | 86.4 s | 180.4 s |
-| Extra render time | **43.9 s** | **110.5 s** |
-| 1080p file | 21.92 MB | 39.18 MB |
-| 4K HDR file | 40.10 MB | 73.37 MB |
-| File growth | **83%** | **87%** |
+| 1080p render | 36.7 s | 69.9 s |
+| 4K HDR render | 90.5 s | 180.4 s |
+| Extra render time | **53.8 s** | **110.5 s** |
+| 1080p file | 22.31 MB | 39.18 MB |
+| 4K HDR file | 40.62 MB | 73.37 MB |
+| File growth | **82%** | **87%** |
 
 You gain four times the output pixels and a 10-bit HDR output. Frame rate stays at 60 fps;
 lower-resolution or SDR sources do not acquire native 4K HDR detail. Music was generated
@@ -83,8 +83,11 @@ isolated resolution costs.
 ### What still limits the claim
 
 - Optional motion descriptions were missing; selection used plain clip facts for those clips.
-  M5 Full also used factual fallback for one demanded episode. Those features are not counted
-  as fully exercised just because a film finished.
+  Those descriptions are not counted as exercised just because a film finished. M5 Full also
+  initially left one demanded episode unread: an oMLX workaround had disabled its owned
+  llama.cpp schema. The fix and a selection-onward retry took **1m 45s**, reused preparation,
+  and completed with no unread episodes. Its paired 4K export took **2m 01s**. Both passed
+  generated music, four stems and decoding; the original cold timing remains above.
 - M2's successful Full run used the bundled llama.cpp reader and a separate llama.cpp caption
   service. Replacing the earlier caption service reduced its measured footprint from about
   2.3 GiB to 507 MiB. The [smaller-Mac caption recipe](../reference/caption-service.md) records
@@ -92,7 +95,8 @@ isolated resolution costs.
 - One physical T1000 served the Kubernetes path. GPU Operator time slicing did not evict
   models or prevent other workloads from using VRAM. Upload-triggered Immich ML work caused
   interference, and ACE-Step retained VRAM after an OOM. A service restart preceded the
-  successful cold confirmation. Automatic recovery after OOM remains unproven.
+  successful cold confirmation. A separate ACE-Step loading-cleanup fix passed an isolated
+  CUDA failure/recovery control; full API recovery on the patched image remains unverified.
 
 The [full timing and recovery report](https://github.com/sam-dumont/immich-memories/blob/main/docs/research/2026-10-03-february-hardware-smoke.md)
 contains phase timings, failed attempts, exact source revisions and installation findings.
