@@ -13,6 +13,11 @@ from immich_memories.speech.facts import SpeechMeasurementUnavailable
 
 logger = logging.getLogger(__name__)
 
+# The detector splits speech at a 200 ms silence, which is a breath, not a pause: two
+# people trading lines leave gaps of that size, and a cut there keeps the question and
+# drops the answer (#1950). Only a silence this long ends an exchange.
+CONVERSATION_PAUSE_SECONDS = 1.0
+
 
 def _merged_ranges(ranges, duration, buffer):
     merged: list[list[float]] = []
@@ -20,7 +25,7 @@ def _merged_ranges(ranges, duration, buffer):
         left, right = max(0.0, start - buffer), min(duration, end + buffer)
         if right <= left:
             continue
-        if merged and left <= merged[-1][1]:
+        if merged and left - merged[-1][1] < CONVERSATION_PAUSE_SECONDS - 2 * buffer:
             merged[-1][1] = max(merged[-1][1], right)
         else:
             merged.append([left, right])

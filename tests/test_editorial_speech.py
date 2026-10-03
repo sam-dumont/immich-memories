@@ -346,3 +346,17 @@ def test_speech_expanding_to_the_end_of_a_measured_live_burst_stays_inside_it():
     ) == (0.0, material.duration_seconds), (
         "the renderer must accept the interval the speech pass kept"
     )
+
+
+def test_a_breath_between_two_speakers_is_not_a_cut_point():
+    """A conversation runs to its end: the 0.2 s turn between lines is not a pause (#1950)."""
+    from immich_memories.analysis.editorial_speech import resolve_speech_cuts
+
+    exchange = [(0.83, 2.07), (2.28, 3.7), (3.92, 6.76)]
+    talk = {"kind": "video", "asset_id": "talk", "seconds": 6.0, "raw_seconds": 6.76}
+    still = {"kind": "image", "asset_id": "view", "seconds": 6.0}
+
+    [talk] = resolve_speech_cuts([talk], lambda _asset: exchange, buffer=0.08)
+    shave_content_duration([talk, still], 9.0)
+
+    assert talk["seconds"] == pytest.approx(6.76), "the answer stays with the question"
