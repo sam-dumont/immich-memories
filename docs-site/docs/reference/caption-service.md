@@ -341,8 +341,10 @@ The bank keys on the picture, its complete source metadata and
 `motion-line-v1@smolvlm2-500m-base-public/3-keyframes-320px`, so a changed source is asked again
 and nothing else is. Two invalid answers, a playback Immich answers 404 for, or an index the app
 cannot read are banked as settled. Timeouts and transport failures stay missing, so a later
-`prepare` retries them. They produce a visible "motion unavailable" warning; cuts continue
-with plain clip facts. `caption_concurrency` bounds the requests in flight; keyframe reads run
+`prepare` retries them and reports a visible "motion unavailable" warning. Normal film refinement
+reuses its rules draft and does not consume these sentences, so it does not request them or
+report their absence as a preparation failure. A model-planning route can use banked lines or
+plain clip facts. `caption_concurrency` bounds the requests in flight; keyframe reads run
 four at a time.
 
 Each row also records what produced it: a digest of the question asked, the keyframe times it

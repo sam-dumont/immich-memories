@@ -331,7 +331,8 @@ def test_fresh_video_frame_facts_are_applied_before_the_nas_cut_ships(tmp_path):
     assert not rejected
 
 
-def test_full_cut_uses_banked_motion_or_plain_facts_without_calling_the_server(tmp_path, caplog):
+@pytest.mark.parametrize("tier", ["nas", "gpu", "full"])
+def test_film_does_not_request_or_report_unused_motion(tmp_path, caplog, tier):
     from tests.conftest import make_clip
 
     first = datetime(2024, 2, 1, 12, tzinfo=UTC)
@@ -348,12 +349,13 @@ def test_full_cut_uses_banked_motion_or_plain_facts_without_calling_the_server(t
         calls.append("motion")
         raise ConnectionError("motion server is down")
 
-    selected, _ = _film(tmp_path, sources, tier="full", motion_reader=unavailable)
+    selected, _ = _film(tmp_path, sources, tier=tier, motion_reader=unavailable)
     assert selected
     assert calls == []
-    assert "motion unavailable" in caplog.text.lower()
+    assert "motion unavailable" not in caplog.text.lower()
     reports = [
         json.loads(p.read_text())
         for p in (tmp_path / "artifacts").rglob("preparation.private.json")
     ]
-    assert any(any(k.startswith("motion:") for k in r["missing_by_producer"]) for r in reports)
+    assert reports
+    assert not any(any(k.startswith("motion:") for k in r["missing_by_producer"]) for r in reports)

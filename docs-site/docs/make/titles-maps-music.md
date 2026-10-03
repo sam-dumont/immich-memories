@@ -57,7 +57,9 @@ The host file is `./output/title-test.mp4`.
 
 The [style and font reference](../reference/output-rendering.md#styles) lists the palettes and supported alphabets. Docker includes the fonts; native installs may need `immich-memories titles fonts --install`.
 
-On a CPU or NAS, title cards keep the font, layout and palette, with text fading in and out. Moving gradients, bokeh and animated deblur need a rendering GPU.
+On a CPU or NAS, title cards keep the font, layout and palette. FFmpeg slides, scales and fades
+the text over a still background; the text is drawn once. Moving backgrounds, bokeh, animated
+deblur and separate title/subtitle timing still need a rendering GPU.
 
 ## Date and place captions
 

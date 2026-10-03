@@ -311,3 +311,40 @@ def test_cpu_title_image_inputs_end_at_the_requested_duration(tmp_path, monkeypa
     assert float(stream["duration"]) == pytest.approx(duration, abs=1 / 24)
     assert len(frame_counts) == 2
     assert all(count == math.ceil(duration) for count in frame_counts), frame_counts
+
+
+@pytest.mark.parametrize("preset", ["smooth_slide", "gentle_scale", "slow_fade", "scale_bounce"])
+def test_cpu_title_preserves_animation_without_redrawing_text(tmp_path, monkeypatch, preset):
+    from immich_memories.titles.renderer_pil import TitleRenderer
+
+    calls = []
+    render = TitleRenderer.render_frame
+
+    def counted(self, *args, **kwargs):
+        calls.append(True)
+        return render(self, *args, **kwargs)
+
+    # WHY: count real rasterizations, not FFmpeg frames; CPU text must still be drawn once.
+    monkeypatch.setattr(TitleRenderer, "render_frame", counted)
+    output = tmp_path / "slide-title.mp4"
+    RenderingService(TitleScreenConfig(use_gpu_rendering=False)).create_title_video(
+        "Moving",
+        None,
+        TitleStyle(name="cpu", animation_preset=preset),
+        output,
+        width=320,
+        height=180,
+        duration=3,
+        fps=30,
+        animated_background=False,
+        background_image=np.zeros((180, 320, 3), dtype=np.float32),
+    )
+    early = extract_frame_rgb(output, 5, 320, 180)
+    settled = extract_frame_rgb(output, 30, 320, 180)
+    early_x = np.where(early.max(axis=2) > 50)[1]
+    settled_x = np.where(settled.max(axis=2) > 150)[1]
+    if preset == "smooth_slide":
+        assert early_x.mean() > settled_x.mean() + 15
+    else:
+        assert np.ptp(early_x) < np.ptp(settled_x) - 1
+    assert len(calls) == 1

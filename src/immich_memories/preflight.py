@@ -405,7 +405,7 @@ def check_title_rendering(config: Config) -> CheckResult:
     return _kernel_library_check()
 
 
-_PIL_RENDERER_MESSAGE = "PIL renderer: animated backgrounds, raster text (no SDF effects)"
+_PIL_RENDERER_MESSAGE = "PIL + FFmpeg: animated raster text, still backgrounds (no SDF effects)"
 
 
 def _kernel_library_check() -> CheckResult:

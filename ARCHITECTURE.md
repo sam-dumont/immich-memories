@@ -204,9 +204,11 @@ selected LLM caption identity, preferring valid banked SmolVLM pairs. Fact reads
 checks and provenance use the same choice. Default SmolVLM reads retain their exact producer.
 `editorial_preparation_motion.py` owns `MotionScope`, motion acquisition and bank reads. Its
 producer-specific reads reuse described SmolVLM motion lines before requesting a new LLM line;
-unchanged sources retain their existing bank entries. `prepare` acquires descriptions; film-time
-evidence preparation reads banked motion or falls back to plain clip facts. Missing motion
-remains in the preparation report but does not block required-fact completeness.
+unchanged sources retain their existing bank entries. Explicit `prepare` acquires descriptions
+and reports missing lines without blocking required-fact completeness. Normal film preparation
+reuses a rules draft whose refinement does not consume motion sentences. It neither requests
+that producer nor reports its absence as a gap; no motion-model calls are added to a cold film.
+The separate model-planning route can read banked lines or use plain clip facts.
 
 - **Producer**: anything that writes a fact about a picture: the caption server, the heads, the
   detectors, the motion and pixel readers (`editorial_preparation*.py`). Film preparation runs
@@ -433,7 +435,7 @@ missing read rights as errors; upload/delete limits and unrestricted keys are wa
 
 **TitleScreenGenerator** (titles/generator.py) composes 3 services:
 - `RenderingService` (rendering_service.py): GPU/CPU renderer selection, video creation
-  - `cpu_video.py`: synthesizes two Pillow plates once; FFmpeg fades and encodes them on CPU-only/NAS hosts
+  - `cpu_video.py`: rasterizes text once; FFmpeg slides/scales/fades the cropped text over a still background on CPU-only/NAS hosts
 - `EndingService` (ending_service.py): fade-to-white ending generation
 - `TripService` (trip_service.py): trip map and location card screens
 
@@ -743,7 +745,7 @@ src/immich_memories/
 │   ├── _text_memory_types.py   # Memory type title helpers
 │   ├── _trip_titles.py         # Trip title text generation
 │   ├── convenience.py          # Convenience/factory functions
-│   ├── cpu_video.py            # CPU/NAS still plates, FFmpeg text fades and plan-owned encoding
+│   ├── cpu_video.py            # CPU/NAS still backgrounds, FFmpeg text movement/fades and plan-owned encoding
 │   ├── encoding.py             # Title video encoding
 │   ├── video_encoding.py       # Video encoding helpers
 │   ├── text_builder.py         # Text layout & positioning

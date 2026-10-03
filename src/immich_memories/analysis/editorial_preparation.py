@@ -598,7 +598,9 @@ def prepare_editorial_annotations(
     whose preview could not be read. ``read_playback`` answers a byte range of a video's
     playback rendition with its full size; without it no motion line is produced.
     ``inspect_clips=False`` defers playback and video exposure until candidate inspection.
-    Cuts set ``acquire_motion=False``: motion descriptions come from prepare, or plain facts.
+    Cuts set ``acquire_motion=False``: their rules draft/refinement does not consume
+    motion sentences, so this pass neither acquires nor reports them as missing.
+    Explicit prepare retains motion acquisition and its completeness report.
     """
     cache_path = Path(getattr(thumbnail_cache, "cache_dir", thumbnail_cache))
     source = tuple({asset.id: asset for asset in assets}.values())
@@ -675,7 +677,9 @@ def prepare_editorial_annotations(
         source,
         store,
         read_playback,
-        demanded=preparation_config.demands_captions,
+        # Film refinement does not consume motion sentences. A producer not requested
+        # by this pass is not missing evidence, even on a cold annotation store.
+        demanded=preparation_config.demands_captions and acquire_motion,
         producer=motion_producer(description_model),
     )
     if acquire_motion:

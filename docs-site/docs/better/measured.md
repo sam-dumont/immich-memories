@@ -46,8 +46,11 @@ SDR or lower-resolution originals do not gain native 4K HDR detail. Tier/model d
 can choose different cuts across machines, and music can need different numbers of candidates.
 These timings are one sample per configuration, not an isolated hardware speed ranking.
 
-The accepted runs still report optional motion-description gaps. NAS Basic falls back to static
-PIL title plates; Basic also recorded a one-frame clip underrun. Those limits remain visible.
+Those accepted runs reported optional motion-description gaps and used static NAS title plates.
+The [follow-up](https://github.com/sam-dumont/immich-memories/blob/main/docs/research/2026-10-03-cpu-title-followup.md)
+corrects the unused-producer warning and measures CPU text animation against that renderer. It
+keeps still backgrounds and adds no motion-model calls. The original timings above are unchanged.
+Basic also recorded a one-frame clip underrun; that separate limit remains visible.
 The [detailed June report](https://github.com/sam-dumont/immich-memories/blob/main/docs/research/2026-10-03-june-hardware-smoke.md)
 contains phase times, feature counts, failed setup attempts and installation corrections. Failed
 work is kept separately from the accepted cold totals. The library and comparison album are private.

@@ -102,7 +102,8 @@ Basic preparation leaves Marqo and Docling off; GPU/Full add those detectors, ca
 Laya pre-screen. Compatible facts already in the store stay banked when you change tiers. See
 [what the upgrades add](../get-started/what-a-gpu-or-a-model-adds.md).
 
-CPU titles draw their background and text once, then fade the text with FFmpeg. For cheaper trip
+CPU titles draw their background and text once, then move, scale and fade the text with FFmpeg.
+The background stays still to keep software encoding cheap. No extra package is needed. For cheaper trip
 maps, use `preset: fast`: three geographic views replace the smooth flight, with short fades and
 full-resolution labels. Hardware video encoding still works. [Titles and maps](../make/titles-maps-music.md)
 explains these choices.

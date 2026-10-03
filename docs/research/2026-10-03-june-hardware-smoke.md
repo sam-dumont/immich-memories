@@ -273,3 +273,10 @@ hit a full Docker Desktop disk; clearing builder space preceded the successful u
 This does not require a NAS user to build from source: the intended RC route supplies the image.
 This gate establishes a clean default Docker install and uninterrupted first CLI film for this
 candidate. The matrix above separately exercises the GPU services and native Mac features.
+
+## Follow-up: motion reports and CPU title movement
+
+The [3 October follow-up](2026-10-03-cpu-title-followup.md) distinguishes an unrequested motion
+producer from a failed acquisition, and measures CPU text animation against the static-title
+baseline. It preserves the cold-run results in this report and rejects a slower moving-background
+experiment. Still backgrounds remain deliberate on CPU.

@@ -147,9 +147,13 @@ class TitleRenderer:
         subtitle: str | None = None,
         frame_number: int = 0,
         animation_preset: AnimationPreset | None = None,
+        *,
+        transparent_background: bool = False,
     ) -> Image.Image:
         """Render a single frame of the title screen."""
-        if self._background_image is not None:
+        if transparent_background:
+            frame = Image.new("RGBA", (self.settings.width, self.settings.height))
+        elif self._background_image is not None:
             # Content-backed: use the pre-extracted frame as static background
             frame = Image.fromarray((self._background_image * 255).astype(np.uint8), mode="RGB")
         elif self.settings.animated_background:
@@ -301,6 +305,8 @@ class TitleRenderer:
         if blur > 0:
             text_layer = text_layer.filter(ImageFilter.GaussianBlur(radius=blur))
 
+        if frame.mode == "RGBA":
+            return Image.alpha_composite(frame, text_layer)
         frame = self._blend_layers(frame.convert("RGBA"), text_layer, optimal_blend_mode).convert(
             "RGB"
         )
@@ -426,7 +432,7 @@ class TitleRenderer:
                 fill=line_color,
             )
 
-        return Image.alpha_composite(frame.convert("RGBA"), line_layer).convert("RGB")
+        return Image.alpha_composite(frame.convert("RGBA"), line_layer).convert(frame.mode)
 
     def _parse_color(self, hex_color: str) -> tuple[int, int, int]:
         """Parse hex color to RGB tuple."""
