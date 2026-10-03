@@ -183,3 +183,37 @@ it verifies the pinned corpus hash before opening the reader, and request words 
 dictionary lookups. The supported WordNet and ACE-Step routes do not call the affected model
 save/load APIs. This is a reviewed reachability finding, not a patched package or a blanket
 scanner exception. Keep the advisory tracked and re-audit any new NLTK training or export integration.
+
+### Approved temporary docs advisory review
+
+`make npm-audit` and CI use the owner-approved review of two unpatched docs
+dependencies, expiring October 17, 2026. The client audit remains strict.
+`make npm-audit-strict` runs the unfiltered audit explicitly:
+
+- braces 3.0.3: [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm).
+  Deeply nested glob patterns can still crash a docs build. A pull request can
+  supply these patterns, but that same build already executes its branch's
+  JavaScript configuration and npm scripts. This review accepts build denial of
+  service within that existing code execution boundary; it does not fix braces.
+  The published site is static and accepts no server-side glob patterns.
+- http-cache-semantics 4.2.0:
+  [GHSA-ch52-4w7c-c8xp](https://github.com/advisories/GHSA-ch52-4w7c-c8xp).
+  Docusaurus reaches it through update-notifier, latest-version, package-json,
+  got and cacheable-request. The supported package-json call leaves got's cache
+  disabled. update-notifier disables itself in CI; Make docs commands also set
+  `NO_UPDATE_NOTIFIER=1`. No shared user HTTP cache runs in the published site.
+
+Neither advisory has an official patched release at review time. The review
+checks the locked leaf versions and exact advisory URLs, including transitive
+findings. New high advisories, available fixes, changed reviewed versions,
+expired reviews and inconclusive audit output fail. The existing high threshold
+is unchanged: the low nested cookie finding remains tracked, not fixed or
+silently removed. The owner approved this temporary exception on October 3, 2026;
+it does not authorize additional advisories or an expiry extension.
+
+npm also labels some transitive Docusaurus findings `fixAvailable: true` without
+naming a replacement. An isolated `npm audit fix --dry-run --ignore-scripts`
+still reported the same 42 findings (36 high, six low). The review follows each
+transitive finding to its advisory leaves; that boolean is accepted only when
+all leaves match the two reviews above. A concrete transitive upgrade or any
+fixable advisory leaf is refused. Cycles without advisory evidence are refused.

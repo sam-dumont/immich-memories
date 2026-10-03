@@ -675,10 +675,21 @@ pip-audit:  ## Audit dev and the all extra shipped in the application image
 	set +e; uvx pip-audit -r "$$REQS" --no-deps --disable-pip --timeout 60 --strict > "$$OUT" 2>&1; AUDIT_EXIT=$$?; set -e; \
 	python3 scripts/pip_audit_smart.py --audit-exit "$$AUDIT_EXIT" < "$$OUT"
 
-.PHONY: npm-audit
-npm-audit:  ## Audit the client toolchain and documentation runtime dependencies
+.PHONY: npm-audit npm-audit-strict
+npm-audit: npm-audit-reviewed-docs  ## Strict client audit plus approved, expiring docs advisory review
+
+npm-audit-strict:  ## Unfiltered high-severity client and documentation dependency audit
 	cd web && npm audit --audit-level=high
 	cd docs-site && npm audit --omit=dev --audit-level=high
+
+# Owner-approved docs-only review; CI calls npm-audit as the single policy entry point.
+.PHONY: npm-audit-reviewed-docs
+npm-audit-reviewed-docs:  ## Time-limited docs advisory review; strict client audit
+	cd web && npm audit --audit-level=high
+	@set -eu; out=$$(mktemp "$${TMPDIR:-/tmp}/npm-docs-audit.XXXXXX"); \
+	trap 'rm -f "$$out"' EXIT; \
+	set +e; (cd docs-site && npm audit --omit=dev --audit-level=high --json) >"$$out"; audit_exit=$$?; set -e; \
+	python3 scripts/npm_docs_audit.py --reviewed --lock docs-site/package-lock.json --audit-exit "$$audit_exit" <"$$out"
 
 diff-cover-local:  ## Check diff-cover locally before pushing (runs tests + merges integration coverage)
 	@echo "Running unit tests with coverage..."
@@ -1052,15 +1063,15 @@ web-check: web-install  ## Type-check the web client, check the contract and typ
 	@echo "web client builds from web/src, matches the contract and the types; no Immich logo shipped"
 
 docs-dev:
-	cd docs-site && npm start
+	cd docs-site && NO_UPDATE_NOTIFIER=1 npm start
 
 docs-build:
-	cd docs-site && npm run build
+	cd docs-site && NO_UPDATE_NOTIFIER=1 npm run build
 
 docs-check: docs-setup-check
 	@log_file=$$(mktemp "$${TMPDIR:-/tmp}/docs-build.XXXXXX") || exit $$?; \
 	status=0; \
-	(cd docs-site && npm run build) >"$$log_file" 2>&1 || status=$$?; \
+	(cd docs-site && NO_UPDATE_NOTIFIER=1 npm run build) >"$$log_file" 2>&1 || status=$$?; \
 	cat "$$log_file"; \
 	if [ "$$status" -ne 0 ]; then \
 		rm -f "$$log_file"; \
