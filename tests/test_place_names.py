@@ -45,6 +45,158 @@ def test_a_named_picture_shows_the_city_and_keeps_immichs_city_for_matching():
     assert asset.exif_info.city == "Hoboken"
 
 
+def test_home_uses_its_containing_district_instead_of_immichs_nearest_town():
+    # Rounded public point in Laeken; zoom 16's administrative address from Nominatim.
+    answer = {"suburb": "Laeken", "city": "Bruxelles", "country": "Belgique"}
+    names = PlaceNames(PlaceGeocoder(open_store(), "fr", lambda *_: answer), home=(50.85, 4.35))
+    asset = _at("home", 50.88, 4.34)
+    asset.exif_info.city = "Jette"
+
+    names.name([asset])
+
+    assert shown_city(asset.exif_info) == "Laeken"
+    assert asset.exif_info.city == "Jette"
+    assert names.localities_at([(50.88, 4.34, None)])[0] == "Laeken"
+    assert (
+        names.localities_at([(51.0, 4.34, None)])[0] == "Bruxelles"
+    )  # Outside the familiar home radius.
+
+
+@pytest.mark.parametrize(
+    "districts,expected",
+    [
+        (["Seaside", "Seaside", "Seaside"], ["Seaside"] * 3),
+        (["Eastbank", "Westbank", "Hilltop"], ["River City"] * 3),
+        (["Eastbank", None, "Hilltop"], ["River City"] * 3),
+    ],
+)
+def test_clip_places_use_the_trip_stops_shared_geographic_scope(districts, expected):
+    from immich_memories.analysis.place_geocoder import cell_of
+
+    points = [(48.85, 2.35), (48.86, 2.34), (48.87, 2.36)]
+    answers = {
+        cell_of(*point): {"city": "River City", "suburb": district, "country_code": "fr"}
+        for point, district in zip(points, districts, strict=True)
+    }
+    names = PlaceNames(PlaceGeocoder(open_store(), "fr", lambda lat, lon: answers[(lat, lon)]))
+
+    assert names.localities_at((lat, lon, "France") for lat, lon in points) == expected
+
+
+def test_a_shared_county_does_not_replace_each_towns_caption():
+    answers = {
+        48.85: {"town": "Upper Ford", "county": "Valley", "country_code": "fr"},
+        48.86: {"town": "Lower Ford", "county": "Valley", "country_code": "fr"},
+    }
+    names = PlaceNames(PlaceGeocoder(open_store(), "fr", lambda lat, _lon: answers[lat]))
+
+    assert names.localities_at([(48.85, 2.35, "France"), (48.86, 2.35, "France")]) == [
+        "Upper Ford",
+        "Lower Ford",
+    ]
+
+
+def test_nearby_towns_do_not_erase_a_concentrated_district():
+    answers = {
+        48.85: {"suburb": "Seaside", "village": "Harbour", "country_code": "fr"},
+        48.86: {"suburb": "Seaside", "village": "Harbour", "country_code": "fr"},
+        48.87: {"city": "Clifftown", "country_code": "fr"},
+    }
+    names = PlaceNames(PlaceGeocoder(open_store(), "fr", lambda lat, _lon: answers[lat]))
+
+    assert names.localities_at((lat, 2.35, "France") for lat in answers) == [
+        "Seaside",
+        "Seaside",
+        "Clifftown",
+    ]
+
+
+def test_a_small_excursion_keeps_its_name_without_erasing_the_main_stay():
+    answers = {
+        48.85: {"suburb": "Seaside", "city": "Harbour", "country_code": "fr"},
+        48.86: {"suburb": "Hilltop", "city": "Harbour", "country_code": "fr"},
+    }
+    names = PlaceNames(PlaceGeocoder(open_store(), "fr", lambda lat, _lon: answers[lat]))
+
+    labels = names.localities_at([(48.85, 2.35, "France")] * 9 + [(48.86, 2.35, "France")])
+
+    assert labels == ["Seaside"] * 9 + ["Harbour"]
+
+
+def test_separate_visits_to_one_city_keep_their_own_districts():
+    answers = {
+        48.85: {"suburb": "Seaside", "city": "Harbour", "country_code": "fr"},
+        48.86: {"suburb": "Hilltop", "city": "Harbour", "country_code": "fr"},
+    }
+    names = PlaceNames(PlaceGeocoder(open_store(), "fr", lambda lat, _lon: answers[lat]))
+    assets = []
+    for i, (lat, day) in enumerate([(48.85, 1), (48.85, 2), (48.86, 20), (48.86, 21)]):
+        asset = _asset(str(i), taken=datetime(2025, 7, day))
+        asset.exif_info.latitude, asset.exif_info.longitude = lat, 2.35
+        asset.exif_info.country = "France"
+        assets.append(asset)
+
+    names.name(reversed(assets))
+
+    assert [shown_city(a.exif_info) for a in assets] == ["Seaside"] * 2 + ["Hilltop"] * 2
+
+
+def test_an_undated_clip_does_not_merge_separate_visits():
+    answers = {
+        48.85: {"suburb": "Seaside", "city": "Harbour", "country_code": "fr"},
+        48.86: {"suburb": "Hilltop", "city": "Harbour", "country_code": "fr"},
+    }
+    names = PlaceNames(PlaceGeocoder(open_store(), "fr", lambda lat, _lon: answers[lat]))
+
+    labels = names.localities_at(
+        [(48.85, 2.35, "France")] * 2 + [(48.86, 2.35, "France")],
+        days=["2025-07-01", "2025-07-02", None],
+    )
+
+    assert labels == ["Seaside", "Seaside", "Harbour"]
+
+
+def test_an_administrative_qualifier_does_not_appear_in_a_locality_label():
+    names = _names({"city_district": "Riverside (quarter)", "town": "Riverside"})
+
+    assert names.localities_at([(*POINT, None)] * 2) == ["Riverside"] * 2
+
+
+def test_a_missing_district_is_not_evidence_of_a_different_district():
+    answers = {
+        48.85: {"suburb": "Seaside", "village": "Harbour", "country_code": "fr"},
+        48.86: {"village": "Harbour", "country_code": "fr"},
+    }
+    names = PlaceNames(PlaceGeocoder(open_store(), "fr", lambda lat, _lon: answers[lat]))
+
+    assert names.localities_at([(48.85, 2.35, "France"), (48.86, 2.35, "France")]) == [
+        "Seaside",
+        "Harbour",
+    ]
+
+
+def test_districts_under_different_osm_keys_still_establish_a_city_wide_visit():
+    answers = {
+        48.85: {"suburb": "Old Town", "city": "River City", "country_code": "fr"},
+        48.86: {"borough": "South", "city": "River City", "country_code": "fr"},
+        48.87: {"city_district": "West", "city": "River City", "country_code": "fr"},
+    }
+    names = PlaceNames(PlaceGeocoder(open_store(), "fr", lambda lat, _lon: answers[lat]))
+
+    assert names.localities_at((lat, 2.35, "France") for lat in answers) == ["River City"] * 3
+
+
+def test_a_border_disagreement_never_combines_a_new_city_with_the_old_country():
+    asset = _at("border", 45.85, 6.93)
+    asset.exif_info.city = "Courmayeur"
+    asset.exif_info.country = "Italy"
+    names = _names({"town": "Chamonix-Mont-Blanc", "country_code": "fr"})
+
+    names.name([asset])
+
+    assert shown_city(asset.exif_info) == "Courmayeur"
+
+
 def test_berlin_districts_share_one_caption_and_do_not_create_town_cards():
     from immich_memories.generate_privacy import clip_location_name
     from immich_memories.processing.clip_caption import captions_for_timeline
@@ -88,7 +240,7 @@ def test_an_old_district_label_is_resolved_again_from_the_cached_address():
     asset = _asset()
     asset.exif_info.place_name = "Wilrijk"
     names = _names()
-    names.locality_at(*POINT)
+    names.localities_at([(*POINT, None)])
 
     names.name([asset])
 
@@ -206,5 +358,7 @@ def test_a_second_run_asks_only_about_new_places_and_never_twice_about_nothing()
     later.name([_at("d", 51.1682, 4.3931), _at("e", 51.20, 3.22), _at("f", 50.50, 4.00)])
 
     assert len(nominatim.asked) == 3  # only the new cell
-    assert later.locality_at(51.1682, 4.3931) == "Antwerpen"  # a second surface, no new question
+    assert (
+        later.localities_at([(51.1682, 4.3931, None)])[0] == "Antwerpen"
+    )  # a second surface, no new question
     assert len(nominatim.asked) == 3

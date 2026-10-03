@@ -95,9 +95,12 @@ def captions_for_timeline(
             where = getattr(clip, "caption_location_name", None)
             if where is None:
                 where = getattr(clip, "location_name", None)
-            if where is not None and str(where) != last_place:
+            # Display text can lose its country after the first caption. Compare the
+            # original place identity so "Nice, France" -> "Nice" is not a city change.
+            identity = getattr(clip, "location_name", None) or where
+            if where is not None and identity != last_place:
                 shown_place = str(where)
-                last_place = shown_place
+                last_place = identity
         captions.append(
             ClipCaption(
                 place=shown_place,

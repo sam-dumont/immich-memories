@@ -25,11 +25,15 @@ _WITHOUT_A_HOME = "US"
 def country_code(name: str | None) -> str | None:
     """The ISO 3166 code of a country as Immich names it, or None when the name is unknown.
 
-    Read against the ``holidays`` library's own registry, so a code it returns is one the
-    library keeps a calendar for.
+    CLDR recognises display names and Immich's official names; the holidays registry
+    also recognises forms such as "The Netherlands".
     """
     if not name:
         return None
+    from immich_memories.i18n_places import country_code as place_country_code
+
+    if code := place_country_code(name):
+        return code
     from holidays.registry import COUNTRIES
 
     key = re.sub(r"[^a-z0-9]+", "_", name.strip().lower()).strip("_").removeprefix("the_")
@@ -40,13 +44,17 @@ def country_code(name: str | None) -> str | None:
 def home_country(config: Config) -> str:
     """The ISO code of the country the home base is in, or the US when there is no home base
     or Immich cannot say."""
+    return known_home_country(config) or _WITHOUT_A_HOME
+
+
+def known_home_country(config: Config) -> str | None:
+    """The verified home country, with no holiday-calendar default for an unknown home."""
     trips = config.trips
     if trips.homebase_latitude == trips.homebase_longitude == 0.0:
-        return _WITHOUT_A_HOME
-    found = _country_at(
+        return None
+    return _country_at(
         config.immich.url, config.immich.api_key, trips.homebase_latitude, trips.homebase_longitude
     )
-    return found or _WITHOUT_A_HOME
 
 
 @functools.lru_cache(maxsize=8)
@@ -67,5 +75,5 @@ def _country_at(url: str, api_key: str, lat: float, lon: float) -> str | None:
     name = first.get("country") if isinstance(first, dict) else None
     code = country_code(name)
     if code is None:
-        logger.warning("No holiday calendar is known for %r; using the US holidays", name)
+        logger.warning("Home country not recognised: %r", name)
     return code

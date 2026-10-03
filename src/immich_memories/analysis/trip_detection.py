@@ -11,12 +11,15 @@ from dataclasses import dataclass, field
 from datetime import date
 from typing import TYPE_CHECKING
 
-from immich_memories.analysis.trip_place import TripPlace, trip_place
+from immich_memories.analysis.place_scope import place_groups, temporal_groups
+from immich_memories.analysis.trip_place import COVERING_SHARE, TripPlace, trip_place
 from immich_memories.api.models import Asset
 from immich_memories.place_names import short_place_name
 from immich_memories.tracking.report_context import private_place_name
 
 if TYPE_CHECKING:
+    from immich_memories.analysis.place_geocoder import PlaceGeocoder
+    from immich_memories.analysis.place_names import PlaceNames
     from immich_memories.config_loader import Config
 
 logger = logging.getLogger(__name__)
@@ -72,14 +75,7 @@ def _filter_away_assets(
 
 
 def _group_by_temporal_gaps(away: list[Asset], max_gap_days: int) -> list[list[Asset]]:
-    groups: list[list[Asset]] = [[away[0]]]
-    for asset in away[1:]:
-        gap = (asset.file_created_at.date() - groups[-1][-1].file_created_at.date()).days
-        if gap > max_gap_days:
-            groups.append([asset])
-        else:
-            groups[-1].append(asset)
-    return groups
+    return temporal_groups(away, lambda asset: asset.file_created_at.date(), max_gap_days)
 
 
 def _build_trip_from_group(
@@ -151,16 +147,40 @@ def geocoder_for(config: Config) -> Geocoder | None:
     shared place geocoder: rounded, rate limited, answered in the film's language, and kept in
     the store, so the next scan of the same year asks nobody.
     """
+    from immich_memories.analysis.editorial_home_radius import home_of
     from immich_memories.analysis.place_geocoder import place_geocoder_for
+    from immich_memories.analysis.place_names import PlaceNames
 
     places = place_geocoder_for(config)
     if places is None:
         return None
 
-    def name(lat: float, lon: float, spread_km: float | None = None) -> str | None:
-        return trip_place_name(places.address(lat, lon), spread_km)
+    return _TripGeocoder(
+        places, PlaceNames(places, home_of(config.trips), max_gap_days=config.trips.max_gap_days)
+    )
 
-    return name
+
+class _TripGeocoder:
+    """Discovery shares the film's locality resolver when a trip fits a local stay."""
+
+    def __init__(self, places: PlaceGeocoder, names: PlaceNames) -> None:
+        self.places = places
+        self.names = names
+
+    def __call__(self, lat: float, lon: float, spread_km: float | None = None) -> str | None:
+        return trip_place_name(self.places.address(lat, lon), spread_km)
+
+    def local_place(self, assets: list[Asset], *, local_stay: bool) -> TripPlace | None:
+        # Discovery is read-only: another call may use the same assets with geocoding off
+        # or a different language. Only copy the EXIF that the resolver will annotate.
+        named = [
+            asset.model_copy(update={"exif_info": asset.exif_info.model_copy()})
+            if asset.exif_info is not None
+            else asset
+            for asset in assets
+        ]
+        self.names.name(named)
+        return trip_place(named, local_stay=local_stay)
 
 
 # Below this spread a trip fits one town, and the geocoder names the town.
@@ -231,8 +251,13 @@ def _derive_location_name(
     an island, two regions or a country come from the pictures themselves.
     """
     spread_km = _compute_spread_km(assets)
-    place = trip_place(assets, local_stay=spread_km < CITY_SPREAD_KM)
-    geocodable = place is None or place.scale in _GEOCODER_SCALES
+    local_stay = spread_km < CITY_SPREAD_KM or _has_local_core(assets)
+    place = trip_place(assets, local_stay=local_stay)
+    if place is not None and place.scale == "city" and isinstance(geocoder, _TripGeocoder):
+        # Resolve the source window, not just the centroid or the eventual selected clips.
+        # Island/region/country trips need no per-photo requests during discovery.
+        return geocoder.local_place(assets, local_stay=local_stay) or place
+    geocodable = _centroid_can_name(place, assets, spread_km)
     if (
         geocodable
         and geocoder is not None
@@ -245,3 +270,34 @@ def _derive_location_name(
         return place
     cities = Counter(a.exif_info.city for a in assets if a.exif_info and a.exif_info.city)
     return TripPlace(cities.most_common(1)[0][0] if cities else "Unknown Location", "city")
+
+
+def _centroid_can_name(place: TripPlace | None, assets: list[Asset], spread_km: float) -> bool:
+    # A city supported by the pictures survives distant excursions. Asking the centroid
+    # at regional scale would overwrite that evidence with an unrelated broader label.
+    # Resolved captions already carry the chosen locality; do not replace their district
+    # with the town above it during a second lookup.
+    if place is not None and place.scale == "city":
+        return spread_km < CITY_SPREAD_KM and not any(
+            asset.exif_info and asset.exif_info.place_name for asset in assets
+        )
+    return place is None or place.scale in _GEOCODER_SCALES
+
+
+def _has_local_core(assets: list[Asset]) -> bool:
+    """A stay may have excursions: use the existing map groups and trip coverage rule."""
+    from immich_memories.analysis.place_geocoder import cell_of
+
+    cells = Counter(
+        cell_of(exif.latitude, exif.longitude)
+        for asset in assets
+        if (exif := asset.exif_info) is not None
+        and exif.latitude is not None
+        and exif.longitude is not None
+    )
+    coordinates = sorted(cells)
+    total = sum(cells.values())
+    return any(
+        sum(cells[coordinates[i]] for i in group) / total >= COVERING_SHARE
+        for group in place_groups(coordinates)
+    )

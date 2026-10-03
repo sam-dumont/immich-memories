@@ -15,7 +15,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from itertools import starmap
 
-from immich_memories.analysis.trip_detection import CITY_SPREAD_KM, haversine_km
+from immich_memories.analysis.place_scope import place_groups, shared_place_name
 
 AddressOf = Callable[[float, float], Mapping[str, str]]
 
@@ -45,35 +45,11 @@ class TripStop:
     name: str
 
 
-def _groups(locations: list[tuple[float, float]]) -> list[list[int]]:
-    groups: list[list[int]] = []
-    for index, (lat, lon) in enumerate(locations):
-        home = next(
-            (
-                group
-                for group in groups
-                if all(
-                    haversine_km(lat, lon, *locations[member]) <= CITY_SPREAD_KM for member in group
-                )
-            ),
-            None,
-        )
-        if home is None:
-            groups.append([index])
-        else:
-            home.append(index)
-    return groups
-
-
 def _shared_name(members: list[tuple[float, float]], address_of: AddressOf | None) -> str | None:
     if address_of is None:
         return None
     addresses = list(starmap(address_of, members))
-    for key in _SHARED_KEYS:
-        values = {address.get(key) or None for address in addresses}
-        if len(values) == 1 and (value := values.pop()):
-            return value
-    return None
+    return shared_place_name(addresses, _SHARED_KEYS)
 
 
 def _fallback_name(names: list[str]) -> str | None:
@@ -95,7 +71,7 @@ def group_trip_stops(
     group large enough to share one name.
     """
     stops: list[TripStop] = []
-    for group in _groups(locations):
+    for group in place_groups(locations):
         members = [locations[i] for i in group]
         member_names = [names[i] if i < len(names) else "" for i in group]
         if len(group) < _AGGREGATE_FROM:
