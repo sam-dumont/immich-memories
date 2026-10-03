@@ -113,8 +113,10 @@ was mistaken for migration input. These are harness failures, not application sp
 
 The NAS GPU 4K/HDR saved-cut attempt failed after 375.251 s during title construction because
 its original run had no persisted date range. No maximum-resolution film was produced.
-The six common outputs took priority; all maximum exports remain deferred. No 4K/HDR performance
-or correctness claim comes from this checkpoint.
+The six common outputs took priority during the first pass. Maximum-capability 4K exports are
+required before the documentation PR becomes ready, alongside uninterrupted end-to-end passes
+for all six configurations. Verify 60 fps and HDR where supported, using default balanced quality.
+No 4K/HDR performance or correctness claim comes from this checkpoint.
 
 ## Source provenance
 
