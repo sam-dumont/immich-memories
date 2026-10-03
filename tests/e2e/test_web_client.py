@@ -83,7 +83,8 @@ def test_a_caption_tick_that_cannot_refresh_goes_back_to_the_report_shown(
     page.goto(f"{launch_app_url}/app/runs/20240701_web_fail")
     page.get_by_role("button", name="Copy report", exact=True).click()
     tick = page.get_by_label("Include captions of flagged photos")
-    tick.check()
+    # WHY: the failed refresh may revert the tick before check() verifies its state.
+    tick.click()
 
     expect(page.get_by_text("The report could not be loaded.")).to_be_visible()
     expect(tick).not_to_be_checked()
