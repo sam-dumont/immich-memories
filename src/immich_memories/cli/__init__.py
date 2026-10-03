@@ -79,7 +79,7 @@ def main(
 ) -> None:
     """Immich Memories.
 
-    Turn your Immich photos and videos into memory films.
+    Watch your memories again, in films you can make your own.
     """
     from immich_memories import process_start
 

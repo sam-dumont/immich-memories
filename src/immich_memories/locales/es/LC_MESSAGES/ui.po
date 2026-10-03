@@ -1467,8 +1467,8 @@ msgid "Try again"
 msgstr "Reintentar"
 
 #: web/routes/login/+page.svelte:53
-msgid "Turn your Immich photos and videos into memory films."
-msgstr "Convierte tus fotos y vídeos de Immich en películas de recuerdos."
+msgid "Watch your memories again, in films you can make your own."
+msgstr "Revive tus recuerdos en películas que puedes hacer tuyas."
 
 #: web/routes/runs/[run_id]/+page.svelte:291 web/routes/runs/[run_id]/pool/+page.svelte:139
 msgid "Undo"

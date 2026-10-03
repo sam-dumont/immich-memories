@@ -1436,8 +1436,8 @@ msgid "Try again"
 msgstr "다시 시도"
 
 #: web/routes/login/+page.svelte:53
-msgid "Turn your Immich photos and videos into memory films."
-msgstr "Immich의 사진과 동영상을 추억 영화로 만드세요."
+msgid "Watch your memories again, in films you can make your own."
+msgstr "나만의 영상으로 추억을 다시 만나세요."
 
 #: web/routes/runs/[run_id]/+page.svelte:291 web/routes/runs/[run_id]/pool/+page.svelte:139
 msgid "Undo"

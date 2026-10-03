@@ -1,6 +1,6 @@
 {
   "name": "Immich Memories",
-  "tagline": "Turn your Immich photos and videos into memory films.",
-  "description": "Self-hosted video memories for Immich. Turn photos and videos into highlight films with titles and music. Run with Docker on your server or NAS.",
+  "tagline": "Watch your memories again, in films you can make your own.",
+  "description": "Watch your memories again, in films you can make your own. A self-hosted companion for Immich: choose photos and videos, review and change the cut, then render an MP4 with titles and music.",
   "homepage": "https://sam-dumont.github.io/immich-memories/"
 }

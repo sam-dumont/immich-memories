@@ -89,7 +89,7 @@ export const TitleScene: React.FC = () => {
               transform: `translateY(${subY}px)`,
             }}
           >
-            Turn your Immich photos and videos into memory films.
+            Watch your memories again, in films you can make your own.
           </div>
         </div>
       </AbsoluteFill>
