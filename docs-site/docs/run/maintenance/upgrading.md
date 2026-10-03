@@ -64,7 +64,9 @@ On Apple Silicon, use `immich-memories[all-mac]`, or `immich-memories[all-mac,au
 ## Kubernetes and Terraform
 
 Back up, change the pinned image tag, apply, then run `models fetch` and `preflight` in the app
-container. The init container only checks file existence, so it does not update changed pins.
+container. The base init container skips fetching when its required paths are present, so changed
+pins need the explicit fetch. The generated GPU setup runs `models fetch --detectors --laya`
+whenever its model init container runs, verifying existing artifact digests.
 See [Kubernetes upgrades](../kubernetes.md#upgrading-and-rollback) or
 [Terraform upgrades](../terraform.md#upgrading).
 
