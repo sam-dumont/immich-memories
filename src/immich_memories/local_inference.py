@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import atexit
+import gc
 import hashlib
 import os
 import secrets
@@ -150,6 +151,9 @@ class LocalModels:
     def prepare_audio(self) -> None:
         """Release the owned reader and unused buffers in already-loaded local runtimes."""
         self.close()
+        # Model loaders can leave cyclic Python owners after their live tensors are dropped.
+        # Collect those owners before asking each allocator to return unused buffers.
+        gc.collect()
         if torch := sys.modules.get("torch"):
             if torch.backends.mps.is_available():
                 torch.mps.empty_cache()

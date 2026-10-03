@@ -84,6 +84,8 @@ def test_a_failed_generation_still_offers_the_run_it_started(
 def test_choose_generate_and_read_the_same_automatic_run(
     page, automation_app_url, automation_workspace
 ):
+    from datetime import date
+
     from immich_memories.automation.state_store import AutomationStateStore
     from immich_memories.tracking import RunDatabase
     from immich_memories.web.suggestions import SUGGESTION_REASON
@@ -124,7 +126,10 @@ def test_choose_generate_and_read_the_same_automatic_run(
     assert rows[0].run_id in page.url
     _evidence(page, "run-details")
     page.get_by_role("link", name="Back to runs").click()
-    expect(page.get_by_role("link").filter(has_text=rows[0].run_id)).to_be_visible()
+    assert rows[0].date_range_start == date(2024, 6, 1)
+    assert rows[0].date_range_end == date(2024, 6, 30)
+    # Dated runs display their month span; the run ID is only the undated fallback.
+    expect(page.locator(f'a[href="/app/runs/{rows[0].run_id}"]')).to_be_visible()
     _evidence(page, "runs")
     # A successful child's real generate transcript is also the CLI evidence for this flow.
     target = (

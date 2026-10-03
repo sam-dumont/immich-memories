@@ -1,6 +1,7 @@
 """Selection models release their native state before rendering needs the device."""
 
 import asyncio
+import gc
 import sys
 import weakref
 from contextlib import ExitStack
@@ -165,3 +166,33 @@ async def test_generation_releases_selection_buffers_before_render_even_with_act
                 params, run_tracker=mocks["tracker"].return_value, defer_finalization=deferred
             )
     assert events == ([] if failed else ["release", "render"])
+
+
+def test_audio_handoff_collects_cyclic_model_owners_before_clearing_buffers(monkeypatch):
+    class Owner:
+        pass
+
+    owner = Owner()
+    owner.cycle = owner
+    reference = weakref.ref(owner)
+    cleared = []
+
+    def clear_cache():
+        assert reference() is None
+        cleared.append(True)
+
+    monkeypatch.setitem(sys.modules, "torch", None)
+    monkeypatch.setitem(
+        sys.modules, "mlx.core", SimpleNamespace(clear_cache=clear_cache, synchronize=lambda: None)
+    )
+    # Disable automatic collection so the test exercises the handoff's explicit collection.
+    was_enabled = gc.isenabled()
+    gc.disable()
+    try:
+        del owner
+        assert reference() is not None
+        LocalModels().prepare_audio()
+        assert cleared == [True]
+    finally:
+        if was_enabled:
+            gc.enable()
