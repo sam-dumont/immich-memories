@@ -155,7 +155,15 @@ _ADMIN_PREFIXES = (
     "provincia di ",
     "provincia de ",
 )
-_ADMIN_SUFFIXES = (" regional unit", " region", " province", " district", " governorate")
+_ADMIN_SUFFIXES = (
+    " regional unit",
+    " region",
+    " province",
+    " district",
+    " governorate",
+    " (quarter)",
+    " (district)",
+)
 
 # How "A and B" is joined in each title language.
 _AND = {

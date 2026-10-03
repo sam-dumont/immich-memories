@@ -39,7 +39,22 @@ _FR_MUTE_H = frozenset({"HT"})
 @lru_cache(maxsize=1)
 def _codes_by_english_name() -> dict[str, str]:
     """CLDR territory name -> code, folded for lookup ("Cyprus" -> "CY")."""
-    return {name.casefold(): code for code, name in Locale(SOURCE_LOCALE).territories.items()}
+    codes = {name.casefold(): code for code, name in Locale(SOURCE_LOCALE).territories.items()}
+    # GeoNames/Immich uses these official names where CLDR uses shorter display names.
+    codes.update(
+        {
+            "united states of america": "US",
+            "state of palestine": "PS",
+            "czech republic": "CZ",
+            "russian federation": "RU",
+        }
+    )
+    return codes
+
+
+def country_code(english_name: str) -> str | None:
+    """The territory identity shared by Immich's names and translated display names."""
+    return _codes_by_english_name().get(english_name.strip().casefold())
 
 
 @lru_cache(maxsize=32)
@@ -56,7 +71,7 @@ def localise_country(english_name: str, locale: str) -> str:
     A name CLDR does not know, a locale it does not know, and English itself
     all come back unchanged, so this is safe to call on anything.
     """
-    if not english_name or locale == SOURCE_LOCALE:
+    if not english_name:
         return english_name
     code = _codes_by_english_name().get(english_name.strip().casefold())
     if code is None:

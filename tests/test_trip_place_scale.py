@@ -223,3 +223,82 @@ def test_a_trip_uses_the_same_resolved_city_as_its_captions():
     (trip,) = detect_trips(pictures, *_HOME)
 
     assert (trip.location_name, trip.location_kind) == ("Berlin, Germany", "city")
+
+
+def test_distant_excursions_do_not_let_a_centroid_override_a_supported_town():
+    pictures = [
+        _picture(i, 50.34, 1.57, "Fort-Mahon-Plage", "Hauts-de-France", "France") for i in range(18)
+    ] + [_picture(i, 50.38, 2.04, "Hesdin", "Hauts-de-France", "France") for i in range(18, 20)]
+
+    def geocoder(*_args, **_kwargs):
+        raise AssertionError("A broad centroid cannot replace the supported city")
+
+    (trip,) = detect_trips(pictures, *_HOME, geocoder=geocoder)
+
+    assert (trip.location_name, trip.location_kind) == ("Fort-Mahon-Plage, France", "city")
+
+
+def test_a_resolved_district_is_not_replaced_by_its_parent_town():
+    pictures = [_picture(i, 50.96, 1.81, "Calais", "Hauts-de-France", "France") for i in range(12)]
+    for picture in pictures:
+        picture.exif_info.place_name = "Blériot-Plage"
+
+    def geocoder(*_args, **_kwargs):
+        raise AssertionError("The pictures already have a resolved locality")
+
+    (trip,) = detect_trips(pictures, *_HOME, geocoder=geocoder)
+
+    assert trip.location_name == "Blériot-Plage, France"
+
+
+def test_an_untranslated_city_keeps_its_script_instead_of_becoming_an_island():
+    pictures = [_picture(i, 34.74, 32.43, "Geroskipou", "Pafos", "Cyprus") for i in range(12)]
+    for picture in pictures:
+        picture.exif_info.place_name = "Γεροσκήπου"
+
+    (trip,) = detect_trips(pictures, *_HOME)
+
+    assert (trip.location_name, trip.location_kind) == ("Γεροσκήπου, Cyprus", "city")
+
+
+def test_a_local_stay_with_excursions_uses_its_majority_town():
+    # 80% in the main town, 15% in its neighbour, 5% on a distant outing. The
+    # geographic core is local even though the complete bounding box is wide.
+    pictures = [_picture(i, 50.34, 1.57, "Seaside", "Coast", "France") for i in range(16)]
+    pictures += [_picture(i, 50.32, 1.60, "Dunes", "Coast", "France") for i in range(16, 19)]
+    pictures += [_picture(19, 50.38, 2.04, "Market Town", "Coast", "France")]
+
+    (trip,) = detect_trips(pictures, *_HOME)
+
+    assert (trip.location_name, trip.location_kind) == ("Seaside, France", "city")
+
+
+def test_discovery_resolves_the_same_local_stay_as_the_film(monkeypatch):
+    from immich_memories.analysis.place_geocoder import PlaceGeocoder
+    from immich_memories.analysis.trip_detection import geocoder_for
+    from immich_memories.config import Config
+    from immich_memories.db import open_store
+
+    places = PlaceGeocoder(
+        open_store(),
+        "fr",
+        lambda *_: {
+            "suburb": "Seaside",
+            "village": "Harbour",
+            "country_code": "fr",
+            "country": "France",
+        },
+    )
+    monkeypatch.setattr(
+        "immich_memories.analysis.place_geocoder.place_geocoder_for", lambda _: places
+    )
+    config = Config()
+    config.trips.homebase_latitude, config.trips.homebase_longitude = _HOME
+    pictures = [_picture(i, 50.96, 1.81, "Nearby Town", "Coast", "France") for i in range(12)]
+
+    (trip,) = detect_trips(pictures, *_HOME, geocoder=geocoder_for(config))
+
+    assert trip.location_name == "Seaside, France"
+    assert {a.exif_info.place_name for a in pictures} == {
+        None
+    }  # Discovery leaves its inputs alone.

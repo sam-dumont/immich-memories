@@ -58,7 +58,10 @@ def _located(assets: Iterable[Asset]) -> list[_Located]:
         if exif.latitude is not None and exif.longitude is not None:
             island = island_at(exif.latitude, exif.longitude, exif.country)
         region = short_place_name(exif.state)
-        located.append(_Located(short_place_name(shown_city(exif)), region, exif.country, island))
+        # A settlement does not stop existing when its translated name is unavailable.
+        # Keep its supplied script instead of silently promoting a local stay to an island.
+        city = shown_city(exif)
+        located.append(_Located(short_place_name(city) or city, region, exif.country, island))
     return located
 
 

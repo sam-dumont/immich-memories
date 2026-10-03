@@ -20,6 +20,9 @@ class TestCountryNames:
             ("Belgium", "nl", "België"),
             ("Italy", "fr", "Italie"),
             ("Cyprus", "en", "Cyprus"),
+            ("United States of America", "fr", "États-Unis"),
+            ("United States of America", "en", "United States"),
+            ("Czech Republic", "fr", "Tchéquie"),
             ("Middle Earth", "fr", "Middle Earth"),
             ("Cyprus", "not-a-locale", "Cyprus"),
         ],
@@ -184,8 +187,10 @@ class TestTheNominatimRequest:
         fetch(51.17, 4.39)
 
         assert asked["query"] == "51.17, 4.39"
-        assert (asked["zoom"], asked["language"]) == (14, "fr")
+        assert (asked["zoom"], asked["language"]) == (16, "fr,en")
         assert asked["limiter"]["min_delay_seconds"] >= 1
+        assert asked["limiter"]["swallow_exceptions"] is False
+        assert asked["client"]["timeout"] == 10
         assert asked["client"]["domain"] == "nominatim.openstreetmap.org"
         assert asked["client"]["user_agent"].startswith("immich-memories/")
 
@@ -293,6 +298,47 @@ class TestGeocodingReachesTheCut:
         assert clip.location_name == "Antwerpen, Belgium"
         assert clip.caption_location_name == "Antwerpen, Belgique"
         assert built == [("fr", "")]
+
+    @pytest.mark.parametrize("language", ["nl", "ja", "pt-BR"])
+    def test_the_user_selected_language_reaches_the_geocoder(self, tmp_path, monkeypatch, language):
+        from immich_memories.analysis.place_geocoder import place_geocoder_for
+
+        requested = []
+
+        def fetch(selected, url=""):
+            requested.append(selected)
+            return lambda *_: {"city": "Configured-language name"}
+
+        monkeypatch.setattr("immich_memories.analysis.place_geocoder.nominatim_fetch", fetch)
+        params = self._params(tmp_path, monkeypatch, True)
+        params.config.title_screens.locale = language
+
+        assert (
+            place_geocoder_for(params.config).address(35.17, 33.36)["city"]
+            == "Configured-language name"
+        )
+        assert requested == [language]
+
+    def test_render_keeps_the_place_resolved_from_the_full_source_window(
+        self, tmp_path, monkeypatch
+    ):
+        from dataclasses import replace
+
+        from immich_memories.api.models import ExifInfo, VideoClipInfo
+        from immich_memories.generate_captions import locality_place_names
+        from tests.conftest import make_asset
+
+        def refuse(*_args, **_kwargs):
+            raise AssertionError("The selected clips must not reinterpret the full stay")
+
+        monkeypatch.setattr("immich_memories.analysis.place_names.place_names_for", refuse)
+        params = self._params(tmp_path, monkeypatch, True)
+        asset = make_asset("city-wide-visit")
+        asset.exif_info = ExifInfo(city="Mitte", country="Germany", place_name="Berlin")
+        params.clips = [VideoClipInfo(asset=asset)]
+        clip = replace(self._clip(), asset_id=asset.id, location_name="Mitte, Germany")
+
+        assert locality_place_names(params, [clip])[0].location_name == "Berlin, Germany"
 
 
 def test_a_chinese_or_japanese_caption_place_takes_its_own_comma():

@@ -74,7 +74,13 @@ def test_a_public_holiday_resolves_by_its_name_in_its_country():
 
 @pytest.mark.parametrize(
     "name,code",
-    [("Belgium", "BE"), ("United States", "US"), ("The Netherlands", "NL"), ("Atlantis", None)],
+    [
+        ("Belgium", "BE"),
+        ("United States", "US"),
+        ("United States of America", "US"),
+        ("The Netherlands", "NL"),
+        ("Atlantis", None),
+    ],
 )
 def test_a_country_immich_names_is_read_as_its_code(name, code):
     from immich_memories.home_country import country_code

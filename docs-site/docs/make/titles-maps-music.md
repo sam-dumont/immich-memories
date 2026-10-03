@@ -63,6 +63,28 @@ On a CPU or NAS, title cards keep the font, layout and palette, with text fading
 
 In **Render**, untick **Add date overlay** or **Caption clips with their place** if you want a cleaner frame. Frequently visited places are not labelled over and over. The lasting defaults are `defaults.add_date` and `defaults.add_place`.
 
+Place captions show the city when it changes. The home country stays hidden. Abroad, the
+country appears when you enter it, unless the opening title already named it; the next city
+doesn't repeat it. Crossing another border shows the new country.
+
+With `network.geocoding: true`, Nominatim resolves rounded coordinates at zoom 16 in your
+chosen title/caption language. If a translation is missing, it tries the base language
+(for example, Portuguese for Brazilian Portuguese), then English, then the available local
+name. A town keeps its name even when no translation exists.
+
+Near the configured home base (within 10 km), captions can name the district, such as Laeken.
+Away from home, a district covering at least 85% of a stay's pictures keeps its name;
+excursions keep their own labels. When all known districts agree, missing district data
+does not erase those local labels. Visits spread across districts use their shared locality.
+Different towns and visits separated by more than `trips.max_gap_days` do not rename one
+another. The selected clips retain the names resolved from the full source window.
+Streets and points of interest stay out of captions. A country disagreement keeps the source
+label; failed lookups are retried on a later run.
+
+A few distant excursions do not turn a local stay into a regional trip: the trip planner
+checks whether at least 85% of its positioned pictures fit a 25 km group. A town supported
+by those pictures is not replaced by a broader label from the trip's centre point.
+
 ## The map fly-over
 
 Trip maps are off by default. Enable them when you want an animated route and are comfortable requesting satellite tiles from an outside provider:

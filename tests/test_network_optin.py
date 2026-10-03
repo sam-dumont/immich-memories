@@ -109,8 +109,14 @@ class TestTripNamingStaysOffline:
         first = detect_trips(_ROME, *_PARIS, geocoder=geocoder_for(config))
         again = detect_trips(_ROME, *_PARIS, geocoder=geocoder_for(config))
 
-        assert [trip.location_name for trip in first + again] == ["Roma, Italia"] * 2
+        from immich_memories.i18n_places import localise_place
+
+        # Keep the source country canonical until title formatting selects its language.
+        assert [localise_place(trip.location_name, "it") for trip in first + again] == [
+            "Roma, Italia"
+        ] * 2
         assert asked == [(41.89, 12.49)]
+        assert all(asset.exif_info.place_name is None for asset in _ROME)
 
     def test_year_discovery_passes_nothing_through_when_it_is_off(
         self, monkeypatch: pytest.MonkeyPatch

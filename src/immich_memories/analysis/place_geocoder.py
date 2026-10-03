@@ -36,12 +36,12 @@ logger = logging.getLogger(__name__)
 Address = dict[str, str]
 Fetch = Callable[[float, float], "Address | None"]
 
-# About 1.1 km at the equator: fine enough to tell two districts apart, coarse enough that a
-# day's pictures share one question and no house number is ever in the request.
+# About 1.1 km at the equator: nearby pictures share a question; no exact GPS is sent.
 _PRECISION = 2
-# Nominatim zoom 14 answers at suburb level, and its address carries every level above it:
-# district, town, municipality, region, country. One question serves a caption and a trip.
-_DISTRICT_ZOOM = 14
+# Zoom 14 selects settlement nodes: in Laeken it returns nearby Mutsaard. Street-level
+# lookup carries the containing suburb instead. We still send rounded GPS and keep only
+# administrative names, never the street itself.
+_DISTRICT_ZOOM = 16
 # What is kept of an answer. Anything finer (road, house number, postcode) is dropped.
 _ADMINISTRATIVE = frozenset(
     {
@@ -116,11 +116,18 @@ def nominatim_fetch(language: str, url: str = "") -> Fetch:
     parts = urlsplit(url.strip()) if url.strip() else None
     domain = f"{parts.netloc}{parts.path}".rstrip("/") if parts else GEOCODING_HOST
     scheme = parts.scheme if parts and parts.scheme else "https"
-    geolocator = Nominatim(user_agent=_USER_AGENT, domain=domain, scheme=scheme)
-    reverse = RateLimiter(geolocator.reverse, min_delay_seconds=1)
+    geolocator = Nominatim(user_agent=_USER_AGENT, domain=domain, scheme=scheme, timeout=10)
+    # Let PlaceGeocoder distinguish outages from genuine empty answers. The limiter's
+    # default swallows errors as None, which otherwise poisons the persistent cache.
+    reverse = RateLimiter(
+        geolocator.reverse, min_delay_seconds=1, max_retries=0, swallow_exceptions=False
+    )
 
     def fetch(latitude: float, longitude: float) -> Address | None:
-        location = reverse(f"{latitude}, {longitude}", zoom=_DISTRICT_ZOOM, language=language)
+        # Nominatim supports an ordered language list. Without the explicit fallback,
+        # a missing French translation produces a local-script name even when English exists.
+        languages = ",".join(dict.fromkeys((language, language.split("-")[0], "en")))
+        location = reverse(f"{latitude}, {longitude}", zoom=_DISTRICT_ZOOM, language=languages)
         if location is None:
             return None
         address = location.raw.get("address", {})
@@ -149,7 +156,8 @@ class PlaceGeocoder:
     def address(self, latitude: float, longitude: float) -> Address:
         """The names around this point, `{}` when nobody can say."""
         latitude, longitude = cell_of(latitude, longitude)
-        cell = f"{latitude:.{_PRECISION}f},{longitude:.{_PRECISION}f}"
+        # Old zoom/language-policy answers must not mask the corrected query.
+        cell = f"z{_DISTRICT_ZOOM}-en:{latitude:.{_PRECISION}f},{longitude:.{_PRECISION}f}"
         with self._store.connect() as connection:
             known = connection.execute(
                 sa.select(geocoded_places.c.address).where(

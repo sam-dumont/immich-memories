@@ -22,7 +22,7 @@ def _clip(date: str | None, place: str | None = None, duration: float = 4.0) -> 
 
 
 class TestPlaceShowsOnChange:
-    def test_home_is_named_without_scanning_the_library(self, tmp_path):
+    def test_home_is_named_without_scanning_the_library(self, tmp_path, monkeypatch):
         from types import SimpleNamespace
 
         from immich_memories.generate_captions import prepare_location_captions
@@ -40,6 +40,8 @@ class TestPlaceShowsOnChange:
 
         # WHY: the library is an external service that captioning should never need.
         library = Library()
+        # The home-country lookup is an Immich reverse-geocode request, not a history scan.
+        monkeypatch.setattr("immich_memories.generate_captions.known_home_country", lambda _: "BE")
         params = SimpleNamespace(
             add_place_overlay=True,
             privacy_mode=False,
@@ -56,7 +58,7 @@ class TestPlaceShowsOnChange:
         prepared = prepare_location_captions(params, clips)
 
         assert [c.place for c in captions_for_timeline(prepared, place=True)] == [
-            "Brussels, Belgium",
+            "Brussels",
             "",
         ]
         assert library.calls == 0
@@ -68,6 +70,43 @@ class TestPlaceShowsOnChange:
         prepared = apply_location_captions(clips)
 
         assert captions_for_timeline(prepared, place=True)[0].place == "Brussels, Belgium"
+
+    @pytest.mark.parametrize(
+        "enabled,title,expected",
+        [(True, None, "Nice"), (True, "Vacances", "Nice, France"), (False, None, "Nice, France")],
+    )
+    def test_country_suppression_reads_the_final_opening_title(
+        self, tmp_path, enabled, title, expected
+    ):
+        from datetime import date
+
+        from immich_memories.config_loader import Config
+        from immich_memories.generate import GenerationParams
+        from immich_memories.generate_captions import prepare_location_captions
+        from immich_memories.generate_settings import build_title_settings
+
+        config = Config()
+        config.title_screens.enabled = enabled
+        config.title_screens.locale = "fr"
+        params = GenerationParams(
+            clips=[],
+            output_path=tmp_path / "film.mp4",
+            config=config,
+            add_place_overlay=True,
+            memory_type="trip",
+            title=title,
+            memory_preset_params={
+                "location_name": "France",
+                "trip_start": date(2025, 8, 1),
+                "trip_end": date(2025, 8, 7),
+            },
+        )
+        clips = [_clip("2025-08-01", "Nice, France")]
+        clips[0].latitude, clips[0].longitude = 43.70, 7.27
+        settings = build_title_settings(params, config, clips)
+        prepared = prepare_location_captions(params, clips, title_settings=settings)
+
+        assert captions_for_timeline(prepared, place=True)[0].place == expected
 
     def test_returning_to_a_city_shows_it_again_but_missing_metadata_does_not(self):
         from immich_memories.generate_captions import apply_location_captions
@@ -88,12 +127,55 @@ class TestPlaceShowsOnChange:
         assert clips[1].location_name == "Brussels, Belgium", "maps keep the original name"
         assert [c.place for c in captions_for_timeline(prepared, place=True)] == [
             "De Haan, Belgium",
-            "Brussels, Belgium",
-            "De Haan, Belgium",
+            "Brussels",
+            "De Haan",
             "",
             "",
             "Nice, France",
         ]
+
+    @pytest.mark.parametrize(
+        "home,title,places,expected",
+        [
+            ("BE", "", ["Laeken, Belgium", "Bruges, Belgium"], ["Laeken", "Bruges"]),
+            ("BE", "UNE SEMAINE EN FRANCE", ["Nice, France", "Paris, France"], ["Nice", "Paris"]),
+            (
+                "BE",
+                "Vacances",
+                ["Nice, France", "Nice, France", None, "Paris, France"],
+                ["Nice, France", "", "", "Paris"],
+            ),
+            (
+                "BE",
+                "EN FRANCE",
+                ["Nice, France", "Rome, Italy", "Paris, France", "Laeken, Belgium"],
+                ["Nice", "Rome, Italie", "Paris, France", "Laeken"],
+            ),
+            (
+                None,
+                "",
+                ["Paris, France", "Paris, United States"],
+                ["Paris, France", "Paris, États-Unis"],
+            ),
+            (None, "", ["France", "France", "Nice, France"], ["France", "", "Nice"]),
+            (None, "FRANCELAND", ["Nice, France"], ["Nice, France"]),
+            (None, "À CHYPRE", ["Nicosia, Cyprus"], ["Nicosia"]),
+            ("US", "", ["Boston, United States of America"], ["Boston"]),
+            (None, "AUX ÉTATS-UNIS", ["Boston, United States of America"], ["Boston"]),
+        ],
+    )
+    def test_countries_follow_borders_and_cities_follow_place_changes(
+        self, home, title, places, expected
+    ):
+        from immich_memories.generate_captions import apply_location_captions
+
+        clips = [_clip("2025-08-01", name) for name in places]
+        prepared = apply_location_captions(
+            clips, locale="fr", home_country=home, opening_title=title
+        )
+
+        assert [c.place for c in captions_for_timeline(prepared, place=True)] == expected
+        assert [c.location_name for c in prepared] == places
 
     def test_a_repeated_place_is_shown_once(self):
         clips = [

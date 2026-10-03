@@ -302,7 +302,6 @@ def render_local(
         )
 
         assembly_clips = locality_place_names(params, assembly_clips)
-        assembly_clips = prepare_location_captions(params, assembly_clips)
 
         # Phase 2: Assemble (includes title generation + streaming encode)
         with span("render.assembly", items=len(assembly_clips)) as assembly:
@@ -313,6 +312,9 @@ def render_local(
                 params,
                 assembly_clips,
                 probe_cache=probe_cache,
+            )
+            assembly_clips = prepare_location_captions(
+                params, assembly_clips, title_settings=settings.title_screens
             )
             if settings.title_screens is not None:
                 announce_title_source(settings.title_screens, run_tracker)
