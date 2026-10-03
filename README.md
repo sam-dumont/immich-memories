@@ -16,7 +16,7 @@ Pick a month, a year, a trip or a person, review the cut, then render with title
   <a href="https://sam-dumont.github.io/immich-memories/demo/demo.mp4">
     <picture>
       <source media="(prefers-color-scheme: dark)" srcset="https://sam-dumont.github.io/immich-memories/img/dark-demo-hero.gif">
-      <img src="https://sam-dumont.github.io/immich-memories/img/demo-hero.gif" alt="Choose a memory, review and change its cut, and watch the finished film" width="720" height="405">
+      <img src="https://sam-dumont.github.io/immich-memories/img/demo-hero.gif" alt="Choose a memory, review and change its cut, and watch the finished film" width="720">
     </picture>
   </a>
   <br/>
