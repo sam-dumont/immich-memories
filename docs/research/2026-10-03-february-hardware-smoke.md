@@ -1,15 +1,21 @@
 # February 2024 hardware smoke test, 3 October 2026
 
-Six configurations produced a film and passed full video/audio decoding. Four initial commands
-completed; M5 Full and M2 Basic completed after saved-cut render retries. This is a first-pass
-checkpoint, not six clean full-feature passes and not a clean-install qualification.
+All six configurations delivered a 1080p60 SDR film. The four eligible GPU/Full configurations
+also delivered 4K60 HDR films. Every delivered file passed complete video/audio decoding.
+**NAS Basic and M2 Basic remain 1080p only.** Default `balanced` quality was used throughout.
+The private album contains 21 tagged outputs, including earlier fallbacks and repaired versions.
 
-All six delivered films are landscape 1920×1080, H.264, 60 fps, SDR BT.709, at the default
-`balanced` quality. The target was 60 seconds. Titles, transitions, date/place captions,
-photos, videos, Live Photos and music were requested. No `high` quality preset was used.
-The private comparison album contains all six, with hardware, tier, variant and source tags
-read back and album membership verified. Household media, asset IDs, private logs, album
-links and credentials are not part of this report.
+Fresh confirmations completed on M5 Full (253.593 s), M2 Full (583.562 s) and Kubernetes GPU
+(751.999 s on one physical T1000). NAS Basic and NAS GPU retain their original successful runs.
+M2 Basic retains its original preparation and a successful render/music retry. This is a measured
+smoke checkpoint, not six uninterrupted runs on one current-main revision or a clean-install
+qualification. Motion-description gaps remain, and M5 Full used factual fallback for one episode.
+Both PRs remain draft pending the remaining feature and installation qualification.
+
+The workload targets 60 seconds, with titles, transitions, date/place captions, photos, videos,
+Live Photos and music requested. No `high` quality preset was used. NAS Basic uses bundled music;
+the final other five common films and all four maximum films have ACE-Step music and four-stem
+mixing. Household media, asset IDs, private logs, album links and credentials are not published.
 
 ## Workload and cold boundary
 
@@ -54,7 +60,7 @@ Both Full configurations used the same pinned Gemma reader weights through local
 The CUDA inference image used as the Kubernetes controller was not a fresh generated app install;
 its bundled-music fallback was not demonstrated.
 
-## Delivered outputs and total times
+## Initial checkpoint: delivered outputs and total times
 
 Seconds throughout; output sizes are decimal MB. Raw wall time includes the CLI wrapper.
 The pipeline column uses the app's root span, with the two composites defined below.
@@ -113,10 +119,8 @@ was mistaken for migration input. These are harness failures, not application sp
 
 The NAS GPU 4K/HDR saved-cut attempt failed after 375.251 s during title construction because
 its original run had no persisted date range. No maximum-resolution film was produced.
-The six common outputs took priority during the first pass. Maximum-capability 4K exports are
-required before the documentation PR becomes ready, alongside uninterrupted end-to-end passes
-for all six configurations. Verify 60 fps and HDR where supported, using default balanced quality.
-No 4K/HDR performance or correctness claim comes from this checkpoint.
+The six common outputs took priority during the first pass. Later maximum exports and repairs
+are recorded below; this failed attempt contributes no 4K performance claim.
 
 ## Maximum-resolution follow-up
 
@@ -144,8 +148,7 @@ Music is generated separately for each export; its timing difference is not a re
 This export reused the original selected cut. It does not repair the missing Laya exercise in the
 first-pass selection or count as a clean end-to-end acceptance run. Rendering used main
 `c96b7fb18` plus the tested smoke fixes; the earlier common repair used `288215135` plus the date
-fix. Keep that revision difference when reading the comparison. The remaining maximum exports and
-the six uninterrupted acceptance runs are still required before the PR becomes ready.
+fix. Keep that revision difference when reading the comparison. Later exports and cold confirmations are recorded below. This earlier result stays separate.
 
 ### M2 Full and Kubernetes GPU follow-up
 
@@ -165,8 +168,93 @@ Kubernetes soundtrack repair took 197.506 s and also passed decoding.
 
 M2 Full subsequently completed a saved-cut 1080p render plus local generated music and all four
 stems in 137.184 s. That film passed decoding and was uploaded separately. Its selection is still
-from the first pass. The M2 4K film still carries its bundled soundtrack; generating a track alone
-does not repair that film or establish a clean handoff from a cold selection.
+from the first pass. That earlier M2 4K film keeps its bundled soundtrack. The final cold run and paired maximum
+below use generated music; a standalone music probe was not counted as a film pass.
+
+## Final confirmations and paired maximum exports
+
+The following cold confirmations started with empty app/media/analysis/render caches and the
+same source inventory. Installed weights stayed in place. Each command finished without a
+phase restart, including generated music and four-stem mixing. Full-file decoding passed.
+Selection changed on the smaller Mac after changing its caption backend, so these remain
+same-workload comparisons rather than identical-cut comparisons across every machine.
+
+| Cold configuration | Wall | Pipeline | Startup | Discovery | Selection | Render | Clip preparation | Assembly | Music | Output MB |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| M5 Full | 253.593 | 252.619 | 4.264 | 0.216 | 177.806 | 42.520 | 14.806 | 27.711 | 23.343 | 21.92 |
+| M2 Full, llama.cpp caption service | 583.562 | 582.204 | 4.450 | 0.236 | 432.049 | 69.901 | 22.523 | 47.373 | 67.359 | 39.18 |
+| Kubernetes GPU, one T1000 | 751.999 | 746.066 | 10.044 | 0.253 | 205.693 | 352.776 | n/a | 352.744 | 164.138 | 42.58 |
+
+M5 now exercised Laya and the Full reader. Its stored warnings still report missing optional
+motion descriptions and one unread demanded episode. M2 Full exercised both and had no unread
+episode warning, but optional motion descriptions were still missing. Kubernetes also reported
+missing optional motion descriptions. These features are not marked as fully exercised.
+
+M2 Basic's final saved-cut render/music retry took **134.060 s**, including 63.112 s render and
+63.373 s music. Its 34,480,812-byte film is **1080p60 SDR**, with local ACE-Step and four stems.
+The original successful preparation remains measured at 170.275 s; adding the successful retry
+from render start through completion gives a **298.654 s composite pipeline**. This is not a new
+cold run. Its original failed work and earlier bundled fallback remain in the initial tables.
+
+### What maximum output cost on the Macs
+
+Each pair below uses the same cut within that machine's final run. Both maximum films are
+3840×2160 at 60 fps, HEVC, 10-bit PQ HDR with BT.2020 primaries. Both passed complete decoding.
+Maximum wall time is a saved-cut export, not another cold selection.
+
+| Configuration | Maximum export wall | 1080p render | 4K render | Extra render | Maximum music | 1080p bytes | 4K bytes | File increase |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| M5 Full | 127.934 s | 42.520 s | 86.436 s | 43.916 s | 31.269 s | 21,921,609 | 40,101,960 | 83% |
+| M2 Full | 304.711 s | 69.901 s | 180.407 s | 110.506 s | 103.942 s | 39,181,431 | 73,369,904 | 87% |
+
+The gain is four times the output pixels plus a 10-bit HDR output; frame rate stays at 60 fps.
+This does not turn lower-resolution or SDR sources into native 4K HDR detail. Music is regenerated
+per export. The M2 maximum also selected a later mastered music candidate, so its extra music
+time must not be attributed to output resolution.
+
+### GPU maximums and recovery cost
+
+The Kubernetes maximum above retained its video and completed its 140.068-second music repair.
+The NAS GPU maximum export took **1,095.863 s**, produced a decoded 4K60 HDR film, then completed
+its **music-only repair in 157.558 s**. Its final file is 107,750,044 bytes. The NAS export retry
+reused downloads from the failed maximum attempt; it is not a fresh-cache 4K measurement.
+
+To repair NAS music without another encode, source audio was restored from the retained
+Kubernetes 4K base. The plan digest, clip order, encoding plan, mute windows and duration matched
+exactly. The NAS video packets were unchanged, verified by hashing. Both GPU maximum films now
+contain ACE-Step music and four stems and passed full decoding. Earlier fallback films remain
+separately labelled in the album. Recovery time is additional work, not a replacement for the
+original failed music timing.
+
+### Memory handoffs: fixes and remaining limits
+
+The fixes release the scene-print encoder, reset the native title runtime before releasing the
+GPU render phase, and collect unreachable local model owners before clearing allocator caches.
+A real T1000 4K title probe freed 610 MiB and produced identical pixels after reinitialization.
+A smaller-Mac Laya probe freed about 780 MiB more after cyclic garbage collection.
+
+The M2 reader was already bundled llama.cpp. The separate MLX caption service occupied about
+2.3 GiB of physical memory; process RSS alone understated it. A cold Full retry with that service
+still fell short of the unchanged 7 GiB music guard. Replacing that caption process with
+llama.cpp SmolVLM2 Q8_0 reduced its measured physical footprint to about 507 MiB (528 MiB peak in
+three structured controls). The next cold Full run, its maximum export and the Basic saved-cut
+repair all completed local music. The measured caption setup is documented in the
+[caption service reference](../../docs-site/docs/reference/caption-service.md). This was a running
+service replacement, not a demonstrated fresh install or an automatically managed startup service.
+
+One NAS maximum OOM occurred after benchmark uploads triggered Immich ML jobs on the same GPU.
+That was benchmark interference: serial generation commands did not prevent upload-triggered
+OCR/face/CLIP work. Later GPU measurements ran before further uploads. Following an OOM,
+ACE-Step retained about 3.7 GiB despite CPU offload settings, and the next cold selection failed.
+After checking that no music jobs were running or queued, the existing ACE-Step deployment was
+restarted once. A saved-preparation retry then passed in 474.502 s; the independent cold
+confirmation above passed in 751.999 s. The earlier failed cold attempt took 215.502 s and is not
+hidden inside either successful timing.
+
+**ACE-Step recovery after OOM remains unresolved.** The successful one-GPU run proves this
+workload can finish in one go with services in a healthy state and without competing upload jobs.
+It does not prove automatic recovery after OOM or reliable co-scheduling with arbitrary GPU jobs.
+GPU Operator time slicing does not unload models on behalf of the application.
 
 ## Source provenance
 
@@ -184,6 +272,15 @@ their preserved original February CLI requests, without changing timings.
 Processing, titles, audio and render-worker implementation files were byte-identical between the
 two base revisions. That supports retaining those phase measurements; it does not turn this into
 a uniform-current-main matrix. The new documentation PR is separate from the unmerged code fix.
+
+The final cold confirmations and paired Mac exports ran commit
+`b9e89f0dc2485dc8830c1ee95ca105ab181ce2e0` plus patch SHA-256
+`694c918dcc06188adbf1228e9208edf5225b684f96a7109fb9a79d13e06b259d`.
+The patch's production changes are committed in `5970d39ea`; the executed snapshot remains
+identified separately. The render service had the title-runtime cleanup overlaid on `c96b7fb18`.
+Main advanced during measurement, including place/title changes in #1947. These results have
+not been relabelled as measurements of that later main. Do not treat this batch as a uniform
+revision comparison.
 
 ## Memory observations
 
@@ -221,7 +318,8 @@ cgroup OOM events. The music failure was GPU VRAM exhaustion, not that pod's RAM
   music nevertheless completed with that server present. A synthetic Laya load/close probe freed
   about 780 MiB more after cyclic garbage collection, even after the existing allocator cleanup.
   The proposed handoff now collects unreachable Python objects before clearing runtime buffers;
-  cold end-to-end verification is pending. The guard remains unchanged.
+  the final cold confirmation above passed after also replacing the separate caption service.
+  The guard remains unchanged.
 - **Single-GPU music:** ACE-Step exhausted the shared T1000 in all three Kubernetes attempts.
   Its error reported only 14.44 MiB free. Existing inference processes later accounted for about
   1.6 GiB, but attribution at the failed handoff is incomplete. Sequential steps alone do not prove
@@ -229,12 +327,13 @@ cgroup OOM events. The music failure was GPU VRAM exhaustion, not that pod's RAM
   retained native allocations after its Python renderers were dropped: a real 4K CUDA probe freed
   610 MiB by releasing that runtime, then rendered an identical frame after reinitialization.
   The worker fix releases it before relinquishing the render phase. The music-only repairs passed;
-  a complete cold one-GPU run still needs to verify the entire handoff.
+  the final cold one-GPU confirmation passed. Recovery after ACE-Step OOM remains unresolved.
 - **Motion descriptions:** [#1633](https://github.com/sam-dumont/immich-memories/pull/1633) made missing
   optional descriptions fall back to plain facts. Cuts do not acquire those lines; preparation does.
   Motion-description coverage was absent here. Live Photo playback and motion measurement are
   separate features. The original M5 plan recorded zero story-motion-description requests.
-- **Reader fallback:** each Full run had one unread demanded episode and used factual fallback.
+- **Reader fallback:** each initial Full run had one unread demanded episode and used factual fallback.
+  The final M5 confirmation still did; the final M2 confirmation did not.
   M5 reader calls ended with `finish_reason=stop`; this does not match the older oMLX truncation report.
 - **NAS titles:** the J4125 title kernel probe hit an illegal instruction; static PIL plates with fades
   completed the film. This is the documented CPU fallback, not a demonstrated new regression.
@@ -244,5 +343,6 @@ memory from selection/rendering to music. A clean-install repeat must use the do
 install route, run preflight, and then finish the same film with every requested service enabled.
 The install corrections in this PR are documentation changes; they do not claim such a repeat passed.
 
-The accompanying [CSV](2026-10-03-february-hardware-smoke.csv) contains only these aggregate timings, sizes and revisions.
+The accompanying [CSV](2026-10-03-february-hardware-smoke.csv) preserves the original six-row
+checkpoint. The final measurements above are additional observations, not silent replacements.
 Private run stores, source manifests, phase trees, logs and decoded films were retained separately.
