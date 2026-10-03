@@ -18,10 +18,14 @@ from __future__ import annotations
 
 import struct
 import subprocess
+import threading
 from collections.abc import Callable, Iterator
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 from statistics import median
+
+import numpy as np
 
 from immich_memories.processing.frame_sampling import even_timestamps
 
@@ -105,15 +109,15 @@ def _counted(payload: bytes | None, fmt: str) -> list[tuple[int, ...]]:
     return [struct.unpack(fmt, payload[4 + i * width : 4 + (i + 1) * width]) for i in range(count)]
 
 
-def _video_track(moov: bytes) -> tuple[int, int]:
+def _media(moov: bytes, handler: bytes) -> tuple[int, int]:
     for kind, start, end in _boxes(moov):
         if kind != b"trak":
             continue
         mdia = _child(moov, (start, end), b"mdia")
         hdlr = _child(moov, mdia, b"hdlr")
-        if moov[hdlr[0] + 8 : hdlr[0] + 12] == b"vide":
+        if moov[hdlr[0] + 8 : hdlr[0] + 12] == handler:
             return mdia
-    raise ValueError("MP4 index has no video track")
+    raise ValueError(f"MP4 index has no {'video' if handler == b'vide' else 'sound'} track")
 
 
 def _sample_offsets(moov: bytes, stbl: tuple[int, int], sizes: list[int]) -> list[int]:
@@ -151,8 +155,8 @@ class _Track:
     codec: str
 
 
-def _track(moov: bytes) -> _Track:
-    mdia = _video_track(moov)
+def _track(moov: bytes, handler: bytes = b"vide") -> _Track:
+    mdia = _media(moov, handler)
     mdhd = _child(moov, mdia, b"mdhd")
     timescale = struct.unpack(">I", moov[mdhd[0] + (20 if moov[mdhd[0]] == 1 else 12) :][:4])[0]
     stbl = _child(moov, _child(moov, mdia, b"minf"), b"stbl")
@@ -330,36 +334,108 @@ def sample_keyframes(read: ReadRange, *, count: int, width: int, workdir: Path) 
 
 # Fine enough to place a window, coarse enough that a B-frame's spread evens out.
 ACTIVITY_BIN_SECONDS = 0.5
+AUDIO_RATE = 16000
+# Phones interleave sound and picture frame by frame, so a span's audio is hundreds of
+# chunks a few kilobytes apart. On the NAS each chunk is a disk seek (757 requests: 6.5 s);
+# reading through a gap this small turns them into a few sequential reads instead.
+COALESCE_GAP_BYTES = 2 * 1024**2
+AUDIO_READERS = 4
 
 
-@dataclass(frozen=True, slots=True)
-class FrameActivity:
-    """(start second, median predicted-frame bytes) per half second, and what reading cost."""
+class PlaybackIndex:
+    """One playback's MP4 index, read once by byte range, and what it can answer cheaply.
 
-    bins: tuple[tuple[float, float], ...]
-    duration: float
-    bytes_read: int
-
-
-def frame_activity(read: ReadRange) -> FrameActivity:
-    """How much each half second of a playback changes, read off its MP4 index alone.
-
-    A predicted frame stores only what changed since the frames it refers to, so its size
-    rises when something crosses a still shot. Those sizes sit in the sample table the index
-    already holds: no frame is fetched or decoded, and the cost is the index (about a
-    kilobyte per second of video) whatever the clip shows or its resolution. Keyframes are
-    left out; they hold a whole picture and say nothing about change.
+    The picture side comes from the index alone; the sound side fetches only the audio
+    chunks of the span asked for. Neither ever reads a picture.
     """
-    reader = _Reader(read)
-    _pieces, moov = _index(reader)
-    track = _track(moov)
-    keyframes = set(track.sync)
-    by_bin: dict[int, list[int]] = {}
-    for sample, (second, size) in enumerate(zip(track.seconds, track.sizes, strict=False)):
-        if sample not in keyframes:
-            by_bin.setdefault(int(second / ACTIVITY_BIN_SECONDS), []).append(size)
-    bins = tuple(
-        (index * ACTIVITY_BIN_SECONDS, float(median(sizes)))
-        for index, sizes in sorted(by_bin.items())
-    )
-    return FrameActivity(bins, track.duration, reader.bytes_read)
+
+    def __init__(self, read: ReadRange) -> None:
+        self._reader = _Reader(read)
+        self._lock = threading.Lock()
+        self._pieces, moov = _index(self._reader)
+        self._video = _track(moov)
+        try:
+            self._audio: _Track | None = _track(moov, b"soun")
+        except ValueError:
+            self._audio = None
+
+    @property
+    def duration(self) -> float:
+        return self._video.duration
+
+    @property
+    def bytes_read(self) -> int:
+        return self._reader.bytes_read
+
+    def activity(self) -> tuple[tuple[float, float], ...]:
+        """How much each half second changes: the median size of its predicted frames.
+
+        A predicted frame stores only what changed since the frames it refers to, so its
+        size rises when something crosses a still shot. Keyframes hold a whole picture and
+        say nothing about change, so they are left out.
+        """
+        keyframes = set(self._video.sync)
+        by_bin: dict[int, list[int]] = {}
+        samples = zip(self._video.seconds, self._video.sizes, strict=False)
+        for sample, (second, size) in enumerate(samples):
+            if sample not in keyframes:
+                by_bin.setdefault(int(second / ACTIVITY_BIN_SECONDS), []).append(size)
+        return tuple(
+            (index * ACTIVITY_BIN_SECONDS, float(median(sizes)))
+            for index, sizes in sorted(by_bin.items())
+        )
+
+    def audio(self, start: float, end: float, *, workdir: Path) -> np.ndarray | None:
+        """The sound between ``start`` and ``end`` as 16 kHz mono, or None without a track.
+
+        Only the audio chunks of the span are fetched, each by its own byte range, then
+        decoded from a sparse copy that holds the index and those chunks alone.
+        """
+        track = self._audio
+        if track is None:
+            return None
+        wanted = [
+            (track.offsets[n], track.offsets[n] + track.sizes[n])
+            for n, second in enumerate(track.seconds)
+            if start - 1.0 <= second < end
+        ]
+        if not wanted:
+            return None
+        pieces = self._pieces.copy()
+        with ThreadPoolExecutor(AUDIO_READERS) as pool:
+            spans = _merged(wanted, gap=COALESCE_GAP_BYTES)
+            for (first, _last), data in zip(spans, pool.map(self._fetch, spans), strict=True):
+                pieces[first] = data
+        workdir.mkdir(parents=True, exist_ok=True)
+        copy = workdir / "sound.mp4"
+        _write(copy, pieces, self._reader.total)
+        decoded = subprocess.run(  # noqa: S603 - fixed argv, paths are not shell-interpreted
+            [
+                "ffmpeg", "-v", "error", "-ss", f"{start:.3f}", "-t", f"{end - start:.3f}",
+                "-i", str(copy), "-map", "0:a:0", "-ac", "1", "-ar", str(AUDIO_RATE),
+                "-f", "f32le", "-",
+            ],
+            capture_output=True, timeout=120, check=False,
+        )  # fmt: skip
+        copy.unlink(missing_ok=True)
+        usable = len(decoded.stdout) // 4 * 4
+        return np.frombuffer(decoded.stdout[:usable], dtype=np.float32) if usable else None
+
+    def _fetch(self, span: tuple[int, int]) -> bytes:
+        data, total = self._reader._read(span[0], span[1] - span[0])
+        with self._lock:
+            self._reader.total = total
+            self._reader.bytes_read += len(data)
+            self._reader.requests += 1
+        return data
+
+
+def _merged(spans: list[tuple[int, int]], *, gap: int = 0) -> list[tuple[int, int]]:
+    """Byte spans in order, the ones closer than ``gap`` joined into one request."""
+    merged: list[list[int]] = []
+    for start, end in sorted(spans):
+        if merged and start <= merged[-1][1] + gap:
+            merged[-1][1] = max(merged[-1][1], end)
+        else:
+            merged.append([start, end])
+    return [(start, end) for start, end in merged]

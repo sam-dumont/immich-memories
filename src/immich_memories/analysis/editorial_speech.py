@@ -17,19 +17,39 @@ logger = logging.getLogger(__name__)
 # people trading lines leave gaps of that size, and a cut there keeps the question and
 # drops the answer (#1950). Only a silence this long ends an exchange.
 CONVERSATION_PAUSE_SECONDS = 1.0
+# An exchange stays whole only when it fits the longest cut speech may hold. Longer runs of
+# "speech" are a crowd, a PA or a long story: on a finish-line clip the detector heard 17 s
+# of it, and keeping that whole dragged the window back 7 s and the cut out to its cap.
+LONGEST_EXCHANGE_SECONDS = 2 * MOTION_CAP_SECONDS
 
 
 def _merged_ranges(ranges, duration, buffer):
-    merged: list[list[float]] = []
+    utterances: list[list[float]] = []
     for start, end in sorted(ranges):
         left, right = max(0.0, start - buffer), min(duration, end + buffer)
         if right <= left:
             continue
-        if merged and left - merged[-1][1] < CONVERSATION_PAUSE_SECONDS - 2 * buffer:
-            merged[-1][1] = max(merged[-1][1], right)
+        if utterances and left <= utterances[-1][1]:
+            utterances[-1][1] = max(utterances[-1][1], right)
         else:
-            merged.append([left, right])
+            utterances.append([left, right])
+    merged: list[list[float]] = []
+    for exchange in _exchanges(utterances):
+        if exchange[-1][1] - exchange[0][0] <= LONGEST_EXCHANGE_SECONDS:
+            merged.append([exchange[0][0], exchange[-1][1]])
+        else:
+            merged.extend(exchange)
     return merged
+
+
+def _exchanges(utterances: list[list[float]]) -> list[list[list[float]]]:
+    exchanges: list[list[list[float]]] = []
+    for utterance in utterances:
+        if exchanges and utterance[0] - exchanges[-1][-1][1] < CONVERSATION_PAUSE_SECONDS:
+            exchanges[-1].append(utterance)
+        else:
+            exchanges.append([utterance])
+    return exchanges
 
 
 def _stitched_ranges(material: LiveRenderMaterial, regions_for):

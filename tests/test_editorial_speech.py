@@ -360,3 +360,24 @@ def test_a_breath_between_two_speakers_is_not_a_cut_point():
     shave_content_duration([talk, still], 9.0)
 
     assert talk["seconds"] == pytest.approx(6.76), "the answer stays with the question"
+
+
+def test_a_crowd_heard_all_along_does_not_hold_the_cut_to_its_longest():
+    """Measured on a finish-line clip: the PA and the crowd read as speech for 17 s. That is
+    not one exchange to keep whole; the window stays where it was and the shave still works."""
+    from immich_memories.analysis.editorial_speech import resolve_speech_cuts
+
+    crowd = [(0.0, 1.7), (3.5, 3.8), (4.0, 9.4), (9.9, 12.1), (12.4, 17.3)]
+    clip = {
+        "kind": "video",
+        "asset_id": "caravan",
+        "seconds": 6.0,
+        "raw_seconds": 17.33,
+        "start_time": 10.0,
+        "end_time": 16.0,
+    }
+
+    [clip] = resolve_speech_cuts([clip], lambda _asset: crowd, buffer=0.08)
+
+    assert clip["start_time"] >= 9.8, "the window is not dragged back across the whole crowd"
+    assert clip["seconds"] <= 8.0

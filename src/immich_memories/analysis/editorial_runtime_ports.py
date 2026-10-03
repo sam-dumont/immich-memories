@@ -121,61 +121,80 @@ def production_live_clock_offsets(source, *, resources):
     return BankedClockOffsets(store=source.store, companions=source.companion_assets, fetch=fetch)
 
 
-def production_window_resolver(source, *, resources):
-    """Choose where each kept video's hold sits, from its playback index alone (#1949)."""
-    from immich_memories.analysis.editorial_video_windows import PlaybackActivity, place_windows
+def production_cut_resolvers(source, *, resources):
+    """Where each kept video plays, then where its cut may end, from one listening (#1949).
 
-    client = None
-
-    def read(asset_id: str, start: int, length: int) -> tuple[bytes, int]:
-        nonlocal client
-        if client is None:
-            client = _stage_reads(source)
-            resources.callback(client.close)
-        return client.get_video_playback_range(asset_id, start, length)
-
-    activity = PlaybackActivity(read)
-    return lambda carriers: place_windows(carriers, activity)
-
-
-def production_speech_resolver(source, *, resources):
-    """Detect retained speech before final timing, with lazy transport and local inference."""
+    The window step reads each kept video's index and the sound of one bounded span by byte
+    range; the speech cut reuses what it heard. Only Live Photo clips, a few seconds each,
+    are still fetched whole for their speech.
+    """
+    import json
     import logging
 
+    from immich_memories.analysis.editorial_clip_facts import ClipWindowFacts
     from immich_memories.analysis.editorial_speech import resolve_speech_cuts, speech_buffer
+    from immich_memories.analysis.editorial_video_windows import place_windows
     from immich_memories.speech.facts import SpeechFacts
 
-    if not source.config.speech.enabled:
-        return None
     client = None
 
-    def fetch(asset_id, path):
+    def reads():
         nonlocal client
         if client is None:
             client = _stage_reads(source)
             resources.callback(client.close)
-        # WHY: a whole video's rendition streams to disk; bytes would hold it in RAM
-        client.download_playback(asset_id, path)
+        return client
 
-    facts = SpeechFacts(
-        assets=dict(source.assets) | dict(source.companion_assets),
+    def fetch(asset_id, path):
+        # WHY: a whole video's rendition streams to disk; bytes would hold it in RAM
+        reads().download_playback(asset_id, path)
+
+    speech_config = source.config.speech
+    speech = (
+        SpeechFacts(
+            assets=dict(source.assets) | dict(source.companion_assets),
+            store=source.store,
+            fetch=fetch,
+            config=speech_config,
+        )
+        if speech_config.enabled
+        else None
+    )
+    windows = ClipWindowFacts(
+        assets=dict(source.assets),
         store=source.store,
-        fetch=fetch,
-        config=source.config.speech,
+        read=lambda asset_id, start, length: reads().get_video_playback_range(
+            asset_id, start, length
+        ),
+        detector=speech.detector if speech is not None else None,
+        detector_settings=json.dumps(speech_config.model_dump(), sort_keys=True),
     )
 
-    def resolve(carriers):
+    def resolve_windows(carriers):
+        try:
+            return place_windows(carriers, windows)
+        finally:
+            windows.flush()
+
+    if speech is None:
+        return resolve_windows, None
+
+    def regions_for(asset_id):
+        heard = windows.speech_for(asset_id)
+        return heard if heard is not None else speech(asset_id)
+
+    def resolve_speech(carriers):
         if not any(c["kind"] in {"video", "live-motion"} for c in carriers):
             return carriers
-        if not facts.detector.available:
+        if not speech.detector.available:
             logging.getLogger(__name__).warning(
                 "Speech boundary detection is unavailable; cuts may interrupt speech. "
                 "Install immich-memories[editorial] to enable the local detector."
             )
             return carriers
         try:
-            return resolve_speech_cuts(carriers, facts, buffer=speech_buffer(source.config))
+            return resolve_speech_cuts(carriers, regions_for, buffer=speech_buffer(source.config))
         finally:
-            facts.flush()
+            speech.flush()
 
-    return resolve
+    return resolve_windows, resolve_speech
