@@ -23,11 +23,11 @@ export default function Home(): ReactNode {
         <div className="container">
           <div className={styles.heroInner}>
             <div className={styles.heroText}>
-              <p className={styles.eyebrow}>Self-hosted · Works alongside Immich</p>
+              <p className={styles.eyebrow}>Self-hosted · A separate companion for Immich</p>
               <Heading as="h1" className={styles.heroTitle}>{productTagline}</Heading>
               <p className={styles.heroSubtitle}>
-                Pick a month, a year, a trip or a person. Review the cut,
-                then render with titles and music.
+                Choose photos and videos from your Immich library. Review and change the cut,
+                then render an MP4 with titles and music.
               </p>
               <div className={styles.heroCtas}>
                 <Link className={styles.ctaPrimary} to="/docs/get-started/quick-start">Make your first film</Link>
