@@ -128,7 +128,9 @@ def resolve_speech_cuts(
         carrier["speech_regions"] = _merged_ranges(ranges, duration, buffer)
         start = carrier.get("start_time", 0.0)
         for left, right in carrier["speech_regions"]:
-            if left < start < right:
+            # A region longer than any kept exchange is no sentence (music, a crowd, wind
+            # read as one line): its start says nothing about where this clip may open.
+            if left < start < right and right - left <= LONGEST_EXCHANGE_SECONDS:
                 start = left
         carrier["start_time"] = start
         # Finishing the sentence is a courtesy, not a licence: an uncapped expand

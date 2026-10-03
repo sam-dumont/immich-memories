@@ -381,3 +381,22 @@ def test_a_crowd_heard_all_along_does_not_hold_the_cut_to_its_longest():
 
     assert clip["start_time"] >= 9.8, "the window is not dragged back across the whole crowd"
     assert clip["seconds"] <= 8.0
+
+
+def test_a_sound_heard_as_one_endless_line_does_not_drag_the_window_back():
+    """Measured on a 49 s clip: the detector heard one unbroken 'utterance' from 9 s to 32 s.
+    No sentence runs 23 s; the window chosen at 30.5 s stays there."""
+    from immich_memories.analysis.editorial_speech import resolve_speech_cuts
+
+    clip = {
+        "kind": "video",
+        "asset_id": "music",
+        "seconds": 6.0,
+        "raw_seconds": 49.2,
+        "start_time": 30.5,
+        "end_time": 36.5,
+    }
+
+    [clip] = resolve_speech_cuts([clip], lambda _asset: [(9.34, 32.1)], buffer=0.08)
+
+    assert clip["start_time"] == 30.5
