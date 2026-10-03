@@ -85,7 +85,8 @@ here measure classifier holds, not end-to-end film performance.
 
 ## Ollama
 
-Native Ollama uses `/api/generate`. Set the context in `options`:
+Native Ollama uses `/api/generate`. For Gemma 4 E4B, set the context in `options`
+and explicitly disable thinking for the text reader:
 
 ```yaml
 advanced:
@@ -93,13 +94,47 @@ advanced:
     enabled: true
     provider: ollama
     base_url: http://localhost:11434
-    model: gemma4:e4b
+    model: gemma4:e4b-it-q4_K_M
     extra_params:
+      think: false
       options:
         num_ctx: 32768
 ```
 
-For Ollama's OpenAI route, use `provider: openai-compatible` and `base_url: http://localhost:11434/v1`. That route cannot set the context per request. Start the server with `OLLAMA_CONTEXT_LENGTH=32768 ollama serve`, or create a model with `PARAMETER num_ctx 32768` in its Modelfile. See [Ollama context length](https://docs.ollama.com/context-length) and [OpenAI compatibility](https://docs.ollama.com/api/openai-compatibility#setting-the-local-context-size). From a container, use the host's reachable address instead of `localhost`.
+Pull that model with `ollama pull gemma4:e4b-it-q4_K_M`. The explicit tag records
+the quantization tested. `extra_params.think: false` overrides thinking on every
+native request, including titles; omit it if you deliberately want reasoning and
+allow enough output tokens for it. With Ollama 0.35.1, omitting it let thinking
+consume part of the first large episode request's 4,000-token budget, leaving
+the JSON answer truncated.
+
+For Ollama's OpenAI route, use its own reasoning switch:
+
+```yaml
+advanced:
+  llm:
+    enabled: true
+    provider: openai-compatible
+    base_url: http://localhost:11434/v1
+    model: gemma4:e4b-it-q4_K_M
+    no_thinking_params:
+      reasoning_effort: none
+```
+
+That route cannot set the context per request. Start the server with
+`OLLAMA_CONTEXT_LENGTH=32768 ollama serve`, or create a model with
+`PARAMETER num_ctx 32768` in its Modelfile. The default
+`chat_template_kwargs.enable_thinking: false` does **not** disable thinking on
+Ollama's compatible route. See [Ollama context length](https://docs.ollama.com/context-length)
+and [OpenAI compatibility](https://docs.ollama.com/api/openai-compatibility).
+From a container, use the host's reachable address instead of `localhost`.
+
+Both recipes passed the larger episode and story-selection probes on an M5 Max.
+The native recipe passed 33/34 synthetic feature checks; the compatible recipe
+passed 32/34. Motion failed on both; the compatible route also missed a period-summary
+fact. The [Ollama validation results](../better/measured.md#ollama-validation)
+include the baseline runs and exact model digest. These settings were tested with
+Gemma 4 E4B, not every model Ollama can serve.
 
 ## Providers and dialects
 
