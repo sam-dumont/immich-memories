@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import test from 'node:test';
 import {buildSetup} from './recipes.ts';
+import {deploymentCommands} from '../InstallationFiles/downloads.ts';
 
 const sources = JSON.parse(readFileSync(new URL('./sources.json', import.meta.url), 'utf8'));
 const setup = {
@@ -61,4 +62,16 @@ test('Basic generates CPU-only files across Docker, Mac and Kubernetes', () => {
   const kustomization = JSON.parse(kube.files.find(file => file.name.endsWith('kustomization.yaml')).content);
   assert.ok(kustomization.resources.includes('../base'));
   assert.doesNotMatch(kube.commands, /tier-basic|tier-nas/);
+});
+
+
+test('vendored inputs pin the docs version and verify before extracting', () => {
+  assert.equal(deploymentCommands('development'), '');
+  const command = deploymentCommands('v1.0.0-rc.2');
+  assert.match(command, /releases\/download\/v1\.0\.0-rc\.2/);
+  assert.match(command, /BUNDLE=immich-memories-deploy-1\.0\.0-rc\.2\.tar\.gz/);
+  assert.ok(command.indexOf('shasum -a 256 -c') < command.indexOf('tar -xzf'));
+  assert.match(command, /test -s bundle\.sha256/);
+  assert.match(command, /-C vendor\/immich-memories/);
+  assert.doesNotMatch(command, /latest|git clone|docker build/);
 });

@@ -61,7 +61,8 @@ The rest of this page covers the manifests and manual operator changes.
 - For NVIDIA overlays: GPU Operator, `nvidia` RuntimeClass and labelled GPU nodes.
 
 The default is one CPU-only app, with SQLite on the data PVC. Use local/block storage for SQLite,
-not NFS/SMB. Keep `replicas: 1` even with PostgreSQL: the UI has in-process state.
+not NFS/SMB. Keep `replicas: 1` even with PostgreSQL: the UI has in-process state. Database leases
+serialize CLI work; they do not synchronize multiple UI processes or make multiple replicas safe.
 
 <DeploymentDiagram topology="basic" />
 
@@ -407,3 +408,103 @@ lists the fetch options. Run fetch from the app's configuration after adding GPU
 [Distributed services on Kubernetes](./reference/cluster-example.md) explains GPU allocations,
 service boundaries and the shipped composition example. Use it when you need separate placement;
 start with the basic install first.
+
+## Configuration ownership
+
+For each field: runtime environment > operator `config.yaml` > saved Settings > deployment
+service defaults > schema default. A command's flags can override its own run. In YAML, the
+`advanced:` wrapper contains `auth`, `server`, `llm`, `editorial`, `inference` and other advanced
+sections; runtime names in the table omit that wrapper. See the [complete field reference](../reference/config-reference.md).
+
+| Group | Who controls it | Change / secret handling |
+|---|---|---|
+| `auth.*`, `server.*` | Environment or file only; ignored if saved by old Settings | Recreate/restart after changes; protect credentials in Kubernetes Secrets |
+| `database.url`, `database.schema` | Environment/file bootstrap only | Stop writers before changing store; restart; keep the database URL secret |
+| `immich.*`, `llm.*`, `editorial.preparation.*`, `inference.*`, `render.*` | Settings unless environment/file pins the key | Saved changes affect subsequent work; changed credential-bearing URLs require credential re-entry; recreate for environment changes |
+| `tier`, `output.*`, `audio.*`, `trips.*`, `upload.*`, `automation.*` | Same precedence | Keep output/cache paths on actual mounts; restart after changing the running timer's deployment configuration |
+| `IMMICH_MEMORIES_DEPLOYMENT_*` service wiring | Low-priority deployment defaults | Settings can override; these are not the normal high-priority runtime environment keys |
+
+`${VAR}` interpolation happens **in the YAML file only**. Settings rejects literal secret
+references; Kubernetes `env.value` does not shell-expand them. Inject an environment value from
+`secretKeyRef`/`envFrom`, or let file interpolation read an injected secret. Keep ConfigMaps free
+of literal secrets. Restart after updating environment-backed Secrets; existing pods do not pick
+up new environment values. The [config source report](./config-file.md#where-a-setting-comes-from)
+shows what wins.
+
+The same data PVC is mounted at both `.immich-memories` and `.cache` without `subPath`, so both
+paths expose the same volume root. This provides writable persistent runtime caches under a
+read-only root; it does not isolate credentials from model code. SQLite, saved credentials and
+session keys live there. The model PVC holds weights and the output PVC holds films.
+Back up the store **and** keys using [backup/restore](./maintenance/storage-backups.md).
+
+## Probes, outages and monitoring
+
+| Endpoint | HTTP result | Dependency and operational consequence |
+|---|---|---|
+| `/health/live` | 200 while the web process responds | No Immich probe. Repeated liveness failures can restart the container |
+| `/health/ready` | 200 ready; 503 missing/invalid config, unsupported API, failed authentication or unreachable Immich | Authenticated Immich access is required. Failure removes the pod from ready Service endpoints; Terraform can keep waiting even with a live web process |
+| `/health` | 200 with detailed status payload | Read the body rather than treating HTTP 200 as readiness. Run/automation/disk detail is gated by the app session when auth is on |
+
+During an Immich outage, inspect `kubectl logs`, pod events, the configured URL/key and NetworkPolicy.
+Port-forward directly to `deployment/immich-memories` to diagnose a live but unready pod.
+Restore authenticated Immich reachability and confirm `/health/ready` returns 200 and the Service
+has ready endpoints again. Do not remove the readiness check to conceal dependency failures.
+An outage/recovery test belongs on a disposable Immich endpoint, never the household server.
+
+The app exposes **no Prometheus scrape or OpenTelemetry export endpoint** in this baseline.
+Use the [existing JSON logs with run IDs](./maintenance/health-logs-cache.md), the health endpoints,
+`runs show`, `report`, per-run timings and `llm-usage.json` for model-call usage.
+The inference service's `/queue` reports that service's work, not app-wide metrics or readiness.
+[Optional OpenTelemetry export (#656)](https://github.com/sam-dumont/immich-memories/issues/656)
+remains separate work. Existing structured logging is available now.
+
+## Resource requests, QoS and scratch
+
+The shipped app pod is **Burstable**: app requests 1 CPU/2Gi versus limits 4 CPU/8Gi; fetch
+init requests 250m/512Mi versus limits 2 CPU/2Gi. The [render memory model](./reference/rendering.md#memory-budget)
+uses the container limit: 4 GiB permits one source-preparation worker; 8 GiB can permit two.
+More RAM may increase parallel work; it does **not** enlarge disk-backed `/tmp`.
+
+For a Basic pod on Kubernetes 1.33, add this strategic-merge patch to your overlay's `patches`
+list to reserve the current ceilings rather than rely on spare node capacity:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: immich-memories
+spec:
+  template:
+    spec:
+      initContainers:
+        - name: fetch-models
+          resources:
+            requests: {cpu: "2", memory: 2Gi}
+            limits: {cpu: "2", memory: 2Gi}
+      containers:
+        - name: immich-memories
+          resources:
+            requests: {cpu: "4", memory: 8Gi}
+            limits: {cpu: "4", memory: 8Gi}
+```
+
+For **Guaranteed** QoS, every ordinary container, init container and sidecar must have CPU and
+memory requests equal to its limits. Add the same treatment to `write-config`, render sidecars
+and injected mesh/agent containers when present; the Basic patch alone does not cover them.
+These are [Kubernetes' container-level QoS rules](https://kubernetes.io/docs/tasks/configure-pod-container/quality-service-pod/).
+Inspect the admitted pod's full resource specification and observed `.status.qosClass`, not just
+your submitted patch. This example is not yet a live-cluster QoS result.
+
+Reserving 4 CPU/8Gi can leave the pod Pending on a busy node and reduces how many other workloads
+fit there; it does not add another UI replica. `/tmp` remains a disk-backed **4Gi emptyDir** under
+node ephemeral storage. Budget node free disk plus logs/image layers and explicit ephemeral-storage
+requests/limits as needed. Increasing the emptyDir limit requires available disk; a memory-backed
+emptyDir would instead count against memory. Models, caches and output have separate PVC budgets.
+
+## Reproducible GitOps inputs
+
+Use a **versioned release deployment bundle**, vendor it and review its diff. Packaging substitutes
+app/inference image tags and Terraform example pins. A remote Git URL or a raw source archive
+skips that substitution and is not the same installation input. The
+[vendoring procedure](./gitops.md) records a real downloadable bundle and distinguishes its
+render/validate check from current-candidate or live-cluster evidence.

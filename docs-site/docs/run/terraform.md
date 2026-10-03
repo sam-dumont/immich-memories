@@ -12,6 +12,10 @@ it to your cluster.
 The project supports this module and the [Kustomize deployment](./kubernetes.md#supported-deployment-paths).
 There is no project Helm chart; request one if your setup needs it.
 
+Read [configuration ownership, probes and resources](./kubernetes.md#configuration-ownership)
+for environment/file versus Settings precedence, singleton behavior and Immich outages.
+Use [pinned bundle vendoring](./gitops.md) for repeatable module inputs.
+
 ## Prerequisites
 
 Terraform 1.9+, Kubernetes provider 2.20+, a working kubeconfig and storage class.

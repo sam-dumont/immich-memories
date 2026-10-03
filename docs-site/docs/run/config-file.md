@@ -38,7 +38,8 @@ For each key, the first source that sets it wins:
 | 1 | Environment variables |
 | 2 | `config.yaml` |
 | 3 | Values saved from Settings or the config CLI |
-| 4 | Built-in defaults |
+| 4 | Deployment defaults (`IMMICH_MEMORIES_DEPLOYMENT_*`) |
+| 5 | Built-in defaults |
 
 Command-specific flags can override these for that command. LLM key shorthands have a
 [special rule](./environment-variables.md#shorthands).

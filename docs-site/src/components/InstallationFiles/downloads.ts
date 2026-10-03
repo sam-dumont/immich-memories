@@ -8,3 +8,21 @@ export function installationCommands(version: string): string {
   const acquire = ['mkdir -p immich-memories && cd immich-memories', ...files.map(file => `curl -fLO "${assetBase(version)}/${file}"`)];
   return [...acquire, 'cp example.env .env', `printf '\nIMMICH_MEMORIES_VERSION=${tag}\n' >> .env`, 'mkdir -p output'].join('\n');
 }
+
+
+export function deploymentCommands(version: string): string {
+  if (!/^v?\d+\.\d+\.\d+(?:-rc\.\d+)?$/.test(version)) return '';
+  const tag = version.replace(/^v/, '');
+  return [
+    'set -eu',
+    `BUNDLE=immich-memories-deploy-${tag}.tar.gz`,
+    `ASSETS=${assetBase(version)}`,
+    'curl -fLO "$ASSETS/$BUNDLE"',
+    'curl -fLO "$ASSETS/SHA256SUMS"',
+    `awk -v bundle="$BUNDLE" '$2 == bundle {print}' SHA256SUMS > bundle.sha256`,
+    'test -s bundle.sha256',
+    'shasum -a 256 -c bundle.sha256',
+    'mkdir -p vendor/immich-memories',
+    'tar -xzf "$BUNDLE" -C vendor/immich-memories',
+  ].join('\n');
+}
