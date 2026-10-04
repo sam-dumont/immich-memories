@@ -248,6 +248,28 @@ def scene_pair_relation(
     return relation
 
 
+def hash_repeat_relation(
+    thumbnail_hash: Callable[[str], str | None],
+) -> Callable[[Mapping[str, Any], Mapping[str, Any]], bool]:
+    """Whether two frames hash as the final duplicate review's own repeat: `_Repeats._by_hash`
+    itself, at the review's own `STANDALONE_REPEAT_DISTANCE`, reused where a further capture
+    group is granted a slot before the review ever runs, so the two rules can never drift
+    apart. A pair with no cached preview on either side is never called a repeat here.
+    """
+    repeats = _Repeats({}, STANDALONE_REPEAT_DISTANCE, None)
+
+    def relation(candidate: Mapping[str, Any], keeper: Mapping[str, Any]) -> bool:
+        for row in (candidate, keeper):
+            asset_id = row["asset_id"]
+            if asset_id not in repeats.hashes:
+                digest = thumbnail_hash(asset_id)
+                if digest:
+                    repeats.hashes[asset_id] = digest
+        return repeats._by_hash(candidate, [keeper]) is not None
+
+    return relation
+
+
 def _replacement_row(carrier: Mapping[str, Any], unit: Mapping[str, Any]) -> dict[str, Any]:
     """The refused carrier's place in the film, filled by the picture that takes it over.
 

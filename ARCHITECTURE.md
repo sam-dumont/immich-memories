@@ -612,6 +612,10 @@ src/immich_memories/
 │   ├── editorial_story_*.py    # Story reading, weighing, slots, shortlist, carriers: the story planner
 │   ├── editorial_story_trips.py     # Detected trips become one story per leg, with a reserve for each leg's length
 │   ├── editorial_story_lookalike.py # A story's further picture is refused when it repeats one it holds
+│   ├── editorial_story_capacity.py # A story's capacity: capture groups offered, folded to what it can show
+│   │                               # distinctly (the final review's own hash+scene rule), but only for a
+│   │                               # story whose unfolded grant would have exceeded that; a clean story's
+│   │                               # allocation is untouched
 │   ├── editorial_story_replacement_pool.py # What a freed slot refills from: the carrier's own moment, its
 │   │                               # story's unshown moments, then other stories' moments that never took a slot
 │   ├── editorial_story_depth.py     # A short film's free slots as verified-different frames inside shown moments

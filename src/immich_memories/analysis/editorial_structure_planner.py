@@ -24,7 +24,10 @@ from immich_memories.analysis.editorial_carrier_eligibility import excluded_carr
 from immich_memories.analysis.editorial_cut_invariants import check_finished_cut
 from immich_memories.analysis.editorial_exposure_chains import chain_holds_for
 from immich_memories.analysis.editorial_family_seat import FilmSeatSource, seat_in_film
-from immich_memories.analysis.editorial_final_hash_review import scene_pair_relation
+from immich_memories.analysis.editorial_final_hash_review import (
+    hash_repeat_relation,
+    scene_pair_relation,
+)
 from immich_memories.analysis.editorial_owner_required import admit_owner_required
 from immich_memories.analysis.editorial_people_condition_pool import (
     exclude_people_condition_violators,
@@ -351,6 +354,7 @@ def _select(
         banked=banked,
         looks_alike=hash_pair_relation(ports.thumbnail_hash),
         scene_alike=scene_pair_relation(ports.scene_print) if ports.scene_print else None,
+        capacity_hash_alike=hash_repeat_relation(ports.thumbnail_hash),
     )
     run.carriers = list(selection.carriers)
     gates = picture_admission(source, ports, material, selection, gate)
@@ -452,6 +456,7 @@ def _select(
                 wall.anchor_label,
                 include_elsewhere=True,
                 partition_of=partition_of_taken,
+                cut_carriers=run.carriers,
             )
         ),
         prior=source.prior_plan,
@@ -587,6 +592,7 @@ def _story_selection(
     banked: BankedAnswers,
     looks_alike=None,
     scene_alike=None,
+    capacity_hash_alike=None,
 ):
     if ports.draft is not None:
         carriers = deepcopy(ports.draft.carriers)
@@ -665,6 +671,7 @@ def _story_selection(
         trips=trips,
         looks_alike=looks_alike,
         scene_alike=scene_alike,
+        capacity_hash_alike=capacity_hash_alike,
         strangers_only=strangers_only(source.assets, source.audience_annotations),
         vouched=partial(owner_vouches_for, evidence=filler_evidence(source)),
         film_span=(source.case.ranges[0].start.date(), source.case.ranges[-1].end.date()),

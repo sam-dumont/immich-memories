@@ -112,6 +112,7 @@ def alternatives_pool(
     *,
     include_elsewhere: bool = False,
     partition_of: Callable[[str], str | None] | None = None,
+    cut_carriers: Sequence[Mapping[str, Any]] | None = None,
 ) -> Callable[[Mapping[str, Any]], list[dict]]:
     """When a carrier is held, offer the same moment's other pictures, then the story's
     unshown moments.
@@ -120,9 +121,11 @@ def alternatives_pool(
     ``apply_gate`` drops a carrier rather than reach past its own anchor), once a story's own
     material runs out the pool reaches into other stories' moments that never took a slot, in
     the planner's own funding order. An elsewhere offer is never from a month the film does
-    not already show (the timing and partition budget are bound to the months selection
-    settled on), never from a different partition than the carrier it would replace when the
-    product caps carriers per partition, and the pool stops after `MAX_ELSEWHERE_OFFERS`
+    not already show — ``cut_carriers`` is the finished cut at the point the caller runs its
+    own review (after the audience gate and the timing trim, for the final duplicate review;
+    selection's own carriers when the caller has no later cut, e.g. the audience gate's own
+    narrower pool) — never from a different partition than the carrier it would replace when
+    the product caps carriers per partition, and the pool stops after `MAX_ELSEWHERE_OFFERS`
     moments so one repeat cannot turn into an unbounded run of audience asks.
     """
     unit_by_asset = {u["asset_id"]: (f, u) for f, units in event_units.items() for u in units}
@@ -139,7 +142,8 @@ def alternatives_pool(
         for episode in story["episodes"]
         for moment in _moments_of(selection, episode)
     }
-    months_shown = {str(c.get("taken", ""))[:7] for c in selection.carriers}
+    shown = selection.carriers if cut_carriers is None else cut_carriers
+    months_shown = {str(c.get("taken", ""))[:7] for c in shown}
     row_of = partial(
         _unit_row,
         unit_by_asset=unit_by_asset,

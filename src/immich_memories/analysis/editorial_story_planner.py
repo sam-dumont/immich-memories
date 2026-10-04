@@ -24,6 +24,7 @@ from immich_memories.analysis.editorial_rule_banked_facts import (
     BankedFacts,
     withheld_by_bank,
 )
+from immich_memories.analysis.editorial_story_capacity import capacity_choices
 from immich_memories.analysis.editorial_story_carriers import (
     CarrierAdmission,
     choice_is_starred,
@@ -42,10 +43,7 @@ from immich_memories.analysis.editorial_story_reading import (
 )
 from immich_memories.analysis.editorial_story_replacement_pool import unfunded_pool
 from immich_memories.analysis.editorial_story_replies import WEIGHT_ROLE, WEIGHTS, relations_on
-from immich_memories.analysis.editorial_story_shortlist import (
-    DepictedChoice,
-    _capture_group_moments,
-)
+from immich_memories.analysis.editorial_story_shortlist import DepictedChoice
 from immich_memories.analysis.editorial_story_slots import PartitionedSlots
 from immich_memories.analysis.editorial_story_standing import StandingGate
 from immich_memories.analysis.editorial_story_threads import fold_threads, thread_scope
@@ -243,93 +241,6 @@ def _weighed_stories(
         [s for s in story.stories if story_units.get(s["key"])], story.priorities
     )
     return stories, story_units
-
-
-def _capture_group_choices(
-    stories: Sequence[Mapping[str, Any]],
-    story_units: Mapping[str, list[dict]],
-    **picking,
-) -> dict[str, list[DepictedChoice]]:
-    """Capture groups establish story capacity before its candidates are shortlisted."""
-    choices_of: dict[str, list[DepictedChoice]] = {}
-    for s in stories:
-        out = _capture_group_moments(story_units[s["key"]], **picking)
-        for c in out:
-            c.episode = s["key"]
-        choices_of[s["key"]] = out
-    return choices_of
-
-
-def _distinct_choices(
-    choices: Sequence[DepictedChoice],
-    unit_by_asset: Mapping[str, tuple[Any, dict]],
-    story_key: str,
-    looks_alike: PairLooksAlike | None,
-    scene_alike: PairLooksAlike | None,
-) -> list[DepictedChoice]:
-    """A story's capacity is the moments it can show distinctly, by the same hash and scene
-    rule the final duplicate review applies over the finished cut. A further capture group
-    whose own primary frame already reads as a repeat of one kept folds into it, so its
-    pictures stay reachable as depth, rather than claiming a slot the review would only take
-    back once the cut is built.
-
-    A starred frame is never folded into a plain one it would repeat: the favourite wins its
-    moment, the same exemption `LookAlikeCheck.repeats` makes at pick time, and two starred
-    frames close enough to be the owner's one "twin" moment are the final duplicate review's
-    own call to make, over the finished cut, not a capacity question asked before a single
-    carrier is picked.
-    """
-    if looks_alike is None is scene_alike:
-        return list(choices)
-
-    def as_carrier(asset_id: str) -> dict[str, Any]:
-        _family, unit = unit_by_asset[asset_id]
-        return {
-            "asset_id": asset_id,
-            "taken": unit["taken"],
-            "kind": unit.get("kind"),
-            "favourite": unit.get("favourite"),
-            "story_episode": story_key,
-        }
-
-    def repeats(candidate: Mapping[str, Any], keeper: Mapping[str, Any]) -> bool:
-        if candidate.get("favourite"):
-            return False
-        return bool(
-            (looks_alike and looks_alike(candidate, keeper))
-            or (scene_alike and scene_alike(candidate, keeper))
-        )
-
-    kept: list[DepictedChoice] = []
-    for choice in choices:
-        candidate = as_carrier(choice.primary)
-        match = next((k for k in kept if repeats(candidate, as_carrier(k.primary))), None)
-        if match is None:
-            kept.append(choice)
-        else:
-            match.alternatives.extend(a for a in choice.members if a not in match.members)
-    return kept
-
-
-def _capacity_choices(
-    stories: Sequence[Mapping[str, Any]],
-    story_units: Mapping[str, list[dict]],
-    unit_by_asset: Mapping[str, tuple[Any, dict]],
-    looks_alike: PairLooksAlike | None,
-    scene_alike: PairLooksAlike | None,
-    **picking,
-) -> tuple[dict[str, list[DepictedChoice]], dict[str, int]]:
-    """Every story's capacity: the capture groups offered, and what is left once a further
-    group that only repeats one kept is folded into it (`_distinct_choices`)."""
-    offered = _capture_group_choices(stories, story_units, **picking)
-    groups_offered = {s["key"]: len(offered[s["key"]]) for s in stories}
-    distinct = {
-        s["key"]: _distinct_choices(
-            offered[s["key"]], unit_by_asset, s["key"], looks_alike, scene_alike
-        )
-        for s in stories
-    }
-    return distinct, groups_offered
 
 
 def _shortlisted_units(
@@ -570,6 +481,7 @@ def select_story_first(
     trips: FilmTrips | None = None,
     looks_alike: PairLooksAlike | None = None,
     scene_alike: PairLooksAlike | None = None,
+    capacity_hash_alike: PairLooksAlike | None = None,
     strangers_only: Callable[[str], bool] = lambda _asset: False,
     vouched: Callable[[Mapping[str, Any]], bool] = lambda _carrier: True,
     film_span: tuple[date, date] | None = None,
@@ -588,6 +500,11 @@ def select_story_first(
     `scene_alike(candidate, keeper)` is the same question by scene print: a depth frame that
     shows the same scene as one a story already holds is never added for "showing something
     new" either, since the final duplicate review would only remove it having spent the slot.
+    `capacity_hash_alike` is the final duplicate review's own hash-repeat question
+    (`editorial_final_hash_review.hash_repeat_relation`, at its own, stricter distance): a
+    story's capacity never counts a further capture group that already reads as a repeat of
+    one kept as a slot of its own, only when its unfolded grant would have exceeded that
+    distinct count; a story whose grant always fit its raw capacity keeps it unfolded.
     `film_span` is the requested period; a recurring activity is one thread per era of it.
     `near_home(family)` says whether a happening was photographed near the home base.
     `standing(asset)` is a picture's standing score (0 refuses), read from its facts on every
@@ -678,10 +595,17 @@ def select_story_first(
         # questions about every candidate and must keep seeing them all.
         "withhold": withheld_by_bank(banked, favourite=starred) if rules is not None else None,
     }
-    choices_of, groups_offered = _capacity_choices(
-        stories, story_units, unit_by_asset, looks_alike, scene_alike, **picking
-    )
     slots = max(1, int(target_seconds // seconds_per_slot))
+    choices_of, groups_offered = capacity_choices(
+        stories,
+        story_units,
+        unit_by_asset,
+        parts,
+        slots,
+        capacity_hash_alike,
+        scene_alike,
+        **picking,
+    )
     reserve_trip_depth(stories, slots=slots, film_days=_photographed_days(event_units))
 
     def place_of(asset: str) -> str:

@@ -72,6 +72,7 @@ def pool_of(
     *,
     include_elsewhere=False,
     partition_of=None,
+    cut_carriers=None,
 ):
     return alternatives_pool(
         selection(carriers, alternatives_of, unfunded_pool),
@@ -79,6 +80,7 @@ def pool_of(
         anchor_label,
         include_elsewhere=include_elsewhere,
         partition_of=partition_of,
+        cut_carriers=cut_carriers,
     )
 
 
@@ -196,6 +198,38 @@ def test_elsewhere_never_offers_a_month_the_film_does_not_already_show():
     )
 
     assert pool(refused) == []
+
+
+def test_elsewhere_months_come_from_the_finished_cut_not_the_pre_review_selection():
+    """#2042 round 2: the final review runs after the audience gate and the timing trim, so
+    the months a carrier may come from are the finished cut's, not selection's own carriers
+    from before either ran. A month selection once held but the cut no longer shows is not
+    an offer either; a month the cut gained since (a late refill of its own) is."""
+    refused = {
+        "asset_id": "held",
+        "event": "F01",
+        "why": "a picture",
+        "story_episode": "S1",
+        "taken": "2024-06-01T09:00",
+    }
+    pool = pool_of(
+        [refused],  # selection's own carriers: June only
+        {"held": []},
+        {
+            "F01": [unit("held", "M1", "2024-06-01T09:00")],
+            "F03": [unit("other-story", "M3", "2024-07-03T11:00")],
+        },
+        {"F01": "A1", "F03": "A3"},
+        unfunded_pool=["other-story"],
+        include_elsewhere=True,
+        # The finished cut, at the point the final review runs, also shows July.
+        cut_carriers=[
+            refused,
+            {"asset_id": "elsewhere-already-shown", "taken": "2024-07-20T09:00"},
+        ],
+    )
+
+    assert [row["asset_id"] for row in pool(refused)] == ["other-story"]
 
 
 def test_elsewhere_respects_the_products_partition_limit():
