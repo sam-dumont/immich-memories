@@ -21,13 +21,21 @@ See [Can I run this?](../run/tested-deployments.md) for exact platform evidence,
 
 Basic needs only `docker-compose.yml` and `example.env` (saved as `.env`). The other files are for GPU, Full, the render worker and PostgreSQL, so download them only if you take one of those routes.
 
-Create `output` yourself, owned by uid 1000, so Docker does not make it as root. This is where local films land:
+Create `output` yourself, owned by uid 1000, so Docker does not make it as root. This is where local films land. Run it in the same folder, right after the downloads:
 
 ```bash
-mkdir -p output && sudo chown 1000:1000 output
+mkdir -p output && sudo chown 1000:1000 output   # drop sudo if you are root
 ```
 
 The container runs as uid 1000. If you run `mkdir` as root and skip the `chown`, preflight fails with "Output directory is not writable". On Synology, `chown` is not enough: use the [ACL recipe](../run/nas.md#the-output-folder).
+
+Already running another copy on this host? Give this one its own Compose project name, host port and container name, or the two share a volume:
+
+```bash
+echo 'COMPOSE_PROJECT_NAME=immich-memories-2' >> .env
+```
+
+Then in `docker-compose.yml` change `container_name` and the number before `:8080` in the port line (keep `${UI_BIND_ADDRESS:-127.0.0.1}`), for example `${UI_BIND_ADDRESS:-127.0.0.1}:8081:8080`. Without a project name, a project in a folder called `immich-memories` reuses the first install's volume. Run every `docker compose` command below from this folder; the service name stays `immich-memories`.
 
 ## 2. Connect Immich
 
@@ -56,6 +64,14 @@ docker compose exec immich-memories immich-memories preflight
 `models fetch` downloads the pinned local model and dictionary. Picture processing runs on your CPU.
 Preflight must pass Immich, required-model and output checks. Basic skips unconfigured optional
 services; a home-coordinate warning does not block an album film.
+
+Over plain SSH with no terminal (a script, `ssh host 'docker compose exec ...'`), add `-T`:
+`docker compose exec -T immich-memories immich-memories preflight`.
+
+Two more warnings are normal on a first run and do not block a film:
+
+- **Immich** with a read-only key: `upload permissions not granted, films stay local; asset.delete not granted, previous versions are kept`. It only means the key cannot upload.
+- **Title rendering** on a CPU without AVX (some Celerons): `kernel backend crashed on this CPU: illegal instruction; titles fall back to the PIL renderer`. Titles use the simpler renderer.
 
 ## 4. Open the app
 
@@ -92,6 +108,7 @@ separate film generation from setup; larger periods can still take hours.
 | `Encoder: Pinned DINOv2 export missing` | Run `models fetch` from step 3. |
 | Output directory is not writable | On Linux, `sudo chown -R 1000:1000 output`. On Synology DSM, use the [ACL recipe](../run/nas.md#the-output-folder). |
 | `Immich: Connection failed` | Check the URL and key in `.env`, then run `docker compose up -d` again. |
+| The cut hangs on thumbnails while preflight is green | The host's network MTU is below Docker's. See [the MTU fix](../reference/troubleshooting.md#preflight-says-immich-is-connected-but-cuts-hang-on-thumbnails). |
 
 Check the installation at any time:
 
