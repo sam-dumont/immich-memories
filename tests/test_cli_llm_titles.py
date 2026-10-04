@@ -11,6 +11,7 @@ from __future__ import annotations
 import asyncio
 from datetime import datetime
 from types import SimpleNamespace
+from unittest.mock import patch
 
 from immich_memories.api.album_service import AlbumService, FilmScope
 from immich_memories.config_loader import Config
@@ -437,3 +438,45 @@ def test_titles_use_the_shared_llm_configuration():
     )
     assert seen["llm_config"] is config.llm
     assert "title_llm" not in Config.model_fields
+
+
+def test_locale_auto_asks_the_model_in_the_french_hosts_language() -> None:
+    """#1958: the prompt must never say "Language: Auto" — resolved before `ask`."""
+    config = _config_with_llm()
+    assert config.title_screens.locale == "auto"
+    ask, seen = _answers()
+
+    # WHY: detect_system_locale is the host-locale boundary; mocking it stands
+    # in for a French host without touching the real OS locale.
+    with patch("immich_memories.i18n.detect_system_locale", return_value="fr"):
+        resolve_film_title(
+            enabled=True,
+            title_override=None,
+            clips=[],
+            config=config,
+            memory_type="year",
+            date_range=_RANGE,
+            person_names=[],
+            ask=ask,
+        )
+    assert seen["locale"] == "fr"
+
+
+def test_explicit_locale_reaches_the_model_unresolved_by_the_host() -> None:
+    config = _config_with_llm()
+    config.title_screens.locale = "fr"
+    ask, seen = _answers()
+
+    with patch("immich_memories.i18n.detect_system_locale") as detect:
+        resolve_film_title(
+            enabled=True,
+            title_override=None,
+            clips=[],
+            config=config,
+            memory_type="year",
+            date_range=_RANGE,
+            person_names=[],
+            ask=ask,
+        )
+        detect.assert_not_called()
+    assert seen["locale"] == "fr"
