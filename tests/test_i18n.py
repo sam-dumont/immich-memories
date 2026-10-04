@@ -78,6 +78,14 @@ class TestGetOrdinal:
 # ---------------------------------------------------------------------------
 
 
+_ALL_LOCALE_ENV = {"LC_ALL": "", "LC_MESSAGES": "", "LANG": "", "LANGUAGE": ""}
+
+
+def _env(**overrides: str) -> dict[str, str]:
+    """The four POSIX locale vars, cleared unless a test sets one."""
+    return {**_ALL_LOCALE_ENV, **overrides}
+
+
 class TestDetectSystemLocale:
     def test_returns_supported_locale(self):
         result = detect_system_locale()
@@ -86,17 +94,74 @@ class TestDetectSystemLocale:
         assert result in SUPPORTED_LOCALES
 
     def test_respects_lang_env(self):
-        with (
-            patch.dict(os.environ, {"LANG": "fr_FR.UTF-8"}),
-            # WHY: mock getdefaultlocale to return None so LANG env is used
-            patch("immich_memories.i18n.locale.getdefaultlocale", return_value=(None, None)),
-        ):
+        with patch.dict(os.environ, _env(LANG="fr_FR.UTF-8"), clear=False):
             assert detect_system_locale() == "fr"
 
     def test_unsupported_lang_falls_back(self):
+        with patch.dict(os.environ, _env(LANG="sw_KE.UTF-8"), clear=False):
+            assert detect_system_locale() == "en"
+
+    def test_lc_all_outranks_lang(self):
+        with patch.dict(os.environ, _env(LC_ALL="de_DE.UTF-8", LANG="fr_FR.UTF-8"), clear=False):
+            assert detect_system_locale() == "de"
+
+    def test_lc_messages_outranks_lang(self):
+        with patch.dict(
+            os.environ, _env(LC_MESSAGES="es_ES.UTF-8", LANG="fr_FR.UTF-8"), clear=False
+        ):
+            assert detect_system_locale() == "es"
+
+    def test_language_is_a_colon_separated_preference_list(self):
+        with patch.dict(os.environ, _env(LANGUAGE="sw:it:fr"), clear=False):
+            assert detect_system_locale() == "it"
+
+    def test_c_and_posix_count_as_no_preference(self):
+        # LANG="C" is what a bare container or a cron job without LANG often
+        # sees; it must fall through rather than be read as a real locale.
+        with patch.dict(os.environ, _env(LC_ALL="C", LANG="fr_FR.UTF-8"), clear=False):
+            assert detect_system_locale() == "fr"
+
+    def test_zh_tw_and_zh_hk_fall_back_to_simplified(self):
+        with patch.dict(os.environ, _env(LANG="zh_TW.UTF-8"), clear=False):
+            assert detect_system_locale() == "zh-Hans"
+        with patch.dict(os.environ, _env(LANG="zh_HK.UTF-8"), clear=False):
+            assert detect_system_locale() == "zh-Hans"
+
+    def test_macos_apple_locale_is_read_when_the_environment_has_no_preference(self):
         with (
-            patch.dict(os.environ, {"LANG": "sw_KE.UTF-8"}),
-            patch("immich_memories.i18n.locale.getdefaultlocale", return_value=(None, None)),
+            patch.dict(os.environ, _env(), clear=False),
+            patch("immich_memories.i18n.sys.platform", "darwin"),
+            # WHY: `defaults read -g AppleLocale` is a subprocess call to macOS
+            # preferences — the actual external boundary, not env or files.
+            patch("immich_memories.i18n.subprocess.run") as run,
+        ):
+            run.return_value.returncode = 0
+            run.return_value.stdout = "fr_FR\n"
+            assert detect_system_locale() == "fr"
+
+    def test_apple_locale_is_not_read_when_the_environment_has_a_preference(self):
+        with (
+            patch.dict(os.environ, _env(LANG="de_DE.UTF-8"), clear=False),
+            patch("immich_memories.i18n.sys.platform", "darwin"),
+            patch("immich_memories.i18n.subprocess.run") as run,
+        ):
+            assert detect_system_locale() == "de"
+            run.assert_not_called()
+
+    def test_apple_locale_is_not_read_off_macos(self):
+        with (
+            patch.dict(os.environ, _env(), clear=False),
+            patch("immich_memories.i18n.sys.platform", "linux"),
+            patch("immich_memories.i18n.subprocess.run") as run,
+        ):
+            assert detect_system_locale() == "en"
+            run.assert_not_called()
+
+    def test_apple_locale_failure_is_ignored(self):
+        with (
+            patch.dict(os.environ, _env(), clear=False),
+            patch("immich_memories.i18n.sys.platform", "darwin"),
+            patch("immich_memories.i18n.subprocess.run", side_effect=OSError("no defaults")),
         ):
             assert detect_system_locale() == "en"
 
@@ -127,12 +192,7 @@ class TestResolveFilmLocale:
         assert resolve_film_locale(None) == "en"
 
     def test_unsupported_host_locale_falls_back_to_english(self):
-        with (
-            patch.dict(os.environ, {"LANG": "sw_KE.UTF-8"}),
-            # WHY: mock getdefaultlocale — the host-locale boundary — so an
-            # unsupported LANG is what decides the fallback, not this machine's own.
-            patch("immich_memories.i18n.locale.getdefaultlocale", return_value=(None, None)),
-        ):
+        with patch.dict(os.environ, _env(LANG="sw_KE.UTF-8"), clear=False):
             assert resolve_film_locale("auto") == "en"
 
 

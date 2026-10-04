@@ -14,8 +14,9 @@ from __future__ import annotations
 import contextlib
 import gettext
 import io
-import locale
 import os
+import subprocess
+import sys
 from collections.abc import Callable
 from functools import lru_cache
 from operator import itemgetter
@@ -52,7 +53,17 @@ _SYSTEM_ALIASES = {
     "zh_cn": "zh-Hans",
     "zh_sg": "zh-Hans",
     "zh": "zh-Hans",
+    # WHY: no Traditional Chinese catalogue exists yet; a host asking for it
+    # reads better in Simplified than falling all the way back to English.
+    "zh_tw": "zh-Hans",
+    "zh_hk": "zh-Hans",
 }
+
+# POSIX precedence order for the locale environment (see `man 7 locale`).
+# LANGUAGE is a colon-separated preference list, most preferred first.
+_LOCALE_ENV_VARS = ("LC_ALL", "LC_MESSAGES", "LANG", "LANGUAGE")
+# What every one of these spells as "no preference stated".
+_NO_PREFERENCE = {"", "c", "posix", "c.utf-8", "c.utf8"}
 
 LOCALES_DIR = Path(__file__).parent / "locales"
 
@@ -209,17 +220,53 @@ def get_ordinal(n: int, locale_code: str = "en") -> str:
     return film_text("ordinal", code, n=n)
 
 
+def _env_locale_candidates() -> list[str]:
+    """Locale candidates from the environment, in POSIX precedence order.
+
+    `locale.getdefaultlocale()` is deprecated (3.11+) and gone in 3.15, and it
+    only ever read this same environment anyway. LANGUAGE is a colon-separated
+    preference list; the others name one locale each.
+    """
+    candidates: list[str] = []
+    for var in _LOCALE_ENV_VARS:
+        for item in os.environ.get(var, "").split(":"):
+            if item.strip().casefold() not in _NO_PREFERENCE:
+                candidates.append(item.strip())
+    return candidates
+
+
+def _macos_apple_locale() -> str | None:
+    """The user's macOS language setting, read only when the environment
+    carries no preference at all.
+
+    launchd and cron jobs — the daily automation run — start with no LANG,
+    unlike an interactive Terminal session, so without this a Mac host spoke
+    French at the command line and English on its own schedule.
+    """
+    if sys.platform != "darwin":
+        return None
+    with contextlib.suppress(Exception):
+        # WHY: `defaults` is a subprocess call out to macOS preferences, not
+        # file or environment state this process already holds.
+        result = subprocess.run(
+            ["defaults", "read", "-g", "AppleLocale"],
+            capture_output=True,
+            text=True,
+            timeout=2,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            return result.stdout.strip()
+    return None
+
+
 def detect_system_locale() -> str:
     """The film language this host's own locale asks for, or English."""
-    candidates: list[str] = []
-    with contextlib.suppress(Exception):
-        sys_locale = locale.getdefaultlocale()[0]
-        if sys_locale:
-            candidates.append(sys_locale)
-    candidates.append(os.environ.get("LANG", "").split(".")[0])
+    candidates = _env_locale_candidates()
+    if not candidates and (apple_locale := _macos_apple_locale()):
+        candidates.append(apple_locale)
     for candidate in candidates:
         folded = candidate.casefold()
-        for key in (folded, folded.split("_")[0]):
+        for key in (folded, folded.split("_")[0].split("-")[0]):
             code = _SYSTEM_ALIASES.get(key) or next(
                 (c for c in SUPPORTED_LOCALES if c.casefold() == key), None
             )
