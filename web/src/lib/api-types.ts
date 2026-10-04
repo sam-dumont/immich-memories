@@ -2256,12 +2256,22 @@ export interface components {
             carriers: components["schemas"]["StoryCarrier"][];
             /** Day */
             day: string;
+            /**
+             * Funded By
+             * @default
+             */
+            funded_by: string;
             /** Granted */
             granted: number;
             /** Key */
             key: string;
             /** Purpose */
             purpose: string;
+            /**
+             * Sparse Quality Reason
+             * @default
+             */
+            sparse_quality_reason: string;
             /** Title */
             title: string;
             /** Weight */

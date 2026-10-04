@@ -291,6 +291,10 @@ def test_quality_key_prefers_nearness_to_midweek():
     assert quality_key(near) < quality_key(far)
 
 
+def _promote(eligible, asset_id, *, stands=lambda _a: True, free=lambda _a: True):
+    return promote_quality_choice(eligible, asset_id, stands=stands, free=free)
+
+
 def test_promote_quality_choice_surfaces_the_chosen_moment_first():
     other = DepictedChoice(
         key="c1", episode="e1", taken="2024-06-01T10:00:00", content="", primary="x"
@@ -304,14 +308,35 @@ def test_promote_quality_choice_surfaces_the_chosen_moment_first():
         alternatives=["z"],
     )
 
-    ordered = promote_quality_choice([other, holder], "z")
+    ordered = _promote([other, holder], "z")
 
     assert ordered[0].key == "c2"
     assert ordered[0].primary == "z"
     assert ordered[1] is other
 
 
-def test_promote_quality_choice_is_inert_without_an_asset_id():
+def test_promote_quality_choice_goes_short_without_an_asset_id():
     choice = DepictedChoice(key="c1", episode="e1", taken="t", content="", primary="x")
 
-    assert promote_quality_choice([choice], None) == [choice]
+    assert _promote([choice], None) == []
+
+
+def test_promote_quality_choice_goes_short_when_the_chosen_asset_does_not_stand():
+    """A week's quality pick ran before the carrier gate ever saw this asset; if the gate
+    now refuses it, the week goes short rather than forcing a gate-failed primary (#2048
+    review, point B)."""
+    choice = DepictedChoice(key="c1", episode="e1", taken="t", content="", primary="x")
+
+    assert _promote([choice], "x", stands=lambda _a: False) == []
+
+
+def test_promote_quality_choice_goes_short_when_the_chosen_asset_is_not_free():
+    choice = DepictedChoice(key="c1", episode="e1", taken="t", content="", primary="x")
+
+    assert _promote([choice], "x", free=lambda _a: False) == []
+
+
+def test_promote_quality_choice_goes_short_when_the_chosen_asset_is_not_in_any_eligible_choice():
+    choice = DepictedChoice(key="c1", episode="e1", taken="t", content="", primary="x")
+
+    assert _promote([choice], "not-offered") == []

@@ -54,8 +54,10 @@ class StoryEntry:
     granted: int
     day: str
     carriers: tuple[CarrierView, ...]
-    # Set to "quality" when a sparse week was funded by its own best picture rather than
-    # going short (#2048); empty for every ordinarily-weighed story.
+    # Set to "quality" when a BASIC sparse week was funded by its own best picture rather
+    # than going short (#2048). The plan omits both keys for every ordinarily-weighed story
+    # and for FULL (the model tier may still read a bare week itself), so this default is
+    # what every such story reads as.
     funded_by: str = ""
     sparse_quality_reason: str = ""
 
@@ -84,8 +86,9 @@ class StoryView:
     duration: DurationView | None
     preparation: str = ""
     # The sparse-week funding audit (#2048): share of indicator-less at-home weeks, the
-    # threshold that triggers it, and which weeks it promoted or still left short. Empty
-    # when the mechanism never engaged (an indicated household, or a model reader).
+    # threshold that triggers it, and which weeks it promoted or still left short. The plan
+    # omits the key, and this stays None, whenever the mechanism never engaged: a household
+    # below the share threshold, or a FULL (model-polished) plan.
     sparse_quality: Mapping[str, Any] | None = None
 
     @property

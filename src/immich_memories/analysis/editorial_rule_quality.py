@@ -9,7 +9,7 @@ taken before the thing happened.
 
 from __future__ import annotations
 
-from collections.abc import Collection, Mapping, Sequence
+from collections.abc import Callable, Collection, Mapping, Sequence
 from dataclasses import dataclass, replace
 from typing import Any
 
@@ -194,16 +194,26 @@ def quality_key(facts: QualityFacts) -> tuple:
 
 
 def promote_quality_choice(
-    eligible: Sequence[DepictedChoice], asset_id: str | None
+    eligible: Sequence[DepictedChoice],
+    asset_id: str | None,
+    *,
+    stands: Callable[[str], bool],
+    free: Callable[[str], bool],
 ) -> list[DepictedChoice]:
     """Surface the picture `read_story` already chose as a sparse week's best picture.
 
     The moment that carries it is made primary by it and ordered first; every other
     moment of the story follows, unchanged. Nothing here asks a fresh question: the
     quality ranking already ran once, in `read_story`, over the week's whole pool.
+
+    `read_story`'s own hard filters (sharpness, standing, never a screenshot) ran before
+    the carrier-admission gate existed for this asset, so they can disagree with it (an
+    owner-cleared NSFW hold, a context requirement the quality pass never saw). The chosen
+    asset must still stand and be free here, or the week goes short rather than forcing a
+    gate-failed member into the primary slot (#2048 review, point B).
     """
-    if not asset_id:
-        return list(eligible)
+    if not asset_id or not (free(asset_id) and stands(asset_id)):
+        return []
     surfaced, rest = [], []
     for choice in eligible:
         if asset_id not in choice.members:
@@ -214,4 +224,4 @@ def promote_quality_choice(
                 choice, primary=asset_id, alternatives=[a for a in choice.members if a != asset_id]
             )
         surfaced.append(choice)
-    return [*surfaced, *rest]
+    return [*surfaced, *rest] if surfaced else []

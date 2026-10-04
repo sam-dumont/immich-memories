@@ -394,7 +394,12 @@ class CarrierAdmission:
         own best picture, already chosen, is simply surfaced (`promote_quality_choice`).
         """
         if s.get("funded_by") == "quality":
-            return promote_quality_choice(eligible, s.get("quality_asset_id"))
+            return promote_quality_choice(
+                eligible,
+                s.get("quality_asset_id"),
+                stands=lambda a: self.gate.stands(a, s["weight"], s["key"]),
+                free=self.free,
+            )
         stars = [c for c in eligible if self.starred_choice(c)]
         # A moment of strangers only is the weaker frame of its story: it comes after every
         # other moment the story holds, never before one showing somebody the library knows.
