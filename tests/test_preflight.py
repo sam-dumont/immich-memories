@@ -625,17 +625,24 @@ def test_hardware_row_says_nothing_about_nvidia_on_a_card_less_host() -> None:
 _PY314 = collections.namedtuple("V", "major minor micro releaselevel serial")(3, 14, 0, "final", 0)
 
 
-def test_title_rendering_preflight_tells_python_314_to_use_an_older_python() -> None:
+def test_title_rendering_preflight_names_python_314_as_the_cause() -> None:
+    """#1987: on 3.14 pyproject's marker drops quadrants outright, so "no wheel for
+
+    this platform" is the wrong lead — the row must name the interpreter and the
+    fix (reinstall under 3.12) instead.
+    """
     # WHY: quadrants is absent on 3.14; stand in for that interpreter and its missing wheel.
     with (
         patch("immich_memories.preflight.importlib.util.find_spec", return_value=None),
         patch(
-            "immich_memories.preflight.sys.version_info",
+            "immich_memories.titles.kernel_backend_probe.sys.version_info",
             _PY314,
         ),
     ):
         result = check_title_rendering(Config())
 
     assert result.status is CheckStatus.WARNING
-    assert "Python 3.14" in result.message
-    assert "use Python 3.11-3.13" in result.message
+    assert result.message == (
+        "Python 3.14 has no GPU title kernels yet (quadrants supports up to 3.13); "
+        "reinstall with --python 3.12 for SDF titles; titles use PIL + FFmpeg (no SDF effects)"
+    )
