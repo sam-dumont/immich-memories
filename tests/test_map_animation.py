@@ -6,6 +6,9 @@ import numpy as np
 from PIL import Image
 
 from immich_memories.titles.map_animation import (
+    _MIN_PIN_LABEL_RATIO,
+    _PIN_LABEL_SHARE,
+    _cached_pin_label_font,
     _destination_overview,
     _draw_pins,
     _FlyConfig,
@@ -160,9 +163,22 @@ class TestPinLabelFit:
         return np.array(out)
 
     def test_a_short_label_is_unaffected(self):
-        arr = self._frame_with_pin("Nice", self._LAT, self._LON)
-        # WHY: unaffected means some bright label pixels still exist near the pin
-        assert arr.max() > 150
+        """A short name is not shrunk: same font size as the unfitted base size."""
+        from PIL import ImageDraw
+
+        from immich_memories.titles.map_renderer import _get_font
+
+        base_size = max(12, int(min(self._W, self._H) * _PIN_LABEL_SHARE))
+        margin = int(self._W * 0.02)
+        max_width = self._W - 2 * margin
+        min_size = max(6, int(self._W * _MIN_PIN_LABEL_RATIO))
+
+        font, width = _cached_pin_label_font("Nice", base_size, max_width, min_size)
+
+        assert font.size == base_size
+        reference_font = _get_font(base_size, bold=True)
+        probe = ImageDraw.Draw(Image.new("RGBA", (1, 1)))
+        assert width == probe.textbbox((0, 0), "Nice", font=reference_font)[2]
 
     def test_a_long_label_near_the_edge_does_not_reach_the_frame_edge(self):
         cam_lat, cam_lon = self._cam_putting_pin_near_right_edge()

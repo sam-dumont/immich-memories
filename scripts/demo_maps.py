@@ -7,9 +7,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
+import numpy as np
+from PIL import Image
+
 from immich_memories.titles.map_renderer import (
     render_location_card,
-    render_trip_map_frame,
+    render_trip_map_array,
 )
 
 OUTPUT_DIR = Path(__file__).parent.parent / "demo_output" / "maps"
@@ -63,9 +66,15 @@ FRANCE_OLERON = {
 
 
 def gen(name: str, **kwargs):
-    """Generate and save a map frame."""
+    """Generate and save a map frame.
+
+    Production never bakes a title into the map image — the title pipeline
+    draws it separately — so this previews pins-only, matching the real output.
+    """
     print(f"  Generating {name}...")
-    img = render_trip_map_frame(**kwargs)
+    kwargs.pop("title_text", None)
+    arr = render_trip_map_array(**kwargs)
+    img = Image.fromarray((arr * 255).astype(np.uint8))
     path = OUTPUT_DIR / f"{name}.png"
     img.convert("RGB").save(path)
     print(f"  -> {path} ({img.size[0]}x{img.size[1]})")

@@ -10,11 +10,12 @@ import time
 from collections.abc import Callable, Iterator
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field, replace
+from functools import lru_cache
 from itertools import starmap
 from pathlib import Path
 
 import numpy as np
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
 
 from immich_memories.processing.encoding_plan import EncodingPlan
 from immich_memories.processing.hardware_encode import apply_hardware_encode
@@ -47,6 +48,10 @@ _ViewInterp = Callable[[float], tuple[float, float, float]]
 _CARD_LABEL_Y = 0.72
 _TITLE_FADE_SECONDS = 0.5
 _PIN_LABEL_SHARE = 0.034
+# Font floors as a fraction of frame width: 18px/10px at a 1080-wide frame,
+# so a 4K render does not stop shrinking at a 1080p-sized minimum.
+_MIN_CARD_FONT_RATIO = 18 / 1080
+_MIN_PIN_LABEL_RATIO = 10 / 1080
 
 
 @dataclass
@@ -231,6 +236,15 @@ def _resize_satellite_frame(image: Image.Image, width: int, height: int) -> Imag
     return result
 
 
+@lru_cache(maxsize=256)
+def _cached_pin_label_font(
+    name: str, base_size: int, max_width: int, min_size: int
+) -> tuple[ImageFont.FreeTypeFont | ImageFont.ImageFont, int]:
+    """Memoised `_fit_pin_label_font`: the same pin name recurs on every frame of a fly-over."""
+    probe = ImageDraw.Draw(Image.new("RGBA", (1, 1)))
+    return _fit_pin_label_font(name, probe, base_size, max_width, min_size=min_size)
+
+
 def _draw_pins(
     frame: Image.Image,
     cam_lat: float,
@@ -253,7 +267,9 @@ def _draw_pins(
     base_font_size = max(12, int(min(w, h) * _PIN_LABEL_SHARE))
     # Labels never wrap next to a pin, so a long name only has shrink + clamp (#1954).
     label_margin = int(w * 0.02)
+    label_top_margin = int(h * 0.02)
     label_max_width = w - 2 * label_margin
+    min_pin_font_size = max(6, int(w * _MIN_PIN_LABEL_RATIO))
     stroke = max(1, int(min(w, h) * 0.003))
     a_w, a_f = int(200 * pin_alpha), int(230 * pin_alpha)
     a_l, a_s = int(220 * pin_alpha), int(200 * pin_alpha)
@@ -269,10 +285,12 @@ def _draw_pins(
         draw.ellipse((sx - base_r, sy - base_r, sx + base_r, sy + base_r), fill=(232, 93, 74, a_f))
 
         if pin.name:
-            font, label_w = _fit_pin_label_font(pin.name, draw, base_font_size, label_max_width)
+            font, label_w = _cached_pin_label_font(
+                pin.name, base_font_size, label_max_width, min_pin_font_size
+            )
             lx = sx - label_w // 2
             lx = max(label_margin, min(w - label_margin - label_w, lx))
-            ly = sy - r_out - getattr(font, "size", 14) - 6
+            ly = max(label_top_margin, sy - r_out - getattr(font, "size", 14) - 6)
             # A dark outline keeps the name readable over snow, sea or city alike.
             draw.text(
                 (lx, ly),
@@ -590,7 +608,10 @@ def _render_title_overlay(
     # 6 % margin either side: a long compound name shrinks to stay inside it
     # instead of overflowing the frame edge (#1954).
     safe_width = int(w * 0.88)
-    lines, font = _fit_title_lines(text, draw, base_size=fs, bold=True, max_width=safe_width)
+    min_size = max(10, int(w * _MIN_CARD_FONT_RATIO))
+    lines, font = _fit_title_lines(
+        text, draw, base_size=fs, bold=True, max_width=safe_width, min_size=min_size
+    )
 
     white = ceil_rgb_for_hdr((255, 255, 255)) if hdr else (255, 255, 255)
     line_h = int(getattr(font, "size", fs) * 1.2)

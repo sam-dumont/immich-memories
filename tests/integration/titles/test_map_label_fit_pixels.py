@@ -12,8 +12,10 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
+from PIL import Image, ImageDraw
 
 from immich_memories.titles.map_animation import _render_title_overlay
+from immich_memories.titles.map_renderer import _fit_title_lines, _get_font
 
 pytestmark = [pytest.mark.integration]
 
@@ -59,16 +61,34 @@ class TestLongNameFitsInsidePortraitCard:
 
 class TestShortNameIsUnchanged:
     def test_a_short_name_renders_at_the_original_font_size(self):
+        """Measures the rendered glyph width, not just "not too tall": a width
+        match pins down the actual font size, where a height bound would pass
+        even if the font had shrunk a little.
+        """
         width, height = 1080, 1920
         base_fs = int(width * 0.12)
+        probe = ImageDraw.Draw(Image.new("RGBA", (1, 1)))
+
+        # Direct check: the fit helper with the exact production parameters
+        # must hand back the base font, unshrunk.
+        _, chosen_font = _fit_title_lines(
+            "Nice", probe, base_size=base_fs, bold=True, max_width=int(width * 0.88)
+        )
+        assert chosen_font.size == base_fs
+
+        reference_font = _get_font(base_fs, bold=True)
+        expected_w = probe.textbbox((0, 0), "Nice", font=reference_font)[2]
 
         overlay = _render_title_overlay("Nice", width, height, hdr=False)
 
         assert overlay is not None
         arr = np.array(overlay)
-        # White text rows: the bright band is noticeably taller than one line
-        # only if the font shrank away from its base size.
-        bright_rows = np.where(arr[:, :, :3].max(axis=(1, 2)) > 200)[0]
-        assert bright_rows.size > 0
-        text_height = bright_rows.max() - bright_rows.min()
-        assert text_height < base_fs * 1.4
+        bright_cols = np.where(arr[:, :, :3].max(axis=(0, 2)) > 200)[0]
+        assert bright_cols.size > 0
+        measured_w = bright_cols.max() - bright_cols.min()
+
+        # textbbox's advance width runs a bit past the last glyph's actual ink
+        # (confirmed by direct rendering, not assumed) — a fixed 4px tolerance
+        # is too tight for that, but 10% still catches a real shrink (which
+        # drops the font by ~8% per step).
+        assert abs(measured_w - expected_w) <= max(6, int(expected_w * 0.1))
