@@ -122,7 +122,7 @@ def test_a_geopy_timeout_is_not_cached_as_an_empty_place(store, monkeypatch):
 
 @pytest.mark.parametrize(
     "user_language,requested_languages",
-    [("fr", "fr,en"), ("nl", "nl,en"), ("ja", "ja,en"), ("pt-BR", "pt-BR,pt,en"), ("en", "en")],
+    [("fr", "fr"), ("nl", "nl"), ("ja", "ja"), ("pt-BR", "pt-BR,pt"), ("en", "en")],
 )
 def test_geocoding_prefers_the_users_language_before_any_fallback(
     monkeypatch, user_language, requested_languages

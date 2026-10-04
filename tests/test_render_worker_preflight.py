@@ -23,7 +23,7 @@ def test_preflight_reports_render_capabilities_without_sending_a_render(monkeypa
             200,
             json={
                 "app_version": __version__,
-                "contract_version": 1,
+                "contract_version": 2,
                 "ready": True,
                 "accelerated": accelerated,
                 "titles": "CUDA",

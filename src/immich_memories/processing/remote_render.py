@@ -82,7 +82,8 @@ class RemoteRenderClient:
         if not self.settings.enabled or not self.settings.worker_token.strip():
             raise GenerationError("Configure render.worker_base_url and render.worker_token")
         health = self._json("GET", "/health")
-        if health.get("app_version") != __version__ or health.get("contract_version") != 1:
+        # v2: the Clip plan contract swapped audio_categories for has_music (#1951).
+        if health.get("app_version") != __version__ or health.get("contract_version") != 2:
             raise GenerationError("Render worker version differs; deploy the same app version")
         if not health.get("ready"):
             raise GenerationError("Render worker is not ready")

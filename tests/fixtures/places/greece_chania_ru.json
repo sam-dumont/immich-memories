@@ -1,0 +1,39 @@
+{
+  "place_id": 427361062,
+  "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+  "osm_type": "way",
+  "osm_id": 331144201,
+  "lat": "35.5138671",
+  "lon": "24.0179930",
+  "category": "highway",
+  "type": "primary",
+  "place_rank": 26,
+  "importance": 0.053396243991760094,
+  "addresstype": "road",
+  "name": "Χατζημιχάλη Γιάνναρη",
+  "display_name": "Χατζημιχάλη Γιάνναρη, Εβραϊκή, Ханья, Δήμος Χανίων, периферийная единица Ханья, периферия Крит, Крит, 731 35, Греция",
+  "address": {
+    "road": "Χατζημιχάλη Γιάνναρη",
+    "neighbourhood": "Εβραϊκή",
+    "city": "Ханья",
+    "municipality": "Δήμος Χανίων",
+    "county": "периферийная единица Ханья",
+    "state": "периферия Крит",
+    "ISO3166-2-lvl5": "GR-M",
+    "postcode": "731 35",
+    "country": "Греция",
+    "country_code": "gr"
+  },
+  "namedetails": {
+    "ref": "ΕΟ90",
+    "name": "Χατζημιχάλη Γιάνναρη",
+    "name:el": "Χατζημιχάλη Γιάνναρη",
+    "int_name": "Chatzimichali Giannari"
+  },
+  "boundingbox": [
+    "35.5138362",
+    "35.5139185",
+    "24.0178356",
+    "24.0192858"
+  ]
+}

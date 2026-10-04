@@ -40,7 +40,10 @@ immich-memories auto install --uninstall
 launchctl list com.immich-memories.auto
 ```
 
-The final lookup should report no loaded service. On Linux:
+The final lookup should report no loaded service: `Could not find service` with exit status 113
+is the expected result, not an error. The launchd label is fixed (`com.immich-memories.auto`), so
+two installs or users on one Mac share it. Run `launchctl list | grep immich` before loading a
+second one, and don't load a plist whose label a job already holds. On Linux:
 
 ```bash
 systemctl --user disable --now immich-memories-auto.timer
@@ -105,7 +108,9 @@ configuration, credentials, preparation, review decisions, history, weights and 
 
 First [back up/export](./maintenance/storage-backups.md) the store, credential encryption key,
 configuration and films you want. Keep the exact image/package version and installation files.
-For Compose, inspect the running app **before** removing its container:
+For Compose, inspect the running app **before** removing its container. Use the same `-p` and
+`-f` as at install: with a different project name, `docker compose ps -q` finds nothing and the
+`test -n` below stops the script.
 
 ```bash
 APP_CONTAINER=$(docker compose ps -q immich-memories)
@@ -206,7 +211,9 @@ mv "$HOME/.immich-memories" "$HOME/.immich-memories.before-reset"
 mkdir -m 700 "$HOME/.immich-memories"
 ```
 
-Create a new config with the [minimum read key](./uv-pip.md), run `models fetch` and preflight.
+Create a new config with the [minimum read key](./uv-pip.md) and put `tier: basic` back in it.
+With no config at all, Apple Silicon selects the `gpu` tier on its own, so a reset would quietly
+change your tier. Then run `models fetch` and preflight.
 The old credentials/history remain in the backup until deliberately removed. Native output and
 external/shared model caches remain. Environment variables can still point at an old/custom store;
 check `config show` privately before calling the new run fresh.
@@ -226,16 +233,28 @@ Do not run a directory removal if you placed other applications' files there.
 :::
 
 For the default Compose project, use the inspected volume name from step 2 and remain in its
-app-only directory. After verifying the mount inventory and backup:
+app-only directory. A generated file (the Synology or setup-builder output) can also carry a named
+output volume, and `DATA_VOLUME` alone misses it. List every volume of the project, with the
+project name from step 2:
 
 ```bash
-docker volume rm "$DATA_VOLUME"
-rm -r -- ./output
-rm -- .env
+docker volume ls --filter label=com.docker.compose.project=<project>
 ```
 
-Remove that project's exact saved configuration/key files if you added any. Do not remove a
-parent directory, shared external model cache or other Docker volumes. Inspect any optional
+Remove the ones that belong to this app (check each against the mount inventory), then:
+
+```bash
+docker volume rm "$DATA_VOLUME"   # plus any other app-owned volume from the list
+rm -r -- ./output
+rm -- .env
+docker image rm ghcr.io/sam-dumont/immich-memories:<version>
+```
+
+The pulled image stays after `down` and the volume removals, so remove it with the line above
+(or keep it for a reinstall). The project folder holds the release files, and any copy of `.env`
+(`.env.bak`, an old `docker-compose.yml` with the key pasted in) still contains the Immich API
+key: delete those by name. Do not remove a parent directory, shared external model cache or other
+Docker volumes. Inspect any optional
 service mounts separately; a shared model server belongs to its operator, not this uninstall.
 
 For the default Kubernetes base, after removing app controllers and schedules:
@@ -264,11 +283,31 @@ files, then delete the state and local films:
 rm -r -- "$HOME/.immich-memories" "$HOME/Videos/Memories"
 ```
 
-Handle `.immich-memories.before-reset` and copied backups deliberately; they may still contain
-credentials and films. Preserve shared Hugging Face/Ollama/llama.cpp caches and packages.
+`.immich-memories.before-reset` keeps the plaintext API key from the old config. Once you no
+longer need it, remove it the same way: `rm -r -- "$HOME/.immich-memories.before-reset"`. Other
+copied backups may hold credentials and films too. Preserve shared Hugging Face/Ollama/llama.cpp
+caches and packages.
+
+`uv tool uninstall` does not clear uv's own download cache (2.6 GB on the test Mac), so "complete
+removal" leaves it. `uv cache clean` empties it for every uv project, not only this app; skip it
+if you use uv for other things.
 
 Check the original deployment inventory again: no running app container/pod/UI process, no active
 app Jobs or schedules, no remaining app-owned volumes/paths except deliberate backups. Separately
-verify Immich still serves its library. Disposable stop/reinstall/reset/removal transcripts for
-all three routes are still required by [#1929](https://github.com/sam-dumont/immich-memories/issues/1929);
-these instructions are not a claim that those destructive tests ran.
+verify Immich still serves its library.
+
+## What has been run
+
+Destructive transcripts exist for two of the three routes, both on 2026-10-04 with
+`v0.0.0-dev.37180797983` (#956 verification):
+
+- **Native**: macOS arm64, prebuilt wheel, isolated HOME. Scheduler setup and removal,
+  uninstall keeping data, reinstall, reset and complete removal. UI stop/start was not run, and
+  neither were the cron and systemd scheduler routes.
+- **Compose**: Synology DS423+, DSM 7.3.2, Docker 24.0.2 with Compose 2.20.1. Stop/start, remove
+  keeping data, reset and complete removal. The other containers on that NAS and Immich were
+  unaffected.
+
+The Kubernetes transcript is still pending under
+[#1929](https://github.com/sam-dumont/immich-memories/issues/1929); until it runs, the Kubernetes
+commands above are written, not proven.

@@ -62,7 +62,6 @@ def _sources():
         bit_depth=10,
         live_burst_material={"entries": [{"still_asset_id": photo.id, "end": 2.731}]},
         safe_cut_gaps=[(0.13, 2.42)],
-        audio_categories=["speech"],
     )
     # Repeated source rows and a wrapper are meaningful input, not a set to normalize.
     return (photo, clip, companion, photo)

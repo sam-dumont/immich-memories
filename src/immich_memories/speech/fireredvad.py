@@ -206,15 +206,31 @@ _CMVN_INVERSE_STD: tuple[float, ...] = (
 )
 
 
+# A frame counts as music or singing when the AED head rates it more likely than not:
+# the same bar `regions_from_probs`'s default speech threshold used to describe "heard".
+_MUSIC_PROB_THRESHOLD = 0.5
+
+
+def _music_fraction(probs: np.ndarray) -> float:
+    """The share of frames where singing or music outscores `_MUSIC_PROB_THRESHOLD`.
+
+    Only called on a `_probs()` result, which is never empty: `_probs()` returns
+    `None` for zero frames before this is reached.
+    """
+    music_or_singing = np.maximum(probs[:, 1], probs[:, 2])
+    return float(np.mean(music_or_singing >= _MUSIC_PROB_THRESHOLD))
+
+
 class FireRedSpeechDetector:
-    """FireRedVAD's AED model, restricted to its speech column.
+    """FireRedVAD's AED model: its speech column for regions, music/singing for `has_music`.
 
     The AED ONNX outputs `probs[1, T, 3]` at 100 fps -- speech, singing,
-    music. Column 0 (speech) is the only one used; `fireredvad_vad.onnx`
+    music. `detect()` uses only column 0 (speech); `fireredvad_vad.onnx`
     (the alternative binary VAD model, not vendored) defines voice as
     speech-union-singing and fires on sustained tones, which would trade
     the AED head's clean separation of speech from music for false
     positives on singing and held notes -- not an improvement.
+    `detect_with_music()` additionally reads columns 1 and 2 for #1951.
     """
 
     def __init__(self, threshold: float = 0.25, min_silence_ms: int = 200) -> None:
@@ -243,6 +259,23 @@ class FireRedSpeechDetector:
             return False
 
     def detect(self, audio: np.ndarray, sample_rate: int) -> list[SpeechRegion]:
+        return self.detect_with_music(audio, sample_rate)[0]
+
+    def detect_with_music(
+        self, audio: np.ndarray, sample_rate: int
+    ) -> tuple[list[SpeechRegion], float]:
+        """Speech regions, plus the fraction of frames the AED head hears as music or singing.
+
+        One inference answers both: the same `probs[1, T, 3]` the speech column already
+        read from (column 0) also carries singing (1) and music (2), at no extra cost.
+        """
+        probs = self._probs(audio, sample_rate)
+        if probs is None:
+            return [], 0.0
+        regions = regions_from_probs(probs[:, 0], self.threshold, self.min_silence_ms)
+        return regions, _music_fraction(probs)
+
+    def _probs(self, audio: np.ndarray, sample_rate: int) -> np.ndarray | None:
         # The fbank frame options below are pinned to VAD_SAMPLE_RATE, so audio
         # at any other rate would be framed against the wrong clock and produce
         # confident nonsense instead of an error.
@@ -250,15 +283,14 @@ class FireRedSpeechDetector:
             raise ValueError(f"FireRedVAD needs {VAD_SAMPLE_RATE} Hz audio, got {sample_rate}")
 
         if not self.available:
-            return []
+            return None
 
         feat = _extract_features(audio, sample_rate)
         if feat.shape[0] == 0:
-            return []
+            return None
 
         probs = self._session.run(None, {"feat": feat[np.newaxis, :, :]})[0]
-        speech_probs = probs[0, :, 0]
-        return regions_from_probs(speech_probs, self.threshold, self.min_silence_ms)
+        return probs[0, :, :]
 
 
 def _extract_features(audio: np.ndarray, sample_rate: int) -> np.ndarray:

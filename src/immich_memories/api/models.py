@@ -339,9 +339,6 @@ class VideoClipInfo(BaseModel):
     # Explicit editorial certification; legacy merging retains its existing behavior.
     editorial_live_manifest: dict[str, Any] | None = None
 
-    # Audio categories detected (populated during pipeline analysis)
-    audio_categories: list[str] | None = None  # e.g. ["laughter", "speech", "engine"]
-
     # LLM Content Analysis results (populated during pipeline analysis)
     llm_description: str | None = None  # Brief description of what's happening
     llm_category: str | None = None  # people | animal | landscape | object
