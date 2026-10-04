@@ -14,7 +14,7 @@ from immich_memories.db import open_store
 from immich_memories.tracking import RunDatabase
 from immich_memories.tracking.models import RunMetadata
 from immich_memories.web import mount_web
-from immich_memories.web.dependencies import Playback, immich_playback, immich_preview
+from immich_memories.web.dependencies import Playback, asset_scope, immich_playback, immich_preview
 from tests.web_api_fixtures import api_client, config_in, save_run
 
 
@@ -60,7 +60,7 @@ def _jpeg(px: int) -> bytes:
 def test_a_thumbnail_the_cache_lacks_is_fetched_from_immich_once(client, config):
     fetched: list[str] = []
 
-    def fetch(asset_id: str) -> bytes:
+    def fetch(asset_id: str, _account: str) -> bytes:
         fetched.append(asset_id)
         return _jpeg(1440)
 
@@ -141,10 +141,10 @@ def test_runs_filter_by_status_and_page_forward(client, config):
 
 
 def test_a_video_streams_the_range_the_browser_asked_immich_for(client):
-    asked: list[tuple[str, str | None]] = []
+    asked: list[tuple[str, str, str | None]] = []
 
-    def playback(asset_id: str, byte_range: str | None) -> Playback:
-        asked.append((asset_id, byte_range))
+    def playback(asset_id: str, account: str, byte_range: str | None) -> Playback:
+        asked.append((asset_id, account, byte_range))
         return Playback(
             status=206,
             headers={"content-range": "bytes 100-199/5000", "content-length": "100"},
@@ -157,11 +157,27 @@ def test_a_video_streams_the_range_the_browser_asked_immich_for(client):
 
     response = client.get(f"/api/v1/assets/{asset}/video", headers={"Range": "bytes=100-199"})
 
-    assert asked == [(asset, "bytes=100-199")]
+    assert asked == [(asset, "primary", "bytes=100-199")]
     assert response.status_code == 206
     assert response.headers["content-range"] == "bytes 100-199/5000"
     assert response.headers["accept-ranges"] == "bytes"
     assert response.content == b"x" * 100
+
+
+def test_a_video_outside_every_configured_account_never_opens_playback(client):
+    opened: list[str] = []
+
+    def playback(asset_id: str, account: str, byte_range: str | None) -> Playback | None:
+        opened.append(asset_id)
+        return None
+
+    client.app.dependency_overrides[asset_scope] = lambda: lambda _asset_id: None
+    client.app.dependency_overrides[immich_playback] = lambda: playback
+
+    response = client.get("/api/v1/assets/out-of-scope/video")
+
+    assert response.status_code == 404
+    assert opened == [], "a scoped-out id must never reach the playback opener"
 
 
 def test_the_picker_offers_every_interface_language_in_its_own_name(client):

@@ -43,14 +43,14 @@ def fetched() -> list[str]:
 def client(tmp_path: Path, cache: ThumbnailCache, fetched: list[str]) -> TestClient:
     faces = {"abc-123": _jpeg(600, 600)}
 
-    def fetch_face(person_id: str) -> bytes | None:
+    def fetch_face(person_id: str, _account: str) -> bytes | None:
         fetched.append(person_id)
         return faces.get(person_id)
 
     client = api_client(config_in(tmp_path))
     client.app.dependency_overrides[thumbnail_cache] = lambda: cache
     # WHY: Immich is the external boundary; the unit tier has no Immich to read from.
-    client.app.dependency_overrides[immich_preview] = lambda: lambda _asset_id: None
+    client.app.dependency_overrides[immich_preview] = lambda: lambda _asset_id, _account: None
     client.app.dependency_overrides[immich_face] = lambda: fetch_face
     return client
 
@@ -113,6 +113,117 @@ def test_picture_routes_are_not_auth_bypass_paths(path):
     assert not is_bypass_path(path)
 
 
+class _FakeAccountsImmich:
+    """Two configured accounts, each only able to read the asset/person it owns."""
+
+    calls: list[tuple[str, str]] = []  # (api_key, id) for every probe or fetch
+    owners: dict[str, str] = {}  # id -> the api_key that owns it
+
+    def __init__(self, *, base_url: str, api_key: str) -> None:
+        self._api_key = api_key
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc) -> bool:
+        return False
+
+    def _own_or_404(self, item_id: str) -> None:
+        _FakeAccountsImmich.calls.append((self._api_key, item_id))
+        if _FakeAccountsImmich.owners.get(item_id) != self._api_key:
+            from immich_memories.api.immich import ImmichNotFoundError
+
+            raise ImmichNotFoundError("not found", status_code=404)
+
+    def get_asset(self, asset_id: str):
+        self._own_or_404(asset_id)
+
+    def get_person(self, person_id: str):
+        self._own_or_404(person_id)
+
+    def get_asset_thumbnail(self, asset_id: str, size: str = "preview") -> bytes:
+        self._own_or_404(asset_id)
+        return f"{self._api_key}:{asset_id}".encode()
+
+    def get_person_thumbnail(self, person_id: str) -> bytes:
+        self._own_or_404(person_id)
+        return _jpeg(200, 200)
+
+
+@pytest.fixture
+def accounts_config(tmp_path: Path) -> Config:
+    from immich_memories.config_models import ImmichConnection
+
+    config = config_in(tmp_path)
+    config.immich.url = "http://primary.test"
+    config.immich.api_key = "primary-key"
+    config.immich.accounts = {
+        "partner": ImmichConnection(url="http://partner.test", api_key="partner-key")
+    }
+    return config
+
+
+@pytest.fixture
+def accounts_client(monkeypatch, accounts_config: Config, cache: ThumbnailCache) -> TestClient:
+    _FakeAccountsImmich.calls = []
+    _FakeAccountsImmich.owners = {"asset-primary": "primary-key", "asset-partner": "partner-key"}
+    # WHY: Immich is the external boundary; a fake stands in for both configured accounts.
+    monkeypatch.setattr("immich_memories.api.sync_client.SyncImmichClient", _FakeAccountsImmich)
+    client = api_client(accounts_config)
+    client.app.dependency_overrides[thumbnail_cache] = lambda: cache
+    return client
+
+
+def test_an_asset_owned_by_the_primary_account_is_served(accounts_client):
+    response = accounts_client.get(
+        "/api/v1/assets/asset-primary/thumbnail", params={"size": "preview"}
+    )
+
+    assert response.status_code == 200
+    assert response.content == b"primary-key:asset-primary"
+
+
+def test_a_partner_owned_asset_is_fetched_with_the_partner_key(accounts_client):
+    response = accounts_client.get(
+        "/api/v1/assets/asset-partner/thumbnail", params={"size": "preview"}
+    )
+
+    assert response.status_code == 200
+    assert response.content == b"partner-key:asset-partner"
+    # The primary was tried first and refused it; the partner's own key read it.
+    assert ("primary-key", "asset-partner") in _FakeAccountsImmich.calls
+    assert ("partner-key", "asset-partner") in _FakeAccountsImmich.calls
+
+
+def test_an_asset_outside_every_configured_account_is_a_404(accounts_client, cache):
+    response = accounts_client.get("/api/v1/assets/asset-nobody/thumbnail")
+
+    assert response.status_code == 404
+
+
+def test_scope_is_checked_before_the_cache_even_when_already_cached(accounts_client, cache):
+    # An id neither configured account can see, but a picture already sits under it in
+    # the shared cache (e.g. left over from before the account lost access to it).
+    cache.put("asset-stale", "preview", _jpeg(100, 100))
+
+    response = accounts_client.get("/api/v1/assets/asset-stale/thumbnail")
+
+    assert response.status_code == 404
+
+
+def test_a_partner_owned_face_is_fetched_with_the_partner_key(accounts_client):
+    _FakeAccountsImmich.owners["person-partner"] = "partner-key"
+
+    response = accounts_client.get("/api/v1/people/person-partner/face")
+
+    assert response.status_code == 200
+    assert ("partner-key", "person-partner") in _FakeAccountsImmich.calls
+
+
+def test_a_person_outside_every_configured_account_is_a_404(accounts_client):
+    assert accounts_client.get("/api/v1/people/person-nobody/face").status_code == 404
+
+
 class _FakeImmich:
     """Stands in for SyncImmichClient. WHY: Immich is the external boundary here."""
 
@@ -145,7 +256,7 @@ def test_a_configured_immich_hands_back_the_face(monkeypatch):
     fetch = _face_fetcher(monkeypatch, "http://immich.test", "key")
     _FakeImmich.payload = b"jpeg-bytes"
 
-    assert fetch("abc") == b"jpeg-bytes"
+    assert fetch("abc", "primary") == b"jpeg-bytes"
     assert _FakeImmich.calls == ["abc"]
 
 
@@ -153,11 +264,11 @@ def test_a_person_without_a_face_is_none_not_an_error(monkeypatch):
     fetch = _face_fetcher(monkeypatch, "http://immich.test", "key")
     _FakeImmich.payload = None
 
-    assert fetch("abc") is None
+    assert fetch("abc", "primary") is None
 
 
 def test_an_unconfigured_immich_is_never_called(monkeypatch):
     fetch = _face_fetcher(monkeypatch, "", "")
 
-    assert fetch("abc") is None
+    assert fetch("abc", "primary") is None
     assert _FakeImmich.calls == []
