@@ -14,7 +14,7 @@ Rules
 - People: first names and the words the family uses at home (maman, papa, mamie, papy; mum, dad), never civil terms (mère, père). Name people only when they are the point of the film.
 - Sentence case: capitalise the first word and proper nouns, nothing else.
 - Title: at most 40 characters. Subtitle: at most 50 characters or null; it may only state what a fact above states, so no distance, count, weather, time of day or feeling the facts are silent about; never a list of names. Null beats a guess.
-- The title or the subtitle always carries the span's year (both years, when it crosses one). A single day is the one span short enough that it gets no date.
+- The title or the subtitle carries the span's year (both years, when it crosses one). A holiday, or "on this day" across the years, gets no date.
 - No generic openers such as "Souvenirs de", "Moments avec", "Voyage en", "Échos de", "Memories of".
 
 Return ONLY JSON: {"title": "...", "subtitle": "..." or null, "reason": "one sentence"}

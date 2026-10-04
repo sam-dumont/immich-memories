@@ -12,7 +12,8 @@ class TestParseTitleResponse:
     """Parse LLM JSON response into TitleSuggestion."""
 
     def test_parses_valid_json(self):
-        from immich_memories.titles.llm_titles import TitleSuggestion, parse_title_response
+        from immich_memories.titles.llm_titles import parse_title_response
+        from immich_memories.titles.title_guards import TitleSuggestion
 
         raw = '{"title": "A Week in Bretagne", "subtitle": "From Brasparts to Frehel", "trip_type": "multi_base", "map_mode": "excursions", "map_mode_reason": "Two bases"}'
         result = parse_title_response(raw)
@@ -171,7 +172,8 @@ class TestGenerateTitleWithLlm:
         from unittest.mock import AsyncMock, patch
 
         from immich_memories.config_models_llm import LLMConfig
-        from immich_memories.titles.llm_titles import TitleSuggestion, generate_title_with_llm
+        from immich_memories.titles.llm_titles import generate_title_with_llm
+        from immich_memories.titles.title_guards import TitleSuggestion
 
         config = LLMConfig(
             enabled=True,
@@ -338,13 +340,13 @@ class TestATitleMayOnlyNameWhatTheFactsName:
     @pytest.mark.asyncio
     async def test_a_place_spelled_the_way_the_film_speaks_is_not_an_invention(self):
         result = await self._titled(
-            '{"title": "Le semi de Bruxelles", "subtitle": null}',
+            '{"title": "Le semi de Bruxelles, 2022", "subtitle": null}',
             locale="fr",
             daily_locations=["2022-03-27: Brussels (50.85, 4.35)"],
         )
 
         assert result is not None
-        assert result.title == "Le semi de Bruxelles"
+        assert result.title == "Le semi de Bruxelles, 2022"
 
     @pytest.mark.asyncio
     async def test_a_subtitle_stating_what_no_fact_states_is_dropped_not_the_title(self):
@@ -358,9 +360,15 @@ class TestATitleMayOnlyNameWhatTheFactsName:
 
 
 class TestATitleKeepsTheYearTheTemplateWouldShow:
-    """A model title must carry the span's year(s), or the template names it instead.
+    """A model title must carry exactly the year(s) the BASIC template's own
+    title would show for the same memory, derived through the renderer's own
+    dispatch (`infer_selection_type` then `generate_title`) — not a fixed list.
 
-    A single day is the one span short enough that a date adds nothing.
+    The template shows no year for "on this day", a person spotlight spanning
+    several years (it opens on the name alone) and a holiday (named off
+    `holiday_label`, never dated). Every other shape — a calendar year, a
+    season, a single-year person spotlight or multi-person film, a plain
+    date range, a trip — carries its year, and the model must too.
     """
 
     @staticmethod
@@ -399,14 +407,73 @@ class TestATitleKeepsTheYearTheTemplateWouldShow:
             )
 
     @pytest.mark.asyncio
-    async def test_occasion_title_missing_the_year_is_refused(self):
+    @pytest.mark.parametrize(
+        ("memory_type", "start_date", "end_date", "kwargs"),
+        [
+            ("season", "2024-06-01", "2024-08-31", {}),
+            ("year_in_review", "2024-01-01", "2024-12-31", {}),
+            ("person_spotlight", "2024-01-01", "2024-06-01", {"person_names": ["Mila"]}),
+            ("multi_person", "2024-01-01", "2024-12-31", {}),
+            ("album", "2024-03-01", "2024-04-15", {}),
+            ("trip", "2024-06-01", "2024-06-07", {}),
+        ],
+        ids=[
+            "season",
+            "calendar_year",
+            "single_year_person_spotlight",
+            "multi_person_with_a_year",
+            "plain_date_range",
+            "trip",
+        ],
+    )
+    async def test_a_yearless_title_is_refused(self, memory_type, start_date, end_date, kwargs):
+        from immich_memories.titles.llm_titles import MemoryTitleFacts
+
         result = await self._titled(
-            '{"title": "Été au bord de mer", "subtitle": null}',
-            memory_type="season",
-            start_date="2024-06-01",
-            end_date="2024-08-31",
+            '{"title": "A lovely time together", "subtitle": null}',
+            memory_type=memory_type,
+            start_date=start_date,
+            end_date=end_date,
+            facts=MemoryTitleFacts(),
+            **kwargs,
         )
         assert result is None
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        ("memory_type", "start_date", "end_date", "kwargs"),
+        [
+            ("on_this_day", "2015-06-17", "2024-06-17", {}),
+            ("person_spotlight", "2015-01-01", "2024-06-01", {"person_names": ["Mila"]}),
+        ],
+        ids=["on_this_day", "multi_year_person_spotlight"],
+    )
+    async def test_a_yearless_title_is_kept_when_the_template_also_shows_none(
+        self, memory_type, start_date, end_date, kwargs
+    ):
+        result = await self._titled(
+            '{"title": "A lovely time together", "subtitle": null}',
+            memory_type=memory_type,
+            start_date=start_date,
+            end_date=end_date,
+            **kwargs,
+        )
+        assert result is not None
+        assert result.title == "A lovely time together"
+
+    @pytest.mark.asyncio
+    async def test_a_holiday_title_needs_no_year_either(self):
+        from immich_memories.titles.llm_titles import MemoryTitleFacts
+
+        result = await self._titled(
+            '{"title": "Noël en famille", "subtitle": null}',
+            memory_type="holiday",
+            start_date="2015-12-25",
+            end_date="2024-12-25",
+            facts=MemoryTitleFacts(holiday="christmas"),
+        )
+        assert result is not None
+        assert result.title == "Noël en famille"
 
     @pytest.mark.asyncio
     async def test_the_year_may_live_in_the_subtitle(self):
@@ -418,19 +485,6 @@ class TestATitleKeepsTheYearTheTemplateWouldShow:
         )
         assert result is not None
         assert result.title == "Été au bord de mer"
-
-    @pytest.mark.asyncio
-    async def test_a_single_day_needs_no_year(self):
-        from immich_memories.titles.llm_titles import MemoryTitleFacts
-
-        result = await self._titled(
-            '{"title": "Sunday at Lakeside Half 2022", "subtitle": null}',
-            memory_type="special_day",
-            start_date="2022-03-27",
-            end_date="2022-03-27",
-            facts=MemoryTitleFacts(album_name="Lakeside Half 2022"),
-        )
-        assert result is not None
 
     @pytest.mark.asyncio
     async def test_a_span_crossing_years_needs_both(self):

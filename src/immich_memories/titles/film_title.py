@@ -61,7 +61,7 @@ def _asks_the_model(*, enabled: bool | None, memory_type: str | None, configured
     if enabled:
         return True
 
-    from immich_memories.titles.llm_titles import OCCASION_MEMORY_TYPES, PEOPLE_MEMORY_TYPES
+    from immich_memories.titles.title_guards import OCCASION_MEMORY_TYPES, PEOPLE_MEMORY_TYPES
 
     return memory_type in PEOPLE_MEMORY_TYPES or memory_type in OCCASION_MEMORY_TYPES
 

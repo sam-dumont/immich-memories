@@ -42,7 +42,7 @@ def test_title_probe_measures_the_real_feature_transport_and_parse(monkeypatch):
                 "choices": [
                     {
                         "finish_reason": "stop",
-                        "message": {"content": '{"title":"Chess tournament"}'},
+                        "message": {"content": '{"title":"Chess tournament, 2030"}'},
                     }
                 ],
                 "usage": {"prompt_tokens": 20, "completion_tokens": 5},

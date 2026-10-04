@@ -780,7 +780,8 @@ src/immich_memories/
 │   ├── fonts.py                # Bundled title families (nothing downloaded at run time)
 │   ├── font_chain.py           # ChainFont: per-letter Noto fallback, bidi run order
 │   ├── script_fonts.py         # Pinned Noto script fonts, `titles fonts --install`
-│   ├── llm_titles.py           # LLM-generated titles
+│   ├── llm_titles.py           # LLM-generated titles: prompt building, parsing, the LLM call
+│   ├── title_guards.py         # Guards refusing an invented name, a missing year, a missing place
 │   ├── title_source.py         # TitleSource: which source produced the opening title
 │   ├── sdf_font.py             # SDF font rendering
 │   ├── sdf_font_rendering.py   # SDF rendering helpers

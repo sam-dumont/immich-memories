@@ -6,7 +6,8 @@ import re
 
 import pytest
 
-from immich_memories.titles.llm_titles import TitleSuggestion, invented_name, parse_title_response
+from immich_memories.titles.llm_titles import parse_title_response
+from immich_memories.titles.title_guards import TitleSuggestion, invented_name
 
 FACTS = (
     "Memory type: special_day\n"
