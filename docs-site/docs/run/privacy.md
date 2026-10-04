@@ -67,6 +67,11 @@ Geocoding gets city, village and trip names and names in the film's language. It
 coordinates rounded to two decimals (about a kilometre) to Nominatim, once per place. That can
 include home. Answers stay in the store. Set `geocoding_url` for your own Nominatim.
 
+After upgrading past the fix that dropped the English fallback, each already-geocoded place is
+looked up once more: the cache key changed, so a stored English answer is never reused, and
+English is no longer requested at all. A place with no name in the film's language keeps its own
+local name instead.
+
 Map tiles come from ArcGIS World Imagery for trip maps and location-card backgrounds. Requests
 reveal the area, including home base. With tiles off, ordinary title/location cards still work.
 [Maps and titles](../make/titles-maps-music.md) explains the result.

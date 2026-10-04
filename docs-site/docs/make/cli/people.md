@@ -51,6 +51,10 @@ immich-memories people bind "Alex Example" --account partner --id PERSON_ID
 
 Then include the account in a film with `generate --accounts primary,partner`. [Second-account setup](../../run/multi-account.mdx).
 
+With `immich.native_sharing: true`, a shared Immich person ID that's already proven on one
+account needs only this one binding: the app verifies it once against the other owner's
+access and reuses it, instead of asking for a separate binding per account.
+
 ## Saved groups
 
 A group names a reusable people condition. Use the canonical IDs shown by `people show`:

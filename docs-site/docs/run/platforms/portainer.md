@@ -33,6 +33,10 @@ Open **Stacks → Add stack**, name it `immich-memories`, and select **Web edito
 
 Click **Deploy the stack**. Wait for `immich-memories` to be running. If the host already uses port 8080, change the left-hand port in the mapping, keeping `127.0.0.1`.
 
+`title_screens.locale: auto` follows the host's `LANG`, but the container sets none, so a film
+always renders in English until you set `title_screens.locale: fr` (or add `LANG: fr_FR.UTF-8`
+to the stack's environment) for a French one.
+
 ## 3. Prepare and check
 
 Open **Containers → immich-memories → Console**, connect with `/bin/sh`, then run:

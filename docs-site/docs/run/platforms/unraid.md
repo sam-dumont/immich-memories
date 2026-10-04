@@ -32,6 +32,10 @@ Choose persistent host directories for configuration/models and finished films. 
 
 Keep **Network Type: Bridge** and the existing **Extra Parameters**. Its `--publish=127.0.0.1:8080:8080/tcp` mapping is deliberately private. There is no separate port entry. For direct LAN access, set **both UI username and UI password** before changing this mapping. Host networking bypasses it. The Unraid admin login does not protect the app.
 
+`title_screens.locale: auto` follows the host's `LANG`, but the container sets none, so a film
+always renders in English until you set `title_screens.locale: fr` (or add a `LANG: fr_FR.UTF-8`
+variable to the template) for a French one.
+
 Click **Apply**, then use the container console instructions below to fetch models and check readiness. No SSH is needed for these steps. A configured template contains your API key: do not share it.
 
 ## Compose Manager alternative

@@ -21,6 +21,11 @@ title_screens:
   locale: fr
 ```
 
+The default, `auto`, follows the host's language: `LC_ALL`, `LC_MESSAGES`, `LANG` and `LANGUAGE` are checked
+in that order, and on a Mac with none of those set, the macOS language setting is used instead. A Docker
+container usually starts with none of them set, so it renders English titles until you set
+`title_screens.locale` or the container's `LANG`.
+
 ## Opening and closing fades
 
 Choose **Opening and closing fade** under **Render**: white, black, or **As configured**. This changes the fade at both ends of the title sequence for this film. Title screens must be enabled.

@@ -224,7 +224,11 @@ The bundled FireRedVAD model runs locally with the `editorial` or `editorial-cud
 It measures retained videos and Live Photo companions, then maps speech onto the stitched
 timeline. The editor fits the resulting intervals before rendering; an uninterrupted
 utterance may cost more time or cause a clip to be left out. This detects voice activity,
-not sentence meaning. Music ducking remains separate.
+not sentence meaning.
+
+The same model also scores a clip's own sound for music or singing, which is how the soundtrack
+knows to step aside instead of just ducking under it. Without the ONNX runtime, or with
+`advanced.speech.enabled: false`, that detection never runs and the soundtrack never steps aside.
 
 ## Generation defaults
 
