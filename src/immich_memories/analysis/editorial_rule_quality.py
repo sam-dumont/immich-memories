@@ -9,14 +9,18 @@ taken before the thing happened.
 
 from __future__ import annotations
 
-from collections.abc import Collection, Mapping
-from dataclasses import dataclass
+from collections.abc import Callable, Collection, Mapping, Sequence
+from dataclasses import dataclass, replace
 from typing import Any
 
+from immich_memories.analysis.editorial_story_shortlist import DepictedChoice
 from immich_memories.analysis.editorial_structure_budget import RESIDUAL_MIN
 from immich_memories.analysis.subject_framing import framing_visibility
 
 PIXEL_WARNINGS = ("SOFT (blurry)", "DARK", "BLOWN OUT")
+# A sharpness far above the library's p10 floor does not deserve an ever-growing lead:
+# past this multiple of the floor, one more stop of sharpness stops mattering.
+SPARSE_SHARPNESS_CAP = 4.0
 
 
 @dataclass(frozen=True)
@@ -117,3 +121,107 @@ def rule_representative_rank(
         )
 
     return rank
+
+
+@dataclass(frozen=True)
+class QualityFacts:
+    """What a sparse week's best-picture pick needs to know about one candidate.
+
+    This is a different question than `PictureFacts`: no reader has named a lead or
+    weighed a burst here, there is no occasion to be representative of yet, so the
+    hard filters below (never a screenshot, document, held-back, warned-about or
+    under-sharp frame) stand in for the owner's own first pass over the week.
+    """
+
+    disqualified: bool
+    faces_present: bool
+    sharpness_ratio: float
+    brightness: float
+    distance_from_midweek: float
+    taken: str
+
+
+def quality_facts(
+    asset: Any,
+    *,
+    line: str,
+    heads: Mapping[str, str],
+    standing: int,
+    sharpness: float,
+    sharpness_floor: float,
+    brightness: float,
+    distance_from_midweek: float,
+    never_auto: bool,
+) -> QualityFacts:
+    """Read one candidate's hard filters and its sort facts for its week's best pick.
+
+    `heads` are the raw detector labels (`"doc_docling"`, `"screen"`), the same
+    vocabulary `RuleStructureReader.standing` reads them in, not the renamed ones an
+    annotation line prints for a person.
+    """
+    screenshot = heads.get("screen", "no") != "no"
+    document = heads.get("doc_docling", "photograph") != "photograph"
+    warned = any(warning in line for warning in PIXEL_WARNINGS) or "rotated" in line.lower()
+    disqualified = (
+        warned
+        or standing < 1
+        or sharpness < sharpness_floor
+        or screenshot
+        or document
+        or never_auto
+    )
+    ratio = min(sharpness / sharpness_floor, SPARSE_SHARPNESS_CAP) if sharpness_floor > 0 else 0.0
+    return QualityFacts(
+        disqualified=disqualified,
+        faces_present=bool(asset.people) or ("people=" in line and "people=none" not in line),
+        sharpness_ratio=ratio,
+        brightness=brightness,
+        distance_from_midweek=distance_from_midweek,
+        taken=asset.file_created_at.isoformat(),
+    )
+
+
+def quality_key(facts: QualityFacts) -> tuple:
+    """Sort key, smallest first; a disqualified candidate never wins its week."""
+    return (
+        facts.disqualified,  # False sorts first: a clean candidate always beats a hard filter
+        not facts.faces_present,
+        -facts.sharpness_ratio,
+        abs(facts.brightness - 128),
+        facts.distance_from_midweek,
+        facts.taken,
+    )
+
+
+def promote_quality_choice(
+    eligible: Sequence[DepictedChoice],
+    asset_id: str | None,
+    *,
+    stands: Callable[[str], bool],
+    free: Callable[[str], bool],
+) -> list[DepictedChoice]:
+    """Surface the picture `read_story` already chose as a sparse week's best picture.
+
+    The moment that carries it is made primary by it and ordered first; every other
+    moment of the story follows, unchanged. Nothing here asks a fresh question: the
+    quality ranking already ran once, in `read_story`, over the week's whole pool.
+
+    `read_story`'s own hard filters (sharpness, standing, never a screenshot) ran before
+    the carrier-admission gate existed for this asset, so they can disagree with it (an
+    owner-cleared NSFW hold, a context requirement the quality pass never saw). The chosen
+    asset must still stand and be free here, or the week goes short rather than forcing a
+    gate-failed member into the primary slot (#2048 review, point B).
+    """
+    if not asset_id or not (free(asset_id) and stands(asset_id)):
+        return []
+    surfaced, rest = [], []
+    for choice in eligible:
+        if asset_id not in choice.members:
+            rest.append(choice)
+            continue
+        if choice.primary != asset_id:
+            choice = replace(
+                choice, primary=asset_id, alternatives=[a for a in choice.members if a != asset_id]
+            )
+        surfaced.append(choice)
+    return [*surfaced, *rest] if surfaced else []

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections import Counter
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from datetime import date, datetime
 from operator import itemgetter
 from statistics import median
@@ -20,8 +20,13 @@ from immich_memories.analysis.editorial_event_story import (
 )
 from immich_memories.analysis.editorial_home_radius import home_of, near_home_of
 from immich_memories.analysis.editorial_rule_episodes import RULES_VERSION
+from immich_memories.analysis.editorial_rule_quality import quality_facts, quality_key
 from immich_memories.analysis.editorial_same_kind import EpisodeKind, same_kind_threads
-from immich_memories.analysis.editorial_shareability import SHAREABLE, owner_cleared_ids
+from immich_memories.analysis.editorial_shareability import (
+    SHAREABLE,
+    never_auto_ids,
+    owner_cleared_ids,
+)
 from immich_memories.analysis.editorial_shareability_audience import exposure_flagged
 from immich_memories.analysis.editorial_standing_facts import (
     carries_nothing,
@@ -38,11 +43,14 @@ from immich_memories.analysis.editorial_story_replies import (
     film_close_family,
     relations_on,
 )
+from immich_memories.analysis.editorial_story_shortlist import spread_evenly
+from immich_memories.analysis.editorial_story_slots import weight_caps
 from immich_memories.analysis.editorial_story_weighing import (
     _FAMILY_WORD,
     _floor_weights,
     consecutive_runs,
 )
+from immich_memories.analysis.editorial_structure_budget import NOMINAL_STILL_SECONDS
 from immich_memories.analysis.place_names import shown_city
 from immich_memories.analysis.trip_legs import legs_of_days
 
@@ -51,6 +59,11 @@ from immich_memories.analysis.trip_legs import legs_of_days
 PRIVATE_VENUES = frozenset({"bedroom", "medical", "private_facility"})
 PUBLIC_VENUES = frozenset({"water"})
 OUTDOOR_LOCATION = "outdoor"
+# Owner ruling 2026-10-04 (option a): when at least this share of a household's at-home
+# weeks carry no occasion indicator at all, BASIC funds them from their own best picture
+# instead of going short. Below this share the 2026-09-23 rule stands: an indicator-less
+# week among mostly-indicated ones still goes short.
+SPARSE_NONE_SHARE = 2 / 3
 
 
 def _calendar_week(day: str) -> tuple[int, int] | tuple[()]:
@@ -76,11 +89,20 @@ class NoModelJudge:
 
 
 class RuleStructureReader:
-    def __init__(self, source, *, printed: PrintedNear | None = None) -> None:
+    def __init__(
+        self,
+        source,
+        *,
+        printed: PrintedNear | None = None,
+        promote_sparse_quality: bool = True,
+    ) -> None:
         self.source = source
         self._face: Callable[[str], bool | None] | None = None
         # Immich's OCR over the screens and documents near a moment, when the run can reach it.
         self._printed = printed
+        # False for the draft a thin model layer polishes (#2048 review, point C): the
+        # owner's ruling is BASIC-only, and the model tier may still read a bare week itself.
+        self._promote_sparse_quality_enabled = promote_sparse_quality
 
     def _day_threshold(self) -> float:
         """A day at least this dense is an occasion by its capture count alone."""
@@ -379,6 +401,14 @@ class RuleStructureReader:
         )
         big = self._big_stories(stories, episodes)
         floors = _floor_weights(stories, journey=False)
+        # BASIC-only (owner ruling 2026-10-04): the model tier may still read a mostly
+        # indicator-less week itself, so a draft the model then polishes never carries this
+        # promotion (#2048 review, point C).
+        sparse_quality = (
+            self._promote_sparse_quality(stories, by_key, hints)
+            if self._promote_sparse_quality_enabled
+            else {}
+        )
         kinds = same_kind_threads(
             stories,
             kind_of=self._episode_kinds(episodes),
@@ -388,24 +418,156 @@ class RuleStructureReader:
         for story in stories:
             for key in story["episodes"]:
                 by_key[key].role = WEIGHT_ROLE[story["weight"]]
-        result = PeriodStory(
-            "",
-            episodes,
-            [],
-            [],
-            [],
-            {
-                "producer": RULES_VERSION,
-                "hints": hints,
-                "floors": floors,
-                "big_stories": big,
-                "same_kind": kinds,
-                "events": events,
-            },
-            stories,
-        )
+        meta = {
+            "producer": RULES_VERSION,
+            "hints": hints,
+            "floors": floors,
+            "big_stories": big,
+            "same_kind": kinds,
+            "events": events,
+        }
+        # Absent, not empty, when the mechanism never engaged: a below-threshold or FULL
+        # plan stays byte-identical to one built before #2048 existed.
+        if sparse_quality.get("promoted") or sparse_quality.get("left_short"):
+            meta["sparse_quality"] = sparse_quality
+        result = PeriodStory("", episodes, [], [], [], meta, stories)
         record(result.as_record())
         return result
+
+    def _at_home(self, story, by_key) -> bool:
+        return not any(self._away_from_home(by_key[k]) for k in story["episodes"])
+
+    def _story_members(self, story, by_key) -> list[str]:
+        return [
+            asset
+            for key in story["episodes"]
+            for moment in by_key[key].moments
+            for asset in self.source.moment_asset_ids.get(moment, ())
+        ]
+
+    def _pixel_facts_of(self, asset_id: str) -> tuple[float, float] | None:
+        """A still's sharpness and brightness, or None when it was never measured (a video,
+        or a picture the pixel pass has not reached yet). A missing row must disqualify a
+        sparse week's candidate, never read as a sharpness of 0 that a floor of 0 would pass."""
+        facts = getattr(self.source, "pixel_facts", None) or {}
+        return facts.get(asset_id)
+
+    def _sharpness_floor(self) -> float:
+        """The library's own p10 sharpness over still images with a measured pixel row: the
+        no-model bar a sparse week's pick must clear. A video or an unmeasured picture would
+        otherwise read as sharpness 0 and drag the floor down to nothing."""
+        sharpness = [
+            facts[0]
+            for asset_id, asset in self.source.assets.items()
+            if not asset.is_video and (facts := self._pixel_facts_of(asset_id)) is not None
+        ]
+        return float(np.percentile(sharpness, 10)) if sharpness else 0.0
+
+    def _free_quality_slots(self, stories: Sequence[Mapping[str, Any]], by_key, candidates) -> int:
+        """What the film's slot budget is likely to leave for a glimpse-weight promotion:
+        the total nominal still slots, less what the stories that already carry a real
+        indicator would claim under the same weight-to-slots rule `allocate_slots` applies.
+        An estimate, not a simulation of `allocate_slots` itself (#2048 review, point E) — it
+        only has to keep the chronological spread from promoting more weeks than the film can
+        actually fund; overestimating what the indicated stories take is the safe direction."""
+        case = getattr(self.source, "case", None)
+        target = getattr(case, "target_seconds", 0.0) or 0.0
+        total = max(int(target // NOMINAL_STILL_SECONDS), 0)
+        candidate_keys = {s["key"] for s in candidates}
+        indicated = [s for s in stories if s["weight"] != "none" and s["key"] not in candidate_keys]
+        caps = weight_caps(total)
+        claimed = sum(
+            min(caps.get(s["weight"], 0), len(self._story_members(s, by_key))) for s in indicated
+        )
+        return max(total - claimed, 0)
+
+    def _quality_pick(self, story, by_key, floor: float, never_auto: frozenset) -> str | None:
+        """The sharpest, best-exposed, most central clean picture of a sparse week's own
+        pool, or None when every candidate fails a hard filter or was never measured."""
+        members = self._story_members(story, by_key)
+        if not members:
+            return None
+        midweek = median(self.source.assets[a].file_created_at.timestamp() for a in members)
+        rows = []
+        for asset_id in members:
+            pixel = self._pixel_facts_of(asset_id)
+            if pixel is None or self.source.assets[asset_id].is_video:
+                continue
+            sharpness, brightness = pixel
+            rows.append(
+                (
+                    asset_id,
+                    quality_facts(
+                        self.source.assets[asset_id],
+                        line=self.source.annotations.get(asset_id, ""),
+                        heads=self._heads_of(asset_id),
+                        standing=self.standing(asset_id),
+                        sharpness=sharpness,
+                        sharpness_floor=floor,
+                        brightness=brightness,
+                        distance_from_midweek=abs(
+                            self.source.assets[asset_id].file_created_at.timestamp() - midweek
+                        ),
+                        never_auto=asset_id in never_auto,
+                    ),
+                )
+            )
+        if not rows:
+            return None
+        asset_id, facts = min(rows, key=lambda row: quality_key(row[1]))
+        return None if facts.disqualified else asset_id
+
+    def _promote_sparse_quality(self, stories, by_key, hints) -> dict[str, Any]:
+        """Fund a mostly-indicator-less household's at-home weeks from their own best
+        picture instead of going short (owner ruling 2026-10-04, option a). A household
+        with real indicators keeps the 2026-09-23 rule: an indicator-less week among
+        mostly-indicated ones still goes short.
+        """
+        at_home = [story for story in stories if self._at_home(story, by_key)]
+        candidates = [story for story in at_home if story["weight"] == "none"]
+        share = len(candidates) / len(at_home) if at_home else 0.0
+        audit: dict[str, Any] = {
+            "share": round(share, 4),
+            "threshold": SPARSE_NONE_SHARE,
+            "promoted": [],
+            "left_short": [],
+        }
+        if not candidates or share < SPARSE_NONE_SHARE:
+            return audit
+        ordered = sorted(
+            candidates, key=lambda story: min(hints[k]["day"] for k in story["episodes"])
+        )
+        free_slots = self._free_quality_slots(stories, by_key, candidates)
+        chosen = spread_evenly(ordered, free_slots) if len(ordered) > free_slots else ordered.copy()
+        chosen_keys = {s["key"] for s in chosen}
+        # Weeks the spread had no room for wait behind the chosen ones: a chosen week that
+        # fails its own filters hands its slot to the next of these, in the same
+        # chronological order, before the slot is given up for good (#2048 review, point E).
+        waiting = [s for s in ordered if s["key"] not in chosen_keys]
+        floor = self._sharpness_floor()
+        never_auto = never_auto_ids(getattr(self.source, "shareability_flags", {}))
+        pool = chosen.copy()
+        while pool:
+            story = pool.pop(0)
+            asset_id = self._quality_pick(story, by_key, floor, never_auto)
+            if asset_id is None:
+                story["sparse_quality_reason"] = "No clean picture of the week"
+                audit["left_short"].append(story["key"])
+                if waiting:
+                    pool.append(waiting.pop(0))
+                continue
+            story["weight"] = "glimpse"
+            story["funded_by"] = "quality"
+            story["quality_asset_id"] = asset_id
+            story["sparse_quality_reason"] = (
+                "The household's period is mostly indicator-less; "
+                "funded by this week's best picture"
+            )
+            audit["promoted"].append(story["key"])
+        for story in waiting:
+            story["sparse_quality_reason"] = "No free slot for the film's length"
+            audit["left_short"].append(story["key"])
+        return audit
 
     def _episode_kinds(self, episodes) -> dict[str, EpisodeKind]:
         partition_for = getattr(self.source.intent, "partition_for", lambda _day: None)
@@ -440,13 +602,18 @@ class RuleStructureReader:
             self._face = face_evidence(self.source.assets)
         return self._face(asset_id)
 
+    def _heads_of(self, asset_id: str) -> dict[str, str]:
+        record = self.source.audience_annotations.get(asset_id)
+        return dict(record.heads) if record else {}
+
     def standing(self, asset_id: str) -> int:
         asset = self.source.assets[asset_id]
-        if asset.is_favorite or asset_id in self.source.owner_required_asset_ids:
+        required = getattr(self.source, "owner_required_asset_ids", ())
+        if asset.is_favorite or asset_id in required:
             return 2
-        record = self.source.audience_annotations.get(asset_id)
-        heads = dict(record.heads) if record else {}
+        heads = self._heads_of(asset_id)
         line = self.source.annotations.get(asset_id, "")
+        record = self.source.audience_annotations.get(asset_id)
         description = getattr(record, "description", None)
         if shows_only_a_body_part(heads, description, face=self._face_on(asset_id)):
             return 0
@@ -455,7 +622,7 @@ class RuleStructureReader:
         exposure_zero = (
             exposure_flagged(heads)
             and self.source.audience == SHAREABLE
-            and asset_id not in owner_cleared_ids(self.source.shareability_flags)
+            and asset_id not in owner_cleared_ids(getattr(self.source, "shareability_flags", {}))
         )
         if (
             exposure_zero

@@ -3172,6 +3172,11 @@
             "title": "Day",
             "type": "string"
           },
+          "funded_by": {
+            "default": "",
+            "title": "Funded By",
+            "type": "string"
+          },
           "granted": {
             "title": "Granted",
             "type": "integer"
@@ -3182,6 +3187,11 @@
           },
           "purpose": {
             "title": "Purpose",
+            "type": "string"
+          },
+          "sparse_quality_reason": {
+            "default": "",
+            "title": "Sparse Quality Reason",
             "type": "string"
           },
           "title": {

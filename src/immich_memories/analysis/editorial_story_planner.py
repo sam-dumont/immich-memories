@@ -74,7 +74,7 @@ class StorySelection:
     lines: Mapping[str, str]
 
     def record(self) -> dict[str, Any]:
-        return {
+        record: dict[str, Any] = {
             "version": STORY_PLANNER_VERSION,
             "slots": self.slots,
             "thesis": self.story.thesis,
@@ -82,6 +82,13 @@ class StorySelection:
             "episodes": self.episodes,
             "calls": self.calls,
         }
+        # Absent, not an empty dict, when the mechanism never engaged (#2048 review, point
+        # D): a below-threshold or FULL plan stays byte-identical to one built before it
+        # existed.
+        sparse_quality = self.story.audit.get("sparse_quality")
+        if sparse_quality:
+            record["sparse_quality"] = sparse_quality
+        return record
 
 
 class _MomentUnits:
@@ -380,9 +387,22 @@ def _episodes_record(
             "granted": len(chosen_by_story[s["key"]]),
             "chosen": chosen_by_story[s["key"]],
         }
+        | _funding_note(s)
         | _kind_of_story(s)
         for s in stories
     ]
+
+
+def _funding_note(s) -> dict[str, Any]:
+    """A week #2048 funded by its own best picture carries why; an ordinarily-weighed
+    story adds neither key, so its record stays identical to one built before the
+    mechanism existed (#2048 review, point D)."""
+    if not s.get("funded_by"):
+        return {}
+    return {
+        "funded_by": s["funded_by"],
+        "sparse_quality_reason": s.get("sparse_quality_reason") or "",
+    }
 
 
 def _kind_of_story(s) -> dict[str, Any]:
