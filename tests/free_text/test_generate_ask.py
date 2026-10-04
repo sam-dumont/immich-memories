@@ -301,6 +301,175 @@ class _RecordingImmich(_ReadableKey):
         return False
 
 
+def test_ask_never_counts_or_traces_another_accounts_pictures(
+    tmp_path: Path, lexicon: WordNetLexicon, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Two accounts share one store (#2044): the store holds captions for both, but a
+    request naming only one account never counts, traces or previews the other's picture,
+    even though both are about the same subject."""
+    import json
+
+    import yaml
+
+    from immich_memories.cli import main
+    from tests.household_fake import PARTNER_KEY, PRIMARY_KEY, FakeHousehold, immich_config, picture
+
+    store = open_store()
+    add_rows(
+        store,
+        "annotation_assets",
+        {"asset_id": "p-cat", "taken_at": "2020-01-01T12:00:00+00:00", "media_kind": "photo"},
+        {"asset_id": "q-cat", "taken_at": "2020-01-02T12:00:00+00:00", "media_kind": "photo"},
+    )
+    add_rows(
+        store,
+        "descriptions",
+        {
+            "asset_id": "p-cat",
+            "model": EDITORIAL.description_model,
+            "text": "A black cat is sleeping",
+        },
+        {
+            "asset_id": "q-cat",
+            "model": EDITORIAL.description_model,
+            "text": "A black cat is sleeping",
+        },
+    )
+    FakeHousehold(
+        library={
+            PRIMARY_KEY: [picture("p-cat", "primary", 1, ())],
+            PARTNER_KEY: [picture("q-cat", "partner", 2, ())],
+        }
+    ).install(monkeypatch)
+    monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    monkeypatch.setattr("immich_memories.cli._ask_generation.load_wordnet", lambda _path: lexicon)
+    monkeypatch.setattr(
+        "immich_memories.cli._ask_generation.WireAsker", lambda *_a, **_k: QuestionAsker(ANSWERS)
+    )
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text(
+        yaml.safe_dump(
+            {
+                "immich": immich_config(),
+                "tier": "full",
+                "advanced": {
+                    "llm": {
+                        "enabled": True,
+                        "base_url": "http://reader.invalid/v1",
+                        "model": "small-reader",
+                    }
+                },
+            }
+        )
+    )
+    trace_file = tmp_path / "ask.json"
+
+    result = CliRunner().invoke(
+        main,
+        [
+            "-c",
+            str(config_path),
+            "generate",
+            "--ask",
+            "our cat along the years",
+            "--accounts",
+            "partner",
+            "--dry-run",
+            "--ask-trace",
+            str(trace_file),
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert "p-cat" not in result.output
+    record = json.loads(trace_file.read_text())
+    assert record["pool"] == {"pictures": 1, "photos": 1, "videos": 0}
+    assert "p-cat" not in json.dumps(record)
+
+
+def test_ask_counts_every_named_accounts_pictures(
+    tmp_path: Path, lexicon: WordNetLexicon, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Naming every account a household has keeps the whole, correctly-owned pool: this is
+    not a one-account cut, it is the pool every account named is allowed to see."""
+    import json
+
+    import yaml
+
+    from immich_memories.cli import main
+    from tests.household_fake import PARTNER_KEY, PRIMARY_KEY, FakeHousehold, immich_config, picture
+
+    store = open_store()
+    add_rows(
+        store,
+        "annotation_assets",
+        {"asset_id": "p-cat", "taken_at": "2020-01-01T12:00:00+00:00", "media_kind": "photo"},
+        {"asset_id": "q-cat", "taken_at": "2020-01-02T12:00:00+00:00", "media_kind": "photo"},
+    )
+    add_rows(
+        store,
+        "descriptions",
+        {
+            "asset_id": "p-cat",
+            "model": EDITORIAL.description_model,
+            "text": "A black cat is sleeping",
+        },
+        {
+            "asset_id": "q-cat",
+            "model": EDITORIAL.description_model,
+            "text": "A black cat is sleeping",
+        },
+    )
+    FakeHousehold(
+        library={
+            PRIMARY_KEY: [picture("p-cat", "primary", 1, ())],
+            PARTNER_KEY: [picture("q-cat", "partner", 2, ())],
+        }
+    ).install(monkeypatch)
+    monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    monkeypatch.setattr("immich_memories.cli._ask_generation.load_wordnet", lambda _path: lexicon)
+    monkeypatch.setattr(
+        "immich_memories.cli._ask_generation.WireAsker", lambda *_a, **_k: QuestionAsker(ANSWERS)
+    )
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text(
+        yaml.safe_dump(
+            {
+                "immich": immich_config(),
+                "tier": "full",
+                "advanced": {
+                    "llm": {
+                        "enabled": True,
+                        "base_url": "http://reader.invalid/v1",
+                        "model": "small-reader",
+                    }
+                },
+            }
+        )
+    )
+    trace_file = tmp_path / "ask.json"
+
+    result = CliRunner().invoke(
+        main,
+        [
+            "-c",
+            str(config_path),
+            "generate",
+            "--ask",
+            "our cat along the years",
+            "--accounts",
+            "primary,partner",
+            "--dry-run",
+            "--ask-trace",
+            str(trace_file),
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    record = json.loads(trace_file.read_text())
+    assert record["pool"] == {"pictures": 2, "photos": 2, "videos": 0}
+
+
 def test_one_undated_occasion_is_filmed_as_its_special_day(
     ask, monkeypatch: pytest.MonkeyPatch
 ) -> None:

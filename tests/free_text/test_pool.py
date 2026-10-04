@@ -145,6 +145,29 @@ def test_several_named_people_keep_a_picture_holding_either_of_their_own_faces(
     assert _ids(pool) == {"kid-alone", "visitor-alone"}
 
 
+def test_a_face_counts_only_on_its_own_accounts_pictures(lexicon: Lexicon) -> None:
+    """In a household run (#2044), a face held to one account never counts on another
+    account's copy of the same person, the same rule `present_on_assets` already applies
+    to a dated run."""
+    view = _view(
+        _at("primarys-own", "2020-05-01T12:00+00:00", people=frozenset({"kid"})),
+        _at("partners-own", "2020-05-01T13:00+00:00", people=frozenset({"kid"})),
+    )
+    asked = _asked("my son", who=WhoLink(present=("kid",), anchors=("kid",)))
+
+    pool = build_pool(
+        asked,
+        view,
+        NOBODY,
+        lexicon,
+        BankedAsker(),
+        face_accounts={"kid": "primary"},
+        picture_accounts={"primarys-own": "primary", "partners-own": "partner"},
+    )
+
+    assert _ids(pool) == {"primarys-own"}
+
+
 def test_company_needs_a_caption_naming_people_of_that_kind(lexicon: Lexicon) -> None:
     view = _view(
         _picture("kids", caption="Two children playing in a park"),

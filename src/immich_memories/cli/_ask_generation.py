@@ -11,6 +11,7 @@ from __future__ import annotations
 import hashlib
 import json
 import sys
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
@@ -19,11 +20,13 @@ from typing import TYPE_CHECKING
 import click
 
 from immich_memories.analysis.editorial_shareability import level_of
+from immich_memories.api.access_clients import AccessBoundClient
 from immich_memories.cli._album_generation import CuratedPool
 from immich_memories.cli._helpers import print_info
+from immich_memories.free_text.account_scope import resolve_account_scope, visible_pictures
 from immich_memories.free_text.handoff import CatalogueEvent, Film, film_for
 from immich_memories.free_text.lexicon import WordNetUnavailable, load_wordnet
-from immich_memories.free_text.library import LibraryUnavailable, read_library
+from immich_memories.free_text.library import LibraryUnavailable, LibraryView, read_library
 from immich_memories.free_text.printed import ImmichPrintedText
 from immich_memories.free_text.reading import WireAsker
 from immich_memories.free_text.trace import explain, pool_counts, save_with_run, trace_record
@@ -99,11 +102,14 @@ def scope_of_ask(
     dry_run: bool,
     typed: RunScope,
     trace_file: Path | None = None,
+    accounts: Sequence[str] = (),
 ) -> RunScope:
     """The run's scope: as typed without `--ask`, else the one its sentence asks for.
 
     Flags the sentence already says are refused. A dry run, or a sentence the library
-    cannot show, ends the command after the trace: there is nothing to film.
+    cannot show, ends the command after the trace: there is nothing to film. `accounts` is
+    the run's chosen household accounts (#2044): the pool only ever names a picture they
+    can see; empty is the one-account run every `--ask` has been.
     """
     if request is None:
         return typed
@@ -114,7 +120,7 @@ def scope_of_ask(
     ]
     if given:
         raise click.UsageError(f"--ask is the whole scope; drop {', '.join(given)}")
-    film = translate_ask(config, request, dry_run=dry_run, trace_file=trace_file)
+    film = translate_ask(config, request, dry_run=dry_run, trace_file=trace_file, accounts=accounts)
     if film is None:
         sys.exit(0)
     # A requested film keeps forwarded pictures: a club's photos arrive by group chat.
@@ -133,14 +139,21 @@ def scope_of_ask(
 
 
 def translate_ask(
-    config: Config, request: str, *, dry_run: bool, trace_file: Path | None = None
+    config: Config,
+    request: str,
+    *,
+    dry_run: bool,
+    trace_file: Path | None = None,
+    accounts: Sequence[str] = (),
 ) -> Film | None:
     """Translate the sentence and print its trace; the film to make, or None for no film.
 
     A dry run stops after the trace and the pool's counts. A request the library cannot
-    show is no film, and the trace says why. `trace_file` keeps the same as JSON.
+    show is no film, and the trace says why. `trace_file` keeps the same as JSON. `accounts`
+    is the run's chosen household accounts (#2044): the pool, verdict, trace and rule
+    preview only ever name a picture they can see; empty is the one-account run every
+    `--ask` has been.
     """
-    from immich_memories.api.immich import SyncImmichClient
     from immich_memories.db import open_store
 
     if config.tier != "full":
@@ -159,11 +172,14 @@ def translate_ask(
             "The store holds no library to read: run immich-memories prepare first"
         )
     asker = WireAsker(config.llm, judgments=store)
-    with SyncImmichClient(
-        base_url=config.immich.url,
-        api_key=config.immich.api_key,
-        api_version=config.immich.api_version,
-    ) as client:
+    with _ask_client(config, accounts) as client:
+        scope = resolve_account_scope(client, accounts, view.pictures, store)
+        view = LibraryView(
+            pictures=visible_pictures(view.pictures, scope),
+            people=view.people,
+            sharpness_line=view.sharpness_line,
+            owner_id=view.owner_id,
+        )
         asked = translate(
             request,
             view,
@@ -173,6 +189,8 @@ def translate_ask(
             today=date.today(),
             trips=config.trips,
             printed=ImmichPrintedText(client),
+            face_accounts=scope.face_accounts,
+            picture_accounts=scope.picture_accounts,
         )
         film = film_for(asked, asker, events_on=catalogue_events)
         # What the editor's rules would drop from the pool: shown by a dry run, and kept with a
@@ -260,3 +278,21 @@ def _home_base(config: Config) -> tuple[float, float] | None:
     if trips.homebase_latitude == trips.homebase_longitude == 0.0:
         return None
     return trips.homebase_latitude, trips.homebase_longitude
+
+
+def _ask_client(config: Config, accounts: Sequence[str]) -> SyncImmichClient:
+    """The one-account client every `--ask` has used, or one that can open every account.
+
+    `accounts` named is a household run (#2044): reading each chosen account's own library
+    needs an `AccessBoundClient`, so the pool can be scoped to what they can see. Naming
+    none keeps the plain client, unchanged.
+    """
+    from immich_memories.api.immich import SyncImmichClient
+
+    if not accounts:
+        return SyncImmichClient(
+            base_url=config.immich.url,
+            api_key=config.immich.api_key,
+            api_version=config.immich.api_version,
+        )
+    return AccessBoundClient(config.immich)
