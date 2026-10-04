@@ -34,12 +34,13 @@ whatever its own period needs on its own, with a warning first if that takes a w
 
 | Request | Not prepared yet | Once prepared |
 | --- | --- | --- |
-| "our cats over the years" | 1,240 pictures, about 6 min to prepare | 74 shots, all the cats, nine years in order |
+| "our cats over the years" | 1,234 pictures, about 8 min to prepare | 74 shots, all the cats, nine years in order |
 | "our dog along the years" | needs preparing first | 76 shots of the dogs |
 | "our horses" | needs preparing first | 70 shots across four years |
 | "my knitting projects" | needs preparing first | 72 shots, all knitting |
 
-Preparing a whole library of 1,200 to 3,100 pictures took 8 to 26 minutes on an Apple M5 Max.
+Measured on the cat household (M5 Max): preparing those 1,234 pictures took 500 s (about 8
+min), in line with preparing a whole library of 1,200 to 3,100 pictures taking 8 to 26 minutes.
 A second request over the same period pays nothing: the captions are already banked.
 
 One thing still gets in the way:

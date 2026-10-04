@@ -102,6 +102,30 @@
         "title": "AskAvailability",
         "type": "object"
       },
+      "AskPreparationNotice": {
+        "description": "The count and the estimate the preview shows before any picture is prepared.",
+        "properties": {
+          "estimated_seconds": {
+            "title": "Estimated Seconds",
+            "type": "number"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "pictures": {
+            "title": "Pictures",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "pictures",
+          "estimated_seconds",
+          "message"
+        ],
+        "title": "AskPreparationNotice",
+        "type": "object"
+      },
       "AskPreview": {
         "description": "`generate --ask --dry-run`'s translation: the trace by part, the pool, the rule preview\nand the verdict.",
         "properties": {
@@ -117,6 +141,16 @@
           },
           "pool": {
             "$ref": "#/components/schemas/PoolCounts"
+          },
+          "preparation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AskPreparationNotice"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "request": {
             "title": "Request",

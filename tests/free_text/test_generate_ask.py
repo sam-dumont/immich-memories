@@ -464,6 +464,82 @@ def test_a_fully_prepared_window_is_neither_warned_about_nor_prepared(ask) -> No
     assert "Preparing " not in result.output
 
 
+def test_preflight_runs_before_preparation_but_not_on_a_dry_run_or_a_prepared_window(
+    ask, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """#2045 (Opus review H): the model-install preflight `prepare` itself runs, before
+    any producer touches a picture -- never on a preview, never when nothing is missing."""
+    calls: list[str] = []
+    monkeypatch.setattr(
+        "immich_memories.cli._ask_generation.refuse_blocked_host",
+        lambda *_a, **_k: calls.append("preflight"),
+    )
+
+    ask("--ask", "our cat along the years", "--dry-run")
+    assert calls == []
+
+    ask.immich.unsynced_camera_shots = [("new-cat-0", FIRST + timedelta(days=1000))]
+    monkeypatch.setattr(
+        "immich_memories.analysis.editorial_preparation.prepare_editorial_annotations",
+        _captioning(open_store(), "A black cat is sleeping"),
+    )
+    monkeypatch.setattr(
+        "immich_memories.cli._album_generation.handle_album_generation", lambda **_k: None
+    )
+
+    ask("--ask", "our cat along the years", "--no-render")
+    assert calls == ["preflight"]
+
+
+def test_a_dry_run_on_an_unprepared_window_only_warns_and_prepares_nothing(
+    ask, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """#2045 owner ruling: a dry run previews the cost of preparing; it never pays it."""
+    ask.immich.unsynced_camera_shots = [("new-cat-0", FIRST + timedelta(days=1000))]
+
+    def _never(**_kwargs):
+        raise AssertionError("a dry run must never call the real preparation pipeline")
+
+    monkeypatch.setattr(
+        "immich_memories.analysis.editorial_preparation.prepare_editorial_annotations", _never
+    )
+
+    result = ask("--ask", "our cat along the years", "--dry-run")
+
+    assert result.exit_code == 0, result.output
+    assert "1 pictures in this period aren't prepared yet; preparing them first takes about" in (
+        result.output
+    )
+    assert "Preparing 1 pictures over 1 window" not in result.output
+
+
+def test_a_preparation_failure_is_reported_and_never_reads_as_not_possible(
+    ask, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """#2045 (Opus review A): a producer failure is named, not swallowed into "not possible"."""
+    ask.immich.unsynced_camera_shots = [("new-cat-0", FIRST + timedelta(days=1000))]
+
+    def _broken(**kwargs):
+        from immich_memories.analysis.editorial_preparation import PreparationResult
+
+        total = len(kwargs["assets"])
+        kwargs["progress"]("captions", total, total)
+        return PreparationResult(
+            requested=total, missing_by_producer={}, failures={"cat-new-cat-0": "reader down"}
+        )
+
+    monkeypatch.setattr(
+        "immich_memories.analysis.editorial_preparation.prepare_editorial_annotations", _broken
+    )
+
+    result = ask("--ask", "our cat along the years", "--no-render")
+
+    assert result.exit_code == 1, result.output
+    assert "could not be prepared" in result.output
+    assert "reader down" in result.output
+    assert "not possible" not in result.output.lower()
+
+
 def test_an_impossible_request_on_a_prepared_library_still_says_not_possible(ask) -> None:
     """#2045: "not possible" survives for a subject that is genuinely nowhere in the library."""
     horse = {

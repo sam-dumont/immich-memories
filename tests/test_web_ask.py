@@ -59,6 +59,7 @@ TRANSLATION = {
     "verdict": "possible",
     "why": "14 pictures",
     "film": {"route": "pool", "line": "the engine films the pool", "outcome": "14 pictures"},
+    "preparation": None,
 }
 
 
@@ -103,6 +104,43 @@ def test_a_preview_is_the_dry_run_and_reads_back_the_translation_it_kept(tmp_pat
     assert "--ask=our cat along the years" in argv and "--dry-run" in argv
     assert job["command"] == "immich-memories generate '--ask=our cat along the years' --dry-run"
     assert client.get(f"/api/v1/ask/preview/{job['id']}").json() == TRANSLATION
+
+
+def test_an_unprepared_window_s_preview_carries_the_warning(tmp_path):
+    """#2045: the preview (a dry run) shows the count and the estimate up front, before
+    the browser commits to making the film; the dry run itself never prepares anything."""
+    unprepared = {
+        **TRANSLATION,
+        "preparation": {
+            "pictures": 1240,
+            "estimated_seconds": 372.0,
+            "message": (
+                "1,240 pictures in this period aren't prepared yet; preparing them first "
+                "takes about 6 min"
+            ),
+        },
+    }
+    recorder = tmp_path / "argv.json"
+    fake = tmp_path / "immich-memories"
+    fake.write_text(
+        f"#!{sys.executable}\nimport json, pathlib, sys\nargs = sys.argv[1:]\n"
+        f"open({str(recorder)!r}, 'w').write(json.dumps(args))\n"
+        "if '--ask-trace' in args:\n"
+        "    kept = pathlib.Path(args[args.index('--ask-trace') + 1])\n"
+        "    kept.parent.mkdir(parents=True, exist_ok=True)\n"
+        f"    kept.write_text({json.dumps(unprepared)!r})\n"
+    )
+    fake.chmod(0o755)
+    client = api_client(_full_tier(tmp_path))
+    # WHY: the real CLI child reads the store and asks the model; this checks what the page reads.
+    client.app.dependency_overrides[cli_executable] = lambda: str(fake)
+
+    started = client.post("/api/v1/ask/preview", json={"sentence": "our cat along the years"})
+    job = _finished(client, started.json()["id"])
+
+    preview = client.get(f"/api/v1/ask/preview/{job['id']}").json()
+    assert preview["preparation"]["pictures"] == 1240
+    assert "6 min" in preview["preparation"]["message"]
 
 
 def test_off_the_model_tier_a_preview_is_refused_and_no_job_starts(tmp_path):

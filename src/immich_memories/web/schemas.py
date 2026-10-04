@@ -359,6 +359,14 @@ class AskRules(BaseModel):
     lifted: list[RuleNoteView]
 
 
+class AskPreparationNotice(BaseModel):
+    """The count and the estimate the preview shows before any picture is prepared."""
+
+    pictures: int
+    estimated_seconds: float
+    message: str
+
+
 class AskPreview(BaseModel):
     """`generate --ask --dry-run`'s translation: the trace by part, the pool, the rule preview
     and the verdict."""
@@ -372,6 +380,9 @@ class AskPreview(BaseModel):
     verdict: str
     why: str
     film: AskedFilm
+    # None when the request's window needs nothing prepared: no caption-dependent subject,
+    # or every picture in it already has one.
+    preparation: AskPreparationNotice | None = None
 
 
 class RenderCapabilities(BaseModel):

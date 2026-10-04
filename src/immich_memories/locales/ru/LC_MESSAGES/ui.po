@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-04 18:11+0200\n"
+"POT-Creation-Date: 2026-10-04 23:32+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ru\n"
@@ -324,7 +324,7 @@ msgstr "День"
 msgid "Day (MM-DD)"
 msgstr "День (MM-DD)"
 
-#: web/lib/AskPanel.svelte:177
+#: web/lib/AskPanel.svelte:180
 msgid "Decided while cutting"
 msgstr "Решается во время монтажа"
 
@@ -465,7 +465,7 @@ msgstr "Семья"
 msgid "Fetching picture previews"
 msgstr "Загрузка превью изображений"
 
-#: web/lib/AskPanel.svelte:140
+#: web/lib/AskPanel.svelte:143
 msgid "Fewer than 12 pictures fit: the film will be short."
 msgstr "Подходит меньше 12 снимков: фильм будет коротким."
 
@@ -530,7 +530,7 @@ msgstr "Как прочитаны ваши слова"
 msgid "How the rules got here"
 msgstr "Как правила пришли к этому"
 
-#: web/lib/AskPanel.svelte:193
+#: web/lib/AskPanel.svelte:196
 msgid "How the sentence was read"
 msgstr "Как прочитана фраза"
 
@@ -743,7 +743,7 @@ msgstr ""
 msgid "No child output was retained for this run."
 msgstr "Для этого запуска не сохранён связанный результат."
 
-#: web/lib/AskPanel.svelte:138
+#: web/lib/AskPanel.svelte:141
 msgid ""
 "No film: the library cannot show this. Try other words, or read below what each part of the "
 "sentence found."
@@ -779,7 +779,7 @@ msgstr "Нет изображений, соответствующих этому
 msgid "No reason recorded for this picture."
 msgstr "Причина выбора этого изображения не записана."
 
-#: web/lib/AskPanel.svelte:174
+#: web/lib/AskPanel.svelte:177
 msgid "No rule the preview can check would drop a picture."
 msgstr "Ни одно правило, которое может проверить предпросмотр, не отбросило бы снимок."
 
@@ -821,7 +821,7 @@ msgstr "Нет"
 msgid "North"
 msgstr "Север"
 
-#: web/lib/AskPanel.svelte:177
+#: web/lib/AskPanel.svelte:180
 msgid "Not applied to a film you asked for"
 msgstr "Не применяется к фильму, который вы попросили"
 
@@ -919,7 +919,7 @@ msgstr "Просмотр изображения"
 msgid "Pictures just read"
 msgstr "Только что прочитанные изображения"
 
-#: web/lib/AskPanel.svelte:201
+#: web/lib/AskPanel.svelte:204
 msgid "Pictures left after each step"
 msgstr "Сколько снимков осталось после каждого шага"
 
@@ -1222,7 +1222,7 @@ msgstr "Умный (затухания и склейки)"
 msgid "Soft romantic"
 msgstr "Soft romantic"
 
-#: web/lib/AskPanel.svelte:165
+#: web/lib/AskPanel.svelte:168
 msgid "Some of its pictures"
 msgstr "Некоторые из его снимков"
 
@@ -1260,7 +1260,9 @@ msgstr "Статичное изображение"
 
 #: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:334
 msgid "Stopped before it saved a film. The cut it came from is under Runs, in its own run."
-msgstr "Остановлено до сохранения фильма. Монтаж, из которого он создавался, лежит в разделе «Запуски», в своём запуске."
+msgstr ""
+"Остановлено до сохранения фильма. Монтаж, из которого он создавался, лежит в разделе "
+"«Запуски», в своём запуске."
 
 #: web/lib/JobPanel.svelte:62
 msgid "Stopped."
@@ -1436,7 +1438,7 @@ msgstr "URL сервера изменился: введите ключ API дл�
 msgid "The settings could not be saved."
 msgstr "Не удалось сохранить настройки."
 
-#: web/lib/AskPanel.svelte:143
+#: web/lib/AskPanel.svelte:146
 msgid "The words changed since this preview: preview again before making the film."
 msgstr "Слова изменились после этого предпросмотра: запустите его снова, прежде чем делать фильм."
 
@@ -1587,7 +1589,7 @@ msgstr ""
 "Что автоматизация создала бы следующим — тот же список, что выводит `auto suggest`. Запустите"
 " так, как это сделал бы `auto run`, или сначала проверьте без рендеринга."
 
-#: web/lib/AskPanel.svelte:149
+#: web/lib/AskPanel.svelte:152
 msgid "What the editor's rules would drop"
 msgstr "Что отбросили бы правила монтажа"
 
@@ -1693,6 +1695,10 @@ msgstr "все вместе"
 msgid "any of them"
 msgstr "любой из них"
 
+#: web/lib/AskPanel.svelte:138
+msgid "making the film prepares them first"
+msgstr "создание фильма сначала их подготавливает"
+
 #: web/lib/AskPanel.svelte:116
 msgid "our cat along the years"
 msgstr "наш кот за все годы"
@@ -1726,12 +1732,12 @@ msgstr "{days} дней · {count} изображений"
 msgid "{done} of {total}"
 msgstr "{done} из {total}"
 
-#: web/lib/AskPanel.svelte:154
+#: web/lib/AskPanel.svelte:157
 #, python-brace-format
 msgid "{passed} of {checked} pictures pass the rules checked before cutting."
 msgstr "{passed} из {checked} снимков проходят правила, проверяемые до монтажа."
 
-#: web/lib/AskPanel.svelte:152
+#: web/lib/AskPanel.svelte:155
 #, python-brace-format
 msgid ""
 "{passed} of {checked} prepared pictures pass the rules checked before cutting; {unread} are "

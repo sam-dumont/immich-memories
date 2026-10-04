@@ -19,10 +19,28 @@ A text reader by itself on the Basic tier is enough for titles, but not for this
 
 ## It prepares the period it asks about
 
-A request reads captions, and a library nobody has run `prepare` on has none yet. Rather than
-answer "not possible" on pictures nobody has looked at, a request checks its own period first
-and, if any of it is missing, prepares it before answering: a warning with the count and an
-estimate, then the usual preparation lines, then the answer.
+A caption-only subject ("our cat", "my knitting") reads captions, and a library nobody has run
+`prepare` on has none yet. Rather than answer "not possible" on pictures nobody has looked at, a
+request checks its own period first: the dates it parsed, or the whole library for "along the
+years". A person film or a computed selection (a trip, someone's first or last picture) reads
+faces and GPS, never a caption, so it is never affected by this.
+
+Preview first, on the CLI or in the web UI: a preview only ever checks and warns, it never
+prepares anything.
+
+```bash
+immich-memories generate --ask "our cat along the years" --dry-run
+```
+
+```
+1,240 pictures in this period aren't prepared yet; preparing them first takes about 6 min
+```
+
+Making the film is the only thing that pays that cost, and it tells you before it does:
+
+```bash
+immich-memories generate --ask "our cat along the years" --no-render
+```
 
 ```
 1,240 pictures in this period aren't prepared yet; preparing them first takes about 6 min
@@ -31,22 +49,19 @@ Preparing 1,240 pictures over 1 window
 ```
 
 A second request over the same period pays nothing: the captions it prepared are banked, the
-same way `immich-memories prepare` banks them. For a whole library's worth of years, expect the
-preparation itself to take minutes, not seconds; the web client shows the same warning before
-it starts.
+same way `immich-memories prepare` banks them. Measured on an M5 Max: 1,234 pictures took 500 s
+(about 8 min) and turned "our cats over the years" into a 74-shot film, nine years in order,
+where the library's regular path had kept 3 of the same 14 clear cat pictures. The web client
+shows the same warning in its preview, before it starts.
 
-## Preview first
+## Preview, then make the film
 
-In the web UI, use **Describe the film you want** on **Memory** and inspect the preview. On the CLI:
-
-```bash
-immich-memories generate --ask "at the park with kids" --dry-run
-```
-
-Read the translated people, dates, places and subject. Check the pool: a plausible sentence does not guarantee the right pictures. When it looks right:
+In the web UI, use **Describe the film you want** on **Memory** and inspect the preview. Read
+the translated people, dates, places and subject. Check the pool: a plausible sentence does not
+guarantee the right pictures. When it looks right:
 
 ```bash
-immich-memories generate --ask "at the park with kids" --no-render
+immich-memories generate --ask "our cat along the years" --no-render
 ```
 
 This saves an actual cut for review. Render it from **Runs**, or use [`runs render`](./cli/runs.md#runs-render).

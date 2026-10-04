@@ -53,21 +53,24 @@ def translate(
 ) -> Ask:
     """Translate a request against the library: every decision keeps its reason for the trace.
 
-    `prepare_window`, when given, is called with the request's own dates right after they
-    are linked: a caption-only subject has no shortlist to fill on demand (#2045), so it is
-    the one request that prepares its own window before the pool reads it. Its return value
-    replaces `view` for everything that follows, so a freshly captioned picture is read, not
-    the stale copy taken before preparation.
+    `prepare_window`, when given, is called with the request's own dates once the subject
+    is known, and only when that subject has words a picture's caption would have to match
+    (`Subject.words`): a person or a computed selection (a trip, someone's first or last
+    picture) reads faces and GPS, never a caption, so it never pays to prepare a window
+    (#2045). A caption-only subject has no shortlist to fill on demand, so it is the one
+    request that prepares its own window before the pool reads it. Its return value replaces
+    `view` for everything that follows, so a freshly captioned picture is read, not the stale
+    copy taken before preparation.
     """
     reading = read_request(request, asker)
     who = link_who(request, reading.who, household, lexicon, asker)
     when = link_when(request, reading.when, who, household, asker, today=today)
-    if prepare_window is not None:
-        view = prepare_window(when)
     if when.start is when.end is None:
         reading = recover_undated_subject(reading, lexicon)
     captions = [picture.caption for picture in view.pictures]
     subject = build_subject(reading, household, captions, lexicon, asker)
+    if prepare_window is not None and subject.words:
+        view = prepare_window(when)
     where = link_where(request, reading.where, subject.heads, household, asker)
     facts = link_facts(request, view, lexicon)
     translation = Translation(reading, who, when, where, facts, subject)

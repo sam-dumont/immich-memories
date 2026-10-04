@@ -134,6 +134,9 @@
             <span class="text-sm tabular-nums">{t('{pictures} pictures: {photos} photos, {videos} videos', { ...preview.pool })}</span>
           </div>
           <p class="text-sm">{preview.why}</p>
+          {#if preview.preparation}
+            <p class="text-sm font-medium" role="alert">{preview.preparation.message}; {t('making the film prepares them first')}</p>
+          {/if}
           {#if preview.verdict === 'not possible'}
             <p class="text-sm font-medium">{t('No film: the library cannot show this. Try other words, or read below what each part of the sentence found.')}</p>
           {:else if preview.verdict === 'thin'}

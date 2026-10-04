@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version:  immich-memories\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-04 18:11+0200\n"
+"POT-Creation-Date: 2026-10-04 23:32+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: fr\n"
@@ -323,7 +323,7 @@ msgstr "Jour"
 msgid "Day (MM-DD)"
 msgstr "Jour (MM-DD)"
 
-#: web/lib/AskPanel.svelte:177
+#: web/lib/AskPanel.svelte:180
 msgid "Decided while cutting"
 msgstr "Décidé pendant le montage"
 
@@ -464,7 +464,7 @@ msgstr "Famille"
 msgid "Fetching picture previews"
 msgstr "Récupération des aperçus des photos"
 
-#: web/lib/AskPanel.svelte:140
+#: web/lib/AskPanel.svelte:143
 msgid "Fewer than 12 pictures fit: the film will be short."
 msgstr "Moins de 12 photos correspondent : le film sera court."
 
@@ -529,7 +529,7 @@ msgstr "Comment vos mots ont été lus"
 msgid "How the rules got here"
 msgstr "Comment les règles en sont arrivées là"
 
-#: web/lib/AskPanel.svelte:193
+#: web/lib/AskPanel.svelte:196
 msgid "How the sentence was read"
 msgstr "Comment la phrase a été lue"
 
@@ -742,7 +742,7 @@ msgstr ""
 msgid "No child output was retained for this run."
 msgstr "Aucun résultat associé conservé pour cette exécution."
 
-#: web/lib/AskPanel.svelte:138
+#: web/lib/AskPanel.svelte:141
 msgid ""
 "No film: the library cannot show this. Try other words, or read below what each part of the "
 "sentence found."
@@ -778,7 +778,7 @@ msgstr "Aucune image ne correspond à ce filtre."
 msgid "No reason recorded for this picture."
 msgstr "Aucune raison enregistrée pour cette image."
 
-#: web/lib/AskPanel.svelte:174
+#: web/lib/AskPanel.svelte:177
 msgid "No rule the preview can check would drop a picture."
 msgstr "Aucune règle vérifiable ici n'écarterait de photo."
 
@@ -818,7 +818,7 @@ msgstr "Aucune"
 msgid "North"
 msgstr "Nord"
 
-#: web/lib/AskPanel.svelte:177
+#: web/lib/AskPanel.svelte:180
 msgid "Not applied to a film you asked for"
 msgstr "Pas appliqué à un film que vous avez demandé"
 
@@ -916,7 +916,7 @@ msgstr "Examen de l’image"
 msgid "Pictures just read"
 msgstr "Photos juste lues"
 
-#: web/lib/AskPanel.svelte:201
+#: web/lib/AskPanel.svelte:204
 msgid "Pictures left after each step"
 msgstr "Photos restantes après chaque étape"
 
@@ -1219,7 +1219,7 @@ msgstr "Intelligent (fondus et coupes)"
 msgid "Soft romantic"
 msgstr "Soft romantic"
 
-#: web/lib/AskPanel.svelte:165
+#: web/lib/AskPanel.svelte:168
 msgid "Some of its pictures"
 msgstr "Quelques-unes de ses photos"
 
@@ -1257,7 +1257,9 @@ msgstr "Image fixe"
 
 #: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:334
 msgid "Stopped before it saved a film. The cut it came from is under Runs, in its own run."
-msgstr "Arrêté avant d'avoir enregistré un film. Le montage dont il vient se trouve dans Exécutions, dans sa propre exécution."
+msgstr ""
+"Arrêté avant d'avoir enregistré un film. Le montage dont il vient se trouve dans Exécutions, "
+"dans sa propre exécution."
 
 #: web/lib/JobPanel.svelte:62
 msgid "Stopped."
@@ -1435,7 +1437,7 @@ msgstr "L'URL du serveur a changé : saisissez la clé API du nouveau serveur."
 msgid "The settings could not be saved."
 msgstr "Les réglages n'ont pas pu être enregistrés."
 
-#: web/lib/AskPanel.svelte:143
+#: web/lib/AskPanel.svelte:146
 msgid "The words changed since this preview: preview again before making the film."
 msgstr "Les mots ont changé depuis cet aperçu : relancez l’aperçu avant de faire le film."
 
@@ -1586,7 +1588,7 @@ msgstr ""
 "Ce que l’automatisation créerait ensuite, la même liste qu’affiche `auto suggest`. Lancez une"
 " exécution comme le ferait `auto run`, ou vérifiez-la d’abord sans effectuer le rendu."
 
-#: web/lib/AskPanel.svelte:149
+#: web/lib/AskPanel.svelte:152
 msgid "What the editor's rules would drop"
 msgstr "Ce que les règles du montage écarteraient"
 
@@ -1694,6 +1696,10 @@ msgstr "toutes ensemble"
 msgid "any of them"
 msgstr "l’une d’entre elles"
 
+#: web/lib/AskPanel.svelte:138
+msgid "making the film prepares them first"
+msgstr "faire le film les prépare d'abord"
+
 #: web/lib/AskPanel.svelte:116
 msgid "our cat along the years"
 msgstr "notre chat au fil des ans"
@@ -1727,12 +1733,12 @@ msgstr "{days} jours · {count} images"
 msgid "{done} of {total}"
 msgstr "{done} sur {total}"
 
-#: web/lib/AskPanel.svelte:154
+#: web/lib/AskPanel.svelte:157
 #, python-brace-format
 msgid "{passed} of {checked} pictures pass the rules checked before cutting."
 msgstr "{passed} photos sur {checked} passent les règles vérifiées avant le montage."
 
-#: web/lib/AskPanel.svelte:152
+#: web/lib/AskPanel.svelte:155
 #, python-brace-format
 msgid ""
 "{passed} of {checked} prepared pictures pass the rules checked before cutting; {unread} are "

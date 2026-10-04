@@ -91,6 +91,25 @@ def test_prepare_window_is_called_with_the_linked_dates_and_its_view_replaces_th
     assert {picture.asset_id for picture in asked.pool.pictures} == {f"cat-{n}" for n in range(14)}
 
 
+def test_a_subject_with_no_caption_words_never_asks_to_prepare_its_window(lexicon: Lexicon) -> None:
+    """#2045 (owner review): a person or a computed selection reads faces and GPS, never a
+    caption, so it never pays to prepare a window -- only a caption-only subject does."""
+    answers = {**ANSWERS, "Split the owner's request": _read([], ["along the years"])}
+
+    def prepare_window(when):
+        raise AssertionError("no caption-dependent subject: this must never be called")
+
+    translate(
+        "my photos along the years",
+        _library(),
+        NOBODY,
+        lexicon,
+        QuestionAsker(answers),
+        today=TODAY,
+        prepare_window=prepare_window,
+    )
+
+
 def test_the_trace_prints_one_line_per_decision_with_the_words_and_the_rule(
     lexicon: Lexicon,
 ) -> None:

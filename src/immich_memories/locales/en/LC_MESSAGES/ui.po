@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-04 18:11+0200\n"
+"POT-Creation-Date: 2026-10-04 23:32+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -321,7 +321,7 @@ msgstr "Day"
 msgid "Day (MM-DD)"
 msgstr "Day (MM-DD)"
 
-#: web/lib/AskPanel.svelte:177
+#: web/lib/AskPanel.svelte:180
 msgid "Decided while cutting"
 msgstr "Decided while cutting"
 
@@ -462,7 +462,7 @@ msgstr "Family"
 msgid "Fetching picture previews"
 msgstr "Fetching picture previews"
 
-#: web/lib/AskPanel.svelte:140
+#: web/lib/AskPanel.svelte:143
 msgid "Fewer than 12 pictures fit: the film will be short."
 msgstr "Fewer than 12 pictures fit: the film will be short."
 
@@ -527,7 +527,7 @@ msgstr "How it read your words"
 msgid "How the rules got here"
 msgstr "How the rules got here"
 
-#: web/lib/AskPanel.svelte:193
+#: web/lib/AskPanel.svelte:196
 msgid "How the sentence was read"
 msgstr "How the sentence was read"
 
@@ -738,7 +738,7 @@ msgstr ""
 msgid "No child output was retained for this run."
 msgstr "No child output was retained for this run."
 
-#: web/lib/AskPanel.svelte:138
+#: web/lib/AskPanel.svelte:141
 msgid ""
 "No film: the library cannot show this. Try other words, or read below what each part of the "
 "sentence found."
@@ -774,7 +774,7 @@ msgstr "No pictures match this filter."
 msgid "No reason recorded for this picture."
 msgstr "No reason recorded for this picture."
 
-#: web/lib/AskPanel.svelte:174
+#: web/lib/AskPanel.svelte:177
 msgid "No rule the preview can check would drop a picture."
 msgstr "No rule the preview can check would drop a picture."
 
@@ -814,7 +814,7 @@ msgstr "None"
 msgid "North"
 msgstr "North"
 
-#: web/lib/AskPanel.svelte:177
+#: web/lib/AskPanel.svelte:180
 msgid "Not applied to a film you asked for"
 msgstr "Not applied to a film you asked for"
 
@@ -912,7 +912,7 @@ msgstr "Picture review"
 msgid "Pictures just read"
 msgstr "Pictures just read"
 
-#: web/lib/AskPanel.svelte:201
+#: web/lib/AskPanel.svelte:204
 msgid "Pictures left after each step"
 msgstr "Pictures left after each step"
 
@@ -1215,7 +1215,7 @@ msgstr "Smart (fades and cuts)"
 msgid "Soft romantic"
 msgstr "Soft romantic"
 
-#: web/lib/AskPanel.svelte:165
+#: web/lib/AskPanel.svelte:168
 msgid "Some of its pictures"
 msgstr "Some of its pictures"
 
@@ -1428,7 +1428,7 @@ msgstr "The server URL changed: enter the API key for the new server."
 msgid "The settings could not be saved."
 msgstr "The settings could not be saved."
 
-#: web/lib/AskPanel.svelte:143
+#: web/lib/AskPanel.svelte:146
 msgid "The words changed since this preview: preview again before making the film."
 msgstr "The words changed since this preview: preview again before making the film."
 
@@ -1575,7 +1575,7 @@ msgstr ""
 "What automation would make next, the same list `auto suggest` prints. Run one as `auto run` "
 "would, or check it first without rendering."
 
-#: web/lib/AskPanel.svelte:149
+#: web/lib/AskPanel.svelte:152
 msgid "What the editor's rules would drop"
 msgstr "What the editor's rules would drop"
 
@@ -1681,6 +1681,10 @@ msgstr "all of them together"
 msgid "any of them"
 msgstr "any of them"
 
+#: web/lib/AskPanel.svelte:138
+msgid "making the film prepares them first"
+msgstr "making the film prepares them first"
+
 #: web/lib/AskPanel.svelte:116
 msgid "our cat along the years"
 msgstr "our cat along the years"
@@ -1714,12 +1718,12 @@ msgstr "{days} days · {count} pictures"
 msgid "{done} of {total}"
 msgstr "{done} of {total}"
 
-#: web/lib/AskPanel.svelte:154
+#: web/lib/AskPanel.svelte:157
 #, python-brace-format
 msgid "{passed} of {checked} pictures pass the rules checked before cutting."
 msgstr "{passed} of {checked} pictures pass the rules checked before cutting."
 
-#: web/lib/AskPanel.svelte:152
+#: web/lib/AskPanel.svelte:155
 #, python-brace-format
 msgid ""
 "{passed} of {checked} prepared pictures pass the rules checked before cutting; {unread} are "

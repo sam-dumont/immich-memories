@@ -21,12 +21,13 @@ import click
 
 from immich_memories.analysis.editorial_shareability import level_of
 from immich_memories.cli._album_generation import CuratedPool
-from immich_memories.cli._helpers import print_info
+from immich_memories.cli._helpers import print_info, refuse_blocked_host
 from immich_memories.cli.progress_file import write_progress
 from immich_memories.free_text.handoff import CatalogueEvent, Film, film_for
 from immich_memories.free_text.lexicon import WordNetUnavailable, load_wordnet
-from immich_memories.free_text.library import LibraryUnavailable, read_library
-from immich_memories.free_text.preparation import prepare_for_request
+from immich_memories.free_text.library import LibraryUnavailable, LibraryView, read_library
+from immich_memories.free_text.linking import WhenLink
+from immich_memories.free_text.preparation import Notice, PreparationFailed, prepare_for_request
 from immich_memories.free_text.printed import ImmichPrintedText
 from immich_memories.free_text.reading import WireAsker
 from immich_memories.free_text.trace import explain, pool_counts, save_with_run, trace_record
@@ -164,46 +165,54 @@ def translate_ask(
             "--ask needs the model tier: set advanced.llm.base_url and advanced.llm.model "
             "to the reader that answers it (tier: full)"
         )
+    notice_of: dict[str, Notice | None] = {}
     try:
         lexicon = load_wordnet(config.free_text.wordnet_path)
         store = open_store(config)
         view = read_library(store, config.editorial)
-    except (WordNetUnavailable, LibraryUnavailable) as error:
-        raise click.ClickException(str(error)) from error
-    asker = WireAsker(config.llm, judgments=store)
-    with SyncImmichClient(
-        base_url=config.immich.url,
-        api_key=config.immich.api_key,
-        api_version=config.immich.api_version,
-    ) as client:
-        asked = translate(
-            request,
-            view,
-            household_of(view, home_base=_home_base(config)),
-            lexicon,
-            asker,
-            today=date.today(),
-            trips=config.trips,
-            printed=ImmichPrintedText(client),
-            prepare_window=lambda when: prepare_for_request(
-                client,
-                config,
-                store,
+        asker = WireAsker(config.llm, judgments=store)
+        with SyncImmichClient(
+            base_url=config.immich.url,
+            api_key=config.immich.api_key,
+            api_version=config.immich.api_version,
+        ) as client:
+
+            def prepare_window(when: WhenLink) -> LibraryView:
+                refreshed, notice_of["notice"] = prepare_for_request(
+                    client,
+                    config,
+                    store,
+                    view,
+                    when,
+                    today=date.today(),
+                    dry_run=dry_run,
+                    print_line=print_info,
+                    report=_progress_reporter(progress_file),
+                    before_preparing=lambda: refuse_blocked_host(config, output_directory=None),
+                )
+                return refreshed
+
+            asked = translate(
+                request,
                 view,
-                when,
+                household_of(view, home_base=_home_base(config)),
+                lexicon,
+                asker,
                 today=date.today(),
-                print_line=print_info,
-                report=_progress_reporter(progress_file),
-            ),
-        )
-        film = film_for(asked, asker, events_on=catalogue_events)
-        # What the editor's rules would drop from the pool: shown by a dry run, and kept with a
-        # film run so its report says which rules its pictures met.
-        rules = _rule_preview(client, config, store, film)
+                trips=config.trips,
+                printed=ImmichPrintedText(client),
+                prepare_window=prepare_window,
+            )
+            film = film_for(asked, asker, events_on=catalogue_events)
+            # What the rules would drop from the pool: shown by a dry run, kept with a film
+            # run so its report says which rules its pictures met.
+            rules = _rule_preview(client, config, store, film)
+    except (WordNetUnavailable, LibraryUnavailable, PreparationFailed) as error:
+        raise click.ClickException(str(error)) from error
     trace = explain(asked, film=film, rules=rules)
     click.echo(trace)
     # One record for the watcher's file and the run's report, so both show the same translation.
-    record = trace_record(asked, film, rules)
+    record = trace_record(asked, film, rules, preparation=notice_of.get("notice"))
     save_with_run(asked, film, trace, people=view.people, record=record)
     if trace_file is not None:
         write_secret_file(trace_file, json.dumps(record))

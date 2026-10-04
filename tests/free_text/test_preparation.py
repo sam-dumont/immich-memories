@@ -9,15 +9,21 @@ from __future__ import annotations
 
 import time
 from datetime import date
+from types import SimpleNamespace
+
+import pytest
 
 from immich_memories.db import open_store
+from immich_memories.free_text import preparation as prep
 from immich_memories.free_text.linking import WhenLink
 from immich_memories.free_text.preparation import (
     DEFAULT_SECONDS_PER_PICTURE,
+    Readiness,
     estimate_seconds_per_picture,
     warning_line,
     window_of,
 )
+from immich_memories.timeperiod import custom_range
 from immich_memories.tracking import timing
 from immich_memories.tracking.run_tracker import RunTracker
 from immich_memories.tracking.span_store import SpanStore
@@ -104,3 +110,64 @@ def test_the_banks_own_past_timing_is_read_before_the_constant() -> None:
         span.duration for span in collected.spans if span.name == "preparation.captions"
     )
     assert rate == measured / 100
+
+
+def test_the_rate_sums_only_preparation_spans_never_the_whole_run(monkeypatch) -> None:
+    """#2045 (Opus review E): the bank's run also carries a root `run` span and a
+    `discovery` span; summing those too would charge every picture for work that was
+    never per-picture."""
+    store = open_store()
+    tracker = RunTracker(store=store, capture_system=False)
+    tracker.start_run(source="prepare")
+    with timing.collecting() as collected, timing.span("run"):
+        with timing.span("discovery"):
+            time.sleep(0.01)
+        with timing.span("preparation.captions", items=100):
+            time.sleep(0.01)
+    SpanStore(store).save(tracker.run_id, collected)
+    tracker.complete_run()
+
+    rate = estimate_seconds_per_picture(store)
+
+    measured = next(
+        span.duration for span in collected.spans if span.name == "preparation.captions"
+    )
+    assert rate == measured / 100
+
+
+def test_live_progress_is_reported_between_the_warning_and_the_completion(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """#2045 (Opus review G): preparation's own progress reaches the watcher as it runs,
+    not just the warning's 0.0 and the finish's 1.0."""
+    window = custom_range(date(2020, 1, 1), date(2020, 1, 2))
+    monkeypatch.setattr(
+        prep, "assess", lambda *_a, **_k: Readiness(window=window, missing=(object(), object()))
+    )
+    monkeypatch.setattr(prep, "estimate_seconds_per_picture", lambda _store: 1.0)
+    monkeypatch.setattr(prep, "read_library", lambda _store, _editorial: "refreshed view")
+
+    def fake_run(client, config, assets, *, progress=None):
+        progress("captions", 1, 2)
+        return SimpleNamespace(costs=lambda: ()), SimpleNamespace(complete=True)
+
+    monkeypatch.setattr(prep, "run_preparation", fake_run)
+    reports: list[tuple[str, float | None, float | None]] = []
+
+    view, notice = prep.prepare_for_request(
+        object(),
+        SimpleNamespace(editorial=None),
+        object(),
+        "stale view",
+        WhenLink(),
+        today=date(2020, 1, 1),
+        print_line=lambda _line: None,
+        report=lambda message, fraction, remaining: reports.append((message, fraction, remaining)),
+    )
+
+    assert view == "refreshed view"
+    assert notice is not None and notice.pictures == 2
+    fractions = [fraction for _message, fraction, _remaining in reports]
+    assert fractions[0] == 0.0  # the warning
+    assert 0.0 < fractions[1] < 1.0  # live, between the warning and the completion
+    assert fractions[-1] == 1.0  # the completion line

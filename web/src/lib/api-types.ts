@@ -1205,6 +1205,18 @@ export interface components {
             tier: string;
         };
         /**
+         * AskPreparationNotice
+         * @description The count and the estimate the preview shows before any picture is prepared.
+         */
+        AskPreparationNotice: {
+            /** Estimated Seconds */
+            estimated_seconds: number;
+            /** Message */
+            message: string;
+            /** Pictures */
+            pictures: number;
+        };
+        /**
          * AskPreview
          * @description `generate --ask --dry-run`'s translation: the trace by part, the pool, the rule preview
          *     and the verdict.
@@ -1214,6 +1226,7 @@ export interface components {
             blocks: components["schemas"]["TraceBlock"][];
             film: components["schemas"]["AskedFilm"];
             pool: components["schemas"]["PoolCounts"];
+            preparation?: components["schemas"]["AskPreparationNotice"] | null;
             /** Request */
             request: string;
             rules?: components["schemas"]["AskRules"] | null;
