@@ -6,8 +6,10 @@ sidebar_label: "Development Setup"
 
 The full contribution guidelines are in [CONTRIBUTING.md](https://github.com/sam-dumont/immich-memories/blob/main/CONTRIBUTING.md).
 
-You need Python 3.11+, FFmpeg, [uv](https://docs.astral.sh/uv/) and GNU Make. The web UI also
-needs Node 22: a checkout builds its own client (see [The web client](#the-web-client)).
+You need Python 3.11 to 3.13, FFmpeg, [uv](https://docs.astral.sh/uv/) and GNU Make. The web UI
+also needs Node 22: a checkout builds its own client (see [The web client](#the-web-client)). On
+3.14, `uv sync` installs fine but skips the GPU title renderer (`quadrants` has no wheel for it
+yet): pin the checkout's virtualenv with `uv venv --python 3.12` before `make dev-test`.
 
 ```bash
 git clone https://github.com/sam-dumont/immich-memories.git

@@ -60,6 +60,29 @@ def kernel_library_installed() -> bool:
     return importlib.util.find_spec(KERNEL_LIBRARY) is not None
 
 
+# The highest Python quadrants publishes a wheel for (pyproject's marker is
+# `python_version < '3.14'`); keep the two in sync.
+_LAST_SUPPORTED_PYTHON = "3.13"
+
+
+def python_version_reason() -> str | None:
+    """Why `quadrants` has no wheel here, when the interpreter itself is the cause.
+
+    On Python 3.14+ pyproject's marker drops the dependency outright, so the
+    install succeeds with no kernel wheel at all and `kernel_library_installed()`
+    looks identical to a platform the library has simply never shipped for. A
+    self-hoster on 3.14 needs the interpreter named as the fix, not "not
+    installed" sending them to reinstall the same package again (#1987).
+    """
+    if sys.version_info < (3, 14):
+        return None
+    return (
+        f"Python {sys.version_info.major}.{sys.version_info.minor} has no GPU title "
+        f"kernels yet ({KERNEL_LIBRARY} supports up to {_LAST_SUPPORTED_PYTHON}); "
+        "reinstall with --python 3.12 for SDF titles"
+    )
+
+
 def _writable_dir(path: Path) -> bool:
     """Create `path` if needed and prove a file can be written in it."""
     try:
@@ -354,7 +377,8 @@ def kernel_dispatch_failure() -> str | None:
     that cannot execute a kernel has no working kernel renderer of any kind.
     """
     if not kernel_library_installed():
-        return f"{KERNEL_LIBRARY} is not installed on this platform; {_PIL_FALLBACK}"
+        reason = python_version_reason() or f"{KERNEL_LIBRARY} is not installed on this platform"
+        return f"{reason}; {_PIL_FALLBACK}"
     result = probe_backend_dispatch(CPU_PROBE_NAME)
     if result.outcome is KernelProbeOutcome.SUCCESS:
         return None

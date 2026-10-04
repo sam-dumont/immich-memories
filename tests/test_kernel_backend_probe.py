@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import collections
 import json
 import platform
 import subprocess
@@ -665,3 +666,46 @@ def test_a_probe_that_times_out_says_so_without_naming_a_signal(
     assert reason is not None
     assert reason.startswith("kernel backend did not start within 30s")
     assert reason.endswith("titles fall back to the PIL renderer")
+
+
+_PY314 = collections.namedtuple("V", "major minor micro releaselevel serial")(3, 14, 0, "final", 0)
+
+
+def test_missing_wheel_on_an_ordinary_platform_says_only_not_installed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A platform quadrants has no wheel for at all (e.g. an Intel Mac) keeps the
+
+    plain reason: there is no interpreter upgrade that would fix it.
+    """
+    import immich_memories.titles.kernel_backend_probe as probe_module
+
+    # WHY: stands in for the absent-wheel probe without needing a real missing package.
+    monkeypatch.setattr(probe_module.importlib.util, "find_spec", lambda _name: None)
+
+    assert probe_module.kernel_dispatch_failure() == (
+        "quadrants is not installed on this platform; titles fall back to the PIL renderer"
+    )
+
+
+def test_missing_wheel_on_python_314_names_the_interpreter_as_the_cause(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """#1987: on 3.14 the wheel is missing because pyproject's marker drops it, not
+
+    because the platform has none; the render log must say so instead of the bare
+    "not installed" line that sent a self-hoster chasing the wrong fix.
+    """
+    import immich_memories.titles.kernel_backend_probe as probe_module
+
+    # WHY: stands in for the absent-wheel probe; the real cause here is the interpreter.
+    monkeypatch.setattr(probe_module.importlib.util, "find_spec", lambda _name: None)
+    # WHY: the import boundary for "which interpreter is this" rather than running on 3.14.
+    monkeypatch.setattr(probe_module.sys, "version_info", _PY314)
+
+    reason = probe_module.kernel_dispatch_failure()
+
+    assert reason == (
+        "Python 3.14 has no GPU title kernels yet (quadrants supports up to 3.13); "
+        "reinstall with --python 3.12 for SDF titles; titles fall back to the PIL renderer"
+    )

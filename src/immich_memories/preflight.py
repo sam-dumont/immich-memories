@@ -434,17 +434,16 @@ def _kernel_library_check() -> CheckResult:
     # WHY the probe module and not the seam behind it: importing the seam is
     # importing the library, and on a processor without AVX that is the crash
     # this check exists to report (#910).
-    from immich_memories.titles.kernel_backend_probe import KERNEL_LIBRARY
+    from immich_memories.titles.kernel_backend_probe import KERNEL_LIBRARY, python_version_reason
 
     if importlib.util.find_spec(KERNEL_LIBRARY) is None:
-        # The reason leads: details print only under -v, and "use an older Python" is
-        # what a native install on Homebrew's default 3.14 needs to read (#1987).
-        message = (
-            f"GPU title kernels unavailable: no {KERNEL_LIBRARY} wheel for {_platform_tag()}; "
-            "titles use PIL + FFmpeg (no SDF effects)"
+        # The reason leads: details print only under -v, and the interpreter is what a
+        # native install on Homebrew's default 3.14 needs to read first (#1987). On any
+        # other platform with no wheel, say that instead — reinstalling changes nothing.
+        no_wheel_reason = python_version_reason() or (
+            f"GPU title kernels unavailable: no {KERNEL_LIBRARY} wheel for {_platform_tag()}"
         )
-        if sys.version_info >= (3, 14):
-            message += "; use Python 3.11-3.13"
+        message = f"{no_wheel_reason}; titles use PIL + FFmpeg (no SDF effects)"
         return CheckResult(
             name="Title rendering",
             status=CheckStatus.WARNING,
