@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
+from urllib.parse import urlsplit
 
 import httpx
 from pydantic import ValidationError
@@ -241,7 +242,10 @@ class ImmichClient:
     def _request_error(self, exc: httpx.RequestError) -> ImmichAPIError:
         """Build a client-aware sanitized transport diagnostic."""
         safe_message = sanitize_error_message(str(exc)).replace(self.api_key, "***")
-        return ImmichAPIError(f"Request failed: {safe_message}")
+        # A timeout stringifies to "", so the exception type is the only reason left.
+        reason = f"{type(exc).__name__}: {safe_message}" if safe_message else type(exc).__name__
+        target = urlsplit(self.base_url).netloc or self.base_url
+        return ImmichAPIError(f"Request failed: cannot reach {target} ({reason})")
 
     async def _request(
         self,
@@ -284,8 +288,8 @@ class ImmichClient:
             if attempt < _MAX_RETRIES - 1:
                 backoff = _BACKOFF_BASE * (2**attempt)
                 logger.warning(
-                    f"{method} {url} attempt {attempt + 1} failed ({last_exception}), "
-                    f"retrying in {backoff:.1f}s"
+                    f"{method} {url} attempt {attempt + 1} failed ({last_exception}); "
+                    f"retrying ({attempt + 2}/{_MAX_RETRIES}) in {backoff:.1f}s"
                 )
                 await asyncio.sleep(backoff)
                 if before_retry is not None and (settled := await before_retry()) is not None:

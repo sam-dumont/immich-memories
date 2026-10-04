@@ -239,7 +239,12 @@ class TestImmichClientRequest:
 
         warnings = "\n".join(record.getMessage() for record in caplog.records)
         assert api_key not in warnings
-        assert warnings.count("Request failed: timed out with ***") == 2
+        assert (
+            warnings.count(
+                "Request failed: cannot reach immich.example.com (TimeoutException: timed out with ***)"
+            )
+            == 2
+        )
 
     @pytest.mark.asyncio
     async def test_retryable_transport_error_redacts_final_exception_traceback(
@@ -263,7 +268,9 @@ class TestImmichClientRequest:
         rendered_traceback = "".join(
             traceback.format_exception(raised.type, raised.value, raised.tb)
         )
-        assert str(raised.value) == "Request failed: connection rejected ***"
+        assert str(raised.value) == (
+            "Request failed: cannot reach immich.example.com (ConnectError: connection rejected ***)"
+        )
         assert api_key not in rendered_traceback
 
     @pytest.mark.asyncio
@@ -284,7 +291,9 @@ class TestImmichClientRequest:
         rendered_traceback = "".join(
             traceback.format_exception(raised.type, raised.value, raised.tb)
         )
-        assert str(raised.value) == "Request failed: request rejected ***"
+        assert str(raised.value) == (
+            "Request failed: cannot reach immich.example.com (RequestError: request rejected ***)"
+        )
         assert api_key not in rendered_traceback
 
     @pytest.mark.asyncio
