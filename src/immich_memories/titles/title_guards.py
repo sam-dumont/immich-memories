@@ -24,6 +24,10 @@ from typing import TYPE_CHECKING
 from immich_memories.titles.relationship_words import (
     FAMILY_GENERIC,
     FAMILY_TYPES,
+    MAKER_POSSESSIVES,
+    NOT_A_RELATIONSHIP,
+    TYPE_ALIASES,
+    UNCONDITIONAL_TYPES,
     RelationWord,
     relationship_words,
 )
@@ -356,6 +360,35 @@ def refusing_single_year_title(
     return None
 
 
+def refusing_a_wrong_year(
+    suggestion: TitleSuggestion | None, start_date: str, end_date: str
+) -> TitleSuggestion | None:
+    """The suggestion, unless it names a year outside the memory's own span.
+
+    A person spotlight running 2024-2026 titled "Yuna, été 2021" names a year
+    the film never reaches; `requiring_the_year` only checks that the
+    required years are present, so a hallucinated extra year passes it. Any
+    four-digit year in the title or subtitle must fall within the span.
+    """
+    if suggestion is None:
+        return suggestion
+    start, end = date.fromisoformat(start_date), date.fromisoformat(end_date)
+    combined = f"{suggestion.title} {suggestion.subtitle or ''}"
+    for year in (int(y) for y in _YEAR_DIGITS.findall(combined)):
+        if not (start.year <= year <= end.year):
+            logger.warning(
+                "Title %r (subtitle %r) names %d, outside the span %s to %s; "
+                "the template names this memory instead",
+                suggestion.title,
+                suggestion.subtitle,
+                year,
+                start_date,
+                end_date,
+            )
+            return None
+    return suggestion
+
+
 def _template_title_text(
     memory_type: str,
     start: date,
@@ -379,24 +412,28 @@ def _template_title_text(
     return info.main_title
 
 
-# Words too small to carry a title's own content: articles, conjunctions and
-# the handful of "year" nouns that let a bare year through as a non-answer
-# ("L'année 2025"). Not a stopword list for prose -- only what a title's
-# filler commonly is, across the film's locales.
+# Words too small to carry a title's own content: articles, conjunctions,
+# possessives, and the handful of "year"/"memories"/"pictures" nouns that
+# let a bare year through as a non-answer ("L'année 2025", "Notre année
+# 2025", "Souvenirs de 2025", "2025 en images"). Not a stopword list for
+# prose -- only what a title's filler commonly is, across the film's
+# locales. No "l'année" entry: an apostrophe splits it into "l" and "année"
+# before this set is ever consulted, so the fragment list below covers it.
 _FILLER_WORDS = frozenset(
     {
-        "l'année", "l'annee", "année", "annee", "le", "la", "les", "un", "une", "des", "de", "du",
-        "et", "en",
+        "année", "annee", "notre", "nos", "le", "la", "les", "un", "une", "des", "de", "du",
+        "et", "en", "images", "image", "souvenir", "souvenirs",
         # Fragments an elided "l'/d'/qu'/..." splits off (apostrophe is not a word character).
         "l", "d", "j", "qu", "n", "s", "c",
-        "the", "a", "an", "and", "of", "in", "year",
-        "el", "los", "las", "y", "año", "ano",
-        "der", "die", "das", "und", "im", "jahr",
-        "il", "lo", "gli", "e", "anno",
-        "het", "een",
-        "o", "os", "as",
-        "rok", "roku", "i",
-        "år", "och", "ett",
+        "the", "a", "an", "and", "of", "in", "our", "year", "memories", "pictures", "photos",
+        "el", "los", "las", "y", "año", "ano", "nuestro", "nuestra", "recuerdos", "imagenes",
+        "imágenes", "fotos",
+        "der", "die", "das", "und", "im", "jahr", "unser", "unsere", "erinnerungen", "bilder",
+        "il", "lo", "gli", "e", "anno", "nostro", "nostra", "ricordi", "immagini", "foto",
+        "het", "een", "onze", "herinneringen", "beelden",
+        "o", "os", "as", "nosso", "nossa", "lembranças", "imagens",
+        "rok", "roku", "i", "nasz", "nasza", "wspomnienia", "zdjęcia",
+        "år", "och", "ett", "vår", "vårt", "minnen",
     }
 )  # fmt: skip
 
@@ -477,40 +514,101 @@ def _recorded_relation_people(
 _NO_WORD_BOUNDARY_SCRIPT = re.compile(r"[぀-ヿ㐀-鿿가-힯]")
 
 
-def _contains_relationship_word(lowered: str, word: str) -> bool:
-    folded = word.casefold()
-    if _NO_WORD_BOUNDARY_SCRIPT.search(folded):
-        return folded in lowered
-    return re.search(rf"(?<![\w-]){re.escape(folded)}(?![\w-])", lowered) is not None
+def _relationship_word_spans(lowered: str, folded_word: str) -> list[tuple[int, int]]:
+    """Every place `folded_word` occurs in `lowered`, as its own token or phrase."""
+    if _NO_WORD_BOUNDARY_SCRIPT.search(folded_word):
+        pattern = re.escape(folded_word)
+    else:
+        pattern = rf"(?<![\w-]){re.escape(folded_word)}(?![\w-])"
+    return [m.span() for m in re.finditer(pattern, lowered)]
+
+
+def _inside_consumed(span: tuple[int, int], consumed: list[tuple[int, int]]) -> bool:
+    start, end = span
+    return any(a <= start and end <= b for a, b in consumed)
+
+
+def _relation_types(relation_type: str) -> tuple[str, ...]:
+    """`relation_type` plus whatever generic or paired type backs the same claim.
+
+    The stored record is often gender-neutral (sibling-of, godparent-of,
+    parent-of) where a title writes the specific word (brother, godmother,
+    mother); either direction counts as the same relation.
+    """
+    return (relation_type, *TYPE_ALIASES.get(relation_type, ()))
+
+
+def _word_is_unfounded(relation_type: str, plural: bool, holders: dict[str, set[str]]) -> bool:
+    if relation_type == FAMILY_GENERIC:
+        return not any(t in holders for t in FAMILY_TYPES)
+    if relation_type in UNCONDITIONAL_TYPES:
+        return False
+    people: set[str] = set()
+    for the_type in _relation_types(relation_type):
+        people |= holders.get(the_type, set())
+    return not people or (plural and len(people) < 2)
+
+
+def _name_tokens(person_names: Sequence[str]) -> frozenset[str]:
+    return frozenset(w.casefold() for name in person_names for w in _name_words(name))
+
+
+def _preceded_by_maker_possessive(lowered: str, start: int, locale: str) -> bool:
+    """Whether the word right before `start` speaks as the film's maker ("our", "notre")."""
+    before = lowered[:start].rstrip()
+    preceding = _name_words(before)
+    return bool(preceding) and preceding[-1] in MAKER_POSSESSIVES.get(locale, frozenset())
+
+
+def _occurrence_is_refused(
+    span: tuple[int, int],
+    entry: RelationWord,
+    lowered: str,
+    holders: dict[str, set[str]],
+    locale: str,
+) -> bool:
+    relation_type, plural, perspective = entry
+    if relation_type == NOT_A_RELATIONSHIP:
+        return False
+    if perspective or _preceded_by_maker_possessive(lowered, span[0], locale):
+        return True
+    return _word_is_unfounded(relation_type, plural, holders)
 
 
 def _unfounded_relationship_word(
-    text: str, words: dict[str, RelationWord], holders: dict[str, set[str]]
+    text: str,
+    words: dict[str, RelationWord],
+    holders: dict[str, set[str]],
+    known_names: frozenset[str],
+    locale: str,
 ) -> str | None:
     """The first relationship word in `text` the title may not use, if any.
 
-    A perspective word (maman, papy, mum, oma) is refused outright: it
-    narrates from a child's point of view, which the template never does,
-    and a backing record does not make it any less overused. Every other
-    relationship word still needs that record: refused when the relation it
+    Checked longest phrase first, and a shorter word's match is skipped once
+    it falls entirely inside a longer phrase already accounted for -- so
+    "meilleur ami" is read whole rather than also flagging "ami" inside it.
+    A word that is one of the film's own first names is never a relation
+    word. A word spoken as the maker's own ("our daughter") is refused
+    outright: it states a relationship to the film's maker, which the
+    prompt forbids. A friend may always be named as a friend; a perspective
+    word (maman, papy, mum, oma) is refused outright, record or no record --
+    it narrates from a child's point of view, which the template never does.
+    Every other word still needs that record: refused when the relation it
     names is not among the film's own recorded relations, or a plural word
     covers only one person.
     """
     lowered = text.casefold()
-    for word, (relation_type, plural, perspective) in sorted(
-        words.items(), key=lambda kv: -len(kv[0])
-    ):
-        if not _contains_relationship_word(lowered, word):
+    consumed: list[tuple[int, int]] = []
+    for word, entry in sorted(words.items(), key=lambda kv: -len(kv[0])):
+        folded = word.casefold()
+        if folded in known_names:
             continue
-        if perspective:
-            return word
-        if relation_type == FAMILY_GENERIC:
-            if any(t in holders for t in FAMILY_TYPES):
+        for span in _relationship_word_spans(lowered, folded):
+            if _inside_consumed(span, consumed):
                 continue
-            return word
-        people = holders.get(relation_type, set())
-        if not people or (plural and len(people) < 2):
-            return word
+            consumed.append(span)
+            if _occurrence_is_refused(span, entry, lowered, holders, locale):
+                return word
     return None
 
 
@@ -533,7 +631,8 @@ def refusing_unfounded_relationships(
         return suggestion
     words = relationship_words(locale)
     holders = _recorded_relation_people(person_names, people_store)
-    if bad := _unfounded_relationship_word(suggestion.title, words, holders):
+    known_names = _name_tokens(person_names)
+    if bad := _unfounded_relationship_word(suggestion.title, words, holders, known_names, locale):
         logger.warning(
             "Title %r calls somebody %r, a relation the family record does not back; "
             "the template names this memory instead",
@@ -542,18 +641,31 @@ def refusing_unfounded_relationships(
         )
         return None
     if suggestion.subtitle and (
-        bad := _unfounded_relationship_word(suggestion.subtitle, words, holders)
+        bad := _unfounded_relationship_word(
+            suggestion.subtitle, words, holders, known_names, locale
+        )
     ):
         logger.info("Subtitle calls somebody %r, which the family record does not back", bad)
         return replace(suggestion, subtitle=None)
     return suggestion
 
 
-_FRENCH_ELISION_VOWELS = frozenset("aàâeéèêëiîïoôuùûüyhAÀÂEÉÈÊËIÎÏOÔUÙÛÜYH")
+# No "y"/"Y": French treats an initial y as a consonant in most everyday
+# words and names ("le yaourt", "Yokohama", "Yuna"), so it never elides.
+_FRENCH_ELISION_VOWELS = frozenset("aàâeéèêëiîïoôuùûühAÀÂEÉÈÊËIÎÏOÔUÙÛÜH")
+
+# h aspiré: a handful of well-known place names that keep their "h" as a
+# consonant ("le Havre", never "l'Havre"). Lexical, not a rule -- only the
+# exceptions a title is likely to actually name are listed.
+_FRENCH_ASPIRATED_H_WORDS = frozenset({"havre", "haye", "havane", "hulpe"})
 
 
 def _elided(word: str, next_word: str) -> str:
-    if not next_word or next_word[0] not in _FRENCH_ELISION_VOWELS:
+    if (
+        not next_word
+        or next_word[0] not in _FRENCH_ELISION_VOWELS
+        or next_word.casefold() in _FRENCH_ASPIRATED_H_WORDS
+    ):
         return f"{word} {next_word}"
     prefix = "l" if word.casefold() in ("le", "la") else "d"
     cased = prefix.upper() if word[:1].isupper() else prefix

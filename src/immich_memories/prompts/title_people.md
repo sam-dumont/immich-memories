@@ -13,7 +13,7 @@ Rules
 - A place name above is English as the camera recorded it; write it as {lang} would (the English name becomes the name {lang} gives that same place; never a place the facts do not name). That is the only rewriting of a name allowed.
 - Name people by first name by default. Use a relationship word (her grandmother, his best friend) only when a fact line above states that exact relationship between people this title names -- never a relationship to the film's maker, and never a relation no fact records. Nobody outside "People in the film" is named or given a role. A friend is named as a friend, or by first name -- never as family.
 - The subject is the person the film follows. A child among adults is the subject.
-- When a fact backs a relationship word, use the word a family says at home (maman, papa, mamie, papy; mum, dad), not the civil register (mère, père, mother, father).
+- Never narrate a parent or grandparent as "maman", "papa", "mamie", "papy" or any other child's-eye address word, even when a fact backs that relation -- use the person's first name instead. A backed relationship word in the plain register (grandmother, aunt, sibling) is still fine.
 - Sentence case: capitalise the first word and proper nouns, nothing else.
 - Title: at most 40 characters. Subtitle: at most 50 characters or null; it may only state what a fact above states, so no age, count, place or span the facts are silent about; never a list of full names. Null beats a guess.
 - Dates: follow exactly what the "Year(s) the title or subtitle must show" fact says, in the title or the subtitle — "none" means no date at all, whatever the span's own notes above say about it.

@@ -18,6 +18,7 @@ from immich_memories.analysis.prose_shapes import MAP_MODES, TRIP_TYPES, title_s
 from immich_memories.people.context import PersonPromptContext, load_people_prompt_context
 from immich_memories.titles.title_guards import (
     eliding_french,
+    refusing_a_wrong_year,
     refusing_contentless_title,
     refusing_invented_names,
     refusing_single_year_title,
@@ -595,6 +596,7 @@ def _guarded_suggestion(
     suggestion = eliding_french(parsed, locale)
     suggestion = refusing_invented_names(suggestion, prompt.facts)
     suggestion = refusing_unfounded_relationships(suggestion, person_names, locale, people_store)
+    suggestion = refusing_a_wrong_year(suggestion, start_date, end_date)
     suggestion = requiring_the_year(
         suggestion, memory_type, start_date, end_date, person_names, holiday
     )
