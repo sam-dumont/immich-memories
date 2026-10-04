@@ -96,7 +96,10 @@ accent kept two vowels apart). Chinese characters use the Simplified forms unles
 ## Languages
 
 `title_screens.locale` sets the language of everything the film prints: titles, months, weekdays, trip cards,
-holidays. `auto` (the default) follows the host's locale.
+holidays. `auto` (the default) follows the host's `LC_ALL`, `LC_MESSAGES`, `LANG` or `LANGUAGE`, and on a Mac
+with none of those set, the macOS language setting. The Docker image sets none of them, so a container always
+renders English on `auto`; set `title_screens.locale: fr` (or `LANG=fr_FR.UTF-8` on the container) for a
+French film.
 
 A film whose window is exactly a meteorological season opens on the season's name (`Summer 2025`, `Été 2025`,
 `2025年の夏`), counted in your home's hemisphere: with `trips.homebase_latitude` south of the equator, 1 December to

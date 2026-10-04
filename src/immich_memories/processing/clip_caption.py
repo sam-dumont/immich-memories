@@ -13,13 +13,7 @@ from typing import Any
 from babel import Locale
 from babel.dates import format_date, format_skeleton
 
-from immich_memories.i18n import (
-    DEFAULT_LOCALE,
-    SUPPORTED_LOCALES,
-    babel_locale,
-    detect_system_locale,
-    get_weekday_name,
-)
+from immich_memories.i18n import babel_locale, get_weekday_name
 from immich_memories.processing.caption_image import (
     CaptionStyle,
     needs_image,
@@ -27,17 +21,6 @@ from immich_memories.processing.caption_image import (
     text_width,
 )
 from immich_memories.titles.letter_case import display_upper
-
-
-def resolve_caption_locale(value: str | None) -> str:
-    """The captions' language: the configured locale, with `auto` following
-    the host machine — which, deployed next to Immich, is the server's locale."""
-    if value in SUPPORTED_LOCALES:
-        return value
-    if value == "auto":
-        return detect_system_locale()
-    return DEFAULT_LOCALE
-
 
 # Caption metrics as a share of the frame's short side, so the date reads the
 # same on a 4K memory and a 720p one. Captions provide quiet context;
