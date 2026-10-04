@@ -409,6 +409,64 @@ def _wrap_text(
     return lines or [text]
 
 
+# A long place name ("Saint-Jean-Cap-Ferrat", a Greek compound, a CJK string)
+# can still be one unbroken token after wrapping: the floor these two helpers
+# shrink down to before they give up and let it overflow slightly.
+_MIN_CARD_FONT_PX = 18
+_MIN_PIN_LABEL_PX = 10
+
+
+def _fit_title_lines(
+    text: str,
+    draw: ImageDraw.ImageDraw,
+    base_size: int,
+    bold: bool,
+    max_width: int,
+    min_size: int = _MIN_CARD_FONT_PX,
+    max_lines: int = 2,
+) -> tuple[list[str], ImageFont.FreeTypeFont | ImageFont.ImageFont]:
+    """Wrap a title at spaces/the first comma, then shrink until it fits.
+
+    `_wrap_text` only breaks on spaces or a comma, so one word wider than
+    `max_width` — a long compound place name — stays whole and overflows a
+    fixed-size card. Shrinking the font is the only way left to bring it
+    back inside the frame; widths are measured with the actual font via
+    `textbbox` so CJK, Greek and Cyrillic names shrink by their real width,
+    not a Latin-average guess. `min_size` is a floor: a pathological name
+    may still not fit there, but it stops getting smaller.
+    """
+    size = base_size
+    while True:
+        font = _get_font(size, bold=bold)
+        lines = _wrap_text(text, draw, font, max_width)[:max_lines]
+        widths = [draw.textbbox((0, 0), line, font=font)[2] for line in lines]
+        if (not widths or max(widths) <= max_width) or size <= min_size:
+            return lines, font
+        size = max(min_size, int(size * 0.92))
+
+
+def _fit_pin_label_font(
+    text: str,
+    draw: ImageDraw.ImageDraw,
+    base_size: int,
+    max_width: int,
+    min_size: int = _MIN_PIN_LABEL_PX,
+) -> tuple[ImageFont.FreeTypeFont | ImageFont.ImageFont, int]:
+    """Shrink a single-line pin label until its measured width fits `max_width`.
+
+    Pin labels never wrap — there is no room for a second line next to a
+    pin — so this only shrinks, returning the font and its measured width so
+    the caller can also clamp the label's x position inside the frame.
+    """
+    size = base_size
+    while True:
+        font = _get_font(size, bold=True)
+        width = int(draw.textbbox((0, 0), text, font=font)[2])
+        if width <= max_width or size <= min_size:
+            return font, width
+        size = max(min_size, int(size * 0.9))
+
+
 def _draw_gradient_band(draw: ImageDraw.ImageDraw, y: int, bh: int, w: int, h: int) -> None:
     """Soft dark gradient band for text readability."""
     cy, half = y + bh // 2, bh // 2
