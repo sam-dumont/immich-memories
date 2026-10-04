@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from immich_memories.audio.mixer import plan_loop_copies
+import subprocess
+
+from immich_memories.audio.mixer import _trim_block_silence, plan_loop_copies
 
 
 class TestPlanLoopCopies:
@@ -65,3 +67,35 @@ class TestStemsAreLoopedToo:
         mixer_helpers.stems_covering([tmp_path / "vocals.wav"], 120.0)
 
         assert called == []
+
+
+class TestTrimBlockSilenceFallbacks:
+    """A failed trim must hand back the untrimmed source; an entirely silent
+    block must signal "drop me" rather than reintroduce the gap it was
+    meant to close."""
+
+    def test_a_failed_trim_falls_back_to_the_source(self, tmp_path, monkeypatch):
+        from immich_memories.audio import mixer
+
+        # WHY: replaces the FFmpeg trim subprocess to force its failure path.
+        def _raise(*_args, **_kwargs):
+            raise subprocess.CalledProcessError(1, "ffmpeg")
+
+        monkeypatch.setattr(mixer.subprocess, "run", _raise)
+
+        source = tmp_path / "block.wav"
+        result = _trim_block_silence(source, tmp_path / "trimmed.wav")
+
+        assert result == source
+
+    def test_a_block_trimmed_to_nothing_is_dropped(self, tmp_path, monkeypatch):
+        from immich_memories.audio import mixer
+
+        # WHY: replaces the FFmpeg trim subprocess; only its success/failure matters here.
+        monkeypatch.setattr(mixer.subprocess, "run", lambda *_a, **_k: None)
+        monkeypatch.setattr(mixer, "get_audio_duration", lambda _p: 0.0)
+
+        source = tmp_path / "block.wav"
+        result = _trim_block_silence(source, tmp_path / "trimmed.wav")
+
+        assert result is None
