@@ -93,11 +93,13 @@ docker compose exec immich-memories immich-memories capabilities
 Expect Basic selection and an enabled Ollama reader. Fix failed reader connectivity before the
 reference run; a model name alone does not establish readiness. Keep bundled music, local output
 and the [20–50-item trial](../get-started/first-film.mdx). Reader failure can leave rules/default
-wording; it must not be recorded as successful model use. Today only `preflight` warns
-(`LLM  WARNING  Cannot connect`, exit 0): a film rendered while Ollama was stopped completed with
-the bundled track and no warning in the log, so check `preflight` before and after a run. There is no
-configured alternate hosted endpoint in this recipe. The stopped-provider outcome still needs
-a disposable test; do not claim the exact error text or no public traffic from configuration alone.
+wording; it must not be recorded as successful model use. `preflight` reports it
+(`LLM  WARNING  Cannot connect`, exit 0), and a run logs one warning per unreachable reader:
+`Reader unreachable at <host> (<error>); falling back to rules and default wording`. The run still
+finishes with the bundled track and default wording, so check for that line before you count a
+film as reader-assisted. There is no configured alternate hosted endpoint in this recipe. Tested on
+Kubernetes on 2026-10-04 with Ollama scaled to zero and public egress blocked: the film completed,
+the log named no host besides Immich, and nothing fell back to a hosted provider.
 
 ## Network phases and verification
 
