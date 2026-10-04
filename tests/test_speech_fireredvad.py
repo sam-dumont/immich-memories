@@ -240,3 +240,27 @@ class TestFireRedSpeechDetectorMocked:
 
         assert regions == []
         assert fraction == 0.0
+
+    def test_detect_with_music_on_audio_too_short_for_one_frame_is_silent(self):
+        detector = FireRedSpeechDetector()
+        detector._available = True
+
+        # WHY: mocks kaldi_native_fbank reporting zero ready frames, the real outcome
+        # for audio shorter than one 25ms window -- no ONNX session is ever reached.
+        fake_fbank = SimpleNamespace(
+            num_frames_ready=0,
+            accept_waveform=lambda *_a, **_kw: None,
+            get_frame=lambda _i: [0.0] * 80,
+        )
+        fake_knf = SimpleNamespace(
+            FbankOptions=lambda: SimpleNamespace(
+                frame_opts=SimpleNamespace(), mel_opts=SimpleNamespace()
+            ),
+            OnlineFbank=lambda _opts: fake_fbank,
+        )
+
+        with patch.dict("sys.modules", {"kaldi_native_fbank": fake_knf}):
+            regions, fraction = detector.detect_with_music(np.zeros(160, dtype=np.float32), 16000)
+
+        assert regions == []
+        assert fraction == 0.0

@@ -212,9 +212,11 @@ _MUSIC_PROB_THRESHOLD = 0.5
 
 
 def _music_fraction(probs: np.ndarray) -> float:
-    """The share of frames where singing or music outscores `_MUSIC_PROB_THRESHOLD`."""
-    if probs.shape[0] == 0:
-        return 0.0
+    """The share of frames where singing or music outscores `_MUSIC_PROB_THRESHOLD`.
+
+    Only called on a `_probs()` result, which is never empty: `_probs()` returns
+    `None` for zero frames before this is reached.
+    """
     music_or_singing = np.maximum(probs[:, 1], probs[:, 2])
     return float(np.mean(music_or_singing >= _MUSIC_PROB_THRESHOLD))
 

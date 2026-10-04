@@ -140,25 +140,28 @@ def banked_motion_residuals(
     }
 
 
+def banked_speech_facts(
+    store: Store, digests: Mapping[str, str], producer: str
+) -> dict[str, tuple[tuple[tuple[float, float], ...], float]]:
+    """Each clip's speech regions and music/singing fraction, read off the bank once."""
+    result: dict[str, tuple[tuple[tuple[float, float], ...], float]] = {}
+    for asset_id, measured in _banked(store, speech_regions, digests, producer).items():
+        if not isinstance(measured, dict) or "regions" not in measured:
+            continue
+        regions = tuple((float(pair[0]), float(pair[1])) for pair in measured["regions"])
+        result[asset_id] = (regions, float(measured.get("music_fraction", 0.0)))
+    return result
+
+
 def banked_speech_regions(
     store: Store, digests: Mapping[str, str], producer: str
 ) -> dict[str, tuple[tuple[float, float], ...]]:
     """The speech regions that still answer for these clips as they are now."""
     return {
-        asset_id: tuple((float(pair[0]), float(pair[1])) for pair in measured["regions"])
-        for asset_id, measured in _banked(store, speech_regions, digests, producer).items()
-        if isinstance(measured, dict) and "regions" in measured
-    }
-
-
-def banked_music_fractions(
-    store: Store, digests: Mapping[str, str], producer: str
-) -> dict[str, float]:
-    """The music/singing share this producer measured beside each clip's speech regions."""
-    return {
-        asset_id: float(measured["music_fraction"])
-        for asset_id, measured in _banked(store, speech_regions, digests, producer).items()
-        if isinstance(measured, dict) and "music_fraction" in measured
+        asset_id: regions
+        for asset_id, (regions, _music_fraction) in banked_speech_facts(
+            store, digests, producer
+        ).items()
     }
 
 

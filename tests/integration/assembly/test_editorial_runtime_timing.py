@@ -27,11 +27,9 @@ from tests.integration.conftest import requires_ffmpeg
 pytestmark = [pytest.mark.integration, requires_ffmpeg]
 
 
-@pytest.fixture
-def spoken_video(tmp_path):
-    fixture = Path(__file__).parents[2] / "fixtures/speech/synthetic_speech_16k.npy"
+def _video_from_fixture(path: Path, fixture_name: str) -> Path:
+    fixture = Path(__file__).parents[2] / "fixtures/speech" / fixture_name
     audio = np.load(fixture).astype(np.float32) / 32768.0
-    path = tmp_path / "speech.mp4"
     subprocess.run(
         [
             "ffmpeg",
@@ -67,48 +65,16 @@ def spoken_video(tmp_path):
         timeout=30,
     )
     return path
+
+
+@pytest.fixture
+def spoken_video(tmp_path):
+    return _video_from_fixture(tmp_path / "speech.mp4", "synthetic_speech_16k.npy")
 
 
 @pytest.fixture
 def sung_video(tmp_path):
-    fixture = Path(__file__).parents[2] / "fixtures/speech/singing_excerpt_16k.npy"
-    audio = np.load(fixture).astype(np.float32) / 32768.0
-    path = tmp_path / "singing.mp4"
-    subprocess.run(
-        [
-            "ffmpeg",
-            "-v",
-            "error",
-            "-f",
-            "lavfi",
-            "-i",
-            "testsrc2=s=160x90:r=30:d=3",
-            "-f",
-            "f32le",
-            "-ar",
-            "16000",
-            "-ac",
-            "1",
-            "-i",
-            "pipe:0",
-            "-t",
-            "3",
-            "-c:v",
-            "libx264",
-            "-preset",
-            "ultrafast",
-            "-threads",
-            "1",
-            "-c:a",
-            "aac",
-            str(path),
-        ],
-        input=audio.tobytes(),
-        check=True,
-        capture_output=True,
-        timeout=30,
-    )
-    return path
+    return _video_from_fixture(tmp_path / "singing.mp4", "singing_excerpt_16k.npy")
 
 
 def test_production_speech_cuts_use_real_detector_and_reuse_facts(
@@ -182,6 +148,53 @@ def test_production_cuts_flag_has_music_for_a_clip_whose_own_audio_sings(
     with ExitStack() as resources:
         _windows, resolve = production_cut_resolvers(source, resources=resources)
         [resolved] = resolve([carrier])
+    assert resolved["has_music"] is True
+
+
+def test_production_cuts_flag_has_music_for_a_stitched_live_motion_carrier(
+    spoken_video, sung_video, tmp_path, monkeypatch
+):
+    """#1951: a live-motion carrier's companions are each measured under their own video id."""
+    from immich_memories.processing.live_material import LiveRenderMaterial, LiveSourceEntry
+
+    videos = {"va": spoken_video, "vb": sung_video}
+
+    # WHY: only Immich transport is replaced; decoding, VAD and cut selection are real.
+    class Client:
+        def __init__(self, **_kwargs):
+            pass
+
+        def download_playback(self, asset_id, path):
+            path.write_bytes(videos[asset_id].read_bytes())
+
+        def close(self):
+            pass
+
+    monkeypatch.setattr("immich_memories.api.sync_client.SyncImmichClient", Client)
+    material = LiveRenderMaterial(
+        (
+            LiveSourceEntry("a", "va", 0, 0, 3),
+            LiveSourceEntry("b", "vb", 1, 0, 3),
+        )
+    )
+    source = SimpleNamespace(
+        config=Config(),
+        assets={"a": make_asset("a", duration=3)},
+        companion_assets={"va": make_asset("va", duration=3), "vb": make_asset("vb", duration=3)},
+        bank_dir=tmp_path / "banks",
+        store=open_store(),
+    )
+    carrier = {
+        "asset_id": "a",
+        "kind": "live-motion",
+        "seconds": 4.0,
+        "raw_seconds": material.duration_seconds,
+        "live_material": material.as_dict(),
+    }
+    with ExitStack() as resources:
+        _windows, resolve = production_cut_resolvers(source, resources=resources)
+        [resolved] = resolve([carrier])
+    # Half the stitch is the sung companion: well past the 0.3 share (#1951).
     assert resolved["has_music"] is True
 
 

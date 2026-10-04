@@ -159,7 +159,7 @@ def test_cut_measurements_answer_only_for_the_source_they_measured(store):
 
 def test_speech_regions_bank_a_music_fraction_beside_the_regions(store):
     """#1951: the fallback detector's music/singing share rides beside its regions."""
-    from immich_memories.store.cut_measurements import banked_music_fractions
+    from immich_memories.store.cut_measurements import banked_speech_facts
 
     with PendingMeasurements(store) as pending:
         pending.speech_regions(
@@ -167,7 +167,7 @@ def test_speech_regions_bank_a_music_fraction_beside_the_regions(store):
         )
 
     assert banked_speech_regions(store, {"v": "d"}, "p") == {"v": ((1.0, 2.0),)}
-    assert banked_music_fractions(store, {"v": "d"}, "p") == {"v": 0.7}
+    assert banked_speech_facts(store, {"v": "d"}, "p") == {"v": (((1.0, 2.0),), 0.7)}
 
 
 def test_a_motion_line_is_replaced_by_its_producer(store):

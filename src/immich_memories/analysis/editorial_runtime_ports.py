@@ -127,10 +127,33 @@ def production_live_clock_offsets(source, *, resources):
 _HAS_MUSIC_SHARE = 0.3
 
 
+def _live_motion_music_fraction(
+    carrier: Mapping[str, Any], music_for: Callable[[str], float]
+) -> float:
+    """The stitch's music share: each companion's own fraction, weighted by its played span.
+
+    A carrier's ``asset_id`` is the kept still, never heard directly; the sound a stitch
+    plays comes from its segments' own companion video ids (#1951).
+    """
+    from immich_memories.processing.live_material import LiveRenderMaterial
+
+    segments = LiveRenderMaterial.from_dict(carrier["live_material"]).segments
+    total = sum(entry.end - entry.start for entry in segments)
+    if total <= 0:
+        return 0.0
+    weighted = sum((entry.end - entry.start) * music_for(entry.video_id) for entry in segments)
+    return weighted / total
+
+
 def _tag_has_music(carriers, music_for: Callable[[str], float]) -> None:
     for carrier in carriers:
-        if carrier["kind"] in {"video", "live-motion"}:
-            carrier["has_music"] = music_for(carrier["asset_id"]) >= _HAS_MUSIC_SHARE
+        if carrier["kind"] == "video":
+            fraction = music_for(carrier["asset_id"])
+        elif carrier["kind"] == "live-motion":
+            fraction = _live_motion_music_fraction(carrier, music_for)
+        else:
+            continue
+        carrier["has_music"] = fraction >= _HAS_MUSIC_SHARE
 
 
 def production_cut_resolvers(source, *, resources):

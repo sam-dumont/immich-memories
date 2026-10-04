@@ -21,7 +21,7 @@ from immich_memories.speech.fireredvad import FireRedSpeechDetector
 from immich_memories.speech.vad import VAD_SAMPLE_RATE, extract_audio_16k
 from immich_memories.store.cut_measurements import (
     PendingMeasurements,
-    banked_music_fractions,
+    banked_speech_facts,
     banked_speech_regions,
 )
 
@@ -76,8 +76,7 @@ class SpeechFacts:
         self.memo: dict[tuple[str, str], Regions] = {}
         self.music_memo: dict[tuple[str, str], float] = {}
         self._measure_source = measure or self._measure
-        self._banked: dict[str, tuple[tuple[float, float], ...]] | None = None
-        self._music_banked: dict[str, float] | None = None
+        self._banked: dict[str, tuple[tuple[tuple[float, float], ...], float]] | None = None
         self._pending = PendingMeasurements(store)
 
     def __call__(self, asset_id: str) -> Regions:
@@ -85,16 +84,13 @@ class SpeechFacts:
         if (asset_id, digest) in self.memo:
             return self.memo[(asset_id, digest)]
         if self._banked is None:
-            # Every clip this cut could ask about, read once.
-            self._banked = read_speech_regions(self.store, self.assets.values(), self.producer)
-            self._music_banked = banked_music_fractions(
-                self.store,
-                {a.id: source_metadata_digest(a) for a in self.assets.values()},
-                self.producer,
-            )
+            # Every clip this cut could ask about, regions and music fraction together,
+            # read off the bank once (#1951).
+            digests = {a.id: source_metadata_digest(a) for a in self.assets.values()}
+            self._banked = banked_speech_facts(self.store, digests, self.producer)
         if asset_id in self._banked:
-            regions = list(self._banked[asset_id])
-            music_fraction = self._music_banked.get(asset_id, 0.0) if self._music_banked else 0.0
+            banked_regions, music_fraction = self._banked[asset_id]
+            regions = list(banked_regions)
         else:
             regions, music_fraction = self._measure_source(asset_id)
             self._remember(asset_id, digest, regions, music_fraction)
