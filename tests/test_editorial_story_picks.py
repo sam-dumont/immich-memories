@@ -14,9 +14,8 @@ from immich_memories.analysis.editorial_story_reading import PAGE_CHARS
 from immich_memories.analysis.editorial_story_shortlist import (
     DepictedChoice,
     _capture_group_moments,
-    _pick_prompt,
-    pick_story_moments,
 )
+from immich_memories.analysis.editorial_story_vote import _pick_prompt, pick_story_moments
 
 
 class PickJudge:

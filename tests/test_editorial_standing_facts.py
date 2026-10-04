@@ -7,7 +7,11 @@ from types import SimpleNamespace
 import pytest
 
 from immich_memories.analysis.editorial_rule_reader import RuleStructureReader
-from immich_memories.analysis.editorial_standing_facts import carries_nothing, names_someone_alive
+from immich_memories.analysis.editorial_standing_facts import (
+    carries_nothing,
+    disqualifies_as_lone_carrier,
+    names_someone_alive,
+)
 
 LONE_OBJECT = {"frame_kind": "lone_everyday_object", "people": "one"}
 
@@ -48,6 +52,24 @@ def test_a_blurred_body_part_close_up_carries_nothing_where_a_sharp_one_does_not
 
     assert carries_nothing(heads, "2024-02-01 12:00 | A hand. | SOFT (blurry)")
     assert not carries_nothing(heads, "2024-02-01 12:00 | A hand.")
+
+
+def test_a_dark_lone_object_now_carries_standing_points_like_blown_out():
+    """DARK used to add nothing; it now weighs like its sibling pixel warning (#2049)."""
+    heads = {"frame_kind": "body_part_closeup", "people": "one"}
+
+    assert carries_nothing(heads, "2024-02-01 12:00 | DARK")
+    assert not carries_nothing(heads, "2024-02-01 12:00")
+
+
+@pytest.mark.parametrize("warning", ["DARK", "SOFT (blurry)", "DARK | SOFT (blurry)"])
+def test_disqualifies_as_lone_carrier_on_either_weighed_warning(warning):
+    assert disqualifies_as_lone_carrier(f"2024-02-01 12:00 | A dog in the yard. | {warning}")
+
+
+def test_disqualifies_as_lone_carrier_leaves_a_clean_or_blown_out_line_alone():
+    assert not disqualifies_as_lone_carrier("2024-02-01 12:00 | A dog in the yard.")
+    assert not disqualifies_as_lone_carrier("2024-02-01 12:00 | BLOWN OUT")
 
 
 def test_a_bank_with_no_frame_kind_row_reads_a_document_as_before_eligibility_does():

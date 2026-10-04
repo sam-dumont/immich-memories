@@ -378,3 +378,42 @@ def test_a_group_no_picture_names_anybody_in_keeps_the_frame_it_had():
     )
 
     assert choice.primary == "sharp"
+
+
+def test_a_moment_whose_only_candidate_is_pixel_disqualified_ships_nothing():
+    """A lone DARK or SOFT (blurry) picture has no sharper sibling to fall back on (#2049)."""
+    from immich_memories.analysis.editorial_story_shortlist import _capture_group_moments
+
+    choices = _capture_group_moments(
+        _group(dark="still"),
+        quality=lambda _asset: 0.0,
+        pixel_disqualified=lambda asset: asset == "dark",
+    )
+
+    assert choices == []
+
+
+def test_a_pixel_disqualified_candidate_with_a_clean_sibling_still_ships_the_clean_one():
+    from immich_memories.analysis.editorial_story_shortlist import _capture_group_moments
+
+    [choice] = _capture_group_moments(
+        _group(clean="still", dark="still"),
+        quality=lambda asset: 1.0 if asset == "clean" else 0.0,
+        pixel_disqualified=lambda asset: asset == "dark",
+    )
+
+    assert choice.primary == "clean"
+    assert choice.alternatives == ["dark"]
+
+
+def test_a_starred_pixel_disqualified_candidate_still_ships():
+    """The favourite rule is unchanged: the owner's starred shot is never refused this way."""
+    from immich_memories.analysis.editorial_story_shortlist import _capture_group_moments
+
+    [choice] = _capture_group_moments(
+        _group(starred="still"),
+        quality=lambda _asset: 0.0,
+        pixel_disqualified=lambda _asset: True,
+    )
+
+    assert choice.primary == "starred"

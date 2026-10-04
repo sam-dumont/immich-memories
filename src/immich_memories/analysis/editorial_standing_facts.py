@@ -45,6 +45,9 @@ _HEADS_FLAGS = {
     "screen": 1.0,
     "BLOWN OUT": 1.5,
     "SOFT (blurry)": 0.5,
+    # No public row carried this label either: it borrows BLOWN OUT's point, the opposite
+    # end of the same defect (crushed shadows instead of crushed highlights, #2049).
+    "DARK": 1.5,
 }
 
 
@@ -66,6 +69,8 @@ _CAPTION_FLAG_POINTS = {
     "screen": 1.0,
     "BLOWN OUT": 2.0,
     "SOFT (blurry)": 1.0,
+    # Same borrowed value as the no-caption table, for the same reason (#2049).
+    "DARK": 2.0,
 }
 # Fitted with no face facts: a library whose faces Immich never read.
 _CAPTION_TABLE = _CaptionTable(
@@ -104,6 +109,17 @@ _CAPTION_FACES_TABLE = _CaptionTable(
     faceless_person=1.0,
 )
 _WEIGHED_MOMENT_WARNINGS = ("SOFT (blurry)", "DARK")
+
+
+def disqualifies_as_lone_carrier(line: str) -> bool:
+    """Carries one of the two pixel warnings that only rank a picture within a capture group.
+
+    Ranking is fine when a sharper, brighter sibling can take the frame instead; with nobody
+    else to fall back on, the moment it would carry is better left unfunded. A clear low-light
+    scene the DARK head's own brightness/dark-fraction thresholds never flagged is untouched
+    (#2049); a starred picture is never checked against this at all (the favourite rule).
+    """
+    return any(warning in line for warning in _WEIGHED_MOMENT_WARNINGS)
 
 
 def _words(*words: str) -> re.Pattern[str]:
@@ -248,6 +264,7 @@ def _head_points(
         "screen": screen_flagged(heads),
         "BLOWN OUT": "BLOWN OUT" in line,
         "SOFT (blurry)": "SOFT (blurry)" in line,
+        "DARK": "DARK" in line,
     }
     return points + sum(value for fact, value in flags.items() if facts[fact])
 
