@@ -24,6 +24,7 @@ const sidebars: SidebarsConfig = {
         'how-it-chooses/what-a-model-adds',
         'how-it-chooses/length-and-filler',
         'how-it-chooses/family-audience-duplicates',
+        'how-it-chooses/known-limitations',
         'make/titles-maps-music',
         'make/photos-and-live-photos',
         'make/automate',
