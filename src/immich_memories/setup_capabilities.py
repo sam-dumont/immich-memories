@@ -46,7 +46,7 @@ def optional_capabilities(config: Config) -> list[Capability]:
 
 def music_capabilities(config: Config, *, test_music: bool = False) -> list[Capability]:
     """Offer smaller local profiles without calling a weight budget a successful test."""
-    from immich_memories.audio.generators.ace_step_isolated import isolated_python
+    from immich_memories.audio.generators.ace_step_isolated import install_hint, isolated_python
     from immich_memories.audio.generators.ace_step_runtime import is_ace_step_importable
     from immich_memories.audio.generators.memory_budget import (
         available_memory_bytes,
@@ -71,7 +71,7 @@ def music_capabilities(config: Config, *, test_music: bool = False) -> list[Capa
         name = f"ACE-Step {variant} / {planner + ' planner' if planner else 'no planner'}"
         required = required_memory_bytes(variant, planner)
         if not installed:
-            rows.append(Capability(name, "missing", "Run make install-acestep in this checkout"))
+            rows.append(Capability(name, "missing", install_hint()))
         elif available is None:
             rows.append(
                 Capability(name, "untested", "Cannot measure available memory; no model loaded")

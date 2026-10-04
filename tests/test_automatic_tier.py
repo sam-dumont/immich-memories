@@ -242,3 +242,14 @@ def test_metal_bindings_without_a_device_leave_the_machine_on_nas(monkeypatch, l
     )
 
     assert Config().tier == "basic"
+
+
+def test_the_automatic_choice_is_logged_as_this_machine_s_answer(caplog):
+    """An init container with no GPU resolves `auto` to basic; the line must not read as the install's tier."""
+    with caplog.at_level("INFO", logger="immich_memories.config_tiers"):
+        config = Config()
+
+    assert config.tier == "basic"
+    line = next(r.getMessage() for r in caplog.records if "auto" in r.getMessage().lower())
+    assert "on this machine" in line
+    assert "tier: gpu" in line
