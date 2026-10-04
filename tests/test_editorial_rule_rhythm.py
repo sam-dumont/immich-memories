@@ -73,6 +73,42 @@ def test_a_one_shot_film_is_lengthened_once():
     assert carriers[0]["seconds"] == 4.5
 
 
+def _video_asset(asset_id, *, duration):
+    return SimpleNamespace(
+        id=asset_id,
+        is_favorite=False,
+        people=[],
+        faces=[],
+        duration_seconds=duration,
+        type=SimpleNamespace(value="VIDEO"),
+        file_created_at=datetime(2024, 2, 7, 10, 0, tzinfo=UTC),
+    )
+
+
+def test_a_video_duration_that_rounds_up_never_publishes_past_its_own_length():
+    """#2039: round() can land raw_seconds up to 5 ms past the real duration (9.286 -> 9.29),
+    which a window or speech clamp then reads as the clip's length and runs past it."""
+    duration = 9.286
+    assert round(duration, 2) > duration, "the regression only shows up when round() rounds up"
+    asset = _video_asset("video", duration=duration)
+    source = SimpleNamespace(
+        assets={asset.id: asset},
+        motion_residuals={},
+        clip_frames={},
+        speech_regions={},
+        config=Config(),
+        pixel_facts={},
+    )
+    wall = SimpleNamespace(event_assets={"F01": [asset.id]}, moment_of_asset={asset.id: "M01"})
+    ports = SimpleNamespace(
+        resolve_motion=None, live_source_integrity=None, thumbnail_hash=lambda _a: None, rules=None
+    )
+    builder = UnitBuilder(source, ports, wall, renderings={}, never_auto=set(), document_sources={})
+    (unit,) = builder.units_of("F01")
+
+    assert unit["raw_seconds"] <= duration
+
+
 def _asset(asset_id, *, favourite=False, people=()):
     return SimpleNamespace(
         id=asset_id,
