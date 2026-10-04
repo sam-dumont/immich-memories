@@ -239,7 +239,9 @@ def test_real_planner_and_projector_share_the_captured_companion_map(tmp_path):
     )
     assert selected["kind"] == "live-motion"
     assert selected["live_material"] == expected[selected["asset_id"]].material.as_dict()
-    assert selected["raw_seconds"] == 4.55
+    # #2039: raw_seconds floors to centiseconds so it never overstates the real duration
+    # (4.5495 -> 4.54, not round()'s 4.55, which would land past the source).
+    assert selected["raw_seconds"] == 4.54
     _, candidates = demand([*assets.values(), *companions.values()])
     projected = project_source_rendering(
         result["carriers"],

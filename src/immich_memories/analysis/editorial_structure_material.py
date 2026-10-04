@@ -7,6 +7,7 @@ bursts, videos and stills, deduplicated — and the anchor row the memory-worthy
 
 from __future__ import annotations
 
+import math
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime
@@ -71,6 +72,16 @@ def rules_still_seconds(*, favourite: bool, known_people: bool) -> float:
     seconds on fewer days, and a day lost is worse than a beat gained.
     """
     return STILL_SECONDS if favourite or known_people else MIN_CARRIER_SECONDS
+
+
+def raw_centiseconds(duration: float) -> float:
+    """A clip's real length, truncated to centiseconds so it never overstates the source.
+
+    `round()` can land up to 5 ms past the true duration (9.286 -> 9.29); a window or speech
+    clamp built on that value then runs past the source's last frame (#2039). Flooring instead
+    of rounding keeps every published length inside the material it describes.
+    """
+    return math.floor(duration * 100) / 100
 
 
 def hold_the_ends(carriers: Sequence[dict]) -> None:
@@ -264,10 +275,10 @@ class UnitBuilder:
             "video_ids": list(r.video_ids),
             "trim_points": [list(p) for p in r.trim_points],
             "live_material": r.material.as_dict(),
-            "seconds": round(min(r.duration_seconds, MOTION_CAP_SECONDS), 2)
+            "seconds": raw_centiseconds(min(r.duration_seconds, MOTION_CAP_SECONDS))
             if motion
             else self._still_hold(members),
-            "raw_seconds": round(r.duration_seconds, 2),
+            "raw_seconds": raw_centiseconds(r.duration_seconds),
             "residual": residual,
         }
 
@@ -287,8 +298,8 @@ class UnitBuilder:
             "members": [asset_id],
             "video_ids": [asset_id],
             "trim_points": [],
-            "seconds": round(min(dur, MOTION_CAP_SECONDS), 2),
-            "raw_seconds": round(dur, 2),
+            "seconds": raw_centiseconds(min(dur, MOTION_CAP_SECONDS)),
+            "raw_seconds": raw_centiseconds(dur),
             "residual": measured,
             "motion_assessed": measured is not None,
         }

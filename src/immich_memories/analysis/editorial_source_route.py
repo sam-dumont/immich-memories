@@ -397,11 +397,12 @@ def _tightened_to_source(
     """Accept only the centisecond rounding boundary, and record both intervals.
 
     Native units publish centiseconds, while source durations retain their full
-    precision. Any other overrun is a real disagreement with the source.
+    precision. Any other overrun is a real disagreement with the source. The gap can land
+    on a window that starts anywhere in the clip, not just at its opening frame (#2039): a
+    window that runs to the clip's last frame hits the same rounding boundary regardless of
+    where it started.
     """
-    if carrier.start == 0 and carrier.end == round(clip.duration_seconds, 2) == row.get(
-        "raw_seconds"
-    ):
+    if carrier.end == round(clip.duration_seconds, 2) == row.get("raw_seconds"):
         adjustments.append(
             {
                 "asset_id": carrier.asset_id,

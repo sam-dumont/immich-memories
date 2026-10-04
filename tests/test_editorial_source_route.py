@@ -159,6 +159,33 @@ def test_only_exact_native_centisecond_rounding_is_reconciled_and_reported():
             project_source_rendering([invalid], rows, config=Config(), include_live_photos=True)
 
 
+def test_centisecond_rounding_overrun_is_accepted_for_a_window_that_starts_after_zero():
+    """#2039: a window that starts mid-clip and runs to the last frame hits the same
+    centisecond rounding gap as a window starting at zero, and must be accepted too."""
+    _, rows = demand([make_clip("video", duration=9.286)])
+    carrier = {
+        "asset_id": "video",
+        "kind": "video",
+        "seconds": 8.04,
+        "start_time": 1.25,
+        "end_time": 9.29,
+        "raw_seconds": 9.29,
+    }
+    projected = project_source_rendering([carrier], rows, config=Config(), include_live_photos=True)
+    assert projected.plan.selections[0].end_time == 9.286
+    assert projected.render_adjustments == (
+        {
+            "asset_id": "video",
+            "reason": "native-duration-rounded-to-centiseconds",
+            "native_interval": [1.25, 9.29],
+            "source_interval": [1.25, 9.286],
+        },
+    )
+    overrun = carrier | {"end_time": 9.4, "seconds": 8.15, "raw_seconds": 9.4}
+    with pytest.raises(ValueError, match="exceeds"):
+        project_source_rendering([overrun], rows, config=Config(), include_live_photos=True)
+
+
 def test_negative_video_source_never_borrows_photograph_duration():
     """A negative duration is refused at source admission (#1013), before the
     route's own guard could see it; the guard stays for defense in depth."""
