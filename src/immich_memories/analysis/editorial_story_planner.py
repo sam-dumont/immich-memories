@@ -80,6 +80,7 @@ class StorySelection:
             "priorities": self.story.priorities,
             "episodes": self.episodes,
             "calls": self.calls,
+            "sparse_quality": self.story.audit.get("sparse_quality") or {},
         }
 
 
@@ -378,6 +379,8 @@ def _episodes_record(
             "groups_offered": groups_offered[s["key"]],
             "granted": len(chosen_by_story[s["key"]]),
             "chosen": chosen_by_story[s["key"]],
+            "funded_by": s.get("funded_by") or "",
+            "sparse_quality_reason": s.get("sparse_quality_reason") or "",
         }
         | _kind_of_story(s)
         for s in stories

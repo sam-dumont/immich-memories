@@ -1,10 +1,17 @@
 """Standard memory products use rules without constructing an inference transport."""
 
+from datetime import datetime, timedelta
+from types import SimpleNamespace
+
 import pytest
 
 from immich_memories.analysis.editorial_final_hash_review import (
     POLICY as FINAL_HASH_REVIEW_POLICY,
 )
+from immich_memories.analysis.editorial_rule_reader import RuleStructureReader
+from immich_memories.analysis.editorial_shareability import NEVER_AUTO, FlagRow
+from immich_memories.analysis.editorial_story_reading import StoryEpisode
+from immich_memories.analysis.editorial_story_slots import allocate_slots
 from immich_memories.config_models_editorial import EditorialConfig
 
 
@@ -119,11 +126,12 @@ def test_rules_finish_product_selection_without_constructing_inference(tmp_path,
         }
     else:
         # The twenty-two day fixture is no longer one story but four weekly ones, so the
-        # assertion is on the story holding the owner's favourites. A week with no
-        # indicator at all weighs none.
+        # assertion is on the story holding the owner's favourites. Its other three weeks
+        # carry no indicator at all: mostly bare, so BASIC funds them from their own best
+        # picture instead of going short (#2048), rather than leaving them "none".
         expected = "minor" if product == "album" else "major"
         assert expected in {e["weight"] for e in plan["story"]["episodes"]}
-        assert {e["weight"] for e in plan["story"]["episodes"]} <= {expected, "none"}
+        assert {e["weight"] for e in plan["story"]["episodes"]} <= {expected, "none", "glimpse"}
     assert all(plan["story"]["calls"][key] == 0 for key in ("story_pages", "pick_calls"))
     assert all(row["kind"] != "live-motion" for row in plan["carriers"])
     assert "picture_facts" not in plan
@@ -300,3 +308,174 @@ def test_a_rules_film_may_play_a_live_photo_and_can_measure_one(tmp_path):
     assert source.lineage["render_policy"] == {"allow_live_motion": True}
     assert ports.resolve_motion is not None
     assert ports.clock_offsets is not None
+
+
+# -- sparse weeks funded by quality (#2048) -----------------------------------------------
+
+
+def _sparse_asset(asset_id, *, at, sharpness=10.0, brightness=128.0):
+    return (
+        SimpleNamespace(
+            id=asset_id,
+            file_created_at=at,
+            is_favorite=False,
+            is_video=False,
+            people=[],
+            faces=[],
+            exif_info=None,
+        ),
+        sharpness,
+        brightness,
+    )
+
+
+def _sparse_source(assets, pixel_facts, *, target_seconds=0.0, never_auto_ids=()):
+    flag = FlagRow(asset_id="", flag=NEVER_AUTO, reason="", source="detector")
+    return SimpleNamespace(
+        assets=assets,
+        annotations={},
+        audience_annotations={},
+        pixel_facts=pixel_facts,
+        shareability_flags=dict.fromkeys(never_auto_ids, (flag,)),
+        owner_required_asset_ids=(),
+        gps={},
+        config=SimpleNamespace(
+            trips=SimpleNamespace(homebase_latitude=None, homebase_longitude=None)
+        ),
+        case=SimpleNamespace(target_seconds=target_seconds),
+        intent=SimpleNamespace(product="monthly_highlights"),
+    )
+
+
+def _sparse_weeks(n, *, target_seconds=0.0, indicated=(), base=datetime(2024, 1, 1, 12)):
+    """`n` at-home weeks, one moment and one clean asset each; `indicated` week indexes
+    keep a non-"none" weight, as a real occasion indicator would have left them."""
+    assets, pixel_facts, moment_asset_ids = {}, {}, {}
+    stories, by_key, hints = [], {}, {}
+    for week in range(n):
+        asset_id = f"a{week}"
+        day = base + timedelta(weeks=week)
+        asset, sharp, bright = _sparse_asset(asset_id, at=day)
+        assets[asset_id] = asset
+        pixel_facts[asset_id] = (sharp, bright)
+        moment = f"m{week}"
+        moment_asset_ids[moment] = (asset_id,)
+        key = f"S{week:03}"
+        by_key[key] = StoryEpisode(key, f"week {week}", "", "", "supporting", "", moments=[moment])
+        stories.append(
+            {"key": key, "episodes": [key], "weight": "minor" if week in indicated else "none"}
+        )
+        hints[key] = {"day": day.date().isoformat()}
+    source = _sparse_source(assets, pixel_facts, target_seconds=target_seconds)
+    source.moment_asset_ids = moment_asset_ids
+    return source, stories, by_key, hints
+
+
+def test_a_mostly_indicated_household_leaves_bare_weeks_short():
+    """Control: 7 of 10 weeks carry an indicator. The three bare weeks stay 'none' with
+    no grant, exactly the 2026-09-23 rule."""
+    source, stories, by_key, hints = _sparse_weeks(10, target_seconds=300.0, indicated=range(7))
+    audit = RuleStructureReader(source)._promote_sparse_quality(stories, by_key, hints)
+
+    assert audit["promoted"] == []
+    assert audit["left_short"] == []
+    assert {s["key"] for s in stories if s["weight"] == "none"} == {"S007", "S008", "S009"}
+
+
+def test_a_mostly_bare_household_funds_its_weeks_from_their_best_picture():
+    """The pets shape, simplified: 13 of 14 weeks are bare; each is promoted to glimpse,
+    funded by its own week's picture."""
+    source, stories, by_key, hints = _sparse_weeks(14, target_seconds=300.0, indicated=(13,))
+    audit = RuleStructureReader(source)._promote_sparse_quality(stories, by_key, hints)
+
+    assert len(audit["promoted"]) == 13
+    assert audit["left_short"] == []
+    bare = [s for s in stories if s["key"] != "S013"]
+    assert all(s["weight"] == "glimpse" for s in bare)
+    assert all(s["funded_by"] == "quality" for s in bare)
+    assert all(s["quality_asset_id"] == f"a{int(s['key'][1:])}" for s in bare)
+    assert next(s for s in stories if s["key"] == "S013")["weight"] == "minor"
+
+
+def test_a_sharp_frame_is_picked_over_a_soft_one_in_the_same_week():
+    source, stories, by_key, hints = _sparse_weeks(1, target_seconds=300.0)
+    # A second, blurrier picture joins the lone clean one in the same week's moment.
+    soft_id = "soft0"
+    soft_asset, _, _ = _sparse_asset(soft_id, at=datetime(2024, 1, 1, 13))
+    source.assets[soft_id] = soft_asset
+    source.pixel_facts[soft_id] = (0.1, 128.0)
+    source.annotations[soft_id] = "resolution:4032x3024 SOFT (blurry)"
+    source.moment_asset_ids["m0"] = ("a0", soft_id)
+
+    audit = RuleStructureReader(source)._promote_sparse_quality(stories, by_key, hints)
+
+    assert audit["promoted"] == ["S000"]
+    assert stories[0]["quality_asset_id"] == "a0"
+
+
+def test_a_junk_only_week_stays_unfunded_with_its_reason():
+    source, stories, by_key, hints = _sparse_weeks(1, target_seconds=300.0)
+    # The week's only picture is a screenshot: no clean candidate exists.
+    source.audience_annotations["a0"] = SimpleNamespace(heads=(("screen", "yes"),))
+
+    audit = RuleStructureReader(source)._promote_sparse_quality(stories, by_key, hints)
+
+    assert audit["promoted"] == []
+    assert audit["left_short"] == ["S000"]
+    assert stories[0]["weight"] == "none"
+    assert stories[0]["sparse_quality_reason"] == "No clean picture of the week"
+
+
+def test_a_light_user_gets_at_most_one_week_per_free_slot():
+    """40 bare weeks, a 300 s target (75 slots): every week fits, so every week is funded."""
+    source, stories, by_key, hints = _sparse_weeks(40, target_seconds=300.0)
+    audit = RuleStructureReader(source)._promote_sparse_quality(stories, by_key, hints)
+
+    assert len(audit["promoted"]) == min(40, len(stories))
+
+
+def test_a_light_user_s_promotions_spread_across_the_period_when_capped():
+    """A target too small for every bare week caps the grant at its slot count, spread
+    across the period rather than taken from one end of it."""
+    source, stories, by_key, hints = _sparse_weeks(40, target_seconds=80.0)  # 20 slots
+    audit = RuleStructureReader(source)._promote_sparse_quality(stories, by_key, hints)
+
+    assert len(audit["promoted"]) == 20
+    assert "S000" in audit["promoted"]
+    assert "S039" in audit["promoted"]
+
+
+def test_the_exact_two_thirds_boundary_promotes():
+    source, stories, by_key, hints = _sparse_weeks(3, target_seconds=300.0, indicated=(2,))
+    audit = RuleStructureReader(source)._promote_sparse_quality(stories, by_key, hints)
+
+    assert audit["share"] == pytest.approx(2 / 3, abs=1e-3)
+    assert set(audit["promoted"]) == {"S000", "S001"}
+
+
+def test_just_under_the_boundary_leaves_bare_weeks_short():
+    source, stories, by_key, hints = _sparse_weeks(3, target_seconds=300.0, indicated=(1, 2))
+    audit = RuleStructureReader(source)._promote_sparse_quality(stories, by_key, hints)
+
+    assert audit["share"] == pytest.approx(1 / 3, abs=1e-3)
+    assert audit["promoted"] == []
+
+
+def test_the_pets_shape_funds_bare_weeks_so_the_walk_no_longer_takes_the_leftovers():
+    """14 weekly cat photos, one week with a video and a town walk: the 13 bare weeks are
+    promoted and each claims its own glimpse slot before the walk's leftovers do, unlike
+    before #2048 where the walk's many moments took every slot the film had."""
+    source, stories, by_key, hints = _sparse_weeks(14, target_seconds=300.0, indicated=(13,))
+    for story in stories:
+        story["first_day"] = hints[story["key"]]["day"]
+    walk = next(s for s in stories if s["key"] == "S013")
+    walk["weight"] = "major"
+
+    audit = RuleStructureReader(source)._promote_sparse_quality(stories, by_key, hints)
+    assert len(audit["promoted"]) == 13
+
+    capacity = {s["key"]: (37 if s["key"] == "S013" else 1) for s in stories}
+    granted = allocate_slots(stories, 20, capacity)
+
+    assert all(granted[key] == 1 for key in granted if key != "S013")
+    assert granted["S013"] == 7  # 20 slots - the 13 glimpses the bare weeks claimed first

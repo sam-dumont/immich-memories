@@ -15,11 +15,13 @@ from collections import Counter
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import replace
 from datetime import datetime
+from functools import partial
 from operator import itemgetter
 from typing import Any
 
 from immich_memories.analysis.editorial_carrier import carrier_row
 from immich_memories.analysis.editorial_picture_admission import PictureAdmission
+from immich_memories.analysis.editorial_rule_quality import promote_quality_choice
 from immich_memories.analysis.editorial_story_depth import depth_ladder, neighbours
 from immich_memories.analysis.editorial_story_lookalike import LookAlikeCheck
 from immich_memories.analysis.editorial_story_pick_contract import (
@@ -378,17 +380,21 @@ class CarrierAdmission:
             motion_of=_unit_reader(self._motion_line, self._unit_by_asset),
             plays=lambda c: carries_motion(self._unit_by_asset[c.primary][1]),
             replacement_allowed=allows_replacement,
-            rules_order=self._rules_order,
+            rules_order=partial(self._rules_order, s),
         )
         self.calls["pick_calls"] += len(self._judge.calls) - calls_before
         return picked
 
-    def _rules_order(self, eligible, n) -> list[DepictedChoice]:
+    def _rules_order(self, s, eligible, n) -> list[DepictedChoice]:
         """Every moment, in the order the rules take them for a grant of ``n``, asking nobody.
 
         A story with more favourites than its grant spends it across the story's whole span;
         the favourites the spread passes over stay behind it, for when one cannot be placed.
+        A sparse week `read_story` funded by quality asks no fresh question here either: its
+        own best picture, already chosen, is simply surfaced (`promote_quality_choice`).
         """
+        if s.get("funded_by") == "quality":
+            return promote_quality_choice(eligible, s.get("quality_asset_id"))
         stars = [c for c in eligible if self.starred_choice(c)]
         # A moment of strangers only is the weaker frame of its story: it comes after every
         # other moment the story holds, never before one showing somebody the library knows.
@@ -398,10 +404,10 @@ class CarrierAdmission:
         preferred.extend(_spread(strangers, max(0, n - len(preferred))))
         return [*preferred, *(c for c in (*stars, *rest, *strangers) if c not in preferred)]
 
-    def _repeat_pick(self, eligible, n, chosen) -> list[DepictedChoice]:
+    def _repeat_pick(self, s, eligible, n, chosen) -> list[DepictedChoice]:
         """A story already asked in this partition refills mechanically, never with a new call."""
         local: list[DepictedChoice] = []
-        for c in self._rules_order(eligible, n):
+        for c in self._rules_order(s, eligible, n):
             if len(local) >= n or not self.compatible(c, [*chosen, *local]):
                 continue
             local.append(c)
@@ -418,7 +424,7 @@ class CarrierAdmission:
                 continue
             pick_key = s["key"] if self.parts.limit is None else (s["key"], part)
             if self._mechanical_picks or self._picked_before.get(pick_key):
-                chosen.extend(self._repeat_pick(eligible, n, chosen))
+                chosen.extend(self._repeat_pick(s, eligible, n, chosen))
             else:
                 self._picked_before[pick_key] = True
                 chosen.extend(self._ask_pick(s, part, eligible, n))
