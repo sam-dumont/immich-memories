@@ -54,7 +54,7 @@ immich-memories models fetch
 immich-memories preflight
 ```
 
-Alternatively, [enable SSH in DSM](https://kb.synology.com/en-global/DSM/help/DSM/AdminCenter/system_terminal?version=7) and run `sudo docker exec immich-memories immich-memories models fetch`, followed by the same command ending in `preflight`. Fix connection or storage errors before making a film.
+Alternatively, [enable SSH in DSM](https://kb.synology.com/en-global/DSM/help/DSM/AdminCenter/system_terminal?version=7) and run `docker exec immich-memories immich-memories models fetch` (add `sudo` if your user isn't in the `docker` group), followed by the same command ending in `preflight`. Fix connection or storage errors before making a film.
 
 ## 4. Open the app
 
@@ -82,14 +82,15 @@ From the resulting `immich-memories` project directory on the NAS:
 chmod 700 .
 chmod 600 .env
 mkdir -p output
-sudo chown 1000:1000 output
+/usr/syno/bin/synoacltool -addace output user:1000:allow:rwxpdDaARWc--:fd--
 sudo docker compose -p immich-memories pull
 sudo docker compose -p immich-memories up -d
 sudo docker compose -p immich-memories exec immich-memories immich-memories models fetch
 sudo docker compose -p immich-memories exec immich-memories immich-memories preflight
 ```
 
-Check DSM ACLs as described above. Run every later Compose command from this directory with
+The `synoacltool` line gives the container's uid 1000 write access to `output` and keeps your own
+entry; see [the output folder](../nas.md#the-output-folder) for why `chown` isn't enough. Check DSM ACLs as described above. Run every later Compose command from this directory with
 `-p immich-memories`; the explicit project name also determines its named volume prefix.
 This stock release-file route uses host port **8080**. If occupied, edit the mapping to
 `127.0.0.1:18081:8080` and use 18081 for both tunnel and proxy upstream.
@@ -123,11 +124,11 @@ certificate, already configured on the NAS. This does not require internet expos
 
    ```bash
    sudo docker compose -p immich-memories up -d
-   curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8080/api/v1/config
+   curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8080/api/v1/settings
    ```
 
-   The protected config endpoint must answer **401** without a session. Stop if it returns
-   configuration. The public health endpoint is deliberately anonymous and is not an auth test.
+   The protected settings endpoint must answer **401** without a session (and 200 after login).
+   Stop if it returns settings. The public health endpoint is deliberately anonymous and is not an auth test.
 4. In DSM **Control Panel → Login Portal → Advanced → Reverse Proxy**, create a source
    **HTTPS**, hostname `memories.example.com`, port **443**, and destination **HTTP**,
    hostname `127.0.0.1`, port **8080**. Assign the matching certificate in DSM's certificate
@@ -147,7 +148,24 @@ certificate, already configured on the NAS. This does not require internet expos
 | Wrong password / temporary lockout | Use the app login from `.env`, not the DSM password; repeated failures trigger the documented rate limit |
 | Output permission failure | Check this project's `output` owner and DSM ACLs, then rerun preflight; do not change Immich's media directories |
 
+## LAN port with app login (no tunnel, no proxy)
+
+If your account can't forward ports and you don't want to set up the proxy, publish the port on
+the LAN with app authentication on. In `.env`, set `IMMICH_MEMORIES_AUTH_USERNAME`,
+`IMMICH_MEMORIES_AUTH_PASSWORD` and `UI_BIND_ADDRESS=0.0.0.0`, then `docker compose up -d`.
+From a second machine, `/api/v1/settings`, thumbnails and film downloads answered 401 without a
+session and 200 after login, and the login and settings survived `restart` and `down`/`up`.
+The port is plain HTTP, so the password and cookie are visible on your LAN; the proxy route above
+is the one with TLS. `/health/ready` stays anonymous and shows the version and Immich reachability.
+
 ### Validation boundary
+
+On 2026-10-04 a DS423+ (DSM 7.3.2-86009 update 3, Docker 24.0.2, Compose 2.20.1) on
+`v0.0.0-dev.37180797983` verified two routes: SSH/Compose with the `synoacltool` output folder
+(a render wrote its film through the bind mount, host sha256 equal to the UI download), and the
+LAN port with app login above. **Not verified:** the DSM reverse proxy, the Container Manager
+GUI project wizard, and a tunnel for a non-admin account (DSM refuses it).
+
 
 The historical test records **DSM 7.3**, x86-64, 17,836 MiB host RAM and a 4 GiB app limit.
 It does not record a Container Manager version. Its UI access used a custom transport, so it
