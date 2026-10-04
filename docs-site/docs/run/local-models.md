@@ -16,8 +16,9 @@ which is a different model/runtime recipe. External services own their memory an
 The exact Ollama/model pair has [recorded conformance results](../better/measured.md#ollama-validation)
 on an M5 Max with 128 GiB and warm caches. Thinking-off native requests passed 33/34 probes;
 motion interpretation failed. That is evidence for individual calls, **not an offline film pass**
-or a minimum hardware measurement. The complete deployment below remains untested, tracked in
-[#1926](https://github.com/sam-dumont/immich-memories/issues/1926).
+or a minimum hardware measurement. The Compose deployment below remains untested, tracked in
+[#1926](https://github.com/sam-dumont/immich-memories/issues/1926). The
+[Kubernetes form](#kubernetes-form) has one recorded run, on CPU only.
 [Other providers and failures](../reference/llm-providers.md) remain separate results.
 
 ## Prepare the two services
@@ -92,7 +93,9 @@ docker compose exec immich-memories immich-memories capabilities
 Expect Basic selection and an enabled Ollama reader. Fix failed reader connectivity before the
 reference run; a model name alone does not establish readiness. Keep bundled music, local output
 and the [20–50-item trial](../get-started/first-film.mdx). Reader failure can leave rules/default
-wording with a visible warning; it must not be recorded as successful model use. There is no
+wording; it must not be recorded as successful model use. Today only `preflight` warns
+(`LLM  WARNING  Cannot connect`, exit 0): a film rendered while Ollama was stopped completed with
+the bundled track and no warning in the log, so check `preflight` before and after a run. There is no
 configured alternate hosted endpoint in this recipe. The stopped-provider outcome still needs
 a disposable test; do not claim the exact error text or no public traffic from configuration alone.
 
@@ -121,6 +124,204 @@ Capture destinations and warnings through startup and generation. A blocked app 
 prove that a separate model server made no downloads. Finally stop only the disposable Ollama
 service, retry, record the error/degradation and destination log, restore it and confirm recovery.
 This protocol is pending execution; it does not certify arbitrary LAN firewalls.
+
+## Kubernetes form {#kubernetes-form}
+
+Same recipe, three differences: the config is a ConfigMap, Ollama runs as a pod in the namespace,
+and NetworkPolicies replace the firewall. Everything below was run on RKE2 1.33.4 with Cilium,
+a clean Basic install, and public egress blocked for both pods. Start from the
+[Kubernetes installation](./kubernetes.md); `kubectl apply -k` your own root, never base files singly.
+
+**Hardware: CPU only.** Ollama had 2 to 6 CPUs and 8 to 14Gi, no GPU. The 6.6 GB model did not fit
+the 4.9 GB of VRAM free on the node's 8 GB T1000, so it was not used, and partial offload was not
+tried. The M5 Max figures above do not apply here. In this run the single music-mood call took
+3 min 34 s and added about 40% to the render (6 min 38 s for a 29.5 s film from a 2-day album).
+Prompt processing ran at roughly 12 tokens/s. Titles and mood are one or a few calls per film, so
+the cost is bounded, but plan for minutes, not seconds, without a GPU.
+
+**Secret.** Put `IMMICH_MEMORIES_SECRET_KEY` in `immich-memories-secrets` next to `IMMICH_URL` and
+`IMMICH_API_KEY` (the Quick start's `secret.yaml.example` has it). Without it, every
+`config show` prints "secrets cannot be saved".
+
+**Config.** Save the `config.yaml` from above, with one change: `base_url: http://ollama:11434`.
+Use the short Service name with no dots: a dotted name gets the app's hosted request defaults,
+and `ollama` resolves inside the namespace. The kustomization generates the ConfigMap and mounts it
+with `subPath`, so the rest of `~/.immich-memories` stays writable. The mount goes on the app and
+its init container:
+
+```yaml
+# kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: <your namespace>
+resources:
+  - <path to deploy/kubernetes/base>
+  - ollama.yaml
+  # - networkpolicy-offline.yaml   # uncomment after the model is pulled, see below
+configMapGenerator:
+  - name: immich-memories-config
+    files:
+      - config.yaml
+generatorOptions:
+  disableNameSuffixHash: true
+patches:
+  - target: {kind: Deployment, name: immich-memories}
+    patch: |-
+      - op: add
+        path: /spec/template/spec/volumes/-
+        value: {name: app-config, configMap: {name: immich-memories-config}}
+      - op: add
+        path: /spec/template/spec/containers/0/volumeMounts/-
+        value: {name: app-config, mountPath: /home/immich/.immich-memories/config.yaml, subPath: config.yaml, readOnly: true}
+      - op: add
+        path: /spec/template/spec/initContainers/0/volumeMounts/-
+        value: {name: app-config, mountPath: /home/immich/.immich-memories/config.yaml, subPath: config.yaml, readOnly: true}
+```
+
+**Ollama.** A Deployment (`Recreate`, one replica), a Service named `ollama` and a 20Gi claim for
+the models. No GPU request; add one only after checking the card holds the model.
+
+```yaml
+# ollama.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ollama-models
+  labels: {app.kubernetes.io/name: ollama}
+spec:
+  accessModes: [ReadWriteOnce]
+  resources: {requests: {storage: 20Gi}}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ollama
+  labels: {app.kubernetes.io/name: ollama}
+spec:
+  replicas: 1
+  strategy: {type: Recreate}
+  selector: {matchLabels: {app.kubernetes.io/name: ollama}}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: ollama}
+    spec:
+      enableServiceLinks: false
+      automountServiceAccountToken: false
+      containers:
+        - name: ollama
+          image: ollama/ollama:0.35.1
+          env:
+            - {name: OLLAMA_HOST, value: "0.0.0.0:11434"}
+          ports: [{name: http, containerPort: 11434}]
+          resources:
+            requests: {cpu: "2", memory: 8Gi}
+            limits: {cpu: "6", memory: 14Gi}
+          readinessProbe:
+            httpGet: {path: /, port: http}
+            periodSeconds: 10
+          volumeMounts:
+            - {name: models, mountPath: /root/.ollama}
+      volumes:
+        - name: models
+          persistentVolumeClaim: {claimName: ollama-models}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ollama
+  labels: {app.kubernetes.io/name: ollama}
+spec:
+  selector: {app.kubernetes.io/name: ollama}
+  ports: [{name: http, port: 11434, targetPort: http}]
+```
+
+Apply, then pull the model once while the Ollama pod can still reach the registry (the policy
+below blocks that), and fetch the app's pins:
+
+```bash
+NS=<your namespace>
+kubectl apply -k <your root>
+kubectl exec -n "$NS" deploy/ollama -- ollama pull gemma4:e4b-it-q4_K_M
+kubectl exec -n "$NS" deploy/immich-memories -- immich-memories preflight -v
+```
+
+The pull took 1 min 42 s cold and the whole apply about 2 minutes including the Ollama image.
+`preflight` should print `LLM OK Connected (ollama, 1 models)`.
+
+**NetworkPolicies, after the pull.** Uncomment the file in the kustomization and apply again. Two policies, one per pod. The app policy is the
+[offline example](./offline.md#kubernetes-replace-broad-egress-after-the-fetch) with one more
+rule, and it **replaces** the base policy under the same name. Immich is selected by pod, not by
+IP (see that page for why). The Ollama pod may only answer the app and resolve DNS.
+
+```yaml
+# networkpolicy-offline.yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: immich-memories
+spec:
+  podSelector:
+    matchLabels: {app.kubernetes.io/name: immich-memories}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - ports: [{port: 8080, protocol: TCP}]
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: immich-memories
+              app.kubernetes.io/component: web-ui
+      ports: [{port: 8080, protocol: TCP}]
+    - to:
+        - namespaceSelector:
+            matchLabels: {kubernetes.io/metadata.name: kube-system}
+          podSelector:
+            matchLabels: {k8s-app: kube-dns}
+      ports: [{port: 53, protocol: UDP}, {port: 53, protocol: TCP}]
+    - to:    # Immich in this cluster: its namespace and pod labels, not its LoadBalancer IP
+        - namespaceSelector:
+            matchLabels: {kubernetes.io/metadata.name: <immich namespace>}
+          podSelector:
+            matchLabels: {<immich pod label>: <value>}
+      ports: [{port: 2283, protocol: TCP}]
+    - to:
+        - podSelector:
+            matchLabels: {app.kubernetes.io/name: ollama}
+      ports: [{port: 11434, protocol: TCP}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ollama
+spec:
+  podSelector:
+    matchLabels: {app.kubernetes.io/name: ollama}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels: {app.kubernetes.io/name: immich-memories}
+      ports: [{port: 11434, protocol: TCP}]
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels: {kubernetes.io/metadata.name: kube-system}
+          podSelector:
+            matchLabels: {k8s-app: kube-dns}
+      ports: [{port: 53, protocol: UDP}, {port: 53, protocol: TCP}]
+```
+
+Applying the root again restores the base's broad egress policy; keep this file in the root so
+it wins. What the run showed: app to Immich and to `ollama:11434` answered 200; the app to
+`example.com`, `1.1.1.1`, GitHub and Hugging Face timed out; the Ollama pod could not reach
+`1.1.1.1:443`, the Ollama registry or Immich. DNS names still resolve (the resolver is allowed).
+The app's logs named no host besides Immich and one `POST http://ollama:11434/api/generate`. That
+proves the two pods could not reach a public endpoint; it is not a packet capture.
+
+**Stopped provider.** `kubectl scale deploy/ollama -n "$NS" --replicas=0` makes `preflight` print
+`LLM  WARNING  Cannot connect` (exit 0). A film rendered anyway with the bundled track and the
+default mood, with no hosted fallback (nothing else is configured and egress is blocked) and no
+warning in the render log. Scale back to 1 and `preflight` is `LLM OK` again after about 30 s.
 
 ## Kubernetes services {#kubernetes-services}
 

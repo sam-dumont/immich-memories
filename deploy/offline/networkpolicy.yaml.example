@@ -1,5 +1,5 @@
 # REPLACE the base policy with this same-name policy after fetching models.
-# Edit example CIDR and DNS selectors for your cluster before applying.
+# Edit the Immich and DNS selectors for your cluster before applying.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -33,12 +33,25 @@ spec:
       ports:
         - {port: 53, protocol: UDP}
         - {port: 53, protocol: TCP}
-    # Documentation-only address: replace with your Immich server's fixed IP.
+    # Immich running in this cluster: select its pods, even if the app connects through a
+    # LoadBalancer IP. Cilium (and some other CNIs) match policy on the backend pod, so an
+    # ipBlock for that IP never matches. Replace the namespace and the pod label with yours.
     - to:
-        - ipBlock:
-            cidr: 192.0.2.10/32
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: immich
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: server
       ports:
         - {port: 2283, protocol: TCP}
+    # Immich outside the cluster instead: delete the rule above and use its fixed IP.
+    # 192.0.2.10 is a documentation-only address.
+    # - to:
+    #     - ipBlock:
+    #         cidr: 192.0.2.10/32
+    #   ports:
+    #     - {port: 2283, protocol: TCP}
     # Optional LAN/in-cluster model services: leave out for NAS.
     # Add separate rules for exact namespaceSelector+podSelector and TCP port.
     # Do not add a ports-only rule: that allows every destination on that port.
