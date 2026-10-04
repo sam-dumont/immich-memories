@@ -76,6 +76,7 @@ _ENGLISH = {
     "bayern": "Bavaria",
     "kriti": "Crete",
     "κρήτη": "Crete",
+    "κρήτης": "Crete",  # genitive, from a standalone "island"/"state" value
     "crète": "Crete",
     "sicilia": "Sicily",
     "sardegna": "Sardinia",
@@ -158,14 +159,26 @@ _ADMIN_PREFIXES = (
     "provincia di ",
     "provincia de ",
     # German, from a real Nominatim answer for a Greek municipality with no French or
-    # German translation (#1954): OSM's own German fields carry the admin word.
+    # German translation (#1954): OSM's own German fields carry the admin word, and the
+    # place name that follows stays nominative (German does not decline it).
     "regionalbezirk ",
     "provinz ",
     "region ",
-    # Greek, same real answer (ς folds to σ): "Δήμος Πλατανιά" -> "Πλατανιά".
-    "δήμοσ ",
-    "περιφερειακή ενότητα ",
-    "περιφέρεια ",
+)
+# These admin words only ever precede an inflected (genitive) form of the place name:
+# dropping the word leaves a declined fragment a native reader would flag as wrong
+# ("Δήμος Πλατανιά" -> "Πλατανιά", genitive of "Πλατανιάς"; "Περιφέρεια Κρήτης" ->
+# "Κρήτης", genitive of "Κρήτη"). Unlike `_ADMIN_PREFIXES`, these are never stripped
+# to a bare name -- the whole label is treated as naming nothing at that scale, the
+# same as a missing key, so a caller falls back to a nominative name it already has
+# (a village, or the trip's own picture-derived country/island). From real Nominatim
+# answers for the same Greek point (#1954) and its Russian translation.
+_INFLECTED_ADMIN_PREFIXES = (
+    "δήμοσ ",  # Greek: Δήμος, municipality (ς folds to σ)
+    "περιφερειακή ενότητα ",  # Greek: regional unit
+    "περιφέρεια ",  # Greek: region
+    "периферийная единица ",  # Russian: regional unit
+    "периферия ",  # Russian: region
 )
 _ADMIN_SUFFIXES = (
     " regional unit",
@@ -202,14 +215,18 @@ def _is_latin(text: str) -> bool:
     return all(not ch.isalpha() or unicodedata.name(ch, "").startswith("LATIN") for ch in text)
 
 
-def _stripped(label: str) -> str:
+def _stripped(label: str) -> str | None:
     """Administrative wording dropped, a known local spelling mapped to English.
 
-    "Municipality of Platanias" -> "Platanias", "Δήμος Πλατανιά" -> "Πλατανιά" (the
-    boilerplate word is dropped; the town's own script and spelling are not touched).
+    "Municipality of Platanias" -> "Platanias" (the boilerplate word is dropped; the
+    town's own script and spelling are not touched). None when the label is an admin
+    word followed by an inflected place name that cannot be safely un-inflected
+    ("Δήμος Πλατανιά"): that is not a name, it names nothing at this scale.
     """
     name = label.strip()
     folded = name.casefold()
+    if any(folded.startswith(prefix) for prefix in _INFLECTED_ADMIN_PREFIXES):
+        return None
     for prefix in _ADMIN_PREFIXES:
         if folded.startswith(prefix):
             name, folded = name[len(prefix) :], folded[len(prefix) :]

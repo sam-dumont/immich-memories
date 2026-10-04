@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import json
 from datetime import UTC, date, datetime
+from pathlib import Path
 
 import pytest
 
 from immich_memories.api.models import Asset, AssetType, ExifInfo
+from immich_memories.i18n import SUPPORTED_LOCALES
 
 
 def _make_asset(
@@ -550,46 +553,42 @@ class TestTripPlaceName:
 
         assert trip_place_name({"state": "Cyprus", "country": "Cyprus"}) == "Cyprus"
 
-    # The real "state"/"country" fields Nominatim answers for a point near Platanias,
-    # Chania (35.512, 23.879), captured per locale in tests/fixtures/places/
-    # greece_platanias_<locale>.json (#1954, #1947). No "en" fallback is sent, so most
-    # locales get the native Greek region name, which `short_place_name` does not know
-    # an English equivalent for and so (correctly, by design) drops to the country alone
-    # rather than guess a translation.
-    _REGION_BY_LOCALE = {
-        "en": "Region of Crete",
-        "fr": "Crète",
-        "nl": "Kreta",
-        "de": "Region Kreta",
-        "es": "Περιφέρεια Κρήτης",
-        "it": "Περιφέρεια Κρήτης",
-        "pt-BR": "Περιφέρεια Κρήτης",
-        "pt-PT": "Περιφέρεια Κρήτης",
-        "pl": "Region Kreta",
-        "sv": "Περιφέρεια Κρήτης",
-        "ru": "периферия Крит",
-        "ja": "Περιφέρεια Κρήτης",
-        "zh-Hans": "克里特大区",
-        "ko": "Περιφέρεια Κρήτης",
+    # Real Nominatim answers for a point near Platanias, Chania (35.512, 23.879),
+    # captured per locale (the product's own accept-language chain, never "en") in
+    # tests/fixtures/places/greece_platanias_<locale>.json (#1954, #1947). English,
+    # German, Dutch and Polish get a nominative region name and so a full trip name;
+    # every other locale's real answer is a Greek (or Russian) genitive construction
+    # ("of Crete"), which is, by this function's own contract, not a name at that scale
+    # at all -- `trip_place_name` returns None rather than a declined fragment, and the
+    # wider pipeline then names the trip from the pictures' own country/island instead.
+    _PLATANIAS_LOCALES = ["fr", *[loc for loc in SUPPORTED_LOCALES if loc != "fr"]]
+    _EXPECTED_REGION_TRIP_NAME = {
+        "en": "Crete, Greece",
+        "fr": "Crete, Grèce",
+        "nl": "Kreta, Griekenland",
+        "de": "Kreta, Griechenland",
+        "pl": "Kreta, Grecja",
+        "es": None,
+        "it": None,
+        "pt-BR": None,
+        "pt-PT": None,
+        "sv": None,
+        "ru": None,
+        "ja": None,
+        "zh-Hans": None,
+        "ko": None,
     }
 
-    @pytest.mark.parametrize("locale", sorted(_REGION_BY_LOCALE))
-    def test_a_trip_name_never_carries_raw_administrative_wording(self, locale):
-        # A region with no English equivalent and no Latin script is, by this
-        # function's own contract, not a name at that scale (`trip_place` then
-        # falls back to the pictures' own country/island) -- it must never be the
-        # raw Nominatim wording.
+    @pytest.mark.parametrize("locale", _PLATANIAS_LOCALES)
+    def test_a_trip_name_never_hand_declines_a_genitive_region(self, locale):
         from immich_memories.analysis.trip_detection import trip_place_name
 
-        address = {"state": self._REGION_BY_LOCALE[locale], "country": "Greece"}
+        path = Path(__file__).parent / "fixtures" / "places" / f"greece_platanias_{locale}.json"
+        address = json.loads(path.read_text())["address"]
 
         name = trip_place_name(address, spread_km=150.0)
 
-        if name is not None:
-            lowered = name.casefold()
-            assert "region" not in lowered
-            assert "δήμος" not in lowered
-            assert "περιφέρεια" not in lowered
+        assert name == self._EXPECTED_REGION_TRIP_NAME[locale]
 
     def test_a_city_scale_trip_takes_the_town(self):
         from immich_memories.analysis.trip_detection import trip_place_name

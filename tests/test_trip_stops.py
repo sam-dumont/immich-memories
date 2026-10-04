@@ -5,8 +5,12 @@ Public cities and invented villages, with round public coordinates.
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 import pytest
 
+from immich_memories.i18n import SUPPORTED_LOCALES
 from immich_memories.titles.trip_stops import group_trip_stops
 
 
@@ -58,36 +62,62 @@ def test_a_shared_municipality_pin_drops_its_administrative_wording() -> None:
     assert [stop.name for stop in stops] == ["Platanias"]
 
 
-# Real municipality answers for the same Greek point (35.512, 23.879), captured per
-# locale in tests/fixtures/places/greece_platanias_<locale>.json: no accept-language
-# override past the film's own, so most locales get the native Greek name (#1954).
-_PLATANIAS_PIN_BY_LOCALE = {
-    "en": ("Municipality of Platanias", "Platanias"),
-    "fr": ("Δήμος Πλατανιά", "Πλατανιά"),
-    "nl": ("Δήμος Πλατανιά", "Πλατανιά"),
-    "de": ("Provinz Platanias", "Platanias"),
-    "es": ("Δήμος Πλατανιά", "Πλατανιά"),
-    "it": ("Δήμος Πλατανιά", "Πλατανιά"),
-    "pt-BR": ("Δήμος Πλατανιά", "Πλατανιά"),
-    "pt-PT": ("Δήμος Πλατανιά", "Πλατανιά"),
-    "pl": ("Δήμος Πλατανιά", "Πλατανιά"),
-    "sv": ("Δήμος Πλατανιά", "Πλατανιά"),
-    "ru": ("Δήμος Πλατανιά", "Πλατανιά"),
-    "ja": ("Δήμος Πλατανιά", "Πλατανιά"),
-    "zh-Hans": ("Δήμος Πλατανιά", "Πλατανιά"),
-    "ko": ("Δήμος Πλατανιά", "Πλατανιά"),
-}
+# Real Nominatim answers for two Greek points, captured per locale (and the product's
+# own accept-language chain, never "en") in tests/fixtures/places/greece_platanias_
+# <locale>.json and greece_chania_<locale>.json (#1954, #1947). French first, then
+# every supported locale.
+_PLATANIAS_LOCALES = ["fr", *[loc for loc in SUPPORTED_LOCALES if loc != "fr"]]
 
 
-@pytest.mark.parametrize("locale", sorted(_PLATANIAS_PIN_BY_LOCALE))
-def test_a_shared_municipality_pin_keeps_its_native_name_in_every_locale(locale) -> None:
-    raw_municipality, expected = _PLATANIAS_PIN_BY_LOCALE[locale]
+def _fixture_address(name: str, locale: str) -> dict[str, str]:
+    path = Path(__file__).parent / "fixtures" / "places" / f"{name}_{locale}.json"
+    return json.loads(path.read_text())["address"]
+
+
+@pytest.mark.parametrize("locale", _PLATANIAS_LOCALES)
+def test_two_villages_in_one_municipality_share_the_municipalitys_name(locale) -> None:
+    """Two villages merged into one municipality, as #1954's case actually looked.
+
+    English and German's own municipality translations are nominative and strip
+    cleanly to "Platanias". Every other locale's real answer is Greek's genitive
+    "Δήμος Πλατανιά" ("of Platanias"); dropping "Δήμος" would leave the declined
+    fragment "Πλατανιά", so it must name nothing at this scale and fall back to the
+    villages' own (nominative) names instead.
+    """
+    municipality = _fixture_address("greece_platanias", locale)["municipality"]
 
     def address(_lat, _lon):
-        return {"municipality": raw_municipality, "country": "Greece"}
+        return {"municipality": municipality, "country": "Greece"}
 
     stops = group_trip_stops(_VALLEY[:3], _VILLAGES[:3], address)
 
+    expected = "Platanias" if locale in ("en", "de") else "Village A → Village C"
+    assert [stop.name for stop in stops] == [expected]
+
+
+@pytest.mark.parametrize("locale", _PLATANIAS_LOCALES)
+def test_two_municipalities_fall_back_to_their_own_members(locale) -> None:
+    """A trip leg from Platanias to Chania (~13 km, one map stop): the two real
+
+    municipalities ("Δήμος Πλατανιά", "Δήμος Χανίων") never agree, so the shared
+    name comes from their (also real) shared county next. English and German's
+    county translations are nominative ("Chania Regional Unit", "Regionalbezirk
+    Chania") and strip to "Chania". Every other locale's real county is Greek's
+    genitive "Περιφερειακή Ενότητα Χανίων" ("of Chania"): not a name to decline,
+    so the pin falls back to the villages themselves, first stop to last.
+    """
+    platanias = _fixture_address("greece_platanias", locale)
+    chania = _fixture_address("greece_chania", locale)
+    platanias_name = platanias["village"]
+    chania_name = chania["city"]
+    points = [(35.512, 23.879), (35.512, 23.879), (35.5138, 24.0180)]
+
+    def address(lat: float, _lon: float) -> dict[str, str]:
+        return platanias if lat < 35.513 else chania
+
+    stops = group_trip_stops(points, [platanias_name, platanias_name, chania_name], address)
+
+    expected = "Chania" if locale in ("en", "de") else f"{platanias_name} → {chania_name}"
     assert [stop.name for stop in stops] == [expected]
 
 
