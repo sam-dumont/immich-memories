@@ -9,15 +9,17 @@ The [Docker install](./docker.md) is the other option.
 
 ## Install
 
-On macOS, install the FFmpeg build with `zscale` for HDR conversion:
+Any FFmpeg build with the `zscale` filter works: HDR conversion needs it. Homebrew's plain
+`ffmpeg` 8.1 passed the check below. If yours does not, install `ffmpeg-full` and put it first
+on your `PATH`:
 
 ```bash
-brew install uv ffmpeg-full
+brew install uv ffmpeg
+brew install ffmpeg-full   # only if grep zscale finds nothing
 export PATH="$(brew --prefix ffmpeg-full)/bin:$PATH"
 ```
 
-Keep the PATH export in your shell's startup file. On Debian/Ubuntu, install FFmpeg with
-`sudo apt install ffmpeg`. Verify HDR support:
+On Debian/Ubuntu, install FFmpeg with `sudo apt install ffmpeg`. Verify HDR support:
 
 ```bash
 ffmpeg -hide_banner -filters | grep zscale
@@ -63,6 +65,9 @@ immich:
   url: http://192.168.1.10:2283
   api_key: your-api-key
 ```
+
+The file holds the key, so keep it private: `chmod 600 ~/.immich-memories/config.yaml`. The app
+warns at startup when other users can read it.
 
 Create the key in Immich's **Account Settings > API Keys** with the
 [ten read permissions](./docker.md#the-api-key). Add the upload set only if you send films back
