@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-01 08:04+0200\n"
+"POT-Creation-Date: 2026-10-04 10:48+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pl\n"
@@ -34,7 +34,7 @@ msgstr ""
 msgid "A monthly review already finished this month."
 msgstr "W tym miesiącu zakończył się już comiesięczny przegląd."
 
-#: web/routes/settings/+page.svelte:89
+#: web/routes/settings/+page.svelte:91
 msgid "API Key"
 msgstr "Klucz API"
 
@@ -43,7 +43,7 @@ msgstr "Klucz API"
 msgid "About {amount} left"
 msgstr "Zostało około {amount}"
 
-#: web/routes/create/+page.svelte:490
+#: web/routes/create/+page.svelte:503
 msgid "Accept forwarded and downloaded media"
 msgstr "Akceptuj przekazywane i pobierane media"
 
@@ -63,7 +63,7 @@ msgstr "Dodaj"
 msgid "Add a relationship"
 msgstr "Dodaj powiązanie"
 
-#: web/lib/RenderPanel.svelte:199
+#: web/lib/RenderPanel.svelte:220
 msgid "Add date overlay"
 msgstr "Pokaż datę"
 
@@ -80,20 +80,20 @@ msgstr "Dodaj: {include} · Usuń: {exclude}"
 msgid "Added for a moment the catalogue records as notable."
 msgstr "Dodano dla chwili, którą katalog oznacza jako wyjątkową."
 
-#: web/routes/runs/[run_id]/+page.svelte:267 web/routes/runs/[run_id]/+page.svelte:269
-#: web/routes/runs/[run_id]/+page.svelte:272
+#: web/routes/runs/[run_id]/+page.svelte:284 web/routes/runs/[run_id]/+page.svelte:286
+#: web/routes/runs/[run_id]/+page.svelte:289
 msgid "Added from the pool"
 msgstr "Dodane z puli"
 
-#: web/routes/create/+page.svelte:335
+#: web/routes/create/+page.svelte:348
 msgid "After a period"
 msgstr "Po okresie"
 
-#: web/lib/labels.ts:11 web/routes/create/+page.svelte:350
+#: web/lib/labels.ts:11 web/routes/create/+page.svelte:363
 msgid "Album"
 msgstr "Album"
 
-#: web/lib/RenderPanel.svelte:241
+#: web/lib/RenderPanel.svelte:263
 msgid "Album name"
 msgstr "Nazwa albumu"
 
@@ -106,7 +106,7 @@ msgstr "Pokaż też {count} zdjęć spoza tego wspomnienia"
 msgid "Alternatives considered"
 msgstr "Rozważone alternatywy"
 
-#: web/routes/create/+page.svelte:365
+#: web/routes/create/+page.svelte:378
 msgid ""
 "Anniversaries first, then the rest. A scheduled run only proposes a day on its anniversary; "
 "here you can pick any day the catalogue holds."
@@ -114,7 +114,7 @@ msgstr ""
 "Najpierw rocznice, potem reszta. Zaplanowane zadanie proponuje dzień tylko w jego rocznicę; "
 "tutaj możesz wybrać dowolny dzień z katalogu."
 
-#: web/routes/create/+page.svelte:344
+#: web/routes/create/+page.svelte:357
 msgid "Another day (MM-DD)"
 msgstr "Inny dzień (MM-DD)"
 
@@ -122,25 +122,29 @@ msgstr "Inny dzień (MM-DD)"
 msgid "Anyone"
 msgstr "Wszyscy"
 
-#: web/routes/create/+page.svelte:37
+#: web/routes/create/+page.svelte:38
 msgid "Anyone. Only pictures nothing held back: no detector flag, no private moment."
 msgstr "Wszyscy. Tylko obrazy bez ograniczeń: bez oznaczenia detektora i bez prywatnych chwil."
 
-#: web/lib/RenderPanel.svelte:148 web/lib/RenderPanel.svelte:154 web/lib/RenderPanel.svelte:177
-#: web/lib/RenderPanel.svelte:183 web/lib/RenderPanel.svelte:189 web/lib/RenderPanel.svelte:195
-#: web/lib/RenderPanel.svelte:241 web/routes/create/+page.svelte:482
+#: web/lib/RenderPanel.svelte:160 web/lib/RenderPanel.svelte:166 web/lib/RenderPanel.svelte:175
+#: web/lib/RenderPanel.svelte:198 web/lib/RenderPanel.svelte:204 web/lib/RenderPanel.svelte:210
+#: web/lib/RenderPanel.svelte:216 web/lib/RenderPanel.svelte:263 web/routes/create/+page.svelte:495
 msgid "As configured"
 msgstr "Zgodnie z konfiguracją"
 
-#: web/lib/RenderPanel.svelte:163
+#: web/lib/RenderPanel.svelte:184
 msgid "As generate decides"
 msgstr "Zgodnie z decyzją generowania"
 
-#: web/lib/RenderPanel.svelte:171 web/lib/labels.ts:23
+#: web/lib/RenderPanel.svelte:167
+msgid "Auto (match the mood)"
+msgstr "Auto (match the mood)"
+
+#: web/lib/RenderPanel.svelte:192 web/lib/labels.ts:23
 msgid "Automatic"
 msgstr "Automatyczne"
 
-#: web/lib/RenderPanel.svelte:212
+#: web/lib/RenderPanel.svelte:233
 msgid "Automatic (as configured)"
 msgstr "Automatycznie (zgodnie z konfiguracją)"
 
@@ -152,15 +156,15 @@ msgstr "Automatycznie (przeglądarka)"
 msgid "Automation is already running. Open Runs to follow it."
 msgstr "Automatyzacja już działa. Otwórz Zadania, aby ją śledzić."
 
-#: web/routes/create/+page.svelte:44
+#: web/routes/create/+page.svelte:45
 msgid "Autumn"
 msgstr "Jesień"
 
-#: web/routes/runs/[run_id]/+page.svelte:259
+#: web/routes/runs/[run_id]/+page.svelte:276
 msgid "Back to pictures"
 msgstr "Wróć do obrazów"
 
-#: web/routes/runs/[run_id]/+page.svelte:125
+#: web/routes/runs/[run_id]/+page.svelte:132
 msgid "Back to runs"
 msgstr "Wróć do zadań"
 
@@ -172,19 +176,19 @@ msgstr "Wróć do montażu"
 msgid "Bind"
 msgstr "Powiąż"
 
-#: web/routes/create/+page.svelte:327
+#: web/routes/create/+page.svelte:340
 msgid "Birthday (MM-DD; Immich’s birth date when empty)"
 msgstr "Urodziny (MM-DD; data urodzenia z Immich, gdy puste)"
 
-#: web/routes/create/+page.svelte:326
+#: web/routes/create/+page.svelte:339
 msgid "Birthday to birthday, with earlier birthdays"
 msgstr "Od urodzin do urodzin, z wcześniejszymi urodzinami"
 
-#: web/lib/RenderPanel.svelte:155 web/lib/SettingsEditor.svelte:95
+#: web/lib/RenderPanel.svelte:176 web/lib/SettingsEditor.svelte:96
 msgid "Black"
 msgstr "Czarny"
 
-#: web/lib/RenderPanel.svelte:195
+#: web/lib/RenderPanel.svelte:216
 msgid "Blurred background"
 msgstr "Rozmyte tło"
 
@@ -192,7 +196,7 @@ msgstr "Rozmyte tło"
 msgid "Browse the whole pool"
 msgstr "Przeglądaj całą pulę"
 
-#: web/routes/settings/+page.svelte:109 web/routes/settings/+page.svelte:110
+#: web/routes/settings/+page.svelte:112 web/routes/settings/+page.svelte:113
 msgid "Caches"
 msgstr "Pamięci podręczne"
 
@@ -204,15 +208,15 @@ msgstr "Anuluj"
 msgid "Candidate key"
 msgstr "Klucz kandydata"
 
-#: web/lib/RenderPanel.svelte:200
+#: web/lib/RenderPanel.svelte:221
 msgid "Caption clips with their place"
 msgstr "Pokaż miejsce na klipach"
 
-#: web/routes/create/+page.svelte:361 web/routes/create/+page.svelte:366
+#: web/routes/create/+page.svelte:374 web/routes/create/+page.svelte:379
 msgid "Catalogued days"
 msgstr "Skatalogowane dni"
 
-#: web/routes/runs/[run_id]/+page.svelte:283
+#: web/routes/runs/[run_id]/+page.svelte:300
 #, python-brace-format
 msgid "Changes: {count}"
 msgstr "Zmiany: {count}"
@@ -225,11 +229,11 @@ msgstr "Sprawdź kwalifikację"
 msgid "Checking pictures for the family audience"
 msgstr "Sprawdzanie obrazów pod kątem odbiorców rodzinnych"
 
-#: web/routes/create/+page.svelte:352
+#: web/routes/create/+page.svelte:365
 msgid "Choose an album"
 msgstr "Wybierz album"
 
-#: web/routes/create/+page.svelte:292
+#: web/routes/create/+page.svelte:299
 msgid ""
 "Choose what the film covers. The cut is made the way the command below makes it; you review "
 "it before anything renders."
@@ -237,7 +241,7 @@ msgstr ""
 "Wybierz, co obejmie film. Montaż powstaje tak, jak robi to polecenie poniżej; zobaczysz go, "
 "zanim cokolwiek zostanie zrenderowane."
 
-#: web/routes/settings/+page.svelte:115
+#: web/routes/settings/+page.svelte:118
 msgid "Clear"
 msgstr "Wyczyść"
 
@@ -249,7 +253,7 @@ msgstr "Usuń blokadę"
 msgid "Clear this hold?"
 msgstr "Usunąć tę blokadę?"
 
-#: web/routes/settings/+page.svelte:67
+#: web/routes/settings/+page.svelte:69
 #, python-brace-format
 msgid "Cleared {count} entries from the {cache}."
 msgstr "Usunięto {count} wpisów z {cache}."
@@ -258,20 +262,20 @@ msgstr "Usunięto {count} wpisów z {cache}."
 msgid "Clipboard unavailable. Select the report below and copy it."
 msgstr "Schowek niedostępny. Zaznacz raport poniżej i skopiuj go."
 
-#: web/routes/create/+page.svelte:495
+#: web/routes/create/+page.svelte:508
 msgid "Command"
 msgstr "Polecenie"
 
-#: web/lib/SettingsEditor.svelte:71
+#: web/lib/SettingsEditor.svelte:72
 #, python-brace-format
 msgid "Config file: {config_path}"
 msgstr "Plik konfiguracji: {config_path}"
 
-#: web/lib/SettingsEditor.svelte:63 web/lib/SettingsEditor.svelte:65
+#: web/lib/SettingsEditor.svelte:64 web/lib/SettingsEditor.svelte:66
 msgid "Configuration"
 msgstr "Konfiguracja"
 
-#: web/routes/settings/+page.svelte:56
+#: web/routes/settings/+page.svelte:58
 #, python-brace-format
 msgid "Connected as: {name}"
 msgstr "Połączono jako: {name}"
@@ -292,7 +296,7 @@ msgstr "Skopiuj jako polecenie CLI"
 msgid "Copy report"
 msgstr "Kopiuj raport"
 
-#: web/lib/RenderPanel.svelte:149
+#: web/lib/RenderPanel.svelte:161
 msgid "Crossfade"
 msgstr "Przenikanie"
 
@@ -304,19 +308,19 @@ msgstr "Porządkowanie"
 msgid "Custom date range"
 msgstr "Własny okres"
 
-#: web/lib/RenderPanel.svelte:149 web/routes/create/+page.svelte:498
+#: web/lib/RenderPanel.svelte:161 web/routes/create/+page.svelte:511
 msgid "Cut"
 msgstr "Montuj"
 
-#: web/routes/runs/[run_id]/+page.svelte:220
+#: web/routes/runs/[run_id]/+page.svelte:237
 msgid "Cut contact sheet"
 msgstr "Stykówka montażu"
 
-#: web/routes/create/+page.svelte:324
+#: web/routes/create/+page.svelte:337
 msgid "Day"
 msgstr "Dzień"
 
-#: web/routes/create/+page.svelte:347
+#: web/routes/create/+page.svelte:360
 msgid "Day (MM-DD)"
 msgstr "Dzień (MM-DD)"
 
@@ -328,7 +332,7 @@ msgstr "Rozstrzygane podczas montażu"
 msgid "Default"
 msgstr "Domyślne"
 
-#: web/routes/runs/[run_id]/+page.svelte:147
+#: web/routes/runs/[run_id]/+page.svelte:154
 msgid "Delivered to Immich. The local file was removed to save disk space."
 msgstr "Przekazano do Immich. Plik lokalny został usunięty, aby zaoszczędzić miejsce na dysku."
 
@@ -344,11 +348,11 @@ msgstr "Opisz film, którego chcesz"
 msgid "Describing the pictures"
 msgstr "Opisywanie obrazów"
 
-#: web/routes/create/+page.svelte:394
+#: web/routes/create/+page.svelte:407
 msgid "Detecting trips from GPS data..."
 msgstr "Wykrywanie podróży na podstawie danych GPS…"
 
-#: web/routes/runs/[run_id]/+page.svelte:292
+#: web/routes/runs/[run_id]/+page.svelte:309
 msgid "Discard changes"
 msgstr "Odrzuć zmiany"
 
@@ -361,9 +365,21 @@ msgstr "Wyszukiwanie nieudane: {error}"
 msgid "Done."
 msgstr "Gotowe."
 
-#: web/routes/runs/[run_id]/+page.svelte:335
+#: web/routes/runs/[run_id]/+page.svelte:352
 msgid "Download child output"
 msgstr "Pobierz powiązany wynik"
+
+#: web/routes/runs/[run_id]/+page.svelte:168
+msgid "Download film"
+msgstr "Pobierz film"
+
+#: web/lib/ModelSetup.svelte:78
+msgid "Download hosts can redirect to their CDNs."
+msgstr "Serwery pobierania mogą przekierowywać do swoich sieci CDN."
+
+#: web/lib/ModelSetup.svelte:66 web/lib/ModelSetup.svelte:67 web/lib/ModelSetup.svelte:81
+msgid "Download models"
+msgstr "Pobierz modele"
 
 #: web/lib/RunReport.svelte:77 web/lib/RunReport.svelte:82
 msgid "Download report"
@@ -385,6 +401,10 @@ msgstr ""
 msgid "Edited without descriptions — picture content was classified, not read."
 msgstr "Zmontowano bez opisów: zawartość obrazów została sklasyfikowana, nie odczytana."
 
+#: web/lib/RenderPanel.svelte:168
+msgid "Elegant minimal"
+msgstr "Elegant minimal"
+
 #: web/lib/ShotInspector.svelte:101
 msgid "Eligible when this shot was chosen. Open one to compare."
 msgstr "Kwalifikowały się, gdy wybrano to ujęcie. Otwórz jeden, aby porównać."
@@ -397,11 +417,11 @@ msgstr "Kwalifikuje się. Nie utworzono filmu."
 msgid "End here"
 msgstr "Zakończ tutaj"
 
-#: web/routes/create/+page.svelte:334
+#: web/routes/create/+page.svelte:347
 msgid "Ends"
 msgstr "Kończy się"
 
-#: web/routes/settings/+page.svelte:114
+#: web/routes/settings/+page.svelte:117
 #, python-brace-format
 msgid "Entries: {count}"
 msgstr "Wpisy: {count}"
@@ -416,7 +436,7 @@ msgstr ""
 " odznacz, a potem obejrzyj podgląd: twoje zaznaczenia trafiają do filmu takie, jakie są, bez "
 "ponownego wyboru. Nigdy nie używaj i Usuń blokadę obowiązują przy każdym uruchomieniu."
 
-#: web/routes/settings/+page.svelte:80
+#: web/routes/settings/+page.svelte:82
 msgid ""
 "Every setting and where its value comes from. What you save here goes to the database; "
 "config.yaml and the environment are never written, and they win over it."
@@ -424,7 +444,7 @@ msgstr ""
 "Każde ustawienie i skąd pochodzi jego wartość. To, co zapiszesz tutaj, trafia do bazy danych;"
 " config.yaml i środowisko nigdy nie są zapisywane i mają nad tym pierwszeństwo."
 
-#: web/routes/create/+page.svelte:410
+#: web/routes/create/+page.svelte:423
 msgid "Every trip of the year"
 msgstr "Każda podróż roku"
 
@@ -436,7 +456,7 @@ msgstr "Eksperymentalne"
 msgid "Expression"
 msgstr "Wyrażenie"
 
-#: web/routes/create/+page.svelte:483 web/routes/runs/[run_id]/pool/+page.svelte:87
+#: web/routes/create/+page.svelte:496 web/routes/runs/[run_id]/pool/+page.svelte:87
 #: web/routes/runs/[run_id]/pool/+page.svelte:168
 msgid "Family"
 msgstr "Rodzina"
@@ -453,7 +473,7 @@ msgstr "Pasuje mniej niż 12 zdjęć: film będzie krótki."
 msgid "Films that may use it"
 msgstr "Filmy, które mogą go użyć"
 
-#: web/routes/create/+page.svelte:421 web/routes/settings/people/+page.svelte:176
+#: web/routes/create/+page.svelte:434 web/routes/settings/people/+page.svelte:176
 msgid "Find a name"
 msgstr "Znajdź imię"
 
@@ -461,15 +481,15 @@ msgstr "Znajdź imię"
 msgid "Finding faces"
 msgstr "Wyszukiwanie twarzy"
 
-#: web/lib/RenderPanel.svelte:195
+#: web/lib/RenderPanel.svelte:216
 msgid "Fit with bars"
 msgstr "Dopasuj z paskami"
 
-#: web/lib/RenderPanel.svelte:181
+#: web/lib/RenderPanel.svelte:202
 msgid "Format"
 msgstr "Format"
 
-#: web/routes/create/+page.svelte:332
+#: web/routes/create/+page.svelte:345
 msgid "From"
 msgstr "Od"
 
@@ -477,11 +497,11 @@ msgstr "Od"
 msgid "Full name"
 msgstr "Pełne imię i nazwisko"
 
-#: web/routes/create/+page.svelte:36
+#: web/routes/create/+page.svelte:37
 msgid "Grandparents, siblings, the group chat. Private moments stay out."
 msgstr "Dziadkowie, rodzeństwo, czat grupowy. Prywatne chwile pozostają wykluczone."
 
-#: web/routes/create/+page.svelte:449
+#: web/routes/create/+page.svelte:462
 msgid "Grouped condition"
 msgstr "Warunek grupowy"
 
@@ -490,15 +510,15 @@ msgstr "Warunek grupowy"
 msgid "Held: {reasons}."
 msgstr "Zablokowane: {reasons}."
 
-#: web/routes/create/+page.svelte:322
+#: web/routes/create/+page.svelte:335
 msgid "Hemisphere"
 msgstr "Półkula"
 
-#: web/lib/RenderPanel.svelte:189
+#: web/lib/RenderPanel.svelte:210
 msgid "High"
 msgstr "Wysoka"
 
-#: web/lib/labels.ts:13 web/routes/create/+page.svelte:341
+#: web/lib/labels.ts:13 web/routes/create/+page.svelte:354
 msgid "Holiday"
 msgstr "Święto"
 
@@ -514,22 +534,26 @@ msgstr "Jak reguły do tego doszły"
 msgid "How the sentence was read"
 msgstr "Jak odczytano zdanie"
 
-#: web/routes/settings/+page.svelte:83 web/routes/settings/+page.svelte:84
+#: web/routes/settings/+page.svelte:85 web/routes/settings/+page.svelte:86
 msgid "Immich Connection"
 msgstr "Połączenie z Immich"
 
-#: web/routes/settings/+page.svelte:86
+#: web/routes/settings/+page.svelte:88
 msgid "Immich Server URL"
 msgstr "Adres URL serwera Immich"
 
-#: web/routes/create/+page.svelte:463
+#: web/routes/create/+page.svelte:476
 msgid "Immich accounts to read (primary alone when none are picked)"
 msgstr "Konta Immich do odczytu (samo główne, gdy żadne nie jest wybrane)"
 
-#: web/routes/runs/[run_id]/+page.svelte:325
+#: web/routes/runs/[run_id]/+page.svelte:342
 #, python-brace-format
 msgid "Immich delivery: {value}"
 msgstr "Przesyłanie do Immich: {value}"
+
+#: web/routes/create/+page.svelte:303
+msgid "Immich unreachable"
+msgstr "Immich jest nieosiągalny"
 
 #: web/lib/labels.ts:56
 msgid "Important"
@@ -543,7 +567,7 @@ msgstr "W montażu"
 msgid "In the film"
 msgstr "W filmie"
 
-#: web/routes/create/+page.svelte:488
+#: web/routes/create/+page.svelte:501
 msgid "Include Live Photos"
 msgstr "Uwzględnij Live Photos"
 
@@ -551,7 +575,7 @@ msgstr "Uwzględnij Live Photos"
 msgid "Include captions of flagged photos"
 msgstr "Dołącz podpisy oznaczonych zdjęć"
 
-#: web/routes/create/+page.svelte:487
+#: web/routes/create/+page.svelte:500
 msgid "Include photos"
 msgstr "Uwzględnij zdjęcia"
 
@@ -563,7 +587,7 @@ msgstr "Język interfejsu"
 msgid "It did not finish."
 msgstr "Nie zakończyło się."
 
-#: web/routes/create/+page.svelte:482 web/routes/runs/[run_id]/pool/+page.svelte:87
+#: web/routes/create/+page.svelte:495 web/routes/runs/[run_id]/pool/+page.svelte:87
 #: web/routes/runs/[run_id]/pool/+page.svelte:168
 msgid "Just us"
 msgstr "Tylko my"
@@ -585,15 +609,15 @@ msgstr "Zachowano, ponieważ"
 msgid "Label"
 msgstr "Etykieta"
 
-#: web/lib/RenderPanel.svelte:171
+#: web/lib/RenderPanel.svelte:192
 msgid "Landscape"
 msgstr "Poziomo"
 
-#: web/routes/create/+page.svelte:477
+#: web/routes/create/+page.svelte:490
 msgid "Length and pictures"
 msgstr "Długość i obrazy"
 
-#: web/routes/create/+page.svelte:479
+#: web/routes/create/+page.svelte:492
 msgid "Length in minutes (fitted to the pictures when empty)"
 msgstr "Długość w minutach (dopasowana do obrazów, gdy pole jest puste)"
 
@@ -605,11 +629,11 @@ msgstr "Live"
 msgid "Looking through your library for memories to suggest..."
 msgstr "Przeszukiwanie biblioteki w poszukiwaniu wspomnień do zaproponowania..."
 
-#: web/lib/RenderPanel.svelte:190
+#: web/lib/RenderPanel.svelte:211
 msgid "Low"
 msgstr "Niska"
 
-#: web/routes/+layout.svelte:63 web/routes/+layout.svelte:74
+#: web/routes/+layout.svelte:65 web/routes/+layout.svelte:76
 msgid "Main navigation"
 msgstr "Nawigacja główna"
 
@@ -633,7 +657,7 @@ msgstr "Zadania ręczne i automatyczne, także nieudane. Otwórz zadanie, aby zo
 msgid "Marked Never use. Tick it to include it in this revision."
 msgstr "Oznaczone jako „Nigdy nie używaj”. Zaznacz, aby dołączyć do tej wersji."
 
-#: web/lib/RenderPanel.svelte:177
+#: web/lib/RenderPanel.svelte:198
 msgid "Match the sources"
 msgstr "Tak jak źródła"
 
@@ -645,7 +669,7 @@ msgstr "Mierzenie ruchu w filmach"
 msgid "Measuring the pictures"
 msgstr "Mierzenie obrazów"
 
-#: web/lib/RenderPanel.svelte:190
+#: web/lib/RenderPanel.svelte:211
 msgid "Medium"
 msgstr "Średnia"
 
@@ -653,19 +677,31 @@ msgstr "Średnia"
 msgid "Memory"
 msgstr "Wspomnienie"
 
-#: web/routes/create/+page.svelte:301
+#: web/routes/create/+page.svelte:314
 msgid "Memory type"
 msgstr "Typ wspomnienia"
+
+#: web/lib/ModelSetup.svelte:54 web/lib/ModelSetup.svelte:57
+msgid "Model downloads failed to start."
+msgstr "Nie udało się rozpocząć pobierania modeli."
 
 #: web/lib/ShotInspector.svelte:133
 msgid "Model polish"
 msgstr "Szlif modelu"
 
+#: web/lib/ModelSetup.svelte:24
+msgid "Model status could not be checked."
+msgstr "Nie udało się sprawdzić stanu modeli."
+
 #: web/lib/ShotInspector.svelte:144
 msgid "Model suggestion"
 msgstr "Sugestia modelu"
 
-#: web/routes/create/+page.svelte:314 web/routes/create/+page.svelte:315
+#: web/lib/RenderPanel.svelte:168
+msgid "Modern warm"
+msgstr "Modern warm"
+
+#: web/routes/create/+page.svelte:327 web/routes/create/+page.svelte:328
 msgid "Month"
 msgstr "Miesiąc"
 
@@ -677,11 +713,11 @@ msgstr "Najważniejsze chwile miesiąca"
 msgid "Multi-Person"
 msgstr "Wiele osób"
 
-#: web/lib/RenderPanel.svelte:210
+#: web/lib/RenderPanel.svelte:231
 msgid "Music"
 msgstr "Muzyka"
 
-#: web/lib/RenderPanel.svelte:233
+#: web/lib/RenderPanel.svelte:254
 msgid "Music volume:"
 msgstr "Głośność muzyki:"
 
@@ -689,11 +725,11 @@ msgstr "Głośność muzyki:"
 msgid "Never use"
 msgstr "Nigdy nie używaj"
 
-#: web/routes/create/+page.svelte:287 web/routes/create/+page.svelte:291
+#: web/routes/create/+page.svelte:294 web/routes/create/+page.svelte:298
 msgid "New memory"
 msgstr "Nowe wspomnienie"
 
-#: web/routes/create/+page.svelte:379
+#: web/routes/create/+page.svelte:392
 msgid ""
 "No catalogued days yet. Run immich-memories discover-days to find them, or film any day by "
 "its date."
@@ -701,7 +737,7 @@ msgstr ""
 "Nie ma jeszcze skatalogowanych dni. Uruchom `immich-memories discover-days`, aby je znaleźć, "
 "albo nakręć dowolny dzień według daty."
 
-#: web/routes/runs/[run_id]/+page.svelte:337
+#: web/routes/runs/[run_id]/+page.svelte:354
 msgid "No child output was retained for this run."
 msgstr "Nie zachowano powiązanego wyniku dla tego zadania."
 
@@ -717,15 +753,15 @@ msgstr ""
 msgid "No model read this cut: the rules chose every picture."
 msgstr "Żaden model nie czytał tego montażu: każdy obraz wybrały reguły."
 
-#: web/lib/RenderPanel.svelte:213
+#: web/lib/RenderPanel.svelte:234
 msgid "No music"
 msgstr "Bez muzyki"
 
-#: web/routes/create/+page.svelte:431
+#: web/routes/create/+page.svelte:444
 msgid "No name matches."
 msgstr "Żadne imię nie pasuje."
 
-#: web/routes/create/+page.svelte:431
+#: web/routes/create/+page.svelte:444
 msgid "No named people in Immich yet."
 msgstr "W Immich nie ma jeszcze nazwanych osób."
 
@@ -733,7 +769,7 @@ msgstr "W Immich nie ma jeszcze nazwanych osób."
 msgid "No outcome recorded."
 msgstr "Nie zapisano wyniku."
 
-#: web/routes/runs/[run_id]/+page.svelte:250
+#: web/routes/runs/[run_id]/+page.svelte:267
 msgid "No pictures match this filter."
 msgstr "Żaden obraz nie pasuje do tego filtra."
 
@@ -749,7 +785,7 @@ msgstr "Żadna reguła, którą podgląd może sprawdzić, nie odrzuciłaby zdj�
 msgid "No runs match this view. Make a memory from Memory or Suggestions."
 msgstr "Brak zadań pasujących do tego widoku. Utwórz wspomnienie przez Wspomnienie lub Propozycje."
 
-#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:317
+#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:334
 msgid "No saved cut is available for this run."
 msgstr "Brak zapisanego montażu dla tego zadania."
 
@@ -761,7 +797,7 @@ msgstr "Brak jeszcze zapisanych grup."
 msgid "No suggestions right now."
 msgstr "Obecnie brak propozycji."
 
-#: web/routes/create/+page.svelte:412
+#: web/routes/create/+page.svelte:425
 msgid "No trips detected for this year."
 msgstr "Nie wykryto podróży w tym roku."
 
@@ -779,11 +815,11 @@ msgstr ""
 msgid "Nobody yet. Rescan the library to read who is in it."
 msgstr "Jeszcze nikogo. Przeskanuj bibliotekę ponownie, aby zobaczyć, kto w niej jest."
 
-#: web/lib/RenderPanel.svelte:149
+#: web/lib/RenderPanel.svelte:161
 msgid "None"
 msgstr "Brak"
 
-#: web/routes/create/+page.svelte:322
+#: web/routes/create/+page.svelte:335
 msgid "North"
 msgstr "Północ"
 
@@ -807,15 +843,15 @@ msgstr "Jeszcze nic nie zapisano."
 msgid "On This Day"
 msgstr "Tego dnia"
 
-#: web/routes/create/+page.svelte:335
+#: web/routes/create/+page.svelte:348
 msgid "On a date"
 msgstr "W określonym dniu"
 
-#: web/routes/create/+page.svelte:419
+#: web/routes/create/+page.svelte:432
 msgid "Only with (optional)"
 msgstr "Tylko z (opcjonalnie)"
 
-#: web/routes/runs/[run_id]/+page.svelte:310
+#: web/routes/runs/[run_id]/+page.svelte:327
 msgid "Open"
 msgstr "Otwórz"
 
@@ -823,19 +859,19 @@ msgstr "Otwórz"
 msgid "Open run"
 msgstr "Otwórz zadanie"
 
-#: web/lib/RenderPanel.svelte:135
+#: web/lib/RenderPanel.svelte:147
 msgid "Open the film run"
 msgstr "Otwórz zadanie filmu"
 
-#: web/lib/RenderPanel.svelte:152
+#: web/lib/RenderPanel.svelte:173
 msgid "Opening and closing fade"
 msgstr "Przenikanie na początku i na końcu"
 
-#: web/routes/runs/[run_id]/+page.svelte:185
+#: web/routes/runs/[run_id]/+page.svelte:202
 msgid "Order and timecodes from the saved cut."
 msgstr "Kolejność i kody czasowe zapisanego montażu."
 
-#: web/lib/RenderPanel.svelte:169
+#: web/lib/RenderPanel.svelte:190
 msgid "Orientation"
 msgstr "Orientacja"
 
@@ -856,16 +892,16 @@ msgstr "Przeszło {stages}"
 msgid "Password"
 msgstr "Hasło"
 
-#: web/routes/create/+page.svelte:419 web/routes/settings/+page.svelte:104
+#: web/routes/create/+page.svelte:432 web/routes/settings/+page.svelte:106
 #: web/routes/settings/people/+page.svelte:127 web/routes/settings/people/+page.svelte:133
 msgid "People"
 msgstr "Osoby"
 
-#: web/routes/create/+page.svelte:450
+#: web/routes/create/+page.svelte:463
 msgid "People condition"
 msgstr "Warunek dotyczący osób"
 
-#: web/routes/create/+page.svelte:339
+#: web/routes/create/+page.svelte:352
 msgid "Period (6m, 1y, 2w)"
 msgstr "Okres (6m, 1y, 2w)"
 
@@ -873,7 +909,7 @@ msgstr "Okres (6m, 1y, 2w)"
 msgid "Person Spotlight"
 msgstr "Jedna osoba w centrum"
 
-#: web/routes/create/+page.svelte:489
+#: web/routes/create/+page.svelte:502
 msgid "Photo duration (seconds)"
 msgstr "Czas zdjęcia (sekundy)"
 
@@ -889,26 +925,30 @@ msgstr "Właśnie odczytane obrazy"
 msgid "Pictures left after each step"
 msgstr "Zdjęcia pozostałe po każdym kroku"
 
-#: web/routes/create/+page.svelte:457
+#: web/routes/create/+page.svelte:470
 msgid "Pictures with"
 msgstr "Obrazy z"
 
-#: web/routes/runs/[run_id]/+page.svelte:135 web/routes/runs/[run_id]/+page.svelte:199
+#: web/routes/runs/[run_id]/+page.svelte:142 web/routes/runs/[run_id]/+page.svelte:216
 #: web/routes/settings/people/+page.svelte:195 web/routes/suggestions/+page.svelte:106
 #, python-brace-format
 msgid "Pictures: {count}"
 msgstr "Obrazy: {count}"
 
+#: web/lib/RenderPanel.svelte:169
+msgid "Playful bright"
+msgstr "Playful bright"
+
 #: web/lib/labels.ts:69
 msgid "Please enter both URL and API key"
 msgstr "Podaj adres URL i klucz API"
 
-#: web/routes/runs/[run_id]/+page.svelte:186 web/routes/runs/[run_id]/pool/+page.svelte:99
+#: web/routes/runs/[run_id]/+page.svelte:203 web/routes/runs/[run_id]/pool/+page.svelte:99
 #: web/routes/runs/[run_id]/pool/+page.svelte:106 web/routes/runs/[run_id]/pool/+page.svelte:120
 msgid "Pool"
 msgstr "Dostępne media"
 
-#: web/lib/RenderPanel.svelte:172
+#: web/lib/RenderPanel.svelte:193
 msgid "Portrait"
 msgstr "Pionowo"
 
@@ -920,7 +960,7 @@ msgstr "Możliwe"
 msgid "Preview"
 msgstr "Podgląd"
 
-#: web/lib/RenderPanel.svelte:220
+#: web/lib/RenderPanel.svelte:241
 msgid "Preview a track"
 msgstr "Odsłuchaj utwór"
 
@@ -928,7 +968,7 @@ msgstr "Odsłuchaj utwór"
 msgid "Preview with these choices"
 msgstr "Podgląd z tym wyborem"
 
-#: web/lib/RenderPanel.svelte:206
+#: web/lib/RenderPanel.svelte:227
 msgid "Privacy mode: blur every picture and scramble names"
 msgstr "Tryb prywatności: rozmywa każdy obraz i ukrywa imiona"
 
@@ -940,9 +980,13 @@ msgstr "Postęp"
 msgid "Put it back"
 msgstr "Przywróć"
 
-#: web/lib/RenderPanel.svelte:187
+#: web/lib/RenderPanel.svelte:208
 msgid "Quality"
 msgstr "Jakość"
+
+#: web/lib/RenderPanel.svelte:167
+msgid "Random"
+msgstr "Random"
 
 #: web/lib/labels.ts:82
 msgid "Reading picture facts"
@@ -956,7 +1000,7 @@ msgstr "Odczytywanie tego, co pokazuje każdy obraz"
 msgid "Recorded alternative"
 msgstr "Zapisana alternatywa"
 
-#: web/routes/create/+page.svelte:390
+#: web/routes/create/+page.svelte:403
 msgid "Refresh"
 msgstr "Odśwież"
 
@@ -964,7 +1008,7 @@ msgstr "Odśwież"
 msgid "Refresh suggestions"
 msgstr "Odśwież propozycje"
 
-#: web/routes/create/+page.svelte:390
+#: web/routes/create/+page.svelte:403
 msgid "Refreshing..."
 msgstr "Odświeżanie..."
 
@@ -976,7 +1020,7 @@ msgstr "Powiązanie"
 msgid "Relationships"
 msgstr "Powiązania"
 
-#: web/lib/SettingsEditor.svelte:66
+#: web/lib/SettingsEditor.svelte:67
 msgid "Reload from Disk"
 msgstr "Wczytaj ponownie z dysku"
 
@@ -992,11 +1036,11 @@ msgstr "Usuń z tego montażu"
 msgid "Remove this relationship"
 msgstr "Usuń to powiązanie"
 
-#: web/routes/runs/[run_id]/+page.svelte:233
+#: web/routes/runs/[run_id]/+page.svelte:250
 msgid "Removed"
 msgstr "Usunięte"
 
-#: web/lib/RenderPanel.svelte:128 web/lib/RenderPanel.svelte:129 web/lib/RenderPanel.svelte:244
+#: web/lib/RenderPanel.svelte:140 web/lib/RenderPanel.svelte:141 web/lib/RenderPanel.svelte:266
 msgid "Render"
 msgstr "Renderuj"
 
@@ -1012,7 +1056,7 @@ msgstr "Podgląd raportu"
 msgid "Rescan the library"
 msgstr "Przeskanuj bibliotekę ponownie"
 
-#: web/lib/RenderPanel.svelte:175
+#: web/lib/RenderPanel.svelte:196
 msgid "Resolution"
 msgstr "Rozdzielczość"
 
@@ -1020,12 +1064,12 @@ msgstr "Rozdzielczość"
 msgid "Review the report, then copy it. Nothing is sent automatically."
 msgstr "Przejrzyj raport, a potem go skopiuj. Nic nie jest wysyłane automatycznie."
 
-#: web/lib/RenderPanel.svelte:143 web/routes/runs/[run_id]/+page.svelte:307
+#: web/lib/RenderPanel.svelte:155 web/routes/runs/[run_id]/+page.svelte:324
 #, python-brace-format
 msgid "Revision {number}"
 msgstr "Wersja {number}"
 
-#: web/routes/runs/[run_id]/+page.svelte:303
+#: web/routes/runs/[run_id]/+page.svelte:320
 msgid "Revisions"
 msgstr "Wersje"
 
@@ -1033,7 +1077,7 @@ msgstr "Wersje"
 msgid "Role (suggestions; type your own)"
 msgstr "Rola (propozycje lub własny tekst)"
 
-#: web/routes/runs/[run_id]/+page.svelte:323
+#: web/routes/runs/[run_id]/+page.svelte:340
 msgid "Run details"
 msgstr "Szczegóły uruchomienia"
 
@@ -1047,7 +1091,7 @@ msgid "Running on the server: {phase}. It continues if you leave this page."
 msgstr "Działa na serwerze: {phase}. Będzie kontynuowane po opuszczeniu strony."
 
 #: web/routes/+layout.svelte:23 web/routes/runs/+page.svelte:76 web/routes/runs/+page.svelte:80
-#: web/routes/runs/+page.svelte:93 web/routes/runs/[run_id]/+page.svelte:119
+#: web/routes/runs/+page.svelte:93 web/routes/runs/[run_id]/+page.svelte:126
 msgid "Runs"
 msgstr "Zadania"
 
@@ -1055,11 +1099,11 @@ msgstr "Zadania"
 msgid "Same episode"
 msgstr "Ten sam epizod"
 
-#: web/lib/SettingsEditor.svelte:109
+#: web/lib/SettingsEditor.svelte:110
 msgid "Save"
 msgstr "Zapisz"
 
-#: web/routes/settings/+page.svelte:95
+#: web/routes/settings/+page.svelte:97
 msgid "Save Config"
 msgstr "Zapisz konfigurację"
 
@@ -1067,20 +1111,20 @@ msgstr "Zapisz konfigurację"
 msgid "Save group"
 msgstr "Zapisz grupę"
 
-#: web/routes/runs/[run_id]/+page.svelte:294
+#: web/routes/runs/[run_id]/+page.svelte:311
 msgid "Save revision"
 msgstr "Zapisz wersję"
 
-#: web/lib/SettingsEditor.svelte:99 web/routes/settings/+page.svelte:91
+#: web/lib/SettingsEditor.svelte:100 web/routes/settings/+page.svelte:93
 msgid "Saved - type a new key to replace it"
 msgstr "Zapisano. Wpisz nowy klucz, aby go zastąpić"
 
-#: web/routes/runs/[run_id]/+page.svelte:297
+#: web/routes/runs/[run_id]/+page.svelte:314
 #, python-brace-format
 msgid "Saved as revision {number}."
 msgstr "Zapisano jako wersję {number}."
 
-#: web/routes/create/+page.svelte:436 web/routes/settings/people/+page.svelte:151
+#: web/routes/create/+page.svelte:449 web/routes/settings/people/+page.svelte:151
 #: web/routes/settings/people/+page.svelte:152
 msgid "Saved groups"
 msgstr "Zapisane grupy"
@@ -1094,16 +1138,16 @@ msgstr "Zapisano tutaj"
 msgid "Saved here, but {name} cannot decrypt it: the default is in use"
 msgstr "Zapisano tutaj, ale {name} nie może tego odszyfrować: używana jest wartość domyślna"
 
-#: web/lib/SettingsEditor.svelte:57 web/routes/settings/+page.svelte:61
+#: web/lib/SettingsEditor.svelte:57 web/routes/settings/+page.svelte:63
 msgid "Saved to the database"
 msgstr "Zapisano w bazie danych"
 
-#: web/routes/runs/[run_id]/+page.svelte:324
+#: web/routes/runs/[run_id]/+page.svelte:341
 #, python-brace-format
 msgid "Saved to: {output_path}"
 msgstr "Zapisano w: {output_path}"
 
-#: web/lib/RenderPanel.svelte:193
+#: web/lib/RenderPanel.svelte:214
 msgid "Scaling Mode"
 msgstr "Tryb skalowania"
 
@@ -1115,11 +1159,11 @@ msgstr "Zaplanowane"
 msgid "Screen time (seconds)"
 msgstr "Czas na ekranie (sekundy)"
 
-#: web/lib/labels.ts:6 web/routes/create/+page.svelte:319
+#: web/lib/labels.ts:6 web/routes/create/+page.svelte:332
 msgid "Season"
 msgstr "Pora roku"
 
-#: web/lib/SettingsEditor.svelte:76
+#: web/lib/SettingsEditor.svelte:77
 #, python-brace-format
 msgid ""
 "Secrets cannot be saved here until {name} is set. Set it, or keep them in the environment or "
@@ -1138,16 +1182,16 @@ msgstr "Ustawione przez {name} (środowisko)"
 msgid "Set in config.yaml as {key}"
 msgstr "Ustawione w config.yaml jako {key}"
 
-#: web/routes/+layout.svelte:24 web/routes/settings/+page.svelte:75
-#: web/routes/settings/+page.svelte:79 web/routes/settings/people/+page.svelte:132
+#: web/routes/+layout.svelte:24 web/routes/settings/+page.svelte:77
+#: web/routes/settings/+page.svelte:81 web/routes/settings/people/+page.svelte:132
 msgid "Settings"
 msgstr "Ustawienia"
 
-#: web/routes/create/+page.svelte:483
+#: web/routes/create/+page.svelte:496
 msgid "Shareable"
 msgstr "Do udostępniania"
 
-#: web/routes/runs/[run_id]/+page.svelte:175
+#: web/routes/runs/[run_id]/+page.svelte:192
 msgid "Show"
 msgstr "Pokaż"
 
@@ -1164,7 +1208,7 @@ msgstr "Zaloguj się"
 msgid "Sign in through the proxy in front of this server."
 msgstr "Zaloguj się przez serwer proxy stojący przed tym serwerem."
 
-#: web/routes/+layout.svelte:55
+#: web/routes/+layout.svelte:56
 msgid "Sign out"
 msgstr "Wyloguj się"
 
@@ -1176,15 +1220,19 @@ msgstr "Logowanie wygasło. Spróbuj ponownie."
 msgid "Small moment"
 msgstr "Drobna chwila"
 
-#: web/lib/RenderPanel.svelte:148
+#: web/lib/RenderPanel.svelte:160
 msgid "Smart (fades and cuts)"
 msgstr "Inteligentne (przenikanie i cięcia)"
+
+#: web/lib/RenderPanel.svelte:170
+msgid "Soft romantic"
+msgstr "Soft romantic"
 
 #: web/lib/AskPanel.svelte:165
 msgid "Some of its pictures"
 msgstr "Kilka jego zdjęć"
 
-#: web/routes/create/+page.svelte:322
+#: web/routes/create/+page.svelte:335
 msgid "South"
 msgstr "Południe"
 
@@ -1192,11 +1240,11 @@ msgstr "Południe"
 msgid "Special day"
 msgstr "Wyjątkowy dzień"
 
-#: web/routes/create/+page.svelte:42
+#: web/routes/create/+page.svelte:43
 msgid "Spring"
 msgstr "Wiosna"
 
-#: web/lib/RenderPanel.svelte:172
+#: web/lib/RenderPanel.svelte:193
 msgid "Square"
 msgstr "Kwadrat"
 
@@ -1220,11 +1268,11 @@ msgstr "Obraz nieruchomy"
 msgid "Stopped."
 msgstr "Zatrzymano."
 
-#: web/routes/runs/[run_id]/+page.svelte:192
+#: web/routes/runs/[run_id]/+page.svelte:209
 msgid "Stories"
 msgstr "Historie"
 
-#: web/lib/RenderPanel.svelte:159
+#: web/lib/RenderPanel.svelte:180
 msgid "Subtitle"
 msgstr "Podtytuł"
 
@@ -1237,7 +1285,7 @@ msgstr "Propozycje"
 msgid "Suggestions could not be loaded."
 msgstr "Nie udało się wczytać propozycji."
 
-#: web/routes/create/+page.svelte:43
+#: web/routes/create/+page.svelte:44
 msgid "Summer"
 msgstr "Lato"
 
@@ -1245,15 +1293,15 @@ msgstr "Lato"
 msgid "Supporting"
 msgstr "Poboczna"
 
-#: web/routes/runs/[run_id]/+page.svelte:235
+#: web/routes/runs/[run_id]/+page.svelte:252
 msgid "Swapped"
 msgstr "Zamienione"
 
-#: web/routes/runs/[run_id]/+page.svelte:273
+#: web/routes/runs/[run_id]/+page.svelte:290
 msgid "Take out"
 msgstr "Usuń"
 
-#: web/routes/settings/+page.svelte:94
+#: web/routes/settings/+page.svelte:96
 msgid "Test Connection"
 msgstr "Testuj połączenie"
 
@@ -1261,7 +1309,7 @@ msgstr "Testuj połączenie"
 msgid "That expression could not be saved."
 msgstr "Nie udało się zapisać tego wyrażenia."
 
-#: web/lib/RenderPanel.svelte:114
+#: web/lib/RenderPanel.svelte:126
 msgid "That file is not an MP3, M4A or WAV"
 msgstr "Ten plik nie jest plikiem MP3, M4A ani WAV"
 
@@ -1273,15 +1321,15 @@ msgstr "Ten plik jest za duży na ścieżkę dźwiękową"
 msgid "That id could not be bound."
 msgstr "Nie udało się powiązać tego id."
 
-#: web/routes/settings/+page.svelte:52
+#: web/routes/settings/+page.svelte:54
 msgid "The connection could not be checked."
 msgstr "Nie udało się sprawdzić połączenia."
 
-#: web/lib/RenderPanel.svelte:142
+#: web/lib/RenderPanel.svelte:154
 msgid "The cut as chosen"
 msgstr "Wybrany montaż"
 
-#: web/routes/create/+page.svelte:267
+#: web/routes/create/+page.svelte:274
 msgid "The cut could not start."
 msgstr "Nie udało się rozpocząć montażu."
 
@@ -1289,11 +1337,11 @@ msgstr "Nie udało się rozpocząć montażu."
 msgid "The cut is ready."
 msgstr "Montaż jest gotowy."
 
-#: web/lib/RenderPanel.svelte:165
+#: web/lib/RenderPanel.svelte:186
 msgid "The dates and places, never a model"
 msgstr "Daty i miejsca, nigdy model"
 
-#: web/lib/SettingsEditor.svelte:73
+#: web/lib/SettingsEditor.svelte:74
 msgid ""
 "The environment wins, then config.yaml, then what is saved here, then the default. A setting "
 "either of the first two sets is greyed out: change it where its label says."
@@ -1302,7 +1350,7 @@ msgstr ""
 "domyślna. Ustawienie zdefiniowane przez jedno z pierwszych dwóch jest wyszarzone: zmień je "
 "tam, gdzie wskazuje jego etykieta."
 
-#: web/lib/AskPanel.svelte:24 web/routes/runs/[run_id]/+page.svelte:143
+#: web/lib/AskPanel.svelte:24 web/routes/runs/[run_id]/+page.svelte:150
 msgid "The film"
 msgstr "Film"
 
@@ -1310,7 +1358,7 @@ msgstr "Film"
 msgid "The film is ready."
 msgstr "Film jest gotowy."
 
-#: web/routes/create/+page.svelte:35
+#: web/routes/create/+page.svelte:36
 msgid "The household. Private moments a caption names, like a bath, play too."
 msgstr "Domownicy. Uwzględniane są też prywatne chwile wymienione w opisie, na przykład kąpiel."
 
@@ -1326,7 +1374,7 @@ msgstr ""
 "Model czyta twoje słowa na tle przygotowanej biblioteki. Najpierw podgląd: pokazuje, czym "
 "stała się każda część zdania i ile zdjęć pasuje, i niczego nie filmuje."
 
-#: web/lib/RenderPanel.svelte:164
+#: web/lib/RenderPanel.svelte:185
 msgid "The model, when one is configured"
 msgstr "Model, jeśli jest skonfigurowany"
 
@@ -1343,7 +1391,7 @@ msgstr ""
 msgid "The picture it replaced"
 msgstr "Obraz, który zastąpił"
 
-#: web/lib/RenderPanel.svelte:203
+#: web/lib/RenderPanel.svelte:224
 msgid ""
 "The place is Immich's. With geocoding on (Settings, network), it names the district in the "
 "film's language, through the public Nominatim or network.geocoding_url."
@@ -1359,7 +1407,7 @@ msgstr "Pula"
 msgid "The preview could not start."
 msgstr "Nie udało się uruchomić podglądu."
 
-#: web/lib/RenderPanel.svelte:214
+#: web/lib/RenderPanel.svelte:235
 msgid "The previewed track"
 msgstr "Odsłuchany utwór"
 
@@ -1367,7 +1415,7 @@ msgstr "Odsłuchany utwór"
 msgid "The previous automatic memory used this category."
 msgstr "Poprzednie automatyczne wspomnienie użyło tej kategorii."
 
-#: web/lib/RenderPanel.svelte:93
+#: web/lib/RenderPanel.svelte:105
 msgid "The render could not start."
 msgstr "Nie udało się rozpocząć renderowania."
 
@@ -1375,7 +1423,7 @@ msgstr "Nie udało się rozpocząć renderowania."
 msgid "The report could not be loaded."
 msgstr "Nie udało się wczytać raportu."
 
-#: web/routes/runs/[run_id]/+page.svelte:63 web/routes/runs/[run_id]/pool/+page.svelte:81
+#: web/routes/runs/[run_id]/+page.svelte:70 web/routes/runs/[run_id]/pool/+page.svelte:81
 msgid "The revision could not be saved."
 msgstr "Nie udało się zapisać wersji."
 
@@ -1403,7 +1451,7 @@ msgstr "Ich id na tym koncie"
 msgid "These people appear in the last two people memories."
 msgstr "Te osoby pojawiają się w dwóch ostatnich wspomnieniach o osobach."
 
-#: web/routes/runs/[run_id]/+page.svelte:268
+#: web/routes/runs/[run_id]/+page.svelte:285
 msgid "They play in the order they were taken, prepared like the rest of the cut."
 msgstr "Odtwarzają się w kolejności, w jakiej zostały zrobione, przygotowane tak jak reszta montażu."
 
@@ -1419,15 +1467,19 @@ msgstr "Ta kategoria pojawia się już dwukrotnie w ostatnich sześciu wspomnien
 msgid "This run kept no record of its pool. Cut again to see one."
 msgstr "To zadanie nie zachowało żadnego zapisu swoich mediów. Zmontuj ponownie, aby go zobaczyć."
 
-#: web/routes/settings/+page.svelte:27
+#: web/routes/settings/+page.svelte:29
 msgid "Thumbnail cache"
 msgstr "Pamięć podręczna miniatur"
 
-#: web/lib/RenderPanel.svelte:158
+#: web/lib/RenderPanel.svelte:179
 msgid "Title (decided as generate decides when empty)"
 msgstr "Tytuł (ustalany przez `generate`, gdy pole jest puste)"
 
-#: web/routes/create/+page.svelte:338
+#: web/lib/RenderPanel.svelte:164
+msgid "Title style"
+msgstr "Title style"
+
+#: web/routes/create/+page.svelte:351
 msgid "To"
 msgstr "Do"
 
@@ -1439,19 +1491,19 @@ msgstr "Zajął miejsce obrazu odrzuconego przez kontrolę."
 msgid "Took the seat of a picture the model removed from this story."
 msgstr "Zajął miejsce obrazu, który model usunął z tej historii."
 
-#: web/lib/RenderPanel.svelte:146
+#: web/lib/RenderPanel.svelte:158
 msgid "Transition Style"
 msgstr "Styl przejść"
 
-#: web/lib/labels.ts:12 web/routes/create/+page.svelte:386
+#: web/lib/labels.ts:12 web/routes/create/+page.svelte:399
 msgid "Trip"
 msgstr "Podróż"
 
-#: web/routes/create/+page.svelte:187 web/routes/create/+page.svelte:191
+#: web/routes/create/+page.svelte:190 web/routes/create/+page.svelte:194
 msgid "Trip detection failed."
 msgstr "Wykrywanie podróży nie powiodło się."
 
-#: web/routes/create/+page.svelte:398
+#: web/routes/create/+page.svelte:411
 msgid "Trips"
 msgstr "Podróże"
 
@@ -1459,11 +1511,7 @@ msgstr "Podróże"
 msgid "Try again"
 msgstr "Spróbuj ponownie"
 
-#: web/routes/login/+page.svelte:53
-msgid "Watch your memories again, in films you can make your own."
-msgstr "Przeżyj wspomnienia jeszcze raz, w filmach po swojemu."
-
-#: web/routes/runs/[run_id]/+page.svelte:291 web/routes/runs/[run_id]/pool/+page.svelte:139
+#: web/routes/runs/[run_id]/+page.svelte:308 web/routes/runs/[run_id]/pool/+page.svelte:139
 msgid "Undo"
 msgstr "Cofnij"
 
@@ -1472,15 +1520,15 @@ msgstr "Cofnij"
 msgid "Updated {when}"
 msgstr "Zaktualizowano {when}"
 
-#: web/lib/RenderPanel.svelte:223
+#: web/lib/RenderPanel.svelte:244
 msgid "Upload a track"
 msgstr "Prześlij utwór"
 
-#: web/lib/RenderPanel.svelte:240
+#: web/lib/RenderPanel.svelte:261
 msgid "Upload the film to Immich"
 msgstr "Prześlij film do Immich"
 
-#: web/routes/create/+page.svelte:453
+#: web/routes/create/+page.svelte:466
 msgid "Use exact library names; each picture must match. It replaces the names above."
 msgstr "Użyj dokładnych nazw z biblioteki; każdy obraz musi pasować. Zastępuje nazwy powyżej."
 
@@ -1496,27 +1544,35 @@ msgstr "Nazwa użytkownika"
 msgid "Verdict"
 msgstr "Werdykt"
 
-#: web/lib/ShotInspector.svelte:76 web/routes/runs/[run_id]/+page.svelte:209
-#: web/routes/runs/[run_id]/+page.svelte:239 web/routes/runs/[run_id]/pool/+page.svelte:127
+#: web/lib/ShotInspector.svelte:76 web/routes/runs/[run_id]/+page.svelte:226
+#: web/routes/runs/[run_id]/+page.svelte:256 web/routes/runs/[run_id]/pool/+page.svelte:127
 msgid "Video"
 msgstr "Wideo"
 
-#: web/routes/settings/+page.svelte:26
+#: web/routes/settings/+page.svelte:28
 msgid "Video cache"
 msgstr "Pamięć podręczna wideo"
 
-#: web/routes/runs/[run_id]/+page.svelte:136
+#: web/routes/runs/[run_id]/+page.svelte:143
 #, python-brace-format
 msgid "Videos: {count}"
 msgstr "Filmy: {count}"
 
-#: web/routes/runs/[run_id]/+page.svelte:167
+#: web/routes/runs/[run_id]/+page.svelte:184
 msgid "View"
 msgstr "Zobacz"
 
-#: web/routes/runs/[run_id]/+page.svelte:149
+#: web/routes/runs/[run_id]/+page.svelte:156
 msgid "View in Immich"
 msgstr "Zobacz w Immich"
+
+#: web/lib/RenderPanel.svelte:169
+msgid "Vintage charm"
+msgstr "Vintage charm"
+
+#: web/routes/login/+page.svelte:53
+msgid "Watch your memories again, in films you can make your own."
+msgstr "Przeżyj wspomnienia jeszcze raz, w filmach po swojemu."
 
 #: web/lib/AskPanel.svelte:20
 msgid "What"
@@ -1538,7 +1594,7 @@ msgstr "Co odrzuciłyby reguły montażu"
 msgid "What the library measures"
 msgstr "Co mierzy biblioteka"
 
-#: web/lib/RenderPanel.svelte:140
+#: web/lib/RenderPanel.svelte:152
 msgid "What to render"
 msgstr "Co zrenderować"
 
@@ -1550,7 +1606,7 @@ msgstr "Kiedy"
 msgid "Where"
 msgstr "Gdzie"
 
-#: web/lib/RenderPanel.svelte:155 web/lib/SettingsEditor.svelte:95
+#: web/lib/RenderPanel.svelte:176 web/lib/SettingsEditor.svelte:96
 msgid "White"
 msgstr "Biały"
 
@@ -1558,15 +1614,15 @@ msgstr "Biały"
 msgid "Who"
 msgstr "Kto"
 
-#: web/routes/settings/+page.svelte:104
+#: web/routes/settings/+page.svelte:106
 msgid "Who is who, their roles and relationships."
 msgstr "Kto jest kim, jakie ma role i powiązania."
 
-#: web/routes/create/+page.svelte:480
+#: web/routes/create/+page.svelte:493
 msgid "Who may see it"
 msgstr "Kto może to zobaczyć"
 
-#: web/lib/RenderPanel.svelte:161
+#: web/lib/RenderPanel.svelte:182
 msgid "Who names the film"
 msgstr "Kto nazywa film"
 
@@ -1582,7 +1638,7 @@ msgstr "Dlaczego model zastąpił inny obraz"
 msgid "Why this picture"
 msgstr "Dlaczego ten obraz"
 
-#: web/routes/create/+page.svelte:45
+#: web/routes/create/+page.svelte:46
 msgid "Winter"
 msgstr "Zima"
 
@@ -1590,7 +1646,7 @@ msgstr "Zima"
 msgid "With"
 msgstr "Z"
 
-#: web/routes/create/+page.svelte:312
+#: web/routes/create/+page.svelte:325
 msgid "Year"
 msgstr "Rok"
 
@@ -1598,11 +1654,11 @@ msgstr "Rok"
 msgid "Year in Review"
 msgstr "Podsumowanie roku"
 
-#: web/routes/create/+page.svelte:330
+#: web/routes/create/+page.svelte:343
 msgid "Years back (all when empty)"
 msgstr "Liczba lat wstecz (wszystkie, gdy pole jest puste)"
 
-#: web/routes/create/+page.svelte:330
+#: web/routes/create/+page.svelte:343
 msgid "Years to span"
 msgstr "Liczba obejmowanych lat"
 
@@ -1619,16 +1675,22 @@ msgstr "Usunąłeś jego blokadę dla poziomu {level}."
 msgid "You will be redirected to your identity provider"
 msgstr "Zostaniesz przekierowany do dostawcy tożsamości"
 
-#: web/routes/runs/[run_id]/+page.svelte:138
+#: web/lib/ModelSetup.svelte:68
+msgid "Your first film needs these model files. Nothing downloads until you press the button."
+msgstr ""
+"Twój pierwszy film potrzebuje tych plików modeli. Pobieranie rozpocznie się dopiero po "
+"naciśnięciu przycisku."
+
+#: web/routes/runs/[run_id]/+page.svelte:145
 #, python-brace-format
 msgid "about {film} of film"
 msgstr "około {film} filmu"
 
-#: web/routes/create/+page.svelte:458
+#: web/routes/create/+page.svelte:471
 msgid "all of them together"
 msgstr "wszystkimi razem"
 
-#: web/routes/create/+page.svelte:458
+#: web/routes/create/+page.svelte:471
 msgid "any of them"
 msgstr "którymkolwiek z nich"
 
@@ -1640,12 +1702,12 @@ msgstr "nasz kot przez lata"
 msgid "starting"
 msgstr "uruchamianie"
 
-#: web/routes/runs/[run_id]/+page.svelte:137
+#: web/routes/runs/[run_id]/+page.svelte:144
 #, python-brace-format
 msgid "{content} of pictures and video"
 msgstr "{content} obrazów i wideo"
 
-#: web/routes/runs/[run_id]/+page.svelte:286
+#: web/routes/runs/[run_id]/+page.svelte:303
 #, python-brace-format
 msgid "{content}: the film grows past its {budget} to hold them"
 msgstr "{content}: film wykracza poza swój {budget}, aby je pomieścić"
@@ -1655,7 +1717,7 @@ msgstr "{content}: film wykracza poza swój {budget}, aby je pomieścić"
 msgid "{date_range_start} to {date_range_end}"
 msgstr "{date_range_start} do {date_range_end}"
 
-#: web/routes/create/+page.svelte:405
+#: web/routes/create/+page.svelte:418
 #, python-brace-format
 msgid "{days} days · {count} pictures"
 msgstr "{days} dni · {count} obrazów"
@@ -1689,7 +1751,7 @@ msgstr "Zdjęcia: {pictures} (fotografie: {photos}, filmy: {videos})"
 msgid "{seconds} s on screen"
 msgstr "{seconds} s na ekranie"
 
-#: web/routes/create/+page.svelte:373
+#: web/routes/create/+page.svelte:386
 #, python-brace-format
 msgid "{years} years ago"
 msgstr "{years} lat temu"
@@ -1699,67 +1761,3 @@ msgstr "{years} lat temu"
 msgid "~{amount} left in this stage"
 msgstr "~{amount} pozostało na tym etapie"
 
-#. English fallback for a new render style label.
-#: web/lib/RenderPanel.svelte
-msgid "Title style"
-msgstr "Title style"
-
-#. English fallback for a new render style label.
-#: web/lib/RenderPanel.svelte
-msgid "Auto (match the mood)"
-msgstr "Auto (match the mood)"
-
-#. English fallback for a new render style label.
-#: web/lib/RenderPanel.svelte
-msgid "Random"
-msgstr "Random"
-
-#. English fallback for a new render style label.
-#: web/lib/RenderPanel.svelte
-msgid "Modern warm"
-msgstr "Modern warm"
-
-#. English fallback for a new render style label.
-#: web/lib/RenderPanel.svelte
-msgid "Elegant minimal"
-msgstr "Elegant minimal"
-
-#. English fallback for a new render style label.
-#: web/lib/RenderPanel.svelte
-msgid "Vintage charm"
-msgstr "Vintage charm"
-
-#. English fallback for a new render style label.
-#: web/lib/RenderPanel.svelte
-msgid "Playful bright"
-msgstr "Playful bright"
-
-#. English fallback for a new render style label.
-#: web/lib/RenderPanel.svelte
-msgid "Soft romantic"
-msgstr "Soft romantic"
-
-#: web/routes/runs/[run_id]/+page.svelte:168
-msgid "Download film"
-msgstr "Pobierz film"
-#: web/lib/ModelSetup.svelte:66 web/lib/ModelSetup.svelte:67 web/lib/ModelSetup.svelte:81
-msgid "Download models"
-msgstr "Pobierz modele"
-
-#: web/lib/ModelSetup.svelte:68
-msgid "Your first film needs these model files. Nothing downloads until you press the button."
-msgstr ""
-"Twój pierwszy film potrzebuje tych plików modeli. Pobieranie rozpocznie się dopiero po "
-"naciśnięciu przycisku."
-
-#: web/lib/ModelSetup.svelte:78
-msgid "Download hosts can redirect to their CDNs."
-msgstr "Serwery pobierania mogą przekierowywać do swoich sieci CDN."
-
-#: web/lib/ModelSetup.svelte:54 web/lib/ModelSetup.svelte:57
-msgid "Model downloads failed to start."
-msgstr "Nie udało się rozpocząć pobierania modeli."
-
-#: web/lib/ModelSetup.svelte:24
-msgid "Model status could not be checked."
-msgstr "Nie udało się sprawdzić stanu modeli."
