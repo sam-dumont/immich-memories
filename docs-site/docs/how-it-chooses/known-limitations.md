@@ -43,7 +43,6 @@ Preparing a whole library of 1,200 to 3,100 pictures took 8 to 26 minutes on an 
 Two things still get in the way:
 
 - **An unprepared library answers "not possible".** Today a request only searches pictures that are already captioned. A request will soon prepare the period it needs on its own, after telling you how long that takes ([#2045](https://github.com/sam-dumont/immich-memories/issues/2045)). Until then, run `immich-memories prepare` for the period first.
-- **A year in the sentence can be misread.** "the horses in 2024" makes no film because the year gets read as text printed on something in the photos ([#2046](https://github.com/sam-dumont/immich-memories/issues/2046)). "our horses" works.
 
 ## Other things to know
 
