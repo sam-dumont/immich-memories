@@ -815,7 +815,7 @@ class TestMixAudioWithStemDucking:
                 filter_arg = cmd[cmd.index("-filter_complex") + 1]
                 assert "loudnorm" in filter_arg
 
-    def test_no_normalize_uses_acopy(self):
+    def test_no_normalize_passes_clip_audio_through_unnormalized(self):
         from immich_memories.audio.mixer import DuckingConfig, MixConfig
         from immich_memories.audio.mixer_helpers import mix_audio_with_stem_ducking
 
@@ -838,7 +838,8 @@ class TestMixAudioWithStemDucking:
 
             cmd = mock_sub.run.call_args[0][0]
             filter_arg = cmd[cmd.index("-filter_complex") + 1]
-            assert "acopy" in filter_arg
+            assert "loudnorm" not in filter_arg
+            assert "[0:a]asplit=2[vidaud][vidkey]" in filter_arg
 
 
 class TestMixAudioWith4StemDucking:
