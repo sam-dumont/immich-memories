@@ -595,7 +595,9 @@ def _guarded_suggestion(
     people_store = facts.people_store if facts else None
     suggestion = eliding_french(parsed, locale)
     suggestion = refusing_invented_names(suggestion, prompt.facts)
-    suggestion = refusing_unfounded_relationships(suggestion, person_names, locale, people_store)
+    suggestion = refusing_unfounded_relationships(
+        suggestion, person_names, locale, people_store, holiday
+    )
     suggestion = refusing_a_wrong_year(suggestion, start_date, end_date)
     suggestion = requiring_the_year(
         suggestion, memory_type, start_date, end_date, person_names, holiday

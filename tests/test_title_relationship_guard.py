@@ -686,3 +686,326 @@ def test_yokohama_is_not_elided():
 
     assert result is not None
     assert result.title == "Le voyage de Yokohama"
+
+
+def test_hollande_is_not_elided_but_herault_is():
+    """The expanded h aspiré list; Hérault is confirmed h muet, not aspiré."""
+    from immich_memories.titles.title_guards import eliding_french
+    from immich_memories.titles.title_suggestion import TitleSuggestion
+
+    suggestion = TitleSuggestion(title="De Hollande à Hanovre", subtitle=None)
+    result = eliding_french(suggestion, "fr")
+    assert result is not None
+    assert result.title == "De Hollande à Hanovre"
+
+    suggestion2 = TitleSuggestion(title="Le vent de Hérault", subtitle=None)
+    result2 = eliding_french(suggestion2, "fr")
+    assert result2 is not None
+    assert result2.title == "Le vent d'Hérault"
+
+
+def test_an_unknown_capitalised_h_name_is_left_unelided():
+    """ "When unsure, don't elide" a capitalised H name not on the known list."""
+    from immich_memories.titles.title_guards import eliding_french
+    from immich_memories.titles.title_suggestion import TitleSuggestion
+
+    suggestion = TitleSuggestion(title="Le jardin de Henri", subtitle=None)
+    result = eliding_french(suggestion, "fr")
+
+    assert result is not None
+    assert result.title == "Le jardin de Henri"
+
+
+@pytest.mark.parametrize(
+    ("locale", "title"),
+    [
+        ("it", "Buona festa, nonna Lina"),
+        ("pl", "Kai i babcia"),
+        ("ru", "С бабушкой у моря"),
+        ("ko", "할머니와 함께"),
+        ("zh-Hans", "和奶奶在一起"),
+        ("ja", "おばあちゃんと一緒に"),
+    ],
+)
+def test_the_standard_grandparent_word_is_record_backed_in_every_locale(locale, title):
+    """Round 3: these ARE the standard words in their language, not a nickname."""
+    from immich_memories.titles.title_guards import refusing_unfounded_relationships
+    from immich_memories.titles.title_suggestion import TitleSuggestion
+
+    store = seed_people(
+        {
+            "owner": {"person_id": "person-owner", "name": "Zed Example"},
+            "people": [
+                {
+                    "ids": ["person-gma"],
+                    "name": "Lina Example",
+                    "confirmed": {"links": [{"kind": "grandparent-of", "with": "person-kid"}]},
+                },
+                {"ids": ["person-kid"], "name": "Kai Example"},
+            ],
+        }
+    )
+    suggestion = TitleSuggestion(title=title, subtitle=None)
+
+    result = refusing_unfounded_relationships(
+        suggestion, ["Lina Example", "Kai Example"], locale, store
+    )
+
+    assert result is suggestion
+
+
+def test_a_new_childs_eye_word_is_still_refused_outright():
+    """Round 3: "papi" (fr, grandfather) and "grandad" (en) are newly added."""
+    from immich_memories.titles.title_guards import refusing_unfounded_relationships
+    from immich_memories.titles.title_suggestion import TitleSuggestion
+
+    store = seed_people(
+        {
+            "owner": {"person_id": "person-owner", "name": "Zed Example"},
+            "people": [
+                {
+                    "ids": ["person-gpa"],
+                    "name": "Theo Example",
+                    "confirmed": {"links": [{"kind": "grandparent-of", "with": "person-kid"}]},
+                },
+                {"ids": ["person-kid"], "name": "Kai Example"},
+            ],
+        }
+    )
+
+    fr_suggestion = TitleSuggestion(title="Kai et papi Theo", subtitle=None)
+    assert (
+        refusing_unfounded_relationships(
+            fr_suggestion, ["Theo Example", "Kai Example"], "fr", store
+        )
+        is None
+    )
+
+    en_suggestion = TitleSuggestion(title="Kai and grandad Theo", subtitle=None)
+    assert (
+        refusing_unfounded_relationships(
+            en_suggestion, ["Theo Example", "Kai Example"], "en", store
+        )
+        is None
+    )
+
+
+def test_a_son_is_refused_when_the_only_record_is_to_the_films_maker():
+    """Round 3: the maker's own relation never backs a word, possessive or not."""
+    from immich_memories.titles.title_guards import refusing_unfounded_relationships
+    from immich_memories.titles.title_suggestion import TitleSuggestion
+
+    store = seed_people(
+        {
+            "owner": {"person_id": "person-owner", "name": "Zed Example"},
+            "people": [
+                {
+                    "ids": ["person-kid"],
+                    "name": "Elio Example",
+                    "confirmed": {"role": "son"},
+                }
+            ],
+        }
+    )
+    suggestion = TitleSuggestion(title="Elio, le fils, 2024", subtitle=None)
+
+    result = refusing_unfounded_relationships(suggestion, ["Elio Example"], "fr", store)
+
+    assert result is None
+
+
+def test_our_little_daughter_is_refused_even_with_a_word_between():
+    """Round 3: the maker-possessive check looks a few words back, not just one."""
+    from immich_memories.titles.title_guards import refusing_unfounded_relationships
+    from immich_memories.titles.title_suggestion import TitleSuggestion
+
+    store = seed_people(
+        {
+            "owner": {"person_id": "person-owner", "name": "Zed Example"},
+            "people": [
+                {"ids": ["person-kid"], "name": "Nina Example", "confirmed": {"role": "daughter"}}
+            ],
+        }
+    )
+    suggestion = TitleSuggestion(title="Our little daughter Nina", subtitle=None)
+
+    result = refusing_unfounded_relationships(suggestion, ["Nina Example"], "en", store)
+
+    assert result is None
+
+
+def test_swedish_far_the_verb_is_not_mistaken_for_father():
+    """ "Vi far till Rom" (we travel to Rome): "far" with no possessive nearby."""
+    from immich_memories.titles.title_guards import refusing_unfounded_relationships
+    from immich_memories.titles.title_suggestion import TitleSuggestion
+
+    store = seed_people(
+        {
+            "owner": {"person_id": "person-owner", "name": "Zed Example"},
+            "people": [{"ids": ["person-a"], "name": "Alva Example"}],
+        }
+    )
+    suggestion = TitleSuggestion(title="Vi far till Rom", subtitle=None)
+
+    result = refusing_unfounded_relationships(suggestion, ["Alva Example"], "sv", store)
+
+    assert result is suggestion
+
+
+def test_swedish_hans_far_with_no_record_is_refused():
+    """Next to a possessive, "far" does read as "father" and still needs a record."""
+    from immich_memories.titles.title_guards import refusing_unfounded_relationships
+    from immich_memories.titles.title_suggestion import TitleSuggestion
+
+    store = seed_people(
+        {
+            "owner": {"person_id": "person-owner", "name": "Zed Example"},
+            "people": [{"ids": ["person-a"], "name": "Alva Example"}],
+        }
+    )
+    suggestion = TitleSuggestion(title="Alva och hans far", subtitle=None)
+
+    result = refusing_unfounded_relationships(suggestion, ["Alva Example"], "sv", store)
+
+    assert result is None
+
+
+def test_korean_emoticon_is_not_misread_as_the_word_aunt():
+    """ "이모티콘" (emoticon) contains "이모" (aunt) but names no relation."""
+    from immich_memories.titles.title_guards import refusing_unfounded_relationships
+    from immich_memories.titles.title_suggestion import TitleSuggestion
+
+    store = seed_people(
+        {
+            "owner": {"person_id": "person-owner", "name": "Zed Example"},
+            "people": [{"ids": ["person-a"], "name": "Yuri Example"}],
+        }
+    )
+    suggestion = TitleSuggestion(title="이모티콘 모음", subtitle=None)
+
+    result = refusing_unfounded_relationships(suggestion, ["Yuri Example"], "ko", store)
+
+    assert result is suggestion
+
+
+def test_mothers_day_names_the_holiday_not_a_person():
+    """ "Festa della mamma" is a legitimate holiday name, not a narrated relation."""
+    with patch("immich_memories.titles.llm_titles.query_llm") as mock_query:
+        mock_query.return_value = _reply("Festa della mamma")
+        suggestion = asyncio.run(
+            generate_title_with_llm(
+                memory_type="holiday",
+                locale="it",
+                start_date="2025-05-11",
+                end_date="2025-05-11",
+                duration_days=1,
+                person_names=[],
+                facts=MemoryTitleFacts(holiday="Mother's Day"),
+                llm_config=_llm_config(),
+            )
+        )
+
+    assert suggestion is not None
+    assert suggestion.title == "Festa della mamma"
+
+
+def test_christmas_with_family_names_no_one_and_is_allowed():
+    """ "Noël en famille" with nobody named is a mood, not a relation claim."""
+    from immich_memories.titles.title_guards import refusing_unfounded_relationships
+    from immich_memories.titles.title_suggestion import TitleSuggestion
+
+    suggestion = TitleSuggestion(title="Noël en famille", subtitle=None)
+
+    result = refusing_unfounded_relationships(suggestion, [], "fr", None)
+
+    assert result is suggestion
+
+
+def test_a_distance_in_the_title_is_not_mistaken_for_a_year():
+    """ "1200 km" is a distance, not a year, however year-shaped the digits are."""
+    with patch("immich_memories.titles.llm_titles.query_llm") as mock_query:
+        mock_query.return_value = _reply("Iceland by car, 2025, 1200 km")
+        suggestion = asyncio.run(
+            generate_title_with_llm(
+                memory_type="trip",
+                locale="en",
+                start_date="2025-06-01",
+                end_date="2025-06-10",
+                duration_days=9,
+                facts=MemoryTitleFacts(place="Iceland"),
+                llm_config=_llm_config(),
+            )
+        )
+
+    assert suggestion is not None
+    assert suggestion.title == "Iceland by car, 2025, 1200 km"
+
+
+def test_the_wrong_year_check_only_looks_at_the_headline():
+    """A subtitle may legitimately carry a day's own date outside the span."""
+    from immich_memories.titles.title_guards import refusing_a_wrong_year
+    from immich_memories.titles.title_suggestion import TitleSuggestion
+
+    suggestion = TitleSuggestion(title="Yuna grandit", subtitle="Photo du 4 juillet 2021")
+
+    result = refusing_a_wrong_year(suggestion, "2024-01-01", "2026-12-31")
+
+    assert result is suggestion
+
+
+def test_a_possessive_with_an_accent_is_still_matched():
+    """Round 3: the maker-possessive check must not accent-fold "mój"/"vår"."""
+    from immich_memories.titles.title_guards import refusing_unfounded_relationships
+    from immich_memories.titles.title_suggestion import TitleSuggestion
+
+    store = seed_people(
+        {
+            "owner": {"person_id": "person-owner", "name": "Zed Example"},
+            "people": [{"ids": ["person-a"], "name": "Ola Example", "confirmed": {"role": "son"}}],
+        }
+    )
+    suggestion = TitleSuggestion(title="Mój syn Ola", subtitle=None)
+
+    result = refusing_unfounded_relationships(suggestion, ["Ola Example"], "pl", store)
+
+    assert result is None
+
+
+def test_notre_annee_with_an_accent_is_still_filler():
+    """Round 3: the filler check must not stop matching an accented word."""
+    with patch("immich_memories.titles.llm_titles.query_llm") as mock_query:
+        mock_query.return_value = _reply("Notre année 2025")
+        suggestion = asyncio.run(
+            generate_title_with_llm(
+                memory_type="multi_person",
+                locale="fr",
+                start_date="2025-01-01",
+                end_date="2025-12-31",
+                duration_days=364,
+                person_names=["Yuna Example"],
+                facts=MemoryTitleFacts(),
+                llm_config=_llm_config(),
+            )
+        )
+
+    assert suggestion is None
+
+
+def test_voyage_en_images_with_no_place_falls_back_to_the_template():
+    """The album-copy shape "<x> en images" names nothing on its own."""
+    with patch("immich_memories.titles.llm_titles.query_llm") as mock_query:
+        mock_query.return_value = _reply("Notre voyage en images")
+        suggestion = asyncio.run(
+            generate_title_with_llm(
+                memory_type="multi_person",
+                locale="fr",
+                start_date="2025-01-01",
+                end_date="2025-12-31",
+                duration_days=364,
+                person_names=["Yuna Example"],
+                facts=MemoryTitleFacts(),
+                llm_config=_llm_config(),
+            )
+        )
+
+    assert suggestion is None
