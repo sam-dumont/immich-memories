@@ -14,7 +14,6 @@ from dataclasses import dataclass
 from datetime import date
 
 from immich_memories.analysis.editorial_intent import EditorialIntent
-from immich_memories.api.person_expression import PersonExpression
 
 __all__ = ["CarrierView", "IntentReport", "Violation", "validate_intent"]
 
@@ -33,9 +32,6 @@ class CarrierView:
     taken: date
     event: str
     seconds: float
-    # The names recognised on this carrier's own picture, for the people-condition check
-    # below (#1954). Empty when the caller never read faces, which never fails the check.
-    people: frozenset[str] = frozenset()
 
 
 @dataclass(frozen=True)
@@ -44,6 +40,9 @@ class Violation:
     severity: str  # "structural" invalidates the plan; "coverage" must be explained in the plan
     partition: str | None
     detail: str
+    # Set only for "people_condition_violated" (#1954): the one carrier it names, so the
+    # render stage can drop exactly it without re-parsing free text.
+    asset_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -130,32 +129,28 @@ def _latest_year_cluster(
     ]
 
 
-def _holds_for(condition: PersonExpression, carrier: CarrierView) -> bool:
-    held = condition.evaluate(lambda name: (carrier.asset_id,) if name in carrier.people else ())
-    return carrier.asset_id in held
-
-
 def _people_violations(
-    condition: PersonExpression | None, carriers: Sequence[CarrierView]
+    carriers: Sequence[CarrierView], violating_ids: Collection[str]
 ) -> list[Violation]:
-    """Every selected carrier whose own recognised people fail the requested condition.
+    """Every selected carrier the caller already found outside the people condition.
 
-    This is the fail-safe (#1954): a people condition is decided strictly per picture at
-    the fetch, so this should never fire. If some other path ever selected outside the
-    pool, the violation must be visible here rather than silently shipping.
+    This is the fail-safe (#1954): a people condition is decided strictly per picture,
+    by `present_on_assets` at the same fetch seam that built the pool, so this should
+    never fire. The caller does that check (it alone holds the resolved face-id
+    condition, `face_accounts`, and the captured `Asset` objects); this function only
+    turns its answer into a visible violation, never re-derives it from names.
     """
-    if condition is None:
-        return []
     return [
         Violation(
             "people_condition_violated",
             "structural",
             None,
-            f"{carrier.asset_id} was selected but its own recognised people "
-            f"({sorted(carrier.people)}) do not satisfy {condition.display_label}",
+            f"{carrier.asset_id} was selected but does not satisfy the requested people "
+            "condition on its own recognised faces",
+            asset_id=carrier.asset_id,
         )
         for carrier in carriers
-        if not _holds_for(condition, carrier)
+        if carrier.asset_id in violating_ids
     ]
 
 
@@ -195,7 +190,7 @@ def validate_intent(
     evidence_partitions: Collection[str],
     # A captured case counts its seconds as an integer; the report always states a float.
     requested_seconds: float | int,
-    people_condition: PersonExpression | None = None,
+    people_violations: Collection[str] = (),
 ) -> IntentReport:
     """Judge the plan's shape against the contract. Sparse material is reported, never padded."""
     usable = float(sum(c.seconds for c in carriers))
@@ -208,7 +203,7 @@ def validate_intent(
             if intent.product in ("on_this_day", "holiday") and carriers
             else []
         ),
-        *_people_violations(people_condition, carriers),
+        *_people_violations(carriers, people_violations),
     ]
     status, reason = _verdict(
         intent,

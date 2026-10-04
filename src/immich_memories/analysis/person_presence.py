@@ -48,8 +48,8 @@ def present_on_assets(
     ``all`` asks for every named person recognised on that one picture, not spread across
     a gathering; ``any`` asks for at least one of them there. In a household run,
     ``face_accounts`` holds each face to the pictures its own account owns (the first of
-    ``access_accounts``), so a face found on either account's copy of the same moment
-    still counts for that picture.
+    ``access_accounts``): a face counts only there, never on the other account's copy of
+    the same moment, so the same two people must share one account's own picture.
     """
     held = face_accounts or {}
     assets_by_face: dict[str, set[str]] = {}

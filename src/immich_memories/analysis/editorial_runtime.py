@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import json
 import logging
-from collections.abc import Callable, Sequence
-from dataclasses import dataclass, replace
+from collections.abc import Callable, Mapping, Sequence
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, TypeVar, cast
 
@@ -133,6 +133,11 @@ class EditorialRunContext:
     # The Immich accounts the run reads (`primary` plus names under `immich.accounts`).
     # Empty reads the primary client alone, exactly as a run always has.
     accounts: tuple[str, ...] = ()
+    # The fetch's own resolved condition (face ids, after the people store and roster) and
+    # the household account each face counts on. `person_expression` above is display
+    # names for the brief; a carrier is checked against THIS at build_result (#1954).
+    resolved_person_condition: PersonExpression | None = None
+    face_accounts: Mapping[str, str] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         """Canonicalize exact windows while preserving every intentional gap."""
@@ -159,6 +164,10 @@ class EditorialRunContext:
             raise ValueError("Runtime rendering policy disagrees with the requested memory")
 
     def _adopt_person_expression(self) -> None:
+        if self.resolved_person_condition is not None and not isinstance(
+            self.resolved_person_condition, PersonExpression
+        ):
+            raise ValueError("runtime resolved people condition must be a validated expression")
         if self.person_expression is None:
             return
         if not isinstance(self.person_expression, PersonExpression):

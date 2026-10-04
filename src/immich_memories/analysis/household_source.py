@@ -46,9 +46,10 @@ def fetch_household_source(
 class HouseholdWindows:
     """Every chosen account's read of a window, as one window source.
 
-    Person presence reads the household through this (`api/person_scope.py`): one episode
-    holds both accounts' copies, so a face recognised on either copy puts its person there.
-    The accounts are the run client's, opened once and kept open until it closes.
+    Person presence reads the household through this (`api/person_scope.py`): a face
+    counts strictly on the pictures its own account owns (`person_presence._counts_on`,
+    #1954), never on the other account's copy of the same moment. The accounts are the
+    run client's, opened once and kept open until it closes.
     """
 
     def __init__(self, client: AccessBoundClient, accounts: Sequence[str]) -> None:

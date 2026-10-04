@@ -11,6 +11,7 @@ import click
 
 from immich_memories.analysis.editorial_shareability_tiers import sharing_refusal
 from immich_memories.analysis.live_photo_pipeline import drop_live_photo_components
+from immich_memories.api.person_scope import window_condition
 from immich_memories.cli._asset_fetch import fetch_media
 from immich_memories.cli._date_resolution import (
     BIRTHDAY_FLAG_FORMAT,
@@ -645,6 +646,16 @@ def register_generate_commands(main: click.Group) -> None:
                     if fetched_photos:
                         print_info(f"Found {len(fetched_photos)} photos")
 
+                    # The exact condition the fetch above just read the window with: over
+                    # face ids, after the people store and roster resolved every name,
+                    # group and uuid. The editorial runtime checks a selected carrier
+                    # against THIS, never the raw --person/--people-expression text (#1954).
+                    resolved_people_condition = window_condition(
+                        run_people.person_ids,
+                        person_match=person_match,
+                        person_expression=run_people.condition,
+                    )
+
                     # A Live Photo's video half is part of a photograph, not
                     # footage: it must not compete as a video against its own still.
                     assets = drop_live_photo_components(assets, fetched_photos)
@@ -709,6 +720,12 @@ def register_generate_commands(main: click.Group) -> None:
                                 if people_condition is not None
                                 else {}
                             ),
+                            **(
+                                {"person_condition_resolved": (resolved_people_condition.to_dict())}
+                                if resolved_people_condition is not None
+                                else {}
+                            ),
+                            "face_accounts": dict(run_people.face_accounts),
                         },
                         date_range=date_range,
                         date_ranges=date_ranges,

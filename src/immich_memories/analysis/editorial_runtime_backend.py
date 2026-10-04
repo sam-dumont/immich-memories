@@ -179,6 +179,7 @@ class ProductionPostCardBackend:
                 )
                 trace.warnings.append(warning)
                 logger.warning(warning)
+        _drop_people_violations(result, trace)
         return self._adopt(result, source.artifact_dir, allowed_ids)
 
     def _effects(self, source, resources):
@@ -232,6 +233,8 @@ class ProductionPostCardBackend:
             event_asset_ids=context.event_asset_ids,
             event_admission=context.event_admission,
             pool_subject=context.pool_subject,
+            resolved_person_condition=context.resolved_person_condition,
+            face_accounts=context.face_accounts,
         )
         source = capture_structure_input(
             workprint,
@@ -519,6 +522,32 @@ def _write_visual_requests(artifact_dir: Path, trace: Trace, request_start: int)
             indent=2,
         ),
     )
+
+
+def _drop_people_violations(result: StructurePlanningResult, trace: Trace) -> None:
+    """Drop any carrier the contract check flagged against the requested people (#1954).
+
+    The owner's ruling is strict: better lose a good picture than bundle in a wrong one.
+    The fetch and the contract check already agree this should never happen; dropping here
+    is the last gate before a carrier reaches render, not a substitute for either.
+    """
+    violations = result.plan.get("intent_report", {}).get("violations", [])
+    dropped = {
+        violation["asset_id"]
+        for violation in violations
+        if violation.get("code") == "people_condition_violated"
+    }
+    if not dropped:
+        return
+    warning = (
+        f"!! {len(dropped)} selected picture(s) failed the requested people condition on "
+        "their own faces and were dropped before render"
+    )
+    trace.warnings.append(warning)
+    logger.warning(warning)
+    result.plan["carriers"] = [
+        row for row in result.plan["carriers"] if row["asset_id"] not in dropped
+    ]
 
 
 def _validate_structure_carriers(result: StructurePlanningResult, *, allowed_ids: set[str]) -> None:

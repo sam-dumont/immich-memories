@@ -22,7 +22,7 @@ from immich_memories.analysis.editorial_intent_validation import CarrierView, va
 from immich_memories.analysis.editorial_story_planner import story_plan_fields
 from immich_memories.analysis.editorial_structure_budget import MIN_CARRIER_SECONDS
 from immich_memories.analysis.editorial_structure_contract import StructurePlanningResult
-from immich_memories.analysis.person_presence import people_condition as _flat_people_condition
+from immich_memories.analysis.person_presence import present_on_assets
 from immich_memories.analysis.place_names import shown_city
 from immich_memories.api.models import Asset
 from immich_memories.api.person_expression import PersonExpression
@@ -209,6 +209,36 @@ def _duration_realization(
     }
 
 
+def _people_condition_violations(
+    carrier_ids: Sequence[str],
+    assets: Mapping[str, Asset],
+    condition: PersonExpression | None,
+    face_accounts: Mapping[str, str],
+) -> frozenset[str]:
+    """Every carrier id outside the fetch's own resolved condition (#1954).
+
+    Uses ``present_on_assets`` with ``face_accounts`` -- the exact function and rule the
+    fetch used to build the pool in the first place -- never the display names on the
+    brief. A carrier missing from the captured source evidence is a structural defect
+    elsewhere (the structure contract already requires every selected id to be a captured
+    asset), so it fails loud here rather than being silently waved through as a match.
+    """
+    if condition is None:
+        return frozenset()
+    missing = [carrier_id for carrier_id in carrier_ids if carrier_id not in assets]
+    if missing:
+        raise ValueError(
+            f"selected carrier(s) {missing} are absent from captured source evidence; "
+            "cannot check the people condition"
+        )
+    held = present_on_assets(
+        [assets[carrier_id] for carrier_id in carrier_ids],
+        condition,
+        face_accounts=face_accounts,
+    )
+    return frozenset(carrier_ids) - held
+
+
 def _contract_check(
     intent,
     outcome: PlanOutcome,
@@ -218,8 +248,10 @@ def _contract_check(
     content,
     assets: Mapping[str, Asset],
     condition: PersonExpression | None,
+    face_accounts: Mapping[str, str],
 ):
     """D09/D14: judge the plan's shape against the contract; sparse material is reported, never padded."""
+    carrier_ids = [x["asset_id"] for x in outcome.carriers]
     report = validate_intent(
         intent,
         carriers=[
@@ -228,17 +260,14 @@ def _contract_check(
                 datetime.fromisoformat(x["taken"]).date(),
                 x["event"],
                 float(x["seconds"]),
-                people=frozenset(
-                    person.name for person in assets[x["asset_id"]].people if person.name
-                )
-                if x["asset_id"] in assets
-                else frozenset(),
             )
             for x in outcome.carriers
         ],
         evidence_partitions=outcome.evidence_partitions,
         requested_seconds=facts.target_seconds,
-        people_condition=condition,
+        people_violations=_people_condition_violations(
+            carrier_ids, assets, condition, face_accounts
+        ),
     )
     if report.status != "insufficient_material" or not _search_limited(assembly):
         return report
@@ -503,11 +532,6 @@ def build_result(source, ports, facts: PlanFacts, outcome: PlanOutcome) -> Struc
             limited=_search_limited(assembly),
         ),
     }
-    condition = _flat_people_condition(
-        source.case.people,
-        "and" if source.case.person_match != "or" else "or",
-        source.case.person_expression,
-    )
     judged["report"] = _contract_check(
         source.intent,
         outcome,
@@ -515,7 +539,8 @@ def build_result(source, ports, facts: PlanFacts, outcome: PlanOutcome) -> Struc
         assembly=assembly,
         content=content,
         assets=source.assets,
-        condition=condition,
+        condition=source.case.resolved_person_condition,
+        face_accounts=source.case.face_accounts,
     )
     plan = _plan_dict(source, ports, facts, outcome, judged)
     return StructurePlanningResult(
