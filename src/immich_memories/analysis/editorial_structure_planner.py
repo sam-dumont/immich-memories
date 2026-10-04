@@ -17,22 +17,16 @@ from operator import itemgetter
 from typing import Any
 
 from immich_memories.analysis import llm_metrics
-from immich_memories.analysis.editorial_block_votes import (
-    judge_worthiness,
-    worth_criterion_v44,
-)
 from immich_memories.analysis.editorial_cut_invariants import check_finished_cut
 from immich_memories.analysis.editorial_episode_documents import factual_moment_rows
 from immich_memories.analysis.editorial_exposure_chains import chain_holds_for
 from immich_memories.analysis.editorial_family_seat import FilmSeatSource, seat_in_film
-from immich_memories.analysis.editorial_home_radius import home_of, near_home_of
 from immich_memories.analysis.editorial_owner_required import admit_owner_required
 from immich_memories.analysis.editorial_people_condition_pool import (
     exclude_people_condition_violators,
     with_people_condition_exclusion,
 )
 from immich_memories.analysis.editorial_picture_admission import picture_admission, shows_life
-from immich_memories.analysis.editorial_picture_ladders import depth_cap
 from immich_memories.analysis.editorial_review_list import write_for_cut
 from immich_memories.analysis.editorial_rule_banked_facts import (
     NO_BANKED_FACTS,
@@ -42,7 +36,7 @@ from immich_memories.analysis.editorial_rule_banked_facts import (
 )
 from immich_memories.analysis.editorial_rule_quality import rule_representative_rank
 from immich_memories.analysis.editorial_rule_reader import NoModelJudge, RuleStructureReader
-from immich_memories.analysis.editorial_shareability import SHAREABLE, unit_members
+from immich_memories.analysis.editorial_shareability import SHAREABLE
 from immich_memories.analysis.editorial_shareability_tiers import audience_check_for
 from immich_memories.analysis.editorial_story_candidates import story_candidates
 from immich_memories.analysis.editorial_story_lookalike import hash_pair_relation
@@ -55,7 +49,6 @@ from immich_memories.analysis.editorial_structure_audience import (
 )
 from immich_memories.analysis.editorial_structure_budget import (
     CONTENT_RESERVE_SECONDS,
-    MIN_CARRIER_SECONDS,
     NOMINAL_STILL_SECONDS,
 )
 from immich_memories.analysis.editorial_structure_contract import (
@@ -81,11 +74,10 @@ from immich_memories.analysis.editorial_structure_lines import strangers_only
 from immich_memories.analysis.editorial_structure_material import (
     Material,
     Wall,
-    anchor_line,
     build_material,
     hold_the_ends,
     read_wall,
-    source_exclusions,
+    refresh_candidates,
 )
 from immich_memories.analysis.editorial_structure_record import (
     PlanFacts,
@@ -101,32 +93,24 @@ from immich_memories.analysis.editorial_unvouched_filler import (
     filler_evidence,
     owner_vouches_for,
 )
+from immich_memories.analysis.editorial_worthiness_gate import (
+    evidence_partitions as evidence_partitions_of,
+)
+from immich_memories.analysis.editorial_worthiness_gate import (
+    near_home_test,
+    partition_cap,
+    story_worthiness,
+    worthiness_gate,
+)
 from immich_memories.analysis.subject_framing import framing_visibility
 from immich_memories.config_tiers import nas_draft_config
 from immich_memories.processing.editorial_timing import bind_editorial_timeline
 from immich_memories.security import write_secret_file
-from immich_memories.store.vote_banks import VoteBank
 from immich_memories.tracking.timed import timed
 
 SECONDS_PER_SLOT = NOMINAL_STILL_SECONDS
 STORY_RANK = {"central": 0, "supporting": 1}
 FLAGGED_LINE = re.compile(r"nsfw=yes|exposure=(partial|nude)")
-
-
-def _near_home_test(source: StructurePlanningInput, wall: Wall):
-    home = home_of(source.config.trips)
-
-    def near_home(f):
-        pts: list[tuple[float, Any]] = []
-        for a in wall.event_assets.get(f, []):
-            asset = source.assets.get(a)
-            exif = asset.exif_info if asset is not None else None
-            if not exif or exif.latitude is None:
-                continue
-            pts.append((exif.latitude, exif.longitude))
-        return near_home_of(home, pts)
-
-    return near_home
 
 
 @dataclass
@@ -191,59 +175,6 @@ def _chapters_of(selection, carriers, anchor_label) -> list[dict]:
         }
         for number, row in enumerate(selection.episodes, 1)
     ]
-
-
-def _story_worthiness(selection, wall: Wall, tier: dict, worth_reason: dict) -> None:
-    """Worthiness comes from the story's own hierarchy, not a separate ballot."""
-    for episode in selection.story.episodes:
-        rank = STORY_RANK.get(episode.role, 2)
-        for moment_alias in episode.moments:
-            f = wall.family_of_moment.get(moment_alias)
-            if f is not None and rank < tier.get(f, 3):
-                tier[f] = rank
-                worth_reason[f] = episode.title
-    for f in wall.fam_ids:
-        tier.setdefault(f, 2)
-
-
-def _evidence_partitions(intent, wall: Wall, tier: dict) -> set[str]:
-    parts = set()
-    for f in wall.fam_ids:
-        if tier[f] > 1:
-            continue
-        day = datetime.fromisoformat(wall.moments[wall.families[f][0]]["taken"]).date()
-        part = intent.partition_for(day)
-        if part is not None:
-            parts.add(part.key)
-    return parts
-
-
-def _partition_cap(
-    intent, target_seconds: float, prior, content_budget=None
-) -> tuple[int, int, int | None]:
-    """Slots, the per-anchor depth cap and the product's partition carrier limit."""
-    slots_total = int(
-        (target_seconds if content_budget is None else content_budget) // SECONDS_PER_SLOT
-    )
-    cap = (
-        depth_cap(target_seconds)
-        if content_budget is None
-        else int(content_budget // MIN_CARRIER_SECONDS)
-    )
-    limit = intent.max_carriers_per_partition
-    if limit is not None:
-        cap = min(cap, limit)
-    if limit is not None and prior:
-        prior_counts: dict[str, int] = {}
-        for c in prior["carriers"]:
-            part = intent.partition_for(datetime.fromisoformat(c["taken"]).date())
-            if part is not None:
-                prior_counts[part.key] = prior_counts.get(part.key, 0) + 1
-        if any(n > limit for n in prior_counts.values()):
-            raise ValueError(
-                "prior plan exceeds the product's partition carrier limit; replan without the incompatible prior"
-            )
-    return slots_total, cap, limit
 
 
 @timed("selection.structure")
@@ -311,7 +242,7 @@ def _plan_structure(
     selection_budget = (
         source.render_timing.selection_budget(source.assets) if source.render_timing else None
     )
-    slots_total, cap, partition_limit = _partition_cap(
+    slots_total, cap, partition_limit = partition_cap(
         source.intent, source.case.target_seconds, source.prior_plan, selection_budget
     )
     prior_assets = (
@@ -445,11 +376,13 @@ def _select(
         chains=chains,
         companion_heads=source.companion_detectors,
         activity_reader=ports.laya.activity_answers if ports.laya else None,
-        prepare_candidates=partial(_refresh_candidates, source, ports, material, chains)
+        prepare_candidates=partial(refresh_candidates, source, ports, material, chains)
         if ports.prepare_candidates
         else None,
+        ocr_text_of=ports.document_ocr_text,
+        protected=source.owner_required_asset_ids,
     )
-    tier, worth_reason, marker = _worthiness_gate(
+    tier, worth_reason, marker = worthiness_gate(
         source,
         ports,
         wall,
@@ -529,8 +462,8 @@ def _select(
         hold_the_ends(run.carriers)
     chapters = _chapters_of(selection, run.carriers, wall.anchor_label)
     beats = [row["beat"] for row in chapters]
-    _story_worthiness(selection, wall, tier, worth_reason)
-    evidence_partitions = _evidence_partitions(source.intent, wall, tier)
+    story_worthiness(selection, wall, tier, worth_reason)
+    evidence_partitions = evidence_partitions_of(source.intent, wall, tier)
     carriers_at_selection = len(run.carriers)
     run.carriers.sort(key=itemgetter("taken"))
     run.selection_stages = {
@@ -609,76 +542,6 @@ def _select(
         ladder_reads=0,
         carriers_at_selection=carriers_at_selection,
     )
-
-
-def _refresh_candidates(source, ports, material, chains, carriers):
-    if not ports.prepare_candidates(carriers):
-        return
-    # Gates and prose readers share the refreshed facts, but these derived views
-    # must follow them before any candidate is judged.
-    chains.update(
-        chain_holds_for(source.assets, source.audience_annotations, source.companion_detectors)
-    )
-    members = {member for carrier in carriers for member in unit_members(carrier)}
-    for member in members:
-        material.document_sources.pop(member, None)
-    material.document_sources.update(
-        source_exclusions(
-            source, ports, {member: source.annotations.get(member, "") for member in members}
-        )
-    )
-    for carrier in carriers:
-        carrier.update(material.builder.refresh_clip_facts(carrier))
-        asset_id = carrier["asset_id"]
-        material.story_lines[asset_id] = material.text.description(
-            carrier
-        ) or source.annotations.get(asset_id, "")
-
-
-def _worthiness_gate(
-    source, ports, wall: Wall, material: Material, *, admission, admission_key, record
-):
-    """Keep scoped admission; ordinary story importance comes from the story reading."""
-    if ports.draft is not None:
-        return ports.draft.tiers.copy(), ports.draft.reasons.copy(), ""
-    if ports.rules is not None:
-        tiers, reasons = ports.rules.worthiness(wall, _near_home_test(source, wall))
-        record("memory-worthy-gate", {"version": "rules-v1", "tiers": tiers, "reasons": reasons})
-        return tiers, reasons, ""
-    criterion, marker = worth_criterion_v44(source.case.product, source.intent.subject)
-    if not marker:
-        record("memory-worthy-gate", {"version": "story-importance-v1", "rounds": []})
-        return {}, {}, ""
-    bank = VoteBank(source.bank_store, "memory-worthy", source.case.key)
-    gate_tier, gate_reason, gate_rounds = judge_worthiness(
-        ports.judge,
-        happenings=wall.fam_ids,
-        label_of=wall.anchor_label,
-        text_of=lambda f: anchor_line(wall, material, f).split(": ", 1)[-1],
-        near_home=_near_home_test(source, wall),
-        contract=admission,
-        contract_key=admission_key,
-        criterion=criterion,
-        marker=marker,
-        period_label=source.case.label,
-        bank=bank,
-        save=bank.save,
-    )
-    record(
-        "memory-worthy-gate",
-        {
-            "version": "memory-worthy-v2-contract",
-            "counts": {
-                "remarkable": sum(1 for t in gate_tier.values() if t == 0),
-                "maybe": sum(1 for t in gate_tier.values() if t == 1),
-                "background": sum(1 for t in gate_tier.values() if t == 2),
-            },
-            "tiers": {wall.anchor_label[f]: t for f, t in gate_tier.items()},
-            "reasons": {wall.anchor_label[f]: r for f, r in gate_reason.items()},
-            "rounds": gate_rounds,
-        },
-    )
-    return gate_tier.copy(), gate_reason.copy(), marker
 
 
 def _story_selection(
@@ -776,7 +639,7 @@ def _story_selection(
         strangers_only=strangers_only(source.assets, source.audience_annotations),
         vouched=partial(owner_vouches_for, evidence=filler_evidence(source)),
         film_span=(source.case.ranges[0].start.date(), source.case.ranges[-1].end.date()),
-        near_home=_near_home_test(source, wall),
+        near_home=near_home_test(source, wall),
         banked=banked,
     )
 

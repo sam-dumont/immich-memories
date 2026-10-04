@@ -62,13 +62,17 @@ def catalogue_prepared_window(
     unservable: Mapping[str, Any] | None = None,
     albums: Callable[[Sequence[str]], tuple[str, ...]] | None = None,
     requester: Callable[[str], str] | None = None,
+    client: object = None,
 ) -> tuple[LibraryCatalogue, tuple[str, ...]]:
     """Read this window's episodes and bank an account for every month it covers.
 
     Returns the catalogue and the episodes that stayed unread; an unread episode keeps its
-    membership and simply contributes nothing to its month's account.
+    membership and simply contributes nothing to its month's account. `client`, when given,
+    reads Immich's own OCR for the same personal-document check a cut applies (#2062).
     """
-    prepared = _admitted(sources, scope, _screen_documents(sources, scope, config, unservable))
+    prepared = _admitted(
+        sources, scope, _screen_documents(sources, scope, config, unservable, client)
+    )
     ask = requester or catalogue_requester(config)
     episodes, unread = _banked_readings(prepared, config=config, requester=ask, albums=albums)
     if not episodes:
@@ -166,8 +170,10 @@ def _screen_documents(
     scope: SourceScope,
     config: Config,
     unservable: Mapping[str, Any] | None,
+    client: object = None,
 ) -> dict[str, Any]:
     """The same gate a cut applies, so both read one corpus and one set of episodes."""
+    from immich_memories.analysis.editorial_carrier_eligibility import document_ocr_port
     from immich_memories.analysis.editorial_source_gate import screen_document_rejections
 
     exclusions: dict[str, Any] = dict(unservable or {})
@@ -176,7 +182,7 @@ def _screen_documents(
     if not readable:
         return exclusions
     lines = _annotations(preliminary, config).lines_for(readable)
-    return exclusions | screen_document_rejections(lines)
+    return exclusions | screen_document_rejections(lines, ocr_text_of=document_ocr_port(client))
 
 
 def _annotations(prepared: PreparedEditorialSource, config: Config):

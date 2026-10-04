@@ -267,7 +267,14 @@ The separate model-planning route can read banked lines or use plain clip facts.
   which can only tighten it (`editorial_rule_banked_facts.py`).
 - **Carrier**: the picture admitted to carry one chosen moment of a funded story, if it is free,
   in context and spaced from the shots already committed (`editorial_story_carriers.py`,
-  `editorial_carrier_eligibility.py`). A carrier is a shot before it is rendered.
+  `editorial_carrier_eligibility.py`). A carrier is a shot before it is rendered. A photographed
+  ID card, passport or personal document is excluded on every tier (`personal_document` in
+  `editorial_carrier_eligibility.py`, shared with the screen/document gate,
+  `screen_document_rejections` in `editorial_source_gate.py`): a caption naming the document, or
+  Immich's own OCR reading a personal-record field, an MRZ line or a card number
+  (`document_ocr_port`), corroborated by the frame head where one is read. Only an explicit
+  owner pin exempts a picture. The memory-worthy tier gate, near-home test and partition caps
+  live in `editorial_worthiness_gate.py`, split out of `editorial_structure_planner.py`.
 - **Picture admission**: `PictureAdmission` (`editorial_picture_admission.py`) owns the shared
   standing, audience, spacing and candidate repetition checks. Draft selection, thin swaps,
   audience replacements, duplicate refills and family seats use it. Later candidates acquire

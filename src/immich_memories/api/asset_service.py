@@ -83,6 +83,21 @@ class AssetService:
         rows = await self._request("GET", "/faces", params={"id": asset_id})
         return [AssetFace(**row) for row in rows] if isinstance(rows, list) else []
 
+    async def get_asset_ocr_text(self, asset_id: str) -> str | None:
+        """This asset's recognised text, read by Immich's own OCR job (2.2+).
+
+        An asset with no OCR data (never processed, or nothing readable in it) answers 404,
+        which reads the same as no text: None, not an error.
+        """
+        from immich_memories.api.immich import ImmichNotFoundError
+
+        try:
+            data = await self._request("GET", f"/assets/{asset_id}/ocr")
+        except ImmichNotFoundError:
+            return None
+        text = data.get("text") if isinstance(data, dict) else None
+        return text or None
+
     @timed("download.preview", items=1)
     async def get_asset_thumbnail(self, asset_id: str, size: str = "preview") -> bytes:
         """Get asset thumbnail."""

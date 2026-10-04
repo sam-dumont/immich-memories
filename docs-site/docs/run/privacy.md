@@ -122,7 +122,8 @@ Read it before sharing; automatic redaction is not a substitute for checking the
 ## Documents never ship
 
 A photographed ID card, passport, bank card, letter or form with readable personal text is
-held back on every tier, on purpose; see [picking a shot](../how-it-chooses/picking-shots.md)
+held back on every tier, on purpose, including its OCR check against your own configured
+Immich server, never an outside service; see [picking a shot](../how-it-chooses/picking-shots.md)
 for how it's caught.
 
 ## Everything that can leave, and when

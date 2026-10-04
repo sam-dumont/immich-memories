@@ -414,6 +414,42 @@ class TestImmichClientRequest:
         assert _TEST_KEY not in str(raised.value)
 
 
+class TestAssetOcrText:
+    """GET /assets/{id}/ocr, and the 404-means-no-text mapping (#2062)."""
+
+    @pytest.mark.asyncio
+    async def test_a_404_reads_as_no_text_not_an_error(self, _mock_config):
+        client = ImmichClient(_TEST_URL, _TEST_KEY)
+        response = httpx.Response(404, request=httpx.Request("GET", "/test"), json={})
+        client._client = AsyncMock()
+        client._client.is_closed = False
+        client._client.request = AsyncMock(return_value=response)
+
+        assert await client.get_asset_ocr_text("missing") is None
+
+    @pytest.mark.asyncio
+    async def test_recognised_text_is_returned(self, _mock_config):
+        client = ImmichClient(_TEST_URL, _TEST_KEY)
+        response = httpx.Response(
+            200, request=httpx.Request("GET", "/test"), json={"text": "PASSPORT"}
+        )
+        client._client = AsyncMock()
+        client._client.is_closed = False
+        client._client.request = AsyncMock(return_value=response)
+
+        assert await client.get_asset_ocr_text("card") == "PASSPORT"
+
+    @pytest.mark.asyncio
+    async def test_empty_recognised_text_reads_as_none(self, _mock_config):
+        client = ImmichClient(_TEST_URL, _TEST_KEY)
+        response = httpx.Response(200, request=httpx.Request("GET", "/test"), json={"text": ""})
+        client._client = AsyncMock()
+        client._client.is_closed = False
+        client._client.request = AsyncMock(return_value=response)
+
+        assert await client.get_asset_ocr_text("card") is None
+
+
 class TestImmichClientLifecycle:
     """Context manager and connection lifecycle."""
 

@@ -13,7 +13,7 @@ from immich_memories.analysis.editorial_album_index import (
     RunAlbumNames,
     record_album_index,
 )
-from immich_memories.analysis.editorial_carrier_eligibility import PERSONAL_DOCUMENT_OCR_WORDS
+from immich_memories.analysis.editorial_carrier_eligibility import document_ocr_port
 from immich_memories.analysis.editorial_event_story import PrintedNear
 from immich_memories.analysis.editorial_evidence_provenance import AttemptEvidenceProvenance
 from immich_memories.analysis.editorial_film_preparation import FilmPreparation
@@ -510,28 +510,6 @@ def _printed_near(client: object) -> PrintedNear | None:
     return ImmichPrintedText(cast(Any, client)).screen_reads
 
 
-def _document_ocr_hits(client: object) -> Callable[[], frozenset[str]] | None:
-    """Every asset Immich's OCR reads a personal-record field on, read once and cached.
-
-    Corroborates the carrier eligibility check's personal-document rule (#2062); None when
-    this client cannot search Immich's metadata.
-    """
-    if not callable(getattr(client, "search_metadata", None)):
-        return None
-    reader = ImmichPrintedText(cast(Any, client))
-    cache: list[frozenset[str]] = []
-
-    def hits() -> frozenset[str]:
-        if not cache:
-            found: set[str] = set()
-            for word in PERSONAL_DOCUMENT_OCR_WORDS:
-                found.update(reader.pictures_reading(word))
-            cache.append(frozenset(found))
-        return cache[0]
-
-    return hits
-
-
 def build_editorial_planner(
     *,
     client: FullEditorialSource,
@@ -682,7 +660,7 @@ def build_editorial_planner(
         episode_demand=demand,
         prepare_refinement=refinement.refine if refinement else None,
         printed_near=_printed_near(client),
-        document_ocr_hits=_document_ocr_hits(client),
+        document_ocr_text=document_ocr_port(client),
     )
 
     def attempt_directory() -> Path:

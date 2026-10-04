@@ -2,10 +2,19 @@
 
 from __future__ import annotations
 
+import logging
 import re
-from collections.abc import Collection, Mapping
+from collections.abc import Callable, Collection, Mapping
+
+import httpx
 
 from immich_memories.analysis.annotation_line_fields import content_of
+from immich_memories.api.immich import ImmichAPIError
+
+logger = logging.getLogger(__name__)
+
+# The Immich server version that first answers GET /assets/{id}/ocr (#2062).
+_OCR_MIN_VERSION = (2, 2)
 
 # The kinds of frame that carry nothing a film can show, against the ones that do. This is
 # the `frame_kind` head's label set, split the way the standing gate reads it.
@@ -146,20 +155,6 @@ def screenshot_by_resolution(line: str) -> bool:
     return (min(w, h), max(w, h)) in PHONE_SCREEN_SIZES
 
 
-# Immich's OCR answers "does picture X read word W", not "does X hold any text" (it banks no
-# OCR text of its own, #2062): a closed vocabulary of personal-record fields a scanned or
-# photographed ID, passport or bank card reads, and an ordinary sign or programme does not.
-PERSONAL_DOCUMENT_OCR_WORDS = (
-    "passport",
-    "driving licence",
-    "driver licence",
-    "driver's license",
-    "identity card",
-    "date of birth",
-    "national insurance",
-    "social security number",
-)
-
 _PERSONAL_DOCUMENT_TEXT = re.compile(
     r"\b(?:identity cards?|id cards?|passports?|driver'?s? licen[cs]es?|driving licen[cs]es?|"
     r"(?:bank|credit|debit) cards?|(?:bank|credit|debit) statements?|boarding passe?s?|"
@@ -168,8 +163,80 @@ _PERSONAL_DOCUMENT_TEXT = re.compile(
     re.IGNORECASE,
 )
 
+# Only these frame kinds carry a personal document at all; an incidental document in a
+# people_moment or place_or_scenery frame is not the frame's subject (#2062). A frame_kind
+# that is missing (no head computed, or no heads at all on Basic) is not a disqualification:
+# OCR is all Basic has, and it must be allowed to stand on its own.
+_DOCUMENT_LIKE_FRAMES = frozenset({"screen_or_document", "meaningful_record"})
 
-def personal_document(content: str, heads: Mapping[str, str], ocr_hit: bool) -> bool:
+# The machine-readable zone on a passport or ID card pads every line to a fixed width with
+# angle brackets; two or more such runs is not a sequence an ordinary caption, sign or menu
+# ever produces.
+_MRZ_LINE = re.compile(r"<{5,}")
+# A 13-19 digit run (a card number) or an IBAN-shaped code.
+_DIGIT_RUN = re.compile(r"\b(?:\d[ -]?){13,19}\b")
+_IBAN = re.compile(r"\b[A-Z]{2}\d{2}[A-Z0-9]{10,30}\b")
+
+# Personal-record field labels a passport, ID card, bank card, payslip or medical record
+# prints, across the household's own languages and the field names the owner named directly
+# (NISS/numéro national, the Belgian national number). Not exhaustive: a locale missing here
+# still gets the caption, MRZ and card/IBAN-number signals.
+_PERSONAL_RECORD_FIELD = re.compile(
+    r"\b(?:"
+    # English
+    r"date of birth|place of birth|nationality|card ?holder|holder'?s? name|"
+    r"social security(?: number)?|national (?:insurance|number)|passport no\.?|"
+    # French / Belgian French
+    r"date de naissance|n[ée]\(?e\)? le|lieu de naissance|num[ée]ro national|niss|"
+    r"titulaire|nom et pr[ée]nom|nom de naissance|"
+    # Dutch / Belgian Dutch
+    r"geboortedatum|geboorteplaats|nationaliteit|identiteitskaart|rijksregisternummer|"
+    # German
+    r"geburtsdatum|geburtsort|staatsangeh[öo]rigkeit|ausweisnummer|"
+    # Spanish
+    r"fecha de nacimiento|lugar de nacimiento|nacionalidad|n[úu]mero de identificaci[óo]n|"
+    # Italian
+    r"data di nascita|luogo di nascita|nazionalit[àa]|codice fiscale|"
+    # Portuguese
+    r"data de nascimento|naturalidade|nacionalidade|"
+    # Nordic / Finnish
+    r"f[øö]dselsdato|f[øö]dselsnummer|personnummer|henkil[öo]tunnus|"
+    # Polish / Romanian / Czech
+    r"data urodzenia|numer pesel|data na[sş]terii|cod numeric personal|rodn[ée] [čc]íslo"
+    r")\b",
+    re.IGNORECASE,
+)
+
+
+def _luhn_valid(run: str) -> bool:
+    """The check digit a card number (not an arbitrary long number) must satisfy."""
+    digits = [int(ch) for ch in run if ch.isdigit()]
+    if len(digits) < 13:
+        return False
+    total = 0
+    for index, digit in enumerate(reversed(digits)):
+        if index % 2 == 1:
+            digit *= 2
+            if digit > 9:
+                digit -= 9
+        total += digit
+    return total % 10 == 0
+
+
+def ocr_reads_a_personal_record(ocr_text: str | None) -> bool:
+    """Immich's own OCR text names a personal-record field, a passport's machine-readable
+    zone, or a Luhn-valid card number / IBAN -- evidence no caption or head can give (#2062)."""
+    if not ocr_text:
+        return False
+    return bool(
+        _PERSONAL_RECORD_FIELD.search(ocr_text)
+        or len(_MRZ_LINE.findall(ocr_text)) >= 2
+        or _IBAN.search(ocr_text)
+        or any(_luhn_valid(run) for run in _DIGIT_RUN.findall(ocr_text))
+    )
+
+
+def personal_document(content: str, heads: Mapping[str, str], ocr_text: str | None = None) -> bool:
     """A photographed ID card or personal document, caught where the detector heads cannot.
 
     `doc_docling` has no identity-document label: it names figure types (charts, tables,
@@ -177,33 +244,32 @@ def personal_document(content: str, heads: Mapping[str, str], ocr_hit: bool) -> 
     the same label an ordinary photo gets, and `frame_kind`'s `screen_or_document` is one
     label for every screen and document, legitimate records included -- on the public
     held-out set 42 of 51 such frames were worth keeping (#1539's own measurement). Neither
-    head tells a photographed passport apart from a race certificate, so neither fires
-    alone; only a caption naming the document, or Immich's OCR reading a personal-record
-    field, does that, and the frame head only narrows which pictures that evidence counts
-    for (#2062).
+    head tells a photographed passport apart from a race certificate on its own, so this
+    reads the content instead: a caption naming the document, or Immich's OCR reading an
+    actual personal-record field, an MRZ line or a card number. The frame head only narrows
+    which pictures that evidence counts for, to an explicit non-document frame kind (#2062).
     """
     if _PERSONAL_DOCUMENT_TEXT.search(content):
         return True
-    if not heads:
-        # BASIC has no document head at all; OCR reading a personal-record field is the
-        # strongest signal it has, so it alone is enough here (prefer false positives).
-        return ocr_hit
-    return heads.get("frame_kind") == "screen_or_document" and ocr_hit
+    frame = heads.get("frame_kind")
+    if frame is not None and frame not in _DOCUMENT_LIKE_FRAMES:
+        return False
+    return ocr_reads_a_personal_record(ocr_text)
 
 
 def excluded_carrier_sources(
     annotations: Mapping[str, str],
     *,
     heads_of: Mapping[str, Mapping[str, str]] | None = None,
-    ocr_document_hits: Collection[str] = (),
+    ocr_text_of: Callable[[str], str | None] | None = None,
     protected: Collection[str] = (),
 ) -> dict[str, str]:
     """Use grounded annotation fields, without reclassifying the event's importance.
 
     A map mentioned in a real scene is not the same as a geographical-map document
     label. No date, filename, person or sporting-event name is part of this rule.
-    `protected` pictures (a favourite, or one the owner required) skip the personal-document
-    check only: the owner's own choice stands.
+    `protected` pictures (only an explicit owner pin, `owner_required_asset_ids`) skip the
+    personal-document check only: the owner's own choice stands.
     """
     excluded = {}
     heads_of = heads_of or {}
@@ -228,7 +294,54 @@ def excluded_carrier_sources(
         elif identical_grid(content):
             excluded[asset_id] = "identical-grid"
         elif asset_id not in protected and personal_document(
-            content, heads_of.get(asset_id, {}), asset_id in ocr_document_hits
+            content,
+            heads_of.get(asset_id, {}),
+            ocr_text_of(asset_id) if ocr_text_of else None,
         ):
             excluded[asset_id] = "personal-document"
     return excluded
+
+
+def document_ocr_port(client: object) -> Callable[[str], str | None] | None:
+    """This run's per-asset OCR text reader, or None when it has no OCR to offer (#2062).
+
+    A server below 2.2, or a client with no asset-OCR or version read at all, skips the
+    signal rather than ask every candidate and fail the same way each time. A read failure
+    once the signal is live disables it for the rest of this run and logs once: a transient
+    Immich error must not hold the whole library, and must not spam the log either. The
+    caption and head signals this read corroborates still apply on their own.
+    """
+    get_server_info = getattr(client, "get_server_info", None)
+    get_text = getattr(client, "get_asset_ocr_text", None)
+    if not callable(get_server_info) or not callable(get_text):
+        return None
+    try:
+        info = get_server_info()
+    except (ImmichAPIError, httpx.HTTPError, OSError) as exc:
+        logger.warning(
+            "Could not read Immich's server version; personal-document OCR is off: %s", exc
+        )
+        return None
+    if (info.major, info.minor) < _OCR_MIN_VERSION:
+        logger.info(
+            "Immich %s predates per-asset OCR reads; personal-document OCR is off",
+            info.version_string,
+        )
+        return None
+    disabled = False
+
+    def ocr_text_of(asset_id: str) -> str | None:
+        nonlocal disabled
+        if disabled:
+            return None
+        try:
+            return get_text(asset_id)
+        except (ImmichAPIError, httpx.HTTPError, OSError) as exc:
+            logger.warning(
+                "Immich OCR read failed (%s); personal-document OCR is off for the rest of this run",
+                exc,
+            )
+            disabled = True
+            return None
+
+    return ocr_text_of

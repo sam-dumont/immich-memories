@@ -265,11 +265,11 @@ class StructurePlannerPorts:
     # Immich's OCR over the screens and documents near a moment, for the no-model reader's event
     # corroboration (`editorial_event_story`); None when the run cannot search Immich.
     printed_near: PrintedNear | None = None
-    # Every asset Immich's OCR reads a personal-record field on (a passport, a driving
-    # licence, a date of birth); corroborates a photographed ID or document the carrier
-    # eligibility heads alone cannot tell from a legitimate record (#2062). None when the
-    # run cannot search Immich.
-    document_ocr_hits: Callable[[], frozenset[str]] | None = None
+    # This asset's OCR text, read through whichever Immich account owns it; corroborates a
+    # photographed ID or document the carrier eligibility heads alone cannot tell from a
+    # legitimate record (#2062). None when the server predates OCR reads (2.2) or a read
+    # failed; a missing or unreadable asset answers None, not an error.
+    document_ocr_text: Callable[[str], str | None] | None = None
     prepare_candidates: Callable[[Sequence[Mapping[str, Any]]], bool] | None = None
     refine: (
         Callable[
