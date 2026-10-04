@@ -788,3 +788,11 @@ def every_run_an_occasion(monkeypatch):
             }
         ),
     )
+
+
+@pytest.fixture(autouse=True)
+def _hardware_probe_advice_fresh():
+    """Probe advice is given once per process; each test starts as if it were the first."""
+    from immich_memories.processing import hardware
+
+    hardware._advice_given.clear()

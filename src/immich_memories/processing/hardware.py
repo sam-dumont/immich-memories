@@ -124,11 +124,18 @@ def _probe_ffmpeg_encode(encoder_args: list[str], *, upload: str | None = None) 
     ]  # fmt: skip
     success, output = _run_ffmpeg_check(args)
     if not success:
-        logger.info("Hardware encoder probe failed for %s: %s", encoder_args, output.strip()[-200:])
+        # ffmpeg's own words are for whoever runs with --verbose; on a host without the
+        # hardware this fails by design and ~25 raw lines before the table help no one.
+        logger.debug("Hardware encoder probe failed for %s: %s", encoder_args, output.strip())
         warning = _probe_failure_advice(output, encoder_args)
-        if warning:
+        if warning and warning not in _advice_given:
+            _advice_given.add(warning)
             logger.warning("%s", warning)
     return success
+
+
+# Every failed probe of one backend names the same cause; say it once per process.
+_advice_given: set[str] = set()
 
 
 # NVENC failures that name their own cause in the ffmpeg output. Both were hit
