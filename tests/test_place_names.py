@@ -223,6 +223,36 @@ def test_berlin_districts_share_one_caption_and_do_not_create_town_cards():
     assert location_card_moves(stops, limit=None) == [None, None, None]
 
 
+def test_a_cached_english_fallback_answer_is_cleaned_without_a_new_request():
+    # A render before this fix cached "Municipality of Platanias" verbatim. The
+    # label must still come out clean on a later render, with no fetch at all.
+    from immich_memories.db import now_db, open_store
+    from immich_memories.db.tables import geocoded_places
+
+    store = open_store()
+    point = (35.512, 23.879)
+    with store.begin() as connection:
+        connection.execute(
+            geocoded_places.insert(),
+            {
+                "cell": "z16-en:35.51,23.88",
+                "language": "fr",
+                "address": {
+                    "municipality": "Municipality of Platanias",
+                    "country": "Greece",
+                },
+                "fetched_at": now_db(),
+            },
+        )
+
+    def refuse(*_args: object) -> dict:
+        raise AssertionError("a cached cell must not be fetched again")
+
+    names = PlaceNames(PlaceGeocoder(store, "fr", refuse))
+
+    assert names.localities_at([(*point, None)]) == ["Platanias"]
+
+
 @pytest.mark.parametrize(
     "names",
     [lambda: PlaceNames(None), lambda: _names(ConnectionError("down"))],
@@ -254,6 +284,18 @@ def test_an_old_district_label_is_resolved_again_from_the_cached_address():
         ({"village": "Wenduine", "town": "De Haan"}, "Wenduine"),
         ({"town": "Brookhaven", "municipality": "Wide County"}, "Brookhaven"),
         ({"city_district": "Mitte", "country": "Germany"}, "Berlin"),
+        # Greek OSM boundaries have no French name; Nominatim's English fallback
+        # (#1947) surfaces administrative wording a viewer should never read (#1954).
+        (
+            {
+                "municipality": "Municipality of Platanias",
+                "state_district": "Regional Unit of Chania",
+                "country": "Greece",
+            },
+            "Platanias",
+        ),
+        # A Latin-script village alongside an English municipality still wins.
+        ({"village": "Platanias", "municipality": "Municipality of Platanias"}, "Platanias"),
     ],
 )
 def test_localities_keep_their_scale_without_guessing_from_a_district(address, expected):

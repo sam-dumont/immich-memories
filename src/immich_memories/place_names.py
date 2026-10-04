@@ -151,12 +151,17 @@ _ADMIN_PREFIXES = (
     "province of ",
     "free state of ",
     "state of ",
+    "municipality of ",
+    "municipal unit of ",
+    "municipal district of ",
     "région ",
     "provincia di ",
     "provincia de ",
 )
 _ADMIN_SUFFIXES = (
     " regional unit",
+    " municipal unit",
+    " municipality",
     " region",
     " province",
     " district",

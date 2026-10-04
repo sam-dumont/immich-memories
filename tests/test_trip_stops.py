@@ -45,6 +45,17 @@ def test_far_apart_towns_each_keep_their_own_name() -> None:
     assert [stop.name for stop in stops] == ["Northtown", "Midtown", "Southtown"]
 
 
+def test_a_shared_municipality_pin_drops_its_administrative_wording() -> None:
+    # Greek OSM boundaries answer in English when the film's language has no
+    # translation (#1954): the pin must still read the town, not the boilerplate.
+    def address(_lat, _lon):
+        return {"municipality": "Municipality of Platanias", "country": "Greece"}
+
+    stops = group_trip_stops(_VALLEY[:3], _VILLAGES[:3], address)
+
+    assert [stop.name for stop in stops] == ["Platanias"]
+
+
 def test_a_cluster_with_no_shared_level_is_named_first_to_last() -> None:
     def no_common_level(lat: float, lon: float) -> dict[str, str]:
         return {"village": f"Village {lat:.2f}", "county": f"County {lat:.2f}"}

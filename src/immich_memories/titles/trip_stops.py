@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from itertools import starmap
 
 from immich_memories.analysis.place_scope import place_groups, shared_place_name
+from immich_memories.place_names import short_place_name
 
 AddressOf = Callable[[float, float], Mapping[str, str]]
 
@@ -49,7 +50,10 @@ def _shared_name(members: list[tuple[float, float]], address_of: AddressOf | Non
     if address_of is None:
         return None
     addresses = list(starmap(address_of, members))
-    return shared_place_name(addresses, _SHARED_KEYS)
+    name = shared_place_name(addresses, _SHARED_KEYS)
+    # The geocoder's raw answer carries administrative wording ("Municipality of
+    # Platanias"); the pin reads the town the same way every other locality does.
+    return (short_place_name(name) or name) if name else None
 
 
 def _fallback_name(names: list[str]) -> str | None:
