@@ -141,9 +141,11 @@ and keep the warmed model PVC. The supplied base policy permits ports across des
 it is not an offline policy. Copy [the destination example](https://github.com/sam-dumont/immich-memories/blob/main/deploy/offline/networkpolicy.yaml.example)
 as `networkpolicy.offline.yaml` and edit:
 
-- `192.0.2.10/32` to the actual fixed Immich IP, and `2283` to its actual TCP port. For an
-  in-cluster Immich pod, replace `ipBlock` with one peer containing both its exact
-  `namespaceSelector` and `podSelector`.
+- The Immich rule. The example selects an in-cluster Immich by its exact `namespaceSelector` and
+  `podSelector`: change the namespace, the pod label and `2283` to yours. Do this even when the
+  app connects through a LoadBalancer IP: Cilium matches policy on the backend pod, so an
+  `ipBlock` for that IP never matches and the app loses Immich (seen on RKE2 with Cilium). For an
+  Immich outside the cluster, delete that rule and uncomment the `ipBlock` one with its fixed IP.
 - DNS selectors to your cluster's actual DNS pods. NodeLocal DNS needs its actual IP/32
   instead. DNS is an additional allowed destination; its resolver may contact upstreams.
   For strict DNS isolation, use fixed IP URLs and remove this rule, or a resolver restricted
@@ -186,7 +188,9 @@ its egress rules. NetworkPolicies are additive: another matching policy that per
 80/443 still permits that traffic. Remove broad matching rules/components, including
 reader-egress, before claiming a destination allow-list. A policy needs a CNI that
 actually enforces it. Service DNAT and `ipBlock` matching depend on the CNI; validate with
-your actual Service/pod/LAN addresses. [Kubernetes documents these limits](https://kubernetes.io/docs/concepts/services-networking/network-policies/).
+your actual Service/pod/LAN addresses. Plain NetworkPolicy has no deny rule, so to simulate an
+Immich outage remove or edit the allow rule for Immich and reapply; restore the rule to end it.
+[Kubernetes documents these limits](https://kubernetes.io/docs/concepts/services-networking/network-policies/).
 
 ## What preflight can prove
 

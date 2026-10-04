@@ -58,6 +58,10 @@ For manual Full configuration, copy `overlays/tier-full/reader-config.yaml.examp
 policy if it differs from the example TCP8000. A reader API key can be supplied in the app
 Secret as `IMMICH_MEMORIES_DEPLOYMENT_READER_API_KEY`, or saved in Settings.
 
+A text model for titles and music mood on a Basic install needs no GPU services: the
+[Kubernetes form of the local text model recipe](./local-models.md#kubernetes-form) runs Ollama
+in the namespace.
+
 The rest of this page covers the manifests and manual operator changes.
 
 ## Prerequisites

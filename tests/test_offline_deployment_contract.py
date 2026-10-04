@@ -72,3 +72,18 @@ def test_offline_policy_replaces_base_and_every_rule_has_a_destination():
                 assert peer["ipBlock"]["cidr"].endswith("/32")
             if "namespaceSelector" in peer:
                 assert peer["podSelector"]["matchLabels"]
+
+
+def test_offline_policy_selects_in_cluster_immich_by_pod_not_by_address():
+    # An in-cluster Immich behind a LoadBalancer IP is matched on its backend pod by some CNIs
+    # (Cilium), so an ipBlock for that IP never matches and the app loses Immich.
+    policy = yaml.safe_load((ROOT / "deploy/offline/networkpolicy.yaml.example").read_text())
+    immich_rules = [
+        rule
+        for rule in policy["spec"]["egress"]
+        if any(port["port"] == 2283 for port in rule["ports"])
+    ]
+    assert len(immich_rules) == 1
+    (peer,) = immich_rules[0]["to"]
+    assert "ipBlock" not in peer
+    assert peer["namespaceSelector"] and peer["podSelector"]["matchLabels"]
