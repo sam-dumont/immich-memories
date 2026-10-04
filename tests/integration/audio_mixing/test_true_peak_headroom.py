@@ -17,7 +17,12 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from immich_memories.audio.mixer import DuckingConfig, MixConfig, mix_audio_with_ducking
+from immich_memories.audio.mixer import (
+    DuckingConfig,
+    MixConfig,
+    final_mix_safety_filter,
+    mix_audio_with_ducking,
+)
 from immich_memories.audio.mixer_helpers import (
     StemDuckingLevels,
     mix_audio_with_4stem_ducking,
@@ -92,6 +97,27 @@ def _decoded_peak(path: Path) -> float:
     return float(np.abs(samples).max())
 
 
+def _decoded_sample_rate(path: Path) -> int:
+    rate = subprocess.run(
+        [
+            "ffprobe",
+            "-v",
+            "error",
+            "-select_streams",
+            "a:0",
+            "-show_entries",
+            "stream=sample_rate",
+            "-of",
+            "default=nw=1:nk=1",
+            str(path),
+        ],
+        capture_output=True,
+        check=True,
+        text=True,
+    ).stdout.strip()
+    return int(rate)
+
+
 def test_4stem_mix_decodes_under_the_true_peak_ceiling(tmp_path: Path) -> None:
     silent_video_audio = tmp_path / "silent.wav"
     _write_silence(silent_video_audio, 6.0)
@@ -118,6 +144,8 @@ def test_4stem_mix_decodes_under_the_true_peak_ceiling(tmp_path: Path) -> None:
     )
 
     assert _decoded_peak(output) <= CEILING
+    # The safety filter oversamples to 192 kHz internally; the encoder must still get 48 kHz.
+    assert _decoded_sample_rate(output) == 48000
 
 
 def test_basic_ducking_mix_decodes_under_the_true_peak_ceiling(tmp_path: Path) -> None:
@@ -142,6 +170,7 @@ def test_basic_ducking_mix_decodes_under_the_true_peak_ceiling(tmp_path: Path) -
     )
 
     assert _decoded_peak(output) <= CEILING
+    assert _decoded_sample_rate(output) == 48000
 
 
 def test_3stem_ducking_mix_decodes_under_the_true_peak_ceiling(tmp_path: Path) -> None:
@@ -170,3 +199,37 @@ def test_3stem_ducking_mix_decodes_under_the_true_peak_ceiling(tmp_path: Path) -
     )
 
     assert _decoded_peak(output) <= CEILING
+    assert _decoded_sample_rate(output) == 48000
+
+
+def test_safety_filter_leaves_normal_level_material_unchanged(tmp_path: Path) -> None:
+    """Material already under the ceiling must pass through flat, not pumped.
+
+    -12 dBFS sits well below the -2 dBFS limiter ceiling, so the limiter
+    should never engage; its attack/release defaults must not visibly move
+    a peak that was never near the threshold.
+    """
+    source = tmp_path / "quiet.wav"
+    amplitude = 10 ** (-12.0 / 20)
+    _write_tone(source, 440, amplitude=amplitude, duration=3.0)
+
+    filtered = tmp_path / "filtered.wav"
+    subprocess.run(
+        [
+            "ffmpeg",
+            "-v",
+            "error",
+            "-y",
+            "-i",
+            str(source),
+            "-af",
+            final_mix_safety_filter(),
+            str(filtered),
+        ],
+        check=True,
+    )
+
+    before = _decoded_peak(source)
+    after = _decoded_peak(filtered)
+    db_change = 20 * np.log10(after / before)
+    assert abs(db_change) <= 0.1

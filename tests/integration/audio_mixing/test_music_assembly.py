@@ -147,3 +147,35 @@ def test_assembly_seams_hold_no_long_silence(tmp_path: Path) -> None:
     out = assemble_music([block_a, block_b], 16.0, tmp_path / "assembled.wav")
 
     assert _silences_in(out, min_duration=1.0) == []
+
+
+def _write_block_with_internal_pause(path: Path, first_hz: float, second_hz: float) -> None:
+    """A block with a quiet bridge in the middle, plus the usual trailing tail.
+
+    2s tone, 0.6s near-silent pause, 3s tone, 4s near-silent tail (9.6s total).
+    A head/tail-only trim must leave the pause and the second tone intact.
+    """
+    first = 0.8 * np.sin(2 * np.pi * first_hz * np.arange(int(2.0 * SAMPLE_RATE)) / SAMPLE_RATE)
+    pause = 0.0005 * np.sin(2 * np.pi * 50 * np.arange(int(0.6 * SAMPLE_RATE)) / SAMPLE_RATE)
+    second = 0.8 * np.sin(2 * np.pi * second_hz * np.arange(int(3.0 * SAMPLE_RATE)) / SAMPLE_RATE)
+    tail = 0.0005 * np.sin(2 * np.pi * 50 * np.arange(int(4.0 * SAMPLE_RATE)) / SAMPLE_RATE)
+    signal = np.concatenate([first, pause, second, tail])
+    with wave.open(str(path), "wb") as handle:
+        handle.setnchannels(1)
+        handle.setsampwidth(2)
+        handle.setframerate(SAMPLE_RATE)
+        handle.writeframes((signal * 32767).astype("<i2").tobytes())
+
+
+def test_assembly_keeps_an_internal_pause_and_what_follows_it(tmp_path: Path) -> None:
+    """Only the lead-in/tail get trimmed; a mid-block pause is not the tail (#1973)."""
+    block = tmp_path / "block_with_pause.wav"
+    _write_block_with_internal_pause(block, 440.0, 880.0)
+
+    out = assemble_music([block], 5.8, tmp_path / "assembled.wav")
+
+    samples = _samples(out)
+    assert len(samples) / SAMPLE_RATE == pytest.approx(5.8, abs=0.1)
+    # The second tone (after the pause) must survive, not be cut away with the tail.
+    second_tone_window = samples[int(3.0 * SAMPLE_RATE) : int(3.3 * SAMPLE_RATE)]
+    assert np.sqrt(np.mean(second_tone_window**2)) > 0.3

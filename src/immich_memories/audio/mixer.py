@@ -174,6 +174,12 @@ def _trim_block_silence(source: Path, destination: Path) -> Path:
     block can land a multi-second near-silent stretch right at that seam
     (#1954). Falls back to the source on failure — a seam defect is better
     than a missing block.
+
+    WHY two single-sided passes, not one stop_periods=1 pass: silenceremove's
+    stop side cuts at the FIRST sub-threshold stretch after sound starts, not
+    only at the end — a quiet internal pause or bridge would chop the block
+    down to its opening phrase. Reversing for the tail pass keeps both ends
+    single-sided.
     """
     command = [
         "ffmpeg",
@@ -183,10 +189,10 @@ def _trim_block_silence(source: Path, destination: Path) -> Path:
         "-i",
         str(source),
         "-af",
-        "silenceremove="
-        f"start_periods=1:start_threshold={_BLOCK_SILENCE_THRESHOLD_DB}dB:start_silence=0.05:"
-        f"stop_periods=1:stop_threshold={_BLOCK_SILENCE_THRESHOLD_DB}dB:"
-        f"stop_silence={_BLOCK_SILENCE_KEEP_SECONDS}",
+        f"silenceremove=start_periods=1:start_threshold={_BLOCK_SILENCE_THRESHOLD_DB}dB:"
+        "start_silence=0.05,"
+        f"areverse,silenceremove=start_periods=1:start_threshold={_BLOCK_SILENCE_THRESHOLD_DB}dB:"
+        f"start_silence={_BLOCK_SILENCE_KEEP_SECONDS},areverse",
         str(destination),
     ]
     try:
