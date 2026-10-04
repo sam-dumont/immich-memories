@@ -550,6 +550,47 @@ class TestTripPlaceName:
 
         assert trip_place_name({"state": "Cyprus", "country": "Cyprus"}) == "Cyprus"
 
+    # The real "state"/"country" fields Nominatim answers for a point near Platanias,
+    # Chania (35.512, 23.879), captured per locale in tests/fixtures/places/
+    # greece_platanias_<locale>.json (#1954, #1947). No "en" fallback is sent, so most
+    # locales get the native Greek region name, which `short_place_name` does not know
+    # an English equivalent for and so (correctly, by design) drops to the country alone
+    # rather than guess a translation.
+    _REGION_BY_LOCALE = {
+        "en": "Region of Crete",
+        "fr": "Crète",
+        "nl": "Kreta",
+        "de": "Region Kreta",
+        "es": "Περιφέρεια Κρήτης",
+        "it": "Περιφέρεια Κρήτης",
+        "pt-BR": "Περιφέρεια Κρήτης",
+        "pt-PT": "Περιφέρεια Κρήτης",
+        "pl": "Region Kreta",
+        "sv": "Περιφέρεια Κρήτης",
+        "ru": "периферия Крит",
+        "ja": "Περιφέρεια Κρήτης",
+        "zh-Hans": "克里特大区",
+        "ko": "Περιφέρεια Κρήτης",
+    }
+
+    @pytest.mark.parametrize("locale", sorted(_REGION_BY_LOCALE))
+    def test_a_trip_name_never_carries_raw_administrative_wording(self, locale):
+        # A region with no English equivalent and no Latin script is, by this
+        # function's own contract, not a name at that scale (`trip_place` then
+        # falls back to the pictures' own country/island) -- it must never be the
+        # raw Nominatim wording.
+        from immich_memories.analysis.trip_detection import trip_place_name
+
+        address = {"state": self._REGION_BY_LOCALE[locale], "country": "Greece"}
+
+        name = trip_place_name(address, spread_km=150.0)
+
+        if name is not None:
+            lowered = name.casefold()
+            assert "region" not in lowered
+            assert "δήμος" not in lowered
+            assert "περιφέρεια" not in lowered
+
     def test_a_city_scale_trip_takes_the_town(self):
         from immich_memories.analysis.trip_detection import trip_place_name
 

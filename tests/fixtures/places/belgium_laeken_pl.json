@@ -1,0 +1,37 @@
+{
+  "place_id": 105942975,
+  "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+  "osm_type": "way",
+  "osm_id": 190606153,
+  "lat": "50.8802899",
+  "lon": "4.3545851",
+  "category": "highway",
+  "type": "residential",
+  "place_rank": 26,
+  "importance": 0.053411087968261196,
+  "addresstype": "road",
+  "name": "Square Cardinal Cardijn - Kardinaal Cardijnplantsoen",
+  "display_name": "Square Cardinal Cardijn - Kardinaal Cardijnplantsoen, Laeken - Laken, Bruksela, Brussel-Hoofdstad - Bruxelles-Capitale, Région de Bruxelles-Capitale - Brussels Hoofdstedelijk Gewest, 1020, Belgia",
+  "address": {
+    "road": "Square Cardinal Cardijn - Kardinaal Cardijnplantsoen",
+    "suburb": "Laeken - Laken",
+    "city": "Bruksela",
+    "county": "Brussel-Hoofdstad - Bruxelles-Capitale",
+    "region": "Région de Bruxelles-Capitale - Brussels Hoofdstedelijk Gewest",
+    "ISO3166-2-lvl4": "BE-BRU",
+    "postcode": "1020",
+    "country": "Belgia",
+    "country_code": "be"
+  },
+  "namedetails": {
+    "name": "Square Cardinal Cardijn - Kardinaal Cardijnplantsoen",
+    "name:fr": "Square Cardinal Cardijn",
+    "name:nl": "Kardinaal Cardijnplantsoen"
+  },
+  "boundingbox": [
+    "50.8802899",
+    "50.8803439",
+    "4.3545769",
+    "4.3545851"
+  ]
+}

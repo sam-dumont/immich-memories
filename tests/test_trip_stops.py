@@ -5,6 +5,8 @@ Public cities and invented villages, with round public coordinates.
 
 from __future__ import annotations
 
+import pytest
+
 from immich_memories.titles.trip_stops import group_trip_stops
 
 
@@ -54,6 +56,39 @@ def test_a_shared_municipality_pin_drops_its_administrative_wording() -> None:
     stops = group_trip_stops(_VALLEY[:3], _VILLAGES[:3], address)
 
     assert [stop.name for stop in stops] == ["Platanias"]
+
+
+# Real municipality answers for the same Greek point (35.512, 23.879), captured per
+# locale in tests/fixtures/places/greece_platanias_<locale>.json: no accept-language
+# override past the film's own, so most locales get the native Greek name (#1954).
+_PLATANIAS_PIN_BY_LOCALE = {
+    "en": ("Municipality of Platanias", "Platanias"),
+    "fr": ("Δήμος Πλατανιά", "Πλατανιά"),
+    "nl": ("Δήμος Πλατανιά", "Πλατανιά"),
+    "de": ("Provinz Platanias", "Platanias"),
+    "es": ("Δήμος Πλατανιά", "Πλατανιά"),
+    "it": ("Δήμος Πλατανιά", "Πλατανιά"),
+    "pt-BR": ("Δήμος Πλατανιά", "Πλατανιά"),
+    "pt-PT": ("Δήμος Πλατανιά", "Πλατανιά"),
+    "pl": ("Δήμος Πλατανιά", "Πλατανιά"),
+    "sv": ("Δήμος Πλατανιά", "Πλατανιά"),
+    "ru": ("Δήμος Πλατανιά", "Πλατανιά"),
+    "ja": ("Δήμος Πλατανιά", "Πλατανιά"),
+    "zh-Hans": ("Δήμος Πλατανιά", "Πλατανιά"),
+    "ko": ("Δήμος Πλατανιά", "Πλατανιά"),
+}
+
+
+@pytest.mark.parametrize("locale", sorted(_PLATANIAS_PIN_BY_LOCALE))
+def test_a_shared_municipality_pin_keeps_its_native_name_in_every_locale(locale) -> None:
+    raw_municipality, expected = _PLATANIAS_PIN_BY_LOCALE[locale]
+
+    def address(_lat, _lon):
+        return {"municipality": raw_municipality, "country": "Greece"}
+
+    stops = group_trip_stops(_VALLEY[:3], _VILLAGES[:3], address)
+
+    assert [stop.name for stop in stops] == [expected]
 
 
 def test_a_cluster_with_no_shared_level_is_named_first_to_last() -> None:

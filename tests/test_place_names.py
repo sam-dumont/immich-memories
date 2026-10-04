@@ -223,9 +223,10 @@ def test_berlin_districts_share_one_caption_and_do_not_create_town_cards():
     assert location_card_moves(stops, limit=None) == [None, None, None]
 
 
-def test_a_cached_english_fallback_answer_is_cleaned_without_a_new_request():
-    # A render before this fix cached "Municipality of Platanias" verbatim. The
-    # label must still come out clean on a later render, with no fetch at all.
+def test_an_old_english_fallback_cache_entry_is_abandoned_not_reused():
+    # #1947 cached an English fallback answer under a "z16-en:" cell key. #1954 drops
+    # that fallback, so the stale English entry must not leak back in: the cell is
+    # asked again, natively, under the new "z16-native:" key.
     from immich_memories.db import now_db, open_store
     from immich_memories.db.tables import geocoded_places
 
@@ -237,20 +238,18 @@ def test_a_cached_english_fallback_answer_is_cleaned_without_a_new_request():
             {
                 "cell": "z16-en:35.51,23.88",
                 "language": "fr",
-                "address": {
-                    "municipality": "Municipality of Platanias",
-                    "country": "Greece",
-                },
+                "address": {"municipality": "Municipality of Platanias", "country": "Greece"},
                 "fetched_at": now_db(),
             },
         )
 
-    def refuse(*_args: object) -> dict:
-        raise AssertionError("a cached cell must not be fetched again")
+    def fetch(_latitude: float, _longitude: float) -> dict:
+        # The real native answer for this cell (tests/fixtures/places/greece_platanias_fr.json).
+        return {"municipality": "Δήμος Πλατανιά", "country": "Grèce"}
 
-    names = PlaceNames(PlaceGeocoder(store, "fr", refuse))
+    names = PlaceNames(PlaceGeocoder(store, "fr", fetch))
 
-    assert names.localities_at([(*point, None)]) == ["Platanias"]
+    assert names.localities_at([(*point, None)]) == ["Πλατανιά"]
 
 
 @pytest.mark.parametrize(
@@ -314,6 +313,51 @@ def test_the_clip_a_location_card_and_a_caption_read_names_the_city():
     _names().name([asset])
 
     assert clip_location_name(asset.exif_info) == "Antwerpen, Belgium"
+
+
+# The real municipality field Nominatim answers with for a point near Platanias, Chania
+# (35.512, 23.879; no nearby village, so this is the label a viewer would read), captured
+# per locale in tests/fixtures/places/greece_platanias_<locale>.json (#1954, #1947). Most
+# locales have no translation and fall back to the native Greek name; English and German
+# alone have their own (admin-worded) translations in OSM.
+_PLATANIAS_MUNICIPALITY_BY_LOCALE = {
+    "en": ("Municipality of Platanias", "Platanias"),
+    "fr": ("Δήμος Πλατανιά", "Πλατανιά"),
+    "nl": ("Δήμος Πλατανιά", "Πλατανιά"),
+    "de": ("Provinz Platanias", "Platanias"),
+    "es": ("Δήμος Πλατανιά", "Πλατανιά"),
+    "it": ("Δήμος Πλατανιά", "Πλατανιά"),
+    "pt-BR": ("Δήμος Πλατανιά", "Πλατανιά"),
+    "pt-PT": ("Δήμος Πλατανιά", "Πλατανιά"),
+    "pl": ("Δήμος Πλατανιά", "Πλατανιά"),
+    "sv": ("Δήμος Πλατανιά", "Πλατανιά"),
+    "ru": ("Δήμος Πλατανιά", "Πλατανιά"),
+    "ja": ("Δήμος Πλατανιά", "Πλατανιά"),
+    "zh-Hans": ("Δήμος Πλατανιά", "Πλατανιά"),
+    "ko": ("Δήμος Πλατανιά", "Πλατανιά"),
+}
+
+
+@pytest.mark.parametrize("locale", sorted(_PLATANIAS_MUNICIPALITY_BY_LOCALE))
+def test_a_place_without_a_name_in_the_films_language_keeps_its_own_name(locale):
+    from immich_memories.generate_privacy import clip_location_name
+    from immich_memories.i18n import SUPPORTED_LOCALES
+
+    assert locale in SUPPORTED_LOCALES
+    raw_municipality, expected_locality = _PLATANIAS_MUNICIPALITY_BY_LOCALE[locale]
+    address = {"municipality": raw_municipality, "state_district": "Chania", "country": "Greece"}
+    asset = _asset()
+    asset.exif_info.country = "Greece"
+
+    _names(address).name([asset])
+
+    assert shown_city(asset.exif_info) == expected_locality
+    label = clip_location_name(asset.exif_info, locale)
+    assert label is not None
+    assert "municipality" not in label.casefold()
+    assert "δήμος" not in label.casefold()
+    assert "provinz" not in label.casefold()
+    assert label.startswith(expected_locality)
 
 
 def test_the_report_keeps_the_resolved_city_as_private_as_the_source_city():

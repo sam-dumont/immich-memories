@@ -124,9 +124,12 @@ def nominatim_fetch(language: str, url: str = "") -> Fetch:
     )
 
     def fetch(latitude: float, longitude: float) -> Address | None:
-        # Nominatim supports an ordered language list. Without the explicit fallback,
-        # a missing French translation produces a local-script name even when English exists.
-        languages = ",".join(dict.fromkeys((language, language.split("-")[0], "en")))
+        # Nominatim supports an ordered language list: the film's language, then its base
+        # language (Portuguese for pt-BR). No "en" is appended (#1954): a place with no
+        # translation in either must keep its own native name, never English boilerplate
+        # ("Municipality of Platanias" in a French film). Nominatim already falls back to
+        # the native name on its own once nothing in the requested list is available.
+        languages = ",".join(dict.fromkeys((language, language.split("-")[0])))
         location = reverse(f"{latitude}, {longitude}", zoom=_DISTRICT_ZOOM, language=languages)
         if location is None:
             return None
@@ -156,8 +159,11 @@ class PlaceGeocoder:
     def address(self, latitude: float, longitude: float) -> Address:
         """The names around this point, `{}` when nobody can say."""
         latitude, longitude = cell_of(latitude, longitude)
-        # Old zoom/language-policy answers must not mask the corrected query.
-        cell = f"z{_DISTRICT_ZOOM}-en:{latitude:.{_PRECISION}f},{longitude:.{_PRECISION}f}"
+        # Old zoom/language-policy answers must not mask the corrected query. The "en"
+        # cache key from #1947 is deliberately abandoned, not renamed: those cells cached
+        # an English fallback answer that #1954 removed, and must be asked again rather
+        # than reused.
+        cell = f"z{_DISTRICT_ZOOM}-native:{latitude:.{_PRECISION}f},{longitude:.{_PRECISION}f}"
         with self._store.connect() as connection:
             known = connection.execute(
                 sa.select(geocoded_places.c.address).where(

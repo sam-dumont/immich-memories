@@ -157,6 +157,15 @@ _ADMIN_PREFIXES = (
     "région ",
     "provincia di ",
     "provincia de ",
+    # German, from a real Nominatim answer for a Greek municipality with no French or
+    # German translation (#1954): OSM's own German fields carry the admin word.
+    "regionalbezirk ",
+    "provinz ",
+    "region ",
+    # Greek, same real answer (ς folds to σ): "Δήμος Πλατανιά" -> "Πλατανιά".
+    "δήμοσ ",
+    "περιφερειακή ενότητα ",
+    "περιφέρεια ",
 )
 _ADMIN_SUFFIXES = (
     " regional unit",
@@ -193,6 +202,23 @@ def _is_latin(text: str) -> bool:
     return all(not ch.isalpha() or unicodedata.name(ch, "").startswith("LATIN") for ch in text)
 
 
+def _stripped(label: str) -> str:
+    """Administrative wording dropped, a known local spelling mapped to English.
+
+    "Municipality of Platanias" -> "Platanias", "Δήμος Πλατανιά" -> "Πλατανιά" (the
+    boilerplate word is dropped; the town's own script and spelling are not touched).
+    """
+    name = label.strip()
+    folded = name.casefold()
+    for prefix in _ADMIN_PREFIXES:
+        if folded.startswith(prefix):
+            name, folded = name[len(prefix) :], folded[len(prefix) :]
+    for suffix in _ADMIN_SUFFIXES:
+        if folded.endswith(suffix):
+            name, folded = name[: -len(suffix)], folded[: -len(suffix)]
+    return _ENGLISH.get(folded, name)
+
+
 def short_place_name(label: str | None) -> str | None:
     """The common English name for a region or city label, or None if it has none.
 
@@ -203,16 +229,20 @@ def short_place_name(label: str | None) -> str | None:
     """
     if not label:
         return None
-    name = label.strip()
-    folded = name.casefold()
-    for prefix in _ADMIN_PREFIXES:
-        if folded.startswith(prefix):
-            name, folded = name[len(prefix) :], folded[len(prefix) :]
-    for suffix in _ADMIN_SUFFIXES:
-        if folded.endswith(suffix):
-            name, folded = name[: -len(suffix)], folded[: -len(suffix)]
-    name = _ENGLISH.get(folded, name)
+    name = _stripped(label)
     return name if name and _is_latin(name) else None
+
+
+def locality_name(label: str | None) -> str | None:
+    """A town, village or district a viewer reads, administrative wording dropped.
+
+    Unlike `short_place_name`, a locality with no English equivalent is kept in its
+    own script rather than discarded (#1954): a Greek village is still a village when
+    its film has no French name for it, never English boilerplate or a dropped label.
+    """
+    if not label:
+        return None
+    return _stripped(label)
 
 
 def island_at(lat: float, lon: float, country: str) -> str | None:

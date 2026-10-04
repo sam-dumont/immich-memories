@@ -23,7 +23,7 @@ from immich_memories.analysis.place_geocoder import cell_of, locality_of, place_
 from immich_memories.analysis.place_scope import place_groups, shared_place_name, temporal_groups
 from immich_memories.analysis.source_filter import asset_of
 from immich_memories.i18n_places import country_code
-from immich_memories.place_names import short_place_name
+from immich_memories.place_names import locality_name
 
 if TYPE_CHECKING:
     from immich_memories.analysis.place_geocoder import Address, PlaceGeocoder
@@ -99,7 +99,7 @@ class PlaceNames:
                 assert lat is not None and lon is not None
                 if not near_home_of(self._home, [(lat, lon)]):
                     labels[i] = label
-        return [short_place_name(label) or label for label in labels]
+        return [locality_name(label) for label in labels]
 
     def name(self, sources: Iterable[Asset | VideoClipInfo]) -> None:
         """Give every positioned picture the place a viewer will be shown, once."""
