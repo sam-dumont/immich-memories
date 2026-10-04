@@ -272,9 +272,28 @@ kubectl delete pvc immich-memories-caption-models immich-memories-inference-cach
 
 Then remove the recorded ConfigMap you mounted (if any), your Ollama Deployment, Service,
 NetworkPolicy and model claim (if you added one), and saved secret files. Run
-`kubectl get all,pvc,networkpolicy,configmap,secret -n "$NS"` at the end: what is left is not the app's. Check retained PVs and storage snapshots with the storage owner; PVC deletion does
-not guarantee their deletion. Keep the namespace when shared. Never delete a namespace as a
-shortcut to discovering which resources belong to the app.
+`kubectl get all,pvc,networkpolicy,configmap,secret -n "$NS"` at the end: what is left is not the app's. Keep the namespace when shared. Never delete a namespace as a
+shortcut to discovering which resources belong to the app. If `apply -k` created the namespace
+and the listing above shows nothing else in it, `kubectl delete namespace "$NS"` finishes the job.
+
+Deleting a PVC does not delete its disk when the StorageClass reclaims with `Retain`: the PV stays
+as `Released`, with your films and state on it. List the ones that belonged to this namespace:
+
+```bash
+kubectl get pv | grep Released | grep "$NS/"
+```
+
+Each row's `CLAIM` column reads `<namespace>/<claim>`. Once you are sure the data is not needed,
+tell the provisioner to drop it:
+
+```bash
+kubectl patch pv <name> -p '{"spec":{"persistentVolumeReclaimPolicy":"Delete"}}'
+```
+
+With a CSI provisioner this deletes the backing disk (verified on proxmox-csi). It is
+permanent: films, caches and the SQLite store on that volume are gone. Check the `CLAIM`
+column twice, since a PV from another app looks the same. Snapshots are the storage owner's to
+remove.
 
 For native defaults, after package/scheduler removal, confirm these paths contain only this app's
 files, then delete the state and local films:

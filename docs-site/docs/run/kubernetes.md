@@ -152,7 +152,9 @@ kubectl apply -k deploy/kubernetes/custom
 kubectl rollout restart -n immich-memories deploy/immich-memories
 ```
 
-On the GPU tier this took 36 seconds and restarted only the app pod. Rotate the Immich API key
+On the GPU tier this took 36 seconds and restarted only the app pod. `apply` prints `configured`
+for objects that did not change (the captioner and inference Deployments among them); they are not
+restarted. Rotate the Immich API key
 this way. Leave `IMMICH_MEMORIES_SECRET_KEY` alone: changing it makes saved credentials unreadable (see
 [the secret key](#keep-the-secret-key)).
 
