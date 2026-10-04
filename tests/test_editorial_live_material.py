@@ -73,3 +73,12 @@ def test_only_exact_declared_centisecond_rounding_can_adjust_live_source_end():
     ):
         with pytest.raises(ValueError):
             material.selected_interval(1.83, **kwargs)
+
+
+def test_centisecond_rounding_is_also_forgiven_for_a_window_that_starts_after_zero():
+    """#2039: a window that starts mid-material and runs to the last frame hits the same
+    centisecond rounding gap as one starting at zero, and must be accepted too."""
+    material = LiveRenderMaterial((LiveSourceEntry("a", "v", 1, 0, 9.286),))
+    assert material.selected_interval(8.04, start=1.25, raw_seconds=9.29) == (1.25, 9.286)
+    with pytest.raises(ValueError, match="exceeds canonical material"):
+        material.selected_interval(8.15, start=1.25, raw_seconds=9.4)

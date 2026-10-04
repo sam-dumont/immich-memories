@@ -182,13 +182,10 @@ class LiveRenderMaterial:
         if abs(end - start - seconds) > 1e-6:
             raise ValueError("Selected Live interval disagrees with its duration")
         if end > self.duration_seconds:
-            if (
-                start == 0
-                and end == round(self.duration_seconds, 2)
-                and (
-                    not isinstance(raw_seconds, bool)
-                    and raw_seconds == round(self.duration_seconds, 2)
-                )
+            # #2039: the centisecond rounding gap can land on a window that starts anywhere
+            # in the material, not just its opening frame.
+            if end == round(self.duration_seconds, 2) and (
+                not isinstance(raw_seconds, bool) and raw_seconds == round(self.duration_seconds, 2)
             ):
                 end = self.duration_seconds
             else:
