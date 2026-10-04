@@ -19,7 +19,15 @@ See [Can I run this?](../run/tested-deployments.md) for exact platform evidence,
 
 <InstallationFiles />
 
-Create `output` yourself so Docker does not make it as root. This is where local films land.
+Basic needs only `docker-compose.yml` and `example.env` (saved as `.env`). The other files are for GPU, Full, the render worker and PostgreSQL, so download them only if you take one of those routes.
+
+Create `output` yourself, owned by uid 1000, so Docker does not make it as root. This is where local films land:
+
+```bash
+mkdir -p output && sudo chown 1000:1000 output
+```
+
+The container runs as uid 1000. If you run `mkdir` as root and skip the `chown`, preflight fails with "Output directory is not writable". On Synology, `chown` is not enough: use the [ACL recipe](../run/nas.md#the-output-folder).
 
 ## 2. Connect Immich
 
