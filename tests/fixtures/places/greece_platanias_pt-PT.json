@@ -1,0 +1,41 @@
+{
+  "place_id": 54961111,
+  "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+  "osm_type": "way",
+  "osm_id": 73684455,
+  "lat": "35.5134017",
+  "lon": "23.8792495",
+  "category": "highway",
+  "type": "trunk",
+  "place_rank": 26,
+  "importance": 0.05338775844968334,
+  "addresstype": "road",
+  "name": "Βόρειος Οδικός Άξονας Κρήτης",
+  "display_name": "Βόρειος Οδικός Άξονας Κρήτης, Παλαιό Γεράνι, Δήμος Πλατανιά, Περιφερειακή Ενότητα Χανίων, Περιφέρεια Κρήτης, Αποκεντρωμένη Διοίκηση Κρήτης, 731 04, Grécia",
+  "address": {
+    "road": "Βόρειος Οδικός Άξονας Κρήτης",
+    "village": "Παλαιό Γεράνι",
+    "municipality": "Δήμος Πλατανιά",
+    "county": "Περιφερειακή Ενότητα Χανίων",
+    "state": "Περιφέρεια Κρήτης",
+    "ISO3166-2-lvl5": "GR-M",
+    "postcode": "731 04",
+    "country": "Grécia",
+    "country_code": "gr"
+  },
+  "namedetails": {
+    "ref": "Α90",
+    "name": "Βόρειος Οδικός Άξονας Κρήτης",
+    "int_ref": "E 65",
+    "name:el": "Βόρειος Οδικός Άξονας Κρήτης",
+    "name:en": "Northern Cretan Highway",
+    "int_name": "Voreios Odikos Axonas Kritis",
+    "short_name": "ΒΟΑΚ"
+  },
+  "boundingbox": [
+    "35.5123262",
+    "35.5169552",
+    "23.8340312",
+    "23.8853484"
+  ]
+}

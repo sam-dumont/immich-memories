@@ -64,7 +64,6 @@ def generation_params(
             duration_seconds=asset.duration_seconds or chosen.end,
             width=asset.width,
             height=asset.height,
-            audio_categories=chosen.audio_categories,
             llm_emotion=chosen.llm_emotion,
         )
         if chosen.live is not None:
@@ -108,7 +107,12 @@ def generation_params(
         privacy_mode=request.options.privacy_mode,
         editorial_selections=tuple(
             EditorialSelection(
-                str(c.asset_id), c.start, c.end, c.render_mode, c.render_frame_seconds
+                str(c.asset_id),
+                c.start,
+                c.end,
+                c.render_mode,
+                c.render_frame_seconds,
+                has_music=c.has_music,
             )
             for c in request.plan.clips
         ),

@@ -775,6 +775,8 @@ build-check:
 	@for wheel in dist/*.whl; do \
 		unzip -l "$$wheel" | grep -q "immich_memories/web/client/index.html" || { \
 			echo "$$wheel has no web client"; exit 1; }; \
+		unzip -l "$$wheel" | grep -q "immich_memories/web/static/fonts/inter-latin.woff2" || { \
+			echo "$$wheel has no web fonts"; exit 1; }; \
 	done
 
 # Ensure dev dependencies are installed
@@ -1107,8 +1109,13 @@ demo-output-trip:  ## Cut the trip film + its map fly-over on the hermetic CLI (
 	uv run pytest tests/e2e/test_demo_assets.py::test_cut_the_trip_memory_and_its_map -v -m demo \
 		--log-cli-level=INFO --tb=short
 
+# Copies, not symlinks: hatchling skips a directory it already reached through a link, so a
+# link from docs-site/ into src/ or tests/ drops the real one from the sdist and wheel (#1976).
 demo-ui-install:  ## Install Remotion demo dependencies
 	cd docs-site/remotion && npm ci
+	rm -rf docs-site/remotion/public/fonts docs-site/remotion/public/library
+	cp -R src/immich_memories/web/static/fonts docs-site/remotion/public/fonts
+	cp -R tests/e2e/fixtures/library docs-site/remotion/public/library
 
 .PHONY: demo-ui-check demo-ui-still
 demo-ui-check:  ## Check the Remotion scene types and code

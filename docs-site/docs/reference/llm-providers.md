@@ -42,7 +42,7 @@ and the prose reader when preparation produces captions. The `gpu` and `full` ti
 the default `basic` tier uses the picture classifiers and rules.
 
 ```bash
-uv tool install "immich-memories[all-mac]" --with laya-mlx  # Apple Silicon uv-tool install
+uv tool install --python 3.12 "immich-memories[all-mac]" --with laya-mlx  # Apple Silicon uv-tool install
 immich-memories models fetch --laya          # platform-specific, digest-pinned
 ```
 

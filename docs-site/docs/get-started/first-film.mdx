@@ -127,7 +127,60 @@ Set [home and people](./who-is-who.md), then choose [another kind of film](../ma
 immich-memories generate --memory-type album --from-album "First film trial" --duration 30 --include-photos --no-render
 ```
 
-This saves a cut for review in **Runs**; render that cut in the UI with upload off.
-Keep `upload.enabled: false` in Settings/file/environment, including for CLI runs.
+This saves a cut for review in **Runs**. Without the UI, render the saved cut from the CLI:
 
-In Docker, prefix it with `docker compose exec immich-memories`. [CLI recipes](../make/cli/generate.md) include reviewing a saved cut before rendering.
+```bash
+immich-memories runs render RUN_ID
+```
+
+`generate --no-render` prints the run id; `immich-memories runs list` shows it later. Without an id, `runs render` takes the most recent completed run. Upload stays
+off unless you pass `--upload-to-immich`. Dropping `--no-render` from `generate` selects and renders
+in one go. Keep `upload.enabled: false` in Settings/file/environment, including for CLI runs.
+
+On Docker, prefix either command with `docker compose exec immich-memories` (no `sudo` needed
+when your user is in the `docker` group). On Kubernetes:
+
+```bash
+kubectl exec -n <namespace> deploy/immich-memories -c immich-memories -- immich-memories runs render RUN_ID
+```
+
+[CLI recipes](../make/cli/generate.md) include reviewing a saved cut before rendering.
+
+### Where the film lands
+
+Each render gets its own folder: `<output dir>/<name>_<run id>/<name>.mp4`. A real one:
+
+```text
+all_album_20210526-20210527_a4cf0add_<run>/all_album_20210526-20210527_a4cf0add.mp4
+```
+
+The `<name>` ends in a short hash of the final cut, so the same cut renders to the same name. The
+`Output (planned)` line printed before selection has no run folder and no hash, and `runs render`
+builds its name from the people and dates (`all_album_<dates>_<hash>`), not from the album name.
+Trust the folder, not that line. `runs render` prints "Rendered" without a path, so look in the
+output folder (`/app/output` in the container).
+
+On Kubernetes, copy only the film, not the whole output volume:
+
+```bash
+kubectl cp -n <namespace> -c immich-memories <pod>:/app/output/<run folder>/<name>.mp4 ./film.mp4
+```
+
+### Long renders
+
+The CLI installs no hangup handler, so closing the terminal or dropping an SSH session or
+`kubectl exec` ends the render with it. For a month or a year, detach it:
+
+```bash
+docker compose exec -d immich-memories immich-memories runs render RUN_ID
+```
+
+On Kubernetes, start it with `nohup ... &` inside a `kubectl exec ... -- sh -c`, and follow the
+run with `immich-memories runs list`. A render that was killed does not resume: run it again.
+
+### Portrait or landscape
+
+The film follows the pictures: if more of the chosen clips are portrait than landscape the canvas
+is portrait (a month of phone shots gave 1080x1920), otherwise landscape (the album trial gave
+1920x1080). Only a tie falls back to `output.resolution`. To force it, pass
+`--orientation landscape` to `generate` or `runs render`.

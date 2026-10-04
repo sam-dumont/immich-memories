@@ -1,0 +1,39 @@
+{
+  "place_id": 428299530,
+  "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+  "osm_type": "way",
+  "osm_id": 331144201,
+  "lat": "35.5138671",
+  "lon": "24.0179930",
+  "category": "highway",
+  "type": "primary",
+  "place_rank": 26,
+  "importance": 0.053396243991760094,
+  "addresstype": "road",
+  "name": "Χατζημιχάλη Γιάνναρη",
+  "display_name": "Χατζημιχάλη Γιάνναρη, Εβραϊκή, 하니아, Δήμος Χανίων, Περιφερειακή Ενότητα Χανίων, Περιφέρεια Κρήτης, Αποκεντρωμένη Διοίκηση Κρήτης, 731 35, 그리스",
+  "address": {
+    "road": "Χατζημιχάλη Γιάνναρη",
+    "neighbourhood": "Εβραϊκή",
+    "city": "하니아",
+    "municipality": "Δήμος Χανίων",
+    "county": "Περιφερειακή Ενότητα Χανίων",
+    "state": "Περιφέρεια Κρήτης",
+    "ISO3166-2-lvl5": "GR-M",
+    "postcode": "731 35",
+    "country": "그리스",
+    "country_code": "gr"
+  },
+  "namedetails": {
+    "ref": "ΕΟ90",
+    "name": "Χατζημιχάλη Γιάνναρη",
+    "name:el": "Χατζημιχάλη Γιάνναρη",
+    "int_name": "Chatzimichali Giannari"
+  },
+  "boundingbox": [
+    "35.5138362",
+    "35.5139185",
+    "24.0178356",
+    "24.0192858"
+  ]
+}
