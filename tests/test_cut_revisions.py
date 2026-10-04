@@ -10,10 +10,12 @@ import pytest
 from immich_memories.operations.cut_revisions import (
     CutEdits,
     RevisionRefused,
+    added_hold,
     read_revisions,
     save_revision,
 )
 from immich_memories.operations.storyboard import PLAN_FILE, PROJECTION_FILE
+from tests.conftest import make_asset
 
 _PLAN = {
     "story": {"thesis": "June.", "episodes": [{"episode": "june", "title": "June"}]},
@@ -47,6 +49,16 @@ def attempt(tmp_path: Path) -> Path:
         json.dumps({"intervals": {"garden-1": [0.0, 3.0], "lake-1": [10.0, 14.0]}})
     )
     return tmp_path
+
+
+def test_an_added_video_holds_no_longer_than_its_own_length():
+    """#2039: round() can land the hold past the video's real duration (9.286 -> 9.29);
+    a 9.286 s video added to a cut must never hold more than its own length."""
+    video = make_asset("video", duration=9.286)
+    seconds, motion = added_hold([(9.286, True)], video)
+
+    assert motion is True
+    assert seconds <= 9.286
 
 
 def test_each_save_is_a_new_numbered_revision_and_the_history_stays(attempt):
