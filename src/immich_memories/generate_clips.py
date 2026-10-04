@@ -448,6 +448,10 @@ def cleanup_temp_dirs(output_dir: Path) -> None:
         if path.exists():
             with contextlib.suppress(Exception):
                 shutil.rmtree(path)
+    # The mix already carries the mastered track; the wav is a ~6 MB by-product.
+    for mastered in output_dir.glob("mastered_*.wav"):
+        with contextlib.suppress(OSError):
+            mastered.unlink()
 
 
 def assets_to_clips(assets: list, *, min_duration: float = MIN_CLIP_DURATION) -> list:

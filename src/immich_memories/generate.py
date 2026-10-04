@@ -6,6 +6,7 @@ All UI interaction is replaced by a progress callback.
 
 from __future__ import annotations
 
+import contextlib
 import logging
 from collections.abc import Callable
 from dataclasses import dataclass, field, replace
@@ -426,6 +427,9 @@ def _clear_run_intermediates(
             cleanup_temp_dirs(run_output_dir)
     except OSError:
         logger.debug("Temp dir cleanup failed", exc_info=True)
+    # rmdir only succeeds on an empty folder: a stopped render leaves nothing worth keeping.
+    with contextlib.suppress(OSError):
+        run_output_dir.rmdir()
 
 
 def _requested_date_range(params: GenerationParams) -> DateRange | None:
