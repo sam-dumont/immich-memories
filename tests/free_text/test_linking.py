@@ -70,6 +70,52 @@ def test_a_plural_word_for_people_asks_for_company(lexicon: Lexicon) -> None:
     assert (friends.company, friends.present) == ("people", ())
     assert kids.company == "children"
     assert cars == link_who("", (), STRANGERS, lexicon, _unasked())
+    assert friends.absent_company is None and friends.company_only is False
+
+
+def test_a_negation_asks_the_company_be_absent_not_required(lexicon: Lexicon) -> None:
+    # #2061: "no humans"/"without children" must not make that company required.
+    no_humans = link_who("paysages, no humans", ("no humans",), STRANGERS, lexicon, _unasked())
+    without_kids = link_who(
+        "without children", ("without children",), STRANGERS, lexicon, _unasked()
+    )
+
+    assert (no_humans.absent_company, no_humans.company) == ("people", None)
+    assert (without_kids.absent_company, without_kids.company) == ("children", None)
+    assert "ABSENT" in no_humans.reasons[0].outcome
+
+
+def test_negation_is_read_in_every_supported_locale(lexicon: Lexicon) -> None:
+    french = link_who("paysages, sans humains", ("sans humains",), STRANGERS, lexicon, _unasked())
+    french_kids = link_who(
+        "sans les enfants", ("sans les enfants",), STRANGERS, lexicon, _unasked()
+    )
+    german = link_who("ohne kinder", ("ohne kinder",), STRANGERS, lexicon, _unasked())
+    spanish = link_who("sin ninos", ("sin ninos",), STRANGERS, lexicon, _unasked())
+    italian = link_who("senza bambini", ("senza bambini",), STRANGERS, lexicon, _unasked())
+
+    assert french.absent_company == "people"
+    assert french_kids.absent_company == "children"
+    assert german.absent_company == "children"
+    assert spanish.absent_company == "children"
+    assert italian.absent_company == "children"
+
+
+def test_only_a_specific_company_kind_stays_specific_not_generic_people(lexicon: Lexicon) -> None:
+    # #2061: "only the performers" must not collapse to generic "people".
+    english = link_who(
+        "live music, only the performers", ("only the performers",), STRANGERS, lexicon, _unasked()
+    )
+    french = link_who(
+        "seulement les musiciens en concert",
+        ("seulement les musiciens",),
+        STRANGERS,
+        lexicon,
+        _unasked(),
+    )
+
+    assert (english.company, english.company_only) == ("performers", True)
+    assert (french.company, french.company_only) == ("performers", True)
 
 
 def test_a_first_name_two_people_share_is_picked_by_vote(lexicon: Lexicon) -> None:

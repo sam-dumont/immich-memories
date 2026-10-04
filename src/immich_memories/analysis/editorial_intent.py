@@ -76,6 +76,10 @@ class EditorialIntent:
     # on the subject, so its standing score can't veto it, and every year that holds pool
     # pictures gets a shot. A plain custom range with a brief is not a curated pool.
     pool_is_subject: bool = False
+    # Phrases a free-text request asked left out ("no humans", "sans les enfants"): hard
+    # rules the brief carries so the planner never selects what the pool already excluded,
+    # and the report can count a violation if one ever slips through (#2061).
+    excluded: tuple[str, ...] = ()
 
     def partition_for(self, when: date) -> IntentPartition | None:
         return next((part for part in self.partitions if part.covers(when)), None)
@@ -93,6 +97,8 @@ class EditorialIntent:
         ]
         if self.subject:
             lines.append(f"binding subject: {self.subject}")
+        if self.excluded:
+            lines.append("must not show: " + "; ".join(self.excluded))
         lines.extend(
             (
                 "must cover: " + "; ".join(self.coverage_requirements),
@@ -159,6 +165,7 @@ def build_editorial_intent(
     event_admission: SpecialEventAdmission | None = None,
     material: Collection[date] | None = None,
     pool_subject: str | None = None,
+    excluded: Sequence[str] = (),
 ) -> EditorialIntent:
     """Derive the contract from the product, its date ranges, and (for a custom memory) its brief.
 
@@ -169,6 +176,9 @@ def build_editorial_intent(
 
     `pool_subject` is the written subject a curated pool was chosen for: the film then binds that
     subject, gives every year of the pool a voice, and carries `pool_is_subject`.
+
+    `excluded` is what a free-text request asked left out: carried as a hard rule the brief
+    states, on top of whatever the pool already dropped for it (#2061).
     """
     if not product.strip():
         raise ValueError("editorial intent needs a product")
@@ -188,7 +198,9 @@ def build_editorial_intent(
         if pool_subject is not None
         else _BUILDERS.get(product, _generic)
     )
-    intent = builder(product, spans, whole, brief=pool_subject or brief, who=who)
+    intent = _with_excluded(
+        builder(product, spans, whole, brief=pool_subject or brief, who=who), excluded
+    )
     if material is None or builder not in (_person, _subject_pool):
         return intent
     years = {day.year for day in material}
@@ -196,6 +208,21 @@ def build_editorial_intent(
         p for p in intent.partitions if not p.key.startswith("year-") or p.start.year in years
     )
     return replace(intent, partitions=kept) if kept else intent
+
+
+def _with_excluded(intent: EditorialIntent, excluded: Sequence[str]) -> EditorialIntent:
+    """The intent with a free-text request's left-out phrases carried as a hard rule (#2061)."""
+    cleaned = tuple(phrase.strip() for phrase in excluded if phrase.strip())
+    if not cleaned:
+        return intent
+    return replace(
+        intent,
+        excluded=cleaned,
+        coverage_requirements=(
+            *intent.coverage_requirements,
+            f"must not show: {', '.join(cleaned)}",
+        ),
+    )
 
 
 def _per_range(spans, prefix: str, *, required: bool) -> tuple[IntentPartition, ...]:

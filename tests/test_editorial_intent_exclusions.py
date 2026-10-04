@@ -1,0 +1,62 @@
+"""A free-text request's exclusions reach the brief as hard rules, and the intent report
+counts a planted violation of one (#2061)."""
+
+from __future__ import annotations
+
+from datetime import date, datetime
+
+from immich_memories.analysis.editorial_intent import build_editorial_intent
+from immich_memories.analysis.editorial_intent_validation import CarrierView, validate_intent
+from immich_memories.timeperiod import DateRange
+
+_WINDOW = (DateRange(datetime(2024, 3, 10), datetime(2024, 5, 20, 23, 59, 59)),)
+DAY = date(2024, 4, 1)
+
+
+def _intent(excluded=()):
+    return build_editorial_intent(
+        "custom", _WINDOW, brief='Make a video about "a trip"', excluded=excluded
+    )
+
+
+def test_exclusions_are_a_hard_rule_in_the_brief():
+    intent = _intent(["humans", "children"])
+
+    assert intent.excluded == ("humans", "children")
+    assert "must not show: humans, children" in intent.coverage_requirements[-1]
+    assert "must not show: humans, children" in intent.prompt_block()
+
+
+def test_no_exclusions_leaves_the_brief_unchanged():
+    plain = _intent()
+    assert plain.excluded == ()
+    assert "must not show" not in plain.prompt_block()
+
+
+def test_a_planted_violation_of_an_exclusion_is_counted_in_the_report():
+    intent = _intent(["humans"])
+    carriers = [
+        CarrierView("clean", DAY, "track", 4.0, caption="A mountain under a clear sky"),
+        CarrierView("planted", DAY, "track", 4.0, caption="A group of humans on a trail"),
+    ]
+
+    report = validate_intent(
+        intent, carriers=carriers, evidence_partitions=set(), requested_seconds=30
+    )
+
+    assert report.status == "structural_violation"
+    violation = next(v for v in report.violations if v.code == "excluded_subject_shown")
+    assert violation.asset_id == "planted"
+    assert "planted" in report.reason
+
+
+def test_a_carrier_without_the_excluded_word_raises_no_violation():
+    intent = _intent(["humans"])
+    carriers = [CarrierView("clean", DAY, "track", 4.0, caption="A mountain under a clear sky")]
+
+    report = validate_intent(
+        intent, carriers=carriers, evidence_partitions=set(), requested_seconds=30
+    )
+
+    assert report.status == "ok"
+    assert not report.violations

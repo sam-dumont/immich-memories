@@ -32,6 +32,9 @@ class CarrierView:
     taken: date
     event: str
     seconds: float
+    # The picture's own caption, read only to count a planted violation of the intent's
+    # exclusions (#2061); None for a caller that never reads captions.
+    caption: str | None = None
 
 
 @dataclass(frozen=True)
@@ -154,6 +157,32 @@ def _people_violations(
     ]
 
 
+def _excluded_violations(
+    intent: EditorialIntent, carriers: Sequence[CarrierView]
+) -> list[Violation]:
+    """Every selected carrier whose own caption still shows a word the intent excludes.
+
+    The pool already drops a picture a free-text request asked left out (#2061); this is
+    the same check run again over what a plan actually selected, so a violation stays
+    visible instead of silently passing through if one ever slips in.
+    """
+    if not intent.excluded:
+        return []
+    words = {word for phrase in intent.excluded for word in phrase.lower().split()}
+    return [
+        Violation(
+            "excluded_subject_shown",
+            "structural",
+            None,
+            f"{carrier.asset_id} was selected but its caption shows what the request asked "
+            f"left out: {carrier.caption}",
+            asset_id=carrier.asset_id,
+        )
+        for carrier in carriers
+        if carrier.caption and words & set(carrier.caption.lower().split())
+    ]
+
+
 def _too_thin(intent: EditorialIntent, carriers: Sequence[CarrierView]) -> bool:
     if len(carriers) < MIN_CARRIERS:
         return True
@@ -204,6 +233,7 @@ def validate_intent(
             else []
         ),
         *_people_violations(carriers, people_violations),
+        *_excluded_violations(intent, carriers),
     ]
     status, reason = _verdict(
         intent,

@@ -28,10 +28,17 @@ from immich_memories.free_text.facts import (
     last_pictures,
     occasion_day,
 )
-from immich_memories.free_text.grammar import free_tier
+from immich_memories.free_text.grammar import free_tier, subject_head
 from immich_memories.free_text.lexicon import Lexicon
 from immich_memories.free_text.library import LibraryPicture, LibraryView
-from immich_memories.free_text.linking import Household, Reason, WhenLink, WhereLink, WhoLink
+from immich_memories.free_text.linking import (
+    Household,
+    Reason,
+    WhenLink,
+    WhereLink,
+    WhoLink,
+    is_performer_word,
+)
 from immich_memories.free_text.pool_questions import (
     left_out,
     one_occasion,
@@ -363,14 +370,21 @@ def _in_episodes(
 
 def _company(funnel: _Funnel, who: WhoLink, lexicon: Lexicon) -> None:
     # Company is read from captions: "with kids" needs a caption naming children.
+    if who.absent_company is not None:
+        _drop_company(funnel, who.absent_company, lexicon)
     if who.company is None:
         return
+    performers = who.company == "performers"
     young = who.company == "children"
     fits: dict[str, bool] = {}
 
     def names_company(word: str) -> bool:
         if word not in fits:
-            fits[word] = lexicon.is_human(word) and (not young or lexicon.is_young(word))
+            fits[word] = (
+                is_performer_word(word)
+                if performers
+                else lexicon.is_human(word) and (not young or lexicon.is_young(word))
+            )
         return fits[word]
 
     kept = [
@@ -379,7 +393,33 @@ def _company(funnel: _Funnel, who: WhoLink, lexicon: Lexicon) -> None:
         if any(names_company(word) for word in words_of(picture.caption or ""))
     ]
     rule = f"a caption naming {who.company} (WordNet's people words)"
+    if who.company_only:
+        rule += "; only that kind asked, an audience caption with none of it is left out"
     funnel.keep("company", kept, Reason(who.company, rule, f"{who.company} in the photos"))
+
+
+def _drop_company(funnel: _Funnel, kind: str, lexicon: Lexicon) -> None:
+    # Absence of people must not rely on captions alone (#2061): a recognised face, or a
+    # caption whose own grammatical subject is a person, proves someone is there even when
+    # the caption never writes a plural "people" word.
+    young = kind == "children"
+
+    def names_company(word: str) -> bool:
+        return lexicon.is_human(word) and (not young or lexicon.is_young(word))
+
+    def has_company(picture: LibraryPicture) -> bool:
+        if any(names_company(word) for word in words_of(picture.caption or "")):
+            return True
+        if kind != "people":
+            return False
+        subject = subject_head(picture.caption)
+        return bool(picture.people) or bool(subject and lexicon.is_human(subject))
+
+    kept = [picture for picture in funnel.pictures if not has_company(picture)]
+    rule = f"no caption naming {kind}" + (
+        "; no recognised face, no caption subject that is a person" if kind == "people" else ""
+    )
+    funnel.keep("absent company", kept, Reason(kind, rule, f"no {kind} in the photos"))
 
 
 def _subject(

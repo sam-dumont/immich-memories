@@ -164,6 +164,62 @@ def test_company_needs_a_caption_naming_people_of_that_kind(lexicon: Lexicon) ->
     assert with_kids.funnel[-1].name == "company"
 
 
+def test_an_absent_people_request_drops_a_face_or_a_human_caption_subject(lexicon: Lexicon) -> None:
+    # #2061: "no humans"/"sans humains" must drop a recognised face even without a caption
+    # naming people, and a caption whose own subject is a person even without a face box.
+    view = _view(
+        _picture("landscape", caption="A mountain under a clear sky"),
+        _picture(
+            "recognised-face", caption="A mountain under a clear sky", people=frozenset({"p"})
+        ),
+        _picture("human-subject", caption="A woman standing by a lake"),
+    )
+    asked = _asked("landscapes, no humans", who=WhoLink(absent_company="people"))
+    # WHY: stands in for the model server, asked what "no humans" leaves out of the film;
+    # that is handled by `absent_company`, not the generic left-out phrase list.
+    asker = BankedAsker(*[{"reason": "banked", "choices": []}] * 3)
+
+    pool = build_pool(asked, view, NOBODY, lexicon, asker)
+
+    assert _ids(pool) == {"landscape"}
+    step = next(s for s in pool.funnel if s.name == "absent company")
+    assert step.kept == 1
+
+
+def test_an_absent_specific_company_kind_is_excluded_not_required(lexicon: Lexicon) -> None:
+    # #2061: "sans les enfants"/"without kids" must exclude children, never require them.
+    view = _view(
+        _picture("adults", caption="Two adults walking on a beach"),
+        _picture("kids", caption="Two children playing on a beach"),
+    )
+    asked = _asked("without kids", who=WhoLink(absent_company="children"))
+    # WHY: stands in for the model server, asked what "without kids" leaves out of the film;
+    # that is handled by `absent_company`, not the generic left-out phrase list.
+    asker = BankedAsker(*[{"reason": "banked", "choices": []}] * 3)
+
+    pool = build_pool(asked, view, NOBODY, lexicon, asker)
+
+    assert _ids(pool) == {"adults"}
+
+
+def test_only_the_performers_keeps_performer_captions_and_drops_the_audience(
+    lexicon: Lexicon,
+) -> None:
+    # #2061: "only the performers" must keep performer-captioned pictures and exclude the
+    # audience, without collapsing the kind into generic "people".
+    view = _view(
+        _picture("musician", caption="A musician playing a guitar on stage"),
+        _picture("singer", caption="A singer performing into a microphone"),
+        _picture("crowd", caption="A crowd watching a concert"),
+        _picture("empty-stage", caption="An empty stage before the show"),
+    )
+    asked = _asked("only the performers", who=WhoLink(company="performers", company_only=True))
+
+    pool = build_pool(asked, view, NOBODY, lexicon, BankedAsker())
+
+    assert _ids(pool) == {"musician", "singer"}
+
+
 OLD_HOME = Home(50.0, 4.0, since=None, until=date(2020, 1, 1))
 NEW_HOME = Home(51.0, 5.0, since=date(2020, 1, 1), until=None)
 MOVED = Household({}, homes=(OLD_HOME, NEW_HOME))
