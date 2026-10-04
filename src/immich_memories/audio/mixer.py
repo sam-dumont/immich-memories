@@ -159,6 +159,47 @@ def plan_loop_copies(*, audio_duration: float, target_duration: float, crossfade
     return max(2, math.ceil((target_duration - audio_duration) / effective) + 1)
 
 
+# Below this, a generated block's lead-in/tail reads as silence rather than music.
+_BLOCK_SILENCE_THRESHOLD_DB = -50.0
+# How much of that near-silence to leave in place: enough that a trim never
+# reads as an abrupt cut, short enough that it cannot hold a seam open.
+_BLOCK_SILENCE_KEEP_SECONDS = 0.2
+
+
+def _trim_block_silence(source: Path, destination: Path) -> Path:
+    """Trim a block's near-silent lead-in/tail before it can hold open a seam.
+
+    ACE-Step blocks often end (sometimes start) with several seconds below
+    -50 dB. assemble_music chains blocks with a crossfade, so an untrimmed
+    block can land a multi-second near-silent stretch right at that seam
+    (#1954). Falls back to the source on failure — a seam defect is better
+    than a missing block.
+    """
+    command = [
+        "ffmpeg",
+        "-y",
+        "-v",
+        "error",
+        "-i",
+        str(source),
+        "-af",
+        "silenceremove="
+        f"start_periods=1:start_threshold={_BLOCK_SILENCE_THRESHOLD_DB}dB:start_silence=0.05:"
+        f"stop_periods=1:stop_threshold={_BLOCK_SILENCE_THRESHOLD_DB}dB:"
+        f"stop_silence={_BLOCK_SILENCE_KEEP_SECONDS}",
+        str(destination),
+    ]
+    try:
+        subprocess.run(command, capture_output=True, check=True, timeout=120)
+    except (subprocess.SubprocessError, OSError) as error:
+        logger.warning("Block silence trim failed, using the block untrimmed: %s", error)
+        return source
+    # A block that was near-silent throughout can trim away to nothing.
+    if get_audio_duration(destination) <= 0.05:
+        return source
+    return destination
+
+
 def assemble_music(
     block_paths: list[Path],
     target_duration: float,
@@ -171,10 +212,15 @@ def assemble_music(
     target, so a long video gets several different takes of the same style rather
     than one phrase on repeat. Output is PCM WAV so mastering and ducking re-encode
     a clean source, unlike the mp3 ``loop_audio_to_duration`` writes for final
-    delivery.
+    delivery. Each block's near-silent lead-in/tail is trimmed first, so a seam
+    never lands on a multi-second silent stretch.
     """
     if not block_paths:
         raise ValueError("assemble_music needs at least one block")
+    block_paths = [
+        _trim_block_silence(path, output_path.parent / f"{output_path.stem}_trim{i}.wav")
+        for i, path in enumerate(block_paths)
+    ]
     durations = [get_audio_duration(p) for p in block_paths]
     shortest = min(durations)
     fade = min(crossfade_seconds, max(shortest / 2, 0.01))
