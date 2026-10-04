@@ -13,13 +13,13 @@ from immich_memories.generate_privacy import (
     extract_trip_pins,
     generate_trip_title_text,
 )
+from immich_memories.i18n import resolve_film_locale
 from immich_memories.processing.assembly_config import (
     AssemblyClip,
     AssemblySettings,
     TitleScreenSettings,
     TransitionType,
 )
-from immich_memories.processing.clip_caption import resolve_caption_locale
 from immich_memories.processing.encoding_plan import (
     EncodingPlan,
     EncodingRequest,
@@ -153,7 +153,7 @@ def build_assembly_settings(
         scale_mode=effective_scale_mode,
         add_date_overlay=params.add_date_overlay,
         add_place_overlay=params.add_place_overlay,
-        caption_locale=config.title_screens.locale,
+        caption_locale=resolve_film_locale(config.title_screens.locale),
         debug_preserve_intermediates=params.debug_preserve_intermediates,
         privacy_mode=params.privacy_mode,
         certified_content_intervals=certified_intervals,
@@ -170,6 +170,10 @@ def build_title_settings(
         return None
 
     from immich_memories.filename_builder import build_title_person_name, get_divider_mode
+
+    # Resolved once: every title-text consumer below (trip title, settings.locale,
+    # the holiday label) must never see the raw "auto" the config allows.
+    resolved_locale = resolve_film_locale(config.title_screens.locale)
 
     title_person_name = build_title_person_name(
         memory_type=params.memory_type,
@@ -191,17 +195,17 @@ def build_title_settings(
     trip_location_names: list[str] = []
     trip_title_text = None
     if params.memory_type == "trip":
-        trip_locations, trip_location_names = _trip_stops(params, config, assembly_clips)
-        trip_title_text = generate_trip_title_text(
-            params.memory_preset_params, config.title_screens.locale
+        trip_locations, trip_location_names = _trip_stops(
+            params, config, assembly_clips, resolved_locale
         )
+        trip_title_text = generate_trip_title_text(params.memory_preset_params, resolved_locale)
 
     settings = TitleScreenSettings(
         enabled=True,
         person_name=title_person_name,
         start_date=params.date_start,
         end_date=params.date_end,
-        locale=config.title_screens.locale,
+        locale=resolved_locale,
         style_mode=config.title_screens.style_mode,
         fade_color=config.title_screens.fade_color,
         title_duration=config.title_screens.title_duration,
@@ -242,9 +246,8 @@ def build_title_settings(
         from immich_memories.memory_types.factory import holiday_label
         from immich_memories.titles.text_builder import title_pattern
 
-        locale = resolve_caption_locale(settings.locale)
-        settings.title_override = holiday_label(holiday, params.date_end.year, locale)
-        settings.subtitle_override = title_pattern("on_this_day_subtitle", locale)
+        settings.title_override = holiday_label(holiday, params.date_end.year, resolved_locale)
+        settings.subtitle_override = title_pattern("on_this_day_subtitle", resolved_locale)
         settings.title_source = TitleSource.OCCASION
 
     # Apply LLM-generated title overrides
@@ -263,7 +266,7 @@ def build_title_settings(
 
 
 def _trip_stops(
-    params: GenerationParams, config: Config, assembly_clips: list[AssemblyClip]
+    params: GenerationParams, config: Config, assembly_clips: list[AssemblyClip], locale: str
 ) -> tuple[list[tuple[float, float]], list[str]]:
     """The intro's pins: close stops grouped under one name, unnamed ones left off.
 
@@ -272,9 +275,7 @@ def _trip_stops(
     """
     from immich_memories.titles.trip_stops import group_trip_stops
 
-    pins, names = extract_trip_pins(
-        assembly_clips, resolve_caption_locale(config.title_screens.locale)
-    )
+    pins, names = extract_trip_pins(assembly_clips, locale)
     address_of = None
     if config.network.geocoding and not params.privacy_mode:
         from immich_memories.analysis.place_geocoder import place_geocoder_for

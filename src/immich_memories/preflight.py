@@ -277,6 +277,17 @@ def _check_anthropic(base_url: str, model: str, api_key: str, timeout: float) ->
         return _transport_failure(exc)
 
 
+def _reader_settings_chosen(config: Config) -> list[str]:
+    """Reader settings someone set, leaving out a key that only came from the shell.
+
+    `OPENAI_API_KEY` is exported for many tools; finding it is not choosing a reader.
+    """
+    from immich_memories.config_loader import env_alias_overrides
+
+    from_shell = "llm.api_key" in env_alias_overrides(config)
+    return [name for name in config.llm.configured_fields if not (from_shell and name == "api_key")]
+
+
 def check_llm(config: Config) -> CheckResult:
     """Check LLM provider availability.
 
@@ -292,12 +303,15 @@ def check_llm(config: Config) -> CheckResult:
         CheckResult with status and details.
     """
     if not config.llm.enabled:
-        if config.llm.configured:
+        if chosen := _reader_settings_chosen(config):
             return CheckResult(
                 name="LLM",
                 status=CheckStatus.WARNING,
                 message="Reader configured but disabled",
-                details="Set advanced.llm.enabled: true to allow local or remote reader calls",
+                details=(
+                    f"Set: {', '.join(chosen)}. "
+                    "Set advanced.llm.enabled: true to allow local or remote reader calls"
+                ),
             )
         return CheckResult(name="LLM", status=CheckStatus.SKIPPED, message="LLM disabled")
     try:
@@ -423,10 +437,18 @@ def _kernel_library_check() -> CheckResult:
     from immich_memories.titles.kernel_backend_probe import KERNEL_LIBRARY
 
     if importlib.util.find_spec(KERNEL_LIBRARY) is None:
+        # The reason leads: details print only under -v, and "use an older Python" is
+        # what a native install on Homebrew's default 3.14 needs to read (#1987).
+        message = (
+            f"GPU title kernels unavailable: no {KERNEL_LIBRARY} wheel for {_platform_tag()}; "
+            "titles use PIL + FFmpeg (no SDF effects)"
+        )
+        if sys.version_info >= (3, 14):
+            message += "; use Python 3.11-3.13"
         return CheckResult(
             name="Title rendering",
             status=CheckStatus.WARNING,
-            message=_PIL_RENDERER_MESSAGE,
+            message=message,
             details=(
                 f"{KERNEL_LIBRARY} publishes no wheel for {_platform_tag()}. "
                 "Wheels exist for Linux x86_64, Linux aarch64, macOS arm64 and Windows AMD64 "
