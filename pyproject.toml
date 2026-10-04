@@ -196,7 +196,9 @@ source = "vcs"
 # Exact releases have no local suffix. Unreleased builds keep their commit identity.
 local_scheme = "node-and-date"
 tag_regex = '^v(?P<version>\d+\.\d+\.\d+(?:-(?:rc|dev)\.\d+)?)$'
-scm.git.describe_command = "git describe --dirty --tags --long --match v[0-9]*.[0-9]*.[0-9]*"
+# WHY --exclude: a dev rehearsal (#1940) tags v0.0.0-dev.<run id> on main, and setuptools-scm cannot
+# add a distance to a .devN version, so every later build failed to compute its version.
+scm.git.describe_command = "git describe --dirty --tags --long --match v[0-9]*.[0-9]*.[0-9]* --exclude *-dev.*"
 
 [tool.hatch.build.hooks.vcs]
 version-file = "src/immich_memories/_version.py"
