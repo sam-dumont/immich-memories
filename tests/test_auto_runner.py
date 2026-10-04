@@ -1087,6 +1087,28 @@ class TestRunOneOutcomes:
         assert result.outcome is AutoOutcome.FAILED
         assert result.reason == "nothing worth a film in this period"
 
+    def test_a_people_condition_that_excluded_the_whole_pool_keeps_its_own_reason(
+        self, config: Config, candidate: MemoryCandidate
+    ) -> None:
+        """A specific reason on the marker's own line (#1954) survives into the attempt's
+        recorded reason, instead of collapsing to the generic one."""
+        runner = AutoRunner(config)
+        runner.execute = lambda _argv: ProcessResult(
+            0,
+            "ℹ Nothing worth a film in February 2019: No picture satisfies the "
+            "requested people condition: 2 picture(s) were left out before planning, "
+            "and nothing else was offered.\n",
+            "",
+        )
+        with patch.object(runner, "suggest", return_value=[candidate]):
+            result = runner.run_one(force=True)
+
+        assert result.outcome is AutoOutcome.FAILED
+        assert result.reason == (
+            "No picture satisfies the requested people condition: 2 picture(s) were "
+            "left out before planning, and nothing else was offered."
+        )
+
     def test_same_key_run_from_another_attempt_cannot_prove_success(
         self, config: Config, candidate: MemoryCandidate, tmp_path: Path
     ) -> None:

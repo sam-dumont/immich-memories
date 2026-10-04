@@ -123,6 +123,15 @@ def period_name(date_range: DateRange) -> str:
     return date_range.description
 
 
+def _nothing_worth_a_film_message(date_range: DateRange, stats: dict) -> str:
+    """The marker stays first so automation's substring match keeps working
+    (automation/runner.py); a people condition that excluded the whole pool adds its own
+    specific reason after it (#1954)."""
+    message = f"{NOTHING_WORTH_A_FILM} in {period_name(date_range)}"
+    reason = stats.get("no_selection_reason")
+    return f"{message}: {reason}" if reason else message
+
+
 def _stops_before_rendering(*, dry_run: bool, no_render: bool) -> bool:
     """Whether this run ends at the plan instead of producing a file.
 
@@ -612,7 +621,7 @@ def run_pipeline_and_generate(
         # Pictures that were read and judged not worth a film are an answer, not a
         # failure; an empty pool is still an error (a filter or connection gone wrong).
         if all_candidates:
-            print_info(f"{NOTHING_WORTH_A_FILM} in {period_name(date_range)}")
+            print_info(_nothing_worth_a_film_message(date_range, pipeline_result.stats))
             sys.exit(0)
         print_error("Pipeline selected no clips")
         sys.exit(1)

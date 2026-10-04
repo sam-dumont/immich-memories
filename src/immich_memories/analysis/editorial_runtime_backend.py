@@ -179,7 +179,7 @@ class ProductionPostCardBackend:
                 )
                 trace.warnings.append(warning)
                 logger.warning(warning)
-        _warn_of_people_condition_drop(result, trace)
+        _warn_of_people_condition_exclusion(result, trace)
         return self._adopt(result, source.artifact_dir, allowed_ids)
 
     def _effects(self, source, resources):
@@ -524,20 +524,18 @@ def _write_visual_requests(artifact_dir: Path, trace: Trace, request_start: int)
     )
 
 
-def _warn_of_people_condition_drop(result: StructurePlanningResult, trace: Trace) -> None:
-    """Surface the replan `plan_structure` already did (#1969): never rewrite carriers here.
+def _warn_of_people_condition_exclusion(result: StructurePlanningResult, trace: Trace) -> None:
+    """Surface what `plan_structure` already excluded before planning (#1954, #1969).
 
     The owner's ruling is strict: better lose a good picture than bundle in a wrong one.
-    `editorial_structure_planner._plan_structure` enforces it before the certified render
-    timing is bound, by replanning over a pool with every violator removed; this only
-    reports what it found, so the carriers, chapters, threads and timing stay one answer.
+    `editorial_structure_planner._plan_structure` enforces it on the whole pool before any
+    selection runs, so there is nothing to rewrite here; this only reports what it found.
     """
-    dropped = result.plan.get("people_condition_dropped")
-    if not dropped:
+    excluded = result.plan.get("people_condition_excluded")
+    if not excluded:
         return
     warning = (
-        f"!! {len(dropped)} selected picture(s) failed the requested people condition on "
-        "their own faces; the cut was replanned without them"
+        f"!! {len(excluded)} picture(s) left out: the requested people are not recognised in them"
     )
     trace.warnings.append(warning)
     logger.warning(warning)

@@ -162,6 +162,8 @@ class SmartPipeline:
                 "editorial_duration_realization": planned.duration_realization,
             }
         )
+        if planned.no_selection_reason is not None:
+            result.stats["no_selection_reason"] = planned.no_selection_reason
         attempt_dir = getattr(self._planner, "last_attempt_directory", None)
         if attempt_dir is not None:
             result.stats["editorial_attempt_directory"] = str(attempt_dir)

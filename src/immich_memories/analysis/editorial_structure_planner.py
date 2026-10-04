@@ -13,6 +13,7 @@ from copy import deepcopy
 from dataclasses import dataclass, replace
 from datetime import datetime
 from functools import partial
+from itertools import chain
 from operator import itemgetter
 from typing import Any
 
@@ -28,7 +29,10 @@ from immich_memories.analysis.editorial_exposure_chains import chain_holds_for
 from immich_memories.analysis.editorial_family_seat import FilmSeatSource, seat_in_film
 from immich_memories.analysis.editorial_home_radius import home_of, near_home_of
 from immich_memories.analysis.editorial_owner_required import admit_owner_required
-from immich_memories.analysis.editorial_people_condition_replan import enforce_people_condition
+from immich_memories.analysis.editorial_people_condition_pool import (
+    exclude_people_condition_violators,
+    with_people_condition_exclusion,
+)
 from immich_memories.analysis.editorial_picture_admission import picture_admission, shows_life
 from immich_memories.analysis.editorial_picture_ladders import depth_cap
 from immich_memories.analysis.editorial_review_list import write_for_cut
@@ -279,20 +283,15 @@ def plan_structure(
 def _plan_structure(
     source: StructurePlanningInput, ports: StructurePlannerPorts
 ) -> StructurePlanningResult:
-    """One pass, then a bounded retry if it selected outside the people condition (#1969).
+    """Apply the people condition to the whole pool once, then plan it in a single pass.
 
-    See `editorial_people_condition_replan.py` for why this must run before the certified
-    render timing is bound, not as a post-hoc rewrite of the carriers list.
+    `editorial_people_condition_pool.py` narrows `moment_asset_ids` before any budget or
+    selection work runs, so every derived field (moment counts, budgets, the certified
+    render timing) is already consistent with it (#1954, #1969): never a second pass, and
+    never a rewrite of an already-planned carriers list.
     """
-    result = _plan_structure_pass(source, ports)
-    return enforce_people_condition(
-        source, result, plan_once=lambda narrowed: _plan_structure_pass(narrowed, ports)
-    )
-
-
-def _plan_structure_pass(
-    source: StructurePlanningInput, ports: StructurePlannerPorts
-) -> StructurePlanningResult:
+    narrowed = exclude_people_condition_violators(source)
+    source = narrowed.source
     source.bank_dir.mkdir(parents=True, mode=0o700, exist_ok=True)
     source.artifact_dir.mkdir(parents=True, mode=0o700, exist_ok=True)
     audit_dir = source.artifact_dir / "derived-decisions"
@@ -302,8 +301,12 @@ def _plan_structure_pass(
     contract, contract_key, admission, admission_key = contract_texts(source.case, source.intent)
     wall = read_wall(source)
     material = build_material(source, ports, wall)
+    pool_ids = frozenset(chain.from_iterable(source.moment_asset_ids.values()))
+    pool_assets = {
+        asset_id: asset for asset_id, asset in source.assets.items() if asset_id in pool_ids
+    }
     selection_budget = (
-        source.render_timing.selection_budget(source.assets) if source.render_timing else None
+        source.render_timing.selection_budget(pool_assets) if source.render_timing else None
     )
     slots_total, cap, partition_limit = _partition_cap(
         source.intent, source.case.target_seconds, source.prior_plan, selection_budget
@@ -355,7 +358,7 @@ def _plan_structure_pass(
         wall_sha256=hashlib.sha256(source.wall_bytes).hexdigest(),
         slots_total=slots_total,
         cap=cap,
-        source_assets=len(source.assets),
+        source_assets=narrowed.pool_size,
         fam_ids=wall.fam_ids,
         anchor_label=wall.anchor_label,
         period_people=wall.period_people,
@@ -367,7 +370,7 @@ def _plan_structure_pass(
         prior_assets=prior_assets,
         prior_plan_ref=source.prior_plan_ref,
     )
-    return replace(
+    result = replace(
         build_result(source, ports, facts, outcome),
         draft=RulesDraft(
             outcome.selection,
@@ -378,6 +381,9 @@ def _plan_structure_pass(
             tuple(deepcopy(outcome.final_duplicates.get("collapsed_favourites", ()))),
         ),
     )
+    if narrowed.excluded:
+        result = with_people_condition_exclusion(result, narrowed.excluded)
+    return result
 
 
 def _timing_binding(source: StructurePlanningInput, run: PlanRun) -> dict:

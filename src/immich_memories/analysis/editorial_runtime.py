@@ -355,6 +355,7 @@ class RuntimeEditorialPlanner:
                     outcome="selected" if result.plan.selections else "no_selection",
                     duration_realization=result.duration_realization,
                     calls_by_stage=structure.plan.get("calls_by_stage") if structure else None,
+                    reason=result.no_selection_reason,
                 )
                 return result
             finally:
@@ -412,6 +413,7 @@ class RuntimeEditorialPlanner:
                     duration_realization=result.plan.get("duration_realization")
                     if result
                     else None,
+                    no_selection_reason=_people_condition_no_selection_reason(result),
                 )
             if result is None:
                 raise RuntimeError("editorial source route has no completed structure result")
@@ -453,6 +455,18 @@ class RuntimeEditorialPlanner:
             trace=trace, evidence_exclusions=exclusions, include_previews=False
         )
         return final, reach
+
+
+def _people_condition_no_selection_reason(result) -> str | None:
+    """A specific empty-cut reason when a people condition excluded the whole pool, else None.
+
+    `editorial_structure_planner._plan_structure` writes `people_condition_excluded` only
+    when it left pictures out before planning; the generic "nothing worth a film" stays
+    the answer for every other empty cut (#1954).
+    """
+    if result is None or not result.plan.get("people_condition_excluded"):
+        return None
+    return result.plan.get("intent_report", {}).get("reason")
 
 
 def _recorded(requester, stage: str, directory: Callable[[], Path]):

@@ -285,8 +285,15 @@ class AutoRunner:
             attempt_id, memory_key=candidate.memory_key
         )
         if matching_run is None and NOTHING_WORTH_A_FILM in (stdout or ""):
-            # Kept a failure so the candidate backs off instead of re-running daily.
-            return "nothing worth a film in this period"
+            # Kept a failure so the candidate backs off instead of re-running daily. A
+            # people condition that excluded the whole pool prints its own specific
+            # reason after the marker on the same line (#1954); surface it instead of
+            # the generic line.
+            marker_line = next(
+                (line for line in (stdout or "").splitlines() if NOTHING_WORTH_A_FILM in line), ""
+            )
+            specific = marker_line.partition(": ")[2].strip()
+            return specific or "nothing worth a film in this period"
         if matching_run is None:
             return "no matching completed auto run"
         if not matching_run.output_path:

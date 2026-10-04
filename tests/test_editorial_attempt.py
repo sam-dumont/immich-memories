@@ -131,6 +131,32 @@ def test_an_attempt_that_made_no_recorded_calls_omits_the_stage_families(tmp_pat
     assert "calls_by_stage" not in read_editorial_attempt(attempt.directory)
 
 
+def test_a_no_selection_outcome_records_its_specific_reason_for_the_web_run_page(tmp_path):
+    """A people condition that excluded the whole pool (#1954) must say so in the run's
+    own record, not just the CLI's stdout: the web run page and automation read this."""
+    with EditorialAttempt(tmp_path, request={}) as attempt:
+        attempt.complete(
+            selected=0,
+            outcome="no_selection",
+            reason="No picture satisfies the requested people condition: "
+            "4 picture(s) were left out before planning, and nothing else was offered.",
+        )
+
+    record = read_editorial_attempt(attempt.directory)
+    assert record["outcome"] == "no_selection"
+    assert record["reason"] == (
+        "No picture satisfies the requested people condition: "
+        "4 picture(s) were left out before planning, and nothing else was offered."
+    )
+
+
+def test_a_selection_with_no_special_reason_leaves_the_record_without_one(tmp_path):
+    with EditorialAttempt(tmp_path, request={}) as attempt:
+        attempt.complete(selected=1)
+
+    assert "reason" not in read_editorial_attempt(attempt.directory)
+
+
 def test_selection_spend_is_saved_at_progress_and_completion_without_rendering(tmp_path):
     from immich_memories.analysis.llm_metrics import record_reply
     from immich_memories.analysis.llm_usage_record import USAGE_FILE

@@ -69,8 +69,11 @@ def _check_wall_membership(
     if tuple(moment_asset_ids) != aliases:
         raise ValueError("captured asset membership must follow the complete wall alias order")
     members = list(chain.from_iterable(moment_asset_ids.values()))
-    if any(not ids for ids in moment_asset_ids.values()) or len(members) != len(set(members)):
-        raise ValueError("captured moments need unique, nonempty selectable membership")
+    # A moment may hold nothing selectable (every candidate excluded by a people
+    # condition, #1954): the wall still names it, for chronology and context, but it
+    # contributes no carrier. Its id order must still be unique across the wall.
+    if len(members) != len(set(members)):
+        raise ValueError("captured moments need unique selectable membership")
     if not set(members).issubset(assets):
         raise ValueError("captured wall selects assets absent from its source evidence")
     return members

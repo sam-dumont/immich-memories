@@ -152,7 +152,9 @@ def test_runtime_captures_once_per_attempt_without_refetch_or_mutation(tmp_path,
         first = source_fetcher(scope)
         assert source_fetcher(scope) is first
         assert first == sources
-        return SimpleNamespace(plan=EditorialPlan(), duration_realization=None)
+        return SimpleNamespace(
+            plan=EditorialPlan(), duration_realization=None, no_selection_reason=None
+        )
 
     # WHY: stops the run at the source fetch, and watches the one filesystem write it makes.
     with (
