@@ -9,7 +9,8 @@ from immich_memories.analysis.editorial_story_pick_contract import (
     ask_moment_pick,
     source_kind_marker,
 )
-from immich_memories.analysis.editorial_story_shortlist import DepictedChoice, pick_story_moments
+from immich_memories.analysis.editorial_story_shortlist import DepictedChoice
+from immich_memories.analysis.editorial_story_vote import pick_story_moments
 from tests.annotation_rows import annotation_store
 
 
