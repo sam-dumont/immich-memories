@@ -42,9 +42,15 @@ does not prove readiness. Service defaults stay below saved Settings. The app in
 detectors and Laya checkpoint into the shared model PVC before startup; it verifies existing
 artifact digests on subsequent starts.
 
-The GPU wrapper requests one GPU for inference and one for captions. The cluster needs two
-schedulable GPU slots. It does not configure device sharing. The external Full reader has its
-own resource requirements. Both model services remain ClusterIP; ingress and egress policies
+The GPU wrapper requests one `nvidia.com/gpu`, for the inference service only. The captioner
+requests none: it lands on a GPU node through the node selector and toleration, and relies on the
+card being time-sliced. A cluster with one exclusive GPU therefore needs sharing configured, or
+the captioner sits on a card it has not reserved. The app pod gets no GPU either: encoding
+(libx264) and titles run on the CPU, and preflight warns "No GPU acceleration". On this tier the
+GPU means picture preparation and captions only. To give the app pod a GPU too, add
+`../components/gpu` to the `components:` of your `custom/kustomization.yaml` (see [GPU](#gpu)). The external Full reader has its own resource requirements.
+
+Both model services remain ClusterIP; ingress and egress policies
 are retained. Generated endpoint port rules are port permissions, not host allow-lists.
 
 For manual Full configuration, copy `overlays/tier-full/reader-config.yaml.example` to
@@ -57,7 +63,10 @@ The rest of this page covers the manifests and manual operator changes.
 ## Prerequisites
 
 - Immich reachable from the cluster, normally port 2283.
-- A storage class for three `ReadWriteOnce` PVCs: data/cache 30Gi, output 50Gi, models 5Gi.
+- A storage class for three `ReadWriteOnce` PVCs: data/cache 30Gi, output 50Gi, models 5Gi. The
+  GPU tier adds two more, caption-models 2Gi and inference-cache 10Gi: five PVCs, 97Gi in total.
+  Check the class's reclaim policy first: `Delete` removes the volumes with the namespace,
+  `Retain` keeps them (and your store) for a reinstall.
 - For NVIDIA overlays: GPU Operator, `nvidia` RuntimeClass and labelled GPU nodes.
 
 The default is one CPU-only app, with SQLite on the data PVC. Use local/block storage for SQLite,
@@ -76,6 +85,10 @@ Download/extract the deployment bundle from your chosen
 [release](https://github.com/sam-dumont/immich-memories/releases). Its image pins
 match that release. If using a source checkout instead, check `base/kustomization.yaml`: committed
 pins can trail releases. Image tags have no `v` prefix.
+
+Using another namespace than `immich-memories`? Read [Another namespace](#another-namespace)
+before you run these: `base/namespace.yaml` would create a stray `immich-memories` Namespace, and
+every `-n immich-memories` below must change with it.
 
 ```bash
 cd deploy/kubernetes
@@ -122,6 +135,28 @@ Authentication is disabled by default. Do not expose the Service or add an Ingre
 [enabling authentication](./authentication.mdx). Keep one UI replica.
 :::
 
+### Rotating a key
+
+Keys live in the Secret. Edit it (the generated `custom/secret.yaml`, or your own copy of
+`base/secret.yaml.example`), apply, then restart the app, since pods do not pick up new
+environment values on their own:
+
+```bash
+kubectl apply -k deploy/kubernetes/custom
+kubectl rollout restart -n immich-memories deploy/immich-memories
+```
+
+On the GPU tier this took 36 seconds and restarted only the app pod. Rotate the Immich API key
+this way. Leave `IMMICH_MEMORIES_SECRET_KEY` alone: changing it makes saved credentials unreadable (see
+[the secret key](#keep-the-secret-key)).
+
+### Keep the secret key
+
+The setup builder generates `IMMICH_MEMORIES_SECRET_KEY` into the Secret. It seals the credentials
+you save from Settings (the Immich key, the reader key) inside the store, so the same value has to
+open the same rows later. Keep a copy outside the cluster. A restored store paired with a new key
+cannot read its saved credentials, and you enter them again.
+
 ## Home base, time zone and the first cut
 
 Add these to the Deployment's `env` (or your overlay), so future applies keep them:
@@ -144,12 +179,18 @@ The web Render panel can upload to Immich. To default CLI/daily films to upload,
 `IMMICH_MEMORIES_UPLOAD__ENABLED=true` and optionally `IMMICH_MEMORIES_UPLOAD__ALBUM_NAME`.
 The key needs [upload permissions](./docker.md#the-api-key).
 
-For local films, copy from the output PVC:
+For local films, copy from the output PVC. Each film sits in its own run folder, so copy the
+`.mp4` rather than the whole volume ([first film](../get-started/first-film.mdx)):
 
 ```bash
 kubectl get pods -n immich-memories
-kubectl cp immich-memories/<pod>:/app/output ./output
+kubectl exec -n immich-memories deploy/immich-memories -c immich-memories -- find /app/output -name '*.mp4'
+kubectl cp -n immich-memories -c immich-memories <pod>:/app/output/<run folder>/<name>.mp4 ./film.mp4
 ```
+
+A CLI render dies with the `kubectl exec` that started it. For a month or a year, run it detached
+inside the pod, for example `kubectl exec ... -- sh -c 'nohup immich-memories runs render RUN_ID > /tmp/render.log 2>&1 &'`,
+and check `immich-memories runs list` for the result.
 
 Confirmed uploads remove their local film; local-only and failed deliveries keep theirs.
 
@@ -391,7 +432,11 @@ The init guard checks presence only, so existing files do not prove new pins mat
 ## Another namespace
 
 Set `namespace:` in each kustomization root you apply. Update command `-n` arguments and any
-cross-namespace URLs too. Applying raw YAML bypasses the namespace transformation.
+cross-namespace URLs too. Applying raw YAML bypasses the namespace transformation. That includes
+the Quick start's `kubectl apply -f base/namespace.yaml` and the Secret you apply by file: create
+your own namespace with `kubectl create namespace <name>` instead, and set `namespace:` in the
+Secret. The setup builder always writes `immich-memories`; change it in the generated
+`secret.yaml` and `kustomization.yaml` if you need another.
 
 ## Check it from outside the pod
 
