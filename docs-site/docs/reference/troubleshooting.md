@@ -37,6 +37,9 @@ In Docker, prefix the command with `docker compose exec immich-memories`. The re
 | `This server does not answer to the host '…'` (HTTP 421) | The requested hostname is not admitted. Add the intended name to `server.allowed_hosts` and check your public URL. See [Allowed hosts](../run/network-security.md#allowed-hosts) |
 | `A write from another site is refused` (HTTP 403) | A browser sent the request from another origin. Open the app at its own address; a script or cron sends no `Origin` and passes |
 | `Immich account 'partner' could not read asset …` | A `generate --accounts` run stops rather than lose that account's pictures. Run `immich-memories config test`: the account's key is wrong, revoked, or lacks the asset read permissions |
+| `Request failed: cannot reach <host> (<Exception>)`, then `retrying (n/N)` | Immich is unreachable from this process. Check the host/port in the error and Immich's own status; the run retries automatically before giving up |
+| Web create page shows "Immich unreachable" | The web server's own health check to Immich failed. Fix the connection (see [Cannot connect to Immich](#cannot-connect-to-immich)) and reload the page |
+| `Reader unreachable at <endpoint> (…); falling back to rules and default wording` | A configured text reader stopped answering mid-run. The run continues with rules and template wording; this warning is logged once per endpoint, not repeated every call |
 
 ## Cannot connect to Immich
 

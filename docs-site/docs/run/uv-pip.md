@@ -45,7 +45,8 @@ For pip, use the same pinned package specification inside the app's virtual envi
 
 A bare install lacks the ONNX runtime needed for picture classifiers and for the speech detector
 (FireRedVAD, bundled in the package). Without it, a video's cut is still chosen from its picture and
-its loudness, but may start or end mid-sentence.
+its loudness, but may start or end mid-sentence. The same model also detects a clip's own music or
+singing; without the ONNX runtime, the soundtrack never steps aside for it.
 
 For GPU or Full on Apple Silicon, append `--with laya-mlx` to the versioned `uv tool install`
 command above. `all-mac` supplies the Metal bindings but does not include this audience-classifier
