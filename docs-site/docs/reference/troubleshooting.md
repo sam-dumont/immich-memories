@@ -88,6 +88,19 @@ says where it passed and where it was dropped, and why. To overrule it, tick it 
 `preview unavailable at Immich (HTTP 404)` and cuts the rest; regenerate that asset's thumbnails in Immich and
 cut again. Every lever is on [Edit the cut](../how-it-chooses/overrule-it.md).
 
+## Preflight says Immich is connected, but cuts hang on thumbnails
+
+Small API calls pass, so preflight is green. Thumbnails are bigger packets, and they stall when the host's network MTU is below Docker's 1500. VPNs, overlay networks, Kubernetes and some cloud VMs do this (seen at 1370). Set the Compose network MTU below the host's with a `docker-compose.override.yml` next to `docker-compose.yml`:
+
+```yaml
+networks:
+  default:
+    driver_opts:
+      com.docker.network.driver.mtu: "1300"
+```
+
+Then `docker compose down && docker compose up -d`. On a host that showed this, a 39-picture cut went from more than 11 minutes unfinished to 21 seconds.
+
 ## The first cut is slow
 
 A cut prepares the pictures it can reach once (previews, pixel facts, heads, detectors, and on the `gpu` and
