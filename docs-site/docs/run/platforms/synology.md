@@ -90,7 +90,10 @@ sudo docker compose -p immich-memories exec immich-memories immich-memories pref
 ```
 
 The `synoacltool` line gives the container's uid 1000 write access to `output` and keeps your own
-entry; see [the output folder](../nas.md#the-output-folder) for why `chown` isn't enough. Check DSM ACLs as described above. Run every later Compose command from this directory with
+entry; see [the output folder](../nas.md#the-output-folder) for why `chown` isn't enough.
+`title_screens.locale: auto` follows the host's `LANG`, but the container sets none, so a film
+always renders in English until you set `title_screens.locale: fr` (or add `LANG: fr_FR.UTF-8`
+to `.env`) for a French one. Check DSM ACLs as described above. Run every later Compose command from this directory with
 `-p immich-memories`; the explicit project name also determines its named volume prefix.
 This stock release-file route uses host port **8080**. If occupied, edit the mapping to
 `127.0.0.1:18081:8080` and use 18081 for both tunnel and proxy upstream.

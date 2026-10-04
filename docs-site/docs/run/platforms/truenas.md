@@ -29,6 +29,10 @@ Enter your connection details below, paste the generated `docker-compose.yml` in
 
 The example uses Docker-managed volumes. For datasets you can snapshot and share directly, create dedicated datasets first and replace the corresponding volume mounts with their absolute `/mnt/...` paths. Give UID/GID 1000 access to those datasets; do not change permissions on an entire existing storage pool.
 
+`title_screens.locale: auto` follows the host's `LANG`, but the container sets none, so a film
+always renders in English until you set `title_screens.locale: fr` (or add `LANG: fr_FR.UTF-8`
+as an environment variable) for a French one.
+
 ## 3. Prepare and check
 
 Open **Apps → Installed**, select `immichmemories`, then in **Workloads** click the **Shell** icon for the running app container. Choose `/bin/sh` if prompted. This is the app shell, not **System → Shell**. Run:

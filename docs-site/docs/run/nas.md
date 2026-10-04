@@ -112,6 +112,10 @@ pin this app to three cores on a four-core NAS:
     cpuset: "0-2"
 ```
 
+`title_screens.locale: auto` follows the host's `LANG`, but the container sets none, so a
+film always renders in English until you set `title_screens.locale: fr` (or add
+`LANG: fr_FR.UTF-8` to the `environment:` block) for a French one.
+
 ## What to expect
 
 Basic films are capped at 1080p. The default 4 GiB memory limit suits that output.
