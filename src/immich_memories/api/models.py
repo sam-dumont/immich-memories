@@ -7,7 +7,7 @@ import operator
 from contextlib import suppress
 from datetime import datetime
 from enum import StrEnum
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -90,6 +90,15 @@ class Person(BaseModel):
     faces: list[AssetFace] = Field(default_factory=list)
 
     model_config = ConfigDict(populate_by_name=True)
+
+
+class PeopleAccess(BaseModel):
+    """An explicit upstream grant, distinct from permission to read an asset."""
+
+    person_id: str = Field(alias="personId")
+    shared_by_id: str = Field(alias="sharedById")
+    shared_with_id: str = Field(alias="sharedWithId")
+    role: Literal["read", "write", "admin"]
 
 
 class AssetFace(BaseModel):
@@ -259,6 +268,7 @@ class ServerInfo(BaseModel):
     major: int
     minor: int
     patch: int
+    prerelease: int | str | None = None
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -273,6 +283,7 @@ class UserInfo(BaseModel):
 
     id: str
     email: str
+    cluster_group_id: str | None = Field(default=None, alias="clusterGroupId")
     name: str = ""
     model_config = ConfigDict(populate_by_name=True)
 

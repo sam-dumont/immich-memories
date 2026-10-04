@@ -175,3 +175,22 @@ monkeypatch.setattr(
 ```
 
 It passes on a real Mac either way, which is what makes this one easy to merge and hard to notice.
+
+## Native Immich sharing
+
+After `make dev`, run either pinned native-identity gate:
+
+```bash
+make test-native-sharing NATIVE_GATE_VERSION=v32-sharing
+make test-native-sharing NATIVE_GATE_VERSION=v33-sharing
+```
+
+Each starts an isolated Immich, seeds the CC0 household library, runs the checks and removes
+its containers. `NATIVE_GATE_PORT` defaults to `2304`. Disposable keys stay under the ignored
+`.immich-gate` directory. Never publish its state file.
+
+The gates cover the partner-only person episode, selected-owner scope, timeline changes,
+favourites on absorbed copies, read-only keys and upstream person merges. The 3.3 RC also
+checks people-sharing roles and revocation. The 3.2 fixture connects manually assigned faces
+through the disposable database; it does not test recognition accuracy. Production fetching
+never writes cluster or sharing state. 3.3 stable validation remains pending.

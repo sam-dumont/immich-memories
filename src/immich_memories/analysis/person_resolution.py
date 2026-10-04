@@ -10,7 +10,7 @@ A leaf shaped like a UUID (or a store `manual:` id) is an id, never a name: it p
 the store person with that id or alias, or else the Immich face with that id. A name that
 several store people carry picks all of them, and says so (``ResolvedPeople.merged``).
 
-Everything here is pure: the store document and the roster are read before selection.
+Native evidence may verify requested IDs on the selected connections; saved bindings are never rewritten.
 """
 
 from __future__ import annotations
@@ -21,6 +21,7 @@ from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import Any
 
+from immich_memories.api.native_sharing import NativePeople
 from immich_memories.api.person_expression import PersonExpression
 from immich_memories.config_models import PRIMARY_ACCOUNT
 from immich_memories.people.account_ids import entry_ids, ids_by_account
@@ -37,7 +38,7 @@ class UnknownPersonId(ValueError):
 
 @dataclass(frozen=True)
 class PersonAlias:
-    """One face cluster of a person, and the account whose pictures carry it."""
+    """One face identity and the account declaring access to it."""
 
     face_id: str
     account: str
@@ -62,7 +63,9 @@ class ResolvedPeople:
     """
 
     condition: PersonExpression
-    face_accounts: Mapping[str, str] = field(default_factory=lambda: MappingProxyType({}))
+    face_accounts: Mapping[str, str | frozenset[str]] = field(
+        default_factory=lambda: MappingProxyType({})
+    )
     merged: tuple[tuple[str, tuple[StorePerson, ...]], ...] = ()
 
 
@@ -95,6 +98,7 @@ def resolve_people(
     *,
     accounts: Sequence[str] = (),
     roster_ids: Callable[[], Collection[str]] = frozenset,
+    native: NativePeople | None = None,
 ) -> ResolvedPeople:
     """Map each leaf (a name, or an id) to the faces it means.
 
@@ -107,9 +111,9 @@ def resolve_people(
     alias the run can read: a missing binding is never permission to match another
     account by name.
     """
-    leaves = _Leaves(store, roster, roster_ids, frozenset(accounts or (PRIMARY_ACCOUNT,)))
+    leaves = _Leaves(store, roster, roster_ids, frozenset(accounts or (PRIMARY_ACCOUNT,)), native)
     condition = expression.map_leaves(leaves.resolve)
-    held = leaves.held if accounts else {}
+    held = leaves.held if accounts or native else {}
     return ResolvedPeople(condition, MappingProxyType(held), tuple(leaves.merged))
 
 
@@ -121,7 +125,8 @@ class _Leaves:
     roster: Callable[[str], PersonExpression]
     roster_ids: Callable[[], Collection[str]]
     readable: frozenset[str]
-    held: dict[str, str] = field(default_factory=dict)
+    native: NativePeople | None = None
+    held: dict[str, str | frozenset[str]] = field(default_factory=dict)
     merged: list[tuple[str, tuple[StorePerson, ...]]] = field(default_factory=list)
 
     def resolve(self, leaf: str) -> PersonExpression:
@@ -132,18 +137,29 @@ class _Leaves:
             return self._outside_store(leaf)
         if len(matched) > 1:
             self.merged.append((leaf, tuple(matched)))
-        aliases = [
-            alias
-            for person in matched
-            for alias in person.aliases
-            if alias.account in self.readable
-        ]
+        aliases = [alias for person in matched for alias in person.aliases if self._can_read(alias)]
         if not aliases:
             raise ValueError(f"{leaf!r} has no face in the accounts this run reads")
-        self.held.update((alias.face_id, alias.account) for alias in aliases)
+        if self.native:
+            for alias in aliases:
+                self.native.accounts_for(alias.face_id, alias.account)
+            self.native.require_complete([alias.face_id for alias in aliases])
+        self.held.update(
+            {
+                alias.face_id: self.native.accounts_for(alias.face_id, alias.account)
+                if self.native
+                else alias.account
+                for alias in aliases
+            }
+        )
         faces = tuple(dict.fromkeys(alias.face_id for alias in aliases))
         leaves = tuple(PersonExpression("person", value=face) for face in faces)
         return leaves[0] if len(leaves) == 1 else PersonExpression("any", children=leaves)
+
+    def _can_read(self, alias: PersonAlias) -> bool:
+        return alias.account in self.readable or bool(
+            self.native and self.native.accounts_for(alias.face_id, alias.account)
+        )
 
     def _outside_store(self, leaf: str) -> PersonExpression:
         if is_person_id(leaf):
@@ -153,7 +169,16 @@ class _Leaves:
             condition = PersonExpression("person", value=face)
         else:
             condition = self.roster(leaf)
-        self.held.update(dict.fromkeys(condition.leaf_values, PRIMARY_ACCOUNT))
+        if self.native:
+            self.native.require_complete(condition.leaf_values)
+        self.held.update(
+            {
+                face: self.native.scopes.get(face, PRIMARY_ACCOUNT)
+                if self.native
+                else PRIMARY_ACCOUNT
+                for face in condition.leaf_values
+            }
+        )
         return condition
 
 

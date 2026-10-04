@@ -5,7 +5,9 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
-from immich_memories.api.models import Person
+from pydantic import TypeAdapter
+
+from immich_memories.api.models import PeopleAccess, Person
 
 RequestFn = Callable[..., Any]
 
@@ -34,6 +36,11 @@ class PersonService:
             if not data.get("hasNextPage"):
                 return people
             page += 1
+
+    async def get_people_access(self) -> list[PeopleAccess]:
+        """Read explicit 3.3 people grants; callers must first verify server support."""
+        data = await self._request("GET", "/people/users")
+        return TypeAdapter(list[PeopleAccess]).validate_python(data)
 
     async def get_person(self, person_id: str) -> Person:
         """Get a specific person by ID."""

@@ -96,10 +96,19 @@ def immich_server(monkeypatch) -> FakeImmich:
 
     def handler(request: httpx.Request) -> httpx.Response:
         key = request.headers["x-api-key"]
+        if request.url.path.endswith("/server/version"):
+            return httpx.Response(200, json={"major": 3, "minor": 2, "patch": 4})
         if request.url.path.endswith("/api-keys/me"):
             return httpx.Response(200, json={"permissions": ["all"]})
         if request.url.path.endswith("/users/me"):
-            return httpx.Response(200, json={"id": USERS[key], "email": f"{USERS[key]}@x.test"})
+            return httpx.Response(
+                200,
+                json={
+                    "id": USERS[key],
+                    "email": f"{USERS[key]}@x.test",
+                    "clusterGroupId": "cluster",
+                },
+            )
         if not request.url.path.endswith("/search/metadata"):
             return httpx.Response(200, json=[])
         if key in server.refusing_search:
@@ -134,9 +143,10 @@ def _config(tmp_path) -> Config:
     )
 
 
-def _source(tmp_path, accounts: tuple[str, ...] = ()):
+def _source(tmp_path, accounts: tuple[str, ...] = (), *, native=False):
     """What the run's source step hands the editor, coalesced as the editor coalesces it."""
     config = _config(tmp_path)
+    config.immich.native_sharing = native
     context = EditorialRunContext(
         key="household",
         label="June",
@@ -148,6 +158,8 @@ def _source(tmp_path, accounts: tuple[str, ...] = ()):
     )
     primary = AccessBoundClient(config.immich)
     try:
+        if native:
+            primary.native_people(accounts)
         planner = build_editorial_planner(
             client=primary,
             thumbnail_cache=object(),
@@ -283,3 +295,40 @@ def test_what_the_store_banked_never_unstars_a_later_run(tmp_path, immich_server
 
     assert later["shared"].favourite is True
     assert {c.asset_id: c.favourite for c in first} == {a: c.favourite for a, c in later.items()}
+
+
+def test_cli_discovery_keeps_the_owners_star_when_partner_timeline_read_arrives_first(
+    tmp_path, immich_server
+):
+    from immich_memories.analysis.household_source import HouseholdWindows
+    from immich_memories.cli._asset_fetch import fetch_media
+    from immich_memories.cli._live_display import QuietDisplay
+
+    with AccessBoundClient(_config(tmp_path).immich) as client:
+        _, photos = fetch_media(
+            client=HouseholdWindows(client, ("primary", "partner")),
+            progress=QuietDisplay(),
+            date_ranges=[WINDOW],
+            person_ids=[],
+        )
+    shared = next(photo for photo in photos if photo.id == "shared")
+    assert shared.is_favorite
+    assert shared.access_accounts[0] == "partner"
+
+
+def test_cli_photo_failure_refuses_a_partial_household(tmp_path, immich_server):
+    from immich_memories.analysis.household_source import HouseholdWindows
+    from immich_memories.api.accounts import AccountUnavailable
+    from immich_memories.cli._asset_fetch import fetch_photos
+
+    immich_server.refusing_search.add(PARTNER_KEY)
+    with AccessBoundClient(_config(tmp_path).immich) as client, pytest.raises(AccountUnavailable):
+        fetch_photos(
+            client=HouseholdWindows(client, ("primary", "partner")),
+            date_ranges=[WINDOW],
+            person_ids=[],
+        )
+
+
+def test_native_primary_scope_is_kept_by_the_editorial_full_window_fetch(tmp_path, immich_server):
+    assert set(_by_id(_source(tmp_path, native=True))) == {"own-photo", "own-video"}
