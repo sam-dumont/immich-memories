@@ -14,13 +14,24 @@ from __future__ import annotations
 import logging
 import re
 import unicodedata
+from collections.abc import Sequence
 from dataclasses import replace
 from datetime import date
 from difflib import SequenceMatcher
 from functools import lru_cache
+from typing import TYPE_CHECKING
 
+from immich_memories.titles.relationship_words import (
+    FAMILY_GENERIC,
+    FAMILY_TYPES,
+    relationship_words,
+)
 from immich_memories.titles.title_routing import is_trip
 from immich_memories.titles.title_suggestion import TitleSuggestion
+
+if TYPE_CHECKING:
+    from immich_memories.db import Store
+    from immich_memories.people.context import PersonPromptContext
 
 logger = logging.getLogger(__name__)
 
@@ -299,3 +310,264 @@ def requiring_the_year(
         end_date,
     )
     return None
+
+
+def _title_states_a_single_year(title: str, required: frozenset[int]) -> bool:
+    """Whether `title` alone names exactly one of several required years.
+
+    A cross-year title is allowed to carry both years as a range ("2024-26")
+    within the title itself; naming only one of them, with the other left for
+    the subtitle, reads as a single-year headline on a multi-year span.
+    """
+    named = {int(y) for y in _YEAR_DIGITS.findall(title)}
+    if len(named) != 1 or not named < required:
+        return False
+    return not _years_named(title, required)
+
+
+def refusing_single_year_title(
+    suggestion: TitleSuggestion | None,
+    memory_type: str,
+    start_date: str,
+    end_date: str,
+    person_names: tuple[str, ...],
+    holiday: str | None,
+) -> TitleSuggestion | None:
+    """The suggestion, unless its TITLE states a single year on a multi-year span.
+
+    `requiring_the_year` already lets a cross-year span's years split across
+    title and subtitle; this catches the title claiming only one of them on
+    its own ("en 2024" opening a 2024-2026 film), which misreads the span even
+    when the subtitle completes it.
+    """
+    if suggestion is None:
+        return suggestion
+    start, end = date.fromisoformat(start_date), date.fromisoformat(end_date)
+    required = required_years(memory_type, start, end, person_names, holiday)
+    if len(required) < 2 or not _title_states_a_single_year(suggestion.title, required):
+        return suggestion
+    logger.warning(
+        "Title %r names only one of the required years %s for a span reaching several; "
+        "the template names this memory instead",
+        suggestion.title,
+        sorted(required),
+    )
+    return None
+
+
+def _template_title_text(
+    memory_type: str,
+    start: date,
+    end: date,
+    person_names: Sequence[str],
+    locale: str,
+) -> str:
+    """The BASIC template's own main title for this memory, in `locale`.
+
+    The subtitle is left out: it is usually the subject's own name, which a
+    model title is free to repeat without that repeat counting as "no new
+    content" -- only the headline itself sets the bar a model title must clear.
+    """
+    from immich_memories.titles.text_builder import generate_title, infer_selection_type
+
+    selection_type = infer_selection_type(start_date=start, end_date=end, memory_type=memory_type)
+    person_name = person_names[0] if memory_type == "person_spotlight" and person_names else None
+    info = generate_title(
+        selection_type, start_date=start, end_date=end, person_name=person_name, locale=locale
+    )
+    return info.main_title
+
+
+# Words too small to carry a title's own content: articles, conjunctions and
+# the handful of "year" nouns that let a bare year through as a non-answer
+# ("L'année 2025"). Not a stopword list for prose -- only what a title's
+# filler commonly is, across the film's locales.
+_FILLER_WORDS = frozenset(
+    {
+        "l'année", "l'annee", "année", "annee", "le", "la", "les", "un", "une", "des", "de", "du",
+        "et", "en",
+        # Fragments an elided "l'/d'/qu'/..." splits off (apostrophe is not a word character).
+        "l", "d", "j", "qu", "n", "s", "c",
+        "the", "a", "an", "and", "of", "in", "year",
+        "el", "los", "las", "y", "año", "ano",
+        "der", "die", "das", "und", "im", "jahr",
+        "il", "lo", "gli", "e", "anno",
+        "het", "een",
+        "o", "os", "as",
+        "rok", "roku", "i",
+        "år", "och", "ett",
+    }
+)  # fmt: skip
+
+
+def _content_words(text: str) -> set[str]:
+    """The words of `text` that are not filler: what the title actually says."""
+    return {w.casefold() for w in _name_words(text) if w.casefold() not in _FILLER_WORDS}
+
+
+def refusing_contentless_title(
+    suggestion: TitleSuggestion | None,
+    memory_type: str,
+    start_date: str,
+    end_date: str,
+    person_names: tuple[str, ...],
+    locale: str,
+) -> TitleSuggestion | None:
+    """The suggestion, unless it adds no content word over the template's own title.
+
+    "L'année 2025" over the template's "2025" differs only by filler; the
+    template names the same year more plainly, so it wins.
+    """
+    if suggestion is None:
+        return suggestion
+    start, end = date.fromisoformat(start_date), date.fromisoformat(end_date)
+    template = _template_title_text(memory_type, start, end, person_names, locale)
+    if _content_words(suggestion.title) - _content_words(template):
+        return suggestion
+    logger.info(
+        "Title %r adds no content word over the template %r; using the template instead",
+        suggestion.title,
+        template,
+    )
+    return None
+
+
+def _add_person_relations(
+    name: str,
+    context: PersonPromptContext,
+    names_in_film: set[str],
+    holders: dict[str, set[str]],
+) -> None:
+    """Every relation type `name` holds, to the maker or to another named person."""
+    from immich_memories.people.relationships import owner_role
+
+    for kind in context.owner_relationship_kinds:
+        if type_word := owner_role(kind):
+            holders.setdefault(type_word.casefold(), set()).add(name)
+    if context.role:
+        holders.setdefault(context.role.strip().casefold(), set()).add(name)
+    for rel in context.relationships:
+        if rel.target_name in names_in_film:
+            type_word = owner_role(rel.kind) or rel.kind.replace("-of", "").replace("-", " ")
+            holders.setdefault(type_word.casefold(), set()).add(name)
+
+
+def _recorded_relation_people(
+    person_names: Sequence[str], people_store: Store | None
+) -> dict[str, set[str]]:
+    """Relation type -> which of the film's people hold it (to the maker or to each other)."""
+    from immich_memories.people.context import load_people_prompt_context
+
+    by_name = {
+        entry.name: entry
+        for entry in load_people_prompt_context(people_store, include_derived=True).values()
+    }
+    names_in_film = set(person_names)
+    holders: dict[str, set[str]] = {}
+    for name in person_names:
+        if (context := by_name.get(name)) is not None:
+            _add_person_relations(name, context, names_in_film, holders)
+    return holders
+
+
+# Japanese, Korean and Chinese write compound words with no space between
+# them, so a word boundary never falls either side of a relationship word;
+# these scripts are matched by plain substring instead.
+_NO_WORD_BOUNDARY_SCRIPT = re.compile(r"[぀-ヿ㐀-鿿가-힯]")
+
+
+def _contains_relationship_word(lowered: str, word: str) -> bool:
+    folded = word.casefold()
+    if _NO_WORD_BOUNDARY_SCRIPT.search(folded):
+        return folded in lowered
+    return re.search(rf"(?<![\w-]){re.escape(folded)}(?![\w-])", lowered) is not None
+
+
+def _unfounded_relationship_word(
+    text: str, words: dict[str, tuple[str, bool]], holders: dict[str, set[str]]
+) -> str | None:
+    """The first relationship word in `text` the recorded relations do not back, if any."""
+    lowered = text.casefold()
+    for word, (relation_type, plural) in sorted(words.items(), key=lambda kv: -len(kv[0])):
+        if not _contains_relationship_word(lowered, word):
+            continue
+        if relation_type == FAMILY_GENERIC:
+            if any(t in holders for t in FAMILY_TYPES):
+                continue
+            return word
+        people = holders.get(relation_type, set())
+        if not people or (plural and len(people) < 2):
+            return word
+    return None
+
+
+def refusing_unfounded_relationships(
+    suggestion: TitleSuggestion | None,
+    person_names: Sequence[str],
+    locale: str,
+    people_store: Store | None,
+) -> TitleSuggestion | None:
+    """The suggestion, minus a relationship word the family record does not back.
+
+    A relationship word is backed when the recorded relations between the
+    film's own people (to the maker, or to each other) include that relation
+    type, for at least as many people as the word's grammatical number
+    claims. A friend called "le fils" of parents who are not in the film, or
+    one grandchild called "les petits-enfants", falls back to the template;
+    an unfounded word in the subtitle alone only drops the subtitle.
+    """
+    if suggestion is None:
+        return suggestion
+    words = relationship_words(locale)
+    holders = _recorded_relation_people(person_names, people_store)
+    if bad := _unfounded_relationship_word(suggestion.title, words, holders):
+        logger.warning(
+            "Title %r calls somebody %r, a relation the family record does not back; "
+            "the template names this memory instead",
+            suggestion.title,
+            bad,
+        )
+        return None
+    if suggestion.subtitle and (
+        bad := _unfounded_relationship_word(suggestion.subtitle, words, holders)
+    ):
+        logger.info("Subtitle calls somebody %r, which the family record does not back", bad)
+        return replace(suggestion, subtitle=None)
+    return suggestion
+
+
+_FRENCH_ELISION_VOWELS = frozenset("aàâeéèêëiîïoôuùûüyhAÀÂEÉÈÊËIÎÏOÔUÙÛÜYH")
+
+
+def _elided(word: str, next_word: str) -> str:
+    if not next_word or next_word[0] not in _FRENCH_ELISION_VOWELS:
+        return f"{word} {next_word}"
+    prefix = "l" if word.casefold() in ("le", "la") else "d"
+    cased = prefix.upper() if word[:1].isupper() else prefix
+    return f"{cased}'{next_word}"
+
+
+def _elide_french_text(text: str) -> str:
+    return re.sub(
+        r"\b(de|le|la)\s+([^\W\d_]+)",
+        lambda m: _elided(m.group(1), m.group(2)),
+        text,
+        flags=re.IGNORECASE,
+    )
+
+
+def eliding_french(suggestion: TitleSuggestion | None, locale: str) -> TitleSuggestion | None:
+    """A model title's "de/le/la + vowel" elided to "d'/l'", in French films only.
+
+    A small model reliably gets the fact right ("de Anne") but not the
+    grammar ("de Anne" should read "d'Anne"); this fixes the one thing the
+    guard can get right deterministically rather than refusing good facts
+    over a spelling rule.
+    """
+    if suggestion is None or locale != "fr":
+        return suggestion
+    return replace(
+        suggestion,
+        title=_elide_french_text(suggestion.title),
+        subtitle=_elide_french_text(suggestion.subtitle) if suggestion.subtitle else None,
+    )

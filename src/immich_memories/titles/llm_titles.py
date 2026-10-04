@@ -17,7 +17,11 @@ from immich_memories.analysis.llm_query import query_llm
 from immich_memories.analysis.prose_shapes import MAP_MODES, TRIP_TYPES, title_shape
 from immich_memories.people.context import PersonPromptContext, load_people_prompt_context
 from immich_memories.titles.title_guards import (
+    eliding_french,
+    refusing_contentless_title,
     refusing_invented_names,
+    refusing_single_year_title,
+    refusing_unfounded_relationships,
     required_years,
     requiring_the_place,
     requiring_the_year,
@@ -258,12 +262,24 @@ def _people_by_name(people_store: Store | None) -> dict[str, PersonPromptContext
     return {name: context for name, context in by_name.items() if name not in ambiguous}
 
 
+def _relation_to_maker(context: PersonPromptContext | None) -> str:
+    """How this person relates to the film's maker, never printing the maker's name."""
+    if context is None or context.relationship_source == "unconfirmed":
+        return "no recorded family relation"
+    if context.relationship_source == "owner":
+        return "is the film's maker"
+    relation = context.relationship.replace("library owner", "the film's maker")
+    return f"relation to the film's maker: {relation} ({context.relationship_source})"
+
+
 def _person_line(name: str, context: PersonPromptContext | None, start: date, end: date) -> str:
+    relation = _relation_to_maker(context)
     born = _birth_date(context)
     if born is None:
-        return f"- {name}: birth date unknown"
+        return f"- {name}: birth date unknown; {relation}"
     return (
-        f"- {name}: born {born}; {_age(born, start)} old at the start, {_age(born, end)} at the end"
+        f"- {name}: born {born}; {_age(born, start)} old at the start, "
+        f"{_age(born, end)} at the end; {relation}"
     )
 
 
@@ -562,6 +578,37 @@ def _trip_prompt(
     )
 
 
+def _guarded_suggestion(
+    parsed: TitleSuggestion | None,
+    *,
+    prompt: TitlePrompt,
+    memory_type: str,
+    locale: str,
+    start_date: str,
+    end_date: str,
+    person_names: tuple[str, ...],
+    facts: MemoryTitleFacts | None,
+) -> TitleSuggestion | None:
+    """Run every title guard in turn, each free to trim or refuse what came before."""
+    holiday = facts.holiday if facts else None
+    people_store = facts.people_store if facts else None
+    suggestion = eliding_french(parsed, locale)
+    suggestion = refusing_invented_names(suggestion, prompt.facts)
+    suggestion = refusing_unfounded_relationships(suggestion, person_names, locale, people_store)
+    suggestion = requiring_the_year(
+        suggestion, memory_type, start_date, end_date, person_names, holiday
+    )
+    suggestion = refusing_single_year_title(
+        suggestion, memory_type, start_date, end_date, person_names, holiday
+    )
+    suggestion = refusing_contentless_title(
+        suggestion, memory_type, start_date, end_date, person_names, locale
+    )
+    if memory_type in PEOPLE_MEMORY_TYPES or memory_type in OCCASION_MEMORY_TYPES:
+        return suggestion
+    return requiring_the_place(suggestion, facts.place if facts else None, locale)
+
+
 async def generate_title_with_llm(
     memory_type: str,
     locale: str,
@@ -616,18 +663,16 @@ async def generate_title_with_llm(
         parsed = parse_title_response(raw)
         if parsed is not None:
             parsed = restore_fact_casing(parsed, prompt.facts or prompt.text)
-        suggestion = refusing_invented_names(parsed, prompt.facts)
-        suggestion = requiring_the_year(
-            suggestion,
-            memory_type,
-            start_date,
-            end_date,
-            tuple(person_names or ()),
-            facts.holiday if facts else None,
+        return _guarded_suggestion(
+            parsed,
+            prompt=prompt,
+            memory_type=memory_type,
+            locale=locale,
+            start_date=start_date,
+            end_date=end_date,
+            person_names=tuple(person_names or ()),
+            facts=facts,
         )
-        if memory_type in PEOPLE_MEMORY_TYPES or memory_type in OCCASION_MEMORY_TYPES:
-            return suggestion
-        return requiring_the_place(suggestion, facts.place if facts else None, locale)
     except (httpx.HTTPError, RuntimeError, ValueError, OSError) as e:
         logger.warning("LLM title generation failed: %s", e, exc_info=True)
         return None
