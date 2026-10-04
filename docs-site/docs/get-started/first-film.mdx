@@ -160,7 +160,7 @@ all_album_20210526-20210527_a4cf0add_<run>/all_album_20210526-20210527_a4cf0add.
 The `<recipe>` is a short hash of the final cut, so the same cut renders to the same name. The
 `Output (planned)` line printed before selection shows that same rule, and `runs render` builds
 its name from the people and dates (`all_album_<dates>_<recipe>`), not from the album name.
-`runs render` prints "Video saved to: <path>" when it finishes, so you don't need to go hunting
+`runs render` prints `Video saved to: <path>` when it finishes, so you don't need to go hunting
 in the output folder (`/app/output` in the container).
 
 On Kubernetes, copy only the film, not the whole output volume:

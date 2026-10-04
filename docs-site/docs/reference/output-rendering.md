@@ -292,7 +292,7 @@ as **Title From**:
 
 The special-day catalogue is stored in English. An English film shows the catalogue title verbatim
 (`occasion`); any other film routes that English title through the reader instead (`model`), or, with no
-reader, through a localized "a day in {place}" template (`fallback`). Editing a catalogue title changes the
+reader, through a localized `"A day in {place}"` template (`fallback`). Editing a catalogue title changes the
 film's title verbatim only in English films.
 
 `fallback` on a film you expected the model to name means the reader was not asked, failed, or had its title
