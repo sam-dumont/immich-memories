@@ -227,6 +227,27 @@ class _Repeats:
         return sorted(asset for asset, vector in self._prints.items() if vector is None)
 
 
+def scene_pair_relation(
+    scene_print: ScenePrint,
+) -> Callable[[Mapping[str, Any], Mapping[str, Any]], bool]:
+    """Whether two frames show one scene, by the same print, window and threshold the final
+    duplicate review reads over a finished cut.
+
+    Reused where a further frame is admitted mid-selection for "showing something new"
+    (`editorial_story_lookalike.shows_something_new`): a frame this same review would call a
+    repeat once the cut is finished must not be added in its place. A pair outside the
+    review's own reach, or with no print on one side, is never called alike here either.
+    """
+    # No hashes are given, so only the scene print is ever read: `_by_hash` always answers None.
+    repeats = _Repeats({}, 0, scene_print)
+
+    def relation(candidate: Mapping[str, Any], keeper: Mapping[str, Any]) -> bool:
+        keeper_id, _similarity = repeats._by_scene(candidate, [keeper])
+        return keeper_id is not None
+
+    return relation
+
+
 def _replacement_row(carrier: Mapping[str, Any], unit: Mapping[str, Any]) -> dict[str, Any]:
     """The refused carrier's place in the film, filled by the picture that takes it over.
 

@@ -10,7 +10,7 @@ from __future__ import annotations
 import json
 from collections import Counter
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 from operator import itemgetter
 from typing import Any
@@ -71,6 +71,9 @@ class StorySelection:
     calls: dict[str, int]
     # The annotation line of every unit, so a replacement carrier can describe itself.
     lines: Mapping[str, str]
+    # Every story's own moments that never took a slot, in the planner's funding order: where
+    # a refill looks once a carrier's own moment and its own story have nothing left to offer.
+    unfunded_pool: list[str] = field(default_factory=list)
 
     def record(self) -> dict[str, Any]:
         return {
@@ -384,6 +387,21 @@ def _episodes_record(
     ]
 
 
+def _unfunded_pool(
+    stories: Sequence[Mapping[str, Any]],
+    choices_of: Mapping[str, list[DepictedChoice]],
+    chosen_by_story: Mapping[str, list[str]],
+) -> list[str]:
+    """Every distinct moment that never took a slot, in the same priority order the stories
+    were funded in: a story's own refill looks here once its own material runs out."""
+    return [
+        c.primary
+        for s in stories
+        for c in choices_of[s["key"]]
+        if c.key not in chosen_by_story[s["key"]]
+    ]
+
+
 def _kind_of_story(s) -> dict[str, Any]:
     """A trip or a recurring thread says so on its row, with what it was allowed."""
     if s.get("trip"):
@@ -494,6 +512,7 @@ def select_story_first(
     rules=None,
     trips: FilmTrips | None = None,
     looks_alike: PairLooksAlike | None = None,
+    scene_alike: PairLooksAlike | None = None,
     strangers_only: Callable[[str], bool] = lambda _asset: False,
     vouched: Callable[[Mapping[str, Any]], bool] = lambda _carrier: True,
     film_span: tuple[date, date] | None = None,
@@ -509,6 +528,9 @@ def select_story_first(
     `record(name, payload)` persists a derived decision under the run's audit directory.
     `trips` are the journeys detected in the pool; each becomes one story before the weighing.
     `looks_alike(candidate, keeper)` refuses a story's further picture that repeats one it holds.
+    `scene_alike(candidate, keeper)` is the same question by scene print: a depth frame that
+    shows the same scene as one a story already holds is never added for "showing something
+    new" either, since the final duplicate review would only remove it having spent the slot.
     `film_span` is the requested period; a recurring activity is one thread per era of it.
     `near_home(family)` says whether a happening was photographed near the home base.
     `standing(asset)` is a picture's standing score (0 refuses), read from its facts on every
@@ -667,7 +689,7 @@ def select_story_first(
         record=record,
         slots=slots,
         calls=calls,
-        lookalike=LookAlikeCheck(looks_alike, slots=slots),
+        lookalike=LookAlikeCheck(looks_alike, slots=slots, scene_alike=scene_alike),
         places=places,
         place_of=place_of,
         strangers_only=strangers_only,
@@ -676,6 +698,7 @@ def select_story_first(
     admission.run()
     record("story-places", places.record())
 
+    unfunded_pool = _unfunded_pool(stories, choices_of, admission.chosen_by_story)
     selection = StorySelection(
         admission.carriers,
         story,
@@ -686,6 +709,7 @@ def select_story_first(
         slots,
         calls,
         story_lines,
+        unfunded_pool,
     )
     record(
         "story-selection",
@@ -719,7 +743,9 @@ def alternatives_pool(
     event_units: Mapping[str, list[dict]],
     anchor_label: Mapping[str, str],
 ) -> Callable[[Mapping[str, Any]], list[dict]]:
-    """For the audience gate: when a carrier is held, offer the same moment's other pictures.
+    """For the audience gate: when a carrier is held, offer the same moment's other pictures,
+    then the story's unshown moments, then, once a story's own material runs out, other
+    stories' moments that never took a slot, in the planner's own funding order.
 
     Each pool unit is bound to the context of the moment it actually shows: the spares of one
     carrier can come from another moment, family or even story, and a row that named the
@@ -740,21 +766,32 @@ def alternatives_pool(
         for moment in _moments_of(selection, episode)
     }
 
+    def _row(a: str) -> dict | None:
+        if a not in unit_by_asset:
+            return None
+        family, unit = unit_by_asset[a]
+        if unit.get("moment") not in story_of_moment:
+            return None
+        return carrier_row(
+            unit,
+            family=family,
+            anchor=anchor_label.get(family, family),
+            story=story_of_moment[unit["moment"]],
+            chapter=chapter_of_moment[unit["moment"]],
+            line=selection.lines.get(a, ""),
+        )
+
     def pool_for(carrier: Mapping[str, Any]) -> list[dict]:
-        return [
-            carrier_row(
-                unit,
-                family=family,
-                anchor=anchor_label.get(family, family),
-                story=story_of_moment[unit["moment"]],
-                chapter=chapter_of_moment[unit["moment"]],
-                line=selection.lines.get(a, ""),
-            )
+        own = [
+            row
             for a in selection.alternatives_of.get(carrier["asset_id"], [])
-            if a in unit_by_asset
-            for family, unit in (unit_by_asset[a],)
-            if unit.get("moment") in story_of_moment
+            if (row := _row(a)) is not None
         ]
+        seen = {row["asset_id"] for row in own} | {carrier["asset_id"]}
+        elsewhere = [
+            row for a in selection.unfunded_pool if a not in seen and (row := _row(a)) is not None
+        ]
+        return own + elsewhere
 
     return pool_for
 

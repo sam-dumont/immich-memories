@@ -277,3 +277,92 @@ def test_a_carrier_the_gate_already_substituted_has_no_moment_to_ask():
     offers = replacement_offers(lambda _c: [_unit("elsewhere", minute=90)])({"asset_id": "swapped"})
 
     assert [rung for rung, _unit in offers] == ["story"]
+
+
+def test_a_unit_from_another_story_is_offered_last_and_labelled_elsewhere():
+    """Once the moment and the carrier's own story are offered, a wider pool may still hand
+    over a moment that never got a slot anywhere else, and the review says where it came from."""
+    from immich_memories.analysis.editorial_structure_finishing import replacement_offers
+
+    carrier = {"asset_id": "late", "story_episode": "story-1", "moment_alternatives": ["sibling"]}
+    other_story = _unit("far-story", minute=90) | {"story_episode": "story-2"}
+    pool = [_unit("sibling", minute=31) | {"story_episode": "story-1"}, other_story]
+
+    offers = replacement_offers(lambda _c: pool)(carrier)
+
+    assert [(rung, unit["asset_id"]) for rung, unit in offers] == [
+        ("moment", "sibling"),
+        ("elsewhere", "far-story"),
+    ]
+
+
+# -- #2042: a story's near-copies, removed here, spill to another story's unfunded moments ----
+
+_SPILL_HASHES = {
+    "keep": "ffffffffffffffff",
+    "dup-a": "ffffffffffffff7f",  # one bit from "keep": the review calls this a repeat
+    "dup-b": "ffffffffffffff3f",  # two bits from "keep": also a repeat
+    "spare-a-moment": "ffffffffffffff7f",  # dup-a's own moment offers only a twin of it
+    "spare-a-story": "ffffffffffffff3f",  # and so does dup-a's own story
+    "spare-b-moment": "ffffffffffffff3f",
+    "spare-b-story": "ffffffffffffff7f",
+    "far-1": "0f0f0f0f0f0f0f0f",  # a different story's unfunded moment: distinct from "keep"
+    "far-2": "f0f0f0f0f0f0f0f0",  # another, distinct from "keep" and from "far-1" too
+}
+
+
+def _spill_offers(carrier):
+    """The near-copy's own moment, then its own story, offer only further near-copies (the
+    burst it was granted more slots than it had distinct material for); only once those are
+    passed over does another story's unfunded moment turn up, labelled "elsewhere"."""
+    rung = {"dup-a": "a", "dup-b": "b"}.get(carrier["asset_id"])
+    if rung is None:
+        return []
+    return [
+        ("moment", _unit(f"spare-{rung}-moment", minute=50 + ord(rung))),
+        ("story", _unit(f"spare-{rung}-story", minute=60 + ord(rung))),
+        ("elsewhere", _unit(f"far-{1 if rung == 'a' else 2}", minute=90 + ord(rung))),
+    ]
+
+
+def test_a_storys_near_copies_are_replaced_by_another_storys_unfunded_moments_not_by_more_copies():
+    """One story was granted more slots than its two distinct moments; the slack was spent on
+    near-copies. The review drops them, and since the story's own moment and its own story
+    offer nothing but further near-copies, the freed slots go to another story's moments that
+    never got a slot at all. The film keeps its length, with no repeat surviving."""
+    cut = [
+        _carrier("keep", minute=0, story="story-1"),
+        _carrier("dup-a", minute=10, story="story-1"),
+        _carrier("dup-b", minute=20, story="story-1"),
+    ]
+
+    survivors, record = review_cut_by_cached_hashes(
+        cut, thumbnail_hash=_SPILL_HASHES.get, replacements_for=_spill_offers
+    )
+
+    assert len(survivors) == len(cut)  # the target the plan asked for, still reached
+    assert {c["asset_id"] for c in survivors} == {"keep", "far-1", "far-2"}
+    assert record["replaced_from"] == {"elsewhere": 2}
+    survived_hashes = [_SPILL_HASHES[c["asset_id"]] for c in survivors]
+    assert len(set(survived_hashes)) == len(survived_hashes)  # no repeat among what stayed
+
+
+def test_a_storys_near_copies_leave_the_film_short_with_no_other_distinct_material():
+    """The same over-granted story, but nothing else in the library has an unfunded moment to
+    give: the film stays short rather than keep a repeat to fill the time."""
+    cut = [
+        _carrier("keep", minute=0, story="story-1"),
+        _carrier("dup-a", minute=10, story="story-1"),
+        _carrier("dup-b", minute=20, story="story-1"),
+    ]
+
+    def no_elsewhere(carrier):
+        return [(rung, row) for rung, row in _spill_offers(carrier) if rung != "elsewhere"]
+
+    survivors, record = review_cut_by_cached_hashes(
+        cut, thumbnail_hash=_SPILL_HASHES.get, replacements_for=no_elsewhere
+    )
+
+    assert [c["asset_id"] for c in survivors] == ["keep"]
+    assert len(survivors) < len(cut)  # short of target: no repeat was kept to close the gap
+    assert record["replaced_from"] == {}

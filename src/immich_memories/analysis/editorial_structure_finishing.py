@@ -141,14 +141,23 @@ def replacement_offers(pool_for: Callable[[Mapping[str, Any]], Sequence[Mapping[
     """Label the audience gate's own pool by where each offer comes from.
 
     The pool a held carrier draws on is already the moment's other pictures first, in the
-    order the quality key ranked them, and then the story's unshown moments. Naming the two
-    rungs is all the duplicate review needs to say which one refilled a slot.
+    order the quality key ranked them, then the story's unshown moments, and then, once a
+    story's own material runs out, other stories' moments that never got a slot. Naming the
+    three rungs is all the duplicate review needs to say which one refilled a slot.
     """
 
     def offers(carrier: Mapping[str, Any]) -> list[tuple[str, Mapping[str, Any]]]:
         moment = set(carrier.get("moment_alternatives") or ())
+        own_story = carrier.get("story_episode")
         return [
-            ("moment" if unit.get("asset_id") in moment else "story", unit)
+            (
+                "moment"
+                if unit.get("asset_id") in moment
+                else "story"
+                if unit.get("story_episode") == own_story
+                else "elsewhere",
+                unit,
+            )
             for unit in pool_for(carrier)
         ]
 

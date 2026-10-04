@@ -9,7 +9,7 @@ from immich_memories.analysis.editorial_story_planner import (
 from immich_memories.analysis.editorial_story_reading import PeriodStory, StoryEpisode
 
 
-def selection(carriers, alternatives_of):
+def selection(carriers, alternatives_of, unfunded_pool=()):
     story = PeriodStory(
         thesis="",
         episodes=[
@@ -51,7 +51,13 @@ def selection(carriers, alternatives_of):
         alternatives_of=alternatives_of,
         slots=4,
         calls={},
-        lines={"mate": "mate's own line", "spare": "spare's own line", "far": "far's own line"},
+        lines={
+            "mate": "mate's own line",
+            "spare": "spare's own line",
+            "far": "far's own line",
+            "other-story": "other-story's own line",
+        },
+        unfunded_pool=list(unfunded_pool),
     )
 
 
@@ -59,8 +65,10 @@ def unit(asset_id, moment, taken):
     return {"asset_id": asset_id, "moment": moment, "kind": "still", "taken": taken}
 
 
-def pool_of(carriers, alternatives_of, event_units, anchor_label):
-    return alternatives_pool(selection(carriers, alternatives_of), event_units, anchor_label)
+def pool_of(carriers, alternatives_of, event_units, anchor_label, unfunded_pool=()):
+    return alternatives_pool(
+        selection(carriers, alternatives_of, unfunded_pool), event_units, anchor_label
+    )
 
 
 def test_context_comes_from_the_pool_units_own_moment():
@@ -94,6 +102,28 @@ def test_context_comes_from_the_pool_units_own_moment():
     assert rows["spare"]["line"] == "spare's own line"
     assert rows["far"]["story_episode"] == "S2"
     assert rows["far"]["story_weight"] == "minor"
+
+
+def test_the_pool_reaches_another_storys_unfunded_moment_once_its_own_runs_out():
+    """Nothing left in the carrier's own moment or story: the planner's unfunded pool, from a
+    story that never got a slot, fills in, in that story's own context."""
+    refused = {"asset_id": "held", "event": "F01", "why": "a picture", "story_episode": "S1"}
+    pool = pool_of(
+        [refused],
+        {"held": []},  # the moment and the story both have nothing left
+        {
+            "F01": [unit("held", "M1", "2024-06-01T09:00")],
+            "F03": [unit("other-story", "M3", "2024-06-03T11:00")],
+        },
+        {"F01": "A1", "F03": "A3"},
+        unfunded_pool=["other-story"],
+    )
+
+    rows = pool(refused)
+
+    assert [row["asset_id"] for row in rows] == ["other-story"]
+    assert rows[0]["story_episode"] == "S2"
+    assert rows[0]["line"] == "other-story's own line"
 
 
 def test_a_pool_unit_never_carries_the_refused_carriers_why():
