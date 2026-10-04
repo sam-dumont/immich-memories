@@ -22,7 +22,7 @@ Allow this **in addition to what Immich uses**:
 | Disk | 25 GB for the persistent data volume, plus the image and finished films |
 | Immich | v2 or v3, reachable from the app, with an API key |
 | Docker | Engine with Compose v2; Docker Desktop also works |
-| Python install | Python 3.11+ and FFmpeg; see [uv / pip](./uv-pip.md) |
+| Python install | Python 3.11 to 3.13 and FFmpeg; see [uv / pip](./uv-pip.md) |
 
 The 25 GB allows for the default preview and video caches: 10 GB each, plus the store and model
 files. An SSD helps. Finished films need their own space unless you upload them to Immich.

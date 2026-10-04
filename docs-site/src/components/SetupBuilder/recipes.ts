@@ -39,7 +39,7 @@ export function nativeInstallCommand(version: string, extras: 'all' | 'all-mac')
   const spec = release.includes('-dev.')
     ? `immich-memories[${extras}] @ ${assetBase(version)}/immich_memories-${python}-py3-none-any.whl`
     : `immich-memories[${extras}]==${python}`;
-  return `uv tool install --prerelease allow "${spec}"${extras === 'all-mac' ? ' --with laya-mlx' : ''}`;
+  return `uv tool install --python 3.12 --prerelease allow "${spec}"${extras === 'all-mac' ? ' --with laya-mlx' : ''}`;
 }
 
 export function validateSetup(setup: Setup): string | null {
