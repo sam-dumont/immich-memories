@@ -90,6 +90,7 @@ lists recipients and the Basic offline verification procedure.
 start on localhost. Publishing a different Docker port mapping can expose the app, including
 its access to your library. [Operate and configure](https://sam-dumont.github.io/immich-memories/docs/run/overview)
 covers login, NAS/Kubernetes setup, backups and storage. Keep one UI replica.
+Report vulnerabilities as [SECURITY.md](SECURITY.md) describes.
 
 This is a separate companion project for Immich, with no upstream ownership or endorsement implied.
 

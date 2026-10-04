@@ -10,7 +10,7 @@ You need Docker Compose v2 and [4 GB free for the app](./requirements.md). On a 
 
 ## Install
 
-### 1. Get the two files
+### 1. Get the files
 
 import InstallationFiles from '@site/src/components/InstallationFiles';
 

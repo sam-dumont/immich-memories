@@ -3,11 +3,13 @@ title: One month, two tiers
 description: A real Basic and Full cut of the same CC0 fixture month, with films and limitations.
 ---
 
+import StaticFile from '@site/src/components/StaticFile';
+
 import Video from '@site/src/components/Video';
 
 # One month, two tiers
 
-These are two finished films from the same June 2024 fixture library: 133 assets and three synthetic people in a disposable Immich 3.2.2 instance. The pictures are [credited CC0 stock photographs](/demo/tier-fixture-credits.txt); the dates, names and household story are invented. No personal library was used. These runs used the older `nas` name for Basic; artifact filenames retain it. The identical bundled soundtrack, `calm_acoustic_1.opus`, is [MIT licensed](/demo/tier-music-license.txt).
+These are two finished films from the same June 2024 fixture library: 133 assets and three synthetic people in a disposable Immich 3.2.2 instance. The pictures are <StaticFile href="/demo/tier-fixture-credits.txt">credited CC0 stock photographs</StaticFile>; the dates, names and household story are invented. No personal library was used. These runs used the older `nas` name for Basic; artifact filenames retain it. The identical bundled soundtrack, `calm_acoustic_1.opus`, is <StaticFile href="/demo/tier-music-license.txt">MIT licensed</StaticFile>.
 
 Both requests asked for 60-second monthly highlights with photos, family sharing, template titles, and 720p SDR H.264 output. Upload was disabled. Each cut selects 14 shots and keeps four favourites. Thirteen shots overlap: Basic includes `IMG_2483.jpg`; Full instead includes `IMG_2432.jpg`. Full rejects three screen-like assets at eligibility; Basic rejects one.
 
@@ -44,4 +46,4 @@ The store and cache started fresh and were shared between tiers. Full reused Bas
 
 An initial Basic render failed because sandbox networking blocked localhost; the authorized retry succeeded. Its initial preflight also reported one missing configured path before generation. Both finished files passed `ffprobe` stream inspection and complete video/audio decoding with `ffmpeg`.
 
-The [sanitized provenance](/demo/tier-provenance.json) records the exact source commit, cached model hashes, dependency versions, film SHA-256 hashes and selected filenames. The fixture credit manifest records each photograph's source, licence and shipped SHA-256. No credentials or raw execution logs are included.
+The <StaticFile href="/demo/tier-provenance.json">sanitized provenance</StaticFile> records the exact source commit, cached model hashes, dependency versions, film SHA-256 hashes and selected filenames. The fixture credit manifest records each photograph's source, licence and shipped SHA-256. No credentials or raw execution logs are included.
