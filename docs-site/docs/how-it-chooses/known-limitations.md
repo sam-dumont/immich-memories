@@ -47,7 +47,7 @@ Two things still get in the way:
 
 ## Other things to know
 
-- **A blurry or nearly black picture can slip in** when it is the only picture of its moment, mostly in narrow selections like free text ([#2049](https://github.com/sam-dumont/immich-memories/issues/2049)).
+- **Fixed:** a blurry or nearly black picture no longer ships as the only picture of its moment; a starred one still does, favourites rule unchanged ([#2049](https://github.com/sam-dumont/immich-memories/issues/2049)).
 - **The run can occasionally exit with an error after the cut is saved.** The film and the saved cut are fine; a script reading the exit code sees a failure ([#2025](https://github.com/sam-dumont/immich-memories/issues/2025)).
 
 Figures on this page come from the test households, never from a real family library. For timings on your own hardware, see [Measure your setup](../better/measured.md).

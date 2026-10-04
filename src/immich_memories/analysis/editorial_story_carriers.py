@@ -29,16 +29,16 @@ from immich_memories.analysis.editorial_story_places import PlaceShares
 from immich_memories.analysis.editorial_story_shortlist import (
     DepictedChoice,
     _spaced,
-    _spread,
     nearby_picture_alternatives,
-    pick_story_moments,
     shortlist_story_moments,
+    spread_evenly,
 )
 from immich_memories.analysis.editorial_story_slots import PartitionedSlots
 from immich_memories.analysis.editorial_story_standing import (
     WEIGHED_STORY_WEIGHTS,
     StandingGate,
 )
+from immich_memories.analysis.editorial_story_vote import pick_story_moments
 from immich_memories.analysis.editorial_thin_vote import sole_era_shots
 
 MAX_PASSES = 3
@@ -394,8 +394,8 @@ class CarrierAdmission:
         # other moment the story holds, never before one showing somebody the library knows.
         rest = [c for c in eligible if not self.starred_choice(c) and not self.of_strangers(c)]
         strangers = [c for c in eligible if not self.starred_choice(c) and self.of_strangers(c)]
-        preferred = [*_spread(stars, n), *_spread(rest, max(0, n - len(stars)))]
-        preferred.extend(_spread(strangers, max(0, n - len(preferred))))
+        preferred = [*spread_evenly(stars, n), *spread_evenly(rest, max(0, n - len(stars)))]
+        preferred.extend(spread_evenly(strangers, max(0, n - len(preferred))))
         return [*preferred, *(c for c in (*stars, *rest, *strangers) if c not in preferred)]
 
     def _repeat_pick(self, eligible, n, chosen) -> list[DepictedChoice]:
