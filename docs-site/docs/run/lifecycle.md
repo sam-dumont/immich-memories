@@ -8,7 +8,15 @@ These operations affect **Immich Memories only**. Keep the separate Immich insta
 its database/volumes and originals. Films already uploaded to Immich remain there; uninstalling
 this app does not delete remote media. No recipe below performs remote-library deletion.
 
-Use the exact project, namespace and paths selected at installation. The commands below cover
+Use the exact project, namespace and paths selected at installation. For Kubernetes, set the
+namespace once per shell and every command below uses it:
+
+```bash
+NS=<your namespace>   # the one your kustomization sets; the shipped default is immich-memories
+```
+
+Never paste a command with a literal `-n immich-memories` into a cluster you did not install
+into by default: that namespace may hold someone else's real install. The commands below cover
 the shipped **Basic Compose**, **Kustomize base** and **native uv/pip** routes with SQLite.
 Inventory optional model/worker services separately; do not stop a shared server used by other
 apps. Suspend a GitOps reconciler before manual Kubernetes maintenance or it can recreate work.
@@ -32,7 +40,10 @@ immich-memories auto install --uninstall
 launchctl list com.immich-memories.auto
 ```
 
-The final lookup should report no loaded service. On Linux:
+The final lookup should report no loaded service: `Could not find service` with exit status 113
+is the expected result, not an error. The launchd label is fixed (`com.immich-memories.auto`), so
+two installs or users on one Mac share it. Run `launchctl list | grep immich` before loading a
+second one, and don't load a plist whose label a job already holds. On Linux:
 
 ```bash
 systemctl --user disable --now immich-memories-auto.timer
@@ -50,9 +61,9 @@ UI service too; `auto install` manages scheduled generation, not the UI service.
 For the optional shipped Kubernetes CronJobs, inspect and suspend the installed names:
 
 ```bash
-kubectl get cronjobs,jobs -n immich-memories -l app.kubernetes.io/name=immich-memories
-kubectl patch cronjob immich-memories-auto -n immich-memories -p '{"spec":{"suspend":true}}'
-kubectl patch cronjob immich-memories-monthly -n immich-memories -p '{"spec":{"suspend":true}}'
+kubectl get cronjobs,jobs -n "$NS" -l app.kubernetes.io/name=immich-memories
+kubectl patch cronjob immich-memories-auto -n "$NS" -p '{"spec":{"suspend":true}}'
+kubectl patch cronjob immich-memories-monthly -n "$NS" -p '{"spec":{"suspend":true}}'
 ```
 
 Skip absent CronJobs. Suspending does not stop a Job already running: let it finish or cancel
@@ -70,13 +81,23 @@ docker compose ps -a
 docker compose start immich-memories
 ```
 
-Kubernetes base (namespace/deployment names are the shipped defaults):
+Kubernetes (deployment names are the shipped defaults, the namespace is yours):
 
 ```bash
-kubectl scale deployment/immich-memories -n immich-memories --replicas=0
-kubectl wait -n immich-memories --for=delete pod -l 'app.kubernetes.io/name=immich-memories,!job-name,!batch.kubernetes.io/job-name' --timeout=120s
+kubectl scale deployment/immich-memories -n "$NS" --replicas=0
+kubectl wait -n "$NS" --for=delete pod -l 'app.kubernetes.io/name=immich-memories,!job-name,!batch.kubernetes.io/job-name' --timeout=120s
 # Start it again:
-kubectl scale deployment/immich-memories -n immich-memories --replicas=1
+kubectl scale deployment/immich-memories -n "$NS" --replicas=1
+```
+
+This stops the app only. On the GPU tier the `immich-memories-inference` and
+`immich-memories-captioner` Deployments keep running and keep their GPU slot, and so does any
+optional service you added yourself (an Ollama pod, for example). Scale those to 0 as well if you
+want the slot back, and back to 1 before the next film:
+
+```bash
+kubectl get deploy -n "$NS"
+kubectl scale deployment/immich-memories-inference deployment/immich-memories-captioner -n "$NS" --replicas=0
 ```
 
 Native: press **Ctrl-C** in the terminal running `immich-memories ui`, or stop the exact UI service
@@ -87,7 +108,9 @@ configuration, credentials, preparation, review decisions, history, weights and 
 
 First [back up/export](./maintenance/storage-backups.md) the store, credential encryption key,
 configuration and films you want. Keep the exact image/package version and installation files.
-For Compose, inspect the running app **before** removing its container:
+For Compose, inspect the running app **before** removing its container. Use the same `-p` and
+`-f` as at install: with a different project name, `docker compose ps -q` finds nothing and the
+`test -n` below stops the script.
 
 ```bash
 APP_CONTAINER=$(docker compose ps -q immich-memories)
@@ -105,15 +128,30 @@ Keep `.env`, encryption key and Compose files. `docker compose up -d` with the s
 and version reuses the data. Named optional services in that project also stop; inspect them first.
 
 Kubernetes: stop as above, then remove only app controllers/routing. Keep the namespace, Secret,
-ConfigMaps and three PVCs. These commands are for the base; delete only an installed named app
-Ingress or CronJob separately, after recording it.
+ConfigMaps and PVCs. List what is installed first, so you remove what is there and not what the
+docs assume:
 
 ```bash
-kubectl delete deployment/immich-memories service/immich-memories networkpolicy/immich-memories -n immich-memories
-kubectl get pvc,secret,configmap -n immich-memories
+kubectl get deploy,svc,networkpolicy,cronjob,ingress,pvc,secret,configmap -n "$NS"
+kubectl delete deployment/immich-memories service/immich-memories networkpolicy/immich-memories -n "$NS"
 ```
 
-Reapply the same version's maintained overlay to reuse the claims. Do not use `kubectl delete -k`
+On the GPU tier also delete the two model services and their policies. Their claims
+(`immich-memories-caption-models` 2Gi, `immich-memories-inference-cache` 10Gi) stay:
+
+```bash
+kubectl delete deployment/immich-memories-inference deployment/immich-memories-captioner \
+  service/inference service/captioner \
+  networkpolicy/immich-memories-inference networkpolicy/immich-memories-captioner -n "$NS"
+```
+
+Delete an installed Ingress or CronJob separately, after recording it. An Ollama pod, its Service
+and its NetworkPolicy are yours, not the app's: they outlive this step, so remove them only if
+nothing else uses them.
+
+Reapply with `kubectl apply -k <your root>`, the kustomization you installed from, to reuse the
+claims. Never `kubectl apply -f` a base file: they hard-code the `immich-memories` namespace.
+Do not use `kubectl delete -k`
 for preservation: the kustomization includes namespace and PVC resources. Keep SQLite on its
 supported local/block storage; verify settings/history and retained films after reinstall.
 
@@ -149,12 +187,18 @@ app model caches; they are fetched again. `.env`, Compose files and `./output` r
 For Kubernetes with the app stopped and no active app Jobs, delete **only** the state PVC:
 
 ```bash
-kubectl get pvc immich-memories-cache -n immich-memories -o wide
-kubectl delete pvc immich-memories-cache -n immich-memories
-kubectl apply -f deploy/kubernetes/base/pvc.yaml
+kubectl get pvc immich-memories-cache -n "$NS" -o wide
+kubectl delete pvc immich-memories-cache -n "$NS"
+kubectl apply -k <your root>
 ```
 
-This preserves `immich-memories-output`, `immich-memories-models` and the app Secret. Verify the
+`apply -k` on your own root recreates the claim in your namespace. `kubectl apply -f
+deploy/kubernetes/base/pvc.yaml` would not: that file says `namespace: immich-memories` and
+creates the claim there, in someone else's install if the default namespace is in use. Reapplying
+also restores the base NetworkPolicy; reapply a stricter [offline policy](./offline.md) afterwards.
+
+This preserves `immich-memories-output`, `immich-memories-models`, the GPU tier's claims, the app
+Secret and any ConfigMap you mount. Verify the
 StorageClass/PV reclaim policy first: `Retain` can leave the old state on a retained PV and is
 not proof of erasure. Bind a fresh volume rather than reattaching the old data, then restart and
 prepare/preflight. Do not claim a reset until saved history/settings are absent as expected.
@@ -167,7 +211,9 @@ mv "$HOME/.immich-memories" "$HOME/.immich-memories.before-reset"
 mkdir -m 700 "$HOME/.immich-memories"
 ```
 
-Create a new config with the [minimum read key](./uv-pip.md), run `models fetch` and preflight.
+Create a new config with the [minimum read key](./uv-pip.md) and put `tier: basic` back in it.
+With no config at all, Apple Silicon selects the `gpu` tier on its own, so a reset would quietly
+change your tier. Then run `models fetch` and preflight.
 The old credentials/history remain in the backup until deliberately removed. Native output and
 external/shared model caches remain. Environment variables can still point at an old/custom store;
 check `config show` privately before calling the new run fresh.
@@ -187,27 +233,46 @@ Do not run a directory removal if you placed other applications' files there.
 :::
 
 For the default Compose project, use the inspected volume name from step 2 and remain in its
-app-only directory. After verifying the mount inventory and backup:
+app-only directory. A generated file (the Synology or setup-builder output) can also carry a named
+output volume, and `DATA_VOLUME` alone misses it. List every volume of the project, with the
+project name from step 2:
 
 ```bash
-docker volume rm "$DATA_VOLUME"
-rm -r -- ./output
-rm -- .env
+docker volume ls --filter label=com.docker.compose.project=<project>
 ```
 
-Remove that project's exact saved configuration/key files if you added any. Do not remove a
-parent directory, shared external model cache or other Docker volumes. Inspect any optional
+Remove the ones that belong to this app (check each against the mount inventory), then:
+
+```bash
+docker volume rm "$DATA_VOLUME"   # plus any other app-owned volume from the list
+rm -r -- ./output
+rm -- .env
+docker image rm ghcr.io/sam-dumont/immich-memories:<version>
+```
+
+The pulled image stays after `down` and the volume removals, so remove it with the line above
+(or keep it for a reinstall). The project folder holds the release files, and any copy of `.env`
+(`.env.bak`, an old `docker-compose.yml` with the key pasted in) still contains the Immich API
+key: delete those by name. Do not remove a parent directory, shared external model cache or other
+Docker volumes. Inspect any optional
 service mounts separately; a shared model server belongs to its operator, not this uninstall.
 
 For the default Kubernetes base, after removing app controllers and schedules:
 
 ```bash
-kubectl delete pvc immich-memories-cache immich-memories-models immich-memories-output -n immich-memories
-kubectl delete secret immich-memories-secrets -n immich-memories
+kubectl delete pvc immich-memories-cache immich-memories-models immich-memories-output -n "$NS"
+kubectl delete secret immich-memories-secrets -n "$NS"
 ```
 
-Remove only the recorded app-owned ConfigMaps, optional service controllers/claims and saved
-secret files. Check retained PVs and storage snapshots with the storage owner; PVC deletion does
+The GPU tier adds two claims. Delete them only if you also deleted the two services above:
+
+```bash
+kubectl delete pvc immich-memories-caption-models immich-memories-inference-cache -n "$NS"
+```
+
+Then remove the recorded ConfigMap you mounted (if any), your Ollama Deployment, Service,
+NetworkPolicy and model claim (if you added one), and saved secret files. Run
+`kubectl get all,pvc,networkpolicy,configmap,secret -n "$NS"` at the end: what is left is not the app's. Check retained PVs and storage snapshots with the storage owner; PVC deletion does
 not guarantee their deletion. Keep the namespace when shared. Never delete a namespace as a
 shortcut to discovering which resources belong to the app.
 
@@ -218,11 +283,31 @@ files, then delete the state and local films:
 rm -r -- "$HOME/.immich-memories" "$HOME/Videos/Memories"
 ```
 
-Handle `.immich-memories.before-reset` and copied backups deliberately; they may still contain
-credentials and films. Preserve shared Hugging Face/Ollama/llama.cpp caches and packages.
+`.immich-memories.before-reset` keeps the plaintext API key from the old config. Once you no
+longer need it, remove it the same way: `rm -r -- "$HOME/.immich-memories.before-reset"`. Other
+copied backups may hold credentials and films too. Preserve shared Hugging Face/Ollama/llama.cpp
+caches and packages.
+
+`uv tool uninstall` does not clear uv's own download cache (2.6 GB on the test Mac), so "complete
+removal" leaves it. `uv cache clean` empties it for every uv project, not only this app; skip it
+if you use uv for other things.
 
 Check the original deployment inventory again: no running app container/pod/UI process, no active
 app Jobs or schedules, no remaining app-owned volumes/paths except deliberate backups. Separately
-verify Immich still serves its library. Disposable stop/reinstall/reset/removal transcripts for
-all three routes are still required by [#1929](https://github.com/sam-dumont/immich-memories/issues/1929);
-these instructions are not a claim that those destructive tests ran.
+verify Immich still serves its library.
+
+## What has been run
+
+Destructive transcripts exist for two of the three routes, both on 2026-10-04 with
+`v0.0.0-dev.37180797983` (#956 verification):
+
+- **Native**: macOS arm64, prebuilt wheel, isolated HOME. Scheduler setup and removal,
+  uninstall keeping data, reinstall, reset and complete removal. UI stop/start was not run, and
+  neither were the cron and systemd scheduler routes.
+- **Compose**: Synology DS423+, DSM 7.3.2, Docker 24.0.2 with Compose 2.20.1. Stop/start, remove
+  keeping data, reset and complete removal. The other containers on that NAS and Immich were
+  unaffected.
+
+The Kubernetes transcript is still pending under
+[#1929](https://github.com/sam-dumont/immich-memories/issues/1929); until it runs, the Kubernetes
+commands above are written, not proven.

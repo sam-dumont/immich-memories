@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import json
 from datetime import UTC, date, datetime
+from pathlib import Path
 
 import pytest
 
 from immich_memories.api.models import Asset, AssetType, ExifInfo
+from immich_memories.i18n import SUPPORTED_LOCALES
 
 
 def _make_asset(
@@ -549,6 +552,43 @@ class TestTripPlaceName:
         from immich_memories.analysis.trip_detection import trip_place_name
 
         assert trip_place_name({"state": "Cyprus", "country": "Cyprus"}) == "Cyprus"
+
+    # Real Nominatim answers for a point near Platanias, Chania (35.512, 23.879),
+    # captured per locale (the product's own accept-language chain, never "en") in
+    # tests/fixtures/places/greece_platanias_<locale>.json (#1954, #1947). English,
+    # German, Dutch and Polish get a nominative region name and so a full trip name;
+    # every other locale's real answer is a Greek (or Russian) genitive construction
+    # ("of Crete"), which is, by this function's own contract, not a name at that scale
+    # at all -- `trip_place_name` returns None rather than a declined fragment, and the
+    # wider pipeline then names the trip from the pictures' own country/island instead.
+    _PLATANIAS_LOCALES = ["fr", *[loc for loc in SUPPORTED_LOCALES if loc != "fr"]]
+    _EXPECTED_REGION_TRIP_NAME = {
+        "en": "Crete, Greece",
+        "fr": "Crete, Grèce",
+        "nl": "Kreta, Griekenland",
+        "de": "Kreta, Griechenland",
+        "pl": "Kreta, Grecja",
+        "es": None,
+        "it": None,
+        "pt-BR": None,
+        "pt-PT": None,
+        "sv": None,
+        "ru": None,
+        "ja": None,
+        "zh-Hans": None,
+        "ko": None,
+    }
+
+    @pytest.mark.parametrize("locale", _PLATANIAS_LOCALES)
+    def test_a_trip_name_never_hand_declines_a_genitive_region(self, locale):
+        from immich_memories.analysis.trip_detection import trip_place_name
+
+        path = Path(__file__).parent / "fixtures" / "places" / f"greece_platanias_{locale}.json"
+        address = json.loads(path.read_text())["address"]
+
+        name = trip_place_name(address, spread_km=150.0)
+
+        assert name == self._EXPECTED_REGION_TRIP_NAME[locale]
 
     def test_a_city_scale_trip_takes_the_town(self):
         from immich_memories.analysis.trip_detection import trip_place_name

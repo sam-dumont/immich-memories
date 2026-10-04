@@ -1,0 +1,35 @@
+{
+  "place_id": 56684825,
+  "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+  "osm_type": "way",
+  "osm_id": 260475479,
+  "lat": "40.7299985",
+  "lon": "17.5799980",
+  "category": "highway",
+  "type": "residential",
+  "place_rank": 26,
+  "importance": 0.053388020904859966,
+  "addresstype": "road",
+  "name": "Corso Giuseppe Garibaldi",
+  "display_name": "Corso Giuseppe Garibaldi, Ostuni, Brindisi, Apulia, 72017, Italy",
+  "address": {
+    "road": "Corso Giuseppe Garibaldi",
+    "town": "Ostuni",
+    "county": "Brindisi",
+    "ISO3166-2-lvl6": "IT-BR",
+    "state": "Apulia",
+    "ISO3166-2-lvl4": "IT-75",
+    "postcode": "72017",
+    "country": "Italy",
+    "country_code": "it"
+  },
+  "namedetails": {
+    "name": "Corso Giuseppe Garibaldi"
+  },
+  "boundingbox": [
+    "40.7254766",
+    "40.7301962",
+    "17.5798490",
+    "17.5812357"
+  ]
+}

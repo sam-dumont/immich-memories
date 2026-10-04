@@ -4,20 +4,22 @@ title: uv / pip
 
 # uv or pip
 
-For a Mac or Linux machine without Docker. You need Python 3.11+ and FFmpeg on your `PATH`.
+For a Mac or Linux machine without Docker. You need Python 3.11 to 3.13 and FFmpeg on your `PATH`.
 The [Docker install](./docker.md) is the other option.
 
 ## Install
 
-On macOS, install the FFmpeg build with `zscale` for HDR conversion:
+Any FFmpeg build with the `zscale` filter works: HDR conversion needs it. Homebrew's plain
+`ffmpeg` 8.1 passed the check below. If yours does not, install `ffmpeg-full` and put it first
+on your `PATH`:
 
 ```bash
-brew install uv ffmpeg-full
+brew install uv ffmpeg
+brew install ffmpeg-full   # only if grep zscale finds nothing
 export PATH="$(brew --prefix ffmpeg-full)/bin:$PATH"
 ```
 
-Keep the PATH export in your shell's startup file. On Debian/Ubuntu, install FFmpeg with
-`sudo apt install ffmpeg`. Verify HDR support:
+On Debian/Ubuntu, install FFmpeg with `sudo apt install ffmpeg`. Verify HDR support:
 
 ```bash
 ffmpeg -hide_banner -filters | grep zscale
@@ -28,6 +30,13 @@ Install the package that matches this documentation build. Choose the command fo
 import InstallationFiles from '@site/src/components/InstallationFiles';
 
 <InstallationFiles kind="native" />
+
+The command pins `--python 3.12` on purpose. The package supports Python 3.11 and newer, but the
+GPU title renderer (`quadrants`) is only installed below 3.14. Without the pin, `uv` picks the
+newest Python on your `PATH` (Homebrew's default is 3.14 now), the install succeeds, and titles
+quietly fall back to PIL without SDF effects: preflight shows "Title rendering: WARNING PIL + FFmpeg".
+If you already installed that way, reinstall with `--force --python 3.12`. With pip, create the
+virtual environment from Python 3.11, 3.12 or 3.13.
 
 Pre-tag rehearsals install a published wheel directly from their GitHub release; they are not
 uploaded to PyPI. RC/final commands pin the matching PyPI version. No source checkout or local
@@ -56,6 +65,9 @@ immich:
   url: http://192.168.1.10:2283
   api_key: your-api-key
 ```
+
+The file holds the key, so keep it private: `chmod 600 ~/.immich-memories/config.yaml`. The app
+warns at startup when other users can read it.
 
 Create the key in Immich's **Account Settings > API Keys** with the
 [ten read permissions](./docker.md#the-api-key). Add the upload set only if you send films back

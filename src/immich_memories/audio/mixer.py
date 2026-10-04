@@ -16,6 +16,32 @@ from immich_memories.security import validate_audio_path, validate_video_path
 logger = logging.getLogger(__name__)
 
 
+# #1954: a FULL-tier film's 4-stem amix (normalize=0, so it can clip) only had
+# a 0.95 sample-peak limiter ahead of AAC encoding (-0.45 dBFS of headroom).
+# AAC reconstruction rings past a limiter that only capped sample peaks, so the
+# decoded file measured +1.73 dBFS. Oversampling before the limiter approximates
+# a true-peak limit, and -2 dBFS leaves room for the encoder's own overshoot.
+_FINAL_MIX_CEILING_DB = -2.0
+
+
+def final_mix_safety_filter(ceiling_db: float = _FINAL_MIX_CEILING_DB) -> str:
+    """FFmpeg filter fragment: a true-peak-safe ceiling for a finished mix.
+
+    Every mixer's final amix must pass its [mixed] stream through this before
+    the AAC encode — chain it in with no input/output labels of its own.
+
+    WHY latency=1: alimiter's lookahead otherwise delays every sample by its
+    own buffer without reporting it, so a transition that happens at 1.000s
+    landed at 1.004958s measured — audible drift on hard cuts. latency=1
+    compensates the delay (FFmpeg >=5.0; this project's floor is 5.1).
+    """
+    limit = 10 ** (ceiling_db / 20)
+    return (
+        f"aresample=192000,alimiter=limit={limit:.4f}:level=disabled:attack=5:release=50:"
+        "latency=1,aresample=48000"
+    )
+
+
 def _db_to_linear(db: float, min_val: float = 1.0, max_val: float = 64.0) -> float:
     """Convert dB to linear scale for FFmpeg parameters.
 
@@ -138,6 +164,55 @@ def plan_loop_copies(*, audio_duration: float, target_duration: float, crossfade
     return max(2, math.ceil((target_duration - audio_duration) / effective) + 1)
 
 
+# Below this, a generated block's lead-in/tail reads as silence rather than music.
+_BLOCK_SILENCE_THRESHOLD_DB = -50.0
+# How much of that near-silence to leave in place: enough that a trim never
+# reads as an abrupt cut, short enough that it cannot hold a seam open.
+_BLOCK_SILENCE_KEEP_SECONDS = 0.2
+
+
+def _trim_block_silence(source: Path, destination: Path) -> Path | None:
+    """Trim a block's near-silent lead-in/tail before it can hold open a seam.
+
+    ACE-Step blocks often end (sometimes start) with several seconds below
+    -50 dB. assemble_music chains blocks with a crossfade, so an untrimmed
+    block can land a multi-second near-silent stretch right at that seam
+    (#1954). Falls back to the source on a trim failure — a seam defect is
+    better than a missing block. Returns None when the block was near-silent
+    throughout: keeping its untrimmed self in the chain would reintroduce
+    the exact gap this trim exists to close, so the caller drops it instead.
+
+    WHY two single-sided passes, not one stop_periods=1 pass: silenceremove's
+    stop side cuts at the FIRST sub-threshold stretch after sound starts, not
+    only at the end — a quiet internal pause or bridge would chop the block
+    down to its opening phrase. Reversing for the tail pass keeps both ends
+    single-sided.
+    """
+    command = [
+        "ffmpeg",
+        "-y",
+        "-v",
+        "error",
+        "-i",
+        str(source),
+        "-af",
+        f"silenceremove=start_periods=1:start_threshold={_BLOCK_SILENCE_THRESHOLD_DB}dB:"
+        "start_silence=0.05,"
+        f"areverse,silenceremove=start_periods=1:start_threshold={_BLOCK_SILENCE_THRESHOLD_DB}dB:"
+        f"start_silence={_BLOCK_SILENCE_KEEP_SECONDS},areverse",
+        str(destination),
+    ]
+    try:
+        subprocess.run(command, capture_output=True, check=True, timeout=120)
+    except (subprocess.SubprocessError, OSError) as error:
+        logger.warning("Block silence trim failed, using the block untrimmed: %s", error)
+        return source
+    # A block that was near-silent throughout can trim away to nothing.
+    if get_audio_duration(destination) <= 0.05:
+        return None
+    return destination
+
+
 def assemble_music(
     block_paths: list[Path],
     target_duration: float,
@@ -150,10 +225,24 @@ def assemble_music(
     target, so a long video gets several different takes of the same style rather
     than one phrase on repeat. Output is PCM WAV so mastering and ducking re-encode
     a clean source, unlike the mp3 ``loop_audio_to_duration`` writes for final
-    delivery.
+    delivery. Each block's near-silent lead-in/tail is trimmed first, so a seam
+    never lands on a multi-second silent stretch.
     """
     if not block_paths:
         raise ValueError("assemble_music needs at least one block")
+    trimmed = [
+        _trim_block_silence(path, output_path.parent / f"{output_path.stem}_trim{i}.wav")
+        for i, path in enumerate(block_paths)
+    ]
+    kept = [path for path in trimmed if path is not None]
+    if not kept:
+        logger.warning(
+            "All %d music blocks were near-silent throughout; keeping them "
+            "untrimmed rather than losing the track entirely",
+            len(block_paths),
+        )
+        kept = block_paths
+    block_paths = kept
     durations = [get_audio_duration(p) for p in block_paths]
     shortest = min(durations)
     fade = min(crossfade_seconds, max(shortest / 2, 0.01))
@@ -421,6 +510,7 @@ def _build_ducking_filter(
             # metadata. The final apad/atrim guarantees both the actual samples
             # AND the metadata match video_duration.
             "[vamix][ducked_music]amix=inputs=2:duration=longest:dropout_transition=2,"
+            f"{final_mix_safety_filter()},"
             f"apad=whole_dur={video_duration},atrim=0:{video_duration}[mixed]",
         )
     )

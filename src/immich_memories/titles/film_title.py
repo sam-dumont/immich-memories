@@ -21,6 +21,7 @@ if TYPE_CHECKING:
     from immich_memories.config_loader import Config
     from immich_memories.timeperiod import DateRange
 
+from immich_memories.i18n import resolve_film_locale
 from immich_memories.titles.title_source import TitleSource, override_source
 
 logger = logging.getLogger(__name__)
@@ -111,10 +112,13 @@ def resolve_film_title(
         facts = replace(facts, album_name=_album_of_the_cut(album_lookup))
 
     start, end = date_range.start.date(), date_range.end.date()
+    # Resolved here, not left to the prompt builder: "auto" must never reach
+    # the model, which would otherwise read it literally as "Language: Auto".
+    locale = resolve_film_locale(config.title_screens.locale if config.title_screens else "en")
     try:
         suggestion = ask(
             memory_type=memory_type or "year",
-            locale=config.title_screens.locale if config.title_screens else "en",
+            locale=locale,
             start_date=str(start),
             end_date=str(end),
             duration_days=(end - start).days,

@@ -82,7 +82,7 @@ separate film generation from setup; larger periods can still take hours.
 | Message or symptom | Fix |
 |---|---|
 | `Encoder: Pinned DINOv2 export missing` | Run `models fetch` from step 3. |
-| Output directory is not writable | Set ownership with `sudo chown -R 1000:1000 output`. |
+| Output directory is not writable | On Linux, `sudo chown -R 1000:1000 output`. On Synology DSM, use the [ACL recipe](../run/nas.md#the-output-folder). |
 | `Immich: Connection failed` | Check the URL and key in `.env`, then run `docker compose up -d` again. |
 
 Check the installation at any time:

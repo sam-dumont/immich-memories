@@ -39,7 +39,7 @@ export function nativeInstallCommand(version: string, extras: 'all' | 'all-mac')
   const spec = release.includes('-dev.')
     ? `immich-memories[${extras}] @ ${assetBase(version)}/immich_memories-${python}-py3-none-any.whl`
     : `immich-memories[${extras}]==${python}`;
-  return `uv tool install --prerelease allow "${spec}"${extras === 'all-mac' ? ' --with laya-mlx' : ''}`;
+  return `uv tool install --python 3.12 --prerelease allow "${spec}"${extras === 'all-mac' ? ' --with laya-mlx' : ''}`;
 }
 
 export function validateSetup(setup: Setup): string | null {
@@ -120,7 +120,8 @@ function macRecipe(setup: Setup): Result {
   const config: Mapping = {
     immich: {url: setup.immichUrl, api_key: setup.apiKey}, tier: setup.tier,
     advanced: {
-      editorial: {preparation: {caption_base_url: setup.tier === 'basic' ? '' : 'http://127.0.0.1:8092/v1'}},
+      // An empty caption_base_url is rejected by the app; Basic simply leaves the key out.
+      ...(setup.tier === 'basic' ? {} : {editorial: {preparation: {caption_base_url: 'http://127.0.0.1:8092/v1'}}}),
       llm: {enabled: full, base_url: setup.readerUrl, api_key: setup.readerApiKey || '', model: setup.readerModel || 'gemma-4-E4B-it-Q4_0'},
     },
   };
@@ -139,7 +140,7 @@ function macRecipe(setup: Setup): Result {
     'test -f ~/.immich-memories/secret-key || openssl rand -hex 32 > ~/.immich-memories/secret-key',
     'export IMMICH_MEMORIES_SECRET_KEY="$(cat ~/.immich-memories/secret-key)"',
     ...caption,
-    'immich-memories config move-to-db tier editorial.preparation.caption_base_url llm.enabled llm.base_url llm.model llm.api_key',
+    `immich-memories config move-to-db tier ${setup.tier === 'basic' ? '' : 'editorial.preparation.caption_base_url '}llm.enabled llm.base_url llm.model llm.api_key`,
     'immich-memories models fetch',
     'immich-memories preflight',
     'immich-memories capabilities',
@@ -191,6 +192,10 @@ export function buildSetup(setup: Setup, sources: Sources, buildVersion: string)
       `tar -xzf ${quote(`immich-memories-deploy-${tag}.tar.gz`)}`,
       'mkdir -p deploy/kubernetes/custom',
       '# Save the generated files at their labelled paths.',
+      '# The Secret holds IMMICH_MEMORIES_SECRET_KEY, which seals the credentials saved in Settings.',
+      '# Keep a copy: a restored store needs the same key.',
+      '# Namespace: this output uses immich-memories. Change it in both generated files and in every -n below.',
+      ...(setup.tier === 'basic' ? [] : ['# GPU tier: the app pod gets no GPU, so encoding and titles run on the CPU; the GPU serves inference and captions.']),
       '# Before applying: choose local/block storage for immich-memories-cache (SQLite).',
       '# NFS/SMB app-data storage is refused at startup; use PostgreSQL for a network database.',
       '# Storage choices: https://sam-dumont.github.io/immich-memories/docs/run/kubernetes#prerequisites',

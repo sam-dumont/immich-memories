@@ -29,12 +29,13 @@ and `immich-memories preflight`; no SSH is needed for preparation. From a host t
 the shipped container name works regardless of the project name or current folder:
 
 ```bash
-sudo docker exec immich-memories immich-memories models fetch
-sudo docker exec immich-memories immich-memories preflight
+docker exec immich-memories immich-memories models fetch
+docker exec immich-memories immich-memories preflight
 ```
 
-Inside the container terminal, run just `immich-memories models fetch` and
-`immich-memories preflight`; leave off `sudo docker exec immich-memories`.
+Add `sudo` only if your user isn't in the `docker` group. Inside the container terminal, run
+just `immich-memories models fetch` and `immich-memories preflight`; leave off
+`docker exec immich-memories`.
 The [Portainer Stack and Console route](./platforms/portainer.md) passed preparation checks,
 and [Synology through SSH/Compose](./platforms/synology.md) completed a first film.
 The DSM Project wizard, Unraid and TrueNAS interface routes have not been tested.
@@ -45,24 +46,42 @@ The default Basic tier needs no caption server or text model.
 ### The output folder
 
 The image runs as UID/GID 1000. NAS users often have a different UID, so preflight can report
-`Output directory is not writable`. Fix the folder over SSH:
+`Output directory is not writable`. The fix depends on the NAS.
+
+**Synology DSM.** `chown` alone does nothing useful on a home share: the share's Synology ACL
+still denies uid 1000. Add an ACL entry for it, over SSH as your DSM user, no `sudo`, in the
+project folder:
+
+```bash
+mkdir -p output
+/usr/syno/bin/synoacltool -addace output user:1000:allow:rwxpdDaARWc--:fd--
+/usr/syno/bin/synoacltool -getace output
+```
+
+- `synoacltool` is not on a docker-group user's `PATH`, so use the full path.
+- `-addace` takes numeric ids. `-add user:1000` resolves names and answers "No such user".
+- The `fd` flags make the entry inherit, so files the container creates stay readable and
+  deletable by your own DSM user.
+- Keep your own entry. The home share already has one, and `-addace` leaves it alone. A folder
+  whose ACL holds only uid 1000 locks you out of your own films (`d---------`).
+
+Checked on a DS423+ (DSM 7.3.2): a uid-1000 container wrote files, the DSM user read and
+removed them, and a UI render wrote its film through the bind mount.
+
+**Plain Linux NAS** (no Synology ACLs):
 
 ```bash
 sudo chown -R 1000:1000 output
 ```
 
-Or run the service as your NAS user. Before changing the Compose `user:` setting, run this
-over SSH as that user, from the project folder, while the container is running and idle:
+Don't set `user: "<your uid>:<gid>"` in the Compose file. The image's `/home/immich` is `0700`
+and owned by 1000, so the app crashes at start with
+`PermissionError: ... '/home/immich/.immich-memories'`.
 
-```bash
-id
-sudo docker exec --user 0 immich-memories chown -R "$(id -u):$(id -g)" /home/immich/.immich-memories
-sudo chown -R "$(id -u):$(id -g)" output
-```
-
-Set `user: "<uid>:<gid>"` in the Compose service to the numbers printed by `id`, then recreate
-the container through your NAS manager. If you remove the output bind mount, turn on
-[upload-back](./docker.md#films-into-immich) so films reach Immich.
+If you replace a named output volume with this bind mount, earlier runs show the film as
+unavailable: their files stayed in the old volume. Nothing is broken, new films land in `output`.
+If you remove the bind mount altogether, turn on [upload-back](./docker.md#films-into-immich)
+so films reach Immich.
 
 ### Reaching the UI
 
@@ -72,9 +91,16 @@ The default port is local to the NAS. From your desktop:
 ssh -L 8080:localhost:8080 you@your-nas
 ```
 
-Open `http://localhost:8080` on the desktop. For LAN access, enable authentication and change
-the port mapping: [Docker access recipe](./docker.md#reaching-the-ui-from-another-machine).
-If another NAS app uses 8080, change the host port (left side) and tunnel to that port.
+Open `http://localhost:8080` on the desktop. Some NAS accounts can't forward ports (DSM allows
+it for administrators only), and then the browser gets "Connection reset by peer". For LAN access
+without a tunnel, turn on authentication and set `UI_BIND_ADDRESS=0.0.0.0` in `.env`:
+[Docker access recipe](./docker.md#reaching-the-ui-from-another-machine). That port is plain
+HTTP; use the proxy route if you want TLS.
+
+The shipped Compose file hard-codes host port 8080 and the container name `immich-memories`.
+If another NAS app already has 8080 (UniFi does), edit the left side of the port mapping and
+tunnel to that port. On a shared host, also rename `container_name`, and then replace
+`immich-memories` in the `docker exec` commands above.
 
 ### Do not use `cpus:` on a Synology
 
@@ -165,8 +191,7 @@ to choose the next useful piece.
 
 The Docker instructions cover [API-key permissions](./docker.md#the-api-key),
 [uploads](./docker.md#films-into-immich), [backups](./database.md#managing-the-store) and
-[upgrades](./maintenance/upgrading.md#docker). Prefix container commands with `sudo` if your NAS
-requires it.
+[upgrades](./maintenance/upgrading.md#docker). Container commands need `sudo` only if your user isn't in the `docker` group.
 
 ## Stop or remove this installation
 

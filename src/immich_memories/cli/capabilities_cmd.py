@@ -68,6 +68,9 @@ def register_capabilities_command(main: click.Group) -> None:
                 "; ".join(filter(None, (check.message, check.details))),
             )
             for check in run_preflight_checks(preflight_config)
+            # The switched-off copy would report "configured but disabled" for a reader the
+            # config enables; the external reader is reported by the local-capability rows.
+            if not (preflight_config is not config and check.name == "LLM")
         )
         rows.extend(optional_capabilities(config))
         rows.extend(music_capabilities(config, test_music=test_music))

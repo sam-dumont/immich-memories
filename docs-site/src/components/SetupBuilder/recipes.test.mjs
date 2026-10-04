@@ -75,3 +75,10 @@ test('vendored inputs pin the docs version and verify before extracting', () => 
   assert.match(command, /-C vendor\/immich-memories/);
   assert.doesNotMatch(command, /latest|git clone|docker build/);
 });
+
+test('Mac Basic leaves out the caption endpoint and does not move it', () => {
+  const result = buildSetup({...setup, platform: 'mac', inline: false}, sources, '1.2.3');
+  const config = JSON.parse(result.files[0].content);
+  assert.equal(config.advanced.editorial, undefined);
+  assert.doesNotMatch(result.commands, /caption_base_url/);
+});
