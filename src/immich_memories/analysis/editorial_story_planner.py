@@ -25,6 +25,7 @@ from immich_memories.analysis.editorial_rule_banked_facts import (
     BankedFacts,
     withheld_by_bank,
 )
+from immich_memories.analysis.editorial_standing_facts import disqualifies_as_lone_carrier
 from immich_memories.analysis.editorial_story_carriers import (
     CarrierAdmission,
     choice_is_starred,
@@ -598,6 +599,9 @@ def select_story_first(
         # Only the no-model draft withholds on banked answers; the model tier asks its own
         # questions about every candidate and must keep seeing them all.
         "withhold": withheld_by_bank(banked, favourite=starred) if rules is not None else None,
+        # A lone DARK or SOFT (blurry) candidate leaves its moment unfunded on every tier,
+        # the heads being read before any model is asked (#2049).
+        "pixel_disqualified": lambda asset_id: disqualifies_as_lone_carrier(line_of(asset_id)),
     }
     choices_of = _capture_group_choices(stories, story_units, **picking)
     groups_offered = {s["key"]: len(choices_of[s["key"]]) for s in stories}

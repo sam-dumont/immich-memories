@@ -19,7 +19,8 @@ from typing import Any
 from immich_memories.analysis.editorial_picture_admission import GateRefusal, PictureAdmission
 from immich_memories.analysis.editorial_shot_kinds import KindOf, lacking
 from immich_memories.analysis.editorial_story_lookalike import MOTION_KINDS
-from immich_memories.analysis.editorial_story_shortlist import DepictedChoice, pick_story_moments
+from immich_memories.analysis.editorial_story_shortlist import DepictedChoice
+from immich_memories.analysis.editorial_story_vote import pick_story_moments
 from immich_memories.analysis.editorial_structure_budget import (
     MIN_CARRIER_SECONDS,
     MIN_MOTION_SECONDS,

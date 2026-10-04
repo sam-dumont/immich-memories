@@ -147,7 +147,7 @@ def _weighing_prompts() -> tuple[str, str]:
 
 
 def _pick_prompts() -> tuple[str, str]:
-    from immich_memories.analysis.editorial_story_shortlist import _pick_prompt
+    from immich_memories.analysis.editorial_story_vote import _pick_prompt
 
     return (
         _pick_prompt(

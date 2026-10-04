@@ -118,3 +118,32 @@ def test_the_real_planner_starts_each_kept_video_on_its_action(tmp_path):
         assert carrier["start_time"] <= 7.5 <= 9.5 <= carrier["end_time"], "the riders cross"
         assert carrier["end_time"] - carrier["start_time"] == carrier["seconds"]
         assert carrier["end_time"] <= 12.0
+
+
+def test_a_window_whose_action_sits_at_the_end_still_projects_from_the_real_source():
+    """#2039: a video whose activity peaks right at its own end gets a window that runs to
+    the clip's last playable frame. That window must stay inside the source and must still
+    project; it must not raise ``editorial interval exceeds actual source metadata``."""
+    from immich_memories.analysis.editorial_clip_facts import WindowFacts
+    from immich_memories.analysis.editorial_source_route import project_source_rendering
+    from immich_memories.analysis.editorial_structure_material import raw_centiseconds
+    from immich_memories.analysis.editorial_video_windows import place_windows
+    from immich_memories.config_loader import Config
+    from tests.conftest import make_clip
+    from tests.test_editorial_source_route import demand
+
+    duration = 9.286
+    raw = raw_centiseconds(duration)
+    activity = _probes(duration, (duration - 1.0, duration))
+
+    [carrier] = place_windows(
+        [{"kind": "video", "asset_id": "video", "seconds": 4.0, "raw_seconds": raw}],
+        lambda _id, _hold: WindowFacts(activity, (), None),
+    )
+
+    assert carrier["end_time"] <= duration
+
+    _, rows = demand([make_clip("video", duration=duration)])
+    projected = project_source_rendering([carrier], rows, config=Config(), include_live_photos=True)
+
+    assert projected.plan.selections[0].end_time <= duration

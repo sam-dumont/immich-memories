@@ -428,7 +428,8 @@ def test_printed_text_vouches_for_its_episode_and_the_subject_is_read_inside_it(
     # WHY: stands in for Immich's OCR search, a read of the server's text index.
     printed = _Printed(wheelers=frozenset({"jersey"}))
     # WHY: stands in for the model server; two of three answers say the club name is printed.
-    asker = BankedAsker(_picks("wheelers"), _picks("wheelers", "club"), _picks("rides"))
+    # "rides" is the subject's own noun, so it is never even offered to this vote.
+    asker = BankedAsker(_picks("wheelers"), _picks("wheelers", "club"), _picks())
     nowhere = _Printed()
     # WHY: as above, for a library where no picture reads the name.
     again = BankedAsker(_picks("wheelers"), _picks("wheelers"), _picks("wheelers"))

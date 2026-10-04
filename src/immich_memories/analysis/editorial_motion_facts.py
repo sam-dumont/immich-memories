@@ -14,6 +14,7 @@ import httpx
 
 from immich_memories.analysis.editorial_bound_sample import source_metadata_digest
 from immich_memories.analysis.editorial_motion_outcomes import MotionAttemptOutcomes
+from immich_memories.analysis.editorial_structure_material import raw_centiseconds
 from immich_memories.api.immich import ImmichAPIError
 from immich_memories.db import Store
 from immich_memories.store.cut_measurements import (
@@ -212,7 +213,8 @@ class DemandedMotionResolver:
         current.update(
             kind="live-motion" if moving else "live-still",
             residual=residual,
-            seconds=round(min(float(current["raw_seconds"]), 6.0), 2) if moving else 4.0,
+            # #2039: floor, not round, so this never exceeds raw_seconds's own length.
+            seconds=raw_centiseconds(min(float(current["raw_seconds"]), 6.0)) if moving else 4.0,
             motion_assessed=bool(residuals),
             motion_evidence={
                 "method": METHOD,

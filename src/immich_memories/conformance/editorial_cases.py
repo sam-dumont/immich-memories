@@ -10,8 +10,9 @@ from immich_memories.analysis.editorial_story_reading import (
     read_period_story,
 )
 from immich_memories.analysis.editorial_story_replies import WEIGHTS
-from immich_memories.analysis.editorial_story_shortlist import DepictedChoice, pick_story_moments
+from immich_memories.analysis.editorial_story_shortlist import DepictedChoice
 from immich_memories.analysis.editorial_story_threads import fold_threads
+from immich_memories.analysis.editorial_story_vote import pick_story_moments
 from immich_memories.analysis.editorial_story_weighing import _weigh_stories
 from immich_memories.config_models_llm import LLMConfig
 from immich_memories.conformance.fixtures import scratch_judge
@@ -219,7 +220,7 @@ def editorial_cases(llm: LLMConfig) -> tuple[Case, ...]:
             partial(moment_selection, llm),
             frozenset(
                 {
-                    "analysis.editorial_story_shortlist:_vote_both_orders",
+                    "analysis.editorial_story_vote:_vote_both_orders",
                     "analysis.editorial_story_pick_contract:ask_moment_pick",
                 }
             ),

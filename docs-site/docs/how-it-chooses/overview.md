@@ -29,6 +29,6 @@ Read [how moments become stories](./moments-and-stories.md), [how a shot wins](.
 
 ## Make it yours
 
-[Review and adjust the cut](./overrule-it.md), [choose who may see it](./family-audience-duplicates.md), or [understand a shorter film](./length-and-filler.md).
+[Review and adjust the cut](./overrule-it.md), [choose who may see it](./family-audience-duplicates.md), or [understand a shorter film](./length-and-filler.md). Where the films still fall short, for families and for everyone else: [Known limitations for now](./known-limitations.md).
 
 For the exact grouping, scoring and timing rules, read [Selection internals](../reference/selection-internals/overview.md). You do not need those to make a film.

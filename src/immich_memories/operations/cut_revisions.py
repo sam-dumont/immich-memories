@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import Any
 
 from immich_memories.analysis.editorial_source_snapshot import SNAPSHOT_NAME, load_sources
+from immich_memories.analysis.editorial_structure_material import raw_centiseconds
 from immich_memories.api.models import Asset, AssetType, VideoClipInfo
 from immich_memories.locked_file import file_lock
 from immich_memories.operations.storyboard import (
@@ -69,7 +70,8 @@ def added_hold(shots: Iterable[tuple[float, bool]], asset: Asset) -> tuple[float
     like = [seconds for seconds, moving in shots if moving == motion]
     seconds = statistics.median(like) if like else (_MOTION_SECONDS if motion else _STILL_SECONDS)
     if asset.type == AssetType.VIDEO and asset.duration_seconds:
-        seconds = min(seconds, asset.duration_seconds)
+        # #2039: round() can land past the video's own length (9.286 -> 9.29); floor instead.
+        return raw_centiseconds(min(seconds, asset.duration_seconds)), motion
     return round(seconds, 2), motion
 
 
