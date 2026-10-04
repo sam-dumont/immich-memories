@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-04 13:49+0200\n"
+"POT-Creation-Date: 2026-10-04 18:11+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: it\n"
@@ -364,7 +364,7 @@ msgstr "Ricerca non riuscita: {error}"
 msgid "Done."
 msgstr "Fatto."
 
-#: web/routes/runs/[run_id]/+page.svelte:352
+#: web/routes/runs/[run_id]/+page.svelte:354
 msgid "Download child output"
 msgstr "Scarica il risultato associato"
 
@@ -545,7 +545,7 @@ msgstr "URL del server Immich"
 msgid "Immich accounts to read (primary alone when none are picked)"
 msgstr "Account Immich da leggere (solo il principale se nessuno è scelto)"
 
-#: web/routes/runs/[run_id]/+page.svelte:342
+#: web/routes/runs/[run_id]/+page.svelte:344
 #, python-brace-format
 msgid "Immich delivery: {value}"
 msgstr "Invio a Immich: {value}"
@@ -736,7 +736,7 @@ msgstr ""
 "Nessun giorno catalogato per ora. Esegui `immich-memories discover-days` per trovarli, oppure"
 " filma qualsiasi giorno tramite la sua data."
 
-#: web/routes/runs/[run_id]/+page.svelte:354
+#: web/routes/runs/[run_id]/+page.svelte:356
 msgid "No child output was retained for this run."
 msgstr "Nessun risultato associato conservato per questa esecuzione."
 
@@ -784,7 +784,7 @@ msgstr "Nessuna regola verificabile dall'anteprima scarterebbe una foto."
 msgid "No runs match this view. Make a memory from Memory or Suggestions."
 msgstr "Nessuna esecuzione corrisponde a questa vista. Crea un ricordo da Ricordo o Suggerimenti."
 
-#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:334
+#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:336
 msgid "No saved cut is available for this run."
 msgstr "Nessun montaggio salvato per questa esecuzione."
 
@@ -1070,7 +1070,7 @@ msgstr "Revisioni"
 msgid "Role (suggestions; type your own)"
 msgstr "Ruolo (suggerimenti o testo libero)"
 
-#: web/routes/runs/[run_id]/+page.svelte:340
+#: web/routes/runs/[run_id]/+page.svelte:342
 msgid "Run details"
 msgstr "Dettagli dell'esecuzione"
 
@@ -1131,7 +1131,7 @@ msgstr "Salvato qui, ma {name} non riesce a decifrarlo: è in uso il valore pred
 msgid "Saved to the database"
 msgstr "Salvato nel database"
 
-#: web/routes/runs/[run_id]/+page.svelte:341
+#: web/routes/runs/[run_id]/+page.svelte:343
 #, python-brace-format
 msgid "Saved to: {output_path}"
 msgstr "Salvato in: {output_path}"
@@ -1252,6 +1252,10 @@ msgstr "Stato"
 #: web/lib/ShotInspector.svelte:76
 msgid "Still"
 msgstr "Immagine fissa"
+
+#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:334
+msgid "Stopped before it saved a film. The cut it came from is under Runs, in its own run."
+msgstr "Fermato prima di salvare un film. Il montaggio da cui deriva è in Esecuzioni, nella sua esecuzione."
 
 #: web/lib/JobPanel.svelte:62
 msgid "Stopped."

@@ -212,6 +212,23 @@ def test_runs_open_as_cards_with_their_cut_and_filter_by_status(
     expect(page.get_by_role("listitem").filter(has_text="Completed")).to_have_count(0)
 
 
+def test_a_cancelled_render_points_to_the_run_of_its_saved_cut(
+    page: Page, launch_app_url: str, launch_workspace
+) -> None:
+    RunDatabase(launch_workspace.store()).save_run(
+        RunMetadata(
+            run_id="20240702_web_cancelled",
+            created_at=datetime.now(UTC),
+            status="cancelled",
+            memory_type="monthly_highlights",
+        )
+    )
+    page.goto(f"{launch_app_url}/app/runs/20240702_web_cancelled")
+
+    expect(page.get_by_text("Stopped before it saved a film.")).to_be_visible()
+    expect(page.get_by_text("No saved cut is available for this run.")).to_have_count(0)
+
+
 def test_the_client_opens_in_the_browser_language(page: Page, launch_app_url: str) -> None:
     page.context.set_extra_http_headers({"Accept-Language": "fr"})
     page.goto(f"{launch_app_url}/app/runs")

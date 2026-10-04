@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-04 13:49+0200\n"
+"POT-Creation-Date: 2026-10-04 18:11+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -362,7 +362,7 @@ msgstr "Discovery failed: {error}"
 msgid "Done."
 msgstr "Done."
 
-#: web/routes/runs/[run_id]/+page.svelte:352
+#: web/routes/runs/[run_id]/+page.svelte:354
 msgid "Download child output"
 msgstr "Download child output"
 
@@ -543,7 +543,7 @@ msgstr "Immich Server URL"
 msgid "Immich accounts to read (primary alone when none are picked)"
 msgstr "Immich accounts to read (primary alone when none are picked)"
 
-#: web/routes/runs/[run_id]/+page.svelte:342
+#: web/routes/runs/[run_id]/+page.svelte:344
 #, python-brace-format
 msgid "Immich delivery: {value}"
 msgstr "Immich delivery: {value}"
@@ -734,7 +734,7 @@ msgstr ""
 "No catalogued days yet. Run immich-memories discover-days to find them, or film any day by "
 "its date."
 
-#: web/routes/runs/[run_id]/+page.svelte:354
+#: web/routes/runs/[run_id]/+page.svelte:356
 msgid "No child output was retained for this run."
 msgstr "No child output was retained for this run."
 
@@ -782,7 +782,7 @@ msgstr "No rule the preview can check would drop a picture."
 msgid "No runs match this view. Make a memory from Memory or Suggestions."
 msgstr "No runs match this view. Make a memory from Memory or Suggestions."
 
-#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:334
+#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:336
 msgid "No saved cut is available for this run."
 msgstr "No saved cut is available for this run."
 
@@ -1068,7 +1068,7 @@ msgstr "Revisions"
 msgid "Role (suggestions; type your own)"
 msgstr "Role (suggestions; type your own)"
 
-#: web/routes/runs/[run_id]/+page.svelte:340
+#: web/routes/runs/[run_id]/+page.svelte:342
 msgid "Run details"
 msgstr "Run details"
 
@@ -1129,7 +1129,7 @@ msgstr "Saved here, but {name} cannot decrypt it: the default is in use"
 msgid "Saved to the database"
 msgstr "Saved to the database"
 
-#: web/routes/runs/[run_id]/+page.svelte:341
+#: web/routes/runs/[run_id]/+page.svelte:343
 #, python-brace-format
 msgid "Saved to: {output_path}"
 msgstr "Saved to: {output_path}"
@@ -1250,6 +1250,10 @@ msgstr "Status"
 #: web/lib/ShotInspector.svelte:76
 msgid "Still"
 msgstr "Still"
+
+#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:334
+msgid "Stopped before it saved a film. The cut it came from is under Runs, in its own run."
+msgstr "Stopped before it saved a film. The cut it came from is under Runs, in its own run."
 
 #: web/lib/JobPanel.svelte:62
 msgid "Stopped."

@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-04 13:49+0200\n"
+"POT-Creation-Date: 2026-10-04 18:11+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ja\n"
@@ -358,7 +358,7 @@ msgstr "検索に失敗しました：{error}"
 msgid "Done."
 msgstr "完了しました。"
 
-#: web/routes/runs/[run_id]/+page.svelte:352
+#: web/routes/runs/[run_id]/+page.svelte:354
 msgid "Download child output"
 msgstr "関連する出力をダウンロード"
 
@@ -532,7 +532,7 @@ msgstr "Immichサーバーの URL"
 msgid "Immich accounts to read (primary alone when none are picked)"
 msgstr "読み込むImmichアカウント(選択がなければプライマリのみ)"
 
-#: web/routes/runs/[run_id]/+page.svelte:342
+#: web/routes/runs/[run_id]/+page.svelte:344
 #, python-brace-format
 msgid "Immich delivery: {value}"
 msgstr "Immich への送信：{value}"
@@ -721,7 +721,7 @@ msgid ""
 "its date."
 msgstr "まだ記録済みの日がありません。`immich-memories discover-days` を実行して見つけるか、日付を指定してどの日でも撮影できます。"
 
-#: web/routes/runs/[run_id]/+page.svelte:354
+#: web/routes/runs/[run_id]/+page.svelte:356
 msgid "No child output was retained for this run."
 msgstr "この実行には関連する出力が保存されていません。"
 
@@ -767,7 +767,7 @@ msgstr "プレビューで確認できるルールで外れる写真はありま
 msgid "No runs match this view. Make a memory from Memory or Suggestions."
 msgstr "この表示に一致する実行はありません。「思い出」か「提案」から作成してください。"
 
-#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:334
+#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:336
 msgid "No saved cut is available for this run."
 msgstr "この実行に保存された編集結果はありません。"
 
@@ -1053,7 +1053,7 @@ msgstr "リビジョン"
 msgid "Role (suggestions; type your own)"
 msgstr "役割（候補から選ぶか自由入力）"
 
-#: web/routes/runs/[run_id]/+page.svelte:340
+#: web/routes/runs/[run_id]/+page.svelte:342
 msgid "Run details"
 msgstr "実行の詳細"
 
@@ -1114,7 +1114,7 @@ msgstr "ここに保存されていますが、{name} で復号できません�
 msgid "Saved to the database"
 msgstr "データベースに保存しました"
 
-#: web/routes/runs/[run_id]/+page.svelte:341
+#: web/routes/runs/[run_id]/+page.svelte:343
 #, python-brace-format
 msgid "Saved to: {output_path}"
 msgstr "保存先：{output_path}"
@@ -1233,6 +1233,10 @@ msgstr "状態"
 #: web/lib/ShotInspector.svelte:76
 msgid "Still"
 msgstr "静止画"
+
+#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:334
+msgid "Stopped before it saved a film. The cut it came from is under Runs, in its own run."
+msgstr "フィルムを保存する前に停止しました。元のカットは「実行履歴」にあり、独自の実行として残っています。"
 
 #: web/lib/JobPanel.svelte:62
 msgid "Stopped."

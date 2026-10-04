@@ -330,6 +330,8 @@
         </ul>
       </section>
     {/if}
+  {:else if run.status === 'cancelled'}
+    <Text color="muted">{t('Stopped before it saved a film. The cut it came from is under Runs, in its own run.')}</Text>
   {:else}
     <Text color="muted">{t('No saved cut is available for this run.')}</Text>
   {/if}

@@ -101,7 +101,7 @@
               {:else}
                 <div class="col-span-2 row-span-2 flex items-center justify-center text-gray-400 dark:text-gray-600">
                   <svg viewBox="0 0 24 24" class="size-12 fill-current opacity-60" aria-hidden="true"><path d={mdiImageOffOutline} /></svg>
-                  <span class="sr-only">{t('No saved cut is available for this run.')}</span>
+                  <span class="sr-only">{run.status === 'cancelled' ? t('Stopped before it saved a film. The cut it came from is under Runs, in its own run.') : t('No saved cut is available for this run.')}</span>
                 </div>
               {/each}
             </div>

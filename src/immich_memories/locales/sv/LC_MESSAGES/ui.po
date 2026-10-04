@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-04 13:49+0200\n"
+"POT-Creation-Date: 2026-10-04 18:11+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: sv\n"
@@ -362,7 +362,7 @@ msgstr "Sökningen misslyckades: {error}"
 msgid "Done."
 msgstr "Klart."
 
-#: web/routes/runs/[run_id]/+page.svelte:352
+#: web/routes/runs/[run_id]/+page.svelte:354
 msgid "Download child output"
 msgstr "Ladda ned tillhörande resultat"
 
@@ -543,7 +543,7 @@ msgstr "Immich-serverns URL"
 msgid "Immich accounts to read (primary alone when none are picked)"
 msgstr "Immich-konton att läsa (endast primärt om inget är valt)"
 
-#: web/routes/runs/[run_id]/+page.svelte:342
+#: web/routes/runs/[run_id]/+page.svelte:344
 #, python-brace-format
 msgid "Immich delivery: {value}"
 msgstr "Överföring till Immich: {value}"
@@ -736,7 +736,7 @@ msgstr ""
 "Inga katalogiserade dagar ännu. Kör `immich-memories discover-days` för att hitta dem, eller "
 "filma valfri dag utifrån dess datum."
 
-#: web/routes/runs/[run_id]/+page.svelte:354
+#: web/routes/runs/[run_id]/+page.svelte:356
 msgid "No child output was retained for this run."
 msgstr "Inget tillhörande resultat sparades för den här körningen."
 
@@ -784,7 +784,7 @@ msgstr "Ingen regel som förhandsvisningen kan kontrollera skulle sortera bort e
 msgid "No runs match this view. Make a memory from Memory or Suggestions."
 msgstr "Inga körningar matchar den här vyn. Skapa ett minne från Minne eller Förslag."
 
-#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:334
+#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:336
 msgid "No saved cut is available for this run."
 msgstr "Ingen sparad klippning finns för den här körningen."
 
@@ -1070,7 +1070,7 @@ msgstr "Revisioner"
 msgid "Role (suggestions; type your own)"
 msgstr "Roll (förslag eller egen text)"
 
-#: web/routes/runs/[run_id]/+page.svelte:340
+#: web/routes/runs/[run_id]/+page.svelte:342
 msgid "Run details"
 msgstr "Detaljer om körningen"
 
@@ -1131,7 +1131,7 @@ msgstr "Sparad här, men {name} kan inte dekryptera den: standardvärdet använd
 msgid "Saved to the database"
 msgstr "Sparad i databasen"
 
-#: web/routes/runs/[run_id]/+page.svelte:341
+#: web/routes/runs/[run_id]/+page.svelte:343
 #, python-brace-format
 msgid "Saved to: {output_path}"
 msgstr "Sparad till: {output_path}"
@@ -1252,6 +1252,10 @@ msgstr "Status"
 #: web/lib/ShotInspector.svelte:76
 msgid "Still"
 msgstr "Stillbild"
+
+#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:334
+msgid "Stopped before it saved a film. The cut it came from is under Runs, in its own run."
+msgstr "Stoppades innan någon film sparades. Klippet den kom från finns under Körningar, i sin egen körning."
 
 #: web/lib/JobPanel.svelte:62
 msgid "Stopped."

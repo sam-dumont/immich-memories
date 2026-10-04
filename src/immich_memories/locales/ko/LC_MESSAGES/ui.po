@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-04 13:49+0200\n"
+"POT-Creation-Date: 2026-10-04 18:11+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ko\n"
@@ -358,7 +358,7 @@ msgstr "검색 실패: {error}"
 msgid "Done."
 msgstr "완료되었습니다."
 
-#: web/routes/runs/[run_id]/+page.svelte:352
+#: web/routes/runs/[run_id]/+page.svelte:354
 msgid "Download child output"
 msgstr "연결된 결과 다운로드"
 
@@ -534,7 +534,7 @@ msgstr "Immich 서버 URL"
 msgid "Immich accounts to read (primary alone when none are picked)"
 msgstr "읽을 Immich 계정(선택하지 않으면 기본 계정만)"
 
-#: web/routes/runs/[run_id]/+page.svelte:342
+#: web/routes/runs/[run_id]/+page.svelte:344
 #, python-brace-format
 msgid "Immich delivery: {value}"
 msgstr "Immich 전송: {value}"
@@ -723,7 +723,7 @@ msgid ""
 "its date."
 msgstr "아직 기록된 날이 없습니다. `immich-memories discover-days`를 실행해 찾거나, 날짜를 지정해 어떤 날이든 촬영하세요."
 
-#: web/routes/runs/[run_id]/+page.svelte:354
+#: web/routes/runs/[run_id]/+page.svelte:356
 msgid "No child output was retained for this run."
 msgstr "이 작업에 연결된 결과가 저장되지 않았습니다."
 
@@ -769,7 +769,7 @@ msgstr "미리보기에서 확인할 수 있는 규칙으로 제외되는 사진
 msgid "No runs match this view. Make a memory from Memory or Suggestions."
 msgstr "이 보기에 해당하는 작업이 없습니다. 추억 또는 제안에서 추억을 만드세요."
 
-#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:334
+#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:336
 msgid "No saved cut is available for this run."
 msgstr "이 작업에는 저장된 편집 결과가 없습니다."
 
@@ -1055,7 +1055,7 @@ msgstr "리비전"
 msgid "Role (suggestions; type your own)"
 msgstr "역할(제안 선택 또는 직접 입력)"
 
-#: web/routes/runs/[run_id]/+page.svelte:340
+#: web/routes/runs/[run_id]/+page.svelte:342
 msgid "Run details"
 msgstr "실행 세부 정보"
 
@@ -1116,7 +1116,7 @@ msgstr "여기에 저장되어 있지만 {name}(으)로 복호화할 수 없어 
 msgid "Saved to the database"
 msgstr "데이터베이스에 저장했습니다"
 
-#: web/routes/runs/[run_id]/+page.svelte:341
+#: web/routes/runs/[run_id]/+page.svelte:343
 #, python-brace-format
 msgid "Saved to: {output_path}"
 msgstr "저장 위치: {output_path}"
@@ -1235,6 +1235,10 @@ msgstr "상태"
 #: web/lib/ShotInspector.svelte:76
 msgid "Still"
 msgstr "정지 이미지"
+
+#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:334
+msgid "Stopped before it saved a film. The cut it came from is under Runs, in its own run."
+msgstr "영상을 저장하기 전에 중지되었습니다. 원본 컷은 작업 내역에 자체 작업으로 있습니다."
 
 #: web/lib/JobPanel.svelte:62
 msgid "Stopped."

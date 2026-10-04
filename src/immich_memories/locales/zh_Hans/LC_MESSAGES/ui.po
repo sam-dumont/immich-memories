@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-04 13:49+0200\n"
+"POT-Creation-Date: 2026-10-04 18:11+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_Hans\n"
@@ -356,7 +356,7 @@ msgstr "搜索失败：{error}"
 msgid "Done."
 msgstr "已完成。"
 
-#: web/routes/runs/[run_id]/+page.svelte:352
+#: web/routes/runs/[run_id]/+page.svelte:354
 msgid "Download child output"
 msgstr "下载关联输出"
 
@@ -530,7 +530,7 @@ msgstr "Immich 服务器地址"
 msgid "Immich accounts to read (primary alone when none are picked)"
 msgstr "要读取的 Immich 账户(未选择时仅主账户)"
 
-#: web/routes/runs/[run_id]/+page.svelte:342
+#: web/routes/runs/[run_id]/+page.svelte:344
 #, python-brace-format
 msgid "Immich delivery: {value}"
 msgstr "上传到 Immich：{value}"
@@ -719,7 +719,7 @@ msgid ""
 "its date."
 msgstr "还没有已收录的日期。运行 `immich-memories discover-days` 来查找，或者按日期为任意一天制作影片。"
 
-#: web/routes/runs/[run_id]/+page.svelte:354
+#: web/routes/runs/[run_id]/+page.svelte:356
 msgid "No child output was retained for this run."
 msgstr "此任务未保留关联输出。"
 
@@ -765,7 +765,7 @@ msgstr "预览能检查的规则不会去掉任何照片。"
 msgid "No runs match this view. Make a memory from Memory or Suggestions."
 msgstr "没有符合筛选条件的任务。请从“回忆”或“建议”创建回忆。"
 
-#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:334
+#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:336
 msgid "No saved cut is available for this run."
 msgstr "此任务没有已保存的剪辑。"
 
@@ -1051,7 +1051,7 @@ msgstr "修订"
 msgid "Role (suggestions; type your own)"
 msgstr "角色（可选建议或自行输入）"
 
-#: web/routes/runs/[run_id]/+page.svelte:340
+#: web/routes/runs/[run_id]/+page.svelte:342
 msgid "Run details"
 msgstr "运行详情"
 
@@ -1112,7 +1112,7 @@ msgstr "已在此保存，但 {name} 无法解密：正在使用默认值"
 msgid "Saved to the database"
 msgstr "已保存到数据库"
 
-#: web/routes/runs/[run_id]/+page.svelte:341
+#: web/routes/runs/[run_id]/+page.svelte:343
 #, python-brace-format
 msgid "Saved to: {output_path}"
 msgstr "已保存至：{output_path}"
@@ -1231,6 +1231,10 @@ msgstr "状态"
 #: web/lib/ShotInspector.svelte:76
 msgid "Still"
 msgstr "静态图片"
+
+#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:334
+msgid "Stopped before it saved a film. The cut it came from is under Runs, in its own run."
+msgstr "在保存影片之前已停止。它所基于的剪辑在“任务”中，有自己的一次任务。"
 
 #: web/lib/JobPanel.svelte:62
 msgid "Stopped."
