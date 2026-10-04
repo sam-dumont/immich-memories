@@ -49,16 +49,56 @@ class FakeHousehold:
     # (the user whose key asked, the path): which account read what.
     reads: list[tuple[str, str]] = field(default_factory=list)
 
+    version: dict = field(default_factory=lambda: {"major": 2, "minor": 7, "patch": 5})
+    clusters: dict[str, str] = field(default_factory=dict)
+    shares: list[dict] = field(default_factory=list)
+    direct_people: dict[str, list[dict]] = field(default_factory=dict)
+    errors: dict[str, int] = field(default_factory=dict)
+    people_page_size: int = 1000
+
     def handler(self, request: httpx.Request) -> httpx.Response:
         key = request.headers["x-api-key"]
         self.requests.append(request.url.path)
         self.reads.append((USERS[key], request.url.path))
+        if status := self.errors.get(request.url.path):
+            return httpx.Response(status, json={"message": "Synthetic endpoint refusal"})
+        if request.url.path.endswith("/server/version"):
+            return httpx.Response(200, json=self.version)
+        if request.url.path.endswith("/people/users"):
+            return httpx.Response(200, json=self.shares)
         if request.url.path.endswith("/api-keys/me"):
             return httpx.Response(200, json={"permissions": ["all"]})
         if request.url.path.endswith("/users/me"):
-            return httpx.Response(200, json={"id": USERS[key], "email": f"{USERS[key]}@x.test"})
+            return httpx.Response(
+                200,
+                json={
+                    "id": USERS[key],
+                    "email": f"{USERS[key]}@x.test",
+                    "clusterGroupId": self.clusters.get(key),
+                },
+            )
         if request.url.path.endswith("/people"):
-            return httpx.Response(200, json={"people": self.roster.get(key, [])})
+            people = self.roster.get(key, [])
+            start = (int(request.url.params.get("page", 1)) - 1) * self.people_page_size
+            end = start + self.people_page_size
+            return httpx.Response(
+                200, json={"people": people[start:end], "hasNextPage": end < len(people)}
+            )
+        if "/people/" in request.url.path:
+            face = request.url.path.rsplit("/", 1)[1]
+            person = next(
+                (
+                    p
+                    for p in [*self.roster.get(key, []), *self.direct_people.get(key, [])]
+                    if p["id"] == face
+                ),
+                None,
+            )
+            return (
+                httpx.Response(200, json=person)
+                if person
+                else httpx.Response(404, json={"message": "Person unavailable"})
+            )
         if not request.url.path.endswith("/search/metadata"):
             return httpx.Response(200, json=[])
         wanted = json.loads(request.content)["type"]

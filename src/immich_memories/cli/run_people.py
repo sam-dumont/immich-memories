@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, Literal
 import click
 
 from immich_memories.analysis.editorial_source import resolve_named_expression
-from immich_memories.analysis.household_source import HouseholdWindows
+from immich_memories.analysis.household_source import HouseholdWindows, source_accounts
 from immich_memories.analysis.person_presence import people_condition as flat_condition
 from immich_memories.analysis.person_resolution import (
     ResolvedPeople,
@@ -31,6 +31,7 @@ from immich_memories.analysis.person_resolution import (
 from immich_memories.api import immich as immich_api
 from immich_memories.api.access_clients import AccessBoundClient
 from immich_memories.api.accounts import AccountUnavailable, check_account_names
+from immich_memories.api.native_sharing import NativePeople
 from immich_memories.api.person_expression import PersonExpression
 from immich_memories.cli._helpers import print_error, print_success, print_warning
 from immich_memories.config_models import PRIMARY_ACCOUNT, ImmichConfig
@@ -76,7 +77,7 @@ def run_client(immich: ImmichConfig, accounts: Sequence[str]) -> SyncImmichClien
     """
     client = (
         AccessBoundClient(immich)
-        if accounts
+        if accounts or immich.native_sharing
         else immich_api.SyncImmichClient(
             base_url=immich.url, api_key=immich.api_key, api_version=immich.api_version
         )
@@ -91,6 +92,7 @@ def run_client(immich: ImmichConfig, accounts: Sequence[str]) -> SyncImmichClien
 
 def run_windows(client: SyncImmichClient, accounts: Sequence[str]) -> WindowSource:
     """The window reads discovery uses: the primary client, or every chosen account."""
+    accounts = source_accounts(client, accounts)
     if not accounts:
         return client
     if not isinstance(client, AccessBoundClient):
@@ -105,7 +107,9 @@ class RunPeople:
     person_ids: list[str] = field(default_factory=list)
     condition: PersonExpression | None = None
     display_names: dict[str, str] = field(default_factory=dict)
-    face_accounts: Mapping[str, str] = field(default_factory=lambda: MappingProxyType({}))
+    face_accounts: Mapping[str, str | frozenset[str]] = field(
+        default_factory=lambda: MappingProxyType({})
+    )
 
 
 def resolve_run_people(
@@ -124,11 +128,14 @@ def resolve_run_people(
     the first case-insensitive match for `--person`, which exits when there is none. A
     `--person` run whose every name is one face keeps the flat id list it always used.
     """
+    native = client.native_people(accounts) if isinstance(client, AccessBoundClient) else None
     if expression is None and not person_names:
         return RunPeople()
     held = store_people(load_document(store))
     # Read only when somebody falls back to it: a store that knows everybody asks nothing.
-    roster = functools.cache(lambda: client.get_all_people(with_hidden=True))
+    roster = functools.cache(
+        lambda: native.roster if native is not None else client.get_all_people(with_hidden=True)
+    )
     try:
         if expression is not None:
             resolved = resolve_people(
@@ -138,6 +145,7 @@ def resolve_run_people(
                     PersonExpression("person", value=name), roster()
                 ),
                 accounts=accounts,
+                native=native,
                 roster_ids=lambda: {person.id for person in roster()},
             )
             _warn_merged(resolved)
@@ -146,7 +154,7 @@ def resolve_run_people(
                 display_names=_display_names(expression, held, roster),
                 face_accounts=resolved.face_accounts,
             )
-        return _flat_people(client, held, person_names, person_match, accounts, roster)
+        return _flat_people(client, held, person_names, person_match, accounts, roster, native)
     except UnknownPersonId as error:
         raise click.UsageError(
             f"No person with id {error} in the people store or the Immich library"
@@ -182,6 +190,7 @@ def _flat_people(
     person_match: str,
     accounts: Sequence[str],
     roster: Callable[[], Sequence[Person]],
+    native: NativePeople | None,
 ) -> RunPeople:
     match: Literal["and", "or"] = "or" if person_match == "or" else "and"
     named = flat_condition(person_names, match, None)
@@ -190,6 +199,14 @@ def _flat_people(
 
     def roster_match(name: str) -> PersonExpression:
         from_roster.add(name)
+        if native is not None:
+            found = next(
+                (person for person in roster() if person.name.casefold() == name.casefold()), None
+            )
+            if found is None:
+                raise ValueError(f"Person not found: {name}")
+            print_success(f"Found person: {found.name}")
+            return PersonExpression("person", value=found.id)
         return _first_named(client, name)
 
     resolved = resolve_people(
@@ -197,6 +214,7 @@ def _flat_people(
         held,
         roster_match,
         accounts=accounts,
+        native=native,
         roster_ids=lambda: {person.id for person in roster()},
     )
     _warn_merged(resolved)

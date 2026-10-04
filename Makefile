@@ -329,6 +329,11 @@ IMMICH_GATE_SERVER_v2 := ghcr.io/immich-app/immich-server:v2.7.5@sha256:c15bff75
 IMMICH_GATE_VALKEY_v2 := docker.io/valkey/valkey:9@sha256:3b55fbaa0cd93cf0d9d961f405e4dfcc70efe325e2d84da207a0a8e6d8fde4f9
 IMMICH_GATE_SERVER_v3 := ghcr.io/immich-app/immich-server:v3.2.2@sha256:79cc1623323d5894922686d8743b4780181428f98eecbfb58ce12c41ef02d1ea
 IMMICH_GATE_VALKEY_v3 := docker.io/valkey/valkey:9@sha256:70739f85ad2ee01a726a965584a0f94895f01b0c60b3cc8b0aeef11eaa6888cf
+# Native identity gates: stable 3.2 and the exact experimental 3.3 RC.
+IMMICH_GATE_SERVER_v32-sharing := ghcr.io/immich-app/immich-server:v3.2.4@sha256:d317916b28090c33eb36b308464ea391f8b7df1d850fcfea227a39ec879718c2
+IMMICH_GATE_SERVER_v33-sharing := ghcr.io/immich-app/immich-server:v3.3.0-rc.1@sha256:b281989600c55905b1ac347f29aeed3a96bc94dec544b086c3299f2ce002d13f
+IMMICH_GATE_VALKEY_v32-sharing := valkey/valkey:9@sha256:418652cfb58ef879d4978c33553735d7147016032d5aefaa14c828e611eb9dfd
+IMMICH_GATE_VALKEY_v33-sharing := $(IMMICH_GATE_VALKEY_v32-sharing)
 IMMICH_GATE_COMPOSE = IMMICH_GATE_SERVER_IMAGE=$(IMMICH_GATE_SERVER_$(IMMICH_GATE_VERSION)) \
 	IMMICH_GATE_VALKEY_IMAGE=$(IMMICH_GATE_VALKEY_$(IMMICH_GATE_VERSION)) \
 	IMMICH_GATE_PORT=$(IMMICH_GATE_PORT) \
@@ -365,6 +370,20 @@ immich-gate-logs:
 
 # The store backend the gate's runs use: sqlite (a file in the gate home) or postgresql
 # (the server IMMICH_GATE_DATABASE_URL names, else a throwaway postgres:16 in Docker).
+# The state contains disposable credentials and stays under the ignored gate directory.
+NATIVE_GATE_VERSION ?= v32-sharing
+NATIVE_GATE_PORT ?= 2304
+NATIVE_GATE_STATE = $(CURDIR)/$(IMMICH_GATE_DIR)/$(NATIVE_GATE_VERSION)
+.PHONY: test-native-sharing
+test-native-sharing:  ## Pinned native identities + owner reads; NATIVE_GATE_VERSION=v32-sharing|v33-sharing
+	@set -eu; \
+	trap '$(MAKE) --no-print-directory immich-gate-down IMMICH_GATE_VERSION=$(NATIVE_GATE_VERSION) IMMICH_GATE_PORT=127.0.0.1:$(NATIVE_GATE_PORT)' EXIT; \
+	$(MAKE) --no-print-directory immich-gate-up IMMICH_GATE_VERSION=$(NATIVE_GATE_VERSION) IMMICH_GATE_PORT=127.0.0.1:$(NATIVE_GATE_PORT); \
+	uv run python -m tests.integration.native_sharing.seed --url http://127.0.0.1:$(NATIVE_GATE_PORT) \
+		--state-dir $(NATIVE_GATE_STATE) --media $(IMMICH_GATE_DIR)/media \
+		--database-container immich-gate-$(NATIVE_GATE_VERSION)-database-1; \
+	IMMICH_SHARING_STATE=$(NATIVE_GATE_STATE)/state.json uv run pytest tests/integration/native_sharing -m integration -v
+
 IMMICH_GATE_DATABASE ?= sqlite
 IMMICH_GATE_RUN_HOME = $(CURDIR)/$(IMMICH_GATE_DIR)/home-$(IMMICH_GATE_VERSION)-$(IMMICH_GATE_DATABASE)
 IMMICH_GATE_JUNIT = tests/immich-gate-$(IMMICH_GATE_VERSION)-$(IMMICH_GATE_DATABASE)-junit.xml

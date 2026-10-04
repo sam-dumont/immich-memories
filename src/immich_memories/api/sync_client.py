@@ -15,6 +15,7 @@ from immich_memories.api.models import (
     AssetFace,
     AssetType,
     MetadataSearchResult,
+    PeopleAccess,
     Person,
     ServerInfo,
     TimeBucket,
@@ -116,6 +117,10 @@ class SyncImmichClient:
 
     def get_all_people(self, with_hidden: bool = False) -> list[Person]:
         return self._run(self._async_client.get_all_people(with_hidden))
+
+    def get_people_access(self) -> list[PeopleAccess]:
+        """Read the 3.3 people grants after native capability discovery."""
+        return self._run(self._async_client.people.get_people_access())
 
     def get_person(self, person_id: str) -> Person:
         return self._run(self._async_client.get_person(person_id))

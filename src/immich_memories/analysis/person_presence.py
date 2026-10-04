@@ -49,15 +49,15 @@ def present_in_episodes(
     episodes: Iterable[Sequence[Asset]],
     condition: PersonExpression,
     *,
-    face_accounts: Mapping[str, str] | None = None,
+    face_accounts: Mapping[str, str | frozenset[str]] | None = None,
 ) -> frozenset[str]:
     """Every picture whose episode satisfies ``condition``, whose leaves are face IDs.
 
     A leaf holds in an episode when that face is recognised on any of its pictures, so
     ``all`` asks for every named person somewhere in the episode, not in one frame. In a
     household run the episode holds every chosen account's copies, and ``face_accounts``
-    holds each face to the pictures its own account owns (the first of
-    ``access_accounts``): one person found in either account's copy is in the episode.
+    holds each face to an explicit owner or verified set of selected owners. Download
+    routing still uses the first of ``access_accounts``.
     """
     episodes = tuple(episodes)
     held = face_accounts or {}
@@ -71,6 +71,10 @@ def present_in_episodes(
     return frozenset(asset.id for index in holding for asset in episodes[index])
 
 
-def _counts_on(asset: Asset, face: str, held: Mapping[str, str]) -> bool:
-    """A face held to an account counts only on the pictures that account owns."""
-    return face not in held or held[face] == next(iter(asset.access_accounts), None)
+def _counts_on(asset: Asset, face: str, held: Mapping[str, str | frozenset[str]]) -> bool:
+    """Count only on the declared owner or verified native owner set."""
+    if face not in held:
+        return True
+    accounts = held[face]
+    owner = next(iter(asset.access_accounts), None)
+    return owner == accounts if isinstance(accounts, str) else owner in accounts

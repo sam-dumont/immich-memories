@@ -159,6 +159,11 @@ class ImmichConfig(ImmichConnection):
     person alias bound to that account records.
     """
 
+    native_sharing: bool = Field(
+        default=False,
+        description="Use verified native person identities while retaining selected owner-account reads",
+    )
+
     accounts: dict[str, ImmichConnection] = Field(
         default_factory=dict,
         description="Extra Immich accounts by name, read only when a run selects them",

@@ -144,6 +144,7 @@ def fetch_photos(
     arrive here now, and in a large library there is always an asset mid-import
     or just deleted, so a 404 is a Tuesday rather than an edge case.
     """
+    from immich_memories.api.accounts import AccountUnavailable
     from immich_memories.api.immich import ImmichAPIError
 
     if person_expression is not None and person_ids:
@@ -163,6 +164,8 @@ def fetch_photos(
                     else {}
                 ),
             )
+        except AccountUnavailable:
+            raise
         except (ImmichAPIError, OSError, RuntimeError, ValueError) as exc:
             logger.warning("Failed to fetch photos for one window: %s", exc, exc_info=True)
             continue
@@ -238,7 +241,7 @@ def fetch_media(
     person_expression: PersonExpression | None = None,
     include_photos: bool = True,
     history_from: int | None = None,
-    face_accounts: Mapping[str, str] | None = None,
+    face_accounts: Mapping[str, str | frozenset[str]] | None = None,
 ) -> tuple[list, list]:
     """The videos and photos a memory's windows hold, as one fetch.
 

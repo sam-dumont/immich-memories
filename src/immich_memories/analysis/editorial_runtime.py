@@ -44,7 +44,7 @@ from immich_memories.analysis.editorial_text_gateway import (
     semantic_text_model_identity,
 )
 from immich_memories.analysis.episode_demand import demand_reader_factory
-from immich_memories.analysis.household_source import fetch_household_source
+from immich_memories.analysis.household_source import fetch_household_source, source_accounts
 from immich_memories.analysis.place_names import place_names_for
 from immich_memories.analysis.selection_source import (
     EditorialDependencies,
@@ -503,6 +503,7 @@ def build_editorial_planner(
             "favourites and people only. Drop the subject to cut the date range as it is, "
             "or configure a model reader (llm.model) to cut it about the subject."
         )
+    accounts = source_accounts(client, context.accounts)
     store = open_store(config)
     runtime_ports = ports or EditorialRuntimePorts()
     context_by_id = runtime_ports.load_people()
@@ -520,7 +521,7 @@ def build_editorial_planner(
         scope=scope,
         owner_excluded_asset_ids=context.owner_excluded_asset_ids,
         owner_required_asset_ids=context.owner_required_asset_ids,
-        primary_owner_id=_primary_owner_id(client, context.accounts),
+        primary_owner_id=_primary_owner_id(client, accounts),
     )
 
     source_snapshot: tuple[Asset | VideoClipInfo, ...] | None = (
@@ -538,11 +539,11 @@ def build_editorial_planner(
             source_snapshot = select_source_members(
                 fetch_household_source(
                     cast(AccessBoundClient, client),
-                    context.accounts,
+                    accounts,
                     requested_scope,
                     runtime_ports.fetch_full_source,
                 )
-                if context.accounts
+                if accounts
                 else runtime_ports.fetch_full_source(client, requested_scope),
                 requested_scope.asset_ids,
             )

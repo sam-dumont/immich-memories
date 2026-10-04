@@ -92,6 +92,7 @@ class AccessBoundClient(SyncImmichClient):
         self._api_version = api_version
         self.routes = routes or AccessRoutes()
         self._accounts: dict[str, OpenAccount] = {}
+        self._native_active = False
 
     def open_accounts(self, names: Sequence[str]) -> dict[str, OpenAccount]:
         """The named accounts, opened on first use and kept open until `close`.
@@ -101,6 +102,28 @@ class AccessBoundClient(SyncImmichClient):
         missing = [name for name in dict.fromkeys(names) if name not in self._accounts]
         self._accounts.update(open_accounts(self._immich, missing))
         return {name: self._accounts[name] for name in dict.fromkeys(names)}
+
+    @property
+    def uses_native_identities(self) -> bool:
+        """Whether this run has verified native capabilities on its selected connections."""
+        return self._native_active
+
+    def native_people(self, accounts: Sequence[str]):
+        """Refresh native identity evidence only when the owner explicitly opted in."""
+        if not self._immich.native_sharing:
+            return None
+        from immich_memories.api.native_sharing import discover_native_people
+
+        self._native_active = False
+        connections = {PRIMARY_ACCOUNT: self._immich} | self._immich.accounts
+        native = discover_native_people(
+            self.open_accounts(accounts or (PRIMARY_ACCOUNT,)),
+            binding_servers={
+                name: connection.url.rstrip("/") for name, connection in connections.items()
+            },
+        )
+        self._native_active = native is not None
+        return native
 
     def sibling(self) -> AccessBoundClient:
         """A client for another thread: the same routes, its own connections."""
