@@ -109,7 +109,7 @@ def honest_title(assets: list, *, what: str, evidence: str) -> str:
     """
     if not what:
         return ""
-    if place := _where_it_was(assets):
+    if place := place_from_assets(assets):
         return f"A day in {place}"
     return (
         title_the_day_can_keep(what, assets, evidence=evidence) if _reads_as_a_title(what) else ""
@@ -162,12 +162,14 @@ def _reads_as_a_title(text: str) -> bool:
     return bool(words) and len(words) <= _TITLE_WORDS and not _A_CLOCK.search(text)
 
 
-def _where_it_was(assets: list) -> str:
+def place_from_assets(assets: list) -> str:
     """The place the day's own pictures name most often, spelled as they spell it.
 
     Coordinates are not a place name: a day with GPS and no city has nowhere
     this can name, and inventing one from the numbers is the failure the guard
-    above exists for.
+    above exists for. Public because the film-time title falls back to the same
+    reading of a day's own EXIF when no model is there to translate the catalogue's
+    English title (see ``titles.film_title``).
     """
     for attr in ("city", "state", "country"):
         names = collections.Counter(

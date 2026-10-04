@@ -207,12 +207,24 @@ def _condition_text(preset: Mapping[str, Any]) -> str | None:
 
 
 def _occasion_name(preset: Mapping[str, Any]) -> str | None:
-    """What the catalogue saw on this day, months before anybody asked for a film."""
+    """What the catalogue saw on this day, months before anybody asked for a film.
+
+    A special day's own title, when the scan could write one, is the vetted
+    name for what happened; its subtitle rides along the same way. Both are
+    banked as English facts (the catalogue is shared and stays English) for
+    this prompt to reword into the film's language -- never used as a ready
+    title, which is how an English headline used to reach a French film.
+    """
+    title = str(preset.get("title") or "").strip()
+    subtitle = str(preset.get("subtitle") or "").strip()
     what = str(preset.get("what") or "").strip()
+    name = title or what
+    if subtitle:
+        name = f"{name} -- {subtitle}" if name else subtitle
     kind = str(preset.get("kind") or "").strip()
-    if not what:
+    if not name:
         return None
-    return f"{what} (kind: {kind})" if kind else what
+    return f"{name} (kind: {kind})" if kind else name
 
 
 def memory_title_facts(

@@ -106,3 +106,6 @@ msgstr "クリスマス"
 
 msgid "holiday.new_years_eve"
 msgstr "大晦日"
+
+msgid "title.day_in_place"
+msgstr "{place}での一日"

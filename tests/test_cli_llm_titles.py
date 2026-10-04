@@ -12,11 +12,34 @@ import asyncio
 from datetime import datetime
 from types import SimpleNamespace
 
+import pytest
+
 from immich_memories.api.album_service import AlbumService, FilmScope
+from immich_memories.api.models import Asset, AssetType, ExifInfo, VideoClipInfo
 from immich_memories.config_loader import Config
+from immich_memories.i18n import SUPPORTED_LOCALES
 from immich_memories.timeperiod import DateRange
 from immich_memories.titles.film_title import resolve_film_title
 from tests.conftest import make_clip
+
+
+def _clip_in(city: str) -> VideoClipInfo:
+    """A clip whose only distinguishing EXIF is the city it was taken in."""
+    now = datetime(2025, 7, 1)
+    asset = Asset(
+        id="clip-in-city",
+        type=AssetType.VIDEO,
+        fileCreatedAt=now,
+        fileModifiedAt=now,
+        updatedAt=now,
+        originalFileName="VID_clip-in-city.MOV",
+        exifInfo=ExifInfo(city=city),
+        duration="0:00:05.000",
+    )
+    return VideoClipInfo(
+        asset=asset, width=1920, height=1080, duration_seconds=5.0, bitrate=10_000_000, codec="hevc"
+    )
+
 
 _RANGE = DateRange(start=datetime(2025, 7, 1), end=datetime(2025, 7, 14))
 
@@ -194,6 +217,117 @@ def test_a_catalogued_day_hands_the_model_what_the_catalogue_saw() -> None:
     )
 
     assert seen["facts"].occasion_name == "an afternoon at a themed bowling alley"
+
+
+def _config_with_llm_locale(locale: str) -> Config:
+    return Config(
+        tier="full",
+        llm={"enabled": True, "base_url": "http://llm.test/v1", "model": "some-model"},
+        title_screens={"locale": locale},
+    )
+
+
+def test_a_special_days_catalogue_title_is_reworded_by_the_model_not_shown_verbatim() -> None:
+    """Case 16/18 of #1954: locale fr, a catalogue title banked in English (#1959).
+
+    The catalogue's title travels in through the same slot a typed --title
+    uses (see `name_from_catalogue`), but a special day's row is not a
+    person's own words -- it is an English fact from the scan, and the film
+    must still open on a French headline.
+    """
+    ask, seen = _answers(title="Une journée au bowling")
+
+    title, subtitle, source = resolve_film_title(
+        enabled=None,
+        title_override="A day at the bowling alley",
+        subtitle_override="Someone's first strike",
+        clips=[make_clip("clip-1")],
+        config=_config_with_llm_locale("fr"),
+        memory_type="special_day",
+        date_range=_RANGE,
+        person_names=[],
+        memory_preset_params={
+            "title": "A day at the bowling alley",
+            "subtitle": "Someone's first strike",
+        },
+        ask=ask,
+    )
+
+    assert (title, subtitle) == ("Une journée au bowling", None)
+    assert source is not None and source.value == "model"
+    assert seen["locale"] == "fr"
+    assert "A day at the bowling alley" in seen["facts"].occasion_name
+    assert "Someone's first strike" in seen["facts"].occasion_name
+
+
+def test_a_special_day_with_no_model_falls_back_to_the_place_in_french() -> None:
+    """With no reader configured, the catalogue's English title cannot be
+    reworded, so the film opens on where the day was instead."""
+    called = []
+
+    title, subtitle, source = resolve_film_title(
+        enabled=None,
+        title_override="A day in Paris",
+        subtitle_override="",
+        clips=[_clip_in("Paris")],
+        config=Config(tier="nas", title_screens={"locale": "fr"}),
+        memory_type="special_day",
+        date_range=_RANGE,
+        person_names=[],
+        memory_preset_params={"title": "A day in Paris", "subtitle": ""},
+        ask=lambda **kwargs: called.append(kwargs),
+    )
+
+    assert (title, subtitle) == ("Une journée à Paris", None)
+    assert source is not None and source.value == "fallback"
+    assert called == []
+
+
+@pytest.mark.parametrize("locale", SUPPORTED_LOCALES)
+def test_a_special_day_with_no_model_is_placed_in_every_supported_locale(locale: str) -> None:
+    """The rules path never shows the catalogue's English title, in any of
+    the 14 supported film languages."""
+    title, subtitle, source = resolve_film_title(
+        enabled=None,
+        title_override="A day in Lisbon",
+        subtitle_override="",
+        clips=[_clip_in("Lisbon")],
+        config=Config(tier="nas", title_screens={"locale": locale}),
+        memory_type="special_day",
+        date_range=_RANGE,
+        person_names=[],
+        memory_preset_params={"title": "A day in Lisbon", "subtitle": ""},
+        ask=lambda **_kwargs: (_ for _ in ()).throw(AssertionError("no model is configured")),
+    )
+
+    assert title is not None
+    assert subtitle is None
+    assert source is not None and source.value == "fallback"
+    if locale != "en":
+        assert title != "A day in Lisbon"
+
+
+def test_an_explicit_cli_title_still_wins_verbatim_on_a_special_day() -> None:
+    """A typed --title is not the catalogue's, and must not be sent through
+    the occasion prompt or replaced by a place fallback."""
+    called = []
+
+    title, subtitle, source = resolve_film_title(
+        enabled=None,
+        title_override="Grandma's 80th",
+        subtitle_override=None,
+        clips=[_clip_in("Paris")],
+        config=_config_with_llm_locale("fr"),
+        memory_type="special_day",
+        date_range=_RANGE,
+        person_names=[],
+        memory_preset_params={"title": "A day at the bowling alley"},
+        ask=lambda **kwargs: called.append(kwargs),
+    )
+
+    assert (title, subtitle) == ("Grandma's 80th", None)
+    assert source is not None and source.value == "override"
+    assert called == []
 
 
 def test_the_album_the_cut_sits_in_reaches_the_facts() -> None:

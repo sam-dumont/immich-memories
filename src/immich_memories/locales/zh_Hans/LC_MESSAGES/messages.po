@@ -106,3 +106,6 @@ msgstr "圣诞节"
 
 msgid "holiday.new_years_eve"
 msgstr "跨年夜"
+
+msgid "title.day_in_place"
+msgstr "在{place}的一天"

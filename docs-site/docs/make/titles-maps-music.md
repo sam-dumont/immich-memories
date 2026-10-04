@@ -12,7 +12,9 @@ These are render choices. You can change them after reviewing the cut, without a
 Under **Render**, type a **Title** and **Subtitle**, or leave them empty for the app's suggestion. Template titles use the dates, people and occasion. An optional [text reader](../better/reader.md) can write a title from the cut's facts.
 
 The film's language is separate from the interface language. Save **Settings > Title screens > locale**
-(including in Docker), or set it in your configuration:
+(including in Docker), or set it in your configuration. A special day found by the automatic
+scan is catalogued with an English name, but its opening title is always written in this
+configured language, not in English.
 
 ```yaml
 title_screens:

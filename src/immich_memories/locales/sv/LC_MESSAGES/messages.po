@@ -107,3 +107,6 @@ msgstr "Juldagen"
 
 msgid "holiday.new_years_eve"
 msgstr "Nyårsafton"
+
+msgid "title.day_in_place"
+msgstr "En dag i {place}"

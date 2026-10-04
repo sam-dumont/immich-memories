@@ -106,3 +106,6 @@ msgstr "크리스마스"
 
 msgid "holiday.new_years_eve"
 msgstr "새해 전날"
+
+msgid "title.day_in_place"
+msgstr "{place}에서의 하루"

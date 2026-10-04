@@ -108,3 +108,6 @@ msgstr "Рождество"
 
 msgid "holiday.new_years_eve"
 msgstr "Канун Нового года"
+
+msgid "title.day_in_place"
+msgstr "День в {place}"

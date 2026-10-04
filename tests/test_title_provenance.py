@@ -111,14 +111,17 @@ def test_an_album_memory_is_named_by_its_album():
     assert source == "album"
 
 
-def test_a_special_day_is_named_by_its_catalogue():
+def test_a_special_days_catalogue_title_is_never_shown_as_a_ready_override():
+    """The catalogue's title is an English fact banked at scan time (#1959),
+    not a ready title: with no reader and nothing to place it by, the film
+    falls back to the template layers rather than the catalogue's own words."""
     source = _resolve(
         title_override="First day of school",
         memory_type="special_day",
         preset_params={"title": "First day of school"},
     )[2]
 
-    assert source == "occasion"
+    assert source != "occasion"
 
 
 def test_a_title_the_model_wrote_is_the_models():
