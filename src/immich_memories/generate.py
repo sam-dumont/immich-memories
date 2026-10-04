@@ -21,6 +21,7 @@ from immich_memories.generate_delivery import (
     _safe_delivery_message,
 )
 from immich_memories.generate_settings import run_music_phase
+from immich_memories.operations.cancellation import PipelineCancelled
 from immich_memories.operations.phases import OperationalPhase, PhaseEvent
 from immich_memories.operations.run_index import record_run_attempt
 from immich_memories.processing.output_canvas import OutputCanvas
@@ -379,6 +380,18 @@ def _fail_run_if_running(run_tracker: RunTracker, message: str) -> None:
         logger.error("Could not persist generation failure state")
 
 
+def _cancel_run_on_stop(stop: BaseException, run_tracker: RunTracker) -> None:
+    """A stop from the user ends the row as cancelled, never a committed artifact."""
+    if isinstance(stop, DeliveryError):
+        return
+    try:
+        persisted = run_tracker.db.get_run(run_tracker.run_id)
+        if persisted is not None and persisted.status == "running":
+            run_tracker.cancel_run()
+    except Exception:  # WHY: the stop itself must reach the caller whatever the store says
+        logger.error("Could not persist cancellation state")
+
+
 def _artifact_warnings(
     params: GenerationParams,
     duration_warning: str | None,
@@ -595,7 +608,8 @@ def _generate_memory_inner(
 
         return result_path
 
-    except DeliveryError:
+    except (DeliveryError, KeyboardInterrupt, PipelineCancelled) as stop:
+        _cancel_run_on_stop(stop, run_tracker)
         raise
     except GenerationError as e:
         safe_msg = _safe_delivery_message(e, params.config)

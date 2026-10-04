@@ -100,11 +100,14 @@ class Lease:
     def held_elsewhere(self) -> bool:
         """Whether some other holder has the lease right now (taken and dropped to find out).
 
-        On SQLite the lock file must already exist, as it does for any lease once taken.
+        On SQLite a lock file that was never created means nobody ever took the lease.
         """
         store = self._backend()
         if store is None:
-            probe = os.open(self.lock_path, os.O_RDONLY)
+            try:
+                probe = os.open(self.lock_path, os.O_RDONLY)
+            except FileNotFoundError:
+                return False
             try:
                 fcntl.flock(probe, fcntl.LOCK_EX | fcntl.LOCK_NB)
             except BlockingIOError:

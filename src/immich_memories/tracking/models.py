@@ -139,7 +139,7 @@ class RunMetadata:
     run_id: str  # Format: YYYYMMDD_HHMMSS_XXXX
     created_at: datetime
     completed_at: datetime | None = None
-    status: Literal["running", "completed", "failed", "cancelled"] = "running"
+    status: Literal["running", "completed", "failed", "cancelled", "interrupted"] = "running"
 
     # Automation / dedup
     memory_type: str | None = None

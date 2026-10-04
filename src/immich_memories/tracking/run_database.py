@@ -163,6 +163,24 @@ class RunDatabase:
         with self.store.begin() as conn:
             conn.execute(sa.update(pipeline_runs).where(_RUNS.run_id == run_id).values(values))
 
+    def interrupt_running_runs(self, completed_at: datetime) -> list[str]:
+        """End every `running` row as `interrupted`; the ids it ended, oldest first."""
+        with self.store.begin() as conn:
+            ids: list[str] = list(
+                conn.execute(
+                    sa.select(_RUNS.run_id)
+                    .where(_RUNS.status == "running")
+                    .order_by(_RUNS.created_at)
+                ).scalars()
+            )
+            if ids:
+                conn.execute(
+                    sa.update(pipeline_runs)
+                    .where(_RUNS.run_id.in_(ids), _RUNS.status == "running")
+                    .values(status="interrupted", completed_at=to_db(completed_at))
+                )
+        return ids
+
     def _transition(
         self,
         run_id: str,
