@@ -96,10 +96,12 @@ The [measurements](../better/measured.md) separate warm tests from cold preparat
 no fixed first-film time is promised. A real month's first preparation can take hours on a NAS.
 
 Press **Cancel** on an active job to cancel it; cancellation can wait for active native work.
-Reloading the browser does not cancel it. Return to **Memory** for the active cut or **Runs** for
-its saved cut/render. Restarting the app/container can interrupt work; it does not automatically
-resume a vanished job. Rerun Cut if no cut was saved, or render the saved revision again.
-Compatible picture facts remain cached. Keep the store and run files.
+Cancelling marks the run **Cancelled** and clears its scratch folder; the saved cut stays, so
+**Render again** still works. Reloading the browser does not cancel it. Return to **Memory** for
+the active cut or **Runs** for its saved cut/render. Restarting the app/container does not resume
+a vanished job: the run shows as **Interrupted** after the next start. Rerun Cut if no cut was
+saved, or render the saved revision again. Compatible picture facts remain cached. Keep the store
+and run files.
 
 | Problem | Diagnostic and next action |
 |---|---|
@@ -148,17 +150,18 @@ kubectl exec -n <namespace> deploy/immich-memories -c immich-memories -- immich-
 
 ### Where the film lands
 
-Each render gets its own folder: `<output dir>/<name>_<run id>/<name>.mp4`. A real one:
+Each render gets its own folder: `<output dir>/<name>_<recipe>_<run id>/<name>_<recipe>.mp4`. A
+real one:
 
 ```text
 all_album_20210526-20210527_a4cf0add_<run>/all_album_20210526-20210527_a4cf0add.mp4
 ```
 
-The `<name>` ends in a short hash of the final cut, so the same cut renders to the same name. The
-`Output (planned)` line printed before selection has no run folder and no hash, and `runs render`
-builds its name from the people and dates (`all_album_<dates>_<hash>`), not from the album name.
-Trust the folder, not that line. `runs render` prints "Rendered" without a path, so look in the
-output folder (`/app/output` in the container).
+The `<recipe>` is a short hash of the final cut, so the same cut renders to the same name. The
+`Output (planned)` line printed before selection shows that same rule, and `runs render` builds
+its name from the people and dates (`all_album_<dates>_<recipe>`), not from the album name.
+`runs render` prints "Video saved to: <path>" when it finishes, so you don't need to go hunting
+in the output folder (`/app/output` in the container).
 
 On Kubernetes, copy only the film, not the whole output volume:
 

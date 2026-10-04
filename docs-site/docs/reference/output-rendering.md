@@ -162,9 +162,10 @@ The full title adds the length and the season or month: `TWO WEEKS IN CRETE, GRE
 
 Immich stores places in English. Country, island and region names are translated offline (CLDR and the bundled
 tables). City names stay as Immich stored them unless you switch on `network.geocoding`, which asks Nominatim
-for the city, town or village each picture is in, in the film's language. Answers are cached for the next film.
-A Berlin visit stays Berlin across Mitte and Kreuzberg. The same name reaches story titles, captions,
-location cards, map pins and the report. What that sends is on [Privacy](../run/privacy.md).
+for the city, town or village each picture is in, in the film's language. A place with no name in the film's
+language, or in its base language, keeps its own local name: it is never shown in English. Answers are cached
+for the next film. A Berlin visit stays Berlin across Mitte and Kreuzberg. The same name reaches story titles,
+captions, location cards, map pins and the report. What that sends is on [Privacy](../run/privacy.md).
 
 ## Date and place captions
 
@@ -270,8 +271,10 @@ The title reader gets facts, never pictures and never coordinates: first names, 
 relations your [people registry](../get-started/who-is-who.md) confirms, the special-day catalogue's words, the
 album that holds most of the cut, and the place names by day. A capitalised word found in none of those facts
 gets the title refused in favour of the template, and so does a country, island or region the facts do not
-name, even as the title's first word. A trip title has to name the trip's place. Refusing
-costs a plainer title, so the check leans towards refusing.
+name, even as the title's first word. A title missing the year or years the template would show for that
+memory is refused the same way (on-this-day films and multi-year person-spotlight films stay yearless, so
+they are exempt). A trip title has to name the trip's place. Refusing costs a plainer title, so the check
+leans towards refusing.
 
 ### Where the title came from
 
@@ -282,10 +285,15 @@ as **Title From**:
 |---|---|
 | `override` | what you typed: `--title`, or your edit in the web UI |
 | `album` | an album film's album name |
-| `occasion` | a holiday's name, or the special-day catalogue's title |
+| `occasion` | a holiday's name, or the special-day catalogue's title in an English film |
 | `model` | what the title reader wrote |
 | `place` | a trip title, built from where it went |
 | `fallback` | the template: the year, the dates, the people |
+
+The special-day catalogue is stored in English. An English film shows the catalogue title verbatim
+(`occasion`); any other film routes that English title through the reader instead (`model`), or, with no
+reader, through a localized "a day in {place}" template (`fallback`). Editing a catalogue title changes the
+film's title verbatim only in English films.
 
 `fallback` on a film you expected the model to name means the reader was not asked, failed, or had its title
 refused.
@@ -323,7 +331,11 @@ the pick prefers a track whose beat lands within 0.2 beats of the photo cadence.
 
 Ducking is a sidechain compressor keyed on the clips' audio, so speech, laughter and wind all lower the music.
 `--music-volume` (0.0 to 1.0, default 0.5) maps onto -20 dB to 0 dB before ducking. When a generator gave four
-stems, vocals duck most and drums keep their rhythm. None of the ducking constants is a config key.
+stems, vocals duck most and drums keep their rhythm. The soundtrack steps aside entirely, rather than ducking
+under, for a whole clip whose own sound is music or singing. None of the ducking constants is a config key.
+
+The final mix is held under a -2 dBFS true-peak ceiling before encoding, so the AAC encode doesn't overshoot
+and clip.
 
 | Where | Switch |
 |---|---|

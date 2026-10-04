@@ -32,6 +32,9 @@ long day (20 pictures over six active hours) with your close family on it. Each 
 video share, then family presence. The title is "A day in" the place. Without roles in the people registry, a long
 day at home is not found.
 
+Catalogue titles are stored in English, whatever the film's language ends up being. A non-English film writes
+its own title in the film's language at render time; the stored catalogue entry does not change.
+
 **On Full tier** (optional), every run of activity is read a month at a time as one line of recorded facts
 (time, place, counts, who Immich recognised, close family by role, up to three captions), and the model names
 distinct occasions rather than recurring everyday activity. This is a discovery heuristic; it can miss a day that matters to you. Choose a Special day date explicitly or edit the catalogue when that happens. No yearly cap. Titles are checked against what the day recorded: a place it never went or a claim nothing supports
@@ -92,7 +95,9 @@ immich-memories days-due --on 2026-12-24
 
 The catalogue is yours to edit: a day the scan missed, a title it got wrong, two occasions to merge.
 `days-export` writes it as JSON, `days-import` puts an edited file back whole. Every record keeps
-exactly what you wrote; a file that is not a list of records changes nothing.
+exactly what you wrote; a file that is not a list of records changes nothing. Editing a catalogue title
+changes the film's title verbatim only in English films; in any other language the film still renders its
+own translated or reworded title, not your edit.
 
 ```bash
 immich-memories days-export --to days.json
