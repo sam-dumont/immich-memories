@@ -260,6 +260,78 @@ def _capture_group_choices(
     return choices_of
 
 
+def _distinct_choices(
+    choices: Sequence[DepictedChoice],
+    unit_by_asset: Mapping[str, tuple[Any, dict]],
+    story_key: str,
+    looks_alike: PairLooksAlike | None,
+    scene_alike: PairLooksAlike | None,
+) -> list[DepictedChoice]:
+    """A story's capacity is the moments it can show distinctly, by the same hash and scene
+    rule the final duplicate review applies over the finished cut. A further capture group
+    whose own primary frame already reads as a repeat of one kept folds into it, so its
+    pictures stay reachable as depth, rather than claiming a slot the review would only take
+    back once the cut is built.
+
+    A starred frame is never folded into a plain one it would repeat: the favourite wins its
+    moment, the same exemption `LookAlikeCheck.repeats` makes at pick time, and two starred
+    frames close enough to be the owner's one "twin" moment are the final duplicate review's
+    own call to make, over the finished cut, not a capacity question asked before a single
+    carrier is picked.
+    """
+    if looks_alike is None is scene_alike:
+        return list(choices)
+
+    def as_carrier(asset_id: str) -> dict[str, Any]:
+        _family, unit = unit_by_asset[asset_id]
+        return {
+            "asset_id": asset_id,
+            "taken": unit["taken"],
+            "kind": unit.get("kind"),
+            "favourite": unit.get("favourite"),
+            "story_episode": story_key,
+        }
+
+    def repeats(candidate: Mapping[str, Any], keeper: Mapping[str, Any]) -> bool:
+        if candidate.get("favourite"):
+            return False
+        return bool(
+            (looks_alike and looks_alike(candidate, keeper))
+            or (scene_alike and scene_alike(candidate, keeper))
+        )
+
+    kept: list[DepictedChoice] = []
+    for choice in choices:
+        candidate = as_carrier(choice.primary)
+        match = next((k for k in kept if repeats(candidate, as_carrier(k.primary))), None)
+        if match is None:
+            kept.append(choice)
+        else:
+            match.alternatives.extend(a for a in choice.members if a not in match.members)
+    return kept
+
+
+def _capacity_choices(
+    stories: Sequence[Mapping[str, Any]],
+    story_units: Mapping[str, list[dict]],
+    unit_by_asset: Mapping[str, tuple[Any, dict]],
+    looks_alike: PairLooksAlike | None,
+    scene_alike: PairLooksAlike | None,
+    **picking,
+) -> tuple[dict[str, list[DepictedChoice]], dict[str, int]]:
+    """Every story's capacity: the capture groups offered, and what is left once a further
+    group that only repeats one kept is folded into it (`_distinct_choices`)."""
+    offered = _capture_group_choices(stories, story_units, **picking)
+    groups_offered = {s["key"]: len(offered[s["key"]]) for s in stories}
+    distinct = {
+        s["key"]: _distinct_choices(
+            offered[s["key"]], unit_by_asset, s["key"], looks_alike, scene_alike
+        )
+        for s in stories
+    }
+    return distinct, groups_offered
+
+
 def _shortlisted_units(
     stories: Sequence[Mapping[str, Any]],
     granted: Mapping[str, int],
@@ -606,8 +678,9 @@ def select_story_first(
         # questions about every candidate and must keep seeing them all.
         "withhold": withheld_by_bank(banked, favourite=starred) if rules is not None else None,
     }
-    choices_of = _capture_group_choices(stories, story_units, **picking)
-    groups_offered = {s["key"]: len(choices_of[s["key"]]) for s in stories}
+    choices_of, groups_offered = _capacity_choices(
+        stories, story_units, unit_by_asset, looks_alike, scene_alike, **picking
+    )
     slots = max(1, int(target_seconds // seconds_per_slot))
     reserve_trip_depth(stories, slots=slots, film_days=_photographed_days(event_units))
 

@@ -428,11 +428,31 @@ def _select(
     resolve_motion_and_timing(run, source, ports)
     # The review protects the same people the seat counts: in a person film, the subject's own.
     close_of = film_close_family(source)
+    # Only the final duplicate review reaches past a carrier's own moment and story: the
+    # audience gate's own replacement (`apply_audience_gate`, above) drops rather than widen
+    # its search, per `editorial_shareability.apply_gate`'s own contract.
+    partition_of_taken = (
+        (
+            lambda taken: (
+                part.key
+                if (part := source.intent.partition_for(datetime.fromisoformat(taken).date()))
+                else None
+            )
+        )
+        if partition_limit is not None
+        else None
+    )
     final_duplicate_review(
         run,
         ports,
         replacements_for=replacement_offers(
-            alternatives_pool(selection, material.units, wall.anchor_label)
+            alternatives_pool(
+                selection,
+                material.units,
+                wall.anchor_label,
+                include_elsewhere=True,
+                partition_of=partition_of_taken,
+            )
         ),
         prior=source.prior_plan,
         prior_assets=prior_assets,

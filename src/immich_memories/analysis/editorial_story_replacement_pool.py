@@ -8,13 +8,20 @@ gate and the final duplicate review draw a replacement from when a carrier is re
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping, Sequence
+from functools import partial
 from typing import TYPE_CHECKING, Any
 
 from immich_memories.analysis.editorial_carrier import carrier_row
 from immich_memories.analysis.editorial_story_shortlist import DepictedChoice
+from immich_memories.analysis.editorial_story_standing import WEIGHED_STORY_WEIGHTS
 
 if TYPE_CHECKING:
     from immich_memories.analysis.editorial_story_planner import StorySelection
+
+# How many of another story's unfunded moments the final duplicate review may ask the audience
+# gate about for one removed carrier. On the FULL tier each ask can cost a model call; a library
+# with thousands of unfunded moments must not turn one repeat into thousands of asks.
+MAX_ELSEWHERE_OFFERS = 20
 
 
 def unfunded_pool(
@@ -23,10 +30,12 @@ def unfunded_pool(
     chosen_by_story: Mapping[str, list[str]],
 ) -> list[str]:
     """Every distinct moment that never took a slot, in the same priority order the stories
-    were funded in: a story's own refill looks here once its own material runs out."""
+    were funded in, from a weighed story only: a story the synthesis gave no weight is never
+    the household's own account of the period, and a refill does not make it one."""
     return [
         c.primary
         for s in stories
+        if s["weight"] in WEIGHED_STORY_WEIGHTS
         for c in choices_of[s["key"]]
         if c.key not in chosen_by_story[s["key"]]
     ]
@@ -39,18 +48,82 @@ def _moments_of(selection: StorySelection, episode_key: str) -> Sequence[str]:
     return []
 
 
+def _unit_row(
+    asset_id: str,
+    *,
+    unit_by_asset: Mapping[str, Any],
+    story_of_moment: Mapping[Any, Any],
+    chapter_of_moment: Mapping[Any, int],
+    anchor_label: Mapping[str, str],
+    lines: Mapping[str, str],
+) -> dict | None:
+    """The row a pool offer shows: the context of the moment it actually carries, never the
+    refused carrier's, so a borrowed description never misdescribes the picture the film
+    then shows."""
+    if asset_id not in unit_by_asset:
+        return None
+    family, unit = unit_by_asset[asset_id]
+    if unit.get("moment") not in story_of_moment:
+        return None
+    return carrier_row(
+        unit,
+        family=family,
+        anchor=anchor_label.get(family, family),
+        story=story_of_moment[unit["moment"]],
+        chapter=chapter_of_moment[unit["moment"]],
+        line=lines.get(asset_id, ""),
+    )
+
+
+def _elsewhere_offers(
+    carrier: Mapping[str, Any],
+    seen: set[str],
+    *,
+    unfunded_pool: Sequence[str],
+    row_of: Callable[[str], dict | None],
+    months_shown: set[str],
+    partition_of: Callable[[str], str | None] | None,
+) -> list[dict]:
+    """Other stories' unfunded moments, filtered to the months and the partition a carrier's
+    own spares already had to meet, bounded to `MAX_ELSEWHERE_OFFERS` moments."""
+    carrier_partition = partition_of(str(carrier["taken"])) if partition_of else None
+
+    def admissible(row: dict) -> bool:
+        if row["taken"][:7] not in months_shown:
+            return False
+        return partition_of is None or partition_of(str(row["taken"])) == carrier_partition
+
+    offers: list[dict] = []
+    for asset_id in unfunded_pool:
+        if len(offers) >= MAX_ELSEWHERE_OFFERS:
+            break
+        row = None if asset_id in seen else row_of(asset_id)
+        if row is None or not admissible(row):
+            continue
+        offers.append(row)
+        seen.add(asset_id)
+    return offers
+
+
 def alternatives_pool(
     selection: StorySelection,
     event_units: Mapping[str, list[dict]],
     anchor_label: Mapping[str, str],
+    *,
+    include_elsewhere: bool = False,
+    partition_of: Callable[[str], str | None] | None = None,
 ) -> Callable[[Mapping[str, Any]], list[dict]]:
-    """For the audience gate: when a carrier is held, offer the same moment's other pictures,
-    then the story's unshown moments, then, once a story's own material runs out, other
-    stories' moments that never took a slot, in the planner's own funding order.
+    """When a carrier is held, offer the same moment's other pictures, then the story's
+    unshown moments.
 
-    Each pool unit is bound to the context of the moment it actually shows: the spares of one
-    carrier can come from another moment, family or even story, and a row that named the
-    refused carrier there would misdescribe the picture the film then shows.
+    With ``include_elsewhere`` (the final duplicate review only: the audience gate's own
+    ``apply_gate`` drops a carrier rather than reach past its own anchor), once a story's own
+    material runs out the pool reaches into other stories' moments that never took a slot, in
+    the planner's own funding order. An elsewhere offer is never from a month the film does
+    not already show (the timing and partition budget are bound to the months selection
+    settled on), never from a different partition than the carrier it would replace when the
+    product caps carriers per partition, and the pool stops after `MAX_ELSEWHERE_OFFERS`
+    moments so one repeat cannot turn into an unbounded run of audience asks.
     """
     unit_by_asset = {u["asset_id"]: (f, u) for f, units in event_units.items() for u in units}
     # A unit row's moment is a loosely-typed field; the map keys are the story's moment ids.
@@ -66,32 +139,32 @@ def alternatives_pool(
         for episode in story["episodes"]
         for moment in _moments_of(selection, episode)
     }
-
-    def _row(a: str) -> dict | None:
-        if a not in unit_by_asset:
-            return None
-        family, unit = unit_by_asset[a]
-        if unit.get("moment") not in story_of_moment:
-            return None
-        return carrier_row(
-            unit,
-            family=family,
-            anchor=anchor_label.get(family, family),
-            story=story_of_moment[unit["moment"]],
-            chapter=chapter_of_moment[unit["moment"]],
-            line=selection.lines.get(a, ""),
-        )
+    months_shown = {str(c.get("taken", ""))[:7] for c in selection.carriers}
+    row_of = partial(
+        _unit_row,
+        unit_by_asset=unit_by_asset,
+        story_of_moment=story_of_moment,
+        chapter_of_moment=chapter_of_moment,
+        anchor_label=anchor_label,
+        lines=selection.lines,
+    )
 
     def pool_for(carrier: Mapping[str, Any]) -> list[dict]:
         own = [
             row
             for a in selection.alternatives_of.get(carrier["asset_id"], [])
-            if (row := _row(a)) is not None
+            if (row := row_of(a)) is not None
         ]
+        if not include_elsewhere:
+            return own
         seen = {row["asset_id"] for row in own} | {carrier["asset_id"]}
-        elsewhere = [
-            row for a in selection.unfunded_pool if a not in seen and (row := _row(a)) is not None
-        ]
-        return own + elsewhere
+        return own + _elsewhere_offers(
+            carrier,
+            seen,
+            unfunded_pool=selection.unfunded_pool,
+            row_of=row_of,
+            months_shown=months_shown,
+            partition_of=partition_of,
+        )
 
     return pool_for
