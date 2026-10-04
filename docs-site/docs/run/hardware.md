@@ -77,7 +77,7 @@ The app image's CPU Torch build is intentional; use the CUDA inference service f
 ### Apple Silicon
 
 ```bash
-uv tool install "immich-memories[all-mac]"
+uv tool install --python 3.12 "immich-memories[all-mac]"
 ```
 
 VideoToolbox handles encoding and Metal handles title effects. The `mac` extra alone lacks the
