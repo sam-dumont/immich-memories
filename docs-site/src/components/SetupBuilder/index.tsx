@@ -125,6 +125,8 @@ export default function SetupBuilder({initialPlatform = 'linux', initialInline =
             <button type="button" className="button button--primary button--sm" aria-label={`Download ${file.name}`} onClick={() => downloadFile(file.name, file.content)}>Download</button>
           </div>
         </div>
+        {file.name.endsWith('.env') && <p className={styles.note}>Browsers often save this as <code>env</code> or <code>env.txt</code>.
+          Rename it to <code>.env</code> (with the leading dot) before you run <code>docker compose</code>.</p>}
         <details className={styles.preview}>
           <summary>Preview {file.name}</summary>
           <CodeBlock language={file.language}>{file.content}</CodeBlock>

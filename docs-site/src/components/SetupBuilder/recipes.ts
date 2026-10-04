@@ -115,6 +115,11 @@ function inlineValues(value: unknown, values: Record<string, string>): unknown {
   return value;
 }
 
+// The release asset pins its image tag; the generated file must too, or a file saved
+// under the wrong .env name silently pulls whatever `latest` is.
+const pinVersion = (text: string, version: string): string =>
+  text.split('${IMMICH_MEMORIES_VERSION:-latest}').join(`\${IMMICH_MEMORIES_VERSION:-${version}}`);
+
 function macRecipe(setup: Setup): Result {
   const full = setup.tier === 'full';
   const config: Mapping = {
@@ -131,7 +136,7 @@ function macRecipe(setup: Setup): Result {
     'mlxcel serve --model "$SNAPSHOT" --alias smolvlm2-500m-base-public --host 127.0.0.1 --port 8092 > captioner.log 2>&1 &',
   ];
   return {error: null, files: [{name: 'config.yaml', language: 'yaml', content: JSON.stringify(config, null, 2)}], commands: [
-    'brew install uv ffmpeg-full llama.cpp',
+    `brew install uv ffmpeg-full${full && !setup.readerUrl ? ' llama.cpp' : ''}`,
     'export PATH="$(brew --prefix ffmpeg-full)/bin:$PATH"',
     nativeInstallCommand(setup.version, 'all-mac'),
     'mkdir -p ~/.immich-memories',
@@ -261,7 +266,7 @@ export function buildSetup(setup: Setup, sources: Sources, buildVersion: string)
       ...workerServices['gpu-worker'] as Mapping,
       ports: [`${'${GPU_WORKER_BIND_ADDRESS:-127.0.0.1}'}:${port}:8092`],
     }}};
-    workerFiles.push({name: 'gpu-worker/docker-compose.yml', language: 'yaml', content: JSON.stringify(worker, null, 2)},
+    workerFiles.push({name: 'gpu-worker/docker-compose.yml', language: 'yaml', content: pinVersion(JSON.stringify(worker, null, 2), setup.version.replace(/^v/, ''))},
       {name: 'gpu-worker/.env', language: 'dotenv', content: [
         `IMMICH_MEMORIES_VERSION=${releaseVersion(setup.version) || 'latest'}`,
         `IMMICH_URL=${dotenv(setup.immichUrl)}`, 'GPU_WORKER_BIND_ADDRESS=0.0.0.0',
@@ -274,7 +279,7 @@ export function buildSetup(setup: Setup, sources: Sources, buildVersion: string)
       '# Use this same private worker address and the token in gpu-worker/.env. Offload is not enabled by this recipe.');
   }
   return {error: null, files: [
-    {name: 'docker-compose.yml', language: 'yaml', content: JSON.stringify(compose, null, 2)},
+    {name: 'docker-compose.yml', language: 'yaml', content: pinVersion(JSON.stringify(compose, null, 2), setup.version.replace(/^v/, ''))},
     ...(!setup.inline ? [{name: '.env', language: 'dotenv', content: env.join('\n')}] : []),
     ...workerFiles,
   ], workerCommands: workerCommands.join('\n'), accessCommands: [
