@@ -239,6 +239,32 @@ def test_a_measured_whole_cut_estimate_drives_the_bar_over_the_stage(client, tmp
     assert (progress["fraction"], progress["remaining_seconds"]) == (0.2, 300.0)
 
 
+def test_an_unprepared_window_surfaces_its_warning_as_the_cuts_progress(client, tmp_path):
+    """#2045: before any attempt exists, a cut's bar shows the preparation warning."""
+    from immich_memories.cli.progress_file import write_progress
+
+    started = client.post("/api/v1/cuts", json={"ask": "our cat along the years"})
+    job_id = started.json()["id"]
+    progress_file = tmp_path / "cache" / "web-jobs" / f"web-{job_id}.preparing.json"
+
+    write_progress(
+        progress_file,
+        {
+            "phase": "preparing",
+            "message": "1,240 pictures in this period aren't prepared yet; preparing "
+            "them first takes about 6 min",
+            "fraction": 0.0,
+            "remaining_seconds": 360.0,
+        },
+    )
+    progress = client.get(f"/api/v1/jobs/{job_id}").json()["progress"]
+
+    assert progress["label"] == (
+        "1,240 pictures in this period aren't prepared yet; preparing them first takes about 6 min"
+    )
+    assert (progress["fraction"], progress["remaining_seconds"]) == (0.0, 360.0)
+
+
 def test_a_stage_that_counts_nothing_offers_no_time_left(client, tmp_path):
     from immich_memories.operations.cut_progress import StageUpdate
     from immich_memories.operations.editorial_attempt import EditorialAttempt

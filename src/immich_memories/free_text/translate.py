@@ -7,6 +7,7 @@ counts only by its words beyond the subject's own nouns.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date
 
@@ -14,7 +15,7 @@ from immich_memories.free_text.facts import TripRules, link_facts
 from immich_memories.free_text.homes import homes_over_time
 from immich_memories.free_text.lexicon import Lexicon
 from immich_memories.free_text.library import LibraryView
-from immich_memories.free_text.linking import Household, link_when, link_where, link_who
+from immich_memories.free_text.linking import Household, WhenLink, link_when, link_where, link_who
 from immich_memories.free_text.pool import Pool, PrintedText, Translation, build_pool
 from immich_memories.free_text.reading import Asker, read_request
 from immich_memories.free_text.subject import build_subject, recover_undated_subject
@@ -48,11 +49,21 @@ def translate(
     today: date,
     trips: TripRules | None = None,
     printed: PrintedText | None = None,
+    prepare_window: Callable[[WhenLink], LibraryView] | None = None,
 ) -> Ask:
-    """Translate a request against the library: every decision keeps its reason for the trace."""
+    """Translate a request against the library: every decision keeps its reason for the trace.
+
+    `prepare_window`, when given, is called with the request's own dates right after they
+    are linked: a caption-only subject has no shortlist to fill on demand (#2045), so it is
+    the one request that prepares its own window before the pool reads it. Its return value
+    replaces `view` for everything that follows, so a freshly captioned picture is read, not
+    the stale copy taken before preparation.
+    """
     reading = read_request(request, asker)
     who = link_who(request, reading.who, household, lexicon, asker)
     when = link_when(request, reading.when, who, household, asker, today=today)
+    if prepare_window is not None:
+        view = prepare_window(when)
     if when.start is when.end is None:
         reading = recover_undated_subject(reading, lexicon)
     captions = [picture.caption for picture in view.pictures]

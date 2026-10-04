@@ -77,6 +77,11 @@ from immich_memories.timeperiod import DateRange
 from immich_memories.tracking.run_observations import observed_command
 
 
+def _ask_progress_file(output: str | None) -> Path | None:
+    """A sibling of --output: the one path a web job already knows to poll for a warning."""
+    return Path(output).with_suffix(".preparing.json") if output else None
+
+
 def _apply_run_overrides(config, sharing: str | None, fade_color: str | None) -> None:
     """Apply film-specific choices and refuse unsupported sharing before fetching media."""
     if fade_color is not None:
@@ -254,7 +259,13 @@ def register_generate_commands(main: click.Group) -> None:
         typed = RunScope(memory_type, day, event_id, from_album, subject, accept_any_provenance)
         memory_type, day, event_id, from_album, subject, accept_any_provenance, curated = (
             scope_of_ask(
-                ctx, config, ask, dry_run=dry_run, typed=typed, trace_file=ask_trace
+                ctx,
+                config,
+                ask,
+                dry_run=dry_run,
+                typed=typed,
+                trace_file=ask_trace,
+                progress_file=_ask_progress_file(output),
             ).fields()
         )
 

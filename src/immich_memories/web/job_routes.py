@@ -144,10 +144,32 @@ def _cut_root(config: Config, job_id: str) -> Path | None:
     return next(iter(sorted(runs.glob(f"web-{job_id}*"))), None) if runs.is_dir() else None
 
 
+def _progress_file_record(job: Job) -> dict[str, Any]:
+    path = Path(str(job.meta.get("progress_file") or ""))
+    try:
+        return json.loads(path.read_text()) if path.is_file() else {}
+    except ValueError:
+        return {}
+
+
+def _preparing_progress(job: Job) -> JobProgress | None:
+    """An unprepared window's warning, read before any attempt -- and so any stage -- exists."""
+    record = _progress_file_record(job)
+    message = record.get("message")
+    if not message:
+        return None
+    return JobProgress(
+        label=str(message),
+        phase=str(record.get("phase") or ""),
+        fraction=record.get("fraction"),
+        remaining_seconds=record.get("remaining_seconds"),
+    )
+
+
 def _cut_progress(config: Config, job: Job) -> JobProgress:
     record = read_latest_attempt(_cut_root(config, job.id))
     if record is None:
-        return JobProgress(label="Preparing the pool")
+        return _preparing_progress(job) or JobProgress(label="Preparing the pool")
     live = live_progress_of(record)
     if live is None:
         return JobProgress(
@@ -170,11 +192,7 @@ def _cut_progress(config: Config, job: Job) -> JobProgress:
 
 
 def _render_progress(job: Job) -> JobProgress:
-    path = Path(str(job.meta.get("progress_file") or ""))
-    try:
-        record: dict[str, Any] = json.loads(path.read_text()) if path.is_file() else {}
-    except ValueError:
-        record = {}
+    record = _progress_file_record(job)
     return JobProgress(
         label=str(record.get("message") or "Preparing the render"),
         phase=str(record.get("phase") or ""),
@@ -234,6 +252,9 @@ def _start_cut(
 
     job_id = uuid4().hex
     output = config.cache.cache_path / "web-jobs" / f"web-{job_id}.mp4"
+    # `--ask`'s own progress file: a sibling of --output, so an unprepared window's warning
+    # (count, estimate) reaches the page before any attempt -- and therefore any stage -- exists.
+    progress_file = output.with_suffix(".preparing.json")
 
     def found_run(job: Job) -> Job:
         record = read_latest_attempt(_cut_root(config, job.id))
@@ -246,7 +267,11 @@ def _start_cut(
         job = runner.start(
             "cut",
             brief.argv(executable=executable, config=_config_flag(), output=output),
-            meta={"shown": brief.shown_command(), "brief": brief.model_dump_json()},
+            meta={
+                "shown": brief.shown_command(),
+                "brief": brief.model_dump_json(),
+                "progress_file": str(progress_file),
+            },
             on_finish=found_run,
             job_id=job_id,
         )

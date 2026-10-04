@@ -13,9 +13,27 @@ The translation can get your request wrong. Preview the scope and the pictures b
 
 ## Before you try it
 
-You need the **Full** tier: GPU picture preparation, a caption service and a configured [text reader](../better/reader.md). Run `immich-memories prepare --year 2025 --month 6` for the period you want to search, and `immich-memories models fetch` to install the pinned WordNet dictionary.
+You need the **Full** tier: GPU picture preparation, a caption service and a configured [text reader](../better/reader.md). Run `immich-memories models fetch` to install the pinned WordNet dictionary.
 
 A text reader by itself on the Basic tier is enough for titles, but not for this feature.
+
+## It prepares the period it asks about
+
+A request reads captions, and a library nobody has run `prepare` on has none yet. Rather than
+answer "not possible" on pictures nobody has looked at, a request checks its own period first
+and, if any of it is missing, prepares it before answering: a warning with the count and an
+estimate, then the usual preparation lines, then the answer.
+
+```
+1,240 pictures in this period aren't prepared yet; preparing them first takes about 6 min
+Preparing 1,240 pictures over 1 window
+...
+```
+
+A second request over the same period pays nothing: the captions it prepared are banked, the
+same way `immich-memories prepare` banks them. For a whole library's worth of years, expect the
+preparation itself to take minutes, not seconds; the web client shows the same warning before
+it starts.
 
 ## Preview first
 

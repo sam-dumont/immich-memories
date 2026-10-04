@@ -65,6 +65,32 @@ def test_a_sentence_becomes_the_pool_of_pictures_whose_captions_are_about_it(
     assert asked.pool.verdict == "possible"
 
 
+def test_prepare_window_is_called_with_the_linked_dates_and_its_view_replaces_the_stale_one(
+    lexicon: Lexicon,
+) -> None:
+    """#2045: a request's own dates reach the hook before anything reads captions with them."""
+    stale = LibraryView(pictures=(), people={}, sharpness_line=None)
+    seen: list[Any] = []
+
+    def prepare_window(when):
+        seen.append(when)
+        return _library()
+
+    asked = translate(
+        "our cat along the years",
+        stale,
+        NOBODY,
+        lexicon,
+        QuestionAsker(ANSWERS),
+        today=TODAY,
+        prepare_window=prepare_window,
+    )
+
+    assert seen and seen[0].start is None and seen[0].end is None
+    # The stale, empty view never reaches the pool: prepare_window's own view does.
+    assert {picture.asset_id for picture in asked.pool.pictures} == {f"cat-{n}" for n in range(14)}
+
+
 def test_the_trace_prints_one_line_per_decision_with_the_words_and_the_rule(
     lexicon: Lexicon,
 ) -> None:

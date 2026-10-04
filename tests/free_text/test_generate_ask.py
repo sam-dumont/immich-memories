@@ -5,6 +5,7 @@ Every picture, caption and word here is invented; the model's answers come from 
 
 from __future__ import annotations
 
+import json
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -12,6 +13,7 @@ from typing import Any
 import pytest
 from click.testing import CliRunner, Result
 
+from immich_memories.analysis.editorial_preparation import PreparationResult
 from immich_memories.api.models import Asset, MetadataSearchResult
 from immich_memories.api.permissions import READ_PERMISSIONS, ApiKeyCapabilities
 from immich_memories.config_models_editorial import EditorialConfig
@@ -79,11 +81,23 @@ class _ReadableKey:
         self.get_key_capabilities().require_read()
 
 
+def _camera_asset(asset_id: str, at: datetime) -> Asset:
+    """A picture Immich would admit into preparation: EXIF names a camera."""
+    from immich_memories.api.models import ExifInfo
+
+    return _asset(asset_id, at).model_copy(
+        update={"exif_info": ExifInfo(make="Apple", model="iPhone 15 Pro")}
+    )
+
+
 class _InventedImmich(_ReadableKey):
     """WHY: replaces the Immich HTTP API; it answers for the invented library and counts calls."""
 
     def __init__(self) -> None:
         self.calls = 0
+        # Pictures Immich holds that the store has never synced: discovered only by
+        # the window-check's own fetch, never by a cheaper read of what is banked.
+        self.unsynced_camera_shots: list[tuple[str, datetime]] = []
 
     def search_metadata(self, *, page, size, taken_after, taken_before, **_filters):
         self.calls += 1
@@ -98,6 +112,39 @@ class _InventedImmich(_ReadableKey):
 
     def get_asset(self, asset_id: str) -> Asset:
         raise AssertionError(f"one read per picture ({asset_id}): read the pool in pages")
+
+    # `--ask` checks the request's window is prepared before it reads it (#2045). None of
+    # the invented library's own pictures carries camera EXIF, so the admission pass drops
+    # every one of them and preparation never has anything to warn about or to prepare.
+    def get_available_years(self, person_id: str | None = None) -> list[int]:
+        years = {taken.year for _, taken, _ in SHOTS} | {
+            at.year for _, at in self.unsynced_camera_shots
+        }
+        return sorted(years)
+
+    def get_videos_for_date_range(self, date_range) -> list:
+        return []
+
+    def get_photos_for_date_range(self, date_range) -> list:
+        start, end = date_range.start.replace(tzinfo=UTC), date_range.end.replace(tzinfo=UTC)
+        return [_asset(shot, taken) for shot, taken, _ in SHOTS if start <= taken <= end] + [
+            _camera_asset(shot, taken)
+            for shot, taken in self.unsynced_camera_shots
+            if start <= taken <= end
+        ]
+
+    def get_live_photos_for_date_range(self, date_range) -> list:
+        return []
+
+    # Bound but never called: the caption producer itself is mocked out in these tests.
+    def get_asset_thumbnail(self, asset_id: str, size: str = "preview") -> bytes:
+        raise AssertionError("the caption producer is mocked; it should never read a thumbnail")
+
+    def get_asset_faces(self, asset_id: str) -> list:
+        raise AssertionError("the caption producer is mocked; it should never read a face")
+
+    def get_video_playback_range(self, asset_id: str, start: int, length: int):
+        raise AssertionError("the caption producer is mocked; it should never read playback")
 
     def __enter__(self) -> _InventedImmich:
         return self
@@ -294,6 +341,17 @@ class _RecordingImmich(_ReadableKey):
         self.windows.append(date_range)
         return []
 
+    # `--ask` checks the request's window is prepared first (#2045); this invented library
+    # has no years and no photos of its own, so that check finds nothing missing.
+    def get_available_years(self, person_id: str | None = None) -> list[int]:
+        return []
+
+    def get_photos_for_date_range(self, date_range) -> list:
+        return []
+
+    def get_live_photos_for_date_range(self, date_range) -> list:
+        return []
+
     def __enter__(self) -> _RecordingImmich:
         return self
 
@@ -324,4 +382,101 @@ def test_one_undated_occasion_is_filmed_as_its_special_day(
 
     ask("--ask", "our wedding", "--no-photos", "--no-live-photos", answers=wedding)
 
-    assert [window.start.date() for window in immich.windows] == [date(2017, 5, 20)]
+    # The window-check that runs first (#2045) also asks for videos, over the whole
+    # library; the occasion's own, narrower window is what the film is actually cut from.
+    assert date(2017, 5, 20) in [window.start.date() for window in immich.windows]
+
+
+def _captioning(store, text: str):
+    """WHY: replaces the configured caption model; writes exactly what it was asked for."""
+
+    def _prepare(**kwargs) -> PreparationResult:
+        from immich_memories.tracking.timing import span
+
+        assets = kwargs["assets"]
+        total = len(assets)
+        with span("preparation.captions", items=total):
+            add_rows(
+                store,
+                "annotation_assets",
+                *(
+                    {
+                        "asset_id": asset.id,
+                        "taken_at": asset.file_created_at.isoformat(),
+                        "media_kind": "photo",
+                    }
+                    for asset in assets
+                ),
+            )
+            add_rows(
+                store,
+                "descriptions",
+                *(
+                    {"asset_id": asset.id, "model": EDITORIAL.description_model, "text": text}
+                    for asset in assets
+                ),
+            )
+            kwargs["progress"]("captions", total, total)
+        return PreparationResult(requested=total, missing_by_producer={}, failures={})
+
+    return _prepare
+
+
+def test_an_unprepared_window_is_warned_about_prepared_and_then_answered(
+    ask, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """#2045: the owner's ruling -- warn with the count and an estimate, prepare, then answer."""
+    from immich_memories.cli import main
+
+    store = open_store()
+    # Three cat pictures Immich holds that the store has never synced, let alone captioned.
+    ask.immich.unsynced_camera_shots = [
+        (f"new-cat-{n}", FIRST + timedelta(days=1000 + n)) for n in range(3)
+    ]
+    monkeypatch.setattr(
+        "immich_memories.analysis.editorial_preparation.prepare_editorial_annotations",
+        _captioning(store, "A black cat is sleeping"),
+    )
+    monkeypatch.setattr(
+        "immich_memories.cli._album_generation.handle_album_generation", lambda **_k: None
+    )
+
+    result = ask("--ask", "our cat along the years", "--no-render")
+
+    assert result.exit_code == 0, result.output
+    assert (
+        "3 pictures in this period aren't prepared yet; preparing them first takes about"
+        in result.output
+    )
+    assert "Preparing 3 pictures over 1 window" in result.output
+    reported = CliRunner().invoke(main, ["-c", str(tmp_path / "config.yaml"), "report", "--json"])
+    translation = json.loads(reported.stdout)["free_text"]["translation"]
+    # The newly captioned pictures read as the same subject, so the pool grew to hold them.
+    assert translation["pool"]["pictures"] == 17
+
+
+def test_a_fully_prepared_window_is_neither_warned_about_nor_prepared(ask) -> None:
+    """#2045: every picture already carries a caption, so the window needs nothing done."""
+    result = ask("--ask", "our cat along the years", "--dry-run")
+
+    assert result.exit_code == 0, result.output
+    assert "aren't prepared yet" not in result.output
+    assert "Preparing " not in result.output
+
+
+def test_an_impossible_request_on_a_prepared_library_still_says_not_possible(ask) -> None:
+    """#2045: "not possible" survives for a subject that is genuinely nowhere in the library."""
+    horse = {
+        **ANSWERS,
+        "Split the owner's request": {
+            **ANSWERS["Split the owner's request"],
+            "what": ["our horse"],
+        },
+    }
+
+    result = ask("--ask", "our horse along the years", answers=horse)
+
+    assert result.exit_code == 0, result.output
+    assert "aren't prepared yet" not in result.output
+    assert "VERDICT  not possible: nothing left after subject" in result.output
+    assert "Not possible, no film" in result.output

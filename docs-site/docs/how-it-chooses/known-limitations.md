@@ -29,20 +29,21 @@ Full does not fix the subject problem on its own: it refines the shortlist Basic
 
 ## Asking in your own words is the way in, on Full
 
-[Free text](../make/free-text.md) is what gets these households their film, once the pictures are prepared:
+[Free text](../make/free-text.md) is what gets these households their film. A request prepares
+whatever its own period needs on its own, with a warning first if that takes a while:
 
-| Request | Library not prepared | Library prepared |
+| Request | Not prepared yet | Once prepared |
 | --- | --- | --- |
-| "our cats over the years" | no film | 74 shots, all the cats, nine years in order |
-| "our dog along the years" | no film | 76 shots of the dogs |
-| "our horses" | no film | 70 shots across four years |
-| "my knitting projects" | no film | 72 shots, all knitting |
+| "our cats over the years" | 1,240 pictures, about 6 min to prepare | 74 shots, all the cats, nine years in order |
+| "our dog along the years" | needs preparing first | 76 shots of the dogs |
+| "our horses" | needs preparing first | 70 shots across four years |
+| "my knitting projects" | needs preparing first | 72 shots, all knitting |
 
 Preparing a whole library of 1,200 to 3,100 pictures took 8 to 26 minutes on an Apple M5 Max.
+A second request over the same period pays nothing: the captions are already banked.
 
-Two things still get in the way:
+One thing still gets in the way:
 
-- **An unprepared library answers "not possible".** Today a request only searches pictures that are already captioned. A request will soon prepare the period it needs on its own, after telling you how long that takes ([#2045](https://github.com/sam-dumont/immich-memories/issues/2045)). Until then, run `immich-memories prepare` for the period first.
 - **A year in the sentence can be misread.** "the horses in 2024" makes no film because the year gets read as text printed on something in the photos ([#2046](https://github.com/sam-dumont/immich-memories/issues/2046)). "our horses" works.
 
 ## Other things to know
