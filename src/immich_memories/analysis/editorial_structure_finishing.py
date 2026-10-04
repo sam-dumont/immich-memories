@@ -20,7 +20,7 @@ from immich_memories.analysis.editorial_final_hash_review import Admits, review_
 from immich_memories.analysis.editorial_intent import voiced_era_of
 from immich_memories.analysis.editorial_intent_validation import MIN_CARRIERS
 from immich_memories.analysis.editorial_source_route import retire_unprojectable
-from immich_memories.analysis.editorial_story_planner import alternatives_pool
+from immich_memories.analysis.editorial_story_replacement_pool import alternatives_pool
 from immich_memories.analysis.editorial_story_trim import trim_to_timing_budget
 from immich_memories.analysis.editorial_structure_audience import (
     AudienceGate,

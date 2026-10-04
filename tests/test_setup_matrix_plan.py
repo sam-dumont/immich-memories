@@ -1255,8 +1255,8 @@ def test_the_copy_out_leaves_the_mastered_audio_on_the_volume(
     assert copy_out.index("--exclude") < copy_out.index("-cf")
 
 
-# Every lane has to plan against the same home. `_near_home_test` in
-# `analysis/editorial_structure_planner` measures each happening against
+# Every lane has to plan against the same home. `near_home_test` in
+# `analysis/editorial_structure_framing` measures each happening against
 # `trips.homebase_*` and `worthiness` in `analysis/editorial_rule_reader` grades
 # anything over 10 km "away". The schema's default for both is 0.0: Mac and NAS
 # cells copy the operator's config and inherit a real home, and a cluster cell's

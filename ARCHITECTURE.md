@@ -612,6 +612,8 @@ src/immich_memories/
 │   ├── editorial_story_*.py    # Story reading, weighing, slots, shortlist, carriers: the story planner
 │   ├── editorial_story_trips.py     # Detected trips become one story per leg, with a reserve for each leg's length
 │   ├── editorial_story_lookalike.py # A story's further picture is refused when it repeats one it holds
+│   ├── editorial_story_replacement_pool.py # What a freed slot refills from: the carrier's own moment, its
+│   │                               # story's unshown moments, then other stories' moments that never took a slot
 │   ├── editorial_story_depth.py     # A short film's free slots as verified-different frames inside shown moments
 │   ├── editorial_story_trim.py      # The allocation in reverse when the production budget is tighter
 │   ├── editorial_story_threads.py   # A recurring activity at one place is one story per era, if the reader agrees
@@ -624,6 +626,7 @@ src/immich_memories/
 │   ├── editorial_structure_*.py    # The structure planner: wall, subject/trip admission + standing gates, audience, record
 │   │                               # _finishing.py holds PlanRun and the passes that run over a settled cut
 │   │                               # (motion/timing, audience gate, duplicate review, trim)
+│   │                               # _framing.py: near-home test, subject pool, chapters, worthiness tier, partition budget
 │   ├── editorial_projection.py # Plan -> PipelineResult, and the stage reporter
 │   ├── provider_health.py      # ProviderHealth: what a provider's answer says about its availability (preflight)
 │   ├── selection_trace.py      # Per-stage funnel record: what each filter received and let through

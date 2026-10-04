@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-from immich_memories.analysis.editorial_story_planner import (
-    StorySelection,
-    alternatives_pool,
-)
+from immich_memories.analysis.editorial_story_planner import StorySelection
 from immich_memories.analysis.editorial_story_reading import PeriodStory, StoryEpisode
+from immich_memories.analysis.editorial_story_replacement_pool import alternatives_pool
 
 
 def selection(carriers, alternatives_of, unfunded_pool=()):
