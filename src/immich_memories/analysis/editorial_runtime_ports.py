@@ -121,6 +121,18 @@ def production_live_clock_offsets(source, *, resources):
     return BankedClockOffsets(store=source.store, companions=source.companion_assets, fetch=fetch)
 
 
+# A clip whose own soundtrack is musical for a third of what this cut heard has a real
+# music/singing presence (#466, #1951); a few seconds of background TV in a minute-long
+# clip should not duck the added soundtrack for its whole window.
+_HAS_MUSIC_SHARE = 0.3
+
+
+def _tag_has_music(carriers, music_for: Callable[[str], float]) -> None:
+    for carrier in carriers:
+        if carrier["kind"] in {"video", "live-motion"}:
+            carrier["has_music"] = music_for(carrier["asset_id"]) >= _HAS_MUSIC_SHARE
+
+
 def production_cut_resolvers(source, *, resources):
     """Where each kept video plays, then where its cut may end, from one listening (#1949).
 
@@ -183,6 +195,10 @@ def production_cut_resolvers(source, *, resources):
         heard = windows.speech_for(asset_id)
         return heard if heard is not None else speech(asset_id)
 
+    def music_for(asset_id):
+        fraction = windows.music_fraction_for(asset_id)
+        return fraction if fraction is not None else speech.music_for(asset_id)
+
     def resolve_speech(carriers):
         if not any(c["kind"] in {"video", "live-motion"} for c in carriers):
             return carriers
@@ -193,7 +209,11 @@ def production_cut_resolvers(source, *, resources):
             )
             return carriers
         try:
-            return resolve_speech_cuts(carriers, regions_for, buffer=speech_buffer(source.config))
+            resolved = resolve_speech_cuts(
+                carriers, regions_for, buffer=speech_buffer(source.config)
+            )
+            _tag_has_music(resolved, music_for)
+            return resolved
         finally:
             speech.flush()
 

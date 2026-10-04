@@ -271,6 +271,46 @@ def test_a_changed_source_retires_its_banked_speech_and_is_measured_again(tmp_pa
     assert fetched == ["v", "v"]
 
 
+def test_music_fraction_is_measured_beside_speech_and_then_banked():
+    """#1951: the fallback route measures and banks a music/singing share too."""
+    from immich_memories.config_models_analysis import SpeechConfig
+    from immich_memories.speech.facts import SpeechFacts
+    from tests.conftest import make_asset
+
+    config = SpeechConfig()
+    assets = {"v": make_asset("v")}
+    measured = 0
+
+    def measure(asset_id):
+        nonlocal measured
+        measured += 1
+        return [], 0.8
+
+    def speech_facts(measure_fn=measure):
+        return SpeechFacts(
+            assets=assets,
+            store=annotation_store(),
+            fetch=lambda _id, _path: None,
+            config=config,
+            measure=measure_fn,
+        )
+
+    first_cut = speech_facts()
+    first_cut("v")
+    assert first_cut.music_for("v") == 0.8
+    first_cut.flush()
+    assert measured == 1
+
+    # A second cut reads the banked music fraction instead of measuring again.
+    def fails(asset_id):
+        raise AssertionError("should not measure a banked clip again")
+
+    second_cut = speech_facts(measure_fn=fails)
+    second_cut("v")
+    assert second_cut.music_for("v") == 0.8
+    assert measured == 1
+
+
 def test_real_planner_budgets_video_lengths_and_fits_after_speech_detection(tmp_path):
     from dataclasses import replace
 

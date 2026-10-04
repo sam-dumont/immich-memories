@@ -27,6 +27,7 @@ from immich_memories.speech.fireredvad import (
 from immich_memories.speech.models import SpeechRegion
 
 FIXTURE = Path(__file__).parent / "fixtures" / "speech" / "synthetic_speech_16k.npy"
+SINGING_FIXTURE = Path(__file__).parent / "fixtures" / "speech" / "singing_excerpt_16k.npy"
 
 # The fixture is two ~1.2 s runs of syllables around a 0.5 s pause; see the
 # generator for the exact layout.
@@ -37,6 +38,11 @@ PAUSE_END = 1.70
 def _fixture_audio() -> np.ndarray:
     """The fixture as the [-1, 1] float32 the detector's callers pass in."""
     return np.load(FIXTURE).astype(np.float32) / 32768.0
+
+
+def _singing_audio() -> np.ndarray:
+    """A real CC0 sung excerpt (see CREDITS.md), as the [-1, 1] float32 callers pass in."""
+    return np.load(SINGING_FIXTURE).astype(np.float32) / 32768.0
 
 
 class TestFireRedSpeechDetector:
@@ -68,6 +74,17 @@ class TestFireRedSpeechDetector:
 
     def test_silence_yields_no_regions(self):
         assert FireRedSpeechDetector().detect(np.zeros(16000 * 3, dtype=np.float32), 16000) == []
+
+    def test_real_singing_scores_a_higher_music_fraction_than_modelled_speech(self):
+        # WHY real audio, not another synthesis: the AED head was trained on real
+        # recordings, and only real sung audio proves it actually separates singing
+        # from this fixture's modelled speech, rather than both reading as neither.
+        _, singing_fraction = FireRedSpeechDetector().detect_with_music(_singing_audio(), 16000)
+        _, speech_fraction = FireRedSpeechDetector().detect_with_music(_fixture_audio(), 16000)
+
+        assert singing_fraction > 0.5
+        assert speech_fraction < 0.2
+        assert singing_fraction > speech_fraction
 
 
 class TestFireRedSpeechDetectorContract:
@@ -179,3 +196,47 @@ class TestFireRedSpeechDetectorMocked:
         assert len(regions) == 1
         assert regions[0].start == pytest.approx(0.05)
         assert regions[0].end == pytest.approx(0.35)
+
+    def test_detect_with_music_reports_the_music_and_singing_share(self):
+        detector = FireRedSpeechDetector(threshold=0.4, min_silence_ms=200)
+        detector._available = True
+
+        # WHY: mocks the onnxruntime session's `run()` boundary -- 10 frames split
+        # evenly between speech-only and music-only, so the expected fraction (0.5)
+        # is exact rather than threshold-sensitive.
+        probs = np.zeros((1, 10, 3), dtype=np.float32)
+        probs[0, :5, 0] = 0.9  # speech
+        probs[0, 5:, 2] = 0.9  # music
+
+        class _FakeSession:
+            def run(self, _output_names, _inputs):
+                return [probs]
+
+        detector._session = _FakeSession()
+
+        fake_fbank = SimpleNamespace(
+            num_frames_ready=10,
+            accept_waveform=lambda *_a, **_kw: None,
+            get_frame=lambda _i: [0.0] * 80,
+        )
+        fake_knf = SimpleNamespace(
+            FbankOptions=lambda: SimpleNamespace(
+                frame_opts=SimpleNamespace(), mel_opts=SimpleNamespace()
+            ),
+            OnlineFbank=lambda _opts: fake_fbank,
+        )
+
+        with patch.dict("sys.modules", {"kaldi_native_fbank": fake_knf}):
+            regions, fraction = detector.detect_with_music(np.zeros(16000, dtype=np.float32), 16000)
+
+        assert len(regions) == 1
+        assert fraction == pytest.approx(0.5)
+
+    def test_detect_with_music_on_an_unavailable_detector_is_silent(self):
+        detector = FireRedSpeechDetector()
+        detector._available = False
+
+        regions, fraction = detector.detect_with_music(np.zeros(16000, dtype=np.float32), 16000)
+
+        assert regions == []
+        assert fraction == 0.0

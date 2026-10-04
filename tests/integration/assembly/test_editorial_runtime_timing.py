@@ -69,6 +69,48 @@ def spoken_video(tmp_path):
     return path
 
 
+@pytest.fixture
+def sung_video(tmp_path):
+    fixture = Path(__file__).parents[2] / "fixtures/speech/singing_excerpt_16k.npy"
+    audio = np.load(fixture).astype(np.float32) / 32768.0
+    path = tmp_path / "singing.mp4"
+    subprocess.run(
+        [
+            "ffmpeg",
+            "-v",
+            "error",
+            "-f",
+            "lavfi",
+            "-i",
+            "testsrc2=s=160x90:r=30:d=3",
+            "-f",
+            "f32le",
+            "-ar",
+            "16000",
+            "-ac",
+            "1",
+            "-i",
+            "pipe:0",
+            "-t",
+            "3",
+            "-c:v",
+            "libx264",
+            "-preset",
+            "ultrafast",
+            "-threads",
+            "1",
+            "-c:a",
+            "aac",
+            str(path),
+        ],
+        input=audio.tobytes(),
+        check=True,
+        capture_output=True,
+        timeout=30,
+    )
+    return path
+
+
 def test_production_speech_cuts_use_real_detector_and_reuse_facts(
     spoken_video, tmp_path, monkeypatch
 ):
@@ -105,10 +147,42 @@ def test_production_speech_cuts_use_real_detector_and_reuse_facts(
     # The fixture's two lines are 0.46 s apart: one exchange since #1950, so the cut runs on
     # past the first line to the end of the second instead of stopping in the breath.
     assert first[0]["seconds"] == pytest.approx(3.0, abs=0.05)
+    assert first[0]["has_music"] is False, "spoken audio alone does not flag has_music (#1951)"
     with ExitStack() as resources:
         _windows, resolve = production_cut_resolvers(source, resources=resources)
         assert resolve([carrier]) == first
     assert calls == ["video", "closed"]
+
+
+def test_production_cuts_flag_has_music_for_a_clip_whose_own_audio_sings(
+    sung_video, tmp_path, monkeypatch
+):
+    """#1951: a kept clip whose own sound is singing/music is carried as has_music."""
+
+    # WHY: only Immich transport is replaced; decoding, VAD and cut selection are real.
+    class Client:
+        def __init__(self, **_kwargs):
+            pass
+
+        def download_playback(self, asset_id, path):
+            path.write_bytes(sung_video.read_bytes())
+
+        def close(self):
+            pass
+
+    monkeypatch.setattr("immich_memories.api.sync_client.SyncImmichClient", Client)
+    source = SimpleNamespace(
+        config=Config(),
+        assets={"video": make_asset("video", duration=3)},
+        companion_assets={},
+        bank_dir=tmp_path / "banks",
+        store=open_store(),
+    )
+    carrier = {"asset_id": "video", "kind": "video", "seconds": 1.0, "raw_seconds": 3.0}
+    with ExitStack() as resources:
+        _windows, resolve = production_cut_resolvers(source, resources=resources)
+        [resolved] = resolve([carrier])
+    assert resolved["has_music"] is True
 
 
 def test_same_smart_cut_renders_to_the_same_measured_length(spoken_video, tmp_path):

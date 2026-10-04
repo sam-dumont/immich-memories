@@ -53,9 +53,17 @@ class PendingMeasurements:
         producer: str,
         source_digest: str,
         regions: Sequence[tuple[float, float]],
+        music_fraction: float = 0.0,
     ) -> None:
-        """An empty list is an answer: this detector heard no speech in this exact source."""
-        measured = [[start, end] for start, end in regions]
+        """An empty list is an answer: this detector heard no speech in this exact source.
+
+        ``music_fraction`` rides beside the regions (#1951): the fallback detector reads
+        one source once, so its music/singing share is measured in the same pass.
+        """
+        measured = {
+            "regions": [[start, end] for start, end in regions],
+            "music_fraction": music_fraction,
+        }
         self._add(speech_regions, asset_id, producer, source_digest, measured)
 
     def clock_offset(
@@ -137,9 +145,20 @@ def banked_speech_regions(
 ) -> dict[str, tuple[tuple[float, float], ...]]:
     """The speech regions that still answer for these clips as they are now."""
     return {
-        asset_id: tuple((float(pair[0]), float(pair[1])) for pair in measured)
+        asset_id: tuple((float(pair[0]), float(pair[1])) for pair in measured["regions"])
         for asset_id, measured in _banked(store, speech_regions, digests, producer).items()
-        if isinstance(measured, list)
+        if isinstance(measured, dict) and "regions" in measured
+    }
+
+
+def banked_music_fractions(
+    store: Store, digests: Mapping[str, str], producer: str
+) -> dict[str, float]:
+    """The music/singing share this producer measured beside each clip's speech regions."""
+    return {
+        asset_id: float(measured["music_fraction"])
+        for asset_id, measured in _banked(store, speech_regions, digests, producer).items()
+        if isinstance(measured, dict) and "music_fraction" in measured
     }
 
 

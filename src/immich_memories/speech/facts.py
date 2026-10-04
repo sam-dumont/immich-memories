@@ -21,12 +21,14 @@ from immich_memories.speech.fireredvad import FireRedSpeechDetector
 from immich_memories.speech.vad import VAD_SAMPLE_RATE, extract_audio_16k
 from immich_memories.store.cut_measurements import (
     PendingMeasurements,
+    banked_music_fractions,
     banked_speech_regions,
 )
 
 logger = logging.getLogger(__name__)
 
-METHOD = "firered-aed-utterances-v1"
+# v2: #1951 banks a music fraction beside the regions; a v1 row never answered it.
+METHOD = "firered-aed-utterances-v2"
 
 Regions = list[tuple[float, float]]
 
@@ -66,14 +68,16 @@ class SpeechFacts:
         store: Store,
         fetch,
         config,
-        measure: Callable[[str], Regions] | None = None,
+        measure: Callable[[str], tuple[Regions, float]] | None = None,
     ):
         self.assets, self.store, self.fetch = assets, store, fetch
         self.detector = FireRedSpeechDetector(config.vad_threshold, config.min_silence_ms)
         self.producer = speech_producer(config)
         self.memo: dict[tuple[str, str], Regions] = {}
+        self.music_memo: dict[tuple[str, str], float] = {}
         self._measure_source = measure or self._measure
         self._banked: dict[str, tuple[tuple[float, float], ...]] | None = None
+        self._music_banked: dict[str, float] | None = None
         self._pending = PendingMeasurements(store)
 
     def __call__(self, asset_id: str) -> Regions:
@@ -83,13 +87,25 @@ class SpeechFacts:
         if self._banked is None:
             # Every clip this cut could ask about, read once.
             self._banked = read_speech_regions(self.store, self.assets.values(), self.producer)
+            self._music_banked = banked_music_fractions(
+                self.store,
+                {a.id: source_metadata_digest(a) for a in self.assets.values()},
+                self.producer,
+            )
         if asset_id in self._banked:
             regions = list(self._banked[asset_id])
+            music_fraction = self._music_banked.get(asset_id, 0.0) if self._music_banked else 0.0
         else:
-            regions = self._measure_source(asset_id)
-            self._remember(asset_id, digest, regions)
+            regions, music_fraction = self._measure_source(asset_id)
+            self._remember(asset_id, digest, regions, music_fraction)
         self.memo[(asset_id, digest)] = regions
+        self.music_memo[(asset_id, digest)] = music_fraction
         return regions
+
+    def music_for(self, asset_id: str) -> float:
+        """The music/singing share this cut measured in a clip, or 0.0 when unmeasured."""
+        digest = source_metadata_digest(self.assets[asset_id])
+        return self.music_memo.get((asset_id, digest), 0.0)
 
     def flush(self) -> None:
         """Bank what this cut measured and has not written yet."""
@@ -99,20 +115,23 @@ class SpeechFacts:
             # An unwritable bank costs the next cut a measurement, never this cut.
             logger.debug("Speech regions were not banked: %s", type(error).__name__)
 
-    def _remember(self, asset_id: str, digest: str, regions: Regions) -> None:
+    def _remember(
+        self, asset_id: str, digest: str, regions: Regions, music_fraction: float
+    ) -> None:
         try:
             self._pending.speech_regions(
                 asset_id=asset_id,
                 producer=self.producer,
                 source_digest=digest,
                 regions=regions,
+                music_fraction=music_fraction,
             )
         except SQLAlchemyError as error:
             logger.debug(
                 "Speech regions for %s were not banked: %s", asset_id, type(error).__name__
             )
 
-    def _measure(self, asset_id: str) -> Regions:
+    def _measure(self, asset_id: str) -> tuple[Regions, float]:
         with tempfile.TemporaryDirectory(prefix="editorial-speech-") as directory:
             path = Path(directory) / "source.mp4"
             try:
@@ -135,10 +154,11 @@ class SpeechFacts:
                     f"playback for {asset_id} could not be probed: {type(error).__name__}"
                 ) from error
             if not probe.has_audio:
-                return []
+                return [], 0.0
             audio = extract_audio_16k(path)
             if audio is None:
                 raise SpeechMeasurementUnavailable(
                     f"audio for {asset_id} could not be extracted for speech detection"
                 )
-            return [(r.start, r.end) for r in self.detector.detect(audio, VAD_SAMPLE_RATE)]
+            regions, music_fraction = self.detector.detect_with_music(audio, VAD_SAMPLE_RATE)
+            return [(r.start, r.end) for r in regions], music_fraction
