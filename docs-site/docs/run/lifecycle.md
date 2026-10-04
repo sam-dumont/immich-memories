@@ -8,7 +8,15 @@ These operations affect **Immich Memories only**. Keep the separate Immich insta
 its database/volumes and originals. Films already uploaded to Immich remain there; uninstalling
 this app does not delete remote media. No recipe below performs remote-library deletion.
 
-Use the exact project, namespace and paths selected at installation. The commands below cover
+Use the exact project, namespace and paths selected at installation. For Kubernetes, set the
+namespace once per shell and every command below uses it:
+
+```bash
+NS=<your namespace>   # the one your kustomization sets; the shipped default is immich-memories
+```
+
+Never paste a command with a literal `-n immich-memories` into a cluster you did not install
+into by default: that namespace may hold someone else's real install. The commands below cover
 the shipped **Basic Compose**, **Kustomize base** and **native uv/pip** routes with SQLite.
 Inventory optional model/worker services separately; do not stop a shared server used by other
 apps. Suspend a GitOps reconciler before manual Kubernetes maintenance or it can recreate work.
@@ -53,9 +61,9 @@ UI service too; `auto install` manages scheduled generation, not the UI service.
 For the optional shipped Kubernetes CronJobs, inspect and suspend the installed names:
 
 ```bash
-kubectl get cronjobs,jobs -n immich-memories -l app.kubernetes.io/name=immich-memories
-kubectl patch cronjob immich-memories-auto -n immich-memories -p '{"spec":{"suspend":true}}'
-kubectl patch cronjob immich-memories-monthly -n immich-memories -p '{"spec":{"suspend":true}}'
+kubectl get cronjobs,jobs -n "$NS" -l app.kubernetes.io/name=immich-memories
+kubectl patch cronjob immich-memories-auto -n "$NS" -p '{"spec":{"suspend":true}}'
+kubectl patch cronjob immich-memories-monthly -n "$NS" -p '{"spec":{"suspend":true}}'
 ```
 
 Skip absent CronJobs. Suspending does not stop a Job already running: let it finish or cancel
@@ -73,13 +81,23 @@ docker compose ps -a
 docker compose start immich-memories
 ```
 
-Kubernetes base (namespace/deployment names are the shipped defaults):
+Kubernetes (deployment names are the shipped defaults, the namespace is yours):
 
 ```bash
-kubectl scale deployment/immich-memories -n immich-memories --replicas=0
-kubectl wait -n immich-memories --for=delete pod -l 'app.kubernetes.io/name=immich-memories,!job-name,!batch.kubernetes.io/job-name' --timeout=120s
+kubectl scale deployment/immich-memories -n "$NS" --replicas=0
+kubectl wait -n "$NS" --for=delete pod -l 'app.kubernetes.io/name=immich-memories,!job-name,!batch.kubernetes.io/job-name' --timeout=120s
 # Start it again:
-kubectl scale deployment/immich-memories -n immich-memories --replicas=1
+kubectl scale deployment/immich-memories -n "$NS" --replicas=1
+```
+
+This stops the app only. On the GPU tier the `immich-memories-inference` and
+`immich-memories-captioner` Deployments keep running and keep their GPU slot, and so does any
+optional service you added yourself (an Ollama pod, for example). Scale those to 0 as well if you
+want the slot back, and back to 1 before the next film:
+
+```bash
+kubectl get deploy -n "$NS"
+kubectl scale deployment/immich-memories-inference deployment/immich-memories-captioner -n "$NS" --replicas=0
 ```
 
 Native: press **Ctrl-C** in the terminal running `immich-memories ui`, or stop the exact UI service
@@ -110,15 +128,30 @@ Keep `.env`, encryption key and Compose files. `docker compose up -d` with the s
 and version reuses the data. Named optional services in that project also stop; inspect them first.
 
 Kubernetes: stop as above, then remove only app controllers/routing. Keep the namespace, Secret,
-ConfigMaps and three PVCs. These commands are for the base; delete only an installed named app
-Ingress or CronJob separately, after recording it.
+ConfigMaps and PVCs. List what is installed first, so you remove what is there and not what the
+docs assume:
 
 ```bash
-kubectl delete deployment/immich-memories service/immich-memories networkpolicy/immich-memories -n immich-memories
-kubectl get pvc,secret,configmap -n immich-memories
+kubectl get deploy,svc,networkpolicy,cronjob,ingress,pvc,secret,configmap -n "$NS"
+kubectl delete deployment/immich-memories service/immich-memories networkpolicy/immich-memories -n "$NS"
 ```
 
-Reapply the same version's maintained overlay to reuse the claims. Do not use `kubectl delete -k`
+On the GPU tier also delete the two model services and their policies. Their claims
+(`immich-memories-caption-models` 2Gi, `immich-memories-inference-cache` 10Gi) stay:
+
+```bash
+kubectl delete deployment/immich-memories-inference deployment/immich-memories-captioner \
+  service/inference service/captioner \
+  networkpolicy/immich-memories-inference networkpolicy/immich-memories-captioner -n "$NS"
+```
+
+Delete an installed Ingress or CronJob separately, after recording it. An Ollama pod, its Service
+and its NetworkPolicy are yours, not the app's: they outlive this step, so remove them only if
+nothing else uses them.
+
+Reapply with `kubectl apply -k <your root>`, the kustomization you installed from, to reuse the
+claims. Never `kubectl apply -f` a base file: they hard-code the `immich-memories` namespace.
+Do not use `kubectl delete -k`
 for preservation: the kustomization includes namespace and PVC resources. Keep SQLite on its
 supported local/block storage; verify settings/history and retained films after reinstall.
 
@@ -154,12 +187,18 @@ app model caches; they are fetched again. `.env`, Compose files and `./output` r
 For Kubernetes with the app stopped and no active app Jobs, delete **only** the state PVC:
 
 ```bash
-kubectl get pvc immich-memories-cache -n immich-memories -o wide
-kubectl delete pvc immich-memories-cache -n immich-memories
-kubectl apply -f deploy/kubernetes/base/pvc.yaml
+kubectl get pvc immich-memories-cache -n "$NS" -o wide
+kubectl delete pvc immich-memories-cache -n "$NS"
+kubectl apply -k <your root>
 ```
 
-This preserves `immich-memories-output`, `immich-memories-models` and the app Secret. Verify the
+`apply -k` on your own root recreates the claim in your namespace. `kubectl apply -f
+deploy/kubernetes/base/pvc.yaml` would not: that file says `namespace: immich-memories` and
+creates the claim there, in someone else's install if the default namespace is in use. Reapplying
+also restores the base NetworkPolicy; reapply a stricter [offline policy](./offline.md) afterwards.
+
+This preserves `immich-memories-output`, `immich-memories-models`, the GPU tier's claims, the app
+Secret and any ConfigMap you mount. Verify the
 StorageClass/PV reclaim policy first: `Retain` can leave the old state on a retained PV and is
 not proof of erasure. Bind a fresh volume rather than reattaching the old data, then restart and
 prepare/preflight. Do not claim a reset until saved history/settings are absent as expected.
@@ -221,12 +260,19 @@ service mounts separately; a shared model server belongs to its operator, not th
 For the default Kubernetes base, after removing app controllers and schedules:
 
 ```bash
-kubectl delete pvc immich-memories-cache immich-memories-models immich-memories-output -n immich-memories
-kubectl delete secret immich-memories-secrets -n immich-memories
+kubectl delete pvc immich-memories-cache immich-memories-models immich-memories-output -n "$NS"
+kubectl delete secret immich-memories-secrets -n "$NS"
 ```
 
-Remove only the recorded app-owned ConfigMaps, optional service controllers/claims and saved
-secret files. Check retained PVs and storage snapshots with the storage owner; PVC deletion does
+The GPU tier adds two claims. Delete them only if you also deleted the two services above:
+
+```bash
+kubectl delete pvc immich-memories-caption-models immich-memories-inference-cache -n "$NS"
+```
+
+Then remove the recorded ConfigMap you mounted (if any), your Ollama Deployment, Service,
+NetworkPolicy and model claim (if you added one), and saved secret files. Run
+`kubectl get all,pvc,networkpolicy,configmap,secret -n "$NS"` at the end: what is left is not the app's. Check retained PVs and storage snapshots with the storage owner; PVC deletion does
 not guarantee their deletion. Keep the namespace when shared. Never delete a namespace as a
 shortcut to discovering which resources belong to the app.
 
