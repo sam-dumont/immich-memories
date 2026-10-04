@@ -182,6 +182,9 @@ name on a jersey, a brand, a sign)? Only a name the request uses that is likely 
 things; usually none. Reason first. Return JSON."""
 _MOST_PRINTED = 3
 _SHORTEST_PRINTED = 3
+# A written year, never a jersey number or a birthday age: only this shape, and only inside
+# `when` (the reading's own date tokens), is dropped as a number (#2046).
+_YEAR = re.compile(r"^(?:1[89]\d{2}|20\d{2})$")
 
 
 def printed_words(
@@ -192,9 +195,15 @@ def printed_words(
     A word already used for the request's own date (a year, a month name in any language: the
     reading already split it into `when`) or for the subject's own nouns is never offered: the
     model voted both in as "printed" at once, OCR then read no photo, and the pool emptied
-    (#2046). Decided in code, never asked.
+    (#2046). A written year is dropped the same way; any other number ("ses 40 ans") is still a
+    genuine candidate, a birthday banner or a jersey number. Decided in code, never asked.
     """
-    dated = {word for phrase in when for word in words_of(phrase)}
+    dated = {
+        word
+        for phrase in when
+        for word in words_of(phrase)
+        if not word.isdigit() or _YEAR.match(word)
+    }
     named = {word.lower() for word in (*subject.heads, *subject.words)}
     offered = [
         word
@@ -203,7 +212,6 @@ def printed_words(
         and word not in GLUE | FIRST_PERSON | PICTURE_WORDS
         and word not in dated
         and word not in named
-        and not word.isdigit()
     ]
     if not offered:
         return (), Reason("", "no word to read", "none")

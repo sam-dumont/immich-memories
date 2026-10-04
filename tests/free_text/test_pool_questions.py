@@ -56,6 +56,31 @@ def test_a_month_name_in_another_locale_is_read_as_the_date_too() -> None:
     assert _offered(asker).isdisjoint({"katzen", "juni", "2023"})
 
 
+def test_an_age_number_is_a_genuine_printed_candidate_not_a_date() -> None:
+    # "ses 100 ans" (her 100th): the reading puts the age phrase in `when`, but 100 is not a
+    # year, so it stays a candidate (a number on the cake, the balloons, the banner).
+    asker = BankedAsker(_picks("100"), _picks("100"), _picks("100"))
+
+    words, reason = printed_words("ses 100 ans", ("100 ans",), Subject(), asker)
+
+    assert "100" in words
+    assert "100" in _offered(asker)
+
+
+def test_a_year_is_dropped_but_another_number_in_the_same_request_is_not() -> None:
+    # "les 100 ans de mamie en 2019": 2019 is the request's own date and is dropped; 100 is an
+    # age, not a date, and stays offered.
+    asker = BankedAsker(_picks("100"), _picks("100"), _picks("100"))
+
+    words, reason = printed_words(
+        "les 100 ans de mamie en 2019", ("100 ans", "en 2019"), Subject(), asker
+    )
+
+    assert "2019" not in _offered(asker)
+    assert "100" in _offered(asker)
+    assert "100" in words
+
+
 def test_a_genuine_quoted_printed_word_still_survives() -> None:
     request = "a sign saying bienvenue"
     # WHY: stands in for the model server; every answer picks the quoted word as printed.
