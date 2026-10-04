@@ -28,6 +28,11 @@ from immich_memories.audio.mixer_helpers import (
     mix_audio_with_4stem_ducking,
     mix_audio_with_stem_ducking,
 )
+from immich_memories.processing.assembly_config import (
+    AssemblySettings,
+    standalone_assembly_encoding_plan,
+)
+from immich_memories.processing.audio_mixer_service import AudioMixerService
 
 pytestmark = pytest.mark.integration
 
@@ -233,3 +238,81 @@ def test_safety_filter_leaves_normal_level_material_unchanged(tmp_path: Path) ->
     after = _decoded_peak(filtered)
     db_change = 20 * np.log10(after / before)
     assert abs(db_change) <= 0.1
+
+
+def test_safety_filter_does_not_shift_a_tone_onset(tmp_path: Path) -> None:
+    """alimiter's lookahead delays every sample unless latency=1 compensates it.
+
+    Measured without compensation: an onset at 1.000s landed at 1.004958s.
+    """
+    source = tmp_path / "onset.wav"
+    silence_samples = int(1.0 * RATE)
+    tone_samples = int(1.0 * RATE)
+    time = np.arange(tone_samples) / RATE
+    signal = np.concatenate([np.zeros(silence_samples), 0.5 * np.sin(2 * np.pi * 440 * time)])
+    with wave.open(str(source), "wb") as stream:
+        stream.setnchannels(1)
+        stream.setsampwidth(2)
+        stream.setframerate(RATE)
+        stream.writeframes((signal * 32767).astype("<i2").tobytes())
+
+    filtered = tmp_path / "onset_filtered.wav"
+    subprocess.run(
+        [
+            "ffmpeg",
+            "-v",
+            "error",
+            "-y",
+            "-i",
+            str(source),
+            "-af",
+            final_mix_safety_filter(),
+            str(filtered),
+        ],
+        check=True,
+    )
+
+    raw = subprocess.run(
+        [
+            "ffmpeg",
+            "-v",
+            "error",
+            "-i",
+            str(filtered),
+            "-f",
+            "f32le",
+            "-ac",
+            "1",
+            "-ar",
+            str(RATE),
+            "-",
+        ],
+        capture_output=True,
+        check=True,
+    ).stdout
+    samples = np.frombuffer(raw, dtype=np.float32)
+    onset_index = int(np.argmax(np.abs(samples) > 0.05))
+
+    assert abs(onset_index / RATE - 1.0) <= 0.001
+
+
+def test_simple_mix_fallback_decodes_under_the_true_peak_ceiling(tmp_path: Path) -> None:
+    """The no-ducking fallback (used when stem mixers fail) had no limiter at all."""
+    video_audio = tmp_path / "video_audio.wav"
+    _write_tone(video_audio, 300, amplitude=0.95, duration=6.0)
+    video = tmp_path / "video.mp4"
+    _make_video(video, video_audio)
+
+    music = tmp_path / "music.wav"
+    _write_tone(music, 500, amplitude=0.95, duration=6.0)
+
+    settings = AssemblySettings(
+        encoding_plan=standalone_assembly_encoding_plan(),
+        music_path=music,
+        music_volume=1.0,
+    )
+    service = AudioMixerService(settings)
+
+    output = service._add_music_simple(video, tmp_path / "mixed.mp4")
+
+    assert _decoded_peak(output) <= CEILING

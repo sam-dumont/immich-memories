@@ -179,3 +179,39 @@ def test_assembly_keeps_an_internal_pause_and_what_follows_it(tmp_path: Path) ->
     # The second tone (after the pause) must survive, not be cut away with the tail.
     second_tone_window = samples[int(3.0 * SAMPLE_RATE) : int(3.3 * SAMPLE_RATE)]
     assert np.sqrt(np.mean(second_tone_window**2)) > 0.3
+
+
+def _write_silent_block(path: Path, duration: float) -> None:
+    """A generated block that never has audible content (below -50 dB throughout)."""
+    count = int(SAMPLE_RATE * duration)
+    silence = 0.0005 * np.sin(2 * np.pi * 50 * np.arange(count) / SAMPLE_RATE)
+    with wave.open(str(path), "wb") as handle:
+        handle.setnchannels(1)
+        handle.setsampwidth(2)
+        handle.setframerate(SAMPLE_RATE)
+        handle.writeframes((silence * 32767).astype("<i2").tobytes())
+
+
+def test_assembly_drops_an_entirely_silent_block_instead_of_chaining_it(tmp_path: Path) -> None:
+    """A fully silent block must not be kept untrimmed: that reintroduces the
+    exact multi-second gap the trim exists to close (#1973)."""
+    block_a = tmp_path / "block_tone.wav"
+    _write_block(block_a, 440.0, lead_silence=False)
+    silent_block = tmp_path / "block_silent.wav"
+    _write_silent_block(silent_block, 5.0)
+
+    out = assemble_music([block_a, silent_block], 10.0, tmp_path / "assembled.wav")
+
+    assert _silences_in(out, min_duration=1.0) == []
+
+
+def test_assembly_keeps_a_silent_block_when_every_block_is_silent(tmp_path: Path) -> None:
+    """Dropping every block would leave nothing to assemble: fall back, with a warning."""
+    silent_a = tmp_path / "silent_a.wav"
+    _write_silent_block(silent_a, 3.0)
+    silent_b = tmp_path / "silent_b.wav"
+    _write_silent_block(silent_b, 3.0)
+
+    out = assemble_music([silent_a, silent_b], 8.0, tmp_path / "assembled.wav")
+
+    assert len(_samples(out)) / SAMPLE_RATE == pytest.approx(8.0, abs=0.15)

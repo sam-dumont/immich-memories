@@ -70,8 +70,9 @@ class TestStemsAreLoopedToo:
 
 
 class TestTrimBlockSilenceFallbacks:
-    """A seam defect is worse than losing a whole block: both failure modes
-    of the trim must hand back the untrimmed source rather than raise."""
+    """A failed trim must hand back the untrimmed source; an entirely silent
+    block must signal "drop me" rather than reintroduce the gap it was
+    meant to close."""
 
     def test_a_failed_trim_falls_back_to_the_source(self, tmp_path, monkeypatch):
         from immich_memories.audio import mixer
@@ -87,7 +88,7 @@ class TestTrimBlockSilenceFallbacks:
 
         assert result == source
 
-    def test_a_block_trimmed_to_nothing_falls_back_to_the_source(self, tmp_path, monkeypatch):
+    def test_a_block_trimmed_to_nothing_is_dropped(self, tmp_path, monkeypatch):
         from immich_memories.audio import mixer
 
         # WHY: replaces the FFmpeg trim subprocess; only its success/failure matters here.
@@ -97,4 +98,4 @@ class TestTrimBlockSilenceFallbacks:
         source = tmp_path / "block.wav"
         result = _trim_block_silence(source, tmp_path / "trimmed.wav")
 
-        assert result == source
+        assert result is None

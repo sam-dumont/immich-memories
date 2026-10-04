@@ -29,11 +29,16 @@ def final_mix_safety_filter(ceiling_db: float = _FINAL_MIX_CEILING_DB) -> str:
 
     Every mixer's final amix must pass its [mixed] stream through this before
     the AAC encode — chain it in with no input/output labels of its own.
+
+    WHY latency=1: alimiter's lookahead otherwise delays every sample by its
+    own buffer without reporting it, so a transition that happens at 1.000s
+    landed at 1.004958s measured — audible drift on hard cuts. latency=1
+    compensates the delay (FFmpeg >=5.0; this project's floor is 5.1).
     """
     limit = 10 ** (ceiling_db / 20)
     return (
-        f"aresample=192000,alimiter=limit={limit:.4f}:level=disabled:attack=5:release=50,"
-        "aresample=48000"
+        f"aresample=192000,alimiter=limit={limit:.4f}:level=disabled:attack=5:release=50:"
+        "latency=1,aresample=48000"
     )
 
 
@@ -166,14 +171,16 @@ _BLOCK_SILENCE_THRESHOLD_DB = -50.0
 _BLOCK_SILENCE_KEEP_SECONDS = 0.2
 
 
-def _trim_block_silence(source: Path, destination: Path) -> Path:
+def _trim_block_silence(source: Path, destination: Path) -> Path | None:
     """Trim a block's near-silent lead-in/tail before it can hold open a seam.
 
     ACE-Step blocks often end (sometimes start) with several seconds below
     -50 dB. assemble_music chains blocks with a crossfade, so an untrimmed
     block can land a multi-second near-silent stretch right at that seam
-    (#1954). Falls back to the source on failure — a seam defect is better
-    than a missing block.
+    (#1954). Falls back to the source on a trim failure — a seam defect is
+    better than a missing block. Returns None when the block was near-silent
+    throughout: keeping its untrimmed self in the chain would reintroduce
+    the exact gap this trim exists to close, so the caller drops it instead.
 
     WHY two single-sided passes, not one stop_periods=1 pass: silenceremove's
     stop side cuts at the FIRST sub-threshold stretch after sound starts, not
@@ -202,7 +209,7 @@ def _trim_block_silence(source: Path, destination: Path) -> Path:
         return source
     # A block that was near-silent throughout can trim away to nothing.
     if get_audio_duration(destination) <= 0.05:
-        return source
+        return None
     return destination
 
 
@@ -223,10 +230,19 @@ def assemble_music(
     """
     if not block_paths:
         raise ValueError("assemble_music needs at least one block")
-    block_paths = [
+    trimmed = [
         _trim_block_silence(path, output_path.parent / f"{output_path.stem}_trim{i}.wav")
         for i, path in enumerate(block_paths)
     ]
+    kept = [path for path in trimmed if path is not None]
+    if not kept:
+        logger.warning(
+            "All %d music blocks were near-silent throughout; keeping them "
+            "untrimmed rather than losing the track entirely",
+            len(block_paths),
+        )
+        kept = block_paths
+    block_paths = kept
     durations = [get_audio_duration(p) for p in block_paths]
     shortest = min(durations)
     fade = min(crossfade_seconds, max(shortest / 2, 0.01))
