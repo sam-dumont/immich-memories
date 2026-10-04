@@ -43,7 +43,7 @@ from immich_memories.analysis.editorial_story_replies import (
     film_close_family,
     relations_on,
 )
-from immich_memories.analysis.editorial_story_shortlist import _spread
+from immich_memories.analysis.editorial_story_shortlist import spread_evenly
 from immich_memories.analysis.editorial_story_slots import weight_caps
 from immich_memories.analysis.editorial_story_weighing import (
     _FAMILY_WORD,
@@ -538,7 +538,7 @@ class RuleStructureReader:
             candidates, key=lambda story: min(hints[k]["day"] for k in story["episodes"])
         )
         free_slots = self._free_quality_slots(stories, by_key, candidates)
-        chosen = _spread(ordered, free_slots) if len(ordered) > free_slots else ordered.copy()
+        chosen = spread_evenly(ordered, free_slots) if len(ordered) > free_slots else ordered.copy()
         chosen_keys = {s["key"] for s in chosen}
         # Weeks the spread had no room for wait behind the chosen ones: a chosen week that
         # fails its own filters hands its slot to the next of these, in the same
