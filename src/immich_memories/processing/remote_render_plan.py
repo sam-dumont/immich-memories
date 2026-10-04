@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 from uuid import uuid4
 
 from immich_memories.api.models import AssetType
+from immich_memories.i18n import resolve_film_locale
 from immich_memories.processing.editorial_timing import (
     bind_editorial_timeline,
     prepare_certified_timeline,
@@ -38,7 +39,11 @@ def build_render_request(params: GenerationParams) -> dict:
     clips = [_clip_request(clip, params, directives.get(clip.asset.id)) for clip in params.clips]
     params, binding = _timing_binding(params, clips)
     canvas = resolve_generation_canvas(params)
-    titles = params.config.title_screens.model_dump()
+    # The worker never resolves "auto" itself, so the host's language is
+    # decided here, before the plan leaves this process.
+    titles = params.config.title_screens.model_dump() | {
+        "locale": resolve_film_locale(params.config.title_screens.locale)
+    }
     return {
         "version": 1,
         "render_attempt": str(uuid4()),

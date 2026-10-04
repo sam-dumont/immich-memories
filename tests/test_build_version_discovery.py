@@ -92,3 +92,18 @@ def test_python_version_discovery_ignores_model_tags_and_retains_commit_identity
         re.fullmatch(options["tag_regex"], "v0.0.0-dev.12345").group("version") == "0.0.0-dev.12345"
     )
     assert not re.fullmatch(options["tag_regex"], "models-v99")
+
+
+def test_python_version_discovery_after_a_rehearsal_skips_the_rehearsal_tag(tagged_repo):
+    # setuptools-scm cannot bump a custom `.devN` number, so a commit after a
+    # `v0.0.0-dev.RUN` rehearsal tag would make every later build fail (#1974).
+    root, git = tagged_repo
+    git("tag", "v0.0.0-dev.12345")
+    git("commit", "--allow-empty", "-qm", "after the rehearsal")
+    options = tomllib.loads((ROOT / "pyproject.toml").read_text())["tool"]["hatch"]["version"][
+        "raw-options"
+    ]
+    description = subprocess.check_output(
+        shlex.split(options["scm"]["git"]["describe_command"]), cwd=root, text=True
+    ).strip()
+    assert description.startswith("v1.2.3-2-g")

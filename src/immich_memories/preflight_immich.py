@@ -55,7 +55,10 @@ def check_immich(config: Config) -> CheckResult:
             )
     except MissingReadPermissions as error:
         return CheckResult(
-            "Immich", CheckStatus.ERROR, "Required read permissions missing", str(error)
+            "Immich",
+            CheckStatus.ERROR,
+            "Required read permissions missing: " + ", ".join(error.missing),
+            str(error),
         )
     except UnsupportedImmichVersion as e:
         safe_message = sanitize_error_message(str(e)).replace(config.immich.api_key, "***")
@@ -95,18 +98,22 @@ def _connected_result(
 ) -> CheckResult:
     details = f"Server: {config.immich.url}; API: {version}"
     warnings = []
+    reasons = []
     if capabilities.is_all:
         warnings.append(
             "This key can delete or change your whole library; create a least-privilege key"
         )
+        reasons.append("key can change your whole library")
         details += "; https://sam-dumont.github.io/immich-memories/docs/run/docker#the-api-key"
     if capabilities.missing_upload:
         warnings.append("Upload steps unavailable: " + ", ".join(capabilities.missing_upload))
+        reasons.append("upload permissions not granted, films stay local")
     if not capabilities.allows(DELETE_PERMISSION):
         warnings.append("Previous version kept: the key lacks asset.delete")
+        reasons.append("asset.delete not granted, previous versions are kept")
     return CheckResult(
         "Immich",
         CheckStatus.WARNING if warnings else CheckStatus.OK,
-        f"Connected as {user}",
+        "; ".join([f"Connected as {user}", *reasons]),
         details + ("; " + "; ".join(warnings) if warnings else ""),
     )

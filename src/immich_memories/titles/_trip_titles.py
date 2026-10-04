@@ -8,11 +8,10 @@ from __future__ import annotations
 
 from datetime import date
 
-from immich_memories.i18n import film_text, film_text_n, month_name_forms
+from immich_memories.i18n import film_text, film_text_n, month_name_forms, resolve_film_locale
 from immich_memories.i18n_places import comma, localise_country, localise_place
 from immich_memories.place_phrases import Place, place_phrase
 from immich_memories.place_phrases.place import infer_place_kind
-from immich_memories.processing.clip_caption import resolve_caption_locale
 from immich_memories.titles.letter_case import display_upper
 
 
@@ -91,7 +90,7 @@ def generate_trip_title(
         "DEUX SEMAINES EN CRÈTE, GRÈCE, ÉTÉ 2025"
         "CRÈTE, GRÈCE · DEUX SEMAINES, ÉTÉ 2025" (no phrase for it)
     """
-    locale = resolve_caption_locale(locale)
+    locale = resolve_film_locale(locale)
     days = (end_date - start_date).days + 1
     duration = _get_duration_label(days, locale)
     time_label = _get_time_label(start_date, end_date, locale)
