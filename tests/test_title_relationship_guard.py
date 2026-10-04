@@ -360,3 +360,73 @@ def test_a_single_person_film_states_its_own_relation_to_the_maker():
     )
 
     assert "relation to the film's maker: best friend" in facts
+
+
+def test_papa_et_maman_is_refused_even_with_the_relation_recorded():
+    """The owner's own verdict: "too much papa et maman" -- a backing record
+
+    does not make the child's-eye narration any less overused, so these words
+    are refused outright rather than checked against the family record.
+    """
+    from immich_memories.titles.title_guards import refusing_unfounded_relationships
+    from immich_memories.titles.title_suggestion import TitleSuggestion
+
+    store = seed_people(
+        {
+            "owner": {"person_id": "person-owner", "name": "Zed Example"},
+            "people": [
+                {
+                    "ids": ["person-mom"],
+                    "name": "Nina Example",
+                    "confirmed": {"role": "mother"},
+                },
+                {
+                    "ids": ["person-dad"],
+                    "name": "Theo Example",
+                    "confirmed": {"role": "father"},
+                },
+                {
+                    "ids": ["person-kid"],
+                    "name": "Elio Example",
+                    "birth_date": "2020-01-01",
+                    "confirmed": {
+                        "links": [
+                            {"kind": "child-of", "with": "person-mom"},
+                            {"kind": "child-of", "with": "person-dad"},
+                        ]
+                    },
+                },
+            ],
+        }
+    )
+    suggestion = TitleSuggestion(title="Papa et maman à la plage", subtitle=None)
+
+    result = refusing_unfounded_relationships(
+        suggestion, ["Elio Example", "Nina Example", "Theo Example"], "fr", store
+    )
+
+    assert result is None
+
+
+def test_a_friend_named_by_first_name_is_kept():
+    """A civil-register or friend word is still governed by the record, not banned."""
+    from immich_memories.titles.title_guards import refusing_unfounded_relationships
+    from immich_memories.titles.title_suggestion import TitleSuggestion
+
+    store = seed_people(
+        {
+            "owner": {"person_id": "person-owner", "name": "Zed Example"},
+            "people": [
+                {
+                    "ids": ["person-friend"],
+                    "name": "Mika Example",
+                    "confirmed": {"role": "friend"},
+                }
+            ],
+        }
+    )
+    suggestion = TitleSuggestion(title="Avec Mika à Rome", subtitle=None)
+
+    result = refusing_unfounded_relationships(suggestion, ["Mika Example"], "fr", store)
+
+    assert result is suggestion

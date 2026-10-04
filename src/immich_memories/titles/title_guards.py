@@ -24,6 +24,7 @@ from typing import TYPE_CHECKING
 from immich_memories.titles.relationship_words import (
     FAMILY_GENERIC,
     FAMILY_TYPES,
+    RelationWord,
     relationship_words,
 )
 from immich_memories.titles.title_routing import is_trip
@@ -484,13 +485,25 @@ def _contains_relationship_word(lowered: str, word: str) -> bool:
 
 
 def _unfounded_relationship_word(
-    text: str, words: dict[str, tuple[str, bool]], holders: dict[str, set[str]]
+    text: str, words: dict[str, RelationWord], holders: dict[str, set[str]]
 ) -> str | None:
-    """The first relationship word in `text` the recorded relations do not back, if any."""
+    """The first relationship word in `text` the title may not use, if any.
+
+    A perspective word (maman, papy, mum, oma) is refused outright: it
+    narrates from a child's point of view, which the template never does,
+    and a backing record does not make it any less overused. Every other
+    relationship word still needs that record: refused when the relation it
+    names is not among the film's own recorded relations, or a plural word
+    covers only one person.
+    """
     lowered = text.casefold()
-    for word, (relation_type, plural) in sorted(words.items(), key=lambda kv: -len(kv[0])):
+    for word, (relation_type, plural, perspective) in sorted(
+        words.items(), key=lambda kv: -len(kv[0])
+    ):
         if not _contains_relationship_word(lowered, word):
             continue
+        if perspective:
+            return word
         if relation_type == FAMILY_GENERIC:
             if any(t in holders for t in FAMILY_TYPES):
                 continue
