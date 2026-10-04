@@ -120,7 +120,8 @@ function macRecipe(setup: Setup): Result {
   const config: Mapping = {
     immich: {url: setup.immichUrl, api_key: setup.apiKey}, tier: setup.tier,
     advanced: {
-      editorial: {preparation: {caption_base_url: setup.tier === 'basic' ? '' : 'http://127.0.0.1:8092/v1'}},
+      // An empty caption_base_url is rejected by the app; Basic simply leaves the key out.
+      ...(setup.tier === 'basic' ? {} : {editorial: {preparation: {caption_base_url: 'http://127.0.0.1:8092/v1'}}}),
       llm: {enabled: full, base_url: setup.readerUrl, api_key: setup.readerApiKey || '', model: setup.readerModel || 'gemma-4-E4B-it-Q4_0'},
     },
   };
@@ -139,7 +140,7 @@ function macRecipe(setup: Setup): Result {
     'test -f ~/.immich-memories/secret-key || openssl rand -hex 32 > ~/.immich-memories/secret-key',
     'export IMMICH_MEMORIES_SECRET_KEY="$(cat ~/.immich-memories/secret-key)"',
     ...caption,
-    'immich-memories config move-to-db tier editorial.preparation.caption_base_url llm.enabled llm.base_url llm.model llm.api_key',
+    `immich-memories config move-to-db tier ${setup.tier === 'basic' ? '' : 'editorial.preparation.caption_base_url '}llm.enabled llm.base_url llm.model llm.api_key`,
     'immich-memories models fetch',
     'immich-memories preflight',
     'immich-memories capabilities',
