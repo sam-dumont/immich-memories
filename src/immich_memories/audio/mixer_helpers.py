@@ -16,6 +16,7 @@ from immich_memories.audio.mixer import (
     DuckingConfig,
     MixConfig,
     _db_to_linear,
+    final_mix_safety_filter,
     get_audio_duration,
     get_video_duration,
     loop_audio_to_duration,
@@ -129,7 +130,8 @@ def mix_audio_with_stem_ducking(
     filter_parts.extend(
         (
             sidechain_filter,
-            "[vidaud][accompaniment][ducked_vocals]amix=inputs=3:duration=first:dropout_transition=2[mixed]",
+            "[vidaud][accompaniment][ducked_vocals]amix=inputs=3:duration=first:dropout_transition=2,"
+            f"{final_mix_safety_filter()}[mixed]",
         )
     )
 
@@ -294,7 +296,7 @@ def mix_audio_with_4stem_ducking(
             f"makeup=1.0[ducked_other]",
             # Averaging five inputs divided the original speech by five.
             "[original][final_drums][ducked_bass][ducked_vocals][ducked_other]"
-            "amix=inputs=5:duration=first:normalize=0,alimiter=limit=0.95:level=false,"
+            f"amix=inputs=5:duration=first:normalize=0,{final_mix_safety_filter()},"
             f"apad=whole_dur={video_duration},atrim=0:{video_duration}[mixed]",
         )
     )

@@ -16,6 +16,27 @@ from immich_memories.security import validate_audio_path, validate_video_path
 logger = logging.getLogger(__name__)
 
 
+# #1954: a FULL-tier film's 4-stem amix (normalize=0, so it can clip) only had
+# a 0.95 sample-peak limiter ahead of AAC encoding (-0.45 dBFS of headroom).
+# AAC reconstruction rings past a limiter that only capped sample peaks, so the
+# decoded file measured +1.73 dBFS. Oversampling before the limiter approximates
+# a true-peak limit, and -2 dBFS leaves room for the encoder's own overshoot.
+_FINAL_MIX_CEILING_DB = -2.0
+
+
+def final_mix_safety_filter(ceiling_db: float = _FINAL_MIX_CEILING_DB) -> str:
+    """FFmpeg filter fragment: a true-peak-safe ceiling for a finished mix.
+
+    Every mixer's final amix must pass its [mixed] stream through this before
+    the AAC encode — chain it in with no input/output labels of its own.
+    """
+    limit = 10 ** (ceiling_db / 20)
+    return (
+        f"aresample=192000,alimiter=limit={limit:.4f}:level=disabled:attack=5:release=50,"
+        "aresample=48000"
+    )
+
+
 def _db_to_linear(db: float, min_val: float = 1.0, max_val: float = 64.0) -> float:
     """Convert dB to linear scale for FFmpeg parameters.
 
@@ -421,6 +442,7 @@ def _build_ducking_filter(
             # metadata. The final apad/atrim guarantees both the actual samples
             # AND the metadata match video_duration.
             "[vamix][ducked_music]amix=inputs=2:duration=longest:dropout_transition=2,"
+            f"{final_mix_safety_filter()},"
             f"apad=whole_dur={video_duration},atrim=0:{video_duration}[mixed]",
         )
     )
