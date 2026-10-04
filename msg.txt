@@ -1,8 +1,0 @@
-fix(web): say Immich is unreachable instead of showing an empty people list
-
-The create page asks /health/ready on load and shows "Immich unreachable"
-when the probe says so, instead of "No named people in Immich yet.".
-
-Fixes #2000
-
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
