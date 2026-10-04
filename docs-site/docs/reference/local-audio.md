@@ -109,7 +109,8 @@ the substitution.
 - **Long films chain takes.** Past `audio.music_block_seconds` (120), up to
   `audio.max_music_blocks` (3) distinct takes are crossfaded and looped, rather than one long
   generation. ACE-Step bounds each take to the block length while keeping all scene moods
-  in its prompt, even when the scenes describe a longer film.
+  in its prompt, even when the scenes describe a longer film. Each take's near-silent lead-in
+  or tail is trimmed first, so a crossfade seam never lands on a silent stretch.
 - **Four stems.** The track is split with Demucs: vocals duck most under the clips' sound, drums
   keep their rhythm. Local Demucs uses Metal on Apple Silicon (`immich-memories[demucs]` alone);
   the configured [inference service](inference-service.md#music-stems) handles separation over HTTP,

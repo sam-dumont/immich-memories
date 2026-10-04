@@ -41,15 +41,15 @@ def present_on_assets(
     assets: Sequence[Asset],
     condition: PersonExpression,
     *,
-    face_accounts: Mapping[str, str] | None = None,
+    face_accounts: Mapping[str, str | frozenset[str]] | None = None,
 ) -> frozenset[str]:
     """Every asset whose own recognised faces satisfy ``condition`` (leaves are face IDs).
 
     ``all`` asks for every named person recognised on that one picture, not spread across
     a gathering; ``any`` asks for at least one of them there. In a household run,
-    ``face_accounts`` holds each face to the pictures its own account owns (the first of
-    ``access_accounts``): a face counts only there, never on the other account's copy of
-    the same moment, so the same two people must share one account's own picture.
+    ``face_accounts`` holds each face to an explicit owner or a verified set of selected
+    owners: a face counts only on pictures those owners hold, never on another account's
+    copy of the same moment. Download routing still uses the first of ``access_accounts``.
     """
     held = face_accounts or {}
     assets_by_face: dict[str, set[str]] = {}
@@ -60,6 +60,10 @@ def present_on_assets(
     return condition.evaluate(lambda face: assets_by_face.get(face, ()))
 
 
-def _counts_on(asset: Asset, face: str, held: Mapping[str, str]) -> bool:
-    """A face held to an account counts only on the pictures that account owns."""
-    return face not in held or held[face] == next(iter(asset.access_accounts), None)
+def _counts_on(asset: Asset, face: str, held: Mapping[str, str | frozenset[str]]) -> bool:
+    """Count only on the declared owner or verified native owner set."""
+    if face not in held:
+        return True
+    accounts = held[face]
+    owner = next(iter(asset.access_accounts), None)
+    return owner == accounts if isinstance(accounts, str) else owner in accounts

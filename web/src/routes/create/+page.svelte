@@ -87,6 +87,8 @@
   let specialDays = $state<SpecialDay[] | null>(null);
   let eventId = $state<string | null>(null);
   let tripProblem = $state('');
+  // The readiness probe answers in seconds; the lists behind it can hang for a minute and look empty.
+  let immichDown = $state(false);
   let people = $state<NamedPerson[]>([]);
   let peopleQuery = $state('');
   // The most pictured first (the server's order); the rest are a search away. Chosen names always show.
@@ -254,6 +256,10 @@
       const earlier = await api<JobView>(`/jobs/${encodeURIComponent(last)}`).catch(() => null);
       if (earlier && (earlier.status === 'failed' || earlier.status === 'interrupted')) job = earlier;
     });
+    void fetch('/health/ready')
+      .then((answer) => answer.json())
+      .then((ready) => (immichDown = ready?.immich?.status === 'unreachable'))
+      .catch(() => (immichDown = false));
     void api<NamedPerson[]>('/people').then((found) => (people = found)).catch(() => (people = []));
     void api<SavedGroup[]>('/roster/groups').then((found) => (savedGroups = found)).catch(() => (savedGroups = []));
     void api<AccountChoice[]>('/accounts').then((found) => (accountChoices = found)).catch(() => (accountChoices = []));
@@ -292,6 +298,10 @@
     <Heading size="large" tag="h1">{t('New memory')}</Heading>
     <Text color="muted">{t('Choose what the film covers. The cut is made the way the command below makes it; you review it before anything renders.')}</Text>
   </div>
+
+  {#if immichDown}
+    <p class="rounded-lg border border-danger px-3 py-2 text-sm text-danger" role="alert">{t('Immich unreachable')}</p>
+  {/if}
 
   <ModelSetup />
 
@@ -431,7 +441,7 @@
                 {#if person.pictures}<span class="ml-1 text-xs text-gray-500 tabular-nums">{person.pictures.toLocaleString(locale())}</span>{/if}
               </label>
             {:else}
-              <Text size="small" color="muted">{people.length ? t('No name matches.') : t('No named people in Immich yet.')}</Text>
+              {#if !immichDown}<Text size="small" color="muted">{people.length ? t('No name matches.') : t('No named people in Immich yet.')}</Text>{/if}
             {/each}
           </div>
           {#if shown.includes('group') && savedGroups.length}

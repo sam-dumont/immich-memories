@@ -75,6 +75,16 @@ def music_policy(*, config, music: str | None, no_music: bool) -> str:
     return "automatic" if music_config_available(config) else "none configured"
 
 
+def planned_output_line(path: Path) -> str:
+    """The path as the run will write it, with the parts only selection can fill in.
+
+    A recipe hash joins the name once the clips are chosen, and every run gets its own
+    folder named after that name and the run id (#1989).
+    """
+    name = f"{path.stem}_<recipe>"
+    return f"Output (planned): {path.parent}/{name}_<run id>/{name}{path.suffix}"
+
+
 def print_generation_preview(preview: GenerationPreview) -> None:
     """Print a stable summary even when interactive progress is disabled."""
     click.echo("Selection plan (no video will be created)")
@@ -103,5 +113,5 @@ def print_generation_preview(preview: GenerationPreview) -> None:
         click.echo(f"Subtitle: {preview.subtitle}")
     click.echo(f"Sharing: {preview.sharing}")
     click.echo(f"Music: {preview.music_policy}")
-    click.echo(f"Output (planned): {preview.output_path}")
+    click.echo(planned_output_line(preview.output_path))
     click.echo(f"Upload: {'planned' if preview.upload_intent else 'disabled'}")

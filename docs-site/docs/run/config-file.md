@@ -199,6 +199,10 @@ This only checks authentication/API compatibility. It does not generate or uploa
 Follow [A second account](./multi-account.mdx) to connect a partner's library, bind matching people
 and select both accounts. The primary remains the only upload target.
 
+Set `immich.native_sharing: true` to use verified shared person IDs on Immich 3.2,
+or experimental 3.3 people sharing. It defaults to `false`. Both owner keys remain required;
+see [native identities](./multi-account.mdx#native-person-identities).
+
 ## Footage the camera roll did not shoot
 
 Filename patterns and the camera-EXIF filter exclude doorbell recordings, screenshots and saved

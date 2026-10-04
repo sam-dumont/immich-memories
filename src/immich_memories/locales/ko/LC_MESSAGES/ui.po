@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-04 07:35+0200\n"
+"POT-Creation-Date: 2026-10-04 13:49+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ko\n"
@@ -40,7 +40,7 @@ msgstr "API 키"
 msgid "About {amount} left"
 msgstr "약 {amount} 남음"
 
-#: web/routes/create/+page.svelte:493
+#: web/routes/create/+page.svelte:503
 msgid "Accept forwarded and downloaded media"
 msgstr "전달되거나 다운로드된 미디어 허용"
 
@@ -82,11 +82,11 @@ msgstr "카탈로그가 주목할 만한 순간으로 기록해 추가되었습�
 msgid "Added from the pool"
 msgstr "후보에서 추가됨"
 
-#: web/routes/create/+page.svelte:338
+#: web/routes/create/+page.svelte:348
 msgid "After a period"
 msgstr "기간 후"
 
-#: web/lib/labels.ts:11 web/routes/create/+page.svelte:353
+#: web/lib/labels.ts:11 web/routes/create/+page.svelte:363
 msgid "Album"
 msgstr "앨범"
 
@@ -103,13 +103,13 @@ msgstr "이 추억 밖의 사진 {count}장도 보기"
 msgid "Alternatives considered"
 msgstr "검토한 대안"
 
-#: web/routes/create/+page.svelte:368
+#: web/routes/create/+page.svelte:378
 msgid ""
 "Anniversaries first, then the rest. A scheduled run only proposes a day on its anniversary; "
 "here you can pick any day the catalogue holds."
 msgstr "기념일을 먼저, 나머지는 그다음에 표시합니다. 예약된 작업은 기념일에만 날짜를 제안합니다. 여기서는 카탈로그에 있는 어떤 날짜든 선택할 수 있습니다."
 
-#: web/routes/create/+page.svelte:347
+#: web/routes/create/+page.svelte:357
 msgid "Another day (MM-DD)"
 msgstr "다른 날 (MM-DD)"
 
@@ -123,7 +123,7 @@ msgstr "누구나. 감지기 표시나 사적인 순간 등 제한이 없는 이
 
 #: web/lib/RenderPanel.svelte:160 web/lib/RenderPanel.svelte:166 web/lib/RenderPanel.svelte:175
 #: web/lib/RenderPanel.svelte:198 web/lib/RenderPanel.svelte:204 web/lib/RenderPanel.svelte:210
-#: web/lib/RenderPanel.svelte:216 web/lib/RenderPanel.svelte:263 web/routes/create/+page.svelte:485
+#: web/lib/RenderPanel.svelte:216 web/lib/RenderPanel.svelte:263 web/routes/create/+page.svelte:495
 msgid "As configured"
 msgstr "설정대로"
 
@@ -171,11 +171,11 @@ msgstr "편집 결과로 돌아가기"
 msgid "Bind"
 msgstr "연결"
 
-#: web/routes/create/+page.svelte:330
+#: web/routes/create/+page.svelte:340
 msgid "Birthday (MM-DD; Immich’s birth date when empty)"
 msgstr "생일 (MM-DD, 비워두면 Immich의 생년월일)"
 
-#: web/routes/create/+page.svelte:329
+#: web/routes/create/+page.svelte:339
 msgid "Birthday to birthday, with earlier birthdays"
 msgstr "생일부터 생일까지, 이전 생일 포함"
 
@@ -207,7 +207,7 @@ msgstr "후보 키"
 msgid "Caption clips with their place"
 msgstr "클립에 장소 표시"
 
-#: web/routes/create/+page.svelte:364 web/routes/create/+page.svelte:369
+#: web/routes/create/+page.svelte:374 web/routes/create/+page.svelte:379
 msgid "Catalogued days"
 msgstr "기록된 날"
 
@@ -224,11 +224,11 @@ msgstr "사용 가능 여부 확인"
 msgid "Checking pictures for the family audience"
 msgstr "가족 시청에 적합한지 확인하는 중"
 
-#: web/routes/create/+page.svelte:355
+#: web/routes/create/+page.svelte:365
 msgid "Choose an album"
 msgstr "앨범을 선택하세요"
 
-#: web/routes/create/+page.svelte:293
+#: web/routes/create/+page.svelte:299
 msgid ""
 "Choose what the film covers. The cut is made the way the command below makes it; you review "
 "it before anything renders."
@@ -255,7 +255,7 @@ msgstr "{cache}에서 {count}개 항목을 지웠습니다."
 msgid "Clipboard unavailable. Select the report below and copy it."
 msgstr "클립보드를 사용할 수 없습니다. 아래 보고서를 선택해 복사하세요."
 
-#: web/routes/create/+page.svelte:498
+#: web/routes/create/+page.svelte:508
 msgid "Command"
 msgstr "명령어"
 
@@ -301,7 +301,7 @@ msgstr "정리"
 msgid "Custom date range"
 msgstr "직접 지정한 기간"
 
-#: web/lib/RenderPanel.svelte:161 web/routes/create/+page.svelte:501
+#: web/lib/RenderPanel.svelte:161 web/routes/create/+page.svelte:511
 msgid "Cut"
 msgstr "편집하기"
 
@@ -309,11 +309,11 @@ msgstr "편집하기"
 msgid "Cut contact sheet"
 msgstr "편집본 이미지 모음"
 
-#: web/routes/create/+page.svelte:327
+#: web/routes/create/+page.svelte:337
 msgid "Day"
 msgstr "날짜"
 
-#: web/routes/create/+page.svelte:350
+#: web/routes/create/+page.svelte:360
 msgid "Day (MM-DD)"
 msgstr "날짜 (MM-DD)"
 
@@ -341,7 +341,7 @@ msgstr "원하는 영화를 설명하세요"
 msgid "Describing the pictures"
 msgstr "이미지를 설명하는 중"
 
-#: web/routes/create/+page.svelte:397
+#: web/routes/create/+page.svelte:407
 msgid "Detecting trips from GPS data..."
 msgstr "GPS 데이터로 여행을 감지하는 중…"
 
@@ -408,7 +408,7 @@ msgstr "대상입니다. 영상은 생성되지 않았습니다."
 msgid "End here"
 msgstr "여기서 끝"
 
-#: web/routes/create/+page.svelte:337
+#: web/routes/create/+page.svelte:347
 msgid "Ends"
 msgstr "종료"
 
@@ -432,7 +432,7 @@ msgid ""
 "config.yaml and the environment are never written, and they win over it."
 msgstr "각 설정과 값이 어디서 오는지. 여기서 저장한 내용은 데이터베이스로 이동합니다. config.yaml과 환경 변수는 절대 기록되지 않으며, 이 값보다 우선합니다."
 
-#: web/routes/create/+page.svelte:413
+#: web/routes/create/+page.svelte:423
 msgid "Every trip of the year"
 msgstr "그 해의 모든 여행"
 
@@ -444,7 +444,7 @@ msgstr "실험적"
 msgid "Expression"
 msgstr "표현식"
 
-#: web/routes/create/+page.svelte:486 web/routes/runs/[run_id]/pool/+page.svelte:87
+#: web/routes/create/+page.svelte:496 web/routes/runs/[run_id]/pool/+page.svelte:87
 #: web/routes/runs/[run_id]/pool/+page.svelte:165
 msgid "Family"
 msgstr "가족"
@@ -461,7 +461,7 @@ msgstr "맞는 사진이 12장 미만입니다: 영화가 짧아집니다."
 msgid "Films that may use it"
 msgstr "이를 사용할 수 있는 영상"
 
-#: web/routes/create/+page.svelte:424 web/routes/settings/people/+page.svelte:176
+#: web/routes/create/+page.svelte:434 web/routes/settings/people/+page.svelte:176
 msgid "Find a name"
 msgstr "이름 검색"
 
@@ -477,7 +477,7 @@ msgstr "여백을 두고 맞춤"
 msgid "Format"
 msgstr "형식"
 
-#: web/routes/create/+page.svelte:335
+#: web/routes/create/+page.svelte:345
 msgid "From"
 msgstr "시작"
 
@@ -489,7 +489,7 @@ msgstr "전체 이름"
 msgid "Grandparents, siblings, the group chat. Private moments stay out."
 msgstr "조부모, 형제자매, 단체 대화방. 사적인 순간은 제외합니다."
 
-#: web/routes/create/+page.svelte:452
+#: web/routes/create/+page.svelte:462
 msgid "Grouped condition"
 msgstr "그룹 조건"
 
@@ -498,7 +498,7 @@ msgstr "그룹 조건"
 msgid "Held: {reasons}."
 msgstr "제한됨: {reasons}."
 
-#: web/routes/create/+page.svelte:325
+#: web/routes/create/+page.svelte:335
 msgid "Hemisphere"
 msgstr "반구"
 
@@ -506,7 +506,7 @@ msgstr "반구"
 msgid "High"
 msgstr "높음"
 
-#: web/lib/labels.ts:13 web/routes/create/+page.svelte:344
+#: web/lib/labels.ts:13 web/routes/create/+page.svelte:354
 msgid "Holiday"
 msgstr "명절·기념일"
 
@@ -530,7 +530,7 @@ msgstr "Immich 연결"
 msgid "Immich Server URL"
 msgstr "Immich 서버 URL"
 
-#: web/routes/create/+page.svelte:466
+#: web/routes/create/+page.svelte:476
 msgid "Immich accounts to read (primary alone when none are picked)"
 msgstr "읽을 Immich 계정(선택하지 않으면 기본 계정만)"
 
@@ -538,6 +538,10 @@ msgstr "읽을 Immich 계정(선택하지 않으면 기본 계정만)"
 #, python-brace-format
 msgid "Immich delivery: {value}"
 msgstr "Immich 전송: {value}"
+
+#: web/routes/create/+page.svelte:303
+msgid "Immich unreachable"
+msgstr "Immich에 연결할 수 없습니다"
 
 #: web/lib/labels.ts:56
 msgid "Important"
@@ -551,7 +555,7 @@ msgstr "편집에 포함"
 msgid "In the film"
 msgstr "영상에 포함"
 
-#: web/routes/create/+page.svelte:491
+#: web/routes/create/+page.svelte:501
 msgid "Include Live Photos"
 msgstr "Live Photos 포함"
 
@@ -559,7 +563,7 @@ msgstr "Live Photos 포함"
 msgid "Include captions of flagged photos"
 msgstr "표시된 사진의 캡션 포함"
 
-#: web/routes/create/+page.svelte:490
+#: web/routes/create/+page.svelte:500
 msgid "Include photos"
 msgstr "사진 포함"
 
@@ -571,7 +575,7 @@ msgstr "화면 언어"
 msgid "It did not finish."
 msgstr "완료되지 않았습니다."
 
-#: web/routes/create/+page.svelte:485 web/routes/runs/[run_id]/pool/+page.svelte:87
+#: web/routes/create/+page.svelte:495 web/routes/runs/[run_id]/pool/+page.svelte:87
 #: web/routes/runs/[run_id]/pool/+page.svelte:165
 msgid "Just us"
 msgstr "우리끼리"
@@ -597,11 +601,11 @@ msgstr "레이블"
 msgid "Landscape"
 msgstr "가로"
 
-#: web/routes/create/+page.svelte:480
+#: web/routes/create/+page.svelte:490
 msgid "Length and pictures"
 msgstr "길이와 이미지"
 
-#: web/routes/create/+page.svelte:482
+#: web/routes/create/+page.svelte:492
 msgid "Length in minutes (fitted to the pictures when empty)"
 msgstr "길이(분, 비워두면 이미지에 맞춰 조정)"
 
@@ -661,7 +665,7 @@ msgstr "중간"
 msgid "Memory"
 msgstr "추억"
 
-#: web/routes/create/+page.svelte:304
+#: web/routes/create/+page.svelte:314
 msgid "Memory type"
 msgstr "추억 유형"
 
@@ -685,7 +689,7 @@ msgstr "모델의 제안"
 msgid "Modern warm"
 msgstr "Modern warm"
 
-#: web/routes/create/+page.svelte:317 web/routes/create/+page.svelte:318
+#: web/routes/create/+page.svelte:327 web/routes/create/+page.svelte:328
 msgid "Month"
 msgstr "월"
 
@@ -709,11 +713,11 @@ msgstr "음악 음량:"
 msgid "Never use"
 msgstr "사용하지 않기"
 
-#: web/routes/create/+page.svelte:288 web/routes/create/+page.svelte:292
+#: web/routes/create/+page.svelte:294 web/routes/create/+page.svelte:298
 msgid "New memory"
 msgstr "새 추억"
 
-#: web/routes/create/+page.svelte:382
+#: web/routes/create/+page.svelte:392
 msgid ""
 "No catalogued days yet. Run immich-memories discover-days to find them, or film any day by "
 "its date."
@@ -737,11 +741,11 @@ msgstr "이 편집은 모델이 읽지 않았습니다. 모든 이미지를 규�
 msgid "No music"
 msgstr "음악 없음"
 
-#: web/routes/create/+page.svelte:434
+#: web/routes/create/+page.svelte:444
 msgid "No name matches."
 msgstr "일치하는 이름이 없습니다."
 
-#: web/routes/create/+page.svelte:434
+#: web/routes/create/+page.svelte:444
 msgid "No named people in Immich yet."
 msgstr "Immich에 아직 이름이 지정된 인물이 없습니다."
 
@@ -777,7 +781,7 @@ msgstr "저장된 그룹이 아직 없습니다."
 msgid "No suggestions right now."
 msgstr "현재 제안이 없습니다."
 
-#: web/routes/create/+page.svelte:415
+#: web/routes/create/+page.svelte:425
 msgid "No trips detected for this year."
 msgstr "이 해에 감지된 여행이 없습니다."
 
@@ -793,7 +797,7 @@ msgstr "아직 아무도 없습니다. 라이브러리를 다시 스캔하면 �
 msgid "None"
 msgstr "없음"
 
-#: web/routes/create/+page.svelte:325
+#: web/routes/create/+page.svelte:335
 msgid "North"
 msgstr "북반구"
 
@@ -817,11 +821,11 @@ msgstr "아직 기록이 없습니다."
 msgid "On This Day"
 msgstr "이날"
 
-#: web/routes/create/+page.svelte:338
+#: web/routes/create/+page.svelte:348
 msgid "On a date"
 msgstr "특정 날짜에"
 
-#: web/routes/create/+page.svelte:422
+#: web/routes/create/+page.svelte:432
 msgid "Only with (optional)"
 msgstr "다음만 포함 (선택)"
 
@@ -866,16 +870,16 @@ msgstr "{stages} 통과"
 msgid "Password"
 msgstr "비밀번호"
 
-#: web/routes/create/+page.svelte:422 web/routes/settings/+page.svelte:106
+#: web/routes/create/+page.svelte:432 web/routes/settings/+page.svelte:106
 #: web/routes/settings/people/+page.svelte:127 web/routes/settings/people/+page.svelte:133
 msgid "People"
 msgstr "인물"
 
-#: web/routes/create/+page.svelte:453
+#: web/routes/create/+page.svelte:463
 msgid "People condition"
 msgstr "인물 조건"
 
-#: web/routes/create/+page.svelte:342
+#: web/routes/create/+page.svelte:352
 msgid "Period (6m, 1y, 2w)"
 msgstr "기간 (6m, 1y, 2w)"
 
@@ -883,7 +887,7 @@ msgstr "기간 (6m, 1y, 2w)"
 msgid "Person Spotlight"
 msgstr "한 인물 집중"
 
-#: web/routes/create/+page.svelte:492
+#: web/routes/create/+page.svelte:502
 msgid "Photo duration (seconds)"
 msgstr "사진 표시 시간(초)"
 
@@ -899,7 +903,7 @@ msgstr "방금 읽은 이미지"
 msgid "Pictures left after each step"
 msgstr "단계별로 남은 사진"
 
-#: web/routes/create/+page.svelte:460
+#: web/routes/create/+page.svelte:470
 msgid "Pictures with"
 msgstr "다음 인물이 있는 이미지"
 
@@ -974,7 +978,7 @@ msgstr "각 이미지가 보여주는 내용을 읽는 중"
 msgid "Recorded alternative"
 msgstr "기록된 대안"
 
-#: web/routes/create/+page.svelte:393
+#: web/routes/create/+page.svelte:403
 msgid "Refresh"
 msgstr "새로고침"
 
@@ -982,7 +986,7 @@ msgstr "새로고침"
 msgid "Refresh suggestions"
 msgstr "제안 새로고침"
 
-#: web/routes/create/+page.svelte:393
+#: web/routes/create/+page.svelte:403
 msgid "Refreshing..."
 msgstr "새로고침 중..."
 
@@ -1094,7 +1098,7 @@ msgstr "저장됨. 교체하려면 새 키를 입력하세요"
 msgid "Saved as revision {number}."
 msgstr "리비전 {number}(으)로 저장했습니다."
 
-#: web/routes/create/+page.svelte:439 web/routes/settings/people/+page.svelte:151
+#: web/routes/create/+page.svelte:449 web/routes/settings/people/+page.svelte:151
 #: web/routes/settings/people/+page.svelte:152
 msgid "Saved groups"
 msgstr "저장된 그룹"
@@ -1129,7 +1133,7 @@ msgstr "예약됨"
 msgid "Screen time (seconds)"
 msgstr "화면 표시 시간(초)"
 
-#: web/lib/labels.ts:6 web/routes/create/+page.svelte:322
+#: web/lib/labels.ts:6 web/routes/create/+page.svelte:332
 msgid "Season"
 msgstr "계절"
 
@@ -1155,7 +1159,7 @@ msgstr "config.yaml의 {key}로 설정됨"
 msgid "Settings"
 msgstr "설정"
 
-#: web/routes/create/+page.svelte:486
+#: web/routes/create/+page.svelte:496
 msgid "Shareable"
 msgstr "공유 가능"
 
@@ -1200,7 +1204,7 @@ msgstr "Soft romantic"
 msgid "Some of its pictures"
 msgstr "해당 사진 일부"
 
-#: web/routes/create/+page.svelte:325
+#: web/routes/create/+page.svelte:335
 msgid "South"
 msgstr "남반구"
 
@@ -1297,7 +1301,7 @@ msgstr "연결을 확인할 수 없습니다."
 msgid "The cut as chosen"
 msgstr "선택한 그대로의 편집"
 
-#: web/routes/create/+page.svelte:268
+#: web/routes/create/+page.svelte:274
 msgid "The cut could not start."
 msgstr "편집을 시작할 수 없습니다."
 
@@ -1443,7 +1447,7 @@ msgstr "제목(비워두면 generate가 결정)"
 msgid "Title style"
 msgstr "Title style"
 
-#: web/routes/create/+page.svelte:341
+#: web/routes/create/+page.svelte:351
 msgid "To"
 msgstr "종료"
 
@@ -1459,15 +1463,15 @@ msgstr "모델이 이 이야기에서 뺀 이미지의 자리를 차지했습니
 msgid "Transition Style"
 msgstr "전환 스타일"
 
-#: web/lib/labels.ts:12 web/routes/create/+page.svelte:389
+#: web/lib/labels.ts:12 web/routes/create/+page.svelte:399
 msgid "Trip"
 msgstr "여행"
 
-#: web/routes/create/+page.svelte:188 web/routes/create/+page.svelte:192
+#: web/routes/create/+page.svelte:190 web/routes/create/+page.svelte:194
 msgid "Trip detection failed."
 msgstr "여행 감지에 실패했습니다."
 
-#: web/routes/create/+page.svelte:401
+#: web/routes/create/+page.svelte:411
 msgid "Trips"
 msgstr "여행"
 
@@ -1492,7 +1496,7 @@ msgstr "트랙 업로드"
 msgid "Upload the film to Immich"
 msgstr "영상을 Immich에 업로드"
 
-#: web/routes/create/+page.svelte:456
+#: web/routes/create/+page.svelte:466
 msgid "Use exact library names; each picture must match. It replaces the names above."
 msgstr "보관함의 이름을 정확히 사용하세요. 각 이미지가 일치해야 합니다. 위의 이름을 대체합니다."
 
@@ -1580,7 +1584,7 @@ msgstr "누구"
 msgid "Who is who, their roles and relationships."
 msgstr "누가 누구인지, 역할과 관계입니다."
 
-#: web/routes/create/+page.svelte:483
+#: web/routes/create/+page.svelte:493
 msgid "Who may see it"
 msgstr "볼 수 있는 사람"
 
@@ -1608,7 +1612,7 @@ msgstr "겨울"
 msgid "With"
 msgstr "상대"
 
-#: web/routes/create/+page.svelte:315
+#: web/routes/create/+page.svelte:325
 msgid "Year"
 msgstr "연도"
 
@@ -1616,11 +1620,11 @@ msgstr "연도"
 msgid "Year in Review"
 msgstr "한 해 돌아보기"
 
-#: web/routes/create/+page.svelte:333
+#: web/routes/create/+page.svelte:343
 msgid "Years back (all when empty)"
 msgstr "지난 연수(비워두면 전체)"
 
-#: web/routes/create/+page.svelte:333
+#: web/routes/create/+page.svelte:343
 msgid "Years to span"
 msgstr "포함할 연도 수"
 
@@ -1646,11 +1650,11 @@ msgstr "첫 영상을 만들려면 이 모델 파일이 필요합니다. 버튼�
 msgid "about {film} of film"
 msgstr "영상 약 {film}"
 
-#: web/routes/create/+page.svelte:461
+#: web/routes/create/+page.svelte:471
 msgid "all of them together"
 msgstr "모두 함께"
 
-#: web/routes/create/+page.svelte:461
+#: web/routes/create/+page.svelte:471
 msgid "any of them"
 msgstr "그중 한 명이라도"
 
@@ -1677,7 +1681,7 @@ msgstr "{content}: 이것들을 담기 위해 영상이 {budget}을 넘어 길�
 msgid "{date_range_start} to {date_range_end}"
 msgstr "{date_range_start}부터 {date_range_end}까지"
 
-#: web/routes/create/+page.svelte:408
+#: web/routes/create/+page.svelte:418
 #, python-brace-format
 msgid "{days} days · {count} pictures"
 msgstr "{days}일 · 이미지 {count}장"
@@ -1709,7 +1713,7 @@ msgstr "사진 {pictures}장: 사진 {photos}, 동영상 {videos}"
 msgid "{seconds} s on screen"
 msgstr "화면에 {seconds}초"
 
-#: web/routes/create/+page.svelte:376
+#: web/routes/create/+page.svelte:386
 #, python-brace-format
 msgid "{years} years ago"
 msgstr "{years}년 전"

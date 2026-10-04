@@ -311,4 +311,4 @@ def test_the_no_captions_tier_cuts_without_a_caption_server_and_says_so(
     assert report["tier"] == "no_captions"
     assert not report["missing_by_producer"] and not report["failures"]
     assert report["seconds_per_picture"]["previews"] >= 0
-    assert "preparation tier=no_captions" in caplog.text
+    assert "preparation depth=no_captions" in caplog.text

@@ -287,7 +287,7 @@ def _finish_preparation(
     """Describe discovered inputs without making a different, approximate selection."""
     import click
 
-    from immich_memories.cli._generation_preview import music_policy
+    from immich_memories.cli._generation_preview import music_policy, planned_output_line
     from immich_memories.db import resolve_location
 
     store = resolve_location(config)
@@ -304,7 +304,7 @@ def _finish_preparation(
     )
     click.echo(f"Sharing: {config.defaults.sharing}")
     click.echo(f"Music: {music_policy(config=config, music=music, no_music=no_music)}")
-    click.echo(f"Output (planned): {output_path}")
+    click.echo(planned_output_line(output_path))
     click.echo(f"Upload: {'planned' if should_upload else 'disabled'}")
     return output_path, should_upload, album_name
 

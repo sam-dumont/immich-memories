@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-04 07:35+0200\n"
+"POT-Creation-Date: 2026-10-04 13:49+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ja\n"
@@ -40,7 +40,7 @@ msgstr "APIキー"
 msgid "About {amount} left"
 msgstr "残り約 {amount}"
 
-#: web/routes/create/+page.svelte:493
+#: web/routes/create/+page.svelte:503
 msgid "Accept forwarded and downloaded media"
 msgstr "転送・ダウンロードされたメディアを許可"
 
@@ -82,11 +82,11 @@ msgstr "カタログで注目すべき瞬間として記録されているため
 msgid "Added from the pool"
 msgstr "候補から追加"
 
-#: web/routes/create/+page.svelte:338
+#: web/routes/create/+page.svelte:348
 msgid "After a period"
 msgstr "期間の後"
 
-#: web/lib/labels.ts:11 web/routes/create/+page.svelte:353
+#: web/lib/labels.ts:11 web/routes/create/+page.svelte:363
 msgid "Album"
 msgstr "アルバム"
 
@@ -103,13 +103,13 @@ msgstr "この思い出の対象外の写真 {count} 枚も表示"
 msgid "Alternatives considered"
 msgstr "検討された代替候補"
 
-#: web/routes/create/+page.svelte:368
+#: web/routes/create/+page.svelte:378
 msgid ""
 "Anniversaries first, then the rest. A scheduled run only proposes a day on its anniversary; "
 "here you can pick any day the catalogue holds."
 msgstr "まず記念日、それ以外はその後に表示します。スケジュール実行はその記念日にしか日を提案しません。ここではカタログにあるどの日でも選べます。"
 
-#: web/routes/create/+page.svelte:347
+#: web/routes/create/+page.svelte:357
 msgid "Another day (MM-DD)"
 msgstr "別の日 (MM-DD)"
 
@@ -123,7 +123,7 @@ msgstr "誰でも。検出器の警告や私的な場面など、制限のない
 
 #: web/lib/RenderPanel.svelte:160 web/lib/RenderPanel.svelte:166 web/lib/RenderPanel.svelte:175
 #: web/lib/RenderPanel.svelte:198 web/lib/RenderPanel.svelte:204 web/lib/RenderPanel.svelte:210
-#: web/lib/RenderPanel.svelte:216 web/lib/RenderPanel.svelte:263 web/routes/create/+page.svelte:485
+#: web/lib/RenderPanel.svelte:216 web/lib/RenderPanel.svelte:263 web/routes/create/+page.svelte:495
 msgid "As configured"
 msgstr "設定どおり"
 
@@ -171,11 +171,11 @@ msgstr "編集結果に戻る"
 msgid "Bind"
 msgstr "紐付け"
 
-#: web/routes/create/+page.svelte:330
+#: web/routes/create/+page.svelte:340
 msgid "Birthday (MM-DD; Immich’s birth date when empty)"
 msgstr "誕生日 (MM-DD、空欄の場合はImmichの生年月日)"
 
-#: web/routes/create/+page.svelte:329
+#: web/routes/create/+page.svelte:339
 msgid "Birthday to birthday, with earlier birthdays"
 msgstr "誕生日から誕生日へ、それ以前の誕生日も含む"
 
@@ -207,7 +207,7 @@ msgstr "候補キー"
 msgid "Caption clips with their place"
 msgstr "クリップに場所を表示"
 
-#: web/routes/create/+page.svelte:364 web/routes/create/+page.svelte:369
+#: web/routes/create/+page.svelte:374 web/routes/create/+page.svelte:379
 msgid "Catalogued days"
 msgstr "記録済みの日"
 
@@ -224,11 +224,11 @@ msgstr "対象になるか確認"
 msgid "Checking pictures for the family audience"
 msgstr "家族向けかどうかを確認しています"
 
-#: web/routes/create/+page.svelte:355
+#: web/routes/create/+page.svelte:365
 msgid "Choose an album"
 msgstr "アルバムを選択"
 
-#: web/routes/create/+page.svelte:293
+#: web/routes/create/+page.svelte:299
 msgid ""
 "Choose what the film covers. The cut is made the way the command below makes it; you review "
 "it before anything renders."
@@ -255,7 +255,7 @@ msgstr "{cache} から {count} 件のエントリを消去しました。"
 msgid "Clipboard unavailable. Select the report below and copy it."
 msgstr "クリップボードを使用できません。下のレポートを選択してコピーしてください。"
 
-#: web/routes/create/+page.svelte:498
+#: web/routes/create/+page.svelte:508
 msgid "Command"
 msgstr "コマンド"
 
@@ -301,7 +301,7 @@ msgstr "整理"
 msgid "Custom date range"
 msgstr "日付範囲を指定"
 
-#: web/lib/RenderPanel.svelte:161 web/routes/create/+page.svelte:501
+#: web/lib/RenderPanel.svelte:161 web/routes/create/+page.svelte:511
 msgid "Cut"
 msgstr "編集する"
 
@@ -309,11 +309,11 @@ msgstr "編集する"
 msgid "Cut contact sheet"
 msgstr "編集内容のコンタクトシート"
 
-#: web/routes/create/+page.svelte:327
+#: web/routes/create/+page.svelte:337
 msgid "Day"
 msgstr "日"
 
-#: web/routes/create/+page.svelte:350
+#: web/routes/create/+page.svelte:360
 msgid "Day (MM-DD)"
 msgstr "日 (MM-DD)"
 
@@ -341,7 +341,7 @@ msgstr "作りたい映画を文章で"
 msgid "Describing the pictures"
 msgstr "画像の説明を作成しています"
 
-#: web/routes/create/+page.svelte:397
+#: web/routes/create/+page.svelte:407
 msgid "Detecting trips from GPS data..."
 msgstr "GPSデータから旅行を検出しています…"
 
@@ -408,7 +408,7 @@ msgstr "対象です。動画は作成されていません。"
 msgid "End here"
 msgstr "ここで終了"
 
-#: web/routes/create/+page.svelte:337
+#: web/routes/create/+page.svelte:347
 msgid "Ends"
 msgstr "終了"
 
@@ -430,7 +430,7 @@ msgid ""
 "config.yaml and the environment are never written, and they win over it."
 msgstr "各設定とその値の出所。ここで保存した内容はデータベースに書き込まれます。config.yaml と環境変数は書き換えられることはなく、常にこちらより優先されます。"
 
-#: web/routes/create/+page.svelte:413
+#: web/routes/create/+page.svelte:423
 msgid "Every trip of the year"
 msgstr "その年のすべての旅行"
 
@@ -442,7 +442,7 @@ msgstr "実験的"
 msgid "Expression"
 msgstr "式"
 
-#: web/routes/create/+page.svelte:486 web/routes/runs/[run_id]/pool/+page.svelte:87
+#: web/routes/create/+page.svelte:496 web/routes/runs/[run_id]/pool/+page.svelte:87
 #: web/routes/runs/[run_id]/pool/+page.svelte:165
 msgid "Family"
 msgstr "家族"
@@ -459,7 +459,7 @@ msgstr "合う写真が 12 枚未満です: 映画は短くなります。"
 msgid "Films that may use it"
 msgstr "これを使用できる動画"
 
-#: web/routes/create/+page.svelte:424 web/routes/settings/people/+page.svelte:176
+#: web/routes/create/+page.svelte:434 web/routes/settings/people/+page.svelte:176
 msgid "Find a name"
 msgstr "名前を検索"
 
@@ -475,7 +475,7 @@ msgstr "帯を付けて収める"
 msgid "Format"
 msgstr "形式"
 
-#: web/routes/create/+page.svelte:335
+#: web/routes/create/+page.svelte:345
 msgid "From"
 msgstr "開始日"
 
@@ -487,7 +487,7 @@ msgstr "氏名"
 msgid "Grandparents, siblings, the group chat. Private moments stay out."
 msgstr "祖父母、きょうだい、グループチャット。私的な場面は除きます。"
 
-#: web/routes/create/+page.svelte:452
+#: web/routes/create/+page.svelte:462
 msgid "Grouped condition"
 msgstr "グループ化された条件"
 
@@ -496,7 +496,7 @@ msgstr "グループ化された条件"
 msgid "Held: {reasons}."
 msgstr "制限あり：{reasons}。"
 
-#: web/routes/create/+page.svelte:325
+#: web/routes/create/+page.svelte:335
 msgid "Hemisphere"
 msgstr "半球"
 
@@ -504,7 +504,7 @@ msgstr "半球"
 msgid "High"
 msgstr "高"
 
-#: web/lib/labels.ts:13 web/routes/create/+page.svelte:344
+#: web/lib/labels.ts:13 web/routes/create/+page.svelte:354
 msgid "Holiday"
 msgstr "祝日・行事"
 
@@ -528,7 +528,7 @@ msgstr "Immich接続"
 msgid "Immich Server URL"
 msgstr "Immichサーバーの URL"
 
-#: web/routes/create/+page.svelte:466
+#: web/routes/create/+page.svelte:476
 msgid "Immich accounts to read (primary alone when none are picked)"
 msgstr "読み込むImmichアカウント(選択がなければプライマリのみ)"
 
@@ -536,6 +536,10 @@ msgstr "読み込むImmichアカウント(選択がなければプライマリ�
 #, python-brace-format
 msgid "Immich delivery: {value}"
 msgstr "Immich への送信：{value}"
+
+#: web/routes/create/+page.svelte:303
+msgid "Immich unreachable"
+msgstr "Immich に接続できません"
 
 #: web/lib/labels.ts:56
 msgid "Important"
@@ -549,7 +553,7 @@ msgstr "編集に使用"
 msgid "In the film"
 msgstr "動画に使用"
 
-#: web/routes/create/+page.svelte:491
+#: web/routes/create/+page.svelte:501
 msgid "Include Live Photos"
 msgstr "Live Photos を含める"
 
@@ -557,7 +561,7 @@ msgstr "Live Photos を含める"
 msgid "Include captions of flagged photos"
 msgstr "フラグ付き写真のキャプションを含める"
 
-#: web/routes/create/+page.svelte:490
+#: web/routes/create/+page.svelte:500
 msgid "Include photos"
 msgstr "写真を含める"
 
@@ -569,7 +573,7 @@ msgstr "画面の言語"
 msgid "It did not finish."
 msgstr "完了しませんでした。"
 
-#: web/routes/create/+page.svelte:485 web/routes/runs/[run_id]/pool/+page.svelte:87
+#: web/routes/create/+page.svelte:495 web/routes/runs/[run_id]/pool/+page.svelte:87
 #: web/routes/runs/[run_id]/pool/+page.svelte:165
 msgid "Just us"
 msgstr "私たちだけ"
@@ -595,11 +599,11 @@ msgstr "ラベル"
 msgid "Landscape"
 msgstr "横向き"
 
-#: web/routes/create/+page.svelte:480
+#: web/routes/create/+page.svelte:490
 msgid "Length and pictures"
 msgstr "長さと画像"
 
-#: web/routes/create/+page.svelte:482
+#: web/routes/create/+page.svelte:492
 msgid "Length in minutes (fitted to the pictures when empty)"
 msgstr "長さ（分単位、空欄の場合は画像に合わせます）"
 
@@ -659,7 +663,7 @@ msgstr "中"
 msgid "Memory"
 msgstr "思い出"
 
-#: web/routes/create/+page.svelte:304
+#: web/routes/create/+page.svelte:314
 msgid "Memory type"
 msgstr "思い出の種類"
 
@@ -683,7 +687,7 @@ msgstr "モデルの提案"
 msgid "Modern warm"
 msgstr "Modern warm"
 
-#: web/routes/create/+page.svelte:317 web/routes/create/+page.svelte:318
+#: web/routes/create/+page.svelte:327 web/routes/create/+page.svelte:328
 msgid "Month"
 msgstr "月"
 
@@ -707,11 +711,11 @@ msgstr "音楽の音量："
 msgid "Never use"
 msgstr "今後使わない"
 
-#: web/routes/create/+page.svelte:288 web/routes/create/+page.svelte:292
+#: web/routes/create/+page.svelte:294 web/routes/create/+page.svelte:298
 msgid "New memory"
 msgstr "新しい思い出"
 
-#: web/routes/create/+page.svelte:382
+#: web/routes/create/+page.svelte:392
 msgid ""
 "No catalogued days yet. Run immich-memories discover-days to find them, or film any day by "
 "its date."
@@ -735,11 +739,11 @@ msgstr "この編集はモデルが読んでいません。すべての画像を
 msgid "No music"
 msgstr "音楽なし"
 
-#: web/routes/create/+page.svelte:434
+#: web/routes/create/+page.svelte:444
 msgid "No name matches."
 msgstr "一致する名前がありません。"
 
-#: web/routes/create/+page.svelte:434
+#: web/routes/create/+page.svelte:444
 msgid "No named people in Immich yet."
 msgstr "Immich にはまだ名前付きの人物がいません。"
 
@@ -775,7 +779,7 @@ msgstr "保存されたグループはまだありません。"
 msgid "No suggestions right now."
 msgstr "現在、提案はありません。"
 
-#: web/routes/create/+page.svelte:415
+#: web/routes/create/+page.svelte:425
 msgid "No trips detected for this year."
 msgstr "この年に検出された旅行はありません。"
 
@@ -791,7 +795,7 @@ msgstr "まだ誰もいません。ライブラリを再スキャンして誰が
 msgid "None"
 msgstr "なし"
 
-#: web/routes/create/+page.svelte:325
+#: web/routes/create/+page.svelte:335
 msgid "North"
 msgstr "北"
 
@@ -815,11 +819,11 @@ msgstr "まだ記録がありません。"
 msgid "On This Day"
 msgstr "この日"
 
-#: web/routes/create/+page.svelte:338
+#: web/routes/create/+page.svelte:348
 msgid "On a date"
 msgstr "特定の日"
 
-#: web/routes/create/+page.svelte:422
+#: web/routes/create/+page.svelte:432
 msgid "Only with (optional)"
 msgstr "対象を限定（任意）"
 
@@ -864,16 +868,16 @@ msgstr "{stages}を通過"
 msgid "Password"
 msgstr "パスワード"
 
-#: web/routes/create/+page.svelte:422 web/routes/settings/+page.svelte:106
+#: web/routes/create/+page.svelte:432 web/routes/settings/+page.svelte:106
 #: web/routes/settings/people/+page.svelte:127 web/routes/settings/people/+page.svelte:133
 msgid "People"
 msgstr "人物"
 
-#: web/routes/create/+page.svelte:453
+#: web/routes/create/+page.svelte:463
 msgid "People condition"
 msgstr "人物条件"
 
-#: web/routes/create/+page.svelte:342
+#: web/routes/create/+page.svelte:352
 msgid "Period (6m, 1y, 2w)"
 msgstr "期間 (6m, 1y, 2w)"
 
@@ -881,7 +885,7 @@ msgstr "期間 (6m, 1y, 2w)"
 msgid "Person Spotlight"
 msgstr "一人の人物に注目"
 
-#: web/routes/create/+page.svelte:492
+#: web/routes/create/+page.svelte:502
 msgid "Photo duration (seconds)"
 msgstr "写真の表示時間（秒）"
 
@@ -897,7 +901,7 @@ msgstr "直前に読み取った画像"
 msgid "Pictures left after each step"
 msgstr "各ステップ後に残った写真"
 
-#: web/routes/create/+page.svelte:460
+#: web/routes/create/+page.svelte:470
 msgid "Pictures with"
 msgstr "画像の条件"
 
@@ -972,7 +976,7 @@ msgstr "各画像の内容を読み取っています"
 msgid "Recorded alternative"
 msgstr "記録された代替候補"
 
-#: web/routes/create/+page.svelte:393
+#: web/routes/create/+page.svelte:403
 msgid "Refresh"
 msgstr "更新"
 
@@ -980,7 +984,7 @@ msgstr "更新"
 msgid "Refresh suggestions"
 msgstr "提案を更新"
 
-#: web/routes/create/+page.svelte:393
+#: web/routes/create/+page.svelte:403
 msgid "Refreshing..."
 msgstr "更新中..."
 
@@ -1092,7 +1096,7 @@ msgstr "保存済み。置き換えるには新しいキーを入力してくだ
 msgid "Saved as revision {number}."
 msgstr "リビジョン {number} として保存しました。"
 
-#: web/routes/create/+page.svelte:439 web/routes/settings/people/+page.svelte:151
+#: web/routes/create/+page.svelte:449 web/routes/settings/people/+page.svelte:151
 #: web/routes/settings/people/+page.svelte:152
 msgid "Saved groups"
 msgstr "保存されたグループ"
@@ -1127,7 +1131,7 @@ msgstr "スケジュール"
 msgid "Screen time (seconds)"
 msgstr "表示時間（秒）"
 
-#: web/lib/labels.ts:6 web/routes/create/+page.svelte:322
+#: web/lib/labels.ts:6 web/routes/create/+page.svelte:332
 msgid "Season"
 msgstr "季節"
 
@@ -1153,7 +1157,7 @@ msgstr "config.yaml の {key} で設定"
 msgid "Settings"
 msgstr "設定"
 
-#: web/routes/create/+page.svelte:486
+#: web/routes/create/+page.svelte:496
 msgid "Shareable"
 msgstr "共有可能"
 
@@ -1198,7 +1202,7 @@ msgstr "Soft romantic"
 msgid "Some of its pictures"
 msgstr "該当する写真の例"
 
-#: web/routes/create/+page.svelte:325
+#: web/routes/create/+page.svelte:335
 msgid "South"
 msgstr "南"
 
@@ -1295,7 +1299,7 @@ msgstr "接続を確認できませんでした。"
 msgid "The cut as chosen"
 msgstr "選択した編集結果"
 
-#: web/routes/create/+page.svelte:268
+#: web/routes/create/+page.svelte:274
 msgid "The cut could not start."
 msgstr "編集を開始できませんでした。"
 
@@ -1441,7 +1445,7 @@ msgstr "タイトル（空欄の場合は `generate` が決定）"
 msgid "Title style"
 msgstr "Title style"
 
-#: web/routes/create/+page.svelte:341
+#: web/routes/create/+page.svelte:351
 msgid "To"
 msgstr "終了日"
 
@@ -1457,15 +1461,15 @@ msgstr "モデルがこのストーリーから外した画像の枠に入りま
 msgid "Transition Style"
 msgstr "切り替えスタイル"
 
-#: web/lib/labels.ts:12 web/routes/create/+page.svelte:389
+#: web/lib/labels.ts:12 web/routes/create/+page.svelte:399
 msgid "Trip"
 msgstr "旅行"
 
-#: web/routes/create/+page.svelte:188 web/routes/create/+page.svelte:192
+#: web/routes/create/+page.svelte:190 web/routes/create/+page.svelte:194
 msgid "Trip detection failed."
 msgstr "旅行の検出に失敗しました。"
 
-#: web/routes/create/+page.svelte:401
+#: web/routes/create/+page.svelte:411
 msgid "Trips"
 msgstr "旅行"
 
@@ -1490,7 +1494,7 @@ msgstr "曲をアップロード"
 msgid "Upload the film to Immich"
 msgstr "動画を Immich にアップロード"
 
-#: web/routes/create/+page.svelte:456
+#: web/routes/create/+page.svelte:466
 msgid "Use exact library names; each picture must match. It replaces the names above."
 msgstr "ライブラリの名前を正確に入力してください。各画像が一致する必要があります。上の名前の代わりに使われます。"
 
@@ -1578,7 +1582,7 @@ msgstr "誰"
 msgid "Who is who, their roles and relationships."
 msgstr "誰が誰か、その役割と関係です。"
 
-#: web/routes/create/+page.svelte:483
+#: web/routes/create/+page.svelte:493
 msgid "Who may see it"
 msgstr "公開範囲"
 
@@ -1606,7 +1610,7 @@ msgstr "冬"
 msgid "With"
 msgstr "相手"
 
-#: web/routes/create/+page.svelte:315
+#: web/routes/create/+page.svelte:325
 msgid "Year"
 msgstr "年"
 
@@ -1614,11 +1618,11 @@ msgstr "年"
 msgid "Year in Review"
 msgstr "一年の振り返り"
 
-#: web/routes/create/+page.svelte:333
+#: web/routes/create/+page.svelte:343
 msgid "Years back (all when empty)"
 msgstr "遡る年数（空欄の場合はすべて）"
 
-#: web/routes/create/+page.svelte:333
+#: web/routes/create/+page.svelte:343
 msgid "Years to span"
 msgstr "対象とする年数"
 
@@ -1644,11 +1648,11 @@ msgstr "最初の映画にはこれらのモデルファイルが必要です。
 msgid "about {film} of film"
 msgstr "映像は約{film}"
 
-#: web/routes/create/+page.svelte:461
+#: web/routes/create/+page.svelte:471
 msgid "all of them together"
 msgstr "全員一緒"
 
-#: web/routes/create/+page.svelte:461
+#: web/routes/create/+page.svelte:471
 msgid "any of them"
 msgstr "いずれか"
 
@@ -1675,7 +1679,7 @@ msgstr "{content}：これらを収録するため、動画が{budget}を超え�
 msgid "{date_range_start} to {date_range_end}"
 msgstr "{date_range_start} から {date_range_end}"
 
-#: web/routes/create/+page.svelte:408
+#: web/routes/create/+page.svelte:418
 #, python-brace-format
 msgid "{days} days · {count} pictures"
 msgstr "{days} 日間・{count} 枚"
@@ -1707,7 +1711,7 @@ msgstr "写真 {pictures} 枚: 静止画 {photos}、動画 {videos}"
 msgid "{seconds} s on screen"
 msgstr "画面に{seconds}秒"
 
-#: web/routes/create/+page.svelte:376
+#: web/routes/create/+page.svelte:386
 #, python-brace-format
 msgid "{years} years ago"
 msgstr "{years} 年前"

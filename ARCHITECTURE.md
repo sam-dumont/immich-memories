@@ -1398,3 +1398,14 @@ The web JSON boundary (`web/request_validation.py`) rejects malformed text and e
 before route validation. Revision allocation and publication share the existing cross-process
 file lock. Configuration's endpoint policy (`config_endpoint_policy.py`) applies on load and
 Settings save, with a process-environment-only link-local override.
+
+## Native Immich identities
+
+`api/native_sharing.py` discovers actual minor versions, cluster membership and 3.3 people
+access behind `immich.native_sharing` (default off). `cli/run_people.py` combines that fresh
+evidence with saved bindings; `analysis/person_presence.py` accepts explicit sets of selected
+owners for a shared face. Owner download routing stays in `AccessBoundClient`.
+`HouseholdWindows` coalesces repeated asset reads before CLI discovery deduplicates IDs,
+preserving unioned favourites and people. Stored canonical identities are not migrated or
+replaced by transient upstream grants. Stale bindings and incomplete native access fail
+explicitly. Live validation lives in `tests/integration/native_sharing/`.

@@ -486,6 +486,15 @@ def _coalesce_sources(
             warnings.append(
                 f"!! conflicting Live Photo rendering manifests for duplicate asset {asset_id}"
             )
+        people = {
+            person.id: person for item in (existing, source) for person in asset_of(item).people
+        }
+        merged_asset = asset_of(preferred).model_copy(update={"people": list(people.values())})
+        preferred = (
+            preferred.model_copy(update={"asset": merged_asset})
+            if isinstance(preferred, VideoClipInfo)
+            else merged_asset
+        )
         coalesced[asset_id] = _with_access_accounts(
             _with_favourite(
                 _without_rendering_evidence(preferred)

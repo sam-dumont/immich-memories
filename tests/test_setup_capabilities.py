@@ -260,3 +260,23 @@ def test_verify_local_does_not_run_external_llm_preflight(monkeypatch):
     assert observed == [False]
     assert config.llm.enabled
     assert "configured-external" in result.output
+
+
+def test_verify_local_never_calls_an_enabled_reader_disabled(monkeypatch):
+    from click.testing import CliRunner
+
+    from immich_memories.cli import main
+    from immich_memories.preflight import check_llm
+
+    config = Config()
+    config.llm.enabled = True
+    config.llm.base_url = "https://example.invalid/v1"
+    # WHY: the real preflight would probe Immich and the network; only its LLM row matters here.
+    monkeypatch.setattr(
+        "immich_memories.preflight.run_preflight_checks", lambda candidate: [check_llm(candidate)]
+    )
+    result = CliRunner().invoke(
+        main.commands["capabilities"], ["--verify-local"], obj={"config": config}
+    )
+    assert result.exit_code == 0, result.output
+    assert "configured but disabled" not in result.output

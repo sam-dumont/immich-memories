@@ -72,7 +72,7 @@ def people_in_window(
     date_range: DateRange,
     condition: PersonExpression,
     *,
-    face_accounts: Mapping[str, str] | None = None,
+    face_accounts: Mapping[str, str | frozenset[str]] | None = None,
 ) -> tuple[list, list]:
     """The videos and photos of one window whose own faces satisfy ``condition`` (face IDs).
 

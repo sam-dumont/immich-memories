@@ -15,6 +15,7 @@ way to make an unsupported server supported.
 | Immich 2.7 and earlier releases | Maintainer-tested history | Earlier patch versions were not enumerated; this history does not establish a supported minimum |
 | Immich v2.7.5 | Source-build CI pass with SQLite | [Real-Immich gate run](https://github.com/sam-dumont/immich-memories/actions/runs/37109268619), app source `d24e98d193287b341b5fa2d869095054483ffe1c`; prebuilt candidate evidence still required |
 | Immich v3.2.2 | Source-build CI pass with SQLite | Same run and source commit; not a public candidate installation |
+| Immich v3.2.2 with the published rehearsal wheel `0.0.0.dev37180797983` | Native arm64 Basic: preflight, a 39-asset album film (29.5 s) and a 248-asset month film (61 s) | Rehearsal `v0.0.0-dev.37180797983`, 2026-10-04; a pre-tag build, not a release acceptance |
 | Other v2/v3 patch releases | API major implemented; exact patch compatibility not established here | Run `config test`, preflight and a bounded film; use the tested families above, then check exact candidate evidence in the matrix |
 | Minimum supported patch | **Not established** | Do not infer a minimum from the oldest test target |
 | Other major versions | Unsupported by the current automatic API policy | Use an implemented v2/v3 contract; a manual override does not validate another major |

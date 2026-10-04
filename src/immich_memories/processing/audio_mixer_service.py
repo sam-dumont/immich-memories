@@ -10,6 +10,7 @@ import math
 import subprocess
 from pathlib import Path
 
+from immich_memories.audio.mixer import final_mix_safety_filter
 from immich_memories.delivery_timestamp import CARRY_CONTAINER_METADATA
 from immich_memories.processing.assembly_config import AssemblySettings
 
@@ -159,8 +160,12 @@ class AudioMixerService:
 
         music_vol = self.settings.music_volume
 
+        # This fallback only runs when the stem mixers already failed, so its
+        # amix had no limiter at all before the AAC encode (#1973 review).
         filter_complex = (
-            f"[1:a]volume={music_vol}[music];[0:a][music]amix=inputs=2:duration=first[aout]"
+            f"[1:a]volume={music_vol}[music];"
+            "[0:a][music]amix=inputs=2:duration=first,"
+            f"{final_mix_safety_filter()}[aout]"
         )
 
         cmd = [

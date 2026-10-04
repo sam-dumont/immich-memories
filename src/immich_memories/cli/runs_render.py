@@ -13,6 +13,7 @@ from typing import get_args
 
 import click
 
+from immich_memories.cli._generate_display import saved_path_line
 from immich_memories.cli._helpers import print_error, print_success
 from immich_memories.cli._runs_reading import RunNotFound, resolve_attempt
 from immich_memories.cli.progress_file import progress_writer, write_progress
@@ -192,4 +193,4 @@ def register_render_command(runs: click.Group) -> None:
                 print_error(str(exc))
                 sys.exit(1)
         write_progress(progress_file, {"done": True, "fraction": 1.0, "output_path": str(path)})
-        print_success(f"Rendered {path}")
+        print_success(saved_path_line(path), highlight=False)

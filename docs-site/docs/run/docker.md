@@ -10,7 +10,7 @@ You need Docker Compose v2 and [4 GB free for the app](./requirements.md). On a 
 
 ## Install
 
-### 1. Get the two files
+### 1. Get the files
 
 import InstallationFiles from '@site/src/components/InstallationFiles';
 
@@ -54,13 +54,14 @@ docker compose exec immich-memories immich-memories preflight
 ```
 
 Create `output` first so Docker does not create it as root. The container runs as UID/GID 1000.
-If preflight reports **Output directory is not writable**:
+If preflight reports **Output directory is not writable**, on plain Linux:
 
 ```bash
 sudo chown -R 1000:1000 output
 ```
 
-If your user is not 1000, see the [NAS permissions recipe](./nas.md#the-output-folder).
+On Synology DSM this isn't enough, because the share's ACL still denies uid 1000. Use the
+`synoacltool` line in the [NAS permissions recipe](./nas.md#the-output-folder).
 `models fetch` downloads the pinned encoder and WordNet data. The published image has no `llama-server`; use an [external reader server](../better/reader.md#use-an-existing-server) for Docker or Kubernetes. GPU/Full also fetch detector models
 and Laya. Files stay on the persistent volume; a recreate keeps them.
 
@@ -95,15 +96,30 @@ ssh -L 8080:localhost:8080 you@your-server
 
 Open `http://localhost:8080` on the desktop.
 
-For LAN access, set both of these in `.env`:
+For LAN access, set these in `.env`:
 
 ```ini
 IMMICH_MEMORIES_AUTH_USERNAME=admin
 IMMICH_MEMORIES_AUTH_PASSWORD=choose-a-long-password
+UI_BIND_ADDRESS=0.0.0.0
 ```
 
-Change the Compose port mapping to `"8080:8080"`, then run `docker compose up -d`.
-Open `http://your-server:8080`. If 8080 is taken, change the left side, for example `"8081:8080"`.
+`UI_BIND_ADDRESS` is the switch: the shipped mapping is `${UI_BIND_ADDRESS:-127.0.0.1}:8080:8080`,
+so there is no need to edit it. Run `docker compose up -d`, then open `http://your-server:8080`.
+If 8080 is taken, change the left-hand 8080 in the mapping, for example `8081:8080`.
+
+To check that auth is on, call a protected route without logging in, from another machine:
+
+```bash
+curl -s -o /dev/null -w '%{http_code}\n' http://your-server:8080/api/v1/settings
+```
+
+It answers 401 without a session and 200 after login. `/health/ready` is anonymous on purpose
+and returns the app version and whether Immich is reachable, so it isn't an auth test.
+
+This port speaks plain HTTP: the password and session cookie cross your LAN in the clear. For
+TLS, put a reverse proxy in front and keep `UI_BIND_ADDRESS=127.0.0.1`
+([Authentication](./authentication.mdx)).
 
 :::caution This app can access your library
 Authentication is disabled by default. Enable it before exposing the port.

@@ -13,7 +13,7 @@ The primary remains the only upload destination.
 ## What you need
 
 - An API key from the second account with the [ten read permissions](./docker.md#the-api-key), shared with you by its owner. It needs no upload or delete rights.
-- Faces named in both libraries; each account has its own people IDs.
+- Named faces, connected through native identities or explicit account bindings.
 - Your primary account already connected and [family set up](../get-started/who-is-who.md).
 
 The example calls the second account `partner`; it can belong to another household member and the label does not assign a relationship. Extra accounts are configured in YAML or environment variables. Settings shows the primary
@@ -62,6 +62,53 @@ The output identifies the owner of each key:
 
 The `partner` line must identify the second account’s owner. If it names you, ask that owner to create a key from their account.
 Configuring the account alone does not change a film's source scope.
+
+## Native person identities
+
+Native identity support is optional. It keeps both owner keys and the same library merge:
+Immich hides a partner's favourite flag from the recipient, and timeline settings change
+which partner assets appear in search. Owner reads keep both signals complete.
+
+```yaml
+immich:
+  native_sharing: true
+```
+
+Add this field to the connection block above, then run `immich-memories preflight`.
+The default is `false`, which keeps existing bindings and makes no native discovery requests.
+
+| Server | Native mode |
+| --- | --- |
+| Immich 2.x or 3.0–3.1 | Existing bindings, with an unsupported-feature explanation |
+| Immich 3.2.x | Shared recognition IDs within a cluster group; tested on 3.2.4 |
+| Immich 3.3 | Experimental people-access discovery; tested on 3.3.0-rc.1 only |
+| Unknown major, newer minor or untested RC | Refused until compatibility is checked |
+
+3.3 stable support has not been validated. `api_version: v3` does not enable newer endpoints.
+Each selected connection reports its actual version. The 3.2 path never calls `/people/users`.
+
+The selected accounts on each server must belong to the same Immich cluster group.
+For 3.3, share the requested people in Immich too; the `read` role is sufficient.
+Discovery uses `user.read` and `person.read`, already in the ten read permissions above.
+People grants and asset grants are separate. The app does not change either, regenerate
+face clusters or enable partner timelines.
+
+A proven shared ID needs only one local binding. This also works with `--accounts partner`:
+a saved primary binding is reused when the partner proves that ID on the same server.
+Distinct IDs still need explicit bindings;
+names alone never merge people. Native mode verifies requested IDs directly when the roster
+omits them. Missing people access, a changed cluster or a failed read stops the run with an
+explanation. Disable native mode to use unconnected accounts with existing bindings.
+
+Saved person IDs, groups, relationships and confirmations stay intact. Native access evidence
+is refreshed for each run and is never exported as a permanent binding. After an upstream
+merge changes an ID, bind the replacement explicitly to the existing local person. The app
+will not guess which saved identity should survive.
+
+Only selected owners enter the film. Exact copies retain both owners' stars and faces;
+similar images stay separate. Downloads, previews, reruns and render workers keep using owner
+keys. People conditions still apply to whole episodes: AND means everyone appears somewhere
+in the episode, including on different owners' photos.
 
 ## Bind the same person across accounts
 

@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-04 07:35+0200\n"
+"POT-Creation-Date: 2026-10-04 13:49+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pl\n"
@@ -43,7 +43,7 @@ msgstr "Klucz API"
 msgid "About {amount} left"
 msgstr "Zostało około {amount}"
 
-#: web/routes/create/+page.svelte:493
+#: web/routes/create/+page.svelte:503
 msgid "Accept forwarded and downloaded media"
 msgstr "Akceptuj przekazywane i pobierane media"
 
@@ -85,11 +85,11 @@ msgstr "Dodano dla chwili, którą katalog oznacza jako wyjątkową."
 msgid "Added from the pool"
 msgstr "Dodane z puli"
 
-#: web/routes/create/+page.svelte:338
+#: web/routes/create/+page.svelte:348
 msgid "After a period"
 msgstr "Po okresie"
 
-#: web/lib/labels.ts:11 web/routes/create/+page.svelte:353
+#: web/lib/labels.ts:11 web/routes/create/+page.svelte:363
 msgid "Album"
 msgstr "Album"
 
@@ -106,7 +106,7 @@ msgstr "Pokaż też {count} zdjęć spoza tego wspomnienia"
 msgid "Alternatives considered"
 msgstr "Rozważone alternatywy"
 
-#: web/routes/create/+page.svelte:368
+#: web/routes/create/+page.svelte:378
 msgid ""
 "Anniversaries first, then the rest. A scheduled run only proposes a day on its anniversary; "
 "here you can pick any day the catalogue holds."
@@ -114,7 +114,7 @@ msgstr ""
 "Najpierw rocznice, potem reszta. Zaplanowane zadanie proponuje dzień tylko w jego rocznicę; "
 "tutaj możesz wybrać dowolny dzień z katalogu."
 
-#: web/routes/create/+page.svelte:347
+#: web/routes/create/+page.svelte:357
 msgid "Another day (MM-DD)"
 msgstr "Inny dzień (MM-DD)"
 
@@ -128,7 +128,7 @@ msgstr "Wszyscy. Tylko obrazy bez ograniczeń: bez oznaczenia detektora i bez pr
 
 #: web/lib/RenderPanel.svelte:160 web/lib/RenderPanel.svelte:166 web/lib/RenderPanel.svelte:175
 #: web/lib/RenderPanel.svelte:198 web/lib/RenderPanel.svelte:204 web/lib/RenderPanel.svelte:210
-#: web/lib/RenderPanel.svelte:216 web/lib/RenderPanel.svelte:263 web/routes/create/+page.svelte:485
+#: web/lib/RenderPanel.svelte:216 web/lib/RenderPanel.svelte:263 web/routes/create/+page.svelte:495
 msgid "As configured"
 msgstr "Zgodnie z konfiguracją"
 
@@ -176,11 +176,11 @@ msgstr "Wróć do montażu"
 msgid "Bind"
 msgstr "Powiąż"
 
-#: web/routes/create/+page.svelte:330
+#: web/routes/create/+page.svelte:340
 msgid "Birthday (MM-DD; Immich’s birth date when empty)"
 msgstr "Urodziny (MM-DD; data urodzenia z Immich, gdy puste)"
 
-#: web/routes/create/+page.svelte:329
+#: web/routes/create/+page.svelte:339
 msgid "Birthday to birthday, with earlier birthdays"
 msgstr "Od urodzin do urodzin, z wcześniejszymi urodzinami"
 
@@ -212,7 +212,7 @@ msgstr "Klucz kandydata"
 msgid "Caption clips with their place"
 msgstr "Pokaż miejsce na klipach"
 
-#: web/routes/create/+page.svelte:364 web/routes/create/+page.svelte:369
+#: web/routes/create/+page.svelte:374 web/routes/create/+page.svelte:379
 msgid "Catalogued days"
 msgstr "Skatalogowane dni"
 
@@ -229,11 +229,11 @@ msgstr "Sprawdź kwalifikację"
 msgid "Checking pictures for the family audience"
 msgstr "Sprawdzanie obrazów pod kątem odbiorców rodzinnych"
 
-#: web/routes/create/+page.svelte:355
+#: web/routes/create/+page.svelte:365
 msgid "Choose an album"
 msgstr "Wybierz album"
 
-#: web/routes/create/+page.svelte:293
+#: web/routes/create/+page.svelte:299
 msgid ""
 "Choose what the film covers. The cut is made the way the command below makes it; you review "
 "it before anything renders."
@@ -262,7 +262,7 @@ msgstr "Usunięto {count} wpisów z {cache}."
 msgid "Clipboard unavailable. Select the report below and copy it."
 msgstr "Schowek niedostępny. Zaznacz raport poniżej i skopiuj go."
 
-#: web/routes/create/+page.svelte:498
+#: web/routes/create/+page.svelte:508
 msgid "Command"
 msgstr "Polecenie"
 
@@ -308,7 +308,7 @@ msgstr "Porządkowanie"
 msgid "Custom date range"
 msgstr "Własny okres"
 
-#: web/lib/RenderPanel.svelte:161 web/routes/create/+page.svelte:501
+#: web/lib/RenderPanel.svelte:161 web/routes/create/+page.svelte:511
 msgid "Cut"
 msgstr "Montuj"
 
@@ -316,11 +316,11 @@ msgstr "Montuj"
 msgid "Cut contact sheet"
 msgstr "Stykówka montażu"
 
-#: web/routes/create/+page.svelte:327
+#: web/routes/create/+page.svelte:337
 msgid "Day"
 msgstr "Dzień"
 
-#: web/routes/create/+page.svelte:350
+#: web/routes/create/+page.svelte:360
 msgid "Day (MM-DD)"
 msgstr "Dzień (MM-DD)"
 
@@ -348,7 +348,7 @@ msgstr "Opisz film, którego chcesz"
 msgid "Describing the pictures"
 msgstr "Opisywanie obrazów"
 
-#: web/routes/create/+page.svelte:397
+#: web/routes/create/+page.svelte:407
 msgid "Detecting trips from GPS data..."
 msgstr "Wykrywanie podróży na podstawie danych GPS…"
 
@@ -417,7 +417,7 @@ msgstr "Kwalifikuje się. Nie utworzono filmu."
 msgid "End here"
 msgstr "Zakończ tutaj"
 
-#: web/routes/create/+page.svelte:337
+#: web/routes/create/+page.svelte:347
 msgid "Ends"
 msgstr "Kończy się"
 
@@ -444,7 +444,7 @@ msgstr ""
 "Każde ustawienie i skąd pochodzi jego wartość. To, co zapiszesz tutaj, trafia do bazy danych;"
 " config.yaml i środowisko nigdy nie są zapisywane i mają nad tym pierwszeństwo."
 
-#: web/routes/create/+page.svelte:413
+#: web/routes/create/+page.svelte:423
 msgid "Every trip of the year"
 msgstr "Każda podróż roku"
 
@@ -456,7 +456,7 @@ msgstr "Eksperymentalne"
 msgid "Expression"
 msgstr "Wyrażenie"
 
-#: web/routes/create/+page.svelte:486 web/routes/runs/[run_id]/pool/+page.svelte:87
+#: web/routes/create/+page.svelte:496 web/routes/runs/[run_id]/pool/+page.svelte:87
 #: web/routes/runs/[run_id]/pool/+page.svelte:165
 msgid "Family"
 msgstr "Rodzina"
@@ -473,7 +473,7 @@ msgstr "Pasuje mniej niż 12 zdjęć: film będzie krótki."
 msgid "Films that may use it"
 msgstr "Filmy, które mogą go użyć"
 
-#: web/routes/create/+page.svelte:424 web/routes/settings/people/+page.svelte:176
+#: web/routes/create/+page.svelte:434 web/routes/settings/people/+page.svelte:176
 msgid "Find a name"
 msgstr "Znajdź imię"
 
@@ -489,7 +489,7 @@ msgstr "Dopasuj z paskami"
 msgid "Format"
 msgstr "Format"
 
-#: web/routes/create/+page.svelte:335
+#: web/routes/create/+page.svelte:345
 msgid "From"
 msgstr "Od"
 
@@ -501,7 +501,7 @@ msgstr "Pełne imię i nazwisko"
 msgid "Grandparents, siblings, the group chat. Private moments stay out."
 msgstr "Dziadkowie, rodzeństwo, czat grupowy. Prywatne chwile pozostają wykluczone."
 
-#: web/routes/create/+page.svelte:452
+#: web/routes/create/+page.svelte:462
 msgid "Grouped condition"
 msgstr "Warunek grupowy"
 
@@ -510,7 +510,7 @@ msgstr "Warunek grupowy"
 msgid "Held: {reasons}."
 msgstr "Zablokowane: {reasons}."
 
-#: web/routes/create/+page.svelte:325
+#: web/routes/create/+page.svelte:335
 msgid "Hemisphere"
 msgstr "Półkula"
 
@@ -518,7 +518,7 @@ msgstr "Półkula"
 msgid "High"
 msgstr "Wysoka"
 
-#: web/lib/labels.ts:13 web/routes/create/+page.svelte:344
+#: web/lib/labels.ts:13 web/routes/create/+page.svelte:354
 msgid "Holiday"
 msgstr "Święto"
 
@@ -542,7 +542,7 @@ msgstr "Połączenie z Immich"
 msgid "Immich Server URL"
 msgstr "Adres URL serwera Immich"
 
-#: web/routes/create/+page.svelte:466
+#: web/routes/create/+page.svelte:476
 msgid "Immich accounts to read (primary alone when none are picked)"
 msgstr "Konta Immich do odczytu (samo główne, gdy żadne nie jest wybrane)"
 
@@ -550,6 +550,10 @@ msgstr "Konta Immich do odczytu (samo główne, gdy żadne nie jest wybrane)"
 #, python-brace-format
 msgid "Immich delivery: {value}"
 msgstr "Przesyłanie do Immich: {value}"
+
+#: web/routes/create/+page.svelte:303
+msgid "Immich unreachable"
+msgstr "Immich jest nieosiągalny"
 
 #: web/lib/labels.ts:56
 msgid "Important"
@@ -563,7 +567,7 @@ msgstr "W montażu"
 msgid "In the film"
 msgstr "W filmie"
 
-#: web/routes/create/+page.svelte:491
+#: web/routes/create/+page.svelte:501
 msgid "Include Live Photos"
 msgstr "Uwzględnij Live Photos"
 
@@ -571,7 +575,7 @@ msgstr "Uwzględnij Live Photos"
 msgid "Include captions of flagged photos"
 msgstr "Dołącz podpisy oznaczonych zdjęć"
 
-#: web/routes/create/+page.svelte:490
+#: web/routes/create/+page.svelte:500
 msgid "Include photos"
 msgstr "Uwzględnij zdjęcia"
 
@@ -583,7 +587,7 @@ msgstr "Język interfejsu"
 msgid "It did not finish."
 msgstr "Nie zakończyło się."
 
-#: web/routes/create/+page.svelte:485 web/routes/runs/[run_id]/pool/+page.svelte:87
+#: web/routes/create/+page.svelte:495 web/routes/runs/[run_id]/pool/+page.svelte:87
 #: web/routes/runs/[run_id]/pool/+page.svelte:165
 msgid "Just us"
 msgstr "Tylko my"
@@ -609,11 +613,11 @@ msgstr "Etykieta"
 msgid "Landscape"
 msgstr "Poziomo"
 
-#: web/routes/create/+page.svelte:480
+#: web/routes/create/+page.svelte:490
 msgid "Length and pictures"
 msgstr "Długość i obrazy"
 
-#: web/routes/create/+page.svelte:482
+#: web/routes/create/+page.svelte:492
 msgid "Length in minutes (fitted to the pictures when empty)"
 msgstr "Długość w minutach (dopasowana do obrazów, gdy pole jest puste)"
 
@@ -673,7 +677,7 @@ msgstr "Średnia"
 msgid "Memory"
 msgstr "Wspomnienie"
 
-#: web/routes/create/+page.svelte:304
+#: web/routes/create/+page.svelte:314
 msgid "Memory type"
 msgstr "Typ wspomnienia"
 
@@ -697,7 +701,7 @@ msgstr "Sugestia modelu"
 msgid "Modern warm"
 msgstr "Modern warm"
 
-#: web/routes/create/+page.svelte:317 web/routes/create/+page.svelte:318
+#: web/routes/create/+page.svelte:327 web/routes/create/+page.svelte:328
 msgid "Month"
 msgstr "Miesiąc"
 
@@ -721,11 +725,11 @@ msgstr "Głośność muzyki:"
 msgid "Never use"
 msgstr "Nigdy nie używaj"
 
-#: web/routes/create/+page.svelte:288 web/routes/create/+page.svelte:292
+#: web/routes/create/+page.svelte:294 web/routes/create/+page.svelte:298
 msgid "New memory"
 msgstr "Nowe wspomnienie"
 
-#: web/routes/create/+page.svelte:382
+#: web/routes/create/+page.svelte:392
 msgid ""
 "No catalogued days yet. Run immich-memories discover-days to find them, or film any day by "
 "its date."
@@ -753,11 +757,11 @@ msgstr "Żaden model nie czytał tego montażu: każdy obraz wybrały reguły."
 msgid "No music"
 msgstr "Bez muzyki"
 
-#: web/routes/create/+page.svelte:434
+#: web/routes/create/+page.svelte:444
 msgid "No name matches."
 msgstr "Żadne imię nie pasuje."
 
-#: web/routes/create/+page.svelte:434
+#: web/routes/create/+page.svelte:444
 msgid "No named people in Immich yet."
 msgstr "W Immich nie ma jeszcze nazwanych osób."
 
@@ -793,7 +797,7 @@ msgstr "Brak jeszcze zapisanych grup."
 msgid "No suggestions right now."
 msgstr "Obecnie brak propozycji."
 
-#: web/routes/create/+page.svelte:415
+#: web/routes/create/+page.svelte:425
 msgid "No trips detected for this year."
 msgstr "Nie wykryto podróży w tym roku."
 
@@ -809,7 +813,7 @@ msgstr "Jeszcze nikogo. Przeskanuj bibliotekę ponownie, aby zobaczyć, kto w ni
 msgid "None"
 msgstr "Brak"
 
-#: web/routes/create/+page.svelte:325
+#: web/routes/create/+page.svelte:335
 msgid "North"
 msgstr "Północ"
 
@@ -833,11 +837,11 @@ msgstr "Jeszcze nic nie zapisano."
 msgid "On This Day"
 msgstr "Tego dnia"
 
-#: web/routes/create/+page.svelte:338
+#: web/routes/create/+page.svelte:348
 msgid "On a date"
 msgstr "W określonym dniu"
 
-#: web/routes/create/+page.svelte:422
+#: web/routes/create/+page.svelte:432
 msgid "Only with (optional)"
 msgstr "Tylko z (opcjonalnie)"
 
@@ -882,16 +886,16 @@ msgstr "Przeszło {stages}"
 msgid "Password"
 msgstr "Hasło"
 
-#: web/routes/create/+page.svelte:422 web/routes/settings/+page.svelte:106
+#: web/routes/create/+page.svelte:432 web/routes/settings/+page.svelte:106
 #: web/routes/settings/people/+page.svelte:127 web/routes/settings/people/+page.svelte:133
 msgid "People"
 msgstr "Osoby"
 
-#: web/routes/create/+page.svelte:453
+#: web/routes/create/+page.svelte:463
 msgid "People condition"
 msgstr "Warunek dotyczący osób"
 
-#: web/routes/create/+page.svelte:342
+#: web/routes/create/+page.svelte:352
 msgid "Period (6m, 1y, 2w)"
 msgstr "Okres (6m, 1y, 2w)"
 
@@ -899,7 +903,7 @@ msgstr "Okres (6m, 1y, 2w)"
 msgid "Person Spotlight"
 msgstr "Jedna osoba w centrum"
 
-#: web/routes/create/+page.svelte:492
+#: web/routes/create/+page.svelte:502
 msgid "Photo duration (seconds)"
 msgstr "Czas zdjęcia (sekundy)"
 
@@ -915,7 +919,7 @@ msgstr "Właśnie odczytane obrazy"
 msgid "Pictures left after each step"
 msgstr "Zdjęcia pozostałe po każdym kroku"
 
-#: web/routes/create/+page.svelte:460
+#: web/routes/create/+page.svelte:470
 msgid "Pictures with"
 msgstr "Obrazy z"
 
@@ -990,7 +994,7 @@ msgstr "Odczytywanie tego, co pokazuje każdy obraz"
 msgid "Recorded alternative"
 msgstr "Zapisana alternatywa"
 
-#: web/routes/create/+page.svelte:393
+#: web/routes/create/+page.svelte:403
 msgid "Refresh"
 msgstr "Odśwież"
 
@@ -998,7 +1002,7 @@ msgstr "Odśwież"
 msgid "Refresh suggestions"
 msgstr "Odśwież propozycje"
 
-#: web/routes/create/+page.svelte:393
+#: web/routes/create/+page.svelte:403
 msgid "Refreshing..."
 msgstr "Odświeżanie..."
 
@@ -1110,7 +1114,7 @@ msgstr "Zapisano. Wpisz nowy klucz, aby go zastąpić"
 msgid "Saved as revision {number}."
 msgstr "Zapisano jako wersję {number}."
 
-#: web/routes/create/+page.svelte:439 web/routes/settings/people/+page.svelte:151
+#: web/routes/create/+page.svelte:449 web/routes/settings/people/+page.svelte:151
 #: web/routes/settings/people/+page.svelte:152
 msgid "Saved groups"
 msgstr "Zapisane grupy"
@@ -1145,7 +1149,7 @@ msgstr "Zaplanowane"
 msgid "Screen time (seconds)"
 msgstr "Czas na ekranie (sekundy)"
 
-#: web/lib/labels.ts:6 web/routes/create/+page.svelte:322
+#: web/lib/labels.ts:6 web/routes/create/+page.svelte:332
 msgid "Season"
 msgstr "Pora roku"
 
@@ -1173,7 +1177,7 @@ msgstr "Ustawione w config.yaml jako {key}"
 msgid "Settings"
 msgstr "Ustawienia"
 
-#: web/routes/create/+page.svelte:486
+#: web/routes/create/+page.svelte:496
 msgid "Shareable"
 msgstr "Do udostępniania"
 
@@ -1218,7 +1222,7 @@ msgstr "Soft romantic"
 msgid "Some of its pictures"
 msgstr "Kilka jego zdjęć"
 
-#: web/routes/create/+page.svelte:325
+#: web/routes/create/+page.svelte:335
 msgid "South"
 msgstr "Południe"
 
@@ -1315,7 +1319,7 @@ msgstr "Nie udało się sprawdzić połączenia."
 msgid "The cut as chosen"
 msgstr "Wybrany montaż"
 
-#: web/routes/create/+page.svelte:268
+#: web/routes/create/+page.svelte:274
 msgid "The cut could not start."
 msgstr "Nie udało się rozpocząć montażu."
 
@@ -1465,7 +1469,7 @@ msgstr "Tytuł (ustalany przez `generate`, gdy pole jest puste)"
 msgid "Title style"
 msgstr "Title style"
 
-#: web/routes/create/+page.svelte:341
+#: web/routes/create/+page.svelte:351
 msgid "To"
 msgstr "Do"
 
@@ -1481,15 +1485,15 @@ msgstr "Zajął miejsce obrazu, który model usunął z tej historii."
 msgid "Transition Style"
 msgstr "Styl przejść"
 
-#: web/lib/labels.ts:12 web/routes/create/+page.svelte:389
+#: web/lib/labels.ts:12 web/routes/create/+page.svelte:399
 msgid "Trip"
 msgstr "Podróż"
 
-#: web/routes/create/+page.svelte:188 web/routes/create/+page.svelte:192
+#: web/routes/create/+page.svelte:190 web/routes/create/+page.svelte:194
 msgid "Trip detection failed."
 msgstr "Wykrywanie podróży nie powiodło się."
 
-#: web/routes/create/+page.svelte:401
+#: web/routes/create/+page.svelte:411
 msgid "Trips"
 msgstr "Podróże"
 
@@ -1514,7 +1518,7 @@ msgstr "Prześlij utwór"
 msgid "Upload the film to Immich"
 msgstr "Prześlij film do Immich"
 
-#: web/routes/create/+page.svelte:456
+#: web/routes/create/+page.svelte:466
 msgid "Use exact library names; each picture must match. It replaces the names above."
 msgstr "Użyj dokładnych nazw z biblioteki; każdy obraz musi pasować. Zastępuje nazwy powyżej."
 
@@ -1604,7 +1608,7 @@ msgstr "Kto"
 msgid "Who is who, their roles and relationships."
 msgstr "Kto jest kim, jakie ma role i powiązania."
 
-#: web/routes/create/+page.svelte:483
+#: web/routes/create/+page.svelte:493
 msgid "Who may see it"
 msgstr "Kto może to zobaczyć"
 
@@ -1632,7 +1636,7 @@ msgstr "Zima"
 msgid "With"
 msgstr "Z"
 
-#: web/routes/create/+page.svelte:315
+#: web/routes/create/+page.svelte:325
 msgid "Year"
 msgstr "Rok"
 
@@ -1640,11 +1644,11 @@ msgstr "Rok"
 msgid "Year in Review"
 msgstr "Podsumowanie roku"
 
-#: web/routes/create/+page.svelte:333
+#: web/routes/create/+page.svelte:343
 msgid "Years back (all when empty)"
 msgstr "Liczba lat wstecz (wszystkie, gdy pole jest puste)"
 
-#: web/routes/create/+page.svelte:333
+#: web/routes/create/+page.svelte:343
 msgid "Years to span"
 msgstr "Liczba obejmowanych lat"
 
@@ -1672,11 +1676,11 @@ msgstr ""
 msgid "about {film} of film"
 msgstr "około {film} filmu"
 
-#: web/routes/create/+page.svelte:461
+#: web/routes/create/+page.svelte:471
 msgid "all of them together"
 msgstr "wszystkimi razem"
 
-#: web/routes/create/+page.svelte:461
+#: web/routes/create/+page.svelte:471
 msgid "any of them"
 msgstr "którymkolwiek z nich"
 
@@ -1703,7 +1707,7 @@ msgstr "{content}: film wykracza poza swój {budget}, aby je pomieścić"
 msgid "{date_range_start} to {date_range_end}"
 msgstr "{date_range_start} do {date_range_end}"
 
-#: web/routes/create/+page.svelte:408
+#: web/routes/create/+page.svelte:418
 #, python-brace-format
 msgid "{days} days · {count} pictures"
 msgstr "{days} dni · {count} obrazów"
@@ -1737,7 +1741,7 @@ msgstr "Zdjęcia: {pictures} (fotografie: {photos}, filmy: {videos})"
 msgid "{seconds} s on screen"
 msgstr "{seconds} s na ekranie"
 
-#: web/routes/create/+page.svelte:376
+#: web/routes/create/+page.svelte:386
 #, python-brace-format
 msgid "{years} years ago"
 msgstr "{years} lat temu"

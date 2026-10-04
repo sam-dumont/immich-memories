@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-04 07:35+0200\n"
+"POT-Creation-Date: 2026-10-04 13:49+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_Hans\n"
@@ -38,7 +38,7 @@ msgstr "API 密钥"
 msgid "About {amount} left"
 msgstr "约剩 {amount}"
 
-#: web/routes/create/+page.svelte:493
+#: web/routes/create/+page.svelte:503
 msgid "Accept forwarded and downloaded media"
 msgstr "接受转发和下载的媒体"
 
@@ -80,11 +80,11 @@ msgstr "因目录记录为值得纪念的时刻而加入。"
 msgid "Added from the pool"
 msgstr "从素材中添加"
 
-#: web/routes/create/+page.svelte:338
+#: web/routes/create/+page.svelte:348
 msgid "After a period"
 msgstr "一段时间之后"
 
-#: web/lib/labels.ts:11 web/routes/create/+page.svelte:353
+#: web/lib/labels.ts:11 web/routes/create/+page.svelte:363
 msgid "Album"
 msgstr "相册"
 
@@ -101,13 +101,13 @@ msgstr "同时显示此回忆之外的 {count} 张照片"
 msgid "Alternatives considered"
 msgstr "已考虑的备选项"
 
-#: web/routes/create/+page.svelte:368
+#: web/routes/create/+page.svelte:378
 msgid ""
 "Anniversaries first, then the rest. A scheduled run only proposes a day on its anniversary; "
 "here you can pick any day the catalogue holds."
 msgstr "先显示纪念日，其余随后。定时任务只会在纪念日当天提议这一天；在这里你可以选择目录中的任意一天。"
 
-#: web/routes/create/+page.svelte:347
+#: web/routes/create/+page.svelte:357
 msgid "Another day (MM-DD)"
 msgstr "其他日期 (MM-DD)"
 
@@ -121,7 +121,7 @@ msgstr "任何人。仅使用未受限制的画面：没有检测标记，也没
 
 #: web/lib/RenderPanel.svelte:160 web/lib/RenderPanel.svelte:166 web/lib/RenderPanel.svelte:175
 #: web/lib/RenderPanel.svelte:198 web/lib/RenderPanel.svelte:204 web/lib/RenderPanel.svelte:210
-#: web/lib/RenderPanel.svelte:216 web/lib/RenderPanel.svelte:263 web/routes/create/+page.svelte:485
+#: web/lib/RenderPanel.svelte:216 web/lib/RenderPanel.svelte:263 web/routes/create/+page.svelte:495
 msgid "As configured"
 msgstr "按配置"
 
@@ -169,11 +169,11 @@ msgstr "返回剪辑"
 msgid "Bind"
 msgstr "绑定"
 
-#: web/routes/create/+page.svelte:330
+#: web/routes/create/+page.svelte:340
 msgid "Birthday (MM-DD; Immich’s birth date when empty)"
 msgstr "生日 (MM-DD；留空则使用 Immich 中的出生日期)"
 
-#: web/routes/create/+page.svelte:329
+#: web/routes/create/+page.svelte:339
 msgid "Birthday to birthday, with earlier birthdays"
 msgstr "从生日到生日，包含更早的生日"
 
@@ -205,7 +205,7 @@ msgstr "候选项标识"
 msgid "Caption clips with their place"
 msgstr "在片段上显示地点"
 
-#: web/routes/create/+page.svelte:364 web/routes/create/+page.svelte:369
+#: web/routes/create/+page.svelte:374 web/routes/create/+page.svelte:379
 msgid "Catalogued days"
 msgstr "已收录的日期"
 
@@ -222,11 +222,11 @@ msgstr "检查是否符合条件"
 msgid "Checking pictures for the family audience"
 msgstr "正在检查图片是否适合全家观看"
 
-#: web/routes/create/+page.svelte:355
+#: web/routes/create/+page.svelte:365
 msgid "Choose an album"
 msgstr "请选择相册"
 
-#: web/routes/create/+page.svelte:293
+#: web/routes/create/+page.svelte:299
 msgid ""
 "Choose what the film covers. The cut is made the way the command below makes it; you review "
 "it before anything renders."
@@ -253,7 +253,7 @@ msgstr "已从 {cache} 中清除 {count} 条记录。"
 msgid "Clipboard unavailable. Select the report below and copy it."
 msgstr "剪贴板不可用。请选中下方报告并复制。"
 
-#: web/routes/create/+page.svelte:498
+#: web/routes/create/+page.svelte:508
 msgid "Command"
 msgstr "命令"
 
@@ -299,7 +299,7 @@ msgstr "整理"
 msgid "Custom date range"
 msgstr "自定义时间范围"
 
-#: web/lib/RenderPanel.svelte:161 web/routes/create/+page.svelte:501
+#: web/lib/RenderPanel.svelte:161 web/routes/create/+page.svelte:511
 msgid "Cut"
 msgstr "剪辑"
 
@@ -307,11 +307,11 @@ msgstr "剪辑"
 msgid "Cut contact sheet"
 msgstr "剪辑缩略图总览"
 
-#: web/routes/create/+page.svelte:327
+#: web/routes/create/+page.svelte:337
 msgid "Day"
 msgstr "日期"
 
-#: web/routes/create/+page.svelte:350
+#: web/routes/create/+page.svelte:360
 msgid "Day (MM-DD)"
 msgstr "日期 (MM-DD)"
 
@@ -339,7 +339,7 @@ msgstr "描述你想要的影片"
 msgid "Describing the pictures"
 msgstr "正在为图片生成描述"
 
-#: web/routes/create/+page.svelte:397
+#: web/routes/create/+page.svelte:407
 msgid "Detecting trips from GPS data..."
 msgstr "正在根据 GPS 数据检测旅行…"
 
@@ -406,7 +406,7 @@ msgstr "符合条件。未生成视频。"
 msgid "End here"
 msgstr "在此结束"
 
-#: web/routes/create/+page.svelte:337
+#: web/routes/create/+page.svelte:347
 msgid "Ends"
 msgstr "结束方式"
 
@@ -428,7 +428,7 @@ msgid ""
 "config.yaml and the environment are never written, and they win over it."
 msgstr "每个设置及其取值来源。你在此保存的内容会写入数据库；config.yaml 和环境变量永远不会被写入，并且优先于此处保存的值。"
 
-#: web/routes/create/+page.svelte:413
+#: web/routes/create/+page.svelte:423
 msgid "Every trip of the year"
 msgstr "这一年的所有旅行"
 
@@ -440,7 +440,7 @@ msgstr "实验性"
 msgid "Expression"
 msgstr "表达式"
 
-#: web/routes/create/+page.svelte:486 web/routes/runs/[run_id]/pool/+page.svelte:87
+#: web/routes/create/+page.svelte:496 web/routes/runs/[run_id]/pool/+page.svelte:87
 #: web/routes/runs/[run_id]/pool/+page.svelte:165
 msgid "Family"
 msgstr "家人"
@@ -457,7 +457,7 @@ msgstr "符合的图片少于 12 张：影片会很短。"
 msgid "Films that may use it"
 msgstr "可以使用它的影片"
 
-#: web/routes/create/+page.svelte:424 web/routes/settings/people/+page.svelte:176
+#: web/routes/create/+page.svelte:434 web/routes/settings/people/+page.svelte:176
 msgid "Find a name"
 msgstr "搜索姓名"
 
@@ -473,7 +473,7 @@ msgstr "加黑边适配"
 msgid "Format"
 msgstr "格式"
 
-#: web/routes/create/+page.svelte:335
+#: web/routes/create/+page.svelte:345
 msgid "From"
 msgstr "起始"
 
@@ -485,7 +485,7 @@ msgstr "全名"
 msgid "Grandparents, siblings, the group chat. Private moments stay out."
 msgstr "祖父母、兄弟姐妹、群聊。排除私密时刻。"
 
-#: web/routes/create/+page.svelte:452
+#: web/routes/create/+page.svelte:462
 msgid "Grouped condition"
 msgstr "分组条件"
 
@@ -494,7 +494,7 @@ msgstr "分组条件"
 msgid "Held: {reasons}."
 msgstr "已限制：{reasons}。"
 
-#: web/routes/create/+page.svelte:325
+#: web/routes/create/+page.svelte:335
 msgid "Hemisphere"
 msgstr "半球"
 
@@ -502,7 +502,7 @@ msgstr "半球"
 msgid "High"
 msgstr "高"
 
-#: web/lib/labels.ts:13 web/routes/create/+page.svelte:344
+#: web/lib/labels.ts:13 web/routes/create/+page.svelte:354
 msgid "Holiday"
 msgstr "节日"
 
@@ -526,7 +526,7 @@ msgstr "Immich 连接"
 msgid "Immich Server URL"
 msgstr "Immich 服务器地址"
 
-#: web/routes/create/+page.svelte:466
+#: web/routes/create/+page.svelte:476
 msgid "Immich accounts to read (primary alone when none are picked)"
 msgstr "要读取的 Immich 账户(未选择时仅主账户)"
 
@@ -534,6 +534,10 @@ msgstr "要读取的 Immich 账户(未选择时仅主账户)"
 #, python-brace-format
 msgid "Immich delivery: {value}"
 msgstr "上传到 Immich：{value}"
+
+#: web/routes/create/+page.svelte:303
+msgid "Immich unreachable"
+msgstr "无法连接 Immich"
 
 #: web/lib/labels.ts:56
 msgid "Important"
@@ -547,7 +551,7 @@ msgstr "在剪辑中"
 msgid "In the film"
 msgstr "在影片中"
 
-#: web/routes/create/+page.svelte:491
+#: web/routes/create/+page.svelte:501
 msgid "Include Live Photos"
 msgstr "包含 Live Photos"
 
@@ -555,7 +559,7 @@ msgstr "包含 Live Photos"
 msgid "Include captions of flagged photos"
 msgstr "包含已标记照片的说明文字"
 
-#: web/routes/create/+page.svelte:490
+#: web/routes/create/+page.svelte:500
 msgid "Include photos"
 msgstr "包含照片"
 
@@ -567,7 +571,7 @@ msgstr "界面语言"
 msgid "It did not finish."
 msgstr "未能完成。"
 
-#: web/routes/create/+page.svelte:485 web/routes/runs/[run_id]/pool/+page.svelte:87
+#: web/routes/create/+page.svelte:495 web/routes/runs/[run_id]/pool/+page.svelte:87
 #: web/routes/runs/[run_id]/pool/+page.svelte:165
 msgid "Just us"
 msgstr "仅自己家"
@@ -593,11 +597,11 @@ msgstr "标签"
 msgid "Landscape"
 msgstr "横屏"
 
-#: web/routes/create/+page.svelte:480
+#: web/routes/create/+page.svelte:490
 msgid "Length and pictures"
 msgstr "时长与图片"
 
-#: web/routes/create/+page.svelte:482
+#: web/routes/create/+page.svelte:492
 msgid "Length in minutes (fitted to the pictures when empty)"
 msgstr "时长（分钟，留空则按图片数量自动调整）"
 
@@ -657,7 +661,7 @@ msgstr "中"
 msgid "Memory"
 msgstr "回忆"
 
-#: web/routes/create/+page.svelte:304
+#: web/routes/create/+page.svelte:314
 msgid "Memory type"
 msgstr "回忆类型"
 
@@ -681,7 +685,7 @@ msgstr "模型建议"
 msgid "Modern warm"
 msgstr "Modern warm"
 
-#: web/routes/create/+page.svelte:317 web/routes/create/+page.svelte:318
+#: web/routes/create/+page.svelte:327 web/routes/create/+page.svelte:328
 msgid "Month"
 msgstr "月份"
 
@@ -705,11 +709,11 @@ msgstr "音乐音量："
 msgid "Never use"
 msgstr "永不使用"
 
-#: web/routes/create/+page.svelte:288 web/routes/create/+page.svelte:292
+#: web/routes/create/+page.svelte:294 web/routes/create/+page.svelte:298
 msgid "New memory"
 msgstr "新建回忆"
 
-#: web/routes/create/+page.svelte:382
+#: web/routes/create/+page.svelte:392
 msgid ""
 "No catalogued days yet. Run immich-memories discover-days to find them, or film any day by "
 "its date."
@@ -733,11 +737,11 @@ msgstr "没有模型阅读此剪辑：每张图片都由规则选出。"
 msgid "No music"
 msgstr "无音乐"
 
-#: web/routes/create/+page.svelte:434
+#: web/routes/create/+page.svelte:444
 msgid "No name matches."
 msgstr "没有匹配的姓名。"
 
-#: web/routes/create/+page.svelte:434
+#: web/routes/create/+page.svelte:444
 msgid "No named people in Immich yet."
 msgstr "Immich 中还没有已命名的人物。"
 
@@ -773,7 +777,7 @@ msgstr "还没有保存的分组。"
 msgid "No suggestions right now."
 msgstr "暂无建议。"
 
-#: web/routes/create/+page.svelte:415
+#: web/routes/create/+page.svelte:425
 msgid "No trips detected for this year."
 msgstr "这一年没有检测到旅行。"
 
@@ -789,7 +793,7 @@ msgstr "还没有人。重新扫描媒体库即可查看其中都有谁。"
 msgid "None"
 msgstr "无"
 
-#: web/routes/create/+page.svelte:325
+#: web/routes/create/+page.svelte:335
 msgid "North"
 msgstr "北半球"
 
@@ -813,11 +817,11 @@ msgstr "尚无记录。"
 msgid "On This Day"
 msgstr "历史上的今天"
 
-#: web/routes/create/+page.svelte:338
+#: web/routes/create/+page.svelte:348
 msgid "On a date"
 msgstr "指定日期"
 
-#: web/routes/create/+page.svelte:422
+#: web/routes/create/+page.svelte:432
 msgid "Only with (optional)"
 msgstr "仅包含（可选）"
 
@@ -862,16 +866,16 @@ msgstr "通过了{stages}"
 msgid "Password"
 msgstr "密码"
 
-#: web/routes/create/+page.svelte:422 web/routes/settings/+page.svelte:106
+#: web/routes/create/+page.svelte:432 web/routes/settings/+page.svelte:106
 #: web/routes/settings/people/+page.svelte:127 web/routes/settings/people/+page.svelte:133
 msgid "People"
 msgstr "人物"
 
-#: web/routes/create/+page.svelte:453
+#: web/routes/create/+page.svelte:463
 msgid "People condition"
 msgstr "人物条件"
 
-#: web/routes/create/+page.svelte:342
+#: web/routes/create/+page.svelte:352
 msgid "Period (6m, 1y, 2w)"
 msgstr "时长 (6m, 1y, 2w)"
 
@@ -879,7 +883,7 @@ msgstr "时长 (6m, 1y, 2w)"
 msgid "Person Spotlight"
 msgstr "人物特辑"
 
-#: web/routes/create/+page.svelte:492
+#: web/routes/create/+page.svelte:502
 msgid "Photo duration (seconds)"
 msgstr "照片时长（秒）"
 
@@ -895,7 +899,7 @@ msgstr "刚读取的图片"
 msgid "Pictures left after each step"
 msgstr "每一步后剩余的图片"
 
-#: web/routes/create/+page.svelte:460
+#: web/routes/create/+page.svelte:470
 msgid "Pictures with"
 msgstr "包含以下人物的图片"
 
@@ -970,7 +974,7 @@ msgstr "正在读取每张图片的内容"
 msgid "Recorded alternative"
 msgstr "已记录的备选项"
 
-#: web/routes/create/+page.svelte:393
+#: web/routes/create/+page.svelte:403
 msgid "Refresh"
 msgstr "刷新"
 
@@ -978,7 +982,7 @@ msgstr "刷新"
 msgid "Refresh suggestions"
 msgstr "刷新建议"
 
-#: web/routes/create/+page.svelte:393
+#: web/routes/create/+page.svelte:403
 msgid "Refreshing..."
 msgstr "正在刷新…"
 
@@ -1090,7 +1094,7 @@ msgstr "已保存，输入新密钥可替换它"
 msgid "Saved as revision {number}."
 msgstr "已保存为修订 {number}。"
 
-#: web/routes/create/+page.svelte:439 web/routes/settings/people/+page.svelte:151
+#: web/routes/create/+page.svelte:449 web/routes/settings/people/+page.svelte:151
 #: web/routes/settings/people/+page.svelte:152
 msgid "Saved groups"
 msgstr "已保存的分组"
@@ -1125,7 +1129,7 @@ msgstr "已计划"
 msgid "Screen time (seconds)"
 msgstr "屏幕时长（秒）"
 
-#: web/lib/labels.ts:6 web/routes/create/+page.svelte:322
+#: web/lib/labels.ts:6 web/routes/create/+page.svelte:332
 msgid "Season"
 msgstr "季节"
 
@@ -1151,7 +1155,7 @@ msgstr "在 config.yaml 中设为 {key}"
 msgid "Settings"
 msgstr "设置"
 
-#: web/routes/create/+page.svelte:486
+#: web/routes/create/+page.svelte:496
 msgid "Shareable"
 msgstr "可分享"
 
@@ -1196,7 +1200,7 @@ msgstr "Soft romantic"
 msgid "Some of its pictures"
 msgstr "其中的几张照片"
 
-#: web/routes/create/+page.svelte:325
+#: web/routes/create/+page.svelte:335
 msgid "South"
 msgstr "南半球"
 
@@ -1293,7 +1297,7 @@ msgstr "无法检查连接。"
 msgid "The cut as chosen"
 msgstr "当前选择的剪辑"
 
-#: web/routes/create/+page.svelte:268
+#: web/routes/create/+page.svelte:274
 msgid "The cut could not start."
 msgstr "剪辑无法启动。"
 
@@ -1433,7 +1437,7 @@ msgstr "标题（留空则由 generate 决定）"
 msgid "Title style"
 msgstr "Title style"
 
-#: web/routes/create/+page.svelte:341
+#: web/routes/create/+page.svelte:351
 msgid "To"
 msgstr "结束"
 
@@ -1449,15 +1453,15 @@ msgstr "接替了模型从这个故事中移除的一张图片的位置。"
 msgid "Transition Style"
 msgstr "转场样式"
 
-#: web/lib/labels.ts:12 web/routes/create/+page.svelte:389
+#: web/lib/labels.ts:12 web/routes/create/+page.svelte:399
 msgid "Trip"
 msgstr "旅行"
 
-#: web/routes/create/+page.svelte:188 web/routes/create/+page.svelte:192
+#: web/routes/create/+page.svelte:190 web/routes/create/+page.svelte:194
 msgid "Trip detection failed."
 msgstr "旅行检测失败。"
 
-#: web/routes/create/+page.svelte:401
+#: web/routes/create/+page.svelte:411
 msgid "Trips"
 msgstr "旅行"
 
@@ -1482,7 +1486,7 @@ msgstr "上传曲目"
 msgid "Upload the film to Immich"
 msgstr "将影片上传到 Immich"
 
-#: web/routes/create/+page.svelte:456
+#: web/routes/create/+page.svelte:466
 msgid "Use exact library names; each picture must match. It replaces the names above."
 msgstr "使用照片库中的准确姓名，每张图片都必须匹配。此设置会替代上面的姓名。"
 
@@ -1570,7 +1574,7 @@ msgstr "谁"
 msgid "Who is who, their roles and relationships."
 msgstr "谁是谁，以及他们的角色和关系。"
 
-#: web/routes/create/+page.svelte:483
+#: web/routes/create/+page.svelte:493
 msgid "Who may see it"
 msgstr "谁可以看到"
 
@@ -1598,7 +1602,7 @@ msgstr "冬季"
 msgid "With"
 msgstr "对象"
 
-#: web/routes/create/+page.svelte:315
+#: web/routes/create/+page.svelte:325
 msgid "Year"
 msgstr "年份"
 
@@ -1606,11 +1610,11 @@ msgstr "年份"
 msgid "Year in Review"
 msgstr "年度回顾"
 
-#: web/routes/create/+page.svelte:333
+#: web/routes/create/+page.svelte:343
 msgid "Years back (all when empty)"
 msgstr "回溯年数（留空则为全部）"
 
-#: web/routes/create/+page.svelte:333
+#: web/routes/create/+page.svelte:343
 msgid "Years to span"
 msgstr "跨越的年数"
 
@@ -1636,11 +1640,11 @@ msgstr "制作第一部影片需要这些模型文件。点击按钮前不会开
 msgid "about {film} of film"
 msgstr "影片约 {film}"
 
-#: web/routes/create/+page.svelte:461
+#: web/routes/create/+page.svelte:471
 msgid "all of them together"
 msgstr "所有人同时出现"
 
-#: web/routes/create/+page.svelte:461
+#: web/routes/create/+page.svelte:471
 msgid "any of them"
 msgstr "其中任意一人"
 
@@ -1667,7 +1671,7 @@ msgstr "{content}：影片会超出其 {budget} 以容纳它们"
 msgid "{date_range_start} to {date_range_end}"
 msgstr "{date_range_start} 至 {date_range_end}"
 
-#: web/routes/create/+page.svelte:408
+#: web/routes/create/+page.svelte:418
 #, python-brace-format
 msgid "{days} days · {count} pictures"
 msgstr "{days} 天 · {count} 张图片"
@@ -1699,7 +1703,7 @@ msgstr "{pictures} 张图片：{photos} 张照片，{videos} 个视频"
 msgid "{seconds} s on screen"
 msgstr "在屏幕上 {seconds} 秒"
 
-#: web/routes/create/+page.svelte:376
+#: web/routes/create/+page.svelte:386
 #, python-brace-format
 msgid "{years} years ago"
 msgstr "{years} 年前"

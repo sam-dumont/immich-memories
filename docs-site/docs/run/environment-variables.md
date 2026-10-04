@@ -128,3 +128,9 @@ See [configured service addresses](./network-security.md#configured-service-addr
 Session/encryption keys, logging and local ACE-Step process settings have their own names.
 See [Environment variable exceptions](./reference/environment.md).
 Scheduled jobs do not inherit your shell's exports; keep the Immich connection in YAML.
+
+## Native person identities
+
+`IMMICH_MEMORIES_IMMICH__NATIVE_SHARING=true` enables the optional
+[native identity path](./multi-account.mdx#native-person-identities). It defaults to `false`.
+Keep each selected owner's key configured: sharing does not expose the owner's favourites.

@@ -619,3 +619,18 @@ def test_model_acquisition_waits_for_a_click_and_keeps_download_errors_visible(
         card.get_by_text("encoder: digest does not match; downloaded bytes discarded")
     ).to_be_visible()
     assert downloads == ["POST"]
+
+
+def test_an_immich_outage_is_not_shown_as_an_empty_library(page, launch_app_url):
+    # WHY: the fake Immich is shared by the whole session, so the outage is what the page is told.
+    page.route(
+        "**/health/ready",
+        lambda route: route.fulfill(
+            status=503,
+            json={"status": "degraded", "immich": {"status": "unreachable", "reachable": False}},
+        ),
+    )
+    page.route("**/api/v1/people", lambda route: route.fulfill(json=[]))
+    page.goto(f"{launch_app_url}/app/create")
+    expect(page.get_by_text("Immich unreachable")).to_be_visible()
+    expect(page.get_by_text("No named people in Immich yet.")).to_have_count(0)

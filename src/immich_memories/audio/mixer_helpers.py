@@ -16,6 +16,7 @@ from immich_memories.audio.mixer import (
     DuckingConfig,
     MixConfig,
     _db_to_linear,
+    final_mix_safety_filter,
     get_audio_duration,
     get_video_duration,
     loop_audio_to_duration,
@@ -109,16 +110,17 @@ def mix_audio_with_stem_ducking(
     vocals_filter += "[vocals_prepared]"
     filter_parts.append(vocals_filter)
 
-    # Prepare video audio
+    # WHY asplit: the clip audio feeds both the sidechain key and the mix; FFmpeg 6/7
+    # refuse a filter label consumed twice (FFmpeg 8 tolerates it, which hid this).
     if config.normalize_audio:
-        filter_parts.append("[0:a]loudnorm=I=-16:TP=-1.5:LRA=11[vidaud]")
+        filter_parts.append("[0:a]loudnorm=I=-16:TP=-1.5:LRA=11,asplit=2[vidaud][vidkey]")
     else:
-        filter_parts.append("[0:a]acopy[vidaud]")
+        filter_parts.append("[0:a]asplit=2[vidaud][vidkey]")
 
     # Apply sidechain compression ONLY to vocals/melody
     # When there's speech, vocals get ducked while accompaniment stays full
     sidechain_filter = (
-        f"[vocals_prepared][vidaud]sidechaincompress="
+        f"[vocals_prepared][vidkey]sidechaincompress="
         f"threshold={ducking.threshold}:"
         f"ratio={ducking.ratio}:"
         f"attack={ducking.attack_ms}:"
@@ -129,7 +131,8 @@ def mix_audio_with_stem_ducking(
     filter_parts.extend(
         (
             sidechain_filter,
-            "[vidaud][accompaniment][ducked_vocals]amix=inputs=3:duration=first:dropout_transition=2[mixed]",
+            "[vidaud][accompaniment][ducked_vocals]amix=inputs=3:duration=first:dropout_transition=2,"
+            f"{final_mix_safety_filter()}[mixed]",
         )
     )
 
@@ -294,7 +297,7 @@ def mix_audio_with_4stem_ducking(
             f"makeup=1.0[ducked_other]",
             # Averaging five inputs divided the original speech by five.
             "[original][final_drums][ducked_bass][ducked_vocals][ducked_other]"
-            "amix=inputs=5:duration=first:normalize=0,alimiter=limit=0.95:level=false,"
+            f"amix=inputs=5:duration=first:normalize=0,{final_mix_safety_filter()},"
             f"apad=whole_dur={video_duration},atrim=0:{video_duration}[mixed]",
         )
     )
