@@ -9,11 +9,15 @@ prompts and the structural review.
 
 from __future__ import annotations
 
+import re
 from collections.abc import Collection, Sequence
 from dataclasses import dataclass
 from datetime import date
 
 from immich_memories.analysis.editorial_intent import EditorialIntent
+from immich_memories.free_text import negation
+
+_WORD = re.compile(r"[\w']+")
 
 __all__ = ["CarrierView", "IntentReport", "Violation", "validate_intent"]
 
@@ -168,7 +172,6 @@ def _excluded_violations(
     """
     if not intent.excluded:
         return []
-    words = {word for phrase in intent.excluded for word in phrase.lower().split()}
     return [
         Violation(
             "excluded_subject_shown",
@@ -179,8 +182,27 @@ def _excluded_violations(
             asset_id=carrier.asset_id,
         )
         for carrier in carriers
-        if carrier.caption and words & set(carrier.caption.lower().split())
+        if carrier.caption and _shows_excluded(intent.excluded, carrier.caption)
     ]
+
+
+def _shows_excluded(excluded: Sequence[str], caption: str) -> bool:
+    """Whether the caption shows a phrase the intent excludes: a "no <kind>" hard rule
+    (`pool.py`'s `_company_exclusions`) by the same curated person-noun matcher that built
+    the pool's own "absent company" filter, every other excluded phrase by its own words
+    (proper `\\w+` tokens, not a naive whitespace split that stuck punctuation to a word)."""
+    caption_words = _WORD.findall(caption.lower())
+    for phrase in excluded:
+        kind = phrase.removeprefix("no ") if phrase.startswith("no ") else None
+        if kind and any(
+            (found := negation.caption_kind_of(word)) is not None and kind in ("people", found)
+            for word in caption_words
+        ):
+            return True
+        phrase_words = set(_WORD.findall(phrase.lower()))
+        if phrase_words and phrase_words <= set(caption_words):
+            return True
+    return False
 
 
 def _too_thin(intent: EditorialIntent, carriers: Sequence[CarrierView]) -> bool:

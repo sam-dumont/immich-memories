@@ -236,6 +236,7 @@ class ProductionPostCardBackend:
             event_asset_ids=context.event_asset_ids,
             event_admission=context.event_admission,
             pool_subject=context.pool_subject,
+            excluded=context.excluded,
             resolved_person_condition=context.resolved_person_condition,
             face_accounts=context.face_accounts,
         )

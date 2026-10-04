@@ -42,6 +42,8 @@ class Case:
     person_expression: PersonExpression | None = None
     # The written subject an album was curated for; None unless the album is a subject pool.
     pool_subject: str | None = None
+    # What that subject pool's free-text request asked left out (#2061).
+    excluded: tuple[str, ...] = ()
     # The fetch's own condition, over face ids after the people store and the roster
     # resolved every name/group/uuid (`cli/run_people.py`), and the household account each
     # face counts on. `people`/`person_expression` above are display names for the brief;

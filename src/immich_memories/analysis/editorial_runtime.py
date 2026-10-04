@@ -123,6 +123,8 @@ class EditorialRunContext:
     # The album is a pool curated for `base_brief`, its written subject: its pictures stand on
     # that subject (`EditorialIntent.pool_is_subject`). Set by `generate --from-album --subject`.
     pool_is_subject: bool = False
+    # What the free-text request asked left out, for a subject pool only (#2061).
+    pool_excluded_phrases: tuple[str, ...] = ()
     motion_outcome_replay: MotionOutcomeReplay | None = None
     person_expression: PersonExpression | None = None
     render_timing: EditorialTimingPolicy | None = None
@@ -190,6 +192,11 @@ class EditorialRunContext:
     def pool_subject(self) -> str | None:
         """The written subject this run's album was curated for, or None for any other run."""
         return self.base_brief if self.pool_is_subject else None
+
+    @property
+    def excluded(self) -> tuple[str, ...]:
+        """What this run's subject pool asked left out, or nothing for any other run."""
+        return self.pool_excluded_phrases if self.pool_is_subject else ()
 
     def _adopt_special_event_members(self) -> None:
         members = validate_special_event_scope(

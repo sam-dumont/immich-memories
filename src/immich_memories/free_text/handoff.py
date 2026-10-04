@@ -50,6 +50,8 @@ class Film:
     subject: str = ""
     # The pool's first and last capture: the window Immich reads its pictures from.
     window: DateRange | None = None
+    # What the request asked left out, carried into the brief as a hard rule (#2061).
+    excluded: tuple[str, ...] = ()
     # The special-day route: the day, and the catalogued occasion on it when there is one.
     day: date | None = None
     event_id: str | None = None
@@ -92,6 +94,7 @@ def film_for(
             start=min(picture.taken_at for picture in pool.pictures),
             end=max(picture.taken_at for picture in pool.pictures),
         ),
+        excluded=pool.excluded,
     )
 
 

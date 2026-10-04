@@ -36,6 +36,8 @@ class CuratedPool:
     asset_ids: tuple[str, ...]
     # The pool's first and last capture: the window its pictures are read from.
     window: DateRange
+    # What the request asked left out, carried into the brief as a hard rule (#2061).
+    excluded: tuple[str, ...] = ()
 
 
 def album_output_path(
@@ -169,7 +171,8 @@ def handle_album_generation(
         upload_to_immich=upload_to_immich,
         album=album,
         memory_preset_params={"album_name": resolved.name, "album_id": resolved.id}
-        | ({"subject": subject} if subject else {}),
+        | ({"subject": subject} if subject else {})
+        | ({"excluded_phrases": list(curated.excluded)} if curated and curated.excluded else {}),
         source=source,
         memory_key=memory_key,
         memory_category=memory_category,

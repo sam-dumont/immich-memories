@@ -15,6 +15,7 @@ from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass, replace
 from datetime import date, timedelta
 
+from immich_memories.free_text import negation
 from immich_memories.free_text.homes import Home
 from immich_memories.free_text.lexicon import Lexicon
 from immich_memories.free_text.library import LibraryPerson
@@ -36,133 +37,6 @@ FIRST_PERSON = frozenset(
 # "We" is the owner and their partner: "our wedding" is the two of them.
 _WE = frozenset({"we", "us", "our", "ours", "ourselves"})
 _PARTNER_ROLE = "partner"
-
-# Negation markers across every supported locale (#2061): a plural word for people after one
-# of these means the request wants that company ABSENT, not required. Folded (no accents),
-# matched the same way every other request word is.
-_NEGATION = frozenset(
-    {
-        "no",
-        "not",
-        "without",
-        "none",  # en
-        "sans",
-        "pas",
-        "aucun",
-        "aucune",  # fr
-        "ohne",
-        "kein",
-        "keine",
-        "keinen",  # de
-        "sin",
-        "ningun",
-        "ninguna",
-        "ninguno",  # es
-        "senza",
-        "nessun",
-        "nessuna",
-        "nessuno",  # it
-    }
-)
-# "only"/"seulement"/"nur"/"solo"/"solamente": the request wants that company and no other.
-_EXCLUSIVE = frozenset({"only", "seulement", "nur", "solo", "solamente", "soltanto"})
-
-# Words for a performer that stay their own company kind instead of collapsing into "people"
-# (#2061): WordNet files "performer" under person, the same as "audience", losing the
-# distinction a request like "only the performers" needs. Each supported locale's own words.
-_PERFORMERS = frozenset(
-    {
-        "performer",
-        "performers",
-        "musician",
-        "musicians",
-        "singer",
-        "singers",
-        "band",
-        "bands",
-        "dancer",
-        "dancers",
-        "actor",
-        "actors",
-        "entertainer",
-        "entertainers",
-        "musicien",
-        "musiciens",
-        "musicienne",
-        "musiciennes",
-        "chanteur",
-        "chanteurs",
-        "chanteuse",
-        "chanteuses",
-        "danseur",
-        "danseurs",
-        "danseuse",
-        "danseuses",
-        "artiste",
-        "artistes",
-        "musiker",
-        "musikerin",
-        "sanger",
-        "sangerin",
-        "tanzer",
-        "tanzerin",
-        "musico",
-        "musicos",
-        "musica",
-        "musicas",
-        "cantante",
-        "cantantes",
-        "bailarin",
-        "bailarines",
-        "bailarina",
-        "bailarinas",
-        "musicista",
-        "musicisti",
-        "cantanti",
-        "ballerino",
-        "ballerini",
-        "ballerina",
-        "ballerine",
-    }
-)
-
-# People-words WordNet cannot classify because they are not English (#2061): the request's
-# own word for "people" or "children" in a supported locale, folded, mapped to whether it is
-# young. Captions stay English regardless of the request's language (the captioner always
-# writes English), so this table is only ever consulted on the request's own words.
-_FOREIGN_COMPANY = {
-    "humains": False,
-    "humain": False,
-    "humaines": False,
-    "humaine": False,
-    "gens": False,
-    "personnes": False,
-    "personne": False,
-    "menschen": False,
-    "personen": False,
-    "leute": False,
-    "personas": False,
-    "gente": False,
-    "persone": False,
-    "enfants": True,
-    "enfant": True,
-    "kinder": True,
-    "kind": True,
-    "ninos": True,
-    "nino": True,
-    "ninas": True,
-    "nina": True,
-    "bambini": True,
-    "bambino": True,
-    "bambina": True,
-    "bambine": True,
-}
-
-
-def is_performer_word(word: str) -> bool:
-    """Whether the word names a kind of performer, in English or a supported locale."""
-    return _fold(word) in _PERFORMERS
-
 
 _AGE = """The request says when its photos were taken (time_words). Does it give that time as a
 person's age (is_age)? Then give the youngest and the oldest age it means and whose age it is.
@@ -229,11 +103,14 @@ class WhoLink:
 
     # People-file persons whose face must be recognised on the photo itself (#1954).
     present: tuple[str, ...] = ()
+    # A named or role-matched person a negated clause excluded ("without Cy"): their face
+    # must be ABSENT, never required (#2061).
+    absent_present: tuple[str, ...] = ()
     # Persons whose facts date or place the request: the owner for "I", the partner for
     # "we", and everyone present.
     anchors: tuple[str, ...] = ()
-    # "children", "people" or "performers": a plural word for people asks for company, no
-    # one in particular.
+    # "children", "teens", "people" or "performers": a plural word for people asks for
+    # company, no one in particular.
     company: str | None = None
     # The request asks this company be ABSENT from the photos ("no humans", "sans enfants"):
     # never required, the opposite (#2061).
@@ -259,8 +136,11 @@ def link_who(
 
     First-person words anywhere in the request ("our wedding" reads as a what) are the owner,
     and "we" adds the partner by role. In the who spans, a name or a people-file role
-    requires that person's face; a plural word for people asks for company ("children" when
-    WordNet says the word is young). The model only picks between people one word fits.
+    requires that person's face; a curated word for people asks for company ("children",
+    "teens", "performers"), per supported locale. Negation on a clause of its own
+    ("no humans", "sans les enfants") turns a required name or company into an absent one,
+    never the other way; a double negation ("not without the kids") cancels back to
+    required (#2061). The model only picks between people one word fits.
     """
     people = household.people
     owner = household.owner
@@ -293,12 +173,16 @@ def link_who(
                 )
             )
     present: list[str] = []
+    absent_present: list[str] = []
     company: str | None = None
     absent_company: str | None = None
     company_only = False
     for span in who:
-        found, span_company, span_reasons = _people_in(request, span, people, lexicon, asker)
+        found, span_absent, span_company, span_reasons = _people_in(
+            request, span, people, lexicon, asker
+        )
         present += found
+        absent_present += span_absent
         company = company or span_company.required
         absent_company = absent_company or span_company.absent
         company_only = company_only or (
@@ -308,6 +192,7 @@ def link_who(
     present = list(dict.fromkeys(present))
     return WhoLink(
         present=tuple(present),
+        absent_present=tuple(dict.fromkeys(absent_present)),
         anchors=tuple(dict.fromkeys(anchors + present)),
         company=company,
         absent_company=absent_company,
@@ -331,36 +216,88 @@ def _people_in(
     people: Mapping[str, LibraryPerson],
     lexicon: Lexicon,
     asker: Asker,
-) -> tuple[list[str], _SpanCompany, list[Reason]]:
-    tokens = [token.removesuffix("'s").removesuffix("’s") for token in words_of(span)]
-    negated = any(_fold(token) in _NEGATION for token in tokens)
-    exclusive = any(_fold(token) in _EXCLUSIVE for token in tokens)
+) -> tuple[list[str], list[str], _SpanCompany, list[Reason]]:
+    """Who one who-span names, clause by clause, so a mixed request ("with the kids, no rain")
+    never lets one clause's negation invert another's (#2061)."""
     found: list[str] = []
+    absent: list[str] = []
     company = _SpanCompany()
     reasons: list[Reason] = []
+    if negation.cjk_locale_of(span) is not None:
+        negated, exclusive, kind = negation.cjk_company(span)
+        if kind:
+            company, reason = _company_reason(span, kind, negated=negated)
+            company = replace(company, exclusive=exclusive)
+            reasons.append(reason)
+        return found, absent, company, reasons
+    for clause in negation.clauses(span):
+        company = _scan_clause(
+            clause, request, people, lexicon, asker, found, absent, reasons, company
+        )
+    return found, absent, company, reasons
+
+
+def _scan_clause(
+    clause: negation.Clause,
+    request: str,
+    people: Mapping[str, LibraryPerson],
+    lexicon: Lexicon,
+    asker: Asker,
+    found: list[str],
+    absent: list[str],
+    reasons: list[Reason],
+    company: _SpanCompany,
+) -> _SpanCompany:
+    tokens = [token.removesuffix("'s").removesuffix("’s") for token in clause.words]
     for index, token in enumerate(tokens):
-        if token in FIRST_PERSON or _fold(token) in _NEGATION or _fold(token) in _EXCLUSIVE:
+        if token in FIRST_PERSON or negation.is_skip_word(token):
             continue
         named, rule = _matches(" ".join(tokens[index : index + 2]), token, people, lexicon)
-        if not named:
-            kind = _company_of(token, lexicon)
-            if kind and company.required is None is company.absent:
-                company, reason = _company_reason(token, kind, negated=negated)
-                reasons.append(reason)
-            continue
-        if len(named) > 1:
-            picked, votes = _which(request, named, asker)
-            rule += f"; {len(named)} fit, the model picked {picked.name} ({_tally(votes)})"
-            named = [picked]
-        found += [person.person_id for person in named]
-        reasons.append(
-            Reason(
-                token,
-                f"{rule}: recognised faces required, on the picture itself",
-                ", ".join(person.name for person in named),
+        if named:
+            _record_named(
+                request, named, rule, token, clause.negated, found, absent, reasons, asker
             )
+            continue
+        kind = negation.request_kind_of(token, negated=clause.negated)
+        # Required and absent are independent slots: a clause's own negation decides which
+        # one a word fills, so an earlier clause filling one never blocks the other (#2061).
+        slot_free = company.absent is None if clause.negated else company.required is None
+        if kind and slot_free:
+            filled, reason = _company_reason(token, kind, negated=clause.negated)
+            company = replace(
+                company,
+                required=filled.required or company.required,
+                absent=filled.absent or company.absent,
+            )
+            reasons.append(reason)
+    return replace(company, exclusive=company.exclusive or clause.exclusive)
+
+
+def _record_named(
+    request: str,
+    named: list[LibraryPerson],
+    rule: str,
+    token: str,
+    negated: bool,
+    found: list[str],
+    absent: list[str],
+    reasons: list[Reason],
+    asker: Asker,
+) -> None:
+    if len(named) > 1:
+        picked, votes = _which(request, named, asker)
+        rule += f"; {len(named)} fit, the model picked {picked.name} ({_tally(votes)})"
+        named = [picked]
+    ids = [person.person_id for person in named]
+    names = ", ".join(person.name for person in named)
+    if negated:
+        absent.extend(ids)
+        reasons.append(Reason(token, f"{rule}: negated, excluded by their own face", names))
+    else:
+        found.extend(ids)
+        reasons.append(
+            Reason(token, f"{rule}: recognised faces required, on the picture itself", names)
         )
-    return found, replace(company, exclusive=exclusive), reasons
 
 
 def _company_reason(token: str, kind: str, *, negated: bool) -> tuple[_SpanCompany, Reason]:
@@ -390,22 +327,6 @@ def _matches(
         return [], ""
     roles = [p for p in people.values() if p.role and lexicon.names_role(token, p.role)]
     return roles, "a role in your people file"
-
-
-def _company_of(token: str, lexicon: Lexicon) -> str | None:
-    # A performer word keeps its own company kind (#2061): "only the performers" must not
-    # collapse to generic "people", which drops the word that made it specific.
-    if is_performer_word(token):
-        return "performers"
-    folded = _fold(token)
-    if folded in _FOREIGN_COMPANY:
-        return "children" if _FOREIGN_COMPANY[folded] else "people"
-    # A plural of people ("friends") asks for company; "the cars" is not anyone. WordNet
-    # only knows English, so a foreign word falls through to the table above.
-    base = lexicon.noun_base(token)
-    if base is None or base == token or not lexicon.is_human(token):
-        return None
-    return "children" if lexicon.is_young(token) else "people"
 
 
 def _named(pair: str, token: str, people: Mapping[str, LibraryPerson]) -> list[LibraryPerson]:

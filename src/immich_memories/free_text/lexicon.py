@@ -20,7 +20,6 @@ from nltk.data import ZipFilePathPointer
 # The synsets whose kinds are people: a person, people as a whole, a group of people.
 _HUMAN = frozenset({"person.n.01", "people.n.01", "social_group.n.01"})
 # A young person, and someone's child: WordNet files a baby under offspring, not juvenile.
-_YOUNG = frozenset({"juvenile.n.01", "child.n.02"})
 _TIME_PERIOD = "time_period.n.01"
 
 # nltk_data's `packages/corpora/wordnet.zip`, WordNet 3.0 as nltk distributes it.
@@ -72,10 +71,6 @@ class Lexicon(Protocol):
 
     def is_human(self, word: str) -> bool:
         """Whether the word's first noun sense is a kind of person, people or social group."""
-        ...
-
-    def is_young(self, word: str) -> bool:
-        """Whether the word's first noun sense is a young person or someone's child."""
         ...
 
     def is_time_period(self, word: str) -> bool:
@@ -152,9 +147,6 @@ class WordNetLexicon:
 
     def is_human(self, word: str) -> bool:
         return bool(self._kinds(word) & _HUMAN)
-
-    def is_young(self, word: str) -> bool:
-        return bool(self._kinds(word) & _YOUNG)
 
     def is_time_period(self, word: str) -> bool:
         return _TIME_PERIOD in self._kinds(word)

@@ -60,3 +60,17 @@ def test_a_carrier_without_the_excluded_word_raises_no_violation():
 
     assert report.status == "ok"
     assert not report.violations
+
+
+def test_a_no_people_hard_rule_catches_a_man_not_only_the_literal_word():
+    # #2061: `pool.py`'s own "no {kind}" hard rule (`_company_exclusions`) is read by the
+    # same curated person-noun matcher the pool itself filters by, not a literal word match.
+    intent = _intent(["no people"])
+    carriers = [CarrierView("planted", DAY, "track", 4.0, caption="A man walking on a trail")]
+
+    report = validate_intent(
+        intent, carriers=carriers, evidence_partitions=set(), requested_seconds=30
+    )
+
+    assert report.status == "structural_violation"
+    assert any(v.code == "excluded_subject_shown" for v in report.violations)

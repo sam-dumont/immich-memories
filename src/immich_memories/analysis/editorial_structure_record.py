@@ -249,9 +249,11 @@ def _contract_check(
     assets: Mapping[str, Asset],
     condition: PersonExpression | None,
     face_accounts: Mapping[str, str],
+    annotations: Mapping[str, str] | None = None,
 ):
     """D09/D14: judge the plan's shape against the contract; sparse material is reported, never padded."""
     carrier_ids = [x["asset_id"] for x in outcome.carriers]
+    captions = annotations or {}
     report = validate_intent(
         intent,
         carriers=[
@@ -260,6 +262,7 @@ def _contract_check(
                 datetime.fromisoformat(x["taken"]).date(),
                 x["event"],
                 float(x["seconds"]),
+                caption=captions.get(x["asset_id"]),
             )
             for x in outcome.carriers
         ],
@@ -541,6 +544,7 @@ def build_result(source, ports, facts: PlanFacts, outcome: PlanOutcome) -> Struc
         assets=source.assets,
         condition=source.case.resolved_person_condition,
         face_accounts=source.case.face_accounts,
+        annotations=source.annotations,
     )
     plan = _plan_dict(source, ports, facts, outcome, judged)
     return StructurePlanningResult(

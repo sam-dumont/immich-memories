@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+import os
 from collections.abc import Mapping
 from datetime import date
+from pathlib import Path
 from typing import Any
+
+import pytest
 
 from immich_memories.free_text.homes import Home
 from immich_memories.free_text.lexicon import Lexicon
@@ -85,20 +89,60 @@ def test_a_negation_asks_the_company_be_absent_not_required(lexicon: Lexicon) ->
     assert "ABSENT" in no_humans.reasons[0].outcome
 
 
-def test_negation_is_read_in_every_supported_locale(lexicon: Lexicon) -> None:
-    french = link_who("paysages, sans humains", ("sans humains",), STRANGERS, lexicon, _unasked())
-    french_kids = link_who(
-        "sans les enfants", ("sans les enfants",), STRANGERS, lexicon, _unasked()
-    )
-    german = link_who("ohne kinder", ("ohne kinder",), STRANGERS, lexicon, _unasked())
-    spanish = link_who("sin ninos", ("sin ninos",), STRANGERS, lexicon, _unasked())
-    italian = link_who("senza bambini", ("senza bambini",), STRANGERS, lexicon, _unasked())
+def test_real_wordnet_no_injected_vocab_still_reads_no_humans_as_absent() -> None:
+    """#2061: the actual bug was `noun_base("humans")` staying "humans" on the real corpus
+    (an irregular plural WordNet's morphy does not reduce), so the old WordNet-dependent
+    path never classified it. Company words are now a curated list independent of
+    WordNet, read against the real pinned corpus, with no word injected for this test."""
+    import pwd
 
-    assert french.absent_company == "people"
-    assert french_kids.absent_company == "children"
-    assert german.absent_company == "children"
-    assert spanish.absent_company == "children"
-    assert italian.absent_company == "children"
+    from immich_memories.free_text.lexicon import WordNetUnavailable, load_wordnet
+
+    # The real account's home, not the disposable one the unit suite seals HOME to
+    # (tests/conftest.py `_leave_the_accounts_home`): a read-only pinned corpus, never a
+    # store, so reading it here carries none of the mutation risk that seal guards against.
+    real_home = Path(pwd.getpwuid(os.getuid()).pw_dir)
+    path = real_home / ".immich-memories" / "models" / "wordnet" / "wordnet.zip"
+    try:
+        real_lexicon = load_wordnet(path)
+    except WordNetUnavailable:
+        pytest.skip("the real pinned WordNet corpus is not installed (`models fetch`)")
+
+    assert real_lexicon.noun_base("humans") == "humans"  # confirms the bug would still exist
+    assert real_lexicon.is_human("humans") is False  # if anything here still asked WordNet
+
+    who = link_who("landscapes, no humans", ("no humans",), STRANGERS, real_lexicon, _unasked())
+
+    assert (who.absent_company, who.company) == ("people", None)
+
+
+_NO_PEOPLE_BY_LOCALE = {
+    "en": ("landscapes, no humans", "people"),
+    "fr": ("paysages, sans humains", "people"),
+    "nl": ("landschappen zonder mensen", "people"),
+    "de": ("Landschaften ohne Menschen", "people"),
+    "es": ("paisajes sin personas", "people"),
+    "it": ("paesaggi senza persone", "people"),
+    "pt-BR": ("paisagens sem pessoas", "people"),
+    "pt-PT": ("paisagens sem pessoas", "people"),
+    "pl": ("krajobrazy bez ludzi", "people"),
+    "sv": ("landskap utan människor", "people"),
+    "ru": ("пейзажи без людей", "people"),
+    "ja": ("風景、人間なし", "people"),
+    "ko": ("풍경, 사람들 없이", "people"),
+    "zh-Hans": ("风景，没有人们", "people"),
+}
+
+
+@pytest.mark.parametrize("locale", sorted(_NO_PEOPLE_BY_LOCALE))
+def test_negation_is_read_in_every_supported_locale(locale: str, lexicon: Lexicon) -> None:
+    """One natural "no people in the landscape" request per locale in
+    `immich_memories.i18n.SUPPORTED_LOCALES` (#2061)."""
+    request, kind = _NO_PEOPLE_BY_LOCALE[locale]
+    who = link_who(request, (request,), STRANGERS, lexicon, _unasked())
+
+    assert who.absent_company == kind
+    assert who.company is None
 
 
 def test_only_a_specific_company_kind_stays_specific_not_generic_people(lexicon: Lexicon) -> None:
@@ -116,6 +160,72 @@ def test_only_a_specific_company_kind_stays_specific_not_generic_people(lexicon:
 
     assert (english.company, english.company_only) == ("performers", True)
     assert (french.company, french.company_only) == ("performers", True)
+
+
+def test_mixed_clauses_do_not_let_one_negation_invert_another(lexicon: Lexicon) -> None:
+    with_kids_no_rain = link_who(
+        "avec les enfants, pas de pluie",
+        ("avec les enfants", "pas de pluie"),
+        STRANGERS,
+        lexicon,
+        _unasked(),
+    )
+    kids_not_teens = link_who(
+        "les enfants mais pas les ados",
+        ("les enfants mais pas les ados",),
+        STRANGERS,
+        lexicon,
+        _unasked(),
+    )
+    band_no_crowd = link_who(
+        "only the band and no crowd",
+        ("only the band and no crowd",),
+        STRANGERS,
+        lexicon,
+        _unasked(),
+    )
+    kids_absent_friends_required = link_who(
+        "sans les enfants avec des amis",
+        ("sans les enfants avec des amis",),
+        STRANGERS,
+        lexicon,
+        _unasked(),
+    )
+
+    assert (with_kids_no_rain.company, with_kids_no_rain.absent_company) == ("children", None)
+    assert (kids_not_teens.company, kids_not_teens.absent_company) == ("children", "teens")
+    assert (band_no_crowd.company, band_no_crowd.absent_company) == ("performers", "audience")
+    assert band_no_crowd.company_only is True
+    assert (kids_absent_friends_required.company, kids_absent_friends_required.absent_company) == (
+        "people",
+        "children",
+    )
+
+
+def test_a_named_person_negated_is_excluded_not_required(lexicon: Lexicon) -> None:
+    excluded = link_who("without Cy", ("without cy",), HOUSEHOLD, lexicon, _unasked())
+    double_negative = link_who(
+        "not without the kids", ("not without the kids",), STRANGERS, lexicon, _unasked()
+    )
+
+    assert excluded.present == ()
+    assert excluded.absent_present == ("p-son",)
+    assert double_negative.company == "children"
+    assert double_negative.absent_company is None
+
+
+def test_personne_negates_itself_in_ne_y_a_personne(lexicon: Lexicon) -> None:
+    # French's own bipartite negation: "personne" alone already means "nobody".
+    who = link_who("il n'y a personne", ("il n'y a personne",), STRANGERS, lexicon, _unasked())
+
+    assert who.absent_company == "people"
+    assert who.company is None
+
+
+def test_elided_articles_split_from_their_word(lexicon: Lexicon) -> None:
+    who = link_who("pas d'enfants", ("pas d'enfants",), STRANGERS, lexicon, _unasked())
+
+    assert who.absent_company == "children"
 
 
 def test_a_first_name_two_people_share_is_picked_by_vote(lexicon: Lexicon) -> None:
