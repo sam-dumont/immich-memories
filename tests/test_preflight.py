@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import collections
 import hashlib
 import http.server
 import json
@@ -293,9 +294,8 @@ def test_title_rendering_preflight_says_what_the_pil_fallback_costs() -> None:
         result = check_title_rendering(Config())
 
     assert result.status is CheckStatus.WARNING
-    assert (
-        result.message == "PIL + FFmpeg: animated raster text, still backgrounds (no SDF effects)"
-    )
+    assert result.message.startswith("GPU title kernels unavailable: no quadrants wheel for ")
+    assert "titles use PIL + FFmpeg" in result.message
     details = result.details or ""
     assert "quadrants publishes no wheel" in details
     assert "Python 3.10-3.13" in details
@@ -620,3 +620,22 @@ def test_hardware_row_says_nothing_about_nvidia_on_a_card_less_host() -> None:
         result = check_hardware()
 
     assert result.message == "No GPU acceleration"
+
+
+_PY314 = collections.namedtuple("V", "major minor micro releaselevel serial")(3, 14, 0, "final", 0)
+
+
+def test_title_rendering_preflight_tells_python_314_to_use_an_older_python() -> None:
+    # WHY: quadrants is absent on 3.14; stand in for that interpreter and its missing wheel.
+    with (
+        patch("immich_memories.preflight.importlib.util.find_spec", return_value=None),
+        patch(
+            "immich_memories.preflight.sys.version_info",
+            _PY314,
+        ),
+    ):
+        result = check_title_rendering(Config())
+
+    assert result.status is CheckStatus.WARNING
+    assert "Python 3.14" in result.message
+    assert "use Python 3.11-3.13" in result.message

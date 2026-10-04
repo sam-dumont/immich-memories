@@ -11,12 +11,12 @@ import logging
 from collections.abc import Callable
 from pathlib import Path
 
+from immich_memories.i18n import resolve_film_locale
 from immich_memories.processing.assembly_config import (
     AssemblyClip,
     AssemblySettings,
     TransitionType,
 )
-from immich_memories.processing.clip_caption import resolve_caption_locale
 from immich_memories.processing.clip_encoder import ClipEncoder
 from immich_memories.processing.ffmpeg_prober import FFmpegProber
 from immich_memories.processing.ffmpeg_runner import AssemblyContext
@@ -287,7 +287,7 @@ class AssemblyEngine:
             privacy_mode=self.settings.privacy_mode,
             date_overlay=self.settings.add_date_overlay,
             place_overlay=self.settings.add_place_overlay,
-            caption_locale=resolve_caption_locale(caption_locale),
+            caption_locale=resolve_film_locale(caption_locale),
             scale_mode=self.settings.scale_mode,
             progress_callback=progress_callback,
             frame_preview_callback=frame_preview_callback,

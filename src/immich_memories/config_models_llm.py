@@ -215,13 +215,19 @@ class LLMConfig(BaseModel):
         )
 
     @property
+    def configured_fields(self) -> tuple[str, ...]:
+        """The reader settings that differ from the built-in defaults."""
+        return tuple(
+            name
+            for name in ("provider", "base_url", "model", "api_key", "local_server", "local_mmproj")
+            if getattr(self, name)
+            != type(self).model_fields[name].get_default(call_default_factory=True)
+        )
+
+    @property
     def configured(self) -> bool:
         """Whether disabled settings name a reader beyond the built-in defaults."""
-        return any(
-            getattr(self, name)
-            != type(self).model_fields[name].get_default(call_default_factory=True)
-            for name in ("provider", "base_url", "model", "api_key", "local_server", "local_mmproj")
-        )
+        return bool(self.configured_fields)
 
     @property
     def reasons(self) -> bool:

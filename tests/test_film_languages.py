@@ -202,3 +202,10 @@ def test_a_crete_trip_title_in_each_design(locale: str, expected: str) -> None:
     )
 
     assert title == expected
+
+
+def test_a_households_own_occasion_falls_back_to_the_date_in_french() -> None:
+    """No catalogue entry exists for a household's own MM-DD occasion, so the
+    fallback date must still speak the film's language, not the host C locale."""
+    assert holiday_label("08-15", 2026, "fr") == "15 août"
+    assert holiday_label("08-15", 2026, "en") == "August 15"
