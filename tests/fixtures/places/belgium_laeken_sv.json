@@ -1,0 +1,32 @@
+{
+  "place_id": 106372338,
+  "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+  "osm_type": "way",
+  "osm_id": 699052798,
+  "lat": "50.8802899",
+  "lon": "4.3545851",
+  "category": "highway",
+  "type": "pedestrian",
+  "place_rank": 26,
+  "importance": 0.053411087968261196,
+  "addresstype": "road",
+  "name": "",
+  "display_name": "Laeken - Laken, Bryssel, Brussel-Hoofdstad - Bruxelles-Capitale, Région de Bruxelles-Capitale - Brussels Hoofdstedelijk Gewest, 1020, Belgien",
+  "address": {
+    "suburb": "Laeken - Laken",
+    "city": "Bryssel",
+    "county": "Brussel-Hoofdstad - Bruxelles-Capitale",
+    "region": "Région de Bruxelles-Capitale - Brussels Hoofdstedelijk Gewest",
+    "ISO3166-2-lvl4": "BE-BRU",
+    "postcode": "1020",
+    "country": "Belgien",
+    "country_code": "be"
+  },
+  "namedetails": null,
+  "boundingbox": [
+    "50.8802193",
+    "50.8802899",
+    "4.3545338",
+    "4.3545851"
+  ]
+}

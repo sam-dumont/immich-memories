@@ -187,7 +187,7 @@ class TestTheNominatimRequest:
         fetch(51.17, 4.39)
 
         assert asked["query"] == "51.17, 4.39"
-        assert (asked["zoom"], asked["language"]) == (16, "fr,en")
+        assert (asked["zoom"], asked["language"]) == (16, "fr")
         assert asked["limiter"]["min_delay_seconds"] >= 1
         assert asked["limiter"]["swallow_exceptions"] is False
         assert asked["client"]["timeout"] == 10

@@ -21,6 +21,7 @@ picture's country.
 
 from __future__ import annotations
 
+import re
 import unicodedata
 from dataclasses import dataclass
 
@@ -76,6 +77,7 @@ _ENGLISH = {
     "bayern": "Bavaria",
     "kriti": "Crete",
     "κρήτη": "Crete",
+    "κρήτης": "Crete",  # genitive, from a standalone "island"/"state" value
     "crète": "Crete",
     "sicilia": "Sicily",
     "sardegna": "Sardinia",
@@ -151,12 +153,38 @@ _ADMIN_PREFIXES = (
     "province of ",
     "free state of ",
     "state of ",
+    "municipality of ",
+    "municipal unit of ",
+    "municipal district of ",
     "région ",
     "provincia di ",
     "provincia de ",
+    # German, from a real Nominatim answer for a Greek municipality with no French or
+    # German translation (#1954): OSM's own German fields carry the admin word, and the
+    # place name that follows stays nominative (German does not decline it).
+    "regionalbezirk ",
+    "provinz ",
+    "region ",
+)
+# These admin words only ever precede an inflected (genitive) form of the place name:
+# dropping the word leaves a declined fragment a native reader would flag as wrong
+# ("Δήμος Πλατανιά" -> "Πλατανιά", genitive of "Πλατανιάς"; "Περιφέρεια Κρήτης" ->
+# "Κρήτης", genitive of "Κρήτη"). Unlike `_ADMIN_PREFIXES`, these are never stripped
+# to a bare name -- the whole label is treated as naming nothing at that scale, the
+# same as a missing key, so a caller falls back to a nominative name it already has
+# (a village, or the trip's own picture-derived country/island). From real Nominatim
+# answers for the same Greek point (#1954) and its Russian translation.
+_INFLECTED_ADMIN_PREFIXES = (
+    "δήμοσ ",  # Greek: Δήμος, municipality (ς folds to σ)
+    "περιφερειακή ενότητα ",  # Greek: regional unit
+    "περιφέρεια ",  # Greek: region
+    "периферийная единица ",  # Russian: regional unit
+    "периферия ",  # Russian: region
 )
 _ADMIN_SUFFIXES = (
     " regional unit",
+    " municipal unit",
+    " municipality",
     " region",
     " province",
     " district",
@@ -188,6 +216,32 @@ def _is_latin(text: str) -> bool:
     return all(not ch.isalpha() or unicodedata.name(ch, "").startswith("LATIN") for ch in text)
 
 
+def _first_alternate(label: str) -> str:
+    """Nominatim sometimes answers with alternates ("A/B", "A; B"); a film label is one name."""
+    return re.split(r"\s*[/;]\s*", label, maxsplit=1)[0]
+
+
+def _stripped(label: str) -> str | None:
+    """Administrative wording dropped, a known local spelling mapped to English.
+
+    "Municipality of Platanias" -> "Platanias" (the boilerplate word is dropped; the
+    town's own script and spelling are not touched). None when the label is an admin
+    word followed by an inflected place name that cannot be safely un-inflected
+    ("Δήμος Πλατανιά"): that is not a name, it names nothing at this scale.
+    """
+    name = _first_alternate(label.strip())
+    folded = name.casefold()
+    if any(folded.startswith(prefix) for prefix in _INFLECTED_ADMIN_PREFIXES):
+        return None
+    for prefix in _ADMIN_PREFIXES:
+        if folded.startswith(prefix):
+            name, folded = name[len(prefix) :], folded[len(prefix) :]
+    for suffix in _ADMIN_SUFFIXES:
+        if folded.endswith(suffix):
+            name, folded = name[: -len(suffix)], folded[: -len(suffix)]
+    return _ENGLISH.get(folded, name)
+
+
 def short_place_name(label: str | None) -> str | None:
     """The common English name for a region or city label, or None if it has none.
 
@@ -198,16 +252,40 @@ def short_place_name(label: str | None) -> str | None:
     """
     if not label:
         return None
-    name = label.strip()
-    folded = name.casefold()
-    for prefix in _ADMIN_PREFIXES:
-        if folded.startswith(prefix):
-            name, folded = name[len(prefix) :], folded[len(prefix) :]
-    for suffix in _ADMIN_SUFFIXES:
-        if folded.endswith(suffix):
-            name, folded = name[: -len(suffix)], folded[: -len(suffix)]
-    name = _ENGLISH.get(folded, name)
+    name = _stripped(label)
     return name if name and _is_latin(name) else None
+
+
+def locality_name(label: str | None) -> str | None:
+    """A town, village or district a viewer reads, administrative wording dropped.
+
+    Unlike `short_place_name`, a locality with no English equivalent is kept in its
+    own script rather than discarded (#1954): a Greek village is still a village when
+    its film has no French name for it, never English boilerplate or a dropped label.
+    """
+    if not label:
+        return None
+    return _stripped(label)
+
+
+def degraded_locality_name(label: str | None) -> str | None:
+    """The last resort when nothing nominative names this place at all (#1954 follow-up).
+
+    The owner's ruling: the native name in its correct (nominative) form when the data
+    has it -- that is `locality_name` -- otherwise the admin word dropped from an
+    inflected construction anyway, even though what remains is declined ("Δήμος
+    Πλατανιά" -> "Πλατανιά"). A slightly-off name beats no name; callers try this only
+    after `locality_name` and a better-known name (Immich's own, a cluster's own
+    members) have both failed.
+    """
+    if not label:
+        return None
+    name = _first_alternate(label.strip())
+    folded = name.casefold()
+    for prefix in _INFLECTED_ADMIN_PREFIXES:
+        if folded.startswith(prefix):
+            return name[len(prefix) :]
+    return locality_name(label)
 
 
 def island_at(lat: float, lon: float, country: str) -> str | None:
