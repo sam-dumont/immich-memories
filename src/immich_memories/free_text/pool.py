@@ -147,7 +147,7 @@ def build_pool(
     _when(funnel, translation.when)
     _present(funnel, translation.who, view)
     rules = trips or TripsConfig()
-    if not (printed and _printed(funnel, translation.reading.request, printed, asker)):
+    if not (printed and _printed(funnel, translation, printed, asker)):
         _where(funnel, translation, household, rules, lexicon, asker)
     _measured(funnel, translation.facts)
     if not _computed(funnel, translation.facts, view, household, rules) and not _occasion(
@@ -330,11 +330,12 @@ def _present(funnel: _Funnel, who: WhoLink, view: LibraryView) -> None:
     funnel.keep("who", kept, Reason(named, rule, "they are there"))
 
 
-def _printed(funnel: _Funnel, request: str, printed: PrintedText, asker: Asker) -> bool:
+def _printed(funnel: _Funnel, translation: Translation, printed: PrintedText, asker: Asker) -> bool:
     # A word printed in a photo (a club's name on a jersey) vouches for the photo's episode: the
     # event decides where, and the subject is then read inside it. A name no picture reads is
     # not found, and the pool says so rather than filming any ride.
-    words, reason = printed_words(request, asker)
+    request = translation.reading.request
+    words, reason = printed_words(request, translation.reading.when, translation.subject, asker)
     if not words:
         return False
     funnel.printed = words

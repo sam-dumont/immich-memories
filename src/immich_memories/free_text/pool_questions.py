@@ -184,12 +184,26 @@ _MOST_PRINTED = 3
 _SHORTEST_PRINTED = 3
 
 
-def printed_words(request: str, asker: Asker) -> tuple[tuple[str, ...], Reason]:
-    """The request's words the model says are printed on things in the photos (read by OCR)."""
+def printed_words(
+    request: str, when: tuple[str, ...], subject: Subject, asker: Asker
+) -> tuple[tuple[str, ...], Reason]:
+    """The request's words the model says are printed on things in the photos (read by OCR).
+
+    A word already used for the request's own date (a year, a month name in any language: the
+    reading already split it into `when`) or for the subject's own nouns is never offered: the
+    model voted both in as "printed" at once, OCR then read no photo, and the pool emptied
+    (#2046). Decided in code, never asked.
+    """
+    dated = {word for phrase in when for word in words_of(phrase)}
+    named = {word.lower() for word in (*subject.heads, *subject.words)}
     offered = [
         word
         for word in dict.fromkeys(words_of(request))
-        if len(word) >= _SHORTEST_PRINTED and word not in GLUE | FIRST_PERSON | PICTURE_WORDS
+        if len(word) >= _SHORTEST_PRINTED
+        and word not in GLUE | FIRST_PERSON | PICTURE_WORDS
+        and word not in dated
+        and word not in named
+        and not word.isdigit()
     ]
     if not offered:
         return (), Reason("", "no word to read", "none")

@@ -68,7 +68,9 @@ def exclusions(llm: LLMConfig) -> str:
 
 
 def printed(llm: LLMConfig) -> str:
-    words, _reason = printed_words("cyclists with VELO printed on their jerseys", WireAsker(llm))
+    words, _reason = printed_words(
+        "cyclists with VELO printed on their jerseys", (), Subject(), WireAsker(llm)
+    )
     assert "velo" in words and "jerseys" not in words, "did not isolate the printed word VELO"
     return "selects VELO for OCR matching"
 
