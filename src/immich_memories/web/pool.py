@@ -41,21 +41,6 @@ def _asset(source: Asset | VideoClipInfo) -> Asset:
     return source.asset if isinstance(source, VideoClipInfo) else source
 
 
-def _memory_people(payload: dict) -> set[str]:
-    """The names or face ids the run was cut for: its people, or its grouped condition's leaves."""
-    from immich_memories.api.person_expression import PersonExpression
-
-    named = {str(value) for value in payload.get("people") or ()}
-    if expression := payload.get("person_expression"):
-        named |= set(PersonExpression.from_dict(expression).leaf_values)
-    return named
-
-
-def _same_episode(asset: Asset, people: set[str]) -> bool:
-    """In the pool through its episode: none of the memory's people is recognised on it (#1438)."""
-    return bool(people) and not any({face.id, face.name} & people for face in asset.people)
-
-
 def _kind(asset: Asset) -> Literal["photo", "video", "live"]:
     if asset.type == AssetType.VIDEO:
         return "video"
@@ -76,7 +61,6 @@ def read_pool(
     if snapshot is None or not snapshot.is_file():
         raise HTTPException(404, "This run kept no record of its pool.")
     payload = json.loads(snapshot.read_text())
-    people = _memory_people(payload)
     every_file = [_asset(source) for source in sources_from_payload(payload)]
     # One tile per picture: a copy (an album's downscale, a forwarded file) is its full-size file.
     copies = picture_copies(every_file)
@@ -100,7 +84,6 @@ def read_pool(
                 taken=asset.file_created_at.isoformat(),
                 kind=_kind(asset),
                 favourite=asset.is_favorite,
-                same_episode=_same_episode(asset, people),
                 in_cut=asset.id in in_cut,
                 reachable=fates.reachable(asset.id),
                 fate=fates.describe(asset.id),

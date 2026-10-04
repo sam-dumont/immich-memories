@@ -1,8 +1,9 @@
-"""A multi-person memory is about the people who were there together.
+"""A multi-person memory is about the people recognised together, on the same picture.
 
-Naming two people asks for the episodes that hold both of them, not the union of two
-solo reels, and not only the frames that happen to hold both faces. These tests pin
-that rule at the fetch seam the CLI uses.
+Naming two people asks for the pictures that hold both of their faces directly, strictly
+per picture (#1954), never widened to the episode around them. This is not two solo
+reels unioned either: AND asks for one picture that carries both. These tests pin that
+rule at the fetch seam the CLI uses.
 """
 
 from __future__ import annotations
@@ -79,22 +80,25 @@ def _fetch(
     )
 
 
-def test_two_people_select_the_episodes_that_hold_both_even_in_separate_frames():
+def test_two_people_need_both_faces_on_the_same_picture():
     client = _LibraryClient(
         [
             _Asset("a-alone", {PERSON_A}),
             _Asset("b-alone", {PERSON_B}, file_created_at=MORNING + timedelta(minutes=20)),
             _Asset("nobody", file_created_at=MORNING + timedelta(minutes=40)),
+            _Asset(
+                "a-and-b", {PERSON_A, PERSON_B}, file_created_at=MORNING + timedelta(minutes=50)
+            ),
             _Asset("a-evening", {PERSON_A}, file_created_at=EVENING),
         ]
     )
 
     assets = _fetch(client, [PERSON_A, PERSON_B])
 
-    assert [a.id for a in assets] == ["a-alone", "b-alone", "nobody"]
+    assert [a.id for a in assets] == ["a-and-b"]
 
 
-def test_people_never_in_one_episode_yield_nothing_rather_than_two_solo_reels():
+def test_people_never_sharing_a_frame_yield_nothing_rather_than_two_solo_reels():
     client = _LibraryClient(
         [
             _Asset("a-alone", {PERSON_A}),
@@ -105,7 +109,7 @@ def test_people_never_in_one_episode_yield_nothing_rather_than_two_solo_reels():
     assert _fetch(client, [PERSON_A, PERSON_B]) == []
 
 
-def test_or_selects_each_persons_episodes_once():
+def test_or_selects_each_persons_own_pictures():
     client = _LibraryClient(
         [
             _Asset("a-alone", {PERSON_A}),
@@ -120,11 +124,11 @@ def test_or_selects_each_persons_episodes_once():
     assert [asset.id for asset in assets] == ["a-alone", "a-and-b", "b-evening"]
 
 
-def test_photos_follow_the_same_rule_as_videos_and_share_their_episodes():
+def test_photos_follow_the_same_per_picture_rule_as_videos():
     client = _LibraryClient(
         [_Asset("video-b", {PERSON_B}, file_created_at=MORNING + timedelta(minutes=10))],
         photos=[
-            _Asset("photo-a-alone", {PERSON_A}),
+            _Asset("photo-a-and-b", {PERSON_A, PERSON_B}),
             _Asset("photo-nobody-named", file_created_at=MORNING + timedelta(minutes=30)),
             _Asset("photo-a-evening", {PERSON_A}, file_created_at=EVENING),
         ],
@@ -132,10 +136,10 @@ def test_photos_follow_the_same_rule_as_videos_and_share_their_episodes():
 
     photos = fetch_photos(client=client, date_ranges=[WINDOW], person_ids=[PERSON_A, PERSON_B])
 
-    assert [p.id for p in photos] == ["photo-a-alone", "photo-nobody-named"]
+    assert [p.id for p in photos] == ["photo-a-and-b"]
 
 
-def test_one_person_selects_every_picture_of_the_episodes_they_appear_in():
+def test_one_person_selects_only_the_pictures_their_own_face_is_on():
     client = _LibraryClient(
         [
             _Asset("a-alone", {PERSON_A}),
@@ -146,4 +150,4 @@ def test_one_person_selects_every_picture_of_the_episodes_they_appear_in():
 
     assets = _fetch(client, [PERSON_A])
 
-    assert {a.id for a in assets} == {"a-alone", "unrecognised"}
+    assert {a.id for a in assets} == {"a-alone"}

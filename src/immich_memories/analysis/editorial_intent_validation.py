@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from datetime import date
 
 from immich_memories.analysis.editorial_intent import EditorialIntent
+from immich_memories.api.person_expression import PersonExpression
 
 __all__ = ["CarrierView", "IntentReport", "Violation", "validate_intent"]
 
@@ -32,6 +33,9 @@ class CarrierView:
     taken: date
     event: str
     seconds: float
+    # The names recognised on this carrier's own picture, for the people-condition check
+    # below (#1954). Empty when the caller never read faces, which never fails the check.
+    people: frozenset[str] = frozenset()
 
 
 @dataclass(frozen=True)
@@ -126,6 +130,35 @@ def _latest_year_cluster(
     ]
 
 
+def _holds_for(condition: PersonExpression, carrier: CarrierView) -> bool:
+    held = condition.evaluate(lambda name: (carrier.asset_id,) if name in carrier.people else ())
+    return carrier.asset_id in held
+
+
+def _people_violations(
+    condition: PersonExpression | None, carriers: Sequence[CarrierView]
+) -> list[Violation]:
+    """Every selected carrier whose own recognised people fail the requested condition.
+
+    This is the fail-safe (#1954): a people condition is decided strictly per picture at
+    the fetch, so this should never fire. If some other path ever selected outside the
+    pool, the violation must be visible here rather than silently shipping.
+    """
+    if condition is None:
+        return []
+    return [
+        Violation(
+            "people_condition_violated",
+            "structural",
+            None,
+            f"{carrier.asset_id} was selected but its own recognised people "
+            f"({sorted(carrier.people)}) do not satisfy {condition.display_label}",
+        )
+        for carrier in carriers
+        if not _holds_for(condition, carrier)
+    ]
+
+
 def _too_thin(intent: EditorialIntent, carriers: Sequence[CarrierView]) -> bool:
     if len(carriers) < MIN_CARRIERS:
         return True
@@ -162,6 +195,7 @@ def validate_intent(
     evidence_partitions: Collection[str],
     # A captured case counts its seconds as an integer; the report always states a float.
     requested_seconds: float | int,
+    people_condition: PersonExpression | None = None,
 ) -> IntentReport:
     """Judge the plan's shape against the contract. Sparse material is reported, never padded."""
     usable = float(sum(c.seconds for c in carriers))
@@ -174,6 +208,7 @@ def validate_intent(
             if intent.product in ("on_this_day", "holiday") and carriers
             else []
         ),
+        *_people_violations(people_condition, carriers),
     ]
     status, reason = _verdict(
         intent,

@@ -22,7 +22,10 @@ from immich_memories.analysis.editorial_intent_validation import CarrierView, va
 from immich_memories.analysis.editorial_story_planner import story_plan_fields
 from immich_memories.analysis.editorial_structure_budget import MIN_CARRIER_SECONDS
 from immich_memories.analysis.editorial_structure_contract import StructurePlanningResult
+from immich_memories.analysis.person_presence import people_condition as _flat_people_condition
 from immich_memories.analysis.place_names import shown_city
+from immich_memories.api.models import Asset
+from immich_memories.api.person_expression import PersonExpression
 from immich_memories.operations.call_families import calls_by_family
 
 IMPLEMENTATION_VERSION = "structure-plan-v87-bounded-offers-and-reference-fallback"
@@ -206,7 +209,16 @@ def _duration_realization(
     }
 
 
-def _contract_check(intent, outcome: PlanOutcome, facts: PlanFacts, *, assembly: Mapping, content):
+def _contract_check(
+    intent,
+    outcome: PlanOutcome,
+    facts: PlanFacts,
+    *,
+    assembly: Mapping,
+    content,
+    assets: Mapping[str, Asset],
+    condition: PersonExpression | None,
+):
     """D09/D14: judge the plan's shape against the contract; sparse material is reported, never padded."""
     report = validate_intent(
         intent,
@@ -216,11 +228,17 @@ def _contract_check(intent, outcome: PlanOutcome, facts: PlanFacts, *, assembly:
                 datetime.fromisoformat(x["taken"]).date(),
                 x["event"],
                 float(x["seconds"]),
+                people=frozenset(
+                    person.name for person in assets[x["asset_id"]].people if person.name
+                )
+                if x["asset_id"] in assets
+                else frozenset(),
             )
             for x in outcome.carriers
         ],
         evidence_partitions=outcome.evidence_partitions,
         requested_seconds=facts.target_seconds,
+        people_condition=condition,
     )
     if report.status != "insufficient_material" or not _search_limited(assembly):
         return report
@@ -485,8 +503,19 @@ def build_result(source, ports, facts: PlanFacts, outcome: PlanOutcome) -> Struc
             limited=_search_limited(assembly),
         ),
     }
+    condition = _flat_people_condition(
+        source.case.people,
+        "and" if source.case.person_match != "or" else "or",
+        source.case.person_expression,
+    )
     judged["report"] = _contract_check(
-        source.intent, outcome, facts, assembly=assembly, content=content
+        source.intent,
+        outcome,
+        facts,
+        assembly=assembly,
+        content=content,
+        assets=source.assets,
+        condition=condition,
     )
     plan = _plan_dict(source, ports, facts, outcome, judged)
     return StructurePlanningResult(

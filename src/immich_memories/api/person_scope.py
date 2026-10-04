@@ -1,11 +1,12 @@
 """Which pictures a memory's people imply, whichever surface asked.
 
 Naming nobody takes the window whole. Naming people reads the window whole too, once,
-and keeps every picture of an episode the people are in (`analysis/person_presence.py`):
-a face recognised once in an afternoon puts that person in all of it. Several people are
-an intersection (``and``: everybody recognised somewhere in the episode) or a union
-(``or``: anybody). Both the CLI and wizard ask through here so the choice is made before
-Cull, and the pool the owner reviews already holds those pictures.
+and keeps exactly the pictures whose own recognised faces satisfy the condition
+(`analysis/person_presence.py`): a people condition is strict per picture (#1954), never
+widened to the gathering around it. Several people are an intersection (``and``:
+everybody recognised on that one picture) or a union (``or``: anybody). Both the CLI and
+wizard ask through here so the choice is made before Cull, and the pool the owner reviews
+already holds those pictures.
 """
 
 from __future__ import annotations
@@ -13,11 +14,7 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping, Sequence
 from typing import TYPE_CHECKING, Any, Literal, Protocol
 
-from immich_memories.analysis.person_presence import (
-    episodes_of,
-    people_condition,
-    present_in_episodes,
-)
+from immich_memories.analysis.person_presence import people_condition, present_on_assets
 from immich_memories.api.person_expression import PersonExpression
 
 if TYPE_CHECKING:
@@ -43,7 +40,7 @@ class PhotoSource(Protocol):
 
 
 class WindowSource(VideoSource, PhotoSource, Protocol):
-    """Both reads, which episode presence needs: an episode mixes videos and photos."""
+    """Both reads, which a people condition needs: a window mixes videos and photos."""
 
 
 PersonMatch = Literal["and", "or"]
@@ -77,17 +74,16 @@ def people_in_window(
     *,
     face_accounts: Mapping[str, str] | None = None,
 ) -> tuple[list, list]:
-    """The videos and photos of one window whose episode holds ``condition`` (face IDs).
+    """The videos and photos of one window whose own faces satisfy ``condition`` (face IDs).
 
     Two reads per window whatever the number of people: per-person queries answer per
-    frame, which is the question this replaces. ``face_accounts`` holds each face to its
-    own account's pictures, in a household run (`present_in_episodes`).
+    frame, which is the question this keeps strict to, rather than per episode.
+    ``face_accounts`` holds each face to its own account's pictures, in a household run
+    (`present_on_assets`).
     """
     videos = client.get_videos_for_date_range(date_range)
     photos = list(client.get_photos_for_date_range(date_range))
-    present = present_in_episodes(
-        episodes_of([*videos, *photos]), condition, face_accounts=face_accounts
-    )
+    present = present_on_assets([*videos, *photos], condition, face_accounts=face_accounts)
     return _in_order(videos, present), _in_order(photos, present)
 
 
@@ -106,7 +102,7 @@ def videos_in_window(
     person_match: str = "and",
     person_expression: PersonExpression | None = None,
 ) -> list:
-    """The videos one window holds, narrowed to the episodes of the people it names."""
+    """The videos one window holds, narrowed to the exact pictures of the people it names."""
     condition = window_condition(
         person_ids, person_match=person_match, person_expression=person_expression
     )
@@ -123,7 +119,7 @@ def photos_in_window(
     person_match: str = "and",
     person_expression: PersonExpression | None = None,
 ) -> list:
-    """The photos one window holds, with the same episode rule as videos."""
+    """The photos one window holds, with the same per-picture rule as videos."""
     condition = window_condition(
         person_ids, person_match=person_match, person_expression=person_expression
     )

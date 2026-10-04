@@ -58,12 +58,10 @@ immich-memories generate --memory-type multi_person --year 2025 \
   --people-expression '"Riley" AND ("Casey" OR "Bob")'
 ```
 
-`AND` binds tighter than `OR`. A person counts as in every picture of an episode (a block of
-pictures with no 90-minute gap) where Immich recognised their face at least once, so the back of a
-head or a baby asleep on a chest still belongs to a person film. `AND` means everybody recognised
-somewhere in the same episode, not in one frame. The expression replaces `--person` and
-`--person-match`. The web UI has it under **Grouped condition**. Trips, albums, person spotlights and any
-`--birthday` run refuse it.
+`AND` binds tighter than `OR`, and `AND` means the same picture, not just the same afternoon: every
+named person must be recognised on that exact picture, strict per picture. The expression replaces
+`--person` and `--person-match`. The web UI has it under **Grouped condition**. Trips, albums,
+person spotlights and any `--birthday` run refuse it.
 
 ## Year in review
 
@@ -100,11 +98,10 @@ web UI and the CLI. `--duration` overrides it. `--hemisphere south` maps summer 
 February.
 
 Person spotlight needs the person named in Immich's face recognition. What makes it a spotlight is
-the filter: the editor is the same one. Multi-person defaults to AND: an afternoon counts when
-both were recognised somewhere in it, even if never in one frame. Two people who never share an
-episode give an empty memory rather than two solo reels. Each window is read once for videos and
-once for photos, however many people are named. Titles and default filenames say AND or OR, so two
-runs never overwrite each other.
+the filter: the editor is the same one. Multi-person defaults to AND, so two people never in the
+same frame give an empty memory rather than two solo reels. Each window is read once for videos
+and once for photos, however many people are named. Titles and default filenames say AND or OR, so
+two runs never overwrite each other.
 
 ### A people memory with no dates
 

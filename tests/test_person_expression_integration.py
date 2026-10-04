@@ -1,4 +1,4 @@
-"""Grouped people conditions survive production boundaries, read per episode.
+"""Grouped people conditions survive production boundaries, read strictly per picture.
 
 The matrix replays stay on the probe branch.
 
@@ -14,7 +14,7 @@ import pytest
 from immich_memories.analysis.editorial_case import Case
 from immich_memories.analysis.editorial_runtime import EditorialRunContext
 from immich_memories.analysis.editorial_source import resolve_named_expression
-from immich_memories.analysis.person_presence import episodes_of, present_in_episodes
+from immich_memories.analysis.person_presence import present_on_assets
 from immich_memories.analysis.selection_trace import Trace
 from immich_memories.api.models import AssetType, Person
 from immich_memories.api.person_expression import PersonExpression
@@ -113,10 +113,10 @@ def test_case_and_context_reject_inconsistent_names_and_untyped_expression(tmp_p
 
 
 @pytest.mark.parametrize("matching", [True, False])
-def test_actual_runtime_reads_the_condition_per_episode_and_keeps_full_canonical_context(
+def test_actual_runtime_reads_the_condition_per_picture_and_keeps_full_canonical_context(
     tmp_path, monkeypatch, matching
 ):
-    """Nobody shares a frame here: an adult and the child each appear alone in one afternoon."""
+    """A people condition is strict per picture: the adult and the child must share a frame."""
     real_context = source_fixture.EditorialRunContext
     # WHY: the shared runtime fixture builds a month film; this adds the grouped condition to it.
     monkeypatch.setattr(
@@ -128,18 +128,18 @@ def test_actual_runtime_reads_the_condition_per_episode_and_keeps_full_canonical
         tmp_path, monkeypatch
     )
     sources[3].people = [_person("a-alone", "Adult A")]
-    sources[4].people = [_person("child", "Child")] if matching else []
+    sources[4].people = (
+        [_person("a-alone", "Adult A"), _person("child", "Child")] if matching else []
+    )
     source_bytes = [a.model_dump(mode="json") for a in sources]
-    # The pool the fetch hands over: the episodes the condition holds in, every name
-    # resolved to all of its faces the way the fetch resolves it.
+    # The pool the fetch hands over: exactly the pictures whose own faces hold the
+    # condition, every name resolved to all of its faces the way the fetch resolves it.
     roster = [_person("a", "Adult A"), _person("b", "Adult B"), _person("child", "Child")]
     roster += [person for asset in sources for person in asset.people]
-    present = present_in_episodes(
-        episodes_of(sources), resolve_named_expression(EXPRESSION, roster)
-    )
+    present = present_on_assets(sources, resolve_named_expression(EXPRESSION, roster))
     pool = [asset for asset in sources if asset.id in present]
     result = build().plan_source(pool, trace=Trace(), include_live_photos=False)
-    expected = {a.id for a in sources} if matching else set()
+    expected = {sources[4].id} if matching else set()
     assert {row.clip.asset.id for row in result.candidates} == expected
     assert set(result.plan.selected_asset_ids).issubset(expected)
     assert len(calls["acquire"]) == 1

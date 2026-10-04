@@ -103,9 +103,10 @@ Seven things the examples hide:
   holds stops the run before it reads a picture.
 - `--accounts primary,partner` reads each named account (from `immich.accounts`, plus `primary`)
   into one film. Without it the primary account reads alone. A face bound to the partner's
-  account only counts on the partner's pictures, and `AND` still holds per episode: one person on
-  your copy of the afternoon and the other on your partner's is enough. An unknown name fails
-  before any request. Albums and trips reject `--accounts` and read the primary only.
+  account only counts on the partner's pictures, and `AND` still holds strictly per picture:
+  both named people must be recognised on the same picture, even if your partner's phone took
+  a different shot of the same afternoon. An unknown name fails before any request. Albums and
+  trips reject `--accounts` and read the primary only.
 - A person or multi-person memory with no dates at all is not an error. It runs from the first day
   one of its pictures could exist to today, read off the birth dates Immich holds (and the people registry
   where Immich holds none). See [memory types](film-types.mdx#a-people-memory-with-no-dates).

@@ -1,10 +1,9 @@
-"""From the fetch to the cut, a person is present across the episode they are recognised in.
+"""From the fetch to the cut, a people condition is strict per picture (#1954).
 
-Faces go unrecognised for people who are really there: the back of a head, a baby
-feeding against a chest, a child across the garden. One recognised face puts the person
-in every picture of the same 90-minute episode, and no further. The fetch decides that
-once, over the window Immich returns; the pool the owner reviews and the cut both use
-that one answer, so the cut never refuses a pool picture for who is in it.
+A missed face (the back of a head, a baby feeding against a chest, a child across the
+garden) costs that picture rather than loosening the rule: bundling in a picture with the
+wrong people is worse than losing a good one. The fetch decides this once, over the
+window Immich returns; the pool the owner reviews and the cut both use that one answer.
 """
 
 from dataclasses import replace
@@ -103,9 +102,7 @@ def selectable(tmp_path, monkeypatch, *, window, fetched=None, providers=None, *
     return set(seen)
 
 
-def test_the_cut_keeps_every_picture_of_an_episode_the_person_is_recognised_in(
-    tmp_path, monkeypatch
-):
+def test_the_cut_keeps_only_the_exact_picture_the_person_is_recognised_on(tmp_path, monkeypatch):
     face = shot("face", hour=9, people=("Ada",))
     back_of_head = shot("back-of-head", hour=9, minute=20)
     elsewhere = shot("afternoon", hour=15)
@@ -114,38 +111,33 @@ def test_the_cut_keeps_every_picture_of_an_episode_the_person_is_recognised_in(
         tmp_path, monkeypatch, window=[face, back_of_head, elsewhere], people=("Ada",)
     )
 
-    assert pool == {"face", "back-of-head"}
+    assert pool == {"face"}
 
 
-def test_and_asks_for_everyone_somewhere_in_the_episode_not_in_one_frame(tmp_path, monkeypatch):
-    morning = [
-        shot("ada-alone", hour=9, people=("Ada",)),
-        shot("ben-alone", hour=9, minute=30, people=("Ben",)),
-        shot("nobody-recognised", hour=9, minute=45),
-    ]
-    only_ada_later = [
-        shot("ada-afternoon", hour=15, people=("Ada",)),
-        shot("afternoon-unrecognised", hour=15, minute=10),
-    ]
+def test_and_needs_everyone_on_the_same_picture_not_just_the_same_afternoon(tmp_path, monkeypatch):
+    ada_alone = shot("ada-alone", hour=9, people=("Ada",))
+    ben_alone = shot("ben-alone", hour=9, minute=30, people=("Ben",))
+    both = shot("both", hour=9, minute=45, people=("Ada", "Ben"))
+    nobody_recognised = shot("nobody-recognised", hour=15)
 
     pool = selectable(
         tmp_path,
         monkeypatch,
-        window=[*morning, *only_ada_later],
+        window=[ada_alone, ben_alone, both, nobody_recognised],
         people=("Ada", "Ben"),
         person_match="and",
     )
 
-    assert pool == {"ada-alone", "ben-alone", "nobody-recognised"}
+    assert pool == {"both"}
 
 
-def test_a_grouped_condition_is_read_per_episode_too(tmp_path, monkeypatch):
+def test_a_grouped_condition_is_read_per_picture_too(tmp_path, monkeypatch):
     window = [
         shot("ada-morning", hour=9, people=("Ada",)),
         shot("ben-morning", hour=9, minute=30, people=("Ben",)),
+        shot("ada-and-ben", hour=9, minute=45, people=("Ada", "Ben")),
         shot("cy-afternoon", hour=15, people=("Cy",)),
         shot("afternoon-unrecognised", hour=15, minute=10),
-        shot("ada-evening", hour=20, people=("Ada",)),
     ]
 
     pool = selectable(
@@ -155,7 +147,7 @@ def test_a_grouped_condition_is_read_per_episode_too(tmp_path, monkeypatch):
         person_expression=PersonExpression.parse('("Ada" AND "Ben") OR "Cy"'),
     )
 
-    assert pool == {"ada-morning", "ben-morning", "cy-afternoon", "afternoon-unrecognised"}
+    assert pool == {"ada-and-ben", "cy-afternoon"}
 
 
 def test_a_film_about_nobody_keeps_the_pictures_it_asked_for(tmp_path, monkeypatch):
@@ -167,15 +159,13 @@ def test_a_film_about_nobody_keeps_the_pictures_it_asked_for(tmp_path, monkeypat
     assert pool == {"asked"}
 
 
-def test_the_cut_keeps_a_pool_picture_after_an_exclusion_splits_its_episode(tmp_path, monkeypatch):
-    """The owner saw "later" in the pool, so the cut may not refuse it for who is in it.
-
-    The screen photo bridged two 80-minute gaps. The evidence gate removes it for being a
-    screen, which is its own reason; it does not take the later picture's presence with it.
-    """
+def test_an_exclusion_of_one_picture_never_touches_a_different_picture_s_people_match(
+    tmp_path, monkeypatch
+):
+    """The owner saw an unrelated screen photo refused; that must not cost a real match."""
     face = shot("face", hour=9, people=("Ada",))
-    bridge = shot("screen", hour=10, minute=20)
-    later = shot("later", hour=11, minute=40)
+    bridge = shot("screen", hour=10, minute=20, people=("Ada",))
+    later = shot("later", hour=11, minute=40, people=("Ada",))
     providers = successful_ports([])
 
     def heads(**kwargs):

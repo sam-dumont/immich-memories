@@ -86,9 +86,9 @@ def _check_companions(companion_assets: Mapping[str, Asset], assets: Mapping[str
 
 
 def _check_case_scope(case: Case, assets: Mapping[str, Asset]) -> None:
-    # Who is in a picture was settled by the fetch, over the episodes the owner reviewed
-    # (`person_presence.py`); regrouping the admitted source here could refuse a pool
-    # picture whose episode an exclusion split.
+    # Who is in a picture was settled by the fetch, strictly per picture (`person_presence.py`,
+    # #1954); every admitted asset already satisfies the people condition, so there is nothing
+    # left to re-check here.
     if case.special_event_id is not None and not set(assets).issubset(case.event_asset_ids):
         raise ValueError("captured source exceeds exact special event membership")
 
