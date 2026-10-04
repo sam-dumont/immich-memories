@@ -271,6 +271,46 @@ def test_a_changed_source_retires_its_banked_speech_and_is_measured_again(tmp_pa
     assert fetched == ["v", "v"]
 
 
+def test_music_fraction_is_measured_beside_speech_and_then_banked():
+    """#1951: the fallback route measures and banks a music/singing share too."""
+    from immich_memories.config_models_analysis import SpeechConfig
+    from immich_memories.speech.facts import SpeechFacts
+    from tests.conftest import make_asset
+
+    config = SpeechConfig()
+    assets = {"v": make_asset("v")}
+    measured = 0
+
+    def measure(asset_id):
+        nonlocal measured
+        measured += 1
+        return [], 0.8
+
+    def speech_facts(measure_fn=measure):
+        return SpeechFacts(
+            assets=assets,
+            store=annotation_store(),
+            fetch=lambda _id, _path: None,
+            config=config,
+            measure=measure_fn,
+        )
+
+    first_cut = speech_facts()
+    first_cut("v")
+    assert first_cut.music_for("v") == 0.8
+    first_cut.flush()
+    assert measured == 1
+
+    # A second cut reads the banked music fraction instead of measuring again.
+    def fails(asset_id):
+        raise AssertionError("should not measure a banked clip again")
+
+    second_cut = speech_facts(measure_fn=fails)
+    second_cut("v")
+    assert second_cut.music_for("v") == 0.8
+    assert measured == 1
+
+
 def test_real_planner_budgets_video_lengths_and_fits_after_speech_detection(tmp_path):
     from dataclasses import replace
 
@@ -360,6 +400,44 @@ def test_a_breath_between_two_speakers_is_not_a_cut_point():
     shave_content_duration([talk, still], 9.0)
 
     assert talk["seconds"] == pytest.approx(6.76), "the answer stays with the question"
+
+
+def test_live_motion_music_fraction_weights_by_segment_duration():
+    """#1951: the stitch's own companions carry the music signal, not the kept still."""
+    from immich_memories.analysis.editorial_runtime_ports import _live_motion_music_fraction
+    from immich_memories.processing.live_material import LiveRenderMaterial, LiveSourceEntry
+
+    material = LiveRenderMaterial(
+        (
+            LiveSourceEntry("a", "va", 0, 0, 3),  # 3 s, no music
+            LiveSourceEntry("b", "vb", 1, 0, 1),  # 1 s, all music
+        )
+    )
+    carrier = {"live_material": material.as_dict()}
+    fractions = {"va": 0.0, "vb": 1.0}
+
+    fraction = _live_motion_music_fraction(carrier, fractions.__getitem__)
+
+    assert fraction == pytest.approx(0.25)  # (3*0 + 1*1) / 4
+
+
+def test_tag_has_music_sets_the_flag_by_kind_and_threshold():
+    """#1951: only video/live-motion carriers are tagged; everything else passes through."""
+    from immich_memories.analysis.editorial_runtime_ports import _tag_has_music
+    from immich_memories.processing.live_material import LiveRenderMaterial, LiveSourceEntry
+
+    material = LiveRenderMaterial((LiveSourceEntry("a", "va", 0, 0, 1),))
+    carriers = [
+        {"kind": "video", "asset_id": "loud"},
+        {"kind": "video", "asset_id": "quiet"},
+        {"kind": "live-motion", "live_material": material.as_dict()},
+        {"kind": "image", "asset_id": "still"},
+    ]
+    music_for = {"loud": 0.9, "quiet": 0.1, "va": 0.9}.get
+
+    _tag_has_music(carriers, lambda asset_id: music_for(asset_id, 0.0))
+
+    assert [c.get("has_music") for c in carriers] == [True, False, True, None]
 
 
 def test_a_crowd_heard_all_along_does_not_hold_the_cut_to_its_longest():

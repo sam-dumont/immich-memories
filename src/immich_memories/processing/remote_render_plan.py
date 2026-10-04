@@ -142,7 +142,7 @@ def _clip_request(clip, params, directive) -> dict:
         "render_frame_seconds": directive.render_frame_seconds if directive else None,
         "live": _live_certificate(clip, mode, start, end),
         "rotation_override": params.clip_rotations.get(clip.asset.id),
-        "audio_categories": clip.audio_categories,
+        "has_music": bool(directive.has_music) if directive else False,
         "llm_emotion": clip.llm_emotion,
     }
 

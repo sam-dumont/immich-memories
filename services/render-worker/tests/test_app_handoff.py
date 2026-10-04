@@ -202,10 +202,12 @@ def test_remote_render_retains_film_settings_and_source_audio_markers(tmp_path):
     params.privacy_mode = True
     params.person_name = "Example Person"
     params.memory_preset_params = {"birthday_age": 10}
+    from immich_memories.analysis.editorial_planner import EditorialSelection
+
     clip = params.clips[0]
-    clip.audio_categories = ["speech", "music"]
     clip.llm_emotion = "happy"
     params.clip_rotations = {clip.asset.id: 90}
+    params.editorial_selections = (EditorialSelection(clip.asset.id, has_music=True),)
 
     received, _ = round_trip(params, tmp_path, geocoding_url="http://geocoder.invalid:8080")
     assert received.config.title_screens == params.config.title_screens
@@ -218,7 +220,7 @@ def test_remote_render_retains_film_settings_and_source_audio_markers(tmp_path):
     assert received.person_name == params.person_name
     assert received.memory_preset_params == params.memory_preset_params
     assert received.clip_rotations == params.clip_rotations
-    assert received.clips[0].audio_categories == ["speech", "music"]
+    assert received.editorial_selections[0].has_music is True
     assert received.clips[0].llm_emotion == "happy"
 
 

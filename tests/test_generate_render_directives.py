@@ -222,6 +222,39 @@ def test_video_directed_to_still_samples_exact_frame_and_uses_photo_render(
     assert clip.asset.type == AssetType.VIDEO
 
 
+def test_a_video_directives_has_music_flows_to_the_assembly_clip(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """#1951: the carrier's measured has_music reaches the assembled clip, not a dead field."""
+    from immich_memories.generate_clips import extract_clips
+
+    clip = make_clip("singing-clip", duration=5.0)
+    source = tmp_path / "source.mp4"
+    source.write_bytes(b"source")
+    clip.local_path = source
+    segment = tmp_path / "segment.mp4"
+    segment.write_bytes(b"segment")
+    params = GenerationParams(
+        clips=[clip],
+        output_path=tmp_path / "memory.mp4",
+        config=Config(),
+        client=MagicMock(),
+        clip_segments={clip.asset.id: (0.0, 5.0)},
+        editorial_selections=(EditorialSelection(clip.asset.id, 0.0, 5.0, has_music=True),),
+    )
+    # WHY: Extraction and probing write/read media; this test owns only placeholder bytes.
+    monkeypatch.setattr(
+        "immich_memories.processing.clips.extract_clip", lambda *_args, **_kwargs: segment
+    )
+    monkeypatch.setattr(
+        "immich_memories.generate_clips.probe_file_duration", lambda _path, **_kwargs: 5.0
+    )
+
+    [result] = extract_clips(params, None, tmp_path)
+
+    assert result.has_music is True
+
+
 def test_duplicate_render_directives_fail_before_prefetch(
     tmp_path: Path,
 ) -> None:

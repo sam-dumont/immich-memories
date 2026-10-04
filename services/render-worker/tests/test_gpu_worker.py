@@ -49,7 +49,7 @@ def test_one_address_preserves_health_authentication_and_facts(tmp_path):
         assert client.get("/health").json()["status"] == "ok"
         assert client.get("/render/health").status_code == 401
         response = client.get("/render/health", headers=AUTH)
-        assert response.json()["contract_version"] == 1
+        assert response.json()["contract_version"] == 2
         assert response.json()["titles"] == "CUDA"
         facts = client.post("/facts", json={"image": "cGl4ZWxz"})
         assert facts.status_code == 200

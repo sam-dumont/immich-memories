@@ -117,7 +117,13 @@ def _through_app(body, directory, *, fallback):
         params = generation_params(
             RenderRequest.model_validate(body), directory, client, lambda *_: None
         )
-        params.clips[0].audio_categories = ["speech", "music"]
+        from dataclasses import replace as _replace
+
+        asset_id = params.clips[0].asset.id
+        params.editorial_selections = tuple(
+            _replace(selection, has_music=True) if selection.asset_id == asset_id else selection
+            for selection in params.editorial_selections
+        )
         tracker = RunTracker("app-live-test", store=open_store(params.config), capture_system=False)
         with worker as url:
             params.config.render = RenderWorkerConfig(

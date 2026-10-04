@@ -97,7 +97,8 @@ class RenderJobs:
         capabilities = self._pool.submit(self.renderer.health).result()
         return capabilities | {
             "app_version": __version__,
-            "contract_version": 1,
+            # v2: the Clip plan contract swapped audio_categories for has_music (#1951).
+            "contract_version": 2,
             "worker_id": str(self.worker_id),
             "started_at": self.started_at.isoformat(),
         }
