@@ -79,6 +79,8 @@ pins can trail releases. Image tags have no `v` prefix.
 
 ```bash
 cd deploy/kubernetes
+# Shipped default namespace. Installing into another one? Set `namespace:` in your own
+# kustomization root and apply that with `kubectl apply -k`; never apply base files singly.
 kubectl apply -f base/namespace.yaml
 secret_file=$(mktemp)
 cat base/secret.yaml.example > "$secret_file"
@@ -466,7 +468,10 @@ uses the container limit: 4 GiB permits one source-preparation worker; 8 GiB can
 More RAM may increase parallel work; it does **not** enlarge disk-backed `/tmp`.
 
 For a Basic pod on Kubernetes 1.33, add this strategic-merge patch to your overlay's `patches`
-list to reserve the current ceilings rather than rely on spare node capacity:
+list to reserve ceilings rather than rely on spare node capacity. Check what the node can give
+first (`kubectl describe node <node> | grep -A8 Allocatable`, minus what is already requested
+there). The example below asks for 4 CPU and 8Gi, so it needs a node with more than 4 allocatable
+CPUs:
 
 ```yaml
 apiVersion: apps/v1
@@ -493,7 +498,14 @@ memory requests equal to its limits. Add the same treatment to `write-config`, r
 and injected mesh/agent containers when present; the Basic patch alone does not cover them.
 These are [Kubernetes' container-level QoS rules](https://kubernetes.io/docs/tasks/configure-pod-container/quality-service-pod/).
 Inspect the admitted pod's full resource specification and observed `.status.qosClass`, not just
-your submitted patch. This example is not yet a live-cluster QoS result.
+your submitted patch.
+
+This example was admitted as Guaranteed on RKE2 1.33.4 and then sat **Pending** on a 4-CPU node:
+4 CPU never fits where the node's allocatable is under 4. The Deployment strategy is `Recreate`,
+so the old pod was already gone and the app stayed down until the patch was reverted. A smaller
+variant, app 2 CPU/6Gi (requests equal to limits), with the fetch init container at 2 CPU/2Gi,
+ran as Guaranteed on that cluster. Start from numbers the node can hold, and expect downtime while
+a Recreate rollout schedules.
 
 Reserving 4 CPU/8Gi can leave the pod Pending on a busy node and reduces how many other workloads
 fit there; it does not add another UI replica. `/tmp` remains a disk-backed **4Gi emptyDir** under
