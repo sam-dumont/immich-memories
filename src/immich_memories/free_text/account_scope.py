@@ -31,6 +31,7 @@ from immich_memories.config_models import PRIMARY_ACCOUNT
 from immich_memories.db import Store
 from immich_memories.free_text.library import LibraryPicture
 from immich_memories.people.companion import load_document
+from immich_memories.store.editorial_preparation import household_seen, single_account_confirmed
 from immich_memories.timeperiod import DateRange
 
 # The store's capture time and Immich's taken filter can sit in different time zones.
@@ -64,21 +65,29 @@ def visible_pictures(
 def likely_household(store: Store, *, other_accounts: bool, native_sharing: bool) -> bool:
     """Whether this store might hold more than the primary's own pictures.
 
-    True when the config names another account or turns on native sharing -- or, cheaply,
-    when the people registry already holds an alias under another account: evidence a
-    household run once wrote into this store, even though this request names no account
-    of its own. A request naming none then still reads as the primary account alone
-    (#2044): preparation writes every source into the one, ownerless `annotation_assets`
-    table (`store/editorial_preparation.py::remember_assets`), so a household run's
-    partner pictures stay in a plain `--ask`'s way otherwise.
+    True when the config names another account or turns on native sharing; or, sticky,
+    once `store_meta` has ever recorded a non-primary access account
+    (`store/editorial_preparation.py::household_seen`) -- which outlives the partner being
+    dropped from config, native sharing being turned off, or a restore that carries the
+    marker with it, since `annotation_assets` itself has no owner column to tell an old
+    household picture apart from the primary's own; or, cheaply, when the people registry
+    already holds an alias under another account, evidence of the same thing for a store
+    written before this marker existed.
+
+    A legacy store with none of these signals yet is not assumed single-account either:
+    only a real ownership-aware read that actually confirmed every asset it saw was the
+    primary's (`single_account_confirmed`) turns this False, so an install upgrading into
+    this code pays the safe, scoped read at most until its next ordinary run earns that.
     """
-    if other_accounts or native_sharing:
+    if other_accounts or native_sharing or household_seen(store):
         return True
-    return any(
+    if any(
         alias.account != PRIMARY_ACCOUNT
         for person in store_people(load_document(store))
         for alias in person.aliases
-    )
+    ):
+        return True
+    return not single_account_confirmed(store)
 
 
 def resolve_account_scope(

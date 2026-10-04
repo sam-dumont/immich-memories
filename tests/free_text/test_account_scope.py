@@ -6,13 +6,17 @@ from datetime import UTC, datetime
 
 import pytest
 
+from immich_memories.api.models import Asset
 from immich_memories.db import open_store
 from immich_memories.free_text.account_scope import (
     AccountScope,
+    likely_household,
     resolve_account_scope,
     visible_pictures,
 )
 from immich_memories.free_text.library import LibraryPicture
+from immich_memories.people.transfer import import_document
+from immich_memories.store.editorial_preparation import remember_assets
 
 
 def _picture(asset_id: str) -> LibraryPicture:
@@ -55,6 +59,77 @@ def test_a_request_naming_accounts_needs_an_access_bound_client() -> None:
 
     with pytest.raises(TypeError, match="AccessBoundClient"):
         resolve_account_scope(object(), ("partner",), [_picture("a")], store)  # type: ignore[arg-type]
+
+
+def test_likely_household_is_true_when_the_config_names_another_account() -> None:
+    store = open_store()
+
+    assert likely_household(store, other_accounts=True, native_sharing=False) is True
+
+
+def test_likely_household_is_true_when_native_sharing_is_on() -> None:
+    store = open_store()
+
+    assert likely_household(store, other_accounts=False, native_sharing=True) is True
+
+
+def test_likely_household_is_true_for_a_non_primary_alias_with_no_other_signal() -> None:
+    """A store written before the `household_seen` marker existed still carries this
+    evidence in the people file (#2044): a name bound to a non-primary account alone is
+    enough, with no account configured and no native sharing on."""
+    store = open_store()
+    import_document(
+        store,
+        {
+            "version": 1,
+            "people": [
+                {
+                    "ids": {"partner": ["kit-q"]},
+                    "name": "Kit",
+                    "birth_date": None,
+                    "inferred": {
+                        "tier": "inner",
+                        "counts_reliable": True,
+                        "evidence": {},
+                        "links": [],
+                    },
+                    "confirmed": {"role": None, "links": [], "notes": None},
+                }
+            ],
+        },
+    )
+
+    assert likely_household(store, other_accounts=False, native_sharing=False) is True
+
+
+def test_likely_household_defaults_true_for_an_untouched_legacy_store() -> None:
+    """No config signal, no alias, and `remember_assets` has never run here: the store is
+    scoped to the primary by default until an ownership-aware read actually confirms it."""
+    store = open_store()
+
+    assert likely_household(store, other_accounts=False, native_sharing=False) is True
+
+
+def test_likely_household_is_false_once_a_read_confirms_a_single_account() -> None:
+    store = open_store()
+    remember_assets(
+        store,
+        [
+            Asset(
+                id="own",
+                type="IMAGE",
+                file_created_at=datetime(2024, 1, 1, tzinfo=UTC),
+                file_modified_at=datetime(2024, 1, 1, tzinfo=UTC),
+                updated_at=datetime(2024, 1, 1, tzinfo=UTC),
+                original_file_name="own.jpg",
+                width=10,
+                height=10,
+                access_accounts=("primary",),
+            )
+        ],
+    )
+
+    assert likely_household(store, other_accounts=False, native_sharing=False) is False
 
 
 def test_native_sharing_widens_a_face_accounts_entry_beyond_its_saved_binding(monkeypatch) -> None:
