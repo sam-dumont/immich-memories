@@ -1,10 +1,12 @@
 """Guards that refuse a model title for what it invents, drops or mislays.
 
 A model answers the title prompt in `llm_titles.py`; what it writes may name
-something no fact names, drop the year the template title would show, or
-(for a trip) leave out the place it must name. Each guard here takes the raw
+something no fact names, drop a year the template title would show, or (for
+a trip) leave out the place it must name. Each guard here takes the raw
 suggestion and returns it, a trimmed version, or ``None`` to fall back to the
-template.
+template. `required_years` is also called before the model is asked, so its
+answer can be put in the prompt as a fact rather than left to prompt wording
+that could drift from what this guard actually checks.
 """
 
 from __future__ import annotations
@@ -12,48 +14,15 @@ from __future__ import annotations
 import logging
 import re
 import unicodedata
-from dataclasses import dataclass, replace
+from dataclasses import replace
 from datetime import date
 from difflib import SequenceMatcher
 from functools import lru_cache
-from typing import Literal
+
+from immich_memories.titles.title_routing import is_trip
+from immich_memories.titles.title_suggestion import TitleSuggestion
 
 logger = logging.getLogger(__name__)
-
-TripType = Literal["multi_base", "base_camp", "road_trip", "hiking_trail"]
-MapMode = Literal["title_only", "excursions", "overnight_stops"]
-
-# Which prompt a memory gets. A film about people is named from the family
-# record; an occasion from what the occasion was. Everything else is a trip.
-PEOPLE_MEMORY_TYPES = frozenset({"person_spotlight", "multi_person"})
-OCCASION_MEMORY_TYPES = frozenset(
-    {
-        "album",
-        "holiday",
-        "monthly_highlights",
-        "on_this_day",
-        "season",
-        "special_day",
-        "year",
-        "year_in_review",
-    }
-)
-
-
-def _is_trip(memory_type: str) -> bool:
-    """Whether this memory is named by the trip prompt, which also classifies the route."""
-    return memory_type not in PEOPLE_MEMORY_TYPES and memory_type not in OCCASION_MEMORY_TYPES
-
-
-@dataclass
-class TitleSuggestion:
-    """LLM-generated title and trip classification."""
-
-    title: str
-    subtitle: str | None = None
-    trip_type: TripType | None = None
-    map_mode: MapMode | None = None
-
 
 # Languages spell the same place their own way (Brussels/Bruxelles,
 # Gent/Ghent), so a name the facts carry and a name the title writes are the
@@ -180,7 +149,7 @@ def restore_fact_casing(suggestion: TitleSuggestion, facts: str) -> TitleSuggest
     )
 
 
-def _refusing_invented_names(
+def refusing_invented_names(
     suggestion: TitleSuggestion | None, facts: str
 ) -> TitleSuggestion | None:
     """The suggestion, minus whatever part of it names something unrecorded."""
@@ -217,7 +186,7 @@ def names_the_place(title: str, place: str, locale: str) -> bool:
     )
 
 
-def _requiring_the_place(
+def requiring_the_place(
     suggestion: TitleSuggestion | None, place: str | None, locale: str
 ) -> TitleSuggestion | None:
     if suggestion is None or not place or names_the_place(suggestion.title, place, locale):
@@ -230,34 +199,17 @@ def _requiring_the_place(
     return None
 
 
-# A person spotlight spanning several years opens on the name alone; "on this
-# day" is never dated; a birthday is an ordinal, never a calendar year. These
-# are the only shapes `generate_title`'s own dispatch can return with no year
-# in them, so `_template_names_no_year` checks against exactly this set.
-_SELECTION_TYPES_WITH_NO_YEAR = frozenset({"on_this_day", "person_spotlight", "birthday_year"})
+# Digits only, in any of the 14 film locales (ja/ko/zh carry a trailing script
+# character, e.g. "2026年", which this boundary ignores since it isn't a digit).
+_YEAR_DIGITS = re.compile(r"(?<!\d)\d{4}(?!\d)")
+
+# The separators a cross-year title can put between a full start year and the
+# end year's two-digit short form: a hyphen/en-dash/em-dash/slash/space in
+# Western locales, a wave dash or fullwidth tilde in ja/ko/zh ("2024〜25年").
+_YEAR_RANGE_SEP = "\\s\u2013\u2014\u301c\uff5e~/-"
 
 
-def _template_names_no_year(
-    memory_type: str, start: date, end: date, person_names: tuple[str, ...]
-) -> bool:
-    """Whether the BASIC template's own dispatch names this memory with no year.
-
-    Walks the same path the renderer uses (`infer_selection_type` then
-    `generate_title`) and reads back the shape it actually resolved to — not
-    the one first guessed, since a nameless person spotlight or a yearless
-    span reroutes itself to a dated shape inside `generate_title` itself.
-    """
-    from immich_memories.titles.text_builder import generate_title, infer_selection_type
-
-    selection_type = infer_selection_type(start_date=start, end_date=end, memory_type=memory_type)
-    person_name = person_names[0] if memory_type == "person_spotlight" and person_names else None
-    info = generate_title(
-        selection_type, start_date=start, end_date=end, person_name=person_name, locale="en"
-    )
-    return info.selection_type.value in _SELECTION_TYPES_WITH_NO_YEAR
-
-
-def _required_years(
+def required_years(
     memory_type: str,
     start: date,
     end: date,
@@ -268,17 +220,32 @@ def _required_years(
 
     A trip's map title always carries its year(s). A holiday's title is its
     name, read off `holiday_label`, which never carries one. Everything else
-    walks the same dispatch the renderer uses so the model is held to exactly
-    what the fallback would show, no more and no less.
+    walks the same dispatch the renderer uses (`infer_selection_type` then
+    `generate_title`) and reads the years back out of what it actually wrote —
+    not a list of which selection types are "supposed" to carry one, since a
+    nameless person spotlight or a yearless span reroutes itself to a dated
+    shape inside `generate_title` itself.
+
+    French is read, not the film's own locale: every locale's catalogue spells
+    a lone year in full, but English abbreviates a cross-year season's end
+    year ("Summer 2024–25"), which would under-read a two-year span here.
     """
-    if not _is_trip(memory_type) and (
-        holiday or _template_names_no_year(memory_type, start, end, person_names)
-    ):
+    if is_trip(memory_type):
+        years = {start.year}
+        if end.year != start.year:
+            years.add(end.year)
+        return frozenset(years)
+    if memory_type == "holiday" and holiday:
         return frozenset()
-    years = {start.year}
-    if end.year != start.year:
-        years.add(end.year)
-    return frozenset(years)
+    from immich_memories.titles.text_builder import generate_title, infer_selection_type
+
+    selection_type = infer_selection_type(start_date=start, end_date=end, memory_type=memory_type)
+    person_name = person_names[0] if memory_type == "person_spotlight" and person_names else None
+    info = generate_title(
+        selection_type, start_date=start, end_date=end, person_name=person_name, locale="fr"
+    )
+    combined = f"{info.main_title} {info.subtitle or ''}"
+    return frozenset(int(y) for y in _YEAR_DIGITS.findall(combined))
 
 
 def _years_named(text: str, required: frozenset[int]) -> bool:
@@ -287,18 +254,18 @@ def _years_named(text: str, required: frozenset[int]) -> bool:
     if not years:
         return True
     first, *rest = years
-    if str(first) not in text:
+    if not re.search(rf"(?<!\d){first}(?!\d)", text):
         return False
     for year in rest:
-        if str(year) in text:
+        if re.search(rf"(?<!\d){year}(?!\d)", text):
             continue
         short = f"{year % 100:02d}"
-        if not re.search(rf"{first}[\s–—\-/]{{0,3}}{short}\b", text):
+        if not re.search(rf"(?<!\d){first}[{_YEAR_RANGE_SEP}]{{0,3}}{short}(?!\d)", text):
             return False
     return True
 
 
-def _requiring_the_year(
+def requiring_the_year(
     suggestion: TitleSuggestion | None,
     memory_type: str,
     start_date: str,
@@ -316,7 +283,7 @@ def _requiring_the_year(
     if suggestion is None:
         return suggestion
     start, end = date.fromisoformat(start_date), date.fromisoformat(end_date)
-    required = _required_years(memory_type, start, end, person_names, holiday)
+    required = required_years(memory_type, start, end, person_names, holiday)
     if not required:
         return suggestion
     combined = f"{suggestion.title} {suggestion.subtitle or ''}"

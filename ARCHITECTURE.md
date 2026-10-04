@@ -782,6 +782,8 @@ src/immich_memories/
 │   ├── script_fonts.py         # Pinned Noto script fonts, `titles fonts --install`
 │   ├── llm_titles.py           # LLM-generated titles: prompt building, parsing, the LLM call
 │   ├── title_guards.py         # Guards refusing an invented name, a missing year, a missing place
+│   ├── title_routing.py        # Which prompt a memory gets: PEOPLE/OCCASION_MEMORY_TYPES, is_trip
+│   ├── title_suggestion.py     # TitleSuggestion: the shape of what the model answers with
 │   ├── title_source.py         # TitleSource: which source produced the opening title
 │   ├── sdf_font.py             # SDF font rendering
 │   ├── sdf_font_rendering.py   # SDF rendering helpers

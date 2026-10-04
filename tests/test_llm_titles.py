@@ -13,7 +13,7 @@ class TestParseTitleResponse:
 
     def test_parses_valid_json(self):
         from immich_memories.titles.llm_titles import parse_title_response
-        from immich_memories.titles.title_guards import TitleSuggestion
+        from immich_memories.titles.title_suggestion import TitleSuggestion
 
         raw = '{"title": "A Week in Bretagne", "subtitle": "From Brasparts to Frehel", "trip_type": "multi_base", "map_mode": "excursions", "map_mode_reason": "Two bases"}'
         result = parse_title_response(raw)
@@ -173,7 +173,7 @@ class TestGenerateTitleWithLlm:
 
         from immich_memories.config_models_llm import LLMConfig
         from immich_memories.titles.llm_titles import generate_title_with_llm
-        from immich_memories.titles.title_guards import TitleSuggestion
+        from immich_memories.titles.title_suggestion import TitleSuggestion
 
         config = LLMConfig(
             enabled=True,
@@ -507,6 +507,17 @@ class TestATitleKeepsTheYearTheTemplateWouldShow:
         assert result is not None
 
     @pytest.mark.asyncio
+    async def test_a_year_as_a_digit_run_inside_a_longer_number_does_not_count(self):
+        """ "20245" contains the substring "2024" but does not name the year 2024."""
+        result = await self._titled(
+            '{"title": "Bilan de l\'annee 20245", "subtitle": null}',
+            memory_type="year_in_review",
+            start_date="2024-01-01",
+            end_date="2024-12-31",
+        )
+        assert result is None
+
+    @pytest.mark.asyncio
     async def test_a_trip_title_with_the_year_is_still_subject_to_the_place_guard(self):
         from immich_memories.titles.llm_titles import MemoryTitleFacts
 
@@ -598,6 +609,134 @@ class TestTheYearGuardReadsEveryFilmLanguage:
         )
         result = await self._titled(json.dumps({"title": yearless, "subtitle": None}), locale)
         assert result is None
+
+
+class TestTheCrossYearShortFormAcceptsEveryFilmSeparator:
+    """ "2024-25", "2024–25" and the ja/ko/zh wave dash/fullwidth-tilde forms
+    ("2024〜25年") are all the same short form for the same two years.
+    """
+
+    @staticmethod
+    def _config():
+        from immich_memories.config_models_llm import LLMConfig
+
+        return LLMConfig(
+            enabled=True,
+            provider="openai-compatible",
+            base_url="http://localhost:8080/v1",
+            model="omlx",
+        )
+
+    @staticmethod
+    async def _titled(title: str, locale: str):
+        from unittest.mock import AsyncMock, patch
+
+        from immich_memories.titles.llm_titles import generate_title_with_llm
+
+        # WHY: replaces the reader, the only boundary these cases exercise.
+        with patch(
+            "immich_memories.titles.llm_titles.query_llm",
+            new_callable=AsyncMock,
+            return_value=json.dumps({"title": title, "subtitle": None}),
+        ):
+            return await generate_title_with_llm(
+                memory_type="season",
+                locale=locale,
+                start_date="2024-12-01",
+                end_date="2025-02-28",
+                duration_days=89,
+                llm_config=TestTheCrossYearShortFormAcceptsEveryFilmSeparator._config(),
+            )
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        ("locale", "title"),
+        [
+            ("en", "Winter 2024–25"),
+            ("en", "Winter 2024—25"),
+            ("fr", "Hiver 2024-25"),
+            ("en", "Winter 2024/25"),
+            ("ja", "2024〜25年の冬"),
+            ("ko", "2024~25년 겨울"),
+            ("zh-Hans", "2024~25年冬天"),
+        ],
+        ids=["en-dash", "em-dash", "hyphen", "slash", "ja-wave-dash", "ko-tilde", "zh-tilde"],
+    )
+    async def test_the_short_form_is_accepted(self, locale, title):
+        result = await self._titled(title, locale)
+        assert result is not None
+        assert result.title == title
+
+
+class TestTheRequiredYearIsAFactNotARuleOfItsOwn:
+    """The three prompts carry one computed fact line instead of restating the
+    year rule in their own words, so prompt wording can never drift from what
+    `requiring_the_year` actually checks.
+    """
+
+    @pytest.mark.asyncio
+    async def test_a_span_ending_today_still_states_its_required_years(self):
+        """An open-ended multi_person span is not read as needing no date."""
+        from immich_memories.titles.llm_titles import MemoryTitleFacts, build_title_prompt
+
+        today = date(2026, 9, 17)
+        prompt = build_title_prompt(
+            memory_type="multi_person",
+            locale="fr",
+            start_date="2024-02-07",
+            end_date=str(today),
+            duration_days=953,
+            person_names=["Ada Example", "Grace Example"],
+            facts=MemoryTitleFacts(today=today),
+        ).text
+        assert "Year(s) the title or subtitle must show: 2024 and 2026" in prompt
+
+    @pytest.mark.asyncio
+    async def test_a_titled_suggestion_naming_that_year_is_kept(self):
+        from unittest.mock import AsyncMock, patch
+
+        from immich_memories.config_models_llm import LLMConfig
+        from immich_memories.titles.llm_titles import MemoryTitleFacts, generate_title_with_llm
+
+        today = date(2026, 9, 17)
+        config = LLMConfig(
+            enabled=True,
+            provider="openai-compatible",
+            base_url="http://localhost:8080/v1",
+            model="omlx",
+        )
+        # WHY: replaces the reader, the only boundary this case exercises.
+        with patch(
+            "immich_memories.titles.llm_titles.query_llm",
+            new_callable=AsyncMock,
+            return_value='{"title": "Ada et Grace, 2024-26", "subtitle": null}',
+        ):
+            result = await generate_title_with_llm(
+                memory_type="multi_person",
+                locale="fr",
+                start_date="2024-02-07",
+                end_date=str(today),
+                duration_days=953,
+                person_names=["Ada Example", "Grace Example"],
+                facts=MemoryTitleFacts(today=today),
+                llm_config=config,
+            )
+        assert result is not None
+        assert result.title == "Ada et Grace, 2024-26"
+
+    @pytest.mark.asyncio
+    async def test_a_multi_year_spotlight_prompt_states_no_year_is_needed(self):
+        from immich_memories.titles.llm_titles import build_title_prompt
+
+        prompt = build_title_prompt(
+            memory_type="person_spotlight",
+            locale="en",
+            start_date="2015-01-01",
+            end_date="2024-06-01",
+            duration_days=3440,
+            person_names=["Mila"],
+        ).text
+        assert "Year(s) the title or subtitle must show: none" in prompt
 
 
 @pytest.mark.parametrize("place,country", [("Norway", "Norway"), ("Brittany", "France")])

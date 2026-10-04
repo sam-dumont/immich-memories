@@ -17,15 +17,18 @@ from immich_memories.analysis.llm_query import query_llm
 from immich_memories.analysis.prose_shapes import MAP_MODES, TRIP_TYPES, title_shape
 from immich_memories.people.context import PersonPromptContext, load_people_prompt_context
 from immich_memories.titles.title_guards import (
-    OCCASION_MEMORY_TYPES,
-    PEOPLE_MEMORY_TYPES,
-    TitleSuggestion,
-    _is_trip,
-    _refusing_invented_names,
-    _requiring_the_place,
-    _requiring_the_year,
+    refusing_invented_names,
+    required_years,
+    requiring_the_place,
+    requiring_the_year,
     restore_fact_casing,
 )
+from immich_memories.titles.title_routing import (
+    OCCASION_MEMORY_TYPES,
+    PEOPLE_MEMORY_TYPES,
+    is_trip,
+)
+from immich_memories.titles.title_suggestion import TitleSuggestion
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -345,6 +348,19 @@ def span_title_facts(
     return "; ".join(notes)
 
 
+def _year_requirement_line(required: frozenset[int]) -> str:
+    """The fact line naming exactly what `requiring_the_year` will check for.
+
+    Prompt wording that restates this rule in its own words drifts from the
+    guard that actually enforces it; every prompt instead defers to this one
+    computed line.
+    """
+    if not required:
+        return "Year(s) the title or subtitle must show: none"
+    years = " and ".join(str(year) for year in sorted(required))
+    return f"Year(s) the title or subtitle must show: {years}"
+
+
 def _plain_condition(person_names: Sequence[str], match: str) -> str:
     """The condition a plain --person run selected on, written the way one reads it."""
     quoted = [json.dumps(name, ensure_ascii=False) for name in person_names]
@@ -362,6 +378,7 @@ def _people_prompt(
     end: date,
     person_names: Sequence[str],
     facts: MemoryTitleFacts,
+    year_line: str,
 ) -> TitlePrompt:
     condition = facts.people_condition or _plain_condition(person_names, facts.person_match)
     known = people_title_facts(person_names, start, end, people_store=facts.people_store)
@@ -376,7 +393,8 @@ def _people_prompt(
         .replace("{memory_type}", memory_type)
         .replace("{condition}", condition)
         .replace("{people_facts}", known)
-        .replace("{span}", span),
+        .replace("{span}", span)
+        .replace("{required_year}", year_line),
         f"{condition}\n{known}\n{span}",
     )
 
@@ -417,6 +435,7 @@ def _occasion_prompt(
     *,
     daily_locations: Sequence[str] | None,
     person_names: Sequence[str],
+    year_line: str,
 ) -> TitlePrompt:
     span = span_title_facts(
         start, end, person_names, people_store=facts.people_store, today=facts.today
@@ -427,7 +446,8 @@ def _occasion_prompt(
         .replace("{lang}", lang)
         .replace("{memory_type}", memory_type)
         .replace("{span}", span)
-        .replace("{occasion_facts}", known),
+        .replace("{occasion_facts}", known)
+        .replace("{required_year}", year_line),
         f"{span}\n{known}",
     )
 
@@ -450,11 +470,13 @@ def build_title_prompt(
     lang = _LOCALE_NAMES.get(locale, locale.capitalize())
     known = facts or MemoryTitleFacts()
     names = list(person_names or ())
+    start, end = date.fromisoformat(start_date), date.fromisoformat(end_date)
+    year_line = _year_requirement_line(
+        required_years(memory_type, start, end, tuple(names), known.holiday)
+    )
     if memory_type in PEOPLE_MEMORY_TYPES:
-        start, end = date.fromisoformat(start_date), date.fromisoformat(end_date)
-        return _people_prompt(lang, memory_type, start, end, names, known)
+        return _people_prompt(lang, memory_type, start, end, names, known, year_line)
     if memory_type in OCCASION_MEMORY_TYPES:
-        start, end = date.fromisoformat(start_date), date.fromisoformat(end_date)
         return _occasion_prompt(
             lang,
             memory_type,
@@ -463,6 +485,7 @@ def build_title_prompt(
             known,
             daily_locations=daily_locations,
             person_names=names,
+            year_line=year_line,
         )
     return _trip_prompt(
         lang=lang,
@@ -477,6 +500,7 @@ def build_title_prompt(
         smart_objects=smart_objects,
         album_name=known.album_name,
         place=known.place,
+        year_line=year_line,
     )
 
 
@@ -494,8 +518,9 @@ def _trip_prompt(
     smart_objects: list[str] | None = None,
     album_name: str | None = None,
     place: str | None = None,
+    year_line: str = "",
 ) -> TitlePrompt:
-    context_lines: list[str] = []
+    context_lines: list[str] = [year_line] if year_line else []
     if place:
         context_lines.append(f"Place (name it, in the title's language): {place}")
     if album_name:
@@ -573,13 +598,13 @@ async def generate_title_with_llm(
             timeout_seconds=300,
             thinking=True,
             judgments=judgments,
-            response_format=title_shape(trip=_is_trip(memory_type)),
+            response_format=title_shape(trip=is_trip(memory_type)),
         )
         parsed = parse_title_response(raw)
         if parsed is not None:
             parsed = restore_fact_casing(parsed, prompt.facts or prompt.text)
-        suggestion = _refusing_invented_names(parsed, prompt.facts)
-        suggestion = _requiring_the_year(
+        suggestion = refusing_invented_names(parsed, prompt.facts)
+        suggestion = requiring_the_year(
             suggestion,
             memory_type,
             start_date,
@@ -589,7 +614,7 @@ async def generate_title_with_llm(
         )
         if memory_type in PEOPLE_MEMORY_TYPES or memory_type in OCCASION_MEMORY_TYPES:
             return suggestion
-        return _requiring_the_place(suggestion, facts.place if facts else None, locale)
+        return requiring_the_place(suggestion, facts.place if facts else None, locale)
     except (httpx.HTTPError, RuntimeError, ValueError, OSError) as e:
         logger.warning("LLM title generation failed: %s", e, exc_info=True)
         return None

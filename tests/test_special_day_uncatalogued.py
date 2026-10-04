@@ -76,7 +76,8 @@ def test_an_explicit_title_still_wins_over_both(catalogue) -> None:
 
 def test_an_uncatalogued_day_leaves_the_naming_to_the_model(catalogue) -> None:
     """No title from the file means the reader is asked, as for any occasion memory."""
-    from immich_memories.titles.llm_titles import OCCASION_MEMORY_TYPES, memory_title_facts
+    from immich_memories.titles.llm_titles import memory_title_facts
+    from immich_memories.titles.title_routing import OCCASION_MEMORY_TYPES
 
     params = resolve_special_day(_DAY, "special_day")
     title, _ = name_from_catalogue(params, None, None)

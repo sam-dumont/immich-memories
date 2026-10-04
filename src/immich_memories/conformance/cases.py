@@ -30,9 +30,14 @@ def title(llm: LLMConfig) -> str:
             llm_config=llm,
         )
     )
-    assert answer is not None, "title response could not be parsed"
+    assert answer is not None, (
+        "title response failed to parse, or was refused by a guard "
+        "(an invented name, a missing year, a missing place)"
+    )
     assert "chess" in answer.title.casefold(), "title did not name the chess tournament"
-    return "title names the chess tournament"
+    named = f"{answer.title} {answer.subtitle or ''}"
+    assert "2030" in named, "title dropped the year the template would show"
+    return "title names the chess tournament and keeps its year"
 
 
 def trip_title(llm: LLMConfig) -> str:
@@ -54,12 +59,17 @@ def trip_title(llm: LLMConfig) -> str:
             llm_config=llm,
         )
     )
-    assert answer is not None and "iceland" in answer.title.lower(), (
-        "trip title lost its recorded place"
+    assert answer is not None, (
+        "trip title failed to parse, or was refused by a guard "
+        "(an invented name, a missing year, a missing place)"
+    )
+    assert "iceland" in answer.title.lower(), "trip title lost its recorded place"
+    assert "2030" in f"{answer.title} {answer.subtitle or ''}", (
+        "trip title dropped the year the template would show"
     )
     assert answer.trip_type == "road_trip", "driving itinerary was not classified as a road trip"
     assert answer.map_mode is not None, "trip returned no valid map mode"
-    return "names Iceland and classifies the moving driving itinerary"
+    return "names Iceland, keeps its year, and classifies the moving driving itinerary"
 
 
 def people_title(llm: LLMConfig) -> str:
@@ -76,10 +86,14 @@ def people_title(llm: LLMConfig) -> str:
                 llm_config=llm,
             )
         )
-    assert answer is not None and "avery" in answer.title.lower(), (
-        "people title lost the named person"
+    assert answer is not None, (
+        "people title failed to parse, or was refused by a guard (an invented name, a missing year)"
     )
-    return "names the synthetic person without inventing a family relationship"
+    assert "avery" in answer.title.lower(), "people title lost the named person"
+    assert "2030" in f"{answer.title} {answer.subtitle or ''}", (
+        "people title dropped the year the template would show"
+    )
+    return "names the synthetic person, keeps its year, without inventing a family relationship"
 
 
 def cases(llm: LLMConfig) -> tuple[Case, ...]:
