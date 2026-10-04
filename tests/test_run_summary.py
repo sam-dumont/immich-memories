@@ -92,3 +92,18 @@ def test_a_reduced_tier_says_so_and_the_full_one_reads_as_a_normal_run() -> None
     assert "TIER" not in summary("full")
     assert "no_captions" in summary("no_captions")
     assert "family viewing" in summary("metadata_only")
+
+
+def test_calls_that_were_all_preparation_are_not_billed_to_the_reader() -> None:
+    """Caption calls with the reader disabled are not "LLM calls"."""
+    text = render_run_summary(
+        total_seconds=387.0,
+        analysis_seconds=229.0,
+        generation_seconds=158.0,
+        eligible=312,
+        planned=14,
+        counters=LLMCounters(calls=16, preparation_calls=16),
+    )
+
+    assert "LLM" not in text
+    assert "Preparation models   16 calls" in text

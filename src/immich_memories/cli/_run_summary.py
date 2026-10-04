@@ -40,6 +40,27 @@ def _calls_part(counters: LLMCounters) -> str:
     return f"{counters.calls} calls ({realtime} realtime, {counters.batch_calls} batch)"
 
 
+def _only_preparation(counters: LLMCounters) -> bool:
+    """Captions and the like come from the preparation models even with the reader disabled.
+
+    Calling them "LLM calls" sent a first-time user looking for a reader (#1984).
+    """
+    return bool(counters.preparation_calls) and counters.preparation_calls == counters.calls
+
+
+def _llm_label(counters: LLMCounters) -> str:
+    return "Preparation models   " if _only_preparation(counters) else "LLM   "
+
+
+def _preparation_note(counters: LLMCounters) -> list[str]:
+    if not counters.preparation_calls or _only_preparation(counters):
+        return []
+    return [
+        f"        Includes {counters.preparation_calls} preparation calls; "
+        "reader pricing does not cover them"
+    ]
+
+
 def _llm_lines(counters: LLMCounters) -> list[str]:
     """What the model cost, or nothing at all when it was never asked.
 
@@ -60,16 +81,13 @@ def _llm_lines(counters: LLMCounters) -> list[str]:
     if counters.wall_seconds:
         parts.append(f"{_clock(counters.wall_seconds)} summed request time")
 
-    lines = ["", "  LLM   " + " · ".join(parts)]
+    lines = ["", "  " + _llm_label(counters) + " · ".join(parts)]
     if counters.unmetered_calls:
         noun = "call" if counters.unmetered_calls == 1 else "calls"
         lines.append(
             f"        Token usage missing for {counters.unmetered_calls} {noun}; totals are incomplete"
         )
-    if counters.preparation_calls:
-        lines.append(
-            f"        Includes {counters.preparation_calls} preparation calls; reader pricing does not cover them"
-        )
+    lines.extend(_preparation_note(counters))
     if counters.reasoning_tokens:
         lines.append(
             f"        {_thousands(counters.reasoning_tokens)} of the completion tokens were reasoning"

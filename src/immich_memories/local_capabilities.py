@@ -49,7 +49,7 @@ def local_capabilities(config: Config) -> list[Capability]:
 
 
 def _music_capability(config: Config) -> Capability:
-    from immich_memories.audio.generators.ace_step_isolated import isolated_python
+    from immich_memories.audio.generators.ace_step_isolated import install_hint, isolated_python
     from immich_memories.audio.generators.ace_step_runtime import is_ace_step_importable
     from immich_memories.audio.generators.memory_budget import memory_shortfall
 
@@ -60,7 +60,7 @@ def _music_capability(config: Config) -> Capability:
             "Local music", "configured-external", "API music configured; not contacted or certified"
         )
     if isolated_python() is None and not is_ace_step_importable():
-        return Capability("Local music", "missing", "Run make install-acestep in this checkout")
+        return Capability("Local music", "missing", install_hint())
     planner = config.ace_step.lm_model_size if config.ace_step.use_lm else None
     if shortfall := memory_shortfall(config.ace_step.model_variant, planner):
         return Capability("Local music", "blocked", str(shortfall))

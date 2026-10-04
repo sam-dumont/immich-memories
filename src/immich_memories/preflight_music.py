@@ -7,7 +7,7 @@ to a bundled track with one warning in its log. `doctor` says so before a render
 
 from __future__ import annotations
 
-from immich_memories.audio.generators.ace_step_isolated import isolated_python
+from immich_memories.audio.generators.ace_step_isolated import install_hint, isolated_python
 from immich_memories.audio.generators.ace_step_runtime import is_ace_step_importable
 from immich_memories.config_loader import Config
 from immich_memories.preflight import CheckResult, CheckStatus
@@ -30,7 +30,7 @@ def check_music(config: Config) -> CheckResult:
         "Music (ACE-Step)",
         CheckStatus.WARNING,
         "Set to run here (mode lib), but not installed",
-        "Run `make install-acestep` in this checkout (every new clone or worktree needs it), or "
+        f"{install_hint()}, or "
         f"point advanced.ace_step at a server. Until then a render tries {ace_step.api_url} and "
         "then uses a bundled track.",
     )

@@ -83,7 +83,7 @@ def _log_preparation(result: Any) -> None:
         for stage, seconds in sorted(result.stage_rates().items())
     )
     logger.info(
-        "preparation tier=%s: %d pictures requested%s",
+        "preparation depth=%s: %d pictures requested%s",
         result.tier,
         result.requested,
         f"; {rates}" if rates else "; nothing to produce",

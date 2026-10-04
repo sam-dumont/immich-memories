@@ -28,6 +28,21 @@ def isolated_python() -> Path | None:
     return None
 
 
+MUSIC_DOCS = "https://sam-dumont.github.io/immich-memories/docs/better/music"
+
+
+def install_hint(prefix: str | None = None) -> str:
+    """What to do about missing local music, said for where this is installed.
+
+    `make install-acestep` exists only in a source checkout; a container or a pip
+    install has no Makefile to run it from.
+    """
+    makefile = Path(prefix or sys.prefix).parent / "Makefile"
+    if makefile.is_file() and "install-acestep" in makefile.read_text(errors="ignore"):
+        return "Run make install-acestep in this checkout (every new clone or worktree needs it)"
+    return f"Local music is not part of this install; see {MUSIC_DOCS}"
+
+
 async def generate_isolated(
     python: Path, config: ACEStepConfig, request: GenerationRequest
 ) -> GenerationResult:
