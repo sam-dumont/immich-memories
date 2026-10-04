@@ -11,6 +11,7 @@ from functools import wraps
 from immich_memories import process_start
 from immich_memories.analysis import llm_metrics
 from immich_memories.db import Store, open_store
+from immich_memories.logging_config import set_current_run_id
 from immich_memories.operations.cancellation import PipelineCancelled
 from immich_memories.tracking import timing
 from immich_memories.tracking.run_database import RunDatabase
@@ -43,12 +44,15 @@ def observe_run(
     tracker = RunTracker(store=store, capture_system=capture_system)
     tracker.start_run(source=source, memory_type=memory_type)
     token = _tracker.set(tracker)
+    # Every line from discovery on carries the run id, not just the render phase.
+    set_current_run_id(tracker.run_id)
     with (
         ExitStack() as cleanup,
         timing.collecting() as collected,
         llm_metrics.collecting() as counters,
     ):
         cleanup.callback(_tracker.reset, token)
+        cleanup.callback(set_current_run_id, None)
         try:
             with timing.span("run") as root:
                 timing.open_at(root, startup)
