@@ -100,7 +100,7 @@ class Household:
 class WhoLink:
     """Who the request is about."""
 
-    # People-file persons whose face must be recognised in the photo's episode.
+    # People-file persons whose face must be recognised on the photo itself (#1954).
     present: tuple[str, ...] = ()
     # Persons whose facts date or place the request: the owner for "I", the partner for
     # "we", and everyone present.
@@ -210,7 +210,7 @@ def _people_in(
         reasons.append(
             Reason(
                 token,
-                f"{rule}: recognised faces required, per episode",
+                f"{rule}: recognised faces required, on the picture itself",
                 ", ".join(person.name for person in named),
             )
         )

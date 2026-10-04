@@ -1017,7 +1017,8 @@ src/immich_memories/
 │   │                           # parts only for a place. Subject.heads feed link_where; subject_kind()
 │   │                           # (the model's place/animal/thing/activity vote)
 │   ├── pool.py                 # build_pool(Translation, LibraryView, ...): the funnel, each Step keeps a
-│   │                           # count and a Reason: when; who (a face in the picture's 90-min episode);
+│   │                           # count and a Reason: when; who (a face on the picture itself, strict per
+│   │                           # picture, #1954);
 │   │                           # printed text (PrintedText port = Immich OCR: anchors' episodes replace
 │   │                           # where); where (scopes.py) or Immich's place names; kind of picture
 │   │                           # (photographs and videos unless a kind is named); sharpness; computed

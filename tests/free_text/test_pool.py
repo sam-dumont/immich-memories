@@ -110,9 +110,11 @@ def _at(asset_id: str, when: str, **fields: Any) -> LibraryPicture:
     return LibraryPicture(asset_id=asset_id, taken_at=datetime.fromisoformat(when), **fields)
 
 
-def test_a_named_person_is_present_anywhere_in_the_episode_of_their_recognised_face(
+def test_a_named_person_is_present_strictly_on_the_picture_their_face_is_recognised_on(
     lexicon: Lexicon,
 ) -> None:
+    """A people condition is strict per picture (#1954): the back-of-head neighbour, taken
+    minutes later in the same episode, is not kept just because it sits beside a match."""
     view = _view(
         _at("face", "2020-05-01T12:00+00:00", people=frozenset({"kid"})),
         _at("from-behind", "2020-05-01T13:15+00:00"),
@@ -123,8 +125,24 @@ def test_a_named_person_is_present_anywhere_in_the_episode_of_their_recognised_f
 
     pool = build_pool(asked, view, NOBODY, lexicon, BankedAsker())
 
-    assert _ids(pool) == {"face", "from-behind"}
-    assert ("who", 2) in [(step.name, step.kept) for step in pool.funnel]
+    assert _ids(pool) == {"face"}
+    assert ("who", 1) in [(step.name, step.kept) for step in pool.funnel]
+
+
+def test_several_named_people_keep_a_picture_holding_either_of_their_own_faces(
+    lexicon: Lexicon,
+) -> None:
+    """Several named people read as "any of them", on their own picture, not combined."""
+    view = _view(
+        _at("kid-alone", "2020-05-01T12:00+00:00", people=frozenset({"kid"})),
+        _at("visitor-alone", "2020-05-01T12:10+00:00", people=frozenset({"visitor"})),
+        _at("nobody", "2020-05-01T12:20+00:00"),
+    )
+    asked = _asked("me and my son", who=WhoLink(present=("kid", "visitor"), anchors=("kid",)))
+
+    pool = build_pool(asked, view, NOBODY, lexicon, BankedAsker())
+
+    assert _ids(pool) == {"kid-alone", "visitor-alone"}
 
 
 def test_company_needs_a_caption_naming_people_of_that_kind(lexicon: Lexicon) -> None:
