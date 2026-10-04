@@ -229,26 +229,28 @@ Then the project set itself a harder bar than "it looks right": films rendered s
 the real NAS, a physical Mac and a Kubernetes GPU box, not a selection comparison on prepared data.
 The first pass came back three working out of nine. That got ruled a blocker, not a target, and
 grew to fifteen successful films across five lanes before anything else was allowed to move. What
-closed it was unglamorous: a NumPy thread pool fighting itself on a ten-year-old GPU (4.7x faster,
-no new hardware), a NAS memory ceiling hit by preview images nobody released after selection, and
-title rendering on NAS cut from 180 seconds to 13 by swapping its software fallback for something
-built for that CPU.
+closed it was unglamorous: a NumPy thread pool fighting itself on an older Quadro T1000 (4.7x
+faster, no new hardware), a NAS memory ceiling hit by preview images nobody released after
+selection, and title rendering on NAS cut from 180 seconds to 13 by swapping its software fallback
+for something built for that CPU.
 
 October 1 and 2 ran without a single Claude session: every pull request in that window came out
 of Codex alone, 118 of them. Two threads mattered. One took the render engine apart for speed once
 the hardware gate was clear: [#1704](https://github.com/sam-dumont/immich-memories/issues/1704)
 (4K HDR assembly) and [#1702](https://github.com/sam-dumont/immich-memories/issues/1702) (trip
 maps) closed with wall-time cuts of 40-51% on a 14.5 s fixture and 62-72% on a 68.5 s one, measured
-separately on both Macs and two Linux GPUs, with the report explicit about what it didn't prove
-(different fixture lengths, gains that don't add up across components). The other was a
-nine-person documentation and security audit of all 103 public pages, every CLI example checked
+separately on both Macs and two older Linux GPUs, a ten-year-old GTX 1070 and a Quadro T1000, with
+the report explicit about what it didn't prove
+(different fixture lengths, gains that don't add up across components). The other was nine audit
+agents going over all 103 public pages, every CLI example checked
 against the real `--help` output, every config key checked against the actual schema, a disposable
 Postgres cluster used to test backup and restore for real. It came back with 256 findings, 5 of
 them release blockers, and landed as
 [#1812](https://github.com/sam-dumont/immich-memories/issues/1812): least-privilege API keys,
-forwarded-header rejection, session invalidation on sign-out, and a public-docs voice pass that
-says plainly the product assumes nothing about family shape, because it was written by one
-household's worth of assumptions and needs people outside that household to say where it's wrong.
+forwarded-header rejection, session invalidation on sign-out, and a public-docs voice pass. The
+docs now say plainly the product assumes nothing about family shape. It was written by one
+household's worth of assumptions, and it needs people outside that household to say where it's
+wrong.
 
 ## The day the cut mattered, not just the choice
 
@@ -257,8 +259,9 @@ a bike race's finish line played only the empty road before the riders arrived, 
 walk got cut mid-breath, dropping the punchline. Claude traced both to one commit three weeks
 earlier,
 [deleting the code](https://github.com/sam-dumont/immich-memories/pull/1953) that chose *where
-inside a clip* to start playing, because nothing called it anymore after the story-first rewrite
-replaced the old scorer: a true statement that hid a job nobody had picked back up. The fix reads
+inside a clip* to start playing. The story-first rewrite had replaced the old scorer, and nothing
+called that code anymore, which was true and also missed the point: nobody had picked the job
+back up. The fix reads
 a clip's own loudness and speech once, by byte range, and prefers a motion peak, then a loud
 moment starting 1.5 seconds early, then the stretch with the most speech. On the NAS, cold, 15
 clips took 18.3 seconds total, 0.46-2.6 seconds each; a 36-second 4K60 clip took 6. Measured
@@ -288,10 +291,13 @@ issues on purpose, not blockers, because fixing forever is also a way of never s
 
 Every one of those fixes went through an Opus review before it counted as done, and in 8 of the 9
 film-defect PRs that review caught something real. The people filter
-([#1969](https://github.com/sam-dumont/immich-memories/pull/1969)) needed several rounds: the
-first found the safety check comparing display names instead of resolved face IDs, which quietly
-readmits two different people sharing a name; later rounds caught a timeline-ordering bug and a
-second planning pass that could let an excluded picture back in. The audio fix
+([#1969](https://github.com/sam-dumont/immich-memories/pull/1969)) took four rounds. Round one: the
+new safety check compared display names against the fetch's resolved face IDs, which would have
+flagged every picture in good films made with saved groups or ID-based people, a false alarm, not
+the bug it was meant to catch. Round two: dropping a picture after the film's timeline was locked
+made the renderer refuse the whole film. Round three: a re-plan could pick a violating picture the
+first pass hadn't. The final design applies the rule to the whole pool before planning starts. The
+audio fix
 ([#1973](https://github.com/sam-dumont/immich-memories/pull/1973)) looked done until review found
 its own silence trim cutting every generated track at its *first* internal pause, not the dead air
 at the seams: a 9.6-second block with a half-second pause inside it came out at 2.22 seconds
@@ -301,17 +307,18 @@ first version was dropping whole words at some widths instead of just shrinking 
 three showed up in the green test suite the fixer had already run.
 
 In parallel, a second session ran the actual install gate
-([#956](https://github.com/sam-dumont/immich-memories/issues/956)): a Mac, a Synology NAS and a
-Kubernetes GPU box, each from nothing, following only the public docs, each producing a real first
-film and a month film verified by decoding the output, not just a clean exit code. Midway through,
-a one-line tag used for an internal dry run quietly broke every version computation on
-`main` ([#1974](https://github.com/sam-dumont/immich-memories/pull/1974)); the install-gate
-session and the film-fixer session found it independently within the hour, coordinated over a
-single message instead of shipping two competing fixes, and it was in before lunch. By the
-afternoon of October 4, main carried every fix from the defect list and the install gate, a dry run
-had been dispatched from that exact commit and verified, and the campaign resumed on the fixed code
-to check its own worst finding: the same people-filter request that had matched 41 of 162 pictures
-on the old build matched 88 of 88 on the new one.
+([#956](https://github.com/sam-dumont/immich-memories/issues/956)): NAS on Compose, Kubernetes and
+a Mac, each following only the public docs. What failed became an issue and a fix: the wheel
+shipped without its web fonts (#1979), a setup-builder config the app itself rejected (#2014),
+cancelled renders stuck showing "Running" forever (#2010). A dev rehearsal built from the fixed
+main was published and verified. Midway through, a one-line tag used for an internal dry run
+quietly broke every version computation on `main`
+([#1974](https://github.com/sam-dumont/immich-memories/pull/1974)); the install-gate session and
+the film-fixer session found it independently within the hour and coordinated over a single
+message instead of shipping two competing fixes. By the afternoon of October 4, main carried every
+fix from the defect list and the install gate, and the campaign resumed on the fixed code to check
+its own worst finding: the same people-filter request that had matched 41 of 162 pictures on the
+old build matched 88 of 88 on the new one.
 
 ## Nine months at a glance
 
@@ -364,6 +371,5 @@ The split kept shifting. Codex ran the two busiest days with no Claude in the ro
 the people-filter bug and six smaller defects, strictly as an observer: no fixes mixed into the
 measurement. Claude did the fixing the next morning and read every fix back before calling it done,
 Sonnet writing the patch, Opus reviewing the diff against the actual contract instead of the tests
-the patch itself had written. That loop caught a real, ship-blocking defect in 8 of the 9 film fixes
-that week, and nothing about it felt like theatre: the reviewer's job was to find the thing the green
-test suite hadn't proven, and most weeks, it did.
+the patch itself had written. That loop caught a real, ship-blocking defect in 8 of the 9 film
+fixes that day: the reviewer's job was to find what the green test suite hadn't proven.
