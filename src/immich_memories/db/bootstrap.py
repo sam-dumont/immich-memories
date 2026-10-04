@@ -58,12 +58,18 @@ class StoreLocation:
 
     @property
     def sqlite_path(self) -> Path | None:
-        """The database file, or None for PostgreSQL and in-memory SQLite."""
+        """The database file, or None for PostgreSQL and in-memory SQLite.
+
+        `normalize_url` already expands `~` for any `StoreLocation` built through
+        `resolve_location`; this expands again so a `StoreLocation` built directly from a
+        raw URL (a test, a future caller) can never hand back a literal `~` segment that
+        a file open resolves relative to the current directory instead of home (#2009).
+        """
         url = self.sa_url
         database = url.database
         if url.get_backend_name() != "sqlite" or not database or database == ":memory:":
             return None
-        return Path(database)
+        return Path(database).expanduser()
 
     def __repr__(self) -> str:
         return f"StoreLocation(url={redact_url(self.url)!r}, schema={self.schema!r})"

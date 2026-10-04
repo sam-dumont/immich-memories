@@ -92,6 +92,7 @@ def pytest_configure(config: pytest.Config) -> None:
 
     _pin_the_cli_width()
     _refuse_the_developers_store()
+    _refuse_a_literal_tilde_path()
     if sealed:
         _refuse_the_accounts_config()
         _refuse_outside_connections()
@@ -318,6 +319,39 @@ def _refuse_the_developers_store() -> None:
     # Both names: store.py bound it at import, migrations/env.py looks it up at call time.
     _TERMINAL_PATCHES.setattr(engine_module, "create_store_engine", guarded)
     _TERMINAL_PATCHES.setattr(store_module, "create_store_engine", guarded)
+
+
+_LITERAL_TILDE_PATHS: list[str] = []
+
+
+def _refuse_a_literal_tilde_path() -> None:
+    """Fail any test whose code creates a directory with a literal `~` path segment.
+
+    `expanduser()` turns `~` into the real home before anything is made; a path that still
+    carries a bare `~` component was built from a string like "~/.immich-memories" without
+    expanding it first, and `mkdir` resolves that relative to the current directory instead
+    of home — the literal `./~/.immich-memories/store.db` this guards against (#2009).
+    """
+    mkdir = Path.mkdir
+
+    def guarded(self: Path, *args: Any, **kwargs: Any) -> Any:
+        if "~" in self.parts:
+            _LITERAL_TILDE_PATHS.append(str(self))
+            raise RuntimeError(f"a test created a path with a literal '~' segment: {self}")
+        return mkdir(self, *args, **kwargs)
+
+    _TERMINAL_PATCHES.setattr(Path, "mkdir", guarded)
+
+
+@pytest.fixture(autouse=True)
+def no_literal_tilde_path() -> Iterator[None]:
+    """Fail the test that created a literal '~' path, even if the error was caught."""
+    _LITERAL_TILDE_PATHS.clear()
+    yield
+    if _LITERAL_TILDE_PATHS:
+        created = sorted(set(_LITERAL_TILDE_PATHS))
+        _LITERAL_TILDE_PATHS.clear()
+        pytest.fail(f"this test created a path with a literal '~' segment: {created}")
 
 
 def _pin_the_cli_width() -> None:

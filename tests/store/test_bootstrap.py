@@ -56,6 +56,20 @@ def test_a_home_relative_sqlite_path_follows_home_per_call(monkeypatch, tmp_path
     assert second.sqlite_path == tmp_path / "b" / "elsewhere" / "store.db"
 
 
+def test_sqlite_path_expands_a_literal_tilde_even_when_built_directly(monkeypatch, tmp_path):
+    # resolve_location always normalizes the URL before building a StoreLocation; this
+    # constructs one directly, the way a careless test or future caller could, to prove
+    # sqlite_path itself never hands back an unexpanded "~" (#2009).
+    monkeypatch.setenv("HOME", str(tmp_path))
+    location = StoreLocation(url="sqlite:///~/.immich-memories/store.db", schema="immich_memories")
+
+    path = location.sqlite_path
+
+    assert path == tmp_path / ".immich-memories" / "store.db"
+    assert path.is_absolute()
+    assert "~" not in path.parts
+
+
 def test_a_postgres_location_has_no_sqlite_path():
     location = StoreLocation(url="postgresql+psycopg://u@h/d", schema="immich_memories")
 
