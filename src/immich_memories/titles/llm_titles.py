@@ -5,20 +5,30 @@ from __future__ import annotations
 import json
 import logging
 import re
-import unicodedata
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from datetime import date, timedelta
-from difflib import SequenceMatcher
-from functools import lru_cache
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any
 
 import httpx
 
 from immich_memories.analysis.llm_query import query_llm
 from immich_memories.analysis.prose_shapes import MAP_MODES, TRIP_TYPES, title_shape
 from immich_memories.people.context import PersonPromptContext, load_people_prompt_context
+from immich_memories.titles.title_guards import (
+    refusing_invented_names,
+    required_years,
+    requiring_the_place,
+    requiring_the_year,
+    restore_fact_casing,
+)
+from immich_memories.titles.title_routing import (
+    OCCASION_MEMORY_TYPES,
+    PEOPLE_MEMORY_TYPES,
+    is_trip,
+)
+from immich_memories.titles.title_suggestion import TitleSuggestion
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -27,9 +37,6 @@ if TYPE_CHECKING:
     from immich_memories.db import Store
 
 logger = logging.getLogger(__name__)
-
-TripType = Literal["multi_base", "base_camp", "road_trip", "hiking_trail"]
-MapMode = Literal["title_only", "excursions", "overnight_stops"]
 
 _VALID_TRIP_TYPES: set[str] = set(TRIP_TYPES)
 _VALID_MAP_MODES: set[str] = set(MAP_MODES)
@@ -57,32 +64,6 @@ _LOCALE_NAMES: dict[str, str] = {
     "nb": "Norwegian",
     "fi": "Finnish",
 }
-
-# Which prompt a memory gets. A film about people is named from the family
-# record; an occasion from what the occasion was. Everything else is a trip.
-PEOPLE_MEMORY_TYPES = frozenset({"person_spotlight", "multi_person"})
-OCCASION_MEMORY_TYPES = frozenset(
-    {
-        "album",
-        "holiday",
-        "monthly_highlights",
-        "on_this_day",
-        "season",
-        "special_day",
-        "year",
-        "year_in_review",
-    }
-)
-
-
-@dataclass
-class TitleSuggestion:
-    """LLM-generated title and trip classification."""
-
-    title: str
-    subtitle: str | None = None
-    trip_type: TripType | None = None
-    map_mode: MapMode | None = None
 
 
 @dataclass(frozen=True)
@@ -312,7 +293,10 @@ def people_title_facts(
     not in the film at all.
     """
     by_name = _people_by_name(people_store)
-    lines = [f"People in the film: {len(person_names)}"]
+    # WHY: a bare "1" still let a small model pluralise the relationship noun
+    # ("ses petits-enfants" for one grandchild); spell out the count in words.
+    count_note = "one person, singular" if len(person_names) == 1 else str(len(person_names))
+    lines = [f"People in the film: {count_note}"]
     lines += [_person_line(name, by_name.get(name), start, end) for name in person_names]
     if len(person_names) > 1:
         lines.append("Family record, between the people in the film:")
@@ -377,6 +361,19 @@ def span_title_facts(
     return "; ".join(notes)
 
 
+def _year_requirement_line(required: frozenset[int]) -> str:
+    """The fact line naming exactly what `requiring_the_year` will check for.
+
+    Prompt wording that restates this rule in its own words drifts from the
+    guard that actually enforces it; every prompt instead defers to this one
+    computed line.
+    """
+    if not required:
+        return "Year(s) the title or subtitle must show: none"
+    years = " and ".join(str(year) for year in sorted(required))
+    return f"Year(s) the title or subtitle must show: {years}"
+
+
 def _plain_condition(person_names: Sequence[str], match: str) -> str:
     """The condition a plain --person run selected on, written the way one reads it."""
     quoted = [json.dumps(name, ensure_ascii=False) for name in person_names]
@@ -394,6 +391,7 @@ def _people_prompt(
     end: date,
     person_names: Sequence[str],
     facts: MemoryTitleFacts,
+    year_line: str,
 ) -> TitlePrompt:
     condition = facts.people_condition or _plain_condition(person_names, facts.person_match)
     known = people_title_facts(person_names, start, end, people_store=facts.people_store)
@@ -408,7 +406,8 @@ def _people_prompt(
         .replace("{memory_type}", memory_type)
         .replace("{condition}", condition)
         .replace("{people_facts}", known)
-        .replace("{span}", span),
+        .replace("{span}", span)
+        .replace("{required_year}", year_line),
         f"{condition}\n{known}\n{span}",
     )
 
@@ -449,6 +448,7 @@ def _occasion_prompt(
     *,
     daily_locations: Sequence[str] | None,
     person_names: Sequence[str],
+    year_line: str,
 ) -> TitlePrompt:
     span = span_title_facts(
         start, end, person_names, people_store=facts.people_store, today=facts.today
@@ -459,14 +459,10 @@ def _occasion_prompt(
         .replace("{lang}", lang)
         .replace("{memory_type}", memory_type)
         .replace("{span}", span)
-        .replace("{occasion_facts}", known),
+        .replace("{occasion_facts}", known)
+        .replace("{required_year}", year_line),
         f"{span}\n{known}",
     )
-
-
-def _is_trip(memory_type: str) -> bool:
-    """Whether this memory is named by the trip prompt, which also classifies the route."""
-    return memory_type not in PEOPLE_MEMORY_TYPES and memory_type not in OCCASION_MEMORY_TYPES
 
 
 def build_title_prompt(
@@ -487,11 +483,13 @@ def build_title_prompt(
     lang = _LOCALE_NAMES.get(locale, locale.capitalize())
     known = facts or MemoryTitleFacts()
     names = list(person_names or ())
+    start, end = date.fromisoformat(start_date), date.fromisoformat(end_date)
+    year_line = _year_requirement_line(
+        required_years(memory_type, start, end, tuple(names), known.holiday)
+    )
     if memory_type in PEOPLE_MEMORY_TYPES:
-        start, end = date.fromisoformat(start_date), date.fromisoformat(end_date)
-        return _people_prompt(lang, memory_type, start, end, names, known)
+        return _people_prompt(lang, memory_type, start, end, names, known, year_line)
     if memory_type in OCCASION_MEMORY_TYPES:
-        start, end = date.fromisoformat(start_date), date.fromisoformat(end_date)
         return _occasion_prompt(
             lang,
             memory_type,
@@ -500,6 +498,7 @@ def build_title_prompt(
             known,
             daily_locations=daily_locations,
             person_names=names,
+            year_line=year_line,
         )
     return _trip_prompt(
         lang=lang,
@@ -514,6 +513,7 @@ def build_title_prompt(
         smart_objects=smart_objects,
         album_name=known.album_name,
         place=known.place,
+        year_line=year_line,
     )
 
 
@@ -531,8 +531,9 @@ def _trip_prompt(
     smart_objects: list[str] | None = None,
     album_name: str | None = None,
     place: str | None = None,
+    year_line: str = "",
 ) -> TitlePrompt:
-    context_lines: list[str] = []
+    context_lines: list[str] = [year_line] if year_line else []
     if place:
         context_lines.append(f"Place (name it, in the title's language): {place}")
     if album_name:
@@ -559,181 +560,6 @@ def _trip_prompt(
         .replace("{duration_days}", str(duration_days))
         .replace("{context_lines}", "\n".join(context_lines))
     )
-
-
-# Languages spell the same place their own way (Brussels/Bruxelles,
-# Gent/Ghent), so a name the facts carry and a name the title writes are the
-# same name when they are this close, and different names below it.
-_SAME_NAME_RATIO = 0.6
-
-
-def _name_words(text: str) -> list[str]:
-    """Letter-only words, accents folded away so Genève matches Geneve."""
-    flattened = "".join(
-        c for c in unicodedata.normalize("NFKD", text) if not unicodedata.combining(c)
-    )
-    return re.findall(r"[^\W\d_]+", flattened)
-
-
-def _is_a_known_name(word: str, known: set[str]) -> bool:
-    lowered = word.casefold()
-    return any(SequenceMatcher(None, lowered, name).ratio() >= _SAME_NAME_RATIO for name in known)
-
-
-@lru_cache(maxsize=1)
-def _calendar_words() -> frozenset[str]:
-    """Month and weekday names in every film language: a date spelled out, never a name.
-
-    The facts carry dates as numbers, so without this "Porto in January" reads as a
-    title that names something no fact names. Wide names only: an abbreviation such
-    as "Jan" is also a first name.
-    """
-    from babel.dates import get_day_names, get_month_names
-
-    from immich_memories.i18n import SUPPORTED_LOCALES, babel_locale
-
-    words: set[str] = set()
-    for code in SUPPORTED_LOCALES:
-        where = babel_locale(code)
-        for context in ("format", "stand-alone"):
-            for names in (
-                get_month_names("wide", context, where),
-                get_day_names("wide", context, where),
-            ):
-                for name in names.values():
-                    words.update(word.casefold() for word in _name_words(name))
-    return frozenset(words)
-
-
-@lru_cache(maxsize=1)
-def _one_word_places() -> dict[str, frozenset[str]]:
-    """Countries, islands and regions named in one word, in every film language.
-
-    Folded word -> the places it names (a CLDR code or an English area name),
-    so "Chypre", "Cyprus" and "Кипр" are one place and "Chypre" is not "type".
-    """
-    from immich_memories.i18n import SUPPORTED_LOCALES, babel_locale
-    from immich_memories.place_names import area_name_groups
-
-    groups: dict[str, set[str]] = {k: set(v) for k, v in area_name_groups().items()}
-    for code in SUPPORTED_LOCALES:
-        for territory, name in babel_locale(code).territories.items():
-            if territory.isalpha():  # "150" is Europe, "001" the world: not a place visited
-                groups.setdefault(territory, set()).add(name)
-    places: dict[str, set[str]] = {}
-    for key, names in groups.items():
-        for name in names:
-            if len(words := _name_words(name)) == 1:
-                places.setdefault(words[0].casefold(), set()).add(key)
-    return {word: frozenset(keys) for word, keys in places.items()}
-
-
-def _names_a_fact(word: str, known: set[str]) -> bool:
-    """Whether `word` is a name the facts carry: the same place, or close in spelling."""
-    places = _one_word_places().get(word.casefold())
-    if places is None:
-        return _is_a_known_name(word, known)
-    return any(places & _one_word_places().get(name, frozenset()) for name in known)
-
-
-def invented_name(line: str, facts: str) -> str | None:
-    """The first name this line uses that the facts do not, if it uses one.
-
-    A capitalised word past the first is a proper noun in the languages the
-    title screens speak. The first word is capitalised by orthography alone, so
-    it counts only when it is a country, island or region's whole name. A place
-    passes only when the facts name that same place, in any language. So this
-    catches an invented name, not invention: a reworded fact passes, a festival
-    or a country nobody recorded does not.
-    """
-    known = {word.casefold() for word in _name_words(facts)}
-    words = _name_words(line)
-    named = [word for word in words[1:] if word[:1].isupper()]
-    if words and words[0].casefold() in _one_word_places():
-        named.insert(0, words[0])
-    return next(
-        (
-            word
-            for word in named
-            if word.casefold() not in _calendar_words() and not _names_a_fact(word, known)
-        ),
-        None,
-    )
-
-
-def restore_fact_casing(suggestion: TitleSuggestion, facts: str) -> TitleSuggestion:
-    """A name the facts spell with a capital keeps it, whatever case the model wrote it in.
-
-    Asked for sentence case, a small model lowercases proper nouns too ("Mai à split"). Only a
-    word of three letters or more that the facts themselves capitalise is touched.
-    """
-    names = {word.casefold() for word in _name_words(facts) if word[:1].isupper() and len(word) > 2}
-
-    def capital(match: re.Match[str]) -> str:
-        word = match.group(0)
-        flat = _name_words(word)
-        if word[:1].islower() and flat and flat[0].casefold() in names:
-            return word[:1].upper() + word[1:]
-        return word
-
-    def fixed(text: str | None) -> str | None:
-        return re.sub(r"[^\W\d_]+", capital, text) if text else text
-
-    return replace(
-        suggestion,
-        title=fixed(suggestion.title) or suggestion.title,
-        subtitle=fixed(suggestion.subtitle),
-    )
-
-
-def _refusing_invented_names(
-    suggestion: TitleSuggestion | None, facts: str
-) -> TitleSuggestion | None:
-    """The suggestion, minus whatever part of it names something unrecorded."""
-    if suggestion is None or not facts:
-        return suggestion
-    if invented := invented_name(suggestion.title, facts):
-        logger.warning(
-            "Title names %r, which no fact names; the template names this memory instead", invented
-        )
-        return None
-    if suggestion.subtitle and (invented := invented_name(suggestion.subtitle, facts)):
-        logger.info("Subtitle names %r, which no fact names; dropping the subtitle", invented)
-        return replace(suggestion, subtitle=None)
-    return suggestion
-
-
-def names_the_place(title: str, place: str, locale: str) -> bool:
-    """Whether `title` names the trip's place, in English or in `locale`.
-
-    Any of the place's own words counts ("Crete" or "Crète" for "Crete,
-    Greece", "Utah" for "Utah and Nevada, United States"), spelled as close as
-    `_SAME_NAME_RATIO` allows.
-    """
-    from immich_memories.i18n_places import localise_place
-
-    spellings = f"{place} {localise_place(place, locale) or ''}".replace(" and ", " ")
-    known = {word.casefold() for word in _name_words(spellings) if len(word) > 2}
-    if not known:
-        return True
-    # WHY exact under four letters: "été" is as close to "Crete" as "Crète" is.
-    return any(
-        w.casefold() in known or (len(w) > 3 and _is_a_known_name(w, known))
-        for w in _name_words(title)
-    )
-
-
-def _requiring_the_place(
-    suggestion: TitleSuggestion | None, place: str | None, locale: str
-) -> TitleSuggestion | None:
-    if suggestion is None or not place or names_the_place(suggestion.title, place, locale):
-        return suggestion
-    logger.warning(
-        "Title %r does not name the trip's place %r; the template names this trip instead",
-        suggestion.title,
-        place,
-    )
-    return None
 
 
 async def generate_title_with_llm(
@@ -785,15 +611,23 @@ async def generate_title_with_llm(
             timeout_seconds=300,
             thinking=True,
             judgments=judgments,
-            response_format=title_shape(trip=_is_trip(memory_type)),
+            response_format=title_shape(trip=is_trip(memory_type)),
         )
         parsed = parse_title_response(raw)
         if parsed is not None:
             parsed = restore_fact_casing(parsed, prompt.facts or prompt.text)
-        suggestion = _refusing_invented_names(parsed, prompt.facts)
+        suggestion = refusing_invented_names(parsed, prompt.facts)
+        suggestion = requiring_the_year(
+            suggestion,
+            memory_type,
+            start_date,
+            end_date,
+            tuple(person_names or ()),
+            facts.holiday if facts else None,
+        )
         if memory_type in PEOPLE_MEMORY_TYPES or memory_type in OCCASION_MEMORY_TYPES:
             return suggestion
-        return _requiring_the_place(suggestion, facts.place if facts else None, locale)
+        return requiring_the_place(suggestion, facts.place if facts else None, locale)
     except (httpx.HTTPError, RuntimeError, ValueError, OSError) as e:
         logger.warning("LLM title generation failed: %s", e, exc_info=True)
         return None

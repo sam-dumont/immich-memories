@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from immich_memories.titles.llm_titles import TitleSuggestion, restore_fact_casing
+from immich_memories.titles.title_guards import restore_fact_casing
+from immich_memories.titles.title_suggestion import TitleSuggestion
 
 
 def test_a_place_the_facts_capitalise_keeps_its_capital_in_the_title():

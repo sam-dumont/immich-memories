@@ -11,6 +11,7 @@ from __future__ import annotations
 import asyncio
 from datetime import datetime
 from types import SimpleNamespace
+from unittest.mock import patch
 
 import pytest
 
@@ -268,7 +269,8 @@ def test_a_special_days_catalogue_title_is_reworded_by_the_model_not_shown_verba
 def test_a_special_day_with_no_model_falls_back_to_the_place_in_french() -> None:
     """With no reader configured, the catalogue's English title cannot be
     reworded, so the film opens on where the day was instead, with the
-    year it would otherwise lose riding in the subtitle."""
+    year it would otherwise lose riding in the subtitle. The 1st of the
+    month takes the French ordinal ("1er"), not the plain cardinal."""
     called = []
 
     title, subtitle, source = resolve_film_title(
@@ -284,9 +286,44 @@ def test_a_special_day_with_no_model_falls_back_to_the_place_in_french() -> None
         ask=lambda **kwargs: called.append(kwargs),
     )
 
-    assert (title, subtitle) == ("Une journée à Paris", "1 juillet 2025")
+    assert (title, subtitle) == ("Une journée à Paris", "1er juillet 2025")
     assert source is not None and source.value == "fallback"
     assert called == []
+
+
+def test_the_french_subtitle_date_takes_no_ordinal_past_the_first() -> None:
+    """Only the 1st of the month is "1er"; the 14th is plainly "14"."""
+    title, subtitle, _source = resolve_film_title(
+        enabled=None,
+        title_override="A day in Paris",
+        subtitle_override="",
+        clips=[_clip_in("Paris")],
+        config=Config(tier="nas", title_screens={"locale": "fr"}),
+        memory_type="special_day",
+        date_range=DateRange(start=datetime(2025, 7, 14), end=datetime(2025, 7, 14)),
+        person_names=[],
+        memory_preset_params={"title": "A day in Paris", "subtitle": ""},
+        ask=lambda **_kwargs: (_ for _ in ()).throw(AssertionError("no model is configured")),
+    )
+
+    assert title == "Une journée à Paris"
+    assert subtitle == "14 juillet 2025"
+
+
+def test_an_english_date_keeps_the_plain_cardinal_for_day_one() -> None:
+    """Only French needs a different word for the first of the month
+    (#1985 review); an English date stays the plain cardinal.
+
+    Through `resolve_film_title` directly: an English film keeps its
+    catalogue title verbatim and never reaches this subtitle builder at
+    all (see the English-film test above), so this date-formatting rule
+    is exercised at its own seam instead.
+    """
+    from immich_memories.titles.film_title import _ordinal_day
+
+    assert _ordinal_day(1, "en") == "1"
+    assert _ordinal_day(1, "fr") == "1er"
+    assert _ordinal_day(14, "fr") == "14"
 
 
 def test_an_english_film_keeps_the_catalogues_english_title_verbatim() -> None:
@@ -724,3 +761,45 @@ def test_titles_use_the_shared_llm_configuration():
     )
     assert seen["llm_config"] is config.llm
     assert "title_llm" not in Config.model_fields
+
+
+def test_locale_auto_asks_the_model_in_the_french_hosts_language() -> None:
+    """#1958: the prompt must never say "Language: Auto" — resolved before `ask`."""
+    config = _config_with_llm()
+    assert config.title_screens.locale == "auto"
+    ask, seen = _answers()
+
+    # WHY: detect_system_locale is the host-locale boundary; mocking it stands
+    # in for a French host without touching the real OS locale.
+    with patch("immich_memories.i18n.detect_system_locale", return_value="fr"):
+        resolve_film_title(
+            enabled=True,
+            title_override=None,
+            clips=[],
+            config=config,
+            memory_type="year",
+            date_range=_RANGE,
+            person_names=[],
+            ask=ask,
+        )
+    assert seen["locale"] == "fr"
+
+
+def test_explicit_locale_reaches_the_model_unresolved_by_the_host() -> None:
+    config = _config_with_llm()
+    config.title_screens.locale = "fr"
+    ask, seen = _answers()
+
+    with patch("immich_memories.i18n.detect_system_locale") as detect:
+        resolve_film_title(
+            enabled=True,
+            title_override=None,
+            clips=[],
+            config=config,
+            memory_type="year",
+            date_range=_RANGE,
+            person_names=[],
+            ask=ask,
+        )
+        detect.assert_not_called()
+    assert seen["locale"] == "fr"

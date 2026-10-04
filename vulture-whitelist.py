@@ -83,12 +83,10 @@ _.get_field_value  # unused method (src/immich_memories/config_loader.py:197)
 _.settings_customise_sources  # unused method (src/immich_memories/config_loader.py:341)
 
 # Reached only from checked-in developer scripts, which vulture does not scan:
-# scripts/preview_trip_titles.py and scripts/demo_maps.py for the map frame,
 # scripts/validate_local_audio.py for the stem check, and
 # scripts/verify_hardware_encode.py for the assembly runner.
 _.has_full_stems  # unused property (src/immich_memories/audio/music_generator_models.py:269)
 _.run_ffmpeg_assembly  # unused method (src/immich_memories/processing/clip_encoder.py:314)
-render_trip_map_frame  # unused function (src/immich_memories/titles/map_renderer.py:38)
 
 # Reported to the owner rather than deleted. Each is either a seam only the
 # tests use, or a wiring gap where the missing caller is the defect and removing

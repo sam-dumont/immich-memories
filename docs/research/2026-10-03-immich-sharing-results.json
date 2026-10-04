@@ -1,0 +1,56 @@
+{
+  "version": {
+    "major": 3,
+    "minor": 3,
+    "patch": 0,
+    "prerelease": 1
+  },
+  "checks": {
+    "people_sharing_alone_primary_assets": 67,
+    "shared_person_same_id": true,
+    "recipient_person_name": "Shared Child",
+    "recipient_other_people_names": [
+      "Shared Child"
+    ],
+    "product_recipient_lookup_by_shared_name": true,
+    "timeline_off_primary_assets": 67,
+    "timeline_on_primary_assets": 135,
+    "single_key_scoped_assets": 134,
+    "single_key_after_exact_dedup": 133,
+    "owner_sees_partner_favourite": true,
+    "primary_sees_partner_favourite": false,
+    "partner_favourite_survives_single_key_merge": false,
+    "unselected_owner_excluded": true,
+    "primary_sees_shared_person_on_partner_asset": true,
+    "partner_asset_reads_with_primary_key": {
+      "detail": 200,
+      "thumbnail": 200,
+      "original": 200,
+      "faces": 200
+    },
+    "read_only_key_assets": 135,
+    "read_only_key_partner_faces": 1,
+    "read_only_key_partner_thumbnail": true,
+    "read_only_key_partner_original": true,
+    "read_only_key_partner_video_playback": true,
+    "read_only_key_partner_video_original": true,
+    "read_only_key_shared_person_lookup": true,
+    "partner_favourite_survives_household_merge": true,
+    "native_person_episode_asset_count": 4,
+    "legacy_account_bound_episode_asset_count": 0,
+    "legacy_drops_partner_target": true,
+    "timeline_off_scoped_assets": 67,
+    "original_after_partner_revocation": 404
+  },
+  "date": "2026-10-03",
+  "product_revision": "a3bfc5dbe66efceaf6985abed72c78600a0fbb37",
+  "server_image": "ghcr.io/immich-app/immich-server:v3.3.0-rc.1@sha256:b281989600c55905b1ac347f29aeed3a96bc94dec544b086c3299f2ce002d13f",
+  "fixture": "tests/integration/immich_gate/media.py; 133 fixture assets split 67/66, one partner duplicate, one outside-owner asset",
+  "scope": "Live HTTP API, existing product clients, exact-copy folding and episode-person presence; no production code changed.",
+  "limitations": [
+    "Manual synthetic face boxes; no ML recognition accuracy claim.",
+    "No full film render or Live Photo pair exercised.",
+    "3.2 source reviewed; live experiment covers only 3.3.0-rc.1.",
+    "No production migration, version dispatch, or native-sharing setting implemented."
+  ]
+}

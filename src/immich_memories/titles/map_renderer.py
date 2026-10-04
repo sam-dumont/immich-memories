@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import contextlib
 import logging
-import math
 
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
@@ -23,7 +22,6 @@ _PIN_OUTLINE_COLOR = "#FFFFFF"
 _PIN_OUTLINE_SIZE = 20
 _LABEL_COLOR = (255, 255, 255, 190)  # Semi-transparent white
 _LABEL_SHADOW_COLOR = (0, 0, 0, 80)  # Very subtle shadow
-_TEXT_COLOR = "#FFFFFF"
 _OSM_ATTRIBUTION = "\u00a9 OpenStreetMap contributors"
 
 # Tile URL templates — only providers that work without API keys.
@@ -33,27 +31,6 @@ MAP_STYLES: dict[str, str] = {
     "satellite": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
 }
 DEFAULT_MAP_STYLE = "satellite"
-
-
-def render_trip_map_frame(
-    locations: list[tuple[float, float]],
-    title_text: str,
-    width: int = 1920,
-    height: int = 1080,
-    location_names: list[str] | None = None,
-    map_style: str = DEFAULT_MAP_STYLE,
-    **_kwargs,
-) -> Image.Image:
-    """Render a map frame with big pins, city labels, and centered title."""
-    base_map, sm = _render_base_map(locations, width, height, map_style)
-
-    if location_names and sm is not None:
-        _draw_pin_labels(base_map, locations, location_names, sm)
-
-    _draw_title_band(base_map, title_text, width, height)
-    _add_attribution(base_map, width, height)
-
-    return base_map
 
 
 def render_trip_map_array(
@@ -182,161 +159,26 @@ def _geo_to_pixel(lat: float, lon: float, sm: StaticMap) -> tuple[int, int]:
 
 
 def _draw_label_at(draw, name: str, px: int, py: int, width: int, height: int, font) -> None:
-    """Draw a single city label near a pin location."""
+    """Draw a single city label near a pin, shrunk and clamped to stay in frame (#1954)."""
     offset_x = int(width * 0.015)
     offset_y = int(-height * 0.012)
+    margin = max(10, int(width * 0.02))
+    min_size = max(6, int(width * _MIN_PIN_LABEL_PX / 1080))
+    base_size = getattr(font, "size", 14)
+    font, text_w = _fit_pin_label_font(name, draw, base_size, width - 2 * margin, min_size=min_size)
 
     lx = px + offset_x
     ly = py + offset_y
 
-    # Measure text to check bounds
-    bbox = draw.textbbox((0, 0), name, font=font)
-    text_w = bbox[2] - bbox[0]
-
-    # If label would go off right edge, place it to the left of the pin
-    if lx + text_w > width - 10:
+    # If label would go off right edge, place it to the left of the pin instead
+    if lx + text_w > width - margin:
         lx = px - offset_x - text_w
+    lx = max(margin, min(width - margin - text_w, lx))
+    ly = max(margin, min(height - margin, ly))
 
     # Shadow for readability (2px offset)
     draw.text((lx + 2, ly + 2), name, fill=_LABEL_SHADOW_COLOR, font=font)
     draw.text((lx, ly), name, fill=_LABEL_COLOR, font=font)
-
-
-def _draw_title_band(
-    image: Image.Image,
-    title: str,
-    width: int,
-    height: int,
-) -> None:
-    """Draw the title centered with a soft blended backdrop.
-
-    For portrait: multiline with bigger font.
-    For landscape: single line centered.
-    """
-    is_portrait = height > width
-    draw = ImageDraw.Draw(image)
-
-    if is_portrait:
-        _draw_title_portrait(draw, image, title, width, height)
-    else:
-        _draw_title_landscape(draw, image, title, width, height)
-
-
-def _draw_title_landscape(draw, image: Image.Image, title: str, width: int, height: int) -> None:
-    """Landscape: single line, centered, 9% height."""
-    title_size = int(height * 0.09)
-    title_font = _get_font(title_size, bold=True)
-
-    bbox = draw.textbbox((0, 0), title, font=title_font)
-    text_w = bbox[2] - bbox[0]
-    text_h = bbox[3] - bbox[1]
-
-    if text_w > width * 0.9:
-        title_size = int(title_size * (width * 0.9) / text_w)
-        title_font = _get_font(title_size, bold=True)
-        bbox = draw.textbbox((0, 0), title, font=title_font)
-        text_w = bbox[2] - bbox[0]
-        text_h = bbox[3] - bbox[1]
-
-    x = (width - text_w) // 2
-    y = (height - text_h) // 2
-
-    _apply_gradient_band(image, y + text_h // 2, int(height * 0.12), width, height)
-    draw = ImageDraw.Draw(image)
-    draw.text((x, y), title, fill=_TEXT_COLOR, font=title_font)
-
-
-def _draw_title_portrait(draw, image: Image.Image, title: str, width: int, height: int) -> None:
-    """Portrait: multiline with MUCH bigger font. Split on comma or space."""
-    title_size = int(width * 0.12)
-    title_font = _get_font(title_size, bold=True)
-
-    # Split into lines — prefer splitting at comma, then at spaces
-    lines = _split_title_for_portrait(title, draw, title_font, int(width * 0.9))
-
-    # Recalculate if still too wide
-    for line in lines:
-        bbox = draw.textbbox((0, 0), line, font=title_font)
-        line_w = bbox[2] - bbox[0]
-        if line_w > width * 0.92:
-            scale = (width * 0.92) / line_w
-            title_size = int(title_size * scale)
-            title_font = _get_font(title_size, bold=True)
-            break
-
-    line_height = int(title_size * 1.25)
-    total_text_height = line_height * len(lines)
-    start_y = (height - total_text_height) // 2
-
-    _apply_gradient_band(
-        image,
-        start_y + total_text_height // 2,
-        int(height * 0.1) + total_text_height // 2,
-        width,
-        height,
-    )
-    draw = ImageDraw.Draw(image)
-
-    for i, line in enumerate(lines):
-        bbox = draw.textbbox((0, 0), line, font=title_font)
-        line_w = bbox[2] - bbox[0]
-        x = (width - line_w) // 2
-        y = start_y + i * line_height
-        draw.text((x, y), line, fill=_TEXT_COLOR, font=title_font)
-
-
-def _split_title_for_portrait(title: str, draw, font, max_width: int) -> list[str]:
-    """Split title into lines that fit within max_width."""
-    # First try splitting at comma
-    if "," in title:
-        parts = [p.strip() for p in title.split(",", 1)]
-        all_fit = all(
-            draw.textbbox((0, 0), p, font=font)[2] - draw.textbbox((0, 0), p, font=font)[0]
-            <= max_width
-            for p in parts
-        )
-        if all_fit:
-            return parts
-
-    # Word-wrap
-    words = title.split()
-    lines: list[str] = []
-    current = ""
-    for word in words:
-        test = f"{current} {word}".strip()
-        bbox = draw.textbbox((0, 0), test, font=font)
-        if bbox[2] - bbox[0] > max_width and current:
-            lines.append(current)
-            current = word
-        else:
-            current = test
-    if current:
-        lines.append(current)
-    return lines or [title]
-
-
-def _apply_gradient_band(
-    image: Image.Image,
-    center_y: int,
-    half_height: int,
-    width: int,
-    height: int,
-    max_alpha: int = 100,
-) -> None:
-    """Apply a soft gradient band (cosine falloff) behind text."""
-    overlay = Image.new("RGBA", (width, height), (0, 0, 0, 0))
-    overlay_draw = ImageDraw.Draw(overlay)
-
-    for dy in range(-half_height, half_height + 1):
-        progress = abs(dy) / half_height if half_height > 0 else 1.0
-        alpha = int(max_alpha * (0.5 + 0.5 * math.cos(progress * math.pi)))
-        row_y = center_y + dy
-        if 0 <= row_y < height:
-            overlay_draw.line([(0, row_y), (width, row_y)], fill=(0, 0, 0, alpha))
-
-    image_rgba = image.convert("RGBA")
-    composited = Image.alpha_composite(image_rgba, overlay)
-    image.paste(composited.convert("RGB"))
 
 
 def _add_attribution(image: Image.Image, width: int, height: int) -> None:
@@ -407,6 +249,147 @@ def _wrap_text(
     if current:
         lines.append(current)
     return lines or [text]
+
+
+# A long place name ("Saint-Jean-Cap-Ferrat", a Greek compound, a CJK string)
+# can still be one unbroken token after wrapping: the floor these two helpers
+# shrink down to before they give up and let it overflow slightly.
+_MIN_CARD_FONT_PX = 18
+_MIN_PIN_LABEL_PX = 10
+# Below this fraction of the base size, break long hyphenated words at a
+# hyphen instead of shrinking further — it reads better than a tiny font.
+_HYPHEN_BREAK_FACTOR = 0.75
+
+
+def _fit_title_lines(
+    text: str,
+    draw: ImageDraw.ImageDraw,
+    base_size: int,
+    bold: bool,
+    max_width: int,
+    min_size: int = _MIN_CARD_FONT_PX,
+    max_lines: int = 2,
+) -> tuple[list[str], ImageFont.FreeTypeFont | ImageFont.ImageFont]:
+    """Wrap a title at spaces/the first comma, then shrink until it fully fits.
+
+    `_wrap_text` only breaks on spaces or a comma, so one word wider than
+    `max_width` — a long compound place name — stays whole and overflows a
+    fixed-size card. The fit check always re-wraps the full text at the
+    current size: a line count or width that only looks right on a slice of
+    the lines dropped words silently, so both must hold on the whole
+    wrapped result. Below `_HYPHEN_BREAK_FACTOR` of `base_size`, a line still
+    too wide also gets broken at a hyphen before shrinking further. Widths
+    are measured with the actual font via `textbbox` so CJK, Greek and
+    Cyrillic names shrink by their real width, not a Latin-average guess.
+
+    `min_size` is a floor. Below it, this stops shrinking; if the text still
+    does not fit in `max_lines`, the overflow is folded into the last line
+    with an ellipsis — truncated visibly, never dropped without a trace.
+    """
+    size = base_size
+    hyphen_threshold = int(base_size * _HYPHEN_BREAK_FACTOR)
+    font = _get_font(size, bold=bold)
+    lines = _wrap_text(text, draw, font, max_width)
+    while True:
+        font = _get_font(size, bold=bold)
+        lines = _wrap_text(text, draw, font, max_width)
+        if size <= hyphen_threshold:
+            lines = _break_hyphenated_lines(lines, draw, font, max_width)
+        widths = [draw.textbbox((0, 0), line, font=font)[2] for line in lines]
+        fits = len(lines) <= max_lines and (not widths or max(widths) <= max_width)
+        if fits or size <= min_size:
+            break
+        size = max(min_size, int(size * 0.92))
+    if len(lines) > max_lines:
+        lines = _truncate_with_ellipsis(lines, draw, font, max_width, max_lines)
+    return [_strip_trailing_comma(line) for line in lines], font
+
+
+def _break_hyphenated_lines(
+    lines: list[str],
+    draw: ImageDraw.ImageDraw,
+    font: ImageFont.FreeTypeFont | ImageFont.ImageFont,
+    max_width: int,
+) -> list[str]:
+    """Break any line still too wide at a hyphen, keeping the hyphen on the first part."""
+    result: list[str] = []
+    for line in lines:
+        width = draw.textbbox((0, 0), line, font=font)[2]
+        if width <= max_width or "-" not in line:
+            result.append(line)
+        else:
+            result.extend(_hyphen_wrap(line, draw, font, max_width))
+    return result
+
+
+def _hyphen_wrap(
+    word: str,
+    draw: ImageDraw.ImageDraw,
+    font: ImageFont.FreeTypeFont | ImageFont.ImageFont,
+    max_w: int,
+) -> list[str]:
+    """Split a hyphenated word into the widest chunks that fit, keeping each hyphen."""
+    parts = word.split("-")
+    chunks: list[str] = []
+    current = parts[0]
+    for part in parts[1:]:
+        candidate = f"{current}-{part}"
+        if draw.textbbox((0, 0), candidate, font=font)[2] <= max_w:
+            current = candidate
+        else:
+            chunks.append(f"{current}-")
+            current = part
+    chunks.append(current)
+    return chunks
+
+
+def _truncate_with_ellipsis(
+    lines: list[str],
+    draw: ImageDraw.ImageDraw,
+    font: ImageFont.FreeTypeFont | ImageFont.ImageFont,
+    max_width: int,
+    max_lines: int,
+) -> list[str]:
+    """Fold everything past `max_lines` into the last line, marked with an ellipsis.
+
+    Only reached at the font floor: shrinking further would make the label
+    illegible, so instead of silently losing the rest of the name, the cut
+    is made visible.
+    """
+    kept = lines[:max_lines].copy()
+    remainder = " ".join(lines[max_lines:])
+    last = f"{kept[-1]} {remainder}".strip()
+    while last and draw.textbbox((0, 0), f"{last}…", font=font)[2] > max_width:
+        last = last[:-1].rstrip()
+    kept[-1] = f"{last}…" if last else "…"
+    return kept
+
+
+def _strip_trailing_comma(line: str) -> str:
+    """Drop a comma left dangling at a wrapped line's end — it reads as unfinished."""
+    return line.removesuffix(",")
+
+
+def _fit_pin_label_font(
+    text: str,
+    draw: ImageDraw.ImageDraw,
+    base_size: int,
+    max_width: int,
+    min_size: int = _MIN_PIN_LABEL_PX,
+) -> tuple[ImageFont.FreeTypeFont | ImageFont.ImageFont, int]:
+    """Shrink a single-line pin label until its measured width fits `max_width`.
+
+    Pin labels never wrap — there is no room for a second line next to a
+    pin — so this only shrinks, returning the font and its measured width so
+    the caller can also clamp the label's x position inside the frame.
+    """
+    size = base_size
+    while True:
+        font = _get_font(size, bold=True)
+        width = int(draw.textbbox((0, 0), text, font=font)[2])
+        if width <= max_width or size <= min_size:
+            return font, width
+        size = max(min_size, int(size * 0.9))
 
 
 def _draw_gradient_band(draw: ImageDraw.ImageDraw, y: int, bh: int, w: int, h: int) -> None:

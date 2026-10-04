@@ -19,7 +19,6 @@ from PIL import Image
 from immich_memories.titles.map_renderer import (
     render_location_card,
     render_trip_map_array,
-    render_trip_map_frame,
 )
 
 pytestmark = [pytest.mark.integration]
@@ -32,21 +31,6 @@ _NAMES = ["Paris", "Lyon"]
 
 # Small dimensions for speed
 _W, _H = 320, 180
-
-
-class TestRenderTripMapFrame:
-    def test_correct_size(self):
-        img = render_trip_map_frame(_LOCATIONS, "France Trip", _W, _H, _NAMES)
-        assert isinstance(img, Image.Image)
-        assert img.size == (_W, _H)
-        assert img.mode == "RGB"
-
-    def test_not_blank(self):
-        img = render_trip_map_frame(_LOCATIONS, "France Trip", _W, _H, _NAMES)
-        arr = np.array(img)
-        # WHY: even the solid-color fallback has pins/text drawn on it,
-        # so std should exceed a low threshold
-        assert arr.std() > 3, f"Map frame looks blank (std={arr.std():.1f})"
 
 
 class TestRenderTripMapArray:
@@ -81,11 +65,6 @@ class TestRenderLocationCard:
 
 
 class TestSingleLocation:
-    def test_single_location_no_crash(self):
-        """A single location should render without errors."""
-        img = render_trip_map_frame([_PARIS], "Paris", _W, _H, ["Paris"])
-        assert img.size == (_W, _H)
-
     def test_single_location_array(self):
         arr = render_trip_map_array([_PARIS], _W, _H, ["Paris"])
         assert arr.shape == (_H, _W, 3)

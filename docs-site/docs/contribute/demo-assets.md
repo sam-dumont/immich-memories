@@ -59,8 +59,8 @@ selection, so the pool count can differ from the file count.
 | `make screenshots` | the light and dark screenshots under `docs-site/static/img/screenshots/` |
 | `make demo-ui-dev` | Remotion Studio for a live preview |
 
-`docs-site/remotion/public/library` is a symlink to `tests/e2e/fixtures/library` (credits in its
-`CREDITS.md`), so the demo shows the same pictures as the tests and the docs. The demo never
+`make demo-ui-install` copies `tests/e2e/fixtures/library` to `docs-site/remotion/public/library`
+(credits in its `CREDITS.md`), so the demo shows the same pictures as the tests and the docs. The demo never
 shows a screenshot: every UI frame is the web client recreated in React.
 
 The order that keeps everything consistent after a UI or a fixture change: `make screenshots`,
@@ -88,8 +88,9 @@ render, the film on the page. Runs and Suggestions follow, then the CLI goes str
 rendered film. The CLI scene plays `generate` as a time-lapse and holds `runs story` and
 `runs why` long enough to read; it cuts the recording at the seconds in `cli-timing.ts`, so a new
 recording moves the cuts with it. Every UI frame is set in Inter from the file the web client
-serves (`public/fonts` links to `src/immich_memories/web/static/fonts`), so a render needs no
-network. The review scene shows the contact sheet and the picture inspector. Its pictures,
+serves (`make demo-ui-install` copies `src/immich_memories/web/static/fonts` to `public/fonts`),
+so a render needs no network. They are copies, not symlinks: a link into `src/` or `tests/`
+makes the packaging skip the real folder. The review scene shows the contact sheet and the picture inspector. Its pictures,
 reasons and stories come from the same fixture as the browser tests; it must not invent model
 proposals that the fixture did not record. Rebuild the Remotion demo and hero after changing the
 client's layout.

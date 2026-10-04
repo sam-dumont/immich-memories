@@ -74,7 +74,9 @@ class Clip(Contract):
     render_frame_seconds: float | None = Field(default=None, ge=0)
     live: LiveCertificate | None = None
     rotation_override: Literal[0, 90, 180, 270] | None = None
-    audio_categories: list[str] | None = Field(default=None, max_length=20)
+    # The clip's own audio is music or singing (#1951): the mix steps the soundtrack
+    # aside over its window.
+    has_music: bool = False
     llm_emotion: str | None = Field(default=None, max_length=100)
 
     @model_validator(mode="after")

@@ -360,7 +360,13 @@ class UnitBuilder:
             carrier = carrier | {"source_integrity": proofs}
             if any(not proof["valid"] for proof in proofs.values()):
                 carrier = carrier.copy()
-                for field in ("start_time", "end_time", "render_frame_seconds", "speech_regions"):
+                for field in (
+                    "start_time",
+                    "end_time",
+                    "render_frame_seconds",
+                    "speech_regions",
+                    "has_music",
+                ):
                     carrier.pop(field, None)
                 return carrier | {
                     "kind": "live-still",
@@ -501,6 +507,7 @@ _RENDERED_FIELDS = frozenset(
         "raw_seconds",
         "residual",
         "speech_regions",
+        "has_music",
         "source_integrity",
     }
 )

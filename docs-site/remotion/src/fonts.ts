@@ -1,9 +1,9 @@
 import { loadFont } from "@remotion/fonts";
 import { staticFile } from "remotion";
 
-// Inter, the web client's type (web/src/app.css), from the very file the client serves:
-// public/fonts links to src/immich_memories/web/static/fonts, the way public/library links to
-// the fixture library. A render then needs no network. Icons are @mdi/js paths, not a font.
+// Inter, the web client's type (web/src/app.css): make demo-ui-install copies the files the
+// client serves into public/fonts, and the fixture library into public/library, so a render
+// needs no network. Icons are @mdi/js paths, not a font.
 export const fontFamily = "Inter";
 
 loadFont({

@@ -46,21 +46,27 @@ class SpeechDetector(Protocol):
 
     def detect(self, audio: Any, sample_rate: int) -> list: ...
 
+    def detect_with_music(self, audio: Any, sample_rate: int) -> tuple[list, float]: ...
+
 
 @dataclass(frozen=True)
 class WindowFacts:
     """(second, activity) of the picture; the speech and (second, dB) loudness heard over
-    ``heard``, all on the clip's clock."""
+    ``heard``, all on the clip's clock; the fraction of ``heard`` the detector scored as
+    music or singing (#1951)."""
 
     activity: tuple[tuple[float, float], ...]
     speech: tuple[tuple[float, float], ...]
     heard: tuple[float, float] | None
     loudness: tuple[tuple[float, float], ...] = ()
+    music_fraction: float = 0.0
 
 
 def facts_producer(detector_settings: str) -> str:
+    # v2: #1951 added music_fraction; a v1 row never answered it, so every source
+    # measures again rather than reading has_music as permanently false.
     digest = hashlib.sha256(detector_settings.encode()).hexdigest()[:12]
-    return f"window-facts-v1@{METHOD}/{digest}"
+    return f"window-facts-v2@{METHOD}/{digest}"
 
 
 class ClipWindowFacts:
@@ -101,6 +107,13 @@ class ClipWindowFacts:
             return None
         return list(facts.speech)
 
+    def music_fraction_for(self, asset_id: str) -> float | None:
+        """The share of the heard span scored as music or singing, or None when unheard."""
+        facts = self._known.get(asset_id)
+        if facts is None or facts.heard is None:
+            return None
+        return facts.music_fraction
+
     def flush(self) -> None:
         """Bank what this cut measured and has not written yet."""
         try:
@@ -121,6 +134,7 @@ class ClipWindowFacts:
             tuple((float(a), float(b)) for a, b in row["speech"]),
             (float(heard[0]), float(heard[1])) if heard else None,
             tuple((float(t), float(db)) for t, db in row.get("loudness", [])),
+            float(row.get("music_fraction", 0.0)),
         )
 
     def _measure(self, asset_id: str, hold: float) -> WindowFacts | None:
@@ -143,6 +157,7 @@ class ClipWindowFacts:
                 "speech": [list(row) for row in facts.speech],
                 "heard": list(facts.heard) if facts.heard else None,
                 "loudness": [list(row) for row in facts.loudness],
+                "music_fraction": facts.music_fraction,
             },
         )
         return facts
@@ -163,11 +178,9 @@ class ClipWindowFacts:
         loudness = _loudness(pcm, offset=heard[0])
         if self._detector is None:
             return WindowFacts(activity, (), None, loudness)
-        speech = tuple(
-            (round(heard[0] + r.start, 3), round(heard[0] + r.end, 3))
-            for r in self._detector.detect(pcm, AUDIO_RATE)
-        )
-        return WindowFacts(activity, speech, heard, loudness)
+        regions, music_fraction = self._detector.detect_with_music(pcm, AUDIO_RATE)
+        speech = tuple((round(heard[0] + r.start, 3), round(heard[0] + r.end, 3)) for r in regions)
+        return WindowFacts(activity, speech, heard, loudness, music_fraction)
 
 
 def _loudness(pcm: np.ndarray, *, offset: float) -> tuple[tuple[float, float], ...]:

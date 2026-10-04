@@ -21,6 +21,7 @@ if TYPE_CHECKING:
     from immich_memories.config_loader import Config
     from immich_memories.timeperiod import DateRange
 
+from immich_memories.i18n import resolve_film_locale
 from immich_memories.titles.title_source import TitleSource, override_source
 
 logger = logging.getLogger(__name__)
@@ -88,6 +89,22 @@ def _day_in_place_title(place_name: str, kind: str, locale: str) -> str:
     return film_text("title.day_in_place_neutral", locale, place=localised)
 
 
+def _ordinal_day(day: int, locale: str) -> str:
+    """The day of the month as a date names it: French says "1er juillet",
+    not "1 juillet", for the first of the month.
+
+    A catalogue key of its own (`date.ordinal_1`), read through the same
+    `film_text` machinery `i18n.get_ordinal` uses -- not `get_ordinal`
+    itself, whose `ordinal.1` is bound to "année" (feminine, "1ère Année")
+    and would be the wrong gender here.
+    """
+    from immich_memories.i18n import film_text
+
+    if locale == "fr" and day == 1:
+        return film_text("date.ordinal_1", locale)
+    return str(day)
+
+
 def _special_day_place_title(
     clips: list[Any], config: Config, date_range: DateRange
 ) -> tuple[str, str] | None:
@@ -101,14 +118,14 @@ def _special_day_place_title(
     the year just because the title names the place instead of the calendar.
     """
     from immich_memories.i18n import month_name_forms
-    from immich_memories.processing.clip_caption import resolve_caption_locale
 
     if (found := _place_and_kind_from_clips(clips)) is None:
         return None
     place_name, kind = found
-    locale = resolve_caption_locale(config.title_screens.locale if config.title_screens else "en")
+    locale = resolve_film_locale(config.title_screens.locale if config.title_screens else "en")
     day = date_range.start.date()
-    subtitle = f"{day.day} {month_name_forms(day.month, locale)['month_of']} {day.year}"
+    month = month_name_forms(day.month, locale)["month_of"]
+    subtitle = f"{_ordinal_day(day.day, locale)} {month} {day.year}"
     return _day_in_place_title(place_name, kind, locale), subtitle
 
 
@@ -171,10 +188,13 @@ def _model_suggested_title(
         facts = replace(facts, album_name=_album_of_the_cut(album_lookup))
 
     start, end = date_range.start.date(), date_range.end.date()
+    # Resolved here, not left to the prompt builder: "auto" must never reach
+    # the model, which would otherwise read it literally as "Language: Auto".
+    locale = resolve_film_locale(config.title_screens.locale if config.title_screens else "en")
     try:
         suggestion = ask(
             memory_type=memory_type or "year",
-            locale=config.title_screens.locale if config.title_screens else "en",
+            locale=locale,
             start_date=str(start),
             end_date=str(end),
             duration_days=(end - start).days,
@@ -204,7 +224,7 @@ def _asks_the_model(*, enabled: bool | None, memory_type: str | None, configured
     if enabled:
         return True
 
-    from immich_memories.titles.llm_titles import OCCASION_MEMORY_TYPES, PEOPLE_MEMORY_TYPES
+    from immich_memories.titles.title_routing import OCCASION_MEMORY_TYPES, PEOPLE_MEMORY_TYPES
 
     return memory_type in PEOPLE_MEMORY_TYPES or memory_type in OCCASION_MEMORY_TYPES
 
@@ -237,13 +257,7 @@ def resolve_film_title(
     model, the film falls back to a template in its own language instead of
     an English headline.
     """
-    from immich_memories.processing.clip_caption import resolve_caption_locale
-
-    # NOTE: resolve_caption_locale, not yet i18n.resolve_film_locale -- #1978
-    # (which renames and moves it) has not merged at the time of this fix;
-    # rebase onto it once it lands so every locale read here goes through one
-    # resolver.
-    locale = resolve_caption_locale(config.title_screens.locale if config.title_screens else "en")
+    locale = resolve_film_locale(config.title_screens.locale if config.title_screens else "en")
 
     from_catalogue = False
     if title_override:

@@ -27,6 +27,10 @@ DELETE_PERMISSION = "asset.delete"
 class MissingReadPermissions(RuntimeError):
     """A key cannot read all source material required for a complete film."""
 
+    def __init__(self, missing: tuple[str, ...]) -> None:
+        self.missing = missing
+        super().__init__("API key lacks required read permissions: " + ", ".join(missing))
+
 
 @dataclass(frozen=True)
 class ApiKeyCapabilities:
@@ -53,6 +57,4 @@ class ApiKeyCapabilities:
     def require_read(self) -> None:
         """Refuse an incomplete source read, naming every permission the owner must add."""
         if missing := self.missing_read:
-            raise MissingReadPermissions(
-                "API key lacks required read permissions: " + ", ".join(missing)
-            )
+            raise MissingReadPermissions(missing)

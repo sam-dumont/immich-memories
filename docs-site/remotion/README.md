@@ -18,9 +18,9 @@ appears.
 | `make demo-music` | Optional ACE-Step candidates in `docs-site/static/demo/music-candidates/` |
 | `make demo-ui-dev` | Remotion Studio for live preview |
 
-`public/library` is a symlink to `tests/e2e/fixtures/library`, so the demo shows the same pictures
-as the tests and the docs, and `public/fonts` links to the web client's own Inter, so a render needs
-no network (the CC0 fixture library, credits in `CREDITS.md` there; `make
+`make demo-ui-install` copies `tests/e2e/fixtures/library` to `public/library`, so the demo shows
+the same pictures as the tests and the docs, and the web client's own Inter to `public/fonts`, so a
+render needs no network (the CC0 fixture library, credits in `CREDITS.md` there; `make
 demo-fixture` exports the cut, its stories and the pool page into `src/fixture.ts`).
 
 The soundtrack is `happy_acoustic_s411.opus` from the bundled music package (MIT;

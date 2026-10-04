@@ -12,3 +12,7 @@ out
 .continue
 .junie
 skills-lock.json
+
+# Copied from src/ and tests/ by make demo-ui-install (#1976)
+public/fonts
+public/library

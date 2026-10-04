@@ -22,6 +22,9 @@ class EditorialSelection:
     end_time: float | None = None
     render_mode: Literal["motion", "still"] | None = None
     render_frame_seconds: float | None = None
+    # The clip's own audio is music or singing (#1951): the added soundtrack steps
+    # aside over its window rather than fighting it.
+    has_music: bool = False
 
     def __post_init__(self) -> None:
         if not isinstance(self.asset_id, str) or not self.asset_id.strip():

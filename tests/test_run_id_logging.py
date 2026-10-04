@@ -122,3 +122,22 @@ class TestJsonFormatIncludesRunId:
         data = json.loads(output)
         # run_id should not be present when there's no active run
         assert "run_id" not in data
+
+
+def _run_id_a_log_line_would_carry() -> str:
+    from immich_memories.logging_config import RunIdFilter
+
+    record = logging.LogRecord("test", logging.INFO, "", 0, "hello", (), None)
+    RunIdFilter().filter(record)
+    return record.run_id  # type: ignore[attr-defined]
+
+
+def test_log_lines_carry_the_run_id_from_the_moment_the_run_exists():
+    from immich_memories.db import open_store
+    from immich_memories.tracking.run_observations import observe_run
+
+    with observe_run(open_store(), source="manual", capture_system=False) as tracker:
+        during = _run_id_a_log_line_would_carry()
+
+    assert during == tracker.run_id
+    assert _run_id_a_log_line_would_carry() == "-"

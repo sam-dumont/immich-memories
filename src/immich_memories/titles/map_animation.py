@@ -10,11 +10,12 @@ import time
 from collections.abc import Callable, Iterator
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field, replace
+from functools import lru_cache
 from itertools import starmap
 from pathlib import Path
 
 import numpy as np
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
 
 from immich_memories.processing.encoding_plan import EncodingPlan
 from immich_memories.processing.hardware_encode import apply_hardware_encode
@@ -24,7 +25,12 @@ from immich_memories.titles.ffmpeg_pipe import StderrDrain
 
 from .colors import ceil_rgb_for_hdr
 from .encoding import standalone_title_encoding_plan, title_color_filter, title_encoder_args
-from .map_renderer import _draw_gradient_band, _overlay_composite, _wrap_text
+from .map_renderer import (
+    _draw_gradient_band,
+    _fit_pin_label_font,
+    _fit_title_lines,
+    _overlay_composite,
+)
 from .map_tiles import CachedStaticMap, tile_cache
 
 logger = logging.getLogger(__name__)
@@ -42,6 +48,10 @@ _ViewInterp = Callable[[float], tuple[float, float, float]]
 _CARD_LABEL_Y = 0.72
 _TITLE_FADE_SECONDS = 0.5
 _PIN_LABEL_SHARE = 0.034
+# Font floors as a fraction of frame width: 18px/10px at a 1080-wide frame,
+# so a 4K render does not stop shrinking at a 1080p-sized minimum.
+_MIN_CARD_FONT_RATIO = 18 / 1080
+_MIN_PIN_LABEL_RATIO = 10 / 1080
 
 
 @dataclass
@@ -226,6 +236,15 @@ def _resize_satellite_frame(image: Image.Image, width: int, height: int) -> Imag
     return result
 
 
+@lru_cache(maxsize=256)
+def _cached_pin_label_font(
+    name: str, base_size: int, max_width: int, min_size: int
+) -> tuple[ImageFont.FreeTypeFont | ImageFont.ImageFont, int]:
+    """Memoised `_fit_pin_label_font`: the same pin name recurs on every frame of a fly-over."""
+    probe = ImageDraw.Draw(Image.new("RGBA", (1, 1)))
+    return _fit_pin_label_font(name, probe, base_size, max_width, min_size=min_size)
+
+
 def _draw_pins(
     frame: Image.Image,
     cam_lat: float,
@@ -241,13 +260,16 @@ def _draw_pins(
     if pin_alpha < 0.05:
         return frame
 
-    from .map_renderer import _get_font
-
     overlay = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     draw = ImageDraw.Draw(overlay)
     base_r = max(6, int(min(w, h) * 0.012))
     # 3.4 % of the short side: 37 px on a 1080p frame, 73 px at 4K, the same in portrait.
-    font = _get_font(max(12, int(min(w, h) * _PIN_LABEL_SHARE)), bold=True)
+    base_font_size = max(12, int(min(w, h) * _PIN_LABEL_SHARE))
+    # Labels never wrap next to a pin, so a long name only has shrink + clamp (#1954).
+    label_margin = int(w * 0.02)
+    label_top_margin = int(h * 0.02)
+    label_max_width = w - 2 * label_margin
+    min_pin_font_size = max(6, int(w * _MIN_PIN_LABEL_RATIO))
     stroke = max(1, int(min(w, h) * 0.003))
     a_w, a_f = int(200 * pin_alpha), int(230 * pin_alpha)
     a_l, a_s = int(220 * pin_alpha), int(200 * pin_alpha)
@@ -263,9 +285,12 @@ def _draw_pins(
         draw.ellipse((sx - base_r, sy - base_r, sx + base_r, sy + base_r), fill=(232, 93, 74, a_f))
 
         if pin.name:
-            bbox = draw.textbbox((0, 0), pin.name, font=font)
-            lx = sx - (bbox[2] - bbox[0]) // 2
-            ly = sy - r_out - getattr(font, "size", 14) - 6
+            font, label_w = _cached_pin_label_font(
+                pin.name, base_font_size, label_max_width, min_pin_font_size
+            )
+            lx = sx - label_w // 2
+            lx = max(label_margin, min(w - label_margin - label_w, lx))
+            ly = max(label_top_margin, sy - r_out - getattr(font, "size", 14) - 6)
             # A dark outline keeps the name readable over snow, sea or city alike.
             draw.text(
                 (lx, ly),
@@ -574,23 +599,27 @@ def _render_title_overlay(
     """
     if not text:
         return None
-    from .map_renderer import _get_font
 
     is_portrait = h > w
     img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
 
     fs = int(w * 0.12) if is_portrait else int(h * 0.09)
-    font = _get_font(fs, bold=True)
+    # 6 % margin either side: a long compound name shrinks to stay inside it
+    # instead of overflowing the frame edge (#1954).
+    safe_width = int(w * 0.88)
+    min_size = max(10, int(w * _MIN_CARD_FONT_RATIO))
+    lines, font = _fit_title_lines(
+        text, draw, base_size=fs, bold=True, max_width=safe_width, min_size=min_size
+    )
 
     white = ceil_rgb_for_hdr((255, 255, 255)) if hdr else (255, 255, 255)
-    lines = _wrap_text(text, draw, font, int(w * 0.88))
-    line_h = int(fs * 1.2)
+    line_h = int(getattr(font, "size", fs) * 1.2)
     total_h = line_h * len(lines)
     if anchor is None:
         anchor = 0.5 if is_portrait else 0.75
     block_y = int(h * anchor) - total_h // 2
-    band_pad = int(fs * 0.8)
+    band_pad = int(getattr(font, "size", fs) * 0.8)
     _draw_gradient_band(draw, block_y - band_pad, total_h + 2 * band_pad, w, h)
     for i, line in enumerate(lines):
         bbox = draw.textbbox((0, 0), line, font=font)
