@@ -120,3 +120,8 @@ def test_a_film_attempt_is_live_while_held_and_interrupted_after(store, tmp_path
     # A holder that died mid-run left "running" behind; nobody holds its lease any more.
     (attempt.directory / "status.private.json").write_text(record)
     assert read_editorial_attempt(attempt.directory, store)["status"] == "interrupted"
+
+
+def test_a_lease_never_taken_is_not_held_elsewhere(store, tmp_path):
+    # PostgreSQL leases never create the lock file, so callers can't use its absence as a guard.
+    assert not Lease("pipeline", tmp_path / "never-created.lock", store).held_elsewhere()

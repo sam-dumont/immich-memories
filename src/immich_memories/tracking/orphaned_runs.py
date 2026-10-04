@@ -17,6 +17,6 @@ def interrupt_orphaned_runs(store: Store, lock_path: Path) -> list[str]:
     drops when its holder dies, so a `running` row with the lease free belongs to no live job.
     """
     pipeline = Lease("pipeline", lock_path, store)
-    if lock_path.exists() and pipeline.held_elsewhere():
+    if pipeline.held_elsewhere():
         return []
     return RunDatabase(store).interrupt_running_runs(datetime.now(tz=UTC))
