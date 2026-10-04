@@ -60,7 +60,6 @@ def reviewed_report():
     packages = {}
     for name, version, advisory in [
         ("braces", "3.0.3", "GHSA-vfj7-8cjw-p6xm"),
-        ("http-cache-semantics", "4.2.0", "GHSA-ch52-4w7c-c8xp"),
     ]:
         path = f"node_modules/{name}"
         packages[path] = {"version": version}
@@ -82,7 +81,7 @@ def reviewed_report():
         "severity": "high",
         "nodes": ["node_modules/docusaurus"],
         "fixAvailable": False,
-        "via": ["braces", "http-cache-semantics"],
+        "via": ["braces"],
     }
     packages["node_modules/docusaurus"] = {"version": "3.10.2"}
     return report, {"packages": packages}
@@ -95,6 +94,26 @@ def test_only_exact_unfixed_graph_is_accepted_until_expiry():
     assert evaluate(with_metadata(report), lock, reviewed=True, today=date(2026, 10, 17)) == 1
     lock["packages"]["node_modules/braces"]["version"] = "3.0.4"
     assert evaluate(with_metadata(report), lock, reviewed=True, today=date(2026, 10, 3)) == 1
+
+
+def test_http_cache_semantics_review_is_retired_once_patched():
+    evaluate = runpy.run_path(str(SCRIPT))["evaluate"]
+    report, lock = reviewed_report()
+    lock["packages"]["node_modules/http-cache-semantics"] = {"version": "4.2.0"}
+    report["vulnerabilities"]["http-cache-semantics"] = {
+        "name": "http-cache-semantics",
+        "severity": "high",
+        "nodes": ["node_modules/http-cache-semantics"],
+        "fixAvailable": False,
+        "via": [
+            {
+                "name": "http-cache-semantics",
+                "severity": "high",
+                "url": "https://github.com/advisories/GHSA-ch52-4w7c-c8xp",
+            }
+        ],
+    }
+    assert evaluate(with_metadata(report), lock, reviewed=True, today=date(2026, 10, 4)) == 1
 
 
 def test_new_fixable_and_critical_advisories_are_refused():
