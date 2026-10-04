@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-04 13:49+0200\n"
+"POT-Creation-Date: 2026-10-04 18:11+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: nl\n"
@@ -364,7 +364,7 @@ msgstr "Zoeken mislukt: {error}"
 msgid "Done."
 msgstr "Klaar."
 
-#: web/routes/runs/[run_id]/+page.svelte:352
+#: web/routes/runs/[run_id]/+page.svelte:354
 msgid "Download child output"
 msgstr "Onderliggend resultaat downloaden"
 
@@ -545,7 +545,7 @@ msgstr "Immich-server-URL"
 msgid "Immich accounts to read (primary alone when none are picked)"
 msgstr "Te lezen Immich-accounts (alleen primair als er geen gekozen is)"
 
-#: web/routes/runs/[run_id]/+page.svelte:342
+#: web/routes/runs/[run_id]/+page.svelte:344
 #, python-brace-format
 msgid "Immich delivery: {value}"
 msgstr "Levering aan Immich: {value}"
@@ -738,7 +738,7 @@ msgstr ""
 "Nog geen vastgelegde dagen. Voer `immich-memories discover-days` uit om ze te vinden, of film"
 " elke dag op basis van de datum."
 
-#: web/routes/runs/[run_id]/+page.svelte:354
+#: web/routes/runs/[run_id]/+page.svelte:356
 msgid "No child output was retained for this run."
 msgstr "Er is geen onderliggend resultaat bewaard voor deze uitvoering."
 
@@ -786,7 +786,7 @@ msgstr "Geen regel die de preview kan controleren zou een foto weglaten."
 msgid "No runs match this view. Make a memory from Memory or Suggestions."
 msgstr "Geen uitvoeringen voor deze weergave. Maak een herinnering via Herinnering of Suggesties."
 
-#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:334
+#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:336
 msgid "No saved cut is available for this run."
 msgstr "Geen opgeslagen montage voor deze uitvoering."
 
@@ -1072,7 +1072,7 @@ msgstr "Revisies"
 msgid "Role (suggestions; type your own)"
 msgstr "Rol (suggesties of eigen tekst)"
 
-#: web/routes/runs/[run_id]/+page.svelte:340
+#: web/routes/runs/[run_id]/+page.svelte:342
 msgid "Run details"
 msgstr "Details van de run"
 
@@ -1133,7 +1133,7 @@ msgstr "Hier opgeslagen, maar {name} kan het niet ontsleutelen: de standaardwaar
 msgid "Saved to the database"
 msgstr "Opgeslagen in de database"
 
-#: web/routes/runs/[run_id]/+page.svelte:341
+#: web/routes/runs/[run_id]/+page.svelte:343
 #, python-brace-format
 msgid "Saved to: {output_path}"
 msgstr "Opgeslagen in: {output_path}"
@@ -1254,6 +1254,10 @@ msgstr "Status"
 #: web/lib/ShotInspector.svelte:76
 msgid "Still"
 msgstr "Stilstaand beeld"
+
+#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:334
+msgid "Stopped before it saved a film. The cut it came from is under Runs, in its own run."
+msgstr "Gestopt voordat er een film is opgeslagen. De montage waar hij van kwam staat onder Uitvoeringen, in zijn eigen uitvoering."
 
 #: web/lib/JobPanel.svelte:62
 msgid "Stopped."
