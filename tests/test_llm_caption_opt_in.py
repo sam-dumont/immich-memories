@@ -139,7 +139,8 @@ def test_opted_in_acquisition_uses_the_llm_once_then_reuses_its_caption(
         assert "configured LLM" in second.failures["captions"]
         assert "caption_base_url" not in second.failures["captions"]
         assert prepared_captions(config, ("new",)) == {}
-        assert len(requests) == 2  # A failed synthetic control leaves the picture uncaptioned.
+        # A failed synthetic control (tried twice per run) leaves the picture uncaptioned.
+        assert len(requests) == 4
         return
     assert first.complete, first.failures
     assert second.complete, second.failures

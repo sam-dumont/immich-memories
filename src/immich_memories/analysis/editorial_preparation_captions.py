@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import io
 import json
+import logging
 import time
 import urllib.error
 import urllib.request
@@ -298,6 +299,23 @@ def _ask_llm(
     )
 
 
+logger = logging.getLogger(__name__)
+
+_WARMUP_PATIENCE = 4
+
+
+def _refused(control: CallOutcome) -> bool:
+    return bool(control.error and control.error.startswith(_REFUSED_ERRORS))
+
+
+def _ask_control(
+    llm_config: LLMConfig | None, base_url: str, image: bytes, timeout: float, api_key: str
+) -> CallOutcome:
+    if llm_config is not None:
+        return _ask_llm(llm_config, image, timeout=timeout, stage="caption_controls")
+    return _ask_one(base_url, image, timeout=timeout, api_key=api_key, stage="caption_controls")
+
+
 def check_provider(
     base_url: str,
     timeout: float,
@@ -339,16 +357,17 @@ def check_provider(
         buffer = io.BytesIO()
         Image.new("RGB", (400, 400), rgb).save(buffer, "JPEG", quality=90)
         image = tile_preview(buffer.getvalue())
-        control = (
-            _ask_llm(llm_config, image, timeout=timeout, stage="caption_controls")
-            if llm_config is not None
-            else _ask_one(
-                base_url, image, timeout=timeout, api_key=api_key, stage="caption_controls"
+        control = _ask_control(llm_config, base_url, image, timeout, api_key)
+        if control.envelope is None and not _refused(control):
+            # A server that has only just started can take far longer than the
+            # timeout on its first request (measured: ~1 token/s, then 178).
+            logger.info(
+                "The caption server is warming up; retrying the first check with more time."
             )
-        )
+            control = _ask_control(llm_config, base_url, image, timeout * _WARMUP_PATIENCE, api_key)
         if control.envelope is None:
             # A refused control says nothing about the schema; it never reached it.
-            if control.error and control.error.startswith(_REFUSED_ERRORS):
+            if _refused(control):
                 raise PermissionError(f"caption endpoint {base_url}: {control.error}")
             raise ValueError("caption endpoint failed the compact-v3 schema control")
         answers.append(control.raw_sha256 or "")
