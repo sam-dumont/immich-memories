@@ -21,10 +21,13 @@ class Loud:
     available = True
 
     def detect(self, pcm, rate):
+        return self.detect_with_music(pcm, rate)[0]
+
+    def detect_with_music(self, pcm, rate):
         loud = np.flatnonzero(np.abs(pcm) > 0.1)
         if not len(loud):
-            return []
-        return [SpeechRegion(loud[0] / rate, loud[-1] / rate)]
+            return [], 0.0
+        return [SpeechRegion(loud[0] / rate, loud[-1] / rate)], 0.0
 
 
 def test_a_long_clip_plays_where_someone_talks_and_is_heard_once(tmp_path):
@@ -57,3 +60,44 @@ def test_a_long_clip_plays_where_someone_talks_and_is_heard_once(tmp_path):
     again = facts()
     place_windows([{"kind": "video", "asset_id": "v", "seconds": 6.0, "raw_seconds": 120.0}], again)
     assert len(reads) == measured, "the next film reads the bank"
+
+
+class MusicStub:
+    """A detector that hears half its span as music, regardless of content (#1951)."""
+
+    available = True
+
+    def detect(self, pcm, rate):
+        return []
+
+    def detect_with_music(self, pcm, rate):
+        return [], 0.5
+
+
+def test_music_fraction_is_measured_and_then_banked(tmp_path):
+    data = shout(tmp_path / "talk.mp4", seconds=10.0, loud=(2.0, 4.0))
+    assets = {"v": make_asset("v")}
+    reads = []
+
+    def facts():
+        def read(asset_id, start, length):
+            reads.append(length)
+            return data[start : start + length], len(data)
+
+        return ClipWindowFacts(
+            assets=assets, store=annotation_store(), read=read, detector=MusicStub()
+        )
+
+    first = facts()
+    [carrier] = place_windows(
+        [{"kind": "video", "asset_id": "v", "seconds": 4.0, "raw_seconds": 10.0}], first
+    )
+    first.flush()
+
+    assert first.music_fraction_for("v") == 0.5
+
+    measured = len(reads)
+    again = facts()
+    place_windows([{"kind": "video", "asset_id": "v", "seconds": 4.0, "raw_seconds": 10.0}], again)
+    assert len(reads) == measured, "the bank answers the music fraction too"
+    assert again.music_fraction_for("v") == 0.5

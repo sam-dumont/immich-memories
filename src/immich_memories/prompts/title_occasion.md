@@ -5,6 +5,7 @@ Facts
 Memory type: {memory_type}
 Span: {span}
 {occasion_facts}
+{required_year}
 
 Rules
 - Every name in the title comes from the facts above: an album's name, what the catalogue called the occasion, a place, a first name. A festival, a race, a venue, a town or an event no fact names did not happen. Reword the facts; never add to them.
@@ -14,7 +15,7 @@ Rules
 - People: first names and the words the family uses at home (maman, papa, mamie, papy; mum, dad), never civil terms (mère, père). Name people only when they are the point of the film.
 - Sentence case: capitalise the first word and proper nouns, nothing else.
 - Title: at most 40 characters. Subtitle: at most 50 characters or null; it may only state what a fact above states, so no distance, count, weather, time of day or feeling the facts are silent about; never a list of names. Null beats a guess.
-- Dates in the title only when the span IS the subject (a calendar year, a month, a season). A single day gets no dates.
+- Dates: follow exactly what the "Year(s) the title or subtitle must show" fact says, in the title or the subtitle — "none" means no date at all.
 - No generic openers such as "Souvenirs de", "Moments avec", "Voyage en", "Échos de", "Memories of".
 
 Return ONLY JSON: {"title": "...", "subtitle": "..." or null, "reason": "one sentence"}

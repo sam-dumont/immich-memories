@@ -272,6 +272,7 @@ def _extracted_segment(extraction: _Extraction, clip, video_path: Path, progress
         duration = min(actual_duration, nominal_duration) if actual_duration else nominal_duration
 
     exif = clip.asset.exif_info
+    directive = extraction.directives.get(clip.asset.id)
     return AssemblyClip(
         path=segment_path,
         duration=duration,
@@ -282,7 +283,7 @@ def _extracted_segment(extraction: _Extraction, clip, video_path: Path, progress
         latitude=exif.latitude if exif else None,
         longitude=exif.longitude if exif else None,
         location_name=clip_location_name(exif),
-        has_music=bool(set(clip.audio_categories or []) & {"music", "singing"}),
+        has_music=bool(directive.has_music) if directive is not None else False,
     )
 
 

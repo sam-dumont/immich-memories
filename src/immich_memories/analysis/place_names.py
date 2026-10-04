@@ -23,7 +23,7 @@ from immich_memories.analysis.place_geocoder import cell_of, locality_of, place_
 from immich_memories.analysis.place_scope import place_groups, shared_place_name, temporal_groups
 from immich_memories.analysis.source_filter import asset_of
 from immich_memories.i18n_places import country_code
-from immich_memories.place_names import short_place_name
+from immich_memories.place_names import degraded_locality_name, locality_name
 
 if TYPE_CHECKING:
     from immich_memories.analysis.place_geocoder import Address, PlaceGeocoder
@@ -77,12 +77,19 @@ class PlaceNames:
         points: Iterable[tuple[float | None, float | None, str | None]],
         *,
         days: Iterable[str | None] | None = None,
+        known_names: Iterable[str | None] | None = None,
     ) -> list[str | None]:
         """Use a district for a concentrated stay, or the city when captures span districts.
 
         Separate localities and separate visits cannot broaden one another. A district
         covering the stay uses the trip namer's existing coverage rule; excursions keep
         their own labels. Quarters, streets and POIs never become labels.
+
+        `known_names` (index-aligned with `points`) is a name already known for that
+        point without the geocoder -- Immich's own city, typically. It wins over a
+        geocoder answer that names nothing at this scale (an inflected admin phrase);
+        when neither has a nominative name, that admin phrase is used anyway, un-inflected
+        where possible, rather than showing nothing at all (#1954 follow-up).
         """
         points = list(points)
         addresses = [self._address(*point) for point in points]
@@ -99,7 +106,11 @@ class PlaceNames:
                 assert lat is not None and lon is not None
                 if not near_home_of(self._home, [(lat, lon)]):
                     labels[i] = label
-        return [short_place_name(label) or label for label in labels]
+        known: list[str | None] = [None] * len(labels) if known_names is None else list(known_names)
+        return [
+            locality_name(label) or known_name or degraded_locality_name(label)
+            for label, known_name in zip(labels, known, strict=True)
+        ]
 
     def name(self, sources: Iterable[Asset | VideoClipInfo]) -> None:
         """Give every positioned picture the place a viewer will be shown, once."""
@@ -115,6 +126,7 @@ class PlaceNames:
         labels = self.localities_at(
             ((e.latitude, e.longitude, e.country) for e, _ in positioned),
             days=(day for _, day in positioned),
+            known_names=(e.city for e, _ in positioned),
         )
         for (exif, _), label in zip(positioned, labels, strict=True):
             exif.place_name = label

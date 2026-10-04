@@ -305,7 +305,7 @@ def test_worker_failures_stop_without_publishing_or_leaking_tokens(tmp_path, fai
                 200,
                 json={
                     "app_version": "old" if failure == "version" else __version__,
-                    "contract_version": 1,
+                    "contract_version": 2,
                     "ready": failure != "not_ready",
                 },
             )

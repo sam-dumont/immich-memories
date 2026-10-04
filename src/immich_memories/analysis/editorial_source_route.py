@@ -186,7 +186,14 @@ def project_source_rendering(
             clock_offsets=clock_offsets,
         )
         selected.append(
-            EditorialSelection(asset_id, carrier.start, end, carrier.mode, carrier.frame)
+            EditorialSelection(
+                asset_id,
+                carrier.start,
+                end,
+                carrier.mode,
+                carrier.frame,
+                has_music=bool(row.get("has_music", False)),
+            )
         )
         replacements[asset_id] = ClipWithSegment(clip, carrier.start, end, 0.0, analyzed=False)
     return EditorialSourcePlan(

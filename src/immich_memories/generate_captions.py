@@ -73,9 +73,9 @@ def prepare_location_captions(
     """Use the actual opening title and known home country without scanning library history."""
     if not clips or not params.add_place_overlay or params.privacy_mode:
         return clips
-    from immich_memories.processing.clip_caption import resolve_caption_locale
+    from immich_memories.i18n import resolve_film_locale
 
-    locale = resolve_caption_locale(params.config.title_screens.locale)
+    locale = resolve_film_locale(params.config.title_screens.locale)
     opening_title = ""
     if title_settings is not None and title_settings.enabled and title_settings.title_duration > 0:
         opening_title = title_settings.title_override or ""

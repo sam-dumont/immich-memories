@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import json
 from datetime import date, datetime, timedelta
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -11,6 +13,7 @@ from immich_memories.analysis.place_geocoder import PlaceGeocoder
 from immich_memories.analysis.place_names import PlaceNames, shown_city
 from immich_memories.api.models import ExifInfo
 from immich_memories.db import open_store
+from immich_memories.i18n import SUPPORTED_LOCALES
 from tests.conftest import make_asset
 
 # Immich names this point after the nearest GeoNames town; OpenStreetMap knows the district.
@@ -223,6 +226,40 @@ def test_berlin_districts_share_one_caption_and_do_not_create_town_cards():
     assert location_card_moves(stops, limit=None) == [None, None, None]
 
 
+def test_an_old_english_fallback_cache_entry_is_abandoned_not_reused():
+    # #1947 cached an English fallback answer under a "z16-en:" cell key. #1954 drops
+    # that fallback, so the stale English entry must not leak back in: the cell is
+    # asked again under the new "z16-film:" key, with the real (fr) answer for this
+    # cell minus its village (tests/fixtures/places/greece_platanias_fr.json). Greek's
+    # genitive "Δήμος Πλατανιά" is not a name at this scale, so with no better name
+    # available it is degraded to "Πλατανιά" rather than reusing the stale English cache.
+    from immich_memories.db import now_db, open_store
+    from immich_memories.db.tables import geocoded_places
+
+    store = open_store()
+    point = (35.512, 23.879)
+    with store.begin() as connection:
+        connection.execute(
+            geocoded_places.insert(),
+            {
+                "cell": "z16-en:35.51,23.88",
+                "language": "fr",
+                "address": {"municipality": "Municipality of Platanias", "country": "Greece"},
+                "fetched_at": now_db(),
+            },
+        )
+
+    address = dict(_fixture_address("greece_platanias", "fr"))
+    del address["village"]
+
+    def fetch(_latitude: float, _longitude: float) -> dict:
+        return address
+
+    names = PlaceNames(PlaceGeocoder(store, "fr", fetch))
+
+    assert names.localities_at([(*point, None)]) == ["Πλατανιά"]
+
+
 @pytest.mark.parametrize(
     "names",
     [lambda: PlaceNames(None), lambda: _names(ConnectionError("down"))],
@@ -254,6 +291,18 @@ def test_an_old_district_label_is_resolved_again_from_the_cached_address():
         ({"village": "Wenduine", "town": "De Haan"}, "Wenduine"),
         ({"town": "Brookhaven", "municipality": "Wide County"}, "Brookhaven"),
         ({"city_district": "Mitte", "country": "Germany"}, "Berlin"),
+        # Greek OSM boundaries have no French name; Nominatim's English fallback
+        # (#1947) surfaces administrative wording a viewer should never read (#1954).
+        (
+            {
+                "municipality": "Municipality of Platanias",
+                "state_district": "Regional Unit of Chania",
+                "country": "Greece",
+            },
+            "Platanias",
+        ),
+        # A Latin-script village alongside an English municipality still wins.
+        ({"village": "Platanias", "municipality": "Municipality of Platanias"}, "Platanias"),
     ],
 )
 def test_localities_keep_their_scale_without_guessing_from_a_district(address, expected):
@@ -272,6 +321,91 @@ def test_the_clip_a_location_card_and_a_caption_read_names_the_city():
     _names().name([asset])
 
     assert clip_location_name(asset.exif_info) == "Antwerpen, Belgium"
+
+
+# Real Nominatim answers for a point near Platanias, Chania (35.512, 23.879), captured
+# per locale (and the product's own accept-language chain, never "en") in
+# tests/fixtures/places/greece_platanias_<locale>.json (#1954, #1947). French is checked
+# first per the owner's own render language, then every supported locale.
+_PLATANIAS_LOCALES = ["fr", *[loc for loc in SUPPORTED_LOCALES if loc != "fr"]]
+
+
+def _fixture_address(name: str, locale: str) -> dict[str, str]:
+    path = Path(__file__).parent / "fixtures" / "places" / f"{name}_{locale}.json"
+    return json.loads(path.read_text())["address"]
+
+
+@pytest.mark.parametrize("locale", _PLATANIAS_LOCALES)
+def test_a_real_address_with_a_village_names_the_village(locale):
+    """A village is right there in every locale's real answer; no admin word to drop.
+
+    Russian's real answer is two alternates joined with "/" ("Палио Герани/Палайо
+    Герани"): a film label takes the first alternate only.
+    """
+    from immich_memories.generate_privacy import clip_location_name
+
+    address = _fixture_address("greece_platanias", locale)
+    expected_village = address["village"].split("/")[0].strip()
+    asset = _asset()
+    asset.exif_info.country = "Greece"
+
+    _names(address).name([asset])
+
+    assert shown_city(asset.exif_info) == expected_village
+    label = clip_location_name(asset.exif_info, locale)
+    assert label is not None
+    assert label.startswith(expected_village)
+
+
+@pytest.mark.parametrize("locale", _PLATANIAS_LOCALES)
+def test_a_real_address_without_a_village_never_hand_declines_the_municipality(locale):
+    """When the village key is missing, only English and German's own nominative
+
+    municipality translations are usable ("Municipality of Platanias" -> "Platanias",
+    "Provinz Platanias" -> "Platanias"). Every other locale's real answer is Greek's
+    genitive "Δήμος Πλατανιά" ("of Platanias"): dropping "Δήμος" would leave the
+    declined fragment "Πλατανιά", which is not the town's name. That must read as no
+    label at this scale, keeping Immich's own city, never a guessed nominative.
+    """
+    address = dict(_fixture_address("greece_platanias", locale))
+    del address["village"]
+    asset = _asset()
+    asset.exif_info.city = "Berlin"
+    asset.exif_info.country = "Greece"
+
+    _names(address).name([asset])
+
+    expected = "Platanias" if locale in ("en", "de") else "Berlin"
+    assert shown_city(asset.exif_info) == expected
+
+
+@pytest.mark.parametrize("locale", _PLATANIAS_LOCALES)
+def test_without_a_village_or_an_immich_city_the_degraded_municipality_still_shows(locale):
+    """Owner's ruling: the native name in its correct form when the data has it,
+
+    otherwise the stripped municipality name even if the grammar is slightly off.
+    With no village key and no Immich city to fall back on, "Δήμος Πλατανιά" becomes
+    "Πλατανιά" (declined, but a name beats no name at all).
+    """
+    address = dict(_fixture_address("greece_platanias", locale))
+    del address["village"]
+    asset = _asset()
+    asset.exif_info.city = None
+    asset.exif_info.country = "Greece"
+
+    _names(address).name([asset])
+
+    # English and German's real municipality answers are their own nominative
+    # translation ("Municipality of Platanias", "Provinz Platanias"); every other
+    # locale's real answer is the same Greek genitive "Δήμος Πλατανιά" ("of
+    # Platanias"), degraded by dropping "Δήμος " and keeping the declined remainder.
+    assert address["municipality"] in (
+        "Municipality of Platanias",
+        "Provinz Platanias",
+        "Δήμος Πλατανιά",
+    )
+    expected = "Platanias" if locale in ("en", "de") else "Πλατανιά"
+    assert shown_city(asset.exif_info) == expected
 
 
 def test_the_report_keeps_the_resolved_city_as_private_as_the_source_city():
