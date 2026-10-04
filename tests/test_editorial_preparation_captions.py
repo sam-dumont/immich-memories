@@ -5,6 +5,7 @@ import http.server
 import io
 import json
 import threading
+import time
 from dataclasses import asdict
 
 import pytest
@@ -211,6 +212,7 @@ class _CaptionServer:
         served: dict | None = None,
         answer: dict | None = None,
         replies: list[dict] | None = None,
+        first_completion_delay: float = 0.0,
     ) -> None:
         self.seen_authorization: list[str | None] = []
         inventory = json.dumps(
@@ -260,12 +262,16 @@ class _CaptionServer:
 
             def do_POST(self) -> None:  # noqa: N802 — BaseHTTPRequestHandler's name
                 self.rfile.read(int(self.headers.get("Content-Length", 0)))
+                if server.completions_seen == 0:
+                    time.sleep(first_completion_delay)
+                server.completions_seen += 1
                 self._answer(completions.pop(0) if len(completions) > 1 else completions[0])
 
             def log_message(self, *args: object) -> None:
                 return
 
         self.unauthorized = 0
+        self.completions_seen = 0
         self._httpd = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
         self._thread = threading.Thread(target=self._httpd.serve_forever, daemon=True)
         self._thread.start()
@@ -393,6 +399,19 @@ def test_the_same_server_probed_twice_is_the_same_origin(open_endpoint):
 
     assert first == second
     assert len({first, second}) == 1
+
+
+def test_a_cold_endpoint_that_misses_the_first_control_is_given_a_second_try(caplog):
+    """A just-started captioner answers its first request far too slowly, then runs fine."""
+    server = _CaptionServer(None, first_completion_delay=1.2)
+    try:
+        with caplog.at_level("INFO"):
+            origin = captions.check_provider(server.base_url, 0.4, check_cancelled)
+    finally:
+        server.close()
+
+    assert origin.endpoint == server.base_url
+    assert "warming up" in caplog.text
 
 
 def test_an_endpoint_advertising_another_model_is_refused():
