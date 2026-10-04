@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import json
+from datetime import date
+
 import pytest
 
 
@@ -58,6 +61,26 @@ class TestParseTitleResponse:
 
         raw = '{"subtitle": "no title field"}'
         assert parse_title_response(raw) is None
+
+
+class TestPeopleTitleFactsStatesTheCountUnambiguously:
+    """A bare "1" still let a small model pluralise ("ses petits-enfants" for one
+    grandchild, in a real French title); the facts must say "one person" outright.
+    """
+
+    def test_one_person_is_spelled_out_as_singular(self):
+        from immich_memories.titles.llm_titles import people_title_facts
+
+        facts = people_title_facts(["Ada Example"], date(2024, 1, 1), date(2024, 12, 31))
+        assert "People in the film: one person, singular" in facts
+
+    def test_two_people_still_get_a_plain_number(self):
+        from immich_memories.titles.llm_titles import people_title_facts
+
+        facts = people_title_facts(
+            ["Ada Example", "Noah Example"], date(2024, 1, 1), date(2024, 12, 31)
+        )
+        assert "People in the film: 2" in facts
 
 
 class TestBuildTitlePrompt:
@@ -156,7 +179,7 @@ class TestGenerateTitleWithLlm:
             base_url="http://localhost:8080/v1",
             model="omlx",
         )
-        llm_response = '{"title": "Summer in Crete", "subtitle": "Chania to Sitia", "trip_type": "multi_base", "map_mode": "excursions", "map_mode_reason": "Two bases"}'
+        llm_response = '{"title": "Summer in Crete, 2019", "subtitle": "Chania to Sitia", "trip_type": "multi_base", "map_mode": "excursions", "map_mode_reason": "Two bases"}'
 
         with patch(
             "immich_memories.titles.llm_titles.query_llm",
@@ -178,7 +201,7 @@ class TestGenerateTitleWithLlm:
             )
 
         assert isinstance(result, TitleSuggestion)
-        assert result.title == "Summer in Crete"
+        assert result.title == "Summer in Crete, 2019"
         assert result.map_mode == "excursions"
 
     @pytest.mark.asyncio
@@ -332,6 +355,195 @@ class TestATitleMayOnlyNameWhatTheFactsName:
         assert result is not None
         assert result.title == "Lakeside Half 2022"
         assert result.subtitle is None
+
+
+class TestATitleKeepsTheYearTheTemplateWouldShow:
+    """A model title must carry the span's year(s), or the template names it instead.
+
+    A single day is the one span short enough that a date adds nothing.
+    """
+
+    @staticmethod
+    def _config():
+        from immich_memories.config_models_llm import LLMConfig
+
+        return LLMConfig(
+            enabled=True,
+            provider="openai-compatible",
+            base_url="http://localhost:8080/v1",
+            model="omlx",
+        )
+
+    @staticmethod
+    async def _titled(raw: str, *, memory_type: str, start_date: str, end_date: str, **kwargs):
+        from unittest.mock import AsyncMock, patch
+
+        from immich_memories.titles.llm_titles import MemoryTitleFacts, generate_title_with_llm
+
+        duration_days = (date.fromisoformat(end_date) - date.fromisoformat(start_date)).days
+        # WHY: replaces the reader, the only boundary these cases exercise.
+        with patch(
+            "immich_memories.titles.llm_titles.query_llm",
+            new_callable=AsyncMock,
+            return_value=raw,
+        ):
+            return await generate_title_with_llm(
+                memory_type=memory_type,
+                locale=kwargs.pop("locale", "en"),
+                start_date=start_date,
+                end_date=end_date,
+                duration_days=duration_days,
+                facts=kwargs.pop("facts", MemoryTitleFacts()),
+                llm_config=TestATitleKeepsTheYearTheTemplateWouldShow._config(),
+                **kwargs,
+            )
+
+    @pytest.mark.asyncio
+    async def test_occasion_title_missing_the_year_is_refused(self):
+        result = await self._titled(
+            '{"title": "Été au bord de mer", "subtitle": null}',
+            memory_type="season",
+            start_date="2024-06-01",
+            end_date="2024-08-31",
+        )
+        assert result is None
+
+    @pytest.mark.asyncio
+    async def test_the_year_may_live_in_the_subtitle(self):
+        result = await self._titled(
+            '{"title": "Été au bord de mer", "subtitle": "L\'été 2024"}',
+            memory_type="season",
+            start_date="2024-06-01",
+            end_date="2024-08-31",
+        )
+        assert result is not None
+        assert result.title == "Été au bord de mer"
+
+    @pytest.mark.asyncio
+    async def test_a_single_day_needs_no_year(self):
+        from immich_memories.titles.llm_titles import MemoryTitleFacts
+
+        result = await self._titled(
+            '{"title": "Sunday at Lakeside Half 2022", "subtitle": null}',
+            memory_type="special_day",
+            start_date="2022-03-27",
+            end_date="2022-03-27",
+            facts=MemoryTitleFacts(album_name="Lakeside Half 2022"),
+        )
+        assert result is not None
+
+    @pytest.mark.asyncio
+    async def test_a_span_crossing_years_needs_both(self):
+        result = await self._titled(
+            '{"title": "Our year together, 2024", "subtitle": null}',
+            memory_type="multi_person",
+            start_date="2024-09-01",
+            end_date="2025-08-31",
+        )
+        assert result is None
+
+    @pytest.mark.asyncio
+    async def test_a_span_crossing_years_accepts_the_short_end_form(self):
+        result = await self._titled(
+            '{"title": "Our year together, 2024-25", "subtitle": null}',
+            memory_type="multi_person",
+            start_date="2024-09-01",
+            end_date="2025-08-31",
+        )
+        assert result is not None
+
+    @pytest.mark.asyncio
+    async def test_a_trip_title_with_the_year_is_still_subject_to_the_place_guard(self):
+        from immich_memories.titles.llm_titles import MemoryTitleFacts
+
+        result = await self._titled(
+            '{"title": "Nowhere in particular, 2024", "subtitle": null}',
+            memory_type="trip",
+            start_date="2024-06-01",
+            end_date="2024-06-07",
+            facts=MemoryTitleFacts(place="Crete, Greece"),
+        )
+        assert result is None
+
+
+# A summer title, written the way each film language's catalogue would write
+# "Summer 2024" (digits unchanged; only the surrounding word and script vary).
+_SUMMER_WITH_YEAR_BY_LOCALE = {
+    "en": "Summer 2024",
+    "fr": "Été 2024",
+    "nl": "Zomer 2024",
+    "de": "Sommer 2024",
+    "es": "Verano de 2024",
+    "it": "Estate 2024",
+    "pt-BR": "Verão de 2024",
+    "pt-PT": "Verão de 2024",
+    "pl": "Lato 2024",
+    "sv": "Sommaren 2024",
+    "ru": "Лето 2024",
+    "ja": "2024年の夏",
+    "zh-Hans": "2024年夏天",
+    "ko": "2024년 여름",
+}
+
+
+class TestTheYearGuardReadsEveryFilmLanguage:
+    """Digits are the same in every script, so the guard needs no locale table of
+    its own: it reads the year straight out of whatever the catalogue would write.
+    """
+
+    @staticmethod
+    def _config():
+        from immich_memories.config_models_llm import LLMConfig
+
+        return LLMConfig(
+            enabled=True,
+            provider="openai-compatible",
+            base_url="http://localhost:8080/v1",
+            model="omlx",
+        )
+
+    @staticmethod
+    async def _titled(raw: str, locale: str):
+        from unittest.mock import AsyncMock, patch
+
+        from immich_memories.titles.llm_titles import generate_title_with_llm
+
+        # WHY: replaces the reader, the only boundary these cases exercise.
+        with patch(
+            "immich_memories.titles.llm_titles.query_llm",
+            new_callable=AsyncMock,
+            return_value=raw,
+        ):
+            return await generate_title_with_llm(
+                memory_type="season",
+                locale=locale,
+                start_date="2024-06-01",
+                end_date="2024-08-31",
+                duration_days=91,
+                llm_config=TestTheYearGuardReadsEveryFilmLanguage._config(),
+            )
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("locale", sorted(_SUMMER_WITH_YEAR_BY_LOCALE))
+    async def test_a_title_carrying_the_year_is_kept(self, locale):
+        title = _SUMMER_WITH_YEAR_BY_LOCALE[locale]
+        result = await self._titled(json.dumps({"title": title, "subtitle": None}), locale)
+        assert result is not None
+        assert result.title == title
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("locale", sorted(_SUMMER_WITH_YEAR_BY_LOCALE))
+    async def test_the_same_title_without_the_year_falls_back_to_the_template(self, locale):
+        title = _SUMMER_WITH_YEAR_BY_LOCALE[locale]
+        yearless = (
+            title.replace("2024", "")
+            .replace("年の", "")
+            .replace("年", "")
+            .replace("년", "")
+            .strip()
+        )
+        result = await self._titled(json.dumps({"title": yearless, "subtitle": None}), locale)
+        assert result is None
 
 
 @pytest.mark.parametrize("place,country", [("Norway", "Norway"), ("Brittany", "France")])

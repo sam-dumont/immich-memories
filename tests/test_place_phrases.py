@@ -212,11 +212,13 @@ async def _trip_title_from_model(reply_title: str, place: str, locale: str = "fr
 
 @pytest.mark.asyncio
 async def test_the_model_is_told_the_place_and_may_name_it_in_the_films_language():
-    suggestion, prompt = await _trip_title_from_model("Deux semaines en Crète", "Crete, Greece")
+    suggestion, prompt = await _trip_title_from_model(
+        "Deux semaines en Crète, 2025", "Crete, Greece"
+    )
 
     assert "Crete, Greece" in prompt
     assert suggestion is not None
-    assert suggestion.title == "Deux semaines en Crète"
+    assert suggestion.title == "Deux semaines en Crète, 2025"
 
 
 @pytest.mark.asyncio

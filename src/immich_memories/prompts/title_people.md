@@ -15,7 +15,7 @@ Rules
 - Use the words the family uses at home (maman, papa, mamie, papy; mum, dad, grandma, grandpa), never the civil ones (mère, père, mother, father).
 - Sentence case: capitalise the first word and proper nouns, nothing else.
 - Title: at most 40 characters. Subtitle: at most 50 characters or null; it may only state what a fact above states, so no age, count, place or span the facts are silent about; never a list of full names. Null beats a guess.
-- Dates belong in the title only when the span IS the subject: a calendar year, a month, a season, a first year. A whole life so far, or a span that ends today, gets no dates.
+- The title or the subtitle always carries the span's year (both years, when it crosses one, or when the span is a whole life so far). A single day is the one span short enough that it gets no date.
 - No generic openers such as "Souvenirs de", "Moments avec", "Memories of".
 
 Return ONLY JSON: {"title": "...", "subtitle": "..." or null, "reason": "one sentence"}

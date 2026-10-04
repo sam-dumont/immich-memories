@@ -11,6 +11,7 @@ Generate a title for a personal memory video. Language: {lang}.
 - Good: 'Sous le soleil de <lieu>', '<région> à pied', '<île>, été sans fin' (<lieu>, <région>, <île>: a place from the context below; never copy an example's words)
 - Bad: 'Échos de X', 'Voyage en X', 'Une semaine de découverte en X'
 - Never use 'weekend' for trips longer than 4 days.
+- The title or the subtitle always carries the year of the trip (both years, when it crosses one). A single day is the one span short enough that it gets no date.
 - For non-trip memories (year, person): focus on the people or the time period.
 
 ## Trip Pattern Classification

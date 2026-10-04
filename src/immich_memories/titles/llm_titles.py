@@ -299,7 +299,10 @@ def people_title_facts(
     not in the film at all.
     """
     by_name = _people_by_name(people_store)
-    lines = [f"People in the film: {len(person_names)}"]
+    # WHY: a bare "1" still let a small model pluralise the relationship noun
+    # ("ses petits-enfants" for one grandchild); spell out the count in words.
+    count_note = "one person, singular" if len(person_names) == 1 else str(len(person_names))
+    lines = [f"People in the film: {count_note}"]
     lines += [_person_line(name, by_name.get(name), start, end) for name in person_names]
     if len(person_names) > 1:
         lines.append("Family record, between the people in the film:")
@@ -710,6 +713,51 @@ def names_the_place(title: str, place: str, locale: str) -> bool:
     )
 
 
+def _span_names_its_years(text: str, start: date, end: date) -> bool:
+    """Whether `text` carries the span's year(s), digits as written in any locale.
+
+    A span inside one year needs that year's four digits. A span crossing a
+    year boundary needs both: the end year's four digits, or its two-digit
+    short form right after the start year ("2024-25").
+    """
+    if str(start.year) not in text:
+        return False
+    if end.year == start.year:
+        return True
+    if str(end.year) in text:
+        return True
+    short_end = f"{end.year % 100:02d}"
+    return bool(re.search(rf"{start.year}[\s–—\-/]{{0,3}}{short_end}\b", text))
+
+
+def _requiring_the_year(
+    suggestion: TitleSuggestion | None, start_date: str, end_date: str
+) -> TitleSuggestion | None:
+    """The suggestion, unless it drops the year(s) the template title would show.
+
+    A single day is the one span short enough that a date adds nothing; every
+    other span must carry its year, in the title or the subtitle, or the
+    template names this memory instead.
+    """
+    if suggestion is None:
+        return suggestion
+    start, end = date.fromisoformat(start_date), date.fromisoformat(end_date)
+    if start == end:
+        return suggestion
+    combined = f"{suggestion.title} {suggestion.subtitle or ''}"
+    if _span_names_its_years(combined, start, end):
+        return suggestion
+    logger.warning(
+        "Title %r (subtitle %r) does not name the year of %s to %s; "
+        "the template names this memory instead",
+        suggestion.title,
+        suggestion.subtitle,
+        start_date,
+        end_date,
+    )
+    return None
+
+
 def _requiring_the_place(
     suggestion: TitleSuggestion | None, place: str | None, locale: str
 ) -> TitleSuggestion | None:
@@ -778,6 +826,7 @@ async def generate_title_with_llm(
         if parsed is not None:
             parsed = restore_fact_casing(parsed, prompt.facts or prompt.text)
         suggestion = _refusing_invented_names(parsed, prompt.facts)
+        suggestion = _requiring_the_year(suggestion, start_date, end_date)
         if memory_type in PEOPLE_MEMORY_TYPES or memory_type in OCCASION_MEMORY_TYPES:
             return suggestion
         return _requiring_the_place(suggestion, facts.place if facts else None, locale)

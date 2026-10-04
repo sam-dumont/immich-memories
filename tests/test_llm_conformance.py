@@ -195,7 +195,7 @@ def test_trip_title_probe_requires_route_classification(monkeypatch):
                         {
                             "finish_reason": "stop",
                             "message": {
-                                "content": '{"title":"Iceland road trip","trip_type":"road_trip","map_mode":"overnight_stops","map_mode_reason":"A driving route"}'
+                                "content": '{"title":"Iceland road trip, 2030","trip_type":"road_trip","map_mode":"overnight_stops","map_mode_reason":"A driving route"}'
                             },
                         }
                     ],
