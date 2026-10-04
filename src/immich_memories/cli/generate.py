@@ -254,7 +254,13 @@ def register_generate_commands(main: click.Group) -> None:
         typed = RunScope(memory_type, day, event_id, from_album, subject, accept_any_provenance)
         memory_type, day, event_id, from_album, subject, accept_any_provenance, curated = (
             scope_of_ask(
-                ctx, config, ask, dry_run=dry_run, typed=typed, trace_file=ask_trace
+                ctx,
+                config,
+                ask,
+                dry_run=dry_run,
+                typed=typed,
+                trace_file=ask_trace,
+                accounts=household,
             ).fields()
         )
 

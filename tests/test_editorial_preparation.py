@@ -39,7 +39,12 @@ from immich_memories.config_models_editorial_preparation import EditorialPrepara
 from immich_memories.config_models_triage import TriageConfig
 from immich_memories.db.tables import face_boxes, head_facts
 from immich_memories.operations.cancellation import PipelineCancelled, cancellation_scope
-from immich_memories.store.editorial_preparation import remember_assets, remember_head_rows
+from immich_memories.store.editorial_preparation import (
+    household_seen,
+    remember_assets,
+    remember_head_rows,
+    single_account_confirmed,
+)
 from tests.annotation_rows import add_rows, annotation_store, count_rows, read_rows
 
 
@@ -430,6 +435,46 @@ def test_metadata_migration_uses_live_source_and_preserves_owner_flags(tmp_path)
     assert (person["person_id"], person["person_name"]) == ("person", "A Person")
     (flag,) = read_rows(store, "asset_flags")
     assert flag["flag"] == "owner_keep"
+
+
+def test_remember_assets_confirms_single_account_for_an_ordinary_write():
+    """An ordinary run's own client never tags ownership at all (#2044): that silence is
+    itself the confirmation a single-account install earns on its next preparation."""
+    store = annotation_store()
+
+    remember_assets(store, [asset("aa1")])
+
+    assert household_seen(store) is False
+    assert single_account_confirmed(store) is True
+
+
+def test_remember_assets_marks_household_seen_once_a_non_primary_account_appears():
+    store = annotation_store()
+
+    remember_assets(store, [asset("aa1").model_copy(update={"access_accounts": ("partner",)})])
+
+    assert household_seen(store) is True
+
+
+def test_remember_assets_confirms_single_account_when_every_tagged_asset_is_the_primarys():
+    store = annotation_store()
+
+    remember_assets(store, [asset("aa1").model_copy(update={"access_accounts": ("primary",)})])
+
+    assert single_account_confirmed(store) is True
+    assert household_seen(store) is False
+
+
+def test_household_seen_stays_true_after_a_later_primary_only_write():
+    """Sticky: once a household has been seen, a later batch that only tags the primary
+    (the partner having been removed from the household in the meantime, say) must not
+    look like a single-account store again (#2044)."""
+    store = annotation_store()
+    remember_assets(store, [asset("aa1").model_copy(update={"access_accounts": ("partner",)})])
+
+    remember_assets(store, [asset("aa2").model_copy(update={"access_accounts": ("primary",)})])
+
+    assert household_seen(store) is True
 
 
 def test_default_cancellation_scope_stops_before_any_acquisition(tmp_path):

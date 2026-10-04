@@ -1224,6 +1224,8 @@ export interface components {
         };
         /** AskRequest */
         AskRequest: {
+            /** Accounts */
+            accounts?: string[];
             /** Sentence */
             sentence: string;
         };

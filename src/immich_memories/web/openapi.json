@@ -154,6 +154,13 @@
       },
       "AskRequest": {
         "properties": {
+          "accounts": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Accounts",
+            "type": "array"
+          },
           "sentence": {
             "maxLength": 500,
             "minLength": 1,
