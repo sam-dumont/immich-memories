@@ -443,8 +443,8 @@ Set `namespace:` in each kustomization root you apply. Update command `-n` argum
 cross-namespace URLs too. Applying raw YAML bypasses the namespace transformation. That includes
 the Quick start's `kubectl apply -f base/namespace.yaml` and the Secret you apply by file: create
 your own namespace with `kubectl create namespace <name>` instead, and set `namespace:` in the
-Secret. The setup builder always writes `immich-memories`; change it in the generated
-`secret.yaml` and `kustomization.yaml` if you need another.
+Secret. The setup builder has a Namespace field: it writes your value into `secret.yaml`,
+`kustomization.yaml` and every `-n` in its commands.
 
 ## Check it from outside the pod
 

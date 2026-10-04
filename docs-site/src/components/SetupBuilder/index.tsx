@@ -10,7 +10,7 @@ export default function SetupBuilder({initialPlatform = 'linux', initialInline =
   const {siteConfig} = useDocusaurusContext();
   const buildVersion = String(siteConfig.customFields?.version || 'development');
   const [setup, setSetup] = useState<Setup>({
-    platform: initialPlatform, inline: initialInline, uiPort: 8080, tier: 'basic', immichUrl: 'http://192.168.1.10:2283', apiKey: '',
+    platform: initialPlatform, inline: initialInline, uiPort: 8080, namespace: 'immich-memories', tier: 'basic', immichUrl: 'http://192.168.1.10:2283', apiKey: '',
     gpuBox: '', readerUrl: '', readerModel: '', readerApiKey: '', cuda: false,
     version: buildVersion,
   });
@@ -40,6 +40,7 @@ export default function SetupBuilder({initialPlatform = 'linux', initialInline =
   };
   const result = buildSetup(setup, sources as Sources, buildVersion);
   const compose = setup.platform === 'linux' || setup.platform === 'synology';
+  const hostPort = compose || setup.platform === 'mac';
   return <section className={styles.builder} aria-label="Setup builder">
     <div className={styles.fields}>
       {showPlatform && <label>Where will it run?
@@ -58,9 +59,13 @@ export default function SetupBuilder({initialPlatform = 'linux', initialInline =
       <label>Immich API key
         <input type="password" autoComplete="off" value={setup.apiKey} onChange={event => update({apiKey: event.target.value})} />
       </label>
-      {compose && <label>UI host port
+      {hostPort && <label>UI host port
         <input type="number" min="1" max="65535" step="1" value={setup.uiPort} onChange={event => update({uiPort: Number(event.target.value)})} />
         <small>Choose a free port if another app already uses 8080. The UI stays localhost-only.</small>
+      </label>}
+      {setup.platform === 'kubernetes' && <label>Namespace
+        <input value={setup.namespace} onChange={event => update({namespace: event.target.value})} />
+        <small>Applied to both generated files and every command below.</small>
       </label>}
     </div>
     <p className={styles.note}>Create a key with the <Link to="/docs/run/docker#the-api-key">ten required read permissions</Link>.
