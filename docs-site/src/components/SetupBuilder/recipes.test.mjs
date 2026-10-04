@@ -82,3 +82,19 @@ test('Mac Basic leaves out the caption endpoint and does not move it', () => {
   assert.equal(config.advanced.editorial, undefined);
   assert.doesNotMatch(result.commands, /caption_base_url/);
 });
+
+test('generated Compose pins the docs build version like the release asset', () => {
+  const result = buildSetup({...setup, platform: 'linux', tier: 'gpu', inline: false}, sources, '1.2.3');
+  const compose = result.files.find(file => file.name === 'docker-compose.yml').content;
+  assert.match(compose, /IMMICH_MEMORIES_VERSION:-1\.2\.3\}/);
+  assert.doesNotMatch(compose, /:-latest/);
+});
+
+test('Mac only installs llama.cpp for the app-owned local reader', () => {
+  const mac = {...setup, platform: 'mac', inline: false};
+  assert.doesNotMatch(buildSetup(mac, sources, '1.2.3').commands, /llama\.cpp/);
+  assert.doesNotMatch(buildSetup({...mac, tier: 'gpu'}, sources, '1.2.3').commands, /llama\.cpp/);
+  assert.match(buildSetup({...mac, tier: 'full'}, sources, '1.2.3').commands, /llama\.cpp/);
+  const remote = buildSetup({...mac, tier: 'full', readerUrl: 'http://reader.lan:8000/v1', readerModel: 'm'}, sources, '1.2.3');
+  assert.doesNotMatch(remote.commands, /llama\.cpp/);
+});
