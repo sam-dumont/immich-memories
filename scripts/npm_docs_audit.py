@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail closed; permit two time-limited docs reviews only with explicit opt-in."""
+"""Fail closed; permit one time-limited docs review only with explicit opt-in."""
 
 import argparse
 import json
@@ -10,7 +10,6 @@ from pathlib import Path
 EXPIRES = date(2026, 10, 17)
 REVIEWED = {
     ("braces", "3.0.3", "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm"),
-    ("http-cache-semantics", "4.2.0", "https://github.com/advisories/GHSA-ch52-4w7c-c8xp"),
 }
 SEVERITIES = {"info", "low", "moderate", "high", "critical"}
 
