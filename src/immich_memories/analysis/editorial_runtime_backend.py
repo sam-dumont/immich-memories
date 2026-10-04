@@ -549,6 +549,7 @@ def _plan_from_structure_result(
             EditorialSelection(
                 asset_id=row["asset_id"],
                 render_mode="motion" if row["kind"] in ("live-motion", "video") else "still",
+                has_music=bool(row.get("has_music", False)),
             )
             for row in carriers
         )

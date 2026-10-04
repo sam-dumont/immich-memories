@@ -119,7 +119,7 @@ docker compose exec immich-memories immich-memories preflight
 Python:
 
 ```bash
-uv tool install --force "immich-memories[all]==X.Y.Z"
+uv tool install --force --python 3.12 "immich-memories[all]==X.Y.Z"
 ```
 
 Kubernetes/Terraform: restore the old image tag and apply, then restore the old store backup with

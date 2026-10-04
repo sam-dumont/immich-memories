@@ -64,7 +64,7 @@ def test_a_live_job_keeps_its_sources_and_exact_selected_interval(tmp_path):
         memory={"person_name": "Example Person", "preset_params": {"birthday_age": 10}},
     )
     body["plan"]["clips"][0].update(
-        audio_categories=["speech", "music"],
+        has_music=True,
         llm_emotion="happy",
         rotation_override=90,
     )
@@ -94,7 +94,7 @@ def test_a_live_job_keeps_its_sources_and_exact_selected_interval(tmp_path):
     assert clip.editorial_live_manifest == body["plan"]["clips"][0]["live"]
     assert params.clip_segments == {clip.asset.id: (0.5, 2.5)}
     assert [(row.start_time, row.end_time) for row in params.editorial_selections] == [(0.5, 2.5)]
-    assert clip.audio_categories == ["speech", "music"]
+    assert params.editorial_selections[0].has_music is True
     assert clip.llm_emotion == "happy"
     assert params.clip_rotations == {clip.asset.id: 90}
     assert params.output_orientation == "square"

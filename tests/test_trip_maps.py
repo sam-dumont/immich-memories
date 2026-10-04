@@ -73,26 +73,6 @@ class TestGenerateTripTitle:
 class TestRenderTripMapFrame:
     """Map frame rendering with staticmap + PIL."""
 
-    def test_returns_image_with_correct_dimensions(self):
-        """render_trip_map_frame returns PIL Image at requested resolution."""
-        from immich_memories.titles.map_renderer import render_trip_map_frame
-
-        locations = [(41.39, 2.17), (48.86, 2.35)]  # Barcelona, Paris
-
-        # Mock staticmap to avoid network calls
-        mock_map_img = Image.new("RGB", (1920, 1080), color=(200, 220, 240))
-        with patch("immich_memories.titles.map_renderer.StaticMap") as mock_sm:
-            mock_sm.return_value.render.return_value = mock_map_img
-            result = render_trip_map_frame(
-                locations=locations,
-                title_text="TWO WEEKS IN SPAIN",
-                width=1920,
-                height=1080,
-            )
-
-        assert isinstance(result, Image.Image)
-        assert result.size == (1920, 1080)
-
     def test_returns_numpy_array_for_gpu(self):
         """render_trip_map_array returns numpy float32 array for the GPU pipeline."""
         from immich_memories.titles.map_renderer import render_trip_map_array
@@ -113,38 +93,6 @@ class TestRenderTripMapFrame:
         assert result.dtype == np.float32
         # Values should be normalized 0-1
         assert result.max() <= 1.0
-
-    def test_single_location_renders(self):
-        """Single location should still produce a valid map."""
-        from immich_memories.titles.map_renderer import render_trip_map_frame
-
-        mock_map_img = Image.new("RGB", (1920, 1080), color=(200, 220, 240))
-        with patch("immich_memories.titles.map_renderer.StaticMap") as mock_sm:
-            mock_sm.return_value.render.return_value = mock_map_img
-            result = render_trip_map_frame(
-                locations=[(41.39, 2.17)],
-                title_text="A WEEK IN BARCELONA",
-                width=1920,
-                height=1080,
-            )
-
-        assert result.size == (1920, 1080)
-
-    def test_portrait_mode(self):
-        """Portrait resolution (1080x1920) should render correctly."""
-        from immich_memories.titles.map_renderer import render_trip_map_frame
-
-        mock_map_img = Image.new("RGB", (1080, 1920), color=(200, 220, 240))
-        with patch("immich_memories.titles.map_renderer.StaticMap") as mock_sm:
-            mock_sm.return_value.render.return_value = mock_map_img
-            result = render_trip_map_frame(
-                locations=[(41.39, 2.17), (48.86, 2.35)],
-                title_text="A WEEK IN SPAIN",
-                width=1080,
-                height=1920,
-            )
-
-        assert result.size == (1080, 1920)
 
     def test_portrait_numpy_array(self):
         """Portrait mode numpy array should have correct shape."""

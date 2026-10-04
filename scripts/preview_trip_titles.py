@@ -41,10 +41,20 @@ for label, location, start, end in trips:
     print(f"  → {title}")
 
 # === 2. Render trip intro map frames ===
+import numpy as np  # noqa: E402
+from PIL import Image  # noqa: E402
+
 from immich_memories.titles.map_renderer import (  # noqa: E402
     render_location_card,
-    render_trip_map_frame,
+    render_trip_map_array,
 )
+
+
+def _render_map_frame(locations, width: int = 1920, height: int = 1080, location_names=None):
+    """Production never bakes a title into the map; previews pins-only to match it."""
+    arr = render_trip_map_array(locations, width, height, location_names=location_names)
+    return Image.fromarray((arr * 255).astype(np.uint8))
+
 
 print("\n" + "=" * 60)
 print("RENDERING MAP FRAMES (this fetches map tiles, may take a moment)")
@@ -77,17 +87,17 @@ map_scenarios = [
     ),
 ]
 
-for filename, title, locations, names in map_scenarios:
+for filename, _title, locations, names in map_scenarios:
     print(f"\n  Rendering {filename}...")
-    img = render_trip_map_frame(locations, title, location_names=names)
+    img = _render_map_frame(locations, location_names=names)
     path = OUTPUT_DIR / f"{filename}.png"
     img.save(str(path))
     print(f"  → Saved to {path}")
 
 # Also render portrait versions for the two main ones
-for filename, title, locations, names in map_scenarios[:2]:
+for filename, _title, locations, names in map_scenarios[:2]:
     print(f"\n  Rendering {filename}_portrait...")
-    img = render_trip_map_frame(locations, title, width=1080, height=1920, location_names=names)
+    img = _render_map_frame(locations, width=1080, height=1920, location_names=names)
     path = OUTPUT_DIR / f"{filename}_portrait.png"
     img.save(str(path))
     print(f"  → Saved to {path}")

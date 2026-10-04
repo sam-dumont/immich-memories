@@ -178,7 +178,7 @@ mode retains the original SDR default. Source audio is preserved; adding a
 soundtrack belongs to the submitting app, which is why the result carries
 `music_mute_windows`.
 
-Clips also carry `rotation_override`, `audio_categories` and `llm_emotion`.
+Clips also carry `rotation_override`, `has_music` and `llm_emotion`.
 The `titles` object accepts the full title configuration; `memory` accepts
 `person_name` and `preset_params`. `options` carries `scale_mode`, date/place
 overlays, `privacy_mode` and `photo_duration`. These preserve the submitted film
