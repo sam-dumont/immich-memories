@@ -28,6 +28,7 @@ from immich_memories.analysis.editorial_exposure_chains import chain_holds_for
 from immich_memories.analysis.editorial_family_seat import FilmSeatSource, seat_in_film
 from immich_memories.analysis.editorial_home_radius import home_of, near_home_of
 from immich_memories.analysis.editorial_owner_required import admit_owner_required
+from immich_memories.analysis.editorial_people_condition_replan import enforce_people_condition
 from immich_memories.analysis.editorial_picture_admission import picture_admission, shows_life
 from immich_memories.analysis.editorial_picture_ladders import depth_cap
 from immich_memories.analysis.editorial_review_list import write_for_cut
@@ -276,6 +277,20 @@ def plan_structure(
 
 
 def _plan_structure(
+    source: StructurePlanningInput, ports: StructurePlannerPorts
+) -> StructurePlanningResult:
+    """One pass, then a bounded retry if it selected outside the people condition (#1969).
+
+    See `editorial_people_condition_replan.py` for why this must run before the certified
+    render timing is bound, not as a post-hoc rewrite of the carriers list.
+    """
+    result = _plan_structure_pass(source, ports)
+    return enforce_people_condition(
+        source, result, plan_once=lambda narrowed: _plan_structure_pass(narrowed, ports)
+    )
+
+
+def _plan_structure_pass(
     source: StructurePlanningInput, ports: StructurePlannerPorts
 ) -> StructurePlanningResult:
     source.bank_dir.mkdir(parents=True, mode=0o700, exist_ok=True)

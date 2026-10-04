@@ -179,7 +179,7 @@ class ProductionPostCardBackend:
                 )
                 trace.warnings.append(warning)
                 logger.warning(warning)
-        _drop_people_violations(result, trace)
+        _warn_of_people_condition_drop(result, trace)
         return self._adopt(result, source.artifact_dir, allowed_ids)
 
     def _effects(self, source, resources):
@@ -524,30 +524,23 @@ def _write_visual_requests(artifact_dir: Path, trace: Trace, request_start: int)
     )
 
 
-def _drop_people_violations(result: StructurePlanningResult, trace: Trace) -> None:
-    """Drop any carrier the contract check flagged against the requested people (#1954).
+def _warn_of_people_condition_drop(result: StructurePlanningResult, trace: Trace) -> None:
+    """Surface the replan `plan_structure` already did (#1969): never rewrite carriers here.
 
     The owner's ruling is strict: better lose a good picture than bundle in a wrong one.
-    The fetch and the contract check already agree this should never happen; dropping here
-    is the last gate before a carrier reaches render, not a substitute for either.
+    `editorial_structure_planner._plan_structure` enforces it before the certified render
+    timing is bound, by replanning over a pool with every violator removed; this only
+    reports what it found, so the carriers, chapters, threads and timing stay one answer.
     """
-    violations = result.plan.get("intent_report", {}).get("violations", [])
-    dropped = {
-        violation["asset_id"]
-        for violation in violations
-        if violation.get("code") == "people_condition_violated"
-    }
+    dropped = result.plan.get("people_condition_dropped")
     if not dropped:
         return
     warning = (
         f"!! {len(dropped)} selected picture(s) failed the requested people condition on "
-        "their own faces and were dropped before render"
+        "their own faces; the cut was replanned without them"
     )
     trace.warnings.append(warning)
     logger.warning(warning)
-    result.plan["carriers"] = [
-        row for row in result.plan["carriers"] if row["asset_id"] not in dropped
-    ]
 
 
 def _validate_structure_carriers(result: StructurePlanningResult, *, allowed_ids: set[str]) -> None:
