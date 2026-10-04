@@ -281,7 +281,7 @@
   }
 
   // A sentence is a brief of its own: `generate --ask` is the whole scope.
-  const cutSentence = (sentence: string) => startCut({ ask: sentence } as CutBrief);
+  const cutSentence = (sentence: string) => startCut({ ask: sentence, accounts: accountsChosen } as CutBrief);
 
   async function cancel() {
     if (job) job = (await post<JobView>(`/jobs/${encodeURIComponent(job.id)}/cancel`, {})).body;
@@ -308,7 +308,7 @@
   {#if job && job.status === 'running'}
     <JobPanel {job} onCancel={cancel} />
   {:else}
-    <AskPanel onFilm={cutSentence} />
+    <AskPanel onFilm={cutSentence} accounts={accountsChosen} />
     <form class="flex flex-col gap-6" onsubmit={(event) => { event.preventDefault(); void cut(); }}>
       <fieldset class="flex flex-col gap-3">
         <legend class="mb-2 text-sm font-semibold">{t('Memory type')}</legend>
