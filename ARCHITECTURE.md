@@ -609,7 +609,8 @@ src/immich_memories/
 │   ├── prose_shapes.py         # The JSON shape each prose seat asks for (response_format json_schema)
 │   ├── text_episode_paging.py  # Its request limits: an episode cut into pages, pages packed into prompts
 │   ├── editorial_album_index.py # Album names by asset, one listing + one read per album, once per run
-│   ├── editorial_story_*.py    # Story reading, weighing, slots, shortlist, carriers: the story planner
+│   ├── editorial_story_*.py    # Story reading, weighing, slots, shortlist, vote, carriers: the story planner
+│   │                           # (editorial_story_vote.py: the two-order model vote over a story's shortlisted moments)
 │   ├── editorial_story_trips.py     # Detected trips become one story per leg, with a reserve for each leg's length
 │   ├── editorial_story_lookalike.py # A story's further picture is refused when it repeats one it holds
 │   ├── editorial_story_depth.py     # A short film's free slots as verified-different frames inside shown moments

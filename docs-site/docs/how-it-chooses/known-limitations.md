@@ -43,11 +43,10 @@ Preparing a whole library of 1,200 to 3,100 pictures took 8 to 26 minutes on an 
 Two things still get in the way:
 
 - **An unprepared library answers "not possible".** Today a request only searches pictures that are already captioned. A request will soon prepare the period it needs on its own, after telling you how long that takes ([#2045](https://github.com/sam-dumont/immich-memories/issues/2045)). Until then, run `immich-memories prepare` for the period first.
-- **A year in the sentence can be misread.** "the horses in 2024" makes no film because the year gets read as text printed on something in the photos ([#2046](https://github.com/sam-dumont/immich-memories/issues/2046)). "our horses" works.
 
 ## Other things to know
 
-- **A blurry or nearly black picture can slip in** when it is the only picture of its moment, mostly in narrow selections like free text ([#2049](https://github.com/sam-dumont/immich-memories/issues/2049)).
+- **Fixed:** a blurry or nearly black picture no longer ships as the only picture of its moment; a starred one still does, favourites rule unchanged ([#2049](https://github.com/sam-dumont/immich-memories/issues/2049)).
 - **The run can occasionally exit with an error after the cut is saved.** The film and the saved cut are fine; a script reading the exit code sees a failure ([#2025](https://github.com/sam-dumont/immich-memories/issues/2025)).
 
 Figures on this page come from the test households, never from a real family library. For timings on your own hardware, see [Measure your setup](../better/measured.md).
