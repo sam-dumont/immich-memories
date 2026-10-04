@@ -89,9 +89,11 @@ class ProductionPostCardBackend:
         ]
         | None = None,
         printed_near: PrintedNear | None = None,
+        document_ocr_hits: Callable[[], frozenset[str]] | None = None,
     ) -> None:
         self._prepare_refinement = prepare_refinement
         self._printed_near = printed_near
+        self._document_ocr_hits = document_ocr_hits
         self._episode_demand = episode_demand
         self._fetch_preview = fetch_preview
         self._attached_sources = attached_sources
@@ -327,6 +329,7 @@ class ProductionPostCardBackend:
                     exclude_people_condition_violators(source).source, printed=self._printed_near
                 ),
                 printed_near=self._printed_near,
+                document_ocr_hits=self._document_ocr_hits,
                 resolve_windows=resolve_windows,
                 resolve_speech=resolve_speech,
                 resolve_motion=production_motion_resolver(source),
@@ -349,6 +352,7 @@ class ProductionPostCardBackend:
             clock_offsets=self.clock_offsets(source, resources),
             live_source_integrity=self.source_integrity(source, resources),
             printed_near=self._printed_near,
+            document_ocr_hits=self._document_ocr_hits,
             **self._thin_polish(source),
         )
 

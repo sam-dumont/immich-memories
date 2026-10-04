@@ -588,11 +588,34 @@ def _renderer(source: StructurePlanningInput, probe):
     return measure
 
 
+def source_exclusions(
+    source: StructurePlanningInput, ports: StructurePlannerPorts, lines: Mapping[str, str]
+) -> dict[str, str]:
+    """The source refusals for these lines, with the heads and OCR evidence that
+    corroborates a personal document (#2062).
+
+    Favourites and pictures the owner required are exempt from the personal-document check
+    only: the owner's own choice stands.
+    """
+    protected = set(source.owner_required_asset_ids) | {
+        asset_id for asset_id, asset in source.assets.items() if asset.is_favorite
+    }
+    ocr_hits = ports.document_ocr_hits() if ports.document_ocr_hits else frozenset()
+    heads_of = {
+        asset_id: dict(record.heads)
+        for asset_id, record in source.audience_annotations.items()
+        if asset_id in lines
+    }
+    return excluded_carrier_sources(
+        lines, heads_of=heads_of, ocr_document_hits=ocr_hits, protected=protected
+    )
+
+
 def build_material(
     source: StructurePlanningInput, ports: StructurePlannerPorts, wall: Wall
 ) -> Material:
     lines = source.annotations
-    document_sources = excluded_carrier_sources(lines)
+    document_sources = source_exclusions(source, ports, lines)
     builder = UnitBuilder(
         source,
         ports,

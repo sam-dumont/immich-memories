@@ -21,6 +21,8 @@ A Live Photo plays as motion when its clip moves and keeps its subject in view. 
 
 Screenshots, documents and unusable frames normally stay out. For a film about objects, give it a curated album and a written subject: a loaf belongs in a film about making bread. A written subject requires a configured text reader; an album without a subject works with the rules reader.
 
+A photographed ID card, passport, bank card, letter or form with readable personal text is excluded on every tier: a caption that names the document, or Immich's own OCR reading a field like a passport number or a date of birth, tells it apart from an ordinary photo that just happens to include a document-shaped frame. On Basic, with no caption and no document head, OCR alone is enough, favouring a missed shot over a leaked one. An ordinary scene with a sign or a programme in it stays in; only a picture that is itself the document is held. A favourite or a picture you explicitly selected is exempt from this check.
+
 If the wrong frame won, [swap or add it in the review](./overrule-it.md). The pool explains why each picture was kept or left out; the CLI has the same answer:
 
 ```bash

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from collections.abc import Mapping
+from collections.abc import Collection, Mapping
 
 from immich_memories.analysis.annotation_line_fields import content_of
 
@@ -146,13 +146,67 @@ def screenshot_by_resolution(line: str) -> bool:
     return (min(w, h), max(w, h)) in PHONE_SCREEN_SIZES
 
 
-def excluded_carrier_sources(annotations: Mapping[str, str]) -> dict[str, str]:
+# Immich's OCR answers "does picture X read word W", not "does X hold any text" (it banks no
+# OCR text of its own, #2062): a closed vocabulary of personal-record fields a scanned or
+# photographed ID, passport or bank card reads, and an ordinary sign or programme does not.
+PERSONAL_DOCUMENT_OCR_WORDS = (
+    "passport",
+    "driving licence",
+    "driver licence",
+    "driver's license",
+    "identity card",
+    "date of birth",
+    "national insurance",
+    "social security number",
+)
+
+_PERSONAL_DOCUMENT_TEXT = re.compile(
+    r"\b(?:identity cards?|id cards?|passports?|driver'?s? licen[cs]es?|driving licen[cs]es?|"
+    r"(?:bank|credit|debit) cards?|(?:bank|credit|debit) statements?|boarding passe?s?|"
+    r"(?:a |an )?(?:letter|form) (?:addressed to|with|showing)[^|]*?"
+    r"(?:name and address|date of birth|personal details|account number))\b",
+    re.IGNORECASE,
+)
+
+
+def personal_document(content: str, heads: Mapping[str, str], ocr_hit: bool) -> bool:
+    """A photographed ID card or personal document, caught where the detector heads cannot.
+
+    `doc_docling` has no identity-document label: it names figure types (charts, tables,
+    logos, a screenshot) and falls back to its catch-all `photograph` for anything else,
+    the same label an ordinary photo gets, and `frame_kind`'s `screen_or_document` is one
+    label for every screen and document, legitimate records included -- on the public
+    held-out set 42 of 51 such frames were worth keeping (#1539's own measurement). Neither
+    head tells a photographed passport apart from a race certificate, so neither fires
+    alone; only a caption naming the document, or Immich's OCR reading a personal-record
+    field, does that, and the frame head only narrows which pictures that evidence counts
+    for (#2062).
+    """
+    if _PERSONAL_DOCUMENT_TEXT.search(content):
+        return True
+    if not heads:
+        # BASIC has no document head at all; OCR reading a personal-record field is the
+        # strongest signal it has, so it alone is enough here (prefer false positives).
+        return ocr_hit
+    return heads.get("frame_kind") == "screen_or_document" and ocr_hit
+
+
+def excluded_carrier_sources(
+    annotations: Mapping[str, str],
+    *,
+    heads_of: Mapping[str, Mapping[str, str]] | None = None,
+    ocr_document_hits: Collection[str] = (),
+    protected: Collection[str] = (),
+) -> dict[str, str]:
     """Use grounded annotation fields, without reclassifying the event's importance.
 
     A map mentioned in a real scene is not the same as a geographical-map document
     label. No date, filename, person or sporting-event name is part of this rule.
+    `protected` pictures (a favourite, or one the owner required) skip the personal-document
+    check only: the owner's own choice stands.
     """
     excluded = {}
+    heads_of = heads_of or {}
     for asset_id, line in annotations.items():
         # The heads and the pixel size are our own fields and are read as such; the words a
         # rule looks for are read only where the picture's content is, so a burst that
@@ -173,4 +227,8 @@ def excluded_carrier_sources(annotations: Mapping[str, str]) -> dict[str, str]:
             excluded[asset_id] = "medical-care"
         elif identical_grid(content):
             excluded[asset_id] = "identical-grid"
+        elif asset_id not in protected and personal_document(
+            content, heads_of.get(asset_id, {}), asset_id in ocr_document_hits
+        ):
+            excluded[asset_id] = "personal-document"
     return excluded
