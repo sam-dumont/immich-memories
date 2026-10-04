@@ -96,6 +96,25 @@ def test_two_villages_in_one_municipality_share_the_municipalitys_name(locale) -
 
 
 @pytest.mark.parametrize("locale", _PLATANIAS_LOCALES)
+def test_a_municipality_cluster_with_no_member_names_shows_the_degraded_name(locale) -> None:
+    """Owner's ruling: when nothing nominative names a pin at all -- no shared
+
+    city/town/village, and the cluster's own members have no name either -- the admin
+    word is dropped from the inflected municipality anyway ("Δήμος Πλατανιά" ->
+    "Πλατανιά"), declined grammar and all, rather than dropping the stop.
+    """
+    municipality = _fixture_address("greece_platanias", locale)["municipality"]
+
+    def address(_lat, _lon):
+        return {"municipality": municipality, "country": "Greece"}
+
+    stops = group_trip_stops(_VALLEY[:3], ["", "", ""], address)
+
+    expected = "Platanias" if locale in ("en", "de") else "Πλατανιά"
+    assert [stop.name for stop in stops] == [expected]
+
+
+@pytest.mark.parametrize("locale", _PLATANIAS_LOCALES)
 def test_two_municipalities_fall_back_to_their_own_members(locale) -> None:
     """A trip leg from Platanias to Chania (~13 km, one map stop): the two real
 

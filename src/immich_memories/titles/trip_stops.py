@@ -16,7 +16,7 @@ from dataclasses import dataclass
 from itertools import starmap
 
 from immich_memories.analysis.place_scope import place_groups, shared_place_name
-from immich_memories.place_names import locality_name
+from immich_memories.place_names import degraded_locality_name, locality_name
 
 AddressOf = Callable[[float, float], Mapping[str, str]]
 
@@ -46,15 +46,22 @@ class TripStop:
     name: str
 
 
-def _shared_name(members: list[tuple[float, float]], address_of: AddressOf | None) -> str | None:
+def _shared_names(
+    members: list[tuple[float, float]], address_of: AddressOf | None
+) -> tuple[str | None, str | None]:
+    """(nominative, degraded) shared name for a cluster, or (None, None) with no geocoder.
+
+    The geocoder's raw answer carries administrative wording ("Municipality of
+    Platanias", "Δήμος Πλατανιά"); the pin reads the town the same way every other
+    locality does. The degraded form un-inflects the admin word anyway ("Πλατανιά")
+    for when nothing else -- not even the cluster's own member names -- can name it
+    (#1954 follow-up): a slightly-off name beats no name.
+    """
     if address_of is None:
-        return None
+        return None, None
     addresses = list(starmap(address_of, members))
     name = shared_place_name(addresses, _SHARED_KEYS)
-    # The geocoder's raw answer carries administrative wording ("Municipality of
-    # Platanias", "Δήμος Πλατανιά"); the pin reads the town the same way every
-    # other locality does, in its own script when that is all there is (#1954).
-    return locality_name(name)
+    return locality_name(name), degraded_locality_name(name)
 
 
 def _fallback_name(names: list[str]) -> str | None:
@@ -86,7 +93,8 @@ def group_trip_stops(
                 if name
             )
             continue
-        name = _shared_name(members, address_of) or _fallback_name(member_names)
+        nominative, degraded = _shared_names(members, address_of)
+        name = nominative or _fallback_name(member_names) or degraded
         if name:
             lat = sum(lat for lat, _ in members) / len(members)
             lon = sum(lon for _, lon in members) / len(members)

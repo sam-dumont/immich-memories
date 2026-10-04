@@ -21,6 +21,7 @@ picture's country.
 
 from __future__ import annotations
 
+import re
 import unicodedata
 from dataclasses import dataclass
 
@@ -215,6 +216,11 @@ def _is_latin(text: str) -> bool:
     return all(not ch.isalpha() or unicodedata.name(ch, "").startswith("LATIN") for ch in text)
 
 
+def _first_alternate(label: str) -> str:
+    """Nominatim sometimes answers with alternates ("A/B", "A; B"); a film label is one name."""
+    return re.split(r"\s*[/;]\s*", label, maxsplit=1)[0]
+
+
 def _stripped(label: str) -> str | None:
     """Administrative wording dropped, a known local spelling mapped to English.
 
@@ -223,7 +229,7 @@ def _stripped(label: str) -> str | None:
     word followed by an inflected place name that cannot be safely un-inflected
     ("Δήμος Πλατανιά"): that is not a name, it names nothing at this scale.
     """
-    name = label.strip()
+    name = _first_alternate(label.strip())
     folded = name.casefold()
     if any(folded.startswith(prefix) for prefix in _INFLECTED_ADMIN_PREFIXES):
         return None
@@ -260,6 +266,26 @@ def locality_name(label: str | None) -> str | None:
     if not label:
         return None
     return _stripped(label)
+
+
+def degraded_locality_name(label: str | None) -> str | None:
+    """The last resort when nothing nominative names this place at all (#1954 follow-up).
+
+    The owner's ruling: the native name in its correct (nominative) form when the data
+    has it -- that is `locality_name` -- otherwise the admin word dropped from an
+    inflected construction anyway, even though what remains is declined ("Δήμος
+    Πλατανιά" -> "Πλατανιά"). A slightly-off name beats no name; callers try this only
+    after `locality_name` and a better-known name (Immich's own, a cluster's own
+    members) have both failed.
+    """
+    if not label:
+        return None
+    name = _first_alternate(label.strip())
+    folded = name.casefold()
+    for prefix in _INFLECTED_ADMIN_PREFIXES:
+        if folded.startswith(prefix):
+            return name[len(prefix) :]
+    return locality_name(label)
 
 
 def island_at(lat: float, lon: float, country: str) -> str | None:

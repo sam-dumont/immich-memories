@@ -230,8 +230,9 @@ def test_an_old_english_fallback_cache_entry_is_abandoned_not_reused():
     # #1947 cached an English fallback answer under a "z16-en:" cell key. #1954 drops
     # that fallback, so the stale English entry must not leak back in: the cell is
     # asked again under the new "z16-film:" key, with the real (fr) answer for this
-    # cell minus its village (tests/fixtures/places/greece_platanias_fr.json) -- Greek's
-    # genitive "Δήμος Πλατανιά" correctly names nothing at this scale, never a fragment.
+    # cell minus its village (tests/fixtures/places/greece_platanias_fr.json). Greek's
+    # genitive "Δήμος Πλατανιά" is not a name at this scale, so with no better name
+    # available it is degraded to "Πλατανιά" rather than reusing the stale English cache.
     from immich_memories.db import now_db, open_store
     from immich_memories.db.tables import geocoded_places
 
@@ -256,7 +257,7 @@ def test_an_old_english_fallback_cache_entry_is_abandoned_not_reused():
 
     names = PlaceNames(PlaceGeocoder(store, "fr", fetch))
 
-    assert names.localities_at([(*point, None)]) == [None]
+    assert names.localities_at([(*point, None)]) == ["Πλατανιά"]
 
 
 @pytest.mark.parametrize(
@@ -336,11 +337,15 @@ def _fixture_address(name: str, locale: str) -> dict[str, str]:
 
 @pytest.mark.parametrize("locale", _PLATANIAS_LOCALES)
 def test_a_real_address_with_a_village_names_the_village(locale):
-    """A village is right there in every locale's real answer; no admin word to drop."""
+    """A village is right there in every locale's real answer; no admin word to drop.
+
+    Russian's real answer is two alternates joined with "/" ("Палио Герани/Палайо
+    Герани"): a film label takes the first alternate only.
+    """
     from immich_memories.generate_privacy import clip_location_name
 
     address = _fixture_address("greece_platanias", locale)
-    expected_village = address["village"]
+    expected_village = address["village"].split("/")[0].strip()
     asset = _asset()
     asset.exif_info.country = "Greece"
 
@@ -371,6 +376,35 @@ def test_a_real_address_without_a_village_never_hand_declines_the_municipality(l
     _names(address).name([asset])
 
     expected = "Platanias" if locale in ("en", "de") else "Berlin"
+    assert shown_city(asset.exif_info) == expected
+
+
+@pytest.mark.parametrize("locale", _PLATANIAS_LOCALES)
+def test_without_a_village_or_an_immich_city_the_degraded_municipality_still_shows(locale):
+    """Owner's ruling: the native name in its correct form when the data has it,
+
+    otherwise the stripped municipality name even if the grammar is slightly off.
+    With no village key and no Immich city to fall back on, "Δήμος Πλατανιά" becomes
+    "Πλατανιά" (declined, but a name beats no name at all).
+    """
+    address = dict(_fixture_address("greece_platanias", locale))
+    del address["village"]
+    asset = _asset()
+    asset.exif_info.city = None
+    asset.exif_info.country = "Greece"
+
+    _names(address).name([asset])
+
+    # English and German's real municipality answers are their own nominative
+    # translation ("Municipality of Platanias", "Provinz Platanias"); every other
+    # locale's real answer is the same Greek genitive "Δήμος Πλατανιά" ("of
+    # Platanias"), degraded by dropping "Δήμος " and keeping the declined remainder.
+    assert address["municipality"] in (
+        "Municipality of Platanias",
+        "Provinz Platanias",
+        "Δήμος Πλατανιά",
+    )
+    expected = "Platanias" if locale in ("en", "de") else "Πλατανιά"
     assert shown_city(asset.exif_info) == expected
 
 
