@@ -8,11 +8,13 @@ from unittest.mock import patch
 import pytest
 
 from immich_memories.i18n import (
+    SUPPORTED_LOCALES,
     _,
     detect_system_locale,
     get_month_name,
     get_ordinal,
     ngettext,
+    resolve_film_locale,
 )
 
 # ---------------------------------------------------------------------------
@@ -97,6 +99,41 @@ class TestDetectSystemLocale:
             patch("immich_memories.i18n.locale.getdefaultlocale", return_value=(None, None)),
         ):
             assert detect_system_locale() == "en"
+
+
+# ---------------------------------------------------------------------------
+# resolve_film_locale
+# ---------------------------------------------------------------------------
+
+
+class TestResolveFilmLocale:
+    def test_explicit_locale_passes_through_unchanged(self):
+        # No host lookup at all when the config already names a real locale.
+        with patch("immich_memories.i18n.detect_system_locale") as detect:
+            assert resolve_film_locale("fr") == "fr"
+            detect.assert_not_called()
+
+    @pytest.mark.parametrize("host_locale", SUPPORTED_LOCALES)
+    def test_auto_follows_every_supported_host_locale(self, host_locale):
+        # WHY: mock detect_system_locale — the host-locale boundary — so every
+        # supported film language is exercised without touching the real OS locale.
+        with patch("immich_memories.i18n.detect_system_locale", return_value=host_locale):
+            assert resolve_film_locale("auto") == host_locale
+
+    def test_unknown_value_falls_back_to_english(self):
+        assert resolve_film_locale("not-a-locale") == "en"
+
+    def test_none_falls_back_to_english(self):
+        assert resolve_film_locale(None) == "en"
+
+    def test_unsupported_host_locale_falls_back_to_english(self):
+        with (
+            patch.dict(os.environ, {"LANG": "sw_KE.UTF-8"}),
+            # WHY: mock getdefaultlocale — the host-locale boundary — so an
+            # unsupported LANG is what decides the fallback, not this machine's own.
+            patch("immich_memories.i18n.locale.getdefaultlocale", return_value=(None, None)),
+        ):
+            assert resolve_film_locale("auto") == "en"
 
 
 # ---------------------------------------------------------------------------

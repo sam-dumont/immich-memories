@@ -228,6 +228,20 @@ def detect_system_locale() -> str:
     return DEFAULT_LOCALE
 
 
+def resolve_film_locale(value: str | None) -> str:
+    """The film's language: the configured locale, with "auto" following the
+    host machine, which, deployed next to Immich, is the server's locale.
+
+    Every piece of text drawn into the film (titles, dividers, location
+    cards, the LLM title prompt, holiday labels) resolves through this one
+    function so "auto" is never seen past the config boundary."""
+    if value in SUPPORTED_LOCALES:
+        return value
+    if value == "auto":
+        return detect_system_locale()
+    return DEFAULT_LOCALE
+
+
 def _supported_language(value: str) -> str | None:
     tag = value.strip().lower().replace("_", "-")
     supported = {code.lower(): code for code in SUPPORTED_LOCALES}

@@ -97,9 +97,9 @@ def place_geocoder_for(config: Config) -> PlaceGeocoder | None:
     if not config.network.geocoding:
         return None
     from immich_memories.db import open_store
-    from immich_memories.processing.clip_caption import resolve_caption_locale
+    from immich_memories.i18n import resolve_film_locale
 
-    language = resolve_caption_locale(config.title_screens.locale)
+    language = resolve_film_locale(config.title_screens.locale)
     fetch = nominatim_fetch(language, config.network.geocoding_url)
     return PlaceGeocoder(open_store(config), language, fetch)
 
