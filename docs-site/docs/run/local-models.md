@@ -133,14 +133,15 @@ selecting an architecture. Third-party caption/reader image support is independe
 |---|---|---|---|
 | App, one replica | Project app `:VERSION`; 8080; Basic/OIDC before LAN exposure | 1 CPU/2Gi → 4 CPU/8Gi; fetch init 250m/512Mi → 2 CPU/2Gi | No GPU in Basic or remote-inference wrapper. Data PVC contains SQLite, Settings/credentials and caches; `/models` pins; `/app/output` films. Init fetches pins |
 | CUDA inference | Project `/inference:VERSION-cuda`; 8092; no key in shipped overlay, restrict network | 500m/1Gi → 4 CPU/4Gi | One GPU allocation; `/cache` PVC for weights/HF/JIT; first use can download and warm models; idle unload does not remove files |
-| Generated CUDA captioner | `ghcr.io/ggml-org/llama.cpp:server-cuda-b10920`; 8092 `/v1`, alias `smolvlm2-500m-base-public`; network isolation | 500m/1Gi → 4 CPU/3Gi; fetch init 100m/64Mi → 1 CPU/256Mi | One separate GPU allocation in generated GPU wrapper; `/models` PVC contains pinned SmolVLM2 Q8_0 and projector; init verifies/downloads them |
+| Generated CUDA captioner | `ghcr.io/ggml-org/llama.cpp:server-cuda-b10920`; 8092 `/v1`, alias `smolvlm2-500m-base-public`; network isolation | 500m/1Gi → 4 CPU/3Gi; fetch init 100m/64Mi → 1 CPU/256Mi | Time-sliced, no reservation in the generated GPU wrapper; `/models` PVC contains pinned SmolVLM2 Q8_0 and projector; init verifies/downloads them |
 | Independently managed CUDA captioner overlay | Same caption server/alias and resource limits | Same as above | No GPU reservation in this overlay: operator must provide supported device access/sharing or request a separate card. It still consumes VRAM |
 | External Full reader | Operator's tested server/model; endpoint and API key as configured | Operator budget; no common measured minimum | Its own model cache, VRAM and startup/download policy. App cannot unload external weights |
 | Optional render worker | [Worker image/config](../better/gpu-render.md); 8093; bearer token | Operator-selected worker/sidecar budget | Encoding GPU is separate from selection capability; scratch and model paths belong to worker; media arrives over authenticated HTTP |
 
-The generated GPU wrapper reserves **two GPU allocations**, one per model service; it does not
-configure sharing. The historical single-T1000 run had operator-managed sharing and does not
-prove that two default exclusive allocations fit on one GPU. VRAM depends on loaded models and
+The generated GPU wrapper reserves **one GPU allocation**, for the inference service. The
+captioner reserves none and relies on time-slicing; the wrapper does not configure sharing. The
+historical single-T1000 run had operator-managed sharing and does not prove that a default
+exclusive card is enough for both. VRAM depends on loaded models and
 concurrency; a missing reservation is not zero consumption or an arbitrary-sharing guarantee.
 
 Only the app and its init/maintenance jobs need the app state volumes. Inference, caption and
