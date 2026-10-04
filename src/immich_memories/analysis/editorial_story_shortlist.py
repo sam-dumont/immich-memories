@@ -199,9 +199,16 @@ def _capture_group_moments(
     subject: Callable[[str], SubjectVisibility] = lambda _a: SubjectVisibility(0, 0.0),
     rank: Callable[[str, int, int], tuple] | None = None,
     withhold: Callable[[str], bool] | None = None,
+    pixel_disqualified: Callable[[str], bool] = lambda _a: False,
 ) -> list[DepictedChoice]:
     """Without a model inventory a capture group is the moment; the favourite, else the best unflagged
     picture that shows life, carries it.
+
+    ``pixel_disqualified`` names a picture whose line carries a pixel warning that only ranks a
+    picture within its group (SOFT (blurry), DARK): never the owner's favourite. The ranking
+    above always puts a clean sibling first when the group has one, so this only ever fires on
+    the group's best candidate when every member carries it, which leaves the moment unfunded
+    rather than shipping the one picture it has (#2049).
 
     Between two pictures that are otherwise equally entitled to the frame, the one that plays
     takes it: a second of the thing happening beats a sharper frame of it having happened. A
@@ -245,13 +252,16 @@ def _capture_group_moments(
                 )
             ),
         )
+        primary = ordered[0]
+        if not primary.get("favourite") and pixel_disqualified(primary["asset_id"]):
+            continue
         choices.append(
             DepictedChoice(
                 key=f"{moment}:cg",
                 episode="",
                 taken=min(u["taken"] for u in members),
                 content="capture group",
-                primary=ordered[0]["asset_id"],
+                primary=primary["asset_id"],
                 alternatives=[u["asset_id"] for u in ordered[1:]],
             )
         )
