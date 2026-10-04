@@ -12,6 +12,7 @@ export interface Setup {
   cuda: boolean;
   version: string;
   uiPort?: number;
+  namespace?: string;
   inline?: boolean;
   secretKey?: string;
 }
@@ -43,9 +44,12 @@ export function nativeInstallCommand(version: string, extras: 'all' | 'all-mac')
 }
 
 export function validateSetup(setup: Setup): string | null {
-  if (['linux', 'synology'].includes(setup.platform) &&
+  if (['linux', 'synology', 'mac'].includes(setup.platform) &&
       (!Number.isInteger(setup.uiPort ?? 8080) || (setup.uiPort ?? 8080) < 1 || (setup.uiPort ?? 8080) > 65535)) {
     return 'UI host port must be a whole number from 1 to 65535.';
+  }
+  if (setup.platform === 'kubernetes' && !/^[a-z0-9]([-a-z0-9]{0,61}[a-z0-9])?$/.test(setup.namespace ?? 'immich-memories')) {
+    return 'Namespace must be a lowercase DNS label: letters, digits and dashes, up to 63 characters.';
   }
   if (setup.version === 'development') return 'Choose a published release version for these setup files.';
   if (!releaseVersion(setup.version) && setup.version !== 'latest') return 'Use a release version such as 1.0.0 or 1.0.0-rc.1.';
@@ -136,20 +140,23 @@ function macRecipe(setup: Setup): Result {
     'mlxcel serve --model "$SNAPSHOT" --alias smolvlm2-500m-base-public --host 127.0.0.1 --port 8092 > captioner.log 2>&1 &',
   ];
   return {error: null, files: [{name: 'config.yaml', language: 'yaml', content: JSON.stringify(config, null, 2)}], commands: [
-    `brew install uv ffmpeg-full${full && !setup.readerUrl ? ' llama.cpp' : ''}`,
-    'export PATH="$(brew --prefix ffmpeg-full)/bin:$PATH"',
+    `brew install uv ffmpeg${full && !setup.readerUrl ? ' llama.cpp' : ''}`,
+    'ffmpeg -hide_banner -filters | grep zscale',
+    '# No output? HDR conversion needs zscale: brew install ffmpeg-full, then put $(brew --prefix ffmpeg-full)/bin first on your PATH.',
     nativeInstallCommand(setup.version, 'all-mac'),
-    'mkdir -p ~/.immich-memories',
-    '# Save the generated config.yaml in ~/.immich-memories.',
     'umask 077',
+    'mkdir -p ~/.immich-memories',
+    '# Save the generated config.yaml in ~/.immich-memories (after umask 077, so only you can read your API key).',
     'test -f ~/.immich-memories/secret-key || openssl rand -hex 32 > ~/.immich-memories/secret-key',
     'export IMMICH_MEMORIES_SECRET_KEY="$(cat ~/.immich-memories/secret-key)"',
     ...caption,
     `immich-memories config move-to-db tier ${setup.tier === 'basic' ? '' : 'editorial.preparation.caption_base_url '}llm.enabled llm.base_url llm.model llm.api_key`,
+    '# move-to-db keeps the full file as config.yaml.bak, API key included. Once the app runs, delete it:',
+    '# rm ~/.immich-memories/config.yaml.bak',
     'immich-memories models fetch',
     'immich-memories preflight',
     'immich-memories capabilities',
-    'immich-memories ui --host 127.0.0.1',
+    `immich-memories ui --host 127.0.0.1 --port ${setup.uiPort ?? 8080}`,
   ].join('\n')};
 }
 
@@ -164,9 +171,10 @@ export function buildSetup(setup: Setup, sources: Sources, buildVersion: string)
   if (setup.platform === 'mac') return macRecipe(setup);
   if (setup.platform === 'kubernetes') {
     const tag = releaseVersion(setup.version)!;
+    const ns = setup.namespace ?? 'immich-memories';
     const root = setup.tier === 'basic' ? 'base' : `overlays/tier-${setup.tier}`;
     const secret = {apiVersion: 'v1', kind: 'Secret', metadata: {
-      name: 'immich-memories-secrets', namespace: 'immich-memories',
+      name: 'immich-memories-secrets', namespace: ns,
     }, type: 'Opaque', stringData: {IMMICH_URL: setup.immichUrl, IMMICH_API_KEY: setup.apiKey, IMMICH_MEMORIES_SECRET_KEY: setup.secretKey!, ...(setup.readerApiKey ? {IMMICH_MEMORIES_DEPLOYMENT_READER_API_KEY: setup.readerApiKey} : {})}};
     const ports = new Set<number>([Number(new URL(setup.immichUrl).port || (setup.immichUrl.startsWith('https:') ? 443 : 80))]);
     if (setup.tier === 'full') ports.add(Number(new URL(setup.readerUrl).port || (setup.readerUrl.startsWith('https:') ? 443 : 80)));
@@ -182,7 +190,7 @@ export function buildSetup(setup: Setup, sources: Sources, buildVersion: string)
     const files = [
       {name: 'deploy/kubernetes/custom/secret.yaml', language: 'yaml', content: JSON.stringify(secret, null, 2)},
       {name: 'deploy/kubernetes/custom/kustomization.yaml', language: 'yaml', content: JSON.stringify({
-        apiVersion: 'kustomize.config.k8s.io/v1beta1', kind: 'Kustomization', namespace: 'immich-memories',
+        apiVersion: 'kustomize.config.k8s.io/v1beta1', kind: 'Kustomization', namespace: ns,
         resources: [`../${root}`, 'secret.yaml'], patches: [egress, tierPreset],
       }, null, 2)},
     ];
@@ -199,18 +207,18 @@ export function buildSetup(setup: Setup, sources: Sources, buildVersion: string)
       '# Save the generated files at their labelled paths.',
       '# The Secret holds IMMICH_MEMORIES_SECRET_KEY, which seals the credentials saved in Settings.',
       '# Keep a copy: a restored store needs the same key.',
-      '# Namespace: this output uses immich-memories. Change it in both generated files and in every -n below.',
       ...(setup.tier === 'basic' ? [] : ['# GPU tier: the app pod gets no GPU, so encoding and titles run on the CPU; the GPU serves inference and captions.']),
       '# Before applying: choose local/block storage for immich-memories-cache (SQLite).',
       '# NFS/SMB app-data storage is refused at startup; use PostgreSQL for a network database.',
       '# Storage choices: https://sam-dumont.github.io/immich-memories/docs/run/kubernetes#prerequisites',
       `kubectl kustomize deploy/kubernetes/custom`,
       'kubectl apply -k deploy/kubernetes/custom',
-      'kubectl rollout status -n immich-memories deploy/immich-memories',
-      'kubectl exec -n immich-memories deploy/immich-memories -- immich-memories preflight',
-      'kubectl exec -n immich-memories deploy/immich-memories -- immich-memories capabilities',
+      `kubectl rollout status -n ${ns} deploy/immich-memories`,
+      `kubectl exec -n ${ns} deploy/immich-memories -- immich-memories models fetch`,
+      `kubectl exec -n ${ns} deploy/immich-memories -- immich-memories preflight`,
+      `kubectl exec -n ${ns} deploy/immich-memories -- immich-memories capabilities`,
       '# Keep this private forwarding command running in this terminal.',
-      'kubectl port-forward -n immich-memories svc/immich-memories 8080:80',
+      `kubectl port-forward -n ${ns} svc/immich-memories 8080:80`,
       '# Open http://localhost:8080 in your browser and start your first monthly cut.',
     ].join('\n')};
   }

@@ -90,3 +90,28 @@ def test_mac_move_to_db_names_only_keys_the_file_sets(tier):
     flat.update({k.removeprefix("advanced."): v for k, v in flat.items()})
     for key in shlex.split(line)[3:]:
         assert key in flat, f"{key} is moved but config.yaml does not set it"
+
+
+@pytest.mark.parametrize("tier", ["basic", "gpu", "full"])
+def test_mac_commands_follow_the_uv_pip_page(tier):
+    commands = OUTPUTS[f"mac/{tier}"]["commands"].splitlines()
+    assert any(
+        line.startswith("brew install uv ffmpeg") and "ffmpeg-full" not in line for line in commands
+    )
+    assert not any(line.startswith("export PATH") for line in commands)
+    assert commands.index("umask 077") < next(
+        i for i, line in enumerate(commands) if "Save the generated config.yaml" in line
+    )
+    assert commands[-1].endswith("ui --host 127.0.0.1 --port 8080")
+
+
+@pytest.mark.parametrize("tier", ["basic", "gpu", "full"])
+def test_kubernetes_namespace_is_one_value_everywhere(tier):
+    result = OUTPUTS[f"kubernetes/{tier}"]
+    docs = [
+        json.loads(f["content"])
+        for f in result["files"]
+        if f["name"].endswith(("secret.yaml", "kustomization.yaml"))
+    ]
+    assert {d.get("namespace") or d["metadata"]["namespace"] for d in docs} == {"immich-memories"}
+    assert "models fetch" in result["commands"]
