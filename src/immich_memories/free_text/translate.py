@@ -7,9 +7,10 @@ counts only by its words beyond the subject's own nouns.
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import date
+from types import MappingProxyType
 
 from immich_memories.free_text.facts import TripRules, link_facts
 from immich_memories.free_text.homes import homes_over_time
@@ -49,9 +50,14 @@ def translate(
     today: date,
     trips: TripRules | None = None,
     printed: PrintedText | None = None,
+    face_accounts: Mapping[str, str | frozenset[str]] = MappingProxyType({}),
+    picture_accounts: Mapping[str, str] = MappingProxyType({}),
     prepare_window: Callable[[WhenLink], LibraryView] | None = None,
 ) -> Ask:
     """Translate a request against the library: every decision keeps its reason for the trace.
+
+    In a household run (#2044), `view` already holds only the pictures the asking accounts
+    can see, and `face_accounts`/`picture_accounts` carry that same scope into the pool.
 
     `prepare_window`, when given, is called with the request's own dates once the subject
     is known, and only when that subject has words a picture's caption would have to match
@@ -60,7 +66,9 @@ def translate(
     (#2045). A caption-only subject has no shortlist to fill on demand, so it is the one
     request that prepares its own window before the pool reads it. Its return value replaces
     `view` for everything that follows, so a freshly captioned picture is read, not the stale
-    copy taken before preparation.
+    copy taken before preparation. In a household run, the caller re-scopes that view to the
+    same accounts before handing it back (`_ask_generation.py`): `face_accounts` and
+    `picture_accounts` here still reflect the window as it stood before preparation.
     """
     reading = read_request(request, asker)
     who = link_who(request, reading.who, household, lexicon, asker)
@@ -74,5 +82,15 @@ def translate(
     where = link_where(request, reading.where, subject.heads, household, asker)
     facts = link_facts(request, view, lexicon)
     translation = Translation(reading, who, when, where, facts, subject)
-    pool = build_pool(translation, view, household, lexicon, asker, trips=trips, printed=printed)
+    pool = build_pool(
+        translation,
+        view,
+        household,
+        lexicon,
+        asker,
+        trips=trips,
+        printed=printed,
+        face_accounts=face_accounts,
+        picture_accounts=picture_accounts,
+    )
     return Ask(translation, pool)

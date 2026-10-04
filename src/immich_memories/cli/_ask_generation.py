@@ -11,7 +11,7 @@ from __future__ import annotations
 import hashlib
 import json
 import sys
-from collections.abc import Callable
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
@@ -20,12 +20,25 @@ from typing import TYPE_CHECKING
 import click
 
 from immich_memories.analysis.editorial_shareability import level_of
+from immich_memories.api.access_clients import AccessBoundClient
 from immich_memories.cli._album_generation import CuratedPool
 from immich_memories.cli._helpers import print_info, refuse_blocked_host
 from immich_memories.cli.progress_file import write_progress
+from immich_memories.config_models import PRIMARY_ACCOUNT
+from immich_memories.free_text.account_scope import (
+    AccountScope,
+    likely_household,
+    resolve_account_scope,
+    visible_pictures,
+)
 from immich_memories.free_text.handoff import CatalogueEvent, Film, film_for
 from immich_memories.free_text.lexicon import WordNetUnavailable, load_wordnet
-from immich_memories.free_text.library import LibraryUnavailable, LibraryView, read_library
+from immich_memories.free_text.library import (
+    LibraryPerson,
+    LibraryUnavailable,
+    LibraryView,
+    read_library,
+)
 from immich_memories.free_text.linking import WhenLink
 from immich_memories.free_text.preparation import Notice, PreparationFailed, prepare_for_request
 from immich_memories.free_text.printed import ImmichPrintedText
@@ -104,12 +117,15 @@ def scope_of_ask(
     typed: RunScope,
     trace_file: Path | None = None,
     progress_file: Path | None = None,
+    accounts: Sequence[str] = (),
 ) -> RunScope:
     """The run's scope: as typed without `--ask`, else the one its sentence asks for.
 
     Flags the sentence already says are refused. A dry run, or a sentence the library
     cannot show, ends the command after the trace: there is nothing to film. `progress_file`
-    carries an unprepared window's warning to a watcher such as the web client.
+    carries an unprepared window's warning to a watcher such as the web client. `accounts`
+    is the run's chosen household accounts (#2044): the pool only ever names a picture they
+    can see; empty is the one-account run every `--ask` has been.
     """
     if request is None:
         return typed
@@ -121,7 +137,12 @@ def scope_of_ask(
     if given:
         raise click.UsageError(f"--ask is the whole scope; drop {', '.join(given)}")
     film = translate_ask(
-        config, request, dry_run=dry_run, trace_file=trace_file, progress_file=progress_file
+        config,
+        request,
+        dry_run=dry_run,
+        trace_file=trace_file,
+        progress_file=progress_file,
+        accounts=accounts,
     )
     if film is None:
         sys.exit(0)
@@ -147,17 +168,20 @@ def translate_ask(
     dry_run: bool,
     trace_file: Path | None = None,
     progress_file: Path | None = None,
+    accounts: Sequence[str] = (),
 ) -> Film | None:
     """Translate the sentence and print its trace; the film to make, or None for no film.
 
     A dry run stops after the trace and the pool's counts. A request the library cannot
-    show is no film, and the trace says why. `trace_file` keeps the same as JSON. A
-    caption-only subject has no shortlist to fill on demand, so the request's own window is
-    prepared first when it needs it (#2045): a warning with the count and an estimate, the
-    usual progress lines, then this answer -- never "not possible" on a window nobody has
-    read yet. `progress_file` carries that warning to a watcher such as the web client.
+    show is no film, and the trace says why. `trace_file` keeps the same as JSON. `accounts`
+    is the run's chosen household accounts (#2044): the pool, verdict, trace and rule
+    preview only ever name a picture they can see; empty is the one-account run every
+    `--ask` has been. A caption-only subject has no shortlist to fill on demand, so the
+    request's own window is prepared first when it needs it (#2045): a warning with the
+    count and an estimate, the usual progress lines, then this answer -- never "not
+    possible" on a window nobody has read yet. `progress_file` carries that warning to a
+    watcher such as the web client.
     """
-    from immich_memories.api.immich import SyncImmichClient
     from immich_memories.db import open_store
 
     if config.tier != "full":
@@ -171,11 +195,25 @@ def translate_ask(
         store = open_store(config)
         view = read_library(store, config.editorial)
         asker = WireAsker(config.llm, judgments=store)
-        with SyncImmichClient(
-            base_url=config.immich.url,
-            api_key=config.immich.api_key,
-            api_version=config.immich.api_version,
-        ) as client:
+        # A request naming no account still reads as the primary alone once a household run
+        # (or native sharing) may have left another account's pictures in this store (#2044).
+        scope_accounts = accounts or (
+            (PRIMARY_ACCOUNT,)
+            if likely_household(
+                store,
+                other_accounts=bool(config.immich.accounts),
+                native_sharing=config.immich.native_sharing,
+            )
+            else ()
+        )
+        with _ask_client(config, scope_accounts) as client:
+            scope = resolve_account_scope(client, scope_accounts, view.pictures, store)
+            view = LibraryView(
+                pictures=visible_pictures(view.pictures, scope),
+                people=_scoped_people(view.people, scope),
+                sharpness_line=view.sharpness_line,
+                owner_id=view.owner_id,
+            )
 
             def prepare_window(when: WhenLink) -> LibraryView:
                 refreshed, notice_of["notice"] = prepare_for_request(
@@ -189,8 +227,9 @@ def translate_ask(
                     print_line=print_info,
                     report=_progress_reporter(progress_file),
                     before_preparing=lambda: refuse_blocked_host(config, output_directory=None),
+                    accounts=scope_accounts,
                 )
-                return refreshed
+                return _rescoped(refreshed, scope_accounts, client, store)
 
             asked = translate(
                 request,
@@ -201,6 +240,8 @@ def translate_ask(
                 today=date.today(),
                 trips=config.trips,
                 printed=ImmichPrintedText(client),
+                face_accounts=scope.face_accounts,
+                picture_accounts=scope.picture_accounts,
                 prepare_window=prepare_window,
             )
             film = film_for(asked, asker, events_on=catalogue_events)
@@ -308,3 +349,62 @@ def _progress_reporter(
         )
 
     return report
+
+
+def _rescoped(
+    view: LibraryView, accounts: Sequence[str], client: SyncImmichClient, store: Store
+) -> LibraryView:
+    """`view` narrowed again to what `accounts` can see, after preparation may have grown it.
+
+    Preparation can discover pictures the first, pre-preparation scope never read (#2044):
+    a window `resolve_account_scope` sized from the stale view would drop them as invisible,
+    the opposite of what preparing them was for. The scope is read fresh from `view`'s own
+    (now current) pictures instead. A one-account run names no accounts and is unchanged.
+    """
+    if not accounts:
+        return view
+    scope = resolve_account_scope(client, accounts, view.pictures, store)
+    return LibraryView(
+        pictures=visible_pictures(view.pictures, scope),
+        people=_scoped_people(view.people, scope),
+        sharpness_line=view.sharpness_line,
+        owner_id=view.owner_id,
+    )
+
+
+def _ask_client(config: Config, accounts: Sequence[str]) -> SyncImmichClient:
+    """The one-account client every `--ask` has used, or one that can open every account.
+
+    `accounts` named (explicitly, or because the store might hold more than the primary's
+    own pictures, #2044) needs an `AccessBoundClient` to read each one's own library, so
+    the pool can be scoped to what they can see. Naming none keeps the plain client,
+    unchanged.
+    """
+    from immich_memories.api.immich import SyncImmichClient
+
+    if not accounts:
+        return SyncImmichClient(
+            base_url=config.immich.url,
+            api_key=config.immich.api_key,
+            api_version=config.immich.api_version,
+        )
+    return AccessBoundClient(config.immich)
+
+
+def _scoped_people(
+    people: Mapping[str, LibraryPerson], scope: AccountScope
+) -> Mapping[str, LibraryPerson]:
+    """`people` the asking accounts can name; every known person when `scope` names none.
+
+    Outside a household run `scope.face_accounts` is empty and everybody the people file
+    knows is nameable, as it always has been. In one, a person with no alias any chosen
+    account can read is not linked or named in the trace at all (#2044): their pictures are
+    already out of the pool, so showing them in WHO would just be a different leak.
+    """
+    if not scope.face_accounts:
+        return people
+    return {
+        person_id: person
+        for person_id, person in people.items()
+        if person_id in scope.face_accounts
+    }

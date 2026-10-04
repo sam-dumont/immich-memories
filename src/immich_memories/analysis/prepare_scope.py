@@ -6,7 +6,7 @@ same cost `prepare` would have, and never a cost of its own invention (#2045).
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from typing import TYPE_CHECKING
 
 from immich_memories.analysis.preparation_report import ProducerClock
@@ -15,7 +15,29 @@ from immich_memories.tracking.timed import timed
 
 if TYPE_CHECKING:
     from immich_memories.analysis.editorial_preparation import PreparationResult
+    from immich_memories.analysis.selection_source import SourceScope
+    from immich_memories.api.models import Asset, VideoClipInfo
     from immich_memories.config_loader import Config
+
+
+def admit_source(
+    config: Config, scope: SourceScope, sources: Sequence[Asset | VideoClipInfo]
+) -> tuple[Asset | VideoClipInfo, ...]:
+    """`sources` passed through the same admission a cut and `prepare` both pay (dedup,
+    camera EXIF, minimum resolution): the source-eligible corpus, whoever fetched it."""
+    from immich_memories.analysis.selection_source import (
+        EditorialDependencies,
+        EditorialSelectionRequest,
+        prepare_editorial_source,
+    )
+    from immich_memories.tracking.report_context import record_assets
+
+    record_assets(sources)
+    prepared = prepare_editorial_source(
+        EditorialSelectionRequest(scope=scope),
+        EditorialDependencies(source_fetcher=lambda _scope: sources),
+    )
+    return tuple(candidate.source for candidate in prepared.candidates)
 
 
 @timed("discovery")
@@ -25,21 +47,10 @@ def eligible_source(client, config: Config, windows: list[DateRange]):
         fetch_full_window_source,
         library_source_scope,
     )
-    from immich_memories.analysis.selection_source import (
-        EditorialDependencies,
-        EditorialSelectionRequest,
-        prepare_editorial_source,
-    )
-    from immich_memories.tracking.report_context import record_assets
 
     scope = library_source_scope(client, config, windows)
     sources = fetch_full_window_source(client, scope)
-    record_assets(sources)
-    prepared = prepare_editorial_source(
-        EditorialSelectionRequest(scope=scope),
-        EditorialDependencies(source_fetcher=lambda _scope: sources),
-    )
-    return scope, sources, tuple(candidate.source for candidate in prepared.candidates)
+    return scope, sources, admit_source(config, scope, sources)
 
 
 def run_preparation(

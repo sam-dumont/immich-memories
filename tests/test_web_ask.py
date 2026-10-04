@@ -143,6 +143,45 @@ def test_an_unprepared_window_s_preview_carries_the_warning(tmp_path):
     assert "6 min" in preview["preparation"]["message"]
 
 
+def test_a_preview_scopes_its_pool_to_the_chosen_accounts(tmp_path):
+    """A household picks accounts on the same page the sentence box lives on (#2044): the
+    preview must read the pool through those accounts too, or it can show pictures the
+    eventual film (which does carry them, `CutBrief.accounts`) would never have counted."""
+    fake, recorder = _dry_run_cli(tmp_path)
+    client = api_client(_full_tier(tmp_path))
+    # WHY: the real CLI child reads the store and asks the model; this checks what the web runs.
+    client.app.dependency_overrides[cli_executable] = lambda: str(fake)
+
+    started = client.post(
+        "/api/v1/ask/preview",
+        json={"sentence": "our cat along the years", "accounts": ["partner"]},
+    )
+
+    assert started.status_code == 202
+    job = _finished(client, started.json()["id"])
+    argv = json.loads(recorder.read_text())
+    assert job["status"] == "succeeded"
+    assert "--accounts=partner" in argv
+
+
+def test_an_old_client_sending_no_accounts_field_still_starts_a_plain_preview(tmp_path):
+    """`accounts` is new (#2044); a client built before it exists sends a bare
+    `{"sentence": ...}` body with no `accounts` key at all. The field must default, not
+    reject the request or crash the route."""
+    fake, recorder = _dry_run_cli(tmp_path)
+    client = api_client(_full_tier(tmp_path))
+    # WHY: the real CLI child reads the store and asks the model; this checks what the web runs.
+    client.app.dependency_overrides[cli_executable] = lambda: str(fake)
+
+    started = client.post("/api/v1/ask/preview", json={"sentence": "our cat along the years"})
+
+    assert started.status_code == 202
+    job = _finished(client, started.json()["id"])
+    argv = json.loads(recorder.read_text())
+    assert job["status"] == "succeeded"
+    assert not any(arg.startswith("--accounts") for arg in argv)
+
+
 def test_off_the_model_tier_a_preview_is_refused_and_no_job_starts(tmp_path):
     client = api_client(config_in(tmp_path))
 

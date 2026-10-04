@@ -13,12 +13,16 @@ from types import SimpleNamespace
 
 import pytest
 
+from immich_memories.api.access_clients import AccessBoundClient
+from immich_memories.config_loader import Config
+from immich_memories.config_models import ImmichConfig
 from immich_memories.db import open_store
 from immich_memories.free_text import preparation as prep
 from immich_memories.free_text.linking import WhenLink
 from immich_memories.free_text.preparation import (
     DEFAULT_SECONDS_PER_PICTURE,
     Readiness,
+    assess,
     estimate_seconds_per_picture,
     warning_line,
     window_of,
@@ -171,3 +175,53 @@ def test_live_progress_is_reported_between_the_warning_and_the_completion(
     assert fractions[0] == 0.0  # the warning
     assert 0.0 < fractions[1] < 1.0  # live, between the warning and the completion
     assert fractions[-1] == 1.0  # the completion line
+
+
+def test_a_household_window_check_discovers_every_named_accounts_pictures(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """#2044: a plain client/window search only ever sees the primary; naming a household's
+    accounts has to read each one's own library (`HouseholdWindows`), or a partner's
+    unprepared pictures would never be found, let alone prepared."""
+    from tests.household_fake import PARTNER_KEY, PRIMARY_KEY, FakeHousehold, immich_config, picture
+
+    FakeHousehold(
+        library={
+            PRIMARY_KEY: [picture("p-cat", "primary", 1, ())],
+            PARTNER_KEY: [picture("q-cat", "partner", 2, ())],
+        }
+    ).install(monkeypatch)
+    store = open_store()
+    config = Config()
+    config.immich = ImmichConfig(**immich_config())
+    when = WhenLink(start=date(2025, 6, 1), end=date(2025, 6, 30))
+
+    with AccessBoundClient(config.immich) as client:
+        readiness = assess(
+            client, config, store, when, today=date(2025, 6, 30), accounts=("primary", "partner")
+        )
+
+    assert {prep._asset_id(asset) for asset in readiness.missing} == {"p-cat", "q-cat"}
+
+
+def test_a_one_account_window_check_never_asks_for_a_household(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """No `accounts` is the plain, one-account read every window check has always done."""
+    from tests.household_fake import PARTNER_KEY, PRIMARY_KEY, FakeHousehold, immich_config, picture
+
+    FakeHousehold(
+        library={
+            PRIMARY_KEY: [picture("p-cat", "primary", 1, ())],
+            PARTNER_KEY: [picture("q-cat", "partner", 2, ())],
+        }
+    ).install(monkeypatch)
+    store = open_store()
+    config = Config()
+    config.immich = ImmichConfig(**immich_config())
+    when = WhenLink(start=date(2025, 6, 1), end=date(2025, 6, 30))
+
+    with AccessBoundClient(config.immich) as client:
+        readiness = assess(client, config, store, when, today=date(2025, 6, 30))
+
+    assert {prep._asset_id(asset) for asset in readiness.missing} == {"p-cat"}

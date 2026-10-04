@@ -266,6 +266,7 @@ def register_generate_commands(main: click.Group) -> None:
                 typed=typed,
                 trace_file=ask_trace,
                 progress_file=_ask_progress_file(output),
+                accounts=household,
             ).fields()
         )
 

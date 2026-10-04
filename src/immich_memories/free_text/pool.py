@@ -9,10 +9,10 @@ many pictures it kept and why, so the trace and a report show where a request wa
 from __future__ import annotations
 
 import bisect
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
-from types import SimpleNamespace
+from types import MappingProxyType, SimpleNamespace
 from typing import Protocol, cast
 
 from immich_memories.analysis.moment_grouping import EPISODE_WINDOW_MINUTES
@@ -134,18 +134,22 @@ def build_pool(
     *,
     trips: TripRules | None = None,
     printed: PrintedText | None = None,
+    face_accounts: Mapping[str, str | frozenset[str]] = MappingProxyType({}),
+    picture_accounts: Mapping[str, str] = MappingProxyType({}),
 ) -> Pool:
     """The pictures the linked request can be filmed from, filter by filter, with a verdict.
 
     A request the library cannot show says so with the filter that emptied it; a pool is never
     padded with pictures that do not mean the ask. `trips` are the trip-detection rules
     (the config's defaults when not given); `printed` searches the letters in the photos,
-    and without it no printed word is looked for.
+    and without it no printed word is looked for. In a household run (#2044), `view` already
+    holds only the asking accounts' pictures, `picture_accounts` names each one's owner and
+    `face_accounts` holds each face to its own account's pictures; empty outside one.
     """
     funnel = _Funnel(view.pictures)
     excluded, left_out_reason = left_out(translation.reading.request, asker)
     _when(funnel, translation.when)
-    _present(funnel, translation.who, view)
+    _present(funnel, translation.who, view, face_accounts, picture_accounts)
     rules = trips or TripsConfig()
     if not (printed and _printed(funnel, translation, printed, asker)):
         _where(funnel, translation, household, rules, lexicon, asker)
@@ -295,34 +299,44 @@ def _names(view: LibraryView, people: frozenset[str]) -> str:
     return ", ".join(known) or "nobody known"
 
 
-def _as_asset(picture: LibraryPicture) -> Asset:
+def _as_asset(picture: LibraryPicture, picture_accounts: Mapping[str, str]) -> Asset:
     """A thin stand-in so `present_on_assets` can read a free-text picture's own faces.
 
-    Free text knows no accounts, so every face counts everywhere (`access_accounts=()`).
-    Structural only (`id`, `people`, `access_accounts`): the real type keeps the contract
-    honest for every other reader of `present_on_assets`.
+    Outside a household run `picture_accounts` is empty and every face counts everywhere,
+    as it always has. Structural only (`id`, `people`, `access_accounts`): the real type
+    keeps the contract honest for every other reader of `present_on_assets`.
     """
+    owner = picture_accounts.get(picture.asset_id)
     return cast(
         Asset,
         SimpleNamespace(
             id=picture.asset_id,
             people=[Person(id=person_id) for person_id in picture.people],
-            access_accounts=(),
+            access_accounts=(owner,) if owner else (),
         ),
     )
 
 
-def _present(funnel: _Funnel, who: WhoLink, view: LibraryView) -> None:
+def _present(
+    funnel: _Funnel,
+    who: WhoLink,
+    view: LibraryView,
+    face_accounts: Mapping[str, str | frozenset[str]],
+    picture_accounts: Mapping[str, str],
+) -> None:
     # A person is present strictly on the picture their own face is recognised on, never
     # spread to the rest of its episode (#1954): better lose a picture than bundle in one
     # a baby feeding against a chest or a child seen from behind only looks like it is in.
     # Several named people are "any of them", read the same way the fetch reads an OR
-    # (`present_on_assets`, `api/person_scope.py`): one shared rule, never a second.
+    # (`present_on_assets`, `api/person_scope.py`): one shared rule, never a second. In a
+    # household run, `face_accounts` holds each face strictly to its own account's
+    # pictures (#2044): a household never lets a face count on another account's copy.
     if not who.present:
         return
     leaves = tuple(PersonExpression("person", value=person_id) for person_id in who.present)
     condition = leaves[0] if len(leaves) == 1 else PersonExpression("any", children=leaves)
-    held = present_on_assets([_as_asset(picture) for picture in funnel.pictures], condition)
+    assets = [_as_asset(picture, picture_accounts) for picture in funnel.pictures]
+    held = present_on_assets(assets, condition, face_accounts=face_accounts)
     kept = [picture for picture in funnel.pictures if picture.asset_id in held]
     rule = "a recognised face of theirs on the picture itself"
     # The trace names them, never by their Immich id: a report turns a name into a role.

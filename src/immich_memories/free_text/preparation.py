@@ -19,7 +19,7 @@ from datetime import date
 
 from immich_memories.analysis.editorial_preparation import PreparationResult
 from immich_memories.analysis.preparation_report import human_duration, rate_report
-from immich_memories.analysis.prepare_scope import eligible_source, run_preparation
+from immich_memories.analysis.prepare_scope import admit_source, eligible_source, run_preparation
 from immich_memories.api.models import Asset, VideoClipInfo
 from immich_memories.free_text.library import LibraryView, read_library
 from immich_memories.free_text.linking import WhenLink
@@ -66,10 +66,34 @@ def window_of(when: WhenLink, client, *, today: date) -> DateRange:
     return custom_range(when.start or earliest, when.end or today)
 
 
-def assess(client, config, store, when: WhenLink, *, today: date) -> Readiness:
-    """The request's window, and the pictures in it with no caption yet."""
+def _household_source(client, config, accounts: Sequence[str], window: DateRange):
+    """`eligible_source`'s household twin: each chosen account's own window, not just the
+    primary's (#2044) -- `AccessBoundClient`'s plain search stays on the primary alone."""
+    from immich_memories.analysis.editorial_source import library_source_scope
+    from immich_memories.analysis.household_source import HouseholdWindows
+
+    scope = library_source_scope(client, config, [window])
+    windows = HouseholdWindows(client, accounts)
+    sources = [
+        *windows.get_photos_for_date_range(window),
+        *windows.get_videos_for_date_range(window),
+    ]
+    return admit_source(config, scope, sources)
+
+
+def assess(
+    client, config, store, when: WhenLink, *, today: date, accounts: Sequence[str] = ()
+) -> Readiness:
+    """The request's window, and the pictures in it with no caption yet.
+
+    `accounts`, in a household run, reads each chosen account's own library (#2044): a
+    plain client/window search sees only the primary's.
+    """
     window = window_of(when, client, today=today)
-    _scope, _sources, assets = eligible_source(client, config, [window])
+    if accounts:
+        assets = _household_source(client, config, accounts, window)
+    else:
+        _scope, _sources, assets = eligible_source(client, config, [window])
     if not assets:
         return Readiness(window=window, missing=())
     ids = tuple(_asset_id(asset) for asset in assets)
@@ -131,6 +155,7 @@ def prepare_for_request(  # noqa: PLR0913 - every argument is one external bound
     print_line: Callable[[str], None],
     report: Callable[[str, float | None, float | None], None] | None = None,
     before_preparing: Callable[[], None] | None = None,
+    accounts: Sequence[str] = (),
 ) -> tuple[LibraryView, Notice | None]:
     """Prepare the request's window if it needs it, and return the view to read it with.
 
@@ -141,9 +166,11 @@ def prepare_for_request(  # noqa: PLR0913 - every argument is one external bound
     itself runs, never on a dry run or an already-prepared window). `report` carries the
     warning and live progress to a watcher such as the web client (message, fraction,
     remaining seconds); `PreparationFailed` is raised, never swallowed into a vague
-    "not possible" later, when a producer could not finish.
+    "not possible" later, when a producer could not finish. `accounts`, in a household run
+    (#2044), discovers and prepares every chosen account's own pictures, not just the
+    primary's; the caller is the one that re-scopes the returned view to them.
     """
-    readiness = assess(client, config, store, when, today=today)
+    readiness = assess(client, config, store, when, today=today, accounts=accounts)
     if not readiness.missing:
         return view, None
     rate = estimate_seconds_per_picture(store)
