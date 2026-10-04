@@ -3,13 +3,15 @@ title: Basic and GPU on the same month
 description: Two changed shots and the source filters behind a real CC0 comparison.
 ---
 
+import StaticFile from '@site/src/components/StaticFile';
+
 # Basic and GPU on the same month
 
 Both tiers made a complete film from the same 133 public CC0 assets, asking for a 60-second
 June 2024 month with photos. Each kept **14 shots and all four favourites**. Twelve sources
 overlapped; GPU selected two different videos. No text reader was enabled.
 
-The pictures are [credited CC0 stock photographs](/demo/tier-fixture-credits.txt), with clips
+The pictures are <StaticFile href="/demo/tier-fixture-credits.txt">credited CC0 stock photographs</StaticFile>, with clips
 made by panning those photographs. Dates, people and location labels are invented fixture
 metadata, not facts about where the photographs were taken.
 
@@ -43,6 +45,6 @@ Default title styles and bundled music differed between runs. GPU logged seven c
 motion facts and an uncalibrated Laya confidence bucket. This is one observed change, without
 independent human quality grading. It does not establish that GPU always makes a better film.
 
-[Frame and film provenance](/demo/basic-gpu/provenance.json) records source filenames,
+<StaticFile href="/demo/basic-gpu/provenance.json">Frame and film provenance</StaticFile> records source filenames,
 sampling times, candidate commit and SHA-256 hashes. The separate
 [Basic and Full example](./tier-example.md) adds a text reader and uses a different run setup.

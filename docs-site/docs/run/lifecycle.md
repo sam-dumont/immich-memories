@@ -167,7 +167,7 @@ mv "$HOME/.immich-memories" "$HOME/.immich-memories.before-reset"
 mkdir -m 700 "$HOME/.immich-memories"
 ```
 
-Create a new config with the [minimum read key](./uv-pip.md), run `models fetch` and preflight.
+Create a new config with the [minimum read key](./uv-pip.md) and put `tier: basic` back: with no config, Apple Silicon picks `gpu`. Then run `models fetch` and preflight.
 The old credentials/history remain in the backup until deliberately removed. Native output and
 external/shared model caches remain. Environment variables can still point at an old/custom store;
 check `config show` privately before calling the new run fresh.
