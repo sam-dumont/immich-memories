@@ -111,8 +111,8 @@ def scope_options(command: FC) -> FC:
             type=str,
             default=None,
             help='Grouped people condition, e.g. ("Person A" OR "Person B") AND "Person C". '
-            "Use exact library names; read per episode: a person recognised once "
-            "in an episode counts in all of its pictures.",
+            "Use exact library names; read per picture: every named person must be "
+            "recognised on the same picture, not just somewhere nearby.",
         ),
         click.option(
             "--group",
@@ -128,8 +128,8 @@ def scope_options(command: FC) -> FC:
             default="and",
             show_default=True,
             help=(
-                "With several --person values, require everyone recognised somewhere "
-                "in the same episode (and) or accept any named person (or)"
+                "With several --person values, require everyone recognised on the same "
+                "picture (and) or accept any named person on it (or)"
             ),
         ),
         click.option(

@@ -62,6 +62,8 @@ def _check_wall_membership(
     wall_bytes: bytes,
     moment_asset_ids: Mapping[str, tuple[str, ...]],
     assets: Mapping[str, Asset],
+    *,
+    allow_empty_moments: bool = False,
 ) -> list[str]:
     from immich_memories.analysis.editorial_wall_rows import _read_wall_index
 
@@ -69,8 +71,13 @@ def _check_wall_membership(
     if tuple(moment_asset_ids) != aliases:
         raise ValueError("captured asset membership must follow the complete wall alias order")
     members = list(chain.from_iterable(moment_asset_ids.values()))
-    if any(not ids for ids in moment_asset_ids.values()) or len(members) != len(set(members)):
+    # Capture always demands a nonempty moment: any gap there is a real defect. Only the
+    # deliberate people-condition narrowing after capture (#1954) may leave one empty,
+    # for chronology and context; the wall still names it, it just contributes no carrier.
+    if not allow_empty_moments and any(not ids for ids in moment_asset_ids.values()):
         raise ValueError("captured moments need unique, nonempty selectable membership")
+    if len(members) != len(set(members)):
+        raise ValueError("captured moments need unique selectable membership")
     if not set(members).issubset(assets):
         raise ValueError("captured wall selects assets absent from its source evidence")
     return members
@@ -86,9 +93,9 @@ def _check_companions(companion_assets: Mapping[str, Asset], assets: Mapping[str
 
 
 def _check_case_scope(case: Case, assets: Mapping[str, Asset]) -> None:
-    # Who is in a picture was settled by the fetch, over the episodes the owner reviewed
-    # (`person_presence.py`); regrouping the admitted source here could refuse a pool
-    # picture whose episode an exclusion split.
+    # Who is in a picture was settled by the fetch, strictly per picture (`person_presence.py`,
+    # #1954); every admitted asset already satisfies the people condition, so there is nothing
+    # left to re-check here.
     if case.special_event_id is not None and not set(assets).issubset(case.event_asset_ids):
         raise ValueError("captured source exceeds exact special event membership")
 
@@ -175,6 +182,10 @@ class StructurePlanningInput:
     # The people registry's facts and links, so a film about people can tell who is close to them
     # rather than to the owner. None reads as it always did: every relation is the owner's.
     people: EditorialPeople | None = None
+    # Set only by the people-condition narrowing that runs after capture (#1954): lets a
+    # moment emptied of every violating candidate pass with nothing selectable, while a
+    # freshly captured source still demands every moment hold something.
+    allow_empty_moments: bool = False
 
     @property
     def bank_store(self) -> Store:
@@ -187,7 +198,12 @@ class StructurePlanningInput:
 
     def __post_init__(self) -> None:
         _check_render_timing(self.render_timing, self.case)
-        _check_wall_membership(self.wall_bytes, self.moment_asset_ids, self.assets)
+        _check_wall_membership(
+            self.wall_bytes,
+            self.moment_asset_ids,
+            self.assets,
+            allow_empty_moments=self.allow_empty_moments,
+        )
         _check_companions(self.companion_assets, self.assets)
         _check_case_scope(self.case, self.assets)
         _check_contract(self.case, self.intent)

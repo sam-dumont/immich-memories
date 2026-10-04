@@ -36,6 +36,10 @@ class EditorialSourcePlan:
     render_adjustments: tuple[dict, ...] = ()
     render_timing: dict | None = None
     duration_realization: dict | None = None
+    # Why an empty `plan.selections` is empty, when the structure result knows a specific
+    # reason (a people condition excluded the whole pool, #1954) rather than the generic
+    # "nothing worth a film".
+    no_selection_reason: str | None = None
 
 
 @runtime_checkable

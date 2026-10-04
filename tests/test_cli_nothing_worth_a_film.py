@@ -13,10 +13,12 @@ from immich_memories.timeperiod import DateRange
 from tests.conftest import make_clip
 
 
-def _run_with_nothing_kept(tmp_path, date_range: DateRange, candidates: list) -> None:
+def _run_with_nothing_kept(
+    tmp_path, date_range: DateRange, candidates: list, *, stats: dict | None = None
+) -> None:
     from immich_memories.cli._pipeline_runner import run_pipeline_and_generate
 
-    result = PipelineResult(selected_clips=[], clip_segments={}, errors=[])
+    result = PipelineResult(selected_clips=[], clip_segments={}, errors=[], stats=stats or {})
     config = Config(
         cache={"database": str(tmp_path / "analysis.db"), "directory": str(tmp_path / "cache")}
     )
@@ -72,3 +74,23 @@ def test_an_empty_pool_is_still_an_error(tmp_path, capsys):
 
     assert stopped.value.code == 1
     assert "Error" in capsys.readouterr().out
+
+
+def test_a_people_condition_that_excluded_the_whole_pool_says_so_specifically(tmp_path, capsys):
+    """A narrowed-to-nothing people condition (#1954) must read as itself, not just as
+    the generic "nothing worth a film" every other empty period reads as."""
+    candidates = [make_clip("floor-1", duration=5.0), make_clip("floor-2", duration=5.0)]
+    reason = (
+        "No picture satisfies the requested people condition: "
+        "2 picture(s) were left out before planning, and nothing else was offered."
+    )
+
+    with pytest.raises(SystemExit) as stopped:
+        _run_with_nothing_kept(
+            tmp_path, FEBRUARY, candidates, stats={"no_selection_reason": reason}
+        )
+
+    said = capsys.readouterr().out
+    assert stopped.value.code == 0
+    assert "Nothing worth a film in February 2019" in said
+    assert reason in said

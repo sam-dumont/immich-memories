@@ -155,7 +155,9 @@ def test_the_runtime_records_evidence_into_the_attempt_that_is_running(
         demand = planner._planner._episode_reader_factory(SimpleNamespace(candidates=()))
         demand._reader(demand._on_demand)
         built["record_evidence"]((_episode("g1", {"a1": "a1 | a rendered line"}),))
-        return SimpleNamespace(plan=EditorialPlan(), duration_realization=None)
+        return SimpleNamespace(
+            plan=EditorialPlan(), duration_realization=None, no_selection_reason=None
+        )
 
     # WHY: the reader itself needs a prepared annotation store and a text model; the
     # boundary under test is only which directory its recorder writes to.

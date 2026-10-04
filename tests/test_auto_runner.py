@@ -1087,6 +1087,62 @@ class TestRunOneOutcomes:
         assert result.outcome is AutoOutcome.FAILED
         assert result.reason == "nothing worth a film in this period"
 
+    def test_a_people_condition_that_excluded_the_whole_pool_keeps_its_own_reason(
+        self, config: Config, candidate: MemoryCandidate
+    ) -> None:
+        """A specific reason on the marker's own line (#1954) survives into the attempt's
+        recorded reason, instead of collapsing to the generic one."""
+        runner = AutoRunner(config)
+        runner.execute = lambda _argv: ProcessResult(
+            0,
+            "ℹ Nothing worth a film in February 2019: No picture satisfies the "
+            "requested people condition: 2 picture(s) were left out before planning, "
+            "and nothing else was offered.\n",
+            "",
+        )
+        with patch.object(runner, "suggest", return_value=[candidate]):
+            result = runner.run_one(force=True)
+
+        assert result.outcome is AutoOutcome.FAILED
+        assert result.reason == (
+            "No picture satisfies the requested people condition: 2 picture(s) were "
+            "left out before planning, and nothing else was offered."
+        )
+
+    def test_the_specific_reason_survives_the_cli_s_real_rich_wrapping(
+        self, config: Config, candidate: MemoryCandidate
+    ) -> None:
+        """Rich wraps `print_info`'s line at its guessed width even without a terminal
+        (cli/_helpers.py); without `soft_wrap`, a long reason would split across several
+        lines and the runner's single-line extraction would only recover a fragment
+        (#1954). Renders through the CLI's own `print_info`, not a hand-built string."""
+        from immich_memories.cli import _helpers
+        from immich_memories.cli._pipeline_runner import _nothing_worth_a_film_message
+        from immich_memories.timeperiod import DateRange
+
+        reason = (
+            "No picture satisfies the requested people condition: 2 picture(s) were "
+            "left out before planning, and nothing else was offered."
+        )
+        message = _nothing_worth_a_film_message(
+            DateRange(start=datetime(2019, 2, 1), end=datetime(2019, 2, 28, 23, 59, 59)),
+            {"no_selection_reason": reason},
+        )
+        # WHY: a non-interactive subprocess's Console, exactly as the real CLI builds
+        # one; `record=True` is the only way to recover its rendered text in a test.
+        headless_console = Console(record=True, width=80, force_terminal=False)
+        with patch.object(_helpers, "console", headless_console):
+            _helpers.print_info(message, soft_wrap=True)
+        stdout = headless_console.export_text()
+
+        runner = AutoRunner(config)
+        runner.execute = lambda _argv: ProcessResult(0, stdout, "")
+        with patch.object(runner, "suggest", return_value=[candidate]):
+            result = runner.run_one(force=True)
+
+        assert result.outcome is AutoOutcome.FAILED
+        assert result.reason == reason
+
     def test_same_key_run_from_another_attempt_cannot_prove_success(
         self, config: Config, candidate: MemoryCandidate, tmp_path: Path
     ) -> None:

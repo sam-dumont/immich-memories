@@ -112,15 +112,20 @@ def print_success(message: str, *, highlight: bool = True) -> None:
         console.print(f"[green]\u2713[/green] {message}", highlight=highlight)
 
 
-def print_info(message: str) -> None:
-    """Print an info message."""
+def print_info(message: str, *, soft_wrap: bool = False) -> None:
+    """Print an info message.
+
+    ``soft_wrap`` is for a line a reader down the pipe must get back whole (automation's
+    own substring match on its stdout, #1954): Rich wraps at its guessed width even
+    without a terminal, splitting one long line across several before it reaches them.
+    """
     display = _active_display.get()
     if display is not None:
         display.print_message(f"[blue]\u2139[/blue] {message}")
     elif _quiet_mode.get():
         _logger.info(message)
     else:
-        console.print(f"[blue]\u2139[/blue] {message}")
+        console.print(f"[blue]\u2139[/blue] {message}", soft_wrap=soft_wrap)
 
 
 def refuse_blocked_host(config: Config, *, output_directory: Path | None) -> None:

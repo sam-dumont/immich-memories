@@ -302,9 +302,9 @@ immich-memories generate [OPTIONS]
 | `--ask` | text | - | Highly experimental: the film in a sentence, e.g. "our cat along the years". Read by the configured model reader against your prepared library; the translation is printed first. Needs tier: full |
 | `--ask-trace` | file | - | With --ask: keep the translation (the trace, the pool counts, the rule preview, the verdict) in this JSON file, for a watcher such as the web client |
 | `--person`, `-p` | text | - | Person name, or a UUID for exactly one person (repeatable) (repeatable) |
-| `--people-expression` | text | - | Grouped people condition, e.g. ("Person A" OR "Person B") AND "Person C". Use exact library names; read per episode: a person recognised once in an episode counts in all of its pictures. |
+| `--people-expression` | text | - | Grouped people condition, e.g. ("Person A" OR "Person B") AND "Person C". Use exact library names; read per picture: every named person must be recognised on the same picture, not just somewhere nearby. |
 | `--group` | text | - | A label saved with `people group add`, resolved like --people-expression (mutually exclusive with it, --person and --person-match) |
-| `--person-match` | choice: `and` \| `or` | and | With several --person values, require everyone recognised somewhere in the same episode (and) or accept any named person (or) |
+| `--person-match` | choice: `and` \| `or` | and | With several --person values, require everyone recognised on the same picture (and) or accept any named person on it (or) |
 | `--accounts` | text | - | Immich accounts the film reads, comma-separated: primary plus names under immich.accounts, e.g. primary,partner. Default: the primary alone |
 | `--memory-type` | choice: `year_in_review` \| `season` \| `person_spotlight` \| `multi_person` \| `monthly_highlights` \| `on_this_day` \| `album` \| `trip` \| `holiday` \| `special_day` | - | Memory type preset (album takes its pool from --from-album) |
 | `--holiday` | text | - | Holiday name or MM-DD (use with --memory-type holiday) |

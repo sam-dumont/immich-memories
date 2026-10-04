@@ -12,7 +12,9 @@ from tests.household_fake import PARTNER_KEY, PRIMARY_KEY, FakeHousehold, immich
 from tests.store.test_people_selection import HOUSEHOLD, WINDOW, _person
 
 
-def test_native_cluster_identity_finds_partner_episode_without_a_second_binding(store, monkeypatch):
+def test_native_cluster_identity_finds_the_partner_picture_without_a_second_binding(
+    store, monkeypatch
+):
     server = FakeHousehold(
         library={
             PARTNER_KEY: [
@@ -42,7 +44,8 @@ def test_native_cluster_identity_finds_partner_episode_without_a_second_binding(
             condition,
             face_accounts=people.face_accounts,
         )
-    assert {photo.id for photo in photos} == {f"q-{i}" for i in range(4)}
+    # Strict per picture: only the partner frame that shows the face, not its whole outing.
+    assert {photo.id for photo in photos} == {"q-0"}
     assert not any(path.endswith("/people/users") for path in server.requests)
 
 

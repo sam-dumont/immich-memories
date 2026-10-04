@@ -123,6 +123,8 @@ def build_editorial_context(
             tuple(resolved.preset_params.get("asset_ids") or ()) if special_event else ()
         ),
         accounts=tuple(resolved.preset_params.get("accounts") or ()),
+        resolved_person_condition=_resolved_person_condition(resolved),
+        face_accounts=dict(resolved.preset_params.get("face_accounts") or {}),
     )
 
 
@@ -132,6 +134,12 @@ def _person_match(resolved: ResolvedRunInputs) -> Literal["and", "or"]:
 
 def _person_expression(resolved: ResolvedRunInputs) -> PersonExpression | None:
     record = resolved.preset_params.get("person_expression")
+    return PersonExpression.from_dict(record) if record is not None else None
+
+
+def _resolved_person_condition(resolved: ResolvedRunInputs) -> PersonExpression | None:
+    """The fetch's own face-id condition (`cli/run_people.py`), not the display names above."""
+    record = resolved.preset_params.get("person_condition_resolved")
     return PersonExpression.from_dict(record) if record is not None else None
 
 

@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
 from immich_memories.analysis.editorial_moment_contract import Moment, MomentCard
@@ -42,6 +42,13 @@ class Case:
     person_expression: PersonExpression | None = None
     # The written subject an album was curated for; None unless the album is a subject pool.
     pool_subject: str | None = None
+    # The fetch's own condition, over face ids after the people store and the roster
+    # resolved every name/group/uuid (`cli/run_people.py`), and the household account each
+    # face counts on. `people`/`person_expression` above are display names for the brief;
+    # a carrier is checked against THIS, with `present_on_assets`, the same function and
+    # rule the fetch used to build the pool (#1954). None when the run names nobody.
+    resolved_person_condition: PersonExpression | None = None
+    face_accounts: Mapping[str, str] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         from immich_memories.analysis.special_event_scope import validate_special_event_scope
@@ -52,6 +59,10 @@ class Case:
             if self.people and set(self.people) != set(self.person_expression.leaf_values):
                 raise ValueError("case people names and grouped condition disagree")
             object.__setattr__(self, "people", self.person_expression.leaf_values)
+        if self.resolved_person_condition is not None and not isinstance(
+            self.resolved_person_condition, PersonExpression
+        ):
+            raise ValueError("case resolved people condition must be a validated expression")
         members = validate_special_event_scope(
             self.special_event_id, self.event_asset_ids, product=self.product
         )

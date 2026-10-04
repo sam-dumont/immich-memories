@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-04 10:48+0200\n"
+"POT-Creation-Date: 2026-10-04 13:49+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: it\n"
@@ -70,7 +70,7 @@ msgstr "Mostra la data"
 msgid "Add someone not in Immich"
 msgstr "Aggiungi qualcuno che non è in Immich"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:152
+#: web/routes/runs/[run_id]/pool/+page.svelte:149
 #, python-brace-format
 msgid "Add: {include} · Take out: {exclude}"
 msgstr "Aggiungi: {include} · Togli: {exclude}"
@@ -117,7 +117,7 @@ msgstr ""
 msgid "Another day (MM-DD)"
 msgstr "Altro giorno (MM-DD)"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:87 web/routes/runs/[run_id]/pool/+page.svelte:168
+#: web/routes/runs/[run_id]/pool/+page.svelte:87 web/routes/runs/[run_id]/pool/+page.svelte:165
 msgid "Anyone"
 msgstr "Chiunque"
 
@@ -199,7 +199,7 @@ msgstr "Sfoglia tutto l'insieme"
 msgid "Caches"
 msgstr "Cache"
 
-#: web/lib/JobPanel.svelte:92 web/routes/runs/[run_id]/pool/+page.svelte:174
+#: web/lib/JobPanel.svelte:92 web/routes/runs/[run_id]/pool/+page.svelte:171
 msgid "Cancel"
 msgstr "Annulla"
 
@@ -244,11 +244,11 @@ msgstr ""
 msgid "Clear"
 msgstr "Cancella"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:142 web/routes/runs/[run_id]/pool/+page.svelte:175
+#: web/routes/runs/[run_id]/pool/+page.svelte:139 web/routes/runs/[run_id]/pool/+page.svelte:172
 msgid "Clear hold"
 msgstr "Rimuovi restrizione"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:161
+#: web/routes/runs/[run_id]/pool/+page.svelte:158
 msgid "Clear this hold?"
 msgstr "Rimuovere questa restrizione?"
 
@@ -456,7 +456,7 @@ msgid "Expression"
 msgstr "Espressione"
 
 #: web/routes/create/+page.svelte:496 web/routes/runs/[run_id]/pool/+page.svelte:87
-#: web/routes/runs/[run_id]/pool/+page.svelte:168
+#: web/routes/runs/[run_id]/pool/+page.svelte:165
 msgid "Family"
 msgstr "Famiglia"
 
@@ -468,7 +468,7 @@ msgstr "Recupero delle anteprime delle foto"
 msgid "Fewer than 12 pictures fit: the film will be short."
 msgstr "Corrispondono meno di 12 immagini: il film sarà corto."
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:166
+#: web/routes/runs/[run_id]/pool/+page.svelte:163
 msgid "Films that may use it"
 msgstr "Film che possono usarla"
 
@@ -587,7 +587,7 @@ msgid "It did not finish."
 msgstr "Non è finito."
 
 #: web/routes/create/+page.svelte:495 web/routes/runs/[run_id]/pool/+page.svelte:87
-#: web/routes/runs/[run_id]/pool/+page.svelte:168
+#: web/routes/runs/[run_id]/pool/+page.svelte:165
 msgid "Just us"
 msgstr "Solo noi"
 
@@ -720,7 +720,7 @@ msgstr "Musica"
 msgid "Music volume:"
 msgstr "Volume della musica:"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:141
+#: web/routes/runs/[run_id]/pool/+page.svelte:138
 msgid "Never use"
 msgstr "Non usare mai"
 
@@ -803,12 +803,6 @@ msgstr "Nessun viaggio rilevato per quest'anno."
 #: web/routes/settings/people/+page.svelte:218
 msgid "No, they are not"
 msgstr "No, non lo sono"
-
-#: web/routes/runs/[run_id]/pool/+page.svelte:132
-msgid "Nobody this memory is about was recognised here; they were, elsewhere in the same episode."
-msgstr ""
-"Nessuno di chi parla questo ricordo è stato riconosciuto qui; lo è stato altrove, nello "
-"stesso episodio."
 
 #: web/routes/settings/people/+page.svelte:184
 msgid "Nobody yet. Rescan the library to read who is in it."
@@ -963,7 +957,7 @@ msgstr "Anteprima"
 msgid "Preview a track"
 msgstr "Ascolta un brano"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:153
+#: web/routes/runs/[run_id]/pool/+page.svelte:150
 msgid "Preview with these choices"
 msgstr "Anteprima con questa selezione"
 
@@ -1093,10 +1087,6 @@ msgstr "In esecuzione sul server: {phase}. Continua anche se lasci questa pagina
 #: web/routes/runs/+page.svelte:93 web/routes/runs/[run_id]/+page.svelte:126
 msgid "Runs"
 msgstr "Esecuzioni"
-
-#: web/routes/runs/[run_id]/pool/+page.svelte:132
-msgid "Same episode"
-msgstr "Stesso episodio"
 
 #: web/lib/SettingsEditor.svelte:110
 msgid "Save"
@@ -1514,7 +1504,7 @@ msgstr "Viaggi"
 msgid "Try again"
 msgstr "Riprova"
 
-#: web/routes/runs/[run_id]/+page.svelte:308 web/routes/runs/[run_id]/pool/+page.svelte:139
+#: web/routes/runs/[run_id]/+page.svelte:308 web/routes/runs/[run_id]/pool/+page.svelte:136
 msgid "Undo"
 msgstr "Annulla decisione"
 

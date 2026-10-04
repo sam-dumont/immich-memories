@@ -1,8 +1,10 @@
-"""The people a memory names are looked up per episode, not per frame, from the first read.
+"""The people a memory names are looked up per picture, not per episode, from the first read.
 
-Two people who spent the afternoon together but never stood in one frame used to give
-"No videos or photos found": Immich was asked for frames holding both. The fetch now
-reads the window once and keeps every picture of an episode the condition holds in.
+A single window read (one for videos, one for photos) answers for any number of named
+people; it just keeps strictly the pictures whose own recognised faces satisfy the
+condition (#1954). Two people who spent the afternoon together but never shared a frame
+give nothing, by design: better lose that pair than bundle them into a picture neither is
+actually in.
 """
 
 from datetime import UTC, datetime, timedelta
@@ -47,6 +49,7 @@ class Library:
 AFTERNOON = [
     picture("a-video", hour=14, faces=("face-a",), video=True),
     picture("b-photo", hour=14, minute=30, faces=("face-b",)),
+    picture("a-and-b-video", hour=14, minute=40, faces=("face-a", "face-b"), video=True),
     picture("unrecognised-video", hour=14, minute=45, video=True),
     picture("unrecognised-photo", hour=15),
 ]
@@ -56,14 +59,14 @@ EVENING_A_ALONE = [
 ]
 
 
-def test_and_finds_people_who_share_an_episode_but_never_a_frame():
+def test_and_needs_both_faces_in_the_same_frame():
     library = Library([*AFTERNOON, *EVENING_A_ALONE])
 
     videos = videos_in_window(library, ["face-a", "face-b"], WINDOW, person_match="and")
     photos = photos_in_window(library, ["face-a", "face-b"], WINDOW, person_match="and")
 
-    assert [v.id for v in videos] == ["a-video", "unrecognised-video"]
-    assert [p.id for p in photos] == ["b-photo", "unrecognised-photo"]
+    assert [v.id for v in videos] == ["a-and-b-video"]
+    assert [p.id for p in photos] == []
 
 
 def test_one_window_costs_two_reads_however_many_people_it_names():
@@ -73,15 +76,15 @@ def test_one_window_costs_two_reads_however_many_people_it_names():
     videos, photos = people_in_window(library, WINDOW, condition)
 
     assert library.reads == ["videos", "photos"]
-    assert {a.id for a in (*videos, *photos)} == {a.id for a in AFTERNOON}
+    assert {a.id for a in (*videos, *photos)} == {"a-and-b-video"}
 
 
-def test_one_person_brings_the_unrecognised_pictures_of_their_episodes_only():
+def test_one_person_brings_only_the_picture_their_own_face_is_on():
     library = Library([*AFTERNOON, *EVENING_A_ALONE])
 
     photos = photos_in_window(library, ["face-b"], WINDOW)
 
-    assert [p.id for p in photos] == ["b-photo", "unrecognised-photo"]
+    assert [p.id for p in photos] == ["b-photo"]
 
 
 class _Progress:
@@ -111,5 +114,5 @@ def test_a_multi_person_cli_fetch_reads_each_window_once_per_kind():
     )
 
     assert library.reads == ["videos", "photos", "videos", "photos"]
-    assert [v.id for v in videos] == ["a-video", "unrecognised-video"]
-    assert [p.id for p in photos] == ["b-photo", "unrecognised-photo"]
+    assert [v.id for v in videos] == ["a-and-b-video"]
+    assert [p.id for p in photos] == []

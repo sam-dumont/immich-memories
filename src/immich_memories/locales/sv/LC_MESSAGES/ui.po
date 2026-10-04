@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-04 10:48+0200\n"
+"POT-Creation-Date: 2026-10-04 13:49+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: sv\n"
@@ -68,7 +68,7 @@ msgstr "Visa datum"
 msgid "Add someone not in Immich"
 msgstr "Lägg till någon som inte finns i Immich"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:152
+#: web/routes/runs/[run_id]/pool/+page.svelte:149
 #, python-brace-format
 msgid "Add: {include} · Take out: {exclude}"
 msgstr "Lägg till: {include} · Ta bort: {exclude}"
@@ -115,7 +115,7 @@ msgstr ""
 msgid "Another day (MM-DD)"
 msgstr "Annan dag (MM-DD)"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:87 web/routes/runs/[run_id]/pool/+page.svelte:168
+#: web/routes/runs/[run_id]/pool/+page.svelte:87 web/routes/runs/[run_id]/pool/+page.svelte:165
 msgid "Anyone"
 msgstr "Alla"
 
@@ -197,7 +197,7 @@ msgstr "Bläddra i hela poolen"
 msgid "Caches"
 msgstr "Cachar"
 
-#: web/lib/JobPanel.svelte:92 web/routes/runs/[run_id]/pool/+page.svelte:174
+#: web/lib/JobPanel.svelte:92 web/routes/runs/[run_id]/pool/+page.svelte:171
 msgid "Cancel"
 msgstr "Avbryt"
 
@@ -242,11 +242,11 @@ msgstr ""
 msgid "Clear"
 msgstr "Rensa"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:142 web/routes/runs/[run_id]/pool/+page.svelte:175
+#: web/routes/runs/[run_id]/pool/+page.svelte:139 web/routes/runs/[run_id]/pool/+page.svelte:172
 msgid "Clear hold"
 msgstr "Ta bort spärr"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:161
+#: web/routes/runs/[run_id]/pool/+page.svelte:158
 msgid "Clear this hold?"
 msgstr "Ta bort den här spärren?"
 
@@ -454,7 +454,7 @@ msgid "Expression"
 msgstr "Uttryck"
 
 #: web/routes/create/+page.svelte:496 web/routes/runs/[run_id]/pool/+page.svelte:87
-#: web/routes/runs/[run_id]/pool/+page.svelte:168
+#: web/routes/runs/[run_id]/pool/+page.svelte:165
 msgid "Family"
 msgstr "Familj"
 
@@ -466,7 +466,7 @@ msgstr "Hämtar bildförhandsvisningar"
 msgid "Fewer than 12 pictures fit: the film will be short."
 msgstr "Färre än 12 bilder passar: filmen blir kort."
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:166
+#: web/routes/runs/[run_id]/pool/+page.svelte:163
 msgid "Films that may use it"
 msgstr "Filmer som får använda den"
 
@@ -585,7 +585,7 @@ msgid "It did not finish."
 msgstr "Blev inte klar."
 
 #: web/routes/create/+page.svelte:495 web/routes/runs/[run_id]/pool/+page.svelte:87
-#: web/routes/runs/[run_id]/pool/+page.svelte:168
+#: web/routes/runs/[run_id]/pool/+page.svelte:165
 msgid "Just us"
 msgstr "Bara vi"
 
@@ -720,7 +720,7 @@ msgstr "Musik"
 msgid "Music volume:"
 msgstr "Musikvolym:"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:141
+#: web/routes/runs/[run_id]/pool/+page.svelte:138
 msgid "Never use"
 msgstr "Använd aldrig"
 
@@ -803,12 +803,6 @@ msgstr "Inga resor hittades för det här året."
 #: web/routes/settings/people/+page.svelte:218
 msgid "No, they are not"
 msgstr "Nej, det stämmer inte"
-
-#: web/routes/runs/[run_id]/pool/+page.svelte:132
-msgid "Nobody this memory is about was recognised here; they were, elsewhere in the same episode."
-msgstr ""
-"Ingen som detta minne handlar om kändes igen här; de kändes igen någon annanstans i samma "
-"episod."
 
 #: web/routes/settings/people/+page.svelte:184
 msgid "Nobody yet. Rescan the library to read who is in it."
@@ -963,7 +957,7 @@ msgstr "Förhandsvisning"
 msgid "Preview a track"
 msgstr "Förhandslyssna på ett spår"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:153
+#: web/routes/runs/[run_id]/pool/+page.svelte:150
 msgid "Preview with these choices"
 msgstr "Förhandsgranskning med dessa val"
 
@@ -1093,10 +1087,6 @@ msgstr "Körs på servern: {phase}. Fortsätter om du lämnar sidan."
 #: web/routes/runs/+page.svelte:93 web/routes/runs/[run_id]/+page.svelte:126
 msgid "Runs"
 msgstr "Körningar"
-
-#: web/routes/runs/[run_id]/pool/+page.svelte:132
-msgid "Same episode"
-msgstr "Samma episod"
 
 #: web/lib/SettingsEditor.svelte:110
 msgid "Save"
@@ -1512,7 +1502,7 @@ msgstr "Resor"
 msgid "Try again"
 msgstr "Försök igen"
 
-#: web/routes/runs/[run_id]/+page.svelte:308 web/routes/runs/[run_id]/pool/+page.svelte:139
+#: web/routes/runs/[run_id]/+page.svelte:308 web/routes/runs/[run_id]/pool/+page.svelte:136
 msgid "Undo"
 msgstr "Ångra"
 

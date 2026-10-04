@@ -114,12 +114,18 @@ class EditorialAttempt:
         outcome: str = "complete",
         duration_realization: dict | None = None,
         calls_by_stage: Mapping[str, Any] | None = None,
+        reason: str | None = None,
     ) -> None:
         self.record.update(status="complete", outcome=outcome, selected_carriers=selected)
         if duration_realization is not None:
             self.record["duration_realization"] = duration_realization
         if calls_by_stage is not None:
             self.record["calls_by_stage"] = dict(calls_by_stage)
+        # Why an empty cut is empty, when the structure result knows a specific reason
+        # (a people condition excluded the whole pool, #1954): read by the web run page
+        # and the automation runner, not just the CLI's own stdout.
+        if reason is not None:
+            self.record["reason"] = reason
 
     def _save(self) -> None:
         write_llm_usage(self.directory, self._usage)

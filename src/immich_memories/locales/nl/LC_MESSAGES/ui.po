@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-04 10:48+0200\n"
+"POT-Creation-Date: 2026-10-04 13:49+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: nl\n"
@@ -70,7 +70,7 @@ msgstr "Datum in beeld"
 msgid "Add someone not in Immich"
 msgstr "Iemand toevoegen die niet in Immich staat"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:152
+#: web/routes/runs/[run_id]/pool/+page.svelte:149
 #, python-brace-format
 msgid "Add: {include} · Take out: {exclude}"
 msgstr "Toevoegen: {include} · Verwijderen: {exclude}"
@@ -117,7 +117,7 @@ msgstr ""
 msgid "Another day (MM-DD)"
 msgstr "Andere dag (MM-DD)"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:87 web/routes/runs/[run_id]/pool/+page.svelte:168
+#: web/routes/runs/[run_id]/pool/+page.svelte:87 web/routes/runs/[run_id]/pool/+page.svelte:165
 msgid "Anyone"
 msgstr "Iedereen"
 
@@ -199,7 +199,7 @@ msgstr "De hele pool bekijken"
 msgid "Caches"
 msgstr "Caches"
 
-#: web/lib/JobPanel.svelte:92 web/routes/runs/[run_id]/pool/+page.svelte:174
+#: web/lib/JobPanel.svelte:92 web/routes/runs/[run_id]/pool/+page.svelte:171
 msgid "Cancel"
 msgstr "Annuleren"
 
@@ -244,11 +244,11 @@ msgstr ""
 msgid "Clear"
 msgstr "Wissen"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:142 web/routes/runs/[run_id]/pool/+page.svelte:175
+#: web/routes/runs/[run_id]/pool/+page.svelte:139 web/routes/runs/[run_id]/pool/+page.svelte:172
 msgid "Clear hold"
 msgstr "Beperking opheffen"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:161
+#: web/routes/runs/[run_id]/pool/+page.svelte:158
 msgid "Clear this hold?"
 msgstr "Deze beperking opheffen?"
 
@@ -456,7 +456,7 @@ msgid "Expression"
 msgstr "Expressie"
 
 #: web/routes/create/+page.svelte:496 web/routes/runs/[run_id]/pool/+page.svelte:87
-#: web/routes/runs/[run_id]/pool/+page.svelte:168
+#: web/routes/runs/[run_id]/pool/+page.svelte:165
 msgid "Family"
 msgstr "Familie"
 
@@ -468,7 +468,7 @@ msgstr "Voorbeelden van beelden worden opgehaald"
 msgid "Fewer than 12 pictures fit: the film will be short."
 msgstr "Minder dan 12 beelden passen: de film wordt kort."
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:166
+#: web/routes/runs/[run_id]/pool/+page.svelte:163
 msgid "Films that may use it"
 msgstr "Films die dit mogen gebruiken"
 
@@ -587,7 +587,7 @@ msgid "It did not finish."
 msgstr "Niet voltooid."
 
 #: web/routes/create/+page.svelte:495 web/routes/runs/[run_id]/pool/+page.svelte:87
-#: web/routes/runs/[run_id]/pool/+page.svelte:168
+#: web/routes/runs/[run_id]/pool/+page.svelte:165
 msgid "Just us"
 msgstr "Alleen wij"
 
@@ -722,7 +722,7 @@ msgstr "Muziek"
 msgid "Music volume:"
 msgstr "Muziekvolume:"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:141
+#: web/routes/runs/[run_id]/pool/+page.svelte:138
 msgid "Never use"
 msgstr "Nooit gebruiken"
 
@@ -805,10 +805,6 @@ msgstr "Geen reizen gedetecteerd voor dit jaar."
 #: web/routes/settings/people/+page.svelte:218
 msgid "No, they are not"
 msgstr "Nee, dat klopt niet"
-
-#: web/routes/runs/[run_id]/pool/+page.svelte:132
-msgid "Nobody this memory is about was recognised here; they were, elsewhere in the same episode."
-msgstr "Niemand over wie deze herinnering gaat, is hier herkend; wel elders, in dezelfde episode."
 
 #: web/routes/settings/people/+page.svelte:184
 msgid "Nobody yet. Rescan the library to read who is in it."
@@ -963,7 +959,7 @@ msgstr "Voorbeeld"
 msgid "Preview a track"
 msgstr "Een nummer beluisteren"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:153
+#: web/routes/runs/[run_id]/pool/+page.svelte:150
 msgid "Preview with these choices"
 msgstr "Voorbeeld met deze selectie"
 
@@ -1093,10 +1089,6 @@ msgstr "Actief op de server: {phase}. Dit gaat door als je deze pagina verlaat."
 #: web/routes/runs/+page.svelte:93 web/routes/runs/[run_id]/+page.svelte:126
 msgid "Runs"
 msgstr "Uitvoeringen"
-
-#: web/routes/runs/[run_id]/pool/+page.svelte:132
-msgid "Same episode"
-msgstr "Zelfde episode"
 
 #: web/lib/SettingsEditor.svelte:110
 msgid "Save"
@@ -1514,7 +1506,7 @@ msgstr "Reizen"
 msgid "Try again"
 msgstr "Opnieuw proberen"
 
-#: web/routes/runs/[run_id]/+page.svelte:308 web/routes/runs/[run_id]/pool/+page.svelte:139
+#: web/routes/runs/[run_id]/+page.svelte:308 web/routes/runs/[run_id]/pool/+page.svelte:136
 msgid "Undo"
 msgstr "Ongedaan maken"
 

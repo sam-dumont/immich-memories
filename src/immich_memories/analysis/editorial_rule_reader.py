@@ -174,6 +174,10 @@ class RuleStructureReader:
     def _day_chunks(self):
         groups = []
         for moment, ids in self.source.moment_asset_ids.items():
+            # A people condition can leave a moment with nothing selectable (#1954); it
+            # contributes no day, chunk or title, never an IndexError on `members[0]`.
+            if not ids:
+                continue
             members = sorted((self.source.assets[a] for a in ids), key=lambda a: a.file_created_at)
             groups.append((members[0].file_created_at.isoformat(), moment, members))
         groups.sort(key=itemgetter(0, 1))

@@ -20,6 +20,9 @@ from immich_memories.analysis.editorial_film_preparation import CandidateEvidenc
 from immich_memories.analysis.editorial_motion_facts import production_motion_resolver
 from immich_memories.analysis.editorial_orchestration import TextEditorialWorkprint
 from immich_memories.analysis.editorial_people import EditorialPeople
+from immich_memories.analysis.editorial_people_condition_pool import (
+    exclude_people_condition_violators,
+)
 from immich_memories.analysis.editorial_planner import EditorialPlan, EditorialSelection
 from immich_memories.analysis.editorial_product_brief import build_editorial_brief
 from immich_memories.analysis.editorial_runtime_ports import (
@@ -179,6 +182,7 @@ class ProductionPostCardBackend:
                 )
                 trace.warnings.append(warning)
                 logger.warning(warning)
+        _warn_of_people_condition_exclusion(result, trace)
         return self._adopt(result, source.artifact_dir, allowed_ids)
 
     def _effects(self, source, resources):
@@ -232,6 +236,8 @@ class ProductionPostCardBackend:
             event_asset_ids=context.event_asset_ids,
             event_admission=context.event_admission,
             pool_subject=context.pool_subject,
+            resolved_person_condition=context.resolved_person_condition,
+            face_accounts=context.face_accounts,
         )
         source = capture_structure_input(
             workprint,
@@ -315,7 +321,11 @@ class ProductionPostCardBackend:
                 thumbnail_hash=thumbnail_hasher,
                 scene_print=scene_prints,
                 thumbnail_metrics=thumbnail_metrics,
-                rules=RuleStructureReader(source, printed=self._printed_near),
+                # Narrowed so a violator never names a story or episode title (#1954);
+                # `_plan_structure` narrows the same way, idempotently, before planning.
+                rules=RuleStructureReader(
+                    exclude_people_condition_violators(source).source, printed=self._printed_near
+                ),
                 printed_near=self._printed_near,
                 resolve_windows=resolve_windows,
                 resolve_speech=resolve_speech,
@@ -364,7 +374,10 @@ class ProductionPostCardBackend:
         from immich_memories.analysis.editorial_laya_reader import laya_reader_for
         from immich_memories.analysis.editorial_rule_reader import RuleStructureReader
 
-        rules = RuleStructureReader(source, printed=self._printed_near)
+        # Narrowed for the same reason as the rules-only path above (#1954).
+        rules = RuleStructureReader(
+            exclude_people_condition_violators(source).source, printed=self._printed_near
+        )
         return {
             "rules": rules,
             "laya": laya_reader_for(config.editorial),
@@ -519,6 +532,23 @@ def _write_visual_requests(artifact_dir: Path, trace: Trace, request_start: int)
             indent=2,
         ),
     )
+
+
+def _warn_of_people_condition_exclusion(result: StructurePlanningResult, trace: Trace) -> None:
+    """Surface what `plan_structure` already excluded before planning (#1954, #1969).
+
+    The owner's ruling is strict: better lose a good picture than bundle in a wrong one.
+    `editorial_structure_planner._plan_structure` enforces it on the whole pool before any
+    selection runs, so there is nothing to rewrite here; this only reports what it found.
+    """
+    excluded = result.plan.get("people_condition_excluded")
+    if not excluded:
+        return
+    warning = (
+        f"!! {len(excluded)} picture(s) left out: the requested people are not recognised in them"
+    )
+    trace.warnings.append(warning)
+    logger.warning(warning)
 
 
 def _validate_structure_carriers(result: StructurePlanningResult, *, allowed_ids: set[str]) -> None:

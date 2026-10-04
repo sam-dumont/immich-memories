@@ -180,8 +180,6 @@ class PoolItem(BaseModel):
     taken: str
     kind: Literal["photo", "video", "live"]
     favourite: bool
-    # In the pool through its episode, not its own faces: the owner may want to untick it.
-    same_episode: bool = False
     in_cut: bool
     # False when the editor never received it (outside this memory's material): a tick can't reach it.
     reachable: bool

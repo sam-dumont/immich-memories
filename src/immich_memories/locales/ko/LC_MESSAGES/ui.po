@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-04 10:48+0200\n"
+"POT-Creation-Date: 2026-10-04 13:49+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ko\n"
@@ -68,7 +68,7 @@ msgstr "날짜 표시"
 msgid "Add someone not in Immich"
 msgstr "Immich에 없는 인물 추가"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:152
+#: web/routes/runs/[run_id]/pool/+page.svelte:149
 #, python-brace-format
 msgid "Add: {include} · Take out: {exclude}"
 msgstr "추가: {include} · 제외: {exclude}"
@@ -113,7 +113,7 @@ msgstr "기념일을 먼저, 나머지는 그다음에 표시합니다. 예약�
 msgid "Another day (MM-DD)"
 msgstr "다른 날 (MM-DD)"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:87 web/routes/runs/[run_id]/pool/+page.svelte:168
+#: web/routes/runs/[run_id]/pool/+page.svelte:87 web/routes/runs/[run_id]/pool/+page.svelte:165
 msgid "Anyone"
 msgstr "누구나"
 
@@ -195,7 +195,7 @@ msgstr "전체 후보 보기"
 msgid "Caches"
 msgstr "캐시"
 
-#: web/lib/JobPanel.svelte:92 web/routes/runs/[run_id]/pool/+page.svelte:174
+#: web/lib/JobPanel.svelte:92 web/routes/runs/[run_id]/pool/+page.svelte:171
 msgid "Cancel"
 msgstr "취소"
 
@@ -238,11 +238,11 @@ msgstr "영상이 다룰 범위를 선택하세요. 편집은 아래 명령어�
 msgid "Clear"
 msgstr "지우기"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:142 web/routes/runs/[run_id]/pool/+page.svelte:175
+#: web/routes/runs/[run_id]/pool/+page.svelte:139 web/routes/runs/[run_id]/pool/+page.svelte:172
 msgid "Clear hold"
 msgstr "제한 해제"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:161
+#: web/routes/runs/[run_id]/pool/+page.svelte:158
 msgid "Clear this hold?"
 msgstr "이 제한을 해제할까요?"
 
@@ -445,7 +445,7 @@ msgid "Expression"
 msgstr "표현식"
 
 #: web/routes/create/+page.svelte:496 web/routes/runs/[run_id]/pool/+page.svelte:87
-#: web/routes/runs/[run_id]/pool/+page.svelte:168
+#: web/routes/runs/[run_id]/pool/+page.svelte:165
 msgid "Family"
 msgstr "가족"
 
@@ -457,7 +457,7 @@ msgstr "이미지 미리보기를 가져오는 중"
 msgid "Fewer than 12 pictures fit: the film will be short."
 msgstr "맞는 사진이 12장 미만입니다: 영화가 짧아집니다."
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:166
+#: web/routes/runs/[run_id]/pool/+page.svelte:163
 msgid "Films that may use it"
 msgstr "이를 사용할 수 있는 영상"
 
@@ -576,7 +576,7 @@ msgid "It did not finish."
 msgstr "완료되지 않았습니다."
 
 #: web/routes/create/+page.svelte:495 web/routes/runs/[run_id]/pool/+page.svelte:87
-#: web/routes/runs/[run_id]/pool/+page.svelte:168
+#: web/routes/runs/[run_id]/pool/+page.svelte:165
 msgid "Just us"
 msgstr "우리끼리"
 
@@ -709,7 +709,7 @@ msgstr "음악"
 msgid "Music volume:"
 msgstr "음악 음량:"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:141
+#: web/routes/runs/[run_id]/pool/+page.svelte:138
 msgid "Never use"
 msgstr "사용하지 않기"
 
@@ -788,10 +788,6 @@ msgstr "이 해에 감지된 여행이 없습니다."
 #: web/routes/settings/people/+page.svelte:218
 msgid "No, they are not"
 msgstr "아니요, 아닙니다"
-
-#: web/routes/runs/[run_id]/pool/+page.svelte:132
-msgid "Nobody this memory is about was recognised here; they were, elsewhere in the same episode."
-msgstr "이 추억에 나오는 사람이 여기서는 인식되지 않았지만, 같은 에피소드의 다른 곳에서 인식되었습니다."
 
 #: web/routes/settings/people/+page.svelte:184
 msgid "Nobody yet. Rescan the library to read who is in it."
@@ -946,7 +942,7 @@ msgstr "미리보기"
 msgid "Preview a track"
 msgstr "트랙 미리듣기"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:153
+#: web/routes/runs/[run_id]/pool/+page.svelte:150
 msgid "Preview with these choices"
 msgstr "이 선택으로 미리보기"
 
@@ -1076,10 +1072,6 @@ msgstr "서버에서 실행 중: {phase}. 이 페이지를 떠나도 계속됩�
 #: web/routes/runs/+page.svelte:93 web/routes/runs/[run_id]/+page.svelte:126
 msgid "Runs"
 msgstr "작업 내역"
-
-#: web/routes/runs/[run_id]/pool/+page.svelte:132
-msgid "Same episode"
-msgstr "같은 에피소드"
 
 #: web/lib/SettingsEditor.svelte:110
 msgid "Save"
@@ -1487,7 +1479,7 @@ msgstr "여행"
 msgid "Try again"
 msgstr "다시 시도"
 
-#: web/routes/runs/[run_id]/+page.svelte:308 web/routes/runs/[run_id]/pool/+page.svelte:139
+#: web/routes/runs/[run_id]/+page.svelte:308 web/routes/runs/[run_id]/pool/+page.svelte:136
 msgid "Undo"
 msgstr "되돌리기"
 

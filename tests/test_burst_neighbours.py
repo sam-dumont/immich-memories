@@ -1,4 +1,4 @@
-"""A person memory takes the whole burst its person is recognised in, and asks for no more."""
+"""A person memory keeps strictly the frames its person is recognised on, and asks for no more."""
 
 from __future__ import annotations
 
@@ -19,10 +19,10 @@ def _live(index: int, *, seconds: float = 0.0):
     return asset
 
 
-class TestThePersonFetchReadsTheEpisode:
-    """The person's episode is the source boundary, not the one frame their face was found in."""
+class TestThePersonFetchReadsStrictlyPerPicture:
+    """The exact frame the person's face was found on is the source boundary (#1954)."""
 
-    def test_a_person_fetch_keeps_the_burst_frames_their_face_was_not_found_in(self):
+    def test_a_person_fetch_keeps_only_the_frame_their_face_was_found_on(self):
         from immich_memories.cli._asset_fetch import fetch_photos
 
         burst = [_live(index, seconds=index * 2.0) for index in range(3)]
@@ -38,7 +38,7 @@ class TestThePersonFetchReadsTheEpisode:
             person_ids=["person-1"],
         )
 
-        assert [asset.id for asset in found] == ["still-0", "still-1", "still-2"]
+        assert [asset.id for asset in found] == ["still-1"]
         client.get_live_photos_for_date_range.assert_not_called()
 
     def test_an_unfiltered_fetch_asks_for_nothing_extra(self):

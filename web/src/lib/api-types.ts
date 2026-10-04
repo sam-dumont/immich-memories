@@ -1760,11 +1760,6 @@ export interface components {
             kind: "photo" | "video" | "live";
             /** Reachable */
             reachable: boolean;
-            /**
-             * Same Episode
-             * @default false
-             */
-            same_episode: boolean;
             /** Taken */
             taken: string;
         };

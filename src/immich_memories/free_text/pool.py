@@ -12,9 +12,13 @@ import bisect
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
-from typing import Protocol
+from types import SimpleNamespace
+from typing import Protocol, cast
 
 from immich_memories.analysis.moment_grouping import EPISODE_WINDOW_MINUTES
+from immich_memories.analysis.person_presence import present_on_assets
+from immich_memories.api.models import Asset, Person
+from immich_memories.api.person_expression import PersonExpression
 from immich_memories.config_models_automation import TripsConfig
 from immich_memories.free_text.facts import (
     LibraryFacts,
@@ -291,15 +295,36 @@ def _names(view: LibraryView, people: frozenset[str]) -> str:
     return ", ".join(known) or "nobody known"
 
 
+def _as_asset(picture: LibraryPicture) -> Asset:
+    """A thin stand-in so `present_on_assets` can read a free-text picture's own faces.
+
+    Free text knows no accounts, so every face counts everywhere (`access_accounts=()`).
+    Structural only (`id`, `people`, `access_accounts`): the real type keeps the contract
+    honest for every other reader of `present_on_assets`.
+    """
+    return cast(
+        Asset,
+        SimpleNamespace(
+            id=picture.asset_id,
+            people=[Person(id=person_id) for person_id in picture.people],
+            access_accounts=(),
+        ),
+    )
+
+
 def _present(funnel: _Funnel, who: WhoLink, view: LibraryView) -> None:
-    # Someone is present when their face is recognised anywhere in the picture's episode: a baby
-    # feeding against a chest or a child seen from behind shows no face of its own.
+    # A person is present strictly on the picture their own face is recognised on, never
+    # spread to the rest of its episode (#1954): better lose a picture than bundle in one
+    # a baby feeding against a chest or a child seen from behind only looks like it is in.
+    # Several named people are "any of them", read the same way the fetch reads an OR
+    # (`present_on_assets`, `api/person_scope.py`): one shared rule, never a second.
     if not who.present:
         return
-    wanted = set(who.present)
-    faces = [p.taken_at for p in funnel.pictures if wanted & p.people]
-    kept = _in_episodes(funnel.pictures, faces)
-    rule = "a recognised face of theirs in the picture's episode (90 minutes)"
+    leaves = tuple(PersonExpression("person", value=person_id) for person_id in who.present)
+    condition = leaves[0] if len(leaves) == 1 else PersonExpression("any", children=leaves)
+    held = present_on_assets([_as_asset(picture) for picture in funnel.pictures], condition)
+    kept = [picture for picture in funnel.pictures if picture.asset_id in held]
+    rule = "a recognised face of theirs on the picture itself"
     # The trace names them, never by their Immich id: a report turns a name into a role.
     named = _names(view, frozenset(who.present))
     funnel.keep("who", kept, Reason(named, rule, "they are there"))

@@ -136,8 +136,8 @@ def fetch_photos(
     """Fetch every photograph in the memory's windows, honouring the person filter.
 
     Several people use the explicit AND/OR rule videos follow. Person-scoped
-    discovery keeps every picture of the episodes the people are in
-    (`api/person_scope.py`), not only the frames their faces were found in.
+    discovery keeps strictly the pictures whose own recognised faces satisfy the
+    condition (`api/person_scope.py`), never the gathering around them.
 
     A window that cannot be read costs that window, not the run. Live Photos
     used to be fetched through a wrapper that said so out loud; their stills
@@ -247,10 +247,10 @@ def fetch_media(
 
     A memory about nobody reads videos and photos the way `fetch_videos` and
     `fetch_photos` do. A memory about people reads each window once per kind and
-    keeps the episodes those people are in (`people_in_window`): an episode mixes
-    videos and photos, so both reads are needed even when photos are left out.
-    ``client`` may be every chosen account read as one (`HouseholdWindows`), and then
-    ``face_accounts`` holds each face to its own account's pictures.
+    keeps strictly the pictures those people are recognised on (`people_in_window`):
+    a window mixes videos and photos, so both reads are needed even when photos are
+    left out. ``client`` may be every chosen account read as one (`HouseholdWindows`),
+    and then ``face_accounts`` holds each face to its own account's pictures.
     """
     condition = window_condition(
         person_ids, person_match=person_match, person_expression=person_expression
@@ -266,7 +266,7 @@ def fetch_media(
         if not include_photos:
             return everything, []
         return everything, fetch_photos(client=client, date_ranges=date_ranges, person_ids=[])
-    task = progress.add_task("Fetching the episodes these people are in...", total=None)
+    task = progress.add_task("Fetching the pictures these people are in...", total=None)
     videos: list = []
     photos: list = []
     for date_range in date_ranges:

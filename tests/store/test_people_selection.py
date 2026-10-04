@@ -109,8 +109,9 @@ def test_a_store_person_is_found_in_both_accounts_pictures(store, immich):
 
     _, found = _discover(store, HOUSEHOLD, names=["Alex"])
 
-    # q-lake through the partner's alias; q-party because Alex is in the party's episode.
-    assert found == {"p-park", "p-party", "p-solo", "q-lake", "q-party"}
+    # q-lake through the partner's alias. q-party is excluded: Alex is not recognised on
+    # it, only Kit is, and a people condition is strict per picture (#1954).
+    assert found == {"p-park", "p-party", "p-solo", "q-lake"}
 
 
 def test_an_alias_only_matches_its_own_accounts_pictures(store, immich):
@@ -159,13 +160,14 @@ def test_a_one_account_run_matches_as_it_did_before_the_store(store, immich, reg
     assert grouped.condition == before_condition
 
 
-def test_an_and_holds_per_episode_across_both_accounts_copies(store, immich):
+def test_an_and_needs_both_faces_on_the_same_picture_even_across_accounts(store, immich):
     import_document(store, REGISTRY)
 
     _, found = _discover(store, HOUSEHOLD, expression='"Alex" AND "Kit"')
 
-    # Alex is on the primary's picture of the party and Kit on the partner's: one episode.
-    assert found == {"p-party", "q-party"}
+    # Alex is on the primary's picture of the party, Kit on the partner's: two different
+    # pictures, so AND holds on neither. Better lose this pair than bundle them in.
+    assert found == set()
 
 
 def test_a_person_bound_only_in_an_account_the_run_does_not_read_is_refused(store, immich):

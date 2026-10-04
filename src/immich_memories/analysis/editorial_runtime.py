@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import json
 import logging
-from collections.abc import Callable, Sequence
-from dataclasses import dataclass, replace
+from collections.abc import Callable, Mapping, Sequence
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, TypeVar, cast
 
@@ -133,6 +133,11 @@ class EditorialRunContext:
     # The Immich accounts the run reads (`primary` plus names under `immich.accounts`).
     # Empty reads the primary client alone, exactly as a run always has.
     accounts: tuple[str, ...] = ()
+    # The fetch's own resolved condition (face ids, after the people store and roster) and
+    # the household account each face counts on. `person_expression` above is display
+    # names for the brief; a carrier is checked against THIS at build_result (#1954).
+    resolved_person_condition: PersonExpression | None = None
+    face_accounts: Mapping[str, str] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         """Canonicalize exact windows while preserving every intentional gap."""
@@ -159,6 +164,10 @@ class EditorialRunContext:
             raise ValueError("Runtime rendering policy disagrees with the requested memory")
 
     def _adopt_person_expression(self) -> None:
+        if self.resolved_person_condition is not None and not isinstance(
+            self.resolved_person_condition, PersonExpression
+        ):
+            raise ValueError("runtime resolved people condition must be a validated expression")
         if self.person_expression is None:
             return
         if not isinstance(self.person_expression, PersonExpression):
@@ -346,6 +355,7 @@ class RuntimeEditorialPlanner:
                     outcome="selected" if result.plan.selections else "no_selection",
                     duration_realization=result.duration_realization,
                     calls_by_stage=structure.plan.get("calls_by_stage") if structure else None,
+                    reason=result.no_selection_reason,
                 )
                 return result
             finally:
@@ -403,6 +413,7 @@ class RuntimeEditorialPlanner:
                     duration_realization=result.plan.get("duration_realization")
                     if result
                     else None,
+                    no_selection_reason=_people_condition_no_selection_reason(result),
                 )
             if result is None:
                 raise RuntimeError("editorial source route has no completed structure result")
@@ -444,6 +455,22 @@ class RuntimeEditorialPlanner:
             trace=trace, evidence_exclusions=exclusions, include_previews=False
         )
         return final, reach
+
+
+def _people_condition_no_selection_reason(result) -> str | None:
+    """A specific empty-cut reason when a people condition excluded the whole pool, else None.
+
+    `editorial_structure_planner._plan_structure` writes `people_condition_excluded`
+    whenever it left pictures out before planning, carriers or not (a recurring product
+    can still read "insufficient_material" from its own occurrence count with carriers
+    present): only an empty `carriers` means the reason is actually about the exclusion.
+    The generic "nothing worth a film" stays the answer for every other empty cut (#1954).
+    """
+    if result is None or not result.plan.get("people_condition_excluded"):
+        return None
+    if result.plan.get("carriers"):
+        return None
+    return result.plan.get("intent_report", {}).get("reason")
 
 
 def _recorded(requester, stage: str, directory: Callable[[], Path]):

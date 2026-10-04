@@ -28,6 +28,10 @@ from immich_memories.analysis.editorial_exposure_chains import chain_holds_for
 from immich_memories.analysis.editorial_family_seat import FilmSeatSource, seat_in_film
 from immich_memories.analysis.editorial_home_radius import home_of, near_home_of
 from immich_memories.analysis.editorial_owner_required import admit_owner_required
+from immich_memories.analysis.editorial_people_condition_pool import (
+    exclude_people_condition_violators,
+    with_people_condition_exclusion,
+)
 from immich_memories.analysis.editorial_picture_admission import picture_admission, shows_life
 from immich_memories.analysis.editorial_picture_ladders import depth_cap
 from immich_memories.analysis.editorial_review_list import write_for_cut
@@ -253,10 +257,15 @@ def plan_structure(
             config=nas_draft_config(source.config),
             artifact_dir=source.artifact_dir / "nas-draft",
         )
+        # The reader must see the same narrowed pool `_plan_structure(nas, rules)` is
+        # about to plan over (#1954): built from the un-narrowed `nas`, it could have
+        # named a story or episode after a picture the people condition excludes.
         rules = replace(
             ports,
             judge=NoModelJudge(),
-            rules=RuleStructureReader(nas, printed=ports.printed_near),
+            rules=RuleStructureReader(
+                exclude_people_condition_violators(nas).source, printed=ports.printed_near
+            ),
             thin=None,
             laya=None,
             observe_story_motion=None,
@@ -278,6 +287,15 @@ def plan_structure(
 def _plan_structure(
     source: StructurePlanningInput, ports: StructurePlannerPorts
 ) -> StructurePlanningResult:
+    """Apply the people condition to the whole pool once, then plan it in a single pass.
+
+    `editorial_people_condition_pool.py` narrows `moment_asset_ids` before any budget or
+    selection work runs, so every derived field (moment counts, budgets, the certified
+    render timing) is already consistent with it (#1954, #1969): never a second pass, and
+    never a rewrite of an already-planned carriers list.
+    """
+    narrowed = exclude_people_condition_violators(source)
+    source = narrowed.source
     source.bank_dir.mkdir(parents=True, mode=0o700, exist_ok=True)
     source.artifact_dir.mkdir(parents=True, mode=0o700, exist_ok=True)
     audit_dir = source.artifact_dir / "derived-decisions"
@@ -287,6 +305,9 @@ def _plan_structure(
     contract, contract_key, admission, admission_key = contract_texts(source.case, source.intent)
     wall = read_wall(source)
     material = build_material(source, ports, wall)
+    # `source.assets` is already narrowed to non-violators above, so every reader of it
+    # (this budget, the second one inside `_select`, chain holds, the rules reader) sees
+    # the same pool without a second filter here.
     selection_budget = (
         source.render_timing.selection_budget(source.assets) if source.render_timing else None
     )
@@ -340,7 +361,7 @@ def _plan_structure(
         wall_sha256=hashlib.sha256(source.wall_bytes).hexdigest(),
         slots_total=slots_total,
         cap=cap,
-        source_assets=len(source.assets),
+        source_assets=narrowed.pool_size,
         fam_ids=wall.fam_ids,
         anchor_label=wall.anchor_label,
         period_people=wall.period_people,
@@ -352,7 +373,7 @@ def _plan_structure(
         prior_assets=prior_assets,
         prior_plan_ref=source.prior_plan_ref,
     )
-    return replace(
+    result = replace(
         build_result(source, ports, facts, outcome),
         draft=RulesDraft(
             outcome.selection,
@@ -363,6 +384,9 @@ def _plan_structure(
             tuple(deepcopy(outcome.final_duplicates.get("collapsed_favourites", ()))),
         ),
     )
+    if narrowed.excluded:
+        result = with_people_condition_exclusion(result, narrowed.excluded)
+    return result
 
 
 def _timing_binding(source: StructurePlanningInput, run: PlanRun) -> dict:

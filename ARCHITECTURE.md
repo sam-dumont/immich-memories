@@ -164,14 +164,12 @@ the code named beside it; if the two disagree, the code wins and this entry is s
   (`MOMENT_WINDOW_MINUTES`, `moment_grouping.py`). One moment is what one shot of the film shows.
 - **Episode**: the block a moment sits in (an afternoon at a circuit, a party), cut at a
   90-minute gap (`EPISODE_WINDOW_MINUTES`, `selection_source_groups.py`).
-- **Person presence**: in a film about people, a person is present in every picture of an episode
-  where Immich recognised their face at least once; `AND` asks for every named person somewhere in
-  the episode, not in one frame. Decided once, by the fetch, by face ID over the window Immich
-  returns (`api/person_scope.py`, one read per kind per window: `fetch_media` in the CLI,
-  `_fetch_media` in the wizard). The pool the owner reviews holds those pictures (marked
-  "Same episode", `AppState.found_by_episode`) and the cut keeps that answer: an evidence
-  exclusion removes a picture for its own reason, never its neighbours' presence. Never past
-  the episode (`person_presence.py`).
+- **Person presence**: in a film about people, a person is present strictly on the pictures
+  Immich recognised their face on; `AND` asks for every named person on that one picture, not
+  spread across the gathering around it (#1954). Decided once, by the fetch, by face ID over the
+  window Immich returns (`api/person_scope.py`, one read per kind per window: `fetch_media` in
+  the CLI, `_fetch_media` in the wizard). The pool the owner reviews holds exactly those pictures,
+  and the cut keeps that answer (`person_presence.py`).
 - **Episode reading**: a model's answer about one episode: what happened, its representatives,
   its cull decisions and its notable moments, banked by exact membership and producer
   (`store/episode_readings.py`, `text_episode_reader.py`). The rules reader writes factual
@@ -530,7 +528,7 @@ src/immich_memories/
 │   ├── editorial_film_preparation.py # NAS-first acquisition and live fact views for selected/candidate refinement
 │   ├── annotation_line_fields.py # Which parts of a picture's line are its content and which we wrote; content rules read only the first
 │   ├── editorial_film_reach.py # What a film prepares: its demanded pictures, their Live families and capture runs
-│   ├── person_presence.py      # Who a person film may select: every picture of an episode its people are recognised in
+│   ├── person_presence.py      # Who a person film may select: strictly the pictures whose own recognised faces satisfy the condition
 │   ├── person_resolution.py    # A name or UUID -> faces: the store's aliases per read account, else the roster
 │   ├── editorial_orchestration.py  # TextEditorialPlanner: episodes -> cards -> edit
 │   ├── editorial_rule_episodes.py  # Factual episode cards / omitted thesis; no semantic-bank writes
@@ -1022,7 +1020,8 @@ src/immich_memories/
 │   │                           # parts only for a place. Subject.heads feed link_where; subject_kind()
 │   │                           # (the model's place/animal/thing/activity vote)
 │   ├── pool.py                 # build_pool(Translation, LibraryView, ...): the funnel, each Step keeps a
-│   │                           # count and a Reason: when; who (a face in the picture's 90-min episode);
+│   │                           # count and a Reason: when; who (a face on the picture itself, strict per
+│   │                           # picture, #1954);
 │   │                           # printed text (PrintedText port = Immich OCR: anchors' episodes replace
 │   │                           # where); where (scopes.py) or Immich's place names; kind of picture
 │   │                           # (photographs and videos unless a kind is named); sharpness; computed
