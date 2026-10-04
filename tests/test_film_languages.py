@@ -62,6 +62,8 @@ def test_no_template_asks_for_a_value_the_code_does_not_give(locale: str) -> Non
         "person",
         "ordinal",
         "n",
+        "place",
+        "phrase",
     }
     for prefix in ("", "start_", "end_"):
         given |= {f"{prefix}month", f"{prefix}month_lc", f"{prefix}month_of", f"{prefix}month_num"}
@@ -204,8 +206,11 @@ def test_a_crete_trip_title_in_each_design(locale: str, expected: str) -> None:
     assert title == expected
 
 
-def test_a_households_own_occasion_falls_back_to_the_date_in_french() -> None:
-    """No catalogue entry exists for a household's own MM-DD occasion, so the
-    fallback date must still speak the film's language, not the host C locale."""
-    assert holiday_label("08-15", 2026, "fr") == "15 août"
-    assert holiday_label("08-15", 2026, "en") == "August 15"
+def test_a_households_own_mm_dd_occasion_is_labelled_in_french() -> None:
+    """No catalogue entry exists for a household's own day, so the date itself
+    (day + month) is the label -- and the month must still be French."""
+    assert holiday_label("07-14", 2024, "fr") == "14 juillet"
+
+
+def test_a_households_own_mm_dd_occasion_stays_english_by_default() -> None:
+    assert holiday_label("07-14", 2024, "en") == "14 July"

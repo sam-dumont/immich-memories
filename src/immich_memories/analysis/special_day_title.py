@@ -109,7 +109,7 @@ def honest_title(assets: list, *, what: str, evidence: str) -> str:
     """
     if not what:
         return ""
-    if place := _where_it_was(assets):
+    if place := place_from_assets(assets):
         return f"A day in {place}"
     return (
         title_the_day_can_keep(what, assets, evidence=evidence) if _reads_as_a_title(what) else ""
@@ -162,22 +162,37 @@ def _reads_as_a_title(text: str) -> bool:
     return bool(words) and len(words) <= _TITLE_WORDS and not _A_CLOCK.search(text)
 
 
-def _where_it_was(assets: list) -> str:
-    """The place the day's own pictures name most often, spelled as they spell it.
+# A day's EXIF field, and the `place_phrases.Place` kind the same word names:
+# a city is a city, a state is the closest thing EXIF has to a region, and a
+# bare country name is a country -- so the film-time fallback can pick the
+# right preposition instead of guessing one from the string alone.
+_EXIF_PLACE_KINDS = (("city", "city"), ("state", "region"), ("country", "country"))
+
+
+def place_and_kind_from_assets(assets: list) -> tuple[str, str] | None:
+    """The place the day's own pictures name most often, and what kind it is.
 
     Coordinates are not a place name: a day with GPS and no city has nowhere
     this can name, and inventing one from the numbers is the failure the guard
-    above exists for.
+    above exists for. Public because the film-time title falls back to the same
+    reading of a day's own EXIF when no model is there to translate the catalogue's
+    English title (see ``titles.film_title``).
     """
-    for attr in ("city", "state", "country"):
+    for attr, kind in _EXIF_PLACE_KINDS:
         names = collections.Counter(
             str(value)
             for asset in assets
             if (value := getattr(getattr(asset, "exif_info", None), attr, None))
         )
         if names:
-            return names.most_common(1)[0][0]
-    return ""
+            return names.most_common(1)[0][0], kind
+    return None
+
+
+def place_from_assets(assets: list) -> str:
+    """The place the day's own pictures name most often, spelled as they spell it."""
+    found = place_and_kind_from_assets(assets)
+    return found[0] if found else ""
 
 
 def _named_people(assets: list) -> set[str]:

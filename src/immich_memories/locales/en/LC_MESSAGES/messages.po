@@ -102,3 +102,9 @@ msgstr "Christmas"
 
 msgid "holiday.new_years_eve"
 msgstr "New Year's Eve"
+
+msgid "title.day_in_place_with"
+msgstr "A day {phrase}"
+
+msgid "title.day_in_place_neutral"
+msgstr "{place} · A day"

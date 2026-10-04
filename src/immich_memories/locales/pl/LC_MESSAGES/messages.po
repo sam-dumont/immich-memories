@@ -108,3 +108,9 @@ msgstr "Boże Narodzenie"
 
 msgid "holiday.new_years_eve"
 msgstr "Sylwester"
+
+msgid "title.day_in_place_with"
+msgstr "Dzień {phrase}"
+
+msgid "title.day_in_place_neutral"
+msgstr "{place} · Dzień"

@@ -107,3 +107,9 @@ msgstr "Kerstmis"
 
 msgid "holiday.new_years_eve"
 msgstr "Oudejaarsavond"
+
+msgid "title.day_in_place_with"
+msgstr "Een dag {phrase}"
+
+msgid "title.day_in_place_neutral"
+msgstr "{place} · Een dag"

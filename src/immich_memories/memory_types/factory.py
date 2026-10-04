@@ -326,18 +326,15 @@ def _trip(
 def holiday_label(holiday: str, year: int, locale: str = "en", *, country: str = "US") -> str:
     """A printable name, falling back to the date for a household's own occasion."""
     from immich_memories.i18n import film_text, month_name_forms
-    from immich_memories.titles.text_builder import title_pattern
 
     key = holiday.strip().lower().replace("-", "_").replace(" ", "_")
     label = film_text(f"holiday.{key}", locale)
     if label != f"holiday.{key}":
         return label
     resolved = resolve_holiday(holiday, year, country=country)
-    # The same {day}/{month} template "on_this_day" uses, so a household's own
-    # occasion reads as "25 décembre" in French rather than the host C
-    # locale's "25 December" from strftime.
-    forms = month_name_forms(resolved.month, locale)
-    return title_pattern("on_this_day", locale, day=resolved.day, **forms)
+    # A household's own MM-DD occasion has no catalogue entry to translate, so the
+    # fallback is built from CLDR's month forms rather than strftime's English names.
+    return f"{resolved.day} {month_name_forms(resolved.month, locale)['month_of']}"
 
 
 def holiday_choices(locale: str = "en") -> dict[str, str]:
