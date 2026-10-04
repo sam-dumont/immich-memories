@@ -38,7 +38,7 @@ Cut; a count of warnings alone does not tell you whether the install can run.
    in Immich before proceeding. Do not add more pictures until the trial finishes.
 2. In **Immich Memories**, open **Memory**, choose **Album** under **Memory type**, then choose
    **First film trial**. The album dropdown shows its asset count. Stop if it exceeds 50.
-3. Open **Length and pictures**. Set **Length in minutes** to **0.5** and enable **Include photos**.
+3. Open **Length and pictures**. Set **Length in minutes** to **0.5**. **Include photos** and **Include Live Photos** are on by default; leave them on.
    Leave optional services and upload disabled. The supported pool can be smaller than the album
    count after exclusions; the album remains the upper bound on its selected entries.
 
@@ -52,7 +52,7 @@ Press **Cut**. The app prepares the pictures and builds the edit. The first cut 
 
 ## Read the cut
 
-The cut opens its run page under **Runs**. The contact sheet shows the shots in playback order. Open one to see it larger, watch its video interval and read why it stayed. **Stories** groups the same shots by story.
+The finished cut is a run under **Runs**; the page may take you to it. If it doesn't move and returns to the empty form (this happens after a reload during the cut), open **Runs**. The contact sheet shows the shots in playback order. Open one to see it larger, watch its video interval and read why it stayed. **Stories** groups the same shots by story.
 
 Favourites help a moment earn its place. Videos often carry it better than a still. Quiet weeks can be empty: the film goes short instead of padding. [How it chooses](../how-it-chooses/overview.md) explains this without requiring you to configure it.
 
@@ -109,6 +109,7 @@ and run files.
 | Missing or wrong model pin | Run `models fetch` again, then preflight; see [offline preparation](../run/offline.md) if downloads are blocked |
 | Output not writable | Fix UID/GID ownership of this project's `output` using [the NAS permissions recipe](../run/nas.md#the-output-folder), then preflight |
 | Memory pressure or exit 137 | Check `docker stats --no-stream` and container state; keep Basic/1080p and give this app its own 4 GiB budget; see [render budgets](../run/reference/rendering.md) |
+| The cut hangs on thumbnails while preflight is green | The host's network MTU is below Docker's: [set a lower Compose network MTU](../reference/troubleshooting.md#preflight-says-immich-is-connected-but-cuts-hang-on-thumbnails) |
 | Interrupted work | Inspect the job error and saved run, then retry Cut or Render as above; [diagnostics](../run/maintenance/health-logs-cache.md) explains logs and reports |
 
 For a deliberate fresh trial or uninstall, use [the scoped lifecycle procedures](../run/lifecycle.md).
@@ -117,7 +118,13 @@ They are separate from retrying an interrupted film.
 ## Next
 
 After the small trial, choose **Monthly Highlights**, a year and a month. Record its input count
-and actual film length separately. That larger run has a different preparation cost; the small
+and actual film length separately. The CLI line, next to the album one:
+
+```bash
+immich-memories generate --memory-type monthly_highlights --year 2021 --month 5 --include-photos
+```
+
+Replace the year and month with your own. That larger run has a different preparation cost; the small
 trial does not validate a full month or year.
 
 

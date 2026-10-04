@@ -95,8 +95,9 @@ entry; see [the output folder](../nas.md#the-output-folder) for why `chown` isn'
 always renders in English until you set `title_screens.locale: fr` (or add `LANG: fr_FR.UTF-8`
 to `.env`) for a French one. Check DSM ACLs as described above. Run every later Compose command from this directory with
 `-p immich-memories`; the explicit project name also determines its named volume prefix.
-This stock release-file route uses host port **8080**. If occupied, edit the mapping to
-`127.0.0.1:18081:8080` and use 18081 for both tunnel and proxy upstream.
+This stock release-file route uses host port **8080**. If occupied, change only the number before
+`:8080` in the port line, so it reads `${UI_BIND_ADDRESS:-127.0.0.1}:18081:8080`, and use 18081 for
+both tunnel and proxy upstream. Keep `${UI_BIND_ADDRESS:-127.0.0.1}`: the LAN route depends on it.
 
 On your **desktop**, the permitted-tunnel route is:
 
