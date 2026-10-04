@@ -108,5 +108,8 @@ msgstr "Natal"
 msgid "holiday.new_years_eve"
 msgstr "Réveillon"
 
-msgid "title.day_in_place"
-msgstr "Um dia em {place}"
+msgid "title.day_in_place_with"
+msgstr "Um dia {phrase}"
+
+msgid "title.day_in_place_neutral"
+msgstr "{place} · Um dia"

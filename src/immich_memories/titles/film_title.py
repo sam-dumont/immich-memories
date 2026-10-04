@@ -50,32 +50,75 @@ def _album_of_the_cut(lookup: Callable[[], str | None] | None) -> str | None:
         return None
 
 
-def _place_from_clips(clips: list[Any]) -> str:
-    """The place the film's own selected pictures name most often.
+def _place_and_kind_from_clips(clips: list[Any]) -> tuple[str, str] | None:
+    """The place the film's own selected pictures name most often, and its kind.
 
     Reuses the special-day scan's own reading of EXIF rather than re-scanning
     anything: the film already has these clips in hand, and a day's place does
     not change between the scan that found it and the film that shows it.
     """
-    from immich_memories.analysis.special_day_title import place_from_assets
+    from immich_memories.analysis.special_day_title import place_and_kind_from_assets
 
     assets = [asset for c in clips if (asset := getattr(c, "asset", None))]
-    return place_from_assets(assets)
+    return place_and_kind_from_assets(assets)
 
 
-def _special_day_place_title(clips: list[Any], config: Config) -> str | None:
-    """ "A day in {place}", in the film's language, for a special day with no model.
+def _day_in_place_title(place_name: str, kind: str, locale: str) -> str:
+    """ "A day in {place}" with the right preposition, never a wrong one.
+
+    Reuses the trip machinery (`place_phrases`): a language with a rule for
+    this place's kind gets a proper phrase ("en France", "we Włoszech"); a
+    language or a place with none (Polish/Russian/Japanese/Chinese/Korean do
+    not cover every city and region, and some locales have no module at all)
+    gets the neutral form with no preposition at all, place first -- the same
+    rule the trip title follows (see `_trip_titles.generate_trip_title`).
+    """
+    from immich_memories.i18n import film_text
+    from immich_memories.i18n_places import localise_country, localise_place
+    from immich_memories.place_phrases import Place, place_phrase
+
+    place = Place(place_name, kind)
+    if phrase := place_phrase(locale, place):
+        return film_text("title.day_in_place_with", locale, phrase=phrase)
+    localised = (
+        localise_country(place_name, locale)
+        if kind == "country"
+        else (localise_place(place_name, locale) or place_name)
+    )
+    return film_text("title.day_in_place_neutral", locale, place=localised)
+
+
+def _special_day_place_title(
+    clips: list[Any], config: Config, date_range: DateRange
+) -> tuple[str, str] | None:
+    """(title, subtitle) naming a special day after its place, in the film's
+    language, for when there is no model to reword the catalogue's title.
 
     The catalogue's own title is banked in English (#1959) and cannot be
     reworded without one; naming the day after where it was still beats an
-    English headline or the generic month-and-year card.
+    English headline or losing the occasion to the generic month-and-year
+    card. The day's own date rides in the subtitle so the film never drops
+    the year just because the title names the place instead of the calendar.
     """
-    from immich_memories.i18n import film_text
+    from immich_memories.i18n import month_name_forms
+    from immich_memories.processing.clip_caption import resolve_caption_locale
 
-    if not (place := _place_from_clips(clips)):
+    if (found := _place_and_kind_from_clips(clips)) is None:
         return None
-    locale = config.title_screens.locale if config.title_screens else "en"
-    return film_text("title.day_in_place", locale, place=place)
+    place_name, kind = found
+    locale = resolve_caption_locale(config.title_screens.locale if config.title_screens else "en")
+    day = date_range.start.date()
+    subtitle = f"{day.day} {month_name_forms(day.month, locale)['month_of']} {day.year}"
+    return _day_in_place_title(place_name, kind, locale), subtitle
+
+
+def _catalogue_fallback(
+    from_catalogue: bool, clips: list[Any], config: Config, date_range: DateRange
+) -> tuple[str, str] | None:
+    """The place-named fallback, only when the title in play is the catalogue's."""
+    if not from_catalogue:
+        return None
+    return _special_day_place_title(clips, config, date_range)
 
 
 def _title_override_result(
@@ -84,16 +127,20 @@ def _title_override_result(
     *,
     memory_type: str | None,
     memory_preset_params: dict | None,
+    locale: str,
 ) -> tuple[str, str | None, TitleSource] | None:
     """The (title, subtitle, source) to return for ``title_override``, or ``None``.
 
     ``None`` means this override is a special day's catalogue title (#1959):
     an English fact banked at scan time, not a ready title, so the caller
     clears it and falls through to the model and its template below instead
-    of showing it verbatim.
+    of showing it verbatim -- unless the film's own language already IS
+    English, in which case the catalogue's words are already right and
+    rerouting them would only risk a model mangling them or a place fallback
+    discarding a title the catalogue got to keep (#1985 review).
     """
     source = override_source(title_override, memory_type, memory_preset_params)
-    if source is TitleSource.OCCASION and memory_type == "special_day":
+    if source is TitleSource.OCCASION and memory_type == "special_day" and locale != "en":
         return None
     return title_override, subtitle_override, source
 
@@ -190,16 +237,25 @@ def resolve_film_title(
     model, the film falls back to a template in its own language instead of
     an English headline.
     """
+    from immich_memories.processing.clip_caption import resolve_caption_locale
+
+    # NOTE: resolve_caption_locale, not yet i18n.resolve_film_locale -- #1978
+    # (which renames and moves it) has not merged at the time of this fix;
+    # rebase onto it once it lands so every locale read here goes through one
+    # resolver.
+    locale = resolve_caption_locale(config.title_screens.locale if config.title_screens else "en")
+
     from_catalogue = False
     if title_override:
-        result = _title_override_result(
+        override_result = _title_override_result(
             title_override,
             subtitle_override,
             memory_type=memory_type,
             memory_preset_params=memory_preset_params,
+            locale=locale,
         )
-        if result is not None:
-            return result
+        if override_result is not None:
+            return override_result
         from_catalogue = True
         if subtitle_override == (memory_preset_params or {}).get("subtitle"):
             subtitle_override = None
@@ -210,11 +266,11 @@ def resolve_film_title(
         memory_type=memory_type,
         configured=bool(llm_config.enabled and llm_config.model),
     ):
-        if from_catalogue and (place_title := _special_day_place_title(clips, config)):
-            return place_title, None, TitleSource.FALLBACK
+        if fallback := _catalogue_fallback(from_catalogue, clips, config, date_range):
+            return fallback[0], fallback[1], TitleSource.FALLBACK
         return None, subtitle_override, None
 
-    return _model_suggested_title(
+    model_result = _model_suggested_title(
         ask=ask,
         memory_type=memory_type,
         config=config,
@@ -226,3 +282,8 @@ def resolve_film_title(
         album_lookup=album_lookup,
         subtitle_override=subtitle_override,
     )
+    if model_result[0] is None and (
+        fallback := _catalogue_fallback(from_catalogue, clips, config, date_range)
+    ):
+        return fallback[0], fallback[1], TitleSource.FALLBACK
+    return model_result

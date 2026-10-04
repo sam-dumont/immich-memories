@@ -63,6 +63,7 @@ def test_no_template_asks_for_a_value_the_code_does_not_give(locale: str) -> Non
         "ordinal",
         "n",
         "place",
+        "phrase",
     }
     for prefix in ("", "start_", "end_"):
         given |= {f"{prefix}month", f"{prefix}month_lc", f"{prefix}month_of", f"{prefix}month_num"}

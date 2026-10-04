@@ -218,9 +218,10 @@ def _occasion_name(preset: Mapping[str, Any]) -> str | None:
     title = str(preset.get("title") or "").strip()
     subtitle = str(preset.get("subtitle") or "").strip()
     what = str(preset.get("what") or "").strip()
-    name = title or what
-    if subtitle:
-        name = f"{name} -- {subtitle}" if name else subtitle
+    # The title is the vetted name; `what` is the plainer description banked
+    # alongside it. Neither replaces the other -- a title with no description
+    # behind it is as thin a fact as a description with no name.
+    name = " -- ".join(dict.fromkeys(part for part in (title, what, subtitle) if part))
     kind = str(preset.get("kind") or "").strip()
     if not name:
         return None

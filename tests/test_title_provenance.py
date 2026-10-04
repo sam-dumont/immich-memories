@@ -111,14 +111,30 @@ def test_an_album_memory_is_named_by_its_album():
     assert source == "album"
 
 
-def test_a_special_days_catalogue_title_is_never_shown_as_a_ready_override():
-    """The catalogue's title is an English fact banked at scan time (#1959),
-    not a ready title: with no reader and nothing to place it by, the film
-    falls back to the template layers rather than the catalogue's own words."""
+def test_a_special_days_english_catalogue_title_is_kept_for_an_english_film():
+    """The catalogue is always English (#1959): an English film shows it
+    verbatim rather than routing it through a model or a place fallback that
+    could only make it worse."""
     source = _resolve(
         title_override="First day of school",
         memory_type="special_day",
         preset_params={"title": "First day of school"},
+    )[2]
+
+    assert source == "occasion"
+
+
+def test_a_special_days_catalogue_title_is_never_shown_as_a_ready_override_in_french():
+    """For any other film language, the catalogue's title is an English fact
+    banked at scan time (#1959), not a ready title: with no reader and
+    nothing to place it by, the film falls back to the template layers
+    rather than the catalogue's own English words."""
+    config = Config(tier="nas", title_screens={"locale": "fr"})
+    source = _resolve(
+        title_override="First day of school",
+        memory_type="special_day",
+        preset_params={"title": "First day of school"},
+        config=config,
     )[2]
 
     assert source != "occasion"
