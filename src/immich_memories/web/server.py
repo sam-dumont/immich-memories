@@ -280,6 +280,7 @@ async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
     logger.info(
         "Application initialized (auth=%s)", "enabled" if config.auth.enabled else "disabled"
     )
+    _settle_dead_runs(config)
     scheduler = asyncio.ensure_future(automation_scheduler.run_forever())
     _warm_answers(config)
     try:
@@ -287,6 +288,22 @@ async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
     finally:
         scheduler.cancel()
         logger.info("Application shutting down")
+
+
+def _settle_dead_runs(config: Any) -> None:
+    """A render the last process died in must not read `Running` for good: mark it interrupted."""
+    from immich_memories.db import open_store
+    from immich_memories.tracking.orphaned_runs import interrupt_orphaned_runs
+
+    try:
+        for run_id in interrupt_orphaned_runs(
+            open_store(config), config.cache.database_path.parent / ".lock"
+        ):
+            logger.warning(
+                "Run %s was left running by a stopped process; marked interrupted", run_id
+            )
+    except Exception:  # WHY: a store hiccup must not keep the server from starting
+        logger.exception("Could not settle runs left running")
 
 
 def _warm_answers(config: Any) -> None:

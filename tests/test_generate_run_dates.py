@@ -46,3 +46,30 @@ def test_failed_render_keeps_february_scope(tmp_path, monkeypatch, observed, as_
     run = RunDatabase(store).list_runs(limit=1)[0]
     assert run.status == "failed"
     assert (run.date_range_start, run.date_range_end) == (date(2024, 2, 1), date(2024, 2, 29))
+
+
+def test_a_render_stopped_midway_is_cancelled_and_leaves_no_scratch_folder(tmp_path, monkeypatch):
+    config = Config()
+    config.title_screens.enabled = False
+    store = open_store(config)
+    params = GenerationParams(
+        clips=[make_clip("stopped", duration=5)],
+        config=config,
+        output_path=tmp_path / "film.mp4",
+        no_music=True,
+    )
+
+    def stop_while_preparing(*args, **kwargs):
+        scratch = next(tmp_path.glob("film_*")) / ".source_preparation" / "0"
+        scratch.mkdir(parents=True)
+        raise KeyboardInterrupt  # what a cancel from the UI becomes in the render's process
+
+    # WHY: media extraction is the FFmpeg/Immich boundary; the run lifecycle stays real.
+    monkeypatch.setattr("immich_memories.generate_render.extract_clips", stop_while_preparing)
+    monkeypatch.setattr("immich_memories.tracking.run_tracker.capture_system_info", lambda: None)
+    with pytest.raises(KeyboardInterrupt):
+        generate_memory(params)
+
+    run = RunDatabase(store).list_runs(limit=1)[0]
+    assert run.status == "cancelled"
+    assert not list(tmp_path.glob("film_*/.source_preparation"))

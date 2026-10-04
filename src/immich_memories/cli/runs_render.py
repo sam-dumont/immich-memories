@@ -16,6 +16,7 @@ import click
 from immich_memories.cli._helpers import print_error, print_success
 from immich_memories.cli._runs_reading import RunNotFound, resolve_attempt
 from immich_memories.cli.progress_file import progress_writer, write_progress
+from immich_memories.cli.termination import stop_on_sigterm
 from immich_memories.config_models_render import TitleStyleMode
 from immich_memories.generate_saved_cut import CutRenderRequest, render_saved_cut
 from immich_memories.operations.cut_revisions import read_revisions
@@ -177,7 +178,7 @@ def register_render_command(runs: click.Group) -> None:
         if run is None:
             print_error(f"Run {resolved} is not in the run database.")
             sys.exit(1)
-        with AccessBoundClient(config.immich) as client:
+        with stop_on_sigterm(), AccessBoundClient(config.immich) as client:
             try:
                 path = render_saved_cut(
                     config=config,
