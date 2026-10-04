@@ -11,7 +11,7 @@ from __future__ import annotations
 import hashlib
 import json
 import sys
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
@@ -23,10 +23,21 @@ from immich_memories.analysis.editorial_shareability import level_of
 from immich_memories.api.access_clients import AccessBoundClient
 from immich_memories.cli._album_generation import CuratedPool
 from immich_memories.cli._helpers import print_info
-from immich_memories.free_text.account_scope import resolve_account_scope, visible_pictures
+from immich_memories.config_models import PRIMARY_ACCOUNT
+from immich_memories.free_text.account_scope import (
+    AccountScope,
+    likely_household,
+    resolve_account_scope,
+    visible_pictures,
+)
 from immich_memories.free_text.handoff import CatalogueEvent, Film, film_for
 from immich_memories.free_text.lexicon import WordNetUnavailable, load_wordnet
-from immich_memories.free_text.library import LibraryUnavailable, LibraryView, read_library
+from immich_memories.free_text.library import (
+    LibraryPerson,
+    LibraryUnavailable,
+    LibraryView,
+    read_library,
+)
 from immich_memories.free_text.printed import ImmichPrintedText
 from immich_memories.free_text.reading import WireAsker
 from immich_memories.free_text.trace import explain, pool_counts, save_with_run, trace_record
@@ -172,11 +183,22 @@ def translate_ask(
             "The store holds no library to read: run immich-memories prepare first"
         )
     asker = WireAsker(config.llm, judgments=store)
-    with _ask_client(config, accounts) as client:
-        scope = resolve_account_scope(client, accounts, view.pictures, store)
+    # A request naming no account still reads as the primary alone once a household run
+    # (or native sharing) may have left another account's pictures in this store (#2044).
+    scope_accounts = accounts or (
+        (PRIMARY_ACCOUNT,)
+        if likely_household(
+            store,
+            other_accounts=bool(config.immich.accounts),
+            native_sharing=config.immich.native_sharing,
+        )
+        else ()
+    )
+    with _ask_client(config, scope_accounts) as client:
+        scope = resolve_account_scope(client, scope_accounts, view.pictures, store)
         view = LibraryView(
             pictures=visible_pictures(view.pictures, scope),
-            people=view.people,
+            people=_scoped_people(view.people, scope),
             sharpness_line=view.sharpness_line,
             owner_id=view.owner_id,
         )
@@ -283,9 +305,10 @@ def _home_base(config: Config) -> tuple[float, float] | None:
 def _ask_client(config: Config, accounts: Sequence[str]) -> SyncImmichClient:
     """The one-account client every `--ask` has used, or one that can open every account.
 
-    `accounts` named is a household run (#2044): reading each chosen account's own library
-    needs an `AccessBoundClient`, so the pool can be scoped to what they can see. Naming
-    none keeps the plain client, unchanged.
+    `accounts` named (explicitly, or because the store might hold more than the primary's
+    own pictures, #2044) needs an `AccessBoundClient` to read each one's own library, so
+    the pool can be scoped to what they can see. Naming none keeps the plain client,
+    unchanged.
     """
     from immich_memories.api.immich import SyncImmichClient
 
@@ -296,3 +319,22 @@ def _ask_client(config: Config, accounts: Sequence[str]) -> SyncImmichClient:
             api_version=config.immich.api_version,
         )
     return AccessBoundClient(config.immich)
+
+
+def _scoped_people(
+    people: Mapping[str, LibraryPerson], scope: AccountScope
+) -> Mapping[str, LibraryPerson]:
+    """`people` the asking accounts can name; every known person when `scope` names none.
+
+    Outside a household run `scope.face_accounts` is empty and everybody the people file
+    knows is nameable, as it always has been. In one, a person with no alias any chosen
+    account can read is not linked or named in the trace at all (#2044): their pictures are
+    already out of the pool, so showing them in WHO would just be a different leak.
+    """
+    if not scope.face_accounts:
+        return people
+    return {
+        person_id: person
+        for person_id, person in people.items()
+        if person_id in scope.face_accounts
+    }

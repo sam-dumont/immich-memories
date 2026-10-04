@@ -285,6 +285,10 @@ def ask_availability(config: Annotated[Config, Depends(current_config)]) -> AskA
 
 class AskRequest(BaseModel):
     sentence: str = Field(min_length=1, max_length=500)
+    # The accounts the page has chosen (`CutBrief.accounts`): a preview must scope its pool
+    # the same way the film it is previewing will (#2044), or the preview can show pictures
+    # the eventual film's own accounts would never have counted.
+    accounts: list[str] = Field(default_factory=list)
 
 
 @router.post("/ask/preview", response_model=JobView, status_code=202, responses={409: {}})
@@ -308,7 +312,9 @@ def start_ask_preview(
     job_id = uuid4().hex
     trace_file = runner.progress_path(job_id)
     config_flag = _config_flag()
-    flags = [f"--ask={sentence}", "--dry-run"]
+    # The same `CutBrief` flags a film from this sentence would get (`accounts` included),
+    # so the preview's pool is scoped exactly as the eventual render will be.
+    flags = [*CutBrief(ask=sentence, accounts=request.accounts).flags(), "--dry-run"]
     argv = [
         executable,
         *(["--config", str(config_flag)] if config_flag else []),

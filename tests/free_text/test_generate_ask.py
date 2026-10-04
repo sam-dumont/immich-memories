@@ -387,6 +387,93 @@ def test_ask_never_counts_or_traces_another_accounts_pictures(
     assert "p-cat" not in json.dumps(record)
 
 
+def test_a_plain_ask_defaults_to_the_primary_when_the_config_has_a_household(
+    tmp_path: Path, lexicon: WordNetLexicon, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A household that once ran `--accounts` left the partner's pictures in the one,
+    ownerless store (#2044): naming no account at all must not fall back to reading all of
+    it, just because `run_accounts` turns "no --accounts" into the one-account run's empty
+    tuple. Configuring a partner account is enough to default this request to the primary
+    account alone, exactly as a dated run already reads without `--accounts`."""
+    import json
+
+    import yaml
+
+    from immich_memories.cli import main
+    from tests.household_fake import PARTNER_KEY, PRIMARY_KEY, FakeHousehold, immich_config, picture
+
+    store = open_store()
+    add_rows(
+        store,
+        "annotation_assets",
+        {"asset_id": "p-cat", "taken_at": "2020-01-01T12:00:00+00:00", "media_kind": "photo"},
+        {"asset_id": "q-cat", "taken_at": "2020-01-02T12:00:00+00:00", "media_kind": "photo"},
+    )
+    add_rows(
+        store,
+        "descriptions",
+        {
+            "asset_id": "p-cat",
+            "model": EDITORIAL.description_model,
+            "text": "A black cat is sleeping",
+        },
+        {
+            "asset_id": "q-cat",
+            "model": EDITORIAL.description_model,
+            "text": "A black cat is sleeping",
+        },
+    )
+    FakeHousehold(
+        library={
+            PRIMARY_KEY: [picture("p-cat", "primary", 1, ())],
+            PARTNER_KEY: [picture("q-cat", "partner", 2, ())],
+        }
+    ).install(monkeypatch)
+    monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    monkeypatch.setattr("immich_memories.cli._ask_generation.load_wordnet", lambda _path: lexicon)
+    monkeypatch.setattr(
+        "immich_memories.cli._ask_generation.WireAsker", lambda *_a, **_k: QuestionAsker(ANSWERS)
+    )
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text(
+        yaml.safe_dump(
+            {
+                "immich": immich_config(),
+                "tier": "full",
+                "advanced": {
+                    "llm": {
+                        "enabled": True,
+                        "base_url": "http://reader.invalid/v1",
+                        "model": "small-reader",
+                    }
+                },
+            }
+        )
+    )
+    trace_file = tmp_path / "ask.json"
+
+    # No --accounts at all: the household is only in the config, not on the command line.
+    result = CliRunner().invoke(
+        main,
+        [
+            "-c",
+            str(config_path),
+            "generate",
+            "--ask",
+            "our cat along the years",
+            "--dry-run",
+            "--ask-trace",
+            str(trace_file),
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert "q-cat" not in result.output
+    record = json.loads(trace_file.read_text())
+    assert record["pool"] == {"pictures": 1, "photos": 1, "videos": 0}
+    assert "q-cat" not in json.dumps(record)
+
+
 def test_ask_counts_every_named_accounts_pictures(
     tmp_path: Path, lexicon: WordNetLexicon, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -468,6 +555,27 @@ def test_ask_counts_every_named_accounts_pictures(
     assert result.exit_code == 0, result.output
     record = json.loads(trace_file.read_text())
     assert record["pool"] == {"pictures": 2, "photos": 2, "videos": 0}
+
+
+def test_scoped_people_drops_a_person_absent_from_the_face_scope() -> None:
+    """`view.people` must shrink with the pool (#2044): once `AccountScope.face_accounts`
+    says who the asking accounts can read, a person held to no readable account is not a
+    candidate `link_who` can name or link in A's trace, the same way their pictures are
+    already out of A's pool."""
+    from immich_memories.cli._ask_generation import _scoped_people
+    from immich_memories.free_text.account_scope import AccountScope
+    from immich_memories.free_text.library import LibraryPerson
+
+    people = {
+        "p-a": LibraryPerson("p-a", "Ada Example", None, None),
+        "p-b": LibraryPerson("p-b", "Bo Example", None, None),
+    }
+
+    unscoped = _scoped_people(people, AccountScope())
+    scoped = _scoped_people(people, AccountScope(face_accounts={"p-a": "primary"}))
+
+    assert unscoped == people
+    assert scoped == {"p-a": people["p-a"]}
 
 
 def test_one_undated_occasion_is_filmed_as_its_special_day(

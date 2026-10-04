@@ -55,3 +55,53 @@ def test_a_request_naming_accounts_needs_an_access_bound_client() -> None:
 
     with pytest.raises(TypeError, match="AccessBoundClient"):
         resolve_account_scope(object(), ("partner",), [_picture("a")], store)  # type: ignore[arg-type]
+
+
+def test_native_sharing_widens_a_face_accounts_entry_beyond_its_saved_binding(monkeypatch) -> None:
+    """A person saved with one explicit binding (`primary` alone) can still be shared
+    natively with the partner's own cluster (#2044, mirrors
+    `test_native_cluster_identity_finds_the_partner_picture_without_a_second_binding`): the
+    scope must hold the face to every account the cluster actually verifies, not just the
+    account the people store happened to save."""
+    from immich_memories.api.access_clients import AccessBoundClient
+    from immich_memories.config_models import ImmichConfig
+    from immich_memories.people.transfer import import_document
+    from tests.household_fake import PARTNER_KEY, PRIMARY_KEY, FakeHousehold, immich_config, picture
+
+    store = open_store()
+    import_document(
+        store,
+        {
+            "version": 1,
+            "people": [
+                {
+                    "ids": ["shared"],
+                    "name": "Alex",
+                    "birth_date": None,
+                    "inferred": {
+                        "tier": "inner",
+                        "counts_reliable": True,
+                        "evidence": {},
+                        "links": [],
+                    },
+                    "confirmed": {"role": None, "links": [], "notes": None},
+                }
+            ],
+        },
+    )
+    FakeHousehold(
+        library={
+            PRIMARY_KEY: [picture("p-cat", "primary", 1, ("shared",))],
+            PARTNER_KEY: [picture("q-cat", "partner", 2, ())],
+        },
+        roster={PRIMARY_KEY: [{"id": "shared", "name": "Alex"}], PARTNER_KEY: []},
+        version={"major": 3, "minor": 2, "patch": 4},
+        clusters={PRIMARY_KEY: "cluster", PARTNER_KEY: "cluster"},
+    ).install(monkeypatch)
+    config = ImmichConfig(**immich_config(), native_sharing=True)
+    pictures = [_picture("p-cat"), _picture("q-cat")]
+
+    with AccessBoundClient(config) as client:
+        scope = resolve_account_scope(client, ("primary", "partner"), pictures, store)
+
+    assert scope.face_accounts["shared"] == frozenset({"primary", "partner"})
