@@ -20,6 +20,9 @@ from immich_memories.analysis.editorial_film_preparation import CandidateEvidenc
 from immich_memories.analysis.editorial_motion_facts import production_motion_resolver
 from immich_memories.analysis.editorial_orchestration import TextEditorialWorkprint
 from immich_memories.analysis.editorial_people import EditorialPeople
+from immich_memories.analysis.editorial_people_condition_pool import (
+    exclude_people_condition_violators,
+)
 from immich_memories.analysis.editorial_planner import EditorialPlan, EditorialSelection
 from immich_memories.analysis.editorial_product_brief import build_editorial_brief
 from immich_memories.analysis.editorial_runtime_ports import (
@@ -318,7 +321,11 @@ class ProductionPostCardBackend:
                 thumbnail_hash=thumbnail_hasher,
                 scene_print=scene_prints,
                 thumbnail_metrics=thumbnail_metrics,
-                rules=RuleStructureReader(source, printed=self._printed_near),
+                # Narrowed so a violator never names a story or episode title (#1954);
+                # `_plan_structure` narrows the same way, idempotently, before planning.
+                rules=RuleStructureReader(
+                    exclude_people_condition_violators(source).source, printed=self._printed_near
+                ),
                 printed_near=self._printed_near,
                 resolve_windows=resolve_windows,
                 resolve_speech=resolve_speech,
@@ -367,7 +374,10 @@ class ProductionPostCardBackend:
         from immich_memories.analysis.editorial_laya_reader import laya_reader_for
         from immich_memories.analysis.editorial_rule_reader import RuleStructureReader
 
-        rules = RuleStructureReader(source, printed=self._printed_near)
+        # Narrowed for the same reason as the rules-only path above (#1954).
+        rules = RuleStructureReader(
+            exclude_people_condition_violators(source).source, printed=self._printed_near
+        )
         return {
             "rules": rules,
             "laya": laya_reader_for(config.editorial),

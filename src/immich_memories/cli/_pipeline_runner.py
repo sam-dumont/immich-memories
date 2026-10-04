@@ -621,7 +621,9 @@ def run_pipeline_and_generate(
         # Pictures that were read and judged not worth a film are an answer, not a
         # failure; an empty pool is still an error (a filter or connection gone wrong).
         if all_candidates:
-            print_info(_nothing_worth_a_film_message(date_range, pipeline_result.stats))
+            print_info(
+                _nothing_worth_a_film_message(date_range, pipeline_result.stats), soft_wrap=True
+            )
             sys.exit(0)
         print_error("Pipeline selected no clips")
         sys.exit(1)

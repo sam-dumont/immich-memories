@@ -13,7 +13,6 @@ from copy import deepcopy
 from dataclasses import dataclass, replace
 from datetime import datetime
 from functools import partial
-from itertools import chain
 from operator import itemgetter
 from typing import Any
 
@@ -258,10 +257,15 @@ def plan_structure(
             config=nas_draft_config(source.config),
             artifact_dir=source.artifact_dir / "nas-draft",
         )
+        # The reader must see the same narrowed pool `_plan_structure(nas, rules)` is
+        # about to plan over (#1954): built from the un-narrowed `nas`, it could have
+        # named a story or episode after a picture the people condition excludes.
         rules = replace(
             ports,
             judge=NoModelJudge(),
-            rules=RuleStructureReader(nas, printed=ports.printed_near),
+            rules=RuleStructureReader(
+                exclude_people_condition_violators(nas).source, printed=ports.printed_near
+            ),
             thin=None,
             laya=None,
             observe_story_motion=None,
@@ -301,12 +305,11 @@ def _plan_structure(
     contract, contract_key, admission, admission_key = contract_texts(source.case, source.intent)
     wall = read_wall(source)
     material = build_material(source, ports, wall)
-    pool_ids = frozenset(chain.from_iterable(source.moment_asset_ids.values()))
-    pool_assets = {
-        asset_id: asset for asset_id, asset in source.assets.items() if asset_id in pool_ids
-    }
+    # `source.assets` is already narrowed to non-violators above, so every reader of it
+    # (this budget, the second one inside `_select`, chain holds, the rules reader) sees
+    # the same pool without a second filter here.
     selection_budget = (
-        source.render_timing.selection_budget(pool_assets) if source.render_timing else None
+        source.render_timing.selection_budget(source.assets) if source.render_timing else None
     )
     slots_total, cap, partition_limit = _partition_cap(
         source.intent, source.case.target_seconds, source.prior_plan, selection_budget

@@ -460,11 +460,15 @@ class RuntimeEditorialPlanner:
 def _people_condition_no_selection_reason(result) -> str | None:
     """A specific empty-cut reason when a people condition excluded the whole pool, else None.
 
-    `editorial_structure_planner._plan_structure` writes `people_condition_excluded` only
-    when it left pictures out before planning; the generic "nothing worth a film" stays
-    the answer for every other empty cut (#1954).
+    `editorial_structure_planner._plan_structure` writes `people_condition_excluded`
+    whenever it left pictures out before planning, carriers or not (a recurring product
+    can still read "insufficient_material" from its own occurrence count with carriers
+    present): only an empty `carriers` means the reason is actually about the exclusion.
+    The generic "nothing worth a film" stays the answer for every other empty cut (#1954).
     """
     if result is None or not result.plan.get("people_condition_excluded"):
+        return None
+    if result.plan.get("carriers"):
         return None
     return result.plan.get("intent_report", {}).get("reason")
 

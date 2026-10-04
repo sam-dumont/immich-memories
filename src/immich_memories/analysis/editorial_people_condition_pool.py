@@ -18,6 +18,7 @@ from immich_memories.analysis.editorial_structure_contract import (
     StructurePlanningResult,
 )
 from immich_memories.analysis.person_presence import present_on_assets
+from immich_memories.api.models import Asset
 
 __all__ = [
     "NarrowedPool",
@@ -30,15 +31,20 @@ __all__ = [
 class NarrowedPool:
     source: StructurePlanningInput
     excluded: frozenset[str]
-    # What `facts.source_assets` should report: the evidence `len(source.assets)` always
-    # counted (companions and unselectable context included, by existing design) minus
-    # only what the people condition excluded here. Equals `len(source.assets)` whenever
+    # What `facts.source_assets` should report: `len(source.assets)` before narrowing,
+    # minus only what the people condition excluded. Equals `len(source.assets)` whenever
     # nothing was excluded, so an unrelated run's count never moves.
     pool_size: int
 
 
 def exclude_people_condition_violators(source: StructurePlanningInput) -> NarrowedPool:
-    """Every moment, narrowed to the candidates whose own faces satisfy the condition."""
+    """Every moment, narrowed to the candidates whose own faces satisfy the condition.
+
+    `assets` and `companion_assets` narrow with it (every reader of `source.assets`,
+    not just the moments, must see the same pool: budgets, chain holds, the rules
+    reader): a violator's Live Photo companion is dropped alongside it, so
+    `_check_companions` still holds.
+    """
     condition = source.case.resolved_person_condition
     all_ids = frozenset(chain.from_iterable(source.moment_asset_ids.values()))
     if condition is None or not all_ids:
@@ -51,9 +57,15 @@ def exclude_people_condition_violators(source: StructurePlanningInput) -> Narrow
     violating = all_ids - held
     if not violating:
         return NarrowedPool(source, frozenset(), len(source.assets))
-    narrowed_moments = _without(source.moment_asset_ids, violating)
     pool_size = len(source.assets) - len(violating)
-    return NarrowedPool(replace(source, moment_asset_ids=narrowed_moments), violating, pool_size)
+    narrowed = replace(
+        source,
+        moment_asset_ids=_without(source.moment_asset_ids, violating),
+        assets={k: v for k, v in source.assets.items() if k not in violating},
+        companion_assets=_without_companions(source, violating),
+        allow_empty_moments=True,
+    )
+    return NarrowedPool(narrowed, violating, pool_size)
 
 
 def _without(
@@ -68,6 +80,21 @@ def _without(
     return {
         alias: tuple(asset_id for asset_id in ids if asset_id not in violating)
         for alias, ids in moment_asset_ids.items()
+    }
+
+
+def _without_companions(
+    source: StructurePlanningInput, violating: frozenset[str]
+) -> dict[str, Asset]:
+    dropped_videos = {
+        asset.live_photo_video_id
+        for asset_id in violating
+        if (asset := source.assets.get(asset_id)) and asset.live_photo_video_id
+    }
+    return {
+        key: companion
+        for key, companion in source.companion_assets.items()
+        if key not in dropped_videos
     }
 
 

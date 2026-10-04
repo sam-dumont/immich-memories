@@ -130,6 +130,27 @@ def test_a_clean_pool_plans_identically_whether_or_not_a_condition_is_checked(tm
     assert "people_condition_excluded" not in without_condition
 
 
+def test_a_clean_pool_returns_source_assets_unchanged_not_a_recomputed_copy(tmp_path):
+    """Regression (#1969): narrowing must not rebuild `source.assets` from moment
+    membership when nothing is excluded. A rebuild would silently drop any asset never
+    referenced by a moment (companions, unselectable context) from `facts.source_assets`
+    and from the selection budget, even with no people condition ever violated."""
+    from immich_memories.analysis.editorial_people_condition_pool import (
+        exclude_people_condition_violators,
+    )
+
+    source = _film(tmp_path)
+    for asset in source.assets.values():
+        asset.people = [Person(id=STORE_FACE_ID, name="")]
+    source = _with_condition(source, PersonExpression("person", value=STORE_FACE_ID))
+
+    narrowed = exclude_people_condition_violators(source)
+
+    assert narrowed.source.assets is source.assets
+    assert narrowed.excluded == frozenset()
+    assert narrowed.pool_size == len(source.assets)
+
+
 def test_a_condition_nobody_in_the_pool_holds_refuses_with_a_specific_reason(tmp_path):
     """Owner ruling: better lose a good picture than bundle in a wrong one (#1954)."""
     source = _film(tmp_path)
@@ -294,3 +315,54 @@ def test_a_carrier_missing_from_captured_evidence_fails_loud_not_silent(tmp_path
 
     with pytest.raises(ValueError, match="absent from captured source evidence"):
         build_result(source, ports, facts, outcome)
+
+
+def test_the_production_rules_reader_is_built_from_the_narrowed_pool(tmp_path):
+    """editorial_runtime_backend._production_effects must hand the no-model rules reader
+    the narrowed pool, not the whole captured source (#1954): otherwise a violator's own
+    caption could still shape a moment's story or title, even though it can never be
+    selected."""
+    from contextlib import ExitStack
+
+    from immich_memories.analysis.editorial_people import adapt_editorial_people
+    from immich_memories.analysis.editorial_runtime import EditorialRunContext
+    from immich_memories.analysis.editorial_runtime_backend import ProductionPostCardBackend
+    from immich_memories.analysis.editorial_runtime_ports import EditorialRuntimePorts
+    from tests.annotation_rows import annotation_store
+
+    source = _film(tmp_path, days=1)
+    bad_id = next(iter(source.assets))
+    for asset_id, asset in source.assets.items():
+        asset.people = (
+            [Person(id="someone-else", name="Someone Else")]
+            if asset_id == bad_id
+            else [Person(id=STORE_FACE_ID, name="")]
+        )
+    source = _with_condition(source, PersonExpression("person", value=STORE_FACE_ID))
+    config = source.config.model_copy(
+        update={"editorial": source.config.editorial.model_copy(update={"reader": "rules"})}
+    )
+    case = source.case
+    backend = ProductionPostCardBackend(
+        config=config,
+        context=EditorialRunContext(
+            case.key,
+            case.label,
+            case.product,
+            case.ranges,
+            case.target_seconds,
+            source.artifact_dir,
+        ),
+        people=adapt_editorial_people({}),
+        thumbnail_cache=object(),
+        store=annotation_store(),
+        bank_root=source.bank_dir,
+        ports=EditorialRuntimePorts(),
+    )
+
+    with ExitStack() as resources:
+        effects = backend._production_effects(source, resources=resources)
+
+    all_narrowed_ids = {a for ids in effects.rules.source.moment_asset_ids.values() for a in ids}
+    assert bad_id not in all_narrowed_ids
+    assert bad_id in {a for ids in source.moment_asset_ids.values() for a in ids}
