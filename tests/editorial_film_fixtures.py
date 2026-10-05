@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 import re
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, timedelta
 from types import SimpleNamespace
 
@@ -55,6 +55,9 @@ class Day:
     people: tuple[str, ...] = ()
     # Whether the owner starred every picture of the day.
     starred: bool = False
+    # Per-moment place override (by moment index), for a day whose moments were geocoded to
+    # different labels of the one real place. Falls back to `where` when a moment has none.
+    moment_where: Mapping[int, tuple[float, float, str, str]] = field(default_factory=dict)
 
 
 def known_person(
@@ -140,6 +143,7 @@ def film_source(
         day_groups = []
         for moment in range(spec.moments):
             local = []
+            where = spec.moment_where.get(moment, spec.where)
             for picture in range(pictures):
                 taken = (
                     datetime.combine(spec.day, datetime.min.time(), UTC)
@@ -149,12 +153,12 @@ def film_source(
                 asset = _asset(
                     f"d{day_index:03d}-m{moment}-p{picture}",
                     taken,
-                    spec.where,
+                    where,
                     spec.people,
                     starred=spec.starred,
                 )
                 description = f"A clothed person during {spec.activity.lower()}, moment {moment} view {picture}."
-                place = f" | at {spec.where[2]}, {spec.where[3]}" if spec.where else ""
+                place = f" | at {where[2]}, {where[3]}" if where else ""
                 company = f" | with {spec.company}" if spec.company else ""
                 annotations[asset.id] = AssetAnnotationLine(
                     asset.id,

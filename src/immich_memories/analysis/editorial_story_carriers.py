@@ -11,10 +11,11 @@ a weak still, but cannot override rejected motion.
 from __future__ import annotations
 
 import hashlib
+import logging
 from collections import Counter
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import replace
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import partial
 from operator import itemgetter
 from typing import Any
@@ -31,6 +32,7 @@ from immich_memories.analysis.editorial_story_places import PlaceShares
 from immich_memories.analysis.editorial_story_shortlist import (
     DepictedChoice,
     _spaced,
+    capture_space_available,
     nearby_picture_alternatives,
     shortlist_story_moments,
     spread_evenly,
@@ -44,6 +46,7 @@ from immich_memories.analysis.editorial_story_vote import pick_story_moments
 from immich_memories.analysis.editorial_thin_vote import sole_era_shots
 
 MAX_PASSES = 3
+logger = logging.getLogger(__name__)
 
 
 def choice_is_starred(c: DepictedChoice, unit_by_asset: Mapping[str, Any]) -> bool:
@@ -55,6 +58,23 @@ def _seconds_apart(taken: str, others: Sequence[str]) -> float:
     return min(
         (abs((when - datetime.fromisoformat(o)).total_seconds()) for o in others), default=0.0
     )
+
+
+def _window(row: Mapping[str, Any]) -> tuple[datetime, datetime] | None:
+    try:
+        start = datetime.fromisoformat(row["taken"])
+    except (KeyError, ValueError):
+        return None
+    return start, start + timedelta(seconds=float(row.get("seconds") or 0.0))
+
+
+def _windows_overlap(a: Mapping[str, Any], b: Mapping[str, Any]) -> bool:
+    """Whether two playable windows share any moment, so a further video is its own shot
+    only when it does not simply replay ground a kept video already covers (#2083)."""
+    window_a, window_b = _window(a), _window(b)
+    if window_a is None or window_b is None:
+        return False
+    return window_a[0] < window_b[1] and window_b[0] < window_a[1]
 
 
 def shortlist_by_partition(
@@ -130,7 +150,14 @@ class CarrierAdmission:
         place_of: Callable[[str], str] = lambda _asset: "",
         strangers_only: Callable[[str], bool] = lambda _asset: False,
         vouched: Callable[[Mapping[str, Any]], bool] = lambda _carrier: True,
+        content_budget_seconds: float | None = None,
+        content_tolerance_seconds: float = 0.0,
     ) -> None:
+        # The depth fill's own stop condition (#2083): seconds of distinct material against
+        # the film's real content budget, not a picture count. None keeps the slot count the
+        # only bound, for callers (and tests) that never sized a budget in seconds.
+        self._content_budget_seconds = content_budget_seconds
+        self._content_tolerance_seconds = content_tolerance_seconds
         self._judge = judge
         self._strangers_only = strangers_only
         self._vouched = vouched
@@ -587,8 +614,7 @@ class CarrierAdmission:
         self.calls["selection_passes"] = passes
         self._keep_occasions()
         if self.lookalike.available:
-            for index, s in enumerate(self.stories, 1):
-                self._deepen_moments(index, s)
+            self._deepen_round_robin()
         self._favourites_before_the_unvouched()
         self.lookalike.readmit(lambda: len(self.carriers) < self.slots)
         self.calls["failed_standing"] = len(self.failed_standing)
@@ -664,12 +690,46 @@ class CarrierAdmission:
 
     # -- depth inside moments ---------------------------------------------------------
 
-    def _deepen_moments(self, index: int, s) -> None:
-        """A film still short spends its free slots on further frames of the moments this story
-        shows, only when they show something new (`editorial_story_depth`). A moment admitted as
-        depth earns its own rungs, so the ladder is read again while it still adds a frame."""
-        while self._deepen_once(index, s):
-            pass
+    def _depth_budget_met(self) -> bool:
+        """Whether the depth fill should stop: content seconds against the real budget when
+        one was sized, else the pass-1/pass-2 slot count a caller with no seconds budget
+        still relies on (#2083)."""
+        if self._content_budget_seconds is None:
+            return len(self.carriers) >= self.slots
+        return (
+            self._content_seconds()
+            >= self._content_budget_seconds - self._content_tolerance_seconds
+        )
+
+    def _content_seconds(self) -> float:
+        return sum(float(c.get("seconds") or 0.0) for c in self.carriers)
+
+    def _deepen_round_robin(self) -> None:
+        """A film still short after every selection pass spends what room is left on further
+        distinct shots, one at a time, round-robin across every story in funding order
+        (#2083): draining one story's moments before its neighbours ever had a turn is how a
+        person film kept filling the same handful of moments past the point of new material."""
+        progressed = True
+        while progressed and not self._depth_budget_met():
+            progressed = False
+            for index, s in enumerate(self.stories, 1):
+                if self._depth_budget_met():
+                    break
+                if self._deepen_once(index, s):
+                    progressed = True
+        self._log_depth_shortfall()
+
+    def _log_depth_shortfall(self) -> None:
+        """One line when distinct shots ran out before the budget did: an honest short film,
+        not a silently repeated one (#2083)."""
+        if self._content_budget_seconds is None or self._depth_budget_met():
+            return
+        logger.info(
+            "%d distinct shots, film runs %.1f s of %.1f s",
+            len(self.carriers),
+            self._content_seconds(),
+            self._content_budget_seconds,
+        )
 
     def _offerable(self, s) -> list[DepictedChoice]:
         """This story's moments, holding only the pictures that could carry a frame.
@@ -710,7 +770,7 @@ class CarrierAdmission:
 
     def _deepen_once(self, index: int, s) -> bool:
         if (
-            len(self.carriers) >= self.slots
+            self._depth_budget_met()
             or s["weight"] not in WEIGHED_STORY_WEIGHTS
             or not self.chosen_by_story[s["key"]]
         ):
@@ -728,24 +788,47 @@ class CarrierAdmission:
         )
         self.gate.ensure([asset for _choice, asset in ladder if self.free(asset)])
         for choice, asset in ladder:
-            if len(self.carriers) >= self.slots:
+            if self._depth_budget_met():
                 break
             if not (self.free(asset) and self.gate.stands(asset, s["weight"], s["key"])):
                 continue
-            if self.places.full(s["key"], self._place_of(asset)):
+            # A place-refused depth frame joins the same readmission ledger a place-refused
+            # pass-1/2 carrier does (#2083), instead of a bare drop that `readmit` never saw.
+            if self._crowds_its_place(s, choice, index, asset):
                 continue
             family, unit = self._unit_by_asset[asset]
             row = self._carrier_row(unit, family, s, choice, index, asset)
-            kept = [c for c in self.carriers if c["story_episode"] == s["key"]]
-            if self.lookalike.shows_something_new(s["key"], row, neighbours(row, kept)):
-                row = row | {"depth": True}
-                if self.pictures.admits(row, cut=self.carriers, tier_of={}):
-                    continue
-                self._used_choice_keys.add(choice.key)
-                self._admit(s, choice, row, [])
-                # One frame at a time: the next is spread from the frames kept, this one included.
-                return True
+            if not self._is_distinct_shot(s, row):
+                continue
+            row = row | {"depth": True}
+            if self.pictures.admits(row, cut=self.carriers, tier_of={}):
+                continue
+            self._used_choice_keys.add(choice.key)
+            self._admit(s, choice, row, [])
+            # One frame at a time: the next is spread from the frames kept, this one included.
+            return True
         return False
+
+    def _is_distinct_shot(self, s, row: dict) -> bool:
+        """Depth only ever adds a frame that is its own shot (#2083): a video whose window
+        does not overlap one already kept of the same moment, or a still/live frame spaced
+        the pass-1 five minutes from every frame its moment already keeps, and that the final
+        review's own look-alike question still calls new. A heap sharing one timestamp is one
+        shot, not many."""
+        # The raw capture group, not `depicted_moment`: an unfolded story gives every
+        # picture its own depicted moment, but the group a further frame must stay
+        # distinct from is still the capture group it shares (#2083).
+        kept_in_moment = [c for c in self.carriers if c.get("moment") == row.get("moment")]
+        if row.get("kind") == "video":
+            if any(k.get("kind") == "video" and _windows_overlap(row, k) for k in kept_in_moment):
+                return False
+        elif not capture_space_available(row, kept_in_moment):
+            return False
+        # The look-alike question stays story-scoped, as it always was: an unchecked
+        # (unhashed) neighbour anywhere in the story must still hold a brand-new moment
+        # back, the same conservatism that keeps a thumbnail-less run from filling blind.
+        kept_in_story = [c for c in self.carriers if c["story_episode"] == s["key"]]
+        return self.lookalike.shows_something_new(s["key"], row, neighbours(row, kept_in_story))
 
     # -- occasion integrity -----------------------------------------------------------
 
