@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import test from 'node:test';
-import {buildSetup} from './recipes.ts';
+import {buildSetup, nativeInstallCommand} from './recipes.ts';
 import {deploymentCommands} from '../InstallationFiles/downloads.ts';
 
 const sources = JSON.parse(readFileSync(new URL('./sources.json', import.meta.url), 'utf8'));
@@ -152,4 +152,10 @@ test('Kubernetes install list fetches models before the first film', () => {
   const fetch = rows.findIndex(row => /immich-memories models fetch$/.test(row));
   assert.ok(fetch > rows.findIndex(row => /rollout status/.test(row)));
   assert.ok(fetch < rows.findIndex(row => /immich-memories preflight$/.test(row)));
+});
+
+test('native install command scopes prerelease to the pinned package, never the whole resolve', () => {
+  const command = nativeInstallCommand('1.2.3', 'all');
+  assert.match(command, /--prerelease if-necessary-or-explicit/);
+  assert.doesNotMatch(command, /--prerelease allow/);
 });
