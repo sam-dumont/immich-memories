@@ -23,20 +23,8 @@ text model on top of that polishes the draft, swapping out the shots that add no
 ([What a model adds](./what-a-model-adds.md)). Facts already banked are reused, and the text model
 only ever reads text and never decides what is shareable.
 
-```mermaid
-flowchart TD
-  accTitle: The short version
-  accDescr: Stages shown: Choose scope, Group moments and stories, Allocate and admit shots, Check the cut, Render.
-  n0["Choose scope"]
-  n1["Group moments and stories"]
-  n2["Allocate and admit shots"]
-  n3["Check the cut"]
-  n4["Render"]
-  n0 --> n1
-  n1 --> n2
-  n2 --> n3
-  n3 --> n4
-```
+Five stages, in order: choose scope, group moments and stories, allocate and admit shots, check
+the cut, render.
 
 ## The house rules
 
@@ -65,22 +53,9 @@ These hold on every tier.
 ## The route through the code
 
 The web UI's **Cut** runs `immich-memories generate --no-render` on the server, so both take the same
-route. The quoted stage names are what the web UI and the terminal print.
-
-```mermaid
-flowchart TD
-  accTitle: The route through the code
-  accDescr: Stages shown: Web Cut or CLI generate, Runtime editorial planner, Prepare evidence and build cards, Select and certify timing, Project render inputs.
-  n0["Web Cut or CLI generate"]
-  n1["Runtime editorial planner"]
-  n2["Prepare evidence and build cards"]
-  n3["Select and certify timing"]
-  n4["Project render inputs"]
-  n0 --> n1
-  n1 --> n2
-  n2 --> n3
-  n3 --> n4
-```
+route. The quoted stage names are what the web UI and the terminal print: "Web Cut or CLI generate"
+starts the runtime editorial planner, which prepares evidence and builds cards, selects and
+certifies timing, then projects the render inputs.
 
 `_select` in `analysis/editorial_structure_planner.py` is where the film gets decided. Everything the
 other pages of this section describe happens inside it.
@@ -91,7 +66,7 @@ Preparation banks versioned picture facts before selection, then reads missing c
 
 ## What a run leaves behind
 
-Every cut writes a durable attempt under `~/.immich-memories/cache/editorial-runs/`, with each pass's
-decisions in `derived-decisions/*.private.json`. `immich-memories runs why <asset-id>` reads them for
+Every cut writes a durable attempt under `~/.immich-memories/cache/editorial-runs/`, with each
+pass's decisions kept alongside it. `immich-memories runs why <asset-id>` reads them for
 one picture, `runs story` prints the storyboard, and `runs show` prints the run with its count of
 broken promises. See [runs](../../make/cli/runs.md).

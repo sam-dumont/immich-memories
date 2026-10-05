@@ -28,6 +28,8 @@ away from a week at home, and who's who, so it knows which people to prioritise.
 
 ## How long a film runs
 
+{/* diagram: decide-length */}
+
 The target is where the length starts, not a promise. A film never runs longer than the distinct
 shots its days hold: a video counts once its window clears every one already kept, a photo or
 Live Photo counts once it's five real minutes from every frame already kept in its moment, and a
@@ -245,7 +247,7 @@ Detection is three steps:
    GPS, no trip.
 2. **Split on gaps**: a new trip starts wherever more than `max_gap_days` (2) calendar days pass between two
    pictures, so a rest day does not split a trip. Saturday morning to Monday afternoon is a
-   two-day gap, regardless of the capture times.
+   two-day gap, regardless of the capture times. A trip over New Year is one trip, not two.
 3. **Drop the short ones**: a trip must span `min_duration_days` (2) nights. `1` catches a weekend.
 
 ```yaml

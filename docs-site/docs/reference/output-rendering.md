@@ -184,6 +184,19 @@ Place captions show the city, town or village, including at home and at familiar
 stays quiet until the place changes; returning to a city names it again. No home setup or library-history
 scan is needed. Country names remain visible and are translated into the film's language.
 
+Near the configured home base (within 10 km), captions can name the district, such as Montmartre in Paris.
+Away from home, a district covering at least 85 % of a stay's pictures keeps its name; excursions keep
+their own labels. When all known districts agree, missing district data does not erase those local labels.
+Visits spread across districts use their shared locality. Different towns and visits separated by more
+than `trips.max_gap_days` do not rename one another. The selected clips retain the names resolved from the
+full source window. Streets and points of interest stay out of captions. A country disagreement keeps the
+source label; failed lookups are retried on a later run. Latvian, Lithuanian and Finnish labels keep the
+name Immich gave them, not the grammatical form a caption would need.
+
+A few distant excursions do not turn a local stay into a regional trip: the trip planner checks whether at
+least 85 % of a stay's positioned pictures fit a 25 km group. A town supported by those pictures is not
+replaced by a broader label from the trip's centre point.
+
 ## The map fly-over
 
 The fly-over needs satellite tiles from a third party, so it is off until you say so:

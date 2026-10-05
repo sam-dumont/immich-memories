@@ -52,7 +52,7 @@ A rehearsal rerun is refused before building: dispatch a new run to avoid replac
 candidate identities. Dispatching this workflow is a separate publication action from merging
 its implementation.
 
-Run [#956's prebuilt first-install checks](https://github.com/sam-dumont/immich-memories/issues/956)
+Run the prebuilt first-install checks
 against these public inputs. Record anonymous pulls, exact host/service/Immich versions, cold
 versus warm state and the bounded playable film. Publishing artifacts alone is not acceptance.
 After RC tagging, verify the actual RC identities/links and rerun affected lanes if runtime
@@ -91,11 +91,11 @@ that range. Install Gitleaks 8.24.3 to run the same scan locally; pre-commit use
 
 ## Household validation before release
 
-Before the first RC, validate the exact candidate revision against all eight private test households. Check people/groups, selection, titles, wording and relevant celebrations, including expected no-film outcomes. Report the tiers actually checked; an older report does not validate the candidate.
+Before the first RC, validate the exact candidate revision against the private test households. Check people/groups, selection, titles, wording and relevant celebrations, including expected no-film outcomes. Report the tiers actually checked; an older report does not validate the candidate.
 
-Private validation media and detailed reports stay on the maintainer's laptop. Publish only anonymous aggregate results. Public screenshots and demos use the separate [CC0 demo fixture](./demo-assets.md#fixture-and-asset-contracts).
+Private validation media and detailed reports stay private. Publish only anonymous aggregate results. Public screenshots and demos use the separate [CC0 demo fixture](./demo-assets.md#fixture-and-asset-contracts).
 
-Eight households do not cover every family or culture. Contributor examples help extend that coverage; see [Households and cultures](./development-setup.md#households-and-cultures).
+The private households do not cover every family or culture. Contributor examples help extend that coverage; see [Households and cultures](./development-setup.md#households-and-cultures).
 
 ## Private terms gate
 

@@ -18,20 +18,8 @@ the rules draft, for selected shots and actual candidates. A reader may use the 
 whole episode for context without captioning every neighbour. `immich-memories prepare` reads a
 whole scope ahead of time when explicitly requested.
 
-```mermaid
-flowchart TD
-  accTitle: Scope and timing
-  accDescr: Stages shown: Resolve reach, Acquire required pixel facts, Build rules draft, Caption and inspect selected candidates, Bank complete evidence.
-  n0["Resolve reach"]
-  n1["Acquire required pixel facts"]
-  n2["Build rules draft"]
-  n3["Caption and inspect selected candidates"]
-  n4["Bank complete evidence"]
-  n0 --> n1
-  n1 --> n2
-  n2 --> n3
-  n3 --> n4
-```
+In order: resolve the reach, acquire the required pixel facts, build the rules draft, caption and
+inspect the selected candidates, then bank the complete evidence.
 
 Admission refuses a few things before anything is read: a video over five minutes
 (`advanced.analysis.max_source_video_seconds`, 300 s), the video half of a Live Photo (it plays

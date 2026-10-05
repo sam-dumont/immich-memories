@@ -19,20 +19,11 @@ model then polishes it ([What a model adds](./what-a-model-adds.md)).
 
 ## The chain
 
-```mermaid
-flowchart TD
-  accTitle: The chain
-  accDescr: Stages shown: Offer moments, Rank their frames, Check eligibility and standing, Check spacing and repetition, Admit and deepen.
-  n0["Offer moments"]
-  n1["Rank their frames"]
-  n2["Check eligibility and standing"]
-  n3["Check spacing and repetition"]
-  n4["Admit and deepen"]
-  n0 --> n1
-  n1 --> n2
-  n2 --> n3
-  n3 --> n4
-```
+Five steps, in order: offer moments, rank their frames, check eligibility and standing, check
+spacing and repetition, admit and deepen. The gates below run in that order; where a favourite
+wins outright and where it still has to clear a gate is marked as it comes up.
+
+{/* diagram: decide-keep-drop */}
 
 ## Which frame carries a moment
 
@@ -71,8 +62,8 @@ weight and purpose, then passes standing, audience, spacing and repetition check
 shots it would join. Newly acquired caption or motion facts are read before that decision.
 This also applies when replacing a duplicate or giving a missing family member a seat.
 The existing depth pass can add a distinct view inside an already shown moment; that exception
-does not transfer to a replacement. Candidate decisions are recorded in the run's private
-`derived-decisions/picture-admission.private.json` file.
+does not transfer to a replacement. Candidate decisions are kept with the run; `runs why` reads
+them back for one picture.
 
 **Free.** Not already a shot, and not a picture the carrier rules keep as evidence only
 (`excluded_carrier_sources`): a document the detector names, a screen the `screen` head flags, a
@@ -133,7 +124,7 @@ The same face rule decides whether a picture "shows life" for the gate: a pictur
 major or dominant story with more than two pictures is only ordered, never refused, and a person counts only when Immich supplies a recognised face.
 A picture with nobody in it serves its story only when it is starred, or when the story is major,
 dominant or minor and holds more than two pictures. Anywhere else it is refused as context
-(`context_rejected` in `derived-decisions/story-selection.private.json`). A custom film about
+(kept with the run as `context_rejected`). A custom film about
 something you wrote (a renovation, the works on a house) drops that rule: its pictures were chosen
 for the subject, so a stripped wall or a room under construction can carry its story, as long as it
 stands. A custom film of its window alone keeps the rule.
@@ -144,8 +135,8 @@ pictures stand on the subject even with a standing score of 0: a loaf on a count
 like any lone object, and stays. A video whose frames mostly miss its subject is still refused, and
 every other gate still runs: sharing and the family-viewing holds, source eligibility, provenance,
 look-alikes, duplicates and length. The allocation gives every year the album holds a shot, even a
-year whose stories the reader weighed `none`. Each shot that got in this way is listed under
-`stood_on_subject` in `derived-decisions/story-selection.private.json`, with its score and why. A
+year whose stories the reader weighed `none`. Each shot that got in this way is kept with the run
+as `stood_on_subject`, with its score and why. A
 custom date range with a written subject is not a pool and keeps the rules above.
 
 Once a moment's frames are through the gate, the ones that stand are sorted again: favourite first,
@@ -164,22 +155,23 @@ A video always plays, from 2 seconds long (shorter clips are stubs and never bec
 6-second hold. When someone is mid-sentence at the cut, the end stretches to the end of what they
 say, never more than 12 seconds from the start.
 
+The six seconds don't have to be the first six. Once a film's videos are picked, each one is read
+once for where to cut, and the answer is banked for every later film. The picture decides first:
+every predicted frame in the clip's encoding stores only what changed since the one before it, so
+frame sizes jump when something moves across an otherwise still shot. That size is in the clip's
+own frame index, so nothing needs decoding to read it; from a static camera the jump marks the
+action (riders crossing a finish line, not the empty road before them). The sound decides next for
+a handheld clip, which changes everywhere: the loudest moment (the cheer when the candles go out, a
+squeal) with a second and a half of build-up before it, or, with no standout moment, the stretch
+with the most talking. Only the sound is fetched, a minute of it at most, so a five-minute clip
+costs what a one-minute one does. A clip with nothing that stands out keeps its opening.
+
 A Live Photo plays as motion on every tier, Basic included, when its clip moves and shows its
 subject. The motion is measured during the cut, for the Live Photos the cut kept, and banked
 per picture so the next cut reads it instead (`store/cut_measurements`).
 
-```mermaid
-flowchart TD
-  accTitle: Videos and Live Photos
-  accDescr: Stages shown: Selected Live Photo, Read or measure motion, Check subject visibility, Play motion or keep the still.
-  n0["Selected Live Photo"]
-  n1["Read or measure motion"]
-  n2["Check subject visibility"]
-  n3["Play motion or keep the still"]
-  n0 --> n1
-  n1 --> n2
-  n2 --> n3
-```
+A selected Live Photo's clip is read or measured for motion, then checked for subject
+visibility; it plays as motion only when both pass, otherwise it keeps the still.
 
 The residual is the optical flow left after the camera's own movement is taken out, over 12 frames
 at 320x240. A clip only ever costs a Live Photo its motion, never its place: a starred Live Photo

@@ -19,6 +19,8 @@ Explore the deployment and processing phase below. Select a service for its data
 
 <DeploymentDiagram chooseTopology />
 
+{/* diagram: architecture-detailed */}
+
 The text reader can be an app-owned local process or an API server. Captioning is a separate role; explicitly enabling LLM captions sends pictures to that configured model. A render worker additionally receives the chosen cut and Immich key, then fetches originals. Keep these services inside the network boundaries described in [Privacy](../run/privacy.md).
 
 ## Composition over inheritance

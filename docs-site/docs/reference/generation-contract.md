@@ -16,6 +16,8 @@ finished film: it reserves the opening, the ending and the dividers, and credits
 trip's map moves run on top of it ([Maps and film length](output-rendering.md#maps-and-film-length)). A
 period with too little material finishes shorter rather than padding.
 
+{/* diagram: seq-generate-reference */}
+
 ```bash
 immich-memories generate [OPTIONS]
 ```
@@ -151,23 +153,7 @@ forwarded pictures included. One occasion of one day ("our wedding") goes to the
 product instead. A sentence the library cannot show makes no film and says which filter emptied
 it. The translation is kept with the run, for [`report`](../make/cli/report.md).
 
-## Trips
-
-With `trips.homebase_latitude` and `trips.homebase_longitude` set, the tool finds clusters of
-GPS-tagged pictures at least 50 km away spanning at least 2 nights, split when the gap between
-pictures passes 2 days. The thresholds are in the
-[config reference](config-reference.md#trip-detection).
-
-```bash
-immich-memories generate --memory-type trip --year 2024                  # a table of trips, no video
-immich-memories generate --memory-type trip --year 2024 --trip-index 2   # one of them
-immich-memories generate --memory-type trip --year 2024 --all-trips      # all of them
-```
-
-A trip over New Year is one trip, not two. `--trip-index` starts at 1; `--month` chooses the trip
-whose midpoint is nearest that month's 15th, without trimming it to that month. Trip photos need
-GPS at least `trips.min_distance_km` (50 km by default) from home; videos are read by date only.
-The default trip filename starts as `trip_<place>_<start-date>.mp4` before the normal run hash is added.
+Trip detection, naming and its CLI flags are on [Film types: Trip](film-types.mdx#trip).
 
 ## What the terminal shows while it runs
 
@@ -208,9 +194,20 @@ funnel at a path you choose.
 
 The CHECK line counts the shots in the finished cut that the sensitive-content detector read between
 0.2 and 0.5 and that nothing else already holds to family viewing. It is a list, not a gate: no shot
-was removed or changed for it. The shots themselves are in `review-before-sharing.private.json` in
-the run attempt directory, and `runs why` names one when you ask about it. A run with none prints
+was removed or changed for it. The shots themselves are kept with the run attempt, and
+`runs why` names one when you ask about it. A run with none prints
 `CHECK 0 pictures to check before sharing`, which says the run looked.
+
+### Run state
+
+{/* diagram: state-run */}
+
+A run's own record (`pipeline_runs.status`) starts `running` and ends one of four ways:
+`completed`, `failed`, `cancelled` (you stopped it, from the CLI or the web UI's **Cancel**), or
+`interrupted` (the process died without a chance to record why: a killed container, a crash).
+Phases are tracked inside a run in order: discovery, download, analysis, selection, render,
+music, delivery, complete. `runs show` prints the status and, for a run that didn't finish,
+which phase it reached.
 
 ## Output
 
