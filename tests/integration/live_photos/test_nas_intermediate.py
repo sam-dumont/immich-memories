@@ -45,7 +45,7 @@ def test_nas_hdr_live_intermediate_is_bounded_and_hardware_encoded(
 ):
     source = _hdr_source(tmp_path, size, transfer)
     output = tmp_path / "merged.mp4"
-    command = build_merge_command([source], [(0.0, 0.1)], output, config=Config(tier="nas"))
+    command = build_merge_command([source], [(0.0, 0.1)], output, config=Config(tier="basic"))
     subprocess.run(command, capture_output=True, check=True)
     stream = json.loads(subprocess.check_output([
         "ffprobe", "-v", "error", "-count_frames", "-select_streams", "v:0",
@@ -89,7 +89,7 @@ def test_nas_download_binds_the_policy_and_reuses_the_certified_merge(tmp_path: 
         },
     )
     prefetched = {"video": SimpleNamespace(path=source)}
-    config = Config(tier="nas")
+    config = Config(tier="basic")
     output = download_clip(
         None, None, clip, tmp_path, prefetched_burst_results=prefetched, config=config
     )

@@ -21,7 +21,7 @@ def test_opted_in_preparation_routes_motion_to_the_llm_and_reuses_it(monkeypatch
     from tests.test_playback_keyframes import encode
 
     config = Config(
-        tier="nas",
+        tier="basic",
         llm={
             "enabled": True,
             "base_url": "http://localhost:43210/v1",

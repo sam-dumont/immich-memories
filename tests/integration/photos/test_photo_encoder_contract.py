@@ -23,7 +23,7 @@ pytestmark = [pytest.mark.integration, requires_ffmpeg]
 @pytest.mark.parametrize("source", [_sdr_photo, _gain_mapped_photo])
 @pytest.mark.parametrize("hardware", [True, False])
 def test_nas_photo_obeys_its_real_encoder_contract(tmp_path, source, hardware):
-    config = Config(tier="nas", hardware={"enabled": hardware})
+    config = Config(tier="basic", hardware={"enabled": hardware})
     plan = photo_encoding_plan(
         config, transfer=HdrTransfer.PQ if check_zscale_available() else HdrTransfer.NONE
     )

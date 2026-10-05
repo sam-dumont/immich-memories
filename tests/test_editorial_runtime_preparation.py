@@ -135,7 +135,7 @@ def test_nas_prepares_and_selects_without_marqo_or_docling(tmp_path):
 
     # WHY: replace only the model producers; use the real rules planner and store.
     providers = replace(successful_ports(produced), detectors=forbidden_detector)
-    planner, sources, _ = build(tmp_path, providers=providers, fetched=[], product_tier="nas")
+    planner, sources, _ = build(tmp_path, providers=providers, fetched=[], product_tier="basic")
 
     planner.plan_source(sources, trace=Trace())
 

@@ -112,7 +112,7 @@ def test_basic_tier_with_no_model_falls_back_to_the_template(caplog) -> None:
         enabled=None,
         title_override=None,
         clips=[make_clip("clip-1")],
-        config=Config(tier="nas"),
+        config=Config(tier="basic"),
         memory_type="album",
         date_range=_RANGE,
         person_names=[],

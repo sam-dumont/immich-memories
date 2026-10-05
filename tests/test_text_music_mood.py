@@ -12,7 +12,7 @@ from tests.annotation_rows import add_rows, annotation_store
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("tier", ["nas", "gpu"])
+@pytest.mark.parametrize("tier", ["basic", "gpu"])
 async def test_music_uses_the_local_mood_without_a_configured_llm(tmp_path, tier):
     from immich_memories.audio.text_mood import mood_for_cut
 
@@ -28,7 +28,7 @@ async def test_music_uses_the_local_mood_without_a_configured_llm(tmp_path, tier
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("tier", ["nas", "gpu", "full"])
+@pytest.mark.parametrize("tier", ["basic", "gpu", "full"])
 async def test_cut_text_answers_once_and_is_reused_without_images(tmp_path, tier):
     from immich_memories.audio.text_mood import mood_for_cut
 

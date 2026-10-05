@@ -7,12 +7,18 @@ from typing import Any
 from urllib.parse import urlsplit
 
 
-def deployment_defaults(environ: Mapping[str, str]) -> dict[str, Any]:
-    """Wire Compose model services without overriding YAML, env or saved Settings."""
+def _validated_preset(environ: Mapping[str, str]) -> str:
     preset = environ.get("IMMICH_MEMORIES_DEPLOYMENT_TIER", "basic") or "basic"
-    preset = {"nas": "basic"}.get(preset, preset)
+    if preset == "nas":
+        raise ValueError("tier 'nas' is now called 'basic': set tier: basic")
     if preset not in {"basic", "gpu", "full"}:
         raise ValueError("IMMICH_MEMORIES_DEPLOYMENT_TIER must be basic, gpu or full")
+    return preset
+
+
+def deployment_defaults(environ: Mapping[str, str]) -> dict[str, Any]:
+    """Wire Compose model services without overriding YAML, env or saved Settings."""
+    preset = _validated_preset(environ)
     defaults: dict[str, Any] = (
         {"tier": preset} if "IMMICH_MEMORIES_DEPLOYMENT_TIER" in environ else {}
     )

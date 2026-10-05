@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-from pydantic import Field, PrivateAttr, model_validator
+from pydantic import Field, PrivateAttr, field_validator, model_validator
 from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, SettingsConfigDict
 
 from immich_memories.config_models import (
@@ -402,6 +402,18 @@ class Config(BaseSettings):
     editorial: EditorialConfig = Field(default_factory=EditorialConfig)
     inference: InferenceConfig = Field(default_factory=InferenceConfig)
     free_text: FreeTextConfig = Field(default_factory=FreeTextConfig)
+
+    @field_validator("tier", mode="before")
+    @classmethod
+    def reject_renamed_nas_tier(cls, value: Any) -> Any:
+        """Refuse the retired `nas` tier name instead of silently mapping it.
+
+        Catches the value from every source (YAML, env vars, saved Settings, the
+        deployment preset) because they all populate this one field.
+        """
+        if value == "nas":
+            raise ValueError("tier 'nas' is now called 'basic': set tier: basic")
+        return value
 
     @model_validator(mode="before")
     @classmethod

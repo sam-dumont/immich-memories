@@ -22,13 +22,13 @@ LLM = {"enabled": True, "base_url": "http://localhost:43210/v1", "model": "fixtu
 
 def test_llm_caption_opt_in_requires_an_enabled_llm():
     with pytest.raises(ValueError, match="caption_provider.*enabled LLM"):
-        Config(tier="nas", editorial={"preparation": {"caption_provider": "llm"}})
+        Config(tier="basic", editorial={"preparation": {"caption_provider": "llm"}})
 
 
 def test_configuring_a_text_llm_never_opts_nas_into_image_requests(monkeypatch, tmp_path):
     from tests.test_editorial_preparation import preview
 
-    config = Config(tier="nas", llm=LLM)
+    config = Config(tier="basic", llm=LLM)
     # WHY: any request to the configured model would cross an unapproved image boundary.
     monkeypatch.setattr(
         httpx, "AsyncClient", lambda **_kw: pytest.fail("LLM requested without caption opt-in")
@@ -55,7 +55,7 @@ def test_opted_in_nas_captions_wait_for_refinement_and_warn_about_cost(caplog, t
     path.write_text(
         json.dumps(
             {
-                "tier": "nas",
+                "tier": "basic",
                 "advanced": {"llm": LLM, "editorial": {"preparation": {"caption_provider": "llm"}}},
             }
         )
@@ -110,7 +110,7 @@ def test_opted_in_acquisition_uses_the_llm_once_then_reuses_its_caption(
         httpx, "AsyncClient", lambda **kw: client(transport=httpx.MockTransport(reply), **kw)
     )
     config = Config(
-        tier="nas",
+        tier="basic",
         llm=LLM,
         editorial={"preparation": {"caption_provider": "llm"}},
     )
@@ -155,7 +155,7 @@ def test_opted_in_acquisition_uses_the_llm_once_then_reuses_its_caption(
 def test_preflight_names_the_opted_in_llm_cost_and_never_probes_smolvlm(monkeypatch):
     # WHY: preflight must not contact an unused external caption service.
     monkeypatch.setattr(httpx, "get", lambda *_a, **_kw: pytest.fail("SmolVLM inventory queried"))
-    config = Config(tier="nas", llm=LLM, editorial={"preparation": {"caption_provider": "llm"}})
+    config = Config(tier="basic", llm=LLM, editorial={"preparation": {"caption_provider": "llm"}})
 
     result = check_caption_endpoint(config)
 

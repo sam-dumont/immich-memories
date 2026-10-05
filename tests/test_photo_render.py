@@ -130,7 +130,7 @@ def test_nas_photo_uses_hardware_h264_with_real_tone_mapping(tmp_path):
     params = GenerationParams(
         clips=[],
         output_path=tmp_path / "film.mp4",
-        config=Config(tier="nas", photos={"duration": 1}),
+        config=Config(tier="basic", photos={"duration": 1}),
         output_resolution="720p",
     )
     with (

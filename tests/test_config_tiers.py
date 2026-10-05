@@ -1,4 +1,4 @@
-"""`tier:` — the one setting that picks nas, gpu or full."""
+"""`tier:` — the one setting that picks basic, gpu or full."""
 
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ def _knobs(config: Config) -> tuple[str, str, bool]:
     return editorial.reader, editorial.preparation.tier, editorial.laya_audience
 
 
-def test_an_unstated_tier_is_the_nas_tier() -> None:
+def test_an_unstated_tier_is_the_basic_tier() -> None:
     config = Config()
 
     assert config.tier == "basic"
@@ -45,7 +45,7 @@ def test_the_full_tier_refuses_to_load_without_an_enabled_model(llm: dict) -> No
 @pytest.mark.parametrize(
     "tier,expected",
     [
-        ("nas", ("rules", "no_captions", False)),
+        ("basic", ("rules", "no_captions", False)),
         ("gpu", ("rules", "full", True)),
         ("full", ("model", "full", True)),
     ],
@@ -64,7 +64,7 @@ def test_the_product_tier_controls_preparation_even_with_stale_advanced_settings
     assert _knobs(config) == expected
 
 
-@pytest.mark.parametrize("tier", ["nas", "gpu"])
+@pytest.mark.parametrize("tier", ["basic", "gpu"])
 @pytest.mark.parametrize("reader", ["model", "auto"])
 def test_a_saved_reader_cannot_enable_an_llm_on_a_tier_without_one(tier, reader):
     config = Config(tier=tier, editorial={"reader": reader}, llm=GEMMA)
@@ -72,7 +72,7 @@ def test_a_saved_reader_cannot_enable_an_llm_on_a_tier_without_one(tier, reader)
     assert config.editorial.resolve_reader(config.llm.model) == "rules"
 
 
-def test_a_model_on_nas_explains_that_text_features_remain_available(caplog) -> None:
+def test_a_model_on_basic_explains_that_text_features_remain_available(caplog) -> None:
     with caplog.at_level(logging.WARNING):
         config = Config(llm=GEMMA)
 
@@ -92,7 +92,7 @@ def test_each_tier_reports_what_it_runs_with() -> None:
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
     from tier_settings import tier_settings
 
-    assert [tier_settings(t) for t in ("nas", "gpu", "full")] == [
+    assert [tier_settings(t) for t in ("basic", "gpu", "full")] == [
         {
             "tier": "basic",
             "reader": "rules",

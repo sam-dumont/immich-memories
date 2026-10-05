@@ -96,11 +96,10 @@ def test_photo_and_assembly_consume_the_same_explicit_canvas() -> None:
 @pytest.mark.parametrize(
     ("tier", "resolution", "orientation", "expected"),
     [
-        ("nas", "4k", "portrait", (1080, 1920)),
         ("basic", "4k", "portrait", (1080, 1920)),
-        ("nas", "auto", "landscape", (1920, 1080)),
-        ("nas", "4k", "square", (1080, 1080)),
-        ("nas", "720p", "portrait", (720, 1280)),
+        ("basic", "auto", "landscape", (1920, 1080)),
+        ("basic", "4k", "square", (1080, 1080)),
+        ("basic", "720p", "portrait", (720, 1280)),
         ("gpu", "4k", "portrait", (2160, 3840)),
         ("full", "4k", "portrait", (2160, 3840)),
     ],

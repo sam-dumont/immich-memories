@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 ProductTier = Literal["basic", "gpu", "full"]
-TierSetting = Literal["auto", "nas", ProductTier]
+TierSetting = Literal["auto", ProductTier]
 
 # (section path, field) -> value, per tier. The section path is walked from the Config.
 _READER = ("editorial",), "reader"
@@ -65,8 +65,6 @@ def _section(config: Config, path: tuple[str, ...]) -> Any:
 
 def apply_tier(config: Config) -> dict[str, Any]:
     """Resolve one product tier and apply its preparation and reader contract."""
-    if config.tier == "nas":
-        config.tier = "basic"
     applied = _apply_caption_provider(config)
     if config.tier == "auto":
         accelerated, reason = inference_acceleration(config.inference)

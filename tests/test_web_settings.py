@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from immich_memories.config_loader import set_config
 from tests.web_api_fixtures import api_client, config_in
 
@@ -100,7 +102,7 @@ def test_global_fade_default_can_be_saved_and_invalid_colours_are_refused(tmp_pa
 
 
 def test_deployment_service_defaults_remain_editable_and_saved_settings_win(tmp_path, monkeypatch):
-    monkeypatch.setenv("IMMICH_MEMORIES_DEPLOYMENT_TIER", "nas")
+    monkeypatch.setenv("IMMICH_MEMORIES_DEPLOYMENT_TIER", "basic")
     defaults = {
         "IMMICH_MEMORIES_DEPLOYMENT_INFERENCE_URL": "http://inference:8092",
         "IMMICH_MEMORIES_DEPLOYMENT_CAPTION_URL": "http://captioner:8092/v1",
@@ -134,19 +136,18 @@ def test_deployment_service_defaults_remain_editable_and_saved_settings_win(tmp_
     set_config(None)
 
 
-def test_legacy_tier_in_saved_settings_is_presented_as_basic(tmp_path, monkeypatch):
+def test_legacy_tier_in_saved_settings_is_refused(tmp_path, monkeypatch):
     from immich_memories.config_loader import Config
     from immich_memories.db import open_store
     from immich_memories.settings_store import SettingsStore
 
-    client, path = _settings_client(tmp_path, monkeypatch)
+    _, path = _settings_client(tmp_path, monkeypatch)
     config = Config.from_yaml(path, stored={})
     store = open_store(config)
     try:
         SettingsStore(store, None).save({"tier": "nas"})
     finally:
         store.engine.dispose()
-    response = client.get("/api/v1/settings")
-    assert response.status_code == 200
-    assert _rows(response.json())["tier"]["value"] == "basic"
+    with pytest.raises(ValueError, match="tier 'nas' is now called 'basic': set tier: basic"):
+        Config.from_yaml(path)
     set_config(None)
