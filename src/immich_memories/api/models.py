@@ -101,6 +101,26 @@ class PeopleAccess(BaseModel):
     role: Literal["read", "write", "admin"]
 
 
+class StackAssetRef(BaseModel):
+    """One member of a stack, as GET /stacks lists it."""
+
+    id: str
+
+
+class Stack(BaseModel):
+    """A mobile auto-stack (an edit and its original, #31082) or a user-made one.
+
+    `primary_asset_id` is the first id a stack was created with; Immich's mobile
+    app lists the edit first, so the primary is the edit, not the original.
+    """
+
+    id: str
+    primary_asset_id: str = Field(alias="primaryAssetId")
+    assets: list[StackAssetRef] = Field(default_factory=list)
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
 class AssetFace(BaseModel):
     """Face detected in an asset."""
 

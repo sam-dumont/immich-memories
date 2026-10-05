@@ -29,12 +29,12 @@ from __future__ import annotations
 
 import re
 from collections import defaultdict
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from itertools import combinations
 from pathlib import PurePath
 
 from immich_memories.analysis.duplicate_hashing import hamming_distance
-from immich_memories.api.models import Asset
+from immich_memories.api.models import Asset, Person
 
 # A forwarded copy is at most this many bits from its camera file; different photos sat 14+ apart.
 FORWARDED_COPY_BITS = 2
@@ -183,6 +183,36 @@ def group_members(copies: Mapping[str, Asset]) -> dict[str, frozenset[str]]:
     for copy_id, keeper in copies.items():
         groups[keeper.id].update((copy_id, keeper.id))
     return {member: frozenset(members) for members in groups.values() for member in members}
+
+
+def kept_ids(copies: Mapping[str, Asset], asset_ids: Sequence[str]) -> tuple[str, ...]:
+    """Each id as the file that carries its picture, in order and without repeats.
+
+    An owner who pinned or excluded one file of an edited picture meant the picture,
+    whichever file the fold kept -- the same contract `exact_copies.kept_ids` holds for
+    byte-identical copies.
+    """
+    return tuple(
+        dict.fromkeys(
+            copies[asset_id].id if asset_id in copies else asset_id for asset_id in asset_ids
+        )
+    )
+
+
+def merged_people(
+    copies: Mapping[str, Asset], assets: Iterable[Asset]
+) -> dict[str, tuple[Person, ...]]:
+    """Every kept file's people, unioned from every file of its picture (deduped by person id).
+
+    Each account tags its own copy, so a person recognized only on the file the fold drops
+    must not be lost from the one it keeps.
+    """
+    by_keeper: defaultdict[str, dict[str, Person]] = defaultdict(dict)
+    for asset in assets:
+        keeper_id = copies[asset.id].id if asset.id in copies else asset.id
+        for person in asset.people:
+            by_keeper[keeper_id].setdefault(person.id, person)
+    return {keeper_id: tuple(people.values()) for keeper_id, people in by_keeper.items()}
 
 
 def copy_reason(keeper: Asset) -> str:

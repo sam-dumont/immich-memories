@@ -29,6 +29,7 @@ from immich_memories.api.models import (
     MetadataSearchResult,
     Person,
     ServerInfo,
+    Stack,
     TimeBucket,
     UserInfo,
 )
@@ -543,6 +544,9 @@ class ImmichClient:
 
     async def get_asset(self, asset_id: str) -> Asset:
         return await self.assets.get_asset(asset_id)
+
+    async def get_stacks(self) -> list[Stack]:
+        return await self.assets.get_stacks()
 
     async def get_asset_faces(self, asset_id: str) -> list[AssetFace]:
         return await self.assets.get_asset_faces(asset_id)

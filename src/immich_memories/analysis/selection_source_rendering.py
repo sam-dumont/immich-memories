@@ -117,6 +117,18 @@ def _with_favourite(source: Asset | VideoClipInfo, favourite: bool) -> Asset | V
     return merged_asset
 
 
+def _with_people(source: Asset | VideoClipInfo, people: Sequence[Any]) -> Asset | VideoClipInfo:
+    """A kept picture-copy's people, unioned across every file of the picture -- see
+    `picture_copies.merged_people`."""
+    asset = asset_of(source)
+    if {person.id for person in asset.people} == {person.id for person in people}:
+        return source
+    merged_asset = asset.model_copy(update={"people": list(people)})
+    if isinstance(source, VideoClipInfo):
+        return source.model_copy(update={"asset": merged_asset})
+    return merged_asset
+
+
 def _rendering_family_material(
     sources: Sequence[Asset | VideoClipInfo],
 ) -> tuple[

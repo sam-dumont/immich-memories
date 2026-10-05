@@ -93,6 +93,7 @@ class AccessBoundClient(SyncImmichClient):
         self.routes = routes or AccessRoutes()
         self._accounts: dict[str, OpenAccount] = {}
         self._native_active = False
+        self._stack_map: dict[str, str] | None = None
 
     def open_accounts(self, names: Sequence[str]) -> dict[str, OpenAccount]:
         """The named accounts, opened on first use and kept open until `close`.
@@ -124,6 +125,14 @@ class AccessBoundClient(SyncImmichClient):
         )
         self._native_active = native is not None
         return native
+
+    def stack_map(self, accounts: Sequence[str]) -> Mapping[str, str]:
+        """Member asset id -> stack primary asset id, read once per account for this run."""
+        if self._stack_map is None:
+            from immich_memories.api.stack_discovery import discover_stack_map
+
+            self._stack_map = discover_stack_map(self.open_accounts(accounts or (PRIMARY_ACCOUNT,)))
+        return self._stack_map
 
     def sibling(self) -> AccessBoundClient:
         """A client for another thread: the same routes, its own connections."""
