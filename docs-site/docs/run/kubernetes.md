@@ -23,11 +23,10 @@ and describe your setup. Helm support will be considered when people request it.
 
 ## Generated tier setup
 
-The generated GPU path has run on RKE2 with an NVIDIA T1000: cold model initialization,
-preflight, encrypted Settings save/reload and a complete first film passed, including full audio/video
-decode. The [measured run](../better/measured.md#generated-gpu-first-film) records the 1080p output,
-CUDA inference/captions, software encoding and corrected local/block SQLite storage. These checks
-used a locally built candidate; they do not verify a published release download.
+This path is supported on RKE2 with NVIDIA GPUs: cold model initialization, preflight, encrypted
+Settings save/reload and a complete first film, including full audio/video decode. See the
+[deployment matrix](./tested-deployments.md) for which release and hardware that covers, and
+the [measured run](../better/measured.md#generated-gpu-first-film) for the numbers.
 
 Use the [setup builder](/setup), select Kubernetes, and enter Immich's reachable URL and API key.
 The builder uses the release version displayed on the page. It generates the Secret, namespace-scoped customization,
@@ -209,6 +208,8 @@ Then copy `base/ingress.yaml.example`, set its host/TLS settings and list it in 
 Use the [proxy trust/cookie checklist](./authentication.mdx#behind-a-reverse-proxy-with-tls).
 
 ## How the pod is wired
+
+{/* diagram: deploy-kubernetes */}
 
 The app runs as UID/GID 1000 with `fsGroup: 1000`, dropped capabilities, RuntimeDefault seccomp
 and a read-only root.
@@ -508,8 +509,8 @@ The app exposes **no Prometheus scrape or OpenTelemetry export endpoint** in thi
 Use the [existing JSON logs with run IDs](./maintenance/health-logs-cache.md), the health endpoints,
 `runs show`, `report`, per-run timings and `llm-usage.json` for model-call usage.
 The inference service's `/queue` reports that service's work, not app-wide metrics or readiness.
-[Optional OpenTelemetry export (#656)](https://github.com/sam-dumont/immich-memories/issues/656)
-remains separate work. Existing structured logging is available now.
+There's no Prometheus/OpenTelemetry export yet; use the structured logs and health endpoints
+above instead.
 
 ## Resource requests, QoS and scratch
 
@@ -551,12 +552,10 @@ These are [Kubernetes' container-level QoS rules](https://kubernetes.io/docs/tas
 Inspect the admitted pod's full resource specification and observed `.status.qosClass`, not just
 your submitted patch.
 
-This example was admitted as Guaranteed on RKE2 1.33.4 and then sat **Pending** on a 4-CPU node:
-4 CPU never fits where the node's allocatable is under 4. The Deployment strategy is `Recreate`,
-so the old pod was already gone and the app stayed down until the patch was reverted. A smaller
-variant, app 2 CPU/6Gi (requests equal to limits), with the fetch init container at 2 CPU/2Gi,
-ran as Guaranteed on that cluster. Start from numbers the node can hold, and expect downtime while
-a Recreate rollout schedules.
+Reserving more CPU than a node has free leaves the pod **Pending**: 4 CPU never fits where the
+node's allocatable is under 4. Because the Deployment strategy is `Recreate`, the old pod is
+already gone by then, so the app stays down until you fix the numbers. Start from numbers the
+node can actually hold, and expect downtime while a Recreate rollout reschedules.
 
 Reserving 4 CPU/8Gi can leave the pod Pending on a busy node and reduces how many other workloads
 fit there; it does not add another UI replica. `/tmp` remains a disk-backed **4Gi emptyDir** under

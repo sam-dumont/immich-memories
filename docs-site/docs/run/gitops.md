@@ -6,10 +6,10 @@ import InstallationFiles from '@site/src/components/InstallationFiles';
 
 # Pin deployment inputs
 
-Use the **same rehearsal/RC version as this documentation build**. Do not substitute v0.103.0:
-its manifests, CLI and UI differ from the current instructions. The promoted route vendors the
-published deployment bundle, whose packaging substitutes app/inference image tags and Terraform
-example pins. A raw source archive or floating Git URL skips those substitutions.
+Use the **same release as this documentation build**: its manifests, CLI and UI match these
+instructions, and a different version's won't. The promoted route vendors the published
+deployment bundle, whose packaging substitutes app/inference image tags and Terraform example
+pins. A raw source archive or floating Git URL skips those substitutions.
 
 ## Download and verify
 
@@ -65,12 +65,6 @@ The checksum detects changed bytes against the published value, not who built th
 [Provenance verification](../contribute/ci.md) checks attested identity where supplied;
 neither validates your cluster configuration, network policies or secrets.
 
-## Validation status
-
-A locally packaged bundle of the current manifests rendered with kubectl 1.34.1 / Kustomize
-5.7.1; its Basic Terraform example passed init/validate with Terraform 1.14.7 on darwin/arm64.
-That check used a synthetic rehearsal version to test packaging, not a public release.
-The public prebuilt rehearsal still needs its empty-directory download/render/init/validate
-transcript with exact asset digest and tool versions. A local render check is not a live
-Kubernetes rollout, observed QoS class, provider connectivity test or Immich outage/recovery test.
-[The deployment matrix](./tested-deployments.md) keeps these statuses separate.
+A packaging render check is not a live Kubernetes rollout, an observed QoS class, a provider
+connectivity test, or an Immich outage/recovery test. See
+[the deployment matrix](./tested-deployments.md) for what each route has actually verified.
