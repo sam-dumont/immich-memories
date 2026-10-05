@@ -75,6 +75,34 @@ def test_no_probes_keeps_the_opening():
     assert choose_window([], duration=30.0, hold=6.0) == pytest.approx(0.0)
 
 
+def test_an_obstructed_second_is_avoided_between_two_equally_busy_windows():
+    """#2022: among two windows with equal activity, the one with fewer flagged seconds
+    wins."""
+    probes = [
+        (0.0, 0.1),
+        (0.5, 0.1),
+        (2.0, 3.0),
+        (2.5, 3.0),
+        (4.0, 3.0),
+        (4.5, 3.0),
+    ]
+
+    clean = choose_window(probes, duration=8.0, hold=1.0, obstructed=[2.0, 2.5])
+
+    assert 3.5 <= clean <= 4.5, "the flagged busy window must lose to the clean one"
+
+
+def test_flagged_everywhere_keeps_todays_choice():
+    """#2022: the penalty is the same for every window, so it changes nothing."""
+    probes = _probes(12.24, (7.5, 9.5))
+    every_second = [i * 0.5 for i in range(int(12.24 / 0.5) + 1)]
+
+    with_flags = choose_window(probes, duration=12.24, hold=4.0, obstructed=every_second)
+    without_flags = choose_window(probes, duration=12.24, hold=4.0)
+
+    assert with_flags == without_flags
+
+
 def test_the_real_planner_starts_each_kept_video_on_its_action(tmp_path):
     from dataclasses import replace
 

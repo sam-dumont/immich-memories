@@ -7,7 +7,9 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 from immich_memories.analysis.catalogue_runtime import catalogue_requester
+from immich_memories.analysis.editorial_bound_sample import source_metadata_digest
 from immich_memories.analysis.editorial_preparation_motion import BankedMotionLines, motion_producer
+from immich_memories.analysis.editorial_preparation_obstruction import OBSTRUCTION_FRAME_PRODUCER
 from immich_memories.analysis.editorial_source import (
     FullEditorialSource,
     fetch_full_window_source,
@@ -25,6 +27,7 @@ from immich_memories.analysis.subject_framing import FaceBox, face_boxes_of
 from immich_memories.analysis.text_episode_paging import TEXT_EPISODE_MAX_OUTPUT_TOKENS
 from immich_memories.api.models import Asset, VideoClipInfo
 from immich_memories.people.context import PersonPromptContext, load_people_prompt_context
+from immich_memories.store.cut_measurements import banked_motion_residuals
 from immich_memories.store.episode_readings import EpisodeReadingStore
 
 if TYPE_CHECKING:
@@ -195,6 +198,17 @@ def production_cut_resolvers(source, *, resources):
         if speech_config.enabled
         else None
     )
+    obstructed_by = {}
+    if source.store is not None:
+        all_assets = dict(source.assets) | dict(source.companion_assets)
+        obstructed_by = {
+            asset_id: measured.get("obstructed_at", [])
+            for asset_id, measured in banked_motion_residuals(
+                source.store,
+                {a: source_metadata_digest(asset) for a, asset in all_assets.items()},
+                OBSTRUCTION_FRAME_PRODUCER,
+            ).items()
+        }
     windows = ClipWindowFacts(
         assets=dict(source.assets),
         store=source.store,
@@ -203,6 +217,7 @@ def production_cut_resolvers(source, *, resources):
         ),
         detector=speech.detector if speech is not None else None,
         detector_settings=json.dumps(speech_config.model_dump(), sort_keys=True),
+        obstructed_by=obstructed_by,
     )
 
     def resolve_windows(carriers):

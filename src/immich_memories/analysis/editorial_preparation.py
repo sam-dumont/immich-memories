@@ -35,6 +35,10 @@ from immich_memories.analysis.editorial_preparation_motion import (
     prepare_motion_lines,
     seat_asker,
 )
+from immich_memories.analysis.editorial_preparation_obstruction import (
+    prepare_obstruction_frames,
+    prepare_obstruction_heads,
+)
 from immich_memories.analysis.editorial_preparation_pixels import (
     PRODUCER_KEY,
     pixel_row,
@@ -120,7 +124,7 @@ class PreparationResult:
         Motion descriptions are optional: absent lines leave the pick its plain clip facts.
         """
         return not any(not key.startswith("motion:") for key in self.missing_by_producer) and all(
-            key == "motion"
+            key in ("motion", "obstruction")
             or key.startswith(
                 (
                     "motion:",
@@ -128,6 +132,8 @@ class PreparationResult:
                     f"{CLIP_COMPANION}:",
                     CLIP_FRAMES_HEAD,
                     VIDEO_MOTION,
+                    "obstruction:",
+                    "obstruction_frames",
                 )
             )
             for key in self.failures
@@ -154,6 +160,8 @@ class PreparationResult:
                     CLIP_COMPANION,
                     f"{CLIP_FRAMES_HEAD}:",
                     f"{VIDEO_MOTION}:",
+                    "obstruction",
+                    "obstruction_frames",
                 )
             )
         )
@@ -190,6 +198,8 @@ class PreparationPorts:
     motion: Callable = prepare_motion_lines
     clip_frames: Callable = prepare_clip_frames
     video_motion: Callable = bank_video_motion
+    obstruction: Callable = prepare_obstruction_heads
+    obstruction_frames: Callable = prepare_obstruction_frames
 
 
 # Pictures per write while a producer banks as it goes: a crash costs at most this many.
@@ -368,6 +378,27 @@ class _Acquisition:
         except Exception as exc:
             self.failures["public_heads"] = f"{type(exc).__name__}: {exc}"
 
+    def obstruction_heads(self, asset_ids: Sequence[str]) -> None:
+        """Bank the rank-only finger-over-the-lens reading (#2022); see `complete`."""
+        self.check()
+        try:
+            with self.timed("obstruction", len(asset_ids)):
+                failures = self.providers.obstruction(
+                    asset_ids=asset_ids,
+                    store=self.store,
+                    bundle_path=self.preparation_config.obstruction_bundle_path,
+                    encoder_path=self.triage_config.encoder_path,
+                    preview_for=self.preview_for,
+                    check_cancelled=self.check,
+                    progress=self.report,
+                    provider=self.triage_config.provider,
+                )
+            self.failures.update({f"obstruction:{k}": v for k, v in failures.items()})
+        except AccountReadFailed:
+            raise
+        except Exception as exc:
+            self.failures["obstruction"] = f"{type(exc).__name__}: {exc}"
+
     def remote_facts(self, pending: Mapping[str, Mapping[str, str]]) -> bool:
         """Bank the offloaded producers from the service; False when it did not answer.
 
@@ -470,6 +501,28 @@ class _Acquisition:
             raise
         except Exception as exc:
             self.failures[VIDEO_MOTION] = f"{type(exc).__name__}: {exc}"
+
+    def obstruction_frames(
+        self, frame_paths: Mapping[str, Sequence[Path]], videos: Mapping[str, Asset]
+    ) -> None:
+        """Bank each video's flagged detector-frame seconds (#2022); see `complete`."""
+        self.check()
+        try:
+            with self.timed("obstruction_frames", len(frame_paths)):
+                errors = self.providers.obstruction_frames(
+                    store=self.store,
+                    videos=videos,
+                    frame_paths=frame_paths,
+                    bundle_path=self.preparation_config.obstruction_bundle_path,
+                    encoder_path=self.triage_config.encoder_path,
+                    check_cancelled=self.check,
+                    provider=self.triage_config.provider,
+                )
+            self.failures.update({f"obstruction_frames:{k}": v for k, v in errors.items()})
+        except AccountReadFailed:
+            raise
+        except Exception as exc:
+            self.failures["obstruction_frames"] = f"{type(exc).__name__}: {exc}"
 
     def captions(self, asset_ids: Sequence[str]) -> None:
         self.check()

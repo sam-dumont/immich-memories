@@ -529,3 +529,14 @@ immich-memories capabilities
 This separates configuration and installation checks from generation evidence. It does not
 prove that every selected picture or finished film is right. Run
 [preflight](../run/maintenance/health-logs-cache.md) after changing services.
+
+## Finger-over-the-lens detector
+
+Trained on a public corpus only (Commons images and synthetic composites on them; see
+`src/immich_memories/triage/bundled_heads/public-obstruction-v1.md`). Measured against the
+owner's held-out library, never used for training: 26 of 49 flagged real finger-over-the-lens
+photos, 11 of 20 on video previews, 240 of 56,372 pictures across the whole library (0.4%).
+Against public random and hard-negative sets: 32 of 440 hard negatives, 4 of 2,000 random
+stills, 6 of 69 hard negatives and 9 of 384 random on video. That recall is why the check
+ranks a clean sibling ahead of a flagged picture rather than dropping it: see
+[Picking a shot](../how-it-chooses/picking-shots.md).

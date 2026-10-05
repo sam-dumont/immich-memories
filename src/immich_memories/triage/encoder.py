@@ -88,6 +88,17 @@ class DinoEncoder:
         tokens = _token_output(self.session.run(None, {input_name: batch}))
         return pool_token_pack(tokens)
 
+    def embed_with_patches(self, batch: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        """One forward pass: the pooled pack, and the ``[n, 256, 384]`` patch tokens.
+
+        A patch-level head (one probe per 14x14 patch, rather than one pooled answer per
+        picture) needs the tokens the pack discards. Running both off the one encoder call
+        a picture already pays for is why this exists instead of a second ``embed``.
+        """
+        input_name = self.session.get_inputs()[0].name
+        tokens = _token_output(self.session.run(None, {input_name: batch}))
+        return pool_token_pack(tokens), tokens[:, 1:, :]
+
     @classmethod
     def open(cls, model_path: Path, *, provider: str = "auto") -> DinoEncoder:
         """Load the pinned DINOv2-small export; refuse any other graph."""

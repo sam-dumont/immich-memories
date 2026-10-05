@@ -13,7 +13,9 @@ from pathlib import Path
 import numpy as np
 
 BUNDLE_SCHEMA = "triage-head-bundle-v1"
+PATCH_BUNDLE_SCHEMA = "triage-patch-head-bundle-v1"
 _META_KEY = "meta"
+PATCH_GRID = 16
 
 
 @dataclass(frozen=True)
@@ -115,3 +117,69 @@ class HeadBundle:
                 for entry in meta["heads"]
             )
         return cls(encoder_key=str(meta["encoder_key"]), pca=pca, heads=heads)
+
+
+@dataclass(frozen=True)
+class PatchHeadBundle:
+    """A per-patch logistic probe over raw DINOv2 tokens, not the pooled, PCA'd pack.
+
+    `HeadBundle` answers one label per picture off the pooled pack; this answers one
+    probability per 14x14 patch off the tokens the pack discards, for a question the pack
+    cannot hold: *where* in the frame, not just whether. The probe standardizes its own
+    input (`mu`, `sd`), matching how it was fit.
+    """
+
+    encoder_key: str
+    name: str
+    version: str
+    mu: np.ndarray
+    sd: np.ndarray
+    w: np.ndarray
+    b: float
+
+    def patch_probabilities(self, tokens: np.ndarray) -> np.ndarray:
+        """``[n, 256, 384]`` patch tokens → ``[n, 16, 16]`` per-patch probabilities."""
+        array = np.asarray(tokens, dtype=np.float64)
+        if array.ndim != 3 or array.shape[1:] != (PATCH_GRID * PATCH_GRID, self.mu.shape[0]):
+            raise ValueError(
+                f"expected [n, {PATCH_GRID * PATCH_GRID}, {self.mu.shape[0]}] tokens, "
+                f"got {array.shape}"
+            )
+        standardized = (array.reshape(-1, self.mu.shape[0]) - self.mu) / self.sd
+        logits = standardized @ self.w + self.b
+        probabilities = 1.0 / (1.0 + np.exp(-logits))
+        return probabilities.reshape(-1, PATCH_GRID, PATCH_GRID).astype(np.float32)
+
+    def save(self, path: Path) -> None:
+        meta = {
+            "schema": PATCH_BUNDLE_SCHEMA,
+            "encoder_key": self.encoder_key,
+            "name": self.name,
+            "version": self.version,
+            "b": self.b,
+        }
+        with path.open("wb") as handle:
+            np.savez_compressed(
+                handle,
+                allow_pickle=False,
+                mu=self.mu.astype(np.float64),
+                sd=self.sd.astype(np.float64),
+                w=self.w.astype(np.float64),
+                meta=np.asarray(json.dumps(meta, sort_keys=True)),
+            )
+
+    @classmethod
+    def load(cls, path: Path) -> PatchHeadBundle:
+        with np.load(path, allow_pickle=False) as payload:
+            meta = json.loads(str(payload["meta"]))
+            if meta.get("schema") != PATCH_BUNDLE_SCHEMA:
+                raise ValueError(f"{path}: not a {PATCH_BUNDLE_SCHEMA} bundle")
+            return cls(
+                encoder_key=str(meta["encoder_key"]),
+                name=str(meta["name"]),
+                version=str(meta["version"]),
+                mu=payload["mu"],
+                sd=payload["sd"],
+                w=payload["w"],
+                b=float(meta["b"]),
+            )
