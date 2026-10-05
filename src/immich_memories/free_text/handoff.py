@@ -14,7 +14,7 @@ from datetime import date
 from typing import Literal
 
 from immich_memories.free_text.linking import Reason
-from immich_memories.free_text.pool import NOT_POSSIBLE
+from immich_memories.free_text.pool import NEEDS_PREPARATION, NOT_POSSIBLE
 from immich_memories.free_text.pool_questions import tally
 from immich_memories.free_text.reading import Asker, choose
 from immich_memories.free_text.translate import Ask
@@ -50,6 +50,11 @@ class Film:
     subject: str = ""
     # The pool's first and last capture: the window Immich reads its pictures from.
     window: DateRange | None = None
+    # What the request asked left out, carried into the brief as a hard rule (#2061).
+    excluded: tuple[str, ...] = ()
+    # A named person the request excluded, by people-file id, for the validation report to
+    # check against a selected carrier's own recognised faces (#2061).
+    excluded_person_ids: tuple[str, ...] = ()
     # The special-day route: the day, and the catalogued occasion on it when there is one.
     day: date | None = None
     event_id: str | None = None
@@ -75,6 +80,8 @@ def film_for(
     One single occasion with a day, found by its pictures or dated by the request, is that
     special day; the model picks between the occasions the catalogue holds on it. Otherwise
     a pool the library can show is the film's whole reach, and "not possible" is no film.
+    A window a caption-dependent request still needs prepared is "needs preparation": not
+    yet known either way, and never reported as "not possible" (#2045).
     """
     pool = ask.pool
     one_day = _one_day(ask, asker)
@@ -83,6 +90,8 @@ def film_for(
         return _special_day(ask.request, day, why, events_on(day), asker)
     if pool.verdict == NOT_POSSIBLE:
         return Film("none", Reason("", "not possible: no film", pool.why))
+    if pool.verdict == NEEDS_PREPARATION:
+        return Film("none", Reason("", "needs preparation: no film yet", pool.why))
     return Film(
         "pool",
         Reason("", "the pool is the film's whole reach", f"{len(pool.pictures)} pictures"),
@@ -92,6 +101,8 @@ def film_for(
             start=min(picture.taken_at for picture in pool.pictures),
             end=max(picture.taken_at for picture in pool.pictures),
         ),
+        excluded=pool.excluded,
+        excluded_person_ids=pool.excluded_person_ids,
     )
 
 

@@ -11,10 +11,11 @@ from __future__ import annotations
 import hashlib
 import json
 import sys
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
+from types import MappingProxyType
 from typing import TYPE_CHECKING
 
 import click
@@ -22,7 +23,8 @@ import click
 from immich_memories.analysis.editorial_shareability import level_of
 from immich_memories.api.access_clients import AccessBoundClient
 from immich_memories.cli._album_generation import CuratedPool
-from immich_memories.cli._helpers import print_info
+from immich_memories.cli._helpers import print_info, refuse_blocked_host
+from immich_memories.cli.progress_file import write_progress
 from immich_memories.config_models import PRIMARY_ACCOUNT
 from immich_memories.free_text.account_scope import (
     AccountScope,
@@ -37,6 +39,14 @@ from immich_memories.free_text.library import (
     LibraryUnavailable,
     LibraryView,
     read_library,
+)
+from immich_memories.free_text.linking import WhenLink
+from immich_memories.free_text.pool import NEEDS_PREPARATION
+from immich_memories.free_text.preparation import (
+    NeedsPreparationPreview,
+    Notice,
+    PreparationFailed,
+    prepare_for_request,
 )
 from immich_memories.free_text.printed import ImmichPrintedText
 from immich_memories.free_text.reading import WireAsker
@@ -113,13 +123,15 @@ def scope_of_ask(
     dry_run: bool,
     typed: RunScope,
     trace_file: Path | None = None,
+    progress_file: Path | None = None,
     accounts: Sequence[str] = (),
 ) -> RunScope:
     """The run's scope: as typed without `--ask`, else the one its sentence asks for.
 
     Flags the sentence already says are refused. A dry run, or a sentence the library
-    cannot show, ends the command after the trace: there is nothing to film. `accounts` is
-    the run's chosen household accounts (#2044): the pool only ever names a picture they
+    cannot show, ends the command after the trace: there is nothing to film. `progress_file`
+    carries an unprepared window's warning to a watcher such as the web client. `accounts`
+    is the run's chosen household accounts (#2044): the pool only ever names a picture they
     can see; empty is the one-account run every `--ask` has been.
     """
     if request is None:
@@ -131,7 +143,14 @@ def scope_of_ask(
     ]
     if given:
         raise click.UsageError(f"--ask is the whole scope; drop {', '.join(given)}")
-    film = translate_ask(config, request, dry_run=dry_run, trace_file=trace_file, accounts=accounts)
+    film = translate_ask(
+        config,
+        request,
+        dry_run=dry_run,
+        trace_file=trace_file,
+        progress_file=progress_file,
+        accounts=accounts,
+    )
     if film is None:
         sys.exit(0)
     # A requested film keeps forwarded pictures: a club's photos arrive by group chat.
@@ -145,7 +164,14 @@ def scope_of_ask(
     ref = "ask-" + hashlib.sha256(request.encode()).hexdigest()[:12]
     if film.window is None:
         raise click.ClickException("The pool holds no picture to film")
-    pool = CuratedPool(name=request, ref=ref, asset_ids=film.asset_ids, window=film.window)
+    pool = CuratedPool(
+        name=request,
+        ref=ref,
+        asset_ids=film.asset_ids,
+        window=film.window,
+        excluded=film.excluded,
+        excluded_person_ids=film.excluded_person_ids,
+    )
     return RunScope(from_album=ref, subject=film.subject, accept_any_provenance=True, curated=pool)
 
 
@@ -155,6 +181,7 @@ def translate_ask(
     *,
     dry_run: bool,
     trace_file: Path | None = None,
+    progress_file: Path | None = None,
     accounts: Sequence[str] = (),
 ) -> Film | None:
     """Translate the sentence and print its trace; the film to make, or None for no film.
@@ -163,7 +190,11 @@ def translate_ask(
     show is no film, and the trace says why. `trace_file` keeps the same as JSON. `accounts`
     is the run's chosen household accounts (#2044): the pool, verdict, trace and rule
     preview only ever name a picture they can see; empty is the one-account run every
-    `--ask` has been.
+    `--ask` has been. A caption-only subject has no shortlist to fill on demand, so the
+    request's own window is prepared first when it needs it (#2045): a warning with the
+    count and an estimate, the usual progress lines, then this answer -- never "not
+    possible" on a window nobody has read yet. `progress_file` carries that warning to a
+    watcher such as the web client.
     """
     from immich_memories.db import open_store
 
@@ -172,65 +203,85 @@ def translate_ask(
             "--ask needs the model tier: set advanced.llm.base_url and advanced.llm.model "
             "to the reader that answers it (tier: full)"
         )
+    notice_of: dict[str, Notice | None] = {}
     try:
         lexicon = load_wordnet(config.free_text.wordnet_path)
         store = open_store(config)
         view = read_library(store, config.editorial)
-    except (WordNetUnavailable, LibraryUnavailable) as error:
+        asker = WireAsker(config.llm, judgments=store)
+        # A request naming no account still reads as the primary alone once a household run
+        # (or native sharing) may have left another account's pictures in this store (#2044).
+        scope_accounts = accounts or (
+            (PRIMARY_ACCOUNT,)
+            if likely_household(
+                store,
+                other_accounts=bool(config.immich.accounts),
+                native_sharing=config.immich.native_sharing,
+            )
+            else ()
+        )
+        with _ask_client(config, scope_accounts) as client:
+            scope = resolve_account_scope(client, scope_accounts, view.pictures, store)
+            view = LibraryView(
+                pictures=visible_pictures(view.pictures, scope),
+                people=_scoped_people(view.people, scope),
+                sharpness_line=view.sharpness_line,
+                owner_id=view.owner_id,
+            )
+
+            def prepare_window(when: WhenLink):
+                try:
+                    refreshed, notice_of["notice"] = prepare_for_request(
+                        client,
+                        config,
+                        store,
+                        view,
+                        when,
+                        today=date.today(),
+                        dry_run=dry_run,
+                        print_line=print_info,
+                        report=_progress_reporter(progress_file),
+                        before_preparing=lambda: refuse_blocked_host(config, output_directory=None),
+                        accounts=scope_accounts,
+                    )
+                except NeedsPreparationPreview as preview:
+                    notice_of["notice"] = preview.notice
+                    raise
+                return _rescoped(refreshed, scope_accounts, client, store)
+
+            asked = translate(
+                request,
+                view,
+                household_of(view, home_base=_home_base(config)),
+                lexicon,
+                asker,
+                today=date.today(),
+                trips=config.trips,
+                printed=ImmichPrintedText(client),
+                face_accounts=scope.face_accounts,
+                picture_accounts=scope.picture_accounts,
+                prepare_window=prepare_window,
+            )
+            film = film_for(asked, asker, events_on=catalogue_events)
+            # What the rules would drop from the pool: shown by a dry run, kept with a film
+            # run so its report says which rules its pictures met.
+            rules = _rule_preview(client, config, store, film)
+    except (WordNetUnavailable, LibraryUnavailable, PreparationFailed) as error:
         raise click.ClickException(str(error)) from error
-    if not view.pictures:
-        raise click.ClickException(
-            "The store holds no library to read: run immich-memories prepare first"
-        )
-    asker = WireAsker(config.llm, judgments=store)
-    # A request naming no account still reads as the primary alone once a household run
-    # (or native sharing) may have left another account's pictures in this store (#2044).
-    scope_accounts = accounts or (
-        (PRIMARY_ACCOUNT,)
-        if likely_household(
-            store,
-            other_accounts=bool(config.immich.accounts),
-            native_sharing=config.immich.native_sharing,
-        )
-        else ()
-    )
-    with _ask_client(config, scope_accounts) as client:
-        scope = resolve_account_scope(client, scope_accounts, view.pictures, store)
-        view = LibraryView(
-            pictures=visible_pictures(view.pictures, scope),
-            people=_scoped_people(view.people, scope),
-            sharpness_line=view.sharpness_line,
-            owner_id=view.owner_id,
-        )
-        asked = translate(
-            request,
-            view,
-            household_of(view, home_base=_home_base(config)),
-            lexicon,
-            asker,
-            today=date.today(),
-            trips=config.trips,
-            printed=ImmichPrintedText(client),
-            face_accounts=scope.face_accounts,
-            picture_accounts=scope.picture_accounts,
-        )
-        film = film_for(asked, asker, events_on=catalogue_events)
-        # What the editor's rules would drop from the pool: shown by a dry run, and kept with a
-        # film run so its report says which rules its pictures met.
-        rules = _rule_preview(client, config, store, film)
     trace = explain(asked, film=film, rules=rules)
     click.echo(trace)
     # One record for the watcher's file and the run's report, so both show the same translation.
-    record = trace_record(asked, film, rules)
+    record = trace_record(asked, film, rules, preparation=notice_of.get("notice"))
     save_with_run(asked, film, trace, people=view.people, record=record)
     if trace_file is not None:
         write_secret_file(trace_file, json.dumps(record))
     if dry_run:
-        counts = pool_counts(asked)
-        print_info(
-            f"Pool: {counts['pictures']} pictures ({counts['photos']} photos, "
-            f"{counts['videos']} videos); dry run, nothing filmed"
-        )
+        if asked.pool.verdict != NEEDS_PREPARATION:
+            counts = pool_counts(asked)
+            print_info(
+                f"Pool: {counts['pictures']} pictures ({counts['photos']} photos, "
+                f"{counts['videos']} videos); dry run, nothing filmed"
+            )
         return None
     if film.route == "none":
         print_info(f"Not possible, no film: {film.reason.outcome}")
@@ -301,6 +352,48 @@ def _home_base(config: Config) -> tuple[float, float] | None:
     if trips.homebase_latitude == trips.homebase_longitude == 0.0:
         return None
     return trips.homebase_latitude, trips.homebase_longitude
+
+
+def _progress_reporter(
+    progress_file: Path | None,
+) -> Callable[[str, float | None, float | None], None] | None:
+    """Keep the warning and the completion line beside `--output`, for a web job to poll."""
+    if progress_file is None:
+        return None
+
+    def report(message: str, fraction: float | None, remaining_seconds: float | None) -> None:
+        write_progress(
+            progress_file,
+            {"phase": "preparing", "message": message, "fraction": fraction}
+            | ({"remaining_seconds": remaining_seconds} if remaining_seconds else {}),
+        )
+
+    return report
+
+
+def _rescoped(
+    view: LibraryView, accounts: Sequence[str], client: SyncImmichClient, store: Store
+) -> tuple[LibraryView, Mapping[str, str], Mapping[str, str | frozenset[str]]]:
+    """`view` and its account scope, narrowed again to what `accounts` can see, after
+    preparation may have grown it.
+
+    Preparation can discover pictures the first, pre-preparation scope never read (#2044):
+    a window `resolve_account_scope` sized from the stale view would drop them as invisible,
+    the opposite of what preparing them was for, and `picture_accounts`/`face_accounts` sized
+    from it would leave them unowned, which the pool then reads as owned by nobody -- visible
+    to every face check, undoing #2055. The scope is read fresh from `view`'s own (now
+    current) pictures instead. A one-account run names no accounts and is unchanged.
+    """
+    if not accounts:
+        return view, MappingProxyType({}), MappingProxyType({})
+    scope = resolve_account_scope(client, accounts, view.pictures, store)
+    rescoped_view = LibraryView(
+        pictures=visible_pictures(view.pictures, scope),
+        people=_scoped_people(view.people, scope),
+        sharpness_line=view.sharpness_line,
+        owner_id=view.owner_id,
+    )
+    return rescoped_view, scope.picture_accounts, scope.face_accounts
 
 
 def _ask_client(config: Config, accounts: Sequence[str]) -> SyncImmichClient:

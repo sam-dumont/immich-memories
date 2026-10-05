@@ -1016,6 +1016,40 @@ class TestTitleInserterExtra:
 
         assert set(paths) == {(2026, 6), (2026, 7)}
 
+    def test_included_month_dividers_overrides_the_positional_cap(
+        self, test_clip_720p, test_clip_720p_b
+    ) -> None:
+        """#2075: the planner renders the budget's chosen months, not a first-N slice."""
+        from dataclasses import dataclass
+
+        from immich_memories.processing.assembly_config import TitleScreenSettings
+        from immich_memories.processing.title_divider_planner import TitleDividerPlanner
+
+        @dataclass
+        class FakeDivider:
+            path: Path
+
+        class FakeGenerator:
+            def generate_month_divider(self, month, year, is_birthday_month=False):
+                return FakeDivider(path=test_clip_720p_b)
+
+        clips = [
+            _make_clip(test_clip_720p, date=f"2026-{month:02d}-05")
+            for month in range(2, 9)  # Feb (opening) through Aug
+        ]
+        # A positional cap of 3 would pick Mar/Apr/May (the first three after Feb).
+        # The budget instead chose Apr/Jun/Aug as the heaviest months.
+        title_settings = TitleScreenSettings(
+            show_month_dividers=True,
+            max_dividers=3,
+            included_month_dividers=frozenset({(2026, 4), (2026, 6), (2026, 8)}),
+        )
+
+        planner = TitleDividerPlanner(FakeGenerator(), title_settings)
+        paths = planner.generate_month_dividers(clips, progress_callback=None)
+
+        assert set(paths) == {(2026, 4), (2026, 6), (2026, 8)}
+
     def test_generate_month_dividers_disabled(self, test_clip_720p):
         """generate_month_dividers returns empty when dividers disabled."""
         from immich_memories.processing.assembly_config import TitleScreenSettings

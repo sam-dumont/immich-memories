@@ -119,6 +119,9 @@ export interface paths {
         /**
          * Thumbnail
          * @description The picture at grid or preview size; a miss is fetched from Immich and kept.
+         *
+         *     No configured account reading this id is a 404 before the cache is even asked, so a
+         *     cached picture never outlives the account that put it there losing access to it.
          */
         get: operations["thumbnail_api_v1_assets__asset_id__thumbnail_get"];
         put?: never;
@@ -1205,6 +1208,18 @@ export interface components {
             tier: string;
         };
         /**
+         * AskPreparationNotice
+         * @description The count and the estimate the preview shows before any picture is prepared.
+         */
+        AskPreparationNotice: {
+            /** Estimated Seconds */
+            estimated_seconds: number;
+            /** Message */
+            message: string;
+            /** Pictures */
+            pictures: number;
+        };
+        /**
          * AskPreview
          * @description `generate --ask --dry-run`'s translation: the trace by part, the pool, the rule preview
          *     and the verdict.
@@ -1214,6 +1229,7 @@ export interface components {
             blocks: components["schemas"]["TraceBlock"][];
             film: components["schemas"]["AskedFilm"];
             pool: components["schemas"]["PoolCounts"];
+            preparation?: components["schemas"]["AskPreparationNotice"] | null;
             /** Request */
             request: string;
             rules?: components["schemas"]["AskRules"] | null;
@@ -2258,12 +2274,22 @@ export interface components {
             carriers: components["schemas"]["StoryCarrier"][];
             /** Day */
             day: string;
+            /**
+             * Funded By
+             * @default
+             */
+            funded_by: string;
             /** Granted */
             granted: number;
             /** Key */
             key: string;
             /** Purpose */
             purpose: string;
+            /**
+             * Sparse Quality Reason
+             * @default
+             */
+            sparse_quality_reason: string;
             /** Title */
             title: string;
             /** Weight */

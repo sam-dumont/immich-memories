@@ -56,6 +56,9 @@ class LibraryPicture:
     sharpness: float | None = None
     # People-file persons whose face Immich recognised in this picture.
     people: frozenset[str] = frozenset()
+    # Every detected face box, named or not: a stranger's face still proves someone is
+    # there, which `people` (library-known faces only) cannot say on its own (#2061).
+    face_count: int = 0
 
 
 @dataclass(frozen=True)
@@ -163,4 +166,5 @@ def _picture(
         people=frozenset(
             canonical[person.person_id] for person in fact.people if person.person_id in canonical
         ),
+        face_count=len(fact.faces),
     )

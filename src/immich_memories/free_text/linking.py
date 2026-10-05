@@ -12,9 +12,10 @@ import re
 import unicodedata
 from collections import Counter
 from collections.abc import Collection, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date, timedelta
 
+from immich_memories.free_text import negation
 from immich_memories.free_text.homes import Home
 from immich_memories.free_text.lexicon import Lexicon
 from immich_memories.free_text.library import LibraryPerson
@@ -102,11 +103,20 @@ class WhoLink:
 
     # People-file persons whose face must be recognised on the photo itself (#1954).
     present: tuple[str, ...] = ()
+    # A named or role-matched person a negated clause excluded ("without Cy"): their face
+    # must be ABSENT, never required (#2061).
+    absent_present: tuple[str, ...] = ()
     # Persons whose facts date or place the request: the owner for "I", the partner for
     # "we", and everyone present.
     anchors: tuple[str, ...] = ()
-    # "children" or "people": a plural word for people asks for company, no one in particular.
+    # "children", "teens", "people" or "performers": a plural word for people asks for
+    # company, no one in particular.
     company: str | None = None
+    # The request asks this company be ABSENT from the photos ("no humans", "sans enfants"):
+    # never required, the opposite (#2061).
+    absent_company: str | None = None
+    # "only the performers": `company` is required and excludes anyone else of that kind.
+    company_only: bool = False
     reasons: tuple[Reason, ...] = ()
 
 
@@ -126,8 +136,11 @@ def link_who(
 
     First-person words anywhere in the request ("our wedding" reads as a what) are the owner,
     and "we" adds the partner by role. In the who spans, a name or a people-file role
-    requires that person's face; a plural word for people asks for company ("children" when
-    WordNet says the word is young). The model only picks between people one word fits.
+    requires that person's face; a curated word for people asks for company ("children",
+    "teens", "performers"), per supported locale. Negation on a clause of its own
+    ("no humans", "sans les enfants") turns a required name or company into an absent one,
+    never the other way; a double negation ("not without the kids") cancels back to
+    required (#2061). The model only picks between people one word fits.
     """
     people = household.people
     owner = household.owner
@@ -160,19 +173,80 @@ def link_who(
                 )
             )
     present: list[str] = []
+    absent_present: list[str] = []
     company: str | None = None
+    absent_company: str | None = None
+    company_only = False
     for span in who:
-        found, plural_people, span_reasons = _people_in(request, span, people, lexicon, asker)
+        found, span_absent, span_company, span_reasons = _people_in(
+            request, span, people, lexicon, asker
+        )
         present += found
-        company = company or plural_people
+        absent_present += span_absent
+        company = company or span_company.required
+        absent_company = absent_company or span_company.absent
+        company_only = company_only or (
+            span_company.exclusive and span_company.required is not None
+        )
         reasons += span_reasons
     present = list(dict.fromkeys(present))
+    # The reader does not always put a negated company phrase, or "only", in `who` (#2061
+    # round 3): either is as likely to land in `what`, or to be dropped from every span.
+    # Negation and "only" are read over the whole request too, filling only what the spans
+    # left empty. This must never turn an ordinary word elsewhere in the request into a
+    # REQUIRED company (round 4): "my son's band concerts" has no negation or "only" at
+    # all, and reading "band" as a required company there emptied its own pool. A required
+    # company from the whole text is adopted only together with its own "only": negation
+    # alone can still fill `absent`, since absence carries no such risk.
+    whole = _company_in_text(request, lexicon)
+    if whole.exclusive:
+        company = company or whole.required
+    absent_company = absent_company or whole.absent
+    company_only = company_only or (whole.exclusive and company is not None)
     return WhoLink(
         present=tuple(present),
+        absent_present=tuple(dict.fromkeys(absent_present)),
         anchors=tuple(dict.fromkeys(anchors + present)),
         company=company,
+        absent_company=absent_company,
+        company_only=company_only,
         reasons=tuple(reasons),
     )
+
+
+def _company_in_text(text: str, lexicon: Lexicon) -> _SpanCompany:
+    """Company and negation read over a whole request, with no face-naming at stake: used
+    only as a fallback for what the who spans missed (#2061). Reuses `_scan_clause` with no
+    people to name, so a name anywhere in the request can never be matched by this pass."""
+    if negation.cjk_locale_of(text) is not None:
+        negated, exclusive, kind = negation.cjk_company(text)
+        if not kind:
+            return _SpanCompany()
+        return replace(_company_reason(text, kind, negated=negated)[0], exclusive=exclusive)
+    company = _SpanCompany()
+    for clause in negation.clauses(text):
+        company = _scan_clause(clause, text, {}, lexicon, _NO_ASKER, [], [], [], company)
+    return company
+
+
+class _NoAsker:
+    """Never reached: `_scan_clause` only asks when a name matched two or more people,
+    which an empty people mapping can never do."""
+
+    def ask(self, prompt: str, schema: Mapping[str, object], *, max_tokens: int) -> None:
+        raise AssertionError("the whole-text company fallback names nobody to ask about")
+
+
+_NO_ASKER = _NoAsker()
+
+
+@dataclass(frozen=True)
+class _SpanCompany:
+    """What one who-span said about company, no one in particular."""
+
+    required: str | None = None
+    absent: str | None = None
+    exclusive: bool = False
 
 
 def _people_in(
@@ -181,40 +255,106 @@ def _people_in(
     people: Mapping[str, LibraryPerson],
     lexicon: Lexicon,
     asker: Asker,
-) -> tuple[list[str], str | None, list[Reason]]:
-    tokens = [token.removesuffix("'s").removesuffix("’s") for token in words_of(span)]
+) -> tuple[list[str], list[str], _SpanCompany, list[Reason]]:
+    """Who one who-span names, clause by clause, so a mixed request ("with the kids, no rain")
+    never lets one clause's negation invert another's (#2061)."""
     found: list[str] = []
-    company: str | None = None
+    absent: list[str] = []
+    company = _SpanCompany()
     reasons: list[Reason] = []
-    for index, token in enumerate(tokens):
-        if token in FIRST_PERSON:
-            continue
-        named, rule = _matches(" ".join(tokens[index : index + 2]), token, people, lexicon)
-        if not named:
-            kind = _company_of(token, lexicon)
-            if kind:
-                company = company or kind
-                reasons.append(
-                    Reason(
-                        token,
-                        f"a plural word for {kind}; a caption naming {kind} shows it",
-                        f"{kind} must be in the photos, no one in particular",
-                    )
-                )
-            continue
-        if len(named) > 1:
-            picked, votes = _which(request, named, asker)
-            rule += f"; {len(named)} fit, the model picked {picked.name} ({_tally(votes)})"
-            named = [picked]
-        found += [person.person_id for person in named]
-        reasons.append(
-            Reason(
-                token,
-                f"{rule}: recognised faces required, on the picture itself",
-                ", ".join(person.name for person in named),
-            )
+    if negation.cjk_locale_of(span) is not None:
+        negated, exclusive, kind = negation.cjk_company(span)
+        if kind:
+            company, reason = _company_reason(span, kind, negated=negated)
+            company = replace(company, exclusive=exclusive)
+            reasons.append(reason)
+        return found, absent, company, reasons
+    for clause in negation.clauses(span):
+        company = _scan_clause(
+            clause, request, people, lexicon, asker, found, absent, reasons, company
         )
-    return found, company, reasons
+    return found, absent, company, reasons
+
+
+def _scan_clause(
+    clause: negation.Clause,
+    request: str,
+    people: Mapping[str, LibraryPerson],
+    lexicon: Lexicon,
+    asker: Asker,
+    found: list[str],
+    absent: list[str],
+    reasons: list[Reason],
+    company: _SpanCompany,
+) -> _SpanCompany:
+    tokens = [token.removesuffix("'s").removesuffix("’s") for token in clause.words]
+    for index, token in enumerate(tokens):
+        if token in FIRST_PERSON or negation.is_skip_word(token):
+            continue
+        # Negation scopes forward from where it is said, not back over the words already
+        # read ("kids not wearing hats" keeps the kids: "not" negates "wearing hats", said
+        # after "kids", never the company word that came before it) (#2061).
+        negated_here = clause.negated_at(index) or negation.is_self_negating(token)
+        named, rule = _matches(" ".join(tokens[index : index + 2]), token, people, lexicon)
+        if named:
+            _record_named(request, named, rule, token, negated_here, found, absent, reasons, asker)
+            continue
+        kind = negation.request_kind_of(token, negated=negated_here)
+        # Required and absent are independent slots: each word's own negation decides which
+        # one it fills, so an earlier word filling one never blocks the other (#2061).
+        slot_free = company.absent is None if negated_here else company.required is None
+        if kind and slot_free:
+            filled, reason = _company_reason(token, kind, negated=negated_here)
+            company = replace(
+                company,
+                required=filled.required or company.required,
+                absent=filled.absent or company.absent,
+            )
+            reasons.append(reason)
+    return replace(company, exclusive=company.exclusive or clause.exclusive)
+
+
+def _record_named(
+    request: str,
+    named: list[LibraryPerson],
+    rule: str,
+    token: str,
+    negated: bool,
+    found: list[str],
+    absent: list[str],
+    reasons: list[Reason],
+    asker: Asker,
+) -> None:
+    if len(named) > 1:
+        picked, votes = _which(request, named, asker)
+        rule += f"; {len(named)} fit, the model picked {picked.name} ({_tally(votes)})"
+        named = [picked]
+    ids = [person.person_id for person in named]
+    names = ", ".join(person.name for person in named)
+    if negated:
+        absent.extend(ids)
+        reasons.append(Reason(token, f"{rule}: negated, excluded by their own face", names))
+    else:
+        found.extend(ids)
+        reasons.append(
+            Reason(token, f"{rule}: recognised faces required, on the picture itself", names)
+        )
+
+
+def _company_reason(token: str, kind: str, *, negated: bool) -> tuple[_SpanCompany, Reason]:
+    if negated:
+        reason = Reason(
+            token,
+            f"negated: a word for {kind}, asked away",
+            f"{kind} must be ABSENT from the photos",
+        )
+        return _SpanCompany(absent=kind), reason
+    reason = Reason(
+        token,
+        f"a plural word for {kind}; a caption naming {kind} shows it",
+        f"{kind} must be in the photos, no one in particular",
+    )
+    return _SpanCompany(required=kind), reason
 
 
 def _matches(
@@ -228,14 +368,6 @@ def _matches(
         return [], ""
     roles = [p for p in people.values() if p.role and lexicon.names_role(token, p.role)]
     return roles, "a role in your people file"
-
-
-def _company_of(token: str, lexicon: Lexicon) -> str | None:
-    # A plural of people ("friends") asks for company; "the cars" is not anyone.
-    base = lexicon.noun_base(token)
-    if base is None or base == token or not lexicon.is_human(token):
-        return None
-    return "children" if lexicon.is_young(token) else "people"
 
 
 def _named(pair: str, token: str, people: Mapping[str, LibraryPerson]) -> list[LibraryPerson]:

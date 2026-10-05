@@ -282,9 +282,9 @@ The separate model-planning route can read banked lines or use plain clip facts.
   head already calls document-like is read anyway, since an MRZ line or a card number can't be
   found by a keyword search. Every read is memoised per asset, shared across the material
   build, a candidate refresh and the audience gate. Only an explicit owner pin exempts a
-  picture. The memory-worthy tier gate,
-  near-home test and partition caps live in `editorial_worthiness_gate.py`, split out of
-  `editorial_structure_planner.py`.
+  picture. The memory-worthy tier gate, the near-home test, the written-subject pool, chapter
+  assembly and the per-partition slot/depth caps live in `editorial_structure_framing.py`,
+  split out of `editorial_structure_planner.py`.
 - **Picture admission**: `PictureAdmission` (`editorial_picture_admission.py`) owns the shared
   standing, audience, spacing and candidate repetition checks. Draft selection, thin swaps,
   audience replacements, duplicate refills and family seats use it. Later candidates acquire
@@ -630,6 +630,12 @@ src/immich_memories/
 │   │                           # (editorial_story_vote.py: the two-order model vote over a story's shortlisted moments)
 │   ├── editorial_story_trips.py     # Detected trips become one story per leg, with a reserve for each leg's length
 │   ├── editorial_story_lookalike.py # A story's further picture is refused when it repeats one it holds
+│   ├── editorial_story_capacity.py # A story's capacity: capture groups offered, folded to what it can show
+│   │                               # distinctly (the final review's own hash+scene rule), but only for a
+│   │                               # story whose unfolded grant would have exceeded that; a clean story's
+│   │                               # allocation is untouched
+│   ├── editorial_story_replacement_pool.py # What a freed slot refills from: the carrier's own moment, its
+│   │                               # story's unshown moments, then other stories' moments that never took a slot
 │   ├── editorial_story_depth.py     # A short film's free slots as verified-different frames inside shown moments
 │   ├── editorial_story_trim.py      # The allocation in reverse when the production budget is tighter
 │   ├── editorial_story_threads.py   # A recurring activity at one place is one story per era, if the reader agrees
@@ -642,6 +648,7 @@ src/immich_memories/
 │   ├── editorial_structure_*.py    # The structure planner: wall, subject/trip admission + standing gates, audience, record
 │   │                               # _finishing.py holds PlanRun and the passes that run over a settled cut
 │   │                               # (motion/timing, audience gate, duplicate review, trim)
+│   │                               # _framing.py: near-home test, subject pool, chapters, worthiness tier, partition budget
 │   ├── editorial_projection.py # Plan -> PipelineResult, and the stage reporter
 │   ├── provider_health.py      # ProviderHealth: what a provider's answer says about its availability (preflight)
 │   ├── selection_trace.py      # Per-stage funnel record: what each filter received and let through
@@ -798,6 +805,8 @@ src/immich_memories/
 │   ├── script_fonts.py         # Pinned Noto script fonts, `titles fonts --install`
 │   ├── llm_titles.py           # LLM-generated titles: prompt building, parsing, the LLM call
 │   ├── title_guards.py         # Guards refusing an invented name, a missing year, a missing place
+│   ├── relationship_guard.py   # Guard refusing a relationship word the people record doesn't back
+│   ├── relationship_words.py   # Per-locale relationship vocabulary (perspective/record-backed/alias)
 │   ├── title_routing.py        # Which prompt a memory gets: PEOPLE/OCCASION_MEMORY_TYPES, is_trip
 │   ├── title_suggestion.py     # TitleSuggestion: the shape of what the model answers with
 │   ├── title_source.py         # TitleSource: which source produced the opening title

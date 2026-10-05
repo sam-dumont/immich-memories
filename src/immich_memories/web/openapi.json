@@ -102,6 +102,30 @@
         "title": "AskAvailability",
         "type": "object"
       },
+      "AskPreparationNotice": {
+        "description": "The count and the estimate the preview shows before any picture is prepared.",
+        "properties": {
+          "estimated_seconds": {
+            "title": "Estimated Seconds",
+            "type": "number"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "pictures": {
+            "title": "Pictures",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "pictures",
+          "estimated_seconds",
+          "message"
+        ],
+        "title": "AskPreparationNotice",
+        "type": "object"
+      },
       "AskPreview": {
         "description": "`generate --ask --dry-run`'s translation: the trace by part, the pool, the rule preview\nand the verdict.",
         "properties": {
@@ -117,6 +141,16 @@
           },
           "pool": {
             "$ref": "#/components/schemas/PoolCounts"
+          },
+          "preparation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AskPreparationNotice"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "request": {
             "title": "Request",
@@ -3172,6 +3206,11 @@
             "title": "Day",
             "type": "string"
           },
+          "funded_by": {
+            "default": "",
+            "title": "Funded By",
+            "type": "string"
+          },
           "granted": {
             "title": "Granted",
             "type": "integer"
@@ -3182,6 +3221,11 @@
           },
           "purpose": {
             "title": "Purpose",
+            "type": "string"
+          },
+          "sparse_quality_reason": {
+            "default": "",
+            "title": "Sparse Quality Reason",
             "type": "string"
           },
           "title": {
@@ -3635,7 +3679,7 @@
     },
     "/api/v1/assets/{asset_id}/thumbnail": {
       "get": {
-        "description": "The picture at grid or preview size; a miss is fetched from Immich and kept.",
+        "description": "The picture at grid or preview size; a miss is fetched from Immich and kept.\n\nNo configured account reading this id is a 404 before the cache is even asked, so a\ncached picture never outlives the account that put it there losing access to it.",
         "operationId": "thumbnail_api_v1_assets__asset_id__thumbnail_get",
         "parameters": [
           {

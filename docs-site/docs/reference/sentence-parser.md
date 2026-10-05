@@ -59,7 +59,20 @@ flowchart TD
    - A name or a role from your people registry ("my son", a first name) means that face, as Immich
      recognised it.
    - A plural word for people ("friends", "kids") asks for company: a caption naming people, or
-     naming children when the word means young people.
+     the specific kind when the word is specific (children, teens, performers). A curated word
+     list reads this, in any of the 14 supported locales, not a dictionary lookup: "humans"
+     is an irregular plural that a dictionary lookup never reduces to its singular, so a list
+     of the words themselves is the only thing that reads it reliably.
+   - "No", "without" and each language's own negation word turn that company into an absence
+     instead of a requirement: "landscapes, no humans" drops any picture with a face or a
+     caption subject who is a person, "sans les enfants" drops children instead of requiring
+     them. A negated name ("without Cy") drops that person's own pictures the same way. Each
+     clause of the sentence is read for its own negation, so "with the kids, no rain" keeps
+     the kids filter and a double negation ("not without the kids") cancels back to a
+     requirement.
+   - "Only" narrows company to the kind named and excludes everyone else of that company:
+     "only the performers" keeps musicians, singers, dancers and the rest of that cast, and
+     drops the audience.
 3. **When.** Years you write are pattern work. An age ("in our 20s") is read by the model as
    numbers, and the calendar is arithmetic from the birth date in your people registry. If a phrase
    such as "foggy days" supplies no dates, its visible modifier still filters the captions.
@@ -93,7 +106,9 @@ flowchart TD
 7. **The film.** The pool goes whole to the editor, filmed like an album whose written subject is
    your sentence: stories, standing, the family-viewing check, duplicates and length all apply.
    Forwarded pictures are kept (a club's photos tend to arrive through a group chat). One occasion
-   of one day ("the birth of my son") goes to the special-day film instead.
+   of one day ("the birth of my son") goes to the special-day film instead. What the sentence
+   excluded travels with it as a hard rule of the editorial brief, so the run's report can name
+   a shot that still showed it, not only filter the pool by it.
 
 ## Reading the trace
 

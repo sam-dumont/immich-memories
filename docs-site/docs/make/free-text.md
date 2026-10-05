@@ -13,22 +13,58 @@ The translation can get your request wrong. Preview the scope and the pictures b
 
 ## Before you try it
 
-You need the **Full** tier: GPU picture preparation, a caption service and a configured [text reader](../better/reader.md). Run `immich-memories prepare --year 2025 --month 6` for the period you want to search, and `immich-memories models fetch` to install the pinned WordNet dictionary.
+You need the **Full** tier: GPU picture preparation, a caption service and a configured [text reader](../better/reader.md). Run `immich-memories models fetch` to install the pinned WordNet dictionary.
 
 A text reader by itself on the Basic tier is enough for titles, but not for this feature.
 
-## Preview first
+## It prepares the period it asks about
 
-In the web UI, use **Describe the film you want** on **Memory** and inspect the preview. On the CLI:
+A caption-only subject ("our cat", "my knitting") reads captions, and a library nobody has run
+`prepare` on has none yet. Rather than answer "not possible" on pictures nobody has looked at, a
+request checks its own period first: the dates it parsed, or the whole library for "along the
+years". A person film or a computed selection (a trip, someone's first or last picture) reads
+faces and GPS, never a caption, so it is never affected by this.
+
+Preview first, on the CLI or in the web UI: a preview only ever checks and warns, it never
+prepares anything. The preview keeps **Make the film** on, even when the window needs
+preparing first; that button is the one thing that pays the cost.
 
 ```bash
-immich-memories generate --ask "at the park with kids" --dry-run
+immich-memories generate --ask "our cat along the years" --dry-run
 ```
 
-Read the translated people, dates, places and subject. Check the pool: a plausible sentence does not guarantee the right pictures. When it looks right:
+```
+1,234 pictures in this period aren't prepared yet; preparing them first takes about 8 min
+```
+
+Making the film is the only thing that pays that cost, and it tells you before it does:
 
 ```bash
-immich-memories generate --ask "at the park with kids" --no-render
+immich-memories generate --ask "our cat along the years" --no-render
+```
+
+```
+1,234 pictures in this period aren't prepared yet; preparing them first takes about 8 min
+Preparing 1,234 pictures over 1 window
+...
+```
+
+A second request over the same period prepares nothing new: the captions are already banked,
+the same way `immich-memories prepare` banks them. It still checks the window first, though,
+which on a large library can itself take a couple of minutes (Immich's own search, not a
+model). Measured on an M5 Max: preparing 1,234 pictures took 500 s (about 8 min) and turned
+"our cats over the years" into a 74-shot film, nine years in order, where the library's
+regular path had kept 3 of the same 14 clear cat pictures. The web client shows the same
+warning in its preview, before it starts.
+
+## Preview, then make the film
+
+In the web UI, use **Describe the film you want** on **Memory** and inspect the preview. Read
+the translated people, dates, places and subject. Check the pool: a plausible sentence does not
+guarantee the right pictures. When it looks right:
+
+```bash
+immich-memories generate --ask "our cat along the years" --no-render
 ```
 
 This saves an actual cut for review. Render it from **Runs**, or use [`runs render`](./cli/runs.md#runs-render).
@@ -36,6 +72,12 @@ This saves an actual cut for review. Render it from **Runs**, or use [`runs rend
 ## How it works
 
 The sentence becomes filters over facts and captions already prepared from your library. Those filters build a pool; the normal editor chooses shots from it. An empty pool makes no film.
+
+## Leaving things out
+
+"No", "without" and their equivalent in your language exclude rather than require: "landscapes, no humans" drops any picture with a face or a person in its caption, "sans les enfants" drops children without requiring them. A named person works the same way: "without Cy" drops Cy's own pictures. Mix a request freely: "with the kids, no rain" keeps the kids filter and drops nothing about rain, since each clause of your sentence is read on its own.
+
+"Only" narrows a company word to the kind you named: "only the performers" keeps musicians, singers, dancers and the rest of that cast, and drops the audience. The exclusion travels with the film all the way to the final cut, so a picture that slipped past the pool filter still gets caught and reported.
 
 The sentence supplies the scope, so do not combine `--ask` with `--year`, `--person` or an album scope. For a predictable date or person film, use [the normal film chooser](./memory-types.mdx).
 

@@ -138,6 +138,8 @@ def _story_part(entry: StoryEntry) -> StoryPart:
         purpose=entry.purpose,
         granted=entry.granted,
         day=entry.day,
+        funded_by=entry.funded_by,
+        sparse_quality_reason=entry.sparse_quality_reason,
         carriers=[
             StoryCarrier(
                 asset_id=carrier.asset_id,

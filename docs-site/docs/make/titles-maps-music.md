@@ -135,6 +135,8 @@ immich-memories generate --year 2025 --music ~/Music/track.mp3 --music-volume 0.
 
 A text reader can write titles and choose the music mood on the Basic tier too. Those calls use text, not pictures. Your typed title wins; template titles remain the fallback. [Title provenance](../reference/output-rendering.md#where-the-title-came-from) explains the source shown on a run.
 
+A model title can use a first name, a place, an occasion name or a relationship word your family record actually states between the people it names, such as "her grandmother". It never calls someone family, or states a relationship, that your record doesn't back, and it never names a year that isn't true for the span. It also never narrates a parent or grandparent from a child's point of view ("maman", "papy", "mum", "oma") even when your record backs the relation; standard words such as "abuela" or "mormor", which have no separate child's-eye form in their own language, are unaffected. A title that breaks a rule falls back to the plain template instead.
+
 ## Generated music
 
 [Set up generated music](../better/music.md) when you want it. The [output reference](../reference/output-rendering.md) has language catalogues, typography, map timing and audio mixing details.

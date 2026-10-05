@@ -10,17 +10,19 @@ import hashlib
 import json
 import re
 from copy import deepcopy
-from dataclasses import dataclass, replace
+from dataclasses import replace
 from datetime import datetime
 from functools import partial
 from operator import itemgetter
-from typing import Any
 
 from immich_memories.analysis import llm_metrics
 from immich_memories.analysis.editorial_cut_invariants import check_finished_cut
-from immich_memories.analysis.editorial_episode_documents import factual_moment_rows
 from immich_memories.analysis.editorial_exposure_chains import chain_holds_for
 from immich_memories.analysis.editorial_family_seat import FilmSeatSource, seat_in_film
+from immich_memories.analysis.editorial_final_hash_review import (
+    hash_repeat_relation,
+    scene_pair_relation,
+)
 from immich_memories.analysis.editorial_owner_required import admit_owner_required
 from immich_memories.analysis.editorial_people_condition_pool import (
     exclude_people_condition_violators,
@@ -40,17 +42,15 @@ from immich_memories.analysis.editorial_shareability import SHAREABLE
 from immich_memories.analysis.editorial_shareability_tiers import audience_check_for
 from immich_memories.analysis.editorial_story_candidates import story_candidates
 from immich_memories.analysis.editorial_story_lookalike import hash_pair_relation
-from immich_memories.analysis.editorial_story_planner import alternatives_pool, select_story_first
+from immich_memories.analysis.editorial_story_planner import select_story_first
+from immich_memories.analysis.editorial_story_replacement_pool import alternatives_pool
 from immich_memories.analysis.editorial_story_replies import film_close_family
 from immich_memories.analysis.editorial_story_trips import detect_film_trips
 from immich_memories.analysis.editorial_structure_audience import (
     AudienceBank,
     AudienceGate,
 )
-from immich_memories.analysis.editorial_structure_budget import (
-    CONTENT_RESERVE_SECONDS,
-    NOMINAL_STILL_SECONDS,
-)
+from immich_memories.analysis.editorial_structure_budget import CONTENT_RESERVE_SECONDS
 from immich_memories.analysis.editorial_structure_contract import (
     RulesDraft,
     StructurePlannerPorts,
@@ -69,6 +69,19 @@ from immich_memories.analysis.editorial_structure_finishing import (
     resolve_motion_and_timing,
     seat_again_after_review,
     trim_to_timing,
+)
+from immich_memories.analysis.editorial_structure_framing import (
+    SECONDS_PER_SLOT,
+    SubjectPool,
+    chapters_of,
+    near_home_test,
+    partition_cap,
+    story_worthiness,
+    subject_pool,
+    worthiness_gate,
+)
+from immich_memories.analysis.editorial_structure_framing import (
+    evidence_partitions as evidence_partitions_of,
 )
 from immich_memories.analysis.editorial_structure_lines import strangers_only
 from immich_memories.analysis.editorial_structure_material import (
@@ -93,87 +106,13 @@ from immich_memories.analysis.editorial_unvouched_filler import (
     filler_evidence,
     owner_vouches_for,
 )
-from immich_memories.analysis.editorial_worthiness_gate import (
-    evidence_partitions as evidence_partitions_of,
-)
-from immich_memories.analysis.editorial_worthiness_gate import (
-    near_home_test,
-    partition_cap,
-    story_worthiness,
-    worthiness_gate,
-)
 from immich_memories.analysis.subject_framing import framing_visibility
 from immich_memories.config_tiers import nas_draft_config
 from immich_memories.processing.editorial_timing import bind_editorial_timeline
 from immich_memories.security import write_secret_file
 from immich_memories.tracking.timed import timed
 
-SECONDS_PER_SLOT = NOMINAL_STILL_SECONDS
 FLAGGED_LINE = re.compile(r"nsfw=yes|exposure=(partial|nude)")
-
-
-@dataclass
-class _SubjectPool:
-    """A subject memory reads only the happenings the gate read as concerning the subject."""
-
-    units: dict[str, list[dict]]
-    moment_assets: dict[str, list[str]]
-    rows_fn: Any
-    record: dict | None = None
-
-
-def _subject_pool(marker, gate_tier, wall, material) -> _SubjectPool:
-    """The candidate pool comes first; the story is built on it alone. Every other product
-    reads the whole period."""
-    if not marker:
-        return _SubjectPool(material.units, material.moment_assets, factual_moment_rows)
-    pool = {f for f, t in gate_tier.items() if t <= 1}
-    pool_moments = {m for m, f in wall.family_of_moment.items() if f in pool}
-
-    def pool_rows(tables_, aliases_):
-        return [
-            row
-            for row in factual_moment_rows(tables_, aliases_)
-            if row.get("moment_id") in pool_moments
-        ]
-
-    return _SubjectPool(
-        {f: units for f, units in material.units.items() if f in pool},
-        {m: ids for m, ids in material.moment_assets.items() if m in pool_moments},
-        pool_rows,
-        {
-            "criterion_marker": marker,
-            "families_in_pool": len(pool),
-            "families_total": len(gate_tier),
-            "moments_in_pool": len(pool_moments),
-        },
-    )
-
-
-def _chapters_of(selection, carriers, anchor_label) -> list[dict]:
-    """Chapters are the chosen episodes in the module's own order, so a carrier's
-    1-based `chapter` indexes this list exactly as the default path's beats do."""
-    episode_of = {e.key: e for e in selection.story.episodes}
-    chapter_families: dict[str, list[str]] = {}
-    for carrier in carriers:
-        known = chapter_families.setdefault(carrier["story_episode"], [])
-        if carrier["event"] not in known:
-            known.append(carrier["event"])
-    return [
-        {
-            "chapter": f"S{number:02d}",
-            "beat": row["title"],
-            "anchors": [anchor_label[f] for f in chapter_families.get(row["episode"], [])],
-            "share": 0.0,
-            "show": (episode_of[row["episode"]].significance or row["title"])
-            if row["episode"] in episode_of
-            else row["title"],
-            "budget": row["granted"],
-            "capacity": row["depicted_moments"],
-            "families": list(chapter_families.get(row["episode"], [])),
-        }
-        for number, row in enumerate(selection.episodes, 1)
-    ]
 
 
 @timed("selection.structure")
@@ -390,7 +329,7 @@ def _select(
         admission_key=admission_key,
         record=record_story,
     )
-    pool = _subject_pool(marker, tier, wall, material)
+    pool = subject_pool(marker, tier, wall, material)
     if pool.record is not None:
         record_story("subject-pool", pool.record)
     # A no-model draft asks nothing, so it reads the model's answers through `banked` alone.
@@ -411,6 +350,8 @@ def _select(
         partition_limit=partition_limit,
         banked=banked,
         looks_alike=hash_pair_relation(ports.thumbnail_hash),
+        scene_alike=scene_pair_relation(ports.scene_print) if ports.scene_print else None,
+        capacity_hash_alike=hash_repeat_relation(ports.thumbnail_hash),
     )
     run.carriers = list(selection.carriers)
     gates = picture_admission(source, ports, material, selection, gate)
@@ -459,7 +400,7 @@ def _select(
     # read rather than glanced at whoever cut them, so this is not the no-model reader's.
     if ports.draft is None:
         hold_the_ends(run.carriers)
-    chapters = _chapters_of(selection, run.carriers, wall.anchor_label)
+    chapters = chapters_of(selection, run.carriers, wall.anchor_label)
     beats = [row["beat"] for row in chapters]
     story_worthiness(selection, wall, tier, worth_reason)
     evidence_partitions = evidence_partitions_of(source.intent, wall, tier)
@@ -488,11 +429,32 @@ def _select(
     resolve_motion_and_timing(run, source, ports)
     # The review protects the same people the seat counts: in a person film, the subject's own.
     close_of = film_close_family(source)
+    # Only the final duplicate review reaches past a carrier's own moment and story: the
+    # audience gate's own replacement (`apply_audience_gate`, above) drops rather than widen
+    # its search, per `editorial_shareability.apply_gate`'s own contract.
+    partition_of_taken = (
+        (
+            lambda taken: (
+                part.key
+                if (part := source.intent.partition_for(datetime.fromisoformat(taken).date()))
+                else None
+            )
+        )
+        if partition_limit is not None
+        else None
+    )
     final_duplicate_review(
         run,
         ports,
         replacements_for=replacement_offers(
-            alternatives_pool(selection, material.units, wall.anchor_label)
+            alternatives_pool(
+                selection,
+                material.units,
+                wall.anchor_label,
+                include_elsewhere=True,
+                partition_of=partition_of_taken,
+                cut_carriers=run.carriers,
+            )
         ),
         prior=source.prior_plan,
         prior_assets=prior_assets,
@@ -548,7 +510,7 @@ def _story_selection(
     ports,
     wall: Wall,
     material: Material,
-    pool: _SubjectPool,
+    pool: SubjectPool,
     gate: AudienceGate,
     *,
     contract: str,
@@ -558,6 +520,8 @@ def _story_selection(
     partition_limit: int | None,
     banked: BankedAnswers,
     looks_alike=None,
+    scene_alike=None,
+    capacity_hash_alike=None,
 ):
     if ports.draft is not None:
         carriers = deepcopy(ports.draft.carriers)
@@ -635,6 +599,8 @@ def _story_selection(
         ),
         trips=trips,
         looks_alike=looks_alike,
+        scene_alike=scene_alike,
+        capacity_hash_alike=capacity_hash_alike,
         strangers_only=strangers_only(source.assets, source.audience_annotations),
         vouched=partial(owner_vouches_for, evidence=filler_evidence(source)),
         film_span=(source.case.ranges[0].start.date(), source.case.ranges[-1].end.date()),

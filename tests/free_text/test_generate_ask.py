@@ -5,6 +5,7 @@ Every picture, caption and word here is invented; the model's answers come from 
 
 from __future__ import annotations
 
+import json
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -12,16 +13,21 @@ from typing import Any
 import pytest
 from click.testing import CliRunner, Result
 
+from immich_memories.analysis.editorial_preparation import PreparationResult
 from immich_memories.api.models import Asset, MetadataSearchResult
 from immich_memories.api.permissions import READ_PERMISSIONS, ApiKeyCapabilities
 from immich_memories.config_models_editorial import EditorialConfig
 from immich_memories.db import open_store
 from immich_memories.free_text.lexicon import WordNetLexicon
+from immich_memories.preflight import CheckResult, CheckStatus
 from immich_memories.store.editorial_preparation import remember_assets
 from tests.annotation_rows import add_rows
 from tests.free_text.banked import QuestionAsker
 
 EDITORIAL = EditorialConfig()
+# A healthy preflight read for the caption service: every `ask` fixture test stubs the
+# real HTTP reachability check with this, so none of them depend on a server being up.
+_OK_CAPTIONS = CheckResult("Captions", CheckStatus.OK, "ok")
 IMMICH = "immich:\n  url: http://immich.invalid\n  api_key: not-a-real-key\n"
 MODEL_TIER = "tier: full\nadvanced:\n  llm:\n    enabled: true\n    base_url: http://reader.invalid/v1\n    model: small-reader\n"
 ANSWERS: dict[str, Any] = {
@@ -84,11 +90,23 @@ class _ReadableKey:
         self.get_key_capabilities().require_read()
 
 
+def _camera_asset(asset_id: str, at: datetime) -> Asset:
+    """A picture Immich would admit into preparation: EXIF names a camera."""
+    from immich_memories.api.models import ExifInfo
+
+    return _asset(asset_id, at).model_copy(
+        update={"exif_info": ExifInfo(make="Apple", model="iPhone 15 Pro")}
+    )
+
+
 class _InventedImmich(_ReadableKey):
     """WHY: replaces the Immich HTTP API; it answers for the invented library and counts calls."""
 
     def __init__(self) -> None:
         self.calls = 0
+        # Pictures Immich holds that the store has never synced: discovered only by
+        # the window-check's own fetch, never by a cheaper read of what is banked.
+        self.unsynced_camera_shots: list[tuple[str, datetime]] = []
 
     def search_metadata(self, *, page, size, taken_after, taken_before, **_filters):
         self.calls += 1
@@ -103,6 +121,39 @@ class _InventedImmich(_ReadableKey):
 
     def get_asset(self, asset_id: str) -> Asset:
         raise AssertionError(f"one read per picture ({asset_id}): read the pool in pages")
+
+    # `--ask` checks the request's window is prepared before it reads it (#2045). None of
+    # the invented library's own pictures carries camera EXIF, so the admission pass drops
+    # every one of them and preparation never has anything to warn about or to prepare.
+    def get_available_years(self, person_id: str | None = None) -> list[int]:
+        years = {taken.year for _, taken, _ in SHOTS} | {
+            at.year for _, at in self.unsynced_camera_shots
+        }
+        return sorted(years)
+
+    def get_videos_for_date_range(self, date_range) -> list:
+        return []
+
+    def get_photos_for_date_range(self, date_range) -> list:
+        start, end = date_range.start.replace(tzinfo=UTC), date_range.end.replace(tzinfo=UTC)
+        return [_asset(shot, taken) for shot, taken, _ in SHOTS if start <= taken <= end] + [
+            _camera_asset(shot, taken)
+            for shot, taken in self.unsynced_camera_shots
+            if start <= taken <= end
+        ]
+
+    def get_live_photos_for_date_range(self, date_range) -> list:
+        return []
+
+    # Bound but never called: the caption producer itself is mocked out in these tests.
+    def get_asset_thumbnail(self, asset_id: str, size: str = "preview") -> bytes:
+        raise AssertionError("the caption producer is mocked; it should never read a thumbnail")
+
+    def get_asset_faces(self, asset_id: str) -> list:
+        raise AssertionError("the caption producer is mocked; it should never read a face")
+
+    def get_video_playback_range(self, asset_id: str, start: int, length: int):
+        raise AssertionError("the caption producer is mocked; it should never read playback")
 
     def __enter__(self) -> _InventedImmich:
         return self
@@ -122,7 +173,13 @@ def ask(tmp_path: Path, lexicon: WordNetLexicon, monkeypatch: pytest.MonkeyPatch
     # WHY: the pinned WordNet corpus is a model download; this one holds the test's words.
     monkeypatch.setattr("immich_memories.cli._ask_generation.load_wordnet", lambda _path: lexicon)
     immich = _InventedImmich()
+    # WHY: replaces the Immich HTTP API with the invented library above.
     monkeypatch.setattr("immich_memories.api.immich.SyncImmichClient", lambda **_k: immich)
+    # WHY: replaces reaching the real caption server over HTTP to check it is up.
+    monkeypatch.setattr(
+        "immich_memories.preflight.check_caption_endpoint",
+        lambda _config: _OK_CAPTIONS,
+    )
 
     def _invoke(
         *args: str, config: str = IMMICH + MODEL_TIER, answers: dict[str, Any] = ANSWERS
@@ -299,6 +356,17 @@ class _RecordingImmich(_ReadableKey):
         self.windows.append(date_range)
         return []
 
+    # `--ask` checks the request's window is prepared first (#2045); this invented library
+    # has no years and no photos of its own, so that check finds nothing missing.
+    def get_available_years(self, person_id: str | None = None) -> list[int]:
+        return []
+
+    def get_photos_for_date_range(self, date_range) -> list:
+        return []
+
+    def get_live_photos_for_date_range(self, date_range) -> list:
+        return []
+
     def __enter__(self) -> _RecordingImmich:
         return self
 
@@ -347,7 +415,9 @@ def test_ask_never_counts_or_traces_another_accounts_pictures(
         }
     ).install(monkeypatch)
     monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    # WHY: the pinned WordNet corpus is a model download; this one holds the test's words.
     monkeypatch.setattr("immich_memories.cli._ask_generation.load_wordnet", lambda _path: lexicon)
+    # WHY: the model server; its answers come from the one bank of model answers.
     monkeypatch.setattr(
         "immich_memories.cli._ask_generation.WireAsker", lambda *_a, **_k: QuestionAsker(ANSWERS)
     )
@@ -435,7 +505,9 @@ def test_a_plain_ask_defaults_to_the_primary_when_the_config_has_a_household(
         }
     ).install(monkeypatch)
     monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    # WHY: the pinned WordNet corpus is a model download; this one holds the test's words.
     monkeypatch.setattr("immich_memories.cli._ask_generation.load_wordnet", lambda _path: lexicon)
+    # WHY: the model server; its answers come from the one bank of model answers.
     monkeypatch.setattr(
         "immich_memories.cli._ask_generation.WireAsker", lambda *_a, **_k: QuestionAsker(ANSWERS)
     )
@@ -531,7 +603,9 @@ def test_a_plain_ask_still_scopes_to_the_primary_after_the_household_leaves_conf
         }
     ).install(monkeypatch)
     monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    # WHY: the pinned WordNet corpus is a model download; this one holds the test's words.
     monkeypatch.setattr("immich_memories.cli._ask_generation.load_wordnet", lambda _path: lexicon)
+    # WHY: the model server; its answers come from the one bank of model answers.
     monkeypatch.setattr(
         "immich_memories.cli._ask_generation.WireAsker", lambda *_a, **_k: QuestionAsker(ANSWERS)
     )
@@ -625,7 +699,9 @@ def test_a_single_account_install_keeps_its_whole_pool_under_the_safe_default(
         }
     ).install(monkeypatch)
     monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    # WHY: the pinned WordNet corpus is a model download; this one holds the test's words.
     monkeypatch.setattr("immich_memories.cli._ask_generation.load_wordnet", lambda _path: lexicon)
+    # WHY: the model server; its answers come from the one bank of model answers.
     monkeypatch.setattr(
         "immich_memories.cli._ask_generation.WireAsker", lambda *_a, **_k: QuestionAsker(ANSWERS)
     )
@@ -710,7 +786,9 @@ def test_ask_counts_every_named_accounts_pictures(
         }
     ).install(monkeypatch)
     monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    # WHY: the pinned WordNet corpus is a model download; this one holds the test's words.
     monkeypatch.setattr("immich_memories.cli._ask_generation.load_wordnet", lambda _path: lexicon)
+    # WHY: the model server; its answers come from the one bank of model answers.
     monkeypatch.setattr(
         "immich_memories.cli._ask_generation.WireAsker", lambda *_a, **_k: QuestionAsker(ANSWERS)
     )
@@ -797,4 +875,270 @@ def test_one_undated_occasion_is_filmed_as_its_special_day(
 
     ask("--ask", "our wedding", "--no-photos", "--no-live-photos", answers=wedding)
 
-    assert [window.start.date() for window in immich.windows] == [date(2017, 5, 20)]
+    # The window-check that runs first (#2045) also asks for videos, over the whole
+    # library; the occasion's own, narrower window is what the film is actually cut from.
+    assert date(2017, 5, 20) in [window.start.date() for window in immich.windows]
+
+
+def _captioning(store, text: str):
+    """WHY: replaces the configured caption model; writes exactly what it was asked for."""
+
+    def _prepare(**kwargs) -> PreparationResult:
+        from immich_memories.tracking.timing import span
+
+        assets = kwargs["assets"]
+        total = len(assets)
+        with span("preparation.captions", items=total):
+            add_rows(
+                store,
+                "annotation_assets",
+                *(
+                    {
+                        "asset_id": asset.id,
+                        "taken_at": asset.file_created_at.isoformat(),
+                        "media_kind": "photo",
+                    }
+                    for asset in assets
+                ),
+            )
+            add_rows(
+                store,
+                "descriptions",
+                *(
+                    {"asset_id": asset.id, "model": EDITORIAL.description_model, "text": text}
+                    for asset in assets
+                ),
+            )
+            kwargs["progress"]("captions", total, total)
+        return PreparationResult(requested=total, missing_by_producer={}, failures={})
+
+    return _prepare
+
+
+def test_an_unprepared_window_is_warned_about_prepared_and_then_answered(
+    ask, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """#2045: the owner's ruling -- warn with the count and an estimate, prepare, then answer."""
+    from immich_memories.cli import main
+
+    store = open_store()
+    # Three cat pictures Immich holds that the store has never synced, let alone captioned.
+    ask.immich.unsynced_camera_shots = [
+        (f"new-cat-{n}", FIRST + timedelta(days=1000 + n)) for n in range(3)
+    ]
+    monkeypatch.setattr(
+        "immich_memories.analysis.editorial_preparation.prepare_editorial_annotations",
+        _captioning(store, "A black cat is sleeping"),
+    )
+    monkeypatch.setattr(
+        "immich_memories.cli._album_generation.handle_album_generation", lambda **_k: None
+    )
+
+    result = ask("--ask", "our cat along the years", "--no-render")
+
+    assert result.exit_code == 0, result.output
+    assert (
+        "3 pictures in this period aren't prepared yet; preparing them first takes about"
+        in result.output
+    )
+    assert "Preparing 3 pictures over 1 window" in result.output
+    reported = CliRunner().invoke(main, ["-c", str(tmp_path / "config.yaml"), "report", "--json"])
+    translation = json.loads(reported.stdout)["free_text"]["translation"]
+    # The newly captioned pictures read as the same subject, so the pool grew to hold them.
+    assert translation["pool"]["pictures"] == 17
+
+
+def test_a_fully_prepared_window_is_neither_warned_about_nor_prepared(ask) -> None:
+    """#2045: every picture already carries a caption, so the window needs nothing done."""
+    result = ask("--ask", "our cat along the years", "--dry-run")
+
+    assert result.exit_code == 0, result.output
+    assert "aren't prepared yet" not in result.output
+    assert "Preparing " not in result.output
+
+
+def test_preflight_runs_before_preparation_but_not_on_a_dry_run_or_a_prepared_window(
+    ask, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """#2045 (Opus review H): the model-install preflight `prepare` itself runs, before
+    any producer touches a picture -- never on a preview, never when nothing is missing."""
+    calls: list[str] = []
+    monkeypatch.setattr(
+        "immich_memories.cli._ask_generation.refuse_blocked_host",
+        lambda *_a, **_k: calls.append("preflight"),
+    )
+
+    ask("--ask", "our cat along the years", "--dry-run")
+    assert calls == []
+
+    ask.immich.unsynced_camera_shots = [("new-cat-0", FIRST + timedelta(days=1000))]
+    monkeypatch.setattr(
+        "immich_memories.analysis.editorial_preparation.prepare_editorial_annotations",
+        _captioning(open_store(), "A black cat is sleeping"),
+    )
+    monkeypatch.setattr(
+        "immich_memories.cli._album_generation.handle_album_generation", lambda **_k: None
+    )
+
+    ask("--ask", "our cat along the years", "--no-render")
+    assert calls == ["preflight"]
+
+
+def test_a_dry_run_on_an_unprepared_window_only_warns_and_prepares_nothing(
+    ask, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """#2045 owner ruling: a dry run previews the cost of preparing; it never pays it."""
+    ask.immich.unsynced_camera_shots = [("new-cat-0", FIRST + timedelta(days=1000))]
+
+    def _never(**_kwargs):
+        raise AssertionError("a dry run must never call the real preparation pipeline")
+
+    monkeypatch.setattr(
+        "immich_memories.analysis.editorial_preparation.prepare_editorial_annotations", _never
+    )
+
+    result = ask("--ask", "our cat along the years", "--dry-run")
+
+    assert result.exit_code == 0, result.output
+    assert "1 pictures in this period aren't prepared yet; preparing them first takes about" in (
+        result.output
+    )
+    assert "Preparing 1 pictures over 1 window" not in result.output
+    # #2045 Opus review: never "not possible" on a window that just hasn't been read yet.
+    assert "VERDICT  needs preparation:" in result.output
+    assert "not possible" not in result.output.lower()
+    assert "Pool: " not in result.output
+
+
+def test_the_preview_s_kept_translation_says_needs_preparation_not_not_possible(
+    ask, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """#2045 (Opus review, BLOCKER): the web preview (the CLI's own `--dry-run --ask-trace`)
+    must carry "needs preparation", not "not possible", so AskPanel can still offer to make
+    the film, which then prepares the window for real."""
+    ask.immich.unsynced_camera_shots = [("new-cat-0", FIRST + timedelta(days=1000))]
+
+    def _never(**_kwargs):
+        raise AssertionError("a dry run must never call the real preparation pipeline")
+
+    monkeypatch.setattr(
+        "immich_memories.analysis.editorial_preparation.prepare_editorial_annotations", _never
+    )
+    kept = tmp_path / "ask.json"
+
+    result = ask("--ask", "our cat along the years", "--dry-run", "--ask-trace", str(kept))
+
+    assert result.exit_code == 0, result.output
+    record = json.loads(kept.read_text())
+    assert record["verdict"] == "needs preparation"
+    assert record["preparation"] is not None and record["preparation"]["pictures"] == 1
+    # The route is "none" (no pool was read yet); the page keeps the button on the verdict.
+    assert record["film"]["route"] == "none"
+
+
+def test_a_preparation_failure_is_reported_and_never_reads_as_not_possible(
+    ask, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """#2045 (Opus review A): a producer failure is named, not swallowed into "not possible"."""
+    ask.immich.unsynced_camera_shots = [("new-cat-0", FIRST + timedelta(days=1000))]
+
+    def _broken(**kwargs):
+        from immich_memories.analysis.editorial_preparation import PreparationResult
+
+        total = len(kwargs["assets"])
+        kwargs["progress"]("captions", total, total)
+        return PreparationResult(
+            requested=total, missing_by_producer={}, failures={"cat-new-cat-0": "reader down"}
+        )
+
+    monkeypatch.setattr(
+        "immich_memories.analysis.editorial_preparation.prepare_editorial_annotations", _broken
+    )
+
+    result = ask("--ask", "our cat along the years", "--no-render")
+
+    assert result.exit_code == 1, result.output
+    assert "could not be prepared" in result.output
+    assert "reader down" in result.output
+    assert "not possible" not in result.output.lower()
+
+
+def test_an_impossible_request_on_a_prepared_library_still_says_not_possible(ask) -> None:
+    """#2045: "not possible" survives for a subject that is genuinely nowhere in the library."""
+    horse = {
+        **ANSWERS,
+        "Split the owner's request": {
+            **ANSWERS["Split the owner's request"],
+            "what": ["our horse"],
+        },
+    }
+
+    result = ask("--ask", "our horse along the years", answers=horse)
+
+    assert result.exit_code == 0, result.output
+    assert "aren't prepared yet" not in result.output
+    assert "VERDICT  not possible: nothing left after subject" in result.output
+
+
+def test_a_household_preview_counts_every_named_accounts_missing_pictures(
+    tmp_path: Path, lexicon: WordNetLexicon, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """#2044 + #2045: the window check reads every chosen account's own library, not just
+    the primary's -- `AccessBoundClient`'s plain search stays on the primary alone, so
+    discovery has to go through each account by name (`HouseholdWindows`)."""
+    import yaml
+
+    from immich_memories.cli import main
+    from tests.household_fake import PARTNER_KEY, PRIMARY_KEY, FakeHousehold, immich_config, picture
+
+    FakeHousehold(
+        library={
+            PRIMARY_KEY: [picture("p-cat", "primary", 1, ())],
+            PARTNER_KEY: [picture("q-cat", "partner", 2, ())],
+        }
+    ).install(monkeypatch)
+    monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    # WHY: the pinned WordNet corpus is a model download; this one holds the test's words.
+    monkeypatch.setattr("immich_memories.cli._ask_generation.load_wordnet", lambda _path: lexicon)
+    # `window_of` would otherwise ask for the whole library's years, which this fake
+    # server does not answer; the fixture's own pictures sit in June 2025.
+    dated = {
+        **ANSWERS,
+        "Give the date range": {"date_from": "2025-06-01", "date_to": "2025-06-30"},
+    }
+    monkeypatch.setattr(
+        "immich_memories.cli._ask_generation.WireAsker", lambda *_a, **_k: QuestionAsker(dated)
+    )
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text(
+        yaml.safe_dump(
+            {
+                "immich": immich_config(),
+                "tier": "full",
+                "advanced": {
+                    "llm": {
+                        "enabled": True,
+                        "base_url": "http://reader.invalid/v1",
+                        "model": "small-reader",
+                    }
+                },
+            }
+        )
+    )
+
+    result = CliRunner().invoke(
+        main,
+        [
+            "-c",
+            str(config_path),
+            "generate",
+            "--ask",
+            "our cat along the years",
+            "--accounts",
+            "primary,partner",
+            "--dry-run",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert "2 pictures in this period aren't prepared yet" in result.output

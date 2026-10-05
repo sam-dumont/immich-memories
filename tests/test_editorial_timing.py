@@ -1,5 +1,6 @@
 """A production title reserve must be fixed before Live intervals are inspected."""
 
+import json
 from dataclasses import replace
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -61,6 +62,57 @@ def test_real_default_title_budget_credits_configured_overlap(transition, overla
     assert plan.title_budget == 10.5
     assert plan.transition_budget == pytest.approx(overlap)
     assert read_editorial_timeline(bind_editorial_timeline(policy, plan, list(assets))) == plan
+
+
+def test_a_binding_with_month_dividers_round_trips_through_json():
+    """#2075: divider_month_keys is a tuple in memory but JSON has no tuples.
+
+    A binding built fresh must equal one that went to disk and back (the owner-edit
+    "nothing changed" path returns the on-disk dict as-is), or every unchanged render
+    of a year film would wrongly look like a changed one.
+    """
+    policy = build_editorial_timing_policy(
+        config=Config(), target_seconds=60, memory_type="year_in_review"
+    )
+    carriers, assets = rows(4)
+    for index, asset in enumerate(assets.values()):
+        asset.file_created_at = datetime(2010, index + 1, 1)
+    plan = policy.resolve(carriers, assets)
+    assert plan.divider_month_keys  # months differ: the field is actually populated
+
+    in_memory_binding = bind_editorial_timeline(policy, plan, list(assets))
+    on_disk_binding = json.loads(json.dumps(in_memory_binding))
+
+    assert in_memory_binding == on_disk_binding
+    assert read_editorial_timeline(on_disk_binding) == plan
+
+
+def test_a_binding_saved_before_month_dividers_existed_still_loads():
+    """#2075: a cut saved before divider_month_keys shipped has no such key at all.
+
+    read_editorial_timeline must not KeyError on it — the field defaults to None,
+    same as it would have read before this field existed.
+    """
+    from immich_memories.processing.editorial_timing import _digest
+
+    policy = build_editorial_timing_policy(
+        config=Config(), target_seconds=60, memory_type="special_day"
+    )
+    carriers, assets = rows()
+    for asset in assets.values():
+        asset.file_created_at = datetime(2010, 1, 1)
+    plan = policy.resolve(carriers, assets)
+    assert plan.divider_month_keys == ()  # nothing eligible: this plan has no dividers to drop
+
+    old_binding = bind_editorial_timeline(policy, plan, list(assets))
+    del old_binding["timeline"]["divider_month_keys"]
+    old_binding["sha256"] = _digest(
+        {key: value for key, value in old_binding.items() if key != "sha256"}
+    )
+
+    loaded = read_editorial_timeline(old_binding)
+    assert loaded.divider_month_keys is None
+    assert loaded == replace(plan, divider_month_keys=None)
 
 
 def test_no_titles_and_output_path_do_not_invalidate_timing():

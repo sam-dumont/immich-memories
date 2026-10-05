@@ -290,7 +290,9 @@ def test_pending_month_dividers_refit_after_final_still_admission(tmp_path):
     carriers = [unit for units in material.units.values() for unit in units]
     run = PlanRun(carriers=carriers, bind_stitch=material.builder.measured_stitch)
     resolve_motion_and_timing(run, source, ports)
-    assert run.render_timeline.divider_policy == "none"
+    # #2065: the tight cut still keeps the one month divider that fits rather than dropping to none.
+    assert run.render_timeline.divider_policy == "capped"
+    assert run.render_timeline.max_dividers == 1
     old_cap = run.final_content_cap
     identities = [(c["asset_id"], c["members"]) for c in run.carriers]
     admit_retained_originals(run, source, material.builder)

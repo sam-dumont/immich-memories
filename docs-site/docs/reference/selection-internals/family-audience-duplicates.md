@@ -105,9 +105,10 @@ The attempt's `request` records the level, `runs show` and `runs story` print it
 and `runs why` reads the gate's verdicts against it.
 
 A shot that leaves is replaced from its own moment first, then from a moment of the same story the
-film doesn't show yet, never within five minutes of a shot of the same moment, and each replacement
-is judged by the same gate before it takes the slot. When every offer is refused, the slot stays
-empty.
+film doesn't show yet, then, once its own story has nothing left, from another story's moment that
+never took a slot (in the planner's own funding order), never within five minutes of a shot of
+the same moment, and each replacement is judged by the same gate before it takes the slot. When
+every offer is refused, the slot stays empty.
 
 A moment you starred something in is only ever shown by a favourite. If the gate holds that
 favourite (or every favourite of it, when you starred two), no plain frame of the same moment
@@ -234,7 +235,10 @@ No tier asks a model to compare two pictures.
    **and** within `photos.burst_hash_threshold` (8) bits on a preview hash are one burst; the
    favourite survives it, else the best frame. A photo with no hash is kept.
 3. **Inside a story, while the cut is built.** A 10-bit hash check against the shots around it (see
-   [Picking each shot](./picking-shots.md#what-a-frame-must-pass)).
+   [Picking each shot](./picking-shots.md#what-a-frame-must-pass)). A further frame of a moment the
+   story already shows (depth, spent only when the film is still short) also has to clear the
+   finished-cut's own scene print check below: a frame that would only be removed there is never
+   added here either.
 4. **Over the finished cut** (`review_cut_by_cached_hashes`):
    - a preview hash within 6 bits, inside the same story or the same day;
    - a scene print (the pooled DINOv2 vector of the preview, banked in `scene-prints.sqlite`) at a

@@ -1,17 +1,19 @@
-"""Which happenings are memory-worthy enough to carry the film, and how deep each may go.
+"""Decisions the structure planner makes about what the film is of, before and around selection.
 
-Split out of `editorial_structure_planner` (#2062): the near-home test, the story's own
-worthiness ranking, the partitions a tier's evidence touches, and the per-partition slot and
-depth caps belong together as one pass over the captured wall, separate from the structure
-planner's draft/story/finishing orchestration.
+Whether a happening sits near home, which families a written subject's pool is narrowed to, the
+memory-worthy tier a model or the rules reader gives each family (or a selected story's own
+hierarchy leaves it at), and the slot/depth budget a product's target seconds buys: all of it
+is read once from facts the planner already holds, never asked again mid-selection.
 """
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
 from immich_memories.analysis.editorial_block_votes import judge_worthiness, worth_criterion_v44
+from immich_memories.analysis.editorial_episode_documents import factual_moment_rows
 from immich_memories.analysis.editorial_home_radius import home_of, near_home_of
 from immich_memories.analysis.editorial_picture_ladders import depth_cap
 from immich_memories.analysis.editorial_structure_budget import (
@@ -40,6 +42,70 @@ def near_home_test(source: StructurePlanningInput, wall: Wall):
         return near_home_of(home, pts)
 
     return near_home
+
+
+@dataclass
+class SubjectPool:
+    """A subject memory reads only the happenings the gate read as concerning the subject."""
+
+    units: dict[str, list[dict]]
+    moment_assets: dict[str, list[str]]
+    rows_fn: Any
+    record: dict | None = None
+
+
+def subject_pool(marker, gate_tier, wall: Wall, material) -> SubjectPool:
+    """The candidate pool comes first; the story is built on it alone. Every other product
+    reads the whole period."""
+    if not marker:
+        return SubjectPool(material.units, material.moment_assets, factual_moment_rows)
+    pool = {f for f, t in gate_tier.items() if t <= 1}
+    pool_moments = {m for m, f in wall.family_of_moment.items() if f in pool}
+
+    def pool_rows(tables_, aliases_):
+        return [
+            row
+            for row in factual_moment_rows(tables_, aliases_)
+            if row.get("moment_id") in pool_moments
+        ]
+
+    return SubjectPool(
+        {f: units for f, units in material.units.items() if f in pool},
+        {m: ids for m, ids in material.moment_assets.items() if m in pool_moments},
+        pool_rows,
+        {
+            "criterion_marker": marker,
+            "families_in_pool": len(pool),
+            "families_total": len(gate_tier),
+            "moments_in_pool": len(pool_moments),
+        },
+    )
+
+
+def chapters_of(selection, carriers, anchor_label) -> list[dict]:
+    """Chapters are the chosen episodes in the module's own order, so a carrier's
+    1-based `chapter` indexes this list exactly as the default path's beats do."""
+    episode_of = {e.key: e for e in selection.story.episodes}
+    chapter_families: dict[str, list[str]] = {}
+    for carrier in carriers:
+        known = chapter_families.setdefault(carrier["story_episode"], [])
+        if carrier["event"] not in known:
+            known.append(carrier["event"])
+    return [
+        {
+            "chapter": f"S{number:02d}",
+            "beat": row["title"],
+            "anchors": [anchor_label[f] for f in chapter_families.get(row["episode"], [])],
+            "share": 0.0,
+            "show": (episode_of[row["episode"]].significance or row["title"])
+            if row["episode"] in episode_of
+            else row["title"],
+            "budget": row["granted"],
+            "capacity": row["depicted_moments"],
+            "families": list(chapter_families.get(row["episode"], [])),
+        }
+        for number, row in enumerate(selection.episodes, 1)
+    ]
 
 
 def story_worthiness(selection, wall: Wall, tier: dict, worth_reason: dict) -> None:

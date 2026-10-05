@@ -13,12 +13,13 @@ from __future__ import annotations
 
 import logging
 import re
-import unicodedata
+from collections.abc import Sequence
 from dataclasses import replace
 from datetime import date
 from difflib import SequenceMatcher
 from functools import lru_cache
 
+from immich_memories.titles.relationship_words import name_words
 from immich_memories.titles.title_routing import is_trip
 from immich_memories.titles.title_suggestion import TitleSuggestion
 
@@ -29,13 +30,7 @@ logger = logging.getLogger(__name__)
 # same name when they are this close, and different names below it.
 _SAME_NAME_RATIO = 0.6
 
-
-def _name_words(text: str) -> list[str]:
-    """Letter-only words, accents folded away so Genève matches Geneve."""
-    flattened = "".join(
-        c for c in unicodedata.normalize("NFKD", text) if not unicodedata.combining(c)
-    )
-    return re.findall(r"[^\W\d_]+", flattened)
+_name_words = name_words
 
 
 def _is_a_known_name(word: str, known: set[str]) -> bool:
@@ -199,9 +194,20 @@ def requiring_the_place(
     return None
 
 
-# Digits only, in any of the 14 film locales (ja/ko/zh carry a trailing script
-# character, e.g. "2026年", which this boundary ignores since it isn't a digit).
-_YEAR_DIGITS = re.compile(r"(?<!\d)\d{4}(?!\d)")
+# A plausible film year (1900-2100), in any of the 14 film locales (ja/ko/zh
+# carry a trailing script character, e.g. "2026年", which this boundary
+# ignores since it isn't a digit). Not followed by a unit: "1200 km" or
+# "2024 ans" is a distance or an age, never a year, however year-shaped the
+# digits are.
+_YEAR_DIGITS = re.compile(
+    r"(?<!\d)(?:19\d{2}|20\d{2}|2100)(?!\d)"
+    r"(?!\s*(?:km|kms|mi|mile|miles|m|cm|an|ans|yr|yrs|year|years)\b)"
+    # Currency symbols have no word boundary of their own, so they are
+    # excluded separately rather than folded into the `\b`-terminated
+    # alternation above (a trailing `\b` after "€" never matches at all).
+    r"(?!\s*[€$£])",
+    re.IGNORECASE,
+)
 
 # The separators a cross-year title can put between a full start year and the
 # end year's two-digit short form: a hyphen/en-dash/em-dash/slash/space in
@@ -299,3 +305,270 @@ def requiring_the_year(
         end_date,
     )
     return None
+
+
+def _title_states_a_single_year(title: str, required: frozenset[int]) -> bool:
+    """Whether `title` alone names exactly one of several required years.
+
+    A cross-year title is allowed to carry both years as a range ("2024-26")
+    within the title itself; naming only one of them, with the other left for
+    the subtitle, reads as a single-year headline on a multi-year span.
+    """
+    named = {int(y) for y in _YEAR_DIGITS.findall(title)}
+    if len(named) != 1 or not named < required:
+        return False
+    return not _years_named(title, required)
+
+
+def refusing_single_year_title(
+    suggestion: TitleSuggestion | None,
+    memory_type: str,
+    start_date: str,
+    end_date: str,
+    person_names: tuple[str, ...],
+    holiday: str | None,
+) -> TitleSuggestion | None:
+    """The suggestion, unless its TITLE states a single year on a multi-year span.
+
+    `requiring_the_year` already lets a cross-year span's years split across
+    title and subtitle; this catches the title claiming only one of them on
+    its own ("en 2024" opening a 2024-2026 film), which misreads the span even
+    when the subtitle completes it.
+    """
+    if suggestion is None:
+        return suggestion
+    start, end = date.fromisoformat(start_date), date.fromisoformat(end_date)
+    required = required_years(memory_type, start, end, person_names, holiday)
+    if len(required) < 2 or not _title_states_a_single_year(suggestion.title, required):
+        return suggestion
+    logger.warning(
+        "Title %r names only one of the required years %s for a span reaching several; "
+        "the template names this memory instead",
+        suggestion.title,
+        sorted(required),
+    )
+    return None
+
+
+def refusing_a_wrong_year(
+    suggestion: TitleSuggestion | None, start_date: str, end_date: str
+) -> TitleSuggestion | None:
+    """The suggestion, unless its TITLE names a year outside the memory's own span.
+
+    A person spotlight running 2024-2026 titled "Yuna, été 2021" names a year
+    the film never reaches; `requiring_the_year` only checks that the
+    required years are present, so a hallucinated extra year passes it. Only
+    the headline is checked: a subtitle sometimes carries a day's own date
+    (an album name, a special day) that is legitimately outside the span.
+    """
+    if suggestion is None:
+        return suggestion
+    start, end = date.fromisoformat(start_date), date.fromisoformat(end_date)
+    for year in (int(y) for y in _YEAR_DIGITS.findall(suggestion.title)):
+        if not (start.year <= year <= end.year):
+            logger.warning(
+                "Title %r (subtitle %r) names %d, outside the span %s to %s; "
+                "the template names this memory instead",
+                suggestion.title,
+                suggestion.subtitle,
+                year,
+                start_date,
+                end_date,
+            )
+            return None
+    return suggestion
+
+
+def _template_title_text(
+    memory_type: str,
+    start: date,
+    end: date,
+    person_names: Sequence[str],
+    locale: str,
+) -> str:
+    """The BASIC template's own main title for this memory, in `locale`.
+
+    The subtitle is left out: it is usually the subject's own name, which a
+    model title is free to repeat without that repeat counting as "no new
+    content" -- only the headline itself sets the bar a model title must clear.
+    """
+    from immich_memories.titles.text_builder import generate_title, infer_selection_type
+
+    selection_type = infer_selection_type(start_date=start, end_date=end, memory_type=memory_type)
+    person_name = person_names[0] if memory_type == "person_spotlight" and person_names else None
+    info = generate_title(
+        selection_type, start_date=start, end_date=end, person_name=person_name, locale=locale
+    )
+    return info.main_title
+
+
+# Words too small to carry a title's own content: articles, conjunctions,
+# possessives, and the handful of "year"/"memories"/"pictures" nouns that
+# let a bare year through as a non-answer ("L'année 2025", "Notre année
+# 2025", "Souvenirs de 2025", "2025 en images"). Not a stopword list for
+# prose -- only what a title's filler commonly is, across the film's
+# locales. No "l'année" entry: an apostrophe splits it into "l" and "année"
+# before this set is ever consulted, so the fragment list below covers it.
+# `_name_words` strips accents (NFKD) before this set is ever consulted, so
+# every entry here is written accent-stripped ("annee", not "année") -- an
+# accented entry would simply never match anything.
+_FILLER_WORDS = frozenset(
+    {
+        "annee", "notre", "nos", "mon", "ma", "le", "la", "les", "un", "une", "des", "de", "du",
+        "et", "en", "images", "image", "souvenir", "souvenirs", "voyage",
+        # Fragments an elided "l'/d'/qu'/..." splits off (apostrophe is not a word character).
+        "l", "d", "j", "qu", "n", "s", "c",
+        "the", "a", "an", "and", "of", "in", "our", "my", "year", "memories", "pictures",
+        "photos", "trip", "journey",
+        "el", "los", "las", "y", "mi", "mis", "ano", "nuestro", "nuestra", "recuerdos",
+        "imagenes", "fotos", "viaje",
+        "der", "die", "das", "und", "im", "mein", "meine", "jahr", "unser", "unsere",
+        "erinnerungen", "bilder", "reise",
+        "il", "lo", "gli", "e", "mio", "mia", "anno", "nostro", "nostra", "ricordi",
+        "immagini", "foto", "viaggio",
+        "het", "een", "mijn", "jaar", "onze", "herinneringen", "beelden", "reis",
+        "o", "os", "as", "meu", "minha", "nosso", "nossa", "lembrancas", "imagens", "viagem",
+        "rok", "roku", "i", "moj", "moja", "nasz", "nasza", "wspomnienia", "zdjecia", "podroz",
+        "ar", "och", "ett", "min", "mitt", "var", "vart", "minnen", "resa",
+        "год", "мой", "моя", "наш", "наша", "воспоминания", "фото",
+        "年", "思い出", "の",
+        "추억",
+        "回忆",
+    }
+)  # fmt: skip
+
+# Japanese, Korean and Chinese write these filler words with no space
+# around them ("2025年の思い出"), so a word-bag split never isolates them;
+# removing them as substrings first lets the rest tokenise normally.
+_CJK_FILLER_SUBSTRINGS = ("年", "思い出", "の", "추억", "回忆")
+
+
+def _content_words(text: str) -> set[str]:
+    """The words of `text` that are not filler: what the title actually says."""
+    stripped = text
+    for substring in _CJK_FILLER_SUBSTRINGS:
+        stripped = stripped.replace(substring, " ")
+    return {w.casefold() for w in _name_words(stripped) if w.casefold() not in _FILLER_WORDS}
+
+
+# The generic album-copy shape ("Mon voyage en images - Paris", "Our trip in
+# pictures", "Unsere Reise in Bildern"): a possessive, a word for "trip", and
+# a word for "in pictures", with or without a place tacked on after a dash.
+# This is filler as a whole PHRASE even with a place on it -- it is the
+# template a photo album already writes by default, not a title.
+_ALBUM_COPY_SHAPE = re.compile(
+    r"^(?:(?:notre|nos|mon|ma|our|my|unser|unsere|mein|meine|nuestro|nuestra|mi|mis|"
+    r"nostro|nostra|mio|mia|ons|onze|nosso|nossa|meu|minha)\s+)?"
+    r"(?:voyage|trip|reis|reise|viaje|viaggio|viagem|podróż|resa)\s+"
+    r"(?:en images|in pictures|in bildern|in beelden|em imagens|in immagini)"
+    r"(?:\s*[-–—:]\s*.+)?$",
+    re.IGNORECASE,
+)
+
+
+def _is_album_copy_shape(title: str) -> bool:
+    return bool(_ALBUM_COPY_SHAPE.match(title.strip()))
+
+
+def refusing_contentless_title(
+    suggestion: TitleSuggestion | None,
+    memory_type: str,
+    start_date: str,
+    end_date: str,
+    person_names: tuple[str, ...],
+    locale: str,
+) -> TitleSuggestion | None:
+    """The suggestion, unless it adds no content word over the template's own title.
+
+    "L'année 2025" over the template's "2025" differs only by filler; the
+    template names the same year more plainly, so it wins. The album-copy
+    shape ("Notre voyage en images - Paris") is refused even with a place
+    on it: it is a photo album's own default caption, not a crafted title.
+    """
+    if suggestion is None:
+        return suggestion
+    if _is_album_copy_shape(suggestion.title):
+        logger.info(
+            "Title %r is the album-copy shape, not a crafted title; "
+            "the template names this memory instead",
+            suggestion.title,
+        )
+        return None
+    start, end = date.fromisoformat(start_date), date.fromisoformat(end_date)
+    template = _template_title_text(memory_type, start, end, person_names, locale)
+    if _content_words(suggestion.title) - _content_words(template):
+        return suggestion
+    logger.info(
+        "Title %r adds no content word over the template %r; using the template instead",
+        suggestion.title,
+        template,
+    )
+    return None
+
+
+# No "y"/"Y": French treats an initial y as a consonant in most everyday
+# words and names ("le yaourt", "Yokohama", "Yuna"), so it never elides.
+_FRENCH_ELISION_VOWELS = frozenset("aàâeéèêëiîïoôuùûühAÀÂEÉÈÊËIÎÏOÔUÙÛÜH")
+
+# h aspiré: well-known place names and common nouns that keep their "h" as a
+# consonant ("le Havre", never "l'Havre"). Lexical, not a rule -- only the
+# exceptions a title is likely to actually name are listed. "Hérault" looks
+# the same shape but is h muet in common usage ("l'Hérault"), so it is kept
+# off this list rather than added to it.
+_FRENCH_ASPIRATED_H_PLACES = frozenset(
+    {
+        "havre", "haye", "havane", "hulpe", "hainaut", "hollande", "hongrie",
+        "huy", "hasselt", "hambourg", "honduras", "hanovre", "helsinki",
+        "hawaï", "hawai", "himalaya", "hongkong",
+    }
+)  # fmt: skip
+_FRENCH_ASPIRATED_H_COMMON_NOUNS = frozenset(
+    {"haricot", "haricots", "hibou", "hiboux", "héros", "hockey", "honte", "hutte"}
+)
+# A capitalised H name not on the aspiré list above is still not elided by
+# default: "when unsure, don't elide" a proper noun. Only a name confirmed
+# h muet in common usage (Hérault) is exempted from that caution.
+_FRENCH_ELIDABLE_H_NAMES = frozenset({"hérault", "hélène"})
+
+
+def _elided(word: str, next_word: str) -> str:
+    if not next_word or next_word[0] not in _FRENCH_ELISION_VOWELS:
+        return f"{word} {next_word}"
+    folded = next_word.casefold()
+    if folded in _FRENCH_ASPIRATED_H_PLACES or folded in _FRENCH_ASPIRATED_H_COMMON_NOUNS:
+        return f"{word} {next_word}"
+    if (
+        next_word[0].casefold() == "h"
+        and next_word[:1].isupper()
+        and folded not in _FRENCH_ELIDABLE_H_NAMES
+    ):
+        return f"{word} {next_word}"
+    prefix = "l" if word.casefold() in ("le", "la") else "d"
+    cased = prefix.upper() if word[:1].isupper() else prefix
+    return f"{cased}'{next_word}"
+
+
+def _elide_french_text(text: str) -> str:
+    return re.sub(
+        r"\b(de|le|la)\s+([^\W\d_]+)",
+        lambda m: _elided(m.group(1), m.group(2)),
+        text,
+        flags=re.IGNORECASE,
+    )
+
+
+def eliding_french(suggestion: TitleSuggestion | None, locale: str) -> TitleSuggestion | None:
+    """A model title's "de/le/la + vowel" elided to "d'/l'", in French films only.
+
+    A small model reliably gets the fact right ("de Anne") but not the
+    grammar ("de Anne" should read "d'Anne"); this fixes the one thing the
+    guard can get right deterministically rather than refusing good facts
+    over a spelling rule.
+    """
+    if suggestion is None or locale != "fr":
+        return suggestion
+    return replace(
+        suggestion,
+        title=_elide_french_text(suggestion.title),
+        subtitle=_elide_french_text(suggestion.subtitle) if suggestion.subtitle else None,
+    )

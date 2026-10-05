@@ -15,7 +15,11 @@ from immich_memories.config import get_config
 from immich_memories.config_loader import Config
 from immich_memories.web.answer_cache import AnswerCache, answer_cache
 
-PreviewFetcher = Callable[[str], bytes | None]
+# (asset_id or person_id, owning account) -> bytes; the account comes from an `AssetScope`
+# or `PersonScope` check, never guessed, so a fetch never reaches past its account's key.
+PreviewFetcher = Callable[[str, str], bytes | None]
+AssetScope = Callable[[str], str | None]
+PersonScope = Callable[[str], str | None]
 
 
 @dataclass(frozen=True)
@@ -27,7 +31,7 @@ class Playback:
     chunks: Iterator[bytes]
 
 
-PlaybackOpener = Callable[[str, str | None], Playback | None]
+PlaybackOpener = Callable[[str, str, str | None], Playback | None]
 
 # What a <video> element needs to seek and size the stream; nothing else of Immich's leaks out.
 _PASSED_HEADERS = ("content-type", "content-length", "content-range", "last-modified", "etag")
@@ -50,17 +54,17 @@ def thumbnail_cache(config: Annotated[Config, Depends(current_config)]) -> Thumb
 
 
 def immich_preview(config: Annotated[Config, Depends(current_config)]) -> PreviewFetcher:
-    """Fetch an asset's preview from Immich server-side, so the API key never reaches a browser."""
+    """Fetch an asset's preview from its owning account, so the API key never reaches a browser."""
 
-    def fetch(asset_id: str) -> bytes | None:
+    def fetch(asset_id: str, account: str) -> bytes | None:
         from immich_memories.api.sync_client import SyncImmichClient
+        from immich_memories.web.media_scope import connection_for
 
-        if not config.immich.url or not config.immich.api_key:
+        connection = connection_for(config.immich, account)
+        if not connection.url or not connection.api_key:
             return None
         try:
-            with SyncImmichClient(
-                base_url=config.immich.url, api_key=config.immich.api_key
-            ) as client:
+            with SyncImmichClient(base_url=connection.url, api_key=connection.api_key) as client:
                 return client.get_asset_thumbnail(asset_id, size="preview")
         except Exception:  # noqa: BLE001 - an unreachable picture is a placeholder, not a 500
             return None
@@ -69,17 +73,18 @@ def immich_preview(config: Annotated[Config, Depends(current_config)]) -> Previe
 
 
 def immich_playback(config: Annotated[Config, Depends(current_config)]) -> PlaybackOpener:
-    """Stream an asset's playback rendition from Immich, the browser's byte range forwarded."""
+    """Stream an asset's playback rendition from its owning account, the browser's byte range forwarded."""
 
-    def open_playback(asset_id: str, byte_range: str | None) -> Playback | None:
+    def open_playback(asset_id: str, account: str, byte_range: str | None) -> Playback | None:
         import httpx
 
-        if not config.immich.url or not config.immich.api_key:
+        from immich_memories.web.media_scope import connection_for
+
+        connection = connection_for(config.immich, account)
+        if not connection.url or not connection.api_key:
             return None
-        client = httpx.Client(base_url=config.immich.url.rstrip("/"), timeout=30.0)
-        headers = {"x-api-key": config.immich.api_key} | (
-            {"range": byte_range} if byte_range else {}
-        )
+        client = httpx.Client(base_url=connection.url.rstrip("/"), timeout=30.0)
+        headers = {"x-api-key": connection.api_key} | ({"range": byte_range} if byte_range else {})
         try:
             request = client.build_request(
                 "GET", f"/api/assets/{asset_id}/video/playback", headers=headers
@@ -108,18 +113,32 @@ def immich_playback(config: Annotated[Config, Depends(current_config)]) -> Playb
     return open_playback
 
 
+def asset_scope(config: Annotated[Config, Depends(current_config)]) -> AssetScope:
+    """The configured account that may read an asset id, checked before any cache read."""
+    from immich_memories.web.media_scope import account_for_asset
+
+    return lambda asset_id: account_for_asset(config.immich, asset_id)
+
+
+def person_scope(config: Annotated[Config, Depends(current_config)]) -> PersonScope:
+    """The configured account that may read a person id, checked before any cache read."""
+    from immich_memories.web.media_scope import account_for_person
+
+    return lambda person_id: account_for_person(config.immich, person_id)
+
+
 def immich_face(config: Annotated[Config, Depends(current_config)]) -> PreviewFetcher:
-    """Fetch a person's face crop from Immich server-side."""
+    """Fetch a person's face crop from its owning account."""
 
-    def fetch(person_id: str) -> bytes | None:
+    def fetch(person_id: str, account: str) -> bytes | None:
         from immich_memories.api.sync_client import SyncImmichClient
+        from immich_memories.web.media_scope import connection_for
 
-        if not config.immich.url or not config.immich.api_key:
+        connection = connection_for(config.immich, account)
+        if not connection.url or not connection.api_key:
             return None
         try:
-            with SyncImmichClient(
-                base_url=config.immich.url, api_key=config.immich.api_key
-            ) as client:
+            with SyncImmichClient(base_url=connection.url, api_key=connection.api_key) as client:
                 return client.get_person_thumbnail(person_id)
         except Exception:  # noqa: BLE001 - a missing face is an empty avatar, not a 500
             return None

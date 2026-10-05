@@ -13,6 +13,8 @@ import sqlalchemy as sa
 from sqlalchemy.engine import Connection
 from sqlalchemy.exc import SQLAlchemyError
 
+from immich_memories.analysis.editorial_preparation_heads import PUBLIC_HEAD_VERSIONS
+from immich_memories.analysis.editorial_standing_facts import names_a_person
 from immich_memories.analysis.llm_caption_identity import LLM_CAPTION_PREFIX
 from immich_memories.analysis.subject_framing import FaceBox
 from immich_memories.db import Store
@@ -173,6 +175,7 @@ class AssetAnnotationFactRepository:
                 self._read_description_fields(connection, asset_ids, records)
         self._read_flags(connection, asset_ids, records)
         self._read_heads(connection, asset_ids, records)
+        self._corroborate_people_head(records)
         self._read_pixels(connection, asset_ids, records)
         self._read_motion(connection, asset_ids, records)
 
@@ -319,6 +322,24 @@ class AssetAnnotationFactRepository:
             )
             for asset_id, head, label in rows:
                 records[str(asset_id)].heads[str(head)] = _clean(label)
+
+    def _corroborate_people_head(self, records: dict[str, _MutableAssetFacts]) -> None:
+        """#2069: public-v1 almost never says "none"; every reader of its people head trusts it.
+
+        Corroborate once, here, before anything downstream reads a head: a picture counts as
+        having people only when it carries a face box, or its caption names a person as
+        subject. Otherwise its label is lowered to "none". A face box is never overruled, and
+        the owner's own head bank (any other version) is trusted as banked.
+        """
+        if self._head_versions.get("people") != PUBLIC_HEAD_VERSIONS["people"]:
+            return
+        for record in records.values():
+            label = record.heads.get("people")
+            if label is None or label == "none" or record.faces:
+                continue
+            if record.description and names_a_person(record.description):
+                continue
+            record.heads["people"] = "none"
 
     def _read_pixels(
         self,
