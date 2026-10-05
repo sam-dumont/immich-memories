@@ -23,7 +23,7 @@ from immich_memories.analysis.selection_source_groups import (
     build_episode_groups,
 )
 from immich_memories.analysis.selection_trace import Trace
-from immich_memories.api.models import AssetType, VideoClipInfo
+from immich_memories.api.models import Asset, AssetType, Person, VideoClipInfo
 from immich_memories.timeperiod import DateRange
 from tests.conftest import make_asset
 
@@ -1282,6 +1282,59 @@ def test_an_edited_picture_still_matches_an_asset_id_scope_naming_its_other_file
     )
 
     assert prepared.candidate_ids == ("edited",)
+
+
+def _edit_pair(taken: datetime) -> tuple[Asset, Asset]:
+    original = make_asset("original", file_created_at=taken, original_file_name="IMG_9001.HEIC")
+    original.type = AssetType.IMAGE
+    original.width, original.height = 4032, 3024
+    original.file_modified_at = taken
+    edited = make_asset("edited", file_created_at=taken, original_file_name="img_9001.heic")
+    edited.type = AssetType.IMAGE
+    edited.width, edited.height = 4032, 3024
+    edited.file_modified_at = taken + timedelta(days=1)
+    return original, edited
+
+
+def test_a_pin_on_an_old_copy_lands_on_the_version_the_fold_kept() -> None:
+    """An owner pin named before an edit was ever uploaded still names the picture."""
+    original, edited = _edit_pair(datetime(2024, 3, 11, 9, 5, 0, tzinfo=UTC))
+
+    prepared = prepare_editorial_source(
+        EditorialSelectionRequest(scope=SourceScope(), owner_required_asset_ids=("original",)),
+        EditorialDependencies(source_fetcher=lambda _scope: (original, edited)),
+    )
+
+    assert prepared.owner_required_asset_ids == ("edited",)
+
+
+def test_an_exclusion_on_an_old_copy_lands_on_the_version_the_fold_kept() -> None:
+    """An owner's exclusion of one file of a picture excludes the picture, not that file."""
+    original, edited = _edit_pair(datetime(2024, 3, 11, 9, 5, 0, tzinfo=UTC))
+
+    prepared = prepare_editorial_source(
+        EditorialSelectionRequest(scope=SourceScope(), owner_excluded_asset_ids=("original",)),
+        EditorialDependencies(source_fetcher=lambda _scope: (original, edited)),
+    )
+
+    assert prepared.candidate_ids == ()
+    assert set(prepared.excluded_ids) == {"original", "edited"}
+
+
+def test_the_kept_edit_carries_every_copys_people() -> None:
+    """Each account tags its own copy; the kept file must not lose a person off the other."""
+    original, edited = _edit_pair(datetime(2024, 3, 11, 9, 5, 0, tzinfo=UTC))
+    original.people = [Person(id="grandma")]
+    edited.people = [Person(id="grandpa")]
+
+    prepared = prepare_editorial_source(
+        EditorialSelectionRequest(scope=SourceScope()),
+        EditorialDependencies(source_fetcher=lambda _scope: (original, edited)),
+    )
+
+    assert prepared.candidate_ids == ("edited",)
+    kept_people = {person.id for person in prepared.candidates[0].source.people}
+    assert kept_people == {"grandma", "grandpa"}
 
 
 def test_pictures_received_in_one_second_under_different_names_stay_apart() -> None:
