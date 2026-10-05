@@ -40,7 +40,6 @@ def register_capabilities_command(main: click.Group) -> None:
         from immich_memories.setup_capabilities import (
             Capability,
             music_capabilities,
-            optional_capabilities,
         )
 
         if test_music and verify_local:
@@ -72,7 +71,6 @@ def register_capabilities_command(main: click.Group) -> None:
             # config enables; the external reader is reported by the local-capability rows.
             if not (preflight_config is not config and check.name == "LLM")
         )
-        rows.extend(optional_capabilities(config))
         rows.extend(music_capabilities(config, test_music=test_music))
         from immich_memories.local_capabilities import local_capabilities, verify_local_capabilities
 

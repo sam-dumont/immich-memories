@@ -19,31 +19,6 @@ class Capability:
     message: str
 
 
-def optional_capabilities(config: Config) -> list[Capability]:
-    """Expose optional readers that can otherwise quietly fall back during a film."""
-    from immich_memories.analysis.editorial_laya_reader import laya_reader_for
-
-    name = "Laya audience check"
-    if not config.editorial.laya_audience:
-        return [Capability(name, "skipped", "Not used by the configured selection tier")]
-    try:
-        reader = laya_reader_for(config.editorial)
-    except (ImportError, OSError, RuntimeError, ValueError) as exc:
-        return [Capability(name, "failed", f"Model could not be opened ({type(exc).__name__})")]
-    if reader is None:
-        return [
-            Capability(
-                name,
-                "missing",
-                "Run immich-memories models fetch; the MLX checkpoint also needs "
-                "laya-mlx in the app environment. For uv tool: "
-                'uv tool install "immich-memories[all-mac]" --with laya-mlx. '
-                "Until then, sharing uses heads and rules alone.",
-            )
-        ]
-    return [Capability(name, "untested", "Model found; inference has not been tested")]
-
-
 def music_capabilities(config: Config, *, test_music: bool = False) -> list[Capability]:
     """Offer smaller local profiles without calling a weight budget a successful test."""
     from immich_memories.audio.generators.ace_step_isolated import install_hint, isolated_python
