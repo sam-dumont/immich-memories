@@ -6,10 +6,16 @@ from types import SimpleNamespace
 from immich_memories.analysis.editorial_rule_episodes import RuleEpisodeReader
 from immich_memories.analysis.editorial_rule_quality import (
     picture_facts,
+    promote_quality_choice,
+    quality_facts,
+    quality_key,
     representative_key,
     rule_representative_rank,
 )
-from immich_memories.analysis.editorial_story_shortlist import _capture_group_moments
+from immich_memories.analysis.editorial_story_shortlist import (
+    DepictedChoice,
+    _capture_group_moments,
+)
 
 
 def _asset(asset_id, *, minute=0, favourite=False, video=False, people=(), faces=()):
@@ -187,3 +193,150 @@ def test_the_episode_card_keeps_the_first_capture_when_it_stands_in_for_a_model(
     assets = [_asset("first", minute=0), _asset("best", minute=1, people=["a"])]
 
     assert _card(assets, by_quality=False).asset_id == "first"
+
+
+# -- a sparse week's best picture (#2048) -------------------------------------------------
+
+
+def _quality(
+    asset,
+    *,
+    line="",
+    heads=None,
+    standing=1,
+    sharpness=10.0,
+    floor=5.0,
+    brightness=128.0,
+    distance=0.0,
+    never_auto=False,
+):
+    return quality_facts(
+        asset,
+        line=line,
+        heads=heads or {},
+        standing=standing,
+        sharpness=sharpness,
+        sharpness_floor=floor,
+        brightness=brightness,
+        distance_from_midweek=distance,
+        never_auto=never_auto,
+    )
+
+
+def test_a_soft_warning_disqualifies_a_candidate():
+    assert _quality(_asset("soft"), line="resolution:4032x3024 SOFT (blurry)").disqualified
+
+
+def test_a_rotated_warning_disqualifies_a_candidate():
+    assert _quality(_asset("rotated"), line="resolution:4032x3024 rotated").disqualified
+
+
+def test_standing_below_one_disqualifies_a_candidate():
+    assert _quality(_asset("low"), standing=0).disqualified
+
+
+def test_sharpness_below_the_library_floor_disqualifies_a_candidate():
+    assert _quality(_asset("blurry"), sharpness=1.0, floor=5.0).disqualified
+
+
+def test_a_screenshot_head_disqualifies_a_candidate():
+    assert _quality(_asset("screenshot"), heads={"screen": "yes"}).disqualified
+
+
+def test_a_document_head_disqualifies_a_candidate():
+    assert _quality(_asset("doc"), heads={"doc_docling": "document"}).disqualified
+
+
+def test_a_never_auto_flag_disqualifies_a_candidate():
+    assert _quality(_asset("held"), never_auto=True).disqualified
+
+
+def test_a_clean_candidate_is_not_disqualified():
+    assert not _quality(_asset("clean")).disqualified
+
+
+def test_quality_key_prefers_faces_present():
+    nobody = _quality(_asset("nobody"), line="people=none")
+    somebody = _quality(_asset("somebody", people=["a"]), line="people=one")
+
+    ordered = sorted([nobody, somebody], key=quality_key)
+    assert ordered[0] is somebody
+
+
+def test_quality_key_prefers_the_sharper_frame_up_to_the_cap():
+    sharp = _quality(_asset("sharp"), sharpness=50.0, floor=5.0)
+    soft = _quality(_asset("soft2"), sharpness=6.0, floor=5.0)
+
+    assert quality_key(sharp) < quality_key(soft)
+
+
+def test_quality_key_caps_the_sharpness_lead_at_four_times_the_floor():
+    way_sharper = _quality(_asset("huge"), sharpness=500.0, floor=5.0)
+    four_times = _quality(_asset("four"), sharpness=20.0, floor=5.0)
+
+    assert way_sharper.sharpness_ratio == four_times.sharpness_ratio == 4.0
+
+
+def test_quality_key_prefers_exposure_closest_to_mid_grey():
+    mid = _quality(_asset("mid"), brightness=128.0)
+    dim = _quality(_asset("dim"), brightness=60.0)
+
+    assert quality_key(mid) < quality_key(dim)
+
+
+def test_quality_key_prefers_nearness_to_midweek():
+    near = _quality(_asset("near"), distance=10.0)
+    far = _quality(_asset("far"), distance=10000.0)
+
+    assert quality_key(near) < quality_key(far)
+
+
+def _promote(eligible, asset_id, *, stands=lambda _a: True, free=lambda _a: True):
+    return promote_quality_choice(eligible, asset_id, stands=stands, free=free)
+
+
+def test_promote_quality_choice_surfaces_the_chosen_moment_first():
+    other = DepictedChoice(
+        key="c1", episode="e1", taken="2024-06-01T10:00:00", content="", primary="x"
+    )
+    holder = DepictedChoice(
+        key="c2",
+        episode="e2",
+        taken="2024-06-01T10:01:00",
+        content="",
+        primary="y",
+        alternatives=["z"],
+    )
+
+    ordered = _promote([other, holder], "z")
+
+    assert ordered[0].key == "c2"
+    assert ordered[0].primary == "z"
+    assert ordered[1] is other
+
+
+def test_promote_quality_choice_goes_short_without_an_asset_id():
+    choice = DepictedChoice(key="c1", episode="e1", taken="t", content="", primary="x")
+
+    assert _promote([choice], None) == []
+
+
+def test_promote_quality_choice_goes_short_when_the_chosen_asset_does_not_stand():
+    """A week's quality pick ran before the carrier gate ever saw this asset; if the gate
+    now refuses it, the week goes short rather than forcing a gate-failed primary (#2048
+    review, point B)."""
+    choice = DepictedChoice(key="c1", episode="e1", taken="t", content="", primary="x")
+
+    assert _promote([choice], "x", stands=lambda _a: False) == []
+
+
+def test_promote_quality_choice_goes_short_when_the_chosen_asset_is_not_free():
+    choice = DepictedChoice(key="c1", episode="e1", taken="t", content="", primary="x")
+
+    assert _promote([choice], "x", free=lambda _a: False) == []
+
+
+def test_promote_quality_choice_goes_short_when_the_chosen_asset_is_not_in_any_eligible_choice():
+    choice = DepictedChoice(key="c1", episode="e1", taken="t", content="", primary="x")
+
+    assert _promote([choice], "not-offered") == []

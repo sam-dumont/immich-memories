@@ -3206,6 +3206,11 @@
             "title": "Day",
             "type": "string"
           },
+          "funded_by": {
+            "default": "",
+            "title": "Funded By",
+            "type": "string"
+          },
           "granted": {
             "title": "Granted",
             "type": "integer"
@@ -3216,6 +3221,11 @@
           },
           "purpose": {
             "title": "Purpose",
+            "type": "string"
+          },
+          "sparse_quality_reason": {
+            "default": "",
+            "title": "Sparse Quality Reason",
             "type": "string"
           },
           "title": {
@@ -3669,7 +3679,7 @@
     },
     "/api/v1/assets/{asset_id}/thumbnail": {
       "get": {
-        "description": "The picture at grid or preview size; a miss is fetched from Immich and kept.",
+        "description": "The picture at grid or preview size; a miss is fetched from Immich and kept.\n\nNo configured account reading this id is a 404 before the cache is even asked, so a\ncached picture never outlives the account that put it there losing access to it.",
         "operationId": "thumbnail_api_v1_assets__asset_id__thumbnail_get",
         "parameters": [
           {

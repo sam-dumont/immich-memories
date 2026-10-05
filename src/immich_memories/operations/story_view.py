@@ -14,7 +14,7 @@ plan is a selection record and the tier is a property of the deployment.
 from __future__ import annotations
 
 import json
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
@@ -54,6 +54,12 @@ class StoryEntry:
     granted: int
     day: str
     carriers: tuple[CarrierView, ...]
+    # Set to "quality" when a BASIC sparse week was funded by its own best picture rather
+    # than going short (#2048). The plan omits both keys for every ordinarily-weighed story
+    # and for FULL (the model tier may still read a bare week itself), so this default is
+    # what every such story reads as.
+    funded_by: str = ""
+    sparse_quality_reason: str = ""
 
 
 @dataclass(frozen=True)
@@ -79,6 +85,11 @@ class StoryView:
     stories: tuple[StoryEntry, ...]
     duration: DurationView | None
     preparation: str = ""
+    # The sparse-week funding audit (#2048): share of indicator-less at-home weeks, the
+    # threshold that triggers it, and which weeks it promoted or still left short. The plan
+    # omits the key, and this stays None, whenever the mechanism never engaged: a household
+    # below the share threshold, or a FULL (model-polished) plan.
+    sparse_quality: Mapping[str, Any] | None = None
 
     @property
     def carrier_count(self) -> int:
@@ -117,6 +128,27 @@ def _duration(realization: object) -> DurationView | None:
         return None
 
 
+def _entry(
+    episode: Mapping[str, Any], rows: Sequence[Mapping[str, Any]], modes: Mapping[str, str]
+) -> StoryEntry:
+    key = str(episode.get("episode") or episode.get("key") or "")
+    title = str(episode.get("title") or key)
+    carriers = tuple(_carrier(row, title, modes) for row in rows)
+    day = str(episode.get("day") or (carriers[0].taken[:10] if carriers else ""))
+    granted = episode.get("granted")
+    return StoryEntry(
+        key=key,
+        title=title,
+        weight=str(episode.get("weight") or ""),
+        purpose=str(episode.get("purpose") or ""),
+        granted=int(granted) if granted is not None else len(carriers),
+        day=day,
+        carriers=carriers,
+        funded_by=str(episode.get("funded_by") or ""),
+        sparse_quality_reason=str(episode.get("sparse_quality_reason") or ""),
+    )
+
+
 def story_view_from_plan(
     plan: Mapping[str, Any], render_modes: Mapping[str, str] | None = None
 ) -> StoryView:
@@ -135,27 +167,15 @@ def story_view_from_plan(
     entries = []
     for episode in story.get("episodes") or ():
         key = str(episode.get("episode") or episode.get("key") or "")
-        title = str(episode.get("title") or key)
         rows = sorted(by_episode.get(key, ()), key=lambda row: str(row.get("taken") or ""))
-        carriers = tuple(_carrier(row, title, modes) for row in rows)
-        day = str(episode.get("day") or (carriers[0].taken[:10] if carriers else ""))
-        granted = episode.get("granted")
-        entries.append(
-            StoryEntry(
-                key=key,
-                title=title,
-                weight=str(episode.get("weight") or ""),
-                purpose=str(episode.get("purpose") or ""),
-                granted=int(granted) if granted is not None else len(carriers),
-                day=day,
-                carriers=carriers,
-            )
-        )
+        entries.append(_entry(episode, rows, modes))
     entries.sort(key=lambda entry: (_weight_rank(entry.weight), entry.day))
+    sparse_quality = story.get("sparse_quality")
     return StoryView(
         thesis=str(story.get("thesis") or ""),
         stories=tuple(entries),
         duration=_duration(plan.get("duration_realization")),
+        sparse_quality=sparse_quality if isinstance(sparse_quality, Mapping) else None,
     )
 
 

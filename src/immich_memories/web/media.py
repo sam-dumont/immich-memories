@@ -11,11 +11,15 @@ from fastapi.responses import StreamingResponse
 from immich_memories.cache.thumbnail_cache import ThumbnailCache
 from immich_memories.cache.thumbnail_sizes import load_person_thumbnail, load_thumbnail
 from immich_memories.web.dependencies import (
+    AssetScope,
+    PersonScope,
     PlaybackOpener,
     PreviewFetcher,
+    asset_scope,
     immich_face,
     immich_playback,
     immich_preview,
+    person_scope,
     thumbnail_cache,
 )
 
@@ -28,15 +32,23 @@ _CACHE_CONTROL = "private, max-age=86400"
 @router.get("/assets/{asset_id}/thumbnail", response_class=Response)
 def thumbnail(
     asset_id: str,
+    scope: Annotated[AssetScope, Depends(asset_scope)],
     cache: Annotated[ThumbnailCache, Depends(thumbnail_cache)],
     fetch: Annotated[PreviewFetcher, Depends(immich_preview)],
     size: Literal["thumbnail", "preview"] = "thumbnail",
 ) -> Response:
-    """The picture at grid or preview size; a miss is fetched from Immich and kept."""
+    """The picture at grid or preview size; a miss is fetched from Immich and kept.
+
+    No configured account reading this id is a 404 before the cache is even asked, so a
+    cached picture never outlives the account that put it there losing access to it.
+    """
     if not _ASSET_ID.match(asset_id):
         return Response(status_code=404)
+    account = scope(asset_id)
+    if account is None:
+        return Response(status_code=404)
     data = load_thumbnail(cache, asset_id, size)
-    if data is None and (preview := fetch(asset_id)):
+    if data is None and (preview := fetch(asset_id, account)):
         cache.put(asset_id, "preview", preview)
         data = load_thumbnail(cache, asset_id, size)
     if data is None:
@@ -47,13 +59,17 @@ def thumbnail(
 @router.get("/assets/{asset_id}/video", response_class=StreamingResponse)
 def video(
     asset_id: str,
+    scope: Annotated[AssetScope, Depends(asset_scope)],
     open_playback: Annotated[PlaybackOpener, Depends(immich_playback)],
     range_header: Annotated[str | None, Header(alias="range")] = None,
 ) -> Response:
     """The playback rendition, streamed by byte range so the preview can seek to the cut's interval."""
     if not _ASSET_ID.match(asset_id):
         return Response(status_code=404)
-    playback = open_playback(asset_id, range_header)
+    account = scope(asset_id)
+    if account is None:
+        return Response(status_code=404)
+    playback = open_playback(asset_id, account, range_header)
     if playback is None:
         return Response(status_code=404)
     headers = playback.headers | {"accept-ranges": "bytes", "cache-control": _CACHE_CONTROL}
@@ -66,13 +82,17 @@ def video(
 @router.get("/people/{person_id}/face", response_class=Response)
 def face(
     person_id: str,
+    scope: Annotated[PersonScope, Depends(person_scope)],
     cache: Annotated[ThumbnailCache, Depends(thumbnail_cache)],
     fetch: Annotated[PreviewFetcher, Depends(immich_face)],
 ) -> Response:
     """A person's face crop at avatar size, fetched from Immich once and cached after."""
     if not _ASSET_ID.match(person_id):
         return Response(status_code=404)
-    data = load_person_thumbnail(cache, person_id, fetch)
+    account = scope(person_id)
+    if account is None:
+        return Response(status_code=404)
+    data = load_person_thumbnail(cache, person_id, lambda pid: fetch(pid, account))
     if data is None:
         return Response(status_code=404)
     return Response(data, media_type="image/jpeg", headers={"Cache-Control": _CACHE_CONTROL})

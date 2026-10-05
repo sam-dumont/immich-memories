@@ -20,12 +20,12 @@ Months and trips work for every household: the knitter's months, the cat househo
 
 What doesn't work yet is anything about what the household actually cares about:
 
-- **A pet household's year turns into its days out.** Basic gives a slot to days with an occasion (a trip, a favourite, a video, close family). A cat asleep on the sofa is none of those, so a year with cats on dozens of ordinary days kept 3 of 14 clear cat pictures and 37 shots of a single town walk.
-- **A sparse year mostly vanishes.** For someone who takes a few snapshots a month, those quiet weeks ARE the year. One test year with 55 pictures across 36 days came out at 8 shots for a 300 second target, with February to August empty. Funding each quiet week with its best clean picture is planned ([#2048](https://github.com/sam-dumont/immich-memories/issues/2048)).
+- **A pet household's year used to turn into its days out; a mostly quiet household no longer loses its ordinary weeks.** Basic gives a slot to days with an occasion (a trip, a favourite, a video, close family); a cat asleep on the sofa is none of those. When at least two thirds of a household's at-home weeks carry no occasion indicator at all, Basic now funds each of them with its own sharpest, best-exposed clean picture instead of letting a single town walk take every leftover slot ([#2048](https://github.com/sam-dumont/immich-memories/issues/2048)). It still can't tell Basic that the subject is the cat: a week that holds both a cat and a dozen pictures of somewhere else just picks whichever reads as the better picture.
+- **A sparse year used to mostly vanish; a mostly indicator-less period no longer does.** For someone who takes a few snapshots a month, those quiet weeks ARE the year. One test year with 55 pictures across 36 days came out at 8 shots for a 300 second target, with February to August empty. The same funding-by-best-picture rule covers this case ([#2048](https://github.com/sam-dumont/immich-memories/issues/2048)).
 - **A face Immich rarely sees makes a thin person film.** A rider in a helmet was recognised on 31 of 1,411 pictures in a year, so her film had 4 shots from one day. The editor only knows who is in a picture through Immich's face recognition.
 - **A couple film needs both faces in one picture.** One of you usually holds the camera, so a year may hold only 15 to 24 pictures of the two of you together.
 
-Full does not fix the subject problem on its own: it refines the shortlist Basic draws, so the cat year still kept 3 of 14. Basic has no way to ask for the pet or the hobby either.
+Full does not fix the subject problem on its own: it refines the shortlist Basic draws, so a household still gets no film about the pet or the hobby specifically. Basic has no way to ask for the pet or the hobby either.
 
 ## Asking in your own words is the way in, on Full
 
