@@ -1258,6 +1258,32 @@ def test_one_picture_stored_twice_reaches_the_editor_once_as_its_full_size_file(
     assert prepared.candidates[0].favourite
 
 
+def test_an_edited_picture_still_matches_an_asset_id_scope_naming_its_other_file() -> None:
+    """An iOS edit lands as a second file; the fold may now keep either one.
+
+    A scope that names one file of the picture (by id, e.g. an album's asset list) meant the
+    picture, not that literal file -- the kept file of the same picture still qualifies.
+    """
+    taken = datetime(2024, 3, 11, 9, 5, 0, tzinfo=UTC)
+    original = make_asset("original", file_created_at=taken, original_file_name="IMG_9001.HEIC")
+    original.type = AssetType.IMAGE
+    original.width, original.height = 4032, 3024
+    original.file_modified_at = taken
+    edited = make_asset("edited", file_created_at=taken, original_file_name="img_9001.heic")
+    edited.type = AssetType.IMAGE
+    edited.width, edited.height = 4032, 3024
+    edited.file_modified_at = taken + timedelta(days=1)
+
+    prepared = prepare_editorial_source(
+        EditorialSelectionRequest(
+            scope=SourceScope(asset_ids=("original",)),
+        ),
+        EditorialDependencies(source_fetcher=lambda _scope: (original, edited)),
+    )
+
+    assert prepared.candidate_ids == ("edited",)
+
+
 def test_pictures_received_in_one_second_under_different_names_stay_apart() -> None:
     """A messaging app dates a received batch to the second it arrived: six photos, one
     instant. Without the camera's own name nothing says they are one picture."""
