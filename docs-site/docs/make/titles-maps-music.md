@@ -81,9 +81,11 @@ chosen title/caption language. If a translation is missing, it tries the base la
 (for example, Portuguese for Brazilian Portuguese), then falls back to the place's own
 native name rather than English. A Greek village with no French name stays in Greek
 script in a French film, not translated or anglicised. A town keeps its name even when
-no translation exists.
+no translation exists. Administrative words come off: "Limassol District" reads Limassol, "Pärnu linn"
+reads Pärnu. Latvian, Lithuanian and Finnish labels keep theirs for now, because the name in
+front is in the genitive ([#2074](https://github.com/sam-dumont/immich-memories/issues/2074)).
 
-Near the configured home base (within 10 km), captions can name the district, such as Laeken.
+Near the configured home base (within 10 km), captions can name the district, such as Montmartre in Paris.
 Away from home, a district covering at least 85% of a stay's pictures keeps its name;
 excursions keep their own labels. When all known districts agree, missing district data
 does not erase those local labels. Visits spread across districts use their shared locality.

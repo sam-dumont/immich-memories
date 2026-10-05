@@ -66,7 +66,7 @@ flowchart TD
    - "No", "without" and each language's own negation word turn that company into an absence
      instead of a requirement: "landscapes, no humans" drops any picture with a face or a
      caption subject who is a person, "sans les enfants" drops children instead of requiring
-     them. A negated name ("without Cy") drops that person's own pictures the same way. Each
+     them. A negated name ("without Alex") drops that person's own pictures the same way. Each
      clause of the sentence is read for its own negation, so "with the kids, no rain" keeps
      the kids filter and a double negation ("not without the kids") cancels back to a
      requirement.

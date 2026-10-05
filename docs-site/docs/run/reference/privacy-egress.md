@@ -26,7 +26,7 @@ Only `enabled: true` enables the reader. A model or endpoint alone leaves it dis
 | The render worker's `IMMICH_MEMORIES_RENDER_WORKER_GEOCODING_URL` | a film rendered on the worker with `network.geocoding: true` | the same coordinates, from the worker; the app's `geocoding_url` is not used there | unset: the worker does not geocode |
 | `server.arcgisonline.com` | `network.map_tiles: true` | tile requests over the trip area and your home base | off |
 | `ace_step.api_url`, `musicgen.base_url` | AI music through a remote API | mood, tempo and genre text; MusicGen is also sent the generated track, for stem separation | off |
-| Apprise or ntfy targets | `notifications.enabled: true` | memory type, outcome, duration, output path, a redacted error tail; a frame if `attach_thumbnail: true` | off |
+| Apprise or ntfy targets | `notifications.enabled: true` | memory type, outcome, duration, output path, the first 200 characters of the redacted error output; a frame if `attach_thumbnail: true` | off |
 | Your OIDC provider | login with `provider: oidc` | the standard OIDC flow with PKCE | authentication off |
 | Configured Immich, reader, caption, render and music endpoints | `preflight`, for enabled/configured services | service/health/model requests with their configured credentials; reader probes can request a one-token reply to `hi` | probes contain no library pictures; notifications are not sent by preflight |
 | `huggingface.co`, `github.com` | `models fetch`; permitted detector downloads during preparation; inference/captioner startup or first use | model requests, no library data | app detector downloads off unless `allow_model_downloads: true`; Compose inference allows them, captioner startup fetches its pinned weights |

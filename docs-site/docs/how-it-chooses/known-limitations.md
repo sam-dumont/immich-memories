@@ -43,13 +43,18 @@ Measured on the cat household (M5 Max): preparing those 1,234 pictures took 500 
 min), in line with preparing a whole library of 1,200 to 3,100 pictures taking 8 to 26 minutes.
 A second request over the same period pays nothing: the captions are already banked.
 
-One thing still gets in the way:
-
-- **A year in the sentence can be misread.** "the horses in 2024" makes no film because the year gets read as text printed on something in the photos ([#2046](https://github.com/sam-dumont/immich-memories/issues/2046)). "our horses" works.
-
 ## Other things to know
 
-- **Fixed:** a blurry or nearly black picture no longer ships as the only picture of its moment; a starred one still does, favourites rule unchanged ([#2049](https://github.com/sam-dumont/immich-memories/issues/2049)).
-- **The run can occasionally exit with an error after the cut is saved.** The film and the saved cut are fine; a script reading the exit code sees a failure ([#2025](https://github.com/sam-dumont/immich-memories/issues/2025)).
+- **Fixed:** a blurry or nearly black picture no longer ships as the only picture of its moment; a starred one still does, favourites rule unchanged ([#2049](https://github.com/sam-dumont/immich-memories/issues/2049)). A year in the sentence ("the horses in 2024") is no longer read as printed text ([#2046](https://github.com/sam-dumont/immich-memories/issues/2046)).
+
+## Open after release
+
+None of these stop a film. You may still notice them:
+
+- **A repeat frame can be refused too early.** The up-front repeat checks don't yet spare a favourite, a close family member's only shot or the film's floor, while the final duplicate review does ([#2071](https://github.com/sam-dumont/immich-memories/issues/2071)).
+- **Some exclusions slip in free text.** Russian and Polish case forms ("без публики") do nothing, "only the performers" drops stage shots with the crowd in frame, and "everyone except grandpa" can collide ([#2072](https://github.com/sam-dumont/immich-memories/issues/2072)).
+- **Latvian, Lithuanian and Finnish places keep their admin word.** You get "Helsingin kaupunki" instead of Helsinki; Estonian labels are already clean ([#2074](https://github.com/sam-dumont/immich-memories/issues/2074)).
+- **Docker automation rough edges.** A failure notification carries the start of the output rather than the error, and `/health/ready` forgets the timer's last fire after a restart ([#2077](https://github.com/sam-dumont/immich-memories/issues/2077)).
+- **The people signal is a stopgap.** A library with face detection off reads "nobody" on every picture with no face box and no caption naming someone, and a face Immich recognises after `prepare` ran doesn't count yet ([#2079](https://github.com/sam-dumont/immich-memories/issues/2079)).
 
 Figures on this page come from the test households, never from a real family library. For timings on your own hardware, see [Measure your setup](../better/measured.md).

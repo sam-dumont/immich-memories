@@ -66,6 +66,11 @@ Three things a scheduled job does differently from your shell:
 
 On macOS a missed job runs when the Mac wakes; launchd does not wake it.
 
+The launchd job writes its wrapper output to `~/.immich-memories/logs/auto.log` and `auto-error.log`.
+The systemd unit sets no `StandardOutput`, so its output goes to the user journal, which a user outside
+`systemd-journal` may not be allowed to read. The per-attempt transcript under the cache is always
+readable by its owner: see [where a scheduled run's logs go](../make/automate.md#where-a-scheduled-runs-logs-go).
+
 ## How it picks one memory
 
 Ten detectors propose candidates, hard rotation rules reject some, the rest are scored, and the top one is
@@ -187,7 +192,7 @@ immich-memories auto test-notification
 `auto test-notification` sends one message to every URL and says whether it went through. It ignores the
 cooldown that follows a failed delivery (`cooldown_hours`, 24), and a test that succeeds clears it. Every film
 then sends one: `auto run`, the Docker timer and a plain `generate`. The message carries the memory type, the
-outcome, the duration, the output path and, on a failure, a redacted error tail; no picture unless you set
+outcome, the duration, the output path and, on a failure, the first 200 characters of the redacted output (often not the error itself yet, [#2077](https://github.com/sam-dumont/immich-memories/issues/2077)); no picture unless you set
 `attach_thumbnail: true`. The URLs hold credentials, so `config show` masks them and the database stores them encrypted.
 Every key is in the [config reference](config-reference.md#notifications).
 

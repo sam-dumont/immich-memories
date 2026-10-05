@@ -142,7 +142,8 @@ In the web **New memory** page, select both under **Immich accounts to read**.
 The scope is exact: `primary,partner` reads both; `partner` alone excludes your primary.
 Omitting accounts reads primary only. Identical files count once, downloads use the owning
 account, and either owner's favourite counts. If one selected account cannot be read, the run
-stops instead of silently omitting that account’s pictures.
+stops instead of silently omitting that account’s pictures. A [free-text ask](../make/free-text.md)
+follows the same scope: without `--accounts` it only searches the primary's pictures.
 
 Albums and trips still use primary only: `--accounts` is refused for those recipes.
 [Duplicates and sharing](../how-it-chooses/family-audience-duplicates.md) covers the selection rules.

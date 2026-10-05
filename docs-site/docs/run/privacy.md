@@ -95,7 +95,8 @@ list the pins. API mode uses the remote music server's checkpoints.
 ## Thumbnails in the web UI
 
 Your browser asks this app for pictures/video, behind the same login. The app fetches or serves
-cached media from Immich. The API key stays on the server.
+cached media from Immich. The API key stays on the server. It only serves a picture one of the
+configured accounts can read: any other ID gets a 404, even when it sits in the cache.
 
 ## Privacy mode
 

@@ -11,8 +11,9 @@ of your camera roll:
   (`title_screens.title_duration`). Title and subtitle shrink together when the pair would pass 80 % of the
   frame height.
 - **Month dividers**: at each month change in a single-year film spanning four months or more. The first
-  month gets none: the intro already said it. `month_divider_threshold` sizes a budget, and when the budget
-  binds the first month changes win, so a thin January can keep its card while a busy November loses one.
+  month gets none: the intro already said it. `month_divider_threshold` sizes a budget. When not every card fits, the film keeps as many as
+  do, picked by clip count (ties go to the earlier month), so a busy November keeps its card and a thin
+  March loses its. A tight film never drops to zero while one card still fits.
 - **Trip map**: a satellite fly-over from home to the destination, in place of the intro. Off by default, see
   [The map fly-over](#the-map-fly-over).
 - **Location cards**: the place name where a trip moves on. A hop of more than 30 km to a different place gets one. A

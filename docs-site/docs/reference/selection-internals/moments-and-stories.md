@@ -139,6 +139,12 @@ Slots are handed out in order: one for each `major` story, then one `minor` per 
 stories up to their ceiling, the remaining `minor` stories, one `glimpse` per day, and whatever is
 left deepens the heavier stories one moment at a time.
 
+A deeper frame of a moment already shown has to pass the same scene check the final duplicate
+review uses, so a near-copy never takes a slot only to be removed later. A slot that review does
+free goes back to the same moment, then the same story, then to other stories' moments that got
+nothing, in the same funding order. A film only comes out short when the library has run out of
+distinct material.
+
 In a long film the `major` ceiling rarely binds. The budget runs out first, so every `major` story
 ends up at the same depth: a two-evening story with a handful of stars gets as many shots as a
 ten-day trip with a hundred.

@@ -11,7 +11,13 @@ Make and review a few films manually first. Set [home and people](../get-started
 
 ## Docker: switch on the built-in timer
 
-In `docker-compose.yml`, add these two lines under the app's `environment:` block:
+Fetch the models first, or the first fire fails on a missing encoder:
+
+```bash
+docker compose exec immich-memories immich-memories models fetch
+```
+
+Then, in `docker-compose.yml`, add these two lines under the app's `environment:` block:
 
 ```yaml
 IMMICH_MEMORIES_AUTOMATION__ENABLED: "true"
@@ -36,6 +42,26 @@ immich-memories auto install --hour 9
 ```
 
 This writes a user timer on macOS or Linux and prints its activation command. Run **Activate:** to start it; installation alone does not activate the schedule. On headless Linux, run `loginctl enable-linger "$USER"` so the timer survives logout. Run **Deactivate:** before `auto install --uninstall`, which only deletes files. Scheduled jobs do not inherit your interactive shell's credentials: keep them in the configuration. [Scheduler details](../reference/automation-contract.md#bare-metal-auto-install) cover the launcher, environment and missed runs.
+
+### Where a scheduled run's logs go
+
+Every attempt that starts a film keeps its full output, credentials redacted, in
+`~/.immich-memories/cache/automation-output/<attempt-id>.private.log`. It's your file (mode 0600):
+no sudo, no journal access needed. **Runs** in the web UI has a download button for it too.
+
+```bash
+immich-memories auto status                  # last attempt, outcome and reason
+ls -t ~/.immich-memories/cache/automation-output/ | head -1   # newest transcript
+```
+
+That path moves with `cache.directory` if you changed it. A day skipped before any film starts (cooldown, every candidate rejected) leaves no
+transcript: `auto status` says why.
+
+The scheduler's own wrapper output goes elsewhere. On macOS it lands in
+`~/.immich-memories/logs/auto.log` and `auto-error.log`. On Linux the systemd unit sends it to your
+user journal: `journalctl --user -u immich-memories-auto.service` works only if your distribution
+keeps per-user journals or you're in the `systemd-journal` group. On a stock Ubuntu account that
+answers "insufficient permissions", so read the transcript above instead.
 
 ## How it picks one memory
 
