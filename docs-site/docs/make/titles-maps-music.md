@@ -83,20 +83,17 @@ native name rather than English. A Greek village with no French name stays in Gr
 script in a French film, not translated or anglicised. A town keeps its name even when
 no translation exists. Administrative words come off: "Limassol District" reads Limassol, "Pärnu linn"
 reads Pärnu. Latvian, Lithuanian and Finnish labels keep theirs for now, because the name in
-front is in the genitive ([#2074](https://github.com/sam-dumont/immich-memories/issues/2074)).
+front is in the genitive.
 
-Near the configured home base (within 10 km), captions can name the district, such as Montmartre in Paris.
-Away from home, a district covering at least 85% of a stay's pictures keeps its name;
-excursions keep their own labels. When all known districts agree, missing district data
-does not erase those local labels. Visits spread across districts use their shared locality.
-Different towns and visits separated by more than `trips.max_gap_days` do not rename one
-another. The selected clips retain the names resolved from the full source window.
-Streets and points of interest stay out of captions. A country disagreement keeps the source
-label; failed lookups are retried on a later run.
-
-A few distant excursions do not turn a local stay into a regional trip: the trip planner
-checks whether at least 85% of its positioned pictures fit a 25 km group. A town supported
-by those pictures is not replaced by a broader label from the trip's centre point.
+Near the configured home base, captions can name the district, such as Montmartre in Paris; further
+out, a district needs most of a stay's pictures behind it to keep its name, and excursions keep
+their own labels. Visits spread across districts use their shared locality, and towns separated
+by more than `trips.max_gap_days` do not rename one another. Streets and points of interest stay
+out of captions. A country disagreement keeps the source label; failed lookups are retried on a
+later run. A few distant excursions do not turn a local stay into a regional trip, and a town
+already named by its own pictures is not replaced by a broader label from the trip's centre
+point. The [output reference](../reference/output-rendering.md) has the exact distances and
+shares.
 
 ## The map fly-over
 
@@ -116,16 +113,6 @@ With maps off, a trip uses ordinary title and location cards. Smooth maps fly be
 In **Render**, choose **Automatic**, **No music**, or upload your own MP3, M4A or WAV. **Music volume** changes the mix; the music drops under the clips' own sound. When a clip's own sound is music or singing, the soundtrack steps aside for its whole window instead of competing with it.
 
 Automatic uses a bundled track by default. A configured [music generator](../better/music.md) can make an original one and enables **Preview a track** so you can listen first. A failed generator falls back to a bundled track and leaves a warning.
-
-```mermaid
-flowchart TD
-  A[Music choice] --> B{Your own track?}
-  B -- Yes --> C[Use your file]
-  B -- No --> D[Automatic track]
-  D --> E[Bundled or generated]
-  C --> F[Mix under clip audio]
-  E --> F
-```
 
 On the CLI:
 
