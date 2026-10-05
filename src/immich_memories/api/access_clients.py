@@ -156,7 +156,16 @@ class AccessBoundClient(SyncImmichClient):
             if account == PRIMARY_ACCOUNT:
                 return read(self)
             return read(self.open_accounts([account])[account].client)
-        except (ImmichAPIError, AccountUnavailable, httpx.HTTPError, OSError) as error:
+        except ImmichAPIError as error:
+            # A 404 is Immich's answer about this one picture (a Live Photo clip often
+            # has no preview), not an account that cannot read: it stays a per-picture miss.
+            if error.status_code == 404:
+                raise
+            raise AccountReadFailed(
+                f"Immich account {account!r} could not read asset {asset_id}: "
+                f"{sanitize_error_message(str(error))}"
+            ) from None
+        except (AccountUnavailable, httpx.HTTPError, OSError) as error:
             detail = sanitize_error_message(str(error))
             raise AccountReadFailed(
                 f"Immich account {account!r} could not read asset {asset_id}: {detail}"
