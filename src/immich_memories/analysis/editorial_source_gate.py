@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Callable, Collection
 
 from immich_memories.analysis.annotation_lines import AnnotationLineBatch
 from immich_memories.analysis.editorial_carrier_eligibility import (
+    frame_is_document_like,
+    personal_document,
     screen_flagged,
     screenshot_by_resolution,
 )
@@ -40,8 +43,17 @@ SCREEN_DOCUMENT_TEXT = re.compile(
 )
 
 
-def screen_document_rejections(batch: AnnotationLineBatch) -> dict[str, str]:
-    """Return the established hard source exclusions in stable input order."""
+def screen_document_rejections(
+    batch: AnnotationLineBatch,
+    *,
+    ocr_text_of: Callable[[str, bool], str | None] | None = None,
+    protected: Collection[str] = (),
+) -> dict[str, str]:
+    """Return the established hard source exclusions in stable input order.
+
+    Only an explicit owner pin (`protected`) is exempt from the personal-document check: a
+    favourite star is not the owner choosing to ship a readable document (#2062).
+    """
     rejected: dict[str, str] = {}
     for line in batch.lines:
         heads = dict(line.heads)
@@ -56,4 +68,10 @@ def screen_document_rejections(batch: AnnotationLineBatch) -> dict[str, str]:
             # A pixel size is metadata, so this arm answers with or without a caption
             # seat. It is already the carrier rule; a screenshot was never a source.
             rejected[line.asset_id] = "screenshot-resolution"
+        elif line.asset_id not in protected and personal_document(
+            line.description or "",
+            heads,
+            ocr_text_of(line.asset_id, frame_is_document_like(heads)) if ocr_text_of else None,
+        ):
+            rejected[line.asset_id] = "personal-document"
     return rejected

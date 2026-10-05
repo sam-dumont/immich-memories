@@ -113,3 +113,57 @@ def test_audience_refuses_a_member_without_holding_the_unexcluded_lead(tmp_path,
     assert library.held(member)["finding"] == "screen-description"
     assert library.held("burst") is None
     assert gate.verdict_of(shot("burst")) == lead_verdict
+
+
+def test_audience_gate_refuses_a_personal_document_through_the_same_ocr_facts(tmp_path):
+    from immich_memories.analysis.editorial_rule_reader import NoModelJudge
+    from immich_memories.analysis.editorial_shareability_tiers import audience_check_for
+    from immich_memories.analysis.editorial_structure_audience import AudienceBank, AudienceGate
+    from immich_memories.db import open_store
+    from tests.test_editorial_shareability_tiers import Annotation
+
+    lines = {"card": "A record on a desk."}
+    library = AudienceBank(open_store(), answerer="rules")
+    gate = AudienceGate(
+        NoModelJudge(),
+        audience="family",
+        annotations={
+            "card": Annotation(lines["card"], heads=(("frame_kind", "meaningful_record"),))
+        },
+        flag_rows={},
+        lines=lines,
+        bank_path=tmp_path / "shareability.json",
+        library=library,
+        check_audience=audience_check_for("no_captions"),
+        ocr_text_of={"card": "Numéro national: 85.04.12-345-67"}.get,
+    )
+
+    assert gate.verdict_of(shot("card")) == "do_not_show"
+    assert gate.verdicts["card"]["finding"] == "personal-document"
+
+
+def test_audience_gate_never_holds_an_owner_pinned_document(tmp_path):
+    from immich_memories.analysis.editorial_rule_reader import NoModelJudge
+    from immich_memories.analysis.editorial_shareability_tiers import audience_check_for
+    from immich_memories.analysis.editorial_structure_audience import AudienceBank, AudienceGate
+    from immich_memories.db import open_store
+    from tests.test_editorial_shareability_tiers import Annotation
+
+    lines = {"card": "A record on a desk."}
+    library = AudienceBank(open_store(), answerer="rules")
+    gate = AudienceGate(
+        NoModelJudge(),
+        audience="family",
+        annotations={
+            "card": Annotation(lines["card"], heads=(("frame_kind", "meaningful_record"),))
+        },
+        flag_rows={},
+        lines=lines,
+        bank_path=tmp_path / "shareability.json",
+        library=library,
+        check_audience=audience_check_for("no_captions"),
+        ocr_text_of={"card": "Numéro national: 85.04.12-345-67"}.get,
+        protected=("card",),
+    )
+
+    assert gate.verdict_of(shot("card")) != "do_not_show"

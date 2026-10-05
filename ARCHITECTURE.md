@@ -267,7 +267,24 @@ The separate model-planning route can read banked lines or use plain clip facts.
   which can only tighten it (`editorial_rule_banked_facts.py`).
 - **Carrier**: the picture admitted to carry one chosen moment of a funded story, if it is free,
   in context and spaced from the shots already committed (`editorial_story_carriers.py`,
-  `editorial_carrier_eligibility.py`). A carrier is a shot before it is rendered.
+  `editorial_carrier_eligibility.py`). A carrier is a shot before it is rendered. A photographed
+  ID card, passport or personal document is excluded on every tier (`personal_document` in
+  `editorial_carrier_eligibility.py`, shared with the screen/document gate,
+  `screen_document_rejections` in `editorial_source_gate.py`): a caption naming the document
+  excludes outright, and Immich's own OCR reading a personal-record field, a document title
+  word, an MRZ line, a Luhn/IBAN-checked number or a named gift voucher corroborates the frame
+  head otherwise. `document_ocr_port` (`editorial_document_ocr.py`) reads that OCR: a server
+  below 2.2, or a failed read, turns the signal off for the run rather than holding the library.
+  Its bulk keyword search is built from the same word tuples the content check reads
+  (`PERSONAL_RECORD_FIELD_WORDS`, `DOCUMENT_TITLE_WORDS` in `editorial_carrier_eligibility.py`)
+  so the two can't drift apart, runs against every configured account (not the primary's
+  alone), and narrows which assets pay for the expensive per-asset read; a candidate the frame
+  head already calls document-like is read anyway, since an MRZ line or a card number can't be
+  found by a keyword search. Every read is memoised per asset, shared across the material
+  build, a candidate refresh and the audience gate. Only an explicit owner pin exempts a
+  picture. The memory-worthy tier gate, the near-home test, the written-subject pool, chapter
+  assembly and the per-partition slot/depth caps live in `editorial_structure_framing.py`,
+  split out of `editorial_structure_planner.py`.
 - **Picture admission**: `PictureAdmission` (`editorial_picture_admission.py`) owns the shared
   standing, audience, spacing and candidate repetition checks. Draft selection, thin swaps,
   audience replacements, duplicate refills and family seats use it. Later candidates acquire

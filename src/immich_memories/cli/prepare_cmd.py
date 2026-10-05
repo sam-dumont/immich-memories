@@ -95,6 +95,7 @@ def _bank_overviews(client, config: Config, scope, sources, unservable) -> None:
         config=config,
         unservable=unservable,
         albums=RunAlbumNames(client),
+        client=client,
     )
     print_success(
         f"Banked {len(catalogue.events):,} episode readings, "

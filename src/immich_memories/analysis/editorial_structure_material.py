@@ -23,6 +23,7 @@ from immich_memories.analysis.editorial_episode_documents import (
     factual_moment_rows,
 )
 from immich_memories.analysis.editorial_event_families import merge_event_families
+from immich_memories.analysis.editorial_exposure_chains import chain_holds_for
 from immich_memories.analysis.editorial_person_period_facts import (
     PersonPeriodProjection,
     render_person_period_facts,
@@ -588,11 +589,59 @@ def _renderer(source: StructurePlanningInput, probe):
     return measure
 
 
+def source_exclusions(
+    source: StructurePlanningInput, ports: StructurePlannerPorts, lines: Mapping[str, str]
+) -> dict[str, str]:
+    """The source refusals for these lines, with the heads and OCR evidence that
+    corroborates a personal document (#2062).
+
+    Only an explicit owner pin (`owner_required_asset_ids`) is exempt from the
+    personal-document check: a favourite star is not the owner choosing to ship a readable
+    document.
+    """
+    heads_of = {
+        asset_id: dict(record.heads)
+        for asset_id, record in source.audience_annotations.items()
+        if asset_id in lines
+    }
+    return excluded_carrier_sources(
+        lines,
+        heads_of=heads_of,
+        ocr_text_of=ports.document_ocr_text,
+        protected=source.owner_required_asset_ids,
+    )
+
+
+def refresh_candidates(source, ports, material: Material, chains, carriers) -> None:
+    """Re-read a replacement's facts, including its source exclusions, before it is judged."""
+    if not ports.prepare_candidates(carriers):
+        return
+    # Gates and prose readers share the refreshed facts, but these derived views
+    # must follow them before any candidate is judged.
+    chains.update(
+        chain_holds_for(source.assets, source.audience_annotations, source.companion_detectors)
+    )
+    members = {member for carrier in carriers for member in _share.unit_members(carrier)}
+    for member in members:
+        material.document_sources.pop(member, None)
+    material.document_sources.update(
+        source_exclusions(
+            source, ports, {member: source.annotations.get(member, "") for member in members}
+        )
+    )
+    for carrier in carriers:
+        carrier.update(material.builder.refresh_clip_facts(carrier))
+        asset_id = carrier["asset_id"]
+        material.story_lines[asset_id] = material.text.description(
+            carrier
+        ) or source.annotations.get(asset_id, "")
+
+
 def build_material(
     source: StructurePlanningInput, ports: StructurePlannerPorts, wall: Wall
 ) -> Material:
     lines = source.annotations
-    document_sources = excluded_carrier_sources(lines)
+    document_sources = source_exclusions(source, ports, lines)
     builder = UnitBuilder(
         source,
         ports,

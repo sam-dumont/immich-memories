@@ -16,11 +16,6 @@ from functools import partial
 from operator import itemgetter
 
 from immich_memories.analysis import llm_metrics
-from immich_memories.analysis.editorial_block_votes import (
-    judge_worthiness,
-    worth_criterion_v44,
-)
-from immich_memories.analysis.editorial_carrier_eligibility import excluded_carrier_sources
 from immich_memories.analysis.editorial_cut_invariants import check_finished_cut
 from immich_memories.analysis.editorial_exposure_chains import chain_holds_for
 from immich_memories.analysis.editorial_family_seat import FilmSeatSource, seat_in_film
@@ -43,7 +38,7 @@ from immich_memories.analysis.editorial_rule_banked_facts import (
 )
 from immich_memories.analysis.editorial_rule_quality import rule_representative_rank
 from immich_memories.analysis.editorial_rule_reader import NoModelJudge, RuleStructureReader
-from immich_memories.analysis.editorial_shareability import SHAREABLE, unit_members
+from immich_memories.analysis.editorial_shareability import SHAREABLE
 from immich_memories.analysis.editorial_shareability_tiers import audience_check_for
 from immich_memories.analysis.editorial_story_candidates import story_candidates
 from immich_memories.analysis.editorial_story_lookalike import hash_pair_relation
@@ -83,6 +78,7 @@ from immich_memories.analysis.editorial_structure_framing import (
     partition_cap,
     story_worthiness,
     subject_pool,
+    worthiness_gate,
 )
 from immich_memories.analysis.editorial_structure_framing import (
     evidence_partitions as evidence_partitions_of,
@@ -91,10 +87,10 @@ from immich_memories.analysis.editorial_structure_lines import strangers_only
 from immich_memories.analysis.editorial_structure_material import (
     Material,
     Wall,
-    anchor_line,
     build_material,
     hold_the_ends,
     read_wall,
+    refresh_candidates,
 )
 from immich_memories.analysis.editorial_structure_record import (
     PlanFacts,
@@ -114,7 +110,6 @@ from immich_memories.analysis.subject_framing import framing_visibility
 from immich_memories.config_tiers import nas_draft_config
 from immich_memories.processing.editorial_timing import bind_editorial_timeline
 from immich_memories.security import write_secret_file
-from immich_memories.store.vote_banks import VoteBank
 from immich_memories.tracking.timed import timed
 
 FLAGGED_LINE = re.compile(r"nsfw=yes|exposure=(partial|nude)")
@@ -319,11 +314,13 @@ def _select(
         chains=chains,
         companion_heads=source.companion_detectors,
         activity_reader=ports.laya.activity_answers if ports.laya else None,
-        prepare_candidates=partial(_refresh_candidates, source, ports, material, chains)
+        prepare_candidates=partial(refresh_candidates, source, ports, material, chains)
         if ports.prepare_candidates
         else None,
+        ocr_text_of=ports.document_ocr_text,
+        protected=source.owner_required_asset_ids,
     )
-    tier, worth_reason, marker = _worthiness_gate(
+    tier, worth_reason, marker = worthiness_gate(
         source,
         ports,
         wall,
@@ -506,74 +503,6 @@ def _select(
         ladder_reads=0,
         carriers_at_selection=carriers_at_selection,
     )
-
-
-def _refresh_candidates(source, ports, material, chains, carriers):
-    if not ports.prepare_candidates(carriers):
-        return
-    # Gates and prose readers share the refreshed facts, but these derived views
-    # must follow them before any candidate is judged.
-    chains.update(
-        chain_holds_for(source.assets, source.audience_annotations, source.companion_detectors)
-    )
-    members = {member for carrier in carriers for member in unit_members(carrier)}
-    for member in members:
-        material.document_sources.pop(member, None)
-    material.document_sources.update(
-        excluded_carrier_sources({member: source.annotations.get(member, "") for member in members})
-    )
-    for carrier in carriers:
-        carrier.update(material.builder.refresh_clip_facts(carrier))
-        asset_id = carrier["asset_id"]
-        material.story_lines[asset_id] = material.text.description(
-            carrier
-        ) or source.annotations.get(asset_id, "")
-
-
-def _worthiness_gate(
-    source, ports, wall: Wall, material: Material, *, admission, admission_key, record
-):
-    """Keep scoped admission; ordinary story importance comes from the story reading."""
-    if ports.draft is not None:
-        return ports.draft.tiers.copy(), ports.draft.reasons.copy(), ""
-    if ports.rules is not None:
-        tiers, reasons = ports.rules.worthiness(wall, near_home_test(source, wall))
-        record("memory-worthy-gate", {"version": "rules-v1", "tiers": tiers, "reasons": reasons})
-        return tiers, reasons, ""
-    criterion, marker = worth_criterion_v44(source.case.product, source.intent.subject)
-    if not marker:
-        record("memory-worthy-gate", {"version": "story-importance-v1", "rounds": []})
-        return {}, {}, ""
-    bank = VoteBank(source.bank_store, "memory-worthy", source.case.key)
-    gate_tier, gate_reason, gate_rounds = judge_worthiness(
-        ports.judge,
-        happenings=wall.fam_ids,
-        label_of=wall.anchor_label,
-        text_of=lambda f: anchor_line(wall, material, f).split(": ", 1)[-1],
-        near_home=near_home_test(source, wall),
-        contract=admission,
-        contract_key=admission_key,
-        criterion=criterion,
-        marker=marker,
-        period_label=source.case.label,
-        bank=bank,
-        save=bank.save,
-    )
-    record(
-        "memory-worthy-gate",
-        {
-            "version": "memory-worthy-v2-contract",
-            "counts": {
-                "remarkable": sum(1 for t in gate_tier.values() if t == 0),
-                "maybe": sum(1 for t in gate_tier.values() if t == 1),
-                "background": sum(1 for t in gate_tier.values() if t == 2),
-            },
-            "tiers": {wall.anchor_label[f]: t for f, t in gate_tier.items()},
-            "reasons": {wall.anchor_label[f]: r for f, r in gate_reason.items()},
-            "rounds": gate_rounds,
-        },
-    )
-    return gate_tier.copy(), gate_reason.copy(), marker
 
 
 def _story_selection(

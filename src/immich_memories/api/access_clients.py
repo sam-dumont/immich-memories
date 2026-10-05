@@ -163,6 +163,12 @@ class AccessBoundClient(SyncImmichClient):
             asset_id, lambda client: SyncImmichClient.get_asset_faces(client, asset_id)
         )
 
+    def get_asset_ocr_text(self, asset_id: str) -> str | None:
+        """This asset's OCR text, read through whichever account owns it (#2062)."""
+        return self._routed(
+            asset_id, lambda client: SyncImmichClient.get_asset_ocr_text(client, asset_id)
+        )
+
     def get_asset_thumbnail(self, asset_id: str, size: str = "preview") -> bytes:
         return self._routed(
             asset_id, lambda client: SyncImmichClient.get_asset_thumbnail(client, asset_id, size)

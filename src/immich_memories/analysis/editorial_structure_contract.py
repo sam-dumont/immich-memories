@@ -265,6 +265,14 @@ class StructurePlannerPorts:
     # Immich's OCR over the screens and documents near a moment, for the no-model reader's event
     # corroboration (`editorial_event_story`); None when the run cannot search Immich.
     printed_near: PrintedNear | None = None
+    # This asset's OCR text, read through whichever Immich account owns it; corroborates a
+    # photographed ID or document the carrier eligibility heads alone cannot tell from a
+    # legitimate record (#2062). The second argument is whether the frame head already
+    # says this frame is document-like: True bypasses the bulk-search narrowing, since an
+    # MRZ or card number can never be found by keyword search. None when the server
+    # predates OCR reads (2.2) or a read failed; a missing or unreadable asset answers
+    # None, not an error.
+    document_ocr_text: Callable[[str, bool], str | None] | None = None
     prepare_candidates: Callable[[Sequence[Mapping[str, Any]]], bool] | None = None
     refine: (
         Callable[

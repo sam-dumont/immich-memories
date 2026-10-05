@@ -48,6 +48,24 @@ async def _retrying(label: str, attempt: Callable[[], Awaitable[_T]]) -> _T:
     return await attempt()
 
 
+def _box_position(box: dict[str, Any]) -> tuple[float, float]:
+    """Top-left corner of a text box's quadrilateral, for a reading-order sort."""
+    xs: list[float] = [v for n in (1, 2, 3, 4) if isinstance(v := box.get(f"x{n}"), (int, float))]
+    ys: list[float] = [v for n in (1, 2, 3, 4) if isinstance(v := box.get(f"y{n}"), (int, float))]
+    return (min(ys) if ys else 0.0, min(xs) if xs else 0.0)
+
+
+def _joined_ocr_text(data: object) -> str | None:
+    """Immich's OCR answer: a list of text boxes, not one string (#2062)."""
+    if not isinstance(data, list):
+        return None
+    boxes = [box for box in data if isinstance(box, dict) and box.get("text")]
+    if not boxes:
+        return None
+    boxes.sort(key=_box_position)
+    return "\n".join(str(box["text"]) for box in boxes) or None
+
+
 def large_original_size(asset: Asset) -> int | None:
     """Bound an oversized original by its metadata, never by a Live Photo's still size."""
     if asset.live_photo_video_id:
@@ -82,6 +100,25 @@ class AssetService:
         """
         rows = await self._request("GET", "/faces", params={"id": asset_id})
         return [AssetFace(**row) for row in rows] if isinstance(rows, list) else []
+
+    async def get_asset_ocr_text(self, asset_id: str) -> str | None:
+        """This asset's recognised text, read by Immich's own OCR job (2.2+).
+
+        The endpoint answers a list of text boxes, each with its own `text` and the
+        quadrilateral it sits in (`x1..y4`), not one joined string. Boxes are read back
+        top-to-bottom, left-to-right by their own position -- the order Immich returns them
+        in is not guaranteed to be reading order -- and joined one per line.
+
+        An asset with no OCR data (never processed, or nothing readable in it) answers 404,
+        which reads the same as no text: None, not an error.
+        """
+        from immich_memories.api.immich import ImmichNotFoundError
+
+        try:
+            data = await self._request("GET", f"/assets/{asset_id}/ocr")
+        except ImmichNotFoundError:
+            return None
+        return _joined_ocr_text(data)
 
     @timed("download.preview", items=1)
     async def get_asset_thumbnail(self, asset_id: str, size: str = "preview") -> bytes:

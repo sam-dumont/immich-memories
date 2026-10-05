@@ -13,6 +13,7 @@ from immich_memories.analysis.editorial_album_index import (
     RunAlbumNames,
     record_album_index,
 )
+from immich_memories.analysis.editorial_document_ocr import document_ocr_port
 from immich_memories.analysis.editorial_event_story import PrintedNear
 from immich_memories.analysis.editorial_evidence_provenance import AttemptEvidenceProvenance
 from immich_memories.analysis.editorial_film_preparation import FilmPreparation
@@ -673,6 +674,7 @@ def build_editorial_planner(
         episode_demand=demand,
         prepare_refinement=refinement.refine if refinement else None,
         printed_near=_printed_near(client),
+        document_ocr_text=document_ocr_port(client, accounts=accounts),
     )
 
     def attempt_directory() -> Path:

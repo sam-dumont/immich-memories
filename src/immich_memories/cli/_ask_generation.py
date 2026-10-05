@@ -332,6 +332,7 @@ def _rule_preview(
         ),
         audience=level_of(config.defaults.sharing),
         preview_jpeg=lambda asset: cached_preview_bytes(thumbnails, asset.id),
+        client=client,
     )
 
 

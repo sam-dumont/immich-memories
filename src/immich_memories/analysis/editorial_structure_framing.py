@@ -1,9 +1,9 @@
 """Decisions the structure planner makes about what the film is of, before and around selection.
 
 Whether a happening sits near home, which families a written subject's pool is narrowed to, the
-worthiness tier a selected story leaves each family at, and the slot/depth budget a product's
-target seconds buys: all of it is read from plain facts the planner already holds, never from a
-model mid-selection.
+memory-worthy tier a model or the rules reader gives each family (or a selected story's own
+hierarchy leaves it at), and the slot/depth budget a product's target seconds buys: all of it
+is read once from facts the planner already holds, never asked again mid-selection.
 """
 
 from __future__ import annotations
@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
+from immich_memories.analysis.editorial_block_votes import judge_worthiness, worth_criterion_v44
 from immich_memories.analysis.editorial_episode_documents import factual_moment_rows
 from immich_memories.analysis.editorial_home_radius import home_of, near_home_of
 from immich_memories.analysis.editorial_picture_ladders import depth_cap
@@ -20,7 +21,8 @@ from immich_memories.analysis.editorial_structure_budget import (
     NOMINAL_STILL_SECONDS,
 )
 from immich_memories.analysis.editorial_structure_contract import StructurePlanningInput
-from immich_memories.analysis.editorial_structure_material import Wall
+from immich_memories.analysis.editorial_structure_material import Material, Wall, anchor_line
+from immich_memories.store.vote_banks import VoteBank
 
 SECONDS_PER_SLOT = NOMINAL_STILL_SECONDS
 STORY_RANK = {"central": 0, "supporting": 1}
@@ -157,3 +159,49 @@ def partition_cap(
                 "prior plan exceeds the product's partition carrier limit; replan without the incompatible prior"
             )
     return slots_total, cap, limit
+
+
+def worthiness_gate(
+    source, ports, wall: Wall, material: Material, *, admission, admission_key, record
+):
+    """Keep scoped admission; ordinary story importance comes from the story reading."""
+    if ports.draft is not None:
+        return ports.draft.tiers.copy(), ports.draft.reasons.copy(), ""
+    if ports.rules is not None:
+        tiers, reasons = ports.rules.worthiness(wall, near_home_test(source, wall))
+        record("memory-worthy-gate", {"version": "rules-v1", "tiers": tiers, "reasons": reasons})
+        return tiers, reasons, ""
+    criterion, marker = worth_criterion_v44(source.case.product, source.intent.subject)
+    if not marker:
+        record("memory-worthy-gate", {"version": "story-importance-v1", "rounds": []})
+        return {}, {}, ""
+    bank = VoteBank(source.bank_store, "memory-worthy", source.case.key)
+    gate_tier, gate_reason, gate_rounds = judge_worthiness(
+        ports.judge,
+        happenings=wall.fam_ids,
+        label_of=wall.anchor_label,
+        text_of=lambda f: anchor_line(wall, material, f).split(": ", 1)[-1],
+        near_home=near_home_test(source, wall),
+        contract=admission,
+        contract_key=admission_key,
+        criterion=criterion,
+        marker=marker,
+        period_label=source.case.label,
+        bank=bank,
+        save=bank.save,
+    )
+    record(
+        "memory-worthy-gate",
+        {
+            "version": "memory-worthy-v2-contract",
+            "counts": {
+                "remarkable": sum(1 for t in gate_tier.values() if t == 0),
+                "maybe": sum(1 for t in gate_tier.values() if t == 1),
+                "background": sum(1 for t in gate_tier.values() if t == 2),
+            },
+            "tiers": {wall.anchor_label[f]: t for f, t in gate_tier.items()},
+            "reasons": {wall.anchor_label[f]: r for f, r in gate_reason.items()},
+            "rounds": gate_rounds,
+        },
+    )
+    return gate_tier.copy(), gate_reason.copy(), marker

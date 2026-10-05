@@ -140,6 +140,9 @@ class SyncImmichClient:
     def get_asset_faces(self, asset_id: str) -> list[AssetFace]:
         return self._run(self._async_client.get_asset_faces(asset_id))
 
+    def get_asset_ocr_text(self, asset_id: str) -> str | None:
+        return self._run(self._async_client.get_asset_ocr_text(asset_id))
+
     def get_asset_thumbnail(self, asset_id: str, size: str = "preview") -> bytes:
         return self._run(self._async_client.get_asset_thumbnail(asset_id, size))
 
