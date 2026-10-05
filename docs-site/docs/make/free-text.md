@@ -73,6 +73,12 @@ This saves an actual cut for review. Render it from **Runs**, or use [`runs rend
 
 The sentence becomes filters over facts and captions already prepared from your library. Those filters build a pool; the normal editor chooses shots from it. An empty pool makes no film.
 
+## Leaving things out
+
+"No", "without" and their equivalent in your language exclude rather than require: "landscapes, no humans" drops any picture with a face or a person in its caption, "sans les enfants" drops children without requiring them. A named person works the same way: "without Cy" drops Cy's own pictures. Mix a request freely: "with the kids, no rain" keeps the kids filter and drops nothing about rain, since each clause of your sentence is read on its own.
+
+"Only" narrows a company word to the kind you named: "only the performers" keeps musicians, singers, dancers and the rest of that cast, and drops the audience. The exclusion travels with the film all the way to the final cut, so a picture that slipped past the pool filter still gets caught and reported.
+
 The sentence supplies the scope, so do not combine `--ask` with `--year`, `--person` or an album scope. For a predictable date or person film, use [the normal film chooser](./memory-types.mdx).
 
 ## When a result is bad

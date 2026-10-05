@@ -43,6 +43,7 @@ VOCABULARY: dict[str, tuple[str | Sense, ...]] = {
     "meadow": ("noun.location",),
     "Northvale": ("noun.location",),
     "person": ("noun.person",),
+    "human": (Sense("noun.person", kind_of="person.n.01"),),
     "juvenile": (Sense("noun.person", kind_of="person.n.01"),),
     "child": (
         Sense("noun.person", kind_of="juvenile.n.01", also=("kid",)),

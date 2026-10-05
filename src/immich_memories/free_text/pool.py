@@ -20,6 +20,7 @@ from immich_memories.analysis.person_presence import present_on_assets
 from immich_memories.api.models import Asset, Person
 from immich_memories.api.person_expression import PersonExpression
 from immich_memories.config_models_automation import TripsConfig
+from immich_memories.free_text import caption_words
 from immich_memories.free_text.facts import (
     LibraryFacts,
     TripRules,
@@ -99,6 +100,13 @@ class Pool:
     printed: tuple[str, ...] = ()
     # The pictures whose printed text reads those words: in the pool on that evidence alone.
     anchors: frozenset[str] = frozenset()
+    # What the request asked left out ("no toy cars"): carried so a film made from this pool
+    # can state it as a hard rule too, not only filter by it here (#2061).
+    excluded: tuple[str, ...] = ()
+    # A named person the request excluded ("without Cy"), by people-file id: carried so a
+    # film made from this pool can check a selected carrier's own recognised faces, the way
+    # a required person condition already is, instead of a caption that never names anyone.
+    excluded_person_ids: tuple[str, ...] = ()
 
 
 class _Funnel:
@@ -154,6 +162,7 @@ def build_pool(
     excluded, left_out_reason = left_out(translation.reading.request, asker)
     _when(funnel, translation.when)
     _present(funnel, translation.who, view, face_accounts, picture_accounts)
+    _absent_present(funnel, translation.who, view, face_accounts, picture_accounts)
     rules = trips or TripsConfig()
     if not (printed and _printed(funnel, translation, printed, asker)):
         _where(funnel, translation, household, rules, lexicon, asker)
@@ -167,7 +176,24 @@ def build_pool(
         notes = (names_reason, left_out_reason)
         _subject(funnel, translation.subject, names, excluded, lexicon, notes)
     _company(funnel, translation.who, lexicon)
-    return _verdict(funnel)
+    return _verdict(
+        funnel,
+        (*excluded, *_company_exclusions(translation.who, view)),
+        translation.who.absent_present,
+    )
+
+
+def _company_exclusions(who: WhoLink, view: LibraryView) -> tuple[str, ...]:
+    # Carried alongside the left-out phrases so a film made from this pool can state every
+    # one of the request's exclusions as a hard rule, not only filter the pool by it (#2061).
+    # Bare nouns, no "no"/"not" of their own (round 3): the brief's own "must not show:"
+    # already carries the single negation; "must not show: no people" reads as a double one.
+    phrases = []
+    if who.absent_company:
+        phrases.append(who.absent_company)
+    if who.absent_present:
+        phrases.append(_names(view, frozenset(who.absent_present)))
+    return tuple(phrases)
 
 
 def _when(funnel: _Funnel, when: WhenLink) -> None:
@@ -348,6 +374,31 @@ def _present(
     funnel.keep("who", kept, Reason(named, rule, "they are there"))
 
 
+def _absent_present(
+    funnel: _Funnel,
+    who: WhoLink,
+    view: LibraryView,
+    face_accounts: Mapping[str, str | frozenset[str]],
+    picture_accounts: Mapping[str, str],
+) -> None:
+    # A negated name or role ("without Cy") excludes exactly that face, never requires it
+    # (#2061): the opposite of `_present`, on the same strict per-picture rule. A household
+    # run's `face_accounts` holds each face to its own account the same way `_present` does
+    # (#2044, #2055): a face excluded on one account never drops another account's picture
+    # of someone else wearing the same name.
+    if not who.absent_present:
+        return
+    excluded = frozenset(who.absent_present)
+    leaves = tuple(PersonExpression("person", value=person_id) for person_id in excluded)
+    condition = leaves[0] if len(leaves) == 1 else PersonExpression("any", children=leaves)
+    assets = [_as_asset(picture, picture_accounts) for picture in funnel.pictures]
+    held = present_on_assets(assets, condition, face_accounts=face_accounts)
+    kept = [picture for picture in funnel.pictures if picture.asset_id not in held]
+    named = _names(view, excluded)
+    rule = "excluded by their own recognised face, strictly per picture"
+    funnel.keep("absent who", kept, Reason(named, rule, "they are not there"))
+
+
 def _printed(funnel: _Funnel, translation: Translation, printed: PrintedText, asker: Asker) -> bool:
     # A word printed in a photo (a club's name on a jersey) vouches for the photo's episode: the
     # event decides where, and the subject is then read inside it. A name no picture reads is
@@ -379,25 +430,68 @@ def _in_episodes(
     return [picture for picture in pictures if near(picture)]
 
 
+_CURATED_REQUIRED_KINDS = frozenset({"performers", "teens", "audience"})
+
+
 def _company(funnel: _Funnel, who: WhoLink, lexicon: Lexicon) -> None:
-    # Company is read from captions: "with kids" needs a caption naming children.
+    # A required ("positive") company stays on main's own WordNet match (#2061 round 4):
+    # the curated list replacing it lost real photos (skiers, a father and son embracing)
+    # whose captions use ordinary words WordNet already recognised as people. The curated
+    # list is for the absent/excluded path, and for a kind main never had ("performers").
+    if who.absent_company is not None:
+        _drop_company(funnel, who.absent_company)
     if who.company is None:
         return
-    young = who.company == "children"
-    fits: dict[str, bool] = {}
+    kind = who.company
+    curated = kind in _CURATED_REQUIRED_KINDS
+    young = kind == "children"
 
     def names_company(word: str) -> bool:
-        if word not in fits:
-            fits[word] = lexicon.is_human(word) and (not young or lexicon.is_young(word))
-        return fits[word]
+        if curated:
+            found = caption_words.caption_kind_of(word)
+            return found is not None and kind in ("people", found)
+        return lexicon.is_human(word) and (not young or lexicon.is_young(word))
 
     kept = [
         picture
         for picture in funnel.pictures
         if any(names_company(word) for word in words_of(picture.caption or ""))
     ]
-    rule = f"a caption naming {who.company} (WordNet's people words)"
-    funnel.keep("company", kept, Reason(who.company, rule, f"{who.company} in the photos"))
+    rule = f"a caption naming {kind}" + (
+        " (a curated word list)" if curated else " (WordNet's people words)"
+    )
+    if who.company_only:
+        # "Only" filters, not just a trace note (#2061 round 3): a caption that also names a
+        # different specific kind (an audience alongside the performers) is left out too.
+        kept = [picture for picture in kept if not _names_another_kind(picture, kind)]
+        rule += "; only that kind asked, a caption that also names another kind is left out"
+    funnel.keep("company", kept, Reason(kind, rule, f"{kind} in the photos"))
+
+
+def _names_another_kind(picture: LibraryPicture, kind: str) -> bool:
+    return any(
+        (found := caption_words.caption_kind_of(word)) is not None and found not in (kind, "people")
+        for word in words_of(picture.caption or "")
+    )
+
+
+def _drop_company(funnel: _Funnel, kind: str) -> None:
+    # Absence of people must not rely on captions alone (#2061): any detected face box,
+    # named or not, proves someone is there even when the caption never writes a word for
+    # people. A generic "people" absence drops every detected face; a specific kind
+    # ("children", "teens", "performers", "audience") only drops that kind's own word.
+    def has_company(picture: LibraryPicture) -> bool:
+        words = words_of(picture.caption or "")
+        if any(
+            (found := caption_words.caption_kind_of(word)) is not None and kind in ("people", found)
+            for word in words
+        ):
+            return True
+        return kind == "people" and picture.face_count > 0
+
+    kept = [picture for picture in funnel.pictures if not has_company(picture)]
+    rule = f"no caption naming {kind}" + ("; no detected face" if kind == "people" else "")
+    funnel.keep("absent company", kept, Reason(kind, rule, f"no {kind} in the photos"))
 
 
 def _subject(
@@ -435,7 +529,11 @@ def _head(phrase: str, lexicon: Lexicon) -> str:
     return (lexicon.noun_base(last[0]) or last[0]) if last else ""
 
 
-def _verdict(funnel: _Funnel) -> Pool:
+def _verdict(
+    funnel: _Funnel,
+    excluded: tuple[str, ...] = (),
+    excluded_person_ids: tuple[str, ...] = (),
+) -> Pool:
     kept = funnel.pictures
     path = " -> ".join(f"{step.name} {step.kept}" for step in funnel.steps)
     if not kept:
@@ -458,4 +556,6 @@ def _verdict(funnel: _Funnel) -> Pool:
         occasion=funnel.occasion,
         printed=funnel.printed,
         anchors=frozenset(funnel.anchors),
+        excluded=excluded,
+        excluded_person_ids=excluded_person_ids,
     )

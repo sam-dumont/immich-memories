@@ -9,11 +9,15 @@ prompts and the structural review.
 
 from __future__ import annotations
 
+import re
 from collections.abc import Collection, Sequence
 from dataclasses import dataclass
 from datetime import date
 
 from immich_memories.analysis.editorial_intent import EditorialIntent
+from immich_memories.free_text import caption_words
+
+_WORD = re.compile(r"[\w']+")
 
 __all__ = ["CarrierView", "IntentReport", "Violation", "validate_intent"]
 
@@ -32,6 +36,9 @@ class CarrierView:
     taken: date
     event: str
     seconds: float
+    # The picture's own caption, read only to count a planted violation of the intent's
+    # exclusions (#2061); None for a caller that never reads captions.
+    caption: str | None = None
 
 
 @dataclass(frozen=True)
@@ -154,6 +161,51 @@ def _people_violations(
     ]
 
 
+def _excluded_violations(
+    intent: EditorialIntent, carriers: Sequence[CarrierView]
+) -> list[Violation]:
+    """Every selected carrier whose own caption still shows a word the intent excludes.
+
+    The pool already drops a picture a free-text request asked left out (#2061); this is
+    the same check run again over what a plan actually selected, so a violation stays
+    visible instead of silently passing through if one ever slips in.
+    """
+    if not intent.excluded:
+        return []
+    return [
+        Violation(
+            "excluded_subject_shown",
+            "structural",
+            None,
+            f"{carrier.asset_id} was selected but its caption shows what the request asked "
+            f"left out: {carrier.caption}",
+            asset_id=carrier.asset_id,
+        )
+        for carrier in carriers
+        if carrier.caption and _shows_excluded(intent.excluded, carrier.caption)
+    ]
+
+
+def _shows_excluded(excluded: Sequence[str], caption: str) -> bool:
+    """Whether the caption shows a phrase the intent excludes: a bare company kind
+    (`pool.py`'s `_company_exclusions`, e.g. "people") by the same curated person-noun
+    matcher that built the pool's own "absent company" filter, every other excluded phrase
+    by its own words (proper `\\w+` tokens, not a naive whitespace split that stuck
+    punctuation to a word)."""
+    words = _WORD.findall(caption.lower())
+    for phrase in excluded:
+        kind = phrase.strip().lower()
+        if kind in caption_words.KINDS and any(
+            (found := caption_words.caption_kind_of(word)) is not None and kind in ("people", found)
+            for word in words
+        ):
+            return True
+        phrase_words = set(_WORD.findall(phrase.lower()))
+        if phrase_words and phrase_words <= set(words):
+            return True
+    return False
+
+
 def _too_thin(intent: EditorialIntent, carriers: Sequence[CarrierView]) -> bool:
     if len(carriers) < MIN_CARRIERS:
         return True
@@ -204,6 +256,7 @@ def validate_intent(
             else []
         ),
         *_people_violations(carriers, people_violations),
+        *_excluded_violations(intent, carriers),
     ]
     status, reason = _verdict(
         intent,

@@ -164,7 +164,14 @@ def scope_of_ask(
     ref = "ask-" + hashlib.sha256(request.encode()).hexdigest()[:12]
     if film.window is None:
         raise click.ClickException("The pool holds no picture to film")
-    pool = CuratedPool(name=request, ref=ref, asset_ids=film.asset_ids, window=film.window)
+    pool = CuratedPool(
+        name=request,
+        ref=ref,
+        asset_ids=film.asset_ids,
+        window=film.window,
+        excluded=film.excluded,
+        excluded_person_ids=film.excluded_person_ids,
+    )
     return RunScope(from_album=ref, subject=film.subject, accept_any_provenance=True, curated=pool)
 
 
