@@ -217,7 +217,7 @@ class AudienceGate:
         activity_reader: Callable[[Mapping[str, tuple[Sequence[str], bool]]], dict[str, str]]
         | None = None,
         prepare_candidates: Callable[[Sequence[Mapping[str, Any]]], None] | None = None,
-        ocr_text_of: Callable[[str], str | None] | None = None,
+        ocr_text_of: Callable[[str, bool], str | None] | None = None,
         protected: Collection[str] = (),
     ) -> None:
         self._prepare_candidates = prepare_candidates

@@ -167,84 +167,155 @@ _MRZ_LINE = re.compile(r"^[A-Z0-9<]{30,}$")
 # A 13-19 digit run (a card number), with no more digits touching either end -- a 20-digit
 # order number must never read as a 19-digit card number at some offset inside it.
 _DIGIT_RUN = re.compile(r"(?<!\d)(?:\d[ -]?){13,19}(?!\d)")
-_IBAN = re.compile(r"\b[A-Z]{2}\d{2}[A-Z0-9]{10,30}\b")
+# A country code, check digits and up to 30 more characters, each optionally preceded by
+# one space -- the printed, grouped form ("BE68 5390 0754 7034") as well as the unbroken one.
+_IBAN = re.compile(r"\b[A-Z]{2}\d{2}(?:[ ]?[A-Z0-9]){8,30}\b")
 # A line carrying one of these is a receipt, invoice or catalogue line, not a personal
 # card: its digit runs are order, reference or barcode numbers, never checked for Luhn.
 _DIGIT_RUN_CONTEXT_EXCLUDED = re.compile(
     r"\b(?:order|commande|ean|r[ée]f(?:[ée]rence)?)\b", re.IGNORECASE
 )
 
+
+def _word_boundary(word: str) -> str:
+    r"""`\bword(s)?\b` for a Latin-script word or phrase; the literal word itself for a
+    script (CJK, Hangul, Cyrillic) `\b` cannot anchor on, since those carry no spaces."""
+    if word.isascii():
+        return rf"\b{re.escape(word)}s?\b"
+    return re.escape(word)
+
+
 # Personal-record field labels a passport, ID card, bank card, payslip or medical record
-# prints, across the household's own languages and the field names the owner named directly
-# (NISS/numéro national, the Belgian national number). Not exhaustive: a locale missing here
-# still gets the caption, MRZ and card/IBAN-number signals.
-_PERSONAL_RECORD_FIELD = re.compile(
-    r"\b(?:"
+# prints, across the household's own languages. This exact tuple also feeds Immich's bulk
+# keyword search (`editorial_document_ocr.py`): one source, so a word added here is read
+# by both the content check and the search that narrows which assets pay for a real OCR
+# read, and the two can never drift apart (#2062 round 4). Not exhaustive: a locale
+# missing here still gets the document-title, MRZ and card/IBAN-number signals.
+PERSONAL_RECORD_FIELD_WORDS: tuple[str, ...] = (
     # English
-    r"date of birth|place of birth|nationality|card ?holder|holder'?s? name|"
-    r"social security(?: number)?|national (?:insurance|number)|passport no\.?|"
+    "date of birth",
+    "place of birth",
+    "nationality",
+    "national insurance",
+    "national number",
+    "passport no",
     # French / Belgian French
-    r"date de naissance|n[ée](?:\(e\)|e)?\s+le|lieu de naissance|num[ée]ro national|niss|"
-    r"titulaire|nom et pr[ée]nom|nom de naissance|"
+    "date de naissance",
+    "lieu de naissance",
+    "numéro national",
+    "numero national",
+    "niss",
+    "titulaire",
+    "nom et prénom",
+    "nom et prenom",
+    "nom de naissance",
     # Dutch / Belgian Dutch
-    r"geboortedatum|geboorteplaats|nationaliteit|identiteitskaart|rijksregisternummer|"
+    "geboortedatum",
+    "geboorteplaats",
+    "nationaliteit",
+    "identiteitskaart",
+    "rijksregisternummer",
     # German
-    r"geburtsdatum|geburtsort|staatsangeh[öo]rigkeit|ausweisnummer|"
+    "geburtsdatum",
+    "geburtsort",
+    "staatsangehörigkeit",
+    "staatsangehoerigkeit",
+    "ausweisnummer",
     # Spanish
-    r"fecha de nacimiento|lugar de nacimiento|nacionalidad|n[úu]mero de identificaci[óo]n|"
+    "fecha de nacimiento",
+    "lugar de nacimiento",
+    "nacionalidad",
+    "número de identificación",
+    "numero de identificacion",
     # Italian
-    r"data di nascita|luogo di nascita|nazionalit[àa]|codice fiscale|"
+    "data di nascita",
+    "luogo di nascita",
+    "nazionalità",
+    "nazionalita",
+    "codice fiscale",
     # Portuguese
-    r"data de nascimento|naturalidade|nacionalidade|"
+    "data de nascimento",
+    "naturalidade",
+    "nacionalidade",
     # Nordic / Finnish
-    r"f[øö]dselsdato|f[øö]dselsnummer|personnummer|henkil[öo]tunnus|"
+    "fødselsdato",
+    "fodselsdato",
+    "fødselsnummer",
+    "fodselsnummer",
+    "personnummer",
+    "henkilötunnus",
+    "henkilotunnus",
     # Polish / Romanian / Czech
-    r"data urodzenia|numer pesel|data na[sş]terii|cod numeric personal|rodn[ée] [čc]íslo"
-    r")\b",
+    "data urodzenia",
+    "numer pesel",
+    "data nașterii",
+    "data nasterii",
+    "cod numeric personal",
+    "rodné číslo",
+    "rodne cislo",
+)
+# A few field labels are not one literal phrase (an optional "(e)", an optional "number",
+# an apostrophe-s), so a search engine cannot look them up as a word; they stay their own
+# patterns, outside the shared vocabulary above.
+_IRREGULAR_FIELD_PATTERN = re.compile(
+    r"\bcard ?holder\b|\bholder'?s? name\b|\bsocial security(?: number)?\b",
+    re.IGNORECASE,
+)
+# "né le"/"née le"/"né(e) le" followed by a date or a capitalised name -- "Ne le jetez
+# pas" must not match, so this requires what follows the field label to look like its
+# value (round 4). The lookahead is deliberately case-sensitive; the label itself is not.
+_BIRTH_DATE_FIELD_FR = re.compile(r"(?i:n[ée](?:\(e\)|e)?\s+le)\s+(?=\d|[A-ZÀ-Ý])")
+_PERSONAL_RECORD_FIELD = re.compile(
+    "|".join(_word_boundary(word) for word in PERSONAL_RECORD_FIELD_WORDS),
     re.IGNORECASE,
 )
 
-# The document's own header/title, in the household's languages and scripts. Latin-script
-# words get a word boundary; a CJK or Hangul document title does not, since those scripts
-# carry no spaces for `\b` to anchor on.
-_DOCUMENT_TITLE_WORDS_LATIN = (
+# The document's own header/title, in the household's languages and scripts. Also feeds
+# the bulk keyword search, so it is a literal-word tuple too (round 4). Bare "pass" is
+# deliberately absent: it caught a ski pass, a bus pass and a day pass; "boarding pass"
+# stays, since a real boarding pass carries the traveller's name.
+DOCUMENT_TITLE_WORDS: tuple[str, ...] = (
     # English
-    r"passports?",
-    r"identity cards?",
-    r"driving licen[cs]es?",
+    "passport",
+    "identity card",
+    "driving licence",
+    "driving license",
+    "boarding pass",
     # French / Belgian French
-    r"passeport",
-    r"carte\s*d['’]?\s*identit[ée]",
-    r"permis de conduire",
+    "passeport",
+    "carte d'identite",
+    "carte d identite",
+    "permis de conduire",
     # Dutch / Belgian Dutch
-    r"paspoort",
-    r"identiteitskaart",
-    r"rijbewijs",
+    "paspoort",
+    "identiteitskaart",
+    "rijbewijs",
     # German
-    r"reisepass",
-    r"personalausweis",
-    r"f[üu]hrerschein",
+    "reisepass",
+    "personalausweis",
+    "führerschein",
+    "fuhrerschein",
     # Spanish
-    r"pasaporte",
-    r"\bdni\b",
-    r"permiso de conducir",
+    "pasaporte",
+    "dni",
+    "permiso de conducir",
     # Italian
-    r"passaporto",
-    r"carta\s*d['’]?\s*identit[àa]",
-    r"patente",
+    "passaporto",
+    "carta d'identita",
+    "carta d identita",
+    "patente",
     # Portuguese
-    r"passaporte",
-    r"carteira de identidade",
-    r"\bcnh\b",
+    "passaporte",
+    "carteira de identidade",
+    "cnh",
     # Polish
-    r"paszport",
-    r"dow[óo]d osobisty",
-    r"prawo jazdy",
+    "paszport",
+    "dowód osobisty",
+    "dowod osobisty",
+    "prawo jazdy",
     # Swedish / Nordic
-    r"k[öo]rkort",
-    r"\bpass\b",
-)
-_DOCUMENT_TITLE_WORDS_OTHER_SCRIPT = (
+    "körkort",
+    "korkort",
     # Russian
     "паспорт",
     "водительское удостоверение",
@@ -261,16 +332,20 @@ _DOCUMENT_TITLE_WORDS_OTHER_SCRIPT = (
     "护照",
 )
 _DOCUMENT_TITLE_WORD = re.compile(
-    "|".join(_DOCUMENT_TITLE_WORDS_LATIN) + "|" + "|".join(_DOCUMENT_TITLE_WORDS_OTHER_SCRIPT),
-    re.IGNORECASE,
+    "|".join(_word_boundary(word) for word in DOCUMENT_TITLE_WORDS), re.IGNORECASE
 )
 # The EU driving licence's own form prints its numbered fields down the card; 4a (issue
 # date) and 4b (expiry date) sit on their own line and belong to no other document.
 _EU_LICENCE_FIELD = re.compile(r"^\s*4[ab]\.", re.MULTILINE)
 # A gift or event voucher reading a name field is a personal record too (round 3): a
-# ticket or coupon that carries who it is for or for whom it was bought.
+# ticket or coupon that carries who it is for or for whom it was bought. The field word
+# must look like a field -- a colon/dash then a capitalised name -- not a floating
+# preposition: "Bon pour un café" must not match (round 4). The lookahead is
+# case-sensitive on purpose; the field word itself is not.
 _VOUCHER_WORD = re.compile(r"\b(?:bon|voucher|gutschein|cadeau|ticket)\b", re.IGNORECASE)
-_VOUCHER_NAME_FIELD = re.compile(r"\b(?:nom|name|naam|titulaire|pour|f[üu]r)\b", re.IGNORECASE)
+_VOUCHER_NAME_FIELD = re.compile(
+    r"(?i:\b(?:nom|name|naam|titulaire|pour|f[üu]r))\s*[:\-]?\s*(?=[A-ZÀ-ÿ])"
+)
 
 
 def _luhn_valid(run: str) -> bool:
@@ -290,7 +365,8 @@ def _luhn_valid(run: str) -> bool:
 
 def _iban_valid(code: str) -> bool:
     """The mod-97 check an IBAN-shaped code (not an arbitrary letters-then-digits string)
-    must satisfy."""
+    must satisfy. `code` may still carry the printed grouping spaces."""
+    code = code.replace(" ", "")
     if not 15 <= len(code) <= 34:
         return False
     rearranged = code[4:] + code[:4]
@@ -336,6 +412,8 @@ def ocr_reads_a_personal_record(ocr_text: str | None) -> bool:
         return False
     return bool(
         _PERSONAL_RECORD_FIELD.search(ocr_text)
+        or _IRREGULAR_FIELD_PATTERN.search(ocr_text)
+        or _BIRTH_DATE_FIELD_FR.search(ocr_text)
         or _DOCUMENT_TITLE_WORD.search(ocr_text)
         or _machine_readable_zone(ocr_text)
         or _iban_present(ocr_text)
@@ -343,6 +421,18 @@ def ocr_reads_a_personal_record(ocr_text: str | None) -> bool:
         or _eu_licence_fields(ocr_text)
         or _gift_voucher_with_a_name(ocr_text)
     )
+
+
+def frame_is_document_like(heads: Mapping[str, str]) -> bool:
+    """Whether this frame's own head evidence leaves the OCR/field-evidence path open.
+
+    Only an explicit non-document `frame_kind` (`people_moment`, `place_or_scenery`, an
+    empty-room or body-part kind) closes it; a missing head (no `frame_kind` computed, or
+    no heads at all on Basic) leaves OCR as the strongest evidence that tier has, so it
+    must be allowed to stand on its own (#2062).
+    """
+    frame = heads.get("frame_kind")
+    return frame is None or frame in _DOCUMENT_LIKE_FRAMES
 
 
 def personal_document(content: str, heads: Mapping[str, str], ocr_text: str | None = None) -> bool:
@@ -364,8 +454,7 @@ def personal_document(content: str, heads: Mapping[str, str], ocr_text: str | No
     """
     if _PERSONAL_DOCUMENT_TEXT.search(content):
         return True
-    frame = heads.get("frame_kind")
-    if frame is not None and frame not in _DOCUMENT_LIKE_FRAMES:
+    if not frame_is_document_like(heads):
         return False
     return ocr_reads_a_personal_record(ocr_text)
 
@@ -374,7 +463,7 @@ def excluded_carrier_sources(
     annotations: Mapping[str, str],
     *,
     heads_of: Mapping[str, Mapping[str, str]] | None = None,
-    ocr_text_of: Callable[[str], str | None] | None = None,
+    ocr_text_of: Callable[[str, bool], str | None] | None = None,
     protected: Collection[str] = (),
 ) -> dict[str, str]:
     """Use grounded annotation fields, without reclassifying the event's importance.
@@ -409,7 +498,9 @@ def excluded_carrier_sources(
         elif asset_id not in protected and personal_document(
             content,
             heads_of.get(asset_id, {}),
-            ocr_text_of(asset_id) if ocr_text_of else None,
+            ocr_text_of(asset_id, frame_is_document_like(heads_of.get(asset_id, {})))
+            if ocr_text_of
+            else None,
         ):
             excluded[asset_id] = "personal-document"
     return excluded

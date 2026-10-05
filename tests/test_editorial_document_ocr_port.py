@@ -26,18 +26,36 @@ class _SearchResult:
         self.next_page: str | None = None
 
 
+class _Account:
+    """WHY: stands in for `OpenAccount`; only `.client` is read."""
+
+    def __init__(self, client: object) -> None:
+        self.client = client
+
+
 class _Client:
     def __init__(
-        self, server_info=None, text_by_asset=None, *, raise_on_text=None, searchable=False
+        self,
+        server_info=None,
+        text_by_asset=None,
+        *,
+        raise_on_text=None,
+        searchable=False,
+        raise_on_search=None,
+        secondary_accounts: dict[str, "_Client"] | None = None,
     ):
         self._server_info = server_info
         self._text = text_by_asset or {}
         self._raise_on_text = raise_on_text
+        self._raise_on_search = raise_on_search
         self.reads: list[str] = []
         self._hits_by_word: dict[str, frozenset[str]] = {}
         self.search_calls: list[str] = []
+        self._secondary_accounts = secondary_accounts or {}
         if searchable:
             self.search_metadata = self._search_metadata
+        if secondary_accounts is not None:
+            self.open_accounts = self._open_accounts
 
     def get_server_info(self) -> ServerInfo:
         return self._server_info
@@ -53,7 +71,12 @@ class _Client:
 
     def _search_metadata(self, *, ocr: str, page: int = 1, size: int = 1000, **_kwargs):
         self.search_calls.append(ocr)
+        if self._raise_on_search is not None:
+            raise self._raise_on_search
         return _SearchResult(self._hits_by_word.get(ocr, frozenset()))
+
+    def _open_accounts(self, names):
+        return {name: _Account(self._secondary_accounts[name]) for name in names}
 
 
 def test_a_client_with_no_search_or_version_read_has_no_ocr_port():
@@ -137,3 +160,86 @@ def test_the_bulk_search_runs_once_even_when_many_assets_are_asked():
     first_pass = list(client.search_calls)
     port("d")
     assert client.search_calls == first_pass
+
+
+def test_every_content_check_rule_word_is_in_the_bulk_search_vocabulary():
+    # #2062 round 4: the 21-B miss happened because the search list and the rule list had
+    # drifted apart. They are built from the same tuples now, so this can't happen again.
+    from immich_memories.analysis.editorial_carrier_eligibility import (
+        DOCUMENT_TITLE_WORDS,
+        PERSONAL_RECORD_FIELD_WORDS,
+    )
+    from immich_memories.analysis.editorial_document_ocr import _OCR_PREFILTER_WORDS
+
+    for word in (*PERSONAL_RECORD_FIELD_WORDS, *DOCUMENT_TITLE_WORDS):
+        assert word in _OCR_PREFILTER_WORDS, word
+
+
+def test_a_failing_bulk_search_disables_the_signal_once_without_raising():
+    client = _Client(
+        ServerInfo(major=2, minor=2, patch=0),
+        {"a": "PASSPORT"},
+        searchable=True,
+        raise_on_search=ImmichAPIError("search down"),
+    )
+    port = document_ocr_port(client)
+    assert port is not None
+
+    # The failing keyword search never raises past the port, and disables the signal for
+    # every asset asked afterwards -- not just the one that triggered it.
+    assert port("a") is None
+    assert port("a") is None
+    assert client.reads == []
+
+
+def test_a_frame_the_head_already_calls_document_like_is_read_even_if_the_search_missed_it():
+    # MRZ, Luhn and IBAN text can never be found by a keyword search; a candidate the
+    # frame head already calls document-like or meaningful-record is read anyway.
+    client = _Client(
+        ServerInfo(major=2, minor=2, patch=0),
+        {"narrowed-out": "MRZ-ONLY", "document-like": "MRZ-ONLY"},
+        searchable=True,
+    )
+    client.hold("passport", frozenset())  # the bulk search turns up nothing for either
+
+    port = document_ocr_port(client)
+    assert port is not None
+
+    assert port("narrowed-out", False) is None
+    assert port("document-like", True) == "MRZ-ONLY"
+
+
+def test_a_secondary_account_s_documents_are_found_too():
+    secondary = _Client(
+        ServerInfo(major=2, minor=2, patch=0), {"partner-card": "PASSPORT"}, searchable=True
+    )
+    secondary.hold("passport", frozenset({"partner-card"}))
+    primary = _Client(
+        ServerInfo(major=2, minor=2, patch=0),
+        {"partner-card": "PASSPORT"},
+        searchable=True,
+        secondary_accounts={"partner": secondary},
+    )
+    primary.hold("passport", frozenset())  # the primary's own search finds nothing
+
+    port = document_ocr_port(primary, accounts=("partner",))
+    assert port is not None
+
+    # The asset only the secondary account's search turned up still pays for a read,
+    # through the primary client (routing per-asset reads is `AccessBoundClient`'s job).
+    assert port("partner-card") == "PASSPORT"
+    assert secondary.search_calls  # the secondary account was asked directly
+
+
+def test_the_primary_account_is_never_searched_twice():
+    from immich_memories.config_models import PRIMARY_ACCOUNT
+
+    client = _Client(ServerInfo(major=2, minor=2, patch=0), searchable=True, secondary_accounts={})
+    port = document_ocr_port(client, accounts=(PRIMARY_ACCOUNT,))
+    assert port is not None
+
+    port("a")
+
+    # "primary" in `accounts` must not reopen the same connection `client` already is:
+    # each word is still searched exactly once, not twice.
+    assert len(client.search_calls) == len(set(client.search_calls))

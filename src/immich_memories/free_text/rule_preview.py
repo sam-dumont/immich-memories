@@ -242,7 +242,7 @@ def _held(prepared: PreparedEditorialSource, readings: AnnotationReadings) -> li
 
 
 def _carrier_fates(
-    batch: AnnotationLineBatch, *, ocr_text_of: Callable[[str], str | None] | None = None
+    batch: AnnotationLineBatch, *, ocr_text_of: Callable[[str, bool], str | None] | None = None
 ) -> dict[str, str]:
     lines = batch.as_mapping()
     heads_of = {line.asset_id: dict(line.heads) for line in batch.lines}

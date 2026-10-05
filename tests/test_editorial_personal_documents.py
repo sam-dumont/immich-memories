@@ -302,6 +302,72 @@ def test_a_mod_97_valid_iban_is_refused_an_invalid_one_is_kept():
     assert invalid == {}
 
 
+def test_a_grouped_iban_is_also_checked_against_mod_97():
+    lines = {"grouped": "2024-02-04"}
+    excluded = excluded_carrier_sources(
+        {"grouped": lines["grouped"]},
+        heads_of={"grouped": {"frame_kind": "meaningful_record"}},
+        ocr_text_of={"grouped": "IBAN: BE68 5390 0754 7034"}.get,
+    )
+    assert excluded == {"grouped": "personal-document"}
+
+
+# -- Round 4: the owner's real replay turned up new false positives to fix without
+# losing the recall round 3 won (#2062).
+
+
+def test_ne_le_jetez_pas_does_not_match_the_birth_date_field():
+    lines = {"bin": "2024-02-04"}
+    excluded = excluded_carrier_sources(
+        {"bin": lines["bin"]},
+        heads_of={"bin": {"frame_kind": "meaningful_record"}},
+        ocr_text_of={"bin": "Ne le jetez pas dans la nature"}.get,
+    )
+    assert excluded == {}
+
+
+def test_patented_does_not_match_the_italian_licence_title_word():
+    lines = {"product": "2024-02-04"}
+    excluded = excluded_carrier_sources(
+        {"product": lines["product"]},
+        heads_of={"product": {"frame_kind": "meaningful_record"}},
+        ocr_text_of={"product": "THIS DESIGN IS PATENTED"}.get,
+    )
+    assert excluded == {}
+
+
+@pytest.mark.parametrize("pass_kind", ["ski pass", "bus pass", "day pass"])
+def test_a_generic_pass_is_not_a_personal_document(pass_kind):
+    lines = {"pass": "2024-02-04"}
+    excluded = excluded_carrier_sources(
+        {"pass": lines["pass"]},
+        heads_of={"pass": {"frame_kind": "meaningful_record"}},
+        ocr_text_of={"pass": f"{pass_kind.upper()}\nvalid today"}.get,
+    )
+    assert excluded == {}
+
+
+def test_a_boarding_pass_is_still_a_personal_document():
+    # Unlike a ski/bus/day pass, a real boarding pass carries the traveller's name.
+    lines = {"pass": "2024-02-04"}
+    excluded = excluded_carrier_sources(
+        {"pass": lines["pass"]},
+        heads_of={"pass": {"frame_kind": "meaningful_record"}},
+        ocr_text_of={"pass": "BOARDING PASS\nPassenger: John Smith"}.get,
+    )
+    assert excluded == {"pass": "personal-document"}
+
+
+def test_bon_pour_un_cafe_is_not_a_voucher_with_a_name():
+    lines = {"menu": "2024-02-04"}
+    excluded = excluded_carrier_sources(
+        {"menu": lines["menu"]},
+        heads_of={"menu": {"frame_kind": "meaningful_record"}},
+        ocr_text_of={"menu": "Bon pour un café offert"}.get,
+    )
+    assert excluded == {}
+
+
 def test_a_two_line_machine_readable_zone_is_required():
     lines = {"a": "2024-02-04", "b": "2024-02-04"}
     one_line = excluded_carrier_sources(

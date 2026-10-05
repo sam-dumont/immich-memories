@@ -660,7 +660,7 @@ def build_editorial_planner(
         episode_demand=demand,
         prepare_refinement=refinement.refine if refinement else None,
         printed_near=_printed_near(client),
-        document_ocr_text=document_ocr_port(client),
+        document_ocr_text=document_ocr_port(client, accounts=accounts),
     )
 
     def attempt_directory() -> Path:

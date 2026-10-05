@@ -89,7 +89,7 @@ class ProductionPostCardBackend:
         ]
         | None = None,
         printed_near: PrintedNear | None = None,
-        document_ocr_text: Callable[[str], str | None] | None = None,
+        document_ocr_text: Callable[[str, bool], str | None] | None = None,
     ) -> None:
         self._prepare_refinement = prepare_refinement
         self._printed_near = printed_near

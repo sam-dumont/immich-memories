@@ -273,11 +273,16 @@ The separate model-planning route can read banked lines or use plain clip facts.
   `screen_document_rejections` in `editorial_source_gate.py`): a caption naming the document
   excludes outright, and Immich's own OCR reading a personal-record field, a document title
   word, an MRZ line, a Luhn/IBAN-checked number or a named gift voucher corroborates the frame
-  head otherwise. `document_ocr_port` (`editorial_runtime.py`) reads that OCR: a server below
-  2.2, or a failed read, turns the signal off for the run rather than holding the library; a
-  bulk keyword search narrows which assets pay for the expensive per-asset read at all, and
-  every read is memoised per asset, shared across the material build, a candidate refresh and
-  the audience gate. Only an explicit owner pin exempts a picture. The memory-worthy tier gate,
+  head otherwise. `document_ocr_port` (`editorial_document_ocr.py`) reads that OCR: a server
+  below 2.2, or a failed read, turns the signal off for the run rather than holding the library.
+  Its bulk keyword search is built from the same word tuples the content check reads
+  (`PERSONAL_RECORD_FIELD_WORDS`, `DOCUMENT_TITLE_WORDS` in `editorial_carrier_eligibility.py`)
+  so the two can't drift apart, runs against every configured account (not the primary's
+  alone), and narrows which assets pay for the expensive per-asset read; a candidate the frame
+  head already calls document-like is read anyway, since an MRZ line or a card number can't be
+  found by a keyword search. Every read is memoised per asset, shared across the material
+  build, a candidate refresh and the audience gate. Only an explicit owner pin exempts a
+  picture. The memory-worthy tier gate,
   near-home test and partition caps live in `editorial_worthiness_gate.py`, split out of
   `editorial_structure_planner.py`.
 - **Picture admission**: `PictureAdmission` (`editorial_picture_admission.py`) owns the shared
