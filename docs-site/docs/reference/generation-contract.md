@@ -16,8 +16,7 @@ finished film: it reserves the opening, the ending and the dividers, and credits
 trip's map moves run on top of it ([Maps and film length](output-rendering.md#maps-and-film-length)). A
 period with too little material finishes shorter rather than padding.
 
-{/* diagram: seq-generate-reference */}
-
+<Diagram name="seq-generate-reference" headline="The same five steps, with the names you'll find in the code and in the store." />
 ```bash
 immich-memories generate [OPTIONS]
 ```
@@ -200,8 +199,7 @@ was removed or changed for it. The shots themselves are kept with the run attemp
 
 ### Run state
 
-{/* diagram: state-run */}
-
+<Diagram name="state-run" headline="A run stays running until it ends one of four ways." />
 A run's own record (`pipeline_runs.status`) starts `running` and ends one of four ways:
 `completed`, `failed`, `cancelled` (you stopped it, from the CLI or the web UI's **Cancel**), or
 `interrupted` (the process died without a chance to record why: a killed container, a crash).

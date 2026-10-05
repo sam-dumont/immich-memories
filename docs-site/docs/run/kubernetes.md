@@ -209,8 +209,7 @@ Use the [proxy trust/cookie checklist](./authentication.mdx#behind-a-reverse-pro
 
 ## How the pod is wired
 
-{/* diagram: deploy-kubernetes */}
-
+<Diagram name="deploy-kubernetes" headline="The base runs the app. Overlays and components bolt on the rest." />
 The app runs as UID/GID 1000 with `fsGroup: 1000`, dropped capabilities, RuntimeDefault seccomp
 and a read-only root.
 

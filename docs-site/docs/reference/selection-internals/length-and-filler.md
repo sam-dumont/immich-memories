@@ -102,8 +102,7 @@ picture in it was picked for that subject, so a loaf in a bread film is the film
 
 The draft tries to reach its length before it gives up the seconds:
 
-{/* diagram: decide-length */}
-
+<Diagram name="decide-length" headline="A film is as long as its distinct shots can carry. It's never padded." />
 - **Depth.** When the film still has content seconds free after every pass, it spends them
   inside the moments it already shows (`editorial_story_depth_fill.py`): first moments no pick
   took, then further frames of each chosen moment, one round at a time, round-robin across

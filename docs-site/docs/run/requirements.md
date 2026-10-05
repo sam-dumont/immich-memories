@@ -47,8 +47,7 @@ Ready? [Install with Docker Compose](./docker.md), or read the [NAS notes](./nas
 
 Leave `tier: auto`. The app chooses from the inference hardware and model configuration it finds.
 
-{/* diagram: decide-tier */}
-
+<Diagram name="decide-tier" headline="auto picks the most your hardware can do. Set tier yourself to pin one." />
 | Tier | What it adds | What you need |
 |---|---|---|
 | **Basic** | A complete film using metadata, CPU picture classifiers and selection rules | The default install and `models fetch` |

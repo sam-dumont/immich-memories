@@ -17,8 +17,7 @@ an OIDC login.
 You don't need any of this for a good film. The [Basic tier](../get-started/choose-your-setup.md)
 makes a complete one on a NAS. This page is for when you have the hardware and want all of it.
 
-{/* diagram: how-i-run-it */}
-
+<Diagram name="how-i-run-it" headline="One CPU pod runs the app. One shared GPU does all the heavy lifting." />
 ## What runs where
 
 | Component | Runs on | What it adds to the film | What it costs |

@@ -16,8 +16,7 @@ immich-memories auto run                # decide and do it
 
 It works on a plain NAS, and makes the same cuts you would get by hand there; a GPU or a model makes them better.
 
-{/* diagram: seq-scheduled-run */}
-
+<Diagram name="seq-scheduled-run" headline="Once a day it checks what's due and makes one film at most." />
 ## Docker: switch on the built-in timer
 
 In Docker the container's only process is the web UI, so the timer lives there. One setting:
@@ -144,8 +143,7 @@ the top candidate. `--cooldown` (`automation.cooldown_hours`, 24) is measured fr
 `auto suggest --json`; the rules still apply, `--force` skips only the cooldown, and a stale key fails rather
 than making something else.
 
-{/* diagram: state-scheduled-attempt */}
-
+<Diagram name="state-scheduled-attempt" headline="Every attempt ends one of four ways, and the lock always comes back." />
 The outcomes are `skipped`, `dry_run`, `completed` and `failed`; the first three exit 0.
 Quiet output is a stable JSON object with `runtime` as its first key. Key a wrapper on `outcome`: `action` is
 `generation` or `delivery_retry`. Logging is disabled during `auto run --quiet`; its result is one JSON line, not formatted multiline output.

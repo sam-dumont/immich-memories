@@ -23,8 +23,7 @@ Five steps, in order: offer moments, rank their frames, check eligibility and st
 spacing and repetition, admit and deepen. The gates below run in that order; where a favourite
 wins outright and where it still has to clear a gate is marked as it comes up.
 
-{/* diagram: decide-keep-drop */}
-
+<Diagram name="decide-keep-drop" headline="A favourite skips two of the six checks. The other four drop it anyway." />
 ## Which frame carries a moment
 
 `rule_representative_rank` (`editorial_rule_quality.py`) sorts a moment's frames by these keys, in

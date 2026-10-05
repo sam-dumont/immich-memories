@@ -167,11 +167,14 @@ immich:
 Immich v2 and v3 both work. `auto` is the default runtime policy: the app detects the server
 major and selects the matching API contract. You do not choose a version for each run. Explicit
 `v2` and `v3` values are manual troubleshooting escape hatches for proxies or unusual deployments
-that break version detection; an override forces that contract and is not a normal upgrade step.
+that break version detection. An override forces that contract; it is not a normal upgrade step.
 An unknown major stops the run with `UnsupportedImmichVersion` rather than sending requests of
 the wrong shape.
 
 ### API wire details
+
+Explicit `v2` and `v3` are manual troubleshooting escape hatches for unusual proxies or deployments
+that prevent correct detection; they force the selected contract.
 
 - **Duration:** v2 duration strings and v3 integer milliseconds are normalized to seconds.
 - **Upload:** v2 keeps the device identity fields; v3 sends `filename` and omits the
@@ -182,8 +185,8 @@ the wrong shape.
 immich-memories config test
 ```
 
-Read-only: it reports the connection and the resolved contract. It does not search assets,
-generate a video, create an album, or upload anything.
+This is a read-only authentication and compatibility check. It does not search assets,
+generate a video, create an album, or upload anything. It reports the connection and the resolved contract.
 
 ## Output codecs and HDR
 

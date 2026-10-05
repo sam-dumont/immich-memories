@@ -6,8 +6,7 @@ title: How it chooses
 
 You choose a month, a trip, a person or an album. Immich Memories turns that pool into a chronological film: a few moments worth keeping, rather than every photo you took.
 
-{/* diagram: seq-generate */}
-
+<Diagram name="seq-generate" headline="From your library to a finished film in five steps." />
 Thirty pictures of the same jump are one moment. A holiday with several stops has several stories. The editor gives those stories room, picks a frame from each moment, and removes repeats. It uses dates, places, faces, favourites and small local picture classifiers.
 
 - **Your favourites matter.** A star in Immich wins over other frames of that moment. It still needs a place in the film.

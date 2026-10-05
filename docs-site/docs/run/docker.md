@@ -220,8 +220,7 @@ The service then reaches Immich over that stack's internal network.
 
 Get the first film working before adding services.
 
-{/* diagram: deploy-compose */}
-
+<Diagram name="deploy-compose" headline="Start with one container. Add a file for each upgrade." />
 | Want | Setup |
 |---|---|
 | GPU picture preparation | [Inference service](../better/inference.md), `docker-compose.gpu.yml` |

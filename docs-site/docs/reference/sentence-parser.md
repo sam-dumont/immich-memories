@@ -44,8 +44,7 @@ estimate, prepares it through the same pipeline `prepare` uses (with the usual p
 then answers. A dry run shows the same warning but never prepares, since it is a preview, not a
 commitment to pay the cost.
 
-{/* diagram: seq-ask */}
-
+<Diagram name="seq-ask" headline="Ask for a film in a sentence. Pictures that aren't prepared yet get prepared first." />
 1. **Reading.** The model splits the sentence into who, when, where and what. It can only pick
    phrases your sentence contains, and it does it three times in three orders. A word counts
    where two answers agree. A part you said nothing about sets no filter: say nothing about where

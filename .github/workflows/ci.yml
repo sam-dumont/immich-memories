@@ -103,6 +103,9 @@ jobs:
       - name: Documentation voice
         if: '!cancelled()'
         run: make docs-voice
+      - name: Docs diagrams drift
+        if: '!cancelled()'
+        run: make docs-diagrams-check
       - name: Third-party notices drift
         if: '!cancelled()'
         run: make notices-check

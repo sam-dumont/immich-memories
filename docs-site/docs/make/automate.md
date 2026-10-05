@@ -9,8 +9,7 @@ description: Let the app choose and make one worthwhile memory film each day.
 
 Make and review a few films manually first. Set [home and people](../get-started/who-is-who.md), then check **Suggestions** to see what it would choose.
 
-{/* diagram: seq-scheduled-run */}
-
+<Diagram name="seq-scheduled-run" headline="Once a day it checks what's due and makes one film at most." />
 ## Docker: switch on the built-in timer
 
 Fetch the models first, or the first fire fails on a missing encoder:

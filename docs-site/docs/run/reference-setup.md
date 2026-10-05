@@ -9,8 +9,7 @@ import DeploymentDiagram from '@site/src/components/DeploymentDiagram';
 Keep the app on the NAS and move classifiers, captions, Demucs stems and rendering to one NVIDIA
 container. The text reader and ACE-Step music generation are separate choices. Laya runs in the app.
 
-{/* diagram: deploy-compose */}
-
+<Diagram name="deploy-compose" headline="Start with one container. Add a file for each upgrade." />
 ## One GPU service {#one-gpu-service}
 
 Use the CUDA inference image matching the app version, the NVIDIA Container Toolkit and a

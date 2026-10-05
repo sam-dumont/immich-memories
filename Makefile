@@ -1042,6 +1042,20 @@ notices-check:  ## Fail when THIRD_PARTY_NOTICES is stale against uv.lock
 	fi; \
 	echo "THIRD_PARTY_NOTICES is up to date"
 
+# Diagrams are Python (docs-site/diagrams/figures), rendered to committed SVGs by a pinned image:
+# Graphviz moves boxes between releases, so local and CI must draw with the same one.
+DIAGRAMS_IMAGE := immich-memories-docs-diagrams
+DIAGRAMS_RUN = docker build -q -t $(DIAGRAMS_IMAGE) docs-site/diagrams >/dev/null && \
+	docker run --rm -u "$$(id -u):$$(id -g)" -e HOME=/tmp -v "$(CURDIR)/docs-site:/site" -w /site \
+	$(DIAGRAMS_IMAGE) python diagrams/build.py
+
+.PHONY: docs-diagrams docs-diagrams-check
+docs-diagrams:  ## Render every docs diagram, light and dark, into docs-site/static/diagrams (needs Docker)
+	$(DIAGRAMS_RUN)
+
+docs-diagrams-check:  ## Fail when a committed diagram SVG no longer matches its figure script
+	$(DIAGRAMS_RUN) --check
+
 docs-install:
 	cd docs-site && npm ci
 

@@ -13,8 +13,7 @@ generation, use the [Python install](../uv-pip.md).
 
 <DeploymentDiagram topology="mac" />
 
-{/* diagram: deploy-mac */}
-
+<Diagram name="deploy-mac" headline="On a Mac it's one Python install and a launchd agent that runs it every day." />
 This path works on Apple Silicon with Metal and VideoToolbox; see
 [measured examples](../../better/measured.md#cold-start-time-by-hardware-and-tier) for real numbers. That check
 didn't activate the reader or generate music; the Full and optional music steps below need their

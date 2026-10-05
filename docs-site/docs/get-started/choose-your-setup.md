@@ -12,8 +12,7 @@ bundled music. It runs on a NAS, a Mac or a cluster without GPU inference. Start
 
 <SetupBuilder />
 
-{/* diagram: decide-install */}
-
+<Diagram name="decide-install" headline="Pick the lane you already run. Every lane gets the same app." />
 For an existing installation, change service URLs and reader credentials in Settings.
 The generated commands configure reader authentication before preflight.
 

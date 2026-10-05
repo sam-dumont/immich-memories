@@ -8,8 +8,7 @@ Use the [Docker Compose install](./docker.md). These are the differences on Syno
 TrueNAS SCALE and Unraid. Start with one month: a NAS can make the whole film, but a year's
 first preparation is a bigger job.
 
-{/* diagram: deploy-nas */}
-
+<Diagram name="deploy-nas" headline="Every NAS runs the same Compose file. Only the screen you paste it into changes." />
 ## Install
 
 Create an Immich key with the [ten read permissions](./docker.md#the-api-key), adding the

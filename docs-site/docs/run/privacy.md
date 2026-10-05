@@ -12,8 +12,7 @@ can also fetch weights on first use, including during a run.
 Optional features can contact other services. You choose which ones, and whether they run on
 your own hardware or outside your network.
 
-{/* diagram: privacy-map */}
-
+<Diagram name="privacy-map" headline="Immich is the only thing it always talks to. Everything else waits for a setting you choose." />
 ## Before adding a service
 
 | Feature | What it receives |

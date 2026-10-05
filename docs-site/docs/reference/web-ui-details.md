@@ -6,8 +6,7 @@ title: Web UI configuration and job behavior
 
 Operator details for the browser client. The task guide is [Use the web UI](../make/web-ui.mdx).
 
-{/* diagram: seq-web-job */}
-
+<Diagram name="seq-web-job" headline="Cut first, look at it, then render. Nothing renders until you press the button." />
 **Cut** runs `generate --no-render` on the server. The panel shows the stage, its count and the last
 pictures it read. With a previous completed run, the bar and time left cover the whole cut: saved
 stage times scale to this picture count, and the current stage uses its measured speed. Without

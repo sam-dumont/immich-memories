@@ -5,8 +5,7 @@ description: Run Immich Memories with Docker, on a NAS, with Python or in Kubern
 
 Start with [Quick start](../get-started/quick-start.md) for one container beside Immich. Use this section when you need a different deployment or want to manage it over time.
 
-{/* diagram: architecture-overview */}
-
+<Diagram name="architecture-overview" headline="Everything runs on your machine. Nothing leaves your network unless you switch it on." />
 ## Choose a deployment
 
 | Your setup | Start here |
