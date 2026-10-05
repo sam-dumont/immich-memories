@@ -191,6 +191,25 @@ _ADMIN_SUFFIXES = (
     " governorate",
     " (quarter)",
     " (district)",
+    # Estonian administrative units (#2066), found in the #1719 campaign. Each is a
+    # separate word after the place name, so the leading space keeps a name that only
+    # ends in the same letters -- "Tallinn", "Narva-Jõesuu" -- untouched: there is no
+    # space before "linn" or "linna" inside those names to match against.
+    " vald",
+    " linn",
+    " alevik",
+    " alev",
+    " küla",
+    " maakond",
+    " valla",  # genitive of "vald", as Nominatim sometimes answers
+    " linna",  # genitive of "linn", as Nominatim sometimes answers
+    # Latvian, Lithuanian and Finnish administrative units, the same shape.
+    " novads",
+    " pagasts",
+    " savivaldybė",
+    " seniūnija",
+    " kunta",
+    " kaupunki",
 )
 
 # How "A and B" is joined in each title language.
