@@ -87,6 +87,34 @@ def test_a_binding_with_month_dividers_round_trips_through_json():
     assert read_editorial_timeline(on_disk_binding) == plan
 
 
+def test_a_binding_saved_before_month_dividers_existed_still_loads():
+    """#2075: a cut saved before divider_month_keys shipped has no such key at all.
+
+    read_editorial_timeline must not KeyError on it — the field defaults to None,
+    same as it would have read before this field existed.
+    """
+    from immich_memories.processing.editorial_timing import _digest
+
+    policy = build_editorial_timing_policy(
+        config=Config(), target_seconds=60, memory_type="special_day"
+    )
+    carriers, assets = rows()
+    for asset in assets.values():
+        asset.file_created_at = datetime(2010, 1, 1)
+    plan = policy.resolve(carriers, assets)
+    assert plan.divider_month_keys == ()  # nothing eligible: this plan has no dividers to drop
+
+    old_binding = bind_editorial_timeline(policy, plan, list(assets))
+    del old_binding["timeline"]["divider_month_keys"]
+    old_binding["sha256"] = _digest(
+        {key: value for key, value in old_binding.items() if key != "sha256"}
+    )
+
+    loaded = read_editorial_timeline(old_binding)
+    assert loaded.divider_month_keys is None
+    assert loaded == replace(plan, divider_month_keys=None)
+
+
 def test_no_titles_and_output_path_do_not_invalidate_timing():
     config = Config(title_screens={"enabled": False})
     params = GenerationParams(

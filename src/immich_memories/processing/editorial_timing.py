@@ -204,8 +204,11 @@ def read_editorial_timeline(binding: dict) -> TimelinePlan:
     ):
         raise ValueError("Editorial timing binding changed")
     timeline_fields = dict(binding["timeline"])
-    if timeline_fields["divider_month_keys"] is not None:
-        # WHY: the dict form stores plain lists (JSON has no tuple); the dataclass
+    # WHY: a cut saved before divider_month_keys existed has no such key in its
+    # stored "timeline" dict; .get() keeps that old binding reading exactly as
+    # before (TimelinePlan defaults the field to None) instead of a KeyError (#2075).
+    if timeline_fields.get("divider_month_keys") is not None:
+        # The dict form stores plain lists (JSON has no tuple); the dataclass
         # field is a tuple of (year, month) pairs, hashable for frozenset() below it.
         timeline_fields["divider_month_keys"] = tuple(
             tuple(key) for key in timeline_fields["divider_month_keys"]
