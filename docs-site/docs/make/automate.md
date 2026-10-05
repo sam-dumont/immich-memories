@@ -9,6 +9,8 @@ description: Let the app choose and make one worthwhile memory film each day.
 
 Make and review a few films manually first. Set [home and people](../get-started/who-is-who.md), then check **Suggestions** to see what it would choose.
 
+{/* diagram: seq-scheduled-run */}
+
 ## Docker: switch on the built-in timer
 
 Fetch the models first, or the first fire fails on a missing encoder:
@@ -30,7 +32,7 @@ Change the time there, then recreate the container:
 docker compose up -d
 ```
 
-The time uses the container's timezone (`TZ`). Upload is a separate choice: either `automation.upload_to_immich: true` or `upload.enabled: true` enables delivery for automatic films. Set `upload.album_name` for the destination; set `automation.album_name` instead if automatic films should land in a different album than manual ones, since it wins over `upload.album_name` for a scheduled run. Complete upload, provenance tagging and requested album delivery remove the local copy. If the key lacks any of the five upload permissions (including album rights when no new album is needed), generation still completes: the local film stays, the run names the missing permission, and automatic retries stop for that film. Temporary tagging or album failures stay pending for the existing bounded retry process. Permitted steps still run, so a film may be uploaded while tagging or album delivery remains incomplete. A key without `asset.delete` keeps the previous uploaded version and records why. Leave both upload switches false to keep films on disk.
+The time uses the container's timezone (`TZ`). Upload is a separate choice: either `automation.upload_to_immich: true` or `upload.enabled: true` enables delivery for automatic films. Set `upload.album_name` for the destination; set `automation.album_name` instead if automatic films should land in a different album than manual ones, since it wins over `upload.album_name` for a scheduled run. Leave both upload switches false to keep films on disk. A key missing an upload permission still gets a completed film, kept locally with the reason named; [upload permissions and retries](../reference/automation-contract.md#docker-switch-on-the-built-in-timer) covers what happens next.
 
 Or omit those Compose lines and save **Settings > Automation > enabled** and
 **daily_at**. Settings also holds the other automation options; file and environment values win.
@@ -41,7 +43,7 @@ Or omit those Compose lines and save **Settings > Automation > enabled** and
 immich-memories auto install --hour 9
 ```
 
-This writes a user timer on macOS or Linux and prints its activation command. Run **Activate:** to start it; installation alone does not activate the schedule. On headless Linux, run `loginctl enable-linger "$USER"` so the timer survives logout. Run **Deactivate:** before `auto install --uninstall`, which only deletes files. Scheduled jobs do not inherit your interactive shell's credentials: keep them in the configuration. [Scheduler details](../reference/automation-contract.md#bare-metal-auto-install) cover the launcher, environment and missed runs.
+This writes a user timer on macOS or Linux and prints its activation command. Run **Activate:** to start it; installation alone does not activate the schedule. On headless Linux, also run `loginctl enable-linger "$USER"` so the timer survives logout. [Scheduler details](../reference/automation-contract.md#bare-metal-auto-install) cover the launcher, environment, missed runs and uninstalling.
 
 ### Where a scheduled run's logs go
 
@@ -86,7 +88,7 @@ immich-memories auto run --dry-run
 
 ## Get told when it runs
 
-Notifications support ntfy, email, Discord and other Apprise targets. Configure the URLs, then test them:
+Notifications support ntfy, email, Discord and other [Apprise](https://github.com/caronc/apprise) targets, off by default. Configure the URLs, then test them:
 
 In Docker, first [set `IMMICH_MEMORIES_SECRET_KEY` in `.env`](../run/config-file.md#secrets-in-the-database)
 and recreate the container. Then save **Settings > Notifications > enabled** and **urls**.
@@ -104,9 +106,7 @@ advanced:
 immich-memories auto test-notification
 ```
 
-The test sends a message to each configured target. The success message comes from any rendered film, manual or automatic; the failure message comes only from the automation runner, and only once it has picked a candidate to run for the day. A day skipped before that (cooldown, no eligible candidate) sends nothing. Thumbnails remain off unless you enable them.
-`ntfys` uses HTTPS. Public ntfy topics can be read by others; use a private, authenticated topic
-for personal run details.
+The test sends a message to each configured target. The success message comes from any rendered film, manual or automatic; the failure message comes only from the automation runner, and only once it has picked a candidate to run for the day. A day skipped before that (cooldown, no eligible candidate) sends nothing. Thumbnails remain off unless you enable them. Use a private, authenticated ntfy topic: public ones can be read by others. [What each message carries](../reference/automation-contract.md#get-told-when-it-runs) covers the full payload.
 
 ## Trigger it over HTTP
 

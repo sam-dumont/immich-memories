@@ -55,6 +55,8 @@ the same way `immich-memories prepare` banks them. It still checks the window fi
 which on a large library can itself take a couple of minutes (Immich's own search, not a
 model). The web client shows the same warning in its preview, before it starts.
 
+{/* diagram: seq-ask */}
+
 ## Preview, then make the film
 
 In the web UI, use **Describe the film you want** on **Memory** and inspect the preview. Read
