@@ -38,13 +38,20 @@ def _clip(asset_id: str, when: datetime, duration: float = 10.0) -> VideoClipInf
 
 
 def _dense_trip(active_days: int) -> tuple[list[VideoClipInfo], list[Asset]]:
+    # Ten minutes apart within a day: each clip and photo is its own distinct shot
+    # (#2083), not a burst sharing one timestamp.
     start = datetime(2026, 7, 1, 9, 0, tzinfo=UTC)
     clips: list[VideoClipInfo] = []
     photos: list[Asset] = []
     for day in range(active_days):
-        when = start + timedelta(days=day)
-        clips.extend(_clip(f"v-{day}-{index}", when) for index in range(3))
-        photos.extend(_asset(f"p-{day}-{index}", when, AssetType.IMAGE) for index in range(4))
+        base = start + timedelta(days=day)
+        clips.extend(
+            _clip(f"v-{day}-{index}", base + timedelta(minutes=10 * index)) for index in range(3)
+        )
+        photos.extend(
+            _asset(f"p-{day}-{index}", base + timedelta(minutes=30 + 10 * index), AssetType.IMAGE)
+            for index in range(4)
+        )
     return clips, photos
 
 
@@ -111,15 +118,15 @@ def test_auto_duration_shrinks_when_twelve_days_have_sparse_media() -> None:
 
 
 def test_one_photo_burst_cannot_manufacture_a_long_memory() -> None:
-    """Regression: hundreds of same-day photos count as four diverse photo moments."""
+    """Regression: five hundred same-timestamp photos are one shot, not five hundred (#2083)."""
     when = datetime(2026, 7, 1, 9, 0, tzinfo=UTC)
     photos = [_asset(f"p-{index}", when, AssetType.IMAGE) for index in range(500)]
 
     result = _resolve([], photos)
 
     assert result.photographed_days == 1
-    assert result.capacity_seconds == 23.5
-    assert result.seconds == 20.0
+    assert result.capacity_seconds == 11.5
+    assert result.seconds == 10.0
 
 
 def test_full_source_duration_does_not_inflate_auto_capacity() -> None:
@@ -194,6 +201,36 @@ def test_a_thin_special_day_still_gets_thirty_seconds_of_pictures() -> None:
     )
 
     assert decision.seconds == 30.0 + 3.5 + 4.0
+
+
+def test_a_dense_special_day_runs_well_past_its_old_thirty_second_cap() -> None:
+    """A day with real, distinct material is no longer held to 30 s of content (#2083):
+    the capacity reads the day's own distinct shots, so the length its active hours bought
+    is the one that holds, not a flat per-day ceiling below it."""
+    from immich_memories.planning.auto_duration import special_day_editorial_duration_seconds
+
+    when = datetime(2026, 7, 1, 9, 0, tzinfo=UTC)
+    clips = [_clip(f"v-{i}", when + timedelta(minutes=10 * i), duration=8.0) for i in range(10)]
+    photos = [
+        _asset(f"p-{i}", when + timedelta(minutes=200 + 10 * i), AssetType.IMAGE) for i in range(30)
+    ]
+    preset_seconds = special_day_editorial_duration_seconds(hours=3.0)
+
+    decision = decide_memory_duration(
+        clips,
+        photos,
+        requested_seconds=None,
+        requested_source=DURATION_FROM_MATERIAL,
+        preset_seconds=preset_seconds,
+        memory_type="special_day",
+        avg_clip_duration=5.0,
+        photo_duration=4.0,
+        title_duration=3.5,
+        ending_duration=4.0,
+    )
+
+    assert decision.seconds > 37.5
+    assert 60.0 <= decision.seconds <= 180.0
 
 
 def test_a_special_day_the_owner_timed_is_left_as_asked() -> None:

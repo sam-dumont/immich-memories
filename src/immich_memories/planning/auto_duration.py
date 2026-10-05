@@ -7,8 +7,10 @@ from collections import defaultdict
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date
+from typing import Any
 
 from immich_memories.api.models import Asset, VideoClipInfo
+from immich_memories.planning.distinct_shots import distinct_shots
 
 # What set a film's length, in the words a run record and a log line use.
 DURATION_FROM_MATERIAL = "the material"
@@ -27,8 +29,6 @@ _SPECIAL_DAY_MAX_EDITORIAL_SECONDS = 180.0
 # However thin the day, a special day keeps this much of its pictures, its titles on top: shorter
 # is not a day (owner, 28 Sep).
 SPECIAL_DAY_MIN_CONTENT_SECONDS = 30.0
-_MAX_DIVERSE_SECONDS_PER_DAY = 30.0
-_MAX_CAPACITY_PHOTOS_PER_DAY = 4
 _DURATION_ROUNDING_SECONDS = 5.0
 
 # A trip and an album have no calendar period to measure coverage against:
@@ -114,10 +114,9 @@ def _asset_day(asset: Asset) -> date:
 
 @dataclass(frozen=True, slots=True)
 class _Material:
-    """The usable seconds and stills a period holds, gathered by the day they fell on."""
+    """The shots a period holds, gathered by the day they fell on."""
 
-    video_seconds_by_day: dict[date, float]
-    photo_count_by_day: dict[date, int]
+    shots_by_day: dict[date, list[dict[str, Any]]]
 
     @classmethod
     def of(
@@ -127,33 +126,34 @@ class _Material:
         *,
         clip_limit: float,
     ) -> _Material:
-        video_seconds_by_day: dict[date, float] = defaultdict(float)
-        photo_count_by_day: dict[date, int] = defaultdict(int)
+        shots_by_day: dict[date, list[dict[str, Any]]] = defaultdict(list)
         for clip in clips:
-            source_duration = max(0.0, clip.duration_seconds)
-            video_seconds_by_day[_asset_day(clip.asset)] += min(source_duration, clip_limit)
+            duration = min(max(0.0, clip.duration_seconds), clip_limit)
+            shots_by_day[_asset_day(clip.asset)].append(
+                {"taken": clip.asset.file_created_at, "seconds": duration, "kind": "video"}
+            )
         for photo in photos:
-            photo_count_by_day[_asset_day(photo)] += 1
-        return cls(video_seconds_by_day, photo_count_by_day)
+            shots_by_day[_asset_day(photo)].append(
+                {"taken": photo.file_created_at, "seconds": 0.0, "kind": "photo"}
+            )
+        return cls(shots_by_day.copy())
 
     @property
     def photographed_days(self) -> int:
-        return len(set(self.video_seconds_by_day) | set(self.photo_count_by_day))
+        return len(self.shots_by_day)
 
     def diverse_capacity_seconds(self, *, still_duration: float, title_seconds: float) -> float:
-        """What the editor can fill: excerpt lengths, not raw sources.
-
-        One dense day cannot inflate the recommendation beyond thirty seconds,
-        and a burst of forty frames of the same scene counts as four stills.
+        """What the editor can fill: a day's distinct shots, videos at their own length
+        and stills at the editor's still length (#2083), with no flat per-day ceiling --
+        a dense day is not held to the same cap as a quiet one. A burst of frames sharing
+        one timestamp is one shot, the same rule the depth fill spends slots by, so the
+        two can never size a day differently.
         """
         content = 0.0
-        for day in set(self.video_seconds_by_day) | set(self.photo_count_by_day):
-            photo_seconds = (
-                min(self.photo_count_by_day[day], _MAX_CAPACITY_PHOTOS_PER_DAY) * still_duration
-            )
-            content += min(
-                _MAX_DIVERSE_SECONDS_PER_DAY,
-                self.video_seconds_by_day[day] + photo_seconds,
+        for shots in self.shots_by_day.values():
+            content += sum(
+                shot["seconds"] if shot["kind"] == "video" else still_duration
+                for shot in distinct_shots(shots)
             )
         return content + title_seconds
 

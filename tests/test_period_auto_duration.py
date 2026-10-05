@@ -27,10 +27,11 @@ def _photo(asset_id: str, when: datetime) -> Asset:
 
 
 def _photographed_month(days: int, per_day: int = 6) -> list[Asset]:
-    """A February photographed on ``days`` of its days."""
+    """A February photographed on ``days`` of its days, each picture its own distinct
+    shot (#2083): ten minutes apart, not a burst sharing one timestamp."""
     first = datetime(2024, 2, 1, 12, 0, tzinfo=UTC)
     return [
-        _photo(f"p-{day}-{index}", first + timedelta(days=day))
+        _photo(f"p-{day}-{index}", first + timedelta(days=day, minutes=10 * index))
         for day in range(days)
         for index in range(per_day)
     ]
@@ -67,7 +68,7 @@ def test_months_with_enough_material_keep_the_one_minute_target() -> None:
 def test_a_dense_year_keeps_its_ten_minute_target() -> None:
     first = datetime(2025, 1, 1, 12, 0, tzinfo=UTC)
     photos = [
-        _photo(f"year-{day}-{index}", first + timedelta(days=day))
+        _photo(f"year-{day}-{index}", first + timedelta(days=day, minutes=10 * index))
         for day in range(365)
         for index in range(4)
     ]
