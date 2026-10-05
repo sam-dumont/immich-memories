@@ -1,8 +1,8 @@
-"""Estonian, Latvian, Lithuanian and Finnish administrative wording never reaches a label.
+"""Estonian administrative wording never reaches a label.
 
 #1971 taught the stripper in `place_names.py` to drop Greek administrative wording; #2066
-(found in the #1719 campaign) found the same boilerplate problem for the Baltic and Nordic
-admin words, which sit after the place name rather than before it.
+(found in the #1719 campaign) found the same boilerplate problem for Estonian's admin
+words, which sit after the place name rather than before it.
 """
 
 from __future__ import annotations
@@ -25,13 +25,11 @@ _CASES = [
     # bare name must come out the same as the nominative form above.
     ("Saku valla", "Saku"),
     ("Pärnu linna", "Pärnu"),
-    # Latvian, Lithuanian, Finnish: the same "name + admin word" shape.
-    ("Cēsu novads", "Cēsu"),
-    ("Mārupes pagasts", "Mārupes"),
-    ("Vilniaus savivaldybė", "Vilniaus"),
-    ("Žirmūnų seniūnija", "Žirmūnų"),
-    ("Espoon kunta", "Espoon"),
-    ("Helsingin kaupunki", "Helsingin"),
+    # Latvian, Lithuanian and Finnish admin words sit in the same Nominatim table, but
+    # the name in front of them is genitive, not nominative ("Helsingin" is "of
+    # Helsinki", not "Helsinki"). #1971 already rejected that genitive-fragment outcome
+    # for Greek, so these are left untouched until a nominative mapping exists for them.
+    ("Helsingin kaupunki", "Helsingin kaupunki"),
     # A hyphenated real name still loses only the trailing admin word.
     ("Narva-Jõesuu linn", "Narva-Jõesuu"),
     # A name that only *looks* like it carries a suffix must stay whole: there is no

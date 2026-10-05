@@ -203,13 +203,12 @@ _ADMIN_SUFFIXES = (
     " maakond",
     " valla",  # genitive of "vald", as Nominatim sometimes answers
     " linna",  # genitive of "linn", as Nominatim sometimes answers
-    # Latvian, Lithuanian and Finnish administrative units, the same shape.
-    " novads",
-    " pagasts",
-    " savivaldybė",
-    " seniūnija",
-    " kunta",
-    " kaupunki",
+    # Latvian (novads, pagasts), Lithuanian (savivaldybė, seniūnija) and Finnish
+    # (kunta, kaupunki) admin words sit in the same table in Nominatim's data, but
+    # unlike Estonian's, the name in front of them is genitive, not nominative:
+    # "Helsingin kaupunki" -> "Helsingin" is "of Helsinki", not "Helsinki" (#1971
+    # rejected the same genitive-fragment outcome for Greek). Left alone until a
+    # genitive-to-nominative mapping exists for those languages.
 )
 
 # How "A and B" is joined in each title language.
