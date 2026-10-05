@@ -24,6 +24,7 @@ from __future__ import annotations
 import re
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
+from functools import lru_cache
 from typing import Any
 
 from immich_memories.analysis.editorial_carrier_eligibility import screen_flagged
@@ -164,20 +165,37 @@ _GOODS = re.compile(
 )
 _NOBODY_SEEN = frozenset({"none", "undetermined"})
 
-# Anyone alive: people of any age and animals. General English, not read off any library.
-_PEOPLE_WORDS = (
-    "man men woman women person people boy boys girl girls child children baby babies toddler",
-    "toddlers infant infants kid kids son daughter mother father dad mom couple friends family",
-    "crowd group bride groom",
-)
+# "dad", "mom", "bride" and "groom" are this module's own: the exclusion matcher below never
+# needed them, so the curated list does not carry them.
+_PEOPLE_WORDS_EXTRA = ("dad", "mom", "bride", "groom")
 _ANIMAL_WORDS = (
     "dog dogs puppy puppies cat cats kitten kittens horse horses pony",
     "ponies cow cows sheep goat goats pig pigs bird birds duck ducks rabbit rabbits deer elephant",
     "elephants giraffe giraffes lion lions monkey monkeys animal animals pet pets donkey camel zebra",
 )
-_ALIVE = _words(*_PEOPLE_WORDS, *_ANIMAL_WORDS)
 _ANIMAL = _words(*_ANIMAL_WORDS)
-_PEOPLE = _words(*_PEOPLE_WORDS)
+
+
+@lru_cache(maxsize=1)
+def _people_pattern() -> re.Pattern[str]:
+    """People of any age: the curated, English-only list `free_text.caption_words` already
+    keeps for the exclusion matcher (#2079 reuses it here instead of a second, smaller
+    hand-written list that only drifted from it). Imported lazily: `free_text`'s own package
+    init reaches back into this module's package (`store.asset_annotations`), so importing it
+    at module load time would be circular.
+    """
+    from immich_memories.free_text.caption_words import PERSON_WORDS
+
+    return _words(*PERSON_WORDS, *_PEOPLE_WORDS_EXTRA)
+
+
+@lru_cache(maxsize=1)
+def _alive_pattern() -> re.Pattern[str]:
+    from immich_memories.free_text.caption_words import PERSON_WORDS
+
+    return _words(*PERSON_WORDS, *_PEOPLE_WORDS_EXTRA, *_ANIMAL_WORDS)
+
+
 # A likeness of a living thing, or something made for one, is an object: "a stuffed bear", "a
 # statue of a man", "baby clothes", "a dog bowl".
 _LIKENESS = re.compile(
@@ -198,12 +216,12 @@ def _living_text(caption: str) -> str:
 
 def names_someone_alive(caption: str) -> bool:
     """The caption names a person or an animal, not a likeness of one or a thing made for one."""
-    return bool(_ALIVE.search(_living_text(caption)))
+    return bool(_alive_pattern().search(_living_text(caption)))
 
 
 def names_a_person(caption: str) -> bool:
     """The caption names a person of any age, not a likeness or a thing made for one (#2069)."""
-    return bool(_PEOPLE.search(_living_text(caption)))
+    return bool(_people_pattern().search(_living_text(caption)))
 
 
 def _names_an_animal(caption: str) -> bool:
