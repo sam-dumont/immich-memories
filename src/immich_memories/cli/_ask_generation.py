@@ -49,7 +49,7 @@ from immich_memories.free_text.preparation import (
     prepare_for_request,
 )
 from immich_memories.free_text.printed import ImmichPrintedText
-from immich_memories.free_text.reading import WireAsker
+from immich_memories.free_text.reading import RequestUnreadable, WireAsker
 from immich_memories.free_text.trace import explain, pool_counts, save_with_run, trace_record
 from immich_memories.free_text.translate import household_of, translate
 from immich_memories.security import write_secret_file
@@ -268,6 +268,12 @@ def translate_ask(
             rules = _rule_preview(client, config, store, film)
     except (WordNetUnavailable, LibraryUnavailable, PreparationFailed) as error:
         raise click.ClickException(str(error)) from error
+    except RequestUnreadable as error:
+        raise click.ClickException(
+            f"The reader couldn't read this request consistently "
+            f"({error.valid_count} of 3 answers usable). Try rephrasing it, or check the "
+            "model at advanced.llm."
+        ) from error
     trace = explain(asked, film=film, rules=rules)
     click.echo(trace)
     # One record for the watcher's file and the run's report, so both show the same translation.

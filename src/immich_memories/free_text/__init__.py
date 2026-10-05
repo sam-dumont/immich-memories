@@ -39,7 +39,13 @@ from immich_memories.free_text.linking import (
     time_cut,
 )
 from immich_memories.free_text.pool import Pool, PrintedText, Step, Translation, build_pool
-from immich_memories.free_text.reading import Asker, Reading, WireAsker, read_request
+from immich_memories.free_text.reading import (
+    Asker,
+    Reading,
+    RequestUnreadable,
+    WireAsker,
+    read_request,
+)
 from immich_memories.free_text.subject import Subject, SubjectWords, build_subject, subject_words
 
 __all__ = [
@@ -59,6 +65,7 @@ __all__ = [
     "Reading",
     "Reason",
     "Relative",
+    "RequestUnreadable",
     "Step",
     "Subject",
     "SubjectWords",
