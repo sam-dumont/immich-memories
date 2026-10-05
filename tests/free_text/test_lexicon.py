@@ -73,6 +73,15 @@ def test_people_words_are_told_from_things_through_their_kinds(tmp_path: Path) -
     assert not lexicon.is_human("cars")
 
 
+def test_young_people_are_juveniles_or_offspring(tmp_path: Path) -> None:
+    lexicon = _people_words(tmp_path)
+
+    assert lexicon.is_young("children")
+    assert lexicon.is_young("kids")
+    assert lexicon.is_young("babies")
+    assert not lexicon.is_young("friends")
+
+
 def test_a_plural_is_told_by_its_noun_base(tmp_path: Path) -> None:
     lexicon = _people_words(tmp_path)
 

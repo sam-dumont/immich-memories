@@ -171,7 +171,7 @@ def build_pool(
         )
         notes = (names_reason, left_out_reason)
         _subject(funnel, translation.subject, names, excluded, lexicon, notes)
-    _company(funnel, translation.who)
+    _company(funnel, translation.who, lexicon)
     return _verdict(
         funnel,
         (*excluded, *_company_exclusions(translation.who, view)),
@@ -426,26 +426,36 @@ def _in_episodes(
     return [picture for picture in pictures if near(picture)]
 
 
-def _company(funnel: _Funnel, who: WhoLink) -> None:
-    # Company is read from captions by a curated word list (#2061), not "any WordNet
-    # person sense": that reached ordinary nouns ("fields", "village") that are not about
-    # people at all. "with kids" needs a caption naming children.
+_CURATED_REQUIRED_KINDS = frozenset({"performers", "teens", "audience"})
+
+
+def _company(funnel: _Funnel, who: WhoLink, lexicon: Lexicon) -> None:
+    # A required ("positive") company stays on main's own WordNet match (#2061 round 4):
+    # the curated list replacing it lost real photos (skiers, a father and son embracing)
+    # whose captions use ordinary words WordNet already recognised as people. The curated
+    # list is for the absent/excluded path, and for a kind main never had ("performers").
     if who.absent_company is not None:
         _drop_company(funnel, who.absent_company)
     if who.company is None:
         return
     kind = who.company
+    curated = kind in _CURATED_REQUIRED_KINDS
+    young = kind == "children"
 
     def names_company(word: str) -> bool:
-        found = caption_words.caption_kind_of(word)
-        return found is not None and kind in ("people", found)
+        if curated:
+            found = caption_words.caption_kind_of(word)
+            return found is not None and kind in ("people", found)
+        return lexicon.is_human(word) and (not young or lexicon.is_young(word))
 
     kept = [
         picture
         for picture in funnel.pictures
         if any(names_company(word) for word in words_of(picture.caption or ""))
     ]
-    rule = f"a caption naming {kind} (a curated word list)"
+    rule = f"a caption naming {kind}" + (
+        " (a curated word list)" if curated else " (WordNet's people words)"
+    )
     if who.company_only:
         # "Only" filters, not just a trace note (#2061 round 3): a caption that also names a
         # different specific kind (an audience alongside the performers) is left out too.

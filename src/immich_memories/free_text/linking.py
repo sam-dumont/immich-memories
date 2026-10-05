@@ -192,10 +192,15 @@ def link_who(
     present = list(dict.fromkeys(present))
     # The reader does not always put a negated company phrase, or "only", in `who` (#2061
     # round 3): either is as likely to land in `what`, or to be dropped from every span.
-    # Negation, "only" and company words are read over the whole request too, filling only
-    # what the spans left empty so a more specific span result is never overridden.
+    # Negation and "only" are read over the whole request too, filling only what the spans
+    # left empty. This must never turn an ordinary word elsewhere in the request into a
+    # REQUIRED company (round 4): "my son's band concerts" has no negation or "only" at
+    # all, and reading "band" as a required company there emptied its own pool. A required
+    # company from the whole text is adopted only together with its own "only": negation
+    # alone can still fill `absent`, since absence carries no such risk.
     whole = _company_in_text(request, lexicon)
-    company = company or whole.required
+    if whole.exclusive:
+        company = company or whole.required
     absent_company = absent_company or whole.absent
     company_only = company_only or (whole.exclusive and company is not None)
     return WhoLink(
