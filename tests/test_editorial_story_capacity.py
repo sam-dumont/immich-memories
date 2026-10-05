@@ -132,7 +132,7 @@ def test_a_story_whose_grant_never_reaches_past_its_distinct_count_keeps_its_raw
     story_units = _flat_story_units("S1", 3)
     parts = PartitionedSlots(_unit_by_asset(3))
 
-    choices_of, groups_offered = capacity_choices(
+    choices_of, groups_offered, folded = capacity_choices(
         stories,
         story_units,
         _unit_by_asset(3),
@@ -151,6 +151,7 @@ def test_a_story_whose_grant_never_reaches_past_its_distinct_count_keeps_its_raw
 
     assert groups_offered["S1"] == 3
     assert len(choices_of["S1"]) == 3  # the gate left it unfolded: the grant never needed it
+    assert folded == frozenset()
 
 
 def test_a_story_whose_grant_would_exceed_its_distinct_count_is_folded():
@@ -161,7 +162,7 @@ def test_a_story_whose_grant_would_exceed_its_distinct_count_is_folded():
     story_units = _flat_story_units("S1", 3)
     parts = PartitionedSlots(_unit_by_asset(3))
 
-    choices_of, _groups_offered = capacity_choices(
+    choices_of, _groups_offered, folded = capacity_choices(
         stories,
         story_units,
         _unit_by_asset(3),
@@ -179,3 +180,79 @@ def test_a_story_whose_grant_would_exceed_its_distinct_count_is_folded():
     )
 
     assert len(choices_of["S1"]) == 2  # folded: a2 is a repeat of a0, by the scene rule
+    assert folded == {"S1"}
+
+
+def test_the_fold_never_mutates_the_original_offered_choices():
+    """A story the gate decides NOT to fold must see its moments exactly as `distinct_choices`
+    found them on entry: no alternatives merged in from a comparison the gate then rejected."""
+    choices = [_choice("c1", "a"), _choice("c2", "b"), _choice("c3", "c")]
+    original_alternatives = [list(c.alternatives) for c in choices]
+
+    distinct_choices(choices, _units(a="t1", b="t2", c="t3"), "S1", None, _always(True))
+
+    assert [c.alternatives for c in choices] == original_alternatives
+    assert [c.alternatives for c in choices] == [[], [], []]
+
+
+def test_a_fold_never_changes_a_neighbours_own_grant(monkeypatch):
+    """S1 is over-granted (3 raw groups, 2 of them one scene) and gets folded. S2 is already
+    granted its own full raw capacity (one group) and must keep exactly that; the freed slack
+    goes to S3, a weighed story with real unused capacity, never to S2."""
+    import immich_memories.analysis.editorial_story_slots as slots_module
+
+    stories = [
+        {"key": "S1", "weight": "major"},
+        {"key": "S2", "weight": "major"},
+        {"key": "S3", "weight": "minor"},
+    ]
+    story_units = {
+        "S1": _flat_story_units("S1", 3)["S1"],
+        "S2": [{"asset_id": "b0", "taken": "2030-06-01T09:00:00", "kind": "still"}],
+        "S3": [
+            {"asset_id": f"c{n}", "taken": f"2030-07-0{n + 1}T09:00:00", "kind": "still"}
+            for n in range(4)
+        ],
+    }
+    unit_by_asset = {
+        **_unit_by_asset(3),
+        "b0": (None, {"asset_id": "b0", "taken": "2030-06-01T09:00:00"}),
+        **{
+            f"c{n}": (None, {"asset_id": f"c{n}", "taken": f"2030-07-0{n + 1}T09:00:00"})
+            for n in range(4)
+        },
+    }
+    parts = PartitionedSlots(unit_by_asset)
+    original_allocate = slots_module.PartitionedSlots.allocate
+    calls = []
+    monkeypatch.setattr(
+        slots_module.PartitionedSlots,
+        "allocate",
+        lambda self, *a, **kw: calls.append(1) or original_allocate(self, *a, **kw),
+    )
+
+    choices_of, _groups_offered, folded = capacity_choices(
+        stories,
+        story_units,
+        unit_by_asset,
+        parts,
+        slots=6,
+        hash_alike=None,
+        scene_alike=lambda c, k: {c["asset_id"], k["asset_id"]} == {"a0", "a2"},
+        quality=lambda _a: 0.0,
+        flagged=lambda _a: False,
+        life=lambda _a: True,
+        plays=lambda _u: False,
+        subject=lambda _a: SubjectVisibility(0, 0.0),
+        rank=None,
+        withhold=None,
+    )
+
+    # S2 is also scene-gated: it is saturated at its own one raw moment, so a depth frame
+    # for it, same as for S1, could only ever be a further picture of a moment already
+    # shown, never a distinct one.
+    assert folded == {"S1", "S2"}
+    assert len(choices_of["S1"]) == 2  # capped at its distinct count
+    assert len(choices_of["S2"]) == 1  # its own, untouched, full raw capacity
+    assert len(choices_of["S3"]) > 1  # it received some of S1's freed slack
+    assert calls == [1]  # `parts.allocate` was asked once, with everyone's raw capacity

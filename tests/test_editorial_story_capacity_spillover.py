@@ -151,6 +151,60 @@ def _crossday_scene_print(asset_id: str) -> np.ndarray:
     return vectors[2 + moment]
 
 
+# -- Round 3: a third, already-saturated story must stay exactly as it was -------------------
+
+_PORTRAIT_SCENE_ID = "portrait"
+_ROUND3_SCENE_IDS = [*_SCENE_IDS, _PORTRAIT_SCENE_ID]
+_ROUND3_SCENE_VECTORS = dict(zip(_ROUND3_SCENE_IDS, np.eye(len(_ROUND3_SCENE_IDS)), strict=True))
+
+
+def _round3_scene_print(asset_id: str) -> np.ndarray:
+    day, moment, _picture = asset_id.split("-")
+    if day == "d002":
+        return _ROUND3_SCENE_VECTORS[_PORTRAIT_SCENE_ID]
+    key = f"burst-{int(moment[1:])}" if day == "d000" else f"hunt-{int(moment[1:])}"
+    return _ROUND3_SCENE_VECTORS[key]
+
+
+def test_a_fold_elsewhere_in_the_film_never_changes_an_unrelated_storys_own_grant(tmp_path):
+    """A third story, a single-moment family portrait with nothing to fold and no slack of
+    its own, is already granted exactly its one real moment before the burst day's fold ever
+    runs. The burst day's fold, and the scavenger hunt absorbing its slack, must leave the
+    portrait's own grant exactly where it was."""
+    days = [
+        Day(date(2030, 5, 1), "Birthday burst in the garden", moments=2),
+        Day(date(2030, 5, 2), "Scavenger hunt around the house", moments=HUNT_MOMENTS),
+        Day(date(2030, 5, 3), "Family portrait", moments=1),
+    ]
+    source = film_source(
+        tmp_path,
+        days,
+        seconds=(SLOTS + 1) * 4,
+        span=MAY,
+        pictures=6,
+        picture_gap=timedelta(seconds=30),
+    )
+
+    def weigh(row: str) -> str:
+        if "Birthday" in row:
+            return "major"
+        return "major" if "portrait" in row else "minor"
+
+    judge = FilmJudge(weigh=weigh)
+    plan = plan_structure(
+        source,
+        StructurePlannerPorts(judge=judge, thumbnail_hash=_hash, scene_print=_round3_scene_print),
+    ).plan
+
+    portrait = _episode_of(plan, title_has="portrait")
+    burst = _episode_of(plan, title_has="Birthday")
+    hunt = _episode_of(plan, title_has="Scavenger")
+    assert portrait["granted"] == 1  # its own, only real moment: untouched by the burst's fold
+    assert burst["granted"] == 2  # capped at its distinct count
+    assert hunt["granted"] == HUNT_MOMENTS  # it absorbed the burst's freed slack
+    assert len(plan["carriers"]) == 1 + 2 + HUNT_MOMENTS
+
+
 def test_the_final_review_refills_a_cross_story_repeat_from_another_storys_elsewhere_moment(
     tmp_path,
 ):

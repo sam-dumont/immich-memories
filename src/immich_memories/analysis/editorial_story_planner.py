@@ -596,7 +596,7 @@ def select_story_first(
         "withhold": withheld_by_bank(banked, favourite=starred) if rules is not None else None,
     }
     slots = max(1, int(target_seconds // seconds_per_slot))
-    choices_of, groups_offered = capacity_choices(
+    choices_of, groups_offered, scene_gated_stories = capacity_choices(
         stories,
         story_units,
         unit_by_asset,
@@ -671,7 +671,12 @@ def select_story_first(
         record=record,
         slots=slots,
         calls=calls,
-        lookalike=LookAlikeCheck(looks_alike, slots=slots, scene_alike=scene_alike),
+        lookalike=LookAlikeCheck(
+            looks_alike,
+            slots=slots,
+            scene_alike=scene_alike,
+            scene_gated_stories=scene_gated_stories,
+        ),
         places=places,
         place_of=place_of,
         strangers_only=strangers_only,
