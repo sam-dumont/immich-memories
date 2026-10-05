@@ -109,6 +109,35 @@ def _default_store_url() -> str:
     return f"sqlite:///{config_state_dir() / 'store.db'}"
 
 
+def store_relocation_warning(config: Config) -> str | None:
+    """Warn an upgrading `--config` user whose store moved out from under them (#2076).
+
+    Before this fix, every `--config` run's store was `~/.immich-memories/store.db`
+    regardless of which config it was. A config that never set `database.url` now gets its
+    own store beside itself (`resolve_location`); without this warning, a user who already
+    has history and banked facts under the old path would open what looks like an empty
+    store the first time they run with the fixed version, with no sign why. Returns a
+    message only in exactly that situation: no explicit `database.url`, the new and old
+    paths differ, the new one does not exist yet, and the old one does.
+    """
+    if config.database.url not in ("", DEFAULT_URL):
+        return None
+    new_path = resolve_location(config).sqlite_path
+    if new_path is None:
+        return None
+    old_path = StoreLocation(url=normalize_url(DEFAULT_URL)).sqlite_path
+    if old_path is None or new_path == old_path or new_path.exists() or not old_path.exists():
+        return None
+    return (
+        f"This config's store is now {new_path}, not the old {old_path}: existing run "
+        f"history and banked facts will not show up here. Keep using the old store by adding "
+        f"`database.url: sqlite:///{old_path}` to this config, or move it: "
+        f"`immich-memories store backup` against the old default, then `immich-memories "
+        f"--config <this config> store restore --from <the backup>` — or just copy the file "
+        f"to {new_path}."
+    )
+
+
 def resolve_location(config: Config | None = None) -> StoreLocation:
     """The environment, then `config.yaml`'s `database:` section, then the loaded config's own file.
 

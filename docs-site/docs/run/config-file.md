@@ -176,7 +176,9 @@ beside the config file that was loaded, not always under `~/.immich-memories`. A
 `immich-memories` run still gets `~/.immich-memories/store.db` and `~/.immich-memories/logs/`,
 since that is where the default config lives. `--config /path/to/other/config.yaml` gets
 `/path/to/other/store.db` and `/path/to/other/logs/` instead, so a second setup, a test library
-say, never mixes into the main one.
+say, never mixes into the main one. Upgrading a `--config` run that already has history under
+the old path gets a startup warning and a `preflight` line naming both paths, with how to
+keep the old store (`database.url`) or move it (`store backup` / `store restore`).
 
 ## Environment variable substitution
 
