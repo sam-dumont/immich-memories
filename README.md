@@ -93,7 +93,7 @@ This is an independent companion to Immich, not made or endorsed by the Immich t
 ## People and calendars
 
 Families, relationships and calendars differ a lot, and the test households only cover some of
-them. If yours is missing, say so. [Calendar limits](https://sam-dumont.github.io/immich-memories/docs/reference/special-days)
+them. If yours is missing, say so. [Calendar limits](https://sam-dumont.github.io/immich-memories/docs/reference/film-types#holiday)
 and [contributing household examples](https://sam-dumont.github.io/immich-memories/docs/contribute/development-setup#households-and-cultures)
 show where help is useful.
 
