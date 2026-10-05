@@ -106,6 +106,122 @@ def test_a_restore_over_the_store_itself_needs_force(filled, location, tmp_path)
     assert _digests(open_store(location=location)) == before
 
 
+def _truncate(backup, tmp_path, name="truncated.backup"):
+    """A copy of `backup`, cut in half, with the same (valid) manifest beside it."""
+    corrupt = tmp_path / name
+    data = backup.read_bytes()
+    corrupt.write_bytes(data[: len(data) // 2])
+    manifest_path(corrupt).write_text(manifest_path(backup).read_text())
+    return corrupt
+
+
+def test_a_truncated_backup_with_force_leaves_the_populated_store_untouched(
+    filled, location, tmp_path
+):
+    before = _digests(filled)
+    backup = tmp_path / "store.backup"
+    backup_store(filled, backup)
+    close_stores()
+    # Captured after the backup's own VACUUM INTO (which can checkpoint the source file) and
+    # after closing every engine, so the only thing that could still move these bytes is restore.
+    before_bytes = location.sqlite_path.read_bytes() if location.sqlite_path else None
+    corrupt = _truncate(backup, tmp_path)
+
+    with pytest.raises(BackupError):
+        restore_store(location, corrupt, force=True)
+
+    if before_bytes is not None:
+        assert location.sqlite_path.read_bytes() == before_bytes
+    assert _digests(open_store(location=location)) == before
+
+
+def test_a_logically_corrupt_backup_fails_integrity_check_cleanly(filled, location, tmp_path):
+    """`PRAGMA integrity_check` returns a bad row instead of raising; that path needs its own
+    corruption, distinct from `_truncate`'s, which breaks the file too early to reach it."""
+    if location.dialect_name != "sqlite":
+        pytest.skip("integrity_check is a SQLite-only validation step")
+    before = _digests(filled)
+    backup = tmp_path / "store.backup"
+    backup_store(filled, backup)
+    close_stores()
+    before_bytes = location.sqlite_path.read_bytes()
+    corrupt = tmp_path / "logically_corrupt.backup"
+    data = bytearray(backup.read_bytes())
+    # Zero out the middle third, well past the 100-byte header: the file still opens (its
+    # header is untouched), but enough B-tree pages disagree with their neighbours that
+    # integrity_check reports it instead of sqlite3 refusing to open the file outright.
+    start, end = len(data) // 3, 2 * len(data) // 3
+    data[start:end] = b"\x00" * (end - start)
+    corrupt.write_bytes(bytes(data))
+    manifest_path(corrupt).write_text(manifest_path(backup).read_text())
+
+    with pytest.raises(BackupError, match="not a valid SQLite database"):
+        restore_store(location, corrupt, force=True)
+
+    assert location.sqlite_path.read_bytes() == before_bytes
+    assert _digests(open_store(location=location)) == before
+
+
+def test_a_manifest_mismatch_after_a_good_swap_rolls_back_the_old_file(filled, location, tmp_path):
+    """The staged file itself is fine and swaps in cleanly; only the post-swap row-count check
+    against the manifest fails. The swap must still undo itself, not just report the error."""
+    before = _digests(filled)
+    backup = tmp_path / "store.backup"
+    backup_store(filled, backup)
+    close_stores()
+    before_bytes = location.sqlite_path.read_bytes() if location.sqlite_path else None
+    tampered = json.loads(manifest_path(backup).read_text())
+    tampered["counts"] = {name: count + 1 for name, count in tampered["counts"].items()}
+    manifest_path(backup).write_text(json.dumps(tampered))
+
+    with pytest.raises(BackupError, match="does not match its manifest"):
+        restore_store(location, backup, force=True)
+
+    if before_bytes is not None:
+        assert location.sqlite_path.read_bytes() == before_bytes
+    assert _digests(open_store(location=location)) == before
+
+
+def test_the_cli_reports_a_truncated_backup_cleanly_and_exits_non_zero(filled, location, tmp_path):
+    from immich_memories.cli import main
+
+    if location.dialect_name != "sqlite":
+        pytest.skip("the CLI drill below only wires up a SQLite URL")
+    before = _digests(filled)
+    backup = tmp_path / "store.backup"
+    backup_store(filled, backup)
+    close_stores()
+    corrupt = _truncate(backup, tmp_path)
+    runner = CliRunner(env={"IMMICH_MEMORIES_DATABASE_URL": location.url})
+
+    result = runner.invoke(main, ["store", "restore", "--from", str(corrupt), "--force"])
+
+    assert result.exit_code != 0
+    assert "Traceback" not in result.output
+    assert _digests(open_store(location=location)) == before
+
+
+def test_a_truncated_backup_into_an_empty_target_is_not_created_or_left_corrupt(
+    filled, scratch, tmp_path
+):
+    backup = tmp_path / "store.backup"
+    backup_store(filled, backup)
+    corrupt = _truncate(backup, tmp_path)
+
+    with pytest.raises(BackupError):
+        restore_store(scratch, corrupt)
+
+    if scratch.sqlite_path is not None:
+        assert not scratch.sqlite_path.exists()
+    else:
+        engine = sa.create_engine(scratch.url)
+        try:
+            with engine.connect() as connection:
+                assert not sa.inspect(connection).has_schema(scratch.schema)
+        finally:
+            engine.dispose()
+
+
 def test_a_backup_never_overwrites_a_file(filled, tmp_path):
     backup = tmp_path / "store.backup"
     backup.write_text("keep me")

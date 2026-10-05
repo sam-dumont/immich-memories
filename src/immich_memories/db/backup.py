@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 import os
 import shutil
+import sqlite3
 import subprocess
 from contextlib import suppress
 from dataclasses import asdict, dataclass
@@ -29,6 +30,7 @@ from immich_memories.db.inventory import (
     store_tables,
 )
 from immich_memories.db.migrate import VERSION_TABLE, current_revisions
+from immich_memories.db.migrate import upgrade as migrate_upgrade
 from immich_memories.db.sqlite_files import private_database_path
 from immich_memories.db.store import Store, close_stores, open_store, unmigrated_store
 from immich_memories.db.time import iso_from_db, now_db
@@ -166,10 +168,17 @@ def restore_store(location: StoreLocation, backup: Path, *, force: bool = False)
     if held and not force:
         raise BackupError(f"the store already holds {held} rows; pass --force to replace them")
     close_stores()
+    # Each backend validates and swaps in one step, rolling back on any failure: the
+    # existing store is never touched before the replacement is proven good (see #2088).
     if location.dialect_name == "sqlite":
-        _swap_sqlite(location, backup)
+        _restore_sqlite(location, backup, manifest)
     else:
         _restore_postgresql(location, backup, manifest)
+    return manifest
+
+
+def _verify_restore(location: StoreLocation, manifest: Manifest) -> None:
+    """Open the restored store, migrate it to head, and check its counts against the manifest."""
     store = open_store(location=location)
     with store.connect() as connection:
         now = row_counts(connection)
@@ -180,7 +189,6 @@ def restore_store(location: StoreLocation, backup: Path, *, force: bool = False)
             f"{n}: {want} expected, {got} found" for n, (want, got) in wrong.items()
         )
         raise BackupError(f"the restored store does not match its manifest: {listing}")
-    return manifest
 
 
 def _rows_held(location: StoreLocation) -> int:
@@ -207,66 +215,156 @@ def _refuse_foreign_tables(connection: Connection, schema: str) -> None:
         )
 
 
-def _swap_sqlite(location: StoreLocation, backup: Path) -> None:
+def _restore_sqlite(location: StoreLocation, backup: Path, manifest: Manifest) -> None:
+    """Stage `backup`, prove it is a good store, and only then swap it in.
+
+    The existing target is never touched while the staged copy is unproven: a truncated or
+    otherwise corrupt backup fails here, before anything about the real store changes.
+    """
     target = location.sqlite_path
     if target is None:
         raise BackupError("an in-memory store cannot be restored")
-    private_database_path(target)
+    target.parent.mkdir(parents=True, exist_ok=True)
     staged = target.with_name(target.name + ".restoring")
+    staged.unlink(missing_ok=True)
     shutil.copyfile(backup, staged)
     staged.chmod(0o600)
+    try:
+        _validate_sqlite_copy(staged)
+        _swap_and_verify(location, target, staged, manifest)
+    finally:
+        staged.unlink(missing_ok=True)
+
+
+def _validate_sqlite_copy(staged: Path) -> None:
+    """Prove `staged` is a readable, migratable SQLite file before it ever becomes the store."""
+    copy = unmigrated_store(StoreLocation(url=f"sqlite:///{staged}"))
+    try:
+        with copy.connect() as connection:
+            result = connection.exec_driver_sql("PRAGMA integrity_check").scalar()
+        if result != "ok":
+            raise BackupError(f"the backup is not a valid SQLite database: {result}")
+        migrate_upgrade(copy)
+    except (sa.exc.SQLAlchemyError, sqlite3.DatabaseError) as error:
+        raise BackupError(f"the backup is not a valid SQLite database: {error}") from error
+    finally:
+        copy.engine.dispose()
+
+
+def _swap_and_verify(
+    location: StoreLocation, target: Path, staged: Path, manifest: Manifest
+) -> None:
+    """Swap the proven `staged` file in for `target`, verify it, and undo on any failure."""
+    private_database_path(target)
     # A WAL left beside the old file would be replayed into the new one.
     for suffix in ("-wal", "-shm", "-journal"):
         with suppress(FileNotFoundError):
             Path(str(target) + suffix).unlink()
+    aside = target.with_name(target.name + ".before-restore")
+    aside.unlink(missing_ok=True)
+    had_existing = target.stat().st_size > 0
+    if had_existing:
+        os.replace(target, aside)
     os.replace(staged, target)
+    try:
+        _verify_restore(location, manifest)
+    except BaseException:
+        close_stores()
+        if had_existing:
+            os.replace(aside, target)
+        else:
+            target.unlink(missing_ok=True)
+        raise
 
 
 def _restore_postgresql(location: StoreLocation, backup: Path, manifest: Manifest) -> None:
+    """Move the live schema aside, restore fresh under its name, verify, then drop the aside.
+
+    Never drops the live schema in place: a pg_restore newer than the server always emits
+    one tolerated, harmless error (a `SET` the server does not know — see
+    `_NEWER_CLIENT_SETTING`), and wrapping the restore in one transaction to make a drop
+    safe aborts that *whole* transaction on this first statement, silently doing nothing
+    while still looking like success. Renaming the live schema aside first means even a
+    no-op restore leaves it recoverable, and `_verify_restore` below catches the no-op
+    before anything is thrown away.
+    """
     pg_restore = _tool("pg_restore")
     source_schema = manifest.schema or location.schema
+    aside = f"{location.schema}__before_restore"
     engine = sa.create_engine(location.sa_url)
     try:
-        with engine.begin() as connection:
-            can_create = connection.execute(
-                sa.text("SELECT has_database_privilege(current_user, current_database(), 'CREATE')")
-            ).scalar()
-            if not can_create:
-                raise BackupError(
-                    "restore needs CREATE on database before replacing its schema; "
-                    "ask the database owner to GRANT CREATE ON DATABASE to the store role. "
-                    "The existing store has not been changed."
-                )
-            inspector = sa.inspect(connection)
-            if source_schema != location.schema and inspector.has_schema(source_schema):
-                raise BackupError(
-                    f"the backup's schema {source_schema!r} exists in this database; a restore "
-                    f"into {location.schema!r} needs it free for the moment it takes"
-                )
-            connection.execute(sa.schema.DropSchema(location.schema, cascade=True, if_exists=True))
-        _run(
-            [
-                pg_restore,
-                "--no-owner",
-                "--no-acl",
-                f"--dbname={_libpq_uri(location)}",
-                str(backup),
-            ],
-            location,
-            tolerated=_NEWER_CLIENT_SETTING,
-        )
-        if source_schema != location.schema:
+        had_existing = _prepare_postgresql_restore(engine, location, source_schema, aside)
+        try:
+            _run(
+                [
+                    pg_restore,
+                    "--no-owner",
+                    "--no-acl",
+                    f"--dbname={_libpq_uri(location)}",
+                    str(backup),
+                ],
+                location,
+                tolerated=_NEWER_CLIENT_SETTING,
+            )
+            if source_schema != location.schema:
+                with engine.begin() as connection:
+                    _rename_schema(connection, source_schema, location.schema)
+            _verify_restore(location, manifest)
+        except BaseException:
+            close_stores()
             with engine.begin() as connection:
-                preparer = connection.dialect.identifier_preparer
-                # DDL takes no bound identifiers: both names go through the dialect's quoting.
                 connection.execute(
-                    sa.text(  # nosemgrep: avoid-sqlalchemy-text
-                        f"ALTER SCHEMA {preparer.quote_schema(source_schema)} "
-                        f"RENAME TO {preparer.quote_schema(location.schema)}"
-                    )
+                    sa.schema.DropSchema(location.schema, cascade=True, if_exists=True)
                 )
+                if had_existing:
+                    _rename_schema(connection, aside, location.schema)
+            raise
+        if had_existing:
+            with engine.begin() as connection:
+                connection.execute(sa.schema.DropSchema(aside, cascade=True, if_exists=True))
     finally:
         engine.dispose()
+
+
+def _prepare_postgresql_restore(
+    engine: sa.Engine, location: StoreLocation, source_schema: str, aside: str
+) -> bool:
+    """Check preconditions and move the live schema aside; returns whether one existed."""
+    with engine.begin() as connection:
+        can_create = connection.execute(
+            sa.text("SELECT has_database_privilege(current_user, current_database(), 'CREATE')")
+        ).scalar()
+        if not can_create:
+            raise BackupError(
+                "restore needs CREATE on database before replacing its schema; "
+                "ask the database owner to GRANT CREATE ON DATABASE to the store role. "
+                "The existing store has not been changed."
+            )
+        inspector = sa.inspect(connection)
+        if inspector.has_schema(aside):
+            raise BackupError(
+                f"a leftover schema {aside!r} exists from an earlier restore attempt; "
+                "drop it by hand before retrying"
+            )
+        if source_schema != location.schema and inspector.has_schema(source_schema):
+            raise BackupError(
+                f"the backup's schema {source_schema!r} exists in this database; a restore "
+                f"into {location.schema!r} needs it free for the moment it takes"
+            )
+        had_existing = inspector.has_schema(location.schema)
+        if had_existing:
+            _rename_schema(connection, location.schema, aside)
+        return had_existing
+
+
+def _rename_schema(connection: Connection, name: str, new_name: str) -> None:
+    preparer = connection.dialect.identifier_preparer
+    # DDL takes no bound identifiers: both names go through the dialect's quoting instead.
+    connection.execute(
+        sa.text(  # nosemgrep: avoid-sqlalchemy-text
+            f"ALTER SCHEMA {preparer.quote_schema(name)} RENAME TO {preparer.quote_schema(new_name)}"
+        )
+    )
 
 
 def _tool(name: str) -> str:
