@@ -366,6 +366,21 @@ def _complete_music_failure(
     return MusicPhaseResult(applied=False, warning=warning)
 
 
+def _assembled_video_duration(result_path: Path) -> float | None:
+    """The already-assembled film's length, or None when the probe fails.
+
+    Feeds the bundled-music playlist (#2070) its covering target; a probe
+    failure here must cost variety, not the whole optional music phase.
+    """
+    from immich_memories.audio.mixer import get_video_duration
+
+    try:
+        duration = get_video_duration(result_path)
+    except (OSError, ValueError):
+        return None
+    return duration if duration > 0 else None
+
+
 @timed("render.music.generate")
 def run_music_phase(
     params: GenerationParams,
@@ -409,6 +424,7 @@ def run_music_phase(
             ),
             source=source,
             editorial_attempt_dir=params.editorial_attempt_dir,
+            video_duration=_assembled_video_duration(result_path),
         )
         if not selection.path:
             if phase_started and selection.warning:

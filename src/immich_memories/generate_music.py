@@ -99,6 +99,7 @@ def resolve_music(
     transition_overlap: float,
     source: MusicSource = MusicSource.AUTO,
     editorial_attempt_dir: Path | None = None,
+    video_duration: float | None = None,
 ) -> MusicSelection:
     """Determine the music to use: provided path, generated, bundled, or none.
 
@@ -106,6 +107,11 @@ def resolve_music(
     generated and the bundled branch need to read the photo cut cadence off the
     clips (#514). It comes from the run rather than ``config.defaults`` because
     ``--transition`` overrides the configured default.
+
+    ``video_duration`` is the already-assembled film's length. When the caller
+    has it, a bundled fallback that would otherwise loop one short track for
+    the whole film instead plays a varied playlist (#2070). Callers that
+    cannot supply it (most existing call sites) keep the single-track pick.
     """
     if no_music:
         return MusicSelection(None)
@@ -145,29 +151,95 @@ def resolve_music(
 
     # WHY: with no generator configured this used to return silence, which is what
     # the Docker/NAS path gets by default.
-    from immich_memories.audio.bundled_music import bundled_track_for_mood
+    return _resolve_bundled_music(
+        music_mood,
+        bundled_library,
+        assembly_clips,
+        transition_overlap,
+        video_duration,
+        run_output_dir,
+        warning,
+    )
 
+
+def _resolve_bundled_music(
+    music_mood: str | None,
+    bundled_library: Path | None,
+    assembly_clips: list[AssemblyClip],
+    transition_overlap: float,
+    video_duration: float | None,
+    run_output_dir: Path,
+    warning: str | None,
+) -> MusicSelection:
+    """The bundled fallback: one track, or a varied playlist for a long film."""
+    cadence = photo_cadence_seconds(assembly_clips, transition_overlap=transition_overlap)
     # The mood used to be read off a `clip.mood` field AssemblyClip has never
     # had, so it was always None and the bundled mood folders never served their
     # purpose. What the clips actually carry is llm_emotion, which the title
     # stack already aggregates into mood families.
-    bundled = bundled_track_for_mood(
-        music_mood,
-        library=bundled_library,
-        cadence_seconds=photo_cadence_seconds(
-            assembly_clips, transition_overlap=transition_overlap
-        ),
-    )
-    if not bundled:
+    bundled_sequence = _bundled_sequence(music_mood, bundled_library, cadence, video_duration)
+    if not bundled_sequence:
         if warning:
             warning = f"{warning}; no bundled track available; no music added"
             logger.warning(warning)
         return MusicSelection(None, warning)
-    mastered = _master(bundled, run_output_dir)
+    if len(bundled_sequence) == 1:
+        track = bundled_sequence[0]
+    else:
+        # _bundled_sequence only returns more than one track once video_duration
+        # is known — that is the branch that builds a multi-track sequence at all.
+        assert video_duration is not None  # noqa: S101 - internal invariant, not user input
+        track = _crossfaded_playlist(bundled_sequence, video_duration, run_output_dir)
+    mastered = _master(track, run_output_dir)
     if warning:
         warning = f"{warning}; used a bundled track instead"
         logger.warning(warning)
     return MusicSelection(mastered, warning)
+
+
+# A short, fixed crossfade between playlist tracks (#2070): long enough that a
+# seam is never a hard cut, short enough it cannot read as a second song.
+_BUNDLED_PLAYLIST_CROSSFADE_SECONDS = 2.0
+
+
+def _bundled_sequence(
+    mood: str | None,
+    bundled_library: Path | None,
+    cadence: float | None,
+    video_duration: float | None,
+) -> list[Path]:
+    """One bundled track, or several when the film is long enough to need more.
+
+    Without a known ``video_duration`` (most existing callers) this keeps the
+    original single-pick behaviour exactly, cadence fit included.
+    """
+    if video_duration is None:
+        from immich_memories.audio.bundled_music import bundled_track_for_mood
+
+        track = bundled_track_for_mood(mood, library=bundled_library, cadence_seconds=cadence)
+        return [track] if track else []
+
+    from immich_memories.audio.bundled_music import bundled_playlist_for_mood
+
+    return bundled_playlist_for_mood(
+        mood,
+        total_duration=video_duration,
+        library=bundled_library,
+        cadence_seconds=cadence,
+    )
+
+
+def _crossfaded_playlist(sequence: list[Path], video_duration: float, run_output_dir: Path) -> Path:
+    """Fold a varied bundled playlist into one track covering the film."""
+    from immich_memories.audio.mixer import assemble_music
+
+    run_output_dir.mkdir(parents=True, exist_ok=True)
+    return assemble_music(
+        sequence,
+        video_duration,
+        run_output_dir / "bundled_playlist.wav",
+        crossfade_seconds=_BUNDLED_PLAYLIST_CROSSFADE_SECONDS,
+    )
 
 
 def _music_evidence(
