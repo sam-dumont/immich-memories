@@ -21,6 +21,8 @@ Start with [Quick start](../get-started/quick-start.md) for one container beside
 
 Already running the app and ready to move work elsewhere? Choose [one GPU service](reference-setup.md) for a shared NVIDIA worker, [distributed Kubernetes services](reference/cluster-example.md) for independently managed workloads, or [local Apple Silicon services](reference/mac-example.md) for a native Mac installation. Each guide explains what you must provide and what stays on the app host.
 
+Want to see everything turned on? [How I run it](how-i-run-it.md) describes my own setup: the app and one GPU worker on Kubernetes, the reader on a Mac, and what each piece costs.
+
 ## Protect access and keep your data
 
 The default UI listens on localhost with authentication off. It holds an Immich API key: enable [authentication](authentication.mdx) before publishing it to other machines. Run one UI replica.

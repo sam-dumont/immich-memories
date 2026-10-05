@@ -45,6 +45,7 @@ const sidebars: SidebarsConfig = {
       type: 'category', label: 'Run it',
       items: [
         'run/overview',
+        'run/how-i-run-it',
         'run/requirements', 'run/tested-deployments',
         {type: 'category', label: 'Install', items: [
           {type: 'doc', id: 'run/docker', label: 'Docker Compose'},
