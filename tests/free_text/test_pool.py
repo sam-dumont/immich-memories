@@ -145,6 +145,29 @@ def test_several_named_people_keep_a_picture_holding_either_of_their_own_faces(
     assert _ids(pool) == {"kid-alone", "visitor-alone"}
 
 
+def test_a_face_counts_only_on_its_own_accounts_pictures(lexicon: Lexicon) -> None:
+    """In a household run (#2044), a face held to one account never counts on another
+    account's copy of the same person, the same rule `present_on_assets` already applies
+    to a dated run."""
+    view = _view(
+        _at("primarys-own", "2020-05-01T12:00+00:00", people=frozenset({"kid"})),
+        _at("partners-own", "2020-05-01T13:00+00:00", people=frozenset({"kid"})),
+    )
+    asked = _asked("my son", who=WhoLink(present=("kid",), anchors=("kid",)))
+
+    pool = build_pool(
+        asked,
+        view,
+        NOBODY,
+        lexicon,
+        BankedAsker(),
+        face_accounts={"kid": "primary"},
+        picture_accounts={"primarys-own": "primary", "partners-own": "partner"},
+    )
+
+    assert _ids(pool) == {"primarys-own"}
+
+
 def test_company_needs_a_caption_naming_people_of_that_kind(lexicon: Lexicon) -> None:
     view = _view(
         _picture("kids", caption="Two children playing in a park"),
@@ -182,6 +205,9 @@ def test_an_absent_people_request_drops_a_face_or_a_human_caption_subject(lexico
     assert _ids(pool) == {"landscape"}
     step = next(s for s in pool.funnel if s.name == "absent company")
     assert step.kept == 1
+    # Bare, no "no" of its own (#2061 round 3): the brief's "must not show:" carries the
+    # single negation; a phrase here with its own "no" would double it.
+    assert pool.excluded == ("people",)
 
 
 def test_an_absent_specific_company_kind_is_excluded_not_required(lexicon: Lexicon) -> None:
@@ -246,6 +272,34 @@ def test_only_the_performers_covers_every_curated_role(lexicon: Lexicon) -> None
         "choir",
         "orchestra",
     }
+
+
+def test_only_filters_a_picture_that_also_names_the_audience(lexicon: Lexicon) -> None:
+    # #2061 round 3: "only" must actually filter, not just change the rule's trace text --
+    # a caption naming both a performer and the audience is left out too.
+    view = _view(
+        _picture("musician-alone", caption="A musician playing a guitar on stage"),
+        _picture("musician-and-crowd", caption="A musician playing to a cheering crowd"),
+    )
+    asked = _asked("only the performers", who=WhoLink(company="performers", company_only=True))
+
+    pool = build_pool(asked, view, NOBODY, lexicon, BankedAsker())
+
+    assert _ids(pool) == {"musician-alone"}
+
+
+def test_performer_evidence_is_not_only_a_role_noun(lexicon: Lexicon) -> None:
+    # #2061 round 3 (Case 30): "man and woman singing into microphones" has no performer
+    # noun at all; what they are doing, and the prop, are still performer evidence.
+    view = _view(
+        _picture("singing", caption="A man and a woman singing into microphones"),
+        _picture("audience-only", caption="A crowd watching a concert"),
+    )
+    asked = _asked("only the performers", who=WhoLink(company="performers", company_only=True))
+
+    pool = build_pool(asked, view, NOBODY, lexicon, BankedAsker())
+
+    assert _ids(pool) == {"singing"}
 
 
 def test_absent_people_never_drops_an_ordinary_landscape_word(lexicon: Lexicon) -> None:

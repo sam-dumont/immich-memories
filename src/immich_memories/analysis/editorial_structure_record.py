@@ -239,6 +239,30 @@ def _people_condition_violations(
     return frozenset(carrier_ids) - held
 
 
+def _named_exclusion_violations(
+    carrier_ids: Sequence[str],
+    assets: Mapping[str, Asset],
+    excluded_person_ids: Sequence[str],
+    face_accounts: Mapping[str, str],
+) -> frozenset[str]:
+    """Every carrier whose own recognised face is a person the request excluded (#2061).
+
+    The opposite check from `_people_condition_violations`: a required condition flags who
+    is missing, an excluded one flags who is there. A named exclusion is checked against
+    the carrier's own recognised faces, never its caption (which never names anyone).
+    """
+    if not excluded_person_ids:
+        return frozenset()
+    leaves = tuple(PersonExpression("person", value=person_id) for person_id in excluded_person_ids)
+    condition = leaves[0] if len(leaves) == 1 else PersonExpression("any", children=leaves)
+    held = present_on_assets(
+        [assets[carrier_id] for carrier_id in carrier_ids if carrier_id in assets],
+        condition,
+        face_accounts=face_accounts,
+    )
+    return frozenset(carrier_ids) & held
+
+
 def _contract_check(
     intent,
     outcome: PlanOutcome,
@@ -250,6 +274,7 @@ def _contract_check(
     condition: PersonExpression | None,
     face_accounts: Mapping[str, str],
     annotations: Mapping[str, str] | None = None,
+    excluded_person_ids: Sequence[str] = (),
 ):
     """D09/D14: judge the plan's shape against the contract; sparse material is reported, never padded."""
     carrier_ids = [x["asset_id"] for x in outcome.carriers]
@@ -270,7 +295,8 @@ def _contract_check(
         requested_seconds=facts.target_seconds,
         people_violations=_people_condition_violations(
             carrier_ids, assets, condition, face_accounts
-        ),
+        )
+        | _named_exclusion_violations(carrier_ids, assets, excluded_person_ids, face_accounts),
     )
     if report.status != "insufficient_material" or not _search_limited(assembly):
         return report
@@ -545,6 +571,7 @@ def build_result(source, ports, facts: PlanFacts, outcome: PlanOutcome) -> Struc
         condition=source.case.resolved_person_condition,
         face_accounts=source.case.face_accounts,
         annotations=source.annotations,
+        excluded_person_ids=source.case.excluded_person_ids,
     )
     plan = _plan_dict(source, ports, facts, outcome, judged)
     return StructurePlanningResult(

@@ -101,8 +101,11 @@ class FakeHousehold:
             )
         if not request.url.path.endswith("/search/metadata"):
             return httpx.Response(200, json=[])
-        wanted = json.loads(request.content)["type"]
-        items = [item for item in self.library.get(key, []) if item["type"] == wanted]
+        # `--ask`'s pool read (`cli/_album_generation.py::pool_media`) names no type at all.
+        wanted = json.loads(request.content).get("type")
+        items = [
+            item for item in self.library.get(key, []) if wanted is None or item["type"] == wanted
+        ]
         return httpx.Response(200, json={"assets": {"items": items, "total": len(items)}})
 
     def install(self, monkeypatch) -> FakeHousehold:

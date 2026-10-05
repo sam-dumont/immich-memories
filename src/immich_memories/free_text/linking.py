@@ -190,6 +190,14 @@ def link_who(
         )
         reasons += span_reasons
     present = list(dict.fromkeys(present))
+    # The reader does not always put a negated company phrase, or "only", in `who` (#2061
+    # round 3): either is as likely to land in `what`, or to be dropped from every span.
+    # Negation, "only" and company words are read over the whole request too, filling only
+    # what the spans left empty so a more specific span result is never overridden.
+    whole = _company_in_text(request, lexicon)
+    company = company or whole.required
+    absent_company = absent_company or whole.absent
+    company_only = company_only or (whole.exclusive and company is not None)
     return WhoLink(
         present=tuple(present),
         absent_present=tuple(dict.fromkeys(absent_present)),
@@ -199,6 +207,32 @@ def link_who(
         company_only=company_only,
         reasons=tuple(reasons),
     )
+
+
+def _company_in_text(text: str, lexicon: Lexicon) -> _SpanCompany:
+    """Company and negation read over a whole request, with no face-naming at stake: used
+    only as a fallback for what the who spans missed (#2061). Reuses `_scan_clause` with no
+    people to name, so a name anywhere in the request can never be matched by this pass."""
+    if negation.cjk_locale_of(text) is not None:
+        negated, exclusive, kind = negation.cjk_company(text)
+        if not kind:
+            return _SpanCompany()
+        return replace(_company_reason(text, kind, negated=negated)[0], exclusive=exclusive)
+    company = _SpanCompany()
+    for clause in negation.clauses(text):
+        company = _scan_clause(clause, text, {}, lexicon, _NO_ASKER, [], [], [], company)
+    return company
+
+
+class _NoAsker:
+    """Never reached: `_scan_clause` only asks when a name matched two or more people,
+    which an empty people mapping can never do."""
+
+    def ask(self, prompt: str, schema: Mapping[str, object], *, max_tokens: int) -> None:
+        raise AssertionError("the whole-text company fallback names nobody to ask about")
+
+
+_NO_ASKER = _NoAsker()
 
 
 @dataclass(frozen=True)
@@ -252,18 +286,20 @@ def _scan_clause(
     for index, token in enumerate(tokens):
         if token in FIRST_PERSON or negation.is_skip_word(token):
             continue
+        # Negation scopes forward from where it is said, not back over the words already
+        # read ("kids not wearing hats" keeps the kids: "not" negates "wearing hats", said
+        # after "kids", never the company word that came before it) (#2061).
+        negated_here = clause.negated_at(index) or negation.is_self_negating(token)
         named, rule = _matches(" ".join(tokens[index : index + 2]), token, people, lexicon)
         if named:
-            _record_named(
-                request, named, rule, token, clause.negated, found, absent, reasons, asker
-            )
+            _record_named(request, named, rule, token, negated_here, found, absent, reasons, asker)
             continue
-        kind = negation.request_kind_of(token, negated=clause.negated)
-        # Required and absent are independent slots: a clause's own negation decides which
-        # one a word fills, so an earlier clause filling one never blocks the other (#2061).
-        slot_free = company.absent is None if clause.negated else company.required is None
+        kind = negation.request_kind_of(token, negated=negated_here)
+        # Required and absent are independent slots: each word's own negation decides which
+        # one it fills, so an earlier word filling one never blocks the other (#2061).
+        slot_free = company.absent is None if negated_here else company.required is None
         if kind and slot_free:
-            filled, reason = _company_reason(token, kind, negated=clause.negated)
+            filled, reason = _company_reason(token, kind, negated=negated_here)
             company = replace(
                 company,
                 required=filled.required or company.required,

@@ -237,6 +237,7 @@ class ProductionPostCardBackend:
             event_admission=context.event_admission,
             pool_subject=context.pool_subject,
             excluded=context.excluded,
+            excluded_person_ids=context.excluded_person_ids,
             resolved_person_condition=context.resolved_person_condition,
             face_accounts=context.face_accounts,
         )
@@ -375,9 +376,13 @@ class ProductionPostCardBackend:
         from immich_memories.analysis.editorial_laya_reader import laya_reader_for
         from immich_memories.analysis.editorial_rule_reader import RuleStructureReader
 
-        # Narrowed for the same reason as the rules-only path above (#1954).
+        # Narrowed for the same reason as the rules-only path above (#1954). The owner's
+        # #2048 ruling is BASIC-only: the model tier still polishes this draft, so the
+        # draft itself must never carry the sparse-week quality promotion.
         rules = RuleStructureReader(
-            exclude_people_condition_violators(source).source, printed=self._printed_near
+            exclude_people_condition_violators(source).source,
+            printed=self._printed_near,
+            promote_sparse_quality=False,
         )
         return {
             "rules": rules,

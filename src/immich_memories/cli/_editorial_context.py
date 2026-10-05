@@ -87,6 +87,9 @@ def build_editorial_context(
     pool_excluded = (
         tuple(resolved.preset_params.get("excluded_phrases") or ()) if product == "album" else ()
     )
+    pool_excluded_person_ids = (
+        tuple(resolved.preset_params.get("excluded_person_ids") or ()) if product == "album" else ()
+    )
     return EditorialRunContext(
         key=key,
         label=label,
@@ -117,6 +120,7 @@ def build_editorial_context(
         owner_excluded_asset_ids=owner_excluded_asset_ids,
         base_brief=pool_subject,
         pool_excluded_phrases=pool_excluded,
+        pool_excluded_person_ids=pool_excluded_person_ids,
         pool_is_subject=pool_subject is not None,
         trip=product == "trip",
         album_ref=album_ref,

@@ -119,6 +119,9 @@ export interface paths {
         /**
          * Thumbnail
          * @description The picture at grid or preview size; a miss is fetched from Immich and kept.
+         *
+         *     No configured account reading this id is a 404 before the cache is even asked, so a
+         *     cached picture never outlives the account that put it there losing access to it.
          */
         get: operations["thumbnail_api_v1_assets__asset_id__thumbnail_get"];
         put?: never;
@@ -1224,6 +1227,8 @@ export interface components {
         };
         /** AskRequest */
         AskRequest: {
+            /** Accounts */
+            accounts?: string[];
             /** Sentence */
             sentence: string;
         };
@@ -2256,12 +2261,22 @@ export interface components {
             carriers: components["schemas"]["StoryCarrier"][];
             /** Day */
             day: string;
+            /**
+             * Funded By
+             * @default
+             */
+            funded_by: string;
             /** Granted */
             granted: number;
             /** Key */
             key: string;
             /** Purpose */
             purpose: string;
+            /**
+             * Sparse Quality Reason
+             * @default
+             */
+            sparse_quality_reason: string;
             /** Title */
             title: string;
             /** Weight */

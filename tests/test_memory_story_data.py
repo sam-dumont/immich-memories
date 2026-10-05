@@ -94,6 +94,42 @@ def test_granted_and_day_fall_back_to_the_carriers_when_the_record_lacks_them() 
     assert (closing.granted, closing.day) == (1, "2024-06-22")
 
 
+def test_a_sparse_quality_promotion_carries_its_funding_and_audit_to_the_view() -> None:
+    """A week #2048 funded by its own best picture shows why, and the plan's audit of
+    the whole mechanism reaches the page alongside the thesis."""
+    plan = _plan()
+    plan["story"]["episodes"][0]["funded_by"] = "quality"
+    plan["story"]["episodes"][0]["sparse_quality_reason"] = (
+        "The household's period is mostly indicator-less; funded by this week's best picture"
+    )
+    plan["story"]["sparse_quality"] = {
+        "share": 0.8,
+        "threshold": 2 / 3,
+        "promoted": ["S0002"],
+        "left_short": [],
+    }
+
+    view = story_view_from_plan(plan)
+
+    closing = next(story for story in view.stories if story.key == "S0002")
+    assert closing.funded_by == "quality"
+    assert "best picture" in closing.sparse_quality_reason
+    assert view.sparse_quality == {
+        "share": 0.8,
+        "threshold": 2 / 3,
+        "promoted": ["S0002"],
+        "left_short": [],
+    }
+
+
+def test_an_ordinarily_weighed_story_carries_no_funding_note() -> None:
+    view = story_view_from_plan(_plan())
+
+    assert all(story.funded_by == "" for story in view.stories)
+    assert all(story.sparse_quality_reason == "" for story in view.stories)
+    assert view.sparse_quality is None
+
+
 def test_render_mode_from_the_selection_wins_over_the_planner_kind() -> None:
     view = story_view_from_plan(_plan(), render_modes={"photo-first": "motion"})
 

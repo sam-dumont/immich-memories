@@ -80,7 +80,8 @@ class CutBrief(BaseModel):
     # A film in a sentence (`--ask`): the whole scope, so it comes with no scope field.
     ask: str | None = None
 
-    def _flags(self) -> list[str]:
+    def flags(self) -> list[str]:
+        """This brief's `generate` flags, one per filled field; a preview reuses them (#2044)."""
         flags = []
         for name in _VALUED:
             value = getattr(self, name)
@@ -105,8 +106,8 @@ class CutBrief(BaseModel):
     def argv(self, *, executable: str, config: Path | None, output: Path) -> list[str]:
         """The command the server runs: this brief, cut and kept, rendered later."""
         head = [executable, *(["--config", str(config)] if config else []), "generate"]
-        return [*head, *self._flags(), "--no-render", "--output", str(output)]
+        return [*head, *self.flags(), "--no-render", "--output", str(output)]
 
     def shown_command(self) -> str:
         """The same cut as a person would type it, without the server's own file choices."""
-        return shlex.join(["immich-memories", "generate", *self._flags(), "--no-render"])
+        return shlex.join(["immich-memories", "generate", *self.flags(), "--no-render"])

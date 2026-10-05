@@ -125,6 +125,8 @@ class EditorialRunContext:
     pool_is_subject: bool = False
     # What the free-text request asked left out, for a subject pool only (#2061).
     pool_excluded_phrases: tuple[str, ...] = ()
+    # A named person that request excluded, by people-file id, for a subject pool only.
+    pool_excluded_person_ids: tuple[str, ...] = ()
     motion_outcome_replay: MotionOutcomeReplay | None = None
     person_expression: PersonExpression | None = None
     render_timing: EditorialTimingPolicy | None = None
@@ -197,6 +199,11 @@ class EditorialRunContext:
     def excluded(self) -> tuple[str, ...]:
         """What this run's subject pool asked left out, or nothing for any other run."""
         return self.pool_excluded_phrases if self.pool_is_subject else ()
+
+    @property
+    def excluded_person_ids(self) -> tuple[str, ...]:
+        """A named person this run's subject pool excluded, or nothing for any other run."""
+        return self.pool_excluded_person_ids if self.pool_is_subject else ()
 
     def _adopt_special_event_members(self) -> None:
         members = validate_special_event_scope(

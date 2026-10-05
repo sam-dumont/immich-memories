@@ -21,6 +21,7 @@ from immich_memories.analysis.editorial_description_outcomes import unavailable_
 from immich_memories.analysis.llm_caption_identity import LLM_CAPTION_PREFIX
 from immich_memories.analysis.subject_framing import FaceBox
 from immich_memories.api.models import Asset
+from immich_memories.config_models import PRIMARY_ACCOUNT
 from immich_memories.db import Store, now_db, to_db
 from immich_memories.db.tables import (
     annotation_assets,
@@ -33,8 +34,20 @@ from immich_memories.db.tables import (
     pixel_facts,
     pixel_facts_thresholds,
 )
+from immich_memories.db.tables.store_meta import store_meta
 from immich_memories.store.batches import bank_rows, id_in, in_chunks, insert_rows, upsert_rows
 from immich_memories.store.caption_selection import selected_captions
+
+# `annotation_assets` has no owner column (#2044): once a household run has ever written a
+# non-primary account's picture into it, every later single-account `--ask` must still
+# scope itself, even after the partner is dropped from config or native sharing is turned
+# off. These two `store_meta` keys are the only record of that history; `household_seen` is
+# sticky and never cleared. `single_account` only ever comes from a batch this same
+# ownership-aware read actually tagged, never from an ordinary run that carries no
+# ownership evidence at all -- so it can't paper over pollution an earlier, unmarked
+# household run already left behind.
+HOUSEHOLD_SEEN_KEY = "household_seen"
+SINGLE_ACCOUNT_KEY = "single_account"
 
 
 def now() -> str:
@@ -56,6 +69,57 @@ def remember_assets(store: Store, assets: Sequence[Asset]) -> None:
             )
         # Two people sharing a name in one picture keep one row, the last, as the file did.
         upsert_rows(connection, asset_people, people, keys=("asset_id", "person_name"))
+        _record_ownership_evidence(connection, assets)
+
+
+def _record_ownership_evidence(connection: Connection, assets: Sequence[Asset]) -> None:
+    """Mark this store household-seen or (so far) single-account, by this batch's evidence.
+
+    An ordinary run's plain client never tags an owner at all (`access_accounts` stays
+    empty on every asset): that absence is itself the confirmation a single-account
+    install earns on its next ordinary preparation, exactly as the config alone already
+    would have said before any account was ever added. A household run tags every asset it
+    reads through `AccessBoundClient`, so one non-primary owner anywhere in the batch is
+    real, sticky evidence, never downgraded by a later, primary-only batch.
+    """
+    owners = {account for asset in assets for account in asset.access_accounts}
+    key = HOUSEHOLD_SEEN_KEY if owners - {PRIMARY_ACCOUNT} else SINGLE_ACCOUNT_KEY
+    upsert_rows(
+        connection,
+        store_meta,
+        [{"key": key, "value": True, "updated_at": now_db()}],
+        keys=("key",),
+    )
+
+
+def household_seen(store: Store) -> bool:
+    """Whether a household account's picture was ever written here, even once (#2044).
+
+    Sticky: once set, nothing clears it, because the pictures it was set for are still in
+    `annotation_assets` with no owner column to tell them apart from the primary's own.
+    """
+    return _meta_flag(store, HOUSEHOLD_SEEN_KEY)
+
+
+def single_account_confirmed(store: Store) -> bool:
+    """Whether a preparation run has already written here without seeing another owner.
+
+    Set by the next ordinary `prepare`/`generate` after an install never named another
+    account (#2044): that run's own client never tags an owner at all, so its silence is
+    the confirmation. `household_seen` is checked first and is never cleared by this, so a
+    store a household run already poisoned keeps paying the safe, scoped read even after
+    a later primary-only batch earns this flag too.
+    """
+    return _meta_flag(store, SINGLE_ACCOUNT_KEY)
+
+
+def _meta_flag(store: Store, key: str) -> bool:
+    with store.connect() as connection:
+        return bool(
+            connection.execute(
+                sa.select(store_meta.c.value).where(store_meta.c.key == key)
+            ).scalar()
+        )
 
 
 def _asset_row(asset: Asset) -> dict[str, Any]:

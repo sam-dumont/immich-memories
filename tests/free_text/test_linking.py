@@ -228,6 +228,143 @@ def test_elided_articles_split_from_their_word(lexicon: Lexicon) -> None:
     assert who.absent_company == "children"
 
 
+def test_negation_the_reader_puts_in_what_or_drops_is_still_read(lexicon: Lexicon) -> None:
+    """#2061 round 3: six locales were lost on real data because a real reader puts a
+    negated company phrase in `what`, or drops it from every span entirely. Negation and
+    company are read over the whole request too, not only the `who` spans the model gave."""
+    in_what = link_who("landschappen zonder mensen", (), STRANGERS, lexicon, _unasked())
+    dropped = link_who("без людей", (), STRANGERS, lexicon, _unasked())
+
+    assert in_what.absent_company == "people"
+    assert dropped.absent_company == "people"
+
+
+def test_a_whole_text_scan_never_overrides_a_more_specific_who_span(lexicon: Lexicon) -> None:
+    # The who span already says "children" required; the fallback whole-text scan must not
+    # also read "no rain" elsewhere in the request as anything about company.
+    who = link_who(
+        "with the kids, no rain please", ("with the kids",), STRANGERS, lexicon, _unasked()
+    )
+
+    assert (who.company, who.absent_company) == ("children", None)
+
+
+def test_negation_scopes_forward_not_back_over_the_company_word(lexicon: Lexicon) -> None:
+    # #2061: "kids not wearing hats" must keep the kids; "not" negates what follows it.
+    who = link_who(
+        "kids not wearing hats", ("kids not wearing hats",), STRANGERS, lexicon, _unasked()
+    )
+
+    assert (who.company, who.absent_company) == ("children", None)
+
+
+def test_except_and_excluding_mean_absent(lexicon: Lexicon) -> None:
+    except_kids = link_who("except the kids", ("except the kids",), STRANGERS, lexicon, _unasked())
+    excluding = link_who(
+        "excluding children", ("excluding children",), STRANGERS, lexicon, _unasked()
+    )
+    french = link_who("sauf les enfants", ("sauf les enfants",), STRANGERS, lexicon, _unasked())
+
+    assert except_kids.absent_company == "children"
+    assert excluding.absent_company == "children"
+    assert french.absent_company == "children"
+
+
+def test_sans_personne_does_not_cancel_back_to_required(lexicon: Lexicon) -> None:
+    # #2061: two negation words in the same clause are not two negations that cancel; an
+    # absolute negative pronoun ("personne") is always absence, on its own.
+    who = link_who("sans personne", ("sans personne",), STRANGERS, lexicon, _unasked())
+
+    assert (who.absent_company, who.company) == ("people", None)
+
+
+_HELD_OUT = {
+    # Owner ruling round 3: 15+ requests not designed into the code, spread across locales,
+    # to check the mechanism generalises rather than matching two campaign phrases. The
+    # reader rarely segments a who-span cleanly, so these go through an empty `who` to
+    # exercise the hardest path: company and negation read over the whole request alone.
+    "le marche de noel, sans la foule": ("absent", "audience"),  # fr: without the crowd
+    "beach without strangers": ("absent", "people"),  # en
+    "nur die kinder beim spielen": ("required", "children"),  # de: only the children playing
+    "het strand zonder mensen": ("absent", "people"),  # nl: the beach without people
+    "tylko dzieci": ("required", "children"),  # pl: only children
+    "solo i bambini": ("required", "children"),  # it: only the children
+    "apenas as criancas": ("required", "children"),  # pt-BR: only the children
+    "food, no faces": ("absent", "people"),  # en: a face stands for the person
+    "sin extranos": ("absent", "people"),  # es: without strangers
+    # Correct non-matches: the subject is not people at all, so neither slot should fire,
+    # even though each one carries a real negation or "only" marker of its own.
+    "solo los perros": (None, None),  # es: only the dogs
+    "zonder auto's": (None, None),  # nl: without cars
+    "bez psow": (None, None),  # pl: without dogs
+    "nothing but sunsets": (None, None),  # en
+    "the wedding, no kissing": (None, None),  # en
+    "только море": (None, None),  # ru: only the sea
+}
+
+
+@pytest.mark.parametrize("request_text", sorted(_HELD_OUT))
+def test_held_out_requests_generalise_beyond_the_two_campaign_phrases(
+    request_text: str, lexicon: Lexicon
+) -> None:
+    """15+ requests this fix was never designed around (owner ruling, round 3): the reader
+    put nothing useful in `who`, so this is the hardest path -- company and negation read
+    over the whole request text alone."""
+    slot, kind = _HELD_OUT[request_text]
+    who = link_who(request_text, (), STRANGERS, lexicon, _unasked())
+
+    if slot is None:
+        assert (who.company, who.absent_company) == (None, None)
+    elif slot == "required":
+        assert who.company == kind
+    else:
+        assert who.absent_company == kind
+
+
+def test_cjk_held_out_requests_generalise(lexicon: Lexicon) -> None:
+    ja_snow = link_who("雪の日、人なし", (), STRANGERS, lexicon, _unasked())
+    ko_only = link_who("아이들만", (), STRANGERS, lexicon, _unasked())
+
+    assert ja_snow.absent_company == "people"
+    assert (ko_only.company, ko_only.company_only) == ("children", True)
+
+
+@pytest.mark.xfail(
+    reason=(
+        "#2061 round 3, known gap: 'grandpa' and 'everyone' both fold to the same generic "
+        "'people' kind, so a required and an absent slot collide on one word instead of "
+        "reading as 'everyone, but not grandpa'. Needs a finer kind than this table has."
+    ),
+    strict=True,
+)
+def test_everyone_except_a_specific_person_is_a_known_gap(lexicon: Lexicon) -> None:
+    who = link_who("everyone except grandpa", (), STRANGERS, lexicon, _unasked())
+
+    assert (who.company, who.absent_company) == ("people", None)
+
+
+def test_cjk_negation_reads_an_inflected_natural_phrase(lexicon: Lexicon) -> None:
+    ja = link_who("人のいない風景", ("人のいない風景",), STRANGERS, lexicon, _unasked())
+    ko = link_who("사람 없는 풍경", ("사람 없는 풍경",), STRANGERS, lexicon, _unasked())
+    zh = link_who("风景，没有人们", ("没有人们",), STRANGERS, lexicon, _unasked())
+
+    assert ja.absent_company == "people"
+    assert ko.absent_company == "people"
+    assert zh.absent_company == "people"
+
+
+def test_absolute_negative_pronouns_mean_absent_people(lexicon: Lexicon) -> None:
+    nobody = link_who("nobody here", ("nobody here",), STRANGERS, lexicon, _unasked())
+    strangers = link_who("no strangers", ("no strangers",), STRANGERS, lexicon, _unasked())
+    tourists = link_who("no tourists", ("no tourists",), STRANGERS, lexicon, _unasked())
+    german = link_who("niemand", ("niemand",), STRANGERS, lexicon, _unasked())
+
+    assert nobody.absent_company == "people"
+    assert strangers.absent_company == "people"
+    assert tourists.absent_company == "people"
+    assert german.absent_company == "people"
+
+
 def test_a_first_name_two_people_share_is_picked_by_vote(lexicon: Lexicon) -> None:
     cousin = LibraryPerson("p-cousin", "Cy Other", "cousin", None)
     people = {**PEOPLE, "p-cousin": cousin}

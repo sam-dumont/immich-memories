@@ -211,18 +211,21 @@ def build_editorial_intent(
 
 
 def _with_excluded(intent: EditorialIntent, excluded: Sequence[str]) -> EditorialIntent:
-    """The intent with a free-text request's left-out phrases carried as a hard rule (#2061)."""
+    """The intent with a free-text request's left-out phrases carried as a hard rule (#2061).
+
+    `prompt_block()` already renders `excluded` as its own "must not show:" line; stating it
+    a second time inside `coverage_requirements`' "must cover:" line would read as the same
+    rule repeated under two different headings (round 3). When "people" itself is excluded,
+    a selection priority that still asks for "people... visible" would contradict the hard
+    rule, so it is dropped.
+    """
     cleaned = tuple(phrase.strip() for phrase in excluded if phrase.strip())
     if not cleaned:
         return intent
-    return replace(
-        intent,
-        excluded=cleaned,
-        coverage_requirements=(
-            *intent.coverage_requirements,
-            f"must not show: {', '.join(cleaned)}",
-        ),
-    )
+    priorities = intent.selection_priorities
+    if "people" in (phrase.lower() for phrase in cleaned):
+        priorities = tuple(p for p in priorities if "people" not in p.lower())
+    return replace(intent, excluded=cleaned, selection_priorities=priorities)
 
 
 def _per_range(spans, prefix: str, *, required: bool) -> tuple[IntentPartition, ...]:

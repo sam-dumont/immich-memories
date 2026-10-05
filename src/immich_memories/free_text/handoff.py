@@ -52,6 +52,9 @@ class Film:
     window: DateRange | None = None
     # What the request asked left out, carried into the brief as a hard rule (#2061).
     excluded: tuple[str, ...] = ()
+    # A named person the request excluded, by people-file id, for the validation report to
+    # check against a selected carrier's own recognised faces (#2061).
+    excluded_person_ids: tuple[str, ...] = ()
     # The special-day route: the day, and the catalogued occasion on it when there is one.
     day: date | None = None
     event_id: str | None = None
@@ -95,6 +98,7 @@ def film_for(
             end=max(picture.taken_at for picture in pool.pictures),
         ),
         excluded=pool.excluded,
+        excluded_person_ids=pool.excluded_person_ids,
     )
 
 

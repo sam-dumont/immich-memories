@@ -38,6 +38,8 @@ class CuratedPool:
     window: DateRange
     # What the request asked left out, carried into the brief as a hard rule (#2061).
     excluded: tuple[str, ...] = ()
+    # A named person the request excluded, by people-file id (#2061).
+    excluded_person_ids: tuple[str, ...] = ()
 
 
 def album_output_path(
@@ -49,6 +51,21 @@ def album_output_path(
     slug = safe_slug(album_name)
     stem = f"album_{slug}" if slug else "album"
     return default_path.parent / f"{stem}.{container}"
+
+
+def _preset_params(
+    resolved: AlbumRef, subject: str | None, curated: CuratedPool | None
+) -> dict[str, object]:
+    """The album's own name and id, plus a subject pool's written subject and whatever a
+    free-text request asked left out (#2061)."""
+    params: dict[str, object] = {"album_name": resolved.name, "album_id": resolved.id}
+    if subject:
+        params["subject"] = subject
+    if curated and curated.excluded:
+        params["excluded_phrases"] = list(curated.excluded)
+    if curated and curated.excluded_person_ids:
+        params["excluded_person_ids"] = list(curated.excluded_person_ids)
+    return params
 
 
 def handle_album_generation(
@@ -170,9 +187,7 @@ def handle_album_generation(
         date_ranges=(),
         upload_to_immich=upload_to_immich,
         album=album,
-        memory_preset_params={"album_name": resolved.name, "album_id": resolved.id}
-        | ({"subject": subject} if subject else {})
-        | ({"excluded_phrases": list(curated.excluded)} if curated and curated.excluded else {}),
+        memory_preset_params=_preset_params(resolved, subject, curated),
         source=source,
         memory_key=memory_key,
         memory_category=memory_category,

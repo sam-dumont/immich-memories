@@ -7,11 +7,9 @@ tree, which made an "absent people" request drop empty landscapes. Everything he
 curated word list instead: explicit, small, and checked against the real corpus by its own
 tests rather than trusted to WordNet's morphology or hypernym depth.
 
-Captions are always written in English (the captioner never writes another language), so the
-request-side tables (`REQUEST_KIND`, `_NEGATION`, `_EXCLUSIVE`, `_CONJUNCTIONS`) are read only
-against the owner's own words, in whichever of the 14 supported locales
-(`immich_memories.i18n.SUPPORTED_LOCALES`) they typed; the caption-side tables (`CAPTION_KIND`,
-`PERSON_WORDS`) are English only.
+The request's own words are read in whichever of the 14 supported locales
+(`immich_memories.i18n.SUPPORTED_LOCALES`) the owner typed; the caption, always English (the
+captioner never writes another language), is read by `caption_words.py` instead.
 """
 
 from __future__ import annotations
@@ -36,194 +34,6 @@ def _folded(words: Iterable[str]) -> frozenset[str]:
 
 
 # ---------------------------------------------------------------------------------------
-# Caption-side (English only): what counts as a person, and which specific kind.
-# ---------------------------------------------------------------------------------------
-
-# Curated, not "any WordNet person sense": real WordNet's first-sense hypernym chain
-# still reaches a person synset for common nouns that are not about people at all. Only a
-# word on this list names a person on a caption (#2061).
-PERSON_WORDS = frozenset(
-    {
-        "person",
-        "people",
-        "human",
-        "humans",
-        "man",
-        "men",
-        "woman",
-        "women",
-        "child",
-        "children",
-        "kid",
-        "kids",
-        "boy",
-        "boys",
-        "girl",
-        "girls",
-        "baby",
-        "babies",
-        "toddler",
-        "toddlers",
-        "infant",
-        "infants",
-        "teenager",
-        "teenagers",
-        "teen",
-        "teens",
-        "adolescent",
-        "adolescents",
-        "adult",
-        "adults",
-        "family",
-        "families",
-        "couple",
-        "couples",
-        "friend",
-        "friends",
-        "parent",
-        "parents",
-        "folks",
-        "crowd",
-        "crowds",
-        "audience",
-        "audiences",
-        "spectator",
-        "spectators",
-        "onlooker",
-        "onlookers",
-        "bystander",
-        "bystanders",
-        "visitor",
-        "visitors",
-        "tourist",
-        "tourists",
-        "guest",
-        "guests",
-        "hiker",
-        "hikers",
-        "pedestrian",
-        "pedestrians",
-        "cyclist",
-        "cyclists",
-        "rider",
-        "riders",
-        "performer",
-        "performers",
-        "musician",
-        "musicians",
-        "singer",
-        "singers",
-        "dancer",
-        "dancers",
-        "actor",
-        "actors",
-        "entertainer",
-        "entertainers",
-        "band",
-        "bands",
-        "drummer",
-        "drummers",
-        "guitarist",
-        "guitarists",
-        "pianist",
-        "pianists",
-        "violinist",
-        "violinists",
-        "rapper",
-        "rappers",
-        "choir",
-        "choirs",
-        "orchestra",
-        "orchestras",
-        "dj",
-        "djs",
-    }
-)
-
-# A specific company kind within PERSON_WORDS: "children", "teens", "performers" or
-# "audience". A word not here but still in PERSON_WORDS is generic "people".
-CAPTION_KIND: dict[str, str] = {
-    **dict.fromkeys(
-        (
-            "child",
-            "children",
-            "kid",
-            "kids",
-            "toddler",
-            "toddlers",
-            "infant",
-            "infants",
-            "baby",
-            "babies",
-        ),
-        "children",
-    ),
-    **dict.fromkeys(
-        ("teenager", "teenagers", "teen", "teens", "adolescent", "adolescents"), "teens"
-    ),
-    **dict.fromkeys(
-        (
-            "performer",
-            "performers",
-            "musician",
-            "musicians",
-            "singer",
-            "singers",
-            "band",
-            "bands",
-            "dancer",
-            "dancers",
-            "actor",
-            "actors",
-            "entertainer",
-            "entertainers",
-            "drummer",
-            "drummers",
-            "guitarist",
-            "guitarists",
-            "pianist",
-            "pianists",
-            "violinist",
-            "violinists",
-            "rapper",
-            "rappers",
-            "choir",
-            "choirs",
-            "orchestra",
-            "orchestras",
-            "dj",
-            "djs",
-        ),
-        "performers",
-    ),
-    **dict.fromkeys(
-        (
-            "crowd",
-            "crowds",
-            "audience",
-            "audiences",
-            "spectator",
-            "spectators",
-            "onlooker",
-            "onlookers",
-            "bystander",
-            "bystanders",
-        ),
-        "audience",
-    ),
-}
-
-
-def caption_kind_of(word: str) -> str | None:
-    """The specific company kind a caption word names ("children", "teens", "performers",
-    "audience"), or "people" for any other word in `PERSON_WORDS`, or None for neither."""
-    folded = word.lower()
-    if folded in CAPTION_KIND:
-        return CAPTION_KIND[folded]
-    return "people" if folded in PERSON_WORDS else None
-
-
-# ---------------------------------------------------------------------------------------
 # Request-side (every supported locale): negation, "only", conjunctions, company words.
 # ---------------------------------------------------------------------------------------
 
@@ -234,44 +44,70 @@ _NEGATION: frozenset[str] = _folded(
         "no",
         "not",
         "without",
-        "none",  # en
+        "none",
+        "except",
+        "excluding",  # en
         "sans",
         "pas",
         "aucun",
-        "aucune",  # fr
+        "aucune",
+        "sauf",
+        "excepte",
+        "hormis",  # fr
         "zonder",
         "geen",  # nl
         "ohne",
         "kein",
         "keine",
-        "keinen",  # de
+        "keinen",
+        "ausser",  # de
         "sin",
         "ningun",
         "ninguna",
-        "ninguno",  # es
+        "ninguno",
+        "excepto",  # es
         "senza",
         "nessun",
         "nessuna",
-        "nessuno",  # it
+        "nessuno",
+        "tranne",  # it
         "sem",
         "nenhum",
         "nenhuma",  # pt-BR, pt-PT
         "bez",
         "zadnych",
         "zadnego",
-        "nie",  # pl
+        "nie",
+        "oprocz",  # pl
         "utan",
         "ingen",
-        "inga",  # sv
+        "inga",
+        "behalve",  # sv (and nl)
         "без",
         "нет",
-        "никаких",  # ru
+        "никаких",
+        "кроме",  # ru
     }
 )
-# Dual-role words: both a negation marker in their language's construction AND the company
-# word itself ("il n'y a personne": nobody). Counted for negation, but never skipped, so
-# they still reach the company lookup.
-_NEGATION_ALSO_COMPANY: frozenset[str] = frozenset({"personne"})
+# Dual-role words: an absolute negative pronoun that is both a negation marker AND the
+# company word itself ("il n'y a personne": nobody; "nessuno" alone: nobody), so each is
+# always read as `people`, never cancelled by another negation marker in the same clause
+# ("sans personne" is one negation, not two that cancel back to required). Counted toward a
+# clause's own negation unconditionally, but never skipped, so they still reach the lookup.
+_NEGATION_ALSO_COMPANY: frozenset[str] = _folded(
+    {
+        "personne",  # fr (also "il n'y a personne")
+        "nobody",
+        "noone",  # en
+        "niemand",  # de, nl
+        "nadie",  # es
+        "nessuno",  # it
+        "ninguem",  # pt-BR, pt-PT
+        "nikt",  # pl
+        "ingen",  # sv (also a pure marker: "inga" is the plural form used before a noun)
+        "никто",  # ru
+    }
+)
 
 _EXCLUSIVE: frozenset[str] = _folded(
     {
@@ -366,6 +202,40 @@ _BARE_PEOPLE_WORDS: frozenset[str] = _folded(
         "personer",  # sv
         "люди",
         "людей",  # ru (nominative and the genitive "без людей" takes)
+        "stranger",
+        "strangers",
+        "tourist",
+        "tourists",
+        "face",
+        "faces",  # en: a face stands for the person it belongs to
+        "etranger",
+        "etrangers",  # fr
+        "vreemdeling",
+        "vreemdelingen",  # nl
+        "fremder",
+        "fremde",  # de
+        "extrano",
+        "extranos",  # es
+        "estraneo",
+        "estranei",  # it
+        "estranho",
+        "estranhos",  # pt-BR, pt-PT
+        "nieznajomy",
+        "nieznajomi",  # pl
+        "framling",
+        "framlingar",  # sv
+        "незнакомец",
+        "незнакомцы",  # ru
+        # Absolute negative pronouns (#2061): each one already means "nobody" on its own,
+        # so it is a bare people-word even outside `_NEGATION_ALSO_COMPANY`'s own clause.
+        "nobody",
+        "noone",
+        "niemand",
+        "nadie",
+        "nessuno",
+        "ninguem",
+        "nikt",
+        "никто",
     }
 )
 # A relational plural still asks for company positively ("with friends"): it names a group
@@ -393,6 +263,43 @@ _RELATIONAL_WORDS: frozenset[str] = _folded(
         "familj",  # sv
         "друзья",
         "семья",  # ru
+        # Grandparents: a specific relation, counted the same way "friends"/"family" are.
+        "grandpa",
+        "grandma",
+        "grandfather",
+        "grandmother",  # en
+        "grand-pere",
+        "grand-mere",  # fr
+        "opa",
+        "oma",  # nl, de
+        "abuelo",
+        "abuela",  # es
+        "nonno",
+        "nonna",  # it
+        "avo",
+        "avos",  # pt-BR, pt-PT
+        "dziadek",
+        "babcia",  # pl
+        "morfar",
+        "farfar",
+        "mormor",
+        "farmor",  # sv
+        "дедушка",
+        "бабушка",  # ru
+        # An absolute positive pronoun ("everyone"): the opposite of "nobody", always a
+        # people word on its own, never gated to a negated clause the way "people" is.
+        "everyone",
+        "everybody",  # en
+        "tous",
+        "toutes",  # fr
+        "iedereen",  # nl
+        "alle",  # de, sv
+        "todos",
+        "todas",  # es, pt-BR, pt-PT
+        "tutti",
+        "tutte",  # it
+        "wszyscy",  # pl
+        "все",  # ru
     }
 )
 _PEOPLE_WORDS: frozenset[str] = _BARE_PEOPLE_WORDS | _RELATIONAL_WORDS
@@ -594,9 +501,9 @@ _AUDIENCE_WORDS: frozenset[str] = _folded(
 # itself rather than tokens. Each locale's negation, "only" and company substrings.
 _CJK_LOCALES = frozenset({"ja", "ko", "zh-Hans"})
 CJK_NEGATION: dict[str, tuple[str, ...]] = {
-    "ja": ("なし", "ない", "抜き"),
-    "ko": ("없이", "없는", "빼고"),
-    "zh-Hans": ("没有", "不要", "无", "不含"),
+    "ja": ("なし", "ない", "抜き", "除いて"),
+    "ko": ("없이", "없는", "빼고", "제외"),
+    "zh-Hans": ("没有", "不要", "无", "不含", "除了", "以外"),
 }
 CJK_EXCLUSIVE: dict[str, tuple[str, ...]] = {
     "ja": ("だけ", "のみ"),
@@ -605,7 +512,7 @@ CJK_EXCLUSIVE: dict[str, tuple[str, ...]] = {
 }
 CJK_PEOPLE: dict[str, tuple[str, ...]] = {
     "ja": ("人間", "人々", "人"),
-    "ko": ("사람들", "인간"),
+    "ko": ("사람들", "사람", "인간"),
     "zh-Hans": ("人们", "人"),
 }
 CJK_CHILDREN: dict[str, tuple[str, ...]] = {
@@ -688,17 +595,26 @@ def cjk_company(text: str) -> tuple[bool, bool, str | None]:
 
 @dataclass(frozen=True)
 class Clause:
-    """One piece of a who-span: its own words, and whether it is negated or exclusive.
+    """One piece of a request: its own words, and whether it is negated or exclusive.
 
     A double negation ("not without the kids") cancels out: `negated` is true only when an
-    odd number of markers were said, the way "not" and "without" each stand for a whole
-    negation on their own. "ne...personne" is French's own bipartite negation, so "personne"
-    alone already counts as one -- it is never paired with a second marker to cancel.
+    odd number of pure markers were said, the way "not" and "without" each stand for a whole
+    negation on their own. An absolute negative pronoun ("nobody", "nessuno", "personne" in
+    "ne...personne") is never part of that count: it always means absence on its own, so
+    "sans personne" is one negation, not two that cancel back to required.
     """
 
     words: tuple[str, ...]
     negated: bool
     exclusive: bool
+
+    def negated_at(self, index: int) -> bool:
+        """Whether the word at `index` is inside a negation's scope: a marker before it in
+        this same clause, never one that only comes after ("kids not wearing hats" keeps the
+        kids -- the negation is for "wearing hats", said after "kids", not for "kids")."""
+        pure = sum(_fold(t) in _NEGATION for t in self.words[:index])
+        dual = any(_fold(t) in _NEGATION_ALSO_COMPANY for t in self.words[:index])
+        return bool(pure % 2) or dual
 
 
 # Elided articles before a vowel ("d'enfants", "l'ami", "qu'il", "n'y") glue onto the next
@@ -734,11 +650,26 @@ def _split_on_conjunctions(tokens: Sequence[str]) -> list[Clause]:
 
 
 def _clause(tokens: Sequence[str]) -> Clause:
-    negated = sum(_fold(t) in _NEGATION or _fold(t) in _NEGATION_ALSO_COMPANY for t in tokens)
+    pure = sum(_fold(t) in _NEGATION for t in tokens)
+    dual = any(_fold(t) in _NEGATION_ALSO_COMPANY for t in tokens)
     exclusive = any(_fold(t) in _EXCLUSIVE for t in tokens)
-    return Clause(tuple(tokens), bool(negated % 2), exclusive)
+    return Clause(tuple(tokens), bool(pure % 2) or dual, exclusive)
+
+
+def is_self_negating(token: str) -> bool:
+    """Whether the token is an absolute negative pronoun ("nobody", "personne"): it means
+    absence on its own, whatever came before it in the clause (#2061)."""
+    return _fold(token) in _NEGATION_ALSO_COMPANY
 
 
 def is_skip_word(token: str) -> bool:
-    """Whether the token is a pure function word (never itself a company or a name)."""
-    return _fold(token) in _NEGATION or _fold(token) in _EXCLUSIVE
+    """Whether the token is a pure function word, never itself a company or a name.
+
+    An absolute negative pronoun ("nobody", "nessuno") is never skipped even though some of
+    them double as a plain negation marker too ("nessun bambino"): it is also the company
+    word itself and must still reach the lookup (#2061).
+    """
+    folded = _fold(token)
+    if folded in _NEGATION_ALSO_COMPANY:
+        return False
+    return folded in _NEGATION or folded in _EXCLUSIVE
