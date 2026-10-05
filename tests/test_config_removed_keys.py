@@ -126,3 +126,58 @@ def test_the_retired_scheduler_and_dead_dials_are_named_and_ignored(tmp_path: Pa
         assert key in message
     assert config.title_screens.title_duration == 3.0
     assert config.triage.provider == "cpu"
+
+
+def test_a_removed_key_names_its_deprecation_reason_not_unknown(tmp_path: Path, caplog) -> None:
+    """#2094: a key the scorer/orchestrator dropped (#325, #327) reports why, not "unknown"."""
+    path = _write(
+        tmp_path,
+        {
+            "audio": {
+                "auto_music": True,
+                "music_source": "pixabay",
+                "ducking_threshold": -20,
+                "ducking_ratio": 4.0,
+                "music_volume_db": -6.0,
+                "fade_in_seconds": 1.0,
+                "fade_out_seconds": 1.0,
+                "pixabay_api_key": "x",
+            },
+            "defaults": {
+                "transition_buffer": 0.5,
+                "output_orientation": "landscape",
+                "target_duration_minutes": 5,
+                "target_duration_seconds": 300,
+            },
+            "advanced": {
+                "analysis": {"keyframe_interval": 2},
+                "hardware": {"device_index": 0, "gpu_memory_limit": 4096},
+                "ace_step": {"bf16": True},
+            },
+        },
+    )
+
+    with caplog.at_level(logging.WARNING):
+        Config.from_yaml(path)
+
+    message = "\n".join(r.getMessage() for r in caplog.records)
+    for key in (
+        "audio.auto_music",
+        "audio.music_source",
+        "audio.ducking_threshold",
+        "audio.ducking_ratio",
+        "audio.music_volume_db",
+        "audio.fade_in_seconds",
+        "audio.fade_out_seconds",
+        "audio.pixabay_api_key",
+        "defaults.transition_buffer",
+        "defaults.output_orientation",
+        "defaults.target_duration_minutes",
+        "defaults.target_duration_seconds",
+        "analysis.keyframe_interval",
+        "hardware.device_index",
+        "hardware.gpu_memory_limit",
+        "ace_step.bf16",
+    ):
+        assert key in message, key
+    assert "unknown config key" not in message.lower()

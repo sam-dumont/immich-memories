@@ -239,8 +239,9 @@ Geocoding and map tiles are off by default. Enable them under `network` only aft
 ## Reader configuration changes before 1.0
 
 A model name or endpoint no longer enables the reader implicitly. Add
-`advanced.llm.enabled: true` to retain LLM calls. With it off, preflight warns when a reader is
-configured but disabled.
+`advanced.llm.enabled: true` to retain LLM calls. With it off, every config load logs a warning
+naming the reader fields it found, and `preflight` shows the same thing; model titles, music
+mood and model selection stay off until you add the switch.
 
 The separate title-model configuration has been removed without a compatibility fallback.
 Remove that old section and move its endpoint, model and credentials to `advanced.llm`.
