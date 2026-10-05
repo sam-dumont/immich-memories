@@ -13,21 +13,15 @@ The published Docker image has no `llama-server`: Docker and Kubernetes require 
 text-model server. Native Linux/macOS can instead run the [app-owned llama.cpp reader](../better/reader.md),
 which is a different model/runtime recipe. External services own their memory and shutdown.
 
-The exact Ollama/model pair has [recorded conformance results](../better/measured.md#local-reader-time-and-accuracy)
-on an M5 Max with 128 GiB and warm caches. Thinking-off native requests passed 33/34 probes;
-motion interpretation failed. That is evidence for individual calls, **not an offline film pass**
-or a minimum hardware measurement. The Compose deployment below remains untested, tracked in
-[#1926](https://github.com/sam-dumont/immich-memories/issues/1926). The
-[Kubernetes form](#kubernetes-form) has one recorded run, on CPU only.
-[Other providers and failures](../reference/llm-providers.md) remain separate results.
+This exact model has [recorded conformance results](../better/measured.md#local-reader-time-and-accuracy):
+validated for text use, with motion interpretation as a known weak spot, not a strength.
+[Other providers and their failures](../reference/llm-providers.md) are tracked separately.
 
 ## Prepare the two services
 
-Start from the [Basic prebuilt installation](./docker.md) and retain its app version/digest.
-Use an operator-managed Ollama 0.35.1 host reachable only from the app's private network;
-its installation, RAM/VRAM and outbound firewall belong to that host. The measured Apple setup
-used 128 GiB unified memory; lower-memory hosts have no end-to-end validation here.
-On the **model host**, verify the version and acquire the exact model:
+Start from the [Basic prebuilt installation](./docker.md). Use an operator-managed Ollama host
+reachable only from the app's private network; its installation, RAM/VRAM and outbound firewall
+belong to that host. On the **model host**, verify the version and acquire the exact model:
 
 ```bash
 ollama --version
@@ -35,7 +29,7 @@ ollama pull gemma4:e4b-it-q4_K_M
 ollama show gemma4:e4b-it-q4_K_M
 ```
 
-Keep the displayed model identity/digest with your test record: an Ollama tag alone can move.
+Keep the displayed model identity/digest alongside your config: an Ollama tag alone can move.
 Ollama's native endpoint is port **11434**, with no app-supplied authentication in this recipe.
 Keep it on a restricted LAN/VLAN or behind your authenticated proxy; never publish it to the internet.
 Its model files stay in Ollama's model directory on that host, separate from app data.
@@ -90,16 +84,13 @@ docker compose exec immich-memories immich-memories preflight
 docker compose exec immich-memories immich-memories capabilities
 ```
 
-Expect Basic selection and an enabled Ollama reader. Fix failed reader connectivity before the
-reference run; a model name alone does not establish readiness. Keep bundled music, local output
-and the [20–50-item trial](../get-started/first-film.mdx). Reader failure can leave rules/default
-wording; it must not be recorded as successful model use. `preflight` reports it
-(`LLM  WARNING  Cannot connect`, exit 0), and a run logs one warning per unreachable reader:
-`Reader unreachable at <host> (<error>); falling back to rules and default wording`. The run still
-finishes with the bundled track and default wording, so check for that line before you count a
-film as reader-assisted. There is no configured alternate hosted endpoint in this recipe. Tested on
-Kubernetes on 2026-10-04 with Ollama scaled to zero and public egress blocked: the film completed,
-the log named no host besides Immich, and nothing fell back to a hosted provider.
+Expect Basic selection and an enabled Ollama reader. A model name alone does not establish
+readiness: fix failed reader connectivity first. Keep bundled music, local output and the
+[20-50-item trial](../get-started/first-film.mdx). Reader failure falls back to rules and
+default wording rather than stopping the run; `preflight` reports it
+(`LLM  WARNING  Cannot connect`, exit 0), and the run log carries one line:
+`Reader unreachable at <host> (<error>); falling back to rules and default wording`. Check for
+that line before counting a film as reader-assisted.
 
 ## Network phases and verification
 
@@ -113,33 +104,25 @@ Maps/geocoding, hosted endpoints, notifications and generated music stay off. Th
 ACE-Step/Demucs first-use downloads, but **all** participating services still need an outbound
 boundary. The [request inventory](./reference/privacy-egress.md) lists each feature's recipients.
 
-To validate local-only operation on disposable hosts, finish preparation first, then use host/router
+To close the network down to just this pair, finish preparation first, then use host/router
 firewall rules permitting app → Immich IP/port and app → Ollama IP/11434. Deny other app egress
-on IPv4 and IPv6. Deny the **Ollama host/process** public egress too, allowing only replies to the
-app and any strictly internal resolver needed. For containers, enforce forwarded traffic, not
+on IPv4 and IPv6. Deny the **Ollama host/process** public egress too, allowing only replies to
+the app and any strictly internal resolver needed. For containers, enforce forwarded traffic, not
 just the host OUTPUT chain; for Kubernetes apply destination policies to **both** pods and remove
 other additive allow rules. The [offline guide](./offline.md) details those enforcement limits.
-
-Record the actual firewall/CNI configuration. From each app/model namespace verify a permitted
-local request and a denied public HTTPS request, then run the bounded film and decode/watch it.
-Capture destinations and warnings through startup and generation. A blocked app container cannot
-prove that a separate model server made no downloads. Finally stop only the disposable Ollama
-service, retry, record the error/degradation and destination log, restore it and confirm recovery.
-This protocol is pending execution; it does not certify arbitrary LAN firewalls.
+Verify from each namespace: a permitted local request succeeds, a public HTTPS request is denied,
+then run a bounded film and check the destinations logged during startup and generation.
 
 ## Kubernetes form {#kubernetes-form}
 
 Same recipe, three differences: the config is a ConfigMap, Ollama runs as a pod in the namespace,
-and NetworkPolicies replace the firewall. Everything below was run on RKE2 1.33.4 with Cilium,
-a clean Basic install, and public egress blocked for both pods. Start from the
+and NetworkPolicies replace the firewall. Start from the
 [Kubernetes installation](./kubernetes.md); `kubectl apply -k` your own root, never base files singly.
 
-**Hardware: CPU only.** Ollama had 2 to 6 CPUs and 8 to 14Gi, no GPU. The 6.6 GB model did not fit
-the 4.9 GB of VRAM free on the node's 8 GB T1000, so it was not used, and partial offload was not
-tried. The M5 Max figures above do not apply here. In this run the single music-mood call took
-3 min 34 s and added about 40% to the render (6 min 38 s for a 29.5 s film from a 2-day album).
-Prompt processing ran at roughly 12 tokens/s. Titles and mood are one or a few calls per film, so
-the cost is bounded, but plan for minutes, not seconds, without a GPU.
+**Hardware.** Check the model fits your node's free VRAM before requesting a GPU; without one,
+Ollama runs on CPU. Titles and mood are one or a few calls per film, so plan for minutes, not
+seconds, per call without a GPU. [Measured numbers for this setup](../better/measured.md#ollama-validation)
+are on the measurements page.
 
 **Secret.** Put `IMMICH_MEMORIES_SECRET_KEY` in `immich-memories-secrets` next to `IMMICH_URL` and
 `IMMICH_API_KEY` (the Quick start's `secret.yaml.example` has it). Without it, every
@@ -247,7 +230,7 @@ kubectl exec -n "$NS" deploy/ollama -- ollama pull gemma4:e4b-it-q4_K_M
 kubectl exec -n "$NS" deploy/immich-memories -- immich-memories preflight -v
 ```
 
-The pull took 1 min 42 s cold and the whole apply about 2 minutes including the Ollama image.
+The pull takes a few minutes cold, depending on your cluster's bandwidth.
 `preflight` should print `LLM OK Connected (ollama, 1 models)`.
 
 **NetworkPolicies, after the pull.** Uncomment the file in the kustomization and apply again. Two policies, one per pod. The app policy is the
@@ -314,16 +297,14 @@ spec:
 ```
 
 Applying the root again restores the base's broad egress policy; keep this file in the root so
-it wins. What the run showed: app to Immich and to `ollama:11434` answered 200; the app to
-`example.com`, `1.1.1.1`, GitHub and Hugging Face timed out; the Ollama pod could not reach
-`1.1.1.1:443`, the Ollama registry or Immich. DNS names still resolve (the resolver is allowed).
-The app's logs named no host besides Immich and one `POST http://ollama:11434/api/generate`. That
-proves the two pods could not reach a public endpoint; it is not a packet capture.
+it wins. Verify the policy from inside the pods: app to Immich and to `ollama:11434` should
+succeed, app to any public host should time out, and the app's logs should name no host besides
+Immich and `ollama:11434`.
 
 **Stopped provider.** `kubectl scale deploy/ollama -n "$NS" --replicas=0` makes `preflight` print
-`LLM  WARNING  Cannot connect` (exit 0). A film rendered anyway with the bundled track and the
-default mood, with no hosted fallback (nothing else is configured and egress is blocked) and no
-warning in the render log. Scale back to 1 and `preflight` is `LLM OK` again after about 30 s.
+`LLM  WARNING  Cannot connect` (exit 0). A film still renders, with the bundled track and the
+default mood and no hosted fallback. Scale back to 1 and `preflight` returns to `LLM OK` once
+Ollama is ready again.
 
 ## Kubernetes services {#kubernetes-services}
 
@@ -342,14 +323,13 @@ selecting an architecture. Third-party caption/reader image support is independe
 | Optional render worker | [Worker image/config](../better/gpu-render.md); 8093; bearer token | Operator-selected worker/sidecar budget | Encoding GPU is separate from selection capability; scratch and model paths belong to worker; media arrives over authenticated HTTP |
 
 The generated GPU wrapper reserves **one GPU allocation**, for the inference service. The
-captioner reserves none and relies on time-slicing; the wrapper does not configure sharing. The
-historical single-T1000 run had operator-managed sharing and does not prove that a default
-exclusive card is enough for both. VRAM depends on loaded models and
-concurrency; a missing reservation is not zero consumption or an arbitrary-sharing guarantee.
+captioner reserves none and relies on time-slicing; the wrapper does not configure sharing, so a
+single exclusive card is not guaranteed to be enough for both. VRAM depends on loaded models and
+concurrency; a missing reservation does not mean zero consumption.
 
 Only the app and its init/maintenance jobs need the app state volumes. Inference, caption and
 external reader use their own caches; HTTP endpoints do not require sharing SQLite or app paths.
 Keep SQLite on local/block storage. PostgreSQL removes that file constraint but does not make
 multiple UI replicas safe. See [mounts, backups and probes](./kubernetes.md#how-the-pod-is-wired).
-Existing services may be reused only after app preflight confirms the expected facts contract,
-caption alias and reader configuration; record their exact versions and warm-cache status.
+Existing services can be reused once `preflight` confirms the expected facts contract, caption
+alias and reader configuration.

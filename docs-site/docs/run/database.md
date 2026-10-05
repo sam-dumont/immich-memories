@@ -19,58 +19,7 @@ warning; it does not make multi-host writing safe.
 
 PostgreSQL is optional. It does not make the UI multi-replica.
 
-## Managing the store
-
-### Back up
-
-```bash
-immich-memories store backup
-```
-
-Docker:
-
-```bash
-docker compose exec immich-memories immich-memories store backup
-docker compose cp immich-memories:/home/immich/.immich-memories/backups ./backups
-```
-
-The app can keep running. The command creates a `.db` (SQLite) or `.dump` (PostgreSQL), plus a
-`.manifest.json`, under `~/.immich-memories/backups/`. Keep both together and copy them off the
-host. Restore requires the manifest.
-
-Also keep:
-
-- `config.yaml` and deployment files;
-- `IMMICH_MEMORIES_SECRET_KEY`, if used for saved credentials;
-- finished films you keep locally.
-
-PostgreSQL backups need `pg_dump` at least as new as the server. The Docker image includes client
-17, so a newer PostgreSQL server needs a matching client. Python installs need client tools on
-`PATH`.
-
-### Restore in a container {#restore-in-a-container}
-
-Stop the app first. A restore replaces its database.
-
-```bash
-docker compose stop immich-memories
-docker compose run --rm immich-memories immich-memories store restore \
-  --from /home/immich/.immich-memories/backups/store-20260930T090000Z.db --force
-docker compose up -d
-```
-
-The filename above is an example; use your actual backup (`.dump` for PostgreSQL). Keep its manifest beside it.
-`--force` permits replacing a non-empty store.
-
-For Kubernetes, suspend scheduled CronJobs, scale the Deployment to zero and run a one-off restore Job on the same volumes
-(and database Secret, when applicable), then scale back to one. The
-[store command reference](./reference/store-commands.md#restore-in-a-container) gives the Job
-procedure. Do not `exec` a restore into the running app.
-
-A SQLite backup restores into SQLite; a PostgreSQL backup restores into PostgreSQL.
-To change backend, restore first, then copy.
-
-### Move to PostgreSQL
+## Move to PostgreSQL
 
 Create the target database/role using one of the [PostgreSQL modes](./reference/database.md), then:
 
@@ -121,6 +70,16 @@ A dedicated database and role can share an instance with Immich without touching
 This is the expert option. Use a separate role/schema, not Immich's role or `public`.
 A whole-Immich database restore also rewinds this schema.
 [Isolation and restore details](./reference/database.md#4-a-dedicated-schema-in-immichs-own-database).
+
+## Backup and restore {#managing-the-store}
+
+[Storage and backups](./maintenance/storage-backups.md) has the full procedure for Python,
+Docker and Kubernetes.
+
+### Restoring in a container {#restore-in-a-container}
+
+The [store command reference](./reference/store-commands.md#restore-in-a-container)
+covers exact flags, what each command does to the schema, and container restore steps.
 
 ## Run history and automation
 
