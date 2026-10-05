@@ -237,13 +237,37 @@ def hue_edge(zone: str, dashed: bool = True, **kw) -> dict:
     return {"color": HUE[zone], "penwidth": "2", "style": "dashed" if dashed else "solid", **kw}
 
 
+def _lines(text: str, size: int | None = None, color: str | None = None) -> str:
+    """Label text as table rows, one line each.
+
+    A line that holds any code() is set in mono from end to end. Mixing faces inside one line
+    breaks in the browser: SVG drops the space where the font changes, and the two fonts are
+    measured by Graphviz but drawn by the browser, so they collide. One face per line can't.
+    """
+    bold = text.startswith("<b>") and text.endswith("</b>")
+    if bold:
+        text = text[3:-4]
+    rows = []
+    for line in text.replace("\n", "<br/>").split("<br/>"):
+        attrs = ""
+        if _CODE_OPEN in line:
+            attrs += f' face="{MONO}"'
+            line = line.replace(_CODE_OPEN, "").replace(_CODE_CLOSE, "")
+        if size:
+            attrs += f' point-size="{size}"'
+        if color:
+            attrs += f' color="{color}"'
+        body = f"<font{attrs}>{line}</font>" if attrs else line
+        rows.append(f"<tr><td>{'<b>' + body + '</b>' if bold else body}</td></tr>")
+    return f'<table border="0" cellspacing="0" cellpadding="1">{"".join(rows)}</table>'
+
+
 def _cell(label: str, ico: str, px: int, sub: str = "") -> str:
-    text = label.replace("\n", "<br/>")
-    sub_row = f'<tr><td><font point-size="11" color="{MUTED}">{sub}</font></td></tr>' if sub else ""
+    sub_row = f"<tr><td>{_lines(sub, 11, MUTED)}</td></tr>" if sub else ""
     return (
-        '<table border="0" cellspacing="3" cellpadding="0">'
+        '<table border="0" cellspacing="2" cellpadding="0">'
         f'<tr><td fixedsize="true" width="{px}" height="{px}"><img src="{ico}" scale="true"/></td></tr>'
-        f"<tr><td>{text}</td></tr>{sub_row}</table>"
+        f"<tr><td>{_lines(label)}</td></tr>{sub_row}</table>"
     )
 
 
@@ -377,8 +401,15 @@ def ladder(start, steps, end, exit_px: int = 40):
     or exit = a list of such tuples for a check with more than one way out.
     Reads left to right; the line is 'no, keep going', the drop is 'yes'.
     """
-    from diagrams import Edge
+    from diagrams import Edge, getdiagram
 
+    # Every ladder says the same thing about its arrows, in the same place.
+    getdiagram().dot.graph_attr.update(
+        labelloc="t",
+        labeljust="l",
+        label=f'<<font point-size="12" color="{MUTED}">&#8594; no, next check'
+        "&#160;&#160;&#160;&#160;&#160;&#8595; yes</font>>",
+    )
     prev = node(f"<b>{start[0]}</b>", start[1], px=56, sub=start[2], group="spine")
     for step in steps:
         check = node(
@@ -402,9 +433,12 @@ def ladder(start, steps, end, exit_px: int = 40):
     return last
 
 
+_CODE_OPEN, _CODE_CLOSE = "\x01", "\x02"
+
+
 def code(text: str) -> str:
-    """Inline mono text for a sub-label: a setting, a path, a command."""
-    return f'<font face="{MONO}">{text}</font>'
+    """Mark a setting, path or command. The whole line it sits on is set in mono (see _lines)."""
+    return f"{_CODE_OPEN}{text}{_CODE_CLOSE}"
 
 
 def chips(words: list, zone: str = "machine", per_row: int = 4, **attrs):
@@ -432,5 +466,17 @@ def chips(words: list, zone: str = "machine", per_row: int = 4, **attrs):
         f'<<table border="0" cellspacing="6" cellpadding="2">{body}</table>>',
         shape="plaintext",
         margin="0",
+        **attrs,
+    )
+
+
+def text_label(text: str, **attrs):
+    """Words that sit on a line: the line passes through this node instead of carrying a label."""
+    from diagrams import Node
+
+    return Node(
+        f'<<font point-size="12" color="{MUTED}">{text}</font>>',
+        shape="plaintext",
+        margin="0.05",
         **attrs,
     )

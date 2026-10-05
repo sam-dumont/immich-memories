@@ -19,7 +19,7 @@ with diagram(STEM, nodesep="0.3", ranksep="0.4"):
                 "exit": (
                     "15, 30, 60 or 90 s",
                     icon("mdi:cellphone", "machine"),
-                    "portrait",
+                    "portrait, unless you<br/>pick another shape",
                     "machine",
                 ),
             },
@@ -48,7 +48,7 @@ with diagram(STEM, nodesep="0.3", ranksep="0.4"):
         (
             "The film",
             icon("mdi:movie-check-outline", "keep"),
-            "rounded down to 5 s;<br/>titles take at most 20%",
+            "rounded down to 5 s;<br/>titles get a 20% share",
         ),
     )
 

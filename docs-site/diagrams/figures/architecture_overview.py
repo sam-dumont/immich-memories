@@ -1,7 +1,18 @@
 """What runs where. Message: it all stays home unless you switch something on."""
 
 from diagrams import Cluster, Edge
-from kit import cluster, diagram, finish, group, icon, main_edge, node, opt_edge, same_rank
+from kit import (
+    cluster,
+    diagram,
+    finish,
+    group,
+    icon,
+    main_edge,
+    node,
+    opt_edge,
+    same_rank,
+    text_label,
+)
 
 STEM = "architecture-overview"
 OPTIONAL = "Optional, on your own hardware"
@@ -46,7 +57,6 @@ with diagram(STEM, nodesep="0.45", ranksep="0.8", ordering="out"):
                     ("ACE-Step music", icon("mdi:music-note", "network")),
                 ]
             )
-        gate = node("Your router", icon("mdi:wall-fire", "neutral"), px=48, sub="closed by default")
 
     with Cluster(OUTSIDE, graph_attr=cluster("outside", dashed=True)):
         internet = group(
@@ -63,8 +73,10 @@ with diagram(STEM, nodesep="0.45", ranksep="0.8", ordering="out"):
     app >> Edge(**main_edge(weight="20")) >> immich
     same_rank(app, helpers)
     helpers >> Edge(style="invis") >> app
-    app >> Edge(**opt_edge()) >> gate
+    # Edge labels collide with orthogonal lines, so the words sit on a node the dashed line passes through.
+    switch = text_label("only what you switch on")
+    app >> Edge(**opt_edge(arrowhead="none")) >> switch
     app >> Edge(**opt_edge(lhead=f"cluster_{OPTIONAL}")) >> extras
-    gate >> Edge(**opt_edge(lhead=f"cluster_{OUTSIDE}")) >> internet
+    switch >> Edge(**opt_edge(lhead=f"cluster_{OUTSIDE}")) >> internet
 
 finish(STEM)

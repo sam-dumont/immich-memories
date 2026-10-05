@@ -35,7 +35,10 @@ with diagram(STEM, nodesep="0.6", ranksep="0.5"):
     busy = node("busy", icon("mdi:timer-sand", "neutral"), px=36, sub="one job at a time")
     cancel = node("Cancel", icon("mdi:cancel", "drop"), px=36, sub="any time: stops the process")
     revise = node(
-        "Revise", icon("mdi:swap-horizontal", "network"), px=36, sub="swap, drop, reorder shots"
+        "Revise",
+        icon("mdi:swap-horizontal", "network"),
+        px=36,
+        sub="swap, drop or add shots,<br/>trim a clip",
     )
     upload = node(
         "Back into Immich",
