@@ -120,7 +120,7 @@ def test_a_timestamp_heap_counts_as_one_shot_and_the_film_goes_short(tmp_path, c
         tmp_path, [day], seconds=600, span=MAY, pictures=17, picture_gap=timedelta(seconds=0)
     )
 
-    with caplog.at_level("INFO", logger="immich_memories.analysis.editorial_story_carriers"):
+    with caplog.at_level("INFO", logger="immich_memories.analysis.editorial_story_depth_fill"):
         plan = _run(source)
 
     assert len(plan["carriers"]) == 1

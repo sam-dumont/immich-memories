@@ -285,6 +285,12 @@ The separate model-planning route can read banked lines or use plain clip facts.
   picture. The memory-worthy tier gate, the near-home test, the written-subject pool, chapter
   assembly and the per-partition slot/depth caps live in `editorial_structure_framing.py`,
   split out of `editorial_structure_planner.py`.
+  `CarrierAdmission` composes a `DepthFill` (`editorial_story_depth_fill.py`) for the pass after
+  pass 1/2: it spends what content-seconds budget is left on further distinct shots of the
+  moments a story already shows, round-robin across stories in funding order, and logs one
+  line and goes honestly short once distinct shots run out before the budget does. The split
+  is a `DepthFillHost` protocol, not a mixin: `DepthFill` reads and mutates the admission's own
+  state (carriers, places, lookalike, gate) through that contract.
 - **Picture admission**: `PictureAdmission` (`editorial_picture_admission.py`) owns the shared
   standing, audience, spacing and candidate repetition checks. Draft selection, thin swaps,
   audience replacements, duplicate refills and family seats use it. Later candidates acquire
@@ -637,6 +643,8 @@ src/immich_memories/
 │   ├── editorial_story_replacement_pool.py # What a freed slot refills from: the carrier's own moment, its
 │   │                               # story's unshown moments, then other stories' moments that never took a slot
 │   ├── editorial_story_depth.py     # A short film's free slots as verified-different frames inside shown moments
+│   ├── editorial_story_depth_fill.py # CarrierAdmission's depth pass, split out: spends content seconds on
+│   │                               # distinct shots round-robin across stories, goes short and logs when they run out
 │   ├── editorial_story_trim.py      # The allocation in reverse when the production budget is tighter
 │   ├── editorial_story_threads.py   # A recurring activity at one place is one story per era, if the reader agrees
 │   ├── editorial_same_kind.py       # No-model: dense same-label stories at one place in one partition share one story's depth
@@ -1128,7 +1136,10 @@ src/immich_memories/
 │   └── storage_report.py       # build_storage_report(): output + cache storage inventory (`runs storage`)
 │
 ├── planning/                   # Media-aware duration planning
-│   ├── auto_duration.py        # decide_memory_duration(): Auto length fitted to discovered media, CLI and UI
+│   ├── auto_duration.py        # decide_memory_duration(): Auto length fitted to discovered media, CLI and UI;
+│   │                           # a day's capacity is its distinct shots (`distinct_shots.py`), no flat per-day cap
+│   ├── distinct_shots.py       # is_new_shot()/distinct_shots(): the one rule for a further frame counting as
+│   │                           # its own shot, shared by auto_duration's capacity and the depth fill's admission
 │   └── memory_length.py        # default_duration_for_type(): the length a memory type asks for, one resolver for every surface
 │
 ├── config.py                   # YAML configuration management (re-exports)
