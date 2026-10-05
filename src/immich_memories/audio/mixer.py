@@ -509,7 +509,14 @@ def _build_ducking_filter(
             # length, but some FFmpeg versions write incorrect stream duration
             # metadata. The final apad/atrim guarantees both the actual samples
             # AND the metadata match video_duration.
-            "[vamix][ducked_music]amix=inputs=2:duration=longest:dropout_transition=2,"
+            # WHY normalize=0: amix defaults to scaling inputs down so a 2-input
+            # sum cannot clip, which measured 6 dB quieter on equal-level tones
+            # (#2070) — the bundled-music path only ran through this function and
+            # landed at -29 to -35 dBFS against generated music's -21 to -24,
+            # because mix_audio_with_4stem_ducking already sets normalize=0 and
+            # leaves the limiter below to guard the ceiling instead.
+            "[vamix][ducked_music]amix=inputs=2:duration=longest:"
+            "dropout_transition=2:normalize=0,"
             f"{final_mix_safety_filter()},"
             f"apad=whole_dur={video_duration},atrim=0:{video_duration}[mixed]",
         )
