@@ -274,18 +274,36 @@ def test_only_the_performers_covers_every_curated_role(lexicon: Lexicon) -> None
     }
 
 
-def test_only_filters_a_picture_that_also_names_the_audience(lexicon: Lexicon) -> None:
-    # #2061 round 3: "only" must actually filter, not just change the rule's trace text --
-    # a caption naming both a performer and the audience is left out too.
+def test_only_the_performers_still_keeps_a_performer_shot_with_the_crowd_visible(
+    lexicon: Lexicon,
+) -> None:
+    # #2061 round 3 drew the line at "another kind in the caption drops it"; #2072 moved it:
+    # a performer shot with the audience visible is still a performer shot -- only a shot
+    # that is audience alone (no performer named) is left out.
     view = _view(
         _picture("musician-alone", caption="A musician playing a guitar on stage"),
         _picture("musician-and-crowd", caption="A musician playing to a cheering crowd"),
+        _picture("audience-only", caption="A crowd watching a concert"),
     )
     asked = _asked("only the performers", who=WhoLink(company="performers", company_only=True))
 
     pool = build_pool(asked, view, NOBODY, lexicon, BankedAsker())
 
-    assert _ids(pool) == {"musician-alone"}
+    assert _ids(pool) == {"musician-alone", "musician-and-crowd"}
+
+
+def test_only_the_children_still_drops_a_caption_also_naming_an_adult(lexicon: Lexicon) -> None:
+    # The #2072 exception is for performers + audience specifically; every other kind
+    # keeps #2061 round 3's rule -- a caption naming a different kind is still left out.
+    view = _view(
+        _picture("kids-alone", caption="Two children playing in the garden"),
+        _picture("kids-and-performer", caption="Two children watching a musician perform"),
+    )
+    asked = _asked("only the kids", who=WhoLink(company="children", company_only=True))
+
+    pool = build_pool(asked, view, NOBODY, lexicon, BankedAsker())
+
+    assert _ids(pool) == {"kids-alone"}
 
 
 def test_performer_evidence_is_not_only_a_role_noun(lexicon: Lexicon) -> None:
