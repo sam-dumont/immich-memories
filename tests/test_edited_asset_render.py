@@ -203,8 +203,10 @@ class _FakeStructurePlannerClient:
     def __init__(self, *, is_edited: bool) -> None:
         self._is_edited = is_edited
         self.thumbnail_calls: list[tuple[str, dict]] = []
+        self.get_asset_calls: list[str] = []
 
     def get_asset(self, asset_id: str) -> Asset:
+        self.get_asset_calls.append(asset_id)
         return make_asset(asset_id, is_edited=self._is_edited)
 
     def get_asset_thumbnail(
@@ -234,3 +236,33 @@ def test_structure_planner_preview_of_an_unedited_asset_is_unchanged():
     EditorialRuntimePorts().fetch_preview(client, "asset-1")
 
     assert client.thumbnail_calls == [("asset-1", {"edited": False})]
+
+
+def test_preparing_known_assets_makes_zero_extra_get_asset_calls():
+    """A cold year or a whole library already pays one Immich call per picture for
+    its preview; a get_asset per picture on top would double that (#2114). The run's
+    own source/pool assets already answer isEdited, so previews() must not ask again."""
+    from immich_memories.analysis.editorial_runtime_ports import EditorialRuntimePorts, edited_by_id
+
+    assets = [make_asset(f"asset-{n}", is_edited=(n % 2 == 0)) for n in range(5)]
+    client = _FakeStructurePlannerClient(is_edited=False)  # would answer wrongly if ever asked
+    known_edited = edited_by_id(assets)
+    reader = EditorialRuntimePorts().preview_reader(client, known_edited)
+
+    for asset in assets:
+        reader(asset.id)
+
+    assert client.get_asset_calls == []
+    assert client.thumbnail_calls == [(asset.id, {"edited": asset.is_edited}) for asset in assets]
+
+
+def test_an_id_outside_the_known_assets_still_falls_back_to_get_asset():
+    from immich_memories.analysis.editorial_runtime_ports import EditorialRuntimePorts
+
+    client = _FakeStructurePlannerClient(is_edited=True)
+    reader = EditorialRuntimePorts().preview_reader(client, {})
+
+    reader("unseen-asset")
+
+    assert client.get_asset_calls == ["unseen-asset"]
+    assert client.thumbnail_calls == [("unseen-asset", {"edited": True})]

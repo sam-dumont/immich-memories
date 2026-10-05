@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from immich_memories.analysis.annotation_lines import StoredAnnotationLineReader
-from immich_memories.analysis.editorial_runtime_ports import EditorialRuntimePorts
+from immich_memories.analysis.editorial_runtime_ports import EditorialRuntimePorts, edited_by_id
 from immich_memories.analysis.editorial_source import FullEditorialSource
 from immich_memories.operations.caption_origins import caption_origin_summary
 from immich_memories.operations.cut_progress import StageUpdate
@@ -180,12 +180,12 @@ class EvidencePreparation:
 
         prepare = self.ports.prepare_annotations or prepare_editorial_annotations
         captured = getattr(prepared, "preparation_sources", {})
+        assets = tuple(
+            captured.get(c.asset_id, c.source) for c in prepared.candidates if c.asset_id in reach
+        )
+        known_edited = edited_by_id(assets)
         return prepare(
-            assets=tuple(
-                captured.get(c.asset_id, c.source)
-                for c in prepared.candidates
-                if c.asset_id in reach
-            ),
+            assets=assets,
             store=self.readings.store,
             thumbnail_cache=self.thumbnail_cache,
             preparation_config=config.editorial.preparation,
@@ -195,7 +195,7 @@ class EvidencePreparation:
             llm_config=config.llm,
             description_model=config.editorial.description_model,
             pixel_producer_key=config.editorial.pixel_producer_key,
-            fetch_preview=lambda asset_id: self.ports.fetch_preview(self.client, asset_id),
+            fetch_preview=self.ports.preview_reader(self.client, known_edited),
             fetch_faces=lambda asset_id: self.ports.fetch_faces(self.client, asset_id),
             read_playback=partial(self.ports.fetch_playback_range, self.client),
             progress=progress,
