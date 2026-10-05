@@ -408,6 +408,22 @@ def test_without_a_village_or_an_immich_city_the_degraded_municipality_still_sho
     assert shown_city(asset.exif_info) == expected
 
 
+def test_a_finnish_municipality_label_falls_back_to_immichs_nominative_city():
+    """#2074: Nominatim's municipality answer for Helsinki is genitive ("Helsingin
+    kaupunki"), which names nothing at this scale -- Immich's own `exif.city` comes
+    from GeoNames, always nominative with no admin word, so it wins instead of a
+    hand-derived (and likely wrong) un-inflected guess.
+    """
+    address = {"municipality": "Helsingin kaupunki", "country": "Suomi"}
+    asset = _asset()
+    asset.exif_info.city = "Helsinki"
+    asset.exif_info.country = "Finland"
+
+    _names(address).name([asset])
+
+    assert shown_city(asset.exif_info) == "Helsinki"
+
+
 def test_the_report_keeps_the_resolved_city_as_private_as_the_source_city():
     from immich_memories.tracking import report_context
 
