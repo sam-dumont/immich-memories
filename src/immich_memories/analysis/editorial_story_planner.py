@@ -15,6 +15,7 @@ from datetime import date
 from operator import itemgetter
 from typing import Any
 
+from immich_memories.analysis.editorial_completion import ACCEPTED_SHORTFALL_FRACTION
 from immich_memories.analysis.editorial_person_period_facts import (
     PersonPeriodProjection,
     arrival_notes,
@@ -53,6 +54,7 @@ from immich_memories.analysis.editorial_story_trips import (
     reserve_trip_depth,
     trip_fold,
 )
+from immich_memories.analysis.editorial_structure_budget import CONTENT_RESERVE_SECONDS
 from immich_memories.analysis.subject_framing import SubjectVisibility
 
 STORY_PLANNER_VERSION = "story-first-selection-v7-prepared-candidates"
@@ -620,6 +622,10 @@ def select_story_first(
         "pixel_disqualified": lambda asset_id: disqualifies_as_lone_carrier(line_of(asset_id)),
     }
     slots = max(1, int(target_seconds // seconds_per_slot))
+    # The depth fill's own budget (#2083): the real content seconds a finished film has
+    # room for, the same reserve the structure planner's own duration realization reads,
+    # so depth and the finished-film accounting can never size the target differently.
+    content_budget_seconds = max(0.0, target_seconds - CONTENT_RESERVE_SECONDS)
     choices_of, groups_offered, scene_gated_stories = capacity_choices(
         stories,
         story_units,
@@ -634,7 +640,11 @@ def select_story_first(
 
     def place_of(asset: str) -> str:
         moment = unit_by_asset.get(asset, (None, {}))[1].get("moment")
-        return str(place_of_moment.get(moment) or "").split(";")[0].split(":", 1)[-1].strip()
+        label = str(place_of_moment.get(moment) or "").split(";")[0].split(":", 1)[-1].strip()
+        # The town-level reading of the label, not the whole administrative string: one
+        # town arriving under two different labels (a short name on one moment, the full
+        # "town, province, region, country" on another) must still share one place (#2083).
+        return label.split(",", 1)[0].strip()
 
     places = place_shares(stories, story_units, place_of=place_of, slots=slots, journey=journey)
     granted, partition_grants = parts.allocate(stories, choices_of, slots)
@@ -705,6 +715,8 @@ def select_story_first(
         place_of=place_of,
         strangers_only=strangers_only,
         vouched=vouched,
+        content_budget_seconds=content_budget_seconds,
+        content_tolerance_seconds=content_budget_seconds * ACCEPTED_SHORTFALL_FRACTION,
     )
     admission.run()
     record("story-places", places.record())

@@ -18,13 +18,16 @@ STANDING = {"first": 2, "refused": 0, "third": 2, "fourth": 2}
 
 
 def _units():
+    # Six minutes apart: past the five-minute capture spacing a depth frame must now
+    # clear to count as its own shot (#2083), so this file's ladder-walk tests stay about
+    # the ladder's own order, not about spacing.
     return {
         asset: (
             "F01",
             {
                 "asset_id": asset,
                 "moment": "M01",
-                "taken": f"2022-08-13T10:0{index}:00",
+                "taken": f"2022-08-13T10:{6 * index:02d}:00",
                 "favourite": False,
                 "kind": "still",
                 "seconds": 4.0,

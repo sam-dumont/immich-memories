@@ -85,8 +85,11 @@ def test_the_run_records_what_each_place_was_allowed(tmp_path):
         (source.artifact_dir / "derived-decisions" / "story-places.private.json").read_text()
     )
     scope = next(s for s in places["scopes"] if s["scope"] == "")
-    assert scope["places"]["Churchtown, Farland"] < scope["allowance"]
-    assert scope["places"]["Churchtown, Farland"] > scope["places"]["Harbour, Farland"]
+    # Keyed by the town-level reading of the label now (#2083), not the whole
+    # "town, country" string, so one town under two administrative strings still shares
+    # one share of the film.
+    assert scope["places"]["Churchtown"] < scope["allowance"]
+    assert scope["places"]["Churchtown"] > scope["places"]["Harbour"]
 
 
 def _starred_building(tmp_path, *, stops_people=()):
