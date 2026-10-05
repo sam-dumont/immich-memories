@@ -26,7 +26,7 @@ and describe your setup. Helm support will be considered when people request it.
 This path is supported on RKE2 with NVIDIA GPUs: cold model initialization, preflight, encrypted
 Settings save/reload and a complete first film, including full audio/video decode. See the
 [deployment matrix](./tested-deployments.md) for which release and hardware that covers, and
-the [measured run](../better/measured.md#generated-gpu-first-film) for the numbers.
+the [measured run](../better/measured.md#cold-start-time-by-hardware-and-tier) for the numbers.
 
 Use the [setup builder](/setup), select Kubernetes, and enter Immich's reachable URL and API key.
 The builder uses the release version displayed on the page. It generates the Secret, namespace-scoped customization,

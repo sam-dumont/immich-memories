@@ -123,7 +123,7 @@ film always renders in English until you set `title_screens.locale: fr` (or add
 Basic films are capped at 1080p. The default 4 GiB memory limit suits that output.
 The first film takes the longest: it has to read every picture in its period before it can
 render. Larger periods, slower storage and different media can take hours. See
-[measured examples](../better/measured.md#june-hardware-matrix) for real numbers on comparable
+[measured examples](../better/measured.md#cold-start-time-by-hardware-and-tier) for real numbers on comparable
 hardware.
 The first film reads the pictures in its period and saves the results; later films reuse matching
 results. Rendering still happens every time.

@@ -93,7 +93,7 @@ photos/videos**, choose **Album**, and set the length to **0.5 minutes**. Review
 with upload off. Shortening a film alone does not reduce how many inputs need preparation.
 
 Cold setup includes the image pull, model download, input preparation and render. Hardware,
-input count and cache state matter. [Measured numbers](../better/measured.md)
+input count and cache state matter. [Measured numbers](../better/measured.md#cold-start-time-by-hardware-and-tier)
 separate film generation from setup; larger periods can still take hours.
 [The phase guide](./first-film.mdx#progress-and-recovery) explains what progress and completion look like.
 [After install](./after-install.md) covers home, people and backups. Got your first film?

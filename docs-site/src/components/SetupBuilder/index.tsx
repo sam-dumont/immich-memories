@@ -114,7 +114,7 @@ export default function SetupBuilder({initialPlatform = 'linux', initialInline =
     <p className={styles.note}><strong>Not yet tested as an end-to-end generated installation</strong> on
       {' '}{({linux: 'Linux Docker Compose', synology: 'Synology Container Manager', mac: 'native Mac', kubernetes: 'Kubernetes'})[setup.platform]}.
       {' '}Files are checked with Compose/Kustomize and the form is checked in a browser. Those checks do not run this installation.
-      {' '}Earlier NAS, Mac and GPU Kubernetes checks are recorded in the <Link to="/docs/better/measured#tested-setups">measured results</Link>.
+      {' '}Earlier NAS, Mac and GPU Kubernetes checks are recorded in the <Link to="/docs/better/measured#cold-start-time-by-hardware-and-tier">measured results</Link>.
       {' '}<Link href="https://github.com/sam-dumont/immich-memories/issues/new">Tried it? Report your platform, release and preflight result.</Link>
     </p>
     <p className={styles.note}>Your choices produce files in this browser. Nothing is sent to an Immich or model server.

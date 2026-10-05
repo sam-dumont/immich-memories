@@ -17,6 +17,8 @@ release; `example.env` and every image default carry that release's version, inc
 | `docker-compose.gpu-worker.yml` | Standalone combined inference/caption/render worker on one GPU box |
 | `docker-compose.postgres.yml` | Optional PostgreSQL store, persistent data and app readiness dependency |
 
+{/* diagram: deploy-compose */}
+
 ## Select the files
 
 The base file runs alone. Add the GPU file for its services, then Full or CUDA when needed:

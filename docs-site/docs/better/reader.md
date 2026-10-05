@@ -52,7 +52,7 @@ advanced:
 
 The app-owned llama.cpp reader keeps episode JSON schemas enabled; the external-server workaround below does not apply to it.
 
-Use the exact name the server advertises. From Docker Desktop, `host.docker.internal` reaches a native server on the host; `localhost` reaches the container itself. Add `api_key` when the server requires one. For these external servers, the app treats loopback, private IP addresses and single-label service names as local: one request at a time, with prompt-only episode JSON and a repetition penalty of 1.0. A dotted hostname counts as hosted: four concurrent requests, episode schemas enabled and no repetition penalty by default. For a LAN server with a dotted name, set `reader_concurrency: 1` and `structured_output: false` if its constrained decoding stalls; the latter disables schemas for every request, not just episode readings.
+Use the exact name the server advertises. From Docker Desktop, `host.docker.internal` reaches a native server on the host; `localhost` reaches the container itself. Add `api_key` when the server requires one. Local servers get conservative defaults, hosted-looking (dotted-name) servers get faster ones; tune `reader_concurrency` and `structured_output` if needed. See [local server defaults](../reference/llm-providers.md#use-an-existing-server) for the exact values.
 
 The server manages its own model memory. The app does not unload an external server's models, so account for that memory alongside captions and music.
 
@@ -60,7 +60,7 @@ The server manages its own model memory. The app does not unload an external ser
 
 A hosted reader receives descriptions, dates, people and place names from your cut. Use a local reader if that text should stay home.
 
-See the [measured hosted-reader time and cost](./measured.md#hosted-reader-cost) for complete
+See the [measured hosted-reader time and cost](./measured.md#hosted-reader-time-and-cost) for complete
 films, free-text requests and provider quality checks. The prices cover reader calls after
 picture preparation; the local machine still does selection and rendering.
 
@@ -87,6 +87,6 @@ These report connections, installation and available features; they do not certi
 
 Review the result. A failed refinement can leave the rules draft and reports that refinement did not run. [Laya](../reference/llm-providers.md#the-laya-audience-pre-screen) handles caption-based sharing separately; sharing never asks the prose reader.
 
-One `advanced.llm` section supplies titles, the selection reader, music mood, special days and optional LLM captions. Before 1.0, configurations could implicitly enable a reader by naming its model or URL and could use a separate title-model block. These shortcuts are removed: add `enabled: true` and move title settings into `advanced.llm`.
+One `advanced.llm` section supplies titles, the selection reader, music mood, special days and optional LLM captions. Add `enabled: true` and keep title settings in `advanced.llm`.
 
 Image captioning with the reader is a separate [opt-in](./captions.md#explicit-llm-captions). That role sends pictures and needs a vision-capable model.

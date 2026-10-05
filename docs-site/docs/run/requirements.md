@@ -27,7 +27,7 @@ files. An SSD helps. Finished films need their own space unless you upload them 
 
 A 30-minute film fits inside the default 4 GiB container limit on a NAS, with some swap. Your
 library and output settings still affect memory use. See the
-[measured examples](../better/measured.md#whole-film-controls).
+[measured examples](../better/measured.md#longer-films-memory-and-duration).
 
 A few limits worth knowing before you install:
 

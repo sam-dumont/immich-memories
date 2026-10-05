@@ -72,7 +72,7 @@ If the host is your NAS or another server, [tunnel or enable LAN access](#reachi
 
 Then make [your first film](../get-started/first-film.mdx). Start with the 20–50-item trial album.
 The first film takes longer: it prepares every picture in the period before it renders. See
-[measured examples](../better/measured.md#june-hardware-matrix) and
+[measured examples](../better/measured.md#cold-start-time-by-hardware-and-tier) and
 [what to expect](./nas.md#what-to-expect).
 
 ### When a step is missing

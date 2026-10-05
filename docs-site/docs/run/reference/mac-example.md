@@ -16,7 +16,7 @@ generation, use the [Python install](../uv-pip.md).
 {/* diagram: deploy-mac */}
 
 This path works on Apple Silicon with Metal and VideoToolbox; see
-[measured examples](../../better/measured.md#generated-native-mac) for real numbers. That check
+[measured examples](../../better/measured.md#cold-start-time-by-hardware-and-tier) for real numbers. That check
 didn't activate the reader or generate music; the Full and optional music steps below need their
 own configuration checks.
 
