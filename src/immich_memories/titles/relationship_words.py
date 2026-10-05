@@ -25,6 +25,22 @@ same words the removed prompt lists used to hand it directly.
 
 from __future__ import annotations
 
+import re
+import unicodedata
+
+
+def name_words(text: str) -> list[str]:
+    """Letter-only words, accents folded away so Genève matches Geneve.
+
+    Lives here, not in `title_guards` or `relationship_guard`, because both
+    of those modules need it and neither may import from the other.
+    """
+    flattened = "".join(
+        c for c in unicodedata.normalize("NFKD", text) if not unicodedata.combining(c)
+    )
+    return re.findall(r"[^\W\d_]+", flattened)
+
+
 # word (casefold, as the model would write it) -> (relation type, is_plural, is_perspective)
 RelationWord = tuple[str, bool, bool]
 
@@ -566,13 +582,18 @@ RELATIONSHIP_WORDS: dict[str, dict[str, RelationWord]] = {
         "お父さん": _word("father", perspective=True),
         "父": _word("father"),
         "祖父": _word("grandparent"),
+        # WHY: "parents" (父母) and "aunt by marriage" (叔母) are not a
+        # parent/mother match; listed so the longest-match scan consumes
+        # them whole, instead of "父"/"母" firing inside them.
+        "父母": _word(NOT_A_RELATIONSHIP),
+        "叔母": _word(NOT_A_RELATIONSHIP),
         "息子": _word("son"),
         "娘": _word("daughter"),
         "子供たち": _word("child", plural=True),
         "孫": _word("grandchild"),
         "孫たち": _word("grandchild", plural=True),
         # WHY: these are the standard Japanese address words for a
-        # grandparent -- record-backed, like the civil 祖母/祖父 below.
+        # grandparent -- record-backed, like the civil 祖母/祖父 above.
         "おばあちゃん": _word("grandparent"),
         "おじいちゃん": _word("grandparent"),
         "ばあば": _word("grandparent", perspective=True),
@@ -639,14 +660,16 @@ RELATIONSHIP_WORDS: dict[str, dict[str, RelationWord]] = {
         "孙子": _word("grandchild"),
         "孙女": _word("grandchild"),
         "孙辈们": _word("grandchild", plural=True),
-        # WHY: the standard Chinese words for a grandparent -- record-backed.
+        # WHY: 奶奶/爷爷 (paternal) and 外婆/外公 (maternal) are both standard
+        # Chinese words for a grandparent, with no separate civil register --
+        # record-backed.
         "奶奶": _word("grandparent"),
         "爷爷": _word("grandparent"),
-        # WHY: these are the maternal-side, more dialectal grandparent
-        # words -- a child's-eye nickname, unlike 奶奶/爷爷 above.
+        "外婆": _word("grandparent"),
+        "外公": _word("grandparent"),
+        # WHY: unlike 外婆 above, this is the more dialectal, affectionate
+        # form -- a child's-eye nickname.
         "姥姥": _word("grandparent", perspective=True),
-        "外婆": _word("grandparent", perspective=True),
-        "外公": _word("grandparent", perspective=True),
         "兄弟": _word("sibling"),
         "姐妹": _word("sibling"),
         "叔叔": _word("uncle"),
@@ -674,9 +697,13 @@ TYPE_ALIASES: dict[str, tuple[str, ...]] = {
     "mother": ("parent",),
     "father": ("parent",),
     "parent": ("mother", "father"),
-    "son": ("child",),
-    "daughter": ("child",),
-    "child": ("son", "daughter"),
+    # WHY: "parent" is the inverse of the relation a child/son/daughter
+    # word names -- "la fille d'X" is backed by X's own "parent-of" record
+    # even when the reciprocal "child-of" was never written on the child's
+    # side.
+    "son": ("child", "parent"),
+    "daughter": ("child", "parent"),
+    "child": ("son", "daughter", "parent"),
     "aunt": ("aunt or uncle",),
     "uncle": ("aunt or uncle",),
     "partner": ("spouse",),
@@ -707,6 +734,29 @@ MAKER_POSSESSIVES: dict[str, frozenset[str]] = {
     "ja": frozenset({"私の", "僕の", "うちの"}),
     "ko": frozenset({"우리", "내"}),
     "zh-Hans": frozenset({"我的", "我们的"}),
+}
+
+
+# A holiday's own name, in each locale, as a title is expected to say it --
+# Mother's/Father's Day and Christmas, the ones that are themselves built
+# from a relationship word. Stripped out of a holiday title before the
+# relationship-word guard scans what is left, so "Fête des mères avec
+# maman" still catches "maman" while "Fête des mères" alone passes.
+HOLIDAY_NAME_PHRASES: dict[str, frozenset[str]] = {
+    "fr": frozenset({"fête des mères", "fête des pères", "noël"}),
+    "en": frozenset({"mother's day", "mothers day", "father's day", "fathers day", "christmas"}),
+    "nl": frozenset({"moederdag", "vaderdag", "kerst", "kerstmis"}),
+    "de": frozenset({"muttertag", "vatertag", "weihnachten"}),
+    "es": frozenset({"día de la madre", "día del padre", "navidad"}),
+    "it": frozenset({"festa della mamma", "festa del papà", "natale"}),
+    "pt-BR": frozenset({"dia das mães", "dia dos pais", "natal"}),
+    "pt-PT": frozenset({"dia da mãe", "dia do pai", "natal"}),
+    "pl": frozenset({"dzień matki", "dzień ojca", "boże narodzenie"}),
+    "sv": frozenset({"mors dag", "fars dag", "jul"}),
+    "ru": frozenset({"день матери", "день отца", "рождество"}),
+    "ja": frozenset({"母の日", "父の日", "クリスマス"}),
+    "ko": frozenset({"어머니의 날", "어버이날", "크리스마스"}),
+    "zh-Hans": frozenset({"母亲节", "父亲节", "圣诞节"}),
 }
 
 

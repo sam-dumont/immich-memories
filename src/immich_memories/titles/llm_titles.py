@@ -16,13 +16,13 @@ import httpx
 from immich_memories.analysis.llm_query import query_llm
 from immich_memories.analysis.prose_shapes import MAP_MODES, TRIP_TYPES, title_shape
 from immich_memories.people.context import PersonPromptContext, load_people_prompt_context
+from immich_memories.titles.relationship_guard import refusing_unfounded_relationships
 from immich_memories.titles.title_guards import (
     eliding_french,
     refusing_a_wrong_year,
     refusing_contentless_title,
     refusing_invented_names,
     refusing_single_year_title,
-    refusing_unfounded_relationships,
     required_years,
     requiring_the_place,
     requiring_the_year,

@@ -250,7 +250,7 @@ def test_a_family_word_with_no_recorded_family_is_refused_in_every_locale(
     locale, title, person_role
 ):
     """One best-friend-named-as-family case per locale, French already covered above."""
-    from immich_memories.titles.title_guards import refusing_unfounded_relationships
+    from immich_memories.titles.relationship_guard import refusing_unfounded_relationships
     from immich_memories.titles.title_suggestion import TitleSuggestion
 
     store = seed_people(
@@ -389,7 +389,7 @@ def test_papa_et_maman_is_refused_even_with_the_relation_recorded():
     does not make the child's-eye narration any less overused, so these words
     are refused outright rather than checked against the family record.
     """
-    from immich_memories.titles.title_guards import refusing_unfounded_relationships
+    from immich_memories.titles.relationship_guard import refusing_unfounded_relationships
     from immich_memories.titles.title_suggestion import TitleSuggestion
 
     store = seed_people(
@@ -431,7 +431,7 @@ def test_papa_et_maman_is_refused_even_with_the_relation_recorded():
 
 def test_a_friend_named_by_first_name_is_kept():
     """A civil-register or friend word is still governed by the record, not banned."""
-    from immich_memories.titles.title_guards import refusing_unfounded_relationships
+    from immich_memories.titles.relationship_guard import refusing_unfounded_relationships
     from immich_memories.titles.title_suggestion import TitleSuggestion
 
     store = seed_people(
@@ -455,7 +455,7 @@ def test_a_friend_named_by_first_name_is_kept():
 
 def test_meilleur_ami_is_not_misread_as_the_shorter_word_ami_inside_it():
     """Longest-match-first: "meilleur ami" is read whole, not as "ami" too."""
-    from immich_memories.titles.title_guards import refusing_unfounded_relationships
+    from immich_memories.titles.relationship_guard import refusing_unfounded_relationships
     from immich_memories.titles.title_suggestion import TitleSuggestion
 
     store = seed_people(
@@ -479,7 +479,7 @@ def test_meilleur_ami_is_not_misread_as_the_shorter_word_ami_inside_it():
 
 def test_a_friend_with_no_recorded_role_is_still_named_as_a_friend():
     """The prompt says a friend is named as a friend; no record is required."""
-    from immich_memories.titles.title_guards import refusing_unfounded_relationships
+    from immich_memories.titles.relationship_guard import refusing_unfounded_relationships
     from immich_memories.titles.title_suggestion import TitleSuggestion
 
     store = seed_people(
@@ -497,7 +497,7 @@ def test_a_friend_with_no_recorded_role_is_still_named_as_a_friend():
 
 def test_a_gender_neutral_sibling_record_backs_the_word_brother():
     """The stored kind is often generic (sibling-of); the word is gendered."""
-    from immich_memories.titles.title_guards import refusing_unfounded_relationships
+    from immich_memories.titles.relationship_guard import refusing_unfounded_relationships
     from immich_memories.titles.title_suggestion import TitleSuggestion
 
     store = seed_people(
@@ -528,7 +528,7 @@ def test_a_gender_neutral_sibling_record_backs_the_word_brother():
 
 def test_a_person_literally_named_son_is_not_mistaken_for_the_word_son():
     """A word that is a film person's own first name is never a relation claim."""
-    from immich_memories.titles.title_guards import refusing_unfounded_relationships
+    from immich_memories.titles.relationship_guard import refusing_unfounded_relationships
     from immich_memories.titles.title_suggestion import TitleSuggestion
 
     store = seed_people(
@@ -546,7 +546,7 @@ def test_a_person_literally_named_son_is_not_mistaken_for_the_word_son():
 
 def test_a_man_on_the_mountain_stays_a_dutch_title_not_a_spouse_claim():
     """nl "man" is an ordinary noun; the spouse word is now the specific echtgenoot."""
-    from immich_memories.titles.title_guards import refusing_unfounded_relationships
+    from immich_memories.titles.relationship_guard import refusing_unfounded_relationships
     from immich_memories.titles.title_suggestion import TitleSuggestion
 
     store = seed_people(
@@ -564,7 +564,7 @@ def test_a_man_on_the_mountain_stays_a_dutch_title_not_a_spouse_claim():
 
 def test_japanese_grandmother_is_read_whole_not_as_the_word_mother_inside_it():
     """ "祖母" (grandmother) must not be misread as "母" (mother) inside it."""
-    from immich_memories.titles.title_guards import refusing_unfounded_relationships
+    from immich_memories.titles.relationship_guard import refusing_unfounded_relationships
     from immich_memories.titles.title_suggestion import TitleSuggestion
 
     store = seed_people(
@@ -591,7 +591,7 @@ def test_japanese_grandmother_is_read_whole_not_as_the_word_mother_inside_it():
 
 def test_korean_strawberry_is_not_misread_as_the_word_daughter():
     """ "딸기" (strawberry) contains "딸" (daughter) but names no relation."""
-    from immich_memories.titles.title_guards import refusing_unfounded_relationships
+    from immich_memories.titles.relationship_guard import refusing_unfounded_relationships
     from immich_memories.titles.title_suggestion import TitleSuggestion
 
     store = seed_people(
@@ -609,7 +609,7 @@ def test_korean_strawberry_is_not_misread_as_the_word_daughter():
 
 def test_our_daughter_is_refused_as_a_relation_to_the_films_maker():
     """ "Tia, notre fille" states a relationship to the maker, which the prompt forbids."""
-    from immich_memories.titles.title_guards import refusing_unfounded_relationships
+    from immich_memories.titles.relationship_guard import refusing_unfounded_relationships
     from immich_memories.titles.title_suggestion import TitleSuggestion
 
     store = seed_people(
@@ -633,7 +633,7 @@ def test_our_daughter_is_refused_as_a_relation_to_the_films_maker():
 
 def test_abuela_is_record_backed_not_banned_outright():
     """Item 8: Spanish has no separate child's-eye word for grandmother."""
-    from immich_memories.titles.title_guards import refusing_unfounded_relationships
+    from immich_memories.titles.relationship_guard import refusing_unfounded_relationships
     from immich_memories.titles.title_suggestion import TitleSuggestion
 
     store = seed_people(
@@ -729,7 +729,7 @@ def test_an_unknown_capitalised_h_name_is_left_unelided():
 )
 def test_the_standard_grandparent_word_is_record_backed_in_every_locale(locale, title):
     """Round 3: these ARE the standard words in their language, not a nickname."""
-    from immich_memories.titles.title_guards import refusing_unfounded_relationships
+    from immich_memories.titles.relationship_guard import refusing_unfounded_relationships
     from immich_memories.titles.title_suggestion import TitleSuggestion
 
     store = seed_people(
@@ -756,7 +756,7 @@ def test_the_standard_grandparent_word_is_record_backed_in_every_locale(locale, 
 
 def test_a_new_childs_eye_word_is_still_refused_outright():
     """Round 3: "papi" (fr, grandfather) and "grandad" (en) are newly added."""
-    from immich_memories.titles.title_guards import refusing_unfounded_relationships
+    from immich_memories.titles.relationship_guard import refusing_unfounded_relationships
     from immich_memories.titles.title_suggestion import TitleSuggestion
 
     store = seed_people(
@@ -792,7 +792,7 @@ def test_a_new_childs_eye_word_is_still_refused_outright():
 
 def test_a_son_is_refused_when_the_only_record_is_to_the_films_maker():
     """Round 3: the maker's own relation never backs a word, possessive or not."""
-    from immich_memories.titles.title_guards import refusing_unfounded_relationships
+    from immich_memories.titles.relationship_guard import refusing_unfounded_relationships
     from immich_memories.titles.title_suggestion import TitleSuggestion
 
     store = seed_people(
@@ -816,7 +816,7 @@ def test_a_son_is_refused_when_the_only_record_is_to_the_films_maker():
 
 def test_our_little_daughter_is_refused_even_with_a_word_between():
     """Round 3: the maker-possessive check looks a few words back, not just one."""
-    from immich_memories.titles.title_guards import refusing_unfounded_relationships
+    from immich_memories.titles.relationship_guard import refusing_unfounded_relationships
     from immich_memories.titles.title_suggestion import TitleSuggestion
 
     store = seed_people(
@@ -836,7 +836,7 @@ def test_our_little_daughter_is_refused_even_with_a_word_between():
 
 def test_swedish_far_the_verb_is_not_mistaken_for_father():
     """ "Vi far till Rom" (we travel to Rome): "far" with no possessive nearby."""
-    from immich_memories.titles.title_guards import refusing_unfounded_relationships
+    from immich_memories.titles.relationship_guard import refusing_unfounded_relationships
     from immich_memories.titles.title_suggestion import TitleSuggestion
 
     store = seed_people(
@@ -854,7 +854,7 @@ def test_swedish_far_the_verb_is_not_mistaken_for_father():
 
 def test_swedish_hans_far_with_no_record_is_refused():
     """Next to a possessive, "far" does read as "father" and still needs a record."""
-    from immich_memories.titles.title_guards import refusing_unfounded_relationships
+    from immich_memories.titles.relationship_guard import refusing_unfounded_relationships
     from immich_memories.titles.title_suggestion import TitleSuggestion
 
     store = seed_people(
@@ -872,7 +872,7 @@ def test_swedish_hans_far_with_no_record_is_refused():
 
 def test_korean_emoticon_is_not_misread_as_the_word_aunt():
     """ "이모티콘" (emoticon) contains "이모" (aunt) but names no relation."""
-    from immich_memories.titles.title_guards import refusing_unfounded_relationships
+    from immich_memories.titles.relationship_guard import refusing_unfounded_relationships
     from immich_memories.titles.title_suggestion import TitleSuggestion
 
     store = seed_people(
@@ -911,7 +911,7 @@ def test_mothers_day_names_the_holiday_not_a_person():
 
 def test_christmas_with_family_names_no_one_and_is_allowed():
     """ "Noël en famille" with nobody named is a mood, not a relation claim."""
-    from immich_memories.titles.title_guards import refusing_unfounded_relationships
+    from immich_memories.titles.relationship_guard import refusing_unfounded_relationships
     from immich_memories.titles.title_suggestion import TitleSuggestion
 
     suggestion = TitleSuggestion(title="Noël en famille", subtitle=None)
@@ -955,7 +955,7 @@ def test_the_wrong_year_check_only_looks_at_the_headline():
 
 def test_a_possessive_with_an_accent_is_still_matched():
     """Round 3: the maker-possessive check must not accent-fold "mój"/"vår"."""
-    from immich_memories.titles.title_guards import refusing_unfounded_relationships
+    from immich_memories.titles.relationship_guard import refusing_unfounded_relationships
     from immich_memories.titles.title_suggestion import TitleSuggestion
 
     store = seed_people(
@@ -1009,3 +1009,227 @@ def test_voyage_en_images_with_no_place_falls_back_to_the_template():
         )
 
     assert suggestion is None
+
+
+@pytest.mark.parametrize(
+    ("locale", "title", "holiday"),
+    [
+        ("fr", "Fête des mères avec maman", "Mother's Day"),
+        ("en", "Mother's Day with mommy", "Mother's Day"),
+        ("fr", "Noël chez papy et mamie", "Christmas"),
+    ],
+)
+def test_a_holiday_title_still_refuses_an_added_perspective_word(locale, title, holiday):
+    """Round 4 BLOCKER: the holiday's own name is stripped, not the whole title."""
+    with patch("immich_memories.titles.llm_titles.query_llm") as mock_query:
+        mock_query.return_value = _reply(title)
+        suggestion = asyncio.run(
+            generate_title_with_llm(
+                memory_type="holiday",
+                locale=locale,
+                start_date="2025-05-11",
+                end_date="2025-05-11",
+                duration_days=1,
+                person_names=[],
+                facts=MemoryTitleFacts(holiday=holiday),
+                llm_config=_llm_config(),
+            )
+        )
+
+    assert suggestion is None
+
+
+def test_album_copy_shape_falls_back_even_with_a_place_on_it():
+    """Round 4: the album-copy shape is filler even with a real place added."""
+    with patch("immich_memories.titles.llm_titles.query_llm") as mock_query:
+        mock_query.return_value = _reply("Notre voyage en images - Paris")
+        suggestion = asyncio.run(
+            generate_title_with_llm(
+                memory_type="multi_person",
+                locale="fr",
+                start_date="2025-01-01",
+                end_date="2025-12-31",
+                duration_days=364,
+                person_names=["Yuna Example"],
+                facts=MemoryTitleFacts(),
+                llm_config=_llm_config(),
+            )
+        )
+
+    assert suggestion is None
+
+
+def test_gran_canaria_is_a_place_not_a_grandparent():
+    from immich_memories.titles.relationship_guard import refusing_unfounded_relationships
+    from immich_memories.titles.title_suggestion import TitleSuggestion
+
+    store = seed_people(
+        {
+            "owner": {"person_id": "person-owner", "name": "Zed Example"},
+            "people": [{"ids": ["person-a"], "name": "Mia Example"}],
+        }
+    )
+    suggestion = TitleSuggestion(title="Mia in Gran Canaria", subtitle=None)
+
+    result = refusing_unfounded_relationships(suggestion, ["Mia Example"], "en", store)
+
+    assert result is suggestion
+
+
+def test_nana_alone_is_not_a_grandparent_claim():
+    """Round 4: "nana" needs a possessive or a name nearby to read as a relation."""
+    from immich_memories.titles.relationship_guard import refusing_unfounded_relationships
+    from immich_memories.titles.title_suggestion import TitleSuggestion
+
+    store = seed_people(
+        {
+            "owner": {"person_id": "person-owner", "name": "Zed Example"},
+            "people": [{"ids": ["person-a"], "name": "Mia Example"}],
+        }
+    )
+    suggestion = TitleSuggestion(title="Afternoon snack: nana bread", subtitle=None)
+
+    result = refusing_unfounded_relationships(suggestion, ["Mia Example"], "en", store)
+
+    assert result is suggestion
+
+
+def test_my_nana_with_no_record_is_refused():
+    from immich_memories.titles.relationship_guard import refusing_unfounded_relationships
+    from immich_memories.titles.title_suggestion import TitleSuggestion
+
+    store = seed_people(
+        {
+            "owner": {"person_id": "person-owner", "name": "Zed Example"},
+            "people": [{"ids": ["person-a"], "name": "Mia Example"}],
+        }
+    )
+    suggestion = TitleSuggestion(title="My nana Mia", subtitle=None)
+
+    result = refusing_unfounded_relationships(suggestion, ["Mia Example"], "en", store)
+
+    assert result is None
+
+
+def test_korean_nae_nae_and_annae_are_not_the_possessive_nae():
+    """Round 4: "내" ("my") must not fire inside "내내" or "안내"."""
+    from immich_memories.titles.relationship_guard import refusing_unfounded_relationships
+    from immich_memories.titles.title_suggestion import TitleSuggestion
+
+    store = seed_people(
+        {
+            "owner": {"person_id": "person-owner", "name": "Zed Example"},
+            "people": [
+                {
+                    "ids": ["person-a"],
+                    "name": "Yuri Example",
+                    "confirmed": {"links": [{"kind": "grandparent-of", "with": "person-b"}]},
+                },
+                {"ids": ["person-b"], "name": "Bo Example"},
+            ],
+        }
+    )
+    suggestion = TitleSuggestion(title="내내 할머니와 안내", subtitle=None)
+
+    result = refusing_unfounded_relationships(
+        suggestion, ["Yuri Example", "Bo Example"], "ko", store
+    )
+
+    assert result is suggestion
+
+
+def test_japanese_parents_and_aunt_by_marriage_are_compound_allowlisted():
+    """Round 4: "父母" (parents) and "叔母" (aunt by marriage) protect 父/母."""
+    from immich_memories.titles.relationship_guard import refusing_unfounded_relationships
+    from immich_memories.titles.title_suggestion import TitleSuggestion
+
+    store = seed_people(
+        {
+            "owner": {"person_id": "person-owner", "name": "Zed Example"},
+            "people": [{"ids": ["person-a"], "name": "Rin Example"}],
+        }
+    )
+    suggestion = TitleSuggestion(title="父母と叔母とRin", subtitle=None)
+
+    result = refusing_unfounded_relationships(suggestion, ["Rin Example"], "ja", store)
+
+    assert result is suggestion
+
+
+def test_chinese_maternal_grandparent_words_are_record_backed():
+    """Round 4: 外婆/外公 are standard, not child's-eye, like 奶奶/爷爷."""
+    from immich_memories.titles.relationship_guard import refusing_unfounded_relationships
+    from immich_memories.titles.title_suggestion import TitleSuggestion
+
+    store = seed_people(
+        {
+            "owner": {"person_id": "person-owner", "name": "Zed Example"},
+            "people": [
+                {
+                    "ids": ["person-a"],
+                    "name": "Mei Example",
+                    "confirmed": {"links": [{"kind": "grandparent-of", "with": "person-b"}]},
+                },
+                {"ids": ["person-b"], "name": "Bo Example"},
+            ],
+        }
+    )
+    suggestion = TitleSuggestion(title="外婆和Bo", subtitle=None)
+
+    result = refusing_unfounded_relationships(
+        suggestion, ["Mei Example", "Bo Example"], "zh-Hans", store
+    )
+
+    assert result is suggestion
+
+
+def test_parent_of_backs_the_child_word_with_no_reciprocal_link():
+    """Round 4: the inverse alias -- a recorded parent-of also backs "la fille de X"."""
+    from immich_memories.titles.relationship_guard import refusing_unfounded_relationships
+    from immich_memories.titles.title_suggestion import TitleSuggestion
+
+    store = seed_people(
+        {
+            "owner": {"person_id": "person-owner", "name": "Zed Example"},
+            "people": [
+                {
+                    "ids": ["person-mom"],
+                    "name": "Rosa Example",
+                    "confirmed": {"links": [{"kind": "parent-of", "with": "person-kid"}]},
+                },
+                # WHY: no reciprocal "child-of" link written on Lea's side --
+                # the inverse alias must still back the word.
+                {"ids": ["person-kid"], "name": "Lea Example"},
+            ],
+        }
+    )
+    suggestion = TitleSuggestion(title="Lea, la fille de Rosa", subtitle=None)
+
+    result = refusing_unfounded_relationships(
+        suggestion, ["Rosa Example", "Lea Example"], "fr", store
+    )
+
+    assert result is suggestion
+
+
+def test_a_price_is_not_mistaken_for_a_year():
+    """ "2024 €" is a price, not a year."""
+    from immich_memories.titles.title_guards import refusing_a_wrong_year
+    from immich_memories.titles.title_suggestion import TitleSuggestion
+
+    suggestion = TitleSuggestion(title="Budget du voyage: 2024 €", subtitle=None)
+
+    result = refusing_a_wrong_year(suggestion, "2010-01-01", "2010-12-31")
+
+    assert result is suggestion
+
+
+def test_de_helene_is_elided_h_muet_with_an_accent():
+    from immich_memories.titles.title_guards import eliding_french
+    from immich_memories.titles.title_suggestion import TitleSuggestion
+
+    suggestion = TitleSuggestion(title="Un été de Hélène", subtitle=None)
+    result = eliding_french(suggestion, "fr")
+
+    assert result is not None
+    assert result.title == "Un été d'Hélène"
