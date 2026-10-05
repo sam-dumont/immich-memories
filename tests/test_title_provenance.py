@@ -203,6 +203,7 @@ def test_runs_show_says_where_the_title_came_from():
 
     from immich_memories.cli._helpers import console
     from immich_memories.cli.runs import _print_run_details_table
+    from immich_memories.config_models import ImmichConfig
     from immich_memories.tracking.models import RunMetadata
 
     run = RunMetadata(
@@ -213,7 +214,7 @@ def test_runs_show_says_where_the_title_came_from():
     )
 
     with console.capture() as captured:
-        _print_run_details_table(run, lambda seconds: f"{seconds:.0f}s")
+        _print_run_details_table(run, lambda seconds: f"{seconds:.0f}s", ImmichConfig())
 
     assert "Title From" in captured.get()
     assert "model" in captured.get()

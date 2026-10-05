@@ -53,6 +53,7 @@ def observe_run(
     ):
         cleanup.callback(_tracker.reset, token)
         cleanup.callback(set_current_run_id, None)
+        cleanup.callback(tracker.release_run)
         try:
             with timing.span("run") as root:
                 timing.open_at(root, startup)

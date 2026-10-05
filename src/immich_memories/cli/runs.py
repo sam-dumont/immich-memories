@@ -12,7 +12,9 @@ from rich.table import Table
 from immich_memories.cli._helpers import console, print_error, print_info, print_success
 from immich_memories.cli._runs_reading import register_reading_commands
 from immich_memories.cli.runs_render import register_render_command
+from immich_memories.config_models import ImmichConfig
 from immich_memories.db import Store, open_store
+from immich_memories.tracking.orphaned_runs import settle_orphaned_runs
 
 
 def _print_storage_report(report) -> None:
@@ -60,7 +62,7 @@ def _run_storage_report(as_json: bool) -> None:
     _print_storage_report(report)
 
 
-def _print_run_details_table(run, format_duration) -> None:
+def _print_run_details_table(run, format_duration, immich: ImmichConfig) -> None:
     """Print the main run details table."""
     table = Table(title="Run Details")
     table.add_column("Property", style="cyan")
@@ -99,7 +101,7 @@ def _print_run_details_table(run, format_duration) -> None:
         )
 
     if run.output_path:
-        table.add_row("Output", run.output_path)
+        table.add_row("Output", _output_cell(run))
         if run.output_duration_seconds > 0:
             table.add_row("Output Duration", format_duration(run.output_duration_seconds))
         if run.output_size_bytes > 0:
@@ -109,7 +111,38 @@ def _print_run_details_table(run, format_duration) -> None:
     if run.errors_count > 0:
         table.add_row("Errors", f"[red]{run.errors_count}[/red]")
 
+    _add_delivery_rows(table, run, immich)
     console.print(table)
+
+
+def _output_cell(run) -> str:
+    from immich_memories.tracking.models import DeliveryStatus
+
+    if run.delivery_status is DeliveryStatus.DELIVERED and not Path(run.output_path).is_file():
+        return f"{run.output_path} [dim](removed after delivery to Immich)[/dim]"
+    return run.output_path
+
+
+def _add_delivery_rows(table: Table, run, immich) -> None:
+    """Where the film went in Immich, as the web run page shows it."""
+    from immich_memories.tracking.models import DeliveryStatus
+
+    if run.delivery_status is DeliveryStatus.NOT_REQUESTED:
+        return
+    styles = {
+        DeliveryStatus.DELIVERED: "[green]delivered[/green]",
+        DeliveryStatus.PENDING: "[yellow]pending[/yellow]",
+        DeliveryStatus.ABANDONED: "[red]abandoned[/red]",
+    }
+    table.add_row("Immich", styles.get(run.delivery_status, run.delivery_status.value))
+    if run.delivery_album:
+        table.add_row("Immich Album", run.delivery_album)
+    if link := immich.asset_url(run.immich_asset_id):
+        table.add_row("Immich Link", link)
+    elif run.immich_asset_id:
+        table.add_row("Immich Asset", run.immich_asset_id)
+    if run.delivery_error and run.delivery_status is not DeliveryStatus.DELIVERED:
+        table.add_row("Delivery Error", f"[red]{run.delivery_error}[/red]")
 
 
 def _print_cut_checks(store: Store, run_id: str) -> None:
@@ -265,9 +298,9 @@ def register_runs_commands(main: click.Group) -> None:
         from immich_memories.config import get_config
         from immich_memories.tracking import RunDatabase, format_duration
 
-        runs_data = RunDatabase(open_store(get_config())).list_runs(
-            limit=limit, person_name=person, status=status
-        )
+        store = open_store(get_config())
+        settle_orphaned_runs(store)
+        runs_data = RunDatabase(store).list_runs(limit=limit, person_name=person, status=status)
 
         if not runs_data:
             print_info("No runs found")
@@ -317,7 +350,9 @@ def register_runs_commands(main: click.Group) -> None:
         from immich_memories.config import get_config
         from immich_memories.tracking import RunDatabase, format_duration
 
-        db = RunDatabase(open_store(get_config()))
+        store = open_store(get_config())
+        settle_orphaned_runs(store)
+        db = RunDatabase(store)
         run = db.get_run(run_id)
 
         if not run:
@@ -338,7 +373,7 @@ def register_runs_commands(main: click.Group) -> None:
         console.print(f"[bold]Run: {run.run_id}[/bold]")
         console.print()
 
-        _print_run_details_table(run, format_duration)
+        _print_run_details_table(run, format_duration, get_config().immich)
         _print_cut_checks(db.store, run.run_id)
         _print_sharing(db.store, run.run_id)
 

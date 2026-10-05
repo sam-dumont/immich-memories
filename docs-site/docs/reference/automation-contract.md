@@ -37,8 +37,10 @@ Either `automation.upload_to_immich: true` or `upload.enabled: true` requests de
 The UI process then runs the same `auto run` decision once a day, with the same lock, history, upload retry
 and notifications as the CLI. A container that was down at `daily_at` catches up when it starts; if the day's
 run already happened (a manual `docker compose exec immich-memories immich-memories auto run` counts) it waits
-for tomorrow. A manual run in progress holds the same lock, so the timer reports `skipped` instead of fighting
-it. `/health/ready` shows the timer under `in_process_scheduler`.
+for tomorrow. A run counts when it made a film, tried and failed, or found nothing worth one. A dry run doesn't,
+and neither does a `cooldown active` skip, which is what most HTTP triggers get back. When the timer waits, the log
+says which run it counted. A manual run in progress holds the same lock, so the timer reports `skipped` instead of
+fighting it. `/health/ready` shows the timer under `in_process_scheduler`.
 
 ## Bare metal: auto install
 

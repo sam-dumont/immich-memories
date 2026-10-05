@@ -207,6 +207,60 @@ class TestRestartCatchUp:
         assert await scheduler.tick() is False
         assert fired == []
 
+    async def test_a_cooldown_skip_before_the_slot_does_not_cancel_todays_fire(
+        self, tmp_path: Path
+    ) -> None:
+        """A trigger that answered `skipped` (cooldown) decided nothing about today's film."""
+        from immich_memories.automation.models import AutoOutcome
+        from immich_memories.automation.state_store import AutomationStateStore
+
+        config = _config(tmp_path, enabled=True, daily_at="09:00")
+        state = AutomationStateStore()
+        attempt = state.start_attempt(reason="triggered")
+        state.finish_attempt(attempt.id, AutoOutcome.SKIPPED, "cooldown active")
+
+        fired: list[Config] = []
+        now = datetime.now().astimezone().replace(hour=9, minute=0, second=5, microsecond=0)
+        scheduler = InProcessScheduler(
+            lambda: config,
+            run_once=lambda c: fired.append(c) or _completed(c),
+            clock=_FakeClock(now),
+        )
+
+        assert await scheduler.tick() is True
+        assert fired == [config]
+
+    async def test_a_decision_to_make_no_film_today_is_the_days_run_and_says_so(
+        self, tmp_path: Path, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        from immich_memories.automation.models import NO_ELIGIBLE_CANDIDATES, AutoOutcome
+        from immich_memories.automation.state_store import AutomationStateStore
+
+        config = _config(tmp_path, enabled=True, daily_at="09:00")
+        state = AutomationStateStore()
+        attempt = state.start_attempt(reason="triggered")
+        state.finish_attempt(attempt.id, AutoOutcome.SKIPPED, NO_ELIGIBLE_CANDIDATES)
+
+        fired: list[Config] = []
+        now = datetime.now().astimezone().replace(hour=9, minute=0, second=5, microsecond=0)
+        scheduler = InProcessScheduler(
+            lambda: config,
+            run_once=lambda c: fired.append(c) or _completed(c),
+            clock=_FakeClock(now),
+        )
+
+        with caplog.at_level("INFO", logger="immich_memories.automation.in_process_scheduler"):
+            assert await scheduler.tick() is False
+            assert await scheduler.tick() is False
+
+        assert fired == []
+        snap = scheduler.snapshot()
+        assert snap.last_outcome == "skipped"
+        assert snap.last_reason == NO_ELIGIBLE_CANDIDATES
+        assert snap.last_fired_at is not None
+        not_firing = [r for r in caplog.records if "already" in r.getMessage()]
+        assert len(not_firing) == 1, "say why the timer stays quiet, once"
+
 
 class TestFailureIsolation:
     async def test_crashing_run_is_recorded_by_type_only_and_not_retried_today(

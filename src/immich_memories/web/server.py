@@ -291,19 +291,16 @@ async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
 
 
 def _settle_dead_runs(config: Any) -> None:
-    """A render the last process died in must not read `Running` for good: mark it interrupted."""
+    """A run whose process died must not read `Running` for good: mark it interrupted."""
     from immich_memories.db import open_store
-    from immich_memories.tracking.orphaned_runs import interrupt_orphaned_runs
+    from immich_memories.tracking.orphaned_runs import settle_orphaned_runs
 
     try:
-        for run_id in interrupt_orphaned_runs(
-            open_store(config), config.cache.database_path.parent / ".lock"
-        ):
-            logger.warning(
-                "Run %s was left running by a stopped process; marked interrupted", run_id
-            )
+        store = open_store(config)
     except Exception:  # WHY: a store hiccup must not keep the server from starting
         logger.exception("Could not settle runs left running")
+        return
+    settle_orphaned_runs(store)
 
 
 def _warm_answers(config: Any) -> None:

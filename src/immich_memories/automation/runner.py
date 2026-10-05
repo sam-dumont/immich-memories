@@ -17,6 +17,7 @@ from immich_memories.automation.candidate_discovery import (
 from immich_memories.automation.candidates import MemoryCandidate
 from immich_memories.automation.delivery_retry import PendingDeliveryRetry, abandon_if_exhausted
 from immich_memories.automation.models import (
+    NO_ELIGIBLE_CANDIDATES,
     AutoAction,
     AutomationAttempt,
     AutoOutcome,
@@ -442,7 +443,7 @@ class AutoRunner:
             return None, self._finish(attempt, AutoOutcome.FAILED, reason, error=reason)
         if not candidates:
             logger.info("No eligible candidates found")
-            result = self._finish(attempt, AutoOutcome.SKIPPED, "no eligible candidates")
+            result = self._finish(attempt, AutoOutcome.SKIPPED, NO_ELIGIBLE_CANDIDATES)
             return None, result
         return candidates[0], None
 

@@ -181,8 +181,29 @@ class SyncImmichClient:
             )
         )
 
-    def search_metadata(self, **kwargs) -> MetadataSearchResult:
-        return self._run(self._async_client.search_metadata(**kwargs))
+    def search_metadata(
+        self,
+        person_ids: list[str] | None = None,
+        asset_type: AssetType | None = None,
+        taken_after: datetime | None = None,
+        taken_before: datetime | None = None,
+        updated_after: datetime | None = None,
+        page: int = 1,
+        size: int = 100,
+        ocr: str | None = None,
+    ) -> MetadataSearchResult:
+        return self._run(
+            self._async_client.search_metadata(
+                person_ids=person_ids,
+                asset_type=asset_type,
+                taken_after=taken_after,
+                taken_before=taken_before,
+                updated_after=updated_after,
+                page=page,
+                size=size,
+                ocr=ocr,
+            )
+        )
 
     def generated_asset_ids(self) -> frozenset[str]:
         return self._run(self._async_client.generated_asset_ids())

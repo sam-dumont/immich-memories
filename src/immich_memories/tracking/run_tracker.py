@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
 import subprocess
@@ -20,6 +21,7 @@ from immich_memories.tracking.system_info import capture_system_info
 
 if TYPE_CHECKING:
     from immich_memories.db import Store
+    from immich_memories.db.leases import Lease
     from immich_memories.processing.film_timeline import FilmTimeline
     from immich_memories.processing.output_contract import OutputProbe
     from immich_memories.timeperiod import DateRange
@@ -55,6 +57,7 @@ class RunTracker:
         self._phase_start_time: float | None = None
         self._phase_llm_mark: object | None = None
         self._phase_items_total: int = 0
+        self._lease: Lease | None = None
 
     def _require_started(self) -> RunMetadata:
         """Return the owned run or reject mutation by an unstarted tracker."""
@@ -117,6 +120,8 @@ class RunTracker:
             system_info=system_info,
         )
 
+        # The lease comes first: a sweep that sees the row must also see its owner.
+        self._hold_lease()
         self.db.save_run(run)
         self._run = run
         from immich_memories.tracking.timing import active
@@ -126,6 +131,31 @@ class RunTracker:
         logger.info(f"Started run {self.run_id}")
 
         return self.run_id
+
+    def _hold_lease(self) -> None:
+        try:
+            lease = self.db.run_lease(self.run_id)
+            lease.acquire()
+        except Exception:  # WHY: liveness is a label for other processes, never a reason to stop
+            logger.warning("Run %s could not take its liveness lease", self.run_id)
+            return
+        self._lease = lease
+
+    def release_run(self) -> None:
+        """Let go of the run's liveness lease; safe to call more than once.
+
+        Called once the run's row has a terminal status. A run that never gets here (the
+        process died) loses the lease with its process, which is what marks it interrupted.
+        """
+        lease, self._lease = self._lease, None
+        if lease is None:
+            return
+        try:
+            lease.release()
+        except Exception:  # WHY: the run already ended; a lease error must not undo that
+            logger.warning("Run %s could not release its liveness lease", self.run_id)
+        with contextlib.suppress(OSError):
+            lease.lock_path.unlink(missing_ok=True)
 
     def start_phase(
         self,
@@ -277,6 +307,7 @@ class RunTracker:
         )
 
         self.db.record_llm_metrics(self.run_id, _llm_run_total() or {})
+        self.release_run()
 
         # Reload to get full data with phases
         run = self.db.get_run(self.run_id)
@@ -323,6 +354,7 @@ class RunTracker:
             errors_count=errors_count,
         )
         self._run = run
+        self.release_run()
         self._mirror_metadata_sidecar(run, output_path.parent)
         logger.info("Completed artifact for run %s", self.run_id)
         return run
@@ -412,6 +444,7 @@ class RunTracker:
             logger.warning(
                 "Run %s is already completed; preserving durable artifact state", self.run_id
             )
+            self.release_run()
             return
         # Complete any pending phase
         if self._current_phase:
@@ -428,6 +461,7 @@ class RunTracker:
         # A run that burned four minutes on the model and then fell over is
         # exactly the one worth being able to see afterwards.
         self.db.record_llm_metrics(self.run_id, _llm_run_total() or {})
+        self.release_run()
 
         logger.error(f"Run {self.run_id} failed: {error}")
 
@@ -444,6 +478,7 @@ class RunTracker:
             status="cancelled",
             completed_at=now,
         )
+        self.release_run()
 
         logger.info(f"Run {self.run_id} cancelled")
 
