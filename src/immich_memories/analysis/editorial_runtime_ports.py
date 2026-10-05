@@ -36,14 +36,59 @@ def _load_people() -> Mapping[str, PersonPromptContext]:
     return load_people_prompt_context(include_derived=True)
 
 
+class KnownEditedCache:
+    """Memoizes `edited_by_id` over a source pool that only grows by identity.
+
+    A caller that re-reads the same (or a still-``None``) pool on every preview
+    would otherwise pay its own O(n) rebuild per picture; this rebuilds only when
+    the pool object itself changes.
+    """
+
+    def __init__(self) -> None:
+        self._source: Sequence[Asset | VideoClipInfo] | None = None
+        self._known: dict[str, bool] = {}
+
+    def for_pool(self, source: Sequence[Asset | VideoClipInfo] | None) -> Mapping[str, bool]:
+        if source is not self._source:
+            self._source = source
+            self._known = edited_by_id(source or ())
+        return self._known
+
+
+def edited_by_id(assets: Sequence[Asset | VideoClipInfo]) -> dict[str, bool]:
+    """Edit state already known for the source or pool assets a run holds.
+
+    `_fetch_preview` reuses this instead of a `get_asset` round trip per picture:
+    unasked, that would double every Immich call a cold year or a whole library
+    already pays, against the owner's "a cold year under an hour" (#2114).
+    """
+    return {asset.id: asset.is_edited for asset in assets if isinstance(asset, Asset)}
+
+
+def _fetch_preview(
+    client: Any, asset_id: str, *, known_edited: Mapping[str, bool] | None = None
+) -> bytes | None:
+    """The preview structure planning and the rule reader judge a picture by.
+
+    Asks for Immich's own edited render when the asset carries one (#2114): without
+    this, selection -- faces, documents, look-alike hashes, crops -- reads the
+    unedited picture while the film renders the edit. `known_edited` (see
+    `edited_by_id`) answers this without a request when the caller already holds
+    the asset; only an id missing from it costs a `get_asset` call.
+    """
+    if known_edited is not None and asset_id in known_edited:
+        edited = known_edited[asset_id]
+    else:
+        edited = getattr(client.get_asset(asset_id), "is_edited", False)
+    return client.get_asset_thumbnail(asset_id, size="preview", edited=edited)
+
+
 @dataclass(frozen=True, slots=True)
 class EditorialRuntimePorts:
     """Explicit replaceable edges around production I/O, suitable for public tests."""
 
     load_people: Callable[[], Mapping[str, PersonPromptContext]] = _load_people
-    fetch_preview: Callable[[Any, str], bytes | None] = lambda client, asset_id: (
-        client.get_asset_thumbnail(asset_id, size="preview")
-    )
+    fetch_preview: Callable[[Any, str], bytes | None] = _fetch_preview
     # Immich names the people it recognised on the asset itself but hands back no
     # geometry there; where each face sits has its own endpoint.
     fetch_faces: Callable[[Any, str], Sequence[FaceBox]] = lambda client, asset_id: face_boxes_of(
@@ -78,6 +123,20 @@ class EditorialRuntimePorts:
     ] = plan_structure
     structure_ports_factory: Callable[[StructurePlanningInput], StructurePlannerPorts] | None = None
     prepare_annotations: Callable[..., Any] | None = None
+
+    def preview_reader(
+        self, client: Any, known_edited: Mapping[str, bool] | None = None
+    ) -> Callable[[str], bytes | None]:
+        """A one-argument preview fetch bound to `client`.
+
+        The raw `fetch_preview` field keeps its plain two-argument contract, so a
+        test's own fetcher is never asked for a `known_edited` it does not expect.
+        Only the unreplaced default takes `known_edited`, and only there does it
+        save the `get_asset` round trip (#2114).
+        """
+        if self.fetch_preview is _fetch_preview:
+            return lambda asset_id: _fetch_preview(client, asset_id, known_edited=known_edited)
+        return lambda asset_id: self.fetch_preview(client, asset_id)
 
 
 def production_story_motion(source, *, store):

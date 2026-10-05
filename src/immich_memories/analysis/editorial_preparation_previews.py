@@ -27,26 +27,32 @@ def preview_refused(exc: BaseException) -> bool:
     return status == 404
 
 
-def ensure_preview(path: Path, asset_id: str, fetch_preview) -> None:
+def ensure_preview(path: Path, asset_id: str, fetch_preview, *, edited: bool = False) -> None:
     """Keep a verified preview at `path`, fetching it only when the cached one is unusable.
 
     The payload is verified as a picture before it replaces anything, and written
     atomically, so a half-written or corrupt download never becomes the cached preview.
+
+    ``edited`` skips the cache-hit shortcut below: the file at ``path`` may hold an
+    earlier run's unedited preview, and reusing it would feed every downstream
+    producer -- pixels, heads, captions -- the wrong picture. An edited asset is
+    always fetched fresh, never cached across runs.
     """
-    try:
-        with Image.open(path) as image:
-            image.verify()
-    except (OSError, ValueError):
-        pass
-    else:
-        # Reuse is use. The cache evicts oldest mtime first, so without this a
-        # preview an earlier run downloaded still looks as old as that run while
-        # this one reads it back for pixels, heads, sheets and the caption --
-        # and a preview that vanishes between those stages is recorded as a
-        # missing fact rather than fetched again.
-        with suppress(OSError):
-            os.utime(path)
-        return
+    if not edited:
+        try:
+            with Image.open(path) as image:
+                image.verify()
+        except (OSError, ValueError):
+            pass
+        else:
+            # Reuse is use. The cache evicts oldest mtime first, so without this a
+            # preview an earlier run downloaded still looks as old as that run while
+            # this one reads it back for pixels, heads, sheets and the caption --
+            # and a preview that vanishes between those stages is recorded as a
+            # missing fact rather than fetched again.
+            with suppress(OSError):
+                os.utime(path)
+            return
     payload = fetch_preview(asset_id) if fetch_preview else None
     if not payload:
         raise FileNotFoundError(

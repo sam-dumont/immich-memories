@@ -164,6 +164,10 @@ class Asset(BaseModel):
     # it is -- the locked folder postdates it.
     visibility: str = Field(default="timeline")
     is_trashed: bool = Field(default=False, alias="isTrashed")
+    # WHY: absent on a server older than 2.5 (isEdited shipped with the image
+    # editor); absent reads as False, which is what every asset on such a server
+    # actually is -- its editor cannot exist yet.
+    is_edited: bool = Field(default=False, alias="isEdited")
     duration_seconds: float | None = None
     # WHY: width/height from search API — needed for resolution filtering
     # BEFORE download. Without these, all non-favorites report 0×0 and get dropped.

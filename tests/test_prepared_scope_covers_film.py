@@ -49,7 +49,7 @@ class _Library:
     def generated_asset_ids(self):
         return frozenset({"our-film"})
 
-    def get_asset_thumbnail(self, _asset_id, size="preview"):
+    def get_asset_thumbnail(self, _asset_id, size="preview", *, edited=False):
         return preview()
 
     def get_asset_faces(self, _asset_id):

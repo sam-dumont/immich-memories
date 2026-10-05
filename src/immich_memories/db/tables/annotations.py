@@ -29,6 +29,11 @@ annotation_assets = Table(
     Column("longitude", Float),
     Column("live_photo_video_id", Text),
     Column("duration_seconds", Float),
+    # Whether Immich's own editor (crop, rotate, mirror) had touched this asset the
+    # last time its facts were banked. Compared against the asset's current isEdited
+    # before it is overwritten, so a picture edited since is read as owing every
+    # content-derived fact again, not just a fresh preview.
+    Column("is_edited", Boolean),
 )
 
 descriptions = Table(

@@ -65,7 +65,10 @@ def immich_preview(config: Annotated[Config, Depends(current_config)]) -> Previe
             return None
         try:
             with SyncImmichClient(base_url=connection.url, api_key=connection.api_key) as client:
-                return client.get_asset_thumbnail(asset_id, size="preview")
+                # A picture edited in Immich's own editor shows that edit here too: the
+                # reviewer must see what the film will render (#2114).
+                edited = client.get_asset(asset_id).is_edited
+                return client.get_asset_thumbnail(asset_id, size="preview", edited=edited)
         except Exception:  # noqa: BLE001 - an unreachable picture is a placeholder, not a 500
             return None
 

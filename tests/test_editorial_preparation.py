@@ -772,4 +772,37 @@ def test_a_prepared_scope_with_nothing_left_to_do_is_complete_with_no_failures(t
     result = run(tmp_path, ports=successful_ports([]))
 
     assert dict(result.failures) == {}
+
+
+def test_a_picture_edited_since_it_was_banked_owes_its_facts_again(tmp_path):
+    """Pixel, head and caption facts were read from the unedited render; none of them
+    are keyed by anything that changes when only the edit does, so an edit after a warm
+    run must still bring the producers back for that one picture (#2114)."""
+    calls = []
+    unedited = [asset("aa1")]
+    run(tmp_path, assets=unedited, ports=successful_ports(calls), fetch_preview=lambda _: preview())
+    assert ("heads", ("aa1",)) in calls
+    assert ("captions", ("aa1",)) in calls
+    calls.clear()
+
+    edited = [unedited[0].model_copy(update={"is_edited": True})]
+    second = run(
+        tmp_path, assets=edited, ports=successful_ports(calls), fetch_preview=lambda _: preview()
+    )
+
+    assert ("heads", ("aa1",)) in calls
+    assert ("captions", ("aa1",)) in calls
+    assert second.complete
+
+
+def test_a_picture_unchanged_since_it_was_banked_asks_nothing_again(tmp_path):
+    """The companion case: no edit, no flip, the ordinary warm-run guarantee holds."""
+    calls = []
+    assets = [asset("aa1")]
+    run(tmp_path, assets=assets, ports=successful_ports(calls), fetch_preview=lambda _: preview())
+    calls.clear()
+
+    result = run(tmp_path, assets=assets, ports=successful_ports(calls))
+
+    assert calls == []
     assert result.complete

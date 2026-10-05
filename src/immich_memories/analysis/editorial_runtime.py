@@ -31,7 +31,7 @@ from immich_memories.analysis.editorial_runtime_evidence import (
     AnnotationReadings,
     EvidencePreparation,
 )
-from immich_memories.analysis.editorial_runtime_ports import EditorialRuntimePorts
+from immich_memories.analysis.editorial_runtime_ports import EditorialRuntimePorts, KnownEditedCache
 from immich_memories.analysis.editorial_source import FullEditorialSource, library_source_scope
 from immich_memories.analysis.editorial_source_route import (
     EditorialSourcePlan,
@@ -661,6 +661,7 @@ def build_editorial_planner(
         artifact_dir=lambda: backend._context.artifact_dir,
     )
     refinement = FilmPreparation(evidence) if config.editorial.preparation.demands_models else None
+    known_edited = KnownEditedCache()
     backend = ProductionPostCardBackend(
         config=config,
         context=context,
@@ -669,7 +670,11 @@ def build_editorial_planner(
         store=store,
         bank_root=config.editorial.resolve_bank_root(config.cache.cache_path),
         ports=runtime_ports,
-        fetch_preview=lambda asset_id: runtime_ports.fetch_preview(client, asset_id),
+        # Reusing is_edited off the source pool itself, instead of a get_asset per
+        # preview, keeps a cold year or a whole library's call count unchanged (#2114).
+        fetch_preview=lambda asset_id: runtime_ports.preview_reader(
+            client, known_edited.for_pool(source_snapshot)
+        )(asset_id),
         attached_sources=lambda: source_snapshot or (),
         episode_demand=demand,
         prepare_refinement=refinement.refine if refinement else None,

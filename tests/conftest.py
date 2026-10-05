@@ -575,6 +575,7 @@ def make_asset(
     exif_make: str | None = "Apple",
     exif_model: str | None = "iPhone 15 Pro",
     duration: str | int | float | None = "0:00:10.000",
+    is_edited: bool = False,
 ) -> Asset:
     """Create an Asset with sensible defaults for testing."""
     now = file_created_at or datetime.now(tz=UTC)
@@ -590,6 +591,7 @@ def make_asset(
         originalFileName=original_file_name or f"VID_{asset_id}.MOV",
         exifInfo=exif,
         duration=duration,
+        isEdited=is_edited,
     )
 
 

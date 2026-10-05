@@ -143,8 +143,10 @@ class SyncImmichClient:
     def get_asset_ocr_text(self, asset_id: str) -> str | None:
         return self._run(self._async_client.get_asset_ocr_text(asset_id))
 
-    def get_asset_thumbnail(self, asset_id: str, size: str = "preview") -> bytes:
-        return self._run(self._async_client.get_asset_thumbnail(asset_id, size))
+    def get_asset_thumbnail(
+        self, asset_id: str, size: str = "preview", *, edited: bool = False
+    ) -> bytes:
+        return self._run(self._async_client.get_asset_thumbnail(asset_id, size, edited=edited))
 
     def get_video_playback_url(self, asset_id: str) -> str:
         return self._async_client.get_video_playback_url(asset_id)
@@ -162,13 +164,16 @@ class SyncImmichClient:
         return self._run(self._async_client.get_video_playback_range(asset_id, start, length))
 
     def download_asset(
-        self, asset_id: str, output_path: Path, *, expected_size_bytes: int | None = None
+        self,
+        asset_id: str,
+        output_path: Path,
+        *,
+        expected_size_bytes: int | None = None,
+        edited: bool = False,
     ) -> Path:
-        if expected_size_bytes is None:
-            return self._run(self._async_client.download_asset(asset_id, output_path))
         return self._run(
             self._async_client.download_asset(
-                asset_id, output_path, expected_size_bytes=expected_size_bytes
+                asset_id, output_path, expected_size_bytes=expected_size_bytes, edited=edited
             )
         )
 
