@@ -429,9 +429,27 @@ class TestAssetOcrText:
 
     @pytest.mark.asyncio
     async def test_recognised_text_is_returned(self, _mock_config):
+        # The real shape: a list of text boxes, each with its own quadrilateral, not one
+        # joined string.
         client = ImmichClient(_TEST_URL, _TEST_KEY)
         response = httpx.Response(
-            200, request=httpx.Request("GET", "/test"), json={"text": "PASSPORT"}
+            200,
+            request=httpx.Request("GET", "/test"),
+            json=[
+                {
+                    "text": "PASSPORT",
+                    "boxScore": 0.99,
+                    "textScore": 0.95,
+                    "x1": 10,
+                    "y1": 10,
+                    "x2": 100,
+                    "y2": 10,
+                    "x3": 100,
+                    "y3": 30,
+                    "x4": 10,
+                    "y4": 30,
+                }
+            ],
         )
         client._client = AsyncMock()
         client._client.is_closed = False
@@ -440,9 +458,48 @@ class TestAssetOcrText:
         assert await client.get_asset_ocr_text("card") == "PASSPORT"
 
     @pytest.mark.asyncio
-    async def test_empty_recognised_text_reads_as_none(self, _mock_config):
+    async def test_boxes_are_joined_in_reading_order_not_response_order(self, _mock_config):
+        def box(text: str, *, y: int, x: int) -> dict[str, object]:
+            return {
+                "text": text,
+                "boxScore": 0.9,
+                "textScore": 0.9,
+                "x1": x,
+                "y1": y,
+                "x2": x + 50,
+                "y2": y,
+                "x3": x + 50,
+                "y3": y + 10,
+                "x4": x,
+                "y4": y + 10,
+            }
+
         client = ImmichClient(_TEST_URL, _TEST_KEY)
-        response = httpx.Response(200, request=httpx.Request("GET", "/test"), json={"text": ""})
+        # The response lists the second line first; reading order must still win.
+        response = httpx.Response(
+            200,
+            request=httpx.Request("GET", "/test"),
+            json=[
+                box("Date of birth: 02 JAN 1990", y=40, x=0),
+                box("PASSPORT", y=0, x=0),
+            ],
+        )
+        client._client = AsyncMock()
+        client._client.is_closed = False
+        client._client.request = AsyncMock(return_value=response)
+
+        text = await client.get_asset_ocr_text("card")
+
+        assert text == "PASSPORT\nDate of birth: 02 JAN 1990"
+
+    @pytest.mark.asyncio
+    async def test_a_box_with_no_text_is_dropped_and_empty_boxes_read_as_none(self, _mock_config):
+        client = ImmichClient(_TEST_URL, _TEST_KEY)
+        response = httpx.Response(
+            200,
+            request=httpx.Request("GET", "/test"),
+            json=[{"text": "", "boxScore": 0.9, "textScore": 0.9, "x1": 0, "y1": 0}],
+        )
         client._client = AsyncMock()
         client._client.is_closed = False
         client._client.request = AsyncMock(return_value=response)

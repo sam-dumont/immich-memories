@@ -2,19 +2,10 @@
 
 from __future__ import annotations
 
-import logging
 import re
 from collections.abc import Callable, Collection, Mapping
 
-import httpx
-
 from immich_memories.analysis.annotation_line_fields import content_of
-from immich_memories.api.immich import ImmichAPIError
-
-logger = logging.getLogger(__name__)
-
-# The Immich server version that first answers GET /assets/{id}/ocr (#2062).
-_OCR_MIN_VERSION = (2, 2)
 
 # The kinds of frame that carry nothing a film can show, against the ones that do. This is
 # the `frame_kind` head's label set, split the way the standing gate reads it.
@@ -169,13 +160,19 @@ _PERSONAL_DOCUMENT_TEXT = re.compile(
 # OCR is all Basic has, and it must be allowed to stand on its own.
 _DOCUMENT_LIKE_FRAMES = frozenset({"screen_or_document", "meaningful_record"})
 
-# The machine-readable zone on a passport or ID card pads every line to a fixed width with
-# angle brackets; two or more such runs is not a sequence an ordinary caption, sign or menu
-# ever produces.
-_MRZ_LINE = re.compile(r"<{5,}")
-# A 13-19 digit run (a card number) or an IBAN-shaped code.
-_DIGIT_RUN = re.compile(r"\b(?:\d[ -]?){13,19}\b")
+# A machine-readable-zone line: 30+ characters of only the alphabet MRZ printers use,
+# nothing else -- a caption, sign or menu line never reads this way. Two such lines (a
+# passport's MRZ is always at least two) is the signal; one `<<<<<` run is not (#2062 round 3).
+_MRZ_LINE = re.compile(r"^[A-Z0-9<]{30,}$")
+# A 13-19 digit run (a card number), with no more digits touching either end -- a 20-digit
+# order number must never read as a 19-digit card number at some offset inside it.
+_DIGIT_RUN = re.compile(r"(?<!\d)(?:\d[ -]?){13,19}(?!\d)")
 _IBAN = re.compile(r"\b[A-Z]{2}\d{2}[A-Z0-9]{10,30}\b")
+# A line carrying one of these is a receipt, invoice or catalogue line, not a personal
+# card: its digit runs are order, reference or barcode numbers, never checked for Luhn.
+_DIGIT_RUN_CONTEXT_EXCLUDED = re.compile(
+    r"\b(?:order|commande|ean|r[ée]f(?:[ée]rence)?)\b", re.IGNORECASE
+)
 
 # Personal-record field labels a passport, ID card, bank card, payslip or medical record
 # prints, across the household's own languages and the field names the owner named directly
@@ -187,7 +184,7 @@ _PERSONAL_RECORD_FIELD = re.compile(
     r"date of birth|place of birth|nationality|card ?holder|holder'?s? name|"
     r"social security(?: number)?|national (?:insurance|number)|passport no\.?|"
     # French / Belgian French
-    r"date de naissance|n[ée]\(?e\)? le|lieu de naissance|num[ée]ro national|niss|"
+    r"date de naissance|n[ée](?:\(e\)|e)?\s+le|lieu de naissance|num[ée]ro national|niss|"
     r"titulaire|nom et pr[ée]nom|nom de naissance|"
     # Dutch / Belgian Dutch
     r"geboortedatum|geboorteplaats|nationaliteit|identiteitskaart|rijksregisternummer|"
@@ -207,6 +204,74 @@ _PERSONAL_RECORD_FIELD = re.compile(
     re.IGNORECASE,
 )
 
+# The document's own header/title, in the household's languages and scripts. Latin-script
+# words get a word boundary; a CJK or Hangul document title does not, since those scripts
+# carry no spaces for `\b` to anchor on.
+_DOCUMENT_TITLE_WORDS_LATIN = (
+    # English
+    r"passports?",
+    r"identity cards?",
+    r"driving licen[cs]es?",
+    # French / Belgian French
+    r"passeport",
+    r"carte\s*d['’]?\s*identit[ée]",
+    r"permis de conduire",
+    # Dutch / Belgian Dutch
+    r"paspoort",
+    r"identiteitskaart",
+    r"rijbewijs",
+    # German
+    r"reisepass",
+    r"personalausweis",
+    r"f[üu]hrerschein",
+    # Spanish
+    r"pasaporte",
+    r"\bdni\b",
+    r"permiso de conducir",
+    # Italian
+    r"passaporto",
+    r"carta\s*d['’]?\s*identit[àa]",
+    r"patente",
+    # Portuguese
+    r"passaporte",
+    r"carteira de identidade",
+    r"\bcnh\b",
+    # Polish
+    r"paszport",
+    r"dow[óo]d osobisty",
+    r"prawo jazdy",
+    # Swedish / Nordic
+    r"k[öo]rkort",
+    r"\bpass\b",
+)
+_DOCUMENT_TITLE_WORDS_OTHER_SCRIPT = (
+    # Russian
+    "паспорт",
+    "водительское удостоверение",
+    # Japanese
+    "運転免許証",
+    "旅券",
+    # Korean
+    "마이넘버",
+    "주민등록증",
+    "운전면허증",
+    # Chinese
+    "身份证",
+    "驾驶证",
+    "护照",
+)
+_DOCUMENT_TITLE_WORD = re.compile(
+    "|".join(_DOCUMENT_TITLE_WORDS_LATIN) + "|" + "|".join(_DOCUMENT_TITLE_WORDS_OTHER_SCRIPT),
+    re.IGNORECASE,
+)
+# The EU driving licence's own form prints its numbered fields down the card; 4a (issue
+# date) and 4b (expiry date) sit on their own line and belong to no other document.
+_EU_LICENCE_FIELD = re.compile(r"^\s*4[ab]\.", re.MULTILINE)
+# A gift or event voucher reading a name field is a personal record too (round 3): a
+# ticket or coupon that carries who it is for or for whom it was bought.
+_VOUCHER_WORD = re.compile(r"\b(?:bon|voucher|gutschein|cadeau|ticket)\b", re.IGNORECASE)
+_VOUCHER_NAME_FIELD = re.compile(r"\b(?:nom|name|naam|titulaire|pour|f[üu]r)\b", re.IGNORECASE)
+
 
 def _luhn_valid(run: str) -> bool:
     """The check digit a card number (not an arbitrary long number) must satisfy."""
@@ -223,16 +288,60 @@ def _luhn_valid(run: str) -> bool:
     return total % 10 == 0
 
 
+def _iban_valid(code: str) -> bool:
+    """The mod-97 check an IBAN-shaped code (not an arbitrary letters-then-digits string)
+    must satisfy."""
+    if not 15 <= len(code) <= 34:
+        return False
+    rearranged = code[4:] + code[:4]
+    digits = "".join(str(int(ch, 36)) for ch in rearranged)
+    return int(digits) % 97 == 1
+
+
+def _luhn_card_number(ocr_text: str) -> bool:
+    """A Luhn-valid card number, skipped on a line that reads as an order or catalogue
+    reference instead (#2062 round 3)."""
+    for line in ocr_text.splitlines():
+        if _DIGIT_RUN_CONTEXT_EXCLUDED.search(line):
+            continue
+        if any(_luhn_valid(run) for run in _DIGIT_RUN.findall(line)):
+            return True
+    return False
+
+
+def _machine_readable_zone(ocr_text: str) -> bool:
+    return sum(1 for line in ocr_text.splitlines() if _MRZ_LINE.match(line.strip())) >= 2
+
+
+def _iban_present(ocr_text: str) -> bool:
+    return any(_iban_valid(match.group()) for match in _IBAN.finditer(ocr_text))
+
+
+def _eu_licence_fields(ocr_text: str) -> bool:
+    """An EU driving licence's own numbered fields, only once its title word confirms it's
+    a licence and not an unrelated form that happens to share a numbering scheme."""
+    return bool(_DOCUMENT_TITLE_WORD.search(ocr_text) and _EU_LICENCE_FIELD.search(ocr_text))
+
+
+def _gift_voucher_with_a_name(ocr_text: str) -> bool:
+    return bool(_VOUCHER_WORD.search(ocr_text) and _VOUCHER_NAME_FIELD.search(ocr_text))
+
+
 def ocr_reads_a_personal_record(ocr_text: str | None) -> bool:
-    """Immich's own OCR text names a personal-record field, a passport's machine-readable
-    zone, or a Luhn-valid card number / IBAN -- evidence no caption or head can give (#2062)."""
+    """Immich's own OCR text names a personal-record field or the document's own title, a
+    passport's machine-readable zone, a Luhn-valid card number or IBAN, an EU licence's
+    numbered fields, or a gift/event voucher carrying a name -- evidence no caption or head
+    can give (#2062)."""
     if not ocr_text:
         return False
     return bool(
         _PERSONAL_RECORD_FIELD.search(ocr_text)
-        or len(_MRZ_LINE.findall(ocr_text)) >= 2
-        or _IBAN.search(ocr_text)
-        or any(_luhn_valid(run) for run in _DIGIT_RUN.findall(ocr_text))
+        or _DOCUMENT_TITLE_WORD.search(ocr_text)
+        or _machine_readable_zone(ocr_text)
+        or _iban_present(ocr_text)
+        or _luhn_card_number(ocr_text)
+        or _eu_licence_fields(ocr_text)
+        or _gift_voucher_with_a_name(ocr_text)
     )
 
 
@@ -246,8 +355,12 @@ def personal_document(content: str, heads: Mapping[str, str], ocr_text: str | No
     held-out set 42 of 51 such frames were worth keeping (#1539's own measurement). Neither
     head tells a photographed passport apart from a race certificate on its own, so this
     reads the content instead: a caption naming the document, or Immich's OCR reading an
-    actual personal-record field, an MRZ line or a card number. The frame head only narrows
-    which pictures that evidence counts for, to an explicit non-document frame kind (#2062).
+    actual personal-record field, an MRZ line or a card number.
+
+    A caption that names the document excludes it outright, with no frame-head narrowing:
+    the owner's stance is that a family holding boarding passes in an ordinary scene should
+    rather be held than risk shipping one that reads. Only the OCR/field-evidence path is
+    narrowed by the frame head, to an explicit non-document frame kind (#2062, round 3).
     """
     if _PERSONAL_DOCUMENT_TEXT.search(content):
         return True
@@ -300,48 +413,3 @@ def excluded_carrier_sources(
         ):
             excluded[asset_id] = "personal-document"
     return excluded
-
-
-def document_ocr_port(client: object) -> Callable[[str], str | None] | None:
-    """This run's per-asset OCR text reader, or None when it has no OCR to offer (#2062).
-
-    A server below 2.2, or a client with no asset-OCR or version read at all, skips the
-    signal rather than ask every candidate and fail the same way each time. A read failure
-    once the signal is live disables it for the rest of this run and logs once: a transient
-    Immich error must not hold the whole library, and must not spam the log either. The
-    caption and head signals this read corroborates still apply on their own.
-    """
-    get_server_info = getattr(client, "get_server_info", None)
-    get_text = getattr(client, "get_asset_ocr_text", None)
-    if not callable(get_server_info) or not callable(get_text):
-        return None
-    try:
-        info = get_server_info()
-    except (ImmichAPIError, httpx.HTTPError, OSError) as exc:
-        logger.warning(
-            "Could not read Immich's server version; personal-document OCR is off: %s", exc
-        )
-        return None
-    if (info.major, info.minor) < _OCR_MIN_VERSION:
-        logger.info(
-            "Immich %s predates per-asset OCR reads; personal-document OCR is off",
-            info.version_string,
-        )
-        return None
-    disabled = False
-
-    def ocr_text_of(asset_id: str) -> str | None:
-        nonlocal disabled
-        if disabled:
-            return None
-        try:
-            return get_text(asset_id)
-        except (ImmichAPIError, httpx.HTTPError, OSError) as exc:
-            logger.warning(
-                "Immich OCR read failed (%s); personal-document OCR is off for the rest of this run",
-                exc,
-            )
-            disabled = True
-            return None
-
-    return ocr_text_of

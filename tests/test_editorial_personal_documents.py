@@ -113,6 +113,16 @@ def test_a_people_moment_frame_is_never_refused_on_ocr_alone():
     assert excluded == {}
 
 
+def test_a_caption_naming_a_document_excludes_it_even_in_an_ordinary_scene():
+    # The owner's stance: a caption naming the document excludes outright, with no
+    # frame-head narrowing. Only the OCR/field-evidence path respects the frame head.
+    lines = {
+        "family": "2024-02-04 09:00+00:00 | A family holds up their boarding passes at the gate"
+    }
+    excluded = excluded_carrier_sources(lines, heads_of={"family": {"frame_kind": "people_moment"}})
+    assert excluded == {"family": "personal-document"}
+
+
 def test_a_street_sign_is_not_a_personal_document():
     lines = {"sign": "2024-02-04 09:00+00:00 | A street sign points towards the old town"}
     assert excluded_carrier_sources(lines) == {}
@@ -195,3 +205,117 @@ def test_planner_material_keeps_a_personal_document_only_when_the_owner_pinned_i
     assert material.document_sources == expected
     selectable = {unit["asset_id"] for units in material.units.values() for unit in units}
     assert (asset_id in selectable) == (protection == "required")
+
+
+# -- Round 3: the owner replayed this against a real Immich 3.2.4 and 0 of 5 campaign
+# outcomes were excluded (false positives stayed at 0 of 200). The word-list OCR signal
+# never fired; these fixtures exercise the actual-text analysis that replaced it (#2062).
+
+
+def test_a_document_title_word_alone_is_enough_in_any_of_the_covered_languages():
+    lines = {"card": "2024-02-04 09:00+00:00"}
+    for title in ("PASSEPORT", "rijbewijs", "Personalausweis", "身份证", "паспорт", "DNI"):
+        excluded = excluded_carrier_sources(
+            lines,
+            heads_of={"card": {"frame_kind": "meaningful_record"}},
+            ocr_text_of={"card": title}.get,
+        )
+        assert excluded == {"card": "personal-document"}, title
+
+
+def test_ne_le_matches_with_or_without_the_feminine_suffix():
+    lines = {"a": "2024-02-04", "b": "2024-02-04", "c": "2024-02-04"}
+    for asset_id, text in (
+        ("a", "né le 4 janvier"),
+        ("b", "née le 4 janvier"),
+        ("c", "né(e) le 4 janvier"),
+    ):
+        excluded = excluded_carrier_sources(
+            {asset_id: lines[asset_id]},
+            heads_of={asset_id: {"frame_kind": "meaningful_record"}},
+            ocr_text_of={asset_id: text}.get,
+        )
+        assert excluded == {asset_id: "personal-document"}, text
+
+
+def test_an_eu_licence_needs_both_its_title_and_a_numbered_field():
+    lines = {"licence": "2024-02-04", "partial": "2024-02-04"}
+    full = excluded_carrier_sources(
+        {"licence": lines["licence"]},
+        heads_of={"licence": {"frame_kind": "meaningful_record"}},
+        ocr_text_of={"licence": "DRIVING LICENCE\n4a. 01.01.2020\n4b. 01.01.2030"}.get,
+    )
+    assert full == {"licence": "personal-document"}
+    # The title word alone is already enough (it's in the document-title list), so this
+    # checks the numbered field doesn't fire without ANY document evidence around it.
+    numbered_only = excluded_carrier_sources(
+        {"partial": lines["partial"]},
+        heads_of={"partial": {"frame_kind": "meaningful_record"}},
+        ocr_text_of={"partial": "ORDER FORM\n4a. widgets\n4b. gadgets"}.get,
+    )
+    assert numbered_only == {}
+
+
+def test_a_gift_voucher_naming_who_it_is_for_is_refused():
+    lines = {"voucher": "2024-02-04"}
+    excluded = excluded_carrier_sources(
+        {"voucher": lines["voucher"]},
+        heads_of={"voucher": {"frame_kind": "meaningful_record"}},
+        ocr_text_of={"voucher": "GUTSCHEIN\nFür: Anna"}.get,
+    )
+    assert excluded == {"voucher": "personal-document"}
+
+
+def test_a_voucher_with_no_name_field_is_kept():
+    lines = {"voucher": "2024-02-04"}
+    excluded = excluded_carrier_sources(
+        {"voucher": lines["voucher"]},
+        heads_of={"voucher": {"frame_kind": "meaningful_record"}},
+        ocr_text_of={"voucher": "VOUCHER\n10% off your next visit"}.get,
+    )
+    assert excluded == {}
+
+
+def test_an_order_number_is_not_read_as_a_card_number():
+    lines = {"receipt": "2024-02-04"}
+    excluded = excluded_carrier_sources(
+        {"receipt": lines["receipt"]},
+        heads_of={"receipt": {"frame_kind": "meaningful_record"}},
+        ocr_text_of={"receipt": "Order number: 4539148803436467\nThank you"}.get,
+    )
+    assert excluded == {}
+
+
+def test_a_mod_97_valid_iban_is_refused_an_invalid_one_is_kept():
+    lines = {"valid": "2024-02-04", "invalid": "2024-02-04"}
+    valid = excluded_carrier_sources(
+        {"valid": lines["valid"]},
+        heads_of={"valid": {"frame_kind": "meaningful_record"}},
+        ocr_text_of={"valid": "IBAN: BE68539007547034"}.get,
+    )
+    assert valid == {"valid": "personal-document"}
+    invalid = excluded_carrier_sources(
+        {"invalid": lines["invalid"]},
+        heads_of={"invalid": {"frame_kind": "meaningful_record"}},
+        ocr_text_of={"invalid": "REF: XX00ABCDEFGH1234567"}.get,
+    )
+    assert invalid == {}
+
+
+def test_a_two_line_machine_readable_zone_is_required():
+    lines = {"a": "2024-02-04", "b": "2024-02-04"}
+    one_line = excluded_carrier_sources(
+        {"a": lines["a"]},
+        heads_of={"a": {"frame_kind": "meaningful_record"}},
+        ocr_text_of={"a": "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"}.get,
+    )
+    assert one_line == {}
+    two_lines = excluded_carrier_sources(
+        {"b": lines["b"]},
+        heads_of={"b": {"frame_kind": "meaningful_record"}},
+        ocr_text_of={
+            "b": "P<BELDURAND<<MARIE<<<<<<<<<<<<<<<<<<<<<<<<<\n"
+            "1234567890BEL9001029F3001011<<<<<<<<<<<<<<04"
+        }.get,
+    )
+    assert two_lines == {"b": "personal-document"}

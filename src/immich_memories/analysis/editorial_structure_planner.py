@@ -109,7 +109,6 @@ from immich_memories.security import write_secret_file
 from immich_memories.tracking.timed import timed
 
 SECONDS_PER_SLOT = NOMINAL_STILL_SECONDS
-STORY_RANK = {"central": 0, "supporting": 1}
 FLAGGED_LINE = re.compile(r"nsfw=yes|exposure=(partial|nude)")
 
 

@@ -173,7 +173,7 @@ def preview_rules(
     drops it, in the run's order: source, screens, holds, carrier rules, then video frames.
     `client`, when given, reads Immich's own OCR for the personal-document check (#2062).
     """
-    from immich_memories.analysis.editorial_carrier_eligibility import document_ocr_port
+    from immich_memories.analysis.editorial_document_ocr import document_ocr_port
 
     prepared = prepare_editorial_source(
         EditorialSelectionRequest(scope=scope),

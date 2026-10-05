@@ -173,7 +173,7 @@ def _screen_documents(
     client: object = None,
 ) -> dict[str, Any]:
     """The same gate a cut applies, so both read one corpus and one set of episodes."""
-    from immich_memories.analysis.editorial_carrier_eligibility import document_ocr_port
+    from immich_memories.analysis.editorial_document_ocr import document_ocr_port
     from immich_memories.analysis.editorial_source_gate import screen_document_rejections
 
     exclusions: dict[str, Any] = dict(unservable or {})
