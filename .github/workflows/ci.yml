@@ -291,13 +291,8 @@ jobs:
           prune-cache: false
       - run: uv python install ${{ matrix.python-version }}
 
-      - name: Install FFmpeg (Linux)
-        if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y ffmpeg
-
-      - name: Install FFmpeg (macOS)
-        if: runner.os == 'macOS'
-        run: brew install ffmpeg
+      - name: Install FFmpeg
+        uses: ./.github/actions/install-ffmpeg
 
       - run: make dev-test
 
@@ -411,13 +406,8 @@ jobs:
           cache-suffix: extras
       - run: uv python install "3.13"
 
-      - name: Install FFmpeg (Linux)
-        if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y ffmpeg
-
-      - name: Install FFmpeg (macOS)
-        if: runner.os == 'macOS'
-        run: brew install ffmpeg
+      - name: Install FFmpeg
+        uses: ./.github/actions/install-ffmpeg
 
       - name: Install with extras
         run: |
@@ -661,7 +651,7 @@ jobs:
             docs-site/package-lock.json
             web/package-lock.json
       - name: Install FFmpeg
-        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+        uses: ./.github/actions/install-ffmpeg
       - name: Install project and browser dependencies
         run: |
           make dev-test

@@ -1,0 +1,53 @@
+name: Install FFmpeg
+description: >-
+  Install FFmpeg on Linux (apt, with retries and bounded timeouts) or macOS
+  (brew), falling back to a static Linux build if apt never recovers.
+
+runs:
+  using: composite
+  steps:
+    - name: Install FFmpeg (Linux, apt)
+      if: runner.os == 'Linux'
+      shell: bash
+      run: |
+        apt_opts=(-o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o DPkg::Lock::Timeout=60)
+        install_ffmpeg() {
+          sudo apt-get update "${apt_opts[@]}" \
+            && sudo apt-get install -y --no-install-recommends "${apt_opts[@]}" ffmpeg
+        }
+        for attempt in 1 2; do
+          echo "::group::apt-get install ffmpeg (attempt $attempt)"
+          if timeout 300 bash -c "$(declare -f install_ffmpeg); install_ffmpeg"; then
+            echo "::endgroup::"
+            exit 0
+          fi
+          echo "::endgroup::"
+        done
+        # A hung or broken apt leaves this to the static-build fallback below,
+        # not a failed step: a stuck mirror shouldn't fail the whole job.
+        echo "apt-get install ffmpeg failed twice; falling back to a static build"
+
+    - name: Install FFmpeg (Linux, static fallback)
+      if: runner.os == 'Linux'
+      shell: bash
+      run: |
+        if command -v ffmpeg >/dev/null 2>&1; then
+          exit 0
+        fi
+        echo "apt did not produce ffmpeg; downloading a static build"
+        curl --fail --silent --show-error --max-time 120 \
+          -o /tmp/ffmpeg-release.tar.xz \
+          https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz
+        mkdir -p /tmp/ffmpeg-static
+        tar -xf /tmp/ffmpeg-release.tar.xz -C /tmp/ffmpeg-static --strip-components=1
+        sudo install -m 0755 /tmp/ffmpeg-static/ffmpeg /usr/local/bin/ffmpeg
+        sudo install -m 0755 /tmp/ffmpeg-static/ffprobe /usr/local/bin/ffprobe
+
+    - name: Install FFmpeg (macOS, brew)
+      if: runner.os == 'macOS'
+      shell: bash
+      run: brew install ffmpeg
+
+    - name: Verify FFmpeg
+      shell: bash
+      run: ffmpeg -version
