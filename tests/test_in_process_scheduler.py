@@ -158,6 +158,55 @@ class TestRestartCatchUp:
         assert fired == []
         assert scheduler.snapshot().next_run == now.replace(hour=9) + timedelta(days=1)
 
+    async def test_dry_run_attempt_before_slot_does_not_cancel_todays_fire(
+        self, tmp_path: Path
+    ) -> None:
+        """A "Check eligibility" dry run (or `auto run --dry-run`) earlier today must
+        not read as "already fired today" — only a real attempt should.
+
+        `start_attempt`/`finish_attempt` stamp `started_at` with the real wall clock,
+        so the scheduler's fake clock must land on the real current day too.
+        """
+        from immich_memories.automation.models import AutoOutcome
+        from immich_memories.automation.state_store import AutomationStateStore
+
+        config = _config(tmp_path, enabled=True, daily_at="09:00")
+        state = AutomationStateStore()
+        dry_run_attempt = state.start_attempt(reason="eligibility check")
+        state.finish_attempt(dry_run_attempt.id, AutoOutcome.DRY_RUN, "dry run")
+
+        fired: list[Config] = []
+        now = datetime.now().astimezone().replace(hour=9, minute=0, second=5, microsecond=0)
+        clock = _FakeClock(now)
+        scheduler = InProcessScheduler(
+            lambda: config, run_once=lambda c: fired.append(c) or _completed(c), clock=clock
+        )
+
+        assert await scheduler.tick() is True
+        assert fired == [config]
+
+    async def test_real_attempt_before_slot_still_waits_for_tomorrow(self, tmp_path: Path) -> None:
+        """A non-dry-run attempt earlier today (a trigger call, a manual `auto run`)
+        still counts as today's fire.
+        """
+        from immich_memories.automation.models import AutoOutcome
+        from immich_memories.automation.state_store import AutomationStateStore
+
+        config = _config(tmp_path, enabled=True, daily_at="09:00")
+        state = AutomationStateStore()
+        attempt = state.start_attempt(reason="triggered")
+        state.finish_attempt(attempt.id, AutoOutcome.COMPLETED, "generated")
+
+        fired: list[Config] = []
+        now = datetime.now().astimezone().replace(hour=9, minute=0, second=5, microsecond=0)
+        clock = _FakeClock(now)
+        scheduler = InProcessScheduler(
+            lambda: config, run_once=lambda c: fired.append(c) or _completed(c), clock=clock
+        )
+
+        assert await scheduler.tick() is False
+        assert fired == []
+
 
 class TestFailureIsolation:
     async def test_crashing_run_is_recorded_by_type_only_and_not_retried_today(
