@@ -13,8 +13,6 @@ from __future__ import annotations
 import hashlib
 from collections import Counter
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import replace
-from datetime import datetime
 from functools import partial
 from operator import itemgetter
 from typing import Any
@@ -22,7 +20,8 @@ from typing import Any
 from immich_memories.analysis.editorial_carrier import carrier_row
 from immich_memories.analysis.editorial_picture_admission import PictureAdmission
 from immich_memories.analysis.editorial_rule_quality import promote_quality_choice
-from immich_memories.analysis.editorial_story_depth import depth_ladder, neighbours
+from immich_memories.analysis.editorial_story_depth import neighbours
+from immich_memories.analysis.editorial_story_depth_fill import DepthFill
 from immich_memories.analysis.editorial_story_lookalike import LookAlikeCheck
 from immich_memories.analysis.editorial_story_pick_contract import (
     carries_motion,
@@ -48,13 +47,6 @@ MAX_PASSES = 3
 
 def choice_is_starred(c: DepictedChoice, unit_by_asset: Mapping[str, Any]) -> bool:
     return any(unit_by_asset[a][1].get("favourite") for a in c.members if a in unit_by_asset)
-
-
-def _seconds_apart(taken: str, others: Sequence[str]) -> float:
-    when = datetime.fromisoformat(taken)
-    return min(
-        (abs((when - datetime.fromisoformat(o)).total_seconds()) for o in others), default=0.0
-    )
 
 
 def shortlist_by_partition(
@@ -130,7 +122,14 @@ class CarrierAdmission:
         place_of: Callable[[str], str] = lambda _asset: "",
         strangers_only: Callable[[str], bool] = lambda _asset: False,
         vouched: Callable[[Mapping[str, Any]], bool] = lambda _carrier: True,
+        content_budget_seconds: float | None = None,
+        content_tolerance_seconds: float = 0.0,
     ) -> None:
+        # The depth fill's own stop condition (#2083): seconds of distinct material against
+        # the film's real content budget, not a picture count. None keeps the slot count the
+        # only bound, for callers (and tests) that never sized a budget in seconds.
+        self._content_budget_seconds = content_budget_seconds
+        self._content_tolerance_seconds = content_tolerance_seconds
         self._judge = judge
         self._strangers_only = strangers_only
         self._vouched = vouched
@@ -586,9 +585,7 @@ class CarrierAdmission:
                 break
         self.calls["selection_passes"] = passes
         self._keep_occasions()
-        if self.lookalike.available:
-            for index, s in enumerate(self.stories, 1):
-                self._deepen_moments(index, s)
+        DepthFill(self).run()
         self._favourites_before_the_unvouched()
         self.lookalike.readmit(lambda: len(self.carriers) < self.slots)
         self.calls["failed_standing"] = len(self.failed_standing)
@@ -661,91 +658,6 @@ class CarrierAdmission:
         self._taken.add(asset)
         self.chosen_by_story[carrier["story_episode"]].append(carrier["depicted_moment"])
         self.places.took(carrier["story_episode"], self._place_of(asset))
-
-    # -- depth inside moments ---------------------------------------------------------
-
-    def _deepen_moments(self, index: int, s) -> None:
-        """A film still short spends its free slots on further frames of the moments this story
-        shows, only when they show something new (`editorial_story_depth`). A moment admitted as
-        depth earns its own rungs, so the ladder is read again while it still adds a frame."""
-        while self._deepen_once(index, s):
-            pass
-
-    def _offerable(self, s) -> list[DepictedChoice]:
-        """This story's moments, holding only the pictures that could carry a frame.
-
-        The model ranks a moment's members, so its ladder walks the top three by position.
-        Ranked by capture facts alone, position says little, and a picture that cannot carry
-        a frame at all must not spend one of the moment's three rungs: an eight-picture
-        moment was shipping two frames with five usable ones left behind. The spares that
-        remain keep favourites first, then spread in capture time from the frames of the
-        moment already in the cut.
-        """
-        choices = self.choices_of[s["key"]]
-        if not self._mechanical_picks:
-            return choices
-        self.gate.ensure([a for c in choices for a in c.members if self.free(a)])
-        carried = {row["asset_id"] for row in self.carriers}
-        offerable = []
-        for c in choices:
-            good = [
-                a
-                for a in c.members
-                if a in carried or (self.free(a) and self.gate.stands(a, s["weight"], s["key"]))
-            ]
-            if not good:
-                continue
-            kept = [row["taken"] for row in self.carriers if row["depicted_moment"] == c.key]
-            spare = sorted(
-                (a for a in good if a not in carried),
-                key=lambda a: (
-                    not self._unit_by_asset[a][1].get("favourite"),
-                    self._unit_by_asset[a][1].get("kind") not in ("video", "live-motion"),
-                    -_seconds_apart(self._unit_by_asset[a][1]["taken"], kept),
-                ),
-            )
-            members = [*(a for a in good if a in carried), *spare]
-            offerable.append(replace(c, primary=members[0], alternatives=members[1:]))
-        return offerable
-
-    def _deepen_once(self, index: int, s) -> bool:
-        if (
-            len(self.carriers) >= self.slots
-            or s["weight"] not in WEIGHED_STORY_WEIGHTS
-            or not self.chosen_by_story[s["key"]]
-        ):
-            return False
-        held = sum(c["story_episode"] == s["key"] for c in self.carriers)
-        self.places.widen(s["key"], held + self.slots - len(self.carriers))
-        ladder = list(
-            depth_ladder(
-                self._offerable(s),
-                chosen=self.chosen_by_story[s["key"]],
-                used=self._used_choice_keys,
-                group_of=lambda asset: self._unit_by_asset[asset][1].get("moment"),
-                kept=[c["asset_id"] for c in self.carriers if c["story_episode"] == s["key"]],
-            )
-        )
-        self.gate.ensure([asset for _choice, asset in ladder if self.free(asset)])
-        for choice, asset in ladder:
-            if len(self.carriers) >= self.slots:
-                break
-            if not (self.free(asset) and self.gate.stands(asset, s["weight"], s["key"])):
-                continue
-            if self.places.full(s["key"], self._place_of(asset)):
-                continue
-            family, unit = self._unit_by_asset[asset]
-            row = self._carrier_row(unit, family, s, choice, index, asset)
-            kept = [c for c in self.carriers if c["story_episode"] == s["key"]]
-            if self.lookalike.shows_something_new(s["key"], row, neighbours(row, kept)):
-                row = row | {"depth": True}
-                if self.pictures.admits(row, cut=self.carriers, tier_of={}):
-                    continue
-                self._used_choice_keys.add(choice.key)
-                self._admit(s, choice, row, [])
-                # One frame at a time: the next is spread from the frames kept, this one included.
-                return True
-        return False
 
     # -- occasion integrity -----------------------------------------------------------
 

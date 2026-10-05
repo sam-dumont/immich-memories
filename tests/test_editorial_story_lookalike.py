@@ -104,16 +104,19 @@ def _afternoon(tmp_path):
     )
 
 
-def test_a_one_occasion_film_spends_its_free_slots_as_depth_inside_its_moments(tmp_path):
+def test_a_dense_moment_goes_short_rather_than_deepen_a_half_minute_burst(tmp_path):
+    """Half a minute apart is a burst, not further distinct shots (#2083): the slot grant
+    promises ten, but each moment counts one shot until it clears the five-minute capture
+    spacing, so the film honestly stops at two rather than fill the rest from the same burst."""
     source = _afternoon(tmp_path)
     plan = _run(source, _apart)
 
     assert plan["story"]["slots"] == 10
-    assert len(plan["carriers"]) == 10  # a moment admitted as depth earns its own rungs too
+    assert len(plan["carriers"]) == 2
     per_group = Counter(c["asset_id"].rsplit("-", 1)[0] for c in plan["carriers"])
-    assert sorted(per_group.values()) == [5, 5]
+    assert sorted(per_group.values()) == [1, 1]
     record = _lookalike_record(source)
-    assert record["depth"]["added"] == 8
+    assert record["depth"]["added"] == 0
 
 
 def _group_alike(asset_id):

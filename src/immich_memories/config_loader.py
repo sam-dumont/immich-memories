@@ -84,6 +84,7 @@ _REMOVED_TOP_LEVEL_SECTIONS = {
 }
 
 _WENT_WITH_THE_SCORER = "went with the legacy clip scorer; story-first selection never read it"
+_REMOVED_IN_325 = "removed in #325; nothing read it"
 
 # Keys that went with the legacy clip scorer. Unlike the sections above these are
 # warned about and dropped: section models ignore unknown keys, so without the
@@ -108,6 +109,27 @@ _REMOVED_CONFIG_KEYS: dict[str, str] = {
     "photos.moment_hash_threshold": _WENT_WITH_THE_SCORER,
     "cache.preview_cache_max_size_mb": "it capped the clip previews the old web pages played; "
     "the web client streams Immich's own renditions (#1395)",
+    "defaults.output_orientation": "removed in #327; the CLI picks the orientation",
+    "audio.pixabay_api_key": "the Pixabay source is removed",
+    "defaults.target_duration_minutes": "replaced by per-memory-type defaults and `--duration`",
+    "defaults.target_duration_seconds": "replaced by per-memory-type defaults and `--duration`",
+    **{
+        f"audio.{field}": _REMOVED_IN_325
+        for field in (
+            "auto_music",
+            "music_source",
+            "ducking_threshold",
+            "ducking_ratio",
+            "music_volume_db",
+            "fade_in_seconds",
+            "fade_out_seconds",
+        )
+    },
+    "analysis.keyframe_interval": _REMOVED_IN_325,
+    "hardware.device_index": _REMOVED_IN_325,
+    "hardware.gpu_memory_limit": _REMOVED_IN_325,
+    "defaults.transition_buffer": _REMOVED_IN_325,
+    "ace_step.bf16": _REMOVED_IN_325,
     **{
         f"analysis.{field}": _WENT_WITH_THE_SCORER
         for field in (
@@ -410,6 +432,25 @@ class Config(BaseSettings):
         apply_tier(self)
         return self
 
+    @model_validator(mode="after")
+    def _warn_reader_configured_but_disabled(self) -> Config:
+        """Say loudly that a named reader is off (#1833 defaulted `llm.enabled` to false).
+
+        A 0.103.0 config set `base_url`/`model` with no `enabled` field and got a working
+        reader; the same file upgrades straight into model titles, music mood and model
+        selection all going dark, with only an INFO tier line and an opt-in preflight check
+        to notice. This fires on every load instead, naming the fields set (never their
+        values, so a secret `api_key` is named but not printed).
+        """
+        if not self.llm.enabled and self.llm.configured_fields:
+            logging.getLogger(__name__).warning(
+                "Reader settings found (%s) but advanced.llm.enabled is false: model "
+                "titles, music mood and model selection are off. Add `enabled: true` "
+                "under llm to turn them on.",
+                ", ".join(self.llm.configured_fields),
+            )
+        return self
+
     @classmethod
     def from_yaml(cls, path: Path, *, stored: dict[str, Any] | None = None) -> Config:
         """Load configuration from a YAML file and the settings saved in the database.
@@ -593,6 +634,20 @@ def get_config_path() -> Path:
     reload can never silently switch the process to the default config.
     """
     return _config_path or Config.get_default_path()
+
+
+def config_state_dir(config_path: Path | None = None) -> Path:
+    """Where a config's run history and scheduler logs default to: its own folder.
+
+    A `--config PATH` run keeps its store and logs beside PATH instead of under the real
+    `$HOME`, so a second setup run under launchd or systemd (which always sees the real
+    `$HOME`) can never mix its run history into the main install's store (#2076). The
+    default config path already sits in `~/.immich-memories`, so a run with no `--config`
+    still lands exactly where it always has. `config_path` lets a caller that is generating
+    scheduler files for a config other than the one it has loaded (`auto install --config`)
+    name it directly, instead of this process's own loaded path.
+    """
+    return (config_path or get_config_path()).parent
 
 
 def load_config(path: Path) -> Config:

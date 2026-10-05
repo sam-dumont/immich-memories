@@ -38,6 +38,8 @@ A few limits worth knowing before you install:
   reuse that work, but still have to render.
 - **Older Celerons work.** Without AVX, titles use the simpler renderer.
 - **ARM64 Docker uses software encoding.** The bundled VA-API drivers are amd64 only.
+- **A native `uv`/`pip` install on Linux ARM64 skips local vocal separation.** `sphn`, a dependency
+  of the `demucs` extra, ships no wheel there and needs Rust plus a C compiler to build.
 - **4K on GPU/Full needs more room.** Allow 8 GB for the app, plus memory for any model services.
 
 See [performance guidance](../better/measured.md) and [platform scope](#supported-and-tested).

@@ -422,6 +422,12 @@ def install(
     print_info(f"  Activate:   {result.activate_command}")
     print_info(f"  Deactivate: {result.deactivate_command}")
 
+    if result.platform == "launchd":
+        from immich_memories.automation.system_scheduler import resolve_disabled_launchd_label
+
+        if note := resolve_disabled_launchd_label():
+            print_info(f"  {note}")
+
 
 @auto.command("test-notification")
 @click.pass_context

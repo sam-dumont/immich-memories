@@ -120,6 +120,13 @@ names/places, coordinates, addresses, URLs and absolute paths removed. Asset IDs
 hashes. It contains no pictures and sends nothing automatically.
 Read it before sharing; automatic redaction is not a substitute for checking the file.
 
+## Documents never ship
+
+A photographed ID card, passport, bank card, letter or form with readable personal text is
+held back on every tier, on purpose, including its OCR check against your own configured
+Immich server, never an outside service; see [picking a shot](../how-it-chooses/picking-shots.md)
+for how it's caught.
+
 ## Everything that can leave, and when
 
 The [network request inventory](reference/privacy-egress.md) keeps the complete egress table and

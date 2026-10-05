@@ -279,6 +279,53 @@ def test_the_config_names_where_the_import_looks_when_the_environment_does_not(
         set_config(None)
 
 
+def test_legacy_files_beside_a_custom_config_are_flagged_as_skipped(tmp_path, monkeypatch):
+    # legacy_home() still only reads $HOME unless import_from says otherwise (#2076); a
+    # --config user whose pre-store files sit beside their own config must be told they are
+    # skipped, not left to wonder why nothing imported.
+    from immich_memories.config_loader import load_config
+    from immich_memories.store.legacy_imports import legacy_import_skip_warning
+
+    monkeypatch.delenv(IMPORT_FROM_ENV, raising=False)
+    monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    config_dir = tmp_path / "other-library"
+    config_dir.mkdir()
+    (config_dir / "people.yaml").write_text("people: []\n")
+    config = load_config(config_dir / "config.yaml")
+
+    warning = legacy_import_skip_warning(config)
+
+    assert warning is not None
+    assert str(config_dir) in warning
+    assert "database.import_from" in warning
+
+
+def test_no_skip_warning_once_import_from_is_set(tmp_path, monkeypatch):
+    from immich_memories.config_loader import load_config
+    from immich_memories.store.legacy_imports import legacy_import_skip_warning
+
+    monkeypatch.delenv(IMPORT_FROM_ENV, raising=False)
+    monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    config_dir = tmp_path / "other-library"
+    config_dir.mkdir()
+    (config_dir / "people.yaml").write_text("people: []\n")
+    config = load_config(config_dir / "config.yaml")
+    config.database.import_from = str(config_dir)
+
+    assert legacy_import_skip_warning(config) is None
+
+
+def test_no_skip_warning_without_legacy_files(tmp_path, monkeypatch):
+    from immich_memories.config_loader import load_config
+    from immich_memories.store.legacy_imports import legacy_import_skip_warning
+
+    monkeypatch.delenv(IMPORT_FROM_ENV, raising=False)
+    monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    config = load_config(tmp_path / "other-library" / "config.yaml")
+
+    assert legacy_import_skip_warning(config) is None
+
+
 def test_verify_accepts_a_stricter_hold_and_names_a_looser_one(store, home):
     from immich_memories.db.tables import audience_holds
 

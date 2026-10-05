@@ -341,6 +341,9 @@ def create_app() -> FastAPI:
     session_secret = storage_secret()
     for warning in check_startup(config, os.environ, session_secret):
         logger.warning(warning)
+    from immich_memories.store_migration_notice import log_store_migration_warnings
+
+    log_store_migration_warnings(config)
     app = FastAPI(title="Immich Memories", lifespan=_lifespan, docs_url=None, redoc_url=None)
     app.state.session_secret = session_secret
     register_health_routes(app)

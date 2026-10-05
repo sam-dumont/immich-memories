@@ -22,6 +22,7 @@ from immich_memories.automation.system_scheduler import (
     generate_systemd_units,
     get_scheduler_status,
     install_scheduler,
+    resolve_disabled_launchd_label,
     show_scheduler_config,
     uninstall_scheduler,
 )
@@ -97,6 +98,17 @@ class TestGenerateLaunchdPlist:
         plist = generate_launchd_plist("/bin/im", log_dir=Path("/var/log/custom"))
         assert "/var/log/custom/auto.log" in plist
         assert "/var/log/custom/auto-error.log" in plist
+
+    def test_log_dir_follows_the_configs_own_directory_by_default(self, tmp_path: Path) -> None:
+        # launchd always runs with the real $HOME; a --config run must keep its own logs
+        # beside its config instead of leaking into ~/.immich-memories (#2076).
+        config_path = tmp_path / "other-library" / "config.yaml"
+
+        plist = generate_launchd_plist("/bin/im", config_path=config_path)
+
+        expected = tmp_path / "other-library" / "logs"
+        assert str(expected / "auto.log") in plist
+        assert str(expected / "auto-error.log") in plist
 
     def test_label(self) -> None:
         plist = generate_launchd_plist("/bin/im")
@@ -505,6 +517,73 @@ class TestStaleCheckoutRefusal:
             result = install_scheduler()
 
         assert str(launcher_shim) in result.activate_command
+
+
+class TestResolveDisabledLaunchdLabel:
+    """`auto install` must enable a label an earlier `launchctl disable` left behind (#2076)."""
+
+    def test_an_enabled_label_reports_nothing(self) -> None:
+        # WHY: launchctl print-disabled is the only boundary this function reads.
+        with patch("immich_memories.automation.system_scheduler.subprocess.run") as run:
+            run.return_value.returncode = 0
+            run.return_value.stdout = '\t"com.immich-memories.auto" => false\n'
+
+            note = resolve_disabled_launchd_label(uid=501)
+
+        assert note is None
+
+    def test_a_disabled_label_is_enabled_and_reported(self) -> None:
+        # WHY: print-disabled (read) and enable (write) are both launchctl subprocess calls.
+        with patch("immich_memories.automation.system_scheduler.subprocess.run") as run:
+
+            def _run(command: list[str], **_kwargs: object) -> object:
+                result = type("Result", (), {})()
+                if command[1] == "print-disabled":
+                    result.returncode = 0
+                    result.stdout = '\t"com.immich-memories.auto" => true\n'
+                else:
+                    result.returncode = 0
+                    result.stdout = ""
+                return result
+
+            run.side_effect = _run
+
+            note = resolve_disabled_launchd_label(uid=501)
+
+        assert note is not None
+        assert "re-enabled" in note
+        enable_call = run.call_args_list[1].args[0]
+        assert enable_call == ["launchctl", "enable", "gui/501/com.immich-memories.auto"]
+
+    def test_a_disabled_label_that_fails_to_enable_tells_the_operator_the_command(self) -> None:
+        with patch("immich_memories.automation.system_scheduler.subprocess.run") as run:
+
+            def _run(command: list[str], **_kwargs: object) -> object:
+                result = type("Result", (), {})()
+                result.returncode = 0 if command[1] == "print-disabled" else 1
+                result.stdout = (
+                    '\t"com.immich-memories.auto" => true\n'
+                    if (command[1] == "print-disabled")
+                    else ""
+                )
+                return result
+
+            run.side_effect = _run
+
+            note = resolve_disabled_launchd_label(uid=501)
+
+        assert note is not None
+        assert "launchctl enable gui/501/com.immich-memories.auto" in note
+
+    def test_an_unreadable_disabled_state_is_reported_without_guessing(self) -> None:
+        with patch(
+            "immich_memories.automation.system_scheduler.subprocess.run",
+            side_effect=OSError("launchctl not found"),
+        ):
+            note = resolve_disabled_launchd_label(uid=501)
+
+        assert note is not None
+        assert "Could not read" in note
 
 
 class TestUninstallScheduler:

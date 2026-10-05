@@ -52,13 +52,15 @@ def test_trip_click_reaches_media_resolver_after_normal_discovery(
 ):
     """Use the real trip handler and pipeline entry; replace only external inputs."""
     start = datetime(2031, 4, 8, 12, tzinfo=UTC)
+    # Ten minutes apart within a day: each photo is its own distinct shot (#2083),
+    # not a burst sharing one timestamp.
     photos = [
         Asset(
             id=f"photo-{day}-{index}",
             type="IMAGE",
-            fileCreatedAt=start + timedelta(days=day),
-            fileModifiedAt=start + timedelta(days=day),
-            updatedAt=start + timedelta(days=day),
+            fileCreatedAt=start + timedelta(days=day, minutes=10 * index),
+            fileModifiedAt=start + timedelta(days=day, minutes=10 * index),
+            updatedAt=start + timedelta(days=day, minutes=10 * index),
             exifInfo={"latitude": 45.0, "longitude": 8.0},
         )
         for day in range(12)

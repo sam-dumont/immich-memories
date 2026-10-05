@@ -14,6 +14,7 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from immich_memories.analysis.annotation_lines import AnnotationLineBatch
 from immich_memories.analysis.editorial_carrier_eligibility import excluded_carrier_sources
 from immich_memories.analysis.editorial_clip_frames import unusable_video
 from immich_memories.analysis.editorial_shareability import (
@@ -54,6 +55,7 @@ _CARRIER_RULES = {
     "face-close-up": "close-up of a face part",
     "medical-care": "medical care",
     "identical-grid": "sheet of identical portraits",
+    "personal-document": "a personal document",
 }
 _WHY = {
     "another file of the same picture": "the full-size file of the same picture plays instead",
@@ -65,6 +67,8 @@ _WHY = {
     "close-up of a face part": "a close-up of an eye or a mouth needs an explanation",
     "medical care": "an ailment or a care item on a person stays out",
     "sheet of identical portraits": "a sheet of ID photos is an identification document",
+    "a personal document": "a photographed ID, passport or document with readable personal "
+    "text is never a carrier",
     "video frames miss the subject": "its sampled frames often miss the subject; a starred "
     "video stays",
 }
@@ -159,6 +163,7 @@ def preview_rules(
     audience: str,
     preview_jpeg: Callable[[Asset], bytes | None] | None = None,
     missing: Sequence[str] = (),
+    client: object = None,
 ) -> RulePreview:
     """Ask the editor's rules about the pool's `sources`, as the run would before cutting.
 
@@ -166,7 +171,10 @@ def preview_rules(
     cached previews the run's copy check reads. `missing` are pool pictures Immich's timeline
     did not return, which the film never reads. Each picture counts under the first rule that
     drops it, in the run's order: source, screens, holds, carrier rules, then video frames.
+    `client`, when given, reads Immich's own OCR for the personal-document check (#2062).
     """
+    from immich_memories.analysis.editorial_document_ocr import document_ocr_port
+
     prepared = prepare_editorial_source(
         EditorialSelectionRequest(scope=scope),
         EditorialDependencies(source_fetcher=lambda _scope: sources, preview_jpeg=preview_jpeg),
@@ -179,12 +187,15 @@ def preview_rules(
     if readable:
         batch = readings.reader(prepared).lines_for(readable)
         lines = batch.as_mapping()
+        ocr_text_of = document_ocr_port(client)
         # Nothing banked to read: the run prepares these first, so no rule has checked them.
         unread = {line.asset_id for line in batch.lines if not line.description and not line.heads}
         unread.update(batch.missing_asset_ids)
+        # The OCR port stays out of this call: its personal-document reason surfaces
+        # distinctly through `_carrier_fates` below, not lumped into the screen bucket.
         _first(fates, dict.fromkeys(screen_document_rejections(batch), SCREENS))
         _first(fates, dict.fromkeys(_held(prepared, readings), HELD))
-        _first(fates, _carrier_fates(lines))
+        _first(fates, _carrier_fates(batch, ocr_text_of=ocr_text_of))
         _first(fates, dict.fromkeys(_frames_miss(prepared, lines), FRAMES))
     # In the run's order of rules; each rule's pictures in the pool's order.
     drops = [
@@ -230,10 +241,15 @@ def _held(prepared: PreparedEditorialSource, readings: AnnotationReadings) -> li
     return [str(unit["asset_id"]) for unit in excluded]
 
 
-def _carrier_fates(lines: Mapping[str, str]) -> dict[str, str]:
+def _carrier_fates(
+    batch: AnnotationLineBatch, *, ocr_text_of: Callable[[str, bool], str | None] | None = None
+) -> dict[str, str]:
+    lines = batch.as_mapping()
+    heads_of = {line.asset_id: dict(line.heads) for line in batch.lines}
+    excluded = excluded_carrier_sources(lines, heads_of=heads_of, ocr_text_of=ocr_text_of)
     return {
         asset_id: _CARRIER_RULES[reason]
-        for asset_id, reason in excluded_carrier_sources(lines).items()
+        for asset_id, reason in excluded.items()
         if reason in _CARRIER_RULES
     }
 

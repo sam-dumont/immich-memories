@@ -33,7 +33,7 @@ classifiers = [
 ]
 
 dependencies = [
-    "httpx>=0.27",
+    "httpx>=0.27,<1",  # 1.0 is still a dev line (no stable release); it drops TimeoutException (#2081)
     "pydantic>=2.0",
     "pydantic-settings>=2.14.2",
     "fastapi>=0.135",  # the server the web client talks to (#1395)
@@ -140,13 +140,16 @@ editorial-cuda = [
 all = [
     "immich-memories[music]",
     "immich-memories[auth]",
-    "immich-memories[demucs]",
+    # demucs pulls sphn, which has no manylinux aarch64 wheel; building it there needs
+    # Rust plus a C compiler. Skipped on that one platform; vocal separation degrades
+    # gracefully without it (#2081).
+    "immich-memories[demucs]; sys_platform != 'linux' or platform_machine != 'aarch64'",
     "immich-memories[editorial]",
 ]
 # All features for macOS (includes Apple Vision framework)
 all-mac = [
     "immich-memories[music]",
-    "immich-memories[demucs]",
+    "immich-memories[demucs]; sys_platform != 'linux' or platform_machine != 'aarch64'",
     "immich-memories[mac]",
     "immich-memories[editorial]",
 ]

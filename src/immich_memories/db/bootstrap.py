@@ -96,11 +96,55 @@ def normalize_url(raw: str) -> str:
     return url.render_as_string(hide_password=False)
 
 
+def _default_store_url() -> str:
+    """The SQLite file beside the loaded config, so a `--config PATH` run keeps its own store.
+
+    `DEFAULT_URL`'s literal `~/.immich-memories/store.db` is only the fallback for a bare
+    `StoreLocation`, or for `resolve_location()` called with no config loaded at all (the
+    module import, migration tooling). The default config path already resolves to
+    `~/.immich-memories`, so a run with no `--config` lands exactly there too (#2076).
+    """
+    from immich_memories.config_loader import config_state_dir
+
+    return f"sqlite:///{config_state_dir() / 'store.db'}"
+
+
+def store_relocation_warning(config: Config) -> str | None:
+    """Warn an upgrading `--config` user whose store moved out from under them (#2076).
+
+    Before this fix, every `--config` run's store was `~/.immich-memories/store.db`
+    regardless of which config it was. A config that never set `database.url` now gets its
+    own store beside itself (`resolve_location`); without this warning, a user who already
+    has history and banked facts under the old path would open what looks like an empty
+    store the first time they run with the fixed version, with no sign why. Returns a
+    message only in exactly that situation: no explicit `database.url`, the new and old
+    paths differ, the new one does not exist yet, and the old one does.
+    """
+    if config.database.url not in ("", DEFAULT_URL):
+        return None
+    new_path = resolve_location(config).sqlite_path
+    if new_path is None:
+        return None
+    old_path = StoreLocation(url=normalize_url(DEFAULT_URL)).sqlite_path
+    if old_path is None or new_path == old_path or new_path.exists() or not old_path.exists():
+        return None
+    return (
+        f"This config's store is now {new_path}, not the old {old_path}: existing run "
+        f"history and banked facts will not show up here. Keep using the old store by adding "
+        f"`database.url: sqlite:///{old_path}` to this config, or move it: "
+        f"`immich-memories store backup` against the old default, then `immich-memories "
+        f"--config <this config> store restore --from <the backup>` — or just copy the file "
+        f"to {new_path}."
+    )
+
+
 def resolve_location(config: Config | None = None) -> StoreLocation:
-    """The environment, then `config.yaml`'s `database:` section, then the default SQLite file.
+    """The environment, then `config.yaml`'s `database:` section, then the loaded config's own file.
 
     Without a config the loaded one is used. `~` is expanded on every call, so a test or a
-    container that moves HOME moves the default store with it.
+    container that moves HOME moves the default store with it. `config.database.url` still
+    holding its pydantic default (never set by the user) is not treated as explicit: the
+    default store instead follows the config that was loaded, not a hardcoded home path.
     """
     env_url, env_schema = os.environ.get(URL_ENV), os.environ.get(SCHEMA_ENV)
     if config is None and env_url and (env_schema or env_url.startswith("sqlite")):
@@ -111,6 +155,10 @@ def resolve_location(config: Config | None = None) -> StoreLocation:
         from immich_memories.config_loader import get_config
 
         config = get_config()
-    url = env_url or config.database.url or DEFAULT_URL
+    configured_url = config.database.url
+    url_from_config = (
+        _default_store_url() if configured_url in ("", DEFAULT_URL) else configured_url
+    )
+    url = env_url or url_from_config
     schema = env_schema or config.database.schema_name or DEFAULT_SCHEMA
     return StoreLocation(url=normalize_url(url), schema=schema)

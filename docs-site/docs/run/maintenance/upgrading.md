@@ -91,7 +91,16 @@ proxy, not an upgrade step. Originals are unchanged.
 ## Config compatibility
 
 Unknown fields inside a known section are ignored; invalid values or unknown top-level sections
-fail startup. A renamed setting can stop taking effect, so check the release notes.
+fail startup. A renamed setting can stop taking effect, so check the release notes. A key a
+release removed logs its deprecation reason at startup ("removed in #325; nothing read it",
+for example) instead of an unhelpful "unknown config key"; delete it once you've read why.
+
+Coming from 0.103.0 or earlier with `advanced.llm.base_url` or `model` set: add
+`advanced.llm.enabled: true`. Versions before this release ran the reader off that alone;
+now it also needs the explicit switch, and a config missing it logs a warning naming the
+fields it found so you don't lose model titles, music mood and model selection without
+noticing.
+
 The store upgrades its schema when opened. Keep a backup and its manifest from before an update;
 if you roll back the app, restore the matching backup rather than downgrading a live schema.
 Keep the app, inference image and render worker on matching version tags.

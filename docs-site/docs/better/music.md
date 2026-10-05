@@ -6,6 +6,8 @@ title: Generate a soundtrack
 
 Your film already gets music: a bundled track, or an audio file you choose. A generator makes an original track for the film’s mood and length. It is optional and off by default.
 
+Without a generator, a film longer than one bundled track plays a varied, crossfaded playlist from the mood's folder instead of looping a single track, and the bundled mix is mastered to the same level as a generated one.
+
 Choose the route for your machine:
 
 | Setup | Route |

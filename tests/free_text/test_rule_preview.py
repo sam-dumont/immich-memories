@@ -173,3 +173,55 @@ def test_pictures_not_prepared_yet_are_not_counted_as_passing() -> None:
     assert preview.lines()[0] == (
         "2 of 6 prepared pictures pass the rules checked before cutting; 3 not prepared yet"
     )
+
+
+class _FakeOcrClient:
+    """A stub Immich server. WHY: replaces a real Immich 2.2+ server for the OCR
+    port (#2062) -- no network, just the two read calls the port needs."""
+
+    def __init__(self, text_by_asset: dict[str, str]) -> None:
+        self._text = text_by_asset
+
+    def get_server_info(self):
+        from immich_memories.api.models import ServerInfo
+
+        return ServerInfo(major=2, minor=2, patch=0)
+
+    def get_asset_ocr_text(self, asset_id: str) -> str | None:
+        return self._text.get(asset_id)
+
+
+def test_a_personal_document_is_dropped_through_the_shared_ocr_port() -> None:
+    # No caption names a document; only Immich's own OCR, read through the client the
+    # preview is given, tells this photographed passport apart from an ordinary photo.
+    store = open_store()
+    card = _photo("card-1", 300)
+    add_rows(
+        store,
+        "descriptions",
+        _caption("card-1", "A document lies open on a desk"),
+    )
+    add_rows(
+        store,
+        "head_facts",
+        {
+            "asset_id": "card-1",
+            "head": "frame_kind",
+            "version": EDITORIAL.head_versions["frame_kind"],
+            "label": "meaningful_record",
+        },
+    )
+    window = DateRange(start=START, end=START + timedelta(days=1))
+    scope = library_source_scope(None, CONFIG, (window,), accept_any_provenance=True)
+    readings = AnnotationReadings(store=store, config=CONFIG, people={})
+
+    preview = preview_rules(
+        [card],
+        scope=scope,
+        readings=readings,
+        audience="family",
+        client=_FakeOcrClient({"card-1": "PASSPORT\nDate of birth: 02 JAN 1990"}),
+    )
+
+    dropped = {drop.rule: drop.asset_ids for drop in preview.drops}
+    assert dropped == {"a personal document": ("card-1",)}

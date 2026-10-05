@@ -40,7 +40,10 @@ export function nativeInstallCommand(version: string, extras: 'all' | 'all-mac')
   const spec = release.includes('-dev.')
     ? `immich-memories[${extras}] @ ${assetBase(version)}/immich_memories-${python}-py3-none-any.whl`
     : `immich-memories[${extras}]==${python}`;
-  return `uv tool install --python 3.12 --prerelease allow "${spec}"${extras === 'all-mac' ? ' --with laya-mlx' : ''}`;
+  // if-necessary-or-explicit: allow a prerelease only for this explicitly pinned package
+  // (an rc wheel). `allow` would let the whole resolve pick a prerelease anywhere in the
+  // dependency tree, e.g. httpx's 1.0 dev line.
+  return `uv tool install --python 3.12 --prerelease if-necessary-or-explicit "${spec}"${extras === 'all-mac' ? ' --with laya-mlx' : ''}`;
 }
 
 export function validateSetup(setup: Setup): string | null {

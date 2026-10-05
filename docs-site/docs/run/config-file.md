@@ -169,6 +169,17 @@ there. Environment variables override file paths.
 when moving a config between machines: blank uses the app's Python.
 [The reference](../reference/config-reference.md) lists model/cache path overrides.
 
+## Where the store and logs live
+
+Without a `database.url`, the run history store and the scheduler's log files (macOS) sit
+beside the config file that was loaded, not always under `~/.immich-memories`. A plain
+`immich-memories` run still gets `~/.immich-memories/store.db` and `~/.immich-memories/logs/`,
+since that is where the default config lives. `--config /path/to/other/config.yaml` gets
+`/path/to/other/store.db` and `/path/to/other/logs/` instead, so a second setup, a test library
+say, never mixes into the main one. Upgrading a `--config` run that already has history under
+the old path gets a startup warning and a `preflight` line naming both paths, with how to
+keep the old store (`database.url`) or move it (`store backup` / `store restore`).
+
 ## Environment variable substitution
 
 Use `${VAR_NAME}`, not `$VAR`. Substitution happens only in `config.yaml`, for [credentials and
@@ -228,8 +239,9 @@ Geocoding and map tiles are off by default. Enable them under `network` only aft
 ## Reader configuration changes before 1.0
 
 A model name or endpoint no longer enables the reader implicitly. Add
-`advanced.llm.enabled: true` to retain LLM calls. With it off, preflight warns when a reader is
-configured but disabled.
+`advanced.llm.enabled: true` to retain LLM calls. With it off, every config load logs a warning
+naming the reader fields it found, and `preflight` shows the same thing; model titles, music
+mood and model selection stay off until you add the switch.
 
 The separate title-model configuration has been removed without a compatibility fallback.
 Remove that old section and move its endpoint, model and credentials to `advanced.llm`.

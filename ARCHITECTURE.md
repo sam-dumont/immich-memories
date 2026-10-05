@@ -267,7 +267,30 @@ The separate model-planning route can read banked lines or use plain clip facts.
   which can only tighten it (`editorial_rule_banked_facts.py`).
 - **Carrier**: the picture admitted to carry one chosen moment of a funded story, if it is free,
   in context and spaced from the shots already committed (`editorial_story_carriers.py`,
-  `editorial_carrier_eligibility.py`). A carrier is a shot before it is rendered.
+  `editorial_carrier_eligibility.py`). A carrier is a shot before it is rendered. A photographed
+  ID card, passport or personal document is excluded on every tier (`personal_document` in
+  `editorial_carrier_eligibility.py`, shared with the screen/document gate,
+  `screen_document_rejections` in `editorial_source_gate.py`): a caption naming the document
+  excludes outright, and Immich's own OCR reading a personal-record field, a document title
+  word, an MRZ line, a Luhn/IBAN-checked number or a named gift voucher corroborates the frame
+  head otherwise. `document_ocr_port` (`editorial_document_ocr.py`) reads that OCR: a server
+  below 2.2, or a failed read, turns the signal off for the run rather than holding the library.
+  Its bulk keyword search is built from the same word tuples the content check reads
+  (`PERSONAL_RECORD_FIELD_WORDS`, `DOCUMENT_TITLE_WORDS` in `editorial_carrier_eligibility.py`)
+  so the two can't drift apart, runs against every configured account (not the primary's
+  alone), and narrows which assets pay for the expensive per-asset read; a candidate the frame
+  head already calls document-like is read anyway, since an MRZ line or a card number can't be
+  found by a keyword search. Every read is memoised per asset, shared across the material
+  build, a candidate refresh and the audience gate. Only an explicit owner pin exempts a
+  picture. The memory-worthy tier gate, the near-home test, the written-subject pool, chapter
+  assembly and the per-partition slot/depth caps live in `editorial_structure_framing.py`,
+  split out of `editorial_structure_planner.py`.
+  `CarrierAdmission` composes a `DepthFill` (`editorial_story_depth_fill.py`) for the pass after
+  pass 1/2: it spends what content-seconds budget is left on further distinct shots of the
+  moments a story already shows, round-robin across stories in funding order, and logs one
+  line and goes honestly short once distinct shots run out before the budget does. The split
+  is a `DepthFillHost` protocol, not a mixin: `DepthFill` reads and mutates the admission's own
+  state (carriers, places, lookalike, gate) through that contract.
 - **Picture admission**: `PictureAdmission` (`editorial_picture_admission.py`) owns the shared
   standing, audience, spacing and candidate repetition checks. Draft selection, thin swaps,
   audience replacements, duplicate refills and family seats use it. Later candidates acquire
@@ -620,6 +643,8 @@ src/immich_memories/
 │   ├── editorial_story_replacement_pool.py # What a freed slot refills from: the carrier's own moment, its
 │   │                               # story's unshown moments, then other stories' moments that never took a slot
 │   ├── editorial_story_depth.py     # A short film's free slots as verified-different frames inside shown moments
+│   ├── editorial_story_depth_fill.py # CarrierAdmission's depth pass, split out: spends content seconds on
+│   │                               # distinct shots round-robin across stories, goes short and logs when they run out
 │   ├── editorial_story_trim.py      # The allocation in reverse when the production budget is tighter
 │   ├── editorial_story_threads.py   # A recurring activity at one place is one story per era, if the reader agrees
 │   ├── editorial_same_kind.py       # No-model: dense same-label stories at one place in one partition share one story's depth
@@ -1111,7 +1136,10 @@ src/immich_memories/
 │   └── storage_report.py       # build_storage_report(): output + cache storage inventory (`runs storage`)
 │
 ├── planning/                   # Media-aware duration planning
-│   ├── auto_duration.py        # decide_memory_duration(): Auto length fitted to discovered media, CLI and UI
+│   ├── auto_duration.py        # decide_memory_duration(): Auto length fitted to discovered media, CLI and UI;
+│   │                           # a day's capacity is its distinct shots (`distinct_shots.py`), no flat per-day cap
+│   ├── distinct_shots.py       # is_new_shot()/distinct_shots(): the one rule for a further frame counting as
+│   │                           # its own shot, shared by auto_duration's capacity and the depth fill's admission
 │   └── memory_length.py        # default_duration_for_type(): the length a memory type asks for, one resolver for every surface
 │
 ├── config.py                   # YAML configuration management (re-exports)

@@ -6,8 +6,9 @@ from pathlib import Path
 
 import pytest
 
-from immich_memories.config_loader import Config
+from immich_memories.config_loader import Config, load_config
 from immich_memories.db import StoreLocation, redact_url, resolve_location
+from immich_memories.db.bootstrap import store_relocation_warning
 
 
 @pytest.fixture(autouse=True)
@@ -24,6 +25,87 @@ def test_unset_defaults_to_a_sqlite_file_under_the_current_home(monkeypatch, tmp
     assert location == StoreLocation(
         url=f"sqlite:///{tmp_path / '.immich-memories' / 'store.db'}", schema="immich_memories"
     )
+
+
+def test_a_custom_config_path_keeps_its_own_store_next_to_it(monkeypatch, tmp_path):
+    # launchd/systemd always run with the real $HOME; a `--config` run must not leak
+    # into ~/.immich-memories regardless of what $HOME is (#2076).
+    monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    config_path = tmp_path / "other-library" / "config.yaml"
+    config = load_config(config_path)
+
+    location = resolve_location(config)
+
+    assert location.sqlite_path == tmp_path / "other-library" / "store.db"
+
+
+def test_two_configs_in_two_directories_write_to_two_different_stores(tmp_path, monkeypatch):
+    monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    first_config = load_config(tmp_path / "library-a" / "config.yaml")
+    first_location = resolve_location(first_config)
+    second_config = load_config(tmp_path / "library-b" / "config.yaml")
+    second_location = resolve_location(second_config)
+
+    assert first_location.sqlite_path == tmp_path / "library-a" / "store.db"
+    assert second_location.sqlite_path == tmp_path / "library-b" / "store.db"
+    assert first_location.sqlite_path != second_location.sqlite_path
+
+
+def test_an_upgrading_config_user_is_warned_about_their_old_store(monkeypatch, tmp_path):
+    # Before #2076 every --config run's store was the home one; an upgrader who already has
+    # history there must be told, not land on what looks like an empty store.
+    monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    old_store = tmp_path / "home" / ".immich-memories" / "store.db"
+    old_store.parent.mkdir(parents=True)
+    old_store.write_text("")
+    config = load_config(tmp_path / "other-library" / "config.yaml")
+
+    warning = store_relocation_warning(config)
+
+    assert warning is not None
+    assert str(old_store) in warning
+    assert str(tmp_path / "other-library" / "store.db") in warning
+    assert "database.url" in warning
+
+
+def test_no_warning_when_the_new_store_already_exists(monkeypatch, tmp_path):
+    monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    old_store = tmp_path / "home" / ".immich-memories" / "store.db"
+    old_store.parent.mkdir(parents=True)
+    old_store.write_text("")
+    config = load_config(tmp_path / "other-library" / "config.yaml")
+    new_store = tmp_path / "other-library" / "store.db"
+    new_store.parent.mkdir(parents=True)
+    new_store.write_text("")
+
+    assert store_relocation_warning(config) is None
+
+
+def test_no_warning_when_there_is_no_old_store_to_lose(monkeypatch, tmp_path):
+    monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    config = load_config(tmp_path / "other-library" / "config.yaml")
+
+    assert store_relocation_warning(config) is None
+
+
+def test_no_warning_for_the_default_config_path(monkeypatch, tmp_path):
+    monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    old_store = tmp_path / "home" / ".immich-memories" / "store.db"
+    old_store.parent.mkdir(parents=True)
+    old_store.write_text("")
+
+    assert store_relocation_warning(Config()) is None
+
+
+def test_no_warning_when_database_url_is_set_explicitly(monkeypatch, tmp_path):
+    monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    old_store = tmp_path / "home" / ".immich-memories" / "store.db"
+    old_store.parent.mkdir(parents=True)
+    old_store.write_text("")
+    config = load_config(tmp_path / "other-library" / "config.yaml")
+    config.database.url = f"sqlite:///{tmp_path / 'other-library' / 'store.db'}"
+
+    assert store_relocation_warning(config) is None
 
 
 def test_config_yaml_names_the_database():

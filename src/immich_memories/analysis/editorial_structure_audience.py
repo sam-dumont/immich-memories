@@ -9,7 +9,7 @@ refusal.
 from __future__ import annotations
 
 import json
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Collection, Mapping, Sequence
 from functools import partial
 from pathlib import Path
 from typing import Any
@@ -217,6 +217,8 @@ class AudienceGate:
         activity_reader: Callable[[Mapping[str, tuple[Sequence[str], bool]]], dict[str, str]]
         | None = None,
         prepare_candidates: Callable[[Sequence[Mapping[str, Any]]], None] | None = None,
+        ocr_text_of: Callable[[str, bool], str | None] | None = None,
+        protected: Collection[str] = (),
     ) -> None:
         self._prepare_candidates = prepare_candidates
         self._judge = judge
@@ -226,6 +228,8 @@ class AudienceGate:
         self._annotations = annotations
         self._flag_rows = flag_rows
         self._lines = lines
+        self._ocr_text_of = ocr_text_of
+        self._protected = protected
         self._chains = chains if chains is not None else {}
         self._companion_heads = companion_heads if companion_heads is not None else {}
         self._bank_path = bank_path
@@ -390,8 +394,16 @@ class AudienceGate:
         """The carrier rule's refusal if one applies, and the evidence the audience question is
         asked on."""
         self.prepare([u])
+        members = _share.unit_members(u)
         excluded = excluded_carrier_sources(
-            {member: self._lines.get(member, "") for member in _share.unit_members(u)}
+            {member: self._lines.get(member, "") for member in members},
+            heads_of={
+                member: dict(self._annotations[member].heads)
+                for member in members
+                if member in self._annotations
+            },
+            ocr_text_of=self._ocr_text_of,
+            protected=self._protected,
         )
         observed_reason = next(iter(excluded.items()), None)
         evidence = _share.evidence_for_unit(
