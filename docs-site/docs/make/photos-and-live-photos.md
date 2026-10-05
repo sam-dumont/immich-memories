@@ -13,6 +13,8 @@ Photos and videos share one cut. A selected still gets a gentle zoom and pan; a 
 
 The pan moves toward the largest face Immich recognised, or toward the centre when there is none. Rendering does not run another face detector.
 
+If you crop, rotate or mirror a photo in Immich's own editor, the film uses that edited version, not the untouched original. An edited HDR photo comes out in SDR: Immich's editor does not carry the gain map over.
+
 Clips keep their whole frame. For a landscape clip in a portrait film, choose **Blurred background** or **Fit with bars** under **Scaling Mode**. Neither crops your subject.
 
 To make a video-only film, untick **Include photos** under **Length and pictures**, pass `--no-photos` on the CLI, or set `photos.enabled: false` in YAML.

@@ -135,7 +135,7 @@ def test_the_pipeline_caps_the_source_at_1_5x_output(monkeypatch, tmp_path) -> N
     monkeypatch.setattr(photo_pipeline, "prepare_photo_source", spy_prepare)
     from unittest.mock import MagicMock
 
-    asset = MagicMock(id="a1", original_file_name="p.jpg")
+    asset = MagicMock(id="a1", original_file_name="p.jpg", is_edited=False)
     import contextlib
 
     with contextlib.suppress(RuntimeError):

@@ -169,9 +169,14 @@ class AccessBoundClient(SyncImmichClient):
             asset_id, lambda client: SyncImmichClient.get_asset_ocr_text(client, asset_id)
         )
 
-    def get_asset_thumbnail(self, asset_id: str, size: str = "preview") -> bytes:
+    def get_asset_thumbnail(
+        self, asset_id: str, size: str = "preview", *, edited: bool = False
+    ) -> bytes:
         return self._routed(
-            asset_id, lambda client: SyncImmichClient.get_asset_thumbnail(client, asset_id, size)
+            asset_id,
+            lambda client: SyncImmichClient.get_asset_thumbnail(
+                client, asset_id, size, edited=edited
+            ),
         )
 
     def get_video_playback(self, asset_id: str) -> bytes:
@@ -194,12 +199,21 @@ class AccessBoundClient(SyncImmichClient):
         )
 
     def download_asset(
-        self, asset_id: str, output_path: Path, *, expected_size_bytes: int | None = None
+        self,
+        asset_id: str,
+        output_path: Path,
+        *,
+        expected_size_bytes: int | None = None,
+        edited: bool = False,
     ) -> Path:
         return self._routed(
             asset_id,
             lambda client: SyncImmichClient.download_asset(
-                client, asset_id, output_path, expected_size_bytes=expected_size_bytes
+                client,
+                asset_id,
+                output_path,
+                expected_size_bytes=expected_size_bytes,
+                edited=edited,
             ),
         )
 

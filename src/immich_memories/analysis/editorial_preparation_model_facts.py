@@ -75,7 +75,11 @@ class ModelFactStage(Protocol):
     ) -> None: ...
 
     def previews(
-        self, ids: Sequence[str], cache_path: Path, fetch_preview: Any
+        self,
+        ids: Sequence[str],
+        cache_path: Path,
+        fetch_preview: Any,
+        edited_by_id: Mapping[str, bool] | None = None,
     ) -> tuple[dict[str, Path], list[str]]: ...
 
     @property

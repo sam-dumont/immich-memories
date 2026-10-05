@@ -79,11 +79,20 @@ def run_preparation(
     thumbnail_cache.begin_run()
     collected = active()
     clock = ProducerClock(spans=collected.spans if collected else None)
+    # Preview reads here only ever see an asset id, not the asset itself (#2114):
+    # built once per batch, so an edited picture's preview still asks for its
+    # edited render.
+    edited_by_id = {asset.id: asset.is_edited for asset in assets}
 
     def report(producer: str, done: int, total: int) -> None:
         clock.report(producer, done, total)
         if progress:
             progress(producer, done, total)
+
+    def fetch_preview(asset_id: str) -> bytes:
+        return client.get_asset_thumbnail(
+            asset_id, size="preview", edited=edited_by_id.get(asset_id, False)
+        )
 
     result = prepare_editorial_annotations(
         assets=assets,
@@ -96,7 +105,7 @@ def run_preparation(
         llm_config=config.llm,
         description_model=config.editorial.description_model,
         pixel_producer_key=config.editorial.pixel_producer_key,
-        fetch_preview=lambda asset_id: client.get_asset_thumbnail(asset_id, size="preview"),
+        fetch_preview=fetch_preview,
         fetch_faces=lambda asset_id: face_boxes_of(client.get_asset_faces(asset_id)),
         read_playback=client.get_video_playback_range,
         progress=report,

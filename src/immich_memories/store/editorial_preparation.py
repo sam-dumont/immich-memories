@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import math
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from contextlib import suppress
 from datetime import UTC, datetime
 from typing import Any
@@ -26,7 +26,9 @@ from immich_memories.db import Store, now_db, to_db
 from immich_memories.db.tables import (
     annotation_assets,
     asset_people,
+    caption_provenance,
     description_fields,
+    description_unavailable,
     descriptions,
     face_boxes,
     face_reads,
@@ -143,7 +145,68 @@ def _asset_row(asset: Asset) -> dict[str, Any]:
         },
         "live_photo_video_id": asset.live_photo_video_id,
         "duration_seconds": asset.duration_seconds,
+        "is_edited": asset.is_edited,
     }
+
+
+def edited_mismatch_ids(store: Store, assets: Sequence[Asset]) -> frozenset[str]:
+    """Which of these assets' edit state differs from what was last banked here.
+
+    Call before `remember_assets` overwrites the stored row: a picture edited in
+    Immich's own editor since it was last prepared had its pixel facts, heads,
+    captions and faces read from the unedited render, and none of those are keyed
+    by anything else that would change when only the edit does.
+    """
+    ids = [asset.id for asset in assets]
+    if not ids:
+        return frozenset()
+    current = {asset.id: asset.is_edited for asset in assets}
+    stored: dict[str, bool] = {}
+    with store.connect() as connection:
+        for chunk in in_chunks(connection, ids):
+            stored.update(
+                (str(asset_id), bool(is_edited))
+                for asset_id, is_edited in connection.execute(
+                    sa.select(annotation_assets.c.asset_id, annotation_assets.c.is_edited).where(
+                        id_in(connection, annotation_assets.c.asset_id, chunk)
+                    )
+                )
+            )
+    return frozenset(
+        asset_id for asset_id, edited in current.items() if stored.get(asset_id, False) != edited
+    )
+
+
+# Immutable once written -- captions in particular refuse to be recaptured over an
+# existing row (`conflicting_caption_ids`) -- so a flipped edit state has to clear these
+# before the producers run again, not merely be reported as missing.
+_FLIPPED_EDIT_TABLES = (
+    descriptions,
+    description_fields,
+    description_unavailable,
+    pixel_facts,
+    head_facts,
+)
+
+
+def forget_edited_facts(store: Store, asset_ids: Iterable[str]) -> None:
+    """Clear a picture's pixel, head and caption rows: Immich's editor changed it since
+    they were last read, and every one of them read the unedited render (#2114).
+
+    Caption provenance is cleared with its row so a recaptured description is not
+    misread as carried from an earlier server. Face geometry is not touched here: the
+    caller re-reads it unconditionally and `remember_faces` replaces a picture's rows
+    outright, so clearing them first would only cost an extra round trip.
+    """
+    ids = list(dict.fromkeys(asset_ids))
+    if not ids:
+        return
+    with store.begin() as connection:
+        for chunk in in_chunks(connection, ids):
+            for table in (*_FLIPPED_EDIT_TABLES, caption_provenance):
+                connection.execute(
+                    sa.delete(table).where(id_in(connection, table.c.asset_id, chunk))
+                )
 
 
 def _people_rows(asset: Asset, timestamp: datetime) -> list[dict[str, Any]]:
