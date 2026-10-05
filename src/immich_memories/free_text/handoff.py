@@ -14,7 +14,7 @@ from datetime import date
 from typing import Literal
 
 from immich_memories.free_text.linking import Reason
-from immich_memories.free_text.pool import NOT_POSSIBLE
+from immich_memories.free_text.pool import NEEDS_PREPARATION, NOT_POSSIBLE
 from immich_memories.free_text.pool_questions import tally
 from immich_memories.free_text.reading import Asker, choose
 from immich_memories.free_text.translate import Ask
@@ -75,6 +75,8 @@ def film_for(
     One single occasion with a day, found by its pictures or dated by the request, is that
     special day; the model picks between the occasions the catalogue holds on it. Otherwise
     a pool the library can show is the film's whole reach, and "not possible" is no film.
+    A window a caption-dependent request still needs prepared is "needs preparation": not
+    yet known either way, and never reported as "not possible" (#2045).
     """
     pool = ask.pool
     one_day = _one_day(ask, asker)
@@ -83,6 +85,8 @@ def film_for(
         return _special_day(ask.request, day, why, events_on(day), asker)
     if pool.verdict == NOT_POSSIBLE:
         return Film("none", Reason("", "not possible: no film", pool.why))
+    if pool.verdict == NEEDS_PREPARATION:
+        return Film("none", Reason("", "needs preparation: no film yet", pool.why))
     return Film(
         "pool",
         Reason("", "the pool is the film's whole reach", f"{len(pool.pictures)} pictures"),

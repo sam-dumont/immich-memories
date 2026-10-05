@@ -53,6 +53,9 @@ _PHOTOGRAPH = frozenset({None, "photograph"})
 _AT_HOMES = frozenset({"home", "home_at_time", "near_home"})
 
 POSSIBLE, THIN, NOT_POSSIBLE = "possible", "thin", "not possible"
+# A caption-dependent request whose window still needs preparing (#2045): never answered
+# as "not possible" -- the pool itself is simply not known yet.
+NEEDS_PREPARATION = "needs preparation"
 
 
 @dataclass(frozen=True)
@@ -82,7 +85,8 @@ class Pool:
 
     pictures: tuple[LibraryPicture, ...]
     funnel: tuple[Step, ...]
-    # "possible", "thin" (a short film) or "not possible" (no film).
+    # "possible", "thin" (a short film), "not possible" (no film) or "needs preparation"
+    # (a caption-dependent request on an unprepared window: not yet known either way).
     verdict: str
     why: str
     # The request asks for one single occasion: the special-day product films it.

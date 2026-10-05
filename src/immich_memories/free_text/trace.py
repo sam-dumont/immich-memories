@@ -15,6 +15,7 @@ from immich_memories.free_text.handoff import Film
 from immich_memories.free_text.library import LibraryPerson
 from immich_memories.free_text.linking import Reason
 from immich_memories.free_text.pool import Translation
+from immich_memories.free_text.preparation import Notice
 from immich_memories.free_text.reading import PARTS, Reading, words_of
 from immich_memories.free_text.rule_preview import RulePreview
 from immich_memories.free_text.translate import Ask
@@ -66,9 +67,12 @@ def pool_counts(ask: Ask) -> dict[str, int]:
     return {"pictures": len(pictures), "photos": len(pictures) - videos, "videos": videos}
 
 
-def trace_record(ask: Ask, film: Film, rules: RulePreview | None = None) -> dict[str, object]:
+def trace_record(
+    ask: Ask, film: Film, rules: RulePreview | None = None, *, preparation: Notice | None = None
+) -> dict[str, object]:
     """The trace as data for a watcher such as the web client: the parts, the pool, the rule
-    preview, the verdict."""
+    preview, the verdict. `preparation` is the warning a preview shows before any picture is
+    prepared (#2045); it is None when the window needed nothing done."""
     blocks = trace_blocks(ask, film=film, rules=rules)
     return {
         "request": ask.request,
@@ -78,6 +82,15 @@ def trace_record(ask: Ask, film: Film, rules: RulePreview | None = None) -> dict
         "verdict": ask.pool.verdict,
         "why": ask.pool.why,
         "film": {"route": film.route, "line": film.line(), "outcome": film.reason.outcome},
+        "preparation": (
+            {
+                "pictures": preparation.pictures,
+                "estimated_seconds": preparation.estimated_seconds,
+                "message": preparation.message,
+            }
+            if preparation
+            else None
+        ),
     }
 
 
