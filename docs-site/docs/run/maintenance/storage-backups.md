@@ -53,6 +53,8 @@ PostgreSQL needs `pg_dump` on `PATH`, at least as new as the server; the image i
 
 Stop the UI, timers and workers first. `--force` replaces an existing store: use the backup you intend
 and keep a copy of the current state. Restore with the release that made the backup when rolling back.
+A corrupt or truncated backup is caught before anything is replaced, so the existing store is left
+exactly as it was and the command exits with a clear error instead of a traceback.
 
 Python, after stopping the app:
 
