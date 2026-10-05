@@ -181,6 +181,22 @@ _INFLECTED_ADMIN_PREFIXES = (
     "периферийная единица ",  # Russian: regional unit
     "периферия ",  # Russian: region
 )
+# Latvian (novads, pagasts), Lithuanian (savivaldybė, seniūnija) and Finnish (kunta,
+# kaupunki) admin words sit in the same table in Nominatim's data, but unlike Estonian's,
+# the name in front of them is genitive, not nominative: "Helsingin kaupunki" ->
+# "Helsingin" is "of Helsinki", not "Helsinki" (#1971 rejected the same genitive-fragment
+# outcome for Greek). Treated the same way as `_INFLECTED_ADMIN_PREFIXES`: the whole label
+# names nothing at this scale, so a caller falls back to a nominative name it already has
+# -- Immich's own `exif.city`, which GeoNames always gives in the nominative with no admin
+# word ("Helsinki", "Saue"), never a hand-written genitive-to-nominative table (#2074).
+_INFLECTED_ADMIN_SUFFIXES = (
+    " novads",
+    " pagasts",
+    " savivaldybė",
+    " seniūnija",
+    " kunta",
+    " kaupunki",
+)
 _ADMIN_SUFFIXES = (
     " regional unit",
     " municipal unit",
@@ -203,12 +219,6 @@ _ADMIN_SUFFIXES = (
     " maakond",
     " valla",  # genitive of "vald", as Nominatim sometimes answers
     " linna",  # genitive of "linn", as Nominatim sometimes answers
-    # Latvian (novads, pagasts), Lithuanian (savivaldybė, seniūnija) and Finnish
-    # (kunta, kaupunki) admin words sit in the same table in Nominatim's data, but
-    # unlike Estonian's, the name in front of them is genitive, not nominative:
-    # "Helsingin kaupunki" -> "Helsingin" is "of Helsinki", not "Helsinki" (#1971
-    # rejected the same genitive-fragment outcome for Greek). Left alone until a
-    # genitive-to-nominative mapping exists for those languages.
 )
 
 # How "A and B" is joined in each title language.
@@ -245,11 +255,14 @@ def _stripped(label: str) -> str | None:
     "Municipality of Platanias" -> "Platanias" (the boilerplate word is dropped; the
     town's own script and spelling are not touched). None when the label is an admin
     word followed by an inflected place name that cannot be safely un-inflected
-    ("Δήμος Πλατανιά"): that is not a name, it names nothing at this scale.
+    ("Δήμος Πλατανιά", "Helsingin kaupunki"): that is not a name, it names nothing at
+    this scale.
     """
     name = _first_alternate(label.strip())
     folded = name.casefold()
     if any(folded.startswith(prefix) for prefix in _INFLECTED_ADMIN_PREFIXES):
+        return None
+    if any(folded.endswith(suffix) for suffix in _INFLECTED_ADMIN_SUFFIXES):
         return None
     for prefix in _ADMIN_PREFIXES:
         if folded.startswith(prefix):
@@ -292,9 +305,9 @@ def degraded_locality_name(label: str | None) -> str | None:
     The owner's ruling: the native name in its correct (nominative) form when the data
     has it -- that is `locality_name` -- otherwise the admin word dropped from an
     inflected construction anyway, even though what remains is declined ("Δήμος
-    Πλατανιά" -> "Πλατανιά"). A slightly-off name beats no name; callers try this only
-    after `locality_name` and a better-known name (Immich's own, a cluster's own
-    members) have both failed.
+    Πλατανιά" -> "Πλατανιά", "Helsingin kaupunki" -> "Helsingin"). A slightly-off name
+    beats no name; callers try this only after `locality_name` and a better-known name
+    (Immich's own, a cluster's own members) have both failed.
     """
     if not label:
         return None
@@ -303,6 +316,9 @@ def degraded_locality_name(label: str | None) -> str | None:
     for prefix in _INFLECTED_ADMIN_PREFIXES:
         if folded.startswith(prefix):
             return name[len(prefix) :]
+    for suffix in _INFLECTED_ADMIN_SUFFIXES:
+        if folded.endswith(suffix):
+            return name[: -len(suffix)]
     return locality_name(label)
 
 

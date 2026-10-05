@@ -10,6 +10,7 @@ from immich_memories.analysis.editorial_rule_reader import RuleStructureReader
 from immich_memories.analysis.editorial_standing_facts import (
     carries_nothing,
     disqualifies_as_lone_carrier,
+    names_a_person,
     names_someone_alive,
 )
 
@@ -237,3 +238,24 @@ def test_the_rules_reader_takes_a_picture_with_no_face_in_a_library_whose_faces_
     reader.source.assets["b"] = face_elsewhere
 
     assert reader.standing("a") == 0
+
+
+@pytest.mark.parametrize(
+    "caption",
+    [
+        "A skier races down the mountain.",
+        "Two players shake hands after the match.",
+        "An elderly lady feeds the pigeons.",
+        "A hiker reaches the summit at sunset.",
+        "The grandmother reads to her grandchildren.",
+        "A group of teens wait at the bus stop.",
+    ],
+)
+def test_names_a_person_reuses_the_curated_caption_words(caption):
+    """#2079: the small hand-written list missed common caption words (skier, player, lady…)
+    that the curated `free_text/caption_words.PERSON_WORDS` already covers."""
+    assert names_a_person(caption)
+
+
+def test_names_a_person_still_rejects_a_likeness():
+    assert not names_a_person("A statue of a man stands in the square.")
