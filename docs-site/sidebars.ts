@@ -111,7 +111,7 @@ const sidebars: SidebarsConfig = {
       type: 'category', label: 'Contribute',
       items: [
         'contribute/development-setup', 'contribute/architecture', 'contribute/testing',
-        'contribute/ci', 'contribute/releasing', 'contribute/demo-assets',
+        'contribute/ci', 'contribute/releasing', 'contribute/writing-docs', 'contribute/demo-assets',
         'contribute/code-of-conduct',
       ],
     },

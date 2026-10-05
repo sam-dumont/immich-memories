@@ -293,10 +293,26 @@ tests/integration/
   - Privacy (anything that can leave the network) → `docs-site/docs/run/privacy.md`
   - Hardware encoding → `docs-site/docs/run/hardware.md`
   - Optional add-ons (reader, captions, inference service, render worker, generated music) → `docs-site/docs/better/`
-  - Dated measurements → `docs-site/docs/better/measured.md` (the only page with dates)
+  - Measurements → `docs-site/docs/better/measured.md` (release + hardware, no calendar dates)
   - First run → `docs-site/docs/get-started/`
   - Reference (all flags/config, FAQ, troubleshooting) → `docs-site/docs/reference/`
 - After structural changes, also update `docs-site/sidebars.ts` if new pages were added.
+
+### Writing the docs (owner rules, read before any docs change)
+
+The full rules are in `docs-site/docs/contribute/writing-docs.md`. The short version:
+
+- **Useful to the reader of that layer, or cut.** README, Welcome, Get started, Make, How it
+  chooses, Run, Better, Reference, Help, How this was built and Contribute each have one reader;
+  the page table in `writing-docs.md` says what belongs where.
+- **No internal detail on public pages:** no issue/PR numbers, commit hashes, calendar dates,
+  "added in / since / used to / no longer" history. Dates live only on *How this was built*;
+  `measured.md` names the release and hardware. These are for internal LLM use, not readers.
+- **Known limitations = lasting limits only.** Never list open issues; link the tracker.
+- **Real diagrams, drawn from the code:** architecture, deployment per install path, sequence
+  for flows, decision charts for choices, state diagrams for lifecycles. Not flowcharts for
+  everything.
+- **Voice:** load the `sams-voice:sams-voice` skill before writing any public text.
 
 ### Makefile Is The Single Source of Truth
 
