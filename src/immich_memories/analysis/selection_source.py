@@ -28,7 +28,7 @@ from immich_memories.analysis.editorial_contracts import (
     TraceDecision,
 )
 from immich_memories.analysis.exact_copies import CopyGroup, FoldedPool, fold_exact_copies
-from immich_memories.analysis.picture_copies import picture_copies, starred_keepers
+from immich_memories.analysis.picture_copies import group_members, picture_copies, starred_keepers
 from immich_memories.analysis.selection_source_groups import (
     EditorialGroup,
     _build_moment_groups_within,
@@ -239,6 +239,7 @@ def prepare_editorial_source(
         hash_of=_preview_hash(dependencies.preview_jpeg),
     )
     starred = starred_keepers(copies, (asset_of(source) for source in sources))
+    group_ids = group_members(copies)
     sources = tuple(
         _with_favourite(source, True) if asset_id_of(source) in starred else source
         for source in sources
@@ -247,7 +248,7 @@ def prepare_editorial_source(
         (
             source,
             _source_exclusion_reason(
-                source, request, dependencies, excluded, components, generated, copies
+                source, request, dependencies, excluded, components, generated, copies, group_ids
             ),
         )
         for source in sources

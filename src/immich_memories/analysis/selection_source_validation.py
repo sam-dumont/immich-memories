@@ -50,11 +50,12 @@ def _source_exclusion_reason(
     components: frozenset[str],
     generated: frozenset[str],
     copies: Mapping[str, Asset],
+    group_ids: Mapping[str, frozenset[str]],
 ) -> str | None:
     clip = source if isinstance(source, VideoClipInfo) else None
     asset = asset_of(source)
     reason = _identity_exclusion_reason(
-        asset, request, owner_exclusions, components, generated, copies
+        asset, request, owner_exclusions, components, generated, copies, group_ids
     )
     if reason is None:
         reason = _provenance_exclusion_reason(asset, clip, request.scope)
@@ -107,10 +108,15 @@ def _identity_exclusion_reason(
     components: frozenset[str],
     generated: frozenset[str],
     copies: Mapping[str, Asset],
+    group_ids: Mapping[str, frozenset[str]],
 ) -> str | None:
     """Facts about this asset: who asked for it, who refused it, and whether it is a copy."""
-    if request.scope.asset_ids is not None and asset.id not in request.scope.asset_ids:
-        return "outside exact asset membership"
+    if request.scope.asset_ids is not None:
+        # An edit re-upload can change which file of a picture is kept; a membership ask that
+        # named one file of it meant the picture, so any file of the same picture qualifies.
+        same_picture = group_ids.get(asset.id, frozenset((asset.id,)))
+        if same_picture.isdisjoint(request.scope.asset_ids):
+            return "outside exact asset membership"
     if not request.scope.include_off_timeline and not_on_the_timeline(asset):
         return "not on the timeline"
     if asset.id in owner_exclusions:
