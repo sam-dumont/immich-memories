@@ -58,7 +58,10 @@ def validate_final_duration(
     plan = params.timeline_plan
     if (
         plan is not None
-        and plan.divider_policy == "all"
+        # WHY: a capped plan still spends divider_duration * max_dividers on top
+        # of the plain target, same as "all" — the soft max must cover it too,
+        # or a capped year film trips the hard-limit check on its own dividers (#2075).
+        and plan.divider_policy in ("all", "capped")
         and plan.eligible_dividers > 0
         and plan.soft_max_duration is not None
     ):

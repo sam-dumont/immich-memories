@@ -218,10 +218,14 @@ class TitleDividerPlanner:
         if progress_callback:
             progress_callback(0.05, "Generating month dividers...")
 
-        limit = _divider_limit(self._title_settings)
-        planned_changes = month_changes
-        if limit is not None:
-            planned_changes = month_changes[1 : limit + 1]
+        included = getattr(self._title_settings, "included_month_dividers", None)
+        if included is not None:
+            # WHY: the budget already picked the heaviest months that fit (#2075);
+            # render exactly those rather than re-deriving a positional slice here.
+            planned_changes = [c for c in month_changes if (c[2], c[1]) in included]
+        else:
+            limit = _divider_limit(self._title_settings)
+            planned_changes = month_changes if limit is None else month_changes[1 : limit + 1]
 
         for _, month, year in planned_changes:
             key = (year, month)

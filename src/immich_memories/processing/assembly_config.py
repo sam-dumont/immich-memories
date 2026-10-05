@@ -88,6 +88,10 @@ class TitleScreenSettings:
     month_divider_threshold: int = 2  # Minimum clips in a month to show divider
     divider_mode: str = "month"  # "none", "month", or "year"
     max_dividers: int | None = None  # Timeline-plan cap; None preserves standalone behavior
+    # The exact (year, month) dividers the budget chose when it capped the eligible
+    # set (the heaviest months, kept in order). None preserves standalone behavior:
+    # the planner falls back to max_dividers' positional slice.
+    included_month_dividers: frozenset[tuple[int, int]] | None = None
     show_ending_screen: bool = True
     use_first_name_only: bool = True  # Use only first name for titles
     # Title background style: "content_backed" (slow-mo blur from clip) or

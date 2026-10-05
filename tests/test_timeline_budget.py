@@ -101,6 +101,46 @@ def test_a_tight_budget_keeps_a_chronological_subset_of_month_dividers() -> None
     assert final.max_dividers == 4
     assert 0 < final.max_dividers < final.eligible_dividers
     assert final.title_budget == pytest.approx(15.5)
+    # Tied clip counts (one clip per month): the earlier months keep their divider.
+    assert final.divider_month_keys == ((2026, 3), (2026, 4), (2026, 5), (2026, 6))
+
+
+def test_a_capped_budget_keeps_the_heaviest_months_not_the_earliest() -> None:
+    """#2075: the budget and the renderer must agree on WHICH months survive a cap."""
+    from immich_memories.processing.timeline_budget import (
+        finalize_selected_timeline,
+        plan_timeline,
+    )
+
+    clips = [_clip("jan", "2026-01-05")]
+    # 11 eligible months (Feb-Dec); March/May/July/Sept/Nov are the heaviest.
+    for month in range(2, 13):
+        count = 5 if month in (3, 5, 7, 9, 11) else 1
+        clips.extend(
+            _clip(f"m{month}-{index}", f"2026-{month:02d}-{(index % 27) + 1:02d}")
+            for index in range(count)
+        )
+    titles = _titles(ending_duration=4.0)
+
+    final = finalize_selected_timeline(
+        plan_timeline(clips, titles, 60.0, "person_spotlight"),
+        clips,
+        selected_duration=63.0,
+        title_settings=titles,
+        memory_type="person_spotlight",
+    )
+
+    assert final.divider_policy == "capped"
+    assert final.eligible_dividers == 11
+    assert final.max_dividers == 5
+    # The 5 heaviest months, in chronological order — not the first 5 (Feb-Jun).
+    assert final.divider_month_keys == (
+        (2026, 3),
+        (2026, 5),
+        (2026, 7),
+        (2026, 9),
+        (2026, 11),
+    )
 
 
 def test_a_budget_too_small_for_even_one_month_divider_logs_once(

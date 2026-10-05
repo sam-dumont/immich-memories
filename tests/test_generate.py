@@ -1018,6 +1018,31 @@ class TestDurationBudgetTolerance:
         with pytest.raises(GenerationError, match="duration budget"):
             _validate_final_duration(self._params(tmp_path, 100.0), 130.0)
 
+    def test_a_capped_divider_plan_gets_the_same_soft_max_as_all(self, tmp_path: Path) -> None:
+        """#2075: a capped month-divider plan still spends divider time on top of target."""
+        from dataclasses import replace
+
+        from immich_memories.processing.timeline_budget import TimelinePlan
+
+        # 3 of 5 eligible month dividers fit (2s each): soft max is 100 + 5*2 = 110.
+        plan = TimelinePlan(
+            target_duration=100.0,
+            content_budget=80.0,
+            title_budget=20.0,
+            title_duration=3.5,
+            ending_duration=4.0,
+            divider_duration=2.0,
+            max_dividers=3,
+            divider_policy="capped",
+            eligible_dividers=5,
+            soft_max_duration=110.0,
+        )
+        params = replace(self._params(tmp_path, 100.0), timeline_plan=plan)
+
+        # 106s spends the capped plan's 3 dividers (6s) on top of the 100s target,
+        # well inside the 110s soft max a plain target-based budget would reject.
+        assert _validate_final_duration(params, 106.0) is None
+
 
 class TestBirthdayFlagNamesTheWindowItRenders:
     """The bare --birthday flag resolves the window after the file was named."""
