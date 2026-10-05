@@ -84,7 +84,7 @@ _REMOVED_TOP_LEVEL_SECTIONS = {
 }
 
 _WENT_WITH_THE_SCORER = "went with the legacy clip scorer; story-first selection never read it"
-_REMOVED_IN_325 = "removed in #325; nothing read it"
+_REMOVED_IN_325 = "nothing read it; remove it from your config"
 
 # Keys that went with the legacy clip scorer. Unlike the sections above these are
 # warned about and dropped: section models ignore unknown keys, so without the
@@ -107,10 +107,10 @@ _REMOVED_CONFIG_KEYS: dict[str, str] = {
     "photos.read_moments": _WENT_WITH_THE_SCORER,
     "photos.moment_gap_seconds": _WENT_WITH_THE_SCORER,
     "photos.moment_hash_threshold": _WENT_WITH_THE_SCORER,
-    "cache.preview_cache_max_size_mb": "it capped the clip previews the old web pages played; "
-    "the web client streams Immich's own renditions (#1395)",
-    "defaults.output_orientation": "removed in #327; the CLI picks the orientation",
-    "audio.pixabay_api_key": "the Pixabay source is removed",
+    "cache.preview_cache_max_size_mb": "the web client streams Immich's own previews; "
+    "remove it from your config",
+    "defaults.output_orientation": "the CLI picks the orientation; remove it from your config",
+    "audio.pixabay_api_key": "there is no Pixabay music source; remove it from your config",
     "defaults.target_duration_minutes": "replaced by per-memory-type defaults and `--duration`",
     "defaults.target_duration_seconds": "replaced by per-memory-type defaults and `--duration`",
     **{
