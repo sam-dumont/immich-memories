@@ -136,8 +136,11 @@ def test_a_truncated_backup_with_force_leaves_the_populated_store_untouched(
 
 
 def test_a_logically_corrupt_backup_fails_integrity_check_cleanly(filled, location, tmp_path):
-    """`PRAGMA integrity_check` returns a bad row instead of raising; that path needs its own
-    corruption, distinct from `_truncate`'s, which breaks the file too early to reach it."""
+    """`PRAGMA integrity_check` returns a bad row instead of raising; that path needs its own,
+    reliably reproducible corruption, distinct from `_truncate`'s, which breaks the file too
+    early (sqlite3 refuses to open it) to ever reach the row-level check."""
+    import sqlite3
+
     if location.dialect_name != "sqlite":
         pytest.skip("integrity_check is a SQLite-only validation step")
     before = _digests(filled)
@@ -145,13 +148,22 @@ def test_a_logically_corrupt_backup_fails_integrity_check_cleanly(filled, locati
     backup_store(filled, backup)
     close_stores()
     before_bytes = location.sqlite_path.read_bytes()
+
+    # A small, purpose-built SQLite file: large enough that the corrupted bytes land inside
+    # a real B-tree page rather than free space, so integrity_check reports it as a row
+    # instead of sqlite3 refusing to open the file outright. The backup content itself does
+    # not need to match the real store; only the manifest beside it does further down the
+    # restore, and that check never runs because this one fails first.
+    plain = tmp_path / "plain.db"
+    connection = sqlite3.connect(plain)
+    connection.execute("CREATE TABLE t (id INTEGER PRIMARY KEY, v TEXT)")
+    connection.executemany("INSERT INTO t VALUES (?, ?)", [(i, "x" * 200) for i in range(500)])
+    connection.commit()
+    connection.close()
+    data = bytearray(plain.read_bytes())
+    middle = len(data) // 2
+    data[middle : middle + 200] = b"\x00" * 200
     corrupt = tmp_path / "logically_corrupt.backup"
-    data = bytearray(backup.read_bytes())
-    # Zero out the middle third, well past the 100-byte header: the file still opens (its
-    # header is untouched), but enough B-tree pages disagree with their neighbours that
-    # integrity_check reports it instead of sqlite3 refusing to open the file outright.
-    start, end = len(data) // 3, 2 * len(data) // 3
-    data[start:end] = b"\x00" * (end - start)
     corrupt.write_bytes(bytes(data))
     manifest_path(corrupt).write_text(manifest_path(backup).read_text())
 
@@ -180,6 +192,22 @@ def test_a_manifest_mismatch_after_a_good_swap_rolls_back_the_old_file(filled, l
     if before_bytes is not None:
         assert location.sqlite_path.read_bytes() == before_bytes
     assert _digests(open_store(location=location)) == before
+
+
+def test_a_manifest_mismatch_into_an_empty_target_leaves_it_empty(filled, scratch, tmp_path):
+    """The swap-and-verify rollback has two shapes: put the old file back (covered above) or,
+    when there was no old file, remove what the swap just put there. This is the second."""
+    backup = tmp_path / "store.backup"
+    backup_store(filled, backup)
+    tampered = json.loads(manifest_path(backup).read_text())
+    tampered["counts"] = {name: count + 1 for name, count in tampered["counts"].items()}
+    manifest_path(backup).write_text(json.dumps(tampered))
+
+    with pytest.raises(BackupError, match="does not match its manifest"):
+        restore_store(scratch, backup)
+
+    if scratch.sqlite_path is not None:
+        assert not scratch.sqlite_path.exists()
 
 
 def test_the_cli_reports_a_truncated_backup_cleanly_and_exits_non_zero(filled, location, tmp_path):
