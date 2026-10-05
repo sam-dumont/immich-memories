@@ -30,7 +30,10 @@
     possible: { label: N_('Possible'), color: 'success' },
     thin: { label: N_('Thin'), color: 'warning' },
     'not possible': { label: N_('Not possible'), color: 'danger' },
+    'needs preparation': { label: N_('Needs preparation'), color: 'warning' },
   };
+  // Durations the way the terminal says them, without borrowing the server's own English.
+  const clockText = (seconds: number) => (seconds < 60 ? `${Math.ceil(seconds)}s` : `${Math.ceil(seconds / 60)} min`);
 
   let availability = $state<AskAvailability | null>(null);
   let sentence = $state('');
@@ -41,7 +44,14 @@
 
   // A preview belongs to the words it read: edited words need a new one before a film.
   const current = $derived(preview !== null && preview.request === sentence.trim());
-  const filmable = $derived(current && preview?.verdict !== 'not possible' && preview?.film.route !== 'none');
+  // "needs preparation" has no pool yet (#2045): the page still offers to make the film,
+  // which prepares the window for real and then answers, rather than hiding the button
+  // behind a route that is "none" only because nothing has been read yet.
+  const filmable = $derived(
+    current &&
+      preview?.verdict !== 'not possible' &&
+      (preview?.verdict === 'needs preparation' || preview?.film.route !== 'none'),
+  );
 
   // The last preview survives a reload, like the page's last cut.
   const LAST_ASK = 'immich-memories:last-ask';
@@ -134,11 +144,16 @@
         <div class="flex flex-col gap-2 rounded-xl bg-gray-100 p-4 dark:bg-gray-900">
           <div class="flex flex-wrap items-center gap-3">
             <Badge color={verdict.color}>{t(verdict.label)}</Badge>
-            <span class="text-sm tabular-nums">{t('{pictures} pictures: {photos} photos, {videos} videos', { ...preview.pool })}</span>
+            {#if preview.verdict !== 'needs preparation'}
+              <span class="text-sm tabular-nums">{t('{pictures} pictures: {photos} photos, {videos} videos', { ...preview.pool })}</span>
+            {/if}
           </div>
-          <p class="text-sm">{preview.why}</p>
+          {#if preview.verdict !== 'needs preparation'}<p class="text-sm">{preview.why}</p>{/if}
           {#if preview.preparation}
-            <p class="text-sm font-medium" role="alert">{preview.preparation.message}; {t('making the film prepares them first')}</p>
+            <p class="text-sm font-medium" role="alert">
+              {t("{pictures} pictures in this period aren't prepared yet; preparing them first takes about {amount}", { pictures: preview.preparation.pictures, amount: clockText(preview.preparation.estimated_seconds) })}
+              {t('Making the film prepares them first.')}
+            </p>
           {/if}
           {#if preview.verdict === 'not possible'}
             <p class="text-sm font-medium">{t('No film: the library cannot show this. Try other words, or read below what each part of the sentence found.')}</p>

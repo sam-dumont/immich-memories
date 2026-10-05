@@ -13,27 +13,47 @@ never prepares: it is a preview, not a commitment to pay the cost.
 
 from __future__ import annotations
 
+import statistics
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import date
+
+import sqlalchemy as sa
 
 from immich_memories.analysis.editorial_preparation import PreparationResult
 from immich_memories.analysis.preparation_report import human_duration, rate_report
 from immich_memories.analysis.prepare_scope import admit_source, eligible_source, run_preparation
 from immich_memories.api.models import Asset, VideoClipInfo
+from immich_memories.db.tables import pipeline_runs
 from immich_memories.free_text.library import LibraryView, read_library
 from immich_memories.free_text.linking import WhenLink
 from immich_memories.store.asset_annotations import AssetAnnotationFactRepository
 from immich_memories.timeperiod import DateRange, custom_range
 from immich_memories.tracking.span_store import SpanStore
 
-# Measured on an M5 Max with smolvlm2-500m (#2045): 0.2-0.4 s/picture. Used only until
-# the store has its own banked timing to read instead.
+# Measured on an M5 Max with smolvlm2-500m (#2045): 0.2-0.4 s/picture, the default reader.
+# Used only until the store has its own banked timing to read instead.
 DEFAULT_SECONDS_PER_PICTURE = 0.3
+
+# How many of the most recently completed runs' caption spans feed the median rate.
+_RATE_HISTORY = 5
+
+# The producer name the caption stage reports under (`editorial_preparation_captions.py`).
+_CAPTION_SPAN = "preparation.captions"
 
 
 class PreparationFailed(RuntimeError):
     """Preparation left pictures without what a cut needs: the window still isn't ready."""
+
+
+class NeedsPreparationPreview(Exception):
+    """A dry run found an unprepared window: no pool was read. `notice` is the warning
+    the caller already printed; `why` is its message, for a handler that wants text only."""
+
+    def __init__(self, notice: Notice) -> None:
+        super().__init__(notice.message)
+        self.notice = notice
+        self.why = notice.message
 
 
 @dataclass(frozen=True)
@@ -108,22 +128,36 @@ def assess(
     return Readiness(window=window, missing=missing)
 
 
-def estimate_seconds_per_picture(store) -> float:
-    """The caption rate the store's own history measured, else a documented constant.
+def _recent_run_ids(store, *, limit: int) -> list[str]:
+    """The most recently completed runs, whatever their source: `generate` records
+    "manual", not "prepare", so a rate the bank can use has to read every run, not one
+    source's alone."""
+    with store.connect() as connection:
+        rows = connection.execute(
+            sa.select(pipeline_runs.c.run_id)
+            .where(pipeline_runs.c.status == "completed")
+            .order_by(pipeline_runs.c.completed_at.desc())
+            .limit(limit)
+        ).scalars()
+        return list(rows)
 
-    Only `preparation.*` leaf spans count: the bank's run also carries a root `run` span
-    and a `discovery` span, and summing those too would charge every picture for work
-    that was never per-picture.
+
+def estimate_seconds_per_picture(store) -> float:
+    """The caption rate the store's own history measured, else the default reader's.
+
+    The median of the caption stage's own `seconds / items` across the most recent
+    completed runs that captioned anything: a single run's rate can be skewed by a cold
+    model load or a handful of retries, and the median survives that better than one
+    run's total. Only pictures that actually needed a caption are counted -- an already
+    captioned picture a run merely revisited reports no `preparation.captions` work.
     """
-    history = SpanStore(store).latest("prepare", prefix="preparation.")
-    if history is None:
-        return DEFAULT_SECONDS_PER_PICTURE
-    spans = [span for span in history.spans if span.name.startswith("preparation.")]
-    pictures = max((span.items or 0 for span in spans), default=0)
-    if not pictures:
-        return DEFAULT_SECONDS_PER_PICTURE
-    seconds = sum(span.duration for span in spans)
-    return seconds / pictures if seconds else DEFAULT_SECONDS_PER_PICTURE
+    rates = [
+        span.duration / span.items
+        for run_id in _recent_run_ids(store, limit=_RATE_HISTORY)
+        for span in SpanStore(store).load(run_id).spans
+        if span.name == _CAPTION_SPAN and span.items
+    ]
+    return statistics.median(rates) if rates else DEFAULT_SECONDS_PER_PICTURE
 
 
 def warning_line(missing: Sequence[Asset | VideoClipInfo], seconds: float) -> str:
@@ -132,6 +166,15 @@ def warning_line(missing: Sequence[Asset | VideoClipInfo], seconds: float) -> st
         f"{len(missing):,} pictures in this period aren't prepared yet; "
         f"preparing them first takes about {human_duration(seconds)}"
     )
+
+
+def _refuse_unreachable_captions(config) -> None:
+    """Fail clearly before preparing, rather than mid-batch, when the caption service is down."""
+    from immich_memories.preflight import CheckStatus, check_caption_endpoint
+
+    result = check_caption_endpoint(config)
+    if result.status is CheckStatus.ERROR:
+        raise PreparationFailed(f"{result.message}: {result.details}")
 
 
 def _failure_detail(result: PreparationResult) -> str:
@@ -160,15 +203,18 @@ def prepare_for_request(  # noqa: PLR0913 - every argument is one external bound
     """Prepare the request's window if it needs it, and return the view to read it with.
 
     A fully prepared window returns `view` unchanged and no notice: no warning, no
-    preparation, no second read of the store. A dry run stops after the warning: it
-    previews what preparing would cost, never commits to paying it. `before_preparing`
+    preparation, no second read of the store. A dry run raises `NeedsPreparationPreview`
+    after the warning: it previews what preparing would cost, never commits to paying it,
+    and the pool is not known either way yet (#2045) -- never "not possible". `before_preparing`
     runs only when preparation is actually about to happen (the preflight checks `prepare`
-    itself runs, never on a dry run or an already-prepared window). `report` carries the
-    warning and live progress to a watcher such as the web client (message, fraction,
-    remaining seconds); `PreparationFailed` is raised, never swallowed into a vague
-    "not possible" later, when a producer could not finish. `accounts`, in a household run
-    (#2044), discovers and prepares every chosen account's own pictures, not just the
-    primary's; the caller is the one that re-scopes the returned view to them.
+    itself runs, never on a dry run or an already-prepared window), followed by a check that
+    the caption service itself answers, so a down service fails clearly before any picture is
+    touched rather than mid-batch. `report` carries the warning and live progress to a watcher
+    such as the web client (message, fraction, remaining seconds); the same progress also
+    prints to the terminal, `report` or not. `PreparationFailed` is raised, never swallowed
+    into a vague "not possible" later, when a producer could not finish. `accounts`, in a
+    household run (#2044), discovers and prepares every chosen account's own pictures, not
+    just the primary's; the caller is the one that re-scopes the returned view to them.
     """
     readiness = assess(client, config, store, when, today=today, accounts=accounts)
     if not readiness.missing:
@@ -181,16 +227,20 @@ def prepare_for_request(  # noqa: PLR0913 - every argument is one external bound
         report(warning, 0.0, seconds)
     notice = Notice(len(readiness.missing), seconds, warning)
     if dry_run:
-        return view, notice
+        raise NeedsPreparationPreview(notice)
     if before_preparing:
         before_preparing()
+    _refuse_unreachable_captions(config)
     print_line(f"Preparing {len(readiness.missing):,} pictures over 1 window")
 
     def live(producer: str, done: int, total: int) -> None:
-        if not report or not total:
+        if not total:
             return
         remaining = rate * max(total - done, 0)
-        report(f"Preparing {producer}: {done:,}/{total:,} pictures", done / total, remaining)
+        message = f"Preparing {producer}: {done:,}/{total:,} pictures"
+        print_line(message)
+        if report:
+            report(message, done / total, remaining)
 
     clock, result = run_preparation(client, config, readiness.missing, progress=live)
     pictures = len(readiness.missing)

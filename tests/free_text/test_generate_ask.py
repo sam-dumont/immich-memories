@@ -19,11 +19,15 @@ from immich_memories.api.permissions import READ_PERMISSIONS, ApiKeyCapabilities
 from immich_memories.config_models_editorial import EditorialConfig
 from immich_memories.db import open_store
 from immich_memories.free_text.lexicon import WordNetLexicon
+from immich_memories.preflight import CheckResult, CheckStatus
 from immich_memories.store.editorial_preparation import remember_assets
 from tests.annotation_rows import add_rows
 from tests.free_text.banked import QuestionAsker
 
 EDITORIAL = EditorialConfig()
+# A healthy preflight read for the caption service: every `ask` fixture test stubs the
+# real HTTP reachability check with this, so none of them depend on a server being up.
+_OK_CAPTIONS = CheckResult("Captions", CheckStatus.OK, "ok")
 IMMICH = "immich:\n  url: http://immich.invalid\n  api_key: not-a-real-key\n"
 MODEL_TIER = "tier: full\nadvanced:\n  llm:\n    enabled: true\n    base_url: http://reader.invalid/v1\n    model: small-reader\n"
 ANSWERS: dict[str, Any] = {
@@ -169,7 +173,13 @@ def ask(tmp_path: Path, lexicon: WordNetLexicon, monkeypatch: pytest.MonkeyPatch
     # WHY: the pinned WordNet corpus is a model download; this one holds the test's words.
     monkeypatch.setattr("immich_memories.cli._ask_generation.load_wordnet", lambda _path: lexicon)
     immich = _InventedImmich()
+    # WHY: replaces the Immich HTTP API with the invented library above.
     monkeypatch.setattr("immich_memories.api.immich.SyncImmichClient", lambda **_k: immich)
+    # WHY: replaces reaching the real caption server over HTTP to check it is up.
+    monkeypatch.setattr(
+        "immich_memories.preflight.check_caption_endpoint",
+        lambda _config: _OK_CAPTIONS,
+    )
 
     def _invoke(
         *args: str, config: str = IMMICH + MODEL_TIER, answers: dict[str, Any] = ANSWERS
@@ -405,7 +415,9 @@ def test_ask_never_counts_or_traces_another_accounts_pictures(
         }
     ).install(monkeypatch)
     monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    # WHY: the pinned WordNet corpus is a model download; this one holds the test's words.
     monkeypatch.setattr("immich_memories.cli._ask_generation.load_wordnet", lambda _path: lexicon)
+    # WHY: the model server; its answers come from the one bank of model answers.
     monkeypatch.setattr(
         "immich_memories.cli._ask_generation.WireAsker", lambda *_a, **_k: QuestionAsker(ANSWERS)
     )
@@ -493,7 +505,9 @@ def test_a_plain_ask_defaults_to_the_primary_when_the_config_has_a_household(
         }
     ).install(monkeypatch)
     monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    # WHY: the pinned WordNet corpus is a model download; this one holds the test's words.
     monkeypatch.setattr("immich_memories.cli._ask_generation.load_wordnet", lambda _path: lexicon)
+    # WHY: the model server; its answers come from the one bank of model answers.
     monkeypatch.setattr(
         "immich_memories.cli._ask_generation.WireAsker", lambda *_a, **_k: QuestionAsker(ANSWERS)
     )
@@ -589,7 +603,9 @@ def test_a_plain_ask_still_scopes_to_the_primary_after_the_household_leaves_conf
         }
     ).install(monkeypatch)
     monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    # WHY: the pinned WordNet corpus is a model download; this one holds the test's words.
     monkeypatch.setattr("immich_memories.cli._ask_generation.load_wordnet", lambda _path: lexicon)
+    # WHY: the model server; its answers come from the one bank of model answers.
     monkeypatch.setattr(
         "immich_memories.cli._ask_generation.WireAsker", lambda *_a, **_k: QuestionAsker(ANSWERS)
     )
@@ -683,7 +699,9 @@ def test_a_single_account_install_keeps_its_whole_pool_under_the_safe_default(
         }
     ).install(monkeypatch)
     monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    # WHY: the pinned WordNet corpus is a model download; this one holds the test's words.
     monkeypatch.setattr("immich_memories.cli._ask_generation.load_wordnet", lambda _path: lexicon)
+    # WHY: the model server; its answers come from the one bank of model answers.
     monkeypatch.setattr(
         "immich_memories.cli._ask_generation.WireAsker", lambda *_a, **_k: QuestionAsker(ANSWERS)
     )
@@ -768,7 +786,9 @@ def test_ask_counts_every_named_accounts_pictures(
         }
     ).install(monkeypatch)
     monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    # WHY: the pinned WordNet corpus is a model download; this one holds the test's words.
     monkeypatch.setattr("immich_memories.cli._ask_generation.load_wordnet", lambda _path: lexicon)
+    # WHY: the model server; its answers come from the one bank of model answers.
     monkeypatch.setattr(
         "immich_memories.cli._ask_generation.WireAsker", lambda *_a, **_k: QuestionAsker(ANSWERS)
     )
@@ -984,6 +1004,36 @@ def test_a_dry_run_on_an_unprepared_window_only_warns_and_prepares_nothing(
         result.output
     )
     assert "Preparing 1 pictures over 1 window" not in result.output
+    # #2045 Opus review: never "not possible" on a window that just hasn't been read yet.
+    assert "VERDICT  needs preparation:" in result.output
+    assert "not possible" not in result.output.lower()
+    assert "Pool: " not in result.output
+
+
+def test_the_preview_s_kept_translation_says_needs_preparation_not_not_possible(
+    ask, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """#2045 (Opus review, BLOCKER): the web preview (the CLI's own `--dry-run --ask-trace`)
+    must carry "needs preparation", not "not possible", so AskPanel can still offer to make
+    the film, which then prepares the window for real."""
+    ask.immich.unsynced_camera_shots = [("new-cat-0", FIRST + timedelta(days=1000))]
+
+    def _never(**_kwargs):
+        raise AssertionError("a dry run must never call the real preparation pipeline")
+
+    monkeypatch.setattr(
+        "immich_memories.analysis.editorial_preparation.prepare_editorial_annotations", _never
+    )
+    kept = tmp_path / "ask.json"
+
+    result = ask("--ask", "our cat along the years", "--dry-run", "--ask-trace", str(kept))
+
+    assert result.exit_code == 0, result.output
+    record = json.loads(kept.read_text())
+    assert record["verdict"] == "needs preparation"
+    assert record["preparation"] is not None and record["preparation"]["pictures"] == 1
+    # The route is "none" (no pool was read yet); the page keeps the button on the verdict.
+    assert record["film"]["route"] == "none"
 
 
 def test_a_preparation_failure_is_reported_and_never_reads_as_not_possible(
@@ -1048,6 +1098,7 @@ def test_a_household_preview_counts_every_named_accounts_missing_pictures(
         }
     ).install(monkeypatch)
     monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    # WHY: the pinned WordNet corpus is a model download; this one holds the test's words.
     monkeypatch.setattr("immich_memories.cli._ask_generation.load_wordnet", lambda _path: lexicon)
     # `window_of` would otherwise ask for the whole library's years, which this fake
     # server does not answer; the fixture's own pictures sit in June 2025.

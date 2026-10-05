@@ -7,9 +7,7 @@ those calls lean on.
 
 from __future__ import annotations
 
-import time
 from datetime import date
-from types import SimpleNamespace
 
 import pytest
 
@@ -18,17 +16,15 @@ from immich_memories.config_loader import Config
 from immich_memories.config_models import ImmichConfig
 from immich_memories.db import open_store
 from immich_memories.free_text import preparation as prep
+from immich_memories.free_text.library import LibraryView
 from immich_memories.free_text.linking import WhenLink
 from immich_memories.free_text.preparation import (
     DEFAULT_SECONDS_PER_PICTURE,
-    Readiness,
     assess,
     estimate_seconds_per_picture,
     warning_line,
     window_of,
 )
-from immich_memories.timeperiod import custom_range
-from immich_memories.tracking import timing
 from immich_memories.tracking.run_tracker import RunTracker
 from immich_memories.tracking.span_store import SpanStore
 
@@ -99,82 +95,157 @@ def test_with_no_banked_rate_the_estimate_falls_back_to_the_documented_constant(
     assert estimate_seconds_per_picture(store) == DEFAULT_SECONDS_PER_PICTURE
 
 
-def test_the_banks_own_past_timing_is_read_before_the_constant() -> None:
-    store = open_store()
+def _banked_caption_span(store, *, source: str, duration: float, items: int) -> None:
+    """A completed run whose bank holds exactly one caption span, of a stated rate."""
+    from immich_memories.tracking.timing import Collector, Span
+
     tracker = RunTracker(store=store, capture_system=False)
-    tracker.start_run(source="prepare")
-    with timing.collecting() as collected, timing.span("preparation.captions", items=100):
-        time.sleep(0.01)
-    SpanStore(store).save(tracker.run_id, collected)
+    tracker.start_run(source=source)
+    span = Span(1, "preparation.captions", None, 0.0, duration, items)
+    SpanStore(store).save(tracker.run_id, Collector(spans=[span]))
     tracker.complete_run()
 
-    rate = estimate_seconds_per_picture(store)
 
-    measured = next(
-        span.duration for span in collected.spans if span.name == "preparation.captions"
-    )
-    assert rate == measured / 100
+def test_the_rate_is_read_from_a_manual_run_not_only_a_prepare_one() -> None:
+    """#2045 (Opus review E): `generate` records its run as "manual", not "prepare" -- a
+    household that has only ever asked never has a "prepare"-sourced run to read."""
+    store = open_store()
+    _banked_caption_span(store, source="manual", duration=1.0, items=100)
+
+    assert estimate_seconds_per_picture(store) == pytest.approx(0.01)
 
 
-def test_the_rate_sums_only_preparation_spans_never_the_whole_run(monkeypatch) -> None:
-    """#2045 (Opus review E): the bank's run also carries a root `run` span and a
-    `discovery` span; summing those too would charge every picture for work that was
-    never per-picture."""
+def test_the_rate_ignores_the_root_run_and_discovery_spans() -> None:
+    """Only `preparation.captions` leaf spans count: a root `run` span and a `discovery`
+    span would charge every picture for work that was never per-picture."""
+    from immich_memories.tracking.timing import Collector, Span
+
     store = open_store()
     tracker = RunTracker(store=store, capture_system=False)
-    tracker.start_run(source="prepare")
-    with timing.collecting() as collected, timing.span("run"):
-        with timing.span("discovery"):
-            time.sleep(0.01)
-        with timing.span("preparation.captions", items=100):
-            time.sleep(0.01)
-    SpanStore(store).save(tracker.run_id, collected)
+    tracker.start_run(source="manual")
+    spans = [
+        Span(1, "run", None, 0.0, 100.0, None),
+        Span(2, "discovery", 1, 0.0, 50.0, None),
+        Span(3, "preparation.captions", 1, 0.0, 1.0, 100),
+    ]
+    SpanStore(store).save(tracker.run_id, Collector(spans=spans))
     tracker.complete_run()
 
-    rate = estimate_seconds_per_picture(store)
-
-    measured = next(
-        span.duration for span in collected.spans if span.name == "preparation.captions"
-    )
-    assert rate == measured / 100
+    assert estimate_seconds_per_picture(store) == pytest.approx(0.01)
 
 
-def test_live_progress_is_reported_between_the_warning_and_the_completion(
+def test_the_rate_is_the_median_of_several_recent_runs_whatever_their_source() -> None:
+    """A realistic bank holds several runs, most of them `generate`'s own "manual" source;
+    the median resists a single cold-load run skewing the estimate."""
+    store = open_store()
+    _banked_caption_span(store, source="manual", duration=1.0, items=10)  # 0.10 s/picture
+    _banked_caption_span(store, source="manual", duration=4.0, items=10)  # 0.40 s/picture
+    _banked_caption_span(store, source="prepare", duration=20.0, items=10)  # 2.00 s/picture
+
+    assert estimate_seconds_per_picture(store) == pytest.approx(0.40)
+
+
+def test_live_progress_reaches_the_watcher_through_the_public_seam(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """#2045 (Opus review G): preparation's own progress reaches the watcher as it runs,
-    not just the warning's 0.0 and the finish's 1.0."""
-    window = custom_range(date(2020, 1, 1), date(2020, 1, 2))
+    not just the warning's 0.0 and the finish's 1.0 -- exercised through the real
+    `prepare_for_request` seam, mocking only the external boundaries it crosses."""
+    from immich_memories.preflight import CheckResult, CheckStatus
+    from tests.household_fake import PRIMARY_KEY, FakeHousehold, immich_config, picture
+
+    # WHY: replaces the Immich HTTP API; the window check's own discovery stays real.
+    FakeHousehold(
+        library={
+            PRIMARY_KEY: [
+                picture("p-cat-1", "primary", 1, ()),
+                picture("p-cat-2", "primary", 2, ()),
+            ]
+        }
+    ).install(monkeypatch)
+    # WHY: replaces reaching the real caption server over HTTP to check it answers.
     monkeypatch.setattr(
-        prep, "assess", lambda *_a, **_k: Readiness(window=window, missing=(object(), object()))
+        "immich_memories.preflight.check_caption_endpoint",
+        lambda _config: CheckResult("Captions", CheckStatus.OK, "ok"),
     )
-    monkeypatch.setattr(prep, "estimate_seconds_per_picture", lambda _store: 1.0)
-    monkeypatch.setattr(prep, "read_library", lambda _store, _editorial: "refreshed view")
 
-    def fake_run(client, config, assets, *, progress=None):
-        progress("captions", 1, 2)
-        return SimpleNamespace(costs=lambda: ()), SimpleNamespace(complete=True)
+    def fake_prepare(**kwargs):
+        from immich_memories.analysis.editorial_preparation import PreparationResult
 
-    monkeypatch.setattr(prep, "run_preparation", fake_run)
+        total = len(kwargs["assets"])
+        for done in range(1, total + 1):
+            kwargs["progress"]("captions", done, total)
+        return PreparationResult(requested=total, missing_by_producer={}, failures={})
+
+    # WHY: replaces the real captioning model.
+    monkeypatch.setattr(
+        "immich_memories.analysis.editorial_preparation.prepare_editorial_annotations",
+        fake_prepare,
+    )
+    store = open_store()
+    config = Config()
+    config.immich = ImmichConfig(**immich_config())
     reports: list[tuple[str, float | None, float | None]] = []
+    when = WhenLink(start=date(2025, 6, 1), end=date(2025, 6, 30))
+    stale = LibraryView(pictures=(), people={}, sharpness_line=None)
 
-    view, notice = prep.prepare_for_request(
-        object(),
-        SimpleNamespace(editorial=None),
-        object(),
-        "stale view",
-        WhenLink(),
-        today=date(2020, 1, 1),
-        print_line=lambda _line: None,
-        report=lambda message, fraction, remaining: reports.append((message, fraction, remaining)),
-    )
+    with AccessBoundClient(config.immich) as client:
+        prep.prepare_for_request(
+            client,
+            config,
+            store,
+            stale,
+            when,
+            today=date(2025, 6, 30),
+            print_line=lambda _line: None,
+            report=lambda message, fraction, remaining: reports.append(
+                (message, fraction, remaining)
+            ),
+        )
 
-    assert view == "refreshed view"
-    assert notice is not None and notice.pictures == 2
     fractions = [fraction for _message, fraction, _remaining in reports]
     assert fractions[0] == 0.0  # the warning
-    assert 0.0 < fractions[1] < 1.0  # live, between the warning and the completion
+    assert any(0.0 < fraction < 1.0 for fraction in fractions[1:-1])  # live
     assert fractions[-1] == 1.0  # the completion line
+
+
+def test_an_unreachable_caption_service_fails_clearly_before_touching_a_picture(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """#2045 (Opus review H): a down caption service must fail with a clear message before
+    any producer runs, not mid-batch."""
+    from immich_memories.preflight import CheckResult, CheckStatus
+    from tests.household_fake import PRIMARY_KEY, FakeHousehold, immich_config, picture
+
+    # WHY: replaces the Immich HTTP API; the window check's own discovery stays real.
+    FakeHousehold(library={PRIMARY_KEY: [picture("p-cat", "primary", 1, ())]}).install(monkeypatch)
+    # WHY: replaces reaching the real caption server over HTTP, standing in for it being down.
+    monkeypatch.setattr(
+        "immich_memories.preflight.check_caption_endpoint",
+        lambda _config: CheckResult(
+            "Captions", CheckStatus.ERROR, "Caption server unreachable", "connection refused"
+        ),
+    )
+
+    def _never(**_kwargs):
+        raise AssertionError("the caption producer must never run once the service is down")
+
+    # WHY: replaces the real captioning model; it must never be reached.
+    monkeypatch.setattr(
+        "immich_memories.analysis.editorial_preparation.prepare_editorial_annotations", _never
+    )
+    store = open_store()
+    config = Config()
+    config.immich = ImmichConfig(**immich_config())
+    when = WhenLink(start=date(2025, 6, 1), end=date(2025, 6, 30))
+    stale = LibraryView(pictures=(), people={}, sharpness_line=None)
+
+    with AccessBoundClient(config.immich) as client, pytest.raises(prep.PreparationFailed) as error:
+        prep.prepare_for_request(
+            client, config, store, stale, when, today=date(2025, 6, 30), print_line=lambda _l: None
+        )
+
+    assert "Caption server unreachable" in str(error.value)
 
 
 def test_a_household_window_check_discovers_every_named_accounts_pictures(

@@ -26,14 +26,15 @@ years". A person film or a computed selection (a trip, someone's first or last p
 faces and GPS, never a caption, so it is never affected by this.
 
 Preview first, on the CLI or in the web UI: a preview only ever checks and warns, it never
-prepares anything.
+prepares anything. The preview keeps **Make the film** on, even when the window needs
+preparing first; that button is the one thing that pays the cost.
 
 ```bash
 immich-memories generate --ask "our cat along the years" --dry-run
 ```
 
 ```
-1,240 pictures in this period aren't prepared yet; preparing them first takes about 6 min
+1,234 pictures in this period aren't prepared yet; preparing them first takes about 8 min
 ```
 
 Making the film is the only thing that pays that cost, and it tells you before it does:
@@ -43,16 +44,18 @@ immich-memories generate --ask "our cat along the years" --no-render
 ```
 
 ```
-1,240 pictures in this period aren't prepared yet; preparing them first takes about 6 min
-Preparing 1,240 pictures over 1 window
+1,234 pictures in this period aren't prepared yet; preparing them first takes about 8 min
+Preparing 1,234 pictures over 1 window
 ...
 ```
 
-A second request over the same period pays nothing: the captions it prepared are banked, the
-same way `immich-memories prepare` banks them. Measured on an M5 Max: 1,234 pictures took 500 s
-(about 8 min) and turned "our cats over the years" into a 74-shot film, nine years in order,
-where the library's regular path had kept 3 of the same 14 clear cat pictures. The web client
-shows the same warning in its preview, before it starts.
+A second request over the same period prepares nothing new: the captions are already banked,
+the same way `immich-memories prepare` banks them. It still checks the window first, though,
+which on a large library can itself take a couple of minutes (Immich's own search, not a
+model). Measured on an M5 Max: preparing 1,234 pictures took 500 s (about 8 min) and turned
+"our cats over the years" into a 74-shot film, nine years in order, where the library's
+regular path had kept 3 of the same 14 clear cat pictures. The web client shows the same
+warning in its preview, before it starts.
 
 ## Preview, then make the film
 

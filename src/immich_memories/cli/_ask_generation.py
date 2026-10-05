@@ -15,6 +15,7 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
+from types import MappingProxyType
 from typing import TYPE_CHECKING
 
 import click
@@ -40,7 +41,13 @@ from immich_memories.free_text.library import (
     read_library,
 )
 from immich_memories.free_text.linking import WhenLink
-from immich_memories.free_text.preparation import Notice, PreparationFailed, prepare_for_request
+from immich_memories.free_text.pool import NEEDS_PREPARATION
+from immich_memories.free_text.preparation import (
+    NeedsPreparationPreview,
+    Notice,
+    PreparationFailed,
+    prepare_for_request,
+)
 from immich_memories.free_text.printed import ImmichPrintedText
 from immich_memories.free_text.reading import WireAsker
 from immich_memories.free_text.trace import explain, pool_counts, save_with_run, trace_record
@@ -215,20 +222,24 @@ def translate_ask(
                 owner_id=view.owner_id,
             )
 
-            def prepare_window(when: WhenLink) -> LibraryView:
-                refreshed, notice_of["notice"] = prepare_for_request(
-                    client,
-                    config,
-                    store,
-                    view,
-                    when,
-                    today=date.today(),
-                    dry_run=dry_run,
-                    print_line=print_info,
-                    report=_progress_reporter(progress_file),
-                    before_preparing=lambda: refuse_blocked_host(config, output_directory=None),
-                    accounts=scope_accounts,
-                )
+            def prepare_window(when: WhenLink):
+                try:
+                    refreshed, notice_of["notice"] = prepare_for_request(
+                        client,
+                        config,
+                        store,
+                        view,
+                        when,
+                        today=date.today(),
+                        dry_run=dry_run,
+                        print_line=print_info,
+                        report=_progress_reporter(progress_file),
+                        before_preparing=lambda: refuse_blocked_host(config, output_directory=None),
+                        accounts=scope_accounts,
+                    )
+                except NeedsPreparationPreview as preview:
+                    notice_of["notice"] = preview.notice
+                    raise
                 return _rescoped(refreshed, scope_accounts, client, store)
 
             asked = translate(
@@ -258,11 +269,12 @@ def translate_ask(
     if trace_file is not None:
         write_secret_file(trace_file, json.dumps(record))
     if dry_run:
-        counts = pool_counts(asked)
-        print_info(
-            f"Pool: {counts['pictures']} pictures ({counts['photos']} photos, "
-            f"{counts['videos']} videos); dry run, nothing filmed"
-        )
+        if asked.pool.verdict != NEEDS_PREPARATION:
+            counts = pool_counts(asked)
+            print_info(
+                f"Pool: {counts['pictures']} pictures ({counts['photos']} photos, "
+                f"{counts['videos']} videos); dry run, nothing filmed"
+            )
         return None
     if film.route == "none":
         print_info(f"Not possible, no film: {film.reason.outcome}")
@@ -353,23 +365,27 @@ def _progress_reporter(
 
 def _rescoped(
     view: LibraryView, accounts: Sequence[str], client: SyncImmichClient, store: Store
-) -> LibraryView:
-    """`view` narrowed again to what `accounts` can see, after preparation may have grown it.
+) -> tuple[LibraryView, Mapping[str, str], Mapping[str, str | frozenset[str]]]:
+    """`view` and its account scope, narrowed again to what `accounts` can see, after
+    preparation may have grown it.
 
     Preparation can discover pictures the first, pre-preparation scope never read (#2044):
     a window `resolve_account_scope` sized from the stale view would drop them as invisible,
-    the opposite of what preparing them was for. The scope is read fresh from `view`'s own
-    (now current) pictures instead. A one-account run names no accounts and is unchanged.
+    the opposite of what preparing them was for, and `picture_accounts`/`face_accounts` sized
+    from it would leave them unowned, which the pool then reads as owned by nobody -- visible
+    to every face check, undoing #2055. The scope is read fresh from `view`'s own (now
+    current) pictures instead. A one-account run names no accounts and is unchanged.
     """
     if not accounts:
-        return view
+        return view, MappingProxyType({}), MappingProxyType({})
     scope = resolve_account_scope(client, accounts, view.pictures, store)
-    return LibraryView(
+    rescoped_view = LibraryView(
         pictures=visible_pictures(view.pictures, scope),
         people=_scoped_people(view.people, scope),
         sharpness_line=view.sharpness_line,
         owner_id=view.owner_id,
     )
+    return rescoped_view, scope.picture_accounts, scope.face_accounts
 
 
 def _ask_client(config: Config, accounts: Sequence[str]) -> SyncImmichClient:

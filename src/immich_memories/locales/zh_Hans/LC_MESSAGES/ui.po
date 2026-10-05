@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-04 23:32+0200\n"
+"POT-Creation-Date: 2026-10-05 03:50+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_Hans\n"
@@ -15,7 +15,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
-#: web/lib/AskPanel.svelte:107
+#: web/lib/AskPanel.svelte:120
 msgid ""
 "A film from a sentence needs the model tier: set advanced.llm.base_url and advanced.llm.model"
 " to the reader that answers it (tier: full)."
@@ -315,7 +315,7 @@ msgstr "日期"
 msgid "Day (MM-DD)"
 msgstr "日期 (MM-DD)"
 
-#: web/lib/AskPanel.svelte:180
+#: web/lib/AskPanel.svelte:198
 msgid "Decided while cutting"
 msgstr "剪辑时决定"
 
@@ -331,7 +331,7 @@ msgstr "已交付到 Immich。为节省磁盘空间，本地文件已删除。"
 msgid "Demo mode"
 msgstr "演示模式"
 
-#: web/lib/AskPanel.svelte:98 web/lib/AskPanel.svelte:116
+#: web/lib/AskPanel.svelte:111 web/lib/AskPanel.svelte:129
 msgid "Describe the film you want"
 msgstr "描述你想要的影片"
 
@@ -432,7 +432,7 @@ msgstr "每个设置及其取值来源。你在此保存的内容会写入数据
 msgid "Every trip of the year"
 msgstr "这一年的所有旅行"
 
-#: web/lib/AskPanel.svelte:101
+#: web/lib/AskPanel.svelte:114
 msgid "Experimental"
 msgstr "实验性"
 
@@ -449,7 +449,7 @@ msgstr "家人"
 msgid "Fetching picture previews"
 msgstr "正在获取图片预览"
 
-#: web/lib/AskPanel.svelte:143
+#: web/lib/AskPanel.svelte:161
 msgid "Fewer than 12 pictures fit: the film will be short."
 msgstr "符合的图片少于 12 张：影片会很短。"
 
@@ -506,7 +506,7 @@ msgstr "高"
 msgid "Holiday"
 msgstr "节日"
 
-#: web/lib/AskPanel.svelte:16
+#: web/lib/AskPanel.svelte:19
 msgid "How it read your words"
 msgstr "你的话是如何被理解的"
 
@@ -514,7 +514,7 @@ msgstr "你的话是如何被理解的"
 msgid "How the rules got here"
 msgstr "规则如何得出这一结果"
 
-#: web/lib/AskPanel.svelte:196
+#: web/lib/AskPanel.svelte:214
 msgid "How the sentence was read"
 msgstr "这句话是如何被理解的"
 
@@ -625,9 +625,13 @@ msgstr "主导航"
 msgid "Main story"
 msgstr "主要故事"
 
-#: web/lib/AskPanel.svelte:122
+#: web/lib/AskPanel.svelte:135
 msgid "Make the film"
 msgstr "制作影片"
+
+#: web/lib/AskPanel.svelte:155
+msgid "Making the film prepares them first."
+msgstr "制作影片会先准备好它们。"
 
 #: web/lib/labels.ts:23
 msgid "Manual"
@@ -705,6 +709,10 @@ msgstr "音乐"
 msgid "Music volume:"
 msgstr "音乐音量："
 
+#: web/lib/AskPanel.svelte:33
+msgid "Needs preparation"
+msgstr "需要准备"
+
 #: web/routes/runs/[run_id]/pool/+page.svelte:138
 msgid "Never use"
 msgstr "永不使用"
@@ -723,7 +731,7 @@ msgstr "还没有已收录的日期。运行 `immich-memories discover-days` 来
 msgid "No child output was retained for this run."
 msgstr "此任务未保留关联输出。"
 
-#: web/lib/AskPanel.svelte:141
+#: web/lib/AskPanel.svelte:159
 msgid ""
 "No film: the library cannot show this. Try other words, or read below what each part of the "
 "sentence found."
@@ -757,7 +765,7 @@ msgstr "没有符合此筛选条件的图片。"
 msgid "No reason recorded for this picture."
 msgstr "未记录选择此图片的原因。"
 
-#: web/lib/AskPanel.svelte:177
+#: web/lib/AskPanel.svelte:195
 msgid "No rule the preview can check would drop a picture."
 msgstr "预览能检查的规则不会去掉任何照片。"
 
@@ -797,11 +805,11 @@ msgstr "无"
 msgid "North"
 msgstr "北半球"
 
-#: web/lib/AskPanel.svelte:180
+#: web/lib/AskPanel.svelte:198
 msgid "Not applied to a film you asked for"
 msgstr "不适用于你要求的影片"
 
-#: web/lib/AskPanel.svelte:29
+#: web/lib/AskPanel.svelte:32
 msgid "Not possible"
 msgstr "不可能"
 
@@ -895,7 +903,7 @@ msgstr "图片审阅"
 msgid "Pictures just read"
 msgstr "刚读取的图片"
 
-#: web/lib/AskPanel.svelte:204
+#: web/lib/AskPanel.svelte:222
 msgid "Pictures left after each step"
 msgstr "每一步后剩余的图片"
 
@@ -926,11 +934,11 @@ msgstr "候选媒体"
 msgid "Portrait"
 msgstr "竖屏"
 
-#: web/lib/AskPanel.svelte:27
+#: web/lib/AskPanel.svelte:30
 msgid "Possible"
 msgstr "可以"
 
-#: web/lib/AskPanel.svelte:120 web/lib/AskPanel.svelte:130
+#: web/lib/AskPanel.svelte:133 web/lib/AskPanel.svelte:143
 msgid "Preview"
 msgstr "预览"
 
@@ -1196,7 +1204,7 @@ msgstr "智能（淡入淡出与剪切）"
 msgid "Soft romantic"
 msgstr "Soft romantic"
 
-#: web/lib/AskPanel.svelte:168
+#: web/lib/AskPanel.svelte:186
 msgid "Some of its pictures"
 msgstr "其中的几张照片"
 
@@ -1319,7 +1327,7 @@ msgid ""
 "either of the first two sets is greyed out: change it where its label says."
 msgstr "环境变量优先，其次是 config.yaml，然后是此处保存的值，最后是默认值。由前两者之一设定的选项会显示为灰色：请在其标签所指示的位置修改。"
 
-#: web/lib/AskPanel.svelte:24 web/routes/runs/[run_id]/+page.svelte:150
+#: web/lib/AskPanel.svelte:27 web/routes/runs/[run_id]/+page.svelte:150
 msgid "The film"
 msgstr "影片"
 
@@ -1335,7 +1343,7 @@ msgstr "家庭内部。也包含描述中提到的私密时刻，例如洗澡。
 msgid "The model had nothing to say about this picture."
 msgstr "模型对这张图片没有任何记录。"
 
-#: web/lib/AskPanel.svelte:110
+#: web/lib/AskPanel.svelte:123
 msgid ""
 "The model reads your words against your prepared library. Preview first: it shows what each "
 "part of the sentence became and how many pictures fit, and films nothing."
@@ -1361,11 +1369,11 @@ msgid ""
 "film's language, through the public Nominatim or network.geocoding_url."
 msgstr "地点来自 Immich。开启地理编码后（设置，网络），会通过公共 Nominatim 或 network.geocoding_url，以影片的语言显示所在街区。"
 
-#: web/lib/AskPanel.svelte:22
+#: web/lib/AskPanel.svelte:25
 msgid "The pool"
 msgstr "候选集"
 
-#: web/lib/AskPanel.svelte:84
+#: web/lib/AskPanel.svelte:97
 msgid "The preview could not start."
 msgstr "预览无法启动。"
 
@@ -1401,7 +1409,7 @@ msgstr "服务器地址已更改：请输入新服务器的 API 密钥。"
 msgid "The settings could not be saved."
 msgstr "无法保存设置。"
 
-#: web/lib/AskPanel.svelte:146
+#: web/lib/AskPanel.svelte:164
 msgid "The words changed since this preview: preview again before making the film."
 msgstr "自这次预览以来文字已更改：制作影片前请重新预览。"
 
@@ -1417,7 +1425,7 @@ msgstr "这些人物出现在最近两次人物回忆中。"
 msgid "They play in the order they were taken, prepared like the rest of the cut."
 msgstr "按拍摄顺序播放，像剪辑的其余部分一样经过处理。"
 
-#: web/lib/AskPanel.svelte:28
+#: web/lib/AskPanel.svelte:31
 msgid "Thin"
 msgstr "偏少"
 
@@ -1502,7 +1510,7 @@ msgstr "改用这张图片"
 msgid "Username"
 msgstr "用户名"
 
-#: web/lib/AskPanel.svelte:23
+#: web/lib/AskPanel.svelte:26
 msgid "Verdict"
 msgstr "结论"
 
@@ -1536,7 +1544,7 @@ msgstr "Vintage charm"
 msgid "Watch your memories again, in films you can make your own."
 msgstr "重温回忆，打造属于你的影片。"
 
-#: web/lib/AskPanel.svelte:20
+#: web/lib/AskPanel.svelte:23
 msgid "What"
 msgstr "什么"
 
@@ -1546,11 +1554,11 @@ msgid ""
 "would, or check it first without rendering."
 msgstr "自动化接下来会创建的内容，与 `auto suggest` 打印的列表相同。可以像 `auto run` 那样运行，也可以先不渲染检查一遍。"
 
-#: web/lib/AskPanel.svelte:152
+#: web/lib/AskPanel.svelte:170
 msgid "What the editor's rules would drop"
 msgstr "剪辑规则会去掉的照片"
 
-#: web/lib/AskPanel.svelte:21
+#: web/lib/AskPanel.svelte:24
 msgid "What the library measures"
 msgstr "图库测得的内容"
 
@@ -1558,11 +1566,11 @@ msgstr "图库测得的内容"
 msgid "What to render"
 msgstr "渲染内容"
 
-#: web/lib/AskPanel.svelte:18
+#: web/lib/AskPanel.svelte:21
 msgid "When"
 msgstr "何时"
 
-#: web/lib/AskPanel.svelte:19
+#: web/lib/AskPanel.svelte:22
 msgid "Where"
 msgstr "何地"
 
@@ -1570,7 +1578,7 @@ msgstr "何地"
 msgid "White"
 msgstr "白色"
 
-#: web/lib/AskPanel.svelte:17
+#: web/lib/AskPanel.svelte:20
 msgid "Who"
 msgstr "谁"
 
@@ -1652,11 +1660,7 @@ msgstr "所有人同时出现"
 msgid "any of them"
 msgstr "其中任意一人"
 
-#: web/lib/AskPanel.svelte:138
-msgid "making the film prepares them first"
-msgstr "制作影片会先准备好它们"
-
-#: web/lib/AskPanel.svelte:116
+#: web/lib/AskPanel.svelte:129
 msgid "our cat along the years"
 msgstr "我们的猫这些年"
 
@@ -1689,19 +1693,26 @@ msgstr "{days} 天 · {count} 张图片"
 msgid "{done} of {total}"
 msgstr "{done}/{total}"
 
-#: web/lib/AskPanel.svelte:157
+#: web/lib/AskPanel.svelte:175
 #, python-brace-format
 msgid "{passed} of {checked} pictures pass the rules checked before cutting."
 msgstr "{checked} 张照片中有 {passed} 张通过剪辑前检查的规则。"
 
-#: web/lib/AskPanel.svelte:155
+#: web/lib/AskPanel.svelte:173
 #, python-brace-format
 msgid ""
 "{passed} of {checked} prepared pictures pass the rules checked before cutting; {unread} are "
 "not prepared yet."
 msgstr "已准备的 {checked} 张照片中有 {passed} 张通过剪辑前检查的规则；{unread} 张尚未准备。"
 
-#: web/lib/AskPanel.svelte:134
+#: web/lib/AskPanel.svelte:154
+#, python-brace-format
+msgid ""
+"{pictures} pictures in this period aren't prepared yet; preparing them first takes about "
+"{amount}"
+msgstr "此期间有 {pictures} 张照片尚未准备好；先准备它们大约需要 {amount}"
+
+#: web/lib/AskPanel.svelte:148
 #, python-brace-format
 msgid "{pictures} pictures: {photos} photos, {videos} videos"
 msgstr "{pictures} 张图片：{photos} 张照片，{videos} 个视频"

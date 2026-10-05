@@ -77,9 +77,48 @@ from immich_memories.timeperiod import DateRange
 from immich_memories.tracking.run_observations import observed_command
 
 
-def _ask_progress_file(output: str | None) -> Path | None:
-    """A sibling of --output: the one path a web job already knows to poll for a warning."""
-    return Path(output).with_suffix(".preparing.json") if output else None
+def _ask_progress_file(output: str | None, *, dry_run: bool) -> Path | None:
+    """A sibling of --output: the one path a web job already knows to poll for a warning.
+
+    A dry run films nothing, so there is no `--output` sibling worth writing beside: the
+    preview's own warning reaches the page through its JSON response, not this file.
+    """
+    return Path(output).with_suffix(".preparing.json") if output and not dry_run else None
+
+
+def _resolved_ask_scope(
+    ctx: click.Context,
+    config,
+    ask: str | None,
+    *,
+    dry_run: bool,
+    typed,
+    trace_file: Path | None,
+    output: str | None,
+    household: tuple[str, ...],
+):
+    """`--ask`'s scope, with its progress file cleaned up once it is no longer needed.
+
+    Preparation, if any, is already done once `scope_of_ask` returns: the file's only
+    reader is a web job polling while the window is still being checked and prepared.
+    """
+    from immich_memories.cli._ask_generation import scope_of_ask
+
+    progress_file = _ask_progress_file(output, dry_run=dry_run)
+    try:
+        return scope_of_ask(
+            ctx,
+            config,
+            ask,
+            dry_run=dry_run,
+            typed=typed,
+            trace_file=trace_file,
+            progress_file=progress_file,
+            accounts=household,
+        ).fields()
+    finally:
+        if progress_file is not None:
+            progress_file.unlink(missing_ok=True)
 
 
 def _apply_run_overrides(config, sharing: str | None, fade_color: str | None) -> None:
@@ -254,20 +293,22 @@ def register_generate_commands(main: click.Group) -> None:
             person_names=person_names,
         )
 
-        from immich_memories.cli._ask_generation import RunScope, scope_of_ask
+        from immich_memories.cli._ask_generation import RunScope
 
-        typed = RunScope(memory_type, day, event_id, from_album, subject, accept_any_provenance)
+        typed_scope = RunScope(
+            memory_type, day, event_id, from_album, subject, accept_any_provenance
+        )
         memory_type, day, event_id, from_album, subject, accept_any_provenance, curated = (
-            scope_of_ask(
+            _resolved_ask_scope(
                 ctx,
                 config,
                 ask,
                 dry_run=dry_run,
-                typed=typed,
+                typed=typed_scope,
                 trace_file=ask_trace,
-                progress_file=_ask_progress_file(output),
-                accounts=household,
-            ).fields()
+                output=output,
+                household=household,
+            )
         )
 
         # Read the memory from the date flags when it was not named. Without

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -74,7 +75,7 @@ def test_prepare_window_is_called_with_the_linked_dates_and_its_view_replaces_th
 
     def prepare_window(when):
         seen.append(when)
-        return _library()
+        return _library(), {}, {}
 
     asked = translate(
         "our cat along the years",
@@ -108,6 +109,69 @@ def test_a_subject_with_no_caption_words_never_asks_to_prepare_its_window(lexico
         today=TODAY,
         prepare_window=prepare_window,
     )
+
+
+def test_the_subject_is_rebuilt_after_preparation_so_a_first_run_matches_a_second(
+    lexicon: Lexicon,
+) -> None:
+    """#2045 (Opus review, BLOCKER): `build_subject` reads the WordNet kinds the library's
+    own captions use; an unprepared first run's empty captions must not leave it with a
+    narrower subject than a second run, already prepared, would get."""
+    uncaptioned = LibraryView(
+        pictures=tuple(replace(picture, caption=None) for picture in _library().pictures),
+        people={},
+        sharpness_line=None,
+    )
+
+    first_run = translate(
+        "our cat along the years",
+        uncaptioned,
+        NOBODY,
+        lexicon,
+        QuestionAsker(ANSWERS),
+        today=TODAY,
+        prepare_window=lambda _when: (_library(), {}, {}),
+    )
+    second_run = translate(
+        "our cat along the years", _library(), NOBODY, lexicon, QuestionAsker(ANSWERS), today=TODAY
+    )
+
+    assert first_run.translation.subject == second_run.translation.subject
+    assert {p.asset_id for p in first_run.pool.pictures} == {
+        p.asset_id for p in second_run.pool.pictures
+    }
+
+
+def test_a_company_word_alone_still_asks_to_prepare_its_window(lexicon: Lexicon) -> None:
+    """#2045 (Opus review B): "with friends" reads captions too (`_company` in pool.py),
+    even with no subject word of its own -- the one predicate has to catch it or "me with
+    friends in 2023" keeps answering as if nothing can be prepared."""
+    answers = {
+        **ANSWERS,
+        "Split the owner's request": {
+            "who": ["friends"],
+            "when": ["in 2023"],
+            "where": [],
+            "what": [],
+        },
+    }
+    seen: list[Any] = []
+
+    def prepare_window(when):
+        seen.append(when)
+        return _library(), {}, {}
+
+    translate(
+        "me with friends in 2023",
+        LibraryView(pictures=(), people={}, sharpness_line=None),
+        Household({}),
+        lexicon,
+        QuestionAsker(answers),
+        today=TODAY,
+        prepare_window=prepare_window,
+    )
+
+    assert seen, "company ('with friends') reads captions, so the window must be checked"
 
 
 def test_the_trace_prints_one_line_per_decision_with_the_words_and_the_rule(

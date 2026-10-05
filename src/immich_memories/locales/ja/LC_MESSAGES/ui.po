@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-04 23:32+0200\n"
+"POT-Creation-Date: 2026-10-05 03:50+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ja\n"
@@ -15,7 +15,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
-#: web/lib/AskPanel.svelte:107
+#: web/lib/AskPanel.svelte:120
 msgid ""
 "A film from a sentence needs the model tier: set advanced.llm.base_url and advanced.llm.model"
 " to the reader that answers it (tier: full)."
@@ -317,7 +317,7 @@ msgstr "日"
 msgid "Day (MM-DD)"
 msgstr "日 (MM-DD)"
 
-#: web/lib/AskPanel.svelte:180
+#: web/lib/AskPanel.svelte:198
 msgid "Decided while cutting"
 msgstr "編集中に判断"
 
@@ -333,7 +333,7 @@ msgstr "Immich に送信しました。ディスク容量を節約するため�
 msgid "Demo mode"
 msgstr "デモモード"
 
-#: web/lib/AskPanel.svelte:98 web/lib/AskPanel.svelte:116
+#: web/lib/AskPanel.svelte:111 web/lib/AskPanel.svelte:129
 msgid "Describe the film you want"
 msgstr "作りたい映画を文章で"
 
@@ -434,7 +434,7 @@ msgstr "各設定とその値の出所。ここで保存した内容はデータ
 msgid "Every trip of the year"
 msgstr "その年のすべての旅行"
 
-#: web/lib/AskPanel.svelte:101
+#: web/lib/AskPanel.svelte:114
 msgid "Experimental"
 msgstr "実験的"
 
@@ -451,7 +451,7 @@ msgstr "家族"
 msgid "Fetching picture previews"
 msgstr "画像のプレビューを取得しています"
 
-#: web/lib/AskPanel.svelte:143
+#: web/lib/AskPanel.svelte:161
 msgid "Fewer than 12 pictures fit: the film will be short."
 msgstr "合う写真が 12 枚未満です: 映画は短くなります。"
 
@@ -508,7 +508,7 @@ msgstr "高"
 msgid "Holiday"
 msgstr "祝日・行事"
 
-#: web/lib/AskPanel.svelte:16
+#: web/lib/AskPanel.svelte:19
 msgid "How it read your words"
 msgstr "言葉の読み取り方"
 
@@ -516,7 +516,7 @@ msgstr "言葉の読み取り方"
 msgid "How the rules got here"
 msgstr "ルールがここに至った経緯"
 
-#: web/lib/AskPanel.svelte:196
+#: web/lib/AskPanel.svelte:214
 msgid "How the sentence was read"
 msgstr "文章の読み取り方"
 
@@ -627,9 +627,13 @@ msgstr "メインナビゲーション"
 msgid "Main story"
 msgstr "主要ストーリー"
 
-#: web/lib/AskPanel.svelte:122
+#: web/lib/AskPanel.svelte:135
 msgid "Make the film"
 msgstr "映画を作る"
+
+#: web/lib/AskPanel.svelte:155
+msgid "Making the film prepares them first."
+msgstr "フィルムを作成すると先に準備されます。"
 
 #: web/lib/labels.ts:23
 msgid "Manual"
@@ -707,6 +711,10 @@ msgstr "音楽"
 msgid "Music volume:"
 msgstr "音楽の音量："
 
+#: web/lib/AskPanel.svelte:33
+msgid "Needs preparation"
+msgstr "準備が必要"
+
 #: web/routes/runs/[run_id]/pool/+page.svelte:138
 msgid "Never use"
 msgstr "今後使わない"
@@ -725,7 +733,7 @@ msgstr "まだ記録済みの日がありません。`immich-memories discover-d
 msgid "No child output was retained for this run."
 msgstr "この実行には関連する出力が保存されていません。"
 
-#: web/lib/AskPanel.svelte:141
+#: web/lib/AskPanel.svelte:159
 msgid ""
 "No film: the library cannot show this. Try other words, or read below what each part of the "
 "sentence found."
@@ -759,7 +767,7 @@ msgstr "このフィルターに一致する画像はありません。"
 msgid "No reason recorded for this picture."
 msgstr "この画像を選んだ理由の記録がありません。"
 
-#: web/lib/AskPanel.svelte:177
+#: web/lib/AskPanel.svelte:195
 msgid "No rule the preview can check would drop a picture."
 msgstr "プレビューで確認できるルールで外れる写真はありません。"
 
@@ -799,11 +807,11 @@ msgstr "なし"
 msgid "North"
 msgstr "北"
 
-#: web/lib/AskPanel.svelte:180
+#: web/lib/AskPanel.svelte:198
 msgid "Not applied to a film you asked for"
 msgstr "リクエストした映画には適用されません"
 
-#: web/lib/AskPanel.svelte:29
+#: web/lib/AskPanel.svelte:32
 msgid "Not possible"
 msgstr "不可能"
 
@@ -897,7 +905,7 @@ msgstr "画像の確認"
 msgid "Pictures just read"
 msgstr "直前に読み取った画像"
 
-#: web/lib/AskPanel.svelte:204
+#: web/lib/AskPanel.svelte:222
 msgid "Pictures left after each step"
 msgstr "各ステップ後に残った写真"
 
@@ -928,11 +936,11 @@ msgstr "候補メディア"
 msgid "Portrait"
 msgstr "縦向き"
 
-#: web/lib/AskPanel.svelte:27
+#: web/lib/AskPanel.svelte:30
 msgid "Possible"
 msgstr "可能"
 
-#: web/lib/AskPanel.svelte:120 web/lib/AskPanel.svelte:130
+#: web/lib/AskPanel.svelte:133 web/lib/AskPanel.svelte:143
 msgid "Preview"
 msgstr "プレビュー"
 
@@ -1198,7 +1206,7 @@ msgstr "スマート（フェードとカット）"
 msgid "Soft romantic"
 msgstr "Soft romantic"
 
-#: web/lib/AskPanel.svelte:168
+#: web/lib/AskPanel.svelte:186
 msgid "Some of its pictures"
 msgstr "該当する写真の例"
 
@@ -1323,7 +1331,7 @@ msgstr ""
 "環境変数が最優先され、次に "
 "config.yaml、次にここでの保存内容、最後に既定値が使われます。先の2つのいずれかで設定されている項目はグレー表示になります。ラベルに示された場所で変更してください。"
 
-#: web/lib/AskPanel.svelte:24 web/routes/runs/[run_id]/+page.svelte:150
+#: web/lib/AskPanel.svelte:27 web/routes/runs/[run_id]/+page.svelte:150
 msgid "The film"
 msgstr "この動画"
 
@@ -1339,7 +1347,7 @@ msgstr "同居家族。説明文に記された入浴などの私的な場面も
 msgid "The model had nothing to say about this picture."
 msgstr "モデルはこの画像について何も記録していません。"
 
-#: web/lib/AskPanel.svelte:110
+#: web/lib/AskPanel.svelte:123
 msgid ""
 "The model reads your words against your prepared library. Preview first: it shows what each "
 "part of the sentence became and how many pictures fit, and films nothing."
@@ -1369,11 +1377,11 @@ msgstr ""
 "場所は Immich のものです。ジオコーディングを有効にすると（設定、ネットワーク）、公開の Nominatim または network.geocoding_url "
 "を通じて、映像の言語で地区名を表示します。"
 
-#: web/lib/AskPanel.svelte:22
+#: web/lib/AskPanel.svelte:25
 msgid "The pool"
 msgstr "候補"
 
-#: web/lib/AskPanel.svelte:84
+#: web/lib/AskPanel.svelte:97
 msgid "The preview could not start."
 msgstr "プレビューを開始できませんでした。"
 
@@ -1409,7 +1417,7 @@ msgstr "サーバーのURLが変更されました。新しいサーバーのAPI
 msgid "The settings could not be saved."
 msgstr "設定を保存できませんでした。"
 
-#: web/lib/AskPanel.svelte:146
+#: web/lib/AskPanel.svelte:164
 msgid "The words changed since this preview: preview again before making the film."
 msgstr "このプレビューの後に言葉が変わりました: 映画を作る前にもう一度プレビューしてください。"
 
@@ -1425,7 +1433,7 @@ msgstr "これらの人物は直近2件の人物思い出に登場していま�
 msgid "They play in the order they were taken, prepared like the rest of the cut."
 msgstr "撮影された順番で再生され、編集の他の部分と同様に準備されます。"
 
-#: web/lib/AskPanel.svelte:28
+#: web/lib/AskPanel.svelte:31
 msgid "Thin"
 msgstr "少なめ"
 
@@ -1510,7 +1518,7 @@ msgstr "代わりにこの画像を使う"
 msgid "Username"
 msgstr "ユーザー名"
 
-#: web/lib/AskPanel.svelte:23
+#: web/lib/AskPanel.svelte:26
 msgid "Verdict"
 msgstr "判定"
 
@@ -1544,7 +1552,7 @@ msgstr "Vintage charm"
 msgid "Watch your memories again, in films you can make your own."
 msgstr "思い出をもう一度。自分らしく仕上げた動画で。"
 
-#: web/lib/AskPanel.svelte:20
+#: web/lib/AskPanel.svelte:23
 msgid "What"
 msgstr "何"
 
@@ -1554,11 +1562,11 @@ msgid ""
 "would, or check it first without rendering."
 msgstr "自動化が次に作成する内容で、`auto suggest` が表示するのと同じリストです。`auto run` と同じように実行するか、レンダリングせずに先に確認できます。"
 
-#: web/lib/AskPanel.svelte:152
+#: web/lib/AskPanel.svelte:170
 msgid "What the editor's rules would drop"
 msgstr "編集ルールで外れる写真"
 
-#: web/lib/AskPanel.svelte:21
+#: web/lib/AskPanel.svelte:24
 msgid "What the library measures"
 msgstr "ライブラリが測るもの"
 
@@ -1566,11 +1574,11 @@ msgstr "ライブラリが測るもの"
 msgid "What to render"
 msgstr "レンダリングする対象"
 
-#: web/lib/AskPanel.svelte:18
+#: web/lib/AskPanel.svelte:21
 msgid "When"
 msgstr "いつ"
 
-#: web/lib/AskPanel.svelte:19
+#: web/lib/AskPanel.svelte:22
 msgid "Where"
 msgstr "どこ"
 
@@ -1578,7 +1586,7 @@ msgstr "どこ"
 msgid "White"
 msgstr "白"
 
-#: web/lib/AskPanel.svelte:17
+#: web/lib/AskPanel.svelte:20
 msgid "Who"
 msgstr "誰"
 
@@ -1660,11 +1668,7 @@ msgstr "全員一緒"
 msgid "any of them"
 msgstr "いずれか"
 
-#: web/lib/AskPanel.svelte:138
-msgid "making the film prepares them first"
-msgstr "フィルムを作成すると先に準備されます"
-
-#: web/lib/AskPanel.svelte:116
+#: web/lib/AskPanel.svelte:129
 msgid "our cat along the years"
 msgstr "うちの猫の年月"
 
@@ -1697,19 +1701,26 @@ msgstr "{days} 日間・{count} 枚"
 msgid "{done} of {total}"
 msgstr "{done}/{total}"
 
-#: web/lib/AskPanel.svelte:157
+#: web/lib/AskPanel.svelte:175
 #, python-brace-format
 msgid "{passed} of {checked} pictures pass the rules checked before cutting."
 msgstr "{checked} 枚中 {passed} 枚が編集前に確認できるルールを通過します。"
 
-#: web/lib/AskPanel.svelte:155
+#: web/lib/AskPanel.svelte:173
 #, python-brace-format
 msgid ""
 "{passed} of {checked} prepared pictures pass the rules checked before cutting; {unread} are "
 "not prepared yet."
 msgstr "準備済みの {checked} 枚中 {passed} 枚が編集前に確認できるルールを通過します。{unread} 枚はまだ準備されていません。"
 
-#: web/lib/AskPanel.svelte:134
+#: web/lib/AskPanel.svelte:154
+#, python-brace-format
+msgid ""
+"{pictures} pictures in this period aren't prepared yet; preparing them first takes about "
+"{amount}"
+msgstr "この期間の{pictures}枚の写真はまだ準備されていません。先に準備するには約{amount}かかります"
+
+#: web/lib/AskPanel.svelte:148
 #, python-brace-format
 msgid "{pictures} pictures: {photos} photos, {videos} videos"
 msgstr "写真 {pictures} 枚: 静止画 {photos}、動画 {videos}"
