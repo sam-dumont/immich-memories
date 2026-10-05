@@ -205,7 +205,7 @@ def write_config(home: Path, url: str, api_key: str) -> Path:
     (state / "cache").mkdir(parents=True, exist_ok=True)
     (state / "output").mkdir(parents=True, exist_ok=True)
     config = {
-        "tier": "nas",
+        "tier": "basic",
         "immich": {"url": url, "api_key": api_key, "api_version": "auto"},
         "output": {
             "directory": str(state / "output"),

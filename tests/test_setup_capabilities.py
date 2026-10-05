@@ -85,7 +85,7 @@ def test_capabilities_command_explains_connection_evidence_and_small_profiles(
         "immich_memories.audio.generators.ace_step_isolated.isolated_python",
         lambda: tmp_path / "python",
     )
-    config = Config(tier="nas")
+    config = Config(tier="basic")
 
     result = CliRunner().invoke(main.commands["capabilities"], obj={"config": config})
 
@@ -185,7 +185,7 @@ def test_json_report_preserves_failed_checks_and_missing_local_audio(monkeypatch
     )
 
     result = CliRunner().invoke(
-        main.commands["capabilities"], ["--json"], obj={"config": Config(tier="nas")}
+        main.commands["capabilities"], ["--json"], obj={"config": Config(tier="basic")}
     )
 
     assert result.exit_code == 0

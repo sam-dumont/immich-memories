@@ -62,8 +62,7 @@ def test_preflight_reports_service_compute_without_downgrading_requested_tier(
         assert "CPUExecutionProvider" in result.details
 
 
-@pytest.mark.parametrize("tier", ["basic", "nas"])
-def test_basic_does_not_probe_an_inference_service(tier):
-    config = Config(tier=tier, inference={"facts_base_url": "https://never-contact.example"})
+def test_basic_does_not_probe_an_inference_service():
+    config = Config(tier="basic", inference={"facts_base_url": "https://never-contact.example"})
     result = check_inference_compute(config)
     assert result.status is CheckStatus.SKIPPED

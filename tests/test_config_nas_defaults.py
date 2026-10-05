@@ -1,4 +1,4 @@
-"""A NAS install's config survives the advanced merge at every depth."""
+"""A basic-tier install's config survives the advanced merge at every depth."""
 
 import yaml
 
@@ -46,8 +46,8 @@ def test_the_flat_key_still_wins_where_both_state_it(tmp_path):
     assert config.editorial.preparation.batch_size == 16
 
 
-def test_a_blank_install_prepares_at_the_documented_nas_tier(tmp_path):
-    """No tier stated is the nas tier: the rules reader, and no caption server to wait on."""
+def test_a_blank_install_prepares_at_the_documented_basic_tier(tmp_path):
+    """No tier stated is the basic tier: the rules reader, and no caption server to wait on."""
     config = Config.from_yaml(_write(tmp_path, {"immich": {"url": "http://nas:2283"}}))
     assert config.editorial.resolve_reader(config.llm.model) == "rules"
     assert config.editorial.preparation.tier == "no_captions"

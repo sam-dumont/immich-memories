@@ -43,7 +43,7 @@ def test_nas_preflight_checks_a_configured_llm_for_text_features(monkeypatch):
     # WHY: test the provider HTTP boundary without running or billing a text model.
     monkeypatch.setattr(httpx.Client, "post", answer)
     config = Config(
-        tier="nas", llm={"enabled": True, "base_url": "http://text.test/v1", "model": "reader"}
+        tier="basic", llm={"enabled": True, "base_url": "http://text.test/v1", "model": "reader"}
     )
 
     assert check_llm(config).status is CheckStatus.OK
@@ -74,7 +74,7 @@ def test_explicit_model_reader_without_a_model_is_a_configuration_error(monkeypa
 
 
 def test_nas_preflight_skips_absent_detector_export_and_interpreter(tmp_path):
-    config = Config(tier="nas")
+    config = Config(tier="basic")
     config.editorial.preparation.marqo_onnx = str(tmp_path / "missing.onnx")
     config.editorial.preparation.detector_python = str(tmp_path / "missing-python")
     assert check_detector_export(config).status is CheckStatus.SKIPPED

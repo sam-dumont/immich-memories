@@ -129,7 +129,7 @@ def test_a_special_days_catalogue_title_is_never_shown_as_a_ready_override_in_fr
     banked at scan time (#1959), not a ready title: with no reader and
     nothing to place it by, the film falls back to the template layers
     rather than the catalogue's own English words."""
-    config = Config(tier="nas", title_screens={"locale": "fr"})
+    config = Config(tier="basic", title_screens={"locale": "fr"})
     source = _resolve(
         title_override="First day of school",
         memory_type="special_day",

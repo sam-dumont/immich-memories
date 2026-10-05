@@ -153,7 +153,7 @@ def test_changed_render_identity_cannot_reuse_an_old_merge(source, probes, tmp_p
         tmp_path,
         merge=merge,
         hardware_enabled=change != "hardware",
-        config=Config(tier="nas") if change == "tier" else None,
+        config=Config(tier="basic") if change == "tier" else None,
     )
     assert second != first
     assert first.is_file() and second.is_file()

@@ -61,7 +61,7 @@ def test_reading_and_preparation_agree_on_one_complete_caption_pair():
         "llm-only": ("A cat sleeps.", "a room"),
         "partial-smol": ("A child runs.", "a garden"),
     }
-    config = Config(tier="nas", editorial={"description_model": LLM_MODEL})
+    config = Config(tier="basic", editorial={"description_model": LLM_MODEL})
     assert prepared_captions(config, ids)["both"] == "A dog runs."
 
 
