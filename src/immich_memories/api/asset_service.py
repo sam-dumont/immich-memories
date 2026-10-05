@@ -10,7 +10,7 @@ from typing import Any, TypeVar
 
 import httpx
 
-from immich_memories.api.models import Asset, AssetFace
+from immich_memories.api.models import Asset, AssetFace, Stack
 from immich_memories.tracking.timed import timed
 
 RequestFn = Callable[..., Any]
@@ -91,6 +91,11 @@ class AssetService:
         """Get a specific asset by ID."""
         data = await self._request("GET", f"/assets/{asset_id}")
         return Asset(**data)
+
+    async def get_stacks(self) -> list[Stack]:
+        """Every stack this account's key can see; needs `stack.read`, checked by the caller."""
+        data = await self._request("GET", "/stacks")
+        return [Stack(**row) for row in data] if isinstance(data, list) else []
 
     async def get_asset_faces(self, asset_id: str) -> list[AssetFace]:
         """Every face Immich found in one asset, with where each sits.

@@ -18,6 +18,7 @@ from immich_memories.api.models import (
     PeopleAccess,
     Person,
     ServerInfo,
+    Stack,
     TimeBucket,
     UserInfo,
 )
@@ -136,6 +137,9 @@ class SyncImmichClient:
 
     def get_asset(self, asset_id: str) -> Asset:
         return self._run(self._async_client.get_asset(asset_id))
+
+    def get_stacks(self) -> list[Stack]:
+        return self._run(self._async_client.get_stacks())
 
     def get_asset_faces(self, asset_id: str) -> list[AssetFace]:
         return self._run(self._async_client.get_asset_faces(asset_id))

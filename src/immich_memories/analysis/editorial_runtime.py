@@ -689,6 +689,9 @@ def build_editorial_planner(
                 folded, directory=backend._context.artifact_dir
             ),
             preview_jpeg=lambda asset: cached_preview_bytes(thumbnail_cache, asset.id),
+            stack_of=(lambda: client.stack_map(accounts))
+            if isinstance(client, AccessBoundClient)
+            else dict,
         ),
         episode_reader_factory=episode_reader_factory,
         backend=backend,

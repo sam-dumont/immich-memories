@@ -53,6 +53,7 @@ from immich_memories.analysis.source_filter import (
     live_photo_component_ids,
 )
 from immich_memories.analysis.source_quality import grounded_source_annotations
+from immich_memories.analysis.stacks import fold_stacks, starred_primaries
 from immich_memories.analysis.visual_atlas import AtlasSource
 from immich_memories.api.access_clients import AccountReadFailed
 from immich_memories.api.models import AssetType, VideoClipInfo
@@ -151,6 +152,9 @@ class EditorialDependencies:
     preview_jpeg: Callable[[Asset], bytes | None] | None = None
     # Keeps which copy stands for each exact-copy group, so a replay reads that one.
     record_copies: Callable[[FoldedPool], None] = lambda _folded: None
+    # Member asset id -> stack primary asset id, from `GET /stacks` (Immich 3.3,
+    # immich-app/immich#31082). Empty on a 403 (no `stack.read`) or a pre-stacks server.
+    stack_of: Callable[[], Mapping[str, str]] = dict
 
 
 @dataclass(frozen=True)
@@ -234,20 +238,12 @@ def prepare_editorial_source(
     excluded = set(request.owner_excluded_asset_ids)
     components = live_photo_component_ids(asset_of(source) for source in sources)
     generated = frozenset(request.scope.generated_asset_ids)
-    copies = picture_copies(
-        (asset_of(source) for source in sources),
-        hash_of=_preview_hash(dependencies.preview_jpeg),
-    )
-    starred = starred_keepers(copies, (asset_of(source) for source in sources))
-    sources = tuple(
-        _with_favourite(source, True) if asset_id_of(source) in starred else source
-        for source in sources
-    )
+    copies, stacked, sources = _fold_copies_and_stacks(sources, dependencies)
     source_decisions = tuple(
         (
             source,
             _source_exclusion_reason(
-                source, request, dependencies, excluded, components, generated, copies
+                source, request, dependencies, excluded, components, generated, copies, stacked
             ),
         )
         for source in sources
@@ -319,6 +315,24 @@ def prepare_editorial_source(
     )
     _validate_prepared_source(prepared)
     return prepared
+
+
+def _fold_copies_and_stacks(
+    sources: Sequence[Asset | VideoClipInfo], dependencies: EditorialDependencies
+) -> tuple[Mapping[str, Asset], Mapping[str, Asset], tuple[Asset | VideoClipInfo, ...]]:
+    """Picture copies and stack members folded into their keeper, with its star promoted."""
+    copies = picture_copies(
+        (asset_of(source) for source in sources),
+        hash_of=_preview_hash(dependencies.preview_jpeg),
+    )
+    stacked = fold_stacks((asset_of(source) for source in sources), dependencies.stack_of())
+    starred = starred_keepers(copies, (asset_of(source) for source in sources))
+    starred |= starred_primaries(stacked, (asset_of(source) for source in sources))
+    sources = tuple(
+        _with_favourite(source, True) if asset_id_of(source) in starred else source
+        for source in sources
+    )
+    return copies, stacked, sources
 
 
 def _captured_assets(sources: Sequence[Asset | VideoClipInfo]) -> dict[str, Asset]:

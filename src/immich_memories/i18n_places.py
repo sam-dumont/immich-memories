@@ -49,6 +49,51 @@ def _codes_by_english_name() -> dict[str, str]:
             "russian federation": "RU",
         }
     )
+    # GeoNames' countryInfo.txt short names (immich-app/immich#30199 rewrites
+    # asset_exif.country to these on Immich 3.3) differ from CLDR's for every
+    # entry below. Two defunct codes (CS, AN) have no CLDR entry of their own,
+    # so they alias to their nearest living successor instead.
+    codes.update(
+        {
+            "antigua and barbuda": "AG",
+            "aland islands": "AX",
+            "bosnia and herzegovina": "BA",
+            "saint barthelemy": "BL",
+            "bonaire, saint eustatius and saba": "BQ",
+            "cocos islands": "CC",
+            "democratic republic of the congo": "CD",
+            "republic of the congo": "CG",
+            "ivory coast": "CI",
+            "cabo verde": "CV",
+            "curacao": "CW",
+            "south georgia and the south sandwich islands": "GS",
+            "hong kong": "HK",
+            "heard island and mcdonald islands": "HM",
+            "saint kitts and nevis": "KN",
+            "saint lucia": "LC",
+            "saint martin": "MF",
+            "myanmar": "MM",
+            "macao": "MO",
+            "the netherlands": "NL",
+            "saint pierre and miquelon": "PM",
+            "pitcairn": "PN",
+            "palestinian territory": "PS",
+            "reunion": "RE",
+            "saint helena": "SH",
+            "svalbard and jan mayen": "SJ",
+            "sao tome and principe": "ST",
+            "turks and caicos islands": "TC",
+            "timor leste": "TL",
+            "turkey": "TR",
+            "trinidad and tobago": "TT",
+            "united states minor outlying islands": "UM",
+            "vatican": "VA",
+            "saint vincent and the grenadines": "VC",
+            "wallis and futuna": "WF",
+            "serbia and montenegro": "RS",
+            "netherlands antilles": "CW",
+        }
+    )
     return codes
 
 

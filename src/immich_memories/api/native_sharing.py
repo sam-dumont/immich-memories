@@ -156,7 +156,19 @@ def native_mode(version: ServerInfo) -> str:
         )
     if version.major == 2 or version.minor < 2:
         return "legacy"
-    if version.minor > 3 or version.prerelease not in (None, 0, "", 1):
+    if version.minor > 3:
+        raise UnsupportedImmichVersion(
+            f"Native sharing is unvalidated on Immich {version.version_string}"
+        )
+    if version.minor == 3 and version.patch == 0 and version.prerelease not in (None, ""):
+        # The 3.3.0 rc track: rc.0 predates the people-sharing server code this
+        # module was validated against; rc.1 and every later rc carry it.
+        if version.prerelease == 0:
+            raise UnsupportedImmichVersion(
+                "Immich 3.3.0-rc.0 is not validated for experimental native sharing"
+            )
+        return "people"
+    if version.prerelease not in (None, 0, "", 1):
         raise UnsupportedImmichVersion(
             f"Native sharing is unvalidated on Immich {version.version_string}"
         )

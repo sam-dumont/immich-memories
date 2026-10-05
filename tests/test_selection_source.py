@@ -1309,3 +1309,59 @@ def test_a_forwarded_copy_with_a_cached_preview_folds_into_its_picture() -> None
 
     assert prepared.candidate_ids == ("camera",)
     assert prepared.excluded_ids == ("forwarded",)
+
+
+def test_a_stack_of_an_edit_and_its_original_gives_only_the_edit_carrying_the_favourite() -> None:
+    # Immich's mobile app auto-stacks an edit with its original (immich-app/immich#31082);
+    # the edit is the stack primary even though it has fewer pixels than the original.
+    edit = make_asset("edit", original_file_name="IMG_1234_edit.heic")
+    edit.type, edit.width, edit.height = AssetType.IMAGE, 1000, 1000
+    original = make_asset("original", original_file_name="IMG_1234.heic", is_favorite=True)
+    original.type, original.width, original.height = AssetType.IMAGE, 4000, 3000
+
+    prepared = prepare_editorial_source(
+        EditorialSelectionRequest(scope=SourceScope()),
+        EditorialDependencies(
+            source_fetcher=lambda _scope: (edit, original),
+            stack_of=lambda: {"original": "edit"},
+        ),
+    )
+
+    assert prepared.candidate_ids == ("edit",)
+    assert prepared.excluded_ids == ("original",)
+    assert next(c for c in prepared.candidates if c.asset_id == "edit").favourite
+
+
+def test_a_burst_stack_folds_every_member_into_its_primary() -> None:
+    primary = make_asset("primary", original_file_name="IMG_0001.heic")
+    second = make_asset("second", original_file_name="IMG_0002.heic")
+    third = make_asset("third", original_file_name="IMG_0003.heic")
+    for asset in (primary, second, third):
+        asset.type = AssetType.IMAGE
+
+    prepared = prepare_editorial_source(
+        EditorialSelectionRequest(scope=SourceScope()),
+        EditorialDependencies(
+            source_fetcher=lambda _scope: (primary, second, third),
+            stack_of=lambda: {"second": "primary", "third": "primary"},
+        ),
+    )
+
+    assert prepared.candidate_ids == ("primary",)
+    assert set(prepared.excluded_ids) == {"second", "third"}
+
+
+def test_no_stack_read_permission_keeps_todays_behaviour() -> None:
+    # A 403 or a pre-stacks server answers an empty map (`access_clients.py`); both
+    # files reach the editor exactly as they did before Immich 3.3 added stacking.
+    edit = make_asset("edit", original_file_name="IMG_1234_edit.heic")
+    edit.type = AssetType.IMAGE
+    original = make_asset("original", original_file_name="IMG_1234.heic")
+    original.type = AssetType.IMAGE
+
+    prepared = prepare_editorial_source(
+        EditorialSelectionRequest(scope=SourceScope()),
+        EditorialDependencies(source_fetcher=lambda _scope: (edit, original)),
+    )
+
+    assert set(prepared.candidate_ids) == {"edit", "original"}
