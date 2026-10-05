@@ -11,9 +11,9 @@ Use **Container Manager → Project** on a DSM model that supports Container Man
 
 :::info Tested on Synology; GUI project wizard not yet exercised
 
-The exact generated NAS file passed a fresh-volume SSH/Compose installation on DSM 7.3: explicit model download, preflight, a default first film, playback, and a Settings URL save/reload/restore. The Container Manager **Project wizard** itself was not exercised. See the [cold-install measurement](../../better/measured.md#generated-cold-installs) and earlier [Synology checks](../../better/measured.md#tested-setups).
+The exact generated NAS file passed a fresh-volume SSH/Compose installation on DSM 7.3: explicit model download, preflight, a default first film, playback, and a Settings URL save/reload/restore. The Container Manager **Project wizard** itself was not exercised. See the [cold-install measurement](../../better/measured.md#cold-start-time-by-hardware-and-tier) and earlier [Synology checks](../../better/measured.md#cold-start-time-by-hardware-and-tier).
 
-A later [stock Docker test](../../better/measured.md#june-docker-install), from source `4b98c19926ec`
+A later [stock Docker test](../../better/measured.md#cold-start-time-by-hardware-and-tier), from source `4b98c19926ec`
 and local image `f62dbfa8d8c8`, also passed with a new volume and fresh models: **28m 56s** for
 the first CLI film, software encoding, bundled music and complete decode. It needed no source
 overlay or dependency repair. This is pre-RC evidence; RC1 follows. It does not exercise the wizard

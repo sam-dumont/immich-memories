@@ -51,7 +51,7 @@ keeping Basic selection and the 1080p cap. A small CPU-only NAS uses static titl
 fades instead of moving kernel effects. Generated music is not a Full-only feature: the
 measured M2 Basic export completed local ACE-Step and four-stem mixing.
 
-The [six-configuration June example](../better/measured.md#june-hardware-matrix)
+The [six-configuration June example](../better/measured.md#cold-start-time-by-hardware-and-tier)
 records uninterrupted cold runs on a NAS, one shared Kubernetes GPU and two Macs, including
 the extra render time and file size for 4K HDR. It names the features exercised, remaining
 warnings and setup corrections. Basic remains 1080p on both NAS and Mac.
@@ -69,7 +69,7 @@ and about 25 GB for persistent data, plus room for the image and finished films.
 
 **Cost:** the first cut prepares the pictures in its period. Later cuts reuse compatible facts;
 they still render the video. Basic output stops at 1080p. The
-[finished-film measurements](../better/measured.md#whole-film-controls) include a one-minute
+[finished-film measurements](../better/measured.md#longer-films-memory-and-duration) include a one-minute
 NAS month that took 7m 23s with picture facts already prepared. That is not a first-install time.
 
 **Check:** `capabilities` should report Basic. A software encoder is a valid result. Run
@@ -80,9 +80,8 @@ NAS month that took 7m 23s with picture facts already prepared. That is not a fi
 Captions add information beyond dates and faces: what is happening, what objects are present,
 and how a picture fits the story. The GPU tier also adds document and sensitive-content checks
 and a family-viewing pre-screen. Review the cut before sharing it; model checks can miss things.
-See [what GPU changed in one CC0 month](../better/gpu-example.md): two different videos and
-two additional source exclusions. Both tiers kept all four favourites. The example records
-the changed cut and its limits; it does not claim that a model always improves a film.
+See [what GPU changed in one CC0 month](../better/tier-example.md#basic-and-gpu). The example
+records the changed cut and its limits; it does not claim that a model always improves a film.
 
 **Fast path:** on Apple Silicon, use the [native Mac setup](../run/reference/mac-example.md).
 The `all-mac` extra makes Metal available to automatic tier detection; captions still need a
@@ -133,7 +132,7 @@ service; [bundled music already works](../make/titles-maps-music.md).
 | Apple Silicon Mac | [Native Mac setup](../run/reference/mac-example.md) |
 | Kubernetes cluster | [Kubernetes](../run/kubernetes.md) |
 
-The [tested setups table](../better/measured.md#tested-setups) separates installation checks,
+The [tested setups table](../better/measured.md#cold-start-time-by-hardware-and-tier) separates installation checks,
 picture preparation and finished films. It names missing measurements too. Rendering benchmarks
 alone do not prove that a new user can install and finish a film.
 

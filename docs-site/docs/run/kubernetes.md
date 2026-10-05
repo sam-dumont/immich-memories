@@ -25,7 +25,7 @@ and describe your setup. Helm support will be considered when people request it.
 
 The generated GPU path has run on RKE2 with an NVIDIA T1000: cold model initialization,
 preflight, encrypted Settings save/reload and a complete first film passed, including full audio/video
-decode. The [measured run](../better/measured.md#generated-gpu-first-film) records the 1080p output,
+decode. The [measured run](../better/measured.md#cold-start-time-by-hardware-and-tier) records the 1080p output,
 CUDA inference/captions, software encoding and corrected local/block SQLite storage. These checks
 used a locally built candidate; they do not verify a published release download.
 

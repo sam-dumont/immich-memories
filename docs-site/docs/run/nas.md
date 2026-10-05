@@ -119,9 +119,9 @@ film always renders in English until you set `title_screens.locale: fr` (or add
 ## What to expect
 
 Basic films are capped at 1080p. The default 4 GiB memory limit suits that output.
-In the [June cold matrix](../better/measured.md#june-hardware-matrix), a 60-second film from a
+In the [June cold matrix](../better/measured.md#cold-start-time-by-hardware-and-tier), a 60-second film from a
 725-source month took 16m 36s on a J4125 NAS with hardware encoding, including preparation,
-bundled music and rendering. A separate [fresh default Docker install](../better/measured.md#june-docker-install)
+bundled music and rendering. A separate [fresh default Docker install](../better/measured.md#cold-start-time-by-hardware-and-tier)
 completed its first film in **28m 56s** with software encoding and bundled music. It used default
 settings; these separately selected films are not an isolated encoder comparison. Larger periods, slower storage and different media can still take hours; these
 single-run results are not deadlines for every library.

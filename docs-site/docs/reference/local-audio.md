@@ -79,6 +79,13 @@ its model cache on a volume. On an NVIDIA box that is the way to go. On a Mac, a
 reach Metal, so run ACE-Step natively and point the app in Docker at
 `http://host.docker.internal:8000`.
 
+Use a build containing the model-loading cleanup fix, which keeps a shared card from retaining
+VRAM after an out-of-memory error:
+
+```text
+ghcr.io/sam-dumont/ace-step-1.5@sha256:45530623b81fa48fd8e4c8398d7d4df4c4ff8b16931edfc3c5cf903dee6dfc24
+```
+
 ## MusicGen
 
 Meta's MusicGen, through a remote server only: text-to-music, and Demucs stem separation on its

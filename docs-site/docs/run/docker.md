@@ -71,8 +71,8 @@ On the Docker host: [http://localhost:8080](http://localhost:8080).
 If the host is your NAS or another server, [tunnel or enable LAN access](#reaching-the-ui-from-another-machine).
 
 Then make [your first film](../get-started/first-film.mdx). Start with the 20–50-item trial album.
-The [June measurements](../better/measured.md#june-hardware-matrix) record a complete cold
-NAS Basic film in 16m 36s with hardware encoding. A separate [fresh default Docker install](../better/measured.md#june-docker-install)
+The [June measurements](../better/measured.md#cold-start-time-by-hardware-and-tier) record a complete cold
+NAS Basic film in 16m 36s with hardware encoding. A separate [fresh default Docker install](../better/measured.md#cold-start-time-by-hardware-and-tier)
 on the same NAS completed its first film in **28m 56s** with software encoding and bundled music.
 Both used the same 725-source month, but these separately selected films are not an isolated encoder comparison. See [what to expect](./nas.md#what-to-expect).
 

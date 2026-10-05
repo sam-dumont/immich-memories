@@ -13,7 +13,7 @@ The published Docker image has no `llama-server`: Docker and Kubernetes require 
 text-model server. Native Linux/macOS can instead run the [app-owned llama.cpp reader](../better/reader.md),
 which is a different model/runtime recipe. External services own their memory and shutdown.
 
-The exact Ollama/model pair has [recorded conformance results](../better/measured.md#ollama-validation)
+The exact Ollama/model pair has [recorded conformance results](../better/measured.md#local-reader-time-and-accuracy)
 on an M5 Max with 128 GiB and warm caches. Thinking-off native requests passed 33/34 probes;
 motion interpretation failed. That is evidence for individual calls, **not an offline film pass**
 or a minimum hardware measurement. The Compose deployment below remains untested, tracked in

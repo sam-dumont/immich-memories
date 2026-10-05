@@ -4,7 +4,9 @@ title: Generate a soundtrack
 
 # Generate a soundtrack
 
-Your film already gets music: a bundled track, or an audio file you choose. A generator makes an original track for the film’s mood and length. It is optional and off by default.
+Your film already gets music: a bundled track, or an audio file you choose. A generator makes an original track for the film's mood and length. It is optional and off by default.
+
+Without a generator, a film longer than one bundled track plays a varied, crossfaded playlist from the mood's folder instead of looping a single track, and the bundled mix is mastered to the same loudness as a generated one.
 
 Choose the route for your machine:
 
@@ -69,22 +71,15 @@ The server owns its weights and GPU. An app in Docker Desktop can reach a native
 
 ### Sharing one GPU with the worker
 
-The [June matrix](./measured.md#june-hardware-matrix) completed NAS-controlled and Kubernetes
-GPU films serially on one T1000 8 GB, including generated music and four-stem separation.
-It used the rebuilt ACE-Step service containing the
-[model-loading cleanup fix](https://github.com/sam-dumont/ace-step-1.5/pull/4), at this exact image:
-
-```text
-ghcr.io/sam-dumont/ace-step-1.5@sha256:45530623b81fa48fd8e4c8398d7d4df4c4ff8b16931edfc3c5cf903dee6dfc24
-```
-
-That digest identifies the tested pre-RC service; it is not a claim about every upstream build.
-Use a service containing that fix for the same configuration. Its server-side offload settings
-still matter. GPU Operator time-slicing provides access to one card, not separate VRAM pools or
-model unloading. The combined worker releases its own models between phases; the separate
-ACE-Step service must manage its own lifetime. Run one film at a time on a shared small card.
-A successful `/health` response does not prove generation fits: check an actual generated track
-and its stem separation. The matrix needed no manual unload or service restart inside acceptance.
+Tested sharing ACE-Step with the render worker on one small GPU card: both films completed
+serially, with generated music and four-stem separation. See
+[Measure your setup](./measured.md#render-worker-and-music-sharing-one-gpu) for the numbers.
+Use a build containing the model-loading cleanup fix (see
+[pinned ACE-Step image](../reference/local-audio.md#in-a-container)). GPU Operator time-slicing
+provides access to one card, not separate VRAM pools or model unloading. The combined worker
+releases its own models between phases; the separate ACE-Step service must manage its own
+lifetime. Run one film at a time on a shared small card. A successful `/health` response does
+not prove generation fits: check an actual generated track and its stem separation.
 
 [MusicGen configuration](../reference/local-audio.md#musicgen) uses its own server and endpoint.
 
