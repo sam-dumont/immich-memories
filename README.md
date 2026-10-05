@@ -82,7 +82,7 @@ have their own data flow, and a local URL alone doesn't prove nothing leaves.
 [Privacy](https://sam-dumont.github.io/immich-memories/docs/run/privacy) lists every recipient
 and how to check the Basic tier is offline.
 
-**Turn on authentication before you open it to your LAN.** It's off by default. Native installs
+**Turn on authentication before you open it to your LAN.** Authentication is disabled by default. Native installs
 and the shipped Compose file listen on localhost only; change the port mapping and anyone who
 can reach it can read your library through it. [Operate and configure](https://sam-dumont.github.io/immich-memories/docs/run/overview)
 covers login, NAS/Kubernetes setup, backups and storage. Keep one UI replica.
