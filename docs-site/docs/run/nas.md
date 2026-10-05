@@ -130,7 +130,7 @@ results. Rendering still happens every time.
 
 Basic preparation leaves Marqo and Docling off; GPU/Full add those detectors, captions and the
 Laya pre-screen. Compatible facts already in the store stay banked when you change tiers. See
-[what the upgrades add](../get-started/what-a-gpu-or-a-model-adds.md).
+[what the upgrades add](../get-started/choose-your-setup.md).
 
 CPU titles draw their background and text once, then move, scale and fade the text with FFmpeg.
 The background stays still to keep software encoding cheap. No extra package is needed. For cheaper trip
@@ -188,7 +188,7 @@ Stay at 1080p on NAS. For rendering on a stronger machine, use a
 ## What a NAS can't do
 
 GPU selection and local generated music need their respective GPU services. A reader alone still
-helps with titles and music mood. Use the [add-on guide](../get-started/what-a-gpu-or-a-model-adds.md)
+helps with titles and music mood. Use the [add-on guide](../get-started/choose-your-setup.md)
 to choose the next useful piece.
 
 ## Everything else

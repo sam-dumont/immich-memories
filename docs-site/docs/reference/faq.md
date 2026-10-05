@@ -21,7 +21,7 @@ Library processing talks to your Immich server. Model setup downloads weights fr
 Yes, it works on a plain NAS: the default install cuts films on a NAS CPU from dates, places, favourites,
 people and what small local classifiers measure on each picture. A GPU makes it faster and adds captions,
 and a text model can refine the draft
-([What a GPU or a model adds](../get-started/what-a-gpu-or-a-model-adds.md)). Sizes and the one Synology trap are on
+([What a GPU or a model adds](../get-started/choose-your-setup.md)). Sizes and the one Synology trap are on
 [On a NAS](../run/nas.md) and [Requirements](../run/requirements.md).
 
 **Do I need face recognition?**

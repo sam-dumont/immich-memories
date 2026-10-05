@@ -6,14 +6,7 @@ title: How it chooses
 
 You choose a month, a trip, a person or an album. Immich Memories turns that pool into a chronological film: a few moments worth keeping, rather than every photo you took.
 
-```mermaid
-flowchart TD
-  accTitle: From your chosen pictures to a film
-  accDescr: Group pictures into moments, choose shots, let you review the cut, then render.
-  moments["Find the moments"] --> shots["Choose and order shots"]
-  shots --> review["You review the cut"]
-  review --> film["Render your film"]
-```
+{/* diagram: seq-generate */}
 
 Thirty pictures of the same jump are one moment. A holiday with several stops has several stories. The editor gives those stories room, picks a frame from each moment, and removes repeats. It uses dates, places, faces, favourites and small local picture classifiers.
 

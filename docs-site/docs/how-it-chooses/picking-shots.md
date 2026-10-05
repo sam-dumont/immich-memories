@@ -10,8 +10,8 @@ A selected video plays as video, usually up to six seconds. Clips shorter than t
 
 The six seconds don't have to be the first six. Once the film's videos are picked, each one is read once for where to cut, and the answer is saved for every later film:
 
-- **The picture.** Every predicted frame stores only what changed, so frame sizes go up when something crosses a still shot. They're in the file's index (about 64 KB), so nothing gets decoded. From a still camera that's the action: the riders crossing a finish line, not the empty road before them.
-- **The sound.** A handheld clip changes everywhere, so its sound decides next: the loudest moment (the cheer when the candles go out, a squeal) with a second and a half of build-up before it. Without one, the stretch with the most talking wins. Only the sound is fetched, a minute of it at most, so a five-minute clip costs what a one-minute one does: about 1.5 s per clip on a Celeron NAS.
+- **The picture.** It finds where the picture changes most, without decoding the whole clip. From a still camera that's the action: the riders crossing a finish line, not the empty road before them.
+- **The sound.** A handheld clip changes everywhere, so its sound decides next: the loudest moment (the cheer when the candles go out, a squeal) with a second and a half of build-up before it. Without one, the stretch with the most talking wins. Only the sound is fetched, a minute of it at most, so a five-minute clip costs about what a one-minute one does.
 
 A clip with nothing that stands out keeps its opening.
 
