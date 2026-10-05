@@ -488,12 +488,18 @@ _AUDIENCE_WORDS: frozenset[str] = _folded(
         "pubblico",  # it
         "multidao",  # pt-BR, pt-PT
         "tlum",
+        "tlumu",  # pl: genitive, as "bez tlumu" takes
         "publiczność",
-        "publicznosc",  # pl
+        "publicznosc",
+        "publicznosci",  # pl: genitive, as "bez publicznosci" takes
         "publik",
         "folkmassa",  # sv
         "толпа",
-        "зрители",  # ru
+        "толпы",  # ru: genitive, as "без толпы" takes
+        "зрители",
+        "зрителей",  # ru: genitive plural, as "без зрителей" takes
+        "публика",
+        "публики",  # ru: "the audience/public" (nominative and the genitive "без публики" takes)
     }
 )
 

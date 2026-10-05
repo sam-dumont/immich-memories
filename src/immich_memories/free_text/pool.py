@@ -469,8 +469,13 @@ def _company(funnel: _Funnel, who: WhoLink, lexicon: Lexicon) -> None:
 
 
 def _names_another_kind(picture: LibraryPicture, kind: str) -> bool:
+    # #2072: a performer shot with the audience in frame is still a performer shot -- the
+    # crowd is what makes a concert a concert. Only a shot naming no performer at all (an
+    # audience alone) must stay excluded; that one never reached `kept` to begin with, since
+    # the caption never named a performer for `names_company` to match.
+    allowed = {kind, "people"} | ({"audience"} if kind == "performers" else set())
     return any(
-        (found := caption_words.caption_kind_of(word)) is not None and found not in (kind, "people")
+        (found := caption_words.caption_kind_of(word)) is not None and found not in allowed
         for word in words_of(picture.caption or "")
     )
 

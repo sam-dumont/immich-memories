@@ -28,7 +28,13 @@ from immich_memories.analysis.editorial_contracts import (
     TraceDecision,
 )
 from immich_memories.analysis.exact_copies import CopyGroup, FoldedPool, fold_exact_copies
-from immich_memories.analysis.picture_copies import picture_copies, starred_keepers
+from immich_memories.analysis.picture_copies import (
+    group_members,
+    kept_ids,
+    merged_people,
+    picture_copies,
+    starred_keepers,
+)
 from immich_memories.analysis.selection_source_groups import (
     EditorialGroup,
     _build_moment_groups_within,
@@ -39,6 +45,7 @@ from immich_memories.analysis.selection_source_rendering import (
     _rendering_family_material,
     _rendering_manifest_signature,
     _with_favourite,
+    _with_people,
     _without_rendering_evidence,
     _without_rendering_family,
 )
@@ -235,15 +242,24 @@ def prepare_editorial_source(
         owner_excluded_asset_ids=folded.kept_ids(request.owner_excluded_asset_ids),
         owner_required_asset_ids=folded.kept_ids(request.owner_required_asset_ids),
     )
-    excluded = set(request.owner_excluded_asset_ids)
     components = live_photo_component_ids(asset_of(source) for source in sources)
     generated = frozenset(request.scope.generated_asset_ids)
-    copies, stacked, sources = _fold_copies_and_stacks(sources, dependencies)
+    request, sources, copies, stacked, excluded, group_ids = _fold_copies_and_stacks(
+        request, sources, dependencies
+    )
     source_decisions = tuple(
         (
             source,
             _source_exclusion_reason(
-                source, request, dependencies, excluded, components, generated, copies, stacked
+                source,
+                request,
+                dependencies,
+                excluded,
+                components,
+                generated,
+                copies,
+                group_ids,
+                stacked,
             ),
         )
         for source in sources
@@ -315,24 +331,6 @@ def prepare_editorial_source(
     )
     _validate_prepared_source(prepared)
     return prepared
-
-
-def _fold_copies_and_stacks(
-    sources: Sequence[Asset | VideoClipInfo], dependencies: EditorialDependencies
-) -> tuple[Mapping[str, Asset], Mapping[str, Asset], tuple[Asset | VideoClipInfo, ...]]:
-    """Picture copies and stack members folded into their keeper, with its star promoted."""
-    copies = picture_copies(
-        (asset_of(source) for source in sources),
-        hash_of=_preview_hash(dependencies.preview_jpeg),
-    )
-    stacked = fold_stacks((asset_of(source) for source in sources), dependencies.stack_of())
-    starred = starred_keepers(copies, (asset_of(source) for source in sources))
-    starred |= starred_primaries(stacked, (asset_of(source) for source in sources))
-    sources = tuple(
-        _with_favourite(source, True) if asset_id_of(source) in starred else source
-        for source in sources
-    )
-    return copies, stacked, sources
 
 
 def _captured_assets(sources: Sequence[Asset | VideoClipInfo]) -> dict[str, Asset]:
@@ -445,6 +443,48 @@ def _preview_hash(
             return None
 
     return hash_of
+
+
+def _fold_copies_and_stacks(
+    request: EditorialSelectionRequest,
+    sources: Sequence[Asset | VideoClipInfo],
+    dependencies: EditorialDependencies,
+) -> tuple[
+    EditorialSelectionRequest,
+    tuple[Asset | VideoClipInfo, ...],
+    Mapping[str, Asset],
+    Mapping[str, Asset],
+    set[str],
+    Mapping[str, frozenset[str]],
+]:
+    """Fold same-picture files and Immich stacks into their keeper, carrying pins, star and people.
+
+    An owner pin or exclusion named before an edit was ever uploaded still named the
+    picture, whichever file the fold kept -- `kept_ids` remaps it the way the exact-copy
+    fold already does. A star or a person tagged on any file belongs to the kept one.
+    """
+    copies = picture_copies(
+        (asset_of(source) for source in sources),
+        hash_of=_preview_hash(dependencies.preview_jpeg),
+    )
+    request = replace(
+        request,
+        owner_excluded_asset_ids=kept_ids(copies, request.owner_excluded_asset_ids),
+        owner_required_asset_ids=kept_ids(copies, request.owner_required_asset_ids),
+    )
+    stacked = fold_stacks((asset_of(source) for source in sources), dependencies.stack_of())
+    starred = starred_keepers(copies, (asset_of(source) for source in sources))
+    starred |= starred_primaries(stacked, (asset_of(source) for source in sources))
+    people_by_keeper = merged_people(copies, (asset_of(source) for source in sources))
+    sources = tuple(
+        _with_people(
+            _with_favourite(source, True) if asset_id_of(source) in starred else source,
+            people_by_keeper.get(asset_id_of(source), asset_of(source).people),
+        )
+        for source in sources
+    )
+    excluded = set(request.owner_excluded_asset_ids)
+    return request, sources, copies, stacked, excluded, group_members(copies)
 
 
 def _visual_source_from(

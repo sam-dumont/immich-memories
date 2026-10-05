@@ -191,6 +191,21 @@ class AutomationStateStore:
             .limit(1)
         )
 
+    def get_last_fired_attempt(self) -> AutomationAttempt | None:
+        """Return the most recently started attempt that was not a dry run.
+
+        Used to decide whether the daily timer "already fired today": a
+        "Check eligibility" dry run or `auto run --dry-run` creates an attempt
+        row too, but it generated nothing, so it must not suppress the day's
+        real fire.
+        """
+        return self._first(
+            sa.select(automation_attempts)
+            .where(_ATTEMPTS.outcome != AutoOutcome.DRY_RUN.value)
+            .order_by(_ATTEMPTS.started_at.desc(), _ATTEMPTS.seq.desc())
+            .limit(1)
+        )
+
     def _first(self, query: sa.Select) -> AutomationAttempt | None:
         with self.store.connect() as conn:
             row = conn.execute(query).mappings().first()

@@ -308,7 +308,11 @@ def test_returned_fact_records_are_immutable() -> None:
 
 
 def test_public_people_head_with_no_face_and_no_person_caption_is_corrected_to_none() -> None:
-    """#2069: public-v1 almost never says none; a landscape caption with no box backs none."""
+    """#2069: public-v1 almost never says none; a landscape caption with no box backs none.
+
+    `asset-z` carries a face box so the batch is read as a library with face data (#2079);
+    `asset-a` itself still has none, and its caption names nobody, so it is still lowered.
+    """
     from immich_memories.store.asset_annotations import AssetAnnotationFactRepository
 
     store = annotation_store()
@@ -319,8 +323,48 @@ def test_public_people_head_with_no_face_and_no_person_caption_is_corrected_to_n
     )
     add_rows(
         store,
+        "face_boxes",
+        {"asset_id": "asset-z", "named": False, "x1": 0.1, "y1": 0.1, "x2": 0.2, "y2": 0.2},
+    )
+    add_rows(
+        store,
         "head_facts",
         {"asset_id": "asset-a", "head": "people", "version": "public-v1", "label": "one"},
+        {"asset_id": "asset-z", "head": "people", "version": "public-v1", "label": "one"},
+    )
+
+    facts = (
+        AssetAnnotationFactRepository(
+            store,
+            description_model="wanted-model",
+            head_versions={"people": "public-v1"},
+            pixel_producer_key="pixel-v1",
+        )
+        .facts_for(("asset-a", "asset-z"))
+        .as_mapping()["asset-a"]
+    )
+
+    assert dict(facts.heads)["people"] == "none"
+
+
+def test_no_face_data_in_the_library_leaves_the_people_head_as_is() -> None:
+    """#2079: with face detection off (or never run), every asset lacks a face box, so the
+    #2069 corroboration would lower every uncaptioned people reading to "none" -- including a
+    real group shot from behind. With no face data anywhere in the library, the head keeps
+    its own word instead.
+    """
+    from immich_memories.store.asset_annotations import AssetAnnotationFactRepository
+
+    store = annotation_store()
+    add_rows(
+        store,
+        "descriptions",
+        {"asset_id": "asset-a", "model": "wanted-model", "text": "a crowd from behind"},
+    )
+    add_rows(
+        store,
+        "head_facts",
+        {"asset_id": "asset-a", "head": "people", "version": "public-v1", "label": "group"},
     )
 
     facts = (
@@ -334,7 +378,7 @@ def test_public_people_head_with_no_face_and_no_person_caption_is_corrected_to_n
         .as_mapping()["asset-a"]
     )
 
-    assert dict(facts.heads)["people"] == "none"
+    assert dict(facts.heads)["people"] == "group"
 
 
 def test_public_people_head_with_a_face_box_is_unchanged() -> None:
