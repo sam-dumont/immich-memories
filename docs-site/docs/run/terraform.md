@@ -45,6 +45,8 @@ Authentication is disabled by default. Keep one UI replica (`replicas = 1`).
 
 ## What it creates
 
+{/* diagram: deploy-terraform */}
+
 Namespace (optional), Secret, three PVCs, Deployment and Service, plus optional ingress.
 `config_yaml` creates a ConfigMap and init container to install the file. Otherwise configuration
 comes from `env`/`secret_env` and saved Settings. The module does **not** create the Kustomize base's

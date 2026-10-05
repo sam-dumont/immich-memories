@@ -11,7 +11,7 @@ Use the Docker-based Apps system in TrueNAS 24.10 or newer. Older Kubernetes-bas
 
 :::info Not yet tested on TrueNAS
 
-We have not tested these steps on this platform. Local template, manifest and browser checks do not establish a tested installation. Please [share your results in #1801](https://github.com/sam-dumont/immich-memories/issues/1801), including platform/app versions and whether preflight and the first film worked.
+We have not tested these steps on this platform. Local template, manifest and browser checks do not establish a tested installation. Please [report your results](https://github.com/sam-dumont/immich-memories/issues), including platform/app versions and whether preflight and the first film worked. The [deployment matrix](../tested-deployments.md) tracks status by platform.
 
 :::
 

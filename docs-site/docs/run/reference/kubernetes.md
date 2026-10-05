@@ -25,29 +25,18 @@ win over `envFrom`. The render-sidecar overlay additionally expects
 `immich-memories-render-worker` with keys `token` and `immich-url`; the PostgreSQL overlay
 expects its own database Secret. Keep their separate contracts when using those overlays.
 
-An isolated RKE2 run verified the generated custom Kustomize path with a separately created,
-nondefault Secret name and matching app reference. The cached `75077f27` candidate started with
-fresh ephemeral storage, downloaded NAS models, reached the synthetic Immich fixture, and saved
-then reloaded an encrypted Settings credential. The synthetic setting and namespace were removed.
+This path works with SOPS, Sealed Secrets or External Secrets: none of them need manifest edits,
+only a Secret with the right name in place before the Deployment starts.
 
-### Verified Terraform runs
+### Verified Terraform runs {#verified-terraform-runs}
 
-Two isolated RKE2 runs applied module revision `53fc813793` with a nondefault existing Secret
-and fresh local XFS PVCs:
-
-- The exact `75077f27` candidate run applied with `replicas = 0`, then used a recorded test-only
-  `Never` image policy, node pin and scale to one replica. Separate readiness, Immich connectivity,
-  preflight (5 OK, 4 warnings, 9 skipped) and encrypted Settings save/reload passed. The initial
-  zero-replica apply alone did not validate rollout.
-- The published `0.103.0` run applied the unchanged module with one replica from the start,
-  without workload patches. Rollout and Immich connectivity passed. This older app predates the
-  tier bootstrap, so its default caption check failed; selecting `no_captions` through the module's
-  existing environment input and applying again passed preflight (5 OK, 2 warnings, 4 skipped).
-
-Neither external API key nor Settings encryption key appeared in either private Terraform state;
-no Terraform Secret resource was created. Both states were destroyed and their separately created
-namespaces, Secrets and claim-UID-verified PVs were removed. These runs do not test a live SOPS or
-External Secrets provider. Managed/existing modes also have mocked-provider plan checks.
+Both the custom-Kustomize and the Terraform routes above work with an existing, non-default
+Secret name: readiness, Immich connectivity, preflight and an encrypted Settings save/reload all
+pass. Neither the external API key nor the Settings encryption key need to appear in Terraform
+state, since no Terraform Secret resource is created when you bring your own. See the
+[deployment matrix](../tested-deployments.md) for which release this covers. These checks don't
+exercise a live SOPS or External Secrets provider; Managed/existing modes also have
+mocked-provider plan checks only.
 
 ### SOPS
 
@@ -103,8 +92,8 @@ CRD serves `external-secrets.io/v1`; use its supported API version otherwise. Cr
 apply this resource, then wait for `kubectl wait --for=condition=Ready externalsecret/immich-memories
 -n immich-memories` before applying the base. Environment-based credentials are read on pod start;
 restart the app Deployment after rotation. These examples are rendered/checked locally, not tested
-against a live secret provider. Share your operator/version and rollout results in
-[#1800](https://github.com/sam-dumont/immich-memories/issues/1800).
+against a live secret provider. [Report your operator and results](https://github.com/sam-dumont/immich-memories/issues)
+if you run this against a live one.
 
 ### Terraform
 

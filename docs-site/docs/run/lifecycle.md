@@ -307,26 +307,14 @@ longer need it, remove it the same way: `rm -r -- "$HOME/.immich-memories.before
 copied backups may hold credentials and films too. Preserve shared Hugging Face/Ollama/llama.cpp
 caches and packages.
 
-`uv tool uninstall` does not clear uv's own download cache (2.6 GB on the test Mac), so "complete
-removal" leaves it. `uv cache clean` empties it for every uv project, not only this app; skip it
-if you use uv for other things.
+`uv tool uninstall` does not clear uv's own download cache, which can run to several GB, so
+"complete removal" leaves it behind. `uv cache clean` empties it for every uv project, not only
+this app; skip it if you use uv for other things.
 
 Check the original deployment inventory again: no running app container/pod/UI process, no active
 app Jobs or schedules, no remaining app-owned volumes/paths except deliberate backups. Separately
 verify Immich still serves its library.
 
-## What has been run
-
-Destructive transcripts exist for two of the three routes, both on 2026-10-04 with
-`v0.0.0-dev.37180797983` (#956 verification):
-
-- **Native**: macOS arm64, prebuilt wheel, isolated HOME. Scheduler setup and removal,
-  uninstall keeping data, reinstall, reset and complete removal. UI stop/start was not run, and
-  neither were the cron and systemd scheduler routes.
-- **Compose**: Synology DS423+, DSM 7.3.2, Docker 24.0.2 with Compose 2.20.1. Stop/start, remove
-  keeping data, reset and complete removal. The other containers on that NAS and Immich were
-  unaffected.
-
-The Kubernetes transcript is still pending under
-[#1929](https://github.com/sam-dumont/immich-memories/issues/1929); until it runs, the Kubernetes
-commands above are written, not proven.
+Native and Compose lifecycle operations (stop/start, uninstall keeping data, reinstall, reset,
+complete removal) are verified; the Kubernetes route is documented but not yet run end to end.
+See the [deployment matrix](./tested-deployments.md).
