@@ -3,18 +3,6 @@ import Mermaid from '@theme-original/Mermaid';
 import type {Props} from '@theme/Mermaid';
 import {useColorMode} from '@docusaurus/theme-common';
 
-// The icons architecture diagrams name, bundled by scripts/diagram-icons.mjs. Registered on the
-// same mermaid instance the theme renders with, before the first diagram draws; nothing is
-// fetched from an icon CDN.
-let iconsRegistered: Promise<void> | undefined;
-function registerDiagramIcons(): Promise<void> {
-  iconsRegistered ??= Promise.all([import('mermaid'), import('./diagram-icons.json')])
-    .then(([{default: mermaid}, {default: packs}]) => {
-      mermaid.registerIconPacks(packs.map((icons) => ({name: icons.prefix, icons})));
-    });
-  return iconsRegistered;
-}
-
 export default function ReadableMermaid(props: Props): ReactNode {
   const {colorMode} = useColorMode();
   const figure = useRef<HTMLElement>(null);
@@ -23,12 +11,6 @@ export default function ReadableMermaid(props: Props): ReactNode {
   const [zoom, setZoom] = useState(1);
   const [scale, setScale] = useState(1);
   const [expanded, setExpanded] = useState(false);
-  const [iconsReady, setIconsReady] = useState(false);
-  useEffect(() => {
-    let live = true;
-    registerDiagramIcons().then(() => live && setIconsReady(true));
-    return () => {live = false;};
-  }, []);
   useEffect(() => {
     if (!expanded) return;
     const previousOverflow = document.body.style.overflow;
@@ -68,7 +50,7 @@ export default function ReadableMermaid(props: Props): ReactNode {
     mutation.observe(element, {childList: true, subtree: true});
     measure();
     return () => { resize.disconnect(); mutation.disconnect(); };
-  }, [props.value, colorMode, zoom, iconsReady]);
+  }, [props.value, colorMode, zoom]);
   const dark = colorMode === 'dark';
   const themeVariables = {
     fontFamily: 'Inter, sans-serif',
@@ -110,7 +92,7 @@ export default function ReadableMermaid(props: Props): ReactNode {
       <div ref={viewport} className="docs-diagram-viewport" role="region"
         aria-label={overflows ? 'Diagram, scroll horizontally to see all branches' : 'Diagram'}
         tabIndex={overflows ? 0 : undefined}>
-        {iconsReady && <Mermaid {...props} value={value} />}
+        <Mermaid {...props} value={value} />
       </div>
     </figure>
   );

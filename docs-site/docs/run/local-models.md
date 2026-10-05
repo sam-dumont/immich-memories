@@ -121,7 +121,7 @@ and NetworkPolicies replace the firewall. Start from the
 
 **Hardware.** Check the model fits your node's free VRAM before requesting a GPU; without one,
 Ollama runs on CPU. Titles and mood are one or a few calls per film, so plan for minutes, not
-seconds, per call without a GPU. [Measured numbers for this setup](../better/measured.md#ollama-validation)
+seconds, per call without a GPU. [Measured numbers for this setup](../better/measured.md#local-reader-time-and-accuracy)
 are on the measurements page.
 
 **Secret.** Put `IMMICH_MEMORIES_SECRET_KEY` in `immich-memories-secrets` next to `IMMICH_URL` and

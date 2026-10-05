@@ -250,7 +250,7 @@ listen on an address reachable from the bridge, such as `0.0.0.0`:
 
 ## The product tier in compose {#the-preparation-tier-in-compose}
 
-The base requests Basic through `TIER=basic`. Existing `TIER=nas` values remain aliases. The GPU and Full tier files request their respective
+The base requests Basic through `TIER=basic`. The GPU and Full tier files request their respective
 tiers. Preflight checks whether the selected hardware and services can satisfy that request.
 Saved Settings can override these deployment defaults. See [tier requirements](./requirements.md#the-preparation-tier).
 Keep `IMMICH_MEMORIES_EDITORIAL__PREPARATION__DETECTOR_CACHE_DIR` on the persistent volume when

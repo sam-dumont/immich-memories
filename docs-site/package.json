@@ -4,7 +4,6 @@
   "private": true,
   "scripts": {
     "docusaurus": "docusaurus",
-    "prestart": "npm run diagram-icons",
     "start": "docusaurus start",
     "build": "docusaurus build",
     "swizzle": "docusaurus swizzle",
@@ -15,8 +14,7 @@
     "write-heading-ids": "docusaurus write-heading-ids",
     "typecheck": "tsc",
     "ui-theme": "node scripts/sync-ui-theme.mjs",
-    "diagram-icons": "node scripts/diagram-icons.mjs",
-    "prebuild": "npm run ui-theme -- --check && npm run diagram-icons -- --check",
+    "prebuild": "npm run ui-theme -- --check",
     "postbuild": "node scripts/check-seo.mjs"
   },
   "dependencies": {
@@ -26,7 +24,6 @@
     "@docusaurus/theme-mermaid": "3.10.2",
     "@immich/ui": "0.90.0",
     "@mdx-js/react": "^3.0.0",
-    "@mermaid-js/layout-elk": "0.1.9",
     "clsx": "^2.0.0",
     "prism-react-renderer": "^2.3.0",
     "react": "^19.0.0",
@@ -36,9 +33,6 @@
     "@docusaurus/module-type-aliases": "3.10.2",
     "@docusaurus/tsconfig": "3.10.2",
     "@docusaurus/types": "3.10.2",
-    "@iconify-json/logos": "1.2.15",
-    "@iconify-json/mdi": "1.2.3",
-    "@iconify-json/simple-icons": "1.2.99",
     "@playwright/test": "^1.63.0",
     "sharp": "^0.35.5",
     "tsx": "^4.0.0",

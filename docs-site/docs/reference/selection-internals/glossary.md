@@ -31,7 +31,7 @@ Where it lives: `editorial_preparation_heads.py`, `editorial_preparation_detecto
 | **Heads** | eight small classifiers over one pinned DINOv2 encoder: location, people, children, activity, venue, frame_kind, screen, uncovered_person |
 | **Detectors** | `nsfw_marqo` (exposure, read on up to eight frames of a video) and `doc_docling` (documents) |
 | **Caption** | a banked description or motion line, acquired for selected shots and candidates by SmolVLM2 500M or an explicitly approved LLM provider |
-| **Tier** | `basic` (CPU heads; legacy `nas` alias), `gpu` (adds Marqo, Docling, captions and Laya), `full` (adds prose refinement); `auto` resolves from GPU inference and LLM configuration |
+| **Tier** | `basic` (CPU heads), `gpu` (adds Marqo, Docling, captions and Laya), `full` (adds prose refinement); `auto` resolves from GPU inference and LLM configuration |
 | **Scene print** | the pooled DINOv2 vector of a preview; two prints at a cosine of 0.65 or more are the same scene |
 | **Residual** | the motion left in a clip once the camera's own movement is removed; 1.5 or more plays as motion |
 | **Bank** | an answer stored under its exact inputs and producer version, so the next run asks nothing; no row means nobody asked |

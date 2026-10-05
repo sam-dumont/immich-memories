@@ -67,7 +67,7 @@ To let Settings control a Compose-pinned key, remove its environment line and an
 Keep the model cache and output paths on mounted volumes.
 
 `TIER` supplies an editable deployment default (`basic`, `gpu` or `full`), not a pinned runtime
-setting. YAML and saved Settings can override it; the legacy `nas` value still selects Basic.
+setting. YAML and saved Settings can override it.
 Home coordinates are not forwarded by the base Compose file: save them in Settings or YAML.
 
 Inspect the same result from the CLI:
@@ -254,6 +254,5 @@ Configured service URLs also follow the [address policy](./network-security.md#c
 ## Product tier names
 
 The product tiers are `basic`, `gpu` and `full`. Basic uses CPU classifiers and rules; it is
-not restricted to NAS hardware. `auto` chooses from available inference capability. Existing
-`nas` values in YAML, environment variables and saved Settings still load as Basic. Config
-and capability output use the canonical value `basic`.
+not restricted to NAS hardware. `auto` chooses from available inference capability. The old
+`nas` value is rejected; use `basic`.

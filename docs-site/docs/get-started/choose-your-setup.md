@@ -27,8 +27,7 @@ A **video encoder** speeds up rendering. It does not enable the GPU selection ti
 [Hardware encoding](../run/hardware.md) and the [render worker](../better/gpu-render.md) are
 separate choices.
 
-Use `tier: basic` to select it explicitly. Existing `tier: nas` settings remain accepted as
-an alias and resolve to `basic`; GPU and Full values are unchanged.
+Use `tier: basic` to select it explicitly. GPU and Full values are unchanged.
 
 See [Can I run this?](../run/tested-deployments.md) for exact platform evidence, candidate versions and untested routes.
 
