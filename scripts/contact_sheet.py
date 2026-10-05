@@ -60,6 +60,7 @@ def _collect(rows: list[dict]):
                     "secs": round(end - start, 1),
                     "res": short_side,
                     "fav": bool(getattr(clip.asset, "is_favorite", False)),
+                    "edited": bool(getattr(clip.asset, "is_edited", False)),
                 }
             )
         raise _SelectionIsFinal
@@ -81,7 +82,7 @@ def _mean_luma(image) -> int | str:
     return int(np.asarray(image.convert("L"), dtype="float32").mean())
 
 
-def _thumbnail(client, asset_id: str, video_id: str | None = None):
+def _thumbnail(client, asset_id: str, video_id: str | None = None, *, edited: bool = False):
     """Fetch a tile, trying the sizes Immich offers before giving up.
 
     Live Photo video components do not always answer on "preview", and a run
@@ -97,7 +98,9 @@ def _thumbnail(client, asset_id: str, video_id: str | None = None):
     last: Exception | None = None
     for size in ("preview", "thumbnail"):
         try:
-            image = Image.open(io.BytesIO(client.get_asset_thumbnail(asset_id, size)))
+            image = Image.open(
+                io.BytesIO(client.get_asset_thumbnail(asset_id, size, edited=edited))
+            )
             return image.convert("RGB"), ""
         except Exception as exc:  # noqa: BLE001, PERF203 - try the next size, then give up
             last = exc
@@ -220,7 +223,7 @@ def _draw(rows: list[dict], label: str, subtitle: str, out: Path) -> Path:
         for i, row in enumerate(rows):
             x = PAD + (i % COLUMNS) * (THUMB_W + PAD)
             y = HEADER_H + (i // COLUMNS) * (THUMB_H + LABEL_H + PAD)
-            image, reason = _thumbnail(client, row["id"], row["video_id"])
+            image, reason = _thumbnail(client, row["id"], row["video_id"], edited=row["edited"])
             row["lum"] = _mean_luma(image)
             if image is None:
                 # A blank tile is unreviewable, so say why rather than leave a

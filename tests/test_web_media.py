@@ -137,11 +137,16 @@ class _FakeAccountsImmich:
 
     def get_asset(self, asset_id: str):
         self._own_or_404(asset_id)
+        from types import SimpleNamespace
+
+        return SimpleNamespace(is_edited=False)
 
     def get_person(self, person_id: str):
         self._own_or_404(person_id)
 
-    def get_asset_thumbnail(self, asset_id: str, size: str = "preview") -> bytes:
+    def get_asset_thumbnail(
+        self, asset_id: str, size: str = "preview", *, edited: bool = False
+    ) -> bytes:
         self._own_or_404(asset_id)
         return f"{self._api_key}:{asset_id}".encode()
 
@@ -272,3 +277,55 @@ def test_an_unconfigured_immich_is_never_called(monkeypatch):
 
     assert fetch("abc", "primary") is None
     assert _FakeImmich.calls == []
+
+
+class _FakePreviewImmich:
+    """Stands in for SyncImmichClient. WHY: Immich is the external boundary here."""
+
+    is_edited = False
+    thumbnail_calls: list[tuple[str, dict]] = []
+
+    def __init__(self, *, base_url: str, api_key: str) -> None:
+        pass
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc) -> bool:
+        return False
+
+    def get_asset(self, asset_id: str):
+        from types import SimpleNamespace
+
+        return SimpleNamespace(is_edited=self.is_edited)
+
+    def get_asset_thumbnail(
+        self, asset_id: str, size: str = "preview", *, edited: bool = False
+    ) -> bytes:
+        _FakePreviewImmich.thumbnail_calls.append((asset_id, {"edited": edited}))
+        return b"jpeg-bytes"
+
+
+def _preview_fetcher(monkeypatch):
+    monkeypatch.setattr("immich_memories.api.sync_client.SyncImmichClient", _FakePreviewImmich)
+    _FakePreviewImmich.thumbnail_calls = []
+    return immich_preview(Config(immich={"url": "http://immich.test", "api_key": "key"}))
+
+
+def test_an_edited_asset_preview_asks_for_the_edited_render(monkeypatch):
+    """The reviewer sees what the film will render (#2114)."""
+    fetch = _preview_fetcher(monkeypatch)
+    _FakePreviewImmich.is_edited = True
+
+    fetch("asset-1", "primary")
+
+    assert _FakePreviewImmich.thumbnail_calls == [("asset-1", {"edited": True})]
+
+
+def test_an_unedited_asset_preview_request_is_unchanged(monkeypatch):
+    fetch = _preview_fetcher(monkeypatch)
+    _FakePreviewImmich.is_edited = False
+
+    fetch("asset-1", "primary")
+
+    assert _FakePreviewImmich.thumbnail_calls == [("asset-1", {"edited": False})]

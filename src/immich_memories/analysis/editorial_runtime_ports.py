@@ -36,14 +36,23 @@ def _load_people() -> Mapping[str, PersonPromptContext]:
     return load_people_prompt_context(include_derived=True)
 
 
+def _fetch_preview(client: Any, asset_id: str) -> bytes | None:
+    """The preview structure planning and the rule reader judge a picture by.
+
+    Asks for Immich's own edited render when the asset carries one (#2114): without
+    this, selection -- faces, documents, look-alike hashes, crops -- reads the
+    unedited picture while the film renders the edit.
+    """
+    edited = getattr(client.get_asset(asset_id), "is_edited", False)
+    return client.get_asset_thumbnail(asset_id, size="preview", edited=edited)
+
+
 @dataclass(frozen=True, slots=True)
 class EditorialRuntimePorts:
     """Explicit replaceable edges around production I/O, suitable for public tests."""
 
     load_people: Callable[[], Mapping[str, PersonPromptContext]] = _load_people
-    fetch_preview: Callable[[Any, str], bytes | None] = lambda client, asset_id: (
-        client.get_asset_thumbnail(asset_id, size="preview")
-    )
+    fetch_preview: Callable[[Any, str], bytes | None] = _fetch_preview
     # Immich names the people it recognised on the asset itself but hands back no
     # geometry there; where each face sits has its own endpoint.
     fetch_faces: Callable[[Any, str], Sequence[FaceBox]] = lambda client, asset_id: face_boxes_of(

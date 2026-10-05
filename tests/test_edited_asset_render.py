@@ -194,3 +194,43 @@ def test_an_unedited_cache_hit_never_refetches(tmp_path):
     ensure_preview(path, "asset-1", fetch_preview, edited=False)
 
     assert path.read_bytes() == _jpeg_bytes("orange")
+
+
+class _FakeStructurePlannerClient:
+    """Stands in for the client the structure planner and rule reader read previews
+    through. WHY: Immich is the external boundary; no network reaches this test."""
+
+    def __init__(self, *, is_edited: bool) -> None:
+        self._is_edited = is_edited
+        self.thumbnail_calls: list[tuple[str, dict]] = []
+
+    def get_asset(self, asset_id: str) -> Asset:
+        return make_asset(asset_id, is_edited=self._is_edited)
+
+    def get_asset_thumbnail(
+        self, asset_id: str, size: str = "preview", *, edited: bool = False
+    ) -> bytes:
+        self.thumbnail_calls.append((asset_id, {"edited": edited}))
+        return b"preview-bytes"
+
+
+def test_structure_planner_preview_of_an_edited_asset_asks_for_the_edited_render():
+    """Selection (faces, documents, look-alike hashes, crops) must judge the same
+    picture the film renders (#2114)."""
+    from immich_memories.analysis.editorial_runtime_ports import EditorialRuntimePorts
+
+    client = _FakeStructurePlannerClient(is_edited=True)
+
+    EditorialRuntimePorts().fetch_preview(client, "asset-1")
+
+    assert client.thumbnail_calls == [("asset-1", {"edited": True})]
+
+
+def test_structure_planner_preview_of_an_unedited_asset_is_unchanged():
+    from immich_memories.analysis.editorial_runtime_ports import EditorialRuntimePorts
+
+    client = _FakeStructurePlannerClient(is_edited=False)
+
+    EditorialRuntimePorts().fetch_preview(client, "asset-1")
+
+    assert client.thumbnail_calls == [("asset-1", {"edited": False})]
