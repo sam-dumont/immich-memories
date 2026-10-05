@@ -6,6 +6,7 @@ Every picture, caption and word here is invented; the model's answers come from 
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -1061,6 +1062,49 @@ def test_a_preparation_failure_is_reported_and_never_reads_as_not_possible(
     assert "could not be prepared" in result.output
     assert "reader down" in result.output
     assert "not possible" not in result.output.lower()
+
+
+def _flaky_reader(valid_times: int) -> Any:
+    """Valid on the first `valid_times` calls to the reading question, cut-shaped after.
+
+    `read_request` asks the reading question in three field orders, retrying once per
+    order when the shape is unusable; counting calls this way lands the reading on exactly
+    `valid_times` usable answers of the three orders, however many retries that costs.
+    """
+    calls = {"n": 0}
+
+    def answer(_schema: Mapping[str, Any]) -> Mapping[str, Any]:
+        calls["n"] += 1
+        if calls["n"] <= valid_times:
+            return {"who": [], "when": ["along the years"], "where": [], "what": ["our cat"]}
+        # WHY: stands in for the model server; a wrong shape is unusable, not empty.
+        return {"who": "", "when": "", "where": "", "what": ""}
+
+    return answer
+
+
+def test_a_reader_that_cannot_read_the_request_fails_cleanly_not_with_a_traceback(ask) -> None:
+    # Only the first of the three field-order answers is usable; the other two never
+    # settle even after their retry, so the reading has 1 of 3 usable answers.
+    answers = {**ANSWERS, "Split the owner's request": _flaky_reader(1)}
+
+    result = ask("--ask", "our cat along the years", "--dry-run", answers=answers)
+
+    assert result.exit_code != 0, result.output
+    assert "couldn't read this request consistently" in result.output
+    assert "1 of 3 answers usable" in result.output
+    assert "Traceback" not in result.output
+
+
+def test_two_of_three_usable_readings_still_translate_the_request(ask) -> None:
+    # The first two field orders settle; the third fails even after its retry, so the
+    # reading has 2 of 3 usable answers -- the behaviour before this fix, unchanged.
+    answers = {**ANSWERS, "Split the owner's request": _flaky_reader(2)}
+
+    result = ask("--ask", "our cat along the years", "--dry-run", answers=answers)
+
+    assert result.exit_code == 0, result.output
+    assert "VERDICT  possible" in result.output
 
 
 def test_an_impossible_request_on_a_prepared_library_still_says_not_possible(ask) -> None:
