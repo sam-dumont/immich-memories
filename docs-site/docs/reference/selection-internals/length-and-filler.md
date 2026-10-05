@@ -65,6 +65,20 @@ A week of ordinary evenings at home with no star, no video and no close family i
 case. Three favourites or a big close-family story still lift a story to `major`, so a quiet week
 that holds something you care about is never quiet to the editor.
 
+### Mostly quiet is a different household
+
+That rule assumes the film has plenty of indicated weeks to carry it, and a quiet week here or
+there just steps aside. A library of a cat, with a weekly photo and nothing else, has no stars, no
+videos, no close family on any of it: every week would read `none` and the film would come out
+empty.
+
+So when at least two thirds of a period's at-home weeks have no indicator at all, the no-model
+path stops treating that as the ordinary case and funds each of them with its own best picture
+instead: sharpest frame, no SOFT, DARK or BLOWN OUT warning, not a screenshot or a document, not
+on hold. A week whose only pictures fail every one of those stays unfunded anyway, same as before,
+and the reason why is kept on the record. Below two thirds, the ordinary rule still applies: a
+quiet week among mostly-indicated ones goes short, same as it always did.
+
 ## Filler nothing vouches for
 
 A quiet month can still have more slots than shots anyone vouches for, and the leftover slots go to

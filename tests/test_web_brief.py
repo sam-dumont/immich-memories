@@ -84,7 +84,7 @@ def test_every_flag_a_brief_can_emit_is_one_generate_accepts():
         ask="our cat",
     )
 
-    emitted = {flag.split("=")[0] for flag in everything._flags()}
+    emitted = {flag.split("=")[0] for flag in everything.flags()}
 
     assert emitted <= accepted, emitted - accepted
 

@@ -9,7 +9,10 @@
   import JobPanel from './JobPanel.svelte';
 
   // The film is the page's ordinary cut of the same sentence: the page starts and follows it.
-  let { onFilm }: { onFilm: (sentence: string) => Promise<string> } = $props();
+  // `accounts` is the page's own account picker (#2044): a preview must scope its pool the
+  // same way the film it is previewing eventually will.
+  let { onFilm, accounts }: { onFilm: (sentence: string) => Promise<string>; accounts: string[] } =
+    $props();
 
   // The trace's parts as the CLI prints them, worded for reading.
   const HEADS: Record<string, string> = {
@@ -78,7 +81,7 @@
 
   async function start() {
     problem = '';
-    const { status, body } = await post<JobView>('/ask/preview', { sentence: sentence.trim() });
+    const { status, body } = await post<JobView>('/ask/preview', { sentence: sentence.trim(), accounts });
     if (status === 202) follow(body);
     else if (status === 409 && body.job?.kind === 'ask') follow(body.job);
     else problem = body.detail ?? t('The preview could not start.');

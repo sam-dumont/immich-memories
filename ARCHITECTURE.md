@@ -609,7 +609,8 @@ src/immich_memories/
 │   ├── prose_shapes.py         # The JSON shape each prose seat asks for (response_format json_schema)
 │   ├── text_episode_paging.py  # Its request limits: an episode cut into pages, pages packed into prompts
 │   ├── editorial_album_index.py # Album names by asset, one listing + one read per album, once per run
-│   ├── editorial_story_*.py    # Story reading, weighing, slots, shortlist, carriers: the story planner
+│   ├── editorial_story_*.py    # Story reading, weighing, slots, shortlist, vote, carriers: the story planner
+│   │                           # (editorial_story_vote.py: the two-order model vote over a story's shortlisted moments)
 │   ├── editorial_story_trips.py     # Detected trips become one story per leg, with a reserve for each leg's length
 │   ├── editorial_story_lookalike.py # A story's further picture is refused when it repeats one it holds
 │   ├── editorial_story_capacity.py # A story's capacity: capture groups offered, folded to what it can show
@@ -787,6 +788,8 @@ src/immich_memories/
 │   ├── script_fonts.py         # Pinned Noto script fonts, `titles fonts --install`
 │   ├── llm_titles.py           # LLM-generated titles: prompt building, parsing, the LLM call
 │   ├── title_guards.py         # Guards refusing an invented name, a missing year, a missing place
+│   ├── relationship_guard.py   # Guard refusing a relationship word the people record doesn't back
+│   ├── relationship_words.py   # Per-locale relationship vocabulary (perspective/record-backed/alias)
 │   ├── title_routing.py        # Which prompt a memory gets: PEOPLE/OCCASION_MEMORY_TYPES, is_trip
 │   ├── title_suggestion.py     # TitleSuggestion: the shape of what the model answers with
 │   ├── title_source.py         # TitleSource: which source produced the opening title

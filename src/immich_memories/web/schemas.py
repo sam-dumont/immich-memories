@@ -116,6 +116,10 @@ class StoryPart(BaseModel):
     granted: int
     day: str
     carriers: list[StoryCarrier]
+    # "quality" when a sparse week was funded by its own best picture instead of going
+    # short (#2048); empty for every ordinarily-weighed story.
+    funded_by: str = ""
+    sparse_quality_reason: str = ""
 
 
 class StoryLength(BaseModel):

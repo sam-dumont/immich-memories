@@ -145,6 +145,29 @@ def test_several_named_people_keep_a_picture_holding_either_of_their_own_faces(
     assert _ids(pool) == {"kid-alone", "visitor-alone"}
 
 
+def test_a_face_counts_only_on_its_own_accounts_pictures(lexicon: Lexicon) -> None:
+    """In a household run (#2044), a face held to one account never counts on another
+    account's copy of the same person, the same rule `present_on_assets` already applies
+    to a dated run."""
+    view = _view(
+        _at("primarys-own", "2020-05-01T12:00+00:00", people=frozenset({"kid"})),
+        _at("partners-own", "2020-05-01T13:00+00:00", people=frozenset({"kid"})),
+    )
+    asked = _asked("my son", who=WhoLink(present=("kid",), anchors=("kid",)))
+
+    pool = build_pool(
+        asked,
+        view,
+        NOBODY,
+        lexicon,
+        BankedAsker(),
+        face_accounts={"kid": "primary"},
+        picture_accounts={"primarys-own": "primary", "partners-own": "partner"},
+    )
+
+    assert _ids(pool) == {"primarys-own"}
+
+
 def test_company_needs_a_caption_naming_people_of_that_kind(lexicon: Lexicon) -> None:
     view = _view(
         _picture("kids", caption="Two children playing in a park"),
@@ -405,7 +428,8 @@ def test_printed_text_vouches_for_its_episode_and_the_subject_is_read_inside_it(
     # WHY: stands in for Immich's OCR search, a read of the server's text index.
     printed = _Printed(wheelers=frozenset({"jersey"}))
     # WHY: stands in for the model server; two of three answers say the club name is printed.
-    asker = BankedAsker(_picks("wheelers"), _picks("wheelers", "club"), _picks("rides"))
+    # "rides" is the subject's own noun, so it is never even offered to this vote.
+    asker = BankedAsker(_picks("wheelers"), _picks("wheelers", "club"), _picks())
     nowhere = _Printed()
     # WHY: as above, for a library where no picture reads the name.
     again = BankedAsker(_picks("wheelers"), _picks("wheelers"), _picks("wheelers"))
