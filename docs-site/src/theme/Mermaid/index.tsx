@@ -3,13 +3,32 @@ import Mermaid from '@theme-original/Mermaid';
 import type {Props} from '@theme/Mermaid';
 import {useColorMode} from '@docusaurus/theme-common';
 
+// The icons architecture diagrams name, bundled by scripts/diagram-icons.mjs. Registered on the
+// same mermaid instance the theme renders with, before the first diagram draws; nothing is
+// fetched from an icon CDN.
+let iconsRegistered: Promise<void> | undefined;
+function registerDiagramIcons(): Promise<void> {
+  iconsRegistered ??= Promise.all([import('mermaid'), import('./diagram-icons.json')])
+    .then(([{default: mermaid}, {default: packs}]) => {
+      mermaid.registerIconPacks(packs.map((icons) => ({name: icons.prefix, icons})));
+    });
+  return iconsRegistered;
+}
+
 export default function ReadableMermaid(props: Props): ReactNode {
   const {colorMode} = useColorMode();
   const figure = useRef<HTMLElement>(null);
   const viewport = useRef<HTMLDivElement>(null);
   const [overflows, setOverflows] = useState(false);
   const [zoom, setZoom] = useState(1);
+  const [scale, setScale] = useState(1);
   const [expanded, setExpanded] = useState(false);
+  const [iconsReady, setIconsReady] = useState(false);
+  useEffect(() => {
+    let live = true;
+    registerDiagramIcons().then(() => live && setIconsReady(true));
+    return () => {live = false;};
+  }, []);
   useEffect(() => {
     if (!expanded) return;
     const previousOverflow = document.body.style.overflow;
@@ -31,7 +50,16 @@ export default function ReadableMermaid(props: Props): ReactNode {
     if (!element) return;
     const measure = () => {
       const svg = element.querySelector('svg');
-      if (svg?.viewBox.baseVal.width) svg.style.width = `${svg.viewBox.baseVal.width * zoom}px`;
+      const natural = svg?.viewBox.baseVal.width;
+      if (svg && natural) {
+        // A wide diagram first shrinks to the column, but never below 60% (text stays legible);
+        // past that it scrolls. The buttons zoom from that fitted size.
+        const style = getComputedStyle(element);
+        const room = element.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+        const fitted = Math.min(1, Math.max(.6, room / natural)) * zoom;
+        svg.style.width = `${natural * fitted}px`;
+        setScale(fitted);
+      }
       setOverflows(element.scrollWidth > element.clientWidth + 1);
     };
     const resize = new ResizeObserver(measure);
@@ -40,7 +68,7 @@ export default function ReadableMermaid(props: Props): ReactNode {
     mutation.observe(element, {childList: true, subtree: true});
     measure();
     return () => { resize.disconnect(); mutation.disconnect(); };
-  }, [props.value, colorMode, zoom]);
+  }, [props.value, colorMode, zoom, iconsReady]);
   const dark = colorMode === 'dark';
   const themeVariables = {
     fontFamily: 'Inter, sans-serif',
@@ -55,16 +83,23 @@ export default function ReadableMermaid(props: Props): ReactNode {
     clusterBkg: dark ? '#222222' : '#f6f6f4',
     clusterBorder: dark ? '#555555' : '#d2d7e3',
     edgeLabelBackground: dark ? '#000000' : '#ffffff',
+    noteBkgColor: dark ? '#2a2a20' : '#fbf6e2',
+    noteBorderColor: dark ? '#8a7f4a' : '#d8c98c',
+    noteTextColor: dark ? '#f2ecd0' : '#172247',
+    archEdgeColor: dark ? '#a4b7e8' : '#59678e',
+    archEdgeArrowColor: dark ? '#a4b7e8' : '#59678e',
+    archGroupBorderColor: dark ? '#7d9dec' : '#8f9bc4',
   };
-  const value = `%%{init: ${JSON.stringify({theme: 'base', themeVariables})}}%%\n${props.value}`;
+  const architecture = {iconSize: 64, fontSize: 15, padding: 36, nodeSeparation: 80};
+  const value = `%%{init: ${JSON.stringify({theme: 'base', themeVariables, architecture})}}%%\n${props.value}`;
   return (
     <figure ref={figure} className={`docs-diagram${expanded ? ' docs-diagram-expanded' : ''}`}
       role={expanded ? 'dialog' : undefined} aria-modal={expanded ? true : undefined}
       aria-label={expanded ? 'Expanded diagram' : undefined}>
       <div className="docs-diagram-tools" role="group" aria-label="Diagram size">
         <button type="button" aria-label="Zoom diagram out" disabled={zoom <= .75} onClick={() => setZoom(value => Math.max(.75, value - .25))}>−</button>
-        <span aria-live="polite">{Math.round(zoom * 100)}%</span>
-        <button type="button" aria-label="Zoom diagram in" disabled={zoom >= 2} onClick={() => setZoom(value => Math.min(2, value + .25))}>+</button>
+        <span aria-live="polite">{Math.round(scale * 100)}%</span>
+        <button type="button" aria-label="Zoom diagram in" disabled={zoom >= 2.5} onClick={() => setZoom(value => Math.min(2.5, value + .25))}>+</button>
         <button type="button" aria-expanded={expanded} onClick={() => setExpanded(value => !value)}>
           {expanded ? 'Close expanded view' : 'Expand diagram'}
         </button>
@@ -75,7 +110,7 @@ export default function ReadableMermaid(props: Props): ReactNode {
       <div ref={viewport} className="docs-diagram-viewport" role="region"
         aria-label={overflows ? 'Diagram, scroll horizontally to see all branches' : 'Diagram'}
         tabIndex={overflows ? 0 : undefined}>
-        <Mermaid {...props} value={value} />
+        {iconsReady && <Mermaid {...props} value={value} />}
       </div>
     </figure>
   );

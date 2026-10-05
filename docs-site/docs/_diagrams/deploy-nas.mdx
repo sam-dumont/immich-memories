@@ -1,0 +1,27 @@
+{/* A NAS install: one Compose stack through the NAS manager, plus an optional GPU box, for run/nas. Drawn from docker-compose.yml, docker-compose.gpu-worker.yml and deploy/unraid. Style: contribute/diagram-style.md. */}
+
+```mermaid
+%%{init: {"layout": "elk"}}%%
+flowchart TB
+    subgraph nas["Your NAS: Synology, Unraid, TrueNAS or Portainer"]
+        app@{ icon: "logos:docker-icon", form: "square", label: "immich-memories, docker-compose.yml or the Unraid template", pos: "b", h: 48 }
+        cfg@{ icon: "mdi:harddisk", form: "square", label: "config folder: config, SQLite store, cache", pos: "b", h: 48 }
+        out@{ icon: "mdi:folder-play-outline", form: "square", label: "output folder, writable by UID 1000", pos: "b", h: 48 }
+        app --- cfg
+        app --- out
+    end
+    subgraph lan["Your network"]
+        immich@{ icon: "simple-icons:immich", form: "square", label: "Immich, on the NAS or elsewhere", pos: "b", h: 48 }
+        subgraph gpubox["Optional GPU box: docker-compose.gpu-worker.yml"]
+            gw@{ icon: "simple-icons:nvidia", form: "square", label: "gpu-worker :8092", pos: "b", h: 48 }
+        end
+    end
+    browser@{ icon: "mdi:web", form: "square", label: "Your browser", pos: "b", h: 48 }
+    browser -->|"port 8080"| app
+    app ==>|"API key"| immich
+    app -.->|"GPU_BOX: facts and captions"| gw
+    app -.->|"render.worker_base_url + token"| gw
+    gw -.->|"fetches originals to render"| immich
+    class gpubox optional
+    classDef optional stroke-dasharray: 6 4
+```
