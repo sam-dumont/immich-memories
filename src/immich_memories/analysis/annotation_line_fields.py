@@ -16,7 +16,7 @@ import re
 
 STARRED = "STARRED by the photographer"
 FLAGGED = "FLAGGED "
-PIXEL_WARNINGS = ("SOFT (blurry)", "DARK", "BLOWN OUT", "rotated")
+PIXEL_WARNINGS = ("SOFT (blurry)", "DARK", "BLOWN OUT", "OBSTRUCTED (edge)", "rotated")
 
 _ROW_PREFIX = re.compile(r"^Material picture p\d+: ")
 _PIPELINE_TAG = re.compile(

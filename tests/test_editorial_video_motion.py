@@ -273,7 +273,12 @@ def test_a_measurement_that_fails_never_blocks_the_cut_and_is_owed_next_pass(tmp
     assert failed.complete and failed.failures == {STAGE: "OSError: disk full"}
     assert failed.producer_failures == ("OSError: disk full",)
     # The frames and the exposure/frame heads are banked; only the residual is still owed.
-    assert healed.pictures_by_stage == {"previews": 1, "detector_frames": 1, STAGE: 1}
+    assert healed.pictures_by_stage == {
+        "previews": 1,
+        "detector_frames": 1,
+        STAGE: 1,
+        "obstruction_frames": 1,
+    }
     assert "room" in read_motion_residuals(annotation_store(), [clip_video("room")])
 
 

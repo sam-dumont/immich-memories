@@ -97,6 +97,26 @@ def test_a_pixel_warning_falls_behind_a_clean_frame():
     assert _order([soft, clean])[0] == "clean"
 
 
+def test_an_obstructed_frame_loses_to_its_clean_sibling():
+    """#2022: a flagged picture loses to a clean sibling; this never drops either shot."""
+    flagged = (_asset("flagged", minute=0), "resolution:4032x3024 OBSTRUCTED (edge)", None)
+    clean = (_asset("clean", minute=1), "resolution:4032x3024", None)
+
+    assert _order([flagged, clean])[0] == "clean"
+
+
+def test_the_favourite_still_wins_even_when_obstructed():
+    """#2022: a favourite is never overruled by a rank-only warning."""
+    favourite = (
+        _asset("favourite", minute=0, favourite=True),
+        "resolution:4032x3024 OBSTRUCTED (edge)",
+        None,
+    )
+    clean = (_asset("clean", minute=1), "resolution:4032x3024", None)
+
+    assert _order([favourite, clean])[0] == "favourite"
+
+
 def test_a_head_that_saw_somebody_leads_one_that_saw_nobody():
     empty = (_asset("empty", minute=0), "people=none", None)
     somebody = (_asset("somebody", minute=1), "people=two", None)
@@ -229,6 +249,11 @@ def test_a_soft_warning_disqualifies_a_candidate():
 
 def test_a_rotated_warning_disqualifies_a_candidate():
     assert _quality(_asset("rotated"), line="resolution:4032x3024 rotated").disqualified
+
+
+def test_an_obstructed_warning_does_not_disqualify_a_candidate():
+    """#2022: rank-only. A sparse week's lone flagged carrier is still its pick."""
+    assert not _quality(_asset("edge"), line="resolution:4032x3024 OBSTRUCTED (edge)").disqualified
 
 
 def test_standing_below_one_disqualifies_a_candidate():

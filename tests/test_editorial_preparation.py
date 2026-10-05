@@ -120,7 +120,35 @@ def successful_ports(calls):
             )
         return {}
 
-    return PreparationPorts(captions=captions, heads=heads, detectors=detectors)
+    def obstruction(**kwargs):
+        calls.append(("obstruction", tuple(kwargs["asset_ids"])))
+        remember_head_rows(
+            kwargs["store"],
+            [
+                {
+                    "asset_id": asset_id,
+                    "head": "obstruction",
+                    "version": "public-obstruction-v1",
+                    "label": "clear",
+                    "confidence": 0.1,
+                    "encoder_key": "test",
+                }
+                for asset_id in kwargs["asset_ids"]
+            ],
+        )
+        return {}
+
+    def obstruction_frames(**kwargs):
+        calls.append(("obstruction_frames", tuple(kwargs["frame_paths"])))
+        return {}
+
+    return PreparationPorts(
+        captions=captions,
+        heads=heads,
+        detectors=detectors,
+        obstruction=obstruction,
+        obstruction_frames=obstruction_frames,
+    )
 
 
 def run(tmp_path, **kwargs):
@@ -148,7 +176,7 @@ def refusing_ports(*absent):
     real = successful_ports(calls)
     seams = {
         name: _refuse(name) if name in absent else getattr(real, name)
-        for name in ("captions", "heads", "detectors")
+        for name in ("captions", "heads", "detectors", "obstruction", "obstruction_frames")
     }
     return PreparationPorts(**seams), calls
 
@@ -594,7 +622,8 @@ def test_the_no_captions_tier_finishes_without_a_caption_server(tmp_path):
 
     assert result.complete
     assert result.tier == "no_captions"
-    assert [stage for stage, _ in calls] == ["heads", "detectors"]
+    # #2022: obstruction runs on the same encoder as the public heads, its own path.
+    assert [stage for stage, _ in calls] == ["heads", "obstruction", "detectors"]
     assert not [key for key in result.missing_by_producer if key.startswith("description:")]
 
 
@@ -651,7 +680,7 @@ def test_a_run_reports_what_each_stage_cost_and_how_many_pictures_it_saw(tmp_pat
 
     rates = result.stage_rates()
     assert result.pictures_by_stage["previews"] == 2
-    assert set(rates) == {"previews", "pixels", "public_heads", "detectors"}
+    assert set(rates) == {"previews", "pixels", "public_heads", "detectors", "obstruction"}
     assert all(seconds >= 0 for seconds in rates.values())
 
 
