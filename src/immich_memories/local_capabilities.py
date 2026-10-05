@@ -153,53 +153,28 @@ async def _verify_stems(config: Config, audio_path: Path, directory: Path) -> Ca
 
 
 def _check_audio_assets(config: Config) -> None:
-    """Use the installed upstream existence contracts without loading weights."""
-    import os
-    import subprocess
-    import sys
+    """Refuse before loading anything when the pinned snapshot a render reads is incomplete.
 
-    from immich_memories.audio.generators.ace_step_isolated import isolated_python
+    Renders load the pinned snapshot under the checkpoint root, never the root itself, so
+    this asks the render's own completeness rule about that same directory.
+    """
+    import os
+
+    from immich_memories.audio.generators.ace_step_checkpoints import missing_pinned_components
     from immich_memories.audio.generators.ace_step_runtime import _dit_model_name, _lm_model_name
 
     root = Path(
         os.environ.get("ACESTEP_CHECKPOINTS_DIR", str(Path.home() / ".cache/ace-step/checkpoints"))
     ).expanduser()
-    variant = _dit_model_name(config.ace_step.model_variant)
-    planner = _lm_model_name(config.ace_step.lm_model_size) if config.ace_step.use_lm else ""
-    code = """import sys
-from pathlib import Path
-from acestep.model_downloader import check_main_model_exists, check_model_exists
-p = Path(sys.argv[1])
-def require(condition, message):
-    if not condition:
-        raise RuntimeError(message)
-require(check_main_model_exists(p), 'Main ACE assets missing')
-require(check_model_exists(sys.argv[2], p), 'Configured DiT missing')
-require(not sys.argv[3] or check_model_exists(sys.argv[3], p), 'Configured planner missing')
-for name in [sys.argv[2], 'vae', 'Qwen3-Embedding-0.6B'] + ([sys.argv[3]] if sys.argv[3] else []):
-    require((p / name / 'config.json').is_file(), 'Local model config missing')
-text = p / 'Qwen3-Embedding-0.6B'
-require((text / 'tokenizer_config.json').is_file(), 'Text tokenizer config missing')
-require(any((text / name).is_file() for name in ['tokenizer.json', 'tokenizer.model', 'vocab.json']), 'Text tokenizer missing')
-"""
-    # The program is constant; config values are separate argv, never shell or source text.
-    result = subprocess.run(
-        # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-tainted-env-args.dangerous-subprocess-use-tainted-env-args
-        [
-            str(isolated_python() or sys.executable),
-            "-c",
-            code,
-            str(root),
-            variant,
-            planner,
-        ],
-        capture_output=True,
-        text=True,
-        timeout=60,
+    planner = _lm_model_name(config.ace_step.lm_model_size) if config.ace_step.use_lm else None
+    missing = missing_pinned_components(
+        root, _dit_model_name(config.ace_step.model_variant), planner
     )
-    if result.returncode:
+    if missing:
         raise RuntimeError(
-            "Local ACE checkpoints missing or incompatible; install weights separately before --verify-local"
+            f"Local ACE weights missing ({', '.join(missing)}); generate one film with music "
+            "or run `immich-memories capabilities --test-music` to fetch them, then "
+            "--verify-local again"
         )
 
 

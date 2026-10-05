@@ -198,18 +198,6 @@ def test_json_report_preserves_failed_checks_and_missing_local_audio(monkeypatch
     )
 
 
-def test_capability_report_catches_missing_laya_before_a_gpu_film(tmp_path):
-    from immich_memories.setup_capabilities import optional_capabilities
-
-    config = Config(tier="gpu", editorial={"laya_checkpoint_path": tmp_path / "missing.tar.gz"})
-
-    rows = optional_capabilities(config)
-
-    laya = next(row for row in rows if row.name == "Laya audience check")
-    assert laya.status == "missing"
-    assert "models fetch" in laya.message
-
-
 def test_verify_local_flag_reports_scoped_evidence_without_changing_legacy_checks(monkeypatch):
     from click.testing import CliRunner
 

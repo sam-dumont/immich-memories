@@ -32,14 +32,14 @@ class TestFormatValidationError:
             result = format_validation_error(e)
             assert "avg_clip_duration" in result
 
-    def test_includes_input_value(self):
-        """Error includes the actual value that was provided."""
+    def test_never_echoes_the_value(self):
+        """The value can be a secret, so only the key and the problem are named (#2129)."""
         try:
-            DefaultsConfig(target_duration_seconds=-1)
+            DefaultsConfig(target_duration_seconds=-12345)
         except ValidationError as e:
             result = format_validation_error(e)
-            assert "Got:" in result
-            assert "-1" in result
+            assert "target_duration_seconds" in result
+            assert "-12345" not in result
 
 
 class TestFormatYamlError:

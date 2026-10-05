@@ -159,6 +159,9 @@ def test_config_test_warns_about_rights_without_refusing_a_readable_key(permissi
     assert result.exit_code == 0, result.output
     expected = "whole library" if "all" in permissions else "asset.upload"
     assert expected in result.output
+    # A key that works is a warning, as preflight calls it, never an error (#2159).
+    assert "Warning:" in result.output
+    assert "Error:" not in result.output
 
 
 def test_partner_account_missing_read_scope_is_named_in_preflight():

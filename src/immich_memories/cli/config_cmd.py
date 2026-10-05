@@ -11,7 +11,13 @@ import click
 from rich.markup import escape
 from rich.table import Table
 
-from immich_memories.cli._helpers import console, print_error, print_info, print_success
+from immich_memories.cli._helpers import (
+    console,
+    print_error,
+    print_info,
+    print_success,
+    print_warning,
+)
 from immich_memories.config import Config
 
 if TYPE_CHECKING:
@@ -45,6 +51,8 @@ def _print_connection_check(result: CheckResult) -> None:
     line = f"{prefix}{result.message}{details}"
     if result.status is CheckStatus.OK:
         print_success(line)
+    elif result.status is CheckStatus.WARNING:
+        print_warning(line)
     else:
         print_error(line)
 

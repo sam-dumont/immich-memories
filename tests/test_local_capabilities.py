@@ -277,3 +277,40 @@ async def test_postrelease_music_refusal_replaces_stale_budget(monkeypatch, tmp_
     music = next(row for row in rows if row.name == "Local music")
     assert music.status == "blocked"
     assert music.message == "Current cgroup refusal"
+
+
+async def test_weights_a_render_already_fetched_pass_the_asset_check(monkeypatch, tmp_path):
+    # #2149: the check read the checkpoint root while renders load its pinned snapshot.
+    from unittest.mock import AsyncMock
+
+    from immich_memories.audio.generators.ace_step_checkpoints import pinned_checkpoints
+    from immich_memories.local_capabilities import verify_local_capabilities
+    from tests.ace_step_downloads import snapshot_module
+
+    config = Config()
+    config.ace_step.enabled = True
+    config.ace_step.mode = "lib"
+    config.ace_step.model_variant = "turbo"
+    config.ace_step.use_lm = False
+    monkeypatch.setenv("ACESTEP_CHECKPOINTS_DIR", str(tmp_path / "checkpoints"))
+    # WHY: tiny weight files replace the remote multi-gigabyte snapshot a render fetches.
+    monkeypatch.setattr("huggingface_hub.snapshot_download", snapshot_module().snapshot_download)
+    with pinned_checkpoints(tmp_path / "checkpoints", "acestep-v15-turbo", None):
+        pass
+    # WHY: substitute model/process I/O so this contract test never starts native inference.
+    monkeypatch.setattr(
+        "immich_memories.audio.generators.ace_step_isolated.isolated_python",
+        lambda: tmp_path / "python",
+    )
+    monkeypatch.setattr(
+        "immich_memories.audio.generators.memory_budget.memory_shortfall", lambda *_: None
+    )
+    generation = AsyncMock(side_effect=RuntimeError("generation reached"))
+    monkeypatch.setattr(
+        "immich_memories.audio.generators.ace_step_backend.ACEStepBackend.generate", generation
+    )
+
+    rows = await verify_local_capabilities(config)
+
+    music = next(row for row in rows if row.name == "Local music")
+    assert music.message == "generation reached"

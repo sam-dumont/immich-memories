@@ -7,23 +7,15 @@ from pydantic import ValidationError
 
 
 def format_validation_error(error: ValidationError) -> str:
-    """Format a Pydantic ValidationError into a user-friendly message.
+    """Name each bad key and what is wrong with it, never the value it holds.
 
-    Args:
-        error: The validation error from Pydantic.
-
-    Returns:
-        Human-readable error description.
+    The value is left out on purpose: it can be an API key or a password, and for a
+    check across the whole config pydantic's input is the entire file.
     """
     lines = ["Configuration error:"]
-    for err in error.errors():
-        field_path = " -> ".join(str(loc) for loc in err["loc"])
-        msg = err["msg"]
-        lines.append(f"  {field_path}: {msg}")
-
-        if "input" in err and err["input"] is not None:
-            lines.append(f"    Got: {err['input']!r}")
-
+    for err in error.errors(include_input=False):
+        field_path = " -> ".join(str(loc) for loc in err["loc"]) or "config"
+        lines.append(f"  {field_path}: {err['msg']}")
     return "\n".join(lines)
 
 
