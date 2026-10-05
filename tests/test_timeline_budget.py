@@ -77,7 +77,8 @@ def test_selected_months_receive_the_complete_divider_set() -> None:
     assert final.soft_max_duration == pytest.approx(70.0)
 
 
-def test_selected_month_dividers_are_all_or_none_above_soft_maximum() -> None:
+def test_a_tight_budget_keeps_a_chronological_subset_of_month_dividers() -> None:
+    """#2065: a year film keeps the dividers that fit, never drops to zero while one fits."""
     from immich_memories.processing.timeline_budget import (
         finalize_selected_timeline,
         plan_timeline,
@@ -94,10 +95,82 @@ def test_selected_month_dividers_are_all_or_none_above_soft_maximum() -> None:
         memory_type="person_spotlight",
     )
 
+    assert final.divider_policy == "capped"
+    assert final.eligible_dividers == 5
+    # 4 of 5 fit: never zero while at least one divider fits the budget.
+    assert final.max_dividers == 4
+    assert 0 < final.max_dividers < final.eligible_dividers
+    assert final.title_budget == pytest.approx(15.5)
+    # Tied clip counts (one clip per month): the earlier months keep their divider.
+    assert final.divider_month_keys == ((2026, 3), (2026, 4), (2026, 5), (2026, 6))
+
+
+def test_a_capped_budget_keeps_the_heaviest_months_not_the_earliest() -> None:
+    """#2075: the budget and the renderer must agree on WHICH months survive a cap."""
+    from immich_memories.processing.timeline_budget import (
+        finalize_selected_timeline,
+        plan_timeline,
+    )
+
+    clips = [_clip("jan", "2026-01-05")]
+    # 11 eligible months (Feb-Dec); March/May/July/Sept/Nov are the heaviest.
+    for month in range(2, 13):
+        count = 5 if month in (3, 5, 7, 9, 11) else 1
+        clips.extend(
+            _clip(f"m{month}-{index}", f"2026-{month:02d}-{(index % 27) + 1:02d}")
+            for index in range(count)
+        )
+    titles = _titles(ending_duration=4.0)
+
+    final = finalize_selected_timeline(
+        plan_timeline(clips, titles, 60.0, "person_spotlight"),
+        clips,
+        selected_duration=63.0,
+        title_settings=titles,
+        memory_type="person_spotlight",
+    )
+
+    assert final.divider_policy == "capped"
+    assert final.eligible_dividers == 11
+    assert final.max_dividers == 5
+    # The 5 heaviest months, in chronological order — not the first 5 (Feb-Jun).
+    assert final.divider_month_keys == (
+        (2026, 3),
+        (2026, 5),
+        (2026, 7),
+        (2026, 9),
+        (2026, 11),
+    )
+
+
+def test_a_budget_too_small_for_even_one_month_divider_logs_once(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """#2065: only a budget that cannot fit a single divider drops to none, and logs once."""
+    from immich_memories.processing.timeline_budget import (
+        finalize_selected_timeline,
+        plan_timeline,
+    )
+
+    clips = [_clip(str(month), f"2026-{month:02d}-05") for month in range(2, 8)]
+    titles = _titles(ending_duration=4.0)
+    preliminary = plan_timeline(clips, titles, 60.0, "person_spotlight")
+
+    with caplog.at_level("WARNING"):
+        final = finalize_selected_timeline(
+            preliminary,
+            clips,
+            selected_duration=68.0,
+            title_settings=titles,
+            memory_type="person_spotlight",
+        )
+
     assert final.divider_policy == "none"
     assert final.eligible_dividers == 5
     assert final.max_dividers == 0
     assert final.title_budget == pytest.approx(7.5)
+    dropped_warnings = [r for r in caplog.records if "Month dividers dropped" in r.message]
+    assert len(dropped_warnings) == 1
 
 
 def test_yearly_timeline_allows_the_complete_month_divider_set() -> None:

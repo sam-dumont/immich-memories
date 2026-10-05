@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import logging
 import math
 from collections import Counter
 from dataclasses import dataclass, replace
 from datetime import date, datetime
 from typing import Any, Literal
+
+logger = logging.getLogger(__name__)
 
 _TITLE_SHARE = 0.20
 _MIN_ENDING_SECONDS = 2.0
@@ -29,6 +32,10 @@ class TimelinePlan:
     eligible_dividers: int = 0
     soft_max_duration: float | None = None
     transition_budget: float = 0.0
+    # Which (year, month) dividers to render, chronological, when divider_mode
+    # is "month" and the budget capped the eligible set. None elsewhere: the
+    # positional cap (max_dividers) is still enough for year/location dividers.
+    divider_month_keys: tuple[tuple[int, int], ...] | None = None
 
 
 def _asset_for(item: Any) -> Any:
@@ -196,15 +203,122 @@ def _with_transition_budget(
     )
 
 
-def _selected_month_divider_count(clips: list[Any]) -> int:
-    months = list(
-        dict.fromkeys(
-            (clip_date.year, clip_date.month)
-            for clip in clips
-            if (clip_date := _item_date(clip)) is not None
-        )
+def _eligible_month_entries(clips: list[Any]) -> list[tuple[tuple[int, int], int]]:
+    """Chronological (year, month) keys past the opening month, with their clip counts.
+
+    The opening month is excluded: the intro title already names it, so it
+    never gets its own divider or a say in which other months make the cut.
+    """
+    counts: dict[tuple[int, int], int] = {}
+    order: list[tuple[int, int]] = []
+    for clip in clips:
+        clip_date = _item_date(clip)
+        if clip_date is None:
+            continue
+        key = (clip_date.year, clip_date.month)
+        if key not in counts:
+            order.append(key)
+        counts[key] = counts.get(key, 0) + 1
+    return [(key, counts[key]) for key in order[1:]]
+
+
+def _select_month_divider_keys(
+    entries: list[tuple[tuple[int, int], int]], chosen: int
+) -> tuple[tuple[int, int], ...]:
+    """The `chosen` eligible months with the most clips, kept in chronological order.
+
+    Ties (equal clip counts) favour the earlier month, so a deterministic
+    chronological run is preferred over an arbitrary scatter.
+    """
+    if chosen >= len(entries):
+        return tuple(key for key, _ in entries)
+    ranked = sorted(range(len(entries)), key=lambda i: (-entries[i][1], i))
+    kept_indices = sorted(ranked[:chosen])
+    return tuple(entries[i][0] for i in kept_indices)
+
+
+def _month_divider_plan_for(
+    preliminary: TimelinePlan,
+    chosen: int,
+    *,
+    entries: list[tuple[tuple[int, int], int]],
+    soft_max: float,
+    selected_clips: list[Any],
+    transition_mode: Any,
+    transition_duration: float,
+) -> TimelinePlan:
+    """The plan for keeping exactly `chosen` of the eligible month dividers."""
+    title_budget = (
+        preliminary.title_duration
+        + preliminary.ending_duration
+        + chosen * preliminary.divider_duration
     )
-    return max(0, len(months) - 1)
+    base = replace(
+        preliminary,
+        title_budget=title_budget,
+        max_dividers=chosen,
+        eligible_dividers=len(entries),
+        soft_max_duration=soft_max,
+        divider_month_keys=_select_month_divider_keys(entries, chosen),
+    )
+    return _with_transition_budget(
+        base,
+        title_card_count=int(base.title_duration > 0.0) + chosen + int(base.ending_duration > 0.0),
+        expected_clip_duration=5.0,
+        expected_content_clips=len(selected_clips),
+        transition_mode=transition_mode,
+        transition_duration=transition_duration,
+    )
+
+
+def _largest_fitting_month_dividers(
+    preliminary: TimelinePlan,
+    *,
+    entries: list[tuple[tuple[int, int], int]],
+    soft_max: float,
+    selected_duration: float,
+    selected_clips: list[Any],
+    transition_mode: Any,
+    transition_duration: float,
+) -> TimelinePlan:
+    """Keep as many of the heaviest-month dividers as the soft-max allows.
+
+    Starts from the complete eligible set and drops the lightest remaining
+    month at a time until what fits — never landing on zero while even a
+    single divider fits (the "keep what fits, never none" rule, #2065).
+    """
+    eligible = len(entries)
+    chosen = eligible
+    plan = _month_divider_plan_for(
+        preliminary,
+        chosen,
+        entries=entries,
+        soft_max=soft_max,
+        selected_clips=selected_clips,
+        transition_mode=transition_mode,
+        transition_duration=transition_duration,
+    )
+    while chosen > 0 and selected_duration + plan.title_budget - plan.transition_budget > soft_max:
+        chosen -= 1
+        plan = _month_divider_plan_for(
+            preliminary,
+            chosen,
+            entries=entries,
+            soft_max=soft_max,
+            selected_clips=selected_clips,
+            transition_mode=transition_mode,
+            transition_duration=transition_duration,
+        )
+    if chosen == 0 and eligible > 0:
+        logger.warning(
+            "Month dividers dropped: none of %d eligible dividers fit the title budget "
+            "(soft max %.1fs, selected duration %.1fs)",
+            eligible,
+            soft_max,
+            selected_duration,
+        )
+    policy: DividerPolicy = "all" if chosen == eligible else ("capped" if chosen > 0 else "none")
+    return replace(plan, divider_policy=policy)
 
 
 def plan_timeline(
@@ -382,12 +496,8 @@ def finalize_selected_timeline(
     if not _is_chronological_month_mode(title_settings, memory_type):
         return preliminary
 
-    eligible = _selected_month_divider_count(selected_clips)
-    complete_title_budget = (
-        preliminary.title_duration
-        + preliminary.ending_duration
-        + eligible * preliminary.divider_duration
-    )
+    entries = _eligible_month_entries(selected_clips)
+    eligible = len(entries)
     # WHY: Opening/ending time is already removed from the content budget. The
     # overflow allowance must cover the *complete* selected divider set too;
     # otherwise the generic 10-second cap makes six or more 2-second dividers
@@ -396,42 +506,12 @@ def finalize_selected_timeline(
         preliminary.soft_max_duration or preliminary.target_duration,
         preliminary.target_duration + eligible * preliminary.divider_duration,
     )
-    complete_plan = _with_transition_budget(
-        replace(
-            preliminary,
-            title_budget=complete_title_budget,
-            max_dividers=eligible,
-            eligible_dividers=eligible,
-        ),
-        title_card_count=int(preliminary.title_duration > 0.0)
-        + eligible
-        + int(preliminary.ending_duration > 0.0),
-        expected_clip_duration=5.0,
-        expected_content_clips=len(selected_clips),
-        transition_mode=transition_mode,
-        transition_duration=transition_duration,
-    )
-    include_all = (
-        selected_duration + complete_title_budget - complete_plan.transition_budget <= soft_max
-    )
-    chosen = eligible if include_all else 0
-    plan = replace(
+    return _largest_fitting_month_dividers(
         preliminary,
-        title_budget=(
-            preliminary.title_duration
-            + preliminary.ending_duration
-            + chosen * preliminary.divider_duration
-        ),
-        max_dividers=chosen,
-        divider_policy="all" if include_all else "none",
-        eligible_dividers=eligible,
-        soft_max_duration=soft_max,
-    )
-    return _with_transition_budget(
-        plan,
-        title_card_count=int(plan.title_duration > 0.0) + chosen + int(plan.ending_duration > 0.0),
-        expected_clip_duration=5.0,
-        expected_content_clips=len(selected_clips),
+        entries=entries,
+        soft_max=soft_max,
+        selected_duration=selected_duration,
+        selected_clips=selected_clips,
         transition_mode=transition_mode,
         transition_duration=transition_duration,
     )

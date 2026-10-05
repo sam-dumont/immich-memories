@@ -237,6 +237,9 @@ def build_title_settings(
         settings.month_divider_duration = plan.divider_duration
         settings.ending_duration = plan.ending_duration
         settings.max_dividers = plan.max_dividers
+        settings.included_month_dividers = (
+            frozenset(plan.divider_month_keys) if plan.divider_month_keys is not None else None
+        )
         settings.show_ending_screen = plan.ending_duration > 0.0
 
     # No fallback occasion: a holiday that arrives without its parameter keeps

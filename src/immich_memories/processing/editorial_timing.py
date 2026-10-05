@@ -178,7 +178,15 @@ def build_editorial_timing_policy(
 def bind_editorial_timeline(
     policy: EditorialTimingPolicy, timeline: TimelinePlan, source_ids: list[str]
 ) -> dict:
-    value = {"policy": policy.as_dict(), "timeline": asdict(timeline), "source_ids": source_ids}
+    timeline_dict = asdict(timeline)
+    # WHY: this dict round-trips through JSON on disk (render inputs), which has no
+    # tuple type. Normalize divider_month_keys to lists here too, so an in-memory
+    # binding compares equal to one just read back from a saved cut (#2075).
+    if timeline_dict["divider_month_keys"] is not None:
+        timeline_dict["divider_month_keys"] = [
+            list(key) for key in timeline_dict["divider_month_keys"]
+        ]
+    value = {"policy": policy.as_dict(), "timeline": timeline_dict, "source_ids": source_ids}
     return value | {"sha256": _digest(value)}
 
 
@@ -195,7 +203,17 @@ def read_editorial_timeline(binding: dict) -> TimelinePlan:
         {key: value for key, value in binding.items() if key != "sha256"}
     ):
         raise ValueError("Editorial timing binding changed")
-    timeline = TimelinePlan(**binding["timeline"])
+    timeline_fields = dict(binding["timeline"])
+    # WHY: a cut saved before divider_month_keys existed has no such key in its
+    # stored "timeline" dict; .get() keeps that old binding reading exactly as
+    # before (TimelinePlan defaults the field to None) instead of a KeyError (#2075).
+    if timeline_fields.get("divider_month_keys") is not None:
+        # The dict form stores plain lists (JSON has no tuple); the dataclass
+        # field is a tuple of (year, month) pairs, hashable for frozenset() below it.
+        timeline_fields["divider_month_keys"] = tuple(
+            tuple(key) for key in timeline_fields["divider_month_keys"]
+        )
+    timeline = TimelinePlan(**timeline_fields)
     if (
         not math.isfinite(timeline.transition_budget)
         or timeline.transition_budget < 0
