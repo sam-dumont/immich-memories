@@ -71,6 +71,11 @@ export class CutEditor {
     // The renderer counts recorded intervals, so the budget here does too.
     return segment ? segment[1] - segment[0] : shot.recorded_seconds;
   };
+  // What the inspector says the shot holds: the edited stretch once trimmed or held, else the film's own time.
+  onScreen = (shot: CutShot) => {
+    const segment = this.current.segments[this.playing(shot)];
+    return segment ? segment[1] - segment[0] : shot.seconds;
+  };
 
   toggleRemoved(shot: CutShot) {
     this.#change((next) => {

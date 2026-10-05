@@ -69,6 +69,8 @@ class PlanRun:
     )
     # Binds a kept carrier's unmeasured Live stitch to its measurement (`measured_stitch`).
     bind_stitch: Callable[[dict], dict] | None = None
+    # The shortest the fit may cut a still to; a longer photo duration raises it (#2131).
+    still_floor: float = MIN_CARRIER_SECONDS
 
 
 def resolve_motion_and_timing(
@@ -103,11 +105,14 @@ def resolve_motion_and_timing(
         protected=frozenset(source.owner_required_asset_ids),
         vouched=partial(owner_vouches_for, evidence=filler_evidence(source)),
         era_of=voiced_era_of(source.intent),
+        floor_for_stills=run.still_floor,
     )
     run.cut_carriers.extend(dropped)
     run.render_timeline = timing.resolve(run.carriers, source.assets)
     run.final_content_cap = run.render_timeline.content_budget
-    run.shaved += shave_content_duration(run.carriers, run.final_content_cap)
+    run.shaved += shave_content_duration(
+        run.carriers, run.final_content_cap, floor_for_stills=run.still_floor
+    )
     if sum(c["seconds"] for c in run.carriers) > run.final_content_cap:
         raise ValueError("Editorial minimum content cannot fit the production title budget")
 
@@ -124,11 +129,15 @@ def admit_retained_originals(
     run.carriers = admitted
     if not changed:
         return
-    run.shaved += shave_content_duration(run.carriers, run.final_content_cap)
+    run.shaved += shave_content_duration(
+        run.carriers, run.final_content_cap, floor_for_stills=run.still_floor
+    )
     if source.render_timing is not None:
         resolved = source.render_timing.resolve(run.carriers, source.assets)
         run.final_content_cap = min(run.final_content_cap, resolved.content_budget)
-        run.shaved += shave_content_duration(run.carriers, run.final_content_cap)
+        run.shaved += shave_content_duration(
+            run.carriers, run.final_content_cap, floor_for_stills=run.still_floor
+        )
         run.render_timeline = source.render_timing.resolve(run.carriers, source.assets)
         run.final_content_cap = min(run.final_content_cap, run.render_timeline.content_budget)
     if sum(carrier["seconds"] for carrier in run.carriers) > run.final_content_cap:
@@ -180,7 +189,9 @@ def _settle_replacements(run: PlanRun, ports: StructurePlannerPorts, added: Sequ
     run.carriers = [resolved.get(c["asset_id"], c) for c in run.carriers]
     if run.final_content_cap <= 0:
         return
-    run.shaved += shave_content_duration(run.carriers, run.final_content_cap)
+    run.shaved += shave_content_duration(
+        run.carriers, run.final_content_cap, floor_for_stills=run.still_floor
+    )
     # A refill whose own minimum hold (a sentence it cannot cut) runs past the room its slot
     # left does not come in: the removal stands and the slot stays empty, latest refill first.
     for asset in reversed(added):
@@ -197,7 +208,9 @@ def _settle_replacements(run: PlanRun, ports: StructurePlannerPorts, added: Sequ
                 "review_stage": "final-duplicates",
             }
         )
-        run.shaved += shave_content_duration(run.carriers, run.final_content_cap)
+        run.shaved += shave_content_duration(
+            run.carriers, run.final_content_cap, floor_for_stills=run.still_floor
+        )
 
 
 def final_duplicate_review(
@@ -327,6 +340,7 @@ def trim_to_timing(
         protected=protected,
         vouched=partial(owner_vouches_for, evidence=filler_evidence(source)),
         era_of=voiced_era_of(source.intent),
+        floor_for_stills=run.still_floor,
     )
     run.cut_carriers.extend(dropped)
     record("timing-trim", {"dropped": [c["asset_id"] for c in dropped], "kept": len(run.carriers)})

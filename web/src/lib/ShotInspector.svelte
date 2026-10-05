@@ -23,10 +23,19 @@
     if (next[1] > next[0]) editor.trim(shot, next);
   }
 
-  // The preview plays the stretch the film plays, and loops it: the rest of the clip is not the cut.
-  function hold() {
+  // The preview opens on the stretch the film plays and loops it while it plays through. A seek
+  // outside it is the reader looking for a new edge, so it is never pulled back.
+  let last = 0;
+  function start() {
     if (!player || !interval) return;
-    if (player.currentTime < interval[0] || player.currentTime >= interval[1]) player.currentTime = interval[0];
+    player.currentTime = interval[0];
+    last = interval[0];
+  }
+  function hold() {
+    if (!player || !interval || player.seeking) return;
+    const playedOut = last >= interval[0] && last < interval[1] && player.currentTime >= interval[1];
+    if (playedOut) player.currentTime = interval[0];
+    last = player.currentTime;
   }
 </script>
 
@@ -37,7 +46,7 @@
         <video bind:this={player} class="aspect-[4/3] w-full object-contain" controls muted playsinline autoplay
           preload="metadata" poster={thumbnail(shot.asset_id, 'preview')}
           src={`${video(shot.asset_id)}#t=${interval[0]},${interval[1]}`}
-          ontimeupdate={hold} onloadedmetadata={hold}></video>
+          ontimeupdate={hold} onloadedmetadata={start}></video>
       {/key}
     {:else}
       <img class={['aspect-[4/3] w-full object-contain', removed && 'opacity-40']} src={thumbnail(playing, 'preview')} alt={shot.reason || shot.story_title} />
@@ -72,7 +81,7 @@
       <span class="font-semibold text-dark">#{shot.position}</span>
       <span>{clock(shot.start)}</span>
       <span>{shot.day}</span>
-      <span>{t('{seconds} s on screen', { seconds: shot.seconds.toFixed(1) })}</span>
+      <span>{t('{seconds} s on screen', { seconds: editor.onScreen(shot).toFixed(1) })}</span>
       <Badge size="tiny" color={shot.motion ? 'info' : 'secondary'}>{shot.motion ? t('Video') : t('Still')}</Badge>
     </p>
     <!-- A rules-made story title can list every place of the week: two lines, the rest on hover. -->

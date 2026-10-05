@@ -88,12 +88,15 @@ def render_ken_burns_streaming(
     vp_w: int,
     vp_h: int,
     params: KenBurnsParams | None = None,
+    *,
+    scale_mode: str = "blur",
 ) -> Iterator[np.ndarray]:
     """Yield Ken Burns frames one at a time (O(1) memory).
 
     The photo "window" is a fixed rectangle centered in the viewport.
-    Ken Burns zooms/pans INSIDE that window. Blur fills the rest,
-    derived from the same crop content each frame.
+    Ken Burns zooms/pans INSIDE that window. With `scale_mode` "blur" the
+    photograph's own blur fills the rest, derived from the same crop content
+    each frame; with "fit" the rest is black, as it is around a fitted video.
 
     The window position and size NEVER change during the animation.
     """
@@ -108,7 +111,8 @@ def render_ken_burns_streaming(
     win_h = int(src_h * photo_scale)
     win_x = (vp_w - win_w) // 2
     win_y = (vp_h - win_h) // 2
-    needs_blur = (win_w < vp_w - 2) or (win_h < vp_h - 2)
+    letterboxed = (win_w < vp_w - 2) or (win_h < vp_h - 2)
+    needs_blur = letterboxed and scale_mode == "blur"
 
     # Scale source for KB headroom — use MAX zoom for crisp pixels
     max_z = max(params.zoom_start, params.zoom_end)
@@ -172,6 +176,10 @@ def render_ken_burns_streaming(
             )
             bg[win_y : win_y + win_h, win_x : win_x + win_w] = sharp
             yield bg
+        elif letterboxed:
+            canvas = np.zeros((vp_h, vp_w, *big.shape[2:]), dtype=big.dtype)
+            canvas[win_y : win_y + win_h, win_x : win_x + win_w] = sharp
+            yield canvas
         else:
             vsx, vsy = vp_w / vis_w, vp_h / vis_h
             m_vp = np.array([[vsx, 0, -x0 * vsx], [0, vsy, -y0 * vsy]], dtype=np.float32)

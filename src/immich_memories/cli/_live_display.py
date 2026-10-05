@@ -17,6 +17,7 @@ from rich.text import Text
 
 from immich_memories.cli._helpers import set_active_display
 from immich_memories.logging_config import install_live_handler, restore_handlers
+from immich_memories.progress_lines import StageLines
 
 
 @runtime_checkable
@@ -55,6 +56,7 @@ class QuietDisplay:
     def __init__(self) -> None:
         self._logger = logging.getLogger("immich_memories.progress")
         self._tasks: dict[TaskID, str] = {}
+        self._stage_lines = StageLines()
         self._next_id = 0
 
     def __enter__(self) -> Self:
@@ -88,7 +90,8 @@ class QuietDisplay:
             description = kwargs["description"]
             if description != self._tasks.get(task_id):
                 self._tasks[task_id] = description
-                self._logger.info(description)
+                if self._stage_lines.keeps_line(description):
+                    self._logger.info(description)
         if kwargs.get("completed"):
             desc = self._tasks.get(task_id, "")
             if desc and "description" not in kwargs:

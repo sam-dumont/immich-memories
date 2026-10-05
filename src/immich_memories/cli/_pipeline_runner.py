@@ -161,6 +161,7 @@ def _finish_without_rendering(
     title: str | None,
     subtitle: str | None,
     cut_run: dict,
+    preset_params: dict | None = None,
 ) -> tuple[Path, bool, str | None]:
     """Print the resolved plan, keep the cut as a run, and return without rendering.
 
@@ -172,11 +173,20 @@ def _finish_without_rendering(
     from immich_memories.cli._generation_preview import (
         GenerationPreview,
         music_policy,
+        print_cut_ending,
         print_generation_preview,
     )
+    from immich_memories.titles.film_title import template_title
 
     selected_clips = pipeline_result.selected_clips
     selected_photos = sum(clip.asset.type == AssetType.IMAGE for clip in selected_clips)
+    template = template_title(
+        config,
+        memory_type=memory_type,
+        date_range=date_range,
+        person_name=cut_run.get("person_name"),
+        preset_params=preset_params,
+    )
     preview = GenerationPreview(
         memory_type=memory_type or "custom",
         date_range=date_range.description,
@@ -191,8 +201,8 @@ def _finish_without_rendering(
         output_path=output_path,
         upload_intent=should_upload,
         music_policy=music_policy(config=config, music=music, no_music=no_music),
-        title=title,
-        subtitle=subtitle,
+        title=title or template[0],
+        subtitle=subtitle if title else template[1],
         sharing=config.defaults.sharing,
     )
     print_generation_preview(preview)
@@ -212,6 +222,7 @@ def _finish_without_rendering(
             f"Kept the cut as run {run_id}: `runs story {run_id}` reads it, "
             f"`runs render {run_id}` renders it."
         )
+    print_cut_ending(_attempt_dir_of(pipeline_result), run_id)
     return output_path, should_upload, album_name
 
 
@@ -268,45 +279,6 @@ def _keep_cut_as_run(
     if attempt is not None:
         record_run_attempt(tracker.run_id, attempt, "", store=tracker.db.store)
     return tracker.run_id
-
-
-def _finish_preparation(
-    *,
-    context,
-    assets,
-    photos,
-    output_canvas,
-    output_path,
-    config,
-    music,
-    no_music,
-    should_upload,
-    album_name,
-    canvas_provisional=False,
-) -> tuple[Path, bool, str | None]:
-    """Describe discovered inputs without making a different, approximate selection."""
-    import click
-
-    from immich_memories.cli._generation_preview import music_policy, planned_output_line
-    from immich_memories.db import resolve_location
-
-    store = resolve_location(config)
-    click.echo("Dry-run preparation (selection was not run; no video will be created)")
-    click.echo(f"Memory: {context.product}")
-    click.echo(f"Date range: {context.label}")
-    click.echo(f"Candidates: {len(assets)} video, {len(photos)} photo")
-    click.echo(f"Target duration: {context.target_seconds:.1f}s")
-    click.echo(f"Annotations: in the store at {store}; coverage checked at selection")
-    click.echo("Selection: pending (use --no-render to run story-first selection)")
-    click.echo(
-        f"Canvas: {output_canvas.width}x{output_canvas.height} ({output_canvas.orientation})"
-        + (" — provisional until selection" if canvas_provisional else "")
-    )
-    click.echo(f"Sharing: {config.defaults.sharing}")
-    click.echo(f"Music: {music_policy(config=config, music=music, no_music=no_music)}")
-    click.echo(planned_output_line(output_path))
-    click.echo(f"Upload: {'planned' if should_upload else 'disabled'}")
-    return output_path, should_upload, album_name
 
 
 class _AttemptPhaseReporter:
@@ -574,7 +546,9 @@ def run_pipeline_and_generate(
         owner_excluded_asset_ids=owner_excluded_asset_ids,
     )
     if dry_run:
-        return _finish_preparation(
+        from immich_memories.cli._generation_preview import print_dry_run_preparation
+
+        return print_dry_run_preparation(
             context=editorial_context,
             assets=assets,
             photos=(resolved.photo_assets or []) if include_photos else [],
@@ -720,6 +694,7 @@ def run_pipeline_and_generate(
                 "person_name": person_name,
                 "source": source,
             },
+            preset_params=resolved.preset_params,
         )
 
     def gen_progress(phase: str, frac: float, msg: str) -> None:

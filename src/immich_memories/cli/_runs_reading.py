@@ -26,6 +26,7 @@ from immich_memories.operations.run_index import attempt_dir_for_run, sharing_li
 from immich_memories.operations.storyboard import (
     Storyboard,
     read_storyboard,
+    short_story_title,
     storyboard_lines,
 )
 
@@ -103,7 +104,7 @@ def why_text(
     if shot is not None:
         lines.append(
             _wrapped(
-                f"in the cut at {shot.timecode}, {shot.day}, story: {shot.story_title}"
+                f"in the cut at {shot.timecode}, {shot.day}, story: {short_story_title(shot.story_title)}"
                 + (f", because {shot.reason}" if shot.reason else ""),
                 columns,
             )

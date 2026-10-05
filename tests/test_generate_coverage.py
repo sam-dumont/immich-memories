@@ -419,8 +419,10 @@ class TestGenerateMemory:
 
 
 class TestCleanupTempClips:
-    def test_removes_tmp_files(self, tmp_path):
-        tmp_clip = tmp_path / "tmp_segment.mp4"
+    def test_removes_cut_segments_from_the_scratch_dir(self, tmp_path):
+        from immich_memories.security import private_temp_dir
+
+        tmp_clip = private_temp_dir("clips") / f"{tmp_path.name}_segment.mp4"
         tmp_clip.write_bytes(b"data")
         clips = [AssemblyClip(path=tmp_clip, duration=3.0)]
         cleanup_temp_clips(clips)
@@ -890,7 +892,9 @@ class TestGenerateMemoryRun:
         params = self._make_params(tmp_path)
         patches, _, _ = self._patch_inner_deps(tmp_path)
         leftover = self._intermediates(tmp_path)
-        temp_clip = tmp_path / "tmp_segment.mp4"
+        from immich_memories.security import private_temp_dir
+
+        temp_clip = private_temp_dir("clips") / f"{tmp_path.name}_segment.mp4"
         temp_clip.write_bytes(b"segment")
 
         with contextlib.ExitStack() as stack:
@@ -1471,3 +1475,14 @@ class TestTitleStyleSwitchesReachTheRenderer:
             title_settings=settings, target_w=1920, target_h=1080, fps=30
         )
         assert title_config.animated_background is False
+
+
+def test_cleanup_leaves_a_clip_outside_the_scratch_dir_alone(tmp_path):
+    """A "tmp" in an output path once made a kept file look like scratch."""
+    outside = tmp_path / "tmp_named_folder" / "segment.mp4"
+    outside.parent.mkdir()
+    outside.write_bytes(b"data")
+
+    cleanup_temp_clips([AssemblyClip(path=outside, duration=3.0)])
+
+    assert outside.exists()

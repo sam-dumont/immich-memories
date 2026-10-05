@@ -231,6 +231,11 @@ def recipe_hash(
     return hashlib.sha256(canonical.encode()).hexdigest()[:_RECIPE_HASH_CHARS]
 
 
+def carries_recipe_hash(path: Path) -> bool:
+    """Whether this name already ends in a recipe hash, so selection has named it."""
+    return _RECIPE_HASH_SUFFIX.search(path.stem) is not None
+
+
 def apply_recipe_hash(path: Path, digest: str) -> Path:
     """Return the path carrying this recipe hash, replacing any it already has."""
     stem = _RECIPE_HASH_SUFFIX.sub("", path.stem)

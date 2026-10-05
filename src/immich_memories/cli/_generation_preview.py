@@ -28,7 +28,7 @@ class GenerationPreview:
     output_path: Path
     upload_intent: bool
     music_policy: str
-    title: str | None = None
+    title: str = ""
     subtitle: str | None = None
     sharing: str = "family"
 
@@ -79,9 +79,12 @@ def planned_output_line(path: Path) -> str:
     """The path as the run will write it, with the parts only selection can fill in.
 
     A recipe hash joins the name once the clips are chosen, and every run gets its own
-    folder named after that name and the run id (#1989).
+    folder named after that name and the run id (#1989). A path that already carries its
+    hash (a --no-render plan, after selection) keeps it and gains no placeholder (#2155).
     """
-    name = f"{path.stem}_<recipe>"
+    from immich_memories.filename_builder import carries_recipe_hash
+
+    name = path.stem if carries_recipe_hash(path) else f"{path.stem}_<recipe>"
     return f"Output (planned): {path.parent}/{name}_<run id>/{name}{path.suffix}"
 
 
@@ -108,10 +111,66 @@ def print_generation_preview(preview: GenerationPreview) -> None:
     click.echo(
         f"Canvas: {preview.canvas.width}x{preview.canvas.height} ({preview.canvas.orientation})"
     )
-    click.echo(f"Title: {preview.title or 'from the template'}")
+    click.echo(f"Title: {preview.title}")
     if preview.subtitle:
         click.echo(f"Subtitle: {preview.subtitle}")
     click.echo(f"Sharing: {preview.sharing}")
     click.echo(f"Music: {preview.music_policy}")
     click.echo(planned_output_line(preview.output_path))
     click.echo(f"Upload: {'planned' if preview.upload_intent else 'disabled'}")
+
+
+def print_cut_ending(attempt_dir: Path | None, run_id: str | None) -> None:
+    """End the plan the way a rendered run ends: the CHECK line, then the cut in order."""
+    from immich_memories.analysis.editorial_review_list import review_count
+    from immich_memories.cli._run_summary import render_cut_ending
+    from immich_memories.operations.storyboard import read_storyboard
+
+    click.echo(
+        render_cut_ending(
+            storyboard=read_storyboard(attempt_dir) if attempt_dir else None,
+            run_id=run_id,
+            review_before_sharing=review_count(attempt_dir),
+        )
+    )
+
+
+def print_dry_run_preparation(
+    *,
+    context,
+    assets,
+    photos,
+    output_canvas,
+    output_path,
+    config,
+    music,
+    no_music,
+    should_upload,
+    album_name,
+    canvas_provisional=False,
+) -> tuple[Path, bool, str | None]:
+    """Describe discovered inputs and the preparation they still owe, without selecting."""
+    from immich_memories.analysis.prepare_scope import unprepared_pictures
+    from immich_memories.api.models import VideoClipInfo
+    from immich_memories.db import open_store
+
+    asset_ids = [
+        source.asset.id if isinstance(source, VideoClipInfo) else source.id
+        for source in (*assets, *photos)
+    ]
+    click.echo("Dry-run preparation (selection was not run; no video will be created)")
+    click.echo(f"Memory: {context.product}")
+    click.echo(f"Date range: {context.label}")
+    click.echo(f"Candidates: {len(assets)} video, {len(photos)} photo")
+    click.echo(f"Target duration: {context.target_seconds:.1f}s")
+    click.echo(f"Preparation: {unprepared_pictures(config, open_store(config), asset_ids).line()}")
+    click.echo("Selection: pending (use --no-render to run story-first selection)")
+    click.echo(
+        f"Canvas: {output_canvas.width}x{output_canvas.height} ({output_canvas.orientation})"
+        + (" — provisional until selection" if canvas_provisional else "")
+    )
+    click.echo(f"Sharing: {config.defaults.sharing}")
+    click.echo(f"Music: {music_policy(config=config, music=music, no_music=no_music)}")
+    click.echo(planned_output_line(output_path))
+    click.echo(f"Upload: {'planned' if should_upload else 'disabled'}")
+    return output_path, should_upload, album_name

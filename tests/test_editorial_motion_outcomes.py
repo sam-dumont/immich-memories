@@ -84,7 +84,8 @@ def runtime(monkeypatch, tmp_path):
         store=annotation_store(),
         motion_outcome_replay=None,
         config=SimpleNamespace(
-            immich=SimpleNamespace(url="unused", api_key="unused", api_version=None)
+            immich=SimpleNamespace(url="unused", api_key="unused", api_version=None),
+            photos=SimpleNamespace(duration=4.0),
         ),
     )
     return source, calls, failed

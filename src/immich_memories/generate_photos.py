@@ -39,6 +39,7 @@ def render_photo_as_clip(
     downloads from Immich, prepares the source (HEIC decode, gain map),
     then streams Ken Burns frames to FFmpeg.
     """
+    from immich_memories.config_models_render import normalize_scale_mode
     from immich_memories.photos.encoding import photo_encoding_plan
     from immich_memories.photos.photo_pipeline import render_single_photo
     from immich_memories.processing.encoding_plan import HdrTransfer
@@ -68,6 +69,7 @@ def render_photo_as_clip(
             params.config,
             transfer=HdrTransfer.PQ if check_zscale_available() else HdrTransfer.NONE,
         ),
+        scale_mode=normalize_scale_mode(params.scale_mode or params.config.defaults.scale_mode),
     )
     if result is None:
         logger.warning(f"Failed to render photo {clip.asset.id}")

@@ -27,6 +27,7 @@ from immich_memories.api.models import Asset, VideoClipInfo
 from immich_memories.db.tables import pipeline_runs
 from immich_memories.free_text.library import LibraryView, read_library
 from immich_memories.free_text.linking import WhenLink
+from immich_memories.progress_lines import StageLines
 from immich_memories.store.asset_annotations import AssetAnnotationFactRepository
 from immich_memories.timeperiod import DateRange, custom_range
 from immich_memories.tracking.span_store import SpanStore
@@ -232,13 +233,16 @@ def prepare_for_request(  # noqa: PLR0913 - every argument is one external bound
         before_preparing()
     _refuse_unreachable_captions(config)
     print_line(f"Preparing {len(readiness.missing):,} pictures over 1 window")
+    # The watcher redraws one bar; the terminal line is a log line, kept to a few per stage.
+    stage_lines = StageLines()
 
     def live(producer: str, done: int, total: int) -> None:
         if not total:
             return
         remaining = rate * max(total - done, 0)
         message = f"Preparing {producer}: {done:,}/{total:,} pictures"
-        print_line(message)
+        if stage_lines.keeps(producer, done, total):
+            print_line(message)
         if report:
             report(message, done / total, remaining)
 

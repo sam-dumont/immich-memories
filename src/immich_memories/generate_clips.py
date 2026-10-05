@@ -424,11 +424,43 @@ def extract_clips(
     return assembly_clips
 
 
+def _temp_clip_paths(assembly_clips: list[AssemblyClip]) -> list[Path]:
+    """The segments FFmpeg cut into the private scratch dir, which outlive no run.
+
+    Matched by that dir rather than by a "tmp" in the path: macOS's temp dir has none, so
+    every cut segment leaked there, and a Linux output path holding one was fair game.
+    """
+    from immich_memories.security import private_temp_dir
+
+    scratch = private_temp_dir("clips")
+    return [
+        clip.path
+        for clip in assembly_clips
+        if clip.path.is_relative_to(scratch) and clip.path.exists()
+    ]
+
+
 def cleanup_temp_clips(assembly_clips: list[AssemblyClip]) -> None:
-    for clip in assembly_clips:
-        with contextlib.suppress(Exception):
-            if clip.path.exists() and "tmp" in str(clip.path).lower():
-                clip.path.unlink()
+    for path in _temp_clip_paths(assembly_clips):
+        with contextlib.suppress(OSError):
+            path.unlink()
+
+
+def keep_temp_clips(assembly_clips: list[AssemblyClip], keep_dir: Path) -> None:
+    """Move the cut's extracted segments out of the private temp dir, beside the film.
+
+    They are cut into a temp dir the system may clear, so `--keep-intermediates` would
+    otherwise keep everything but the segments the film was assembled from (#2133).
+    """
+    import shutil
+
+    paths = _temp_clip_paths(assembly_clips)
+    if not paths:
+        return
+    keep_dir.mkdir(parents=True, exist_ok=True)
+    for path in paths:
+        shutil.move(path, keep_dir / path.name)
+    logger.info("Kept %d cut segments in %s", len(paths), keep_dir)
 
 
 def cleanup_temp_dirs(output_dir: Path) -> None:
