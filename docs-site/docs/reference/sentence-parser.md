@@ -38,14 +38,13 @@ pool the same way it chooses from a month or a trip. The model reads your words.
 to what the library holds. No model looks at a picture to decide whether it belongs: the pool is
 built from captions and facts the library already has.
 
-```mermaid
-flowchart TD
-  A[Your sentence] --> B[Read people, dates, places and subject]
-  B --> C[Match against prepared library facts]
-  C --> D{Useful pool?}
-  D -- Yes --> E[Normal editor makes the cut]
-  D -- No --> F[Explain the empty filter]
-```
+Before any of that, a caption-dependent request pays for its own window: the run measures caption
+coverage over the request's own dates and, if anything is missing, warns with a count and an
+estimate, prepares it through the same pipeline `prepare` uses (with the usual progress lines),
+then answers. A dry run shows the same warning but never prepares, since it is a preview, not a
+commitment to pay the cost.
+
+{/* diagram: seq-ask */}
 
 1. **Reading.** The model splits the sentence into who, when, where and what. It can only pick
    phrases your sentence contains, and it does it three times in three orders. A word counts
@@ -126,20 +125,26 @@ VERDICT  possible: 457 pictures in the pool; ...
 FILM     the engine films the pool as an album whose written subject is your words: 457 pictures (the pool is the film's whole reach)
 ```
 
+The opening title's language follows `title_screens.locale`, the film's own setting, not the
+language you typed the sentence in: an English sentence in a French-titled film still gets a
+French title.
+
 `POOL` is the funnel: how many pictures were left after each filter. When a film is wrong, this
 line usually says where. A subject count of 3 means the captioner never writes your word. A count
 that barely moves means the filter did nothing.
 
-`VERDICT` is one of three:
+`VERDICT` is one of four:
 
 | Verdict | Meaning | What happens |
 |---|---|---|
 | possible | 12 pictures or more in the pool | the film is made |
 | thin | fewer than 12 | a short film is made, and the run says why |
-| not possible | the pool is empty | no film; the trace names the filter that emptied it |
+| not possible | the pool is empty, on a library the request's window has already read | no film; the trace names the filter that emptied it |
+| needs preparation | a caption-dependent request's window has not been read yet | the run warns, prepares the window, then answers with one of the other three |
 
 A computed selection ("the first picture of each person") is never called thin, however short.
-The run does not pad a request it cannot show with something else.
+The run does not pad a request it cannot show with something else. `needs preparation` is never
+reported as `not possible`: an unread window is not known to be empty, only unread.
 
 ## Which rules would drop pictures
 
@@ -187,9 +192,9 @@ passing: the first line then reads "17 of 18 prepared pictures pass ...; 12 not 
 run reads those pictures before applying the rules. There is no switch to turn a rule
 off. Held pictures come back one at a time, when you clear them on the pool page.
 
-With `--dry-run` the command stops after the trace and the rule preview. Translating one sentence
-took 7 to 46 seconds on a Mac with a local Gemma E4B; the model's answers are banked in the store,
-so asking the same question twice does not ask the model twice.
+With `--dry-run` the command stops after the trace and the rule preview. The model's answers are
+banked in the store, so asking the same question twice does not ask the model twice. Translation
+timing is on [Measure your setup](../better/measured.md).
 
 ## Where it is good, where it is less good
 

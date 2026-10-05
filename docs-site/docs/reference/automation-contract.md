@@ -16,6 +16,8 @@ immich-memories auto run                # decide and do it
 
 It works on a plain NAS, and makes the same cuts you would get by hand there; a GPU or a model makes them better.
 
+{/* diagram: seq-scheduled-run */}
+
 ## Docker: switch on the built-in timer
 
 In Docker the container's only process is the web UI, so the timer lives there. One setting:
@@ -37,8 +39,11 @@ Either `automation.upload_to_immich: true` or `upload.enabled: true` requests de
 The UI process then runs the same `auto run` decision once a day, with the same lock, history, upload retry
 and notifications as the CLI. A container that was down at `daily_at` catches up when it starts; if the day's
 run already happened (a manual `docker compose exec immich-memories immich-memories auto run` counts) it waits
-for tomorrow. A manual run in progress holds the same lock, so the timer reports `skipped` instead of fighting
-it. `/health/ready` shows the timer under `in_process_scheduler`.
+for tomorrow. A manual `auto run` in progress holds the same automation lock, so the timer's attempt never
+starts and leaves no attempt row: `auto history` and `auto status` never show it. A manual `generate` in
+progress holds a different lock (the pipeline lock, not the automation lock), so the timer's own attempt
+does start, its child `generate` then fails to get the pipeline lock, and the attempt ends `failed`, not
+`skipped`. `/health/ready` shows the timer under `in_process_scheduler`.
 
 ## Bare metal: auto install
 
@@ -139,9 +144,16 @@ the top candidate. `--cooldown` (`automation.cooldown_hours`, 24) is measured fr
 `auto suggest --json`; the rules still apply, `--force` skips only the cooldown, and a stale key fails rather
 than making something else.
 
+{/* diagram: state-scheduled-attempt */}
+
 The outcomes are `skipped`, `dry_run`, `completed` and `failed`; the first three exit 0.
 Quiet output is a stable JSON object with `runtime` as its first key. Key a wrapper on `outcome`: `action` is
 `generation` or `delivery_retry`. Logging is disabled during `auto run --quiet`; its result is one JSON line, not formatted multiline output.
+
+**Known limitation:** an attempt killed mid-run (the process is terminated rather than exiting on its own)
+stays recorded as `running` forever. `auto status` and the trigger API's `status_url` both keep reporting it
+as active, since nothing marks it otherwise. Restarting the app does not clear it; recognise this case by an
+attempt whose `started_at` is far in the past with no `finished_at`.
 
 ```json
 {"runtime": {"version": "<running version>", "checkout": null, "commit": null, "upstream": null, "commits_behind": null, "stale": false}, "outcome": "dry_run", "action": "generation", "reason": "dry run", "candidate_key": "trip:2026-07-02:2026-07-09:", "category": "trip", "run_id": null, "error": null, "output_path": null, "recent_categories": ["monthly_review", "birthday"], "rejections": []}
@@ -192,7 +204,8 @@ immich-memories auto test-notification
 `auto test-notification` sends one message to every URL and says whether it went through. It ignores the
 cooldown that follows a failed delivery (`cooldown_hours`, 24), and a test that succeeds clears it. Every film
 then sends one: `auto run`, the Docker timer and a plain `generate`. The message carries the memory type, the
-outcome, the duration, the output path and, on a failure, the first 200 characters of the redacted output (often not the error itself yet, [#2077](https://github.com/sam-dumont/immich-memories/issues/2077)); no picture unless you set
+outcome, the duration, the output path and, on a failure, the first 200 characters of the redacted output
+(often the lead-up to the error, not the error itself); no picture unless you set
 `attach_thumbnail: true`. The URLs hold credentials, so `config show` masks them and the database stores them encrypted.
 Every key is in the [config reference](config-reference.md#notifications).
 

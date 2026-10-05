@@ -28,9 +28,12 @@ away from a week at home, and who's who, so it knows which people to prioritise.
 
 ## How long a film runs
 
+{/* diagram: decide-length */}
+
 The target is where the length starts, not a promise. A film never runs longer than the varied
-footage its days can fill, counted a day at a time and capped at 30 s a day. Three photographed
-days can supply up to 90 s of pictures, plus titles; a thin day can supply much less. The preset
+footage its days can fill: each day's capacity is its distinct shots, videos at their own length
+and stills at the editor's still length, with no flat per-day ceiling. A dense day can supply far
+more than a quiet one; a day of a dozen photos of the same cake does not multiply into minutes. The preset
 target and the available material both limit the cut. It goes short rather than padding. The run record
 says what set the length:
 
@@ -243,7 +246,7 @@ Detection is three steps:
    GPS, no trip.
 2. **Split on gaps**: a new trip starts wherever more than `max_gap_days` (2) calendar days pass between two
    pictures, so a rest day does not split a trip. Saturday morning to Monday afternoon is a
-   two-day gap, regardless of the capture times.
+   two-day gap, regardless of the capture times. A trip over New Year is one trip, not two.
 3. **Drop the short ones**: a trip must span `min_duration_days` (2) nights. `1` catches a weekend.
 
 ```yaml
