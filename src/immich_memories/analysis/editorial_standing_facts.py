@@ -177,6 +177,7 @@ _ANIMAL_WORDS = (
 )
 _ALIVE = _words(*_PEOPLE_WORDS, *_ANIMAL_WORDS)
 _ANIMAL = _words(*_ANIMAL_WORDS)
+_PEOPLE = _words(*_PEOPLE_WORDS)
 # A likeness of a living thing, or something made for one, is an object: "a stuffed bear", "a
 # statue of a man", "baby clothes", "a dog bowl".
 _LIKENESS = re.compile(
@@ -198,6 +199,11 @@ def _living_text(caption: str) -> str:
 def names_someone_alive(caption: str) -> bool:
     """The caption names a person or an animal, not a likeness of one or a thing made for one."""
     return bool(_ALIVE.search(_living_text(caption)))
+
+
+def names_a_person(caption: str) -> bool:
+    """The caption names a person of any age, not a likeness or a thing made for one (#2069)."""
+    return bool(_PEOPLE.search(_living_text(caption)))
 
 
 def _names_an_animal(caption: str) -> bool:
