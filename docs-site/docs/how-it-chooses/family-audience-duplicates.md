@@ -18,6 +18,8 @@ immich-memories generate --year 2024 --month 6 --sharing family
 
 These checks can miss things or flag an innocent picture. **Look through the cut before sharing it.** On Basic, the app has fewer ways to identify private activities: Just us and Family use the same conservative rules. GPU and Full add descriptions and the local Laya text classifier's activity check. [Useful words](./glossary.md) explains the tiers and readers.
 
+{/* diagram: decide-keep-drop */}
+
 ## Fix a picture’s decision
 
 The pool tells you when a picture is held and why.

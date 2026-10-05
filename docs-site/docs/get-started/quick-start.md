@@ -11,9 +11,7 @@ You need Docker with Compose v2, Immich v2 or v3, and two CPU cores, 4 GiB of RA
 
 import InstallationFiles from '@site/src/components/InstallationFiles';
 
-See [Can I run this?](../run/tested-deployments.md) for exact platform evidence, candidate versions and untested routes.
-
-[Immich compatibility](../run/compatibility.md) distinguishes API majors, test targets and candidate-tested patch versions.
+See [tested deployments](../run/tested-deployments.md) for exact platform evidence, Immich API versions and untested routes.
 
 ## 1. Download the files
 
@@ -95,7 +93,7 @@ photos/videos**, choose **Album**, and set the length to **0.5 minutes**. Review
 with upload off. Shortening a film alone does not reduce how many inputs need preparation.
 
 Cold setup includes the image pull, model download, input preparation and render. Hardware,
-input count and cache state matter. The [June measurements](../better/measured.md#june-hardware-matrix)
+input count and cache state matter. [Measured numbers](../better/measured.md)
 separate film generation from setup; larger periods can still take hours.
 [The phase guide](./first-film.mdx#progress-and-recovery) explains what progress and completion look like.
 [After install](./after-install.md) covers home, people and backups. Got your first film?

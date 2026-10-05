@@ -132,7 +132,7 @@ This is separate from the UI's [session signing key](./authentication.mdx#sessio
 | Upload destination | `upload` | [What Immich sees](./privacy.md#what-immich-sees) |
 | Place names and map tiles | `network` | [Outside calls](./privacy.md#geocoding-and-maps) |
 | Disk usage and persistence | `cache`, `database` | [Caches](./maintenance/health-logs-cache.md#caches), [database](./database.md) |
-| A model or service | `advanced.llm`, `advanced.inference`, `render` | [Add-ons](../get-started/what-a-gpu-or-a-model-adds.md) |
+| A model or service | `advanced.llm`, `advanced.inference`, `render` | [Add-ons](../get-started/choose-your-setup.md) |
 | Login or daily schedule | `advanced.auth`, `advanced.automation` | [Authentication](./authentication.mdx), [automation](../make/automate.md) |
 
 Every key/default is in the [config reference](../reference/config-reference.md).

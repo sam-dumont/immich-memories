@@ -10,7 +10,7 @@ sidebar_position: 6
 The Basic tier makes the whole film from metadata, pixels and small CPU classifiers. The `gpu` tier
 adds captions and Laya for the pictures in the cut and their candidates. The `full` tier adds a text
 model that reads the draft, as annotation lines, and polishes it: this page is how. What each tier
-adds, feature by feature: [What a GPU or a model adds](../../get-started/what-a-gpu-or-a-model-adds.md).
+adds, feature by feature: [What a GPU or a model adds](../../get-started/choose-your-setup.md).
 
 The prose model gets text only and never decides sharing. Rules, picture classifiers and Laya
 own that check. A configured LLM can also write titles and music mood on Basic or GPU without
