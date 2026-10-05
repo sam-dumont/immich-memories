@@ -96,11 +96,26 @@ def normalize_url(raw: str) -> str:
     return url.render_as_string(hide_password=False)
 
 
+def _default_store_url() -> str:
+    """The SQLite file beside the loaded config, so a `--config PATH` run keeps its own store.
+
+    `DEFAULT_URL`'s literal `~/.immich-memories/store.db` is only the fallback for a bare
+    `StoreLocation`, or for `resolve_location()` called with no config loaded at all (the
+    module import, migration tooling). The default config path already resolves to
+    `~/.immich-memories`, so a run with no `--config` lands exactly there too (#2076).
+    """
+    from immich_memories.config_loader import config_state_dir
+
+    return f"sqlite:///{config_state_dir() / 'store.db'}"
+
+
 def resolve_location(config: Config | None = None) -> StoreLocation:
-    """The environment, then `config.yaml`'s `database:` section, then the default SQLite file.
+    """The environment, then `config.yaml`'s `database:` section, then the loaded config's own file.
 
     Without a config the loaded one is used. `~` is expanded on every call, so a test or a
-    container that moves HOME moves the default store with it.
+    container that moves HOME moves the default store with it. `config.database.url` still
+    holding its pydantic default (never set by the user) is not treated as explicit: the
+    default store instead follows the config that was loaded, not a hardcoded home path.
     """
     env_url, env_schema = os.environ.get(URL_ENV), os.environ.get(SCHEMA_ENV)
     if config is None and env_url and (env_schema or env_url.startswith("sqlite")):
@@ -111,6 +126,10 @@ def resolve_location(config: Config | None = None) -> StoreLocation:
         from immich_memories.config_loader import get_config
 
         config = get_config()
-    url = env_url or config.database.url or DEFAULT_URL
+    configured_url = config.database.url
+    url_from_config = (
+        _default_store_url() if configured_url in ("", DEFAULT_URL) else configured_url
+    )
+    url = env_url or url_from_config
     schema = env_schema or config.database.schema_name or DEFAULT_SCHEMA
     return StoreLocation(url=normalize_url(url), schema=schema)

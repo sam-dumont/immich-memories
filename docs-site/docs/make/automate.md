@@ -35,7 +35,7 @@ Or omit those Compose lines and save **Settings > Automation > enabled** and
 immich-memories auto install --hour 9
 ```
 
-This writes a user timer on macOS or Linux and prints its activation command. Run **Activate:** to start it; installation alone does not activate the schedule. On headless Linux, run `loginctl enable-linger "$USER"` so the timer survives logout. Run **Deactivate:** before `auto install --uninstall`, which only deletes files. Scheduled jobs do not inherit your interactive shell's credentials: keep them in the configuration. [Scheduler details](../reference/automation-contract.md#bare-metal-auto-install) cover the launcher, environment and missed runs.
+This writes a user timer on macOS or Linux and prints its activation command. Run **Activate:** to start it; installation alone does not activate the schedule. On headless Linux, run `loginctl enable-linger "$USER"` so the timer survives logout. Run **Deactivate:** before `auto install --uninstall`, which only deletes files. Scheduled jobs do not inherit your interactive shell's credentials: keep them in the configuration. A scheduled run keeps its history and logs with the config it was installed with, [same as the store](../run/config-file.md#where-the-store-and-logs-live), so a second `--config` never mixes into the main one. On macOS, `auto install` also re-enables the job's launchd label if an earlier `launchctl disable` left it off. [Scheduler details](../reference/automation-contract.md#bare-metal-auto-install) cover the launcher, environment and missed runs.
 
 ## How it picks one memory
 

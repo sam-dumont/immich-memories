@@ -138,8 +138,16 @@ def _guard_scheduled_code_freshness(binary: str) -> None:
         raise StaleCheckoutError(binary, checkout, drift)
 
 
-def _default_log_dir() -> Path:
-    return Path.home() / ".immich-memories" / "logs"
+def _default_log_dir(config_path: Path | None = None) -> Path:
+    """The scheduler's stdout/stderr log directory, beside the config it is scheduled with.
+
+    Follows the same rule as the run history's default store (#2076): a `--config PATH`
+    install keeps its own logs next to PATH, so launchd (which always runs with the real
+    `$HOME`) never mixes a second setup's logs into the main install's `~/.immich-memories`.
+    """
+    from immich_memories.config_loader import config_state_dir
+
+    return config_state_dir(config_path) / "logs"
 
 
 def _install_time_path() -> str:
@@ -239,7 +247,7 @@ def generate_launchd_plist(
     config_path: Path | None = None,
 ) -> str:
     """Generate a macOS launchd plist XML string for scheduled auto-generation."""
-    log_dir = log_dir or _default_log_dir()
+    log_dir = log_dir or _default_log_dir(config_path)
 
     payload = {
         "Label": _LAUNCHD_LABEL,
@@ -459,7 +467,7 @@ def _install_launchd(
     content = generate_launchd_plist(binary, hour, minute, cooldown, config_path=config_path)
     plist_path = _launchd_plist_path()
     plist_path.parent.mkdir(parents=True, exist_ok=True)
-    _default_log_dir().mkdir(parents=True, exist_ok=True)
+    _default_log_dir(config_path).mkdir(parents=True, exist_ok=True)
     plist_path.write_text(content)
 
     return SchedulerInstallResult(
@@ -513,6 +521,66 @@ def _install_crontab(
             f"(crontab -l 2>/dev/null; printf '%s\\n' {shlex.quote(entry)}) | crontab -"
         ),
         deactivate_command=(f"crontab -l | grep -Fv -- {shlex.quote(entry)} | crontab -"),
+    )
+
+
+def _label_disabled(uid: int) -> bool | None:
+    """Whether launchctl has `_LAUNCHD_LABEL` disabled for this user, or None if unreadable."""
+    try:
+        result = subprocess.run(  # noqa: S603
+            ["launchctl", "print-disabled", f"gui/{uid}"],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=5,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if result.returncode != 0:
+        return None
+    for line in result.stdout.splitlines():
+        if _LAUNCHD_LABEL in line:
+            return "true" in line.casefold()
+    return False
+
+
+def _enable_label(uid: int) -> bool:
+    try:
+        result = subprocess.run(  # noqa: S603
+            ["launchctl", "enable", f"gui/{uid}/{_LAUNCHD_LABEL}"],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=5,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    return result.returncode == 0
+
+
+def resolve_disabled_launchd_label(uid: int | None = None) -> str | None:
+    """Enable a launchd label an earlier `launchctl disable` left behind, or explain it.
+
+    A disabled label survives both `auto uninstall` and a plist rewrite: `launchctl load`/
+    `bootstrap` then fails with an opaque "Bootstrap failed: 5: Input/output error" that
+    never names the label (#2076). Called after `auto install` on macOS. Returns a message
+    for the operator, or None when the label was already enabled.
+    """
+    uid = os.getuid() if uid is None else uid
+    disabled = _label_disabled(uid)
+    if disabled is False:
+        return None
+    if disabled is None:
+        return (
+            f"Could not read launchctl's disabled state for {_LAUNCHD_LABEL}. If "
+            f"`launchctl load` fails with an I/O error, run "
+            f"`launchctl enable gui/{uid}/{_LAUNCHD_LABEL}`."
+        )
+    if _enable_label(uid):
+        return f"{_LAUNCHD_LABEL} was disabled by a previous `launchctl disable`; re-enabled it."
+    return (
+        f"{_LAUNCHD_LABEL} is disabled by launchctl and could not be re-enabled automatically. "
+        f"Run `launchctl enable gui/{uid}/{_LAUNCHD_LABEL}` before loading the job."
     )
 
 

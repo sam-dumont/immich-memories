@@ -169,6 +169,15 @@ there. Environment variables override file paths.
 when moving a config between machines: blank uses the app's Python.
 [The reference](../reference/config-reference.md) lists model/cache path overrides.
 
+## Where the store and logs live
+
+Without a `database.url`, the run history store and the scheduler's log files (macOS) sit
+beside the config file that was loaded, not always under `~/.immich-memories`. A plain
+`immich-memories` run still gets `~/.immich-memories/store.db` and `~/.immich-memories/logs/`,
+since that is where the default config lives. `--config /path/to/other/config.yaml` gets
+`/path/to/other/store.db` and `/path/to/other/logs/` instead, so a second setup, a test library
+say, never mixes into the main one.
+
 ## Environment variable substitution
 
 Use `${VAR_NAME}`, not `$VAR`. Substitution happens only in `config.yaml`, for [credentials and

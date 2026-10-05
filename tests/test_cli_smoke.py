@@ -472,6 +472,25 @@ class TestAutoRunOutput:
         assert result.exit_code == 0, result.output
         assert install.call_args.kwargs["force"] is True
 
+    def test_a_disabled_launchd_label_is_reported_to_the_operator(self) -> None:
+        """A label an earlier `launchctl disable` left behind must not fail silently (#2076)."""
+        # WHY: install_scheduler and the disabled-label check both touch the host's launchd.
+        with (
+            patch(
+                "immich_memories.automation.system_scheduler.install_scheduler",
+                return_value=SchedulerInstallResult(platform="launchd"),
+            ),
+            patch(
+                "immich_memories.automation.system_scheduler.resolve_disabled_launchd_label",
+                return_value="com.immich-memories.auto was disabled; re-enabled it.",
+            ) as resolve_disabled,
+        ):
+            result = _invoke(["auto", "install"])
+
+        assert result.exit_code == 0, result.output
+        assert "re-enabled it" in result.output
+        resolve_disabled.assert_called_once()
+
     def test_quiet_completed_emits_exactly_one_json_object(self, tmp_path: Path) -> None:
         output = tmp_path / "memory.mp4"
         auto_result = AutoRunResult(
