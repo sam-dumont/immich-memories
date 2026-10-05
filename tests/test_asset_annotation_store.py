@@ -305,3 +305,128 @@ def test_returned_fact_records_are_immutable() -> None:
 
     with pytest.raises(FrozenInstanceError):
         facts.description = "mutated"  # type: ignore[misc]
+
+
+def test_public_people_head_with_no_face_and_no_person_caption_is_corrected_to_none() -> None:
+    """#2069: public-v1 almost never says none; a landscape caption with no box backs none."""
+    from immich_memories.store.asset_annotations import AssetAnnotationFactRepository
+
+    store = annotation_store()
+    add_rows(
+        store,
+        "descriptions",
+        {"asset_id": "asset-a", "model": "wanted-model", "text": "a mountain at sunset"},
+    )
+    add_rows(
+        store,
+        "head_facts",
+        {"asset_id": "asset-a", "head": "people", "version": "public-v1", "label": "one"},
+    )
+
+    facts = (
+        AssetAnnotationFactRepository(
+            store,
+            description_model="wanted-model",
+            head_versions={"people": "public-v1"},
+            pixel_producer_key="pixel-v1",
+        )
+        .facts_for(("asset-a",))
+        .as_mapping()["asset-a"]
+    )
+
+    assert dict(facts.heads)["people"] == "none"
+
+
+def test_public_people_head_with_a_face_box_is_unchanged() -> None:
+    """A face box always backs the head's people label; it is never lowered."""
+    from immich_memories.store.asset_annotations import AssetAnnotationFactRepository
+
+    store = annotation_store()
+    add_rows(
+        store,
+        "descriptions",
+        {"asset_id": "asset-a", "model": "wanted-model", "text": "a mountain at sunset"},
+    )
+    add_rows(
+        store,
+        "face_boxes",
+        {"asset_id": "asset-a", "named": False, "x1": 0.1, "y1": 0.1, "x2": 0.2, "y2": 0.2},
+    )
+    add_rows(
+        store,
+        "head_facts",
+        {"asset_id": "asset-a", "head": "people", "version": "public-v1", "label": "one"},
+    )
+
+    facts = (
+        AssetAnnotationFactRepository(
+            store,
+            description_model="wanted-model",
+            head_versions={"people": "public-v1"},
+            pixel_producer_key="pixel-v1",
+        )
+        .facts_for(("asset-a",))
+        .as_mapping()["asset-a"]
+    )
+
+    assert dict(facts.heads)["people"] == "one"
+
+
+def test_public_people_head_with_a_person_caption_and_no_face_counts_as_people() -> None:
+    """A caption naming a person backs the head's label, even with no recognised face."""
+    from immich_memories.store.asset_annotations import AssetAnnotationFactRepository
+
+    store = annotation_store()
+    add_rows(
+        store,
+        "descriptions",
+        {"asset_id": "asset-a", "model": "wanted-model", "text": "a woman walking"},
+    )
+    add_rows(
+        store,
+        "head_facts",
+        {"asset_id": "asset-a", "head": "people", "version": "public-v1", "label": "one"},
+    )
+
+    facts = (
+        AssetAnnotationFactRepository(
+            store,
+            description_model="wanted-model",
+            head_versions={"people": "public-v1"},
+            pixel_producer_key="pixel-v1",
+        )
+        .facts_for(("asset-a",))
+        .as_mapping()["asset-a"]
+    )
+
+    assert dict(facts.heads)["people"] == "one"
+
+
+def test_owner_people_head_is_trusted_as_is() -> None:
+    """The owner's own head bank is corroborated against nothing: #2069 is public-v1 only."""
+    from immich_memories.store.asset_annotations import AssetAnnotationFactRepository
+
+    store = annotation_store()
+    add_rows(
+        store,
+        "descriptions",
+        {"asset_id": "asset-a", "model": "wanted-model", "text": "a mountain at sunset"},
+    )
+    add_rows(
+        store,
+        "head_facts",
+        {"asset_id": "asset-a", "head": "people", "version": "owner-v1", "label": "one"},
+    )
+
+    facts = (
+        AssetAnnotationFactRepository(
+            store,
+            description_model="wanted-model",
+            head_versions={"people": "owner-v1"},
+            pixel_producer_key="pixel-v1",
+        )
+        .facts_for(("asset-a",))
+        .as_mapping()["asset-a"]
+    )
+
+    assert dict(facts.heads)["people"] == "one"
