@@ -84,6 +84,33 @@ class TestPeopleTitleFactsStatesTheCountUnambiguously:
         assert "People in the film: 2" in facts
 
 
+class TestMemoryTitleFactsReadsAWrittenSubject:
+    """An `--ask` subject pool (#2064) and a `--subject` album both carry their
+    subject as `occasion_name`, so the title prompt can reword it, in the film's
+    language, the same way it already rewords a special day's catalogue title."""
+
+    def test_a_written_subject_becomes_the_occasion_name(self):
+        from immich_memories.titles.llm_titles import memory_title_facts
+
+        facts = memory_title_facts({"album_id": "ask-1", "subject": "landscapes, no humans"})
+
+        assert facts.occasion_name == "landscapes, no humans"
+
+    def test_a_catalogued_title_still_wins_over_a_subject(self):
+        from immich_memories.titles.llm_titles import memory_title_facts
+
+        facts = memory_title_facts({"title": "A day at the lake", "subject": "lake day"})
+
+        assert facts.occasion_name == "A day at the lake"
+
+    def test_no_subject_and_no_catalogue_leaves_the_occasion_unnamed(self):
+        from immich_memories.titles.llm_titles import memory_title_facts
+
+        facts = memory_title_facts({"album_name": "Trip 2025", "album_id": "a-1"})
+
+        assert facts.occasion_name is None
+
+
 class TestBuildTitlePrompt:
     """Build context-rich prompt for the LLM."""
 

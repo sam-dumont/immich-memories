@@ -214,11 +214,15 @@ def test_a_curated_pool_is_read_from_immich_and_filmed_as_an_album_of_its_subjec
 
     assert [a.id for a in captured["assets"]] == ["v1"]
     assert [a.id for a in captured["photo_assets"]] == ["p1"]
+    # No "album_name": a curated pool's name is the raw request, never a real Immich
+    # album, so it must not ride into the title prompt as an "Album name" fact (#2064).
     assert captured["memory_preset_params"] == {
-        "album_name": "our cat along the years",
         "album_id": "ask-1234",
         "subject": "our cat along the years",
     }
+    # The raw request never becomes the on-screen title override directly (#2064): it
+    # goes through the same model + template path every other route's title does.
+    assert captured["title_override"] is None
 
 
 class _PagedImmich:
