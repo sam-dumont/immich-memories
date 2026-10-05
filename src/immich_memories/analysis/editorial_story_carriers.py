@@ -11,11 +11,8 @@ a weak still, but cannot override rejected motion.
 from __future__ import annotations
 
 import hashlib
-import logging
 from collections import Counter
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import replace
-from datetime import datetime, timedelta
 from functools import partial
 from operator import itemgetter
 from typing import Any
@@ -23,7 +20,8 @@ from typing import Any
 from immich_memories.analysis.editorial_carrier import carrier_row
 from immich_memories.analysis.editorial_picture_admission import PictureAdmission
 from immich_memories.analysis.editorial_rule_quality import promote_quality_choice
-from immich_memories.analysis.editorial_story_depth import depth_ladder, neighbours
+from immich_memories.analysis.editorial_story_depth import neighbours
+from immich_memories.analysis.editorial_story_depth_fill import DepthFill
 from immich_memories.analysis.editorial_story_lookalike import LookAlikeCheck
 from immich_memories.analysis.editorial_story_pick_contract import (
     carries_motion,
@@ -32,7 +30,6 @@ from immich_memories.analysis.editorial_story_places import PlaceShares
 from immich_memories.analysis.editorial_story_shortlist import (
     DepictedChoice,
     _spaced,
-    capture_space_available,
     nearby_picture_alternatives,
     shortlist_story_moments,
     spread_evenly,
@@ -46,35 +43,10 @@ from immich_memories.analysis.editorial_story_vote import pick_story_moments
 from immich_memories.analysis.editorial_thin_vote import sole_era_shots
 
 MAX_PASSES = 3
-logger = logging.getLogger(__name__)
 
 
 def choice_is_starred(c: DepictedChoice, unit_by_asset: Mapping[str, Any]) -> bool:
     return any(unit_by_asset[a][1].get("favourite") for a in c.members if a in unit_by_asset)
-
-
-def _seconds_apart(taken: str, others: Sequence[str]) -> float:
-    when = datetime.fromisoformat(taken)
-    return min(
-        (abs((when - datetime.fromisoformat(o)).total_seconds()) for o in others), default=0.0
-    )
-
-
-def _window(row: Mapping[str, Any]) -> tuple[datetime, datetime] | None:
-    try:
-        start = datetime.fromisoformat(row["taken"])
-    except (KeyError, ValueError):
-        return None
-    return start, start + timedelta(seconds=float(row.get("seconds") or 0.0))
-
-
-def _windows_overlap(a: Mapping[str, Any], b: Mapping[str, Any]) -> bool:
-    """Whether two playable windows share any moment, so a further video is its own shot
-    only when it does not simply replay ground a kept video already covers (#2083)."""
-    window_a, window_b = _window(a), _window(b)
-    if window_a is None or window_b is None:
-        return False
-    return window_a[0] < window_b[1] and window_b[0] < window_a[1]
 
 
 def shortlist_by_partition(
@@ -613,8 +585,7 @@ class CarrierAdmission:
                 break
         self.calls["selection_passes"] = passes
         self._keep_occasions()
-        if self.lookalike.available:
-            self._deepen_round_robin()
+        DepthFill(self).run()
         self._favourites_before_the_unvouched()
         self.lookalike.readmit(lambda: len(self.carriers) < self.slots)
         self.calls["failed_standing"] = len(self.failed_standing)
@@ -687,148 +658,6 @@ class CarrierAdmission:
         self._taken.add(asset)
         self.chosen_by_story[carrier["story_episode"]].append(carrier["depicted_moment"])
         self.places.took(carrier["story_episode"], self._place_of(asset))
-
-    # -- depth inside moments ---------------------------------------------------------
-
-    def _depth_budget_met(self) -> bool:
-        """Whether the depth fill should stop: content seconds against the real budget when
-        one was sized, else the pass-1/pass-2 slot count a caller with no seconds budget
-        still relies on (#2083)."""
-        if self._content_budget_seconds is None:
-            return len(self.carriers) >= self.slots
-        return (
-            self._content_seconds()
-            >= self._content_budget_seconds - self._content_tolerance_seconds
-        )
-
-    def _content_seconds(self) -> float:
-        return sum(float(c.get("seconds") or 0.0) for c in self.carriers)
-
-    def _deepen_round_robin(self) -> None:
-        """A film still short after every selection pass spends what room is left on further
-        distinct shots, one at a time, round-robin across every story in funding order
-        (#2083): draining one story's moments before its neighbours ever had a turn is how a
-        person film kept filling the same handful of moments past the point of new material."""
-        progressed = True
-        while progressed and not self._depth_budget_met():
-            progressed = False
-            for index, s in enumerate(self.stories, 1):
-                if self._depth_budget_met():
-                    break
-                if self._deepen_once(index, s):
-                    progressed = True
-        self._log_depth_shortfall()
-
-    def _log_depth_shortfall(self) -> None:
-        """One line when distinct shots ran out before the budget did: an honest short film,
-        not a silently repeated one (#2083)."""
-        if self._content_budget_seconds is None or self._depth_budget_met():
-            return
-        logger.info(
-            "%d distinct shots, film runs %.1f s of %.1f s",
-            len(self.carriers),
-            self._content_seconds(),
-            self._content_budget_seconds,
-        )
-
-    def _offerable(self, s) -> list[DepictedChoice]:
-        """This story's moments, holding only the pictures that could carry a frame.
-
-        The model ranks a moment's members, so its ladder walks the top three by position.
-        Ranked by capture facts alone, position says little, and a picture that cannot carry
-        a frame at all must not spend one of the moment's three rungs: an eight-picture
-        moment was shipping two frames with five usable ones left behind. The spares that
-        remain keep favourites first, then spread in capture time from the frames of the
-        moment already in the cut.
-        """
-        choices = self.choices_of[s["key"]]
-        if not self._mechanical_picks:
-            return choices
-        self.gate.ensure([a for c in choices for a in c.members if self.free(a)])
-        carried = {row["asset_id"] for row in self.carriers}
-        offerable = []
-        for c in choices:
-            good = [
-                a
-                for a in c.members
-                if a in carried or (self.free(a) and self.gate.stands(a, s["weight"], s["key"]))
-            ]
-            if not good:
-                continue
-            kept = [row["taken"] for row in self.carriers if row["depicted_moment"] == c.key]
-            spare = sorted(
-                (a for a in good if a not in carried),
-                key=lambda a: (
-                    not self._unit_by_asset[a][1].get("favourite"),
-                    self._unit_by_asset[a][1].get("kind") not in ("video", "live-motion"),
-                    -_seconds_apart(self._unit_by_asset[a][1]["taken"], kept),
-                ),
-            )
-            members = [*(a for a in good if a in carried), *spare]
-            offerable.append(replace(c, primary=members[0], alternatives=members[1:]))
-        return offerable
-
-    def _deepen_once(self, index: int, s) -> bool:
-        if (
-            self._depth_budget_met()
-            or s["weight"] not in WEIGHED_STORY_WEIGHTS
-            or not self.chosen_by_story[s["key"]]
-        ):
-            return False
-        held = sum(c["story_episode"] == s["key"] for c in self.carriers)
-        self.places.widen(s["key"], held + self.slots - len(self.carriers))
-        ladder = list(
-            depth_ladder(
-                self._offerable(s),
-                chosen=self.chosen_by_story[s["key"]],
-                used=self._used_choice_keys,
-                group_of=lambda asset: self._unit_by_asset[asset][1].get("moment"),
-                kept=[c["asset_id"] for c in self.carriers if c["story_episode"] == s["key"]],
-            )
-        )
-        self.gate.ensure([asset for _choice, asset in ladder if self.free(asset)])
-        for choice, asset in ladder:
-            if self._depth_budget_met():
-                break
-            if not (self.free(asset) and self.gate.stands(asset, s["weight"], s["key"])):
-                continue
-            # A place-refused depth frame joins the same readmission ledger a place-refused
-            # pass-1/2 carrier does (#2083), instead of a bare drop that `readmit` never saw.
-            if self._crowds_its_place(s, choice, index, asset):
-                continue
-            family, unit = self._unit_by_asset[asset]
-            row = self._carrier_row(unit, family, s, choice, index, asset)
-            if not self._is_distinct_shot(s, row):
-                continue
-            row = row | {"depth": True}
-            if self.pictures.admits(row, cut=self.carriers, tier_of={}):
-                continue
-            self._used_choice_keys.add(choice.key)
-            self._admit(s, choice, row, [])
-            # One frame at a time: the next is spread from the frames kept, this one included.
-            return True
-        return False
-
-    def _is_distinct_shot(self, s, row: dict) -> bool:
-        """Depth only ever adds a frame that is its own shot (#2083): a video whose window
-        does not overlap one already kept of the same moment, or a still/live frame spaced
-        the pass-1 five minutes from every frame its moment already keeps, and that the final
-        review's own look-alike question still calls new. A heap sharing one timestamp is one
-        shot, not many."""
-        # The raw capture group, not `depicted_moment`: an unfolded story gives every
-        # picture its own depicted moment, but the group a further frame must stay
-        # distinct from is still the capture group it shares (#2083).
-        kept_in_moment = [c for c in self.carriers if c.get("moment") == row.get("moment")]
-        if row.get("kind") == "video":
-            if any(k.get("kind") == "video" and _windows_overlap(row, k) for k in kept_in_moment):
-                return False
-        elif not capture_space_available(row, kept_in_moment):
-            return False
-        # The look-alike question stays story-scoped, as it always was: an unchecked
-        # (unhashed) neighbour anywhere in the story must still hold a brand-new moment
-        # back, the same conservatism that keeps a thumbnail-less run from filling blind.
-        kept_in_story = [c for c in self.carriers if c["story_episode"] == s["key"]]
-        return self.lookalike.shows_something_new(s["key"], row, neighbours(row, kept_in_story))
 
     # -- occasion integrity -----------------------------------------------------------
 
