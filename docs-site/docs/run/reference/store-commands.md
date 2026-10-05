@@ -68,34 +68,10 @@ restore into the backend the backup came from, then `store copy`.
 #### Restore in a container {#restore-in-a-container}
 
 In a container the app is the process that holds the store, so `exec` into it is the wrong place.
-Stop it and run the restore in a one-off container on the same volumes.
-
-**Docker Compose:**
-
-```bash
-docker compose stop immich-memories
-docker compose run --rm immich-memories immich-memories store restore \
-  --from /home/immich/.immich-memories/backups/store-<UTC time>.db --force
-docker compose up -d
-```
-
-**Kubernetes and Terraform:** suspend the installed CronJobs first (record which were active), then scale the Deployment to 0, run a copy of the one-off `generate` Job in
-`deploy/kubernetes/base/job.yaml` with its command replaced by
-`immich-memories store restore --from /home/immich/.immich-memories/backups/<file> --force` (add the
-database Secret to it when the store is on PostgreSQL), then scale back to 1:
-
-```bash
-kubectl -n immich-memories get cronjob -l app.kubernetes.io/name=immich-memories
-kubectl -n immich-memories patch cronjob immich-memories-auto -p '{"spec":{"suspend":true}}'
-kubectl -n immich-memories patch cronjob immich-memories-monthly -p '{"spec":{"suspend":true}}'
-kubectl -n immich-memories scale deploy/immich-memories --replicas=0
-kubectl -n immich-memories wait --for=delete pod -l 'app.kubernetes.io/name=immich-memories,!job-name,!batch.kubernetes.io/job-name' --timeout=120s
-kubectl -n immich-memories apply -f restore-job.yaml && kubectl -n immich-memories wait --for=condition=complete job/<name>
-kubectl -n immich-memories scale deploy/immich-memories --replicas=1
-```
-
-Wait for any already-running scheduled Job to finish before restoring. After a successful restore,
-resume only CronJobs that were active before maintenance with `spec.suspend=false`.
+Stop it and run the restore in a one-off container on the same volumes: Compose's `run --rm`, or a
+Kubernetes/Terraform Job after suspending CronJobs and scaling the Deployment to 0.
+[Storage and backups](../maintenance/storage-backups.md#restore) has the exact commands and the
+restore Job manifest for each deployment type.
 
 On a uv or pip install, stop `immich-memories ui` and run the restore from a shell, outside the time
 the daily job fires.

@@ -96,10 +96,15 @@ The store upgrades its schema when opened. Keep a backup and its manifest from b
 if you roll back the app, restore the matching backup rather than downgrading a live schema.
 Keep the app, inference image and render worker on matching version tags.
 
+Upgrading past 0.103.0 needs one explicit step: a config that only set a model name or endpoint
+to turn on the reader needs `advanced.llm.enabled: true` added. Without it, the reader stays off
+and `preflight` warns that one is configured but disabled. See
+[enabling a reader](../config-file.md#enabling-a-reader).
+
 ## Rollback
 
 Restore the backup taken before upgrading if the newer release migrated the store.
-Stop the app before restoring. [Container restore](../database.md#restore-in-a-container)
+Stop the app before restoring. [Container restore](./storage-backups.md#restore)
 uses a one-off process, not `exec` in the running app.
 
 For Docker, use this order. The backup and its manifest must be together on the mounted config
