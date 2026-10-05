@@ -112,6 +112,8 @@ For most installs, use `all` or `all-mac`. Smaller/custom installs:
 
 Never install `editorial` and `editorial-cuda` together: both provide `onnxruntime`.
 `all` includes editorial/music/audio/auth/demucs. `all-mac` includes the same except auth, plus mac.
+On Linux aarch64, `all` and `all-mac` skip `demucs`: its `sphn` dependency ships no wheel there and
+needs Rust plus a C compiler to build. Vocal separation shows unavailable instead of installing.
 Local ACE-Step is a [separate checkout setup](../better/music.md), not a pip extra.
 
 ## Daily automation
