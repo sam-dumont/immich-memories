@@ -73,6 +73,8 @@ class FakeImmich:
     reads: list[tuple[str, str, bool]] = field(default_factory=list)
     # Keys that still prove who they are but whose picture reads now fail.
     revoked: set[str] = field(default_factory=set)
+    # Ids Immich keeps no file for: a Live Photo's clip often has no preview at all.
+    missing: set[str] = field(default_factory=set)
 
     def hold(self, key: str, *assets: dict) -> None:
         self.library.setdefault(key, []).extend(assets)
@@ -102,6 +104,8 @@ def immich(monkeypatch) -> FakeImmich:
         if read is None:
             return httpx.Response(200, json=[])
         asset_id = read.group(1)
+        if asset_id in server.missing:
+            return httpx.Response(404, json={"message": "Resource not found"})
         served = server.owners.get(asset_id) == user and key not in server.revoked
         server.reads.append((user, asset_id, served))
         if not served:

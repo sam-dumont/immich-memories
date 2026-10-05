@@ -66,6 +66,18 @@ def test_a_preview_that_is_not_a_picture_is_only_that_picture_unavailable(previe
     assert previews.metrics()["unavailable"] == 1
 
 
+def test_a_picture_immich_keeps_no_preview_for_is_only_that_picture_unavailable(
+    immich,  # noqa: F811
+    previews,
+):
+    # A 404 is Immich's settled answer about one picture (many Live Photo clips have no
+    # preview), not an account that cannot read: the run carries on without it.
+    immich.missing.add("own-photo")
+
+    assert previews("own-photo") is None
+    assert previews.metrics()["unavailable"] == 1
+
+
 SRC = Path(__file__).resolve().parents[1] / "src" / "immich_memories"
 # The per-picture handlers of preparation and selection: each turns one unusable picture
 # into unavailable evidence, so each must let an account's failed read through first.
