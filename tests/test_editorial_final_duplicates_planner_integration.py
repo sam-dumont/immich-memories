@@ -257,6 +257,9 @@ def test_refinement_preserves_the_drafts_starred_duplicate_history(tmp_path):
     assert [(row["asset_id"], row["keeper"]) for row in collapsed] == [(ids[0], ids[1])]
     selected = {c["asset_id"] for c in plan["carriers"]}
     assert ids[0] not in selected and ids[1] in selected
+    # #2042: the draft's own duplicate review already removed it; refinement must not
+    # silently forget where the shot went.
+    assert ids[0] in {row["asset_id"] for row in plan["cut_carriers"]}
 
 
 def test_folding_starred_twins_never_leaves_a_film_with_nothing(tmp_path):

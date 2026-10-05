@@ -8,6 +8,8 @@ import json
 from collections import Counter
 from datetime import date, timedelta
 
+import numpy as np
+
 from immich_memories.analysis.editorial_structure_contract import StructurePlannerPorts
 from immich_memories.analysis.editorial_structure_planner import plan_structure
 from tests.editorial_film_fixtures import Day, FilmJudge, film_source, home_days, trip_days
@@ -44,9 +46,12 @@ class TwinOf:
         return _apart(self.first if asset_id == self.repeat else asset_id)
 
 
-def _run(source, thumbnail_hash):
+def _run(source, thumbnail_hash, scene_print=None):
     return plan_structure(
-        source, StructurePlannerPorts(judge=FilmJudge(), thumbnail_hash=thumbnail_hash)
+        source,
+        StructurePlannerPorts(
+            judge=FilmJudge(), thumbnail_hash=thumbnail_hash, scene_print=scene_print
+        ),
     ).plan
 
 
@@ -128,3 +133,23 @@ def test_depth_takes_only_frames_that_look_different(tmp_path):
         "d000-m0",
         "d000-m1",
     ]
+
+
+def _scene_of_group(asset_id):
+    """Every frame of one capture group shares a scene print; the two groups differ."""
+    return (
+        np.array([1.0, 0.0]) if asset_id.rsplit("-", 1)[0].endswith("m0") else np.array([0.0, 1.0])
+    )
+
+
+def test_depth_does_not_take_a_frame_the_final_review_would_call_a_repeat(tmp_path):
+    """The cached hash alone says every frame of a capture group is distinct; the scene print
+    says a further one shows the same thing again, and the final review would remove it. Depth
+    must not spend a slot on it either: a film may stay short of its target rather than hold a
+    frame it would only lose again at the end."""
+    source = _afternoon(tmp_path)
+    plan = _run(source, _apart, scene_print=_scene_of_group)
+
+    assert len(plan["carriers"]) == 2  # one frame per moment; the film stays short
+    record = _lookalike_record(source)
+    assert record["depth"]["added"] == 0

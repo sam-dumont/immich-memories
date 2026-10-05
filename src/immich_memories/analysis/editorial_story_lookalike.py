@@ -63,8 +63,23 @@ def hash_pair_relation(
 class LookAlikeCheck:
     """The refusals of one selection, inside a fixed bound of pair questions (twice the slots)."""
 
-    def __init__(self, looks_alike: PairLooksAlike | None, *, slots: int) -> None:
+    def __init__(
+        self,
+        looks_alike: PairLooksAlike | None,
+        *,
+        slots: int,
+        scene_alike: PairLooksAlike | None = None,
+        scene_gated_stories: frozenset[str] = frozenset(),
+    ) -> None:
         self._looks_alike = looks_alike
+        # The scene print's own rule (`editorial_final_hash_review.scene_pair_relation`), asked
+        # only about depth: a further frame of a moment already shown must clear it too, or the
+        # final review would only remove it again having spent the slot on it meanwhile.
+        self._scene_alike = scene_alike
+        # Only a story the capacity fold actually touched (`editorial_story_capacity`) asks
+        # this question at all: a story with nothing to fold never had a repeat to find, and
+        # asking it anyway only risks refusing a depth frame the final review would have kept.
+        self._scene_gated_stories = scene_gated_stories
         # The same work bound the final duplicate review uses over the finished film: twice the
         # pictures it may hold. Nothing about a particular film sets it.
         self.limit = 2 * slots
@@ -109,12 +124,20 @@ class LookAlikeCheck:
     def shows_something_new(
         self, story: str, candidate: Mapping[str, Any], kept: Sequence[Mapping[str, Any]]
     ) -> bool:
-        """Depth inside a moment: True only when every compared frame was asked and differs."""
+        """Depth inside a moment: True only when every compared frame was asked and differs,
+        by the hash and, where the scene print is read, by the scene the final review would
+        ask about too. A depth frame that review would only remove is never added here."""
         try:
             repeated = next((k for k in kept if self._answer(candidate, k) is not False), None)
         except _Unasked:
             self.depth["unasked"] += 1
             return False
+        if (
+            repeated is None
+            and self._scene_alike is not None
+            and story in self._scene_gated_stories
+        ):
+            repeated = next((k for k in kept if self._scene_alike(candidate, k)), None)
         if repeated is not None:
             self.depth["refused"].append(
                 {"story": story, "asset_id": candidate["asset_id"], "repeats": repeated["asset_id"]}

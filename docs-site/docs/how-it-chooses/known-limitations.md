@@ -10,9 +10,9 @@ The editor was tested on eight synthetic households built from openly licensed p
 
 Months, trips, years and person films come out with the right people, in the order things happened, and almost always without screenshots or receipts (a photographed page got into 3 of 48 test films, all of them years or seasons). Basic got there on its own.
 
-Some films come out shorter than the material allows. The planner can give one story more slots than it has distinct moments, the final duplicate check removes the repeats, and those slots stay empty ([#2042](https://github.com/sam-dumont/immich-memories/issues/2042)). Nothing wrong ends up in the film; there is just less of it. In the worst case a month with 13 photographed days kept 7 shots for a 52 second budget.
+A story used to be granted more slots than it had distinct moments, with the final duplicate check removing the repeats and leaving those slots empty. The planner now caps a story's grant at the moments it can show distinctly and spends the rest on stories with unfunded moments elsewhere, so a film only comes out short when the library genuinely has no more distinct material to give it.
 
-Full does better on the same films. Captions tell moments apart before the slots are handed out, so fewer picks get thrown away as copies. That month went from 7 shots to 13 and reached its target, and a birthday film went from 60 shots to 79.
+Full still does better on the same films: captions tell moments apart before the slots are handed out, so fewer picks get thrown away as copies in the first place.
 
 ## Pets, hobbies and light users: Basic gives something, but not their subject
 

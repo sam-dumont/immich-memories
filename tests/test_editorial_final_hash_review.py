@@ -277,3 +277,20 @@ def test_a_carrier_the_gate_already_substituted_has_no_moment_to_ask():
     offers = replacement_offers(lambda _c: [_unit("elsewhere", minute=90)])({"asset_id": "swapped"})
 
     assert [rung for rung, _unit in offers] == ["story"]
+
+
+def test_a_unit_from_another_story_is_offered_last_and_labelled_elsewhere():
+    """Once the moment and the carrier's own story are offered, a wider pool may still hand
+    over a moment that never got a slot anywhere else, and the review says where it came from."""
+    from immich_memories.analysis.editorial_structure_finishing import replacement_offers
+
+    carrier = {"asset_id": "late", "story_episode": "story-1", "moment_alternatives": ["sibling"]}
+    other_story = _unit("far-story", minute=90) | {"story_episode": "story-2"}
+    pool = [_unit("sibling", minute=31) | {"story_episode": "story-1"}, other_story]
+
+    offers = replacement_offers(lambda _c: pool)(carrier)
+
+    assert [(rung, unit["asset_id"]) for rung, unit in offers] == [
+        ("moment", "sibling"),
+        ("elsewhere", "far-story"),
+    ]

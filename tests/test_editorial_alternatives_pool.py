@@ -2,14 +2,12 @@
 
 from __future__ import annotations
 
-from immich_memories.analysis.editorial_story_planner import (
-    StorySelection,
-    alternatives_pool,
-)
+from immich_memories.analysis.editorial_story_planner import StorySelection
 from immich_memories.analysis.editorial_story_reading import PeriodStory, StoryEpisode
+from immich_memories.analysis.editorial_story_replacement_pool import alternatives_pool
 
 
-def selection(carriers, alternatives_of):
+def selection(carriers, alternatives_of, unfunded_pool=()):
     story = PeriodStory(
         thesis="",
         episodes=[
@@ -51,7 +49,13 @@ def selection(carriers, alternatives_of):
         alternatives_of=alternatives_of,
         slots=4,
         calls={},
-        lines={"mate": "mate's own line", "spare": "spare's own line", "far": "far's own line"},
+        lines={
+            "mate": "mate's own line",
+            "spare": "spare's own line",
+            "far": "far's own line",
+            "other-story": "other-story's own line",
+        },
+        unfunded_pool=list(unfunded_pool),
     )
 
 
@@ -59,8 +63,25 @@ def unit(asset_id, moment, taken):
     return {"asset_id": asset_id, "moment": moment, "kind": "still", "taken": taken}
 
 
-def pool_of(carriers, alternatives_of, event_units, anchor_label):
-    return alternatives_pool(selection(carriers, alternatives_of), event_units, anchor_label)
+def pool_of(
+    carriers,
+    alternatives_of,
+    event_units,
+    anchor_label,
+    unfunded_pool=(),
+    *,
+    include_elsewhere=False,
+    partition_of=None,
+    cut_carriers=None,
+):
+    return alternatives_pool(
+        selection(carriers, alternatives_of, unfunded_pool),
+        event_units,
+        anchor_label,
+        include_elsewhere=include_elsewhere,
+        partition_of=partition_of,
+        cut_carriers=cut_carriers,
+    )
 
 
 def test_context_comes_from_the_pool_units_own_moment():
@@ -94,6 +115,150 @@ def test_context_comes_from_the_pool_units_own_moment():
     assert rows["spare"]["line"] == "spare's own line"
     assert rows["far"]["story_episode"] == "S2"
     assert rows["far"]["story_weight"] == "minor"
+
+
+def test_the_pool_reaches_another_storys_unfunded_moment_once_its_own_runs_out():
+    """Nothing left in the carrier's own moment or story: the final review's widened pool,
+    from a story that never got a slot, fills in, in that story's own context. The audience
+    gate's own (narrower) pool never reaches this far; see
+    `test_the_audience_gates_own_pool_never_reaches_elsewhere` below."""
+    refused = {
+        "asset_id": "held",
+        "event": "F01",
+        "why": "a picture",
+        "story_episode": "S1",
+        "taken": "2024-06-01T09:00",
+    }
+    pool = pool_of(
+        [refused],
+        {"held": []},  # the moment and the story both have nothing left
+        {
+            "F01": [unit("held", "M1", "2024-06-01T09:00")],
+            "F03": [unit("other-story", "M3", "2024-06-03T11:00")],
+        },
+        {"F01": "A1", "F03": "A3"},
+        unfunded_pool=["other-story"],
+        include_elsewhere=True,
+    )
+
+    rows = pool(refused)
+
+    assert [row["asset_id"] for row in rows] == ["other-story"]
+    assert rows[0]["story_episode"] == "S2"
+    assert rows[0]["line"] == "other-story's own line"
+
+
+def test_the_audience_gates_own_pool_never_reaches_elsewhere():
+    """The audience gate drops a carrier rather than widen its search past the carrier's own
+    moment and story (`editorial_shareability.apply_gate`'s own contract): `include_elsewhere`
+    defaults to off, which is what `apply_audience_gate` asks for."""
+    refused = {
+        "asset_id": "held",
+        "event": "F01",
+        "why": "a picture",
+        "story_episode": "S1",
+        "taken": "2024-06-01T09:00",
+    }
+    pool = pool_of(
+        [refused],
+        {"held": []},
+        {
+            "F01": [unit("held", "M1", "2024-06-01T09:00")],
+            "F03": [unit("other-story", "M3", "2024-06-03T11:00")],
+        },
+        {"F01": "A1", "F03": "A3"},
+        unfunded_pool=["other-story"],
+    )
+
+    assert pool(refused) == []
+
+
+def test_elsewhere_never_offers_a_month_the_film_does_not_already_show():
+    """The timing and partition budget are bound to the months selection settled on: an
+    elsewhere offer from a month nothing else in the film shows is never made, so the film
+    stays short of that slot rather than pull in a new month this late."""
+    refused = {
+        "asset_id": "held",
+        "event": "F01",
+        "why": "a picture",
+        "story_episode": "S1",
+        "taken": "2024-06-01T09:00",
+    }
+    other_carrier = {"asset_id": "other-carrier", "taken": "2024-06-15T09:00"}
+    pool = pool_of(
+        [refused, other_carrier],
+        {"held": [], "other-carrier": []},
+        {
+            "F01": [unit("held", "M1", "2024-06-01T09:00")],
+            "F03": [unit("other-story", "M3", "2024-07-03T11:00")],  # a month shown nowhere
+        },
+        {"F01": "A1", "F03": "A3"},
+        unfunded_pool=["other-story"],
+        include_elsewhere=True,
+    )
+
+    assert pool(refused) == []
+
+
+def test_elsewhere_months_come_from_the_finished_cut_not_the_pre_review_selection():
+    """#2042 round 2: the final review runs after the audience gate and the timing trim, so
+    the months a carrier may come from are the finished cut's, not selection's own carriers
+    from before either ran. A month selection once held but the cut no longer shows is not
+    an offer either; a month the cut gained since (a late refill of its own) is."""
+    refused = {
+        "asset_id": "held",
+        "event": "F01",
+        "why": "a picture",
+        "story_episode": "S1",
+        "taken": "2024-06-01T09:00",
+    }
+    pool = pool_of(
+        [refused],  # selection's own carriers: June only
+        {"held": []},
+        {
+            "F01": [unit("held", "M1", "2024-06-01T09:00")],
+            "F03": [unit("other-story", "M3", "2024-07-03T11:00")],
+        },
+        {"F01": "A1", "F03": "A3"},
+        unfunded_pool=["other-story"],
+        include_elsewhere=True,
+        # The finished cut, at the point the final review runs, also shows July.
+        cut_carriers=[
+            refused,
+            {"asset_id": "elsewhere-already-shown", "taken": "2024-07-20T09:00"},
+        ],
+    )
+
+    assert [row["asset_id"] for row in pool(refused)] == ["other-story"]
+
+
+def test_elsewhere_respects_the_products_partition_limit():
+    """A product that caps carriers per partition never has elsewhere cross partitions: the
+    same rule the carrier's own spares already had to meet (`editorial_story_carriers._spares`).
+    Both offers are in the month the film already shows, so only the partition rule tells
+    them apart."""
+    refused = {
+        "asset_id": "held",
+        "event": "F01",
+        "why": "a picture",
+        "story_episode": "S1",
+        "taken": "2024-06-01T09:00",
+    }
+    pool = pool_of(
+        [refused],
+        {"held": []},
+        {
+            "F01": [unit("held", "M1", "2024-06-01T09:00")],
+            "F02": [unit("same-partition", "M2", "2024-06-01T15:00")],
+            "F03": [unit("other-partition", "M3", "2024-06-15T11:00")],
+        },
+        {"F01": "A1", "F02": "A2", "F03": "A3"},
+        unfunded_pool=["same-partition", "other-partition"],
+        include_elsewhere=True,
+        partition_of=lambda taken: taken[:10],  # one partition per day
+    )
+
+    assert [row["asset_id"] for row in pool(refused)] == ["same-partition"]
 
 
 def test_a_pool_unit_never_carries_the_refused_carriers_why():

@@ -10,12 +10,11 @@ from __future__ import annotations
 import json
 from collections import Counter
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 from operator import itemgetter
 from typing import Any
 
-from immich_memories.analysis.editorial_carrier import carrier_row
 from immich_memories.analysis.editorial_person_period_facts import (
     PersonPeriodProjection,
     arrival_notes,
@@ -26,6 +25,7 @@ from immich_memories.analysis.editorial_rule_banked_facts import (
     withheld_by_bank,
 )
 from immich_memories.analysis.editorial_standing_facts import disqualifies_as_lone_carrier
+from immich_memories.analysis.editorial_story_capacity import capacity_choices
 from immich_memories.analysis.editorial_story_carriers import (
     CarrierAdmission,
     choice_is_starred,
@@ -42,11 +42,9 @@ from immich_memories.analysis.editorial_story_reading import (
     read_period_story,
     story_episode_rows,
 )
+from immich_memories.analysis.editorial_story_replacement_pool import unfunded_pool
 from immich_memories.analysis.editorial_story_replies import WEIGHT_ROLE, WEIGHTS, relations_on
-from immich_memories.analysis.editorial_story_shortlist import (
-    DepictedChoice,
-    _capture_group_moments,
-)
+from immich_memories.analysis.editorial_story_shortlist import DepictedChoice
 from immich_memories.analysis.editorial_story_slots import PartitionedSlots
 from immich_memories.analysis.editorial_story_standing import StandingGate
 from immich_memories.analysis.editorial_story_threads import fold_threads, thread_scope
@@ -72,6 +70,9 @@ class StorySelection:
     calls: dict[str, int]
     # The annotation line of every unit, so a replacement carrier can describe itself.
     lines: Mapping[str, str]
+    # Every story's own moments that never took a slot, in the planner's funding order: where
+    # a refill looks once a carrier's own moment and its own story have nothing left to offer.
+    unfunded_pool: list[str] = field(default_factory=list)
 
     def record(self) -> dict[str, Any]:
         record: dict[str, Any] = {
@@ -248,21 +249,6 @@ def _weighed_stories(
         [s for s in story.stories if story_units.get(s["key"])], story.priorities
     )
     return stories, story_units
-
-
-def _capture_group_choices(
-    stories: Sequence[Mapping[str, Any]],
-    story_units: Mapping[str, list[dict]],
-    **picking,
-) -> dict[str, list[DepictedChoice]]:
-    """Capture groups establish story capacity before its candidates are shortlisted."""
-    choices_of: dict[str, list[DepictedChoice]] = {}
-    for s in stories:
-        out = _capture_group_moments(story_units[s["key"]], **picking)
-        for c in out:
-            c.episode = s["key"]
-        choices_of[s["key"]] = out
-    return choices_of
 
 
 def _shortlisted_units(
@@ -515,6 +501,8 @@ def select_story_first(
     rules=None,
     trips: FilmTrips | None = None,
     looks_alike: PairLooksAlike | None = None,
+    scene_alike: PairLooksAlike | None = None,
+    capacity_hash_alike: PairLooksAlike | None = None,
     strangers_only: Callable[[str], bool] = lambda _asset: False,
     vouched: Callable[[Mapping[str, Any]], bool] = lambda _carrier: True,
     film_span: tuple[date, date] | None = None,
@@ -530,6 +518,14 @@ def select_story_first(
     `record(name, payload)` persists a derived decision under the run's audit directory.
     `trips` are the journeys detected in the pool; each becomes one story before the weighing.
     `looks_alike(candidate, keeper)` refuses a story's further picture that repeats one it holds.
+    `scene_alike(candidate, keeper)` is the same question by scene print: a depth frame that
+    shows the same scene as one a story already holds is never added for "showing something
+    new" either, since the final duplicate review would only remove it having spent the slot.
+    `capacity_hash_alike` is the final duplicate review's own hash-repeat question
+    (`editorial_final_hash_review.hash_repeat_relation`, at its own, stricter distance): a
+    story's capacity never counts a further capture group that already reads as a repeat of
+    one kept as a slot of its own, only when its unfolded grant would have exceeded that
+    distinct count; a story whose grant always fit its raw capacity keeps it unfolded.
     `film_span` is the requested period; a recurring activity is one thread per era of it.
     `near_home(family)` says whether a happening was photographed near the home base.
     `standing(asset)` is a picture's standing score (0 refuses), read from its facts on every
@@ -623,9 +619,17 @@ def select_story_first(
         # the heads being read before any model is asked (#2049).
         "pixel_disqualified": lambda asset_id: disqualifies_as_lone_carrier(line_of(asset_id)),
     }
-    choices_of = _capture_group_choices(stories, story_units, **picking)
-    groups_offered = {s["key"]: len(choices_of[s["key"]]) for s in stories}
     slots = max(1, int(target_seconds // seconds_per_slot))
+    choices_of, groups_offered, scene_gated_stories = capacity_choices(
+        stories,
+        story_units,
+        unit_by_asset,
+        parts,
+        slots,
+        capacity_hash_alike,
+        scene_alike,
+        **picking,
+    )
     reserve_trip_depth(stories, slots=slots, film_days=_photographed_days(event_units))
 
     def place_of(asset: str) -> str:
@@ -691,7 +695,12 @@ def select_story_first(
         record=record,
         slots=slots,
         calls=calls,
-        lookalike=LookAlikeCheck(looks_alike, slots=slots),
+        lookalike=LookAlikeCheck(
+            looks_alike,
+            slots=slots,
+            scene_alike=scene_alike,
+            scene_gated_stories=scene_gated_stories,
+        ),
         places=places,
         place_of=place_of,
         strangers_only=strangers_only,
@@ -710,6 +719,7 @@ def select_story_first(
         slots,
         calls,
         story_lines,
+        unfunded_pool(stories, choices_of, admission.chosen_by_story),
     )
     record(
         "story-selection",
@@ -736,58 +746,6 @@ def select_story_first(
         },
     )
     return selection
-
-
-def alternatives_pool(
-    selection: StorySelection,
-    event_units: Mapping[str, list[dict]],
-    anchor_label: Mapping[str, str],
-) -> Callable[[Mapping[str, Any]], list[dict]]:
-    """For the audience gate: when a carrier is held, offer the same moment's other pictures.
-
-    Each pool unit is bound to the context of the moment it actually shows: the spares of one
-    carrier can come from another moment, family or even story, and a row that named the
-    refused carrier there would misdescribe the picture the film then shows.
-    """
-    unit_by_asset = {u["asset_id"]: (f, u) for f, units in event_units.items() for u in units}
-    # A unit row's moment is a loosely-typed field; the map keys are the story's moment ids.
-    chapter_of_moment: dict[Any, int] = {
-        moment: number
-        for number, row in enumerate(selection.episodes, 1)
-        for episode in row["day_episodes"]
-        for moment in _moments_of(selection, episode)
-    }
-    story_of_moment = {
-        moment: story
-        for story in selection.story.stories
-        for episode in story["episodes"]
-        for moment in _moments_of(selection, episode)
-    }
-
-    def pool_for(carrier: Mapping[str, Any]) -> list[dict]:
-        return [
-            carrier_row(
-                unit,
-                family=family,
-                anchor=anchor_label.get(family, family),
-                story=story_of_moment[unit["moment"]],
-                chapter=chapter_of_moment[unit["moment"]],
-                line=selection.lines.get(a, ""),
-            )
-            for a in selection.alternatives_of.get(carrier["asset_id"], [])
-            if a in unit_by_asset
-            for family, unit in (unit_by_asset[a],)
-            if unit.get("moment") in story_of_moment
-        ]
-
-    return pool_for
-
-
-def _moments_of(selection: StorySelection, episode_key: str) -> Sequence[str]:
-    for episode in selection.story.episodes:
-        if episode.key == episode_key:
-            return episode.moments
-    return []
 
 
 def story_plan_fields(selection: StorySelection) -> dict[str, Any]:
