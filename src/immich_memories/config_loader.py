@@ -595,6 +595,20 @@ def get_config_path() -> Path:
     return _config_path or Config.get_default_path()
 
 
+def config_state_dir(config_path: Path | None = None) -> Path:
+    """Where a config's run history and scheduler logs default to: its own folder.
+
+    A `--config PATH` run keeps its store and logs beside PATH instead of under the real
+    `$HOME`, so a second setup run under launchd or systemd (which always sees the real
+    `$HOME`) can never mix its run history into the main install's store (#2076). The
+    default config path already sits in `~/.immich-memories`, so a run with no `--config`
+    still lands exactly where it always has. `config_path` lets a caller that is generating
+    scheduler files for a config other than the one it has loaded (`auto install --config`)
+    name it directly, instead of this process's own loaded path.
+    """
+    return (config_path or get_config_path()).parent
+
+
 def load_config(path: Path) -> Config:
     """Load a config file as this process's single configuration source.
 

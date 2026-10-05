@@ -22,7 +22,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from types import ModuleType
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from immich_memories.db import Store, iso_from_db, now_db
 from immich_memories.db.leases import Lease
@@ -35,6 +35,9 @@ from immich_memories.db.legacy_import import (
 )
 from immich_memories.db.store import on_first_open
 from immich_memories.security import private_temp_dir
+
+if TYPE_CHECKING:
+    from immich_memories.config_loader import Config
 
 logger = logging.getLogger(__name__)
 
@@ -158,6 +161,32 @@ def verify_import(store: Store, home: Path) -> dict[str, list[str]]:
 def has_legacy_files(home: Path) -> bool:
     """Whether any importer finds a file to read under `home`."""
     return any(importer.load().legacy_sources(home) for importer in IMPORTERS)
+
+
+def legacy_import_skip_warning(config: Config) -> str | None:
+    """Warn when a `--config` user's own legacy files would never be seen (#2076).
+
+    `legacy_home()` always resolves to `~/.immich-memories` unless `database.import_from`
+    (or its environment variable) says otherwise; it was never taught to follow `--config`
+    the way the store now does, so legacy pre-store files left beside a non-default config
+    are found by neither. Returns a message only when exactly that is true: no explicit
+    `import_from`, this config's own folder is not the default one, and it holds files the
+    import would otherwise have read.
+    """
+    if os.environ.get(IMPORT_FROM_ENV) or config.database.import_from:
+        return None
+    from immich_memories.config_loader import config_state_dir
+
+    config_dir = config_state_dir()
+    home_dir = Path.home() / ".immich-memories"
+    if config_dir == home_dir or not has_legacy_files(config_dir):
+        return None
+    return (
+        f"Legacy pre-store files sit next to this config ({config_dir}), but the one-time "
+        f"import only looks under {home_dir} unless `database.import_from` names another "
+        f"directory; they will be skipped. Add `database.import_from: {config_dir}` to "
+        f"this config to import them."
+    )
 
 
 def import_on_first_open(store: Store) -> None:

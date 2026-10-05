@@ -678,6 +678,7 @@ def run_preflight_checks(config: Config) -> list[CheckResult]:
     )
     from immich_memories.preflight_settings import check_stored_settings
     from immich_memories.preflight_sign_in import check_sign_in
+    from immich_memories.preflight_store import check_store_location
 
     return [
         *check_unknown_config_keys(config),
@@ -693,6 +694,7 @@ def run_preflight_checks(config: Config) -> list[CheckResult]:
         check_detector_interpreter(config),
         check_caption_endpoint(config),
         check_host_paths(config),
+        check_store_location(config),
         check_output_directory(config.output.output_path),
         check_notifications(config),
         check_render_worker(config),

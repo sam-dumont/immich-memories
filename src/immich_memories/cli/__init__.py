@@ -128,6 +128,10 @@ def main(
         print_error(str(e))
         sys.exit(1)
 
+    from immich_memories.store_migration_notice import log_store_migration_warnings
+
+    log_store_migration_warnings(ctx.obj["config"])
+
     # Registered after the config has loaded, so the import never runs inside a config load.
     # The `store` commands manage imports, backups and restores by hand.
     if ctx.invoked_subcommand != "store":
