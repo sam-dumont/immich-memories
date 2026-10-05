@@ -57,8 +57,17 @@ def _preset_params(
     resolved: AlbumRef, subject: str | None, curated: CuratedPool | None
 ) -> dict[str, object]:
     """The album's own name and id, plus a subject pool's written subject and whatever a
-    free-text request asked left out (#2061)."""
-    params: dict[str, object] = {"album_name": resolved.name, "album_id": resolved.id}
+    free-text request asked left out (#2061).
+
+    A curated pool's ``name`` is the pool's internal ref (`--ask`'s raw request for a
+    subject pool, #2064): never a real Immich album name, so it is left off ``album_name``
+    here -- otherwise it would ride into the title prompt as an "Album name in Immich" fact
+    the model is free to echo verbatim, putting the English request back in the title by a
+    different door.
+    """
+    params: dict[str, object] = {"album_id": resolved.id}
+    if curated is None:
+        params["album_name"] = resolved.name
     if subject:
         params["subject"] = subject
     if curated and curated.excluded:
@@ -177,8 +186,11 @@ def handle_album_generation(
         add_place_overlay=add_place,
         debug_preserve_intermediates=keep_intermediates,
         privacy_mode=privacy_mode,
-        # The album's own name is the best title we have; an explicit --title still wins.
-        title_override=title_override or resolved.name,
+        # A real album's own name is the best title we have; an explicit --title still
+        # wins. A curated (`--ask`) pool's name is the raw request, never a title (#2064):
+        # it is left out here so the run asks the model, in the film's language, with the
+        # guards every other route gets, and falls back to the dated template on refusal.
+        title_override=title_override or (resolved.name if curated is None else None),
         llm_title=llm_title,
         subtitle_override=subtitle_override,
         memory_type=MemoryType.ALBUM,

@@ -219,12 +219,19 @@ def memory_title_facts(
     *,
     album_name: str | None = None,
 ) -> MemoryTitleFacts:
-    """Read the facts a run already carries out of its preset parameters."""
+    """Read the facts a run already carries out of its preset parameters.
+
+    A written subject (`--subject`, or `--ask`'s own reading of what the request is
+    about, #2064) stands in for the catalogue's occasion name when there is no
+    catalogue: the prompt rewords it into the film's language the same way it already
+    rewords a special day's English-banked title, rather than the request ever riding
+    into the title as a quoted fact.
+    """
     preset = preset_params or {}
     return MemoryTitleFacts(
         people_condition=_condition_text(preset),
         person_match=str(preset.get("person_match") or "and"),
-        occasion_name=_occasion_name(preset),
+        occasion_name=_occasion_name(preset) or (str(preset.get("subject") or "").strip() or None),
         album_name=album_name or preset.get("album_name") or None,
         holiday=preset.get("holiday") or None,
         place=preset.get("location_name") or None,
