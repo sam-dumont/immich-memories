@@ -4,7 +4,10 @@
 __pycache__/
 .agent/
 .cache
-.claude/
+.claude/*
+!.claude/rules/
+!.claude/hooks/
+!.claude/settings.json
 .complexipy_cache/
 complexipy_results_*.json
 .continue/

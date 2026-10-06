@@ -100,7 +100,7 @@ These are enforced by CI and pre-commit hooks. Not suggestions.
 - Conventional commits: `feat(scope): description`
 - No docstrings that restate the function signature
 
-Full rules in [CLAUDE.md](CLAUDE.md) (yes, the AI reads it too).
+Full rules in [AGENTS.md](AGENTS.md) (yes, the AI reads it too: Claude Code and Codex both load it).
 
 ## Project Structure
 
