@@ -16,8 +16,8 @@ export default function SetupBuilder({initialPlatform = 'linux', initialInline =
   });
   const [notice, setNotice] = useState('');
   useEffect(() => {
-    const bytes = crypto.getRandomValues(new Uint8Array(32));
-    setSetup(previous => ({...previous, secretKey: [...bytes].map(value => value.toString(16).padStart(2, '0')).join('')}));
+    const token = () => [...crypto.getRandomValues(new Uint8Array(32))].map(value => value.toString(16).padStart(2, '0')).join('');
+    setSetup(previous => ({...previous, secretKey: token(), triggerToken: token()}));
   }, []);
   const update = (values: Partial<Setup>) => {
     setNotice('');
@@ -65,6 +65,11 @@ export default function SetupBuilder({initialPlatform = 'linux', initialInline =
       {setup.platform === 'kubernetes' && <label>Namespace
         <input value={setup.namespace} onChange={event => update({namespace: event.target.value})} />
         <small>Applied to both generated files and every command below.</small>
+      </label>}
+      {setup.platform === 'kubernetes' && <label className={styles.check}>
+        <input type="checkbox" checked={Boolean(setup.automation)} onChange={event => update({automation: event.target.checked})} />
+        Scheduled films (CronJobs)
+        <small>Adds a trigger token to the Secret and switches on the two CronJobs in the base.</small>
       </label>}
     </div>
     <p className={styles.note}>The builder does not ask for your Immich API key. The files hold the placeholder

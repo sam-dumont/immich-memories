@@ -136,3 +136,16 @@ def test_release_bundle_pins_component_images_without_a_directory_allowlist(
     with tarfile.open(destination) as archive:
         value = yaml.safe_load(archive.extractfile(str(path.relative_to(tmp_path))).read())
     assert value["images"][0]["newTag"] == expected
+
+
+def test_gpu_services_init_container_runs_on_the_gpu_tier():
+    # Without the pin the fetch init container resolves "auto" to basic and logs a tier
+    # the app container never runs, while it fetches the GPU detectors anyway.
+    path = "deploy/kubernetes/components/gpu-services/deployment-services.yaml"
+    with open(path) as handle:
+        docs = [d for d in yaml.safe_load_all(handle) if d]
+    init = next(d for d in docs if d.get("kind") == "Deployment")["spec"]["template"]["spec"][
+        "initContainers"
+    ][0]
+    env = {e["name"]: e.get("value") for e in init["env"]}
+    assert env["IMMICH_MEMORIES_DEPLOYMENT_TIER"] == "gpu"

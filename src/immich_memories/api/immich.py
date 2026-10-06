@@ -47,6 +47,10 @@ logger = logging.getLogger(__name__)
 _RETRYABLE_STATUS = TRANSIENT_STATUS
 _MAX_RETRIES = 3
 _BACKOFF_BASE = 1.0
+# Requests in a row that exhaust their retries on a connect or read error. One flaky call
+# resets on the next answer; a server that has gone away does not, and a month's cut used to
+# spend ten minutes finding that out one request at a time.
+UNREACHABLE_AFTER_REQUESTS = 3
 
 
 @dataclass(frozen=True)
@@ -102,6 +106,14 @@ class ImmichAPIError(Exception):
         self.details = details
 
 
+class ImmichStoppedAnswering(Exception):
+    """Immich refused connection after connection; the run stops instead of retrying on.
+
+    Not an ImmichAPIError on purpose: the preparation loops catch that per item and carry
+    on, which is the retry storm this ends.
+    """
+
+
 class ImmichAuthError(ImmichAPIError):
     """Authentication error with Immich API."""
 
@@ -150,6 +162,7 @@ class ImmichClient:
             else resolve_api_version(self._api_version_policy, None)
         )
         self._api_version_lock = asyncio.Lock()
+        self._unreachable_requests = 0
         self._key_capabilities: ApiKeyCapabilities | None = None
         self._key_capabilities_lock = asyncio.Lock()
 
@@ -269,13 +282,17 @@ class ImmichClient:
         """
         url = f"/api{endpoint}"
         logger.debug(f"Request: {method} {url}")
+        if self._unreachable_requests >= UNREACHABLE_AFTER_REQUESTS:
+            raise self._stopped_answering()
 
         last_exception: Exception | None = None
 
         for attempt in range(_MAX_RETRIES):
             try:
                 response = await self.client.request(method, url, **kwargs)
-                return self._check_response(response)
+                result = self._check_response(response)
+                self._unreachable_requests = 0
+                return result
             except (httpx.TimeoutException, httpx.NetworkError) as e:
                 last_exception = self._request_error(e)
             except ImmichAPIError as e:
@@ -296,7 +313,22 @@ class ImmichClient:
                 if before_retry is not None and (settled := await before_retry()) is not None:
                     return settled
 
+        self._note_unreachable(last_exception)
         raise last_exception or ImmichAPIError("Request failed after retries")
+
+    def _note_unreachable(self, error: Exception | None) -> None:
+        if not isinstance(error, ImmichAPIError) or error.status_code is not None:
+            return
+        self._unreachable_requests += 1
+        if self._unreachable_requests >= UNREACHABLE_AFTER_REQUESTS:
+            raise self._stopped_answering() from error
+
+    def _stopped_answering(self) -> ImmichStoppedAnswering:
+        target = urlsplit(self.base_url).netloc or self.base_url
+        return ImmichStoppedAnswering(
+            f"Immich at {target} stopped answering; what was prepared is kept; "
+            "rerun the same command to continue"
+        )
 
     async def get_server_info(self) -> ServerInfo:
         """Get server version information."""

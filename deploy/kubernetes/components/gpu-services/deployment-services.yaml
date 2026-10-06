@@ -15,6 +15,10 @@ spec:
             - secretRef:
                 name: immich-memories-secrets
           env:
+            # The init container has no GPU of its own; without the pin it resolves
+            # "auto" to basic and logs a tier the app container never runs.
+            - name: IMMICH_MEMORIES_DEPLOYMENT_TIER
+              value: gpu
             - name: IMMICH_MEMORIES_EDITORIAL__LAYA_CHECKPOINT
               value: /models/laya/laya-audience-onnx-90420ef3.tar.gz
       containers:

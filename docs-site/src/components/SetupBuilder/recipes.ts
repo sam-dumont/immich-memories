@@ -15,6 +15,8 @@ export interface Setup {
   namespace?: string;
   inline?: boolean;
   secretKey?: string;
+  automation?: boolean;
+  triggerToken?: string;
 }
 export interface Recipe {name: string; language: string; content: string; data?: unknown}
 
@@ -90,6 +92,9 @@ export function validateSetup(setup: Setup): string | null {
     return setup.platform === 'kubernetes'
       ? 'Generate a private settings key before exporting Kubernetes setup files.'
       : 'Generate a private settings key before exporting a single-file stack.';
+  }
+  if (setup.platform === 'kubernetes' && setup.automation && !/^[a-f0-9]{64}$/.test(setup.triggerToken || '')) {
+    return 'Generate a trigger token before exporting the scheduled-film CronJobs.';
   }
   if (setup.gpuBox) {
     const raw = setup.gpuBox;
@@ -195,7 +200,7 @@ export function buildSetup(setup: Setup, sources: Sources, buildVersion: string)
     const root = setup.tier === 'basic' ? 'base' : `overlays/tier-${setup.tier}`;
     const secret = {apiVersion: 'v1', kind: 'Secret', metadata: {
       name: 'immich-memories-secrets', namespace: ns,
-    }, type: 'Opaque', stringData: {IMMICH_URL: setup.immichUrl, IMMICH_API_KEY: API_KEY_PLACEHOLDER, IMMICH_MEMORIES_SECRET_KEY: setup.secretKey!, ...(readerKey(setup) ? {IMMICH_MEMORIES_DEPLOYMENT_READER_API_KEY: readerKey(setup)} : {})}};
+    }, type: 'Opaque', stringData: {IMMICH_URL: setup.immichUrl, IMMICH_API_KEY: API_KEY_PLACEHOLDER, IMMICH_MEMORIES_SECRET_KEY: setup.secretKey!, ...(setup.automation ? {IMMICH_MEMORIES_SERVER__TRIGGER_TOKEN: setup.triggerToken!} : {}), ...(readerKey(setup) ? {IMMICH_MEMORIES_DEPLOYMENT_READER_API_KEY: readerKey(setup)} : {})}};
     const ports = new Set<number>([Number(new URL(setup.immichUrl).port || (setup.immichUrl.startsWith('https:') ? 443 : 80))]);
     if (setup.tier === 'full') ports.add(Number(new URL(setup.readerUrl).port || (setup.readerUrl.startsWith('https:') ? 443 : 80)));
     const egress = {target: {kind: 'NetworkPolicy', name: 'immich-memories'}, patch: new Block(toYaml([{
@@ -228,12 +233,20 @@ export function buildSetup(setup: Setup, sources: Sources, buildVersion: string)
       '# The Secret holds IMMICH_MEMORIES_SECRET_KEY, which seals the credentials saved in Settings.',
       '# Keep a copy: a restored store needs the same key.',
       ...(setup.tier === 'basic' ? [] : ['# GPU tier: the app pod gets no GPU, so encoding and titles run on the CPU; the GPU serves inference and captions.']),
+      ...(setup.automation ? [
+        '# Scheduled films: switch on the two CronJobs in the base. They read the trigger token from secret.yaml.',
+        "sed -i.bak 's/^  # - cronjobs.yaml$/  - cronjobs.yaml/' deploy/kubernetes/base/kustomization.yaml && rm deploy/kubernetes/base/kustomization.yaml.bak",
+      ] : []),
       '# Before applying: choose local/block storage for immich-memories-cache (SQLite).',
       '# NFS/SMB app-data storage is refused at startup; use PostgreSQL for a network database.',
       '# Storage choices: https://sam-dumont.github.io/immich-memories/docs/run/kubernetes#prerequisites',
       `kubectl kustomize deploy/kubernetes/custom`,
       'kubectl apply -k deploy/kubernetes/custom',
       `kubectl rollout status -n ${ns} deploy/immich-memories`,
+      ...(setup.automation ? [
+        `# Try a schedule now: kubectl create job -n ${ns} --from=cronjob/immich-memories-auto trigger-test`,
+        '# The Job only says the trigger was accepted: follow the film in the app (Runs) or with runs list.',
+      ] : []),
       `kubectl exec -n ${ns} deploy/immich-memories -- immich-memories models fetch`,
       `kubectl exec -n ${ns} deploy/immich-memories -- immich-memories preflight`,
       `kubectl exec -n ${ns} deploy/immich-memories -- immich-memories capabilities`,

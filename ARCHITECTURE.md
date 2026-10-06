@@ -1105,6 +1105,7 @@ src/immich_memories/
 │   ├── models.py               # Typed values returned/persisted by automation
 │   ├── generation_request.py   # Typed boundary from candidates to the `generate` CLI
 │   ├── state_store.py          # Automation attempts in the store; failure streaks for backoff
+│   ├── phase_log.py            # Logs a generation child's stored phase events while it runs
 │   ├── status.py               # Cooldown gate + read-only AutomationStatus contract
 │   ├── delivery_retry.py       # Durable state for one pending delivery retry
 │   ├── notification_state.py   # Durable, sanitized notification delivery health (store row id 1)

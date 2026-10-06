@@ -17,7 +17,9 @@ See [tested deployments](../run/tested-deployments.md) for exact platform eviden
 
 <InstallationFiles />
 
-Basic needs only `docker-compose.yml` and `example.env` (saved as `.env`). The other files are for GPU, Full, the render worker and PostgreSQL, so download them only if you take one of those routes.
+Basic needs only `docker-compose.yml` and `example.env` (saved as `.env`). The other files are for GPU, Full, the render worker and PostgreSQL, so download them only if you take one of those routes. The commands above pin `.env` to this release by rewriting the `IMMICH_MEMORIES_VERSION` line that `example.env` already holds.
+
+The image is about 2.3 GB. With an empty layer cache the pull in step 3 took 84 seconds on a Synology; budget more on a slow line.
 
 Create `output` yourself, owned by uid 1000, so Docker does not make it as root. This is where local films land. Run it in the same folder, right after the downloads:
 
@@ -27,13 +29,13 @@ mkdir -p output && sudo chown 1000:1000 output   # drop sudo if you are root
 
 The container runs as uid 1000. If you run `mkdir` as root and skip the `chown`, preflight fails with "Output directory is not writable". On Synology, `chown` is not enough: use the [ACL recipe](../run/nas.md#the-output-folder).
 
-Already running another copy on this host? Give this one its own Compose project name, host port and container name, or the two share a volume:
+**Sharing this host with another copy, or with something on port 8080?** Do this now, before step 3. The compose file hard-codes `container_name: immich-memories` and the host port, so a second copy collides on both, and two projects in folders with the same name share one volume:
 
 ```bash
 echo 'COMPOSE_PROJECT_NAME=immich-memories-2' >> .env
 ```
 
-Then in `docker-compose.yml` change `container_name` and the number before `:8080` in the port line (keep `${UI_BIND_ADDRESS:-127.0.0.1}`), for example `${UI_BIND_ADDRESS:-127.0.0.1}:8081:8080`. Without a project name, a project in a folder called `immich-memories` reuses the first install's volume. Run every `docker compose` command below from this folder; the service name stays `immich-memories`.
+Then in `docker-compose.yml` change `container_name` and the number before `:8080` in the port line (keep `${UI_BIND_ADDRESS:-127.0.0.1}`), for example `${UI_BIND_ADDRESS:-127.0.0.1}:8081:8080`. Run every `docker compose` command below from this folder; the service name stays `immich-memories`, and the app is then at `http://localhost:8081` instead of 8080 in step 4. Only `UI_BIND_ADDRESS` is a variable; the port number is not.
 
 ## 2. Connect Immich
 
@@ -63,8 +65,8 @@ docker compose exec immich-memories immich-memories preflight
 Preflight must pass Immich, required-model and output checks. Basic skips unconfigured optional
 services; a home-coordinate warning does not block an album film.
 
-Over plain SSH with no terminal (a script, `ssh host 'docker compose exec ...'`), add `-T`:
-`docker compose exec -T immich-memories immich-memories preflight`.
+Over plain SSH with no terminal (a script, `ssh host 'docker compose exec ...'`), add `-T`, and set the table width, or its first column wraps and the row labels disappear:
+`docker compose exec -T -e COLUMNS=140 immich-memories immich-memories preflight`.
 
 Two more warnings are normal on a first run and do not block a film:
 
@@ -91,6 +93,8 @@ Then open the same localhost address on your desktop. The default port is availa
 Follow [Your first film](./first-film.mdx): create an Immich album with **20–50 supported
 photos/videos**, choose **Album**, and set the length to **0.5 minutes**. Review the cut and render
 with upload off. Shortening a film alone does not reduce how many inputs need preparation.
+
+No Docker? The same steps work natively: use [pip / uv](../run/uv-pip.md) and drop `docker compose exec immich-memories` from every command on this page and on [Your first film](./first-film.mdx). Films then land in `~/Videos/Memories`, not `./output`.
 
 Cold setup includes the image pull, model download, input preparation and render. Hardware,
 input count and cache state matter. [Measured numbers](../better/measured.md#cold-start-time-by-hardware-and-tier)

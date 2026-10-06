@@ -357,7 +357,7 @@ def check_llm(config: Config) -> CheckResult:
     return _check_openai_compatible(base_url, model, llm.api_key, llm.preflight_timeout_seconds)
 
 
-def check_hardware() -> CheckResult:
+def check_hardware(inference_gpu: bool = False) -> CheckResult:
     """Check hardware acceleration availability.
 
     Returns:
@@ -377,6 +377,13 @@ def check_hardware() -> CheckResult:
             # prints details only under -v and a GPU node encoding in software is
             # a misconfiguration rather than the expected answer (#936).
             hint = nvenc_capability_hint()
+            if inference_gpu and not hint:
+                return CheckResult(
+                    name="Hardware",
+                    status=CheckStatus.OK,
+                    message=GPU_FOR_PREPARATION,
+                    details="This pod has no GPU of its own; the inference service has one.",
+                )
             return CheckResult(
                 name="Hardware",
                 status=CheckStatus.WARNING,
@@ -408,7 +415,7 @@ def check_hardware() -> CheckResult:
         )
 
 
-def check_title_rendering(config: Config) -> CheckResult:
+def check_title_rendering(config: Config, inference_gpu: bool = False) -> CheckResult:
     """Report whether title screens get the GPU renderer or the PIL fallback."""
     if not config.title_screens.enabled:
         return CheckResult(
@@ -416,13 +423,18 @@ def check_title_rendering(config: Config) -> CheckResult:
             status=CheckStatus.SKIPPED,
             message="Title screens disabled",
         )
-    return _kernel_library_check()
+    return _kernel_library_check(inference_gpu)
 
+
+# The tier's design, not a fault: the GPU lives in the inference service, the app pod has none.
+GPU_FOR_PREPARATION = (
+    "GPU is used for picture preparation; encoding and titles stay on the CPU on this tier"
+)
 
 _PIL_RENDERER_MESSAGE = "PIL + FFmpeg: animated raster text, still backgrounds (no SDF effects)"
 
 
-def _kernel_library_check() -> CheckResult:
+def _kernel_library_check(inference_gpu: bool = False) -> CheckResult:
     """Name the title renderer this machine will use, and why.
 
     Two ways to lose the kernels, and a self-hoster should meet both here rather
@@ -467,16 +479,23 @@ def _kernel_library_check() -> CheckResult:
             message=reason,
             details=_PIL_RENDERER_MESSAGE,
         )
-    return _kernel_backend_check()
+    return _kernel_backend_check(inference_gpu)
 
 
-def _kernel_backend_check() -> CheckResult:
+def _kernel_backend_check(inference_gpu: bool = False) -> CheckResult:
     """Name the backend working kernels land on: a GPU, or the processor (#1202)."""
     import platform
 
     from immich_memories.titles.kernel_backend_probe import KERNEL_LIBRARY, gpu_backend
 
     gpu, failures = gpu_backend(platform.system())
+    if gpu is None and inference_gpu:
+        return CheckResult(
+            name="Title rendering",
+            status=CheckStatus.OK,
+            message=GPU_FOR_PREPARATION,
+            details="; ".join(failures),
+        )
     if gpu is None:
         return CheckResult(
             name="Title rendering",
@@ -662,7 +681,7 @@ def run_preflight_checks(config: Config) -> list[CheckResult]:
         List of check results.
     """
     from immich_memories.preflight_accounts import check_extra_accounts
-    from immich_memories.preflight_compute import check_inference_compute
+    from immich_memories.preflight_compute import check_inference_compute, inference_gpu_available
     from immich_memories.preflight_config_keys import check_unknown_config_keys
     from immich_memories.preflight_homebase import check_homebase
     from immich_memories.preflight_immich import check_immich
@@ -681,6 +700,7 @@ def run_preflight_checks(config: Config) -> list[CheckResult]:
     from immich_memories.preflight_sign_in import check_sign_in
     from immich_memories.preflight_store import check_store_location
 
+    inference_gpu = inference_gpu_available(config)
     return [
         *check_unknown_config_keys(config),
         check_immich(config),
@@ -689,7 +709,7 @@ def run_preflight_checks(config: Config) -> list[CheckResult]:
         check_homebase(config),
         check_sign_in(config),
         check_llm(config),
-        check_title_rendering(config),
+        check_title_rendering(config, inference_gpu),
         check_encoder(config),
         check_detector_export(config),
         check_detector_interpreter(config),
@@ -701,7 +721,7 @@ def run_preflight_checks(config: Config) -> list[CheckResult]:
         check_notifications(config),
         check_render_worker(config),
         check_music(config),
-        check_hardware(),
+        check_hardware(inference_gpu),
         check_inference_compute(config),
         check_memory(config),
         *outside_call_checks(config),

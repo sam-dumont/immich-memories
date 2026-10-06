@@ -117,6 +117,46 @@ def test_kubernetes_namespace_is_one_value_everywhere(tier):
     assert "models fetch" in result["commands"]
 
 
+def kubernetes_automation_output() -> dict:
+    script = f"""
+import {{readFileSync}} from 'node:fs';
+import {{buildSetup}} from {json.dumps(str(BUILDER / "recipes.ts"))};
+const sources = JSON.parse(readFileSync({json.dumps(str(BUILDER / "sources.json"))}, 'utf8'));
+console.log(JSON.stringify(buildSetup({{
+  platform: 'kubernetes', tier: 'basic', immichUrl: 'http://192.168.1.10:2283',
+  gpuBox: '', readerUrl: '', readerModel: '', cuda: false, version: '1.2.3',
+  secretKey: {json.dumps(SECRET)}, automation: true, triggerToken: {json.dumps("b" * 64)},
+}}, sources, '1.2.3')));
+"""
+    result = subprocess.run(
+        ["node", "--experimental-strip-types", "--input-type=module", "-e", script],
+        capture_output=True,
+        text=True,
+        timeout=60,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    return json.loads(result.stdout)
+
+
+def test_kubernetes_automation_command_enables_the_shipped_cronjobs(tmp_path):
+    result = kubernetes_automation_output()
+    secret = next(f for f in result["files"] if f["name"].endswith("/secret.yaml"))
+    assert (
+        yaml.safe_load(secret["content"])["stringData"]["IMMICH_MEMORIES_SERVER__TRIGGER_TOKEN"]
+        == "b" * 64
+    )
+    sed = next(line for line in result["commands"].splitlines() if line.startswith("sed "))
+    base = tmp_path / "deploy/kubernetes/base"
+    base.mkdir(parents=True)
+    shipped = ROOT / "deploy/kubernetes/base/kustomization.yaml"
+    (base / "kustomization.yaml").write_text(shipped.read_text())
+    subprocess.run(["sh", "-c", sed], cwd=tmp_path, check=True)
+    resources = yaml.safe_load((base / "kustomization.yaml").read_text())["resources"]
+    assert "cronjobs.yaml" in resources
+    assert not (base / "kustomization.yaml.bak").exists()
+
+
 PLACEHOLDER = "replace-with-your-immich-api-key"
 
 

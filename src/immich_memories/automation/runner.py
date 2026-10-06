@@ -29,6 +29,7 @@ from immich_memories.automation.notification_state import NotificationStateStore
 from immich_memories.automation.notifications import (
     send_configured_notification as _send_notification,
 )
+from immich_memories.automation.phase_log import log_phase_progress
 from immich_memories.automation.state_store import AutomationStateStore
 from immich_memories.automation.status import (
     AutomationStatus,
@@ -207,6 +208,10 @@ class AutoRunner:
         self._discovery = CandidateDiscovery(config, self.db, self.state)
         self._prepared_immich_preflight: Any | None = None
         self._prepared_pending_delivery: RunMetadata | None = None
+
+    def _attempt_phase_events(self, attempt_id: str) -> list[dict[str, Any]]:
+        stored = self.state.get_attempt(attempt_id)
+        return stored.phase_events if stored is not None else []
 
     def _secrets(self) -> tuple[str, ...]:
         """Return configured credential values that must never enter attempt history."""
@@ -638,7 +643,8 @@ class AutoRunner:
             logger.info("Generating: %s (score=%.3f)", candidate.reason, candidate.score)
             logger.info("Running: %s", " ".join(cmd))
             try:
-                process = self.execute(cmd)
+                with log_phase_progress(lambda: self._attempt_phase_events(attempt.id)):
+                    process = self.execute(cmd)
             except subprocess.TimeoutExpired as exc:
                 self._retain_child_output(attempt.id, exc.stdout, exc.stderr)
                 details = self._process_details(exc.stdout, exc.stderr)

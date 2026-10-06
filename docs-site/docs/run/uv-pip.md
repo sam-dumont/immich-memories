@@ -9,9 +9,10 @@ The [Docker install](./docker.md) is the other option.
 
 ## Install
 
-Any FFmpeg build with the `zscale` filter works: HDR conversion needs it. Homebrew's plain
-`ffmpeg` 8.1 passed the check below. If yours does not, install `ffmpeg-full` and put it first
-on your `PATH`:
+Any FFmpeg build with the `zscale` filter works: HDR conversion needs it. Homebrew's default
+`ffmpeg` has `zscale` on some Macs and not on others (an M2 without it, a Mac with it), so run
+the check below yourself before you trust it. If it prints nothing, install `ffmpeg-full` and put
+it first on your `PATH`:
 
 ```bash
 brew install uv ffmpeg
@@ -82,6 +83,7 @@ immich-memories ui
 ```
 
 Open [http://localhost:8080](http://localhost:8080) and make [your first film](../get-started/first-film.mdx).
+The guides on the Docker route (Quick start, first film, after install) show `docker compose exec immich-memories` in front of every command: leave that prefix off and run `immich-memories ...` directly.
 Films default to `~/Videos/Memories`. Set home coordinates for trips and public holidays:
 [Home and people](../get-started/who-is-who.md).
 

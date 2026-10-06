@@ -34,6 +34,25 @@ reader settings when Full is selected, and egress rules for the supplied endpoin
 Download each file and save it at its labelled path after extracting that release's bundle.
 The generated commands render the exact manifests before applying them.
 
+Without the builder, make the same files by hand. The bundle ships `base/secret.yaml.example`
+(copy it to your own `secret.yaml`; there is no ready `secret.yaml`) and has no `custom/`
+directory, so create one. For the GPU tier, a root next to `base/` looks like this:
+
+```yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: immich-memories
+resources:
+  - ../base
+  - secret.yaml
+components:
+  - ../components/gpu-services
+```
+
+`overlays/tier-gpu` is the same wrapper (base plus `components/gpu-services`) in a ready-made
+directory: apply it directly when you do not need your own patches. `overlays/tier-full` does the
+same for Full. For Basic, `resources: [../base, secret.yaml]` alone is enough.
+
 Basic uses the CPU base. GPU adds the existing CUDA inference and caption deployments through
 `components/gpu-services`; Full adds an explicitly enabled external reader. These are requested
 tiers. Preflight checks actual compute, captions, Laya and reader availability; a preset name
@@ -78,6 +97,25 @@ serialize CLI work; they do not synchronize multiple UI processes or make multip
 
 <DeploymentDiagram topology="basic" />
 
+## Another namespace
+
+The manifests say `immich-memories` everywhere. To install under another name, decide before you
+run anything below:
+
+- Set `namespace:` in each kustomization root you apply. Applying raw YAML bypasses the namespace
+  transformation, so the Quick start's `kubectl apply -f base/namespace.yaml` and the Secret you
+  apply by file would create or use `immich-memories` anyway. Create your own namespace with
+  `kubectl create namespace <name>` instead (skip `base/namespace.yaml`), and set `namespace:` in
+  the Secret.
+- Change every `-n immich-memories` in the commands to your namespace, and any cross-namespace URL.
+- The Secret's *name* does not follow the namespace or a `namePrefix`. It is the literal
+  `immich-memories-secrets` in the Deployment (`envFrom`), both CronJobs (`secretKeyRef`) and the
+  Secret example, and the base does not contain that Secret (you apply it separately), so
+  kustomize has nothing to rename. Create the Secret with exactly that name, in your namespace.
+
+The setup builder has a Namespace field: it writes your value into `secret.yaml`,
+`kustomization.yaml` and every `-n` in its commands.
+
 ## Quick start
 
 Create the Immich key with the [ten read permissions](./docker.md#the-api-key). Add the upload
@@ -89,9 +127,8 @@ Download/extract the deployment bundle from your chosen
 match that release. If using a source checkout instead, check `base/kustomization.yaml`: committed
 pins can trail releases. Image tags have no `v` prefix.
 
-Using another namespace than `immich-memories`? Read [Another namespace](#another-namespace)
-before you run these: `base/namespace.yaml` would create a stray `immich-memories` Namespace, and
-every `-n immich-memories` below must change with it.
+Not using the `immich-memories` namespace? Read [Another namespace](#another-namespace) above
+first: this block and every `-n immich-memories` after it assume the default.
 
 ```bash
 cd deploy/kubernetes
@@ -194,6 +231,18 @@ kubectl get pods -n immich-memories
 kubectl exec -n immich-memories deploy/immich-memories -c immich-memories -- find /app/output -name '*.mp4'
 kubectl cp -n immich-memories -c immich-memories <pod>:/app/output/<run folder>/<name>.mp4 ./film.mp4
 ```
+
+`kubectl cp` is fine for a short film. For anything over about 100 MB it can fail with
+`unexpected EOF` and leave a truncated, unplayable file (a 128 MB film failed 2 times in 3, a
+6.5 MB one never did). Stream the file through `exec` and compare sizes:
+
+```bash
+kubectl exec -n immich-memories deploy/immich-memories -c immich-memories -- cat "/app/output/<run folder>/<name>.mp4" > film.mp4
+kubectl exec -n immich-memories deploy/immich-memories -c immich-memories -- stat -c %s "/app/output/<run folder>/<name>.mp4"
+stat -f %z film.mp4   # macOS; on Linux: stat -c %s film.mp4
+```
+
+The two numbers must match. Play the file to the end before you delete anything.
 
 A CLI render dies with the `kubectl exec` that started it. For a month or a year, run it detached
 inside the pod, for example `kubectl exec ... -- sh -c 'nohup immich-memories runs render RUN_ID > /tmp/render.log 2>&1 &'`,
@@ -380,11 +429,47 @@ wrappers over these components, so existing apply commands still work.
 ## Batch jobs
 
 `base/cronjobs.yaml` is optional and contains only scheduled HTTP triggers. Add
-`- cronjobs.yaml` to `base/kustomization.yaml`, render, then apply that root. They call
-`POST /api/trigger` on the running app and mount no application PVCs. Set `IMMICH_MEMORIES_SERVER__TRIGGER_TOKEN` in the Secret.
+`- cronjobs.yaml` to `base/kustomization.yaml` (uncomment the line already there), render, then
+apply that root. They call `POST /api/trigger` on the running app and mount no application PVCs.
+Set `IMMICH_MEMORIES_SERVER__TRIGGER_TOKEN` in the Secret (`openssl rand -hex 32`). The
+[setup builder](/setup) does both for you when you tick **Scheduled films (CronJobs)**: the token
+goes into the generated `secret.yaml` and its commands switch the CronJobs on before the apply.
 Both schedules invoke the automatic decision, even the job named monthly: they do not force a
 monthly film. The Service selects only `web-ui` pods, so a Ready curl Job is never used as an
 HTTP backend.
+
+**`concurrencyPolicy: Forbid` does not guard anything here.** The Job only sends the trigger and
+exits in under a second whatever the outcome, so Kubernetes never sees two Jobs overlap. The guard
+is the app's own run lease: while a run is active, a second `POST /api/trigger` is refused with
+`HTTP 409` and `{"detail":"a run is already active","attempt_id":"..."}`. Twelve simultaneous
+POSTs after a finished film gave 2 accepted (202) and 10 refused (409), and two CronJobs firing in
+the same second both got 202, then both ended `skipped` for cooldown. The curl in these Jobs uses
+`-f`, so a 409 makes it exit non-zero, and `restartPolicy: OnFailure` retries a failed pod. The
+Job's own handling of a 409 has not been observed: only the HTTP answers were checked.
+
+**Test a schedule now, and follow what it started.** Fire a Job from the CronJob without waiting
+for its clock:
+
+```bash
+kubectl create job -n immich-memories --from=cronjob/immich-memories-auto trigger-test
+kubectl logs -n immich-memories job/trigger-test
+```
+
+`Complete` only means the trigger was accepted: the Job's log is just
+`{"status":"accepted","attempt_id":"...","status_url":"/api/trigger/..."}` and the Job is done in a
+few seconds. The film is made by the running app, detached from that HTTP request, and a year can
+take close to an hour on four CPU cores. Follow it with the attempt id and the token:
+
+```bash
+kubectl port-forward -n immich-memories svc/immich-memories 8080:80
+TOKEN=$(kubectl get secret -n immich-memories immich-memories-secrets -o jsonpath='{.data.IMMICH_MEMORIES_SERVER__TRIGGER_TOKEN}' | base64 -d)
+curl -s -H "Host: localhost" -H "Authorization: Bearer $TOKEN" http://localhost:8080/api/trigger/<attempt_id>
+```
+
+The answer carries `state` (`running`, then `completed`, `failed` or `skipped`), `phase`, `reason`
+and, once there is one, the `run`. `kubectl exec -n immich-memories deploy/immich-memories -- immich-memories runs list`
+shows the same run from inside the pod, though it can say "No runs found" for the first seconds.
+[The trigger contract](../reference/automation-contract.md#kubernetes) has every field.
 
 For a fixed recipe, prefer `kubectl exec ... -- immich-memories generate ...`.
 The separate `base/job.yaml` contains only the one-off generate Job. It mounts the PVCs
@@ -436,15 +521,6 @@ Back up, change pins in the base **and any add-on overlays**, render the same ku
 installed, then apply it. Run `models fetch` and `preflight` in the updated app.
 The init guard checks presence only, so existing files do not prove new pins match.
 [Rollback](./maintenance/upgrading.md#rollback) requires the old store backup when its schema changed.
-
-## Another namespace
-
-Set `namespace:` in each kustomization root you apply. Update command `-n` arguments and any
-cross-namespace URLs too. Applying raw YAML bypasses the namespace transformation. That includes
-the Quick start's `kubectl apply -f base/namespace.yaml` and the Secret you apply by file: create
-your own namespace with `kubectl create namespace <name>` instead, and set `namespace:` in the
-Secret. The setup builder has a Namespace field: it writes your value into `secret.yaml`,
-`kustomization.yaml` and every `-n` in its commands.
 
 ## Check it from outside the pod
 

@@ -187,6 +187,24 @@ def _apply_request(
     params.title_source = source.value if source is not None else None
 
 
+def _render_base_path(output_dir: Path, run: Any, date_range: Any, container: str) -> Path:
+    """The film's file name before the recipe hash.
+
+    An album film keeps the `album_<slug>` name `generate --from-album` gave it: the run
+    records no album name to rebuild it from, and a different name per command is a
+    different film to anyone looking in the folder.
+    """
+    if run.memory_type == "album" and run.output_path:
+        return (output_dir / Path(run.output_path).name).with_suffix(f".{container}")
+    return build_memory_output_path(
+        output_dir=output_dir,
+        person_names=list(run.memory_people),
+        memory_type=run.memory_type,
+        date_range=date_range,
+        container=container,
+    )
+
+
 def render_saved_cut(
     *,
     config: Config,
@@ -241,18 +259,13 @@ def render_saved_cut(
             clips=params.clips,
             hardware_hevc=lambda: hardware_hevc_available(config),
         )
+    container = resolve_output_selection(
+        config_codec=config.output.codec,
+        config_container=config.output.format,
+        format_override=request.output_format,
+    ).container
     params.output_path = name_after_recipe(
-        build_memory_output_path(
-            output_dir=config.output.output_path,
-            person_names=list(run.memory_people),
-            memory_type=run.memory_type,
-            date_range=date_range,
-            container=resolve_output_selection(
-                config_codec=config.output.codec,
-                config_container=config.output.format,
-                format_override=request.output_format,
-            ).container,
-        ),
+        _render_base_path(config.output.output_path, run, date_range, container),
         selected_clips=params.clips,
         clip_segments=params.clip_segments,
         editorial_selections=params.editorial_selections,
