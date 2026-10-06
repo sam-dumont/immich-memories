@@ -251,13 +251,18 @@ class PartitionedSlots:
         partition_of: Callable[[str], str | None] | None = None,
         limit: int | None = None,
         voiced: bool = False,
-        pool_is_subject: bool = False,
+        every_era_speaks: bool = False,
     ) -> None:
         self._unit_by_asset = unit_by_asset
         self._partition_of = partition_of
         self.limit = limit
         self._voiced = voiced
-        self._pool_is_subject = pool_is_subject
+        self._every_era_speaks = every_era_speaks
+
+    @property
+    def every_era_speaks(self) -> bool:
+        """Every partition speaks, whatever its stories weigh: the film is about the dates."""
+        return self._voiced and self._every_era_speaks
 
     @property
     def voice_of(self) -> Callable[[str], str | None] | None:
@@ -359,7 +364,7 @@ class PartitionedSlots:
                 {k: len(v) for k, v in capacity_choices.items()},
                 already=already,
                 era_of=self.eras(capacity_choices, silent),
-                pool_is_subject=self._pool_is_subject,
+                pool_is_subject=self._every_era_speaks,
             )
             return counts, {key: {None: count} for key, count in counts.items()}
         used: dict[str | None, int] = {}

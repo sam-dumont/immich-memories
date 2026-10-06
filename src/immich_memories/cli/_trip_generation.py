@@ -256,7 +256,9 @@ def handle_trip_generation(
         memory_category=memory_category,
     )
 
-    trips_table = format_trips_table(trips)
+    from immich_memories.i18n import resolve_film_locale
+
+    trips_table = format_trips_table(trips, resolve_film_locale(config.title_screens.locale))
     if trips_table:
         progress.stop()
         console.print()

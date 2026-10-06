@@ -38,7 +38,7 @@ from immich_memories.analysis.editorial_rule_banked_facts import (
 )
 from immich_memories.analysis.editorial_rule_quality import rule_representative_rank
 from immich_memories.analysis.editorial_rule_reader import NoModelJudge, RuleStructureReader
-from immich_memories.analysis.editorial_shareability import SHAREABLE
+from immich_memories.analysis.editorial_shareability import FAMILY, SHAREABLE
 from immich_memories.analysis.editorial_shareability_tiers import audience_check_for
 from immich_memories.analysis.editorial_story_candidates import story_candidates
 from immich_memories.analysis.editorial_story_lookalike import hash_pair_relation
@@ -125,6 +125,11 @@ def plan_structure(
             source,
             config=nas_draft_config(source.config),
             artifact_dir=source.artifact_dir / "nas-draft",
+            # Only the refinement reads the captions a shareable clearance rests on. Judged by
+            # the draft's rules, a picture nothing has described yet could never be cleared,
+            # and an empty draft would end the film before any caption was read (#2135).
+            # The refinement still gates every shot at the film's own level.
+            audience=FAMILY if source.audience == SHAREABLE else source.audience,
         )
         # The reader must see the same narrowed pool `_plan_structure(nas, rules)` is
         # about to plan over (#1954): built from the un-narrowed `nas`, it could have
@@ -592,6 +597,7 @@ def _story_selection(
         voice_per_partition=source.intent.voice_per_partition,
         context_without_life=source.intent.context_without_life,
         pool_is_subject=source.intent.pool_is_subject,
+        occurrence_is_subject=source.intent.occurrence_is_subject,
         partition_of=lambda taken: (
             part.key
             if (part := source.intent.partition_for(datetime.fromisoformat(taken).date()))

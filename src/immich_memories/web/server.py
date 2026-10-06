@@ -321,10 +321,13 @@ def _warm_answers(config: Any) -> None:
 
     cache = answer_cache(config)
     suggestions_answer(cache, AutoRunner(config))
+    from immich_memories.i18n import resolve_film_locale
+
     find = trip_finder(config)
+    locale = resolve_film_locale(config.title_screens.locale)
     this_year = datetime.now(UTC).year
     for year in (this_year, this_year - 1):
-        trips_answer(cache, find, year, [])
+        trips_answer(cache, find, year, [], locale)
 
 
 def _moved(target: str):

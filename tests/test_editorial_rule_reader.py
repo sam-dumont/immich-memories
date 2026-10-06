@@ -109,18 +109,16 @@ def test_rules_finish_product_selection_without_constructing_inference(tmp_path,
     elif product != "on_this_day":
         assert sources[0].id in {clip.asset.id for clip in result.selected_clips}
     # A one-shot grant now takes the middle favourite of its story rather than its first,
-    # so on_this_day is asserted on its own contract of one shot per year, below.
+    # so on_this_day is asserted on its own contract of a shot in every year, below.
     attempt = planner.last_attempt_directory
     plan = json.loads((attempt / "plan.private.json").read_text())
     assert plan["reader"] == "rules-v1"
     assert not plan["story"]["thesis"]
     if product == "on_this_day":
-        from collections import Counter
-
-        assert Counter(c.asset.file_created_at.year for c in result.selected_clips) == {
-            2022: 1,
-            2023: 1,
-            2024: 1,
+        assert {c.asset.file_created_at.year for c in result.selected_clips} == {
+            2022,
+            2023,
+            2024,
         }
     else:
         # The twenty-two day fixture is no longer one story but four weekly ones, so the

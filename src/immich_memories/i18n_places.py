@@ -171,6 +171,22 @@ def localise_place(name: str | None, locale: str) -> str | None:
     return f"{localise_place_part(head, locale)}{comma(locale)}{localise_country(tail, locale)}"
 
 
+def localise_trip_place(english: str, kind: str, locale: str) -> str:
+    """A trip's name, in the film's language, at the scale trip naming chose.
+
+    `english` and `kind` are what `trip_place`/`_derive_location_name` produce: a
+    "Place, Country" label (or "A and B, Country", or a bare country) for every
+    `kind` except "countries", which is "A → B" and has no country tail to split
+    off. Every surface that names a trip -- the film's own title, the trip
+    listing, the web picker -- must call this on the same two values, so a
+    French film never reads a region's name in French next to its country in
+    English, or a bare English label where everything else around it is French.
+    """
+    if kind == "countries":
+        return " → ".join(localise_country(c, locale) for c in english.split(" → "))
+    return localise_place(english, locale) or english
+
+
 def place_label(city: str | None, country: str | None, locale: str) -> str | None:
     """The label a viewer reads for one place, or None when there is no place."""
     localised = localise_country(country, locale) if country else None

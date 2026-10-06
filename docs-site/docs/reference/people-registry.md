@@ -102,8 +102,9 @@ people store exactly as `--people-expression` does, and it combines with `--acco
 with `people export`/`people import`, next to the people.
 
 The scan also writes its measurements (every person's counts and the pairs seen together) to
-`~/.immich-memories/people-graph.json`. That one stays a file: each scan recomputes all of it from Immich and
-nothing reads it back.
+`people-graph.json`, next to the store this run is using (`~/.immich-memories` by default, or
+wherever `--config` or `database.url` point instead). That one stays a file: each scan
+recomputes all of it from Immich and nothing reads it back.
 
 It is the same registry as the **People** page in the web UI. The roles you confirm there decide who counts as close
 family, and selection reads that on every tier: the family seat, the big-story rule, and the relations a model

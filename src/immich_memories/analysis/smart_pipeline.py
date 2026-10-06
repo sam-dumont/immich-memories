@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from immich_memories.analysis import selection_trace as trace
+from immich_memories.analysis.editorial_left_out import final_cut_notes
 from immich_memories.analysis.editorial_projection import (
     EditorialStageReporter,
     editorial_clip_segment,
@@ -167,7 +168,16 @@ class SmartPipeline:
         attempt_dir = getattr(self._planner, "last_attempt_directory", None)
         if attempt_dir is not None:
             result.stats["editorial_attempt_directory"] = str(attempt_dir)
-        active_trace.record("editorial final cut", candidates, result.selected_clips)
+        kept_ids = {clip.asset.id for clip in result.selected_clips}
+        active_trace.record(
+            "editorial final cut",
+            candidates,
+            result.selected_clips,
+            notes=final_cut_notes(
+                planned.structure_plan,
+                (c.clip.asset.id for c in candidates if c.clip.asset.id not in kept_ids),
+            ),
+        )
         if attempt_dir is not None:
             # Every run keeps its decision log beside its plan, so `runs why <asset>`
             # can answer without the run having been started with --trace-selection.

@@ -660,6 +660,7 @@ src/immich_memories/
 │   ├── editorial_projection.py # Plan -> PipelineResult, and the stage reporter
 │   ├── provider_health.py      # ProviderHealth: what a provider's answer says about its availability (preflight)
 │   ├── selection_trace.py      # Per-stage funnel record: what each filter received and let through
+│   ├── editorial_left_out.py   # Why the final cut left each picture out (gate verdict, pass reason, or unused)
 │   ├── progress.py             # ProgressTracker: the run clock the stage reporter reads
 │   ├── trip_detection.py       # GPS-based trip detection (clustering, injected geocoder)
 │   ├── trip_legs.py            # Where a trip changes where it stays: areas of stay become legs (#1563)
