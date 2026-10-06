@@ -54,7 +54,7 @@ jobs:
   # Determine if a release is needed based on commits AND branch names
   analyze:
     name: Analyze Commits & Branches
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: >-
       github.repository_id == '1174219883' &&
       (github.ref == 'refs/heads/main' || inputs.dry_run || inputs.inference_only || inputs.app_only)
@@ -106,7 +106,7 @@ jobs:
       !cancelled() && needs.analyze.outputs.should_release == 'true' &&
       needs.ci.result == 'success' &&
       (inputs.dry_run || needs.docker-manifest.result == 'success')
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
       # Provenance: the OIDC token is what identifies this workflow to
@@ -271,7 +271,7 @@ jobs:
           make_latest: ${{ needs.analyze.outputs.prerelease == 'true' && 'false' || 'true' }}
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: dist-release
           path: dist/
@@ -302,7 +302,7 @@ jobs:
     name: Publish to PyPI
     needs: [analyze, release, pypi-publish-music]
     if: github.repository_id == '1174219883' && (!inputs.dry_run && inputs.channel != 'dev' && needs.analyze.outputs.should_release == 'true')
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment:
       name: pypi
       url: https://pypi.org/project/immich-memories/
@@ -316,7 +316,7 @@ jobs:
           egress-policy: audit
 
       - name: Download release artifacts
-        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: dist-release
           path: dist/
@@ -332,7 +332,7 @@ jobs:
     name: Publish bundled music to PyPI
     needs: [analyze, release]
     if: github.repository_id == '1174219883' && (!inputs.dry_run && inputs.channel != 'dev' && needs.analyze.outputs.should_release == 'true')
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment:
       name: pypi
       url: https://pypi.org/project/immich-memories-music/
@@ -398,7 +398,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - runner: ubuntu-latest
+          - runner: ubuntu-24.04
             platform: linux/amd64
             slug: amd64
           - runner: ubuntu-24.04-arm
@@ -459,7 +459,7 @@ jobs:
           touch "/tmp/digests/${digest#sha256:}"
 
       - name: Upload digest
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: digests-${{ matrix.slug }}
           path: /tmp/digests/*
@@ -493,13 +493,13 @@ jobs:
         # cpu ships on both architectures a NAS or a laptop might be; cuda is
         # amd64 only, because the CUDA runtime base this builds on is.
         include:
-          - runner: ubuntu-latest
+          - runner: ubuntu-24.04
             platform: linux/amd64
             device: cpu
           - runner: ubuntu-24.04-arm
             platform: linux/arm64
             device: cpu
-          - runner: ubuntu-latest
+          - runner: ubuntu-24.04
             platform: linux/amd64
             device: cuda
 
@@ -550,7 +550,7 @@ jobs:
           touch "/tmp/digests/${digest#sha256:}"
 
       - name: Upload digest
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: inference-digests-${{ matrix.device }}-${{ strategy.job-index }}
           path: /tmp/digests/*
@@ -562,7 +562,7 @@ jobs:
       github.repository_id == '1174219883' &&
       !cancelled() && needs.analyze.result == 'success' &&
       needs.inference-build.result == 'success'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       packages: write
@@ -576,7 +576,7 @@ jobs:
           egress-policy: audit
 
       - name: Download digests
-        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           path: /tmp/digests
           pattern: inference-digests-*
@@ -648,7 +648,7 @@ jobs:
     name: Smoke Test Docker Image
     if: github.repository_id == '1174219883'
     needs: [analyze, docker-build]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
       contents: read
@@ -662,7 +662,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Download digests
-        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           path: /tmp/digests
           pattern: digests-amd64
@@ -694,7 +694,7 @@ jobs:
     name: Create Docker Manifest
     if: github.repository_id == '1174219883'
     needs: [analyze, docker-build, docker-smoke]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       packages: write
@@ -708,7 +708,7 @@ jobs:
           egress-policy: audit
 
       - name: Download digests
-        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           path: /tmp/digests
           pattern: digests-*
@@ -762,7 +762,7 @@ jobs:
     name: Publish matching deployment manifests
     needs: [analyze, release, docker-manifest, inference-manifest]
     if: github.repository_id == '1174219883' && (needs.analyze.outputs.should_release == 'true' && !inputs.dry_run)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
     steps:

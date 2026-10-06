@@ -45,7 +45,7 @@ permissions:
 jobs:
   mirror:
     name: Mirror & Trigger GPU Tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: github.repository_id == '1174219883'
     steps:
       - name: Harden Runner

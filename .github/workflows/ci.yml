@@ -33,7 +33,7 @@ jobs:
   changes:
     name: Change Scope
     if: github.repository_id == '1174219883'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       docs_only: ${{ steps.scope.outputs.docs_only }}
       docs_site: ${{ steps.scope.outputs.docs_site }}
@@ -51,7 +51,7 @@ jobs:
 
   setup:
     name: Setup Cache
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: github.repository_id == '1174219883'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -76,7 +76,7 @@ jobs:
     name: Quality Gates
     if: github.repository_id == '1174219883'
     needs: [setup]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -148,7 +148,7 @@ jobs:
         if: '!cancelled()'
         run: make critique
       # Keep this in quality so docs-only and release workflow calls check it too.
-      # ubuntu-latest ships the
+      # ubuntu-24.04 ships the
       # compose plugin, and `config` parses without touching the daemon.
       - name: Compose file stands alone
         if: '!cancelled()'
@@ -162,7 +162,7 @@ jobs:
     name: Security Scan
     if: github.repository_id == '1174219883'
     needs: [setup]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       pull-requests: read
@@ -228,10 +228,11 @@ jobs:
         uses: hadolint/hadolint-action@06be81baf89a55ffd0e24b8f04a4185738dd3387 # v3.5.0
         with:
           dockerfile: docker/Dockerfile
+          config: .hadolint.yaml
           failure-threshold: error
 
       - name: Upload Bandit report
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
           name: bandit-report
@@ -261,10 +262,10 @@ jobs:
       # Ubuntu keeps every Python; macOS keeps one per PR and the full grid on
       # main, where runs are serialised anyway.
       matrix: ${{ fromJSON(needs.changes.outputs.docs_only == 'true'
-        && '{"include":[{"os":"ubuntu-latest","python-version":"3.12"}]}'
+        && '{"include":[{"os":"ubuntu-24.04","python-version":"3.12"}]}'
         || github.event_name == 'pull_request'
-        && '{"include":[{"os":"ubuntu-latest","python-version":"3.11"},{"os":"ubuntu-latest","python-version":"3.12"},{"os":"ubuntu-latest","python-version":"3.13"},{"os":"macos-latest","python-version":"3.13"}]}'
-        || '{"include":[{"os":"ubuntu-latest","python-version":"3.11"},{"os":"ubuntu-latest","python-version":"3.12"},{"os":"ubuntu-latest","python-version":"3.13"},{"os":"macos-latest","python-version":"3.11"},{"os":"macos-latest","python-version":"3.12"},{"os":"macos-latest","python-version":"3.13"}]}') }}
+        && '{"include":[{"os":"ubuntu-24.04","python-version":"3.11"},{"os":"ubuntu-24.04","python-version":"3.12"},{"os":"ubuntu-24.04","python-version":"3.13"},{"os":"macos-latest","python-version":"3.13"}]}'
+        || '{"include":[{"os":"ubuntu-24.04","python-version":"3.11"},{"os":"ubuntu-24.04","python-version":"3.12"},{"os":"ubuntu-24.04","python-version":"3.13"},{"os":"macos-latest","python-version":"3.11"},{"os":"macos-latest","python-version":"3.12"},{"os":"macos-latest","python-version":"3.13"}]}') }}
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2
@@ -308,11 +309,11 @@ jobs:
       # installs FFmpeg, so the suites covering the changed paths run here -- and
       # only those: an unrelated PR runs none of them.
       - name: Integration coverage for changed paths
-        if: matrix.python-version == '3.12' && matrix.os == 'ubuntu-latest' && github.event_name == 'pull_request'
+        if: matrix.python-version == '3.12' && matrix.os == 'ubuntu-24.04' && github.event_name == 'pull_request'
         run: make dev-test-integration integration-coverage-for-diff
 
       - name: Diff coverage (≥80% on changed lines)
-        if: matrix.python-version == '3.12' && matrix.os == 'ubuntu-latest' && github.event_name == 'pull_request'
+        if: matrix.python-version == '3.12' && matrix.os == 'ubuntu-24.04' && github.event_name == 'pull_request'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -354,7 +355,7 @@ jobs:
 
       - name: Upload unit test coverage to Codecov
         uses: codecov/codecov-action@75cd11691c0faa626561e295848008c8a7dddffe # v5
-        if: matrix.python-version == '3.12' && matrix.os == 'ubuntu-latest'
+        if: matrix.python-version == '3.12' && matrix.os == 'ubuntu-24.04'
         with:
           files: coverage.xml
           flags: unittests
@@ -367,7 +368,7 @@ jobs:
 
       - name: Upload test results to Codecov
         uses: codecov/codecov-action@75cd11691c0faa626561e295848008c8a7dddffe # v5
-        if: ${{ !cancelled() && matrix.python-version == '3.12' && matrix.os == 'ubuntu-latest' }}
+        if: ${{ !cancelled() && matrix.python-version == '3.12' && matrix.os == 'ubuntu-24.04' }}
         with:
           files: junit.xml
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -386,7 +387,7 @@ jobs:
         include:
           # Only the extras with tests marked `extras` (the torch family);
           # everything else runs in the main `test` job.
-          - os: ubuntu-latest
+          - os: ubuntu-24.04
             extras: "dev"
           - os: macos-latest
             extras: "dev,mac"
@@ -429,7 +430,7 @@ jobs:
     name: Test Store (SQLite + PostgreSQL)
     if: github.repository_id == '1174219883' && needs.changes.outputs.store == 'true'
     needs: [changes, quality, security]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     services:
       postgres:
@@ -477,7 +478,7 @@ jobs:
     name: Build Package
     if: github.repository_id == '1174219883' && needs.changes.outputs.docs_only != 'true'
     needs: [changes, test]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -493,7 +494,7 @@ jobs:
       - run: make build
       - name: Check package
         run: make build-check
-      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: dist-ci
           path: dist/
@@ -507,7 +508,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - runner: ubuntu-latest
+          - runner: ubuntu-24.04
             platform: linux/amd64
           - runner: ubuntu-24.04-arm
             platform: linux/arm64
@@ -540,7 +541,7 @@ jobs:
   container-e2e:
     name: Container E2E (${{ matrix.database }})
     needs: [changes, test]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     if: >-
       github.repository_id == '1174219883'
@@ -564,7 +565,7 @@ jobs:
         run: make test-container CONTAINER_E2E_DATABASE=${{ matrix.database }} CONTAINER_E2E_BUILD=0
       - name: Upload container diagnostics
         if: failure()
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: container-e2e-${{ matrix.database }}
           if-no-files-found: ignore
@@ -574,7 +575,7 @@ jobs:
     name: Docs Build
     if: github.repository_id == '1174219883' && needs.changes.outputs.docs_site == 'true'
     needs: [changes]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Create LFS cache key
@@ -603,11 +604,12 @@ jobs:
   launch-check:
     name: Hermetic Launch Check (${{ matrix.database }})
     needs: [changes, setup]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 40
+    # Pull requests, and the release (it calls this workflow from a manual dispatch).
     if: >-
       github.repository_id == '1174219883'
-      && github.event_name == 'pull_request'
+      && (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch')
       && needs.changes.outputs.docs_only != 'true'
     strategy:
       fail-fast: false
@@ -671,7 +673,7 @@ jobs:
           IMMICH_MEMORIES_E2E_DATABASE_URL: postgresql://postgres:store-test@127.0.0.1:5432/postgres
       - name: Upload launch diagnostics
         if: failure()
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: launch-check-diagnostics-${{ matrix.database }}
           if-no-files-found: ignore
@@ -689,7 +691,7 @@ jobs:
   ci-success:
     name: CI Success
     needs: [changes, setup, quality, security, test, test-extras, test-store, build, docker, container-e2e, docs, launch-check]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: always() && github.repository_id == '1174219883'
     steps:
       - name: Check all jobs passed

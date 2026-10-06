@@ -34,11 +34,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - {runner: ubuntu-latest, kind: app, arch: amd64, file: docker/Dockerfile, device: cpu}
+          - {runner: ubuntu-24.04, kind: app, arch: amd64, file: docker/Dockerfile, device: cpu}
           - {runner: ubuntu-24.04-arm, kind: app, arch: arm64, file: docker/Dockerfile, device: cpu}
-          - {runner: ubuntu-latest, kind: inference, arch: amd64, file: docker/Dockerfile.inference, device: cpu}
+          - {runner: ubuntu-24.04, kind: inference, arch: amd64, file: docker/Dockerfile.inference, device: cpu}
           - {runner: ubuntu-24.04-arm, kind: inference, arch: arm64, file: docker/Dockerfile.inference, device: cpu}
-          - {runner: ubuntu-latest, kind: inference, arch: amd64, file: docker/Dockerfile.inference, device: cuda}
+          - {runner: ubuntu-24.04, kind: inference, arch: amd64, file: docker/Dockerfile.inference, device: cuda}
     env:
       IMAGE_AUDIT_FILE: ${{ matrix.file }}
       IMAGE_AUDIT_DEVICE: ${{ matrix.device }}
@@ -51,7 +51,7 @@ jobs:
       - run: make image-audit
       - name: Save exact installed package inventories and audit result
         if: always()
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: image-audit-${{ matrix.kind }}-${{ matrix.device }}-${{ matrix.arch }}
           path: image-audit/

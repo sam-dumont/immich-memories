@@ -13,7 +13,7 @@ permissions: read-all
 jobs:
   analysis:
     name: Scorecard analysis
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: github.repository_id == '1174219883'
     permissions:
       # A job-level block replaces the top-level read-all, so every read the

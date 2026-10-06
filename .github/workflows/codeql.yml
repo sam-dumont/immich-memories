@@ -29,7 +29,7 @@ concurrency:
 jobs:
   analyze:
     name: Analyze Python
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: github.repository_id == '1174219883'
     timeout-minutes: 45
     permissions:

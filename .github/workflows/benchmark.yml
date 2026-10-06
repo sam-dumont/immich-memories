@@ -72,7 +72,7 @@ jobs:
   bench-linux:
     name: Benchmark (Linux CI)
     if: github.repository_id == '1174219883' && (github.event_name != 'workflow_dispatch')
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       # github-action-benchmark posts the regression comment on the PR.
@@ -130,7 +130,7 @@ jobs:
 
       # WHY: restore BEFORE benchmark-action so it has historical data to compare against
       - name: Restore benchmark cache
-        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ./cache
           key: benchmark-linux-ci-main-
@@ -167,13 +167,13 @@ jobs:
 
       - name: Save benchmark cache
         if: github.ref == 'refs/heads/main'
-        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ./cache
           key: benchmark-linux-ci-main-${{ github.run_id }}
 
       - name: Upload benchmark artifact
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
           name: benchmark-linux-ci
@@ -186,7 +186,7 @@ jobs:
   ingest:
     name: Ingest (${{ github.event.inputs.runner }})
     if: github.repository_id == '1174219883' && (github.event_name == 'workflow_dispatch')
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # A dispatched ingest has no PR to comment on; it only writes the cache.
     permissions:
       contents: read
@@ -217,7 +217,7 @@ jobs:
           "
 
       - name: Restore benchmark cache
-        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ./cache
           key: benchmark-${{ github.event.inputs.runner }}-main-
@@ -251,7 +251,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Save benchmark cache
-        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ./cache
           key: benchmark-${{ github.event.inputs.runner }}-main-${{ github.run_id }}
