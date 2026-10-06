@@ -11,7 +11,11 @@ from uuid import uuid4
 
 import sqlalchemy as sa
 
-from immich_memories.automation.models import AutomationAttempt, AutoOutcome
+from immich_memories.automation.models import (
+    NO_ELIGIBLE_CANDIDATES,
+    AutomationAttempt,
+    AutoOutcome,
+)
 from immich_memories.db import Store, from_db, open_store, to_db
 from immich_memories.db.tables import automation_attempts
 from immich_memories.operations.phases import OperationalPhase, PhaseEvent
@@ -191,17 +195,24 @@ class AutomationStateStore:
             .limit(1)
         )
 
-    def get_last_fired_attempt(self) -> AutomationAttempt | None:
-        """Return the most recently started attempt that was not a dry run.
+    def get_last_daily_attempt(self) -> AutomationAttempt | None:
+        """Return the most recent attempt that counts as a day's automation run.
 
-        Used to decide whether the daily timer "already fired today": a
-        "Check eligibility" dry run or `auto run --dry-run` creates an attempt
-        row too, but it generated nothing, so it must not suppress the day's
-        real fire.
+        The daily timer reads it to decide whether today's run already happened. One that
+        ran (running, completed or failed) counts, and so does a decision that nothing is
+        worth a film today. A dry run generated nothing, and a cooldown skip (what most
+        HTTP triggers get back) decided nothing about today, so neither cancels the timer.
         """
+        ran = _ATTEMPTS.outcome.in_(
+            [AutoOutcome.RUNNING.value, AutoOutcome.COMPLETED.value, AutoOutcome.FAILED.value]
+        )
+        decided_nothing = sa.and_(
+            _ATTEMPTS.outcome == AutoOutcome.SKIPPED.value,
+            _ATTEMPTS.reason == NO_ELIGIBLE_CANDIDATES,
+        )
         return self._first(
             sa.select(automation_attempts)
-            .where(_ATTEMPTS.outcome != AutoOutcome.DRY_RUN.value)
+            .where(sa.or_(ran, decided_nothing))
             .order_by(_ATTEMPTS.started_at.desc(), _ATTEMPTS.seq.desc())
             .limit(1)
         )

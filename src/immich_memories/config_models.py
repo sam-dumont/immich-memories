@@ -177,6 +177,12 @@ class ImmichConfig(ImmichConnection):
                 raise ValueError(f"account name {name!r} must be {ACCOUNT_NAME_RULE}")
         return value
 
+    def asset_url(self, asset_id: str | None) -> str | None:
+        """A link straight to one asset in Immich's web app, or None without a server URL."""
+        if not asset_id or not self.url:
+            return None
+        return f"{self.url.rstrip('/')}/photos/{asset_id}"
+
 
 class DatabaseConfig(BaseModel):
     """Where the store lives. Read before the store opens, so never kept in it."""

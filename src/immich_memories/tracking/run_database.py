@@ -18,8 +18,10 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.exc import IntegrityError
 
 from immich_memories.db import Store, open_store, to_db
+from immich_memories.db.leases import Lease
 from immich_memories.db.tables import automation_attempts, phase_stats, pipeline_runs
 from immich_memories.operations.phases import PhaseEvent
+from immich_memories.security import private_temp_dir
 from immich_memories.tracking.models import DeliveryStatus, PhaseStats, RunMetadata
 from immich_memories.tracking.phase_rows import advance_phase
 from immich_memories.tracking.run_database_rows import (
@@ -163,23 +165,46 @@ class RunDatabase:
         with self.store.begin() as conn:
             conn.execute(sa.update(pipeline_runs).where(_RUNS.run_id == run_id).values(values))
 
-    def interrupt_running_runs(self, completed_at: datetime) -> list[str]:
-        """End every `running` row as `interrupted`; the ids it ended, oldest first."""
-        with self.store.begin() as conn:
-            ids: list[str] = list(
+    def run_lease(self, run_id: str) -> Lease:
+        """The lease a run's owning process holds while the run is `running`.
+
+        The operating system or the server drops it when that process dies, which is how
+        `interrupt_orphaned_runs` tells a dead run from a slow one.
+        """
+        database = self.store.location.sqlite_path
+        # A PostgreSQL lease never touches the file; an in-memory SQLite store has no directory.
+        directory = database.parent / "run-leases" if database else private_temp_dir("run-leases")
+        return Lease(f"run:{run_id}", directory / f"{run_id}.lock", self.store)
+
+    def running_run_ids(self) -> list[str]:
+        """Every run still recorded `running`, oldest first."""
+        with self.store.connect() as conn:
+            return list(
                 conn.execute(
                     sa.select(_RUNS.run_id)
                     .where(_RUNS.status == "running")
                     .order_by(_RUNS.created_at)
                 ).scalars()
             )
-            if ids:
+
+    def interrupt_runs(self, run_ids: Sequence[str], completed_at: datetime) -> list[str]:
+        """End these runs as `interrupted` if they still read `running`; the ids it ended."""
+        if not run_ids:
+            return []
+        with self.store.begin() as conn:
+            still: set[str] = set(
                 conn.execute(
-                    sa.update(pipeline_runs)
-                    .where(_RUNS.run_id.in_(ids), _RUNS.status == "running")
-                    .values(status="interrupted", completed_at=to_db(completed_at))
-                )
-        return ids
+                    sa.select(_RUNS.run_id).where(
+                        _RUNS.run_id.in_(run_ids), _RUNS.status == "running"
+                    )
+                ).scalars()
+            )
+            conn.execute(
+                sa.update(pipeline_runs)
+                .where(_RUNS.run_id.in_(still), _RUNS.status == "running")
+                .values(status="interrupted", completed_at=to_db(completed_at))
+            )
+        return [run_id for run_id in run_ids if run_id in still]
 
     def _transition(
         self,

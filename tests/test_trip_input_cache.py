@@ -6,9 +6,12 @@ import json
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, create_autospec, patch
+
+import pytest
 
 from immich_memories.api.models import Asset, AssetType, ExifInfo, TimeBucket
+from immich_memories.api.sync_client import SyncImmichClient
 from immich_memories.timeperiod import DateRange
 
 
@@ -38,6 +41,15 @@ def _fingerprint(server: str = "https://immich.example", api_key: str = "api-key
     from immich_memories.automation.trip_input_cache import source_fingerprint
 
     return source_fingerprint(server, api_key, _buckets())
+
+
+def _client() -> MagicMock:
+    """A client fake that rejects any call the real `SyncImmichClient` would reject."""
+    # WHY: replaces the Immich HTTP boundary; autospec keeps a drifted keyword failing here.
+    client = create_autospec(SyncImmichClient, instance=True)
+    client.api_key = "api-key-one"
+    client._async_client = MagicMock()
+    return client
 
 
 def test_cache_reuses_unchanged_snapshot_and_filters_current_window(tmp_path: Path) -> None:
@@ -141,14 +153,14 @@ def test_load_or_fetch_avoids_second_full_year_query_when_unchanged(tmp_path: Pa
     from immich_memories.automation.trip_input_cache import load_or_fetch_trip_assets
 
     now = datetime(2026, 8, 12, 3, tzinfo=UTC)
-    client = MagicMock()
-    client.api_key = "api-key-one"
+    client = _client()
     client.search_metadata.return_value.total = 0
     query = object()
     service = MagicMock()
     service.get_assets_for_date_range.return_value = query
     client._run.return_value = [_asset("trip-photo", datetime(2026, 1, 5, tzinfo=UTC))]
 
+    # WHY: the paged Immich bulk read; the cache around it is under test.
     with patch("immich_memories.api.all_assets_service.AllAssetsService", return_value=service):
         first = load_or_fetch_trip_assets(
             client,
@@ -177,8 +189,7 @@ def test_changed_bucket_count_refetches_and_replaces_snapshot(tmp_path: Path) ->
     from immich_memories.automation.trip_input_cache import load_or_fetch_trip_assets
 
     now = datetime(2026, 8, 12, 3, tzinfo=UTC)
-    client = MagicMock()
-    client.api_key = "api-key-one"
+    client = _client()
     query = object()
     service = MagicMock()
     service.get_assets_for_date_range.return_value = query
@@ -187,6 +198,7 @@ def test_changed_bucket_count_refetches_and_replaces_snapshot(tmp_path: Path) ->
         [_asset("second", datetime(2026, 1, 6, tzinfo=UTC))],
     ]
 
+    # WHY: the paged Immich bulk read; the cache around it is under test.
     with patch("immich_memories.api.all_assets_service.AllAssetsService", return_value=service):
         load_or_fetch_trip_assets(
             client,
@@ -215,14 +227,14 @@ def test_same_count_metadata_update_forces_full_refetch(tmp_path: Path) -> None:
     from immich_memories.automation.trip_input_cache import load_or_fetch_trip_assets
 
     now = datetime(2026, 8, 12, 3, tzinfo=UTC)
-    client = MagicMock()
-    client.api_key = "api-key-one"
+    client = _client()
     client.search_metadata.return_value.total = 1
     client._run.side_effect = [
         [_asset("before-edit", datetime(2026, 1, 5, tzinfo=UTC))],
         [_asset("after-edit", datetime(2026, 1, 5, tzinfo=UTC), latitude=40.71)],
     ]
 
+    # WHY: the paged Immich bulk read; the cache around it is under test.
     with patch("immich_memories.api.all_assets_service.AllAssetsService") as service_type:
         service_type.return_value.get_assets_for_date_range.side_effect = [object(), object()]
         load_or_fetch_trip_assets(
@@ -251,10 +263,10 @@ def test_fetch_covers_daily_window_through_cache_horizon(tmp_path: Path) -> None
     from immich_memories.automation.trip_input_cache import load_or_fetch_trip_assets
 
     now = datetime(2026, 8, 12, 3, tzinfo=UTC)
-    client = MagicMock()
-    client.api_key = "api-key-one"
+    client = _client()
     client._run.return_value = []
 
+    # WHY: the paged Immich bulk read; the cache around it is under test.
     with patch("immich_memories.api.all_assets_service.AllAssetsService") as service_type:
         load_or_fetch_trip_assets(
             client,
@@ -310,13 +322,14 @@ def test_freshness_probe_failure_falls_back_to_full_fetch(tmp_path: Path) -> Non
     from immich_memories.automation.trip_input_cache import load_or_fetch_trip_assets
 
     now = datetime(2026, 8, 12, 3, tzinfo=UTC)
-    client = MagicMock(api_key="api-key-one")
+    client = _client()
     client.search_metadata.side_effect = OSError("connection reset")
     client._run.side_effect = [
         [_asset("cached", datetime(2026, 1, 5, tzinfo=UTC))],
         [_asset("refetched", datetime(2026, 1, 6, tzinfo=UTC))],
     ]
 
+    # WHY: the paged Immich bulk read; the cache around it is under test.
     with patch("immich_memories.api.all_assets_service.AllAssetsService") as service_type:
         service_type.return_value.get_assets_for_date_range.side_effect = [object(), object()]
         load_or_fetch_trip_assets(
@@ -365,3 +378,31 @@ def test_concurrent_writers_leave_one_complete_valid_snapshot(tmp_path: Path) ->
     assert loaded is not None
     assert [asset.id for asset in loaded.assets] in (["writer-one"], ["writer-two"])
     assert list(cache.path.parent.glob(".assets-*.tmp")) == []
+
+
+@pytest.mark.parametrize("client_type", ["ImmichClient", "SyncImmichClient"])
+def test_both_clients_accept_the_freshness_probe(client_type: str) -> None:
+    """The cache asks Immich for assets updated since the snapshot; both clients must take it."""
+    import inspect
+
+    import immich_memories.api.immich as immich
+
+    method = getattr(immich, client_type).search_metadata
+    inspect.signature(method).bind(
+        None, updated_after=datetime(2026, 8, 12, tzinfo=UTC), page=1, size=1
+    )
+
+
+def test_the_sync_client_takes_exactly_what_the_async_client_takes() -> None:
+    import inspect
+
+    from immich_memories.api.immich import ImmichClient
+
+    def keywords(method) -> dict[str, object]:
+        return {
+            name: parameter.default
+            for name, parameter in inspect.signature(method).parameters.items()
+            if name != "self"
+        }
+
+    assert keywords(SyncImmichClient.search_metadata) == keywords(ImmichClient.search_metadata)

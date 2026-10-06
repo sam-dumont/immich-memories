@@ -15,7 +15,7 @@ from datetime import date, datetime, time, timedelta
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from immich_memories.automation.models import AutoRunResult
+    from immich_memories.automation.models import AutomationAttempt, AutoRunResult
     from immich_memories.config_loader import Config
 
 logger = logging.getLogger(__name__)
@@ -110,7 +110,12 @@ class InProcessScheduler:
         if now >= slot and self._last_fired_date != now.date():
             # WHY: the durable attempt table is the source of truth across restarts and
             # `docker exec … auto run` — one automation decision per calendar day.
-            self._last_fired_date = await asyncio.to_thread(_last_attempt_local_date, config, now)
+            earlier = await asyncio.to_thread(_last_daily_attempt, config)
+            if (
+                earlier is not None
+                and earlier.started_at.astimezone(now.tzinfo).date() == now.date()
+            ):
+                self._adopt_todays_run(earlier, now)
         if now < slot or self._last_fired_date == now.date():
             self._next_run = slot if now < slot else slot + timedelta(days=1)
             return False
@@ -120,6 +125,20 @@ class InProcessScheduler:
         self._next_run = slot + timedelta(days=1)
         await self._fire(config)
         return True
+
+    def _adopt_todays_run(self, attempt: AutomationAttempt, now: datetime) -> None:
+        """Today's run already happened in another caller: show it, and say why we wait."""
+        self._last_fired_date = now.date()
+        self._last_fired_at = attempt.started_at.astimezone(now.tzinfo)
+        self._last_outcome = attempt.outcome.value
+        self._last_reason = attempt.reason
+        logger.info(
+            "In-process automation: today's run already happened at %s (%s: %s); "
+            "the timer waits for tomorrow",
+            self._last_fired_at.strftime("%H:%M"),
+            attempt.outcome.value,
+            attempt.reason,
+        )
 
     async def _fire(self, config: Config) -> None:
         self._running = True
@@ -148,14 +167,11 @@ class InProcessScheduler:
             await sleep(POLL_SECONDS)
 
 
-def _last_attempt_local_date(config: Config, now: datetime) -> date | None:
+def _last_daily_attempt(config: Config) -> AutomationAttempt | None:
     from immich_memories.automation.state_store import AutomationStateStore
     from immich_memories.db import open_store
 
-    last = AutomationStateStore(open_store(config)).get_last_fired_attempt()
-    if last is None:
-        return None
-    return last.started_at.astimezone(now.tzinfo).date()
+    return AutomationStateStore(open_store(config)).get_last_daily_attempt()
 
 
 def _run_auto_once(config: Config) -> AutoRunResult:
