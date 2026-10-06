@@ -31,7 +31,17 @@ def _evidence(page: Page, name: str) -> None:
     set_theme(page, "light")
 
 
-def test_suggestions_page_offers_the_discovered_candidates(page, launch_app_url):
+def _stand_in_2025(workspace) -> None:
+    """Spotlights read the year before the clock; the fixture's pictures are from 2024."""
+    from tests.e2e.fake_automation import CLOCK_FILE
+
+    clock = workspace.root / "state" / CLOCK_FILE
+    clock.parent.mkdir(parents=True, exist_ok=True)
+    clock.write_text("2025-07-01")
+
+
+def test_suggestions_page_offers_the_discovered_candidates(page, launch_app_url, launch_workspace):
+    _stand_in_2025(launch_workspace)
     page.goto(f"{launch_app_url}/suggestions")
     page.wait_for_url("**/app/suggestions")
     expect(page.get_by_role("heading", name="Suggestions", level=1)).to_be_visible()
@@ -141,6 +151,7 @@ def test_choose_generate_and_read_the_same_automatic_run(
 
 
 def test_variety_rejections_and_all_sidebar_destinations(page, launch_app_url, launch_workspace):
+    _stand_in_2025(launch_workspace)
     from datetime import datetime, timedelta
 
     from immich_memories.tracking import RunDatabase

@@ -1,7 +1,4 @@
 {
-  "src/immich_memories/automation/calendar_detectors.py": {
-    "BirthdayDetector::detect": [17]
-  },
   "src/immich_memories/automation/runner.py": {
     "AutoRunner::_run_one_under_lease": [19]
   },

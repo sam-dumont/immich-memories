@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from unittest.mock import AsyncMock
 
 import pytest
@@ -30,3 +31,19 @@ class TestCountAssetsWithPeople:
         request = AsyncMock(return_value={})
 
         assert await SearchService(request).count_assets_with_people(["p1", "p2"]) == 0
+
+    @pytest.mark.asyncio
+    async def test_a_window_narrows_the_count_to_pictures_taken_in_it(self):
+        # WHY: the Immich HTTP API; the request body is the contract under test.
+        request = AsyncMock(return_value={"total": 7})
+
+        total = await SearchService(request).count_assets_with_people(
+            ["p1"],
+            taken_after=datetime(2025, 1, 1),
+            taken_before=datetime(2025, 12, 31, 23, 59, 59),
+        )
+
+        assert total == 7
+        body = request.await_args.kwargs["json"]
+        assert body["takenAfter"].startswith("2025-01-01T00:00:00")
+        assert body["takenBefore"].startswith("2025-12-31T23:59:59")

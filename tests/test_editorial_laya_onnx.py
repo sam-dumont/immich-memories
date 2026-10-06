@@ -65,6 +65,7 @@ def test_onnx_preserves_input_order_across_length_sorted_batches(monkeypatch, ch
         "onnxruntime",
         SimpleNamespace(
             get_available_providers=lambda: ["CUDAExecutionProvider", "CPUExecutionProvider"],
+            disable_telemetry_events=lambda: None,
             InferenceSession=Session,
         ),
     )
@@ -165,7 +166,9 @@ def test_close_drops_session_and_reloads_same_probabilities(monkeypatch, checkpo
         sys.modules,
         "onnxruntime",
         SimpleNamespace(
-            get_available_providers=lambda: ["CPUExecutionProvider"], InferenceSession=Session
+            get_available_providers=lambda: ["CPUExecutionProvider"],
+            disable_telemetry_events=lambda: None,
+            InferenceSession=Session,
         ),
     )
     scorer = OnnxLayaScorer(checkpoint)

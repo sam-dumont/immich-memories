@@ -92,11 +92,12 @@ class OnnxLayaScorer:
         if self._session is None or self._tokens is None:
             import onnxruntime as ort
 
+            from immich_memories.onnx_session import open_inference_session
             from immich_memories.triage.encoder import provider_chain
 
             chain = provider_chain(self._provider, ort.get_available_providers())
-            self._session = ort.InferenceSession(
-                str(self._checkpoint / "model.onnx"), providers=list(chain)
+            self._session = open_inference_session(
+                ort, self._checkpoint / "model.onnx", providers=list(chain)
             )
             self._tokens = LayaTokens(self._checkpoint)
         return self._session, self._tokens

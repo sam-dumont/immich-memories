@@ -495,6 +495,10 @@ def _handler_type(
                     },
                 )
                 return
+            if path == "/api/search/statistics":
+                # Same filters as the metadata search, answered as Immich does: a count only.
+                self._send_json(200, {"total": len(_assets_for_search(self._read_json()))})
+                return
             if path == "/api/assets":
                 try:
                     upload = self._read_multipart()

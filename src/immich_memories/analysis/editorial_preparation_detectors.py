@@ -189,6 +189,14 @@ def _open_session(
     return session, session.get_inputs()[0].name
 
 
+def _new_session(ort: Any, model_path: Path, options: Any, providers: list[str]) -> Any:
+    # WHY: this file runs in a detector-only interpreter that cannot import immich_memories,
+    # so it cannot use onnx_session.open_inference_session. ONNX Runtime's telemetry sends
+    # HTTP by default and has to be off before the first session exists (#2181).
+    ort.disable_telemetry_events()
+    return ort.InferenceSession(str(model_path), sess_options=options, providers=providers)
+
+
 def _session_on(
     ort: Any, head: str, model_path: Path, options: Any, wanted: tuple[str, ...]
 ) -> Any:
@@ -201,7 +209,7 @@ def _session_on(
     working GPU deployment from outside the pod.
     """
     try:
-        session = ort.InferenceSession(str(model_path), options, providers=list(wanted))
+        session = _new_session(ort, model_path, options, list(wanted))
     except Exception as exc:
         if wanted[0] == CPU_PROVIDER:
             raise
@@ -210,7 +218,7 @@ def _session_on(
             f"{head}: {wanted[0]} refused {model_path.name} "
             f"({type(exc).__name__}: {exc}); deciding on {CPU_PROVIDER}",
         )
-        return ort.InferenceSession(str(model_path), options, providers=[CPU_PROVIDER])
+        return _new_session(ort, model_path, options, [CPU_PROVIDER])
     running = tuple(session.get_providers())
     if running and running[0] != wanted[0]:
         _announce_once(head, f"{head}: asked for {wanted[0]}, running on {running[0]}")

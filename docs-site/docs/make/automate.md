@@ -66,7 +66,7 @@ answers "insufficient permissions", so read the transcript above instead.
 
 ## How it picks one memory
 
-It ranks suitable memories and avoids repeating the same category or person too often. That choice selects the subject; the normal editor still chooses the shots. Trips wait until after you are home and birthdays wait a little for phone uploads.
+It ranks suitable memories and avoids repeating the same category or person too often. That choice selects the subject; the normal editor still chooses the shots. Trips wait until after you are home and birthdays wait a little for phone uploads. A person is only suggested when they have pictures in the period the film would read (last year for a spotlight), and the count shown is for that period, not their lifetime.
 
 **Suggestions** shows each reason. **Check eligibility** previews the checks without rendering, and **Run this suggestion** asks for that candidate. A manual request still respects the automation rules. A check is a dry run: it shows up in the history, and the day's scheduled film still runs at its time.
 

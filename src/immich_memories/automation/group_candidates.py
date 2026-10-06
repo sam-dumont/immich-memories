@@ -37,7 +37,10 @@ class GroupCandidateDetector:
         groups: list[SavedGroup] | None = None,
         person_asset_counts: dict[str, int] | None = None,
     ) -> list[MemoryCandidate]:
-        """Emit one candidate per saved group, skipping any known to have zero assets."""
+        """Emit one candidate per saved group, skipping any with no pictures in last year.
+
+        ``person_asset_counts`` is each member's count for that year, the one the film reads.
+        """
         counts = person_asset_counts or {}
         year = today.year - 1
         start, end = date(year, 1, 1), date(year, 12, 31)

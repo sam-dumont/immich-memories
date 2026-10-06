@@ -24,6 +24,7 @@ from typing import Any
 
 import numpy as np
 
+from immich_memories.onnx_session import open_inference_session
 from immich_memories.speech.models import SpeechRegion
 from immich_memories.speech.vad import VAD_SAMPLE_RATE
 
@@ -250,8 +251,8 @@ class FireRedSpeechDetector:
             importlib.import_module("kaldi_native_fbank")
             import onnxruntime as ort
 
-            self._session = ort.InferenceSession(
-                str(_MODEL_PATH), providers=["CPUExecutionProvider"]
+            self._session = open_inference_session(
+                ort, _MODEL_PATH, providers=["CPUExecutionProvider"]
             )
             return True
         except (ImportError, RuntimeError, OSError) as exc:

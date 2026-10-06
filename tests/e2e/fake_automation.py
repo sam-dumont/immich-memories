@@ -12,10 +12,22 @@ from immich_memories.automation.models import ProcessResult
 FAIL_MARKER = "fail-next-child"
 
 
-class FixtureDate(date):
-    @classmethod
-    def today(cls):
-        return cls(2024, 7, 1)
+# A test that needs the calendar to stand one year later writes an ISO date here: the
+# fixture library is June 2024, so a person-based suggestion (which reads the year before
+# today) only exists once the clock is in 2025.
+CLOCK_FILE = "fixture-clock"
+
+
+def _fixture_date(state_dir: Path) -> type[date]:
+    class FixtureDate(date):
+        @classmethod
+        def today(cls):
+            clock = state_dir / CLOCK_FILE
+            if clock.is_file():
+                return cls.fromisoformat(clock.read_text().strip())
+            return cls(2024, 7, 1)
+
+    return FixtureDate
 
 
 def _child_that_opened_its_run_then_failed(command: list[str]) -> ProcessResult:
@@ -46,7 +58,7 @@ def install_fake_automation(config_path: Path, state_dir: Path) -> None:
     from immich_memories.self_command import self_command
     from tests.e2e.cli_bootstrap import CLI_BOOTSTRAP
 
-    candidate_discovery.date = FixtureDate
+    candidate_discovery.date = _fixture_date(state_dir)
     # WHY: naming the fixture's lake must not contact the public Nominatim service.
     place_geocoder.nominatim_fetch = lambda *_args, **_kwargs: (
         lambda *_point: {
