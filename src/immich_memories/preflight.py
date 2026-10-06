@@ -666,6 +666,7 @@ def run_preflight_checks(config: Config) -> list[CheckResult]:
     from immich_memories.preflight_config_keys import check_unknown_config_keys
     from immich_memories.preflight_homebase import check_homebase
     from immich_memories.preflight_immich import check_immich
+    from immich_memories.preflight_laya import check_laya
     from immich_memories.preflight_music import check_music
     from immich_memories.preflight_network import outside_call_checks
     from immich_memories.preflight_render import check_render_worker
@@ -693,6 +694,7 @@ def run_preflight_checks(config: Config) -> list[CheckResult]:
         check_detector_export(config),
         check_detector_interpreter(config),
         check_caption_endpoint(config),
+        check_laya(config),
         check_host_paths(config),
         check_store_location(config),
         check_output_directory(config.output.output_path),

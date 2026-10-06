@@ -40,6 +40,32 @@ CHECKPOINT_SET = hashlib.sha256(
 ).hexdigest()[:16]
 
 
+def pinned_directory(root: Path) -> Path:
+    """Where the pinned snapshot lives under ACE-Step's checkpoint root."""
+    return root / f"pinned-{CHECKPOINT_SET}"
+
+
+def _components(dit_model: str, lm_model: str | None) -> tuple[list[str], list[str]]:
+    requested = [name for name in (dit_model, lm_model) if name]
+    extra = [name for name in requested if name not in _MAIN_COMPONENTS]
+    return [*_MAIN_COMPONENTS, *extra], extra
+
+
+def missing_pinned_components(root: Path, dit_model: str, lm_model: str | None) -> list[str]:
+    """The components a local render would load that have no weights on disk yet.
+
+    The same rule the render applies after fetching, so a check that reports nothing
+    missing here is one a render will not fail on.
+    """
+    directory = pinned_directory(root)
+    names, _extra = _components(dit_model, lm_model)
+    return [
+        name
+        for name in names
+        if not any((directory / name / filename).is_file() for filename in _WEIGHT_FILES)
+    ]
+
+
 @contextmanager
 def pinned_checkpoints(root: Path, dit_model: str, lm_model: str | None) -> Iterator[Path]:
     """Download only immutable revisions and point ACE-Step at their complete local tree.
@@ -47,15 +73,14 @@ def pinned_checkpoints(root: Path, dit_model: str, lm_model: str | None) -> Iter
     The original cache stays untouched. Download errors propagate before either handler
     starts, and a partial cache is refused rather than letting upstream fetch latest.
     """
-    requested = [name for name in (dit_model, lm_model) if name]
-    extra = [name for name in requested if name not in _MAIN_COMPONENTS]
+    _names, extra = _components(dit_model, lm_model)
     for name in extra:
         if f"ACE-Step/{name}" not in CHECKPOINT_REVISIONS:
             raise ValueError(f"No pinned ACE-Step checkpoint for {name!r}")
 
     from huggingface_hub import snapshot_download
 
-    directory = root / f"pinned-{CHECKPOINT_SET}"
+    directory = pinned_directory(root)
     downloads = [
         (MAIN_REPO, directory),
         *[(f"ACE-Step/{name}", directory / name) for name in extra],
@@ -64,9 +89,8 @@ def pinned_checkpoints(root: Path, dit_model: str, lm_model: str | None) -> Iter
         snapshot_download(
             repo_id=repo, revision=CHECKPOINT_REVISIONS[repo], local_dir=str(destination)
         )
-    for name in (*_MAIN_COMPONENTS, *extra):
-        if not any((directory / name / filename).is_file() for filename in _WEIGHT_FILES):
-            raise RuntimeError(f"Pinned ACE-Step snapshot is incomplete: {name}")
+    if missing := missing_pinned_components(root, dit_model, lm_model):
+        raise RuntimeError(f"Pinned ACE-Step snapshot is incomplete: {missing[0]}")
 
     previous = os.environ.get("ACESTEP_CHECKPOINTS_DIR")
     os.environ["ACESTEP_CHECKPOINTS_DIR"] = str(directory)
