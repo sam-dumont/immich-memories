@@ -1,6 +1,6 @@
 # Architecture Guide
 
-> This document is optimized for LLM consumption. Reference it from CLAUDE.md
+> This document is optimized for LLM consumption. Reference it from AGENTS.md
 > to avoid re-reading the full codebase each session.
 
 ## Human overview
@@ -1360,14 +1360,14 @@ settings path; the Terraform deployment uses the same layout.
 - **Max file length**: 800 lines soft / 1000 hard (enforced in CI via `make file-length`)
 - **Max complexity**: Xenon grade C (<=20 cyclomatic complexity, `make complexity`)
 - **Cognitive complexity**: complexipy ≤15 per function (`make cognitive-complexity`)
-- **Makefile**: Single source of truth for all commands (CI, pre-commit, CLAUDE.md)
+- **Makefile**: Single source of truth for all commands (CI, pre-commit, AGENTS.md)
 - **Composition**: Top-level orchestrators compose service objects via constructor injection
 - **Re-export shims**: Only in `__init__.py` — never in regular modules
 - **No `_`-prefixed overflow files**: All files have descriptive names
 - **Private helpers**: Prefixed with `_`, same package
 - **Tests**: `tests/` directory, run with `make test`
 - **Free-text evaluation**: `tests/free_text/prompts/*.json`, one recorded prompt per file (the request, the model's banked answers keyed by a phrase of their question, the expected spans/links/subject/funnel/pool/verdict/film); `test_prompts.py` translates each against the invented household in `eval_library.py`, the model faked once in `banked.py` (`recorded()`)
-- **Integration tests**: run manually with `make test-integration*` (per-suite folders under `tests/integration/`, see CLAUDE.md); also run on the self-hosted GPU runner. Not a pre-commit hook.
+- **Integration tests**: run manually with `make test-integration*` (per-suite folders under `tests/integration/`, see AGENTS.md); also run on the self-hosted GPU runner. Not a pre-commit hook.
 - **Real-Immich gate**: `make test-immich-gate` (`tests/integration/immich_gate/`: compose file, `seed.py`, `media.py`) runs on every PR against Immich v2 and v3 in Docker, each with the store on SQLite and on PostgreSQL (`IMMICH_GATE_DATABASE`; `.github/workflows/immich-gate.yml`, required check `Immich Gate`); the pinned images ride in the Actions cache per version (`scripts/immich_gate_images.sh`, `make immich-gate-fetch`/`immich-gate-save`).
 - **Launch check per backend**: `make launch-check-ci` (SQLite) and `make launch-check-ci-postgres` (each launch workspace gets its own schema in `IMMICH_MEMORIES_E2E_DATABASE_URL`); CI job `Hermetic Launch Check (sqlite|postgresql)`. `scripts/with_throwaway_postgres.sh` starts the throwaway `postgres:16` for this, `make test-store` and the gate.
 - **Container e2e**: `make test-container` (`tests/container/`, marker `container`) builds the image and runs it from `docker-compose.yml` on a legacy volume: first-start import and `store import --verify`, `store backup`/`restore` in the image, the trigger API called by the CronJob's curl. `CONTAINER_E2E_DATABASE=postgresql` switches on the compose file's PostgreSQL example; CI job `Container E2E (sqlite|postgresql)`.

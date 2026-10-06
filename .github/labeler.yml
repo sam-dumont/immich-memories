@@ -14,13 +14,13 @@ area/processing:
   - changed-files:
       - any-glob-to-any-file: 'src/immich_memories/processing/**'
 
-area/ui:
+area/web:
   - changed-files:
-      - any-glob-to-any-file: 'src/immich_memories/ui/**'
+      - any-glob-to-any-file: ['web/**', 'src/immich_memories/web/**']
 
 area/cli:
   - changed-files:
-      - any-glob-to-any-file: 'src/immich_memories/cli.py'
+      - any-glob-to-any-file: 'src/immich_memories/cli/**'
 
 # Type labels
 documentation:
