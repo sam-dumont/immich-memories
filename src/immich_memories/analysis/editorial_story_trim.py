@@ -9,6 +9,7 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping
 from typing import Any
 
+from immich_memories.analysis.editorial_structure_budget import hold_floor
 from immich_memories.analysis.editorial_thin_vote import sole_era_shots
 
 
@@ -19,6 +20,7 @@ def trim_to_timing_budget(
     protected: frozenset[str] = frozenset(),
     vouched: Callable[[Mapping[str, Any]], bool] = lambda _carrier: True,
     era_of: Callable[[str], str | None] | None = None,
+    floor_for_stills: float | None = None,
 ) -> tuple[list[dict], list[dict]]:
     """Drop carriers until their minimum content fits the production content budget of what remains.
 
@@ -29,15 +31,15 @@ def trim_to_timing_budget(
     A favourite is never a victim while a picture nothing vouches for (`vouched`) remains: the
     owner's star outranks the allocation's order. In a film that gives every partition a voice
     (`era_of`), a partition's only shot goes after every other. A dropped carrier carries the
-    reason it was cut, which the selection sheet prints.
+    reason it was cut, which the selection sheet prints. `floor_for_stills`, when given, is a
+    still's minimum instead of `min_seconds`: a longer photo duration keeps fewer stills.
     """
-    from immich_memories.speech.cuts import minimum_duration
 
     kept = carriers.copy()
     dropped: list[dict] = []
     while kept:
         budget = content_budget_of(kept)
-        if sum(minimum_duration(c, min_seconds) for c in kept) <= budget + 1e-6:
+        if _minimum_content(kept, min_seconds, floor_for_stills) <= budget + 1e-6:
             break
         counts: dict[str, int] = {}
         for c in kept:
@@ -73,6 +75,19 @@ def trim_to_timing_budget(
             }
         )
     return kept, dropped
+
+
+def _minimum_content(
+    carriers: list[dict], min_seconds: float, floor_for_stills: float | None
+) -> float:
+    from immich_memories.speech.cuts import minimum_duration
+
+    return sum(
+        minimum_duration(
+            c, min_seconds if floor_for_stills is None else hold_floor(c, floor_for_stills)
+        )
+        for c in carriers
+    )
 
 
 _DROP_ORDER = {"none": 0, "glimpse": 1, "minor": 2, "major": 3, "dominant": 4}

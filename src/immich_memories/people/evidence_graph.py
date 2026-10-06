@@ -10,18 +10,29 @@ from typing import TYPE_CHECKING, Any
 from immich_memories.security import write_secret_file
 
 if TYPE_CHECKING:
+    from immich_memories.db.bootstrap import StoreLocation
     from immich_memories.people.graph import PeopleGraph, PersonNode
 
 SCHEMA_VERSION = 1
 
 
-def default_evidence_graph_path() -> Path:
-    """Where a scan writes its measurements.
+def default_evidence_graph_path(location: StoreLocation | None = None) -> Path:
+    """Where a scan writes its measurements: beside the selected store, not a fixed home.
 
     A file, not a store table: every scan recomputes all of it from Immich, and nothing
-    reads it back at run time. It is there for a person reviewing relationships.
+    reads it back at run time. It is there for a person reviewing relationships. It must
+    land next to whatever store this run picked -- `--config`, `IMMICH_MEMORIES_DATABASE_URL`
+    -- never a hardcoded `~/.immich-memories` (#2151), or a scan against one store silently
+    overwrites another's file. A SQLite store's directory is used directly; a store with no
+    local file (PostgreSQL, in-memory) falls back to the loaded config's own directory,
+    matching how the store itself picks a default location (`_default_store_url`).
     """
-    return Path.home() / ".immich-memories" / "people-graph.json"
+    from immich_memories.config_loader import config_state_dir
+    from immich_memories.db.bootstrap import resolve_location
+
+    location = location or resolve_location()
+    directory = location.sqlite_path.parent if location.sqlite_path else config_state_dir()
+    return directory / "people-graph.json"
 
 
 def save_evidence_graph(

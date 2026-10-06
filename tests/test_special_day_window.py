@@ -236,3 +236,32 @@ def test_an_entry_from_before_windows_existed_still_reads(tmp_path) -> None:
 
 # Which runs the sequence reader names is not these tests' subject (#1093).
 pytestmark = pytest.mark.usefixtures("every_run_an_occasion")
+
+
+def test_a_day_one_year_back_reads_one_year_ago(tmp_path) -> None:
+    save_catalogue([{"day": "2024-06-12", "title": "A day out"}])
+
+    printed = _days_due("2025-06-12")
+
+    assert "1 year ago" in printed
+    assert "1 years ago" not in printed
+
+
+def test_the_hours_shown_beside_a_window_are_the_window_s_own(tmp_path) -> None:
+    """A forty-minute window printed next to the day's seven active hours reads as a contradiction."""
+    save_catalogue(
+        [
+            {
+                "day": "2015-06-12",
+                "title": "A day out",
+                "photos": 133,
+                "active_hours": 7,
+                "window": ["2015-06-12T15:34:00", "2015-06-12T16:14:00"],
+            }
+        ]
+    )
+
+    printed = _days_due("2025-06-12")
+
+    assert "15:34-16:14  40m" in printed
+    assert "7h" not in printed

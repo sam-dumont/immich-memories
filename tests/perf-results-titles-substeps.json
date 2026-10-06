@@ -1,21 +1,21 @@
 {
-  "timestamp": "2026-09-17T15:48:50",
+  "timestamp": "2026-10-06T01:31:07",
   "substeps": {
-    "content_backed__slowmo_init": 0.07615679100854322,
-    "content_backed__catmull_rom": 0.5760327079915442,
-    "content_backed__catmull_rom_avg_ms": 5.482499125147505,
-    "content_backed__catmull_rom_p95_ms": 6.149374996311963,
-    "content_backed__kernel_render": 0.985380084021017,
-    "content_backed__kernel_avg_ms": 9.37863050494343,
-    "content_backed__kernel_p95_ms": 9.936458023730665,
-    "content_backed__kernel_first_ms": 37.21737494925037,
-    "content_backed__full_title": 1.4965749169932678,
-    "content_backed__output_mb": 9.325982093811035,
-    "gradient__kernel_render": 0.8288477080059238,
-    "gradient__kernel_avg_ms": 7.887091256478535,
-    "gradient__kernel_p95_ms": 7.926916994620115,
-    "gradient__kernel_first_ms": 31.02962503908202,
-    "gradient__full_title": 1.22951379197184,
-    "gradient__output_mb": 10.707414627075195
+    "content_backed__slowmo_init": 0.07319704198744148,
+    "content_backed__catmull_rom": 0.5535447499714792,
+    "content_backed__catmull_rom_avg_ms": 5.268057182963405,
+    "content_backed__catmull_rom_p95_ms": 5.98854199051857,
+    "content_backed__kernel_render": 0.8933592080138624,
+    "content_backed__kernel_avg_ms": 8.503085346005502,
+    "content_backed__kernel_p95_ms": 9.824500069953501,
+    "content_backed__kernel_first_ms": 38.51841692812741,
+    "content_backed__full_title": 1.2078485420206562,
+    "content_backed__output_mb": 7.657355308532715,
+    "gradient__kernel_render": 0.8217994159786031,
+    "gradient__kernel_avg_ms": 7.821117454607571,
+    "gradient__kernel_p95_ms": 7.866292027756572,
+    "gradient__kernel_first_ms": 30.974291963502765,
+    "gradient__full_title": 1.0532773329177871,
+    "gradient__output_mb": 10.924355506896973
   }
 }

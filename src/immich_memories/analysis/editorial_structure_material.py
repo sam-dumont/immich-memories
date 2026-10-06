@@ -60,9 +60,12 @@ STILL_SECONDS = NOMINAL_STILL_SECONDS
 # the existing fit and shave can move, so a varied film still lands on its target.
 LONGEST_STILL_SECONDS = NOMINAL_STILL_SECONDS + 1.0
 STILL_KINDS = ("still", "live-still")
+EMPTY_SCENE_GIVES_BACK = NOMINAL_STILL_SECONDS - MIN_CARRIER_SECONDS
 
 
-def rules_still_seconds(*, favourite: bool, known_people: bool) -> float:
+def rules_still_seconds(
+    *, favourite: bool, known_people: bool, nominal: float = STILL_SECONDS
+) -> float:
     """How long the no-model reader holds one still.
 
     Every still was held for exactly four seconds, so 82 % of a CPU-only film's shots were the
@@ -72,7 +75,7 @@ def rules_still_seconds(*, favourite: bool, known_people: bool) -> float:
     where seven pictures in eight are starred, lengthening the common case spends the film's
     seconds on fewer days, and a day lost is worse than a beat gained.
     """
-    return STILL_SECONDS if favourite or known_people else MIN_CARRIER_SECONDS
+    return nominal if favourite or known_people else nominal - EMPTY_SCENE_GIVES_BACK
 
 
 def raw_centiseconds(duration: float) -> float:
@@ -85,16 +88,18 @@ def raw_centiseconds(duration: float) -> float:
     return math.floor(duration * 100) / 100
 
 
-def hold_the_ends(carriers: Sequence[dict]) -> None:
+def hold_the_ends(carriers: Sequence[dict], *, nominal: float = STILL_SECONDS) -> None:
     """Hold the film's first and last still half a second longer, in place.
 
     An opening and a closing frame are read rather than glanced at. A clip keeps the length its
-    own material gave it. This runs once the film is settled, so the shave that follows can take
+    own material gave it. A still is never held more than a second past the nominal hold.
+    This runs once the film is settled, so the shave that follows can take
     the half second back if the target leaves no room for it.
     """
     for carrier in {id(c): c for c in (list(carriers[:1]) + list(carriers[-1:]))}.values():
         if carrier["kind"] in STILL_KINDS:
-            set_duration(carrier, min(carrier["seconds"] + 0.5, LONGEST_STILL_SECONDS))
+            longest = nominal + LONGEST_STILL_SECONDS - NOMINAL_STILL_SECONDS
+            set_duration(carrier, min(carrier["seconds"] + 0.5, longest))
 
 
 @dataclass
@@ -212,6 +217,7 @@ class UnitBuilder:
         self._resolve_motion = ports.resolve_motion
         self._thumbnail_hash = ports.thumbnail_hash
         self._window = source.config.photos.burst_window_seconds
+        self._nominal_still = source.config.photos.duration
         self._threshold = source.config.photos.burst_hash_threshold
         self._never_auto = never_auto
         self._document_sources = document_sources
@@ -226,13 +232,14 @@ class UnitBuilder:
         return sharp * max(0.0, 1.0 - abs(bright - 118.0) / 92.0)
 
     def _still_hold(self, asset_ids: Sequence[str]) -> float:
-        """A model film holds every still for the nominal four seconds; a rules film varies it."""
+        """A model film holds every still for the configured photo duration; a rules film varies it."""
         if not self._rules_reader:
-            return STILL_SECONDS
+            return self._nominal_still
         assets = [self._assets[a] for a in asset_ids if a in self._assets]
         return rules_still_seconds(
             favourite=any(a.is_favorite for a in assets),
             known_people=any(a.people or a.faces for a in assets),
+            nominal=self._nominal_still,
         )
 
     def _thumb_hash(self, asset_id: str):

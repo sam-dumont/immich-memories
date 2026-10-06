@@ -183,13 +183,16 @@ def _by_id(candidates) -> dict:
     return {candidate.asset_id: candidate for candidate in candidates}
 
 
-def test_a_run_that_names_no_accounts_reads_the_primary_as_before(tmp_path, immich_server):
+def test_a_run_that_names_no_accounts_reads_only_what_the_primary_owns(tmp_path, immich_server):
+    """Immich's own partner sharing can put the partner's and grandma's pictures on the
+    primary's timeline (see LIBRARY above). A run that named no accounts promised primary
+    only (docs: "Omitting accounts reads primary only"), so neither belongs in the source
+    (#2143)."""
     source = _by_id(_source(tmp_path))
 
-    assert set(source) == {"own-photo", "own-video", "shared", "grandma-photo"}
+    assert set(source) == {"own-photo", "own-video"}
     assert set(immich_server.searched_by) == {"user-primary"}
     assert all(candidate.source.access_accounts == () for candidate in source.values())
-    assert "access_accounts" not in source["shared"].source.model_dump(mode="json")
 
 
 def test_a_household_run_reads_each_chosen_account_and_tags_who_returned_it(

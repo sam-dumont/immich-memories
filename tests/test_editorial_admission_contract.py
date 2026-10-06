@@ -29,13 +29,12 @@ def test_otd_admission_renders_original_occurrences_without_final_year_limit():
     )
     assert intent.admission_prompt_block(windows) == legacy.prompt_block()
     assert "selection limit:" not in intent.admission_prompt_block(windows)
-    assert "at most 1 selected carrier per calendar year" in intent.prompt_block()
     assert [p.key for p in intent.partitions] == ["year-2030", "year-2032"]
     assert intent.identity() != legacy.identity()
 
 
 def test_real_planner_budget_only_changes_leave_occurrence_tiers_equal_without_ballots(tmp_path):
-    source = make_source(tmp_path / "limited")
+    source = make_source(tmp_path / "limited", per_year_limit=1)
     limited_judge = ControlledStoryJudge()
     limited = run(source, limited_judge)
     unlimited_source = replace(

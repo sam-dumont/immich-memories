@@ -26,7 +26,7 @@ from immich_memories.titles.title_source import TitleSource, override_source
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["resolve_film_title"]
+__all__ = ["holiday_title", "resolve_film_title", "template_title"]
 
 
 def _descriptions(clips: list[Any]) -> list[str]:
@@ -301,3 +301,63 @@ def resolve_film_title(
     ):
         return fallback[0], fallback[1], TitleSource.FALLBACK
     return model_result
+
+
+def holiday_title(
+    preset_params: dict, memory_type: str | None, end: Any, locale: str
+) -> tuple[str, str] | None:
+    """A holiday film's own occasion title and subtitle, or None when it is not one.
+
+    No fallback occasion: a holiday that arrives without its parameter keeps the
+    template's own title rather than claiming to be somebody's Christmas.
+    """
+    holiday = preset_params.get("holiday")
+    if memory_type != "holiday" or not end or not holiday:
+        return None
+    from immich_memories.memory_types.factory import holiday_label
+    from immich_memories.titles.text_builder import title_pattern
+
+    return holiday_label(holiday, end.year, locale), title_pattern("on_this_day_subtitle", locale)
+
+
+def template_title(
+    config: Config,
+    *,
+    memory_type: str | None,
+    date_range: DateRange,
+    person_name: str | None,
+    preset_params: dict | None = None,
+) -> tuple[str, str | None]:
+    """The title and subtitle the render's template layers write when nothing names the film.
+
+    The same inputs the title screen reads, so a plan that stops before rendering can say
+    what the film opens on instead of "from the template" (#2153).
+    """
+    from immich_memories.filename_builder import build_title_person_name
+    from immich_memories.generate_privacy import generate_trip_title_text
+    from immich_memories.titles.text_builder import generate_title, infer_selection_type
+
+    params = preset_params or {}
+    locale = resolve_film_locale(config.title_screens.locale)
+    if occasion := holiday_title(params, memory_type, date_range.end, locale):
+        return occasion
+    if memory_type == "trip" and (trip := generate_trip_title_text(params, locale)):
+        return trip, None
+    name = build_title_person_name(
+        memory_type=memory_type,
+        preset_params=params,
+        person_name=person_name,
+        use_first_name_only=config.title_screens.use_first_name_only,
+    )
+    selection = infer_selection_type(
+        start_date=date_range.start, end_date=date_range.end, memory_type=memory_type
+    )
+    info = generate_title(
+        selection,
+        start_date=date_range.start,
+        end_date=date_range.end,
+        person_name=name,
+        locale=locale,
+        hemisphere=config.trips.hemisphere,
+    )
+    return info.main_title, info.subtitle or None

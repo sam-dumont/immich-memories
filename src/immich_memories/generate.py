@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, Literal, overload
 
 from immich_memories.db import Store, open_store
 from immich_memories.db.leases import Lease, LeaseHeldError
-from immich_memories.generate_clips import cleanup_temp_clips, cleanup_temp_dirs
+from immich_memories.generate_clips import cleanup_temp_clips, cleanup_temp_dirs, keep_temp_clips
 from immich_memories.generate_delivery import (
     _deliver_with_operational_progress,
     _safe_delivery_message,
@@ -419,7 +419,10 @@ def _clear_run_intermediates(
 ) -> None:
     """Cleanup never masks the outcome of the run it is closing."""
     try:
-        cleanup_temp_clips(assembly_clips)
+        if params.debug_preserve_intermediates:
+            keep_temp_clips(assembly_clips, run_output_dir / ".intermediates")
+        else:
+            cleanup_temp_clips(assembly_clips)
     except OSError:
         logger.debug("Temp clip cleanup failed", exc_info=True)
     try:

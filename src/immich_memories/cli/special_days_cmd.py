@@ -5,7 +5,7 @@ from __future__ import annotations
 import calendar
 import json
 import sys
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -168,14 +168,25 @@ def _register_transfer(main: click.Group) -> None:
         print_success(f"{len(records)} catalogue records imported from {source}")
 
 
+def _length(start: datetime, end: datetime) -> str:
+    minutes = round((end - start).total_seconds() / 60)
+    hours, minutes = divmod(minutes, 60)
+    if not hours:
+        return f"{minutes}m"
+    return f"{hours}h{minutes:02d}" if minutes else f"{hours}h"
+
+
 def _print_anniversary(entry: DiscoveredDay, years: int) -> None:
-    line = f"[bold]{years} years ago[/bold]  {entry.day}  {entry.title or entry.what}"
+    ago = "1 year ago" if years == 1 else f"{years} years ago"
+    line = f"[bold]{ago}[/bold]  {entry.day}  {entry.title or entry.what}"
     if not judged_by_this_build(entry):
         line += "  [yellow]stale[/yellow]"
+    # The window is what a film of this day is cut from, so the length beside it is the
+    # window's; the day's active hours would contradict it.
     if entry.window:
         start, end = entry.window
-        line += f"  [dim]{start:%H:%M}-{end:%H:%M}[/dim]"
-    if entry.active_hours:
+        line += f"  [dim]{start:%H:%M}-{end:%H:%M}  {_length(start, end)}[/dim]"
+    elif entry.active_hours:
         line += f"  [dim]{entry.active_hours}h[/dim]"
     console.print(line)
     if entry.event_id is not None:

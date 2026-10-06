@@ -26,6 +26,12 @@ in that order, and on a Mac with none of those set, the macOS language setting i
 container usually starts with none of them set, so it renders English titles until you set
 `title_screens.locale` or the container's `LANG`.
 
+A trip is named at one scale (a town, a region, a country, whichever fits how far its pictures
+spread) and every part of that name is shown in this same configured language, in the opening
+title, the trip picker in the web UI, and the discovery table a `generate --memory-type trip`
+run prints before cutting one. A French film never shows a region translated next to its
+country in English, or the other way round.
+
 ## Opening and closing fades
 
 Choose **Opening and closing fade** under **Render**: white, black, or **As configured**. This changes the fade at both ends of the title sequence for this film. Title screens must be enabled.

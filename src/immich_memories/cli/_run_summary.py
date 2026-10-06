@@ -18,7 +18,7 @@ from __future__ import annotations
 from immich_memories.analysis.llm_metrics import LLMCounters
 from immich_memories.operations.storyboard import Storyboard, storyboard_lines
 
-__all__ = ["render_llm_totals", "render_run_summary"]
+__all__ = ["render_cut_ending", "render_llm_totals", "render_run_summary"]
 
 _NO_SPEND = LLMCounters()
 
@@ -187,6 +187,15 @@ def render_run_summary(
 
 
 _SUMMARY_SHOTS = 8
+
+
+def render_cut_ending(
+    *, storyboard: Storyboard | None, run_id: str | None, review_before_sharing: int
+) -> str:
+    """The CHECK line and the cut in order: how every run ends, rendered or not (#2153)."""
+    lines = _review_lines(review_before_sharing, run_id)
+    lines.extend(_storyboard_lines(storyboard, run_id))
+    return "\n".join(lines)
 
 
 def _storyboard_lines(board: Storyboard | None, run_id: str | None) -> list[str]:

@@ -76,6 +76,10 @@ class EditorialIntent:
     # on the subject, so its standing score can't veto it, and every year that holds pool
     # pictures gets a shot. A plain custom range with a brief is not a curated pool.
     pool_is_subject: bool = False
+    # The dates are the film's subject (on this day): a year that holds a picture standing on its
+    # own speaks however ordinary its story reads against the busier years, so the film goes
+    # short only when the years run out of distinct shots (#2134). Standing still applies.
+    occurrence_is_subject: bool = False
     # Phrases a free-text request asked left out ("no humans", "sans les enfants"): hard
     # rules the brief carries so the planner never selects what the pool already excluded,
     # and the report can count a violation if one ever slips through (#2061).
@@ -275,6 +279,7 @@ def _recurring(product, spans, whole, *, brief, who):
             for part in _per_year(whole, required=True)
             if any(start <= part.end and end >= part.start for start, end in spans)
         )
+    every_year = product == "on_this_day"
     return EditorialIntent(
         product=product,
         scope=f"{day} across {len(spans)} occurrences, {whole[0].year}..{whole[1].year}",
@@ -292,7 +297,8 @@ def _recurring(product, spans, whole, *, brief, who):
         ),
         allowed_texture="the festive or ritual setting of the day itself",
         abstention_policy="fewer than two occurrences hold usable material: insufficient_material rather than a single-year film",
-        max_carriers_per_partition=1 if product == "on_this_day" else None,
+        voice_per_partition=every_year,
+        occurrence_is_subject=every_year,
     )
 
 

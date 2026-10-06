@@ -22,6 +22,10 @@ class AutoOutcome(StrEnum):
     FAILED = "failed"
 
 
+# The skip that is a decision about today's film, unlike a cooldown or a held lease.
+NO_ELIGIBLE_CANDIDATES = "no eligible candidates"
+
+
 class AutoAction(StrEnum):
     """Work selected for one automation invocation."""
 

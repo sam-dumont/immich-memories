@@ -296,3 +296,57 @@ def test_a_one_account_window_check_never_asks_for_a_household(
         readiness = assess(client, config, store, when, today=date(2025, 6, 30))
 
     assert {prep._asset_id(asset) for asset in readiness.missing} == {"p-cat"}
+
+
+def test_the_terminal_gets_a_few_lines_per_stage_not_one_per_picture(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """#2161: a log-file run printed one line per picture; the watcher still gets every one."""
+    from immich_memories.preflight import CheckResult, CheckStatus
+    from tests.household_fake import PRIMARY_KEY, FakeHousehold, immich_config, picture
+
+    # WHY: replaces the Immich HTTP API; the window check's own discovery stays real.
+    FakeHousehold(
+        library={PRIMARY_KEY: [picture(f"p-{n}", "primary", 1 + n % 28, ()) for n in range(20)]}
+    ).install(monkeypatch)
+    # WHY: replaces reaching the real caption server over HTTP to check it answers.
+    monkeypatch.setattr(
+        "immich_memories.preflight.check_caption_endpoint",
+        lambda _config: CheckResult("Captions", CheckStatus.OK, "ok"),
+    )
+
+    def fake_prepare(**kwargs):
+        from immich_memories.analysis.editorial_preparation import PreparationResult
+
+        total = len(kwargs["assets"])
+        for done in range(1, total + 1):
+            kwargs["progress"]("captions", done, total)
+        return PreparationResult(requested=total, missing_by_producer={}, failures={})
+
+    # WHY: replaces the real captioning model.
+    monkeypatch.setattr(
+        "immich_memories.analysis.editorial_preparation.prepare_editorial_annotations",
+        fake_prepare,
+    )
+    config = Config()
+    config.immich = ImmichConfig(**immich_config())
+    printed: list[str] = []
+    reports: list[str] = []
+
+    with AccessBoundClient(config.immich) as client:
+        prep.prepare_for_request(
+            client,
+            config,
+            open_store(),
+            LibraryView(pictures=(), people={}, sharpness_line=None),
+            WhenLink(start=date(2025, 6, 1), end=date(2025, 6, 30)),
+            today=date(2025, 6, 30),
+            print_line=printed.append,
+            report=lambda message, _fraction, _remaining: reports.append(message),
+        )
+
+    counted = [line for line in printed if line.startswith("Preparing captions:")]
+    assert counted[0] == "Preparing captions: 1/20 pictures"
+    assert counted[-1] == "Preparing captions: 20/20 pictures"
+    assert len(counted) <= 5
+    assert sum(message.startswith("Preparing captions:") for message in reports) == 20

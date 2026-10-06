@@ -63,7 +63,9 @@ cover. A favourite, video, close-family presence or required-part indicator read
 
 A week of ordinary evenings at home with no star, no video and no close family is exactly that
 case. Three favourites or a big close-family story still lift a story to `major`, so a quiet week
-that holds something you care about is never quiet to the editor.
+that holds something you care about is never quiet to the editor. On this day is the exception:
+every year of it gets a shot, however quiet
+([Every year gets a shot](./moments-and-stories.md)).
 
 ### Mostly quiet is a different household
 

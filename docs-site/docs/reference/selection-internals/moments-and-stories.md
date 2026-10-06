@@ -151,6 +151,12 @@ readmission, the timing trim, the filler drop, and the model polish's vote and s
 shot it holds back, whatever year it carries. The finished-cut check reports a year left without
 one. A year-in-review film is one year, so this does not apply to it.
 
+On this day is split into calendar years the same way, and goes one step further: the date coming
+back is the subject, so a year speaks even when its stories read as background (`none`) next to the
+busier years. Its pictures still have to stand on their own. Once every year has its shot, a film
+that is still short takes further distinct shots from those same years, round-robin, and only goes
+short when they run out.
+
 ## When the model plans the whole film
 
 On a model install, the model plans the whole film only when `advanced.editorial.thin_model_layer`

@@ -829,7 +829,10 @@ def _acquire_captions(
     description_model: str,
 ) -> None:
     if not asset_ids:
-        return
+        # A scope already captioned still shows the producer in the cost table, so a pass
+        # that owed nothing never reads as one that never captioned (#2150).
+        with stage.timed("captions", 0):
+            return
     accepted = DESCRIPTION_MODEL
     if stage.preparation_config.caption_provider == "llm" and stage.llm_config is not None:
         accepted = llm_caption_identity(

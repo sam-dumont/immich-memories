@@ -202,3 +202,63 @@ def test_store_birth_date_overlays_the_immich_roster(monkeypatch):
     snapshot = discovery._library_snapshot(discovery._config.automation, date(2026, 8, 1), store)
 
     assert snapshot.people[0].birth_date == date(2018, 4, 2)
+
+
+def _trip_assets(start: date, days: int) -> list:
+    from datetime import UTC, datetime, timedelta
+
+    from immich_memories.api.models import Asset, AssetType, ExifInfo
+
+    assets = []
+    for day in range(days):
+        for hour in range(9, 21):
+            taken = datetime.combine(start + timedelta(days=day), datetime.min.time(), UTC)
+            taken += timedelta(hours=hour)
+            assets.append(
+                Asset(
+                    id=f"trip-{day}-{hour}",
+                    type=AssetType.IMAGE,
+                    fileCreatedAt=taken,
+                    fileModifiedAt=taken,
+                    updatedAt=taken,
+                    exifInfo=ExifInfo(
+                        latitude=43.30, longitude=5.37, city="Seaside", country="Elsewhere"
+                    ),
+                )
+            )
+    return assets
+
+
+@pytest.mark.parametrize("accounts", [[], ["primary", "partner"]])
+def test_a_trip_is_still_suggested_from_the_primary_when_accounts_are_selected(
+    monkeypatch, accounts
+):
+    """Trips stay primary-only: selecting a second account must not lose them."""
+    from datetime import timedelta
+
+    today = date.today()
+    trip = _trip_assets(today - timedelta(days=40), 12)
+    primary = _FakeClient(
+        buckets=[TimeBucket(count=len(trip), timeBucket="2026-01-01")], people=[], counts={}
+    )
+    partner = _FakeClient(
+        buckets=[TimeBucket(count=4, timeBucket="2026-01-01")], people=[], counts={}
+    )
+    opened = {"primary": _open_account("primary", primary)}
+    if accounts:
+        opened["partner"] = _open_account("partner", partner)
+    _patch_open_accounts(monkeypatch, opened)
+    # WHY: the trailing-year bulk read from Immich; its cache has its own tests.
+    monkeypatch.setattr(discovery_module, "load_or_fetch_trip_assets", lambda *_a, **_k: trip)
+    config = _config(accounts)
+    config.automation.detect_trips = True
+    config.trips.homebase_latitude = 50.85
+    config.trips.homebase_longitude = 4.35
+
+    found = CandidateDiscovery(config, _FakeRuns(), _FakeAttempts()).discover(
+        limit=None, recent_auto_runs=[]
+    )
+
+    trips = [c for c in found.candidates if c.memory_type == "trip"]
+    assert len(trips) == 1
+    assert "accounts" not in trips[0].extra_params

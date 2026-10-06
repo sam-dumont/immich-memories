@@ -45,7 +45,11 @@ from immich_memories.analysis.editorial_text_gateway import (
     semantic_text_model_identity,
 )
 from immich_memories.analysis.episode_demand import demand_reader_factory
-from immich_memories.analysis.household_source import fetch_household_source, source_accounts
+from immich_memories.analysis.household_source import (
+    fetch_household_source,
+    primary_owned_only,
+    source_accounts,
+)
 from immich_memories.analysis.place_names import place_names_for
 from immich_memories.analysis.selection_source import (
     EditorialDependencies,
@@ -372,7 +376,7 @@ class RuntimeEditorialPlanner:
                     calls_by_stage=structure.plan.get("calls_by_stage") if structure else None,
                     reason=result.no_selection_reason,
                 )
-                return result
+                return replace(result, structure_plan=structure.plan) if structure else result
             finally:
                 self._backend._context = context
 
@@ -586,7 +590,9 @@ def build_editorial_planner(
                     runtime_ports.fetch_full_source,
                 )
                 if accounts
-                else runtime_ports.fetch_full_source(client, requested_scope),
+                else primary_owned_only(
+                    client, runtime_ports.fetch_full_source(client, requested_scope)
+                ),
                 requested_scope.asset_ids,
             )
         if not named:

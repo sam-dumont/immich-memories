@@ -195,6 +195,18 @@ def test_cold_full_source_then_warm_has_zero_provider_calls(tmp_path):
     assert stat.S_IMODE(db_path.stat().st_mode) == 0o600
 
 
+def test_a_warm_captioned_scope_still_reports_the_caption_producer(tmp_path):
+    """#2150: a pass that owes no caption says it checked them, not nothing at all."""
+    from immich_memories.tracking.timing import collecting
+
+    assert run(tmp_path, ports=successful_ports([]), fetch_preview=lambda _: preview()).complete
+    with collecting() as collected:
+        assert run(tmp_path, ports=successful_ports([])).complete
+
+    captions = [s for s in collected.spans if s.name == "preparation.captions"]
+    assert [s.items for s in captions] == [0]
+
+
 def test_changing_caption_server_preserves_rows_and_marks_legacy_origins_unknown(tmp_path):
     calls = []
     assert run(tmp_path, ports=successful_ports(calls), fetch_preview=lambda _: preview()).complete

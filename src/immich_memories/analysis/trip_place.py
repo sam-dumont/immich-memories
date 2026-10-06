@@ -57,7 +57,9 @@ def _located(assets: Iterable[Asset]) -> list[_Located]:
         island = None
         if exif.latitude is not None and exif.longitude is not None:
             island = island_at(exif.latitude, exif.longitude, exif.country)
-        region = short_place_name(exif.state)
+        # Immich files some pictures under "<subdivision>, <region>" and others under the
+        # region alone; the broadest part keeps every picture of a trip at one scale (#2152).
+        region = short_place_name(exif.state.rsplit(",", 1)[-1].strip() if exif.state else None)
         # A settlement does not stop existing when its translated name is unavailable.
         # Keep its supplied script instead of silently promoting a local stay to an island.
         city = shown_city(exif)

@@ -14,6 +14,7 @@ import httpx
 
 from immich_memories.analysis.editorial_bound_sample import source_metadata_digest
 from immich_memories.analysis.editorial_motion_outcomes import MotionAttemptOutcomes
+from immich_memories.analysis.editorial_structure_budget import NOMINAL_STILL_SECONDS
 from immich_memories.analysis.editorial_structure_material import raw_centiseconds
 from immich_memories.api.immich import ImmichAPIError
 from immich_memories.db import Store
@@ -137,6 +138,7 @@ class DemandedMotionResolver:
         sample_limit=3,
         on_playback=None,
         outcomes: MotionAttemptOutcomes | None = None,
+        still_seconds: float = NOMINAL_STILL_SECONDS,
     ) -> None:
         self.assets = assets
         self.store = store
@@ -146,6 +148,7 @@ class DemandedMotionResolver:
         self.sample_limit = sample_limit
         self.on_playback = on_playback
         self.outcomes = outcomes
+        self.still_seconds = still_seconds
 
     def __call__(self, carriers):
         started = time.monotonic()
@@ -214,7 +217,9 @@ class DemandedMotionResolver:
             kind="live-motion" if moving else "live-still",
             residual=residual,
             # #2039: floor, not round, so this never exceeds raw_seconds's own length.
-            seconds=raw_centiseconds(min(float(current["raw_seconds"]), 6.0)) if moving else 4.0,
+            seconds=raw_centiseconds(min(float(current["raw_seconds"]), 6.0))
+            if moving
+            else self.still_seconds,
             motion_assessed=bool(residuals),
             motion_evidence={
                 "method": METHOD,
@@ -351,6 +356,7 @@ def production_motion_resolver(source, *, on_playback=None):
                 sample_limit=sample_limit,
                 on_playback=on_playback,
                 outcomes=outcomes,
+                still_seconds=source.config.photos.duration,
             )(carriers)
         finally:
             if client is not None:

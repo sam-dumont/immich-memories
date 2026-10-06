@@ -132,10 +132,19 @@ class TestScan:
         assert "people in the store" in output
         assert len(people_entries(load_document())) == 3
 
-    def test_it_writes_the_refreshable_evidence_graph_as_a_file(self, tmp_path):
+    def test_it_writes_the_refreshable_evidence_graph_beside_the_selected_store(self):
+        """#2151: the graph file follows whichever store this run picked, not a fixed home.
+
+        The `isolated_store` fixture (autouse, conftest.py) points every test's store at its
+        own file outside `~/.immich-memories`; the graph must land next to it, same as the
+        store itself.
+        """
+        from immich_memories.db import open_store
+
+        store = open_store()
         output = _run(["people", "scan"])
 
-        graph_path = tmp_path / ".immich-memories" / "people-graph.json"
+        graph_path = store.location.sqlite_path.parent / "people-graph.json"
         graph = json.loads(graph_path.read_text())
         assert _unwrapped(str(graph_path)) in _unwrapped(output)
         assert len(graph["nodes"]) == 3

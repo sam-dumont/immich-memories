@@ -15,6 +15,7 @@ from immich_memories.operations.run_index import attempt_dir_for_run
 from immich_memories.operations.storyboard import read_storyboard
 from immich_memories.tracking import RunDatabase
 from immich_memories.tracking.models import RunMetadata
+from immich_memories.tracking.orphaned_runs import settle_orphaned_runs
 from immich_memories.web.dependencies import current_config
 from immich_memories.web.film_files import local_film
 from immich_memories.web.schemas import PhaseTiming, RunDetail, RunPage, RunSummary
@@ -57,13 +58,6 @@ def _summary(config: Config, record: RunMetadata) -> RunSummary:
     )
 
 
-def _immich_asset_url(config: Config, asset_id: str | None) -> str | None:
-    """A link straight to the delivered asset, when the server is configured with a URL."""
-    if not asset_id or not config.immich.url:
-        return None
-    return f"{config.immich.url.rstrip('/')}/photos/{asset_id}"
-
-
 @router.get("", response_model=RunPage)
 def list_runs(
     config: Annotated[Config, Depends(current_config)],
@@ -72,9 +66,9 @@ def list_runs(
     status: Literal["completed", "failed", "running", "cancelled", "interrupted"] | None = None,
 ) -> RunPage:
     """Runs newest first, each with the first pictures its saved cut plays."""
-    records = RunDatabase(open_store(config)).list_runs(
-        limit=limit + 1, offset=offset, status=status
-    )
+    store = open_store(config)
+    settle_orphaned_runs(store)
+    records = RunDatabase(store).list_runs(limit=limit + 1, offset=offset, status=status)
     return RunPage(
         runs=[_summary(config, record) for record in records[:limit]],
         next_offset=offset + limit if len(records) > limit else None,
@@ -112,7 +106,7 @@ def read_run(run_id: str, config: Annotated[Config, Depends(current_config)]) ->
         delivery_status=record.delivery_status.value,
         delivery_error=record.delivery_error,
         immich_asset_id=record.immich_asset_id,
-        immich_asset_url=_immich_asset_url(config, record.immich_asset_id),
+        immich_asset_url=config.immich.asset_url(record.immich_asset_id),
         warnings=record.warnings.copy(),
         phases=[
             PhaseTiming(

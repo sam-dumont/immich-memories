@@ -41,6 +41,24 @@ def source_accounts(client: FullEditorialSource, accounts: Sequence[str]) -> tup
     return tuple(accounts)
 
 
+def primary_owned_only(client: object, sources: Sequence[Source]) -> tuple[Source, ...]:
+    """Drop anything a run that named no accounts does not itself own (#2143).
+
+    Immich's own partner sharing can put a connected account's pictures on the primary's
+    timeline even though this app was never told about that account: the primary's own
+    `/search/metadata` already answers with them. A run that named no accounts promised
+    "primary only" (docs: multi-account.mdx), the same promise `HouseholdWindows` keeps for
+    a named household by dropping an owner nobody chose. A client that cannot say who it is
+    (a test double with no accounts in play) is read exactly as before: nothing is dropped.
+    """
+    whoami = getattr(client, "get_current_user", None)
+    if not callable(whoami):
+        return tuple(sources)
+    owner_id = whoami().id
+    # An asset whose owner Immich did not report is not known to be someone else's.
+    return tuple(source for source in sources if asset_of(source).owner_id in ("", owner_id))
+
+
 def fetch_household_source(
     client: AccessBoundClient, accounts: Sequence[str], scope: SourceScope, fetch: WindowFetch
 ) -> tuple[Source, ...]:

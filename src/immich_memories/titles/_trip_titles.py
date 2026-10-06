@@ -9,7 +9,7 @@ from __future__ import annotations
 from datetime import date
 
 from immich_memories.i18n import film_text, film_text_n, month_name_forms, resolve_film_locale
-from immich_memories.i18n_places import comma, localise_country, localise_place
+from immich_memories.i18n_places import comma, localise_trip_place
 from immich_memories.place_phrases import Place, place_phrase
 from immich_memories.place_phrases.place import infer_place_kind
 from immich_memories.titles.letter_case import display_upper
@@ -65,9 +65,7 @@ def _get_time_label(start_date: date, end_date: date, locale: str = "en") -> str
 
 
 def _localised(place: Place, locale: str) -> str:
-    if place.kind == "countries":
-        return " → ".join(localise_country(c, locale) for c in place.english.split(" → "))
-    return localise_place(place.english, locale) or place.english
+    return localise_trip_place(place.english, place.kind, locale)
 
 
 def generate_trip_title(

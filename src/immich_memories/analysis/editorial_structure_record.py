@@ -20,7 +20,7 @@ from typing import Any
 from immich_memories.analysis.editorial_completion import ACCEPTED_SHORTFALL_FRACTION
 from immich_memories.analysis.editorial_intent_validation import CarrierView, validate_intent
 from immich_memories.analysis.editorial_story_planner import story_plan_fields
-from immich_memories.analysis.editorial_structure_budget import MIN_CARRIER_SECONDS
+from immich_memories.analysis.editorial_structure_budget import MIN_CARRIER_SECONDS, hold_floor
 from immich_memories.analysis.editorial_structure_contract import StructurePlanningResult
 from immich_memories.analysis.person_presence import present_on_assets
 from immich_memories.analysis.place_names import shown_city
@@ -81,12 +81,12 @@ def provider_metrics(counters):
     }
 
 
-def _speech_safe_shave(carrier: dict) -> float | None:
+def _speech_safe_shave(carrier: dict, floor_for_stills: float) -> float | None:
     """The duration half a second off this hold would leave, or None if it cannot move."""
     from immich_memories.speech.cuts import minimum_duration, safe_end
 
     seconds = carrier["seconds"]
-    floor = minimum_duration(carrier, MIN_CARRIER_SECONDS)
+    floor = minimum_duration(carrier, hold_floor(carrier, floor_for_stills))
     if seconds <= floor:
         return None
     duration = safe_end(carrier, max(floor, seconds - 0.5)) - carrier.get("start_time", 0.0)
@@ -96,13 +96,15 @@ def _speech_safe_shave(carrier: dict) -> float | None:
     return duration if seconds - duration >= TIMELINE_SECONDS else None
 
 
-def shave_content_duration(carriers, content_cap):
+def shave_content_duration(carriers, content_cap, *, floor_for_stills=MIN_CARRIER_SECONDS):
     """Shorten holds before inspection, preserving speech and exact source intervals."""
     from immich_memories.speech.cuts import set_duration
 
     shaved = 0
     while sum(x["seconds"] for x in carriers) > content_cap:
-        offers = [(c, d) for c in carriers if (d := _speech_safe_shave(c)) is not None]
+        offers = [
+            (c, d) for c in carriers if (d := _speech_safe_shave(c, floor_for_stills)) is not None
+        ]
         if not offers:
             break
         longest, duration = max(offers, key=lambda offer: offer[0]["seconds"])

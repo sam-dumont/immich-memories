@@ -342,6 +342,9 @@ class Config(BaseSettings):
         env_prefix="IMMICH_MEMORIES_",
         env_nested_delimiter="__",
         case_sensitive=False,
+        # A validation error's text otherwise carries its input: for a whole-config check
+        # that is every key and password in the file, printed by any traceback (#2129).
+        hide_input_in_errors=True,
     )
 
     _unknown_keys: tuple[str, ...] = PrivateAttr(default=())

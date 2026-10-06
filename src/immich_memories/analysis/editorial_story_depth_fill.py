@@ -26,6 +26,7 @@ from immich_memories.analysis.editorial_story_depth import depth_ladder, neighbo
 from immich_memories.analysis.editorial_story_lookalike import LookAlikeCheck
 from immich_memories.analysis.editorial_story_places import PlaceShares
 from immich_memories.analysis.editorial_story_shortlist import DepictedChoice
+from immich_memories.analysis.editorial_story_slots import PartitionedSlots
 from immich_memories.analysis.editorial_story_standing import WEIGHED_STORY_WEIGHTS, StandingGate
 from immich_memories.planning.distinct_shots import is_new_shot
 
@@ -44,6 +45,7 @@ class DepthFillHost(Protocol):
 
     carriers: list[dict]
     slots: int
+    parts: PartitionedSlots
     stories: Sequence[Mapping[str, Any]]
     chosen_by_story: dict[str, list[str]]
     places: PlaceShares
@@ -159,13 +161,16 @@ class DepthFill:
             offerable.append(replace(c, primary=members[0], alternatives=members[1:]))
         return offerable
 
+    def _deepens(self, s) -> bool:
+        """A story the cut already shows deepens when it is weighed, or when every era of the
+        film speaks whatever its stories weigh (on this day, #2134)."""
+        host = self._host
+        weighed = s["weight"] in WEIGHED_STORY_WEIGHTS or host.parts.every_era_speaks
+        return weighed and bool(host.chosen_by_story[s["key"]])
+
     def _deepen_once(self, index: int, s) -> bool:
         host = self._host
-        if (
-            self._depth_budget_met()
-            or s["weight"] not in WEIGHED_STORY_WEIGHTS
-            or not host.chosen_by_story[s["key"]]
-        ):
+        if self._depth_budget_met() or not self._deepens(s):
             return False
         held = sum(c["story_episode"] == s["key"] for c in host.carriers)
         host.places.widen(s["key"], held + host.slots - len(host.carriers))

@@ -109,8 +109,13 @@ def render_single_photo(
     *,
     source_path: Path | None = None,
     encoding_plan: EncodingPlan | None = None,
+    scale_mode: str = "blur",
 ) -> AssemblyClip | None:
-    """Download, prepare, render (streaming), and encode a single photo."""
+    """Download, prepare, render (streaming), and encode a single photo.
+
+    `scale_mode` fills the bands around a still that does not match the canvas: its own
+    blur ("blur") or black ("fit"), the same choice the film makes for its videos.
+    """
     try:
         raw_path = _source_photo_path(asset, work_dir) if source_path is None else source_path
         if source_path is None and not raw_path.exists():
@@ -136,6 +141,7 @@ def render_single_photo(
             peak_nits=peak_nits,
             primaries=getattr(prepared, "primaries", "bt709"),
             encoding_plan=encoding_plan,
+            scale_mode=scale_mode,
         )
 
         if not output_path.exists() or output_path.stat().st_size < 100:
@@ -215,6 +221,7 @@ def _stream_render_to_mp4(
     peak_nits: int = 203,
     primaries: str = "bt709",
     encoding_plan: EncodingPlan | None = None,
+    scale_mode: str = "blur",
 ) -> None:
     """Render Ken Burns frames and stream directly to FFmpeg.
 
@@ -253,7 +260,9 @@ def _stream_render_to_mp4(
     source = _at_pipe_depth(img, sixteen_bit=pix_fmt == "rgb48le")
 
     def _frames() -> Iterator[bytes]:
-        for frame in render_ken_burns_streaming(source, target_w, target_h, params):
+        for frame in render_ken_burns_streaming(
+            source, target_w, target_h, params, scale_mode=scale_mode
+        ):
             yield frame.tobytes()
 
     returncode, stderr_text = write_frames_to_ffmpeg(

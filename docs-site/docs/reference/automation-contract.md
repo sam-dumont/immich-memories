@@ -38,12 +38,14 @@ Either `automation.upload_to_immich: true` or `upload.enabled: true` requests de
 The UI process then runs the same `auto run` decision once a day, with the same lock, history, upload retry
 and notifications as the CLI. A container that was down at `daily_at` catches up when it starts; if the day's
 run already happened (a manual `docker compose exec immich-memories immich-memories auto run` counts) it waits
-for tomorrow. A dry run does not count: a **Check eligibility** or an `auto run --dry-run` earlier that
-day leaves the scheduled film in place. A manual `auto run` in progress holds the same automation lock, so the timer's attempt never
-starts and leaves no attempt row: `auto history` and `auto status` never show it. A manual `generate` in
-progress holds a different lock (the pipeline lock, not the automation lock), so the timer's own attempt
-does start, its child `generate` then fails to get the pipeline lock, and the attempt ends `failed`, not
-`skipped`. `/health/ready` shows the timer under `in_process_scheduler`.
+for tomorrow. A run counts when it made a film, tried and failed, or found nothing worth one. A dry run doesn't
+(a **Check eligibility** or an `auto run --dry-run` leaves the scheduled film in place), and neither does a
+`cooldown active` skip, which is what most HTTP triggers get back. When the timer waits, the log says which run it
+counted. A manual `auto run` in progress holds the same automation lock: the timer's attempt comes back `skipped`
+("automation already running") before it records anything, so `auto history` and `auto status` never show it. A
+manual `generate` in progress holds a different lock (the pipeline lock), so the timer's own attempt does start,
+its child `generate` then fails to get the pipeline lock, and the attempt ends `failed`, not `skipped`.
+`/health/ready` shows the timer under `in_process_scheduler`.
 
 ## Bare metal: auto install
 

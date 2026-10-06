@@ -13,7 +13,7 @@ Review a cut before rendering it. Changes to that cut become a saved revision; c
 Open a shot in the contact sheet:
 
 - **Remove from this cut** takes it out of this film.
-- For a video, **Start here** and **End here** choose the interval to play.
+- For a video, **Start here** and **End here** choose the interval to play. The preview loops the chosen interval; seek before or after it to move an edge outwards.
 - Under **Other pictures of this moment**, choose a replacement and press **Use this picture instead**. **Keep the original** undoes a swap.
 
 Press **Save revision**, then select that revision under **What to render**. The app renders those edits without choosing the shots again. **Undo** walks back an edit; **Discard changes** drops the unsaved changes.

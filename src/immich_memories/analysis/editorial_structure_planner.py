@@ -38,7 +38,7 @@ from immich_memories.analysis.editorial_rule_banked_facts import (
 )
 from immich_memories.analysis.editorial_rule_quality import rule_representative_rank
 from immich_memories.analysis.editorial_rule_reader import NoModelJudge, RuleStructureReader
-from immich_memories.analysis.editorial_shareability import SHAREABLE
+from immich_memories.analysis.editorial_shareability import FAMILY, SHAREABLE
 from immich_memories.analysis.editorial_shareability_tiers import audience_check_for
 from immich_memories.analysis.editorial_story_candidates import story_candidates
 from immich_memories.analysis.editorial_story_lookalike import hash_pair_relation
@@ -50,7 +50,7 @@ from immich_memories.analysis.editorial_structure_audience import (
     AudienceBank,
     AudienceGate,
 )
-from immich_memories.analysis.editorial_structure_budget import CONTENT_RESERVE_SECONDS
+from immich_memories.analysis.editorial_structure_budget import CONTENT_RESERVE_SECONDS, still_floor
 from immich_memories.analysis.editorial_structure_contract import (
     RulesDraft,
     StructurePlannerPorts,
@@ -125,6 +125,11 @@ def plan_structure(
             source,
             config=nas_draft_config(source.config),
             artifact_dir=source.artifact_dir / "nas-draft",
+            # Only the refinement reads the captions a shareable clearance rests on. Judged by
+            # the draft's rules, a picture nothing has described yet could never be cleared,
+            # and an empty draft would end the film before any caption was read (#2135).
+            # The refinement still gates every shot at the film's own level.
+            audience=FAMILY if source.audience == SHAREABLE else source.audience,
         )
         # The reader must see the same narrowed pool `_plan_structure(nas, rules)` is
         # about to plan over (#1954): built from the un-narrowed `nas`, it could have
@@ -189,6 +194,7 @@ def _plan_structure(
     run = PlanRun(
         final_content_cap=source.case.target_seconds - CONTENT_RESERVE_SECONDS,
         bind_stitch=material.builder.measured_stitch,
+        still_floor=still_floor(source.config.photos.duration),
     )
     reader = ports.laya.cache_identity if ports.laya else "rules"
     library = AudienceBank(
@@ -215,7 +221,9 @@ def _plan_structure(
             library.flush()
     metrics = provider_metrics(counters)
     if run.render_timeline is None:
-        run.shaved += shave_content_duration(run.carriers, run.final_content_cap)
+        run.shaved += shave_content_duration(
+            run.carriers, run.final_content_cap, floor_for_stills=run.still_floor
+        )
     elif sum(c["seconds"] for c in run.carriers) > run.final_content_cap:
         raise ValueError("Certified editorial content grew after its timing was fixed")
     outcome.metrics = metrics
@@ -399,7 +407,7 @@ def _select(
     # second back when the target leaves no room for it. An opening and a closing frame are
     # read rather than glanced at whoever cut them, so this is not the no-model reader's.
     if ports.draft is None:
-        hold_the_ends(run.carriers)
+        hold_the_ends(run.carriers, nominal=source.config.photos.duration)
     chapters = chapters_of(selection, run.carriers, wall.anchor_label)
     beats = [row["beat"] for row in chapters]
     story_worthiness(selection, wall, tier, worth_reason)
@@ -592,6 +600,7 @@ def _story_selection(
         voice_per_partition=source.intent.voice_per_partition,
         context_without_life=source.intent.context_without_life,
         pool_is_subject=source.intent.pool_is_subject,
+        occurrence_is_subject=source.intent.occurrence_is_subject,
         partition_of=lambda taken: (
             part.key
             if (part := source.intent.partition_for(datetime.fromisoformat(taken).date()))

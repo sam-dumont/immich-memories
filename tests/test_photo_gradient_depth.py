@@ -40,9 +40,9 @@ def rendered_and_reference(tmp_path, monkeypatch, *, sixteen_bit: bool, low: flo
     frames = []
     real_render = renderer.render_ken_burns_streaming
 
-    def spy(src, width, height, params):
+    def spy(src, width, height, params, **kwargs):
         moves.append(params)
-        return real_render(src, width, height, params)
+        return real_render(src, width, height, params, **kwargs)
 
     def pipe(cmd, sent, **_kwargs):
         frames.extend(bytes(frame) for frame in sent)

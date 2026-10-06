@@ -23,6 +23,11 @@ from tests.conftest import (
 
 
 def test_a_cli_run_without_a_home_reads_the_suites_config_not_the_accounts():
+    # Checked before the write: a run that keeps the real HOME (an `-m` selecting
+    # integration, or a cleared addopts) must fail here, not overwrite the account's config.
+    assert _TEST_ROOT is not None
+    assert Path.home().resolve().is_relative_to(_TEST_ROOT.resolve())
+    assert Path.home().resolve() != _account_home()
     config_file = Path.home() / ".immich-memories" / "config.yaml"
     config_file.parent.mkdir(parents=True, exist_ok=True)
     config_file.write_text("immich:\n  url: http://127.0.0.1:9/suite-home\n")
@@ -31,9 +36,6 @@ def test_a_cli_run_without_a_home_reads_the_suites_config_not_the_accounts():
 
     assert result.exit_code == 0, result.output
     assert "suite-home" in result.output
-    assert _TEST_ROOT is not None
-    assert Path.home().resolve().is_relative_to(_TEST_ROOT.resolve())
-    assert Path.home().resolve() != _account_home()
 
 
 def test_the_shells_provider_and_immich_settings_do_not_reach_a_test():

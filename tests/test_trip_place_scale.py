@@ -302,3 +302,17 @@ def test_discovery_resolves_the_same_local_stay_as_the_film(monkeypatch):
     assert {a.exif_info.place_name for a in pictures} == {
         None
     }  # Discovery leaves its inputs alone.
+
+
+def test_a_region_reported_with_and_without_its_subdivision_is_one_region():
+    # Immich files some pictures under "<subdivision>, <region>" and others under the region
+    # alone: they name one region, never "A, B and B" (#2152).
+    name = _trip_name(
+        [
+            (20, 48.14, 11.58, "Munich", "Upper Bavaria, Bavaria", "Germany"),
+            (15, 48.37, 10.90, "Augsburg", "Bavaria", "Germany"),
+            (10, 49.01, 12.10, "Regensburg", "Upper Palatinate, Bavaria", "Germany"),
+        ]
+    )
+
+    assert name == "Bavaria, Germany"

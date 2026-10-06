@@ -8,7 +8,7 @@ arrives in the group chat's photos as often as in the owner's own.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Protocol
+from typing import Protocol
 
 from immich_memories.analysis.source_filter import not_shot_here
 from immich_memories.api.models import MetadataSearchResult
@@ -19,7 +19,15 @@ _MOST_PAGES = 20
 
 
 class _Search(Protocol):
-    def search_metadata(self, **options: Any) -> MetadataSearchResult: ...
+    def search_metadata(
+        self,
+        *,
+        taken_after: datetime | None = None,
+        taken_before: datetime | None = None,
+        page: int = 1,
+        size: int = 100,
+        ocr: str | None = None,
+    ) -> MetadataSearchResult: ...
 
 
 class ImmichPrintedText:
