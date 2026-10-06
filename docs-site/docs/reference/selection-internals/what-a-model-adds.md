@@ -35,7 +35,9 @@ flowchart TD
   The tier owns the reader and preparation switches; they are not independent choices.
 - The first draft uses metadata and CPU facts on every tier, even when captions are already banked,
   so it never depends on an earlier caption job. Captions arrive during the polish, for the
-  selected shots and their candidates.
+  selected shots and their candidates. A shareable film's first draft is cut for family viewing:
+  only the polish has the captions a shareable clearance needs, so the shareable check runs there,
+  on every shot and replacement.
 - **Route B** covers months, years, seasons, trips, special days and person films. It also covers
   separate date windows, such as the same day across years or a birthday with flashbacks.
 - **Route C** is selected with `advanced.editorial.thin_model_layer: false`.

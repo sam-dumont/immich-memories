@@ -17,8 +17,13 @@ if TYPE_CHECKING:
     from immich_memories.config_loader import Config
 
 
-def format_trips_table(trips: list[DetectedTrip]) -> Table | None:
+def format_trips_table(trips: list[DetectedTrip], locale: str = "en") -> Table | None:
     """Format detected trips as a Rich table for CLI display.
+
+    `locale` names each trip the way its film title does (`generate_trip_title`):
+    the same scale trip naming chose (`trip.location_kind`), every part in the
+    film's language. Without this a French film's listing could show "Crète,
+    Greece" -- the region translated, the country left in English (#2152).
 
     Returns None if no trips were detected.
     """
@@ -37,13 +42,21 @@ def format_trips_table(trips: list[DetectedTrip]) -> Table | None:
         date_str = f"{trip.start_date.isoformat()} to {trip.end_date.isoformat()}"
         table.add_row(
             str(i),
-            trip.location_name,
+            _localised_location(trip, locale),
             date_str,
             str(days),
             str(trip.asset_count),
         )
 
     return table
+
+
+def _localised_location(trip: DetectedTrip, locale: str) -> str:
+    if not trip.location_name or not trip.location_kind:
+        return trip.location_name
+    from immich_memories.i18n_places import localise_trip_place
+
+    return localise_trip_place(trip.location_name, trip.location_kind, locale)
 
 
 def select_trips(

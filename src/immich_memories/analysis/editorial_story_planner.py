@@ -498,6 +498,7 @@ def select_story_first(
     voice_per_partition: bool = False,
     context_without_life: bool = False,
     pool_is_subject: bool = False,
+    occurrence_is_subject: bool = False,
     motion_line: Callable[[Mapping[str, Any]], str] | None = None,
     episode_readings: Mapping[str, Any] | None = None,
     rules=None,
@@ -540,6 +541,8 @@ def select_story_first(
     `pool_is_subject` is a film whose material is a pool curated for its written subject: a pool
     picture stands on that subject whatever its standing score, and every partition holding
     pool pictures gets its voice; the record lists the pictures that stood on the subject.
+    `occurrence_is_subject` is a film about the dates themselves: every partition gets its voice
+    from its first story that stands, whatever that story weighs, and standing still applies.
     """
     calls = {
         "story_pages": 0,
@@ -553,7 +556,7 @@ def select_story_first(
         partition_of=partition_of,
         limit=partition_limit,
         voiced=voice_per_partition,
-        pool_is_subject=pool_is_subject,
+        every_era_speaks=pool_is_subject or occurrence_is_subject,
     )
     units = _MomentUnits(event_units, family_of_moment, dict(family_tier or {}))
     place_of_moment = {

@@ -119,7 +119,7 @@ def _register_scan(people: click.Group) -> None:
 
         config = get_config()
         store = open_store(config)
-        graph_path = default_evidence_graph_path()
+        graph_path = default_evidence_graph_path(store.location)
         retained = retained_immich_ids(load_document(store))
         with SyncImmichClient(base_url=config.immich.url, api_key=config.immich.api_key) as client:
             graph = build_graph(

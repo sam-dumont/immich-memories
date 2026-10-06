@@ -151,11 +151,20 @@ class Trips(BaseModel):
     error: str | None
 
 
-def _trip_choices(found: list[Any]) -> list[TripChoice]:
+def _trip_place(trip: Any, locale: str) -> str:
+    """The trip's name as its own film title would show it: one scale, one language (#2152)."""
+    if not trip.location_name or not trip.location_kind:
+        return trip.location_name
+    from immich_memories.i18n_places import localise_trip_place
+
+    return localise_trip_place(trip.location_name, trip.location_kind, locale)
+
+
+def _trip_choices(found: list[Any], locale: str) -> list[TripChoice]:
     return [
         TripChoice(
             index=number,
-            place=trip.location_name,
+            place=_trip_place(trip, locale),
             start=trip.start_date,
             end=trip.end_date,
             days=(trip.end_date - trip.start_date).days + 1,
@@ -166,13 +175,21 @@ def _trip_choices(found: list[Any]) -> list[TripChoice]:
 
 
 def trips_answer(
-    cache: AnswerCache, find: TripFinder, year: int, people: list[str], *, refresh: bool = False
+    cache: AnswerCache,
+    find: TripFinder,
+    year: int,
+    people: list[str],
+    locale: str,
+    *,
+    refresh: bool = False,
 ) -> Cached:
     """A year's trips from the answer cache, worked out behind the page when due."""
     named = sorted(people)
     return cache.read(
-        f"trips:{year}:{','.join(named)}",
-        lambda: {"trips": [t.model_dump(mode="json") for t in _trip_choices(find(year, named))]},
+        f"trips:{year}:{','.join(named)}:{locale}",
+        lambda: {
+            "trips": [t.model_dump(mode="json") for t in _trip_choices(find(year, named), locale)]
+        },
         refresh=refresh,
     )
 
@@ -182,6 +199,7 @@ def trips(
     year: int,
     find: Annotated[TripFinder, Depends(trip_finder)],
     cache: Annotated[AnswerCache, Depends(answers)],
+    config: Annotated[Config, Depends(current_config)],
     person: Annotated[list[str] | None, Query()] = None,
     refresh: bool = False,
 ) -> Trips:
@@ -190,7 +208,10 @@ def trips(
     Discovery reads the year's GPS and takes a while; the last answer for the year comes back at
     once, and a fresh one is worked out behind it when it is a day old or `refresh` asks.
     """
-    got = trips_answer(cache, find, year, person or [], refresh=refresh)
+    from immich_memories.i18n import resolve_film_locale
+
+    locale = resolve_film_locale(config.title_screens.locale)
+    got = trips_answer(cache, find, year, person or [], locale, refresh=refresh)
     listed = [TripChoice.model_validate(t) for t in got.value["trips"]] if got.value else None
     return Trips(
         trips=listed, computed_at=got.computed_at, refreshing=got.refreshing, error=got.error

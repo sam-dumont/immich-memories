@@ -6,14 +6,12 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
+from immich_memories.analysis.editorial_left_out import NOT_IN_PLAN
 from immich_memories.analysis.selection_trace import Trace
 from immich_memories.operations.reader_words import stage_words
 from immich_memories.operations.storyboard import TRACE_FILE, Storyboard, read_storyboard
 
 _UNRECORDED = "Outcome not recorded for this cut"
-
-# What the planner's own stage means when it drops a picture no pass objected to.
-_NOT_IN_PLAN = "kept by every pass, not used in the plan"
 
 
 def read_trace(attempt_dir: Path) -> Trace | None:
@@ -79,7 +77,7 @@ def _stage_outcomes(trace: Trace, outcomes: dict[str, str]) -> None:
         for asset_id in stage.lost_ids:
             if outcomes.get(asset_id, _UNRECORDED) != _UNRECORDED:
                 continue
-            unstated = _NOT_IN_PLAN if stage.name == final else "No reason recorded"
+            unstated = NOT_IN_PLAN if stage.name == final else "No reason recorded"
             reason = stage.notes.get(asset_id) or unstated
             outcomes[asset_id] = f"Left out at {stage_words(stage.name)}: {reason}"
 

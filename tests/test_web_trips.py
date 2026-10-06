@@ -12,11 +12,12 @@ from immich_memories.web.library import trip_finder
 from tests.web_api_fixtures import api_client, config_in
 
 
-def _trip(place: str, start: date, end: date, count: int) -> DetectedTrip:
+def _trip(place: str, start: date, end: date, count: int, kind: str = "") -> DetectedTrip:
     return DetectedTrip(
         start_date=start,
         end_date=end,
         location_name=place,
+        location_kind=kind,
         asset_count=count,
         centroid_lat=0.0,
         centroid_lon=0.0,
@@ -65,6 +66,25 @@ def test_trips_keep_discovery_order_and_number_from_one(tmp_path: Path):
             "pictures": 9,
         },
     ]
+
+
+def test_a_french_film_names_its_trip_picker_in_french(tmp_path: Path):
+    # Same naming the trip film title uses (#2152): a French film's trip picker
+    # must not show a region in French next to its country in English.
+    def find(year: int, people: list[str]) -> list[DetectedTrip]:
+        return [_trip("Crete, Greece", date(2024, 6, 20), date(2024, 6, 26), 80, "island")]
+
+    config = config_in(tmp_path)
+    config.title_screens.locale = "fr"
+    client = api_client(config)
+    client.app.dependency_overrides[trip_finder] = lambda: find
+    client.app.dependency_overrides[answers] = lambda: AnswerCache(
+        tmp_path / "answers", max_age=timedelta(hours=24), start=lambda work: work()
+    )
+
+    answer = client.get("/api/v1/trips", params={"year": 2024}).json()
+
+    assert answer["trips"][0]["place"] == "Crète, Grèce"
 
 
 def test_an_immich_refusal_is_a_bad_gateway_that_says_so(tmp_path: Path):

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from math import isfinite
 from typing import TYPE_CHECKING, Any, Literal, Protocol, runtime_checkable
 
@@ -40,6 +40,9 @@ class EditorialSourcePlan:
     # reason (a people condition excluded the whole pool, #1954) rather than the generic
     # "nothing worth a film".
     no_selection_reason: str | None = None
+    # The structure plan the cut came from, so the final-cut stage can say why each picture
+    # it did not use is out (`editorial_left_out.final_cut_notes`).
+    structure_plan: Mapping[str, Any] = field(default_factory=dict)
 
 
 @runtime_checkable

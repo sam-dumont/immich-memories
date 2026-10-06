@@ -1,4 +1,8 @@
-"""One model-chosen carrier per calendar year, before funding and through completion."""
+"""A per-partition carrier limit, before funding and through completion.
+
+On this day itself has no limit any more: every year gets a voice first and the film deepens
+where the years hold more (#2134). The limit stays a contract capability, exercised here on an
+on-this-day source that sets it explicitly (`per_year_limit`)."""
 
 import json
 import re
@@ -36,7 +40,7 @@ def ranges(years):
     )
 
 
-def make_source(tmp_path, *, years=(2030, 2031, 2032), product="on_this_day"):
+def make_source(tmp_path, *, years=(2030, 2031, 2032), product="on_this_day", per_year_limit=None):
     groups, episodes, cards, candidates, annotations = [], [], [], [], {}
     for year in years:
         for event in range(2):
@@ -108,7 +112,10 @@ def make_source(tmp_path, *, years=(2030, 2031, 2032), product="on_this_day"):
     )
     return StructurePlanningInput(
         case=case,
-        intent=build_editorial_intent(product, case.ranges, brief=case.brief),
+        intent=replace(
+            build_editorial_intent(product, case.ranges, brief=case.brief),
+            max_carriers_per_partition=per_year_limit,
+        ),
         config=Config(tier="gpu"),
         wall_bytes=wall.text.encode(),
         moment_asset_ids={
@@ -202,17 +209,18 @@ class AnnualJudge(EditorialJudge):
         return super().answer(stage, prompt)
 
 
-def test_calendar_year_groups_repeated_windows_and_limits_budget_without_spilling():
+def test_calendar_year_groups_repeated_windows_and_gives_each_year_a_voice():
     policy = build_editorial_intent("on_this_day", ranges((2030, 2030, 2032)), brief="This day")
     assert [p.key for p in policy.partitions] == ["year-2030", "year-2032"]
-    assert policy.max_carriers_per_partition == 1
-    assert "at most 1 selected carrier per calendar year" in policy.prompt_block()
+    assert policy.max_carriers_per_partition is None
+    assert policy.voice_per_partition
+    assert "selection limit:" not in policy.prompt_block()
 
 
 def test_model_chooses_event_and_picture_before_acquisition_and_warm_is_exact(tmp_path):
     from tests.editorial_story_fixtures import AnnualStoryJudge
 
-    source = make_source(tmp_path)
+    source = make_source(tmp_path, per_year_limit=1)
     judge = AnnualStoryJudge()
     plan = run(source, judge)
     assert [c["asset_id"] for c in plan["carriers"]] == [f"y{y}-e1-p2" for y in (2030, 2031, 2032)]
@@ -235,7 +243,7 @@ def test_model_chooses_event_and_picture_before_acquisition_and_warm_is_exact(tm
 def test_single_eligible_year_is_still_capped_and_insufficiency_is_reported(tmp_path):
     from tests.editorial_story_fixtures import AnnualStoryJudge
 
-    plan = run(make_source(tmp_path, years=(2030,)), AnnualStoryJudge())
+    plan = run(make_source(tmp_path, years=(2030,), per_year_limit=1), AnnualStoryJudge())
     assert len(plan["carriers"]) == 1
     assert plan["intent_report"]["coverage"] == {"year-2030": 1}
     assert plan["intent_report"]["status"] == "insufficient_material"
@@ -243,21 +251,32 @@ def test_single_eligible_year_is_still_capped_and_insufficiency_is_reported(tmp_
 
 def test_validator_catches_excess_across_families_and_reports_missing_year():
     policy = build_editorial_intent("on_this_day", ranges((2030, 2031)), brief="This day")
-    report = validate_intent(
-        policy,
-        carriers=[
-            CarrierView("a", date(2030, 5, 2), "morning", 4),
-            CarrierView("b", date(2030, 5, 2), "evening", 4),
-        ],
-        evidence_partitions={"year-2030", "year-2031"},
-        requested_seconds=90,
-    )
-    assert report.status == "structural_violation"
-    assert {v.code for v in report.violations} == {"partition_carrier_limit", "uncovered_partition"}
+    two_in_one_year = [
+        CarrierView("a", date(2030, 5, 2), "morning", 4),
+        CarrierView("b", date(2030, 5, 2), "evening", 4),
+    ]
+
+    def judged(intent):
+        return validate_intent(
+            intent,
+            carriers=two_in_one_year,
+            evidence_partitions={"year-2030", "year-2031"},
+            requested_seconds=90,
+        )
+
+    limited = judged(replace(policy, max_carriers_per_partition=1))
+    assert limited.status == "structural_violation"
+    assert {v.code for v in limited.violations} == {
+        "partition_carrier_limit",
+        "uncovered_partition",
+    }
+    # On this day itself sets no limit: a second shot of one year is depth, the missing year
+    # is still reported.
+    assert {v.code for v in judged(policy).violations} == {"uncovered_partition"}
 
 
 def test_incompatible_prior_fails_before_any_model_choice_instead_of_arbitrarily_dropping(tmp_path):
-    source = make_source(tmp_path)
+    source = make_source(tmp_path, per_year_limit=1)
     prior = {
         "carriers": [
             {"asset_id": str(i), "event": f"E{i}", "taken": "2030-05-02T08:00:00+00:00"}
