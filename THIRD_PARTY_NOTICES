@@ -476,7 +476,7 @@ freetype-py 2.5.1
   License: BSD
   URL: https://github.com/rougier/freetype-py
 
-fsspec 2026.2.0
+fsspec 2026.9.0
   License: BSD-3-Clause
   URL: https://github.com/fsspec/filesystem_spec
 
