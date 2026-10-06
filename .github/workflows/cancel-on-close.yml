@@ -21,7 +21,7 @@ jobs:
   cancel:
     name: Cancel this branch's leftover runs
     if: github.repository_id == '1174219883'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
       # Cancelling a run is a write on the Actions API, and it is the only

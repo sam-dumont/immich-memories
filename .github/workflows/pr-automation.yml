@@ -18,7 +18,7 @@ jobs:
   # Auto-label PRs based on files changed
   label:
     name: Auto Label
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: github.repository_id == '1174219883' && github.event_name == 'pull_request'
     permissions:
       contents: read
@@ -31,7 +31,7 @@ jobs:
   # Validate PR title follows conventional commits
   validate-title:
     name: Validate PR Title
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: github.repository_id == '1174219883' && (github.event_name == 'pull_request')
     permissions:
       contents: read
@@ -63,7 +63,7 @@ jobs:
   # Add size labels
   size:
     name: PR Size
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: github.repository_id == '1174219883' && (github.event_name == 'pull_request')
     permissions:
       contents: read
@@ -86,7 +86,7 @@ jobs:
   # Require approval for breaking changes
   breaking-change-check:
     name: Breaking Change Review
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: github.repository_id == '1174219883' && (github.event_name == 'pull_request')
     permissions:
       contents: read
@@ -110,7 +110,7 @@ jobs:
 
       - name: Add breaking change label
         if: steps.check.outputs.is_breaking == 'true'
-        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
             github.rest.issues.addLabels({
@@ -123,7 +123,7 @@ jobs:
   # Welcome first-time contributors
   welcome:
     name: Welcome
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: github.repository_id == '1174219883' && (github.event_name == 'pull_request' && github.event.action == 'opened')
     permissions:
       contents: read
@@ -155,7 +155,7 @@ jobs:
   # to every PR, including forks without the owner's private list.
   private-terms:
     name: Private terms
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: github.repository_id == '1174219883' && (github.event_name == 'pull_request')
     permissions:
       contents: read

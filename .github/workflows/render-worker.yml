@@ -20,7 +20,7 @@ concurrency:
 jobs:
   worker:
     if: github.repository_id == '1174219883'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
       PYTHONPATH: services/render-worker

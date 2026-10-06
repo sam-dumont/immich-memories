@@ -15,6 +15,9 @@ RUN npm run build
 # WHY: pinned to digest to prevent supply-chain attacks via tag mutation
 FROM python:3.11-slim@sha256:b1b81d67b8df73bf6067191790c233ef9e598b863fc1ccf447956138ca466d99 AS builder
 
+# A failing command inside a pipe (the dependency pin filter below) fails the build.
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
 WORKDIR /app
 
 # Install build dependencies
@@ -200,7 +203,7 @@ EXPOSE 8080
 
 # Health check (use python instead of curl since slim image doesn't include curl)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8080/health/live')" || exit 1
+    CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health/live', timeout=8)"]
 
 # Default command: run the UI
 CMD ["immich-memories", "ui", "--host", "0.0.0.0"]

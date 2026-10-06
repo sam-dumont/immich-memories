@@ -28,7 +28,7 @@ permissions:
 jobs:
   build:
     name: Build Docs
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # Model artifact releases (models-v*) are not app releases, and Pages refuses their tags.
     if: >-
       github.repository_id == '1174219883'
@@ -134,7 +134,7 @@ jobs:
     name: Deploy to GitHub Pages
     if: github.repository_id == '1174219883'
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # The deploy-pages contract: pages to publish, id-token to prove which
     # workflow is publishing.
     permissions:
