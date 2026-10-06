@@ -19,7 +19,7 @@ is needed. Use the [minimum read key](../run/docker.md#the-api-key).
 
 ## Prepare and check first
 
-From the Compose project directory, after the image pull and container start:
+From the Compose project directory, after the image pull and container start. Installed without Docker ([pip / uv](../run/uv-pip.md))? Drop `docker compose exec immich-memories` from every command on this page and run `immich-memories ...` directly.
 
 ```bash
 docker compose exec immich-memories immich-memories models fetch
@@ -50,11 +50,15 @@ month to diagnose a first-install problem.
 
 Press **Cut**. The app prepares the pictures and builds the edit. The first cut takes longer; compatible preparation results are reused on later cuts. You can reload the page while it works; return to **Memory** to follow the active cut.
 
+When the cut finishes, the page opens its run by itself. The progress panel's "The cut is ready." can go by too fast to see, so do not wait for it: if the panel is gone and a run page is showing, the cut is done.
+
 ## Read the cut
 
 The finished cut is a run under **Runs**; the page may take you to it. If it doesn't move and returns to the empty form (this happens after a reload during the cut), open **Runs**. The contact sheet shows the shots in playback order. Open one to see it larger, watch its video interval and read why it stayed. **Stories** groups the same shots by story.
 
-Favourites help a moment earn its place. Videos often carry it better than a still. Quiet weeks can be empty: the film goes short instead of padding. [How it chooses](../how-it-chooses/overview.md) explains this without requiring you to configure it.
+Favourites help a moment earn its place. Videos often carry it better than a still. Quiet weeks can be empty: the film goes short instead of padding.
+
+Expect fewer shots than pictures. On the trial album (39 pictures from two days: 38 photos and 1 video) a 0.5 minute film held 7 shots, 6 photos and 1 video, about 26 s of pictures and video. Titles and fades made up the rest of the 30 s. Bursts and near-identical frames count as one shot, and a photo that sits within five minutes of one already kept in its moment is not a new shot, so 20 to 50 pictures from one outing make a handful of shots, not 39. That is the editor working, not a failed cut. [How it chooses](../how-it-chooses/overview.md) has the rules. [How it chooses](../how-it-chooses/overview.md) explains this without requiring you to configure it.
 
 ## Fix it
 
@@ -72,11 +76,11 @@ Under **Render**, pick the cut or your revision in **What to render**, then pres
 
 <ThemedScreenshot name="memory-export" alt="The finished film in the player" />
 
-On Docker, local films land in `./output`. If you select **Upload the film to Immich**, a successful upload removes the local copy. This also happens for CLI and automatic uploads. The run remains in **Runs**, with its link to Immich. Leave upload off when you want the file locally.
+On Docker, local films land in `./output`. Installed natively, they land in `~/Videos/Memories` (under whatever `$HOME` the app runs with). If you select **Upload the film to Immich**, a successful upload removes the local copy. This also happens for CLI and automatic uploads. The run remains in **Runs**, with its link to Immich. Leave upload off when you want the file locally.
 
 Play the local film through to the end with sound. Success means a playable MP4 in the run's
 player, a working **Download**, and the file in `./output` on the Compose host (`/app/output`
-inside the container). Record the actual duration; selection may produce less than the requested
+inside the container), or in `~/Videos/Memories` on a native install. Record the actual duration; selection may produce less than the requested
 30 seconds when usable material runs short. An empty or failed render is not success.
 
 ## Progress and recovery
@@ -85,7 +89,7 @@ inside the container). Record the actual duration; selection may produce less th
 |---|---|---|
 | Image pull | `docker compose pull` layer progress in the terminal | Pull exits successfully; `docker compose up -d` starts the app |
 | Model preparation | `models fetch` downloads or verifies pinned files | Command succeeds, then preflight passes the required checks |
-| Input preparation and cut | Memory page stage, picture counts and elapsed time | “The cut is ready.” and a saved run opens |
+| Input preparation and cut | Memory page stage, picture counts and elapsed time | The page opens the saved run (“The cut is ready.” may flash by first) |
 | Review | Shots, Pool and saved revisions on the run page | You select the revision you intend to render |
 | Render | Render progress on the run page | “The film is ready.”, player and Download |
 
@@ -110,6 +114,7 @@ and run files.
 | Output not writable | Fix UID/GID ownership of this project's `output` using [the NAS permissions recipe](../run/nas.md#the-output-folder), then preflight |
 | Memory pressure or exit 137 | Check `docker stats --no-stream` and container state; keep Basic/1080p and give this app its own 4 GiB budget; see [render budgets](../run/reference/rendering.md) |
 | The cut hangs on thumbnails while preflight is green | The host's network MTU is below Docker's: [set a lower Compose network MTU](../reference/troubleshooting.md#preflight-says-immich-is-connected-but-cuts-hang-on-thumbnails) |
+| A cut fails with “cannot reach” your Immich | A busy or shared Immich can drop connections for several minutes in the middle of preparation. What the cut already prepared is kept: run the same command again and it fetches only what is missing. A month on a shared Immich failed after 10 minutes this way and finished on the immediate rerun, fetching 159 missing previews |
 | Interrupted work | Inspect the job error and saved run, then retry Cut or Render as above; [diagnostics](../run/maintenance/health-logs-cache.md) explains logs and reports |
 
 For a deliberate fresh trial or uninstall, use [the scoped lifecycle procedures](../run/lifecycle.md).
@@ -124,8 +129,10 @@ and actual film length separately. The CLI line, next to the album one:
 immich-memories generate --memory-type monthly_highlights --year 2021 --month 5 --include-photos
 ```
 
-Replace the year and month with your own. That larger run has a different preparation cost; the small
+Replace the year and month with your own. With no `--duration`, a month film aims for 60 s (the trial month gave 60.5 s, portrait). That larger run has a different preparation cost; the small
 trial does not validate a full month or year.
+
+The default render adds the date and place name to the film (`--add-date --add-place`). Place names come from Immich's own place data unless you turn on `network.geocoding`, which asks the public Nominatim (or the server you set in `network.geocoding_url`). It is off by default, so a stock install makes no Nominatim call. [Privacy](../run/privacy.md#geocoding-and-maps) lists everything that can leave your network.
 
 
 Set [home and people](./who-is-who.md), then choose [another kind of film](../make/memory-types.mdx). Titles, format and music can wait until you like the cut.
@@ -162,6 +169,14 @@ On Kubernetes, copy only the film, not the whole output volume:
 
 ```bash
 kubectl cp -n <namespace> -c immich-memories <pod>:/app/output/<run folder>/<name>.mp4 ./film.mp4
+```
+
+For a film over about 100 MB, `kubectl cp` can die with `unexpected EOF` and leave a truncated, unplayable file (a 128 MB film failed 2 times in 3). Stream it instead and compare the size with the one the pod reports:
+
+```bash
+kubectl exec -n <namespace> deploy/immich-memories -c immich-memories -- cat "/app/output/<run folder>/<name>.mp4" > film.mp4
+kubectl exec -n <namespace> deploy/immich-memories -c immich-memories -- stat -c %s "/app/output/<run folder>/<name>.mp4"
+stat -f %z film.mp4   # macOS; on Linux: stat -c %s film.mp4
 ```
 
 ### Portrait or landscape

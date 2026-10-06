@@ -345,6 +345,36 @@ def test_title_rendering_preflight_says_a_container_without_a_gpu_draws_on_the_c
     assert "found no device" in (result.details or "")
 
 
+def test_title_rendering_on_the_gpu_tier_reads_as_the_design_not_a_fault() -> None:
+    # WHY: the dispatch probe is a child process; this is what a GPU-less app pod answers.
+    with patch(
+        "immich_memories.titles.kernel_backend_probe.probe_backend_dispatch", _probes("cpu")
+    ):
+        result = check_title_rendering(Config(), inference_gpu=True)
+
+    assert result.status is CheckStatus.OK
+    assert result.message.startswith("GPU is used for picture preparation")
+
+
+def test_hardware_row_on_the_gpu_tier_is_not_a_warning() -> None:
+    from immich_memories.preflight import check_hardware
+    from immich_memories.processing.hardware import HWAccelBackend, HWAccelCapabilities
+
+    with (
+        patch(
+            "immich_memories.processing.hardware.detect_hardware_acceleration",
+            return_value=HWAccelCapabilities(backend=HWAccelBackend.NONE),
+        ),
+        # WHY: nvidia-smi is the second witness; the app pod has no such binary
+        patch("subprocess.run", side_effect=FileNotFoundError),
+        patch.dict("os.environ", {"NVIDIA_VISIBLE_DEVICES": ""}),
+    ):
+        result = check_hardware(inference_gpu=True)
+
+    assert result.status is CheckStatus.OK
+    assert "encoding and titles stay on the CPU" in result.message
+
+
 def test_title_rendering_preflight_reports_a_cpu_that_cannot_run_a_kernel() -> None:
     """An installed wheel is not proof: a Celeron J4125 has no AVX and dies on the
     first kernel the library compiles (#910). Preflight has to say so before the run,

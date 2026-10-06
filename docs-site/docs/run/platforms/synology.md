@@ -53,9 +53,15 @@ immich-memories models fetch
 immich-memories preflight
 ```
 
-Alternatively, [enable SSH in DSM](https://kb.synology.com/en-global/DSM/help/DSM/AdminCenter/system_terminal?version=7) and run `docker exec immich-memories immich-memories models fetch` (add `sudo` if your user isn't in the `docker` group), followed by the same command ending in `preflight`. Fix connection or storage errors before making a film.
+Alternatively, [enable SSH in DSM](https://kb.synology.com/en-global/DSM/help/DSM/AdminCenter/system_terminal?version=7) and run `docker exec immich-memories immich-memories models fetch` (add `sudo` if your user isn't in the `docker` group), followed by the same command ending in `preflight`. Fix connection or storage errors before making a film. Without a terminal the preflight table wraps at 80 columns and loses its row labels: run it as `docker exec -e COLUMNS=140 immich-memories immich-memories preflight`.
 
 ## 4. Open the app
+
+Three ways in, from simplest to most work. Pick one:
+
+1. **SSH tunnel.** Needs an SSH account that is allowed to forward ports (below). Nothing is published on the LAN.
+2. **DSM reverse proxy with login**, when tunnelling is disabled and you have a LAN DNS name and a TLS certificate: [Authenticated proxy](#authenticated-proxy).
+3. **LAN port with app login**, when you have neither a tunnel nor a certificate: [LAN port with app login](#lan-port-with-app-login-no-tunnel-no-proxy). Plain HTTP on your LAN.
 
 Your SSH account must also be allowed to forward TCP connections. Enabling SSH in DSM does not
 guarantee this: a non-admin account can connect over SSH while the tunnel still fails with
@@ -135,6 +141,9 @@ certificate, already configured on the NAS. This does not require internet expos
    ```
 
    The protected settings endpoint must answer **401** without a session (and 200 after login).
+   Add `-u user:password` and it still answers 401: the login is a form that sets a session
+   cookie, not HTTP Basic, so `curl -u` never signs in. To test the 200, sign in the way the page
+   does and reuse its cookie, see [Checking auth with curl](#checking-auth-with-curl).
    Stop if it returns settings. The public health endpoint is deliberately anonymous and is not an auth test.
 4. In DSM **Control Panel → Login Portal → Advanced → Reverse Proxy**, create a source
    **HTTPS**, hostname `memories.example.com`, port **443**, and destination **HTTP**,
@@ -164,6 +173,20 @@ From a second machine, `/api/v1/settings`, thumbnails and film downloads should 
 without a session and 200 after login, and both should survive `restart` and `down`/`up`.
 The port is plain HTTP, so the password and cookie are visible on your LAN; the proxy route above
 is the one with TLS. `/health/ready` stays anonymous and shows the version and Immich reachability.
+
+### Checking auth with curl {#checking-auth-with-curl}
+
+The app's "Basic auth" is a username and password typed into a login form. It does not read an
+HTTP `Authorization: Basic` header, so `curl -u user:password .../api/v1/settings` gets 401 whatever
+the password. Sign in over `/auth/login`, keep the cookie, and ask again:
+
+```bash
+curl -s -c jar.txt -H 'Content-Type: application/json' \
+  -d '{"username":"admin","password":"your-password"}' http://nas-address:8080/auth/login
+curl -s -b jar.txt -o /dev/null -w '%{http_code}\n' http://nas-address:8080/api/v1/settings   # 200
+```
+
+Use your own address and port. A wrong password gets 401 here too, and repeated failures trigger the rate limit.
 
 See the [deployment matrix](../tested-deployments.md) for which of these routes have a verified
 first run on this platform, and what still needs a report.

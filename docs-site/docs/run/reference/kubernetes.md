@@ -7,7 +7,9 @@ title: "Kubernetes topology and add-ons"
 ## Bring your own Secret
 
 The base references `immich-memories-secrets` in namespace `immich-memories`; it no longer
-creates a Secret. Create it before starting the Deployment. No manifest edits are needed
+creates a Secret. That name is a literal: the base does not contain the Secret, so a kustomize
+`namespace:` or `namePrefix` never rewrites it. Create the Secret with exactly this name in
+whatever namespace you deploy to. Create it before starting the Deployment. No manifest edits are needed
 when your SOPS, Sealed Secrets or External Secrets workflow produces that name.
 
 | Key | When needed |
@@ -257,7 +259,10 @@ Each outside service is a URL on the Deployment; open its port in the NetworkPol
 
 `base/cronjobs.yaml` contains only the two HTTP-trigger schedules, one monthly and one daily.
 Set the trigger token and uncomment `- cronjobs.yaml` in the kustomization, then render and
-apply that root. The separate `base/job.yaml` contains only the one-off `generate` Job;
+apply that root (the [setup builder](/setup) does both when you tick **Scheduled films
+(CronJobs)**). `concurrencyPolicy: Forbid` on them guards nothing, because each Job returns in
+under a second; the app's run lease answers a second trigger with 409. How to test a schedule and
+follow the film it starts: [Batch jobs](../kubernetes.md#batch-jobs). The separate `base/job.yaml` contains only the one-off `generate` Job;
 include it only with the Deployment scaled to zero.
 
 The store defaults to a SQLite file on the `immich-memories-cache` PVC, one writer at a time; a second pod on

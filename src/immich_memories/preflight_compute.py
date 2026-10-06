@@ -24,3 +24,13 @@ def check_inference_compute(config: Config) -> CheckResult:
         f"No verified inference GPU for requested {config.tier} tier",
         f"{reason}. Check the CUDA image/device override or local Metal runtime; the requested tier is unchanged.",
     )
+
+
+def inference_gpu_available(config: Config) -> bool:
+    """Whether a non-basic tier reaches an inference GPU (the answer the compute row prints)."""
+    if config.tier == "basic":
+        return False
+    try:
+        return inference_acceleration(config.inference)[0]
+    except ValueError:
+        return False

@@ -155,6 +155,35 @@ test('Kubernetes install list fetches models before the first film', () => {
   assert.ok(fetch < rows.findIndex(row => /immich-memories preflight$/.test(row)));
 });
 
+const triggerToken = 'b'.repeat(64);
+
+test('Kubernetes without automation has no trigger token and leaves the CronJobs off', () => {
+  const result = buildSetup(kube, sources, '1.2.3');
+  const secret = result.files.find(file => file.name.endsWith('/secret.yaml')).data;
+  assert.equal(secret.stringData.IMMICH_MEMORIES_SERVER__TRIGGER_TOKEN, undefined);
+  assert.doesNotMatch(result.commands, /cronjobs\.yaml/);
+});
+
+test('Kubernetes automation puts the trigger token in the Secret and enables cronjobs.yaml before the apply', () => {
+  const result = buildSetup({...kube, automation: true, triggerToken}, sources, '1.2.3');
+  assert.equal(result.error, null);
+  const secret = result.files.find(file => file.name.endsWith('/secret.yaml')).data;
+  assert.equal(secret.stringData.IMMICH_MEMORIES_SERVER__TRIGGER_TOKEN, triggerToken);
+  const rows = lines(result.commands);
+  const enable = rows.findIndex(row => /cronjobs\.yaml/.test(row) && /^sed /.test(row));
+  assert.ok(enable > -1);
+  assert.ok(enable < rows.findIndex(row => /^kubectl kustomize /.test(row)));
+  assert.ok(enable < rows.findIndex(row => /^kubectl apply -k /.test(row)));
+});
+
+for (const bad of [undefined, 'short']) {
+  test(`Kubernetes automation rejects a bad trigger token: ${bad}`, () => {
+    const result = buildSetup({...kube, automation: true, triggerToken: bad}, sources, '1.2.3');
+    assert.match(result.error, /trigger token/);
+    assert.deepEqual(result.files, []);
+  });
+}
+
 test('native install command scopes prerelease to the pinned package, never the whole resolve', () => {
   const command = nativeInstallCommand('1.2.3', 'all');
   assert.match(command, /--prerelease if-necessary-or-explicit/);

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import UTC, date, datetime
 from pathlib import Path
 
@@ -129,3 +130,31 @@ def test_named_title_style_loads_and_overrides_only_this_render(cut, monkeypatch
     handed = _render(params, attempt, monkeypatch, CutRenderRequest(title_style=style))
     assert handed.config.title_screens.style_mode == style
     assert params.config.title_screens.style_mode == "auto"
+
+
+def test_an_album_film_renders_under_the_name_generate_gave_it(cut, monkeypatch):  # noqa: F811
+    params, attempt = cut
+    album_run = replace(
+        RUN,
+        memory_type="album",
+        output_path=f"/films/album_trip_2025_{RUN.run_id}/album_trip_2025_deadbeef.mp4",
+    )
+    handed = {}
+
+    def generate_memory(given):
+        handed["params"] = given
+        return Path("/films/film.mp4")
+
+    # WHY: the render writes a film with FFmpeg; the engine's own tests own that side.
+    monkeypatch.setattr("immich_memories.generate_saved_cut.generate_memory", generate_memory)
+    render_saved_cut(
+        config=params.config,
+        client=None,
+        run=album_run,
+        attempt_dir=attempt,
+        revision=None,
+        request=CutRenderRequest(),
+    )
+
+    # Not all_album_<year>: one album, one name, whichever command rendered it.
+    assert handed["params"].output_path.name.startswith("album_trip_2025_")

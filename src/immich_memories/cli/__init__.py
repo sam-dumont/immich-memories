@@ -46,7 +46,19 @@ def _warn_about_unauthenticated_external_bind(config: Config, host: str) -> None
     )
 
 
-@click.group()
+class _MemoriesGroup(click.Group):
+    """The command group, ending a run whose Immich stopped answering with its one message."""
+
+    def invoke(self, ctx: click.Context) -> object:
+        from immich_memories.api.immich import ImmichStoppedAnswering
+
+        try:
+            return super().invoke(ctx)
+        except ImmichStoppedAnswering as error:
+            raise click.ClickException(str(error)) from error
+
+
+@click.group(cls=_MemoriesGroup)
 @click.version_option(version=__version__)
 @click.option("--config", "-c", type=click.Path(), help="Path to config file")
 @click.option(
