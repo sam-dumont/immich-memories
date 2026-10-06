@@ -278,6 +278,26 @@ def test_sans_personne_does_not_cancel_back_to_required(lexicon: Lexicon) -> Non
     assert (who.absent_company, who.company) == ("people", None)
 
 
+@pytest.mark.parametrize(
+    "request_text",
+    [
+        "без публики",  # ru: without the audience ("публика" nominative, never declined)
+        "без толпы",  # ru: without the crowd ("толпа" declines to the genitive "толпы")
+        "без зрителей",  # ru: without the spectators (genitive plural of "зрители")
+        "bez tlumu",  # pl: without the crowd (genitive of "tlum")
+        "bez publicznosci",  # pl: without the audience (genitive of "publicznosc")
+    ],
+)
+def test_ru_and_pl_case_forms_of_an_exclusion_noun_are_read(
+    request_text: str, lexicon: Lexicon
+) -> None:
+    """#2072: "без публики" did nothing -- the genitive (and other case) forms Russian and
+    Polish put a noun in after a negation word were missing from the exclusion tables."""
+    who = link_who(request_text, (), STRANGERS, lexicon, _unasked())
+
+    assert who.absent_company == "audience"
+
+
 _HELD_OUT = {
     # Owner ruling round 3: 15+ requests not designed into the code, spread across locales,
     # to check the mechanism generalises rather than matching two campaign phrases. The

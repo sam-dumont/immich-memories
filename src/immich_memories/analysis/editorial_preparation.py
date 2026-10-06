@@ -19,6 +19,11 @@ from immich_memories.analysis.editorial_description_outcomes import cached_previ
 from immich_memories.analysis.editorial_preparation_captions import prepare_captions
 from immich_memories.analysis.editorial_preparation_detector_frames import DetectorFrames
 from immich_memories.analysis.editorial_preparation_detectors import prepare_detectors
+from immich_memories.analysis.editorial_preparation_edits import (
+    edited_preview_targets,
+    ids_owing_faces,
+    owing_flipped_edits,
+)
 from immich_memories.analysis.editorial_preparation_heads import prepare_clip_frames, prepare_heads
 from immich_memories.analysis.editorial_preparation_model_facts import (
     CLIP_COMPANION,
@@ -34,6 +39,10 @@ from immich_memories.analysis.editorial_preparation_motion import (
     playback_sampler,
     prepare_motion_lines,
     seat_asker,
+)
+from immich_memories.analysis.editorial_preparation_obstruction import (
+    prepare_obstruction_frames,
+    prepare_obstruction_heads,
 )
 from immich_memories.analysis.editorial_preparation_pixels import (
     PRODUCER_KEY,
@@ -70,7 +79,9 @@ from immich_memories.operations.cancellation import check_cancelled as current_c
 from immich_memories.store.caption_provenance import CaptionOrigin, origins_for
 from immich_memories.store.caption_selection import conflicting_caption_ids
 from immich_memories.store.editorial_preparation import (
+    edited_mismatch_ids,
     faces_unread,
+    forget_edited_facts,
     heads_missing_for,
     missing_facts,
     remember_assets,
@@ -120,7 +131,7 @@ class PreparationResult:
         Motion descriptions are optional: absent lines leave the pick its plain clip facts.
         """
         return not any(not key.startswith("motion:") for key in self.missing_by_producer) and all(
-            key == "motion"
+            key in ("motion", "obstruction")
             or key.startswith(
                 (
                     "motion:",
@@ -128,6 +139,8 @@ class PreparationResult:
                     f"{CLIP_COMPANION}:",
                     CLIP_FRAMES_HEAD,
                     VIDEO_MOTION,
+                    "obstruction:",
+                    "obstruction_frames",
                 )
             )
             for key in self.failures
@@ -154,6 +167,8 @@ class PreparationResult:
                     CLIP_COMPANION,
                     f"{CLIP_FRAMES_HEAD}:",
                     f"{VIDEO_MOTION}:",
+                    "obstruction",
+                    "obstruction_frames",
                 )
             )
         )
@@ -190,6 +205,8 @@ class PreparationPorts:
     motion: Callable = prepare_motion_lines
     clip_frames: Callable = prepare_clip_frames
     video_motion: Callable = bank_video_motion
+    obstruction: Callable = prepare_obstruction_heads
+    obstruction_frames: Callable = prepare_obstruction_frames
 
 
 # Pictures per write while a producer banks as it goes: a crash costs at most this many.
@@ -273,7 +290,11 @@ class _Acquisition:
         self.seconds[stage] = self.seconds.get(stage, 0.0) + measured.duration
 
     def previews(
-        self, ids: Sequence[str], cache_path: Path, fetch_preview
+        self,
+        ids: Sequence[str],
+        cache_path: Path,
+        fetch_preview,
+        edited_by_id: Mapping[str, bool] | None = None,
     ) -> tuple[dict[str, Path], list[str]]:
         paths: dict[str, Path] = {}
         unusable: list[str] = []
@@ -283,7 +304,8 @@ class _Acquisition:
                 subdir = asset_id[:2] if len(asset_id) >= 2 else "00"
                 path = cache_path / subdir / f"{asset_id}_preview.jpg"
                 try:
-                    ensure_preview(path, asset_id, fetch_preview)
+                    edited = (edited_by_id or {}).get(asset_id, False)  # #2114: may be stale
+                    ensure_preview(path, asset_id, fetch_preview, edited=edited)
                     paths[asset_id] = path
                     self.note(asset_id)
                 except AccountReadFailed:
@@ -319,7 +341,9 @@ class _Acquisition:
                 remember_pixels(self.store, measured)
         refresh_threshold(self.store)
 
-    def faces(self, source: Sequence[Asset], fetch_faces) -> None:
+    def faces(
+        self, source: Sequence[Asset], fetch_faces, *, flipped_edits: frozenset[str] = frozenset()
+    ) -> None:
         """Bank where each face sits in the pictures that name somebody.
 
         Only those pictures: a frame naming nobody has no subject to be framed well
@@ -328,7 +352,8 @@ class _Acquisition:
         """
         if fetch_faces is None:
             return
-        asset_ids = faces_unread(self.store, _naming_somebody(source))
+        named = _naming_somebody(source)
+        asset_ids = ids_owing_faces(faces_unread(self.store, named), named, flipped_edits)
         read: dict[str, Sequence[FaceBox]] = {}
         with self.timed("faces", len(asset_ids)):
             try:
@@ -367,6 +392,27 @@ class _Acquisition:
             raise
         except Exception as exc:
             self.failures["public_heads"] = f"{type(exc).__name__}: {exc}"
+
+    def obstruction_heads(self, asset_ids: Sequence[str]) -> None:
+        """Bank the rank-only finger-over-the-lens reading (#2022); see `complete`."""
+        self.check()
+        try:
+            with self.timed("obstruction", len(asset_ids)):
+                failures = self.providers.obstruction(
+                    asset_ids=asset_ids,
+                    store=self.store,
+                    bundle_path=self.preparation_config.obstruction_bundle_path,
+                    encoder_path=self.triage_config.encoder_path,
+                    preview_for=self.preview_for,
+                    check_cancelled=self.check,
+                    progress=self.report,
+                    provider=self.triage_config.provider,
+                )
+            self.failures.update({f"obstruction:{k}": v for k, v in failures.items()})
+        except AccountReadFailed:
+            raise
+        except Exception as exc:
+            self.failures["obstruction"] = f"{type(exc).__name__}: {exc}"
 
     def remote_facts(self, pending: Mapping[str, Mapping[str, str]]) -> bool:
         """Bank the offloaded producers from the service; False when it did not answer.
@@ -470,6 +516,28 @@ class _Acquisition:
             raise
         except Exception as exc:
             self.failures[VIDEO_MOTION] = f"{type(exc).__name__}: {exc}"
+
+    def obstruction_frames(
+        self, frame_paths: Mapping[str, Sequence[Path]], videos: Mapping[str, Asset]
+    ) -> None:
+        """Bank each video's flagged detector-frame seconds (#2022); see `complete`."""
+        self.check()
+        try:
+            with self.timed("obstruction_frames", len(frame_paths)):
+                errors = self.providers.obstruction_frames(
+                    store=self.store,
+                    videos=videos,
+                    frame_paths=frame_paths,
+                    bundle_path=self.preparation_config.obstruction_bundle_path,
+                    encoder_path=self.triage_config.encoder_path,
+                    check_cancelled=self.check,
+                    provider=self.triage_config.provider,
+                )
+            self.failures.update({f"obstruction_frames:{k}": v for k, v in errors.items()})
+        except AccountReadFailed:
+            raise
+        except Exception as exc:
+            self.failures["obstruction_frames"] = f"{type(exc).__name__}: {exc}"
 
     def captions(self, asset_ids: Sequence[str]) -> None:
         self.check()
@@ -621,7 +689,10 @@ def prepare_editorial_annotations(
         failures={},
     )
     stage.check()
-    preview_paths, preview_missing = stage.previews(ids, cache_path, fetch_preview)
+    flipped_edits = edited_mismatch_ids(store, source)  # before `remember_assets` overwrites it
+    forget_edited_facts(store, flipped_edits)
+    edited_by_id = edited_preview_targets(source, flipped_edits)
+    preview_paths, preview_missing = stage.previews(ids, cache_path, fetch_preview, edited_by_id)
     # This stage writes into the cache layout directly rather than through `put`,
     # so the periodic check `put` performs never sees the previews a scope brings
     # in -- and on a rerun, where nothing is fetched, nothing checks at all. The
@@ -645,13 +716,16 @@ def prepare_editorial_annotations(
     _ensure_sharpness_threshold(store, pixel_producer_key)
     carry_still_exposure(store, source, head_versions)
     before, _ = outstanding()
+    before = owing_flipped_edits(
+        before, flipped_edits, pixel_producer_key, description_model, head_versions
+    )
     available = set(preview_paths)
 
     def pending(key: str) -> tuple[str, ...]:
         return tuple(asset_id for asset_id in before.get(key, ()) if asset_id in available)
 
     _acquire_pixels(stage, pending(f"pixel:{pixel_producer_key}"), pixel_producer_key)
-    stage.faces(source, fetch_faces)
+    stage.faces(source, fetch_faces, flipped_edits=flipped_edits)
     if preparation_config.demands_models:
         frames = DetectorFrames(source, read_playback)
         clips = heads_missing_for(

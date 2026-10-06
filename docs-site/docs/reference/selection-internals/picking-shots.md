@@ -39,7 +39,7 @@ order. Each key only breaks the ties of the one before it.
    (`subject_framing.py`). In a person film only that person's face counts, and a bigger face of
    someone else costs the rung.
 6. **More of the frame** is that person.
-7. **No pixel warning**: `SOFT (blurry)`, `DARK` or `BLOWN OUT` lose.
+7. **No pixel warning**: `SOFT (blurry)`, `DARK`, `BLOWN OUT` or `OBSTRUCTED (edge)` lose.
 8. **The `people` head saw somebody.**
 9. **The middle of the burst** over its first and last frames.
 10. **The clock.**
@@ -107,9 +107,22 @@ library.
 A `SOFT (blurry)` or `DARK` picture never carries a moment alone: with no cleaner sibling to take
 the frame, the moment goes unfunded. A starred one still ships.
 
+`OBSTRUCTED (edge)` is rank-only. A patch-level probe over the DINOv2 tokens of the preview
+(`public-obstruction-v1`, trained on public pictures and synthetic finger composites) flags a frame
+when its largest above-threshold blob touches a border, covers at least 15 % of the frame, is at
+least half skin tone and is not a shadow; a blob mostly covered by a face box is a face, not a
+finger (`editorial_obstruction.py`). The warning only sorts frames at key 7: it is never a refusal,
+never part of the standing table, and a moment whose only frame is flagged still ships it. A picture
+never measured for it reads as clean. Detection rates are on
+[Measure your setup](../../better/measured.md#finger-over-the-lens).
+
 The public `people` head almost never says "none" (0.66 % of the pictures in one real library, against about a third
 on a hand-checked sample), so its word is checked first: a picture counts as having people only when
-Immich found a face on it or its caption names a person. Anything else is read as `none`.
+Immich found a face on it or its caption names a person. Anything else is read as `none`. A
+person is read from the curated English person-word list the free-text matcher uses (`skier`,
+`player`, `lady`, `crowd` and the rest), plus `dad`, `mom`, `bride` and `groom`. The check only runs
+over a batch in which at least one picture carries a face box: in a library with face detection off
+or never run, every face list is empty, so an empty one proves nothing and the head's word stands.
 
 Two short cuts sit above the table. A frame the head calls a people moment is never refused when it
 is sharp, not dark, and Immich found a face on it. A picture whose caption names a person is never
@@ -159,7 +172,10 @@ once for where to cut, and the answer is banked for every later film. The pictur
 every predicted frame in the clip's encoding stores only what changed since the one before it, so
 frame sizes jump when something moves across an otherwise still shot. That size is in the clip's
 own frame index, so nothing needs decoding to read it; from a static camera the jump marks the
-action (riders crossing a finish line, not the empty road before them). The sound decides next for
+action (riders crossing a finish line, not the empty road before them). Each second inside a
+candidate window that the finger check flagged costs that window half a second of score, so of two
+equally busy windows the clean one plays; a clip flagged everywhere pays the same everywhere and
+keeps its window. The sound decides next for
 a handheld clip, which changes everywhere: the loudest moment (the cheer when the candles go out, a
 squeal) with a second and a half of build-up before it, or, with no standout moment, the stretch
 with the most talking. Only the sound is fetched, a minute of it at most, so a five-minute clip

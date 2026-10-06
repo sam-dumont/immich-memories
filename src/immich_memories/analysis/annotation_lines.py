@@ -9,6 +9,7 @@ from datetime import date, datetime
 from typing import TYPE_CHECKING, Protocol
 from uuid import UUID
 
+from immich_memories.analysis import editorial_obstruction
 from immich_memories.analysis.annotation_line_fields import FLAGGED, STARRED
 from immich_memories.analysis.editorial_carrier_eligibility import CARRYING_KINDS
 from immich_memories.analysis.editorial_clip_frames import (
@@ -50,6 +51,10 @@ _HEAD_SILENCE = {
     # A frame kind is only worth a reader's attention when it says the frame carries nothing.
     "frame_kind": CARRYING_KINDS,
     CLIP_FRAMES_HEAD: frozenset({SHOWS_ITS_MOMENT}),
+    # Rendered as a pixel warning (OBSTRUCTED (edge)) by `_pixel_warnings`, never as a head bit.
+    editorial_obstruction.HEAD_NAME: frozenset(
+        {editorial_obstruction.CLEAR_LABEL, editorial_obstruction.OBSTRUCTED_LABEL}
+    ),
 }
 _HEAD_RENAMES = {
     "doc_docling": "document",
@@ -190,8 +195,14 @@ class StoredAnnotationLineReader:
             raise ValueError("annotation reader needs unique candidate IDs")
         self._candidate_by_id = candidate_by_id
         # A clip's frame reading is banked only for clips, so no picture is ever owed it and
-        # it is not a configured head; every line reads it where it exists.
-        head_versions = {**head_versions, CLIP_FRAMES_HEAD: CLIP_FRAMES_VERSION}
+        # it is not a configured head; every line reads it where it exists. The obstruction
+        # head (#2022) is the same shape: rank-only, nothing is ever owed it, and a line
+        # reads it wherever `prepare_obstruction_heads` banked it.
+        head_versions = {
+            **head_versions,
+            CLIP_FRAMES_HEAD: CLIP_FRAMES_VERSION,
+            editorial_obstruction.HEAD_NAME: editorial_obstruction.HEAD_VERSION,
+        }
         self._head_versions = head_versions
         self._people_context = dict(people_context or {})
         self._subjects = frozenset(_clean(subject) for subject in subjects if _clean(subject))
@@ -502,9 +513,9 @@ def _age_label(born: date | None, when: datetime) -> str | None:
 
 def _pixel_warnings(facts: StoredAssetAnnotationFacts) -> tuple[str, ...]:
     pixel = facts.pixel
-    if pixel is None:
-        return ()
     warnings = []
+    if pixel is None:
+        return _obstruction_warning(facts)
     if (
         pixel.sharpness is not None
         and pixel.soft_below is not None
@@ -527,7 +538,14 @@ def _pixel_warnings(facts: StoredAssetAnnotationFacts) -> tuple[str, ...]:
         warnings.append("BLOWN OUT")
     if pixel.needs_rotation:
         warnings.append("rotated")
-    return tuple(warnings)
+    return tuple(warnings) + _obstruction_warning(facts)
+
+
+def _obstruction_warning(facts: StoredAssetAnnotationFacts) -> tuple[str, ...]:
+    flagged = dict(facts.heads).get(editorial_obstruction.HEAD_NAME) == (
+        editorial_obstruction.OBSTRUCTED_LABEL
+    )
+    return (editorial_obstruction.WARNING,) if flagged else ()
 
 
 def _place(candidate: EditorialCandidate) -> str:

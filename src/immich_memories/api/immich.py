@@ -29,6 +29,7 @@ from immich_memories.api.models import (
     MetadataSearchResult,
     Person,
     ServerInfo,
+    Stack,
     TimeBucket,
     UserInfo,
 )
@@ -544,14 +545,19 @@ class ImmichClient:
     async def get_asset(self, asset_id: str) -> Asset:
         return await self.assets.get_asset(asset_id)
 
+    async def get_stacks(self) -> list[Stack]:
+        return await self.assets.get_stacks()
+
     async def get_asset_faces(self, asset_id: str) -> list[AssetFace]:
         return await self.assets.get_asset_faces(asset_id)
 
     async def get_asset_ocr_text(self, asset_id: str) -> str | None:
         return await self.assets.get_asset_ocr_text(asset_id)
 
-    async def get_asset_thumbnail(self, asset_id: str, size: str = "preview") -> bytes:
-        return await self.assets.get_asset_thumbnail(asset_id, size)
+    async def get_asset_thumbnail(
+        self, asset_id: str, size: str = "preview", *, edited: bool = False
+    ) -> bytes:
+        return await self.assets.get_asset_thumbnail(asset_id, size, edited=edited)
 
     def get_video_playback_url(self, asset_id: str) -> str:
         return self.assets.get_video_playback_url(asset_id)
@@ -571,12 +577,15 @@ class ImmichClient:
         return await self.assets.get_video_playback_range(asset_id, start, length)
 
     async def download_asset(
-        self, asset_id: str, output_path: Path, *, expected_size_bytes: int | None = None
+        self,
+        asset_id: str,
+        output_path: Path,
+        *,
+        expected_size_bytes: int | None = None,
+        edited: bool = False,
     ) -> Path:
-        if expected_size_bytes is None:
-            return await self.assets.download_asset(asset_id, output_path)
         return await self.assets.download_asset(
-            asset_id, output_path, expected_size_bytes=expected_size_bytes
+            asset_id, output_path, expected_size_bytes=expected_size_bytes, edited=edited
         )
 
     # ---- Delegate to PersonService ----

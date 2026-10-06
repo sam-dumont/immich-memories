@@ -13,7 +13,7 @@ preparation and rendering, the [one GPU service](../reference-setup.md) is simpl
 
 <DeploymentDiagram topology="cluster" />
 
-[How I run it](../how-i-run-it.md) describes the owner's own cluster built from these pieces, why each one is there, and where it departs from this overlay.
+[How I run it](../how-i-run-it.md) describes the maintainer's own cluster built from these pieces, why each one is there, and where it departs from this overlay.
 
 ## What runs where
 

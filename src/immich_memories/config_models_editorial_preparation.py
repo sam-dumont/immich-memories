@@ -126,3 +126,10 @@ class EditorialPreparationConfig(BaseModel):
         if self.head_bundle.strip():
             return Path(self.head_bundle).expanduser()
         return Path(__file__).parent / "triage" / "bundled_heads" / "public-8heads-v4.npz"
+
+    @property
+    def obstruction_bundle_path(self) -> Path:
+        """The shipped finger-over-the-lens probe (#2022); not configurable, like the
+        bundle above's default: it is trained on public data only and ships with the
+        package."""
+        return Path(__file__).parent / "triage" / "bundled_heads" / "public-obstruction-v1.npz"

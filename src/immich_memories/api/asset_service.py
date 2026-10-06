@@ -10,7 +10,7 @@ from typing import Any, TypeVar
 
 import httpx
 
-from immich_memories.api.models import Asset, AssetFace
+from immich_memories.api.models import Asset, AssetFace, Stack
 from immich_memories.tracking.timed import timed
 
 RequestFn = Callable[..., Any]
@@ -92,6 +92,11 @@ class AssetService:
         data = await self._request("GET", f"/assets/{asset_id}")
         return Asset(**data)
 
+    async def get_stacks(self) -> list[Stack]:
+        """Every stack this account's key can see; needs `stack.read`, checked by the caller."""
+        data = await self._request("GET", "/stacks")
+        return [Stack(**row) for row in data] if isinstance(data, list) else []
+
     async def get_asset_faces(self, asset_id: str) -> list[AssetFace]:
         """Every face Immich found in one asset, with where each sits.
 
@@ -121,9 +126,17 @@ class AssetService:
         return _joined_ocr_text(data)
 
     @timed("download.preview", items=1)
-    async def get_asset_thumbnail(self, asset_id: str, size: str = "preview") -> bytes:
-        """Get asset thumbnail."""
-        params = {"size": size}
+    async def get_asset_thumbnail(
+        self, asset_id: str, size: str = "preview", *, edited: bool = False
+    ) -> bytes:
+        """Get asset thumbnail.
+
+        ``edited`` asks for the render Immich's own editor produced (crop, rotate,
+        mirror) instead of the untouched original; always JPEG or WebP, never HEIC.
+        """
+        params: dict[str, Any] = {"size": size}
+        if edited:
+            params["edited"] = "true"
         return await self._request("GET", f"/assets/{asset_id}/thumbnail", params=params)
 
     def get_video_playback_url(self, asset_id: str) -> str:
@@ -173,15 +186,24 @@ class AssetService:
         max_size_bytes: int = DEFAULT_DOWNLOAD_LIMIT,
         *,
         expected_size_bytes: int | None = None,
+        edited: bool = False,
     ) -> Path:
         """Download an original, bounded by its known size or the fallback limit.
 
         A caller with original-file metadata may supply an exact size above the
         fallback limit. Both oversized and incomplete transfers then fail.
 
+        ``edited`` asks for Immich's own edited render (crop, rotate, mirror)
+        instead of the untouched original. Its size is unrelated to the
+        original's -- `fileSizeInByte` describes the file this never downloads --
+        so any `expected_size_bytes` is ignored and the transfer is only bounded
+        by `max_size_bytes`.
+
         Raises:
             ValueError: If download exceeds its bound or differs from the expected size.
         """
+        if edited:
+            expected_size_bytes = None
         max_size_bytes = _download_bound(max_size_bytes, expected_size_bytes)
         return await self._stream_to(
             f"/api/assets/{asset_id}/original",
@@ -189,6 +211,7 @@ class AssetService:
             output_path,
             max_size_bytes,
             expected_size_bytes,
+            params={"edited": "true"} if edited else None,
         )
 
     @timed("download.playback", items=1)
@@ -209,11 +232,13 @@ class AssetService:
         output_path: Path,
         max_size_bytes: int,
         expected_size_bytes: int | None,
+        *,
+        params: dict[str, str] | None = None,
     ) -> Path:
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
         async def attempt() -> Path:
-            async with self._get_client().stream("GET", url) as response:
+            async with self._get_client().stream("GET", url, params=params) as response:
                 response.raise_for_status()
                 _check_content_length(
                     response.headers.get("content-length", ""),

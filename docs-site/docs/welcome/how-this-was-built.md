@@ -5,7 +5,7 @@ description: Nine months of building Immich Memories, the experiments that faile
 
 # How this was built
 
-This is the project's history through September 2026. It includes retired tools, failed experiments and measurements from those versions. For the current product, start with [what it does](./introduction.mdx); for the current code, see [the architecture](../contribute/architecture.md).
+This is the project's history through its first release candidate, 1.0.0-rc.1, in October 2026. It includes retired tools, failed experiments and measurements from those versions. For the current product, start with [what it does](./introduction.mdx); for the current code, see [the architecture](../contribute/architecture.md).
 
 > "what was supposed to be a weekend project became a 9 month constant refactor but I’m getting where
 > I want"
@@ -311,6 +311,61 @@ fix from the defect list and the install gate, and the campaign resumed on the f
 its own worst finding: the same people-filter request that had matched 41 of 162 pictures on the
 old build matched 88 of 88 on the new one.
 
+## Two defects, one bug, and a line in the sand
+
+Reading the campaign's actual rendered films, not just its logs, found one more thing the
+selection checks couldn't see: a title model free to invent a relationship nobody had claimed. Given
+only a birth date and an age, it filled the gap with the likeliest story and called a close family
+friend someone's child. The fix made the title model state only what the household's own records
+actually say, and nothing it doesn't.
+
+The sharper bug looked like two separate problems until I read them side by side. One film buried
+43% of its length in near-identical frames of a single photo pile it had already shown once. Another,
+from a day with plenty of real footage to choose from, stayed capped at a flat 30 seconds like it had
+nothing left to say. Both came out of the same step: a pass that tops up a thin moment with more
+material, counting how many pictures it had added instead of how many seconds, with no limit on
+repeating the same shot. Fixed, it counts distinct shots and real seconds, and a film is now allowed
+to come out honestly short when the material actually runs out, with one line in the log saying so
+instead of papering over it.
+
+That fix landed, and so did the ruling that closed the list: fix it now only if it breaks something,
+a crash, a wrong or unsafe video, a privacy problem; everything else becomes an issue for later. Nine
+months of "just one more pass" needed exactly one sentence to end: *polish gets after release, or we
+never stop*.
+
+## What actually works, checked
+
+The first pass at "is everything working" was an inventory, not a test: of 165 advertised features,
+78 had evidence they worked, 21 hadn't been touched in a while, and 61 had never been exercised for
+real at all. I called that out, and the next pass ran every row for real, on my own library, on the
+exact code about to be tagged: 246 checks, every film type, the web app driven in a browser, two
+full 4K renders with music, an upload back to Immich. 181 came back right. 8 were broken and 27
+gave the wrong output, including a config error that printed every secret in the file and a
+`--photo-duration` flag that did nothing at all, all with 12,000 green tests behind them. The
+security problem and every broken or wrong flow outside the experimental free-text feature got fixed, or ruled expected,
+before the tag. The lesson went into the backlog too: tests that check each advertised feature's real
+output, not just the functions underneath it.
+
+The sharpest finding had nothing to do with video: the scheduler. The automation that's supposed to
+make a film every week on its own hadn't had a real run on my own Mac since August, switched off
+after it was caught running from a stale copy of the code during two unrelated crashes. Linux's
+version of the same job had never been tried even once. Both got run for real before anything shipped.
+
+One advertised gap got closed properly instead of papered over: nothing had ever caught a finger
+over the lens. The project's own rule is that a trained model only ever learns from public pictures,
+never the library it runs on, so the fix trains on public "finger over the camera" photo sets instead
+of mine. Tested read-only against real footage, it still isn't accurate enough to drop a shot on its
+own say, so it ships as a warning, not a verdict: a flagged shot loses only to a clean version of the
+same moment, and a favourite still wins outright regardless.
+
+Even this page went through its own round: an early rewrite of the whole docs set still reads like a
+build log, commit numbers and dates on a page a stranger reads before deciding whether to install
+anything. The fix was the same discipline as everywhere else in this project: every page answers the
+one question its own reader actually has, and this is the one page that gets to keep its dates.
+
+That round of fixes, and the one before it, became **1.0.0-rc.1**, the project's first public release
+candidate.
+
 ## Nine months at a glance
 
 | Period | What changed |
@@ -322,6 +377,7 @@ old build matched 88 of 88 on the new one.
 | August 2026 | Selection became an edit; model experiments got tested and discarded. |
 | September 2026 | Stories replaced day quotas, the plain NAS became the baseline, and the third web UI arrived. |
 | Late September - early October 2026 | Launch triage, a real-hardware control gate, a render-speed pass and a 256-finding docs audit, then a strict people filter and a restored in-clip cut. |
+| Early October 2026 | A feature-by-feature check of everything the docs advertise, a finger-over-lens warning trained only on public photos, and a rewrite of these docs: **1.0.0-rc.1**. |
 
 ## See what sticks, then cut
 

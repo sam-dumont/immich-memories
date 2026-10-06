@@ -68,7 +68,7 @@ answers "insufficient permissions", so read the transcript above instead.
 
 It ranks suitable memories and avoids repeating the same category or person too often. That choice selects the subject; the normal editor still chooses the shots. Trips wait until after you are home and birthdays wait a little for phone uploads.
 
-**Suggestions** shows each reason. **Check eligibility** previews the checks, and **Run this suggestion** asks for that candidate. A manual request still respects the automation rules. Opening **Check eligibility** counts as that day's run: it writes the attempt the day would otherwise have made, so the scheduled timer does not fire again until tomorrow.
+**Suggestions** shows each reason. **Check eligibility** previews the checks without rendering, and **Run this suggestion** asks for that candidate. A manual request still respects the automation rules. A check is a dry run: it shows up in the history, and the day's scheduled film still runs at its time.
 
 ## Check on it
 

@@ -532,7 +532,7 @@ class TestBuildAssemblySettingsExtraBranches:
         settings = build_assembly_settings(params, [])
         assert settings.scale_mode == "fit"
 
-    @pytest.mark.parametrize(("tier", "expected"), [("nas", (1920, 1080)), ("gpu", (3840, 2160))])
+    @pytest.mark.parametrize(("tier", "expected"), [("basic", (1920, 1080)), ("gpu", (3840, 2160))])
     def test_4k_resolution_respects_the_tier(self, tier, expected):
         params = GenerationParams(
             clips=[],

@@ -30,6 +30,11 @@ SOUND_LEAD_SECONDS = 1.5
 SPEECH_MARGIN_SECONDS = 0.5
 # Past the minimum hold a clip may be shaved from its end, so action there counts for less.
 SHAVABLE_WEIGHT = 0.5
+# #2022: a flagged second inside a candidate window costs this much of a second of score,
+# so a window that holds a flagged moment loses to an equally-busy one that does not. When
+# every window is equally flagged the penalty is the same everywhere and changes nothing,
+# so the clip keeps today's choice rather than being pushed somewhere arbitrary.
+OBSTRUCTION_PENALTY_SECONDS = 0.5
 
 
 def _change(start: float, hold: float, probes, peak: float) -> float:
@@ -37,6 +42,11 @@ def _change(start: float, hold: float, probes, peak: float) -> float:
     return sum(
         (1.0 if t < sure_end else SHAVABLE_WEIGHT) * m / peak for t, m in probes if start <= t < end
     )
+
+
+def _obstruction_penalty(start: float, hold: float, obstructed: Sequence[float]) -> float:
+    flagged_inside = sum(1 for second in obstructed if start <= second < start + hold)
+    return OBSTRUCTION_PENALTY_SECONDS * flagged_inside
 
 
 def _spoken(start: float, hold: float, speech) -> float:
@@ -80,16 +90,20 @@ def choose_window(
     hold: float,
     speech: Sequence[tuple[float, float]] = (),
     loudness: Sequence[tuple[float, float]] = (),
+    obstructed: Sequence[float] = (),
 ) -> float:
     """The start, in source seconds, of the ``hold`` that shows the most of this clip.
 
     ``probes`` are (second, activity) readings of the picture, ``loudness`` (second, dB)
-    readings of the sound, ``speech`` the measured utterances. A clear peak of change in
-    the picture decides: from a still camera it is the action, and a crowd's PA heard all
-    along must not pull a finish line off its riders. A handheld clip changes everywhere,
-    so its sound decides next: the loudest moment (a cheer, the candles, a squeal) inside
-    the part that always plays. Without either, the window holding the most speech wins, so
-    a joke told on a walk starts on its first line. Otherwise the opening stays.
+    readings of the sound, ``speech`` the measured utterances, ``obstructed`` the seconds a
+    finger-over-the-lens check flagged (#2022). A clear peak of change in the picture
+    decides: from a still camera it is the action, and a crowd's PA heard all along must not
+    pull a finish line off its riders. A handheld clip changes everywhere, so its sound
+    decides next: the loudest moment (a cheer, the candles, a squeal) inside the part that
+    always plays. Without either, the window holding the most speech wins, so a joke told on
+    a walk starts on its first line. Otherwise the opening stays. Among windows that would
+    otherwise tie, one holding fewer flagged seconds wins; flagged everywhere, the penalty
+    is everywhere the same and today's choice stands.
     """
     if duration <= hold:
         return 0.0
@@ -97,7 +111,11 @@ def choose_window(
     peak = max((m for _, m in probes), default=0.0)
     rises = _excess(loudness)
     if peak > 0:
-        seen = _best(starts, lambda s: _change(s, hold, probes, peak))
+
+        def scored(s: float) -> float:
+            return _change(s, hold, probes, peak) - _obstruction_penalty(s, hold, obstructed)
+
+        seen = _best(starts, scored)
         if _change(seen, hold, probes, peak) > _change(0.0, hold, probes, peak) * CLEAR_MARGIN:
             return seen
     if rises:
@@ -121,6 +139,9 @@ class Facts(Protocol):
     @property
     def speech(self) -> Sequence[tuple[float, float]]: ...
 
+    @property
+    def obstructed(self) -> Sequence[float]: ...
+
 
 def place_windows(
     carriers: list[dict], facts_for: Callable[[str, float], Facts | None]
@@ -143,6 +164,7 @@ def place_windows(
                 hold=hold,
                 speech=facts.speech,
                 loudness=facts.loudness,
+                obstructed=facts.obstructed,
             )
             carrier = carrier | {"start_time": start}
             set_duration(carrier, hold)

@@ -82,8 +82,9 @@ chosen title/caption language. If a translation is missing, it tries the base la
 native name rather than English. A Greek village with no French name stays in Greek
 script in a French film, not translated or anglicised. A town keeps its name even when
 no translation exists. Administrative words come off: "Limassol District" reads Limassol, "Pärnu linn"
-reads Pärnu. Latvian, Lithuanian and Finnish labels keep theirs for now, because the name in
-front is in the genitive.
+reads Pärnu. A Latvian, Lithuanian or Finnish municipality name
+comes in the genitive ("Helsingin kaupunki"), so the caption uses the city Immich stored for the
+picture instead ("Helsinki").
 
 Near the configured home base, captions can name the district, such as Montmartre in Paris; further
 out, a district needs most of a stay's pictures behind it to keep its name, and excursions keep

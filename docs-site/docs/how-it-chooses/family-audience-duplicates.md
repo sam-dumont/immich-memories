@@ -33,6 +33,12 @@ These decisions are different from editing one finished cut. Ticking or untickin
 
 Confirm the relationships that apply to your household in [Home and people](../get-started/who-is-who.md). The editor can give a close relative an appearance when they are present in the period but missing from the cut.
 
-Copies and bursts normally become one shot. Later checks remove repeated scenes, favouring your stars and useful motion. A shorter film is preferable to the same sunset twice.
+Copies and bursts normally become one shot. When Immich holds the same picture more than once, the film plays one file:
+
+- **A copy or an edit.** A shared album's smaller copy, or the edited version your phone uploaded next to the original (same file name, same camera, same capture instant): the newest full-size version plays, so your edit wins over the original and a downscaled album copy never does. A star, the people Immich recognised and a `generate --include` or `--exclude` on any of the files count for the one kept.
+- **The same bytes twice.** Your partner's phone uploaded it too, or a second account holds it: one copy plays, and a star on any of them counts.
+- **An Immich stack.** The stack's top picture plays, and a star on any picture in the stack counts for it. Reading stacks needs the optional `stack.read` permission on the [API key](../run/docker.md#the-api-key); without it every stacked picture is its own candidate.
+
+Later checks remove repeated scenes, favouring your stars and useful motion. A shorter film is preferable to the same sunset twice.
 
 For detector coverage, hold precedence, family-seat thresholds and duplicate comparisons, read the [sharing and duplicate reference](../reference/selection-internals/family-audience-duplicates.md).

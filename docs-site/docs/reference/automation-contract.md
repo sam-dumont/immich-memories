@@ -38,7 +38,8 @@ Either `automation.upload_to_immich: true` or `upload.enabled: true` requests de
 The UI process then runs the same `auto run` decision once a day, with the same lock, history, upload retry
 and notifications as the CLI. A container that was down at `daily_at` catches up when it starts; if the day's
 run already happened (a manual `docker compose exec immich-memories immich-memories auto run` counts) it waits
-for tomorrow. A manual `auto run` in progress holds the same automation lock, so the timer's attempt never
+for tomorrow. A dry run does not count: a **Check eligibility** or an `auto run --dry-run` earlier that
+day leaves the scheduled film in place. A manual `auto run` in progress holds the same automation lock, so the timer's attempt never
 starts and leaves no attempt row: `auto history` and `auto status` never show it. A manual `generate` in
 progress holds a different lock (the pipeline lock, not the automation lock), so the timer's own attempt
 does start, its child `generate` then fails to get the pipeline lock, and the attempt ends `failed`, not

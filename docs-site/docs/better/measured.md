@@ -138,6 +138,25 @@ resident memory dropped from about 2.3 GiB to about 507 MiB on a 16 GiB Mac. See
 [the caption service reference](../reference/caption-service.md#apple-silicon-with-llamacpp) for
 the setup.
 
+## Finger over the lens {#finger-over-the-lens}
+
+The finger check is a small head trained only on public images (Commons pictures and synthetic
+fingers pasted on them). It was then run against the maintainer's library, which it never saw in
+training.
+
+| Set | Flagged |
+| --- | --- |
+| Real finger-over-the-lens photos | 26 of 49 |
+| Real finger-over-the-lens video previews | 11 of 20 |
+| Look-alike photos with no finger | 32 of 440 |
+| Random photos | 4 of 2,000 |
+| Look-alike video previews with no finger | 6 of 69 |
+| Random video previews | 9 of 384 |
+| Whole library | 240 of 56,372 (0.4%) |
+
+It catches about half of the real ones. That's why a flagged picture only loses to a clean shot of
+the same moment and is never dropped: see [picking a shot](../how-it-chooses/picking-shots.md).
+
 ## Read your own run
 
 ```bash

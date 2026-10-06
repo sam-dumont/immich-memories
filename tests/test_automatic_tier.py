@@ -202,7 +202,7 @@ def test_explicit_nas_config_does_not_import_inference_runtimes():
         [
             sys.executable,
             "-c",
-            "import sys; from immich_memories import Config; Config(tier='nas'); "
+            "import sys; from immich_memories import Config; Config(tier='basic'); "
             "assert not {'numpy', 'onnxruntime', 'mlx.core'} & sys.modules.keys()",
         ],
         capture_output=True,

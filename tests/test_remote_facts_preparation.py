@@ -88,6 +88,11 @@ def test_cold_offload_then_warm_reuses_all_facts_without_network(monkeypatch, tm
     assert len(calls) == 2
     assert all(set(names) == {"heads", "nsfw_marqo", "doc_docling"} for names in calls)
     rows = banked_rows()
+    # #2022: the obstruction head banks locally (its own encoder pass, no remote path) for
+    # both assets, alongside the 20 rows the remote service answered.
+    obstruction_rows = [row for row in rows if row[0] == "obstruction"]
+    assert len(obstruction_rows) == 2
+    rows = [row for row in rows if row[0] != "obstruction"]
     assert len(rows) == 20
     for head, version, key in rows:
         assert version == EditorialConfig().head_versions[head]
@@ -130,7 +135,7 @@ def test_an_unreachable_service_is_named_and_the_local_producers_take_over(monke
     assert result.complete is False
     assert ENDPOINT in result.failures["remote_facts"]
     assert "local" in result.failures["remote_facts"]
-    assert {name for name, _ in local_calls} == {"heads", "detectors"}
+    assert {name for name, _ in local_calls} == {"heads", "detectors", "obstruction"}
     assert result.missing_by_producer == {}
 
 
@@ -148,7 +153,8 @@ def test_without_the_fallback_a_dead_service_leaves_the_facts_missing(monkeypatc
     assert result.complete is False
     assert "HTTP 503" in result.failures["remote_facts"]
     assert ENDPOINT in result.failures["remote_facts"]
-    assert local_calls == []
+    # #2022: obstruction has no remote path, so it still runs locally here.
+    assert [name for name, _ in local_calls] == ["obstruction"]
     assert set(result.missing_by_producer) == {
         f"head:{head}@{version}" for head, version in EditorialConfig().head_versions.items()
     }
@@ -166,7 +172,8 @@ def test_a_malformed_answer_banks_nothing(monkeypatch, tmp_path):
         tmp_path, inference=InferenceConfig(facts_base_url=ENDPOINT, fallback_to_local=False)
     )
     assert result.complete is False
-    assert banked_rows() == []
+    # #2022: obstruction has no remote path and is unrelated to the malformed answer.
+    assert [row[0] for row in banked_rows()] == ["obstruction", "obstruction"]
     assert "incompatible" in result.failures["remote_facts"]
 
 
@@ -180,7 +187,7 @@ def test_the_local_path_is_untouched_when_no_endpoint_is_configured(tmp_path):
         fetch_preview=lambda _: preview(),
     )
     assert result.complete
-    assert {name for name, _ in calls} == {"heads", "detectors"}
+    assert {name for name, _ in calls} == {"heads", "detectors", "obstruction"}
 
 
 def fake_service(response: httpx.Response) -> RemoteFactsClient:
@@ -413,5 +420,6 @@ def test_unreadable_video_frames_use_remote_preview_exposure_and_report_the_fail
         ["doc_docling", "heads", "nsfw_marqo"],
         ["nsfw_marqo"],
     ]
-    assert handed == {} and local_calls == []
+    # #2022: obstruction has no remote path, so it still runs locally here.
+    assert handed == {} and [name for name, _ in local_calls] == ["obstruction"]
     assert "detector_frames:vv1" in result.failures

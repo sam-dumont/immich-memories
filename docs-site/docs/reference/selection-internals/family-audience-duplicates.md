@@ -190,21 +190,35 @@ prints yours last.
 
 ## Duplicates
 
-Sameness is decided in four places, from what ingest banked (the preview hash and the scene print).
+Sameness is decided in four places, from Immich's own metadata (checksums, file names, capture times, stacks) and what ingest banked (the preview hash and the scene print).
 No tier asks a model to compare two pictures.
 
-1. **Copies, at the source.** A shared album carries no originals, so a curated shot arrives twice:
-   the camera's file and a ~2048 px downscale, same name, same instant to the millisecond. Files
-   with the same camera name, kind and capture instant are one picture. So is a file forwarded
-   back under a UUID name on the same second, when both cached previews sit within 2 bits (a
-   received batch shares a second too, so the pixels have to agree; burst frames hash alike, so
-   the name has to say it was forwarded). The file with the most pixels plays, a star on any copy
-   counts for the picture, and the others are left out as "another file of the same picture". On
-   one measured February that was 352 of 2,028 files. Files with the same bytes (an equal SHA-1) are one
-   picture too: your partner's phone uploaded it as well, or a second account of a
-   `generate --accounts` run holds it. A Live Photo copy stands for it before a plain one, then a
-   starred copy, then the primary account's. A video whose bytes are a Live Photo's own motion
-   folds into that Live Photo (`exact_copies.py`).
+1. **Copies, at the source.** Three folds run before the editor sees the pool, in this order.
+   - *Same bytes* (`exact_copies.py`). Files with an equal SHA-1 and the same kind are one picture:
+     your partner's phone uploaded it as well, or a second account of a `generate --accounts` run
+     holds it. A Live Photo copy stands for it before a plain one, then a starred copy, then the
+     primary account's, then the smallest (owner id, asset id). A video whose bytes are a Live
+     Photo's own motion folds into that Live Photo. A star on any copy stars the kept one, and an
+     `--include` or `--exclude` naming a folded copy names the kept one.
+   - *Same picture, other file* (`picture_copies.py`). A shared album carries no originals, so a
+     curated shot arrives twice: the camera's file and a ~2048 px downscale. An iOS edit arrives
+     twice too: Immich has no replace endpoint, so the edit lands next to the original. Files with
+     the same file-name stem, kind and capture instant (EXIF's own, to the millisecond) are one
+     picture, and where EXIF carries a camera model it has to match as well. So is a file
+     forwarded back under a UUID name on the same second, when both cached previews sit within 2
+     bits (a received batch shares a second too, so the pixels have to agree; burst frames hash
+     alike, so the name has to say it was forwarded). A file under half the pixels of the group's
+     largest is a shared-album downscale and never plays; among the rest, the newest
+     `fileModifiedAt` plays, then the higher asset id on an exact tie. A star, the people
+     recognised on any file, and an `--include` or `--exclude` naming any file carry to the kept
+     one. The others are left out as "another file of the same picture".
+   - *Immich stacks* (`stacks.py`). `GET /stacks` is read once per account per run. Every member
+     of a stack is left out as "another file of the same stack" and the stack's primary (the top
+     picture) plays; a star on any member stars the primary. Only the star moves: people stay on
+     the file they were tagged on, and an `--include` naming a member does not carry to the
+     primary. A member whose primary is outside the pool stays a
+     candidate. The read needs `stack.read`; a key without it, or a server with no stacks
+     endpoint, logs one warning per account and the run folds no stacks.
 2. **Bursts, before the editor.** Photos within `photos.burst_window_seconds` (300) of each other
    **and** within `photos.burst_hash_threshold` (8) bits on a preview hash are one burst; the
    favourite survives it, else the best frame. A photo with no hash is kept.

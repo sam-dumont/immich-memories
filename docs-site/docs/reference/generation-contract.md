@@ -154,6 +154,29 @@ it. The translation is kept with the run, for [`report`](../make/cli/report.md).
 
 Trip detection, naming and its CLI flags are on [Film types: Trip](film-types.mdx#trip).
 
+## What it reads from Immich
+
+Every read goes to the accounts the run names, each with its own key. Writes happen only when upload is
+on: the finished film, its tag and its album, plus moving an earlier render of the same recipe to
+Immich's trash when the key has `asset.delete`.
+
+| Read | What the run uses it for |
+|---|---|
+| Metadata search and timeline buckets | the period's pictures, with capture time, EXIF, place, people, favourites and whether Immich's editor touched them (`isEdited`) |
+| `GET /assets/{id}/thumbnail` (preview size) | the previews preparation and selection judge; an edited photo's preview is asked for with `edited=true` |
+| `GET /assets/{id}/original` | the photos and clips the renderer plays; an edited photo is downloaded with `edited=true` |
+| `GET /assets/{id}/video/playback` | a video's sound, read for speech and for where to cut |
+| `GET /faces`, `GET /people` | face boxes for framing and the people checks, and the names Immich recognised |
+| `GET /assets/{id}/ocr` | readable documents (Immich 2.2 and later; off for the run on an older server) |
+| `GET /stacks` | stack folding, once per account per run; needs the optional `stack.read`, and a key without it folds no stacks |
+| `GET /albums` | album scopes and the upload destination |
+
+Before the editor sees the pool, three folds turn a picture stored several times into one
+candidate: identical bytes, other files of the same picture (the newest full-size version plays),
+and Immich stacks (the top picture plays). The rules are in
+[Duplicates](selection-internals/family-audience-duplicates.md#duplicates). The permission each
+read needs is in [the API key](../run/docker.md#the-api-key).
+
 ## What the terminal shows while it runs
 
 One line per stage, the same record the web UI draws its rows from. A stage that counts its work

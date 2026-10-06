@@ -110,7 +110,7 @@ def _film(
         editorial={
             "reader": "model" if tier == "full" else "rules",
             "laya_audience": False,
-            "preparation": {"tier": "no_captions" if tier == "nas" else "full"},
+            "preparation": {"tier": "no_captions" if tier == "basic" else "full"},
         },
     )
     window = DateRange(datetime(2024, 2, 1, tzinfo=UTC), datetime(2024, 2, 29, 23, 59, tzinfo=UTC))
@@ -153,7 +153,7 @@ def test_full_refinement_reuses_gpu_captions_instead_of_recaptioning(tmp_path):
     assert not any(producer == "captions" for producer, _ in calls)
 
 
-@pytest.mark.parametrize("tier", ["nas", "gpu", "full"])
+@pytest.mark.parametrize("tier", ["basic", "gpu", "full"])
 def test_banked_captions_do_not_change_the_initial_nas_draft(tmp_path, tier):
     first = datetime(2024, 2, 1, 12, tzinfo=UTC)
     sources = [photo(f"picture-{n:02}", at=first + timedelta(days=n)) for n in range(24)]
@@ -213,7 +213,7 @@ def test_gpu_captions_the_nas_selection_before_considering_changes(tmp_path):
     sources = [photo(f"picture-{n:02}", at=first + timedelta(days=n)) for n in range(24)]
     for asset in sources:
         asset.is_favorite = True
-    draft, _ = _film(tmp_path / "nas", sources, tier="nas")
+    draft, _ = _film(tmp_path / "nas", sources, tier="basic")
     assert 0 < len(draft) < len(sources)
 
     refined, calls = _film(tmp_path / "gpu", sources, tier="gpu")
@@ -235,7 +235,7 @@ def test_a_refinement_replacement_is_captioned_before_it_enters_the_film(tmp_pat
     ]
     for asset in sources:
         asset.is_favorite = True
-    draft, _ = _film(tmp_path / "nas", sources, tier="nas")
+    draft, _ = _film(tmp_path / "nas", sources, tier="basic")
     held = min(draft)
 
     refined, calls = _film(
@@ -262,7 +262,7 @@ def test_a_refinement_replacement_is_captioned_before_it_enters_the_film(tmp_pat
     assert {asset for report in reports for asset in report["requested_asset_ids"]} == captioned
 
 
-@pytest.mark.parametrize("tier", ["nas", "gpu"])
+@pytest.mark.parametrize("tier", ["basic", "gpu"])
 def test_live_clip_detector_reads_follow_the_tier_and_draft_scope(tmp_path, tier):
     first = datetime(2024, 2, 1, 12, tzinfo=UTC)
     sources = [
@@ -314,7 +314,7 @@ def test_fresh_video_frame_facts_are_applied_before_the_nas_cut_ships(tmp_path):
     baseline, _ = _film(
         tmp_path / "good",
         sources,
-        tier="nas",
+        tier="basic",
         playback_content=content,
         frame_reader=frames("people_moment"),
     )
@@ -323,7 +323,7 @@ def test_fresh_video_frame_facts_are_applied_before_the_nas_cut_ships(tmp_path):
     rejected, _ = _film(
         tmp_path / "bad",
         sources,
-        tier="nas",
+        tier="basic",
         playback_content=content,
         frame_reader=frames("accidental_or_blurred_frame"),
     )
@@ -331,7 +331,7 @@ def test_fresh_video_frame_facts_are_applied_before_the_nas_cut_ships(tmp_path):
     assert not rejected
 
 
-@pytest.mark.parametrize("tier", ["nas", "gpu", "full"])
+@pytest.mark.parametrize("tier", ["basic", "gpu", "full"])
 def test_film_does_not_request_or_report_unused_motion(tmp_path, caplog, tier):
     from tests.conftest import make_clip
 

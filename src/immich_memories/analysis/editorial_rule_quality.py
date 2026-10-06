@@ -17,7 +17,11 @@ from immich_memories.analysis.editorial_story_shortlist import DepictedChoice
 from immich_memories.analysis.editorial_structure_budget import RESIDUAL_MIN
 from immich_memories.analysis.subject_framing import framing_visibility
 
-PIXEL_WARNINGS = ("SOFT (blurry)", "DARK", "BLOWN OUT")
+PIXEL_WARNINGS = ("SOFT (blurry)", "DARK", "BLOWN OUT", "OBSTRUCTED (edge)")
+# quality_facts' hard filter predates the obstruction warning and must stay a hard filter
+# only for the exposure problems it always was: an obstruction flag ranks a sibling ahead
+# of a flagged shot (#2022) but never disqualifies the only candidate a sparse week has.
+_DISQUALIFYING_PIXEL_WARNINGS = ("SOFT (blurry)", "DARK", "BLOWN OUT")
 # A sharpness far above the library's p10 floor does not deserve an ever-growing lead:
 # past this multiple of the floor, one more stop of sharpness stops mattering.
 SPARSE_SHARPNESS_CAP = 4.0
@@ -161,7 +165,10 @@ def quality_facts(
     """
     screenshot = heads.get("screen", "no") != "no"
     document = heads.get("doc_docling", "photograph") != "photograph"
-    warned = any(warning in line for warning in PIXEL_WARNINGS) or "rotated" in line.lower()
+    warned = (
+        any(warning in line for warning in _DISQUALIFYING_PIXEL_WARNINGS)
+        or "rotated" in line.lower()
+    )
     disqualified = (
         warned
         or standing < 1

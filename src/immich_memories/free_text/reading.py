@@ -39,6 +39,21 @@ Leave a part empty when the request says nothing about it. Return JSON."""
 _WORD = re.compile(r"[\w'’]+")
 
 
+class RequestUnreadable(ValueError):
+    """Fewer than 2 of the 3 field-order answers were usable; the request wasn't read reliably.
+
+    Carries `valid_count` (0-1) so a caller can say exactly how unreliable the read was,
+    instead of a bare "could not read" message.
+    """
+
+    def __init__(self, valid_count: int) -> None:
+        self.valid_count = valid_count
+        super().__init__(
+            f"Could not read the request reliably ({valid_count} of 3 answers usable); "
+            "please rephrase or try again."
+        )
+
+
 class Asker(Protocol):
     """One question to the configured reader, answered in the JSON shape asked for."""
 
@@ -171,8 +186,9 @@ def read_request(request: str, asker: Asker) -> Reading:
         answers.append(said)
         for part in PARTS:
             votes[part].update(_covered(tokens, said[part]))
-    if sum(answer is not None for answer in answers) < 2:
-        raise ValueError("Could not read the request reliably; please rephrase or try again.")
+    valid_count = sum(answer is not None for answer in answers)
+    if valid_count < 2:
+        raise RequestUnreadable(valid_count)
     _vote_content(votes)
     spans = {part: _runs(tokens, votes[part]) for part in PARTS}
     return Reading(request=request, answers=tuple(answers), **spans)

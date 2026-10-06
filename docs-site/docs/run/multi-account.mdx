@@ -81,10 +81,10 @@ The default is `false`, which keeps existing bindings and makes no native discov
 | --- | --- |
 | Immich 2.x or 3.0–3.1 | Existing bindings, with an unsupported-feature explanation |
 | Immich 3.2.x | Shared recognition IDs within a cluster group; tested on 3.2.4 |
-| Immich 3.3 | Experimental people-access discovery; tested on 3.3.0-rc.1 only |
-| Unknown major, newer minor or untested RC | Refused until compatibility is checked |
+| Immich 3.3 | Experimental people-access discovery; every 3.3 release, and 3.3.0-rc.1 or a later 3.3.0 release candidate |
+| Unknown major, newer minor, 3.3.0-rc.0 or a release candidate of any other version | Refused until compatibility is checked |
 
-3.3 stable support has not been validated. `api_version: v3` does not enable newer endpoints.
+`api_version: v3` does not enable newer endpoints.
 Each selected connection reports its actual version. The 3.2 path never calls `/people/users`.
 
 The selected accounts on each server must belong to the same Immich cluster group.

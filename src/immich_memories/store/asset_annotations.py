@@ -330,8 +330,16 @@ class AssetAnnotationFactRepository:
         having people only when it carries a face box, or its caption names a person as
         subject. Otherwise its label is lowered to "none". A face box is never overruled, and
         the owner's own head bank (any other version) is trusted as banked.
+
+        #2079: a library with face detection off (or never run) gives every asset in this
+        batch the same empty face list, which would otherwise read as "no corroborating box"
+        for every one of them -- lowering a real group shot from behind along with genuine
+        landscapes. Only a batch where something carries a face box treats a bare one as
+        evidence, the same scope `face_evidence` already reads faces over.
         """
         if self._head_versions.get("people") != PUBLIC_HEAD_VERSIONS["people"]:
+            return
+        if not any(record.faces for record in records.values()):
             return
         for record in records.values():
             label = record.heads.get("people")

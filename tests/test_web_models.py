@@ -5,7 +5,7 @@ from tests.web_api_fixtures import api_client, config_in
 
 def test_first_start_lists_nas_downloads_without_creating_files_or_jobs(tmp_path):
     config = config_in(tmp_path)
-    config.tier = "nas"
+    config.tier = "basic"
     config.triage.encoder = str(tmp_path / "models/encoder.onnx")
     config.free_text.wordnet = str(tmp_path / "models/wordnet.zip")
     client = api_client(config)
@@ -107,7 +107,7 @@ def test_status_never_contacts_download_hosts_or_returns_url_credentials(monkeyp
     import urllib.request
 
     config = config_in(tmp_path)
-    config.tier = "nas"
+    config.tier = "basic"
     config.triage.encoder = str(tmp_path / "encoder.onnx")
     config.free_text.wordnet = str(tmp_path / "wordnet.zip")
     config.triage.encoder_url = "https://secret:password@example.com/weights?token=hidden"
@@ -127,7 +127,7 @@ def test_status_never_contacts_download_hosts_or_returns_url_credentials(monkeyp
 
 def test_a_changed_download_host_requires_fresh_consent_before_any_job(tmp_path):
     config = config_in(tmp_path)
-    config.tier = "nas"
+    config.tier = "basic"
     config.triage.encoder = str(tmp_path / "encoder.onnx")
     config.free_text.wordnet = str(tmp_path / "wordnet.zip")
     client = api_client(config)

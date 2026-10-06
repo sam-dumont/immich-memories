@@ -151,6 +151,7 @@ def test_a_line_renders_every_available_fact_without_stable_asset_ids() -> None:
         "flags:all-except-exposure-v2",
         "head:activity:public-v1",
         "head:clip_frames:frame_kind-public-v1/8-frames",
+        "head:obstruction:public-obstruction-v1",
         "motion-bursts:legacy-v1",
         "people:immich-live+owner-context-v1",
         "pixel:pixel-v1",
@@ -222,6 +223,46 @@ def test_pixel_warnings_only_fire_on_the_measurement_that_earns_them(
 
     warned = tuple(w for w in ("SOFT (blurry)", "DARK", "BLOWN OUT") if w in line)
     assert warned == expected
+
+
+def test_an_obstructed_head_fact_renders_as_a_pixel_warning_not_a_head_bit():
+    store = store_with(
+        head_facts=(("a-picture", "obstruction", "public-obstruction-v1", "obstructed"),),
+    )
+
+    line = (
+        reader(
+            store,
+            candidate("a-picture"),
+            head_versions={"obstruction": "public-obstruction-v1"},
+        )
+        .lines_for(("a-picture",))
+        .lines[0]
+        .text
+    )
+
+    assert "OBSTRUCTED (edge)" in line
+    assert "obstruction=" not in line
+
+
+def test_a_clear_obstruction_head_fact_renders_no_warning():
+    store = store_with(
+        head_facts=(("a-picture", "obstruction", "public-obstruction-v1", "clear"),),
+    )
+
+    line = (
+        reader(
+            store,
+            candidate("a-picture"),
+            head_versions={"obstruction": "public-obstruction-v1"},
+        )
+        .lines_for(("a-picture",))
+        .lines[0]
+        .text
+    )
+
+    assert "OBSTRUCTED (edge)" not in line
+    assert "obstruction=" not in line
 
 
 @pytest.mark.parametrize(

@@ -12,6 +12,15 @@ gave it. Every image in range comes back from Immich, Live Photo stills included
 
 `--no-photos` takes stills out for one run; `photos.enabled` is the lasting switch.
 
+A photo edited in Immich's own editor (crop, rotate, mirror; `isEdited` on the asset) is read as
+Immich renders the edit: the previews preparation and selection read ask for `edited=true`, and so
+does the download the renderer animates. Its size check is skipped, since the edited render's size
+has nothing to do with the original's. A picture whose edit state changed since it was last prepared
+gets its preview, pixel facts, heads, caption and face reading again on the next run. An edited HDR
+photo plays as SDR, because Immich's edited render carries no gain map. Videos and Live Photo clips
+always come from the original: the editor does not touch them. A server older than Immich 2.5 sends
+no `isEdited`, and every picture reads as unedited.
+
 ## Ken Burns, and where the pan lands
 
 One renderer for every photo: a zoom of 5 to 12 %, seeded from the asset ID so a re-render moves the

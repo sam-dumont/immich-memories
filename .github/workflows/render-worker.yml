@@ -30,7 +30,7 @@ jobs:
       - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
       - run: uv python install 3.13
       - run: make dev-ci
-      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+      - uses: ./.github/actions/install-ffmpeg
       - run: >-
           make lint format-check typecheck security-lint
           SERVICE_TREES=services/render-worker

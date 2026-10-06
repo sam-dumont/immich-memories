@@ -83,9 +83,9 @@ itself. With no model, or one that refuses, the title falls back to the dated te
 
 ## Leaving things out
 
-"No", "without" and their equivalent in your language exclude rather than require: "landscapes, no humans" drops any picture with a face or a person in its caption, "sans les enfants" drops children without requiring them. A named person works the same way: "without Alex" drops Alex's own pictures. Mix a request freely: "with the kids, no rain" keeps the kids filter and drops nothing about rain, since each clause of your sentence is read on its own.
+"No", "without" and their equivalent in your language exclude rather than require: "landscapes, no humans" drops any picture with a face or a person in its caption, "sans les enfants" drops children without requiring them. The word after a negation can take its case form: "без публики" and "bez publiczności" both leave the audience out. A named person works the same way: "without Alex" drops Alex's own pictures. Mix a request freely: "with the kids, no rain" keeps the kids filter and drops nothing about rain, since each clause of your sentence is read on its own.
 
-"Only" narrows a company word to the kind you named: "only the performers" keeps musicians, singers, dancers and the rest of that cast, and drops the audience. The exclusion travels with the film all the way to the final cut, so a picture that slipped past the pool filter still gets caught and reported.
+"Only" narrows a company word to the kind you named: "only the performers" keeps musicians, singers, dancers and the rest of that cast, and drops shots of the audience alone. A stage shot with the crowd in it is still a performer shot, so it stays. The exclusion travels with the film all the way to the final cut, so a picture that slipped past the pool filter still gets caught and reported.
 
 The sentence supplies the scope, so do not combine `--ask` with `--year`, `--person` or an album scope. For a predictable date or person film, use [the normal film chooser](./memory-types.mdx).
 

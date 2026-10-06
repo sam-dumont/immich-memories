@@ -158,6 +158,11 @@ Partner accounts need the read set only.
 recipe to Immich's trash after the replacement succeeds. It never authorizes a hard delete
 through this app. Originals are not changed.
 
+`stack.read` is separate and optional too. It lets the app fold a stack (an edit and its
+original, a burst) into its top picture before selection, so only one of them ships, and a star
+on any picture of the stack counts for it. Without it, `GET /stacks` answers 403, the run logs one
+warning for that account, and every stacked picture is read as its own candidate.
+
 Do not add `timeline.read`, `tag.read`, or album-update permissions to this minimum.
 Timeline routes use `asset.read`. The app reads the key's own permission list through
 `GET /api-keys/me`, which needs API-key authentication but no extra permission.

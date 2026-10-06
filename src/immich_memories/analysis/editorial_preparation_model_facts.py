@@ -15,6 +15,8 @@ from pathlib import Path
 from typing import Any, Protocol
 
 from immich_memories.analysis.editorial_clip_frames import CLIP_FRAMES_HEAD, CLIP_FRAMES_VERSION
+from immich_memories.analysis.editorial_obstruction import HEAD_NAME as OBSTRUCTION_HEAD
+from immich_memories.analysis.editorial_obstruction import HEAD_VERSION as OBSTRUCTION_VERSION
 from immich_memories.analysis.editorial_preparation_detector_frames import (
     DetectorFrames,
     served_locally,
@@ -59,6 +61,8 @@ class ModelFactStage(Protocol):
 
     def public_heads(self, asset_ids: Sequence[str], head_versions: Mapping[str, str]) -> None: ...
 
+    def obstruction_heads(self, asset_ids: Sequence[str]) -> None: ...
+
     def detectors(
         self,
         pending: Mapping[str, Sequence[str]],
@@ -74,8 +78,16 @@ class ModelFactStage(Protocol):
         self, frame_paths: Mapping[str, Sequence[Path]], videos: Mapping[str, Asset]
     ) -> None: ...
 
+    def obstruction_frames(
+        self, frame_paths: Mapping[str, Sequence[Path]], videos: Mapping[str, Asset]
+    ) -> None: ...
+
     def previews(
-        self, ids: Sequence[str], cache_path: Path, fetch_preview: Any
+        self,
+        ids: Sequence[str],
+        cache_path: Path,
+        fetch_preview: Any,
+        edited_by_id: Mapping[str, bool] | None = None,
     ) -> tuple[dict[str, Path], list[str]]: ...
 
     @property
@@ -194,6 +206,13 @@ def acquire_model_facts(
     public_ids = _public_head_ids(before, ids, available, requested_public)
     if public_ids:
         stage.public_heads(public_ids, requested_public)
+    # #2022: its own path, not the required public heads' bundle, so it is asked for by
+    # name rather than through `before` (which only ever scans the configured heads).
+    obstruction_ids = heads_missing_for(
+        stage.store, [a for a in ids if a in available], OBSTRUCTION_HEAD, OBSTRUCTION_VERSION
+    )
+    if obstruction_ids:
+        stage.obstruction_heads(obstruction_ids)
     detector_pending = _detector_pending(pending, head_versions, offloaded_exposure)
     if detector_pending or clips or motion:
         exposure = detector_pending.get(MARQO_HEAD, ())
@@ -208,6 +227,7 @@ def acquire_model_facts(
             _sampled_models(stage, detector_pending, preview_paths, sampled, owed)
             if measurable := {video: sampled[video] for video in motion if video in sampled}:
                 stage.video_motion(measurable, motion)
+                stage.obstruction_frames(measurable, motion)
     _record_unpackaged_heads(pending, head_versions, stage.failures)
 
 

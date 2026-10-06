@@ -120,7 +120,35 @@ def successful_ports(calls):
             )
         return {}
 
-    return PreparationPorts(captions=captions, heads=heads, detectors=detectors)
+    def obstruction(**kwargs):
+        calls.append(("obstruction", tuple(kwargs["asset_ids"])))
+        remember_head_rows(
+            kwargs["store"],
+            [
+                {
+                    "asset_id": asset_id,
+                    "head": "obstruction",
+                    "version": "public-obstruction-v1",
+                    "label": "clear",
+                    "confidence": 0.1,
+                    "encoder_key": "test",
+                }
+                for asset_id in kwargs["asset_ids"]
+            ],
+        )
+        return {}
+
+    def obstruction_frames(**kwargs):
+        calls.append(("obstruction_frames", tuple(kwargs["frame_paths"])))
+        return {}
+
+    return PreparationPorts(
+        captions=captions,
+        heads=heads,
+        detectors=detectors,
+        obstruction=obstruction,
+        obstruction_frames=obstruction_frames,
+    )
 
 
 def run(tmp_path, **kwargs):
@@ -148,7 +176,7 @@ def refusing_ports(*absent):
     real = successful_ports(calls)
     seams = {
         name: _refuse(name) if name in absent else getattr(real, name)
-        for name in ("captions", "heads", "detectors")
+        for name in ("captions", "heads", "detectors", "obstruction", "obstruction_frames")
     }
     return PreparationPorts(**seams), calls
 
@@ -594,7 +622,8 @@ def test_the_no_captions_tier_finishes_without_a_caption_server(tmp_path):
 
     assert result.complete
     assert result.tier == "no_captions"
-    assert [stage for stage, _ in calls] == ["heads", "detectors"]
+    # #2022: obstruction runs on the same encoder as the public heads, its own path.
+    assert [stage for stage, _ in calls] == ["heads", "obstruction", "detectors"]
     assert not [key for key in result.missing_by_producer if key.startswith("description:")]
 
 
@@ -651,7 +680,7 @@ def test_a_run_reports_what_each_stage_cost_and_how_many_pictures_it_saw(tmp_pat
 
     rates = result.stage_rates()
     assert result.pictures_by_stage["previews"] == 2
-    assert set(rates) == {"previews", "pixels", "public_heads", "detectors"}
+    assert set(rates) == {"previews", "pixels", "public_heads", "detectors", "obstruction"}
     assert all(seconds >= 0 for seconds in rates.values())
 
 
@@ -772,4 +801,37 @@ def test_a_prepared_scope_with_nothing_left_to_do_is_complete_with_no_failures(t
     result = run(tmp_path, ports=successful_ports([]))
 
     assert dict(result.failures) == {}
+
+
+def test_a_picture_edited_since_it_was_banked_owes_its_facts_again(tmp_path):
+    """Pixel, head and caption facts were read from the unedited render; none of them
+    are keyed by anything that changes when only the edit does, so an edit after a warm
+    run must still bring the producers back for that one picture (#2114)."""
+    calls = []
+    unedited = [asset("aa1")]
+    run(tmp_path, assets=unedited, ports=successful_ports(calls), fetch_preview=lambda _: preview())
+    assert ("heads", ("aa1",)) in calls
+    assert ("captions", ("aa1",)) in calls
+    calls.clear()
+
+    edited = [unedited[0].model_copy(update={"is_edited": True})]
+    second = run(
+        tmp_path, assets=edited, ports=successful_ports(calls), fetch_preview=lambda _: preview()
+    )
+
+    assert ("heads", ("aa1",)) in calls
+    assert ("captions", ("aa1",)) in calls
+    assert second.complete
+
+
+def test_a_picture_unchanged_since_it_was_banked_asks_nothing_again(tmp_path):
+    """The companion case: no edit, no flip, the ordinary warm-run guarantee holds."""
+    calls = []
+    assets = [asset("aa1")]
+    run(tmp_path, assets=assets, ports=successful_ports(calls), fetch_preview=lambda _: preview())
+    calls.clear()
+
+    result = run(tmp_path, assets=assets, ports=successful_ports(calls))
+
+    assert calls == []
     assert result.complete

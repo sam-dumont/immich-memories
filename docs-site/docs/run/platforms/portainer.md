@@ -47,7 +47,7 @@ Fix any reported connection or storage errors before making a film. Model downlo
 
 ![Portainer Console showing the tested app preflight: 6 OK, 3 warnings and 9 skipped checks.](/img/screenshots/setup-portainer-console.png)
 
-An older build of the app prints this tier's name as NAS; this guide calls it Basic.
+The screenshot names this tier NAS; the app calls it Basic.
 
 ## 4. Open the app
 

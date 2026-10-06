@@ -85,7 +85,7 @@ def test_preflight_names_missing_read_permissions_instead_of_reporting_connected
     from immich_memories.preflight_immich import check_immich
 
     with permission_server(["user.read"]) as (url, _requests):
-        config = Config(tier="nas", immich={"url": url, "api_key": "synthetic-key"})
+        config = Config(tier="basic", immich={"url": url, "api_key": "synthetic-key"})
         result = check_immich(config)
     assert result.status is CheckStatus.ERROR
     assert "asset.download" in (result.details or "")
@@ -97,7 +97,7 @@ def test_preflight_names_missing_user_read_before_calling_the_denied_user_route(
     from immich_memories.preflight_immich import check_immich
 
     with permission_server([]) as (url, requests):
-        result = check_immich(Config(tier="nas", immich={"url": url, "api_key": "synthetic-key"}))
+        result = check_immich(Config(tier="basic", immich={"url": url, "api_key": "synthetic-key"}))
     assert result.status is CheckStatus.ERROR
     assert "user.read" in (result.details or "")
     assert "/api/users/me" not in requests
@@ -109,7 +109,7 @@ def test_cut_client_refuses_incomplete_read_scope_before_discovering_assets():
     from immich_memories.config_loader import Config
 
     with permission_server(["user.read"]) as (url, requests):
-        config = Config(tier="nas", immich={"url": url, "api_key": "synthetic-key"})
+        config = Config(tier="basic", immich={"url": url, "api_key": "synthetic-key"})
         with pytest.raises(MissingReadPermissions, match="asset.download"):
             run_client(config.immich, ())
         assert requests == ["/api/api-keys/me"]
@@ -154,7 +154,7 @@ def test_config_test_warns_about_rights_without_refusing_a_readable_key(permissi
 
     with permission_server(permissions) as (url, _requests):
         path = tmp_path / "config.yaml"
-        path.write_text(f"tier: nas\nimmich:\n  url: {url}\n  api_key: synthetic-key\n")
+        path.write_text(f"tier: basic\nimmich:\n  url: {url}\n  api_key: synthetic-key\n")
         result = CliRunner().invoke(main, ["--config", str(path), "config", "test"])
     assert result.exit_code == 0, result.output
     expected = "whole library" if "all" in permissions else "asset.upload"
@@ -168,7 +168,7 @@ def test_partner_account_missing_read_scope_is_named_in_preflight():
 
     with permission_server(["user.read"]) as (url, _requests):
         config = Config(
-            tier="nas", immich={"accounts": {"partner": {"url": url, "api_key": "synthetic-key"}}}
+            tier="basic", immich={"accounts": {"partner": {"url": url, "api_key": "synthetic-key"}}}
         )
         result = check_extra_accounts(config)[0]
     assert result.status is CheckStatus.ERROR

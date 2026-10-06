@@ -28,13 +28,13 @@ def compose_cli():
 
 
 @pytest.mark.parametrize(
-    "tier,cuda", [("nas", False), ("gpu", False), ("gpu", True), ("full", False), ("full", True)]
+    "tier,cuda", [("basic", False), ("gpu", False), ("gpu", True), ("full", False), ("full", True)]
 )
 def test_tier_files_use_one_version_and_editable_service_defaults(
     compose_cli, monkeypatch, tmp_path, tier, cuda
 ):
     files = ["docker-compose.yml"]
-    if tier != "nas":
+    if tier != "basic":
         files.append("docker-compose.gpu.yml")
     if tier == "full":
         files.append("docker-compose.full.yml")
@@ -65,8 +65,8 @@ def test_tier_files_use_one_version_and_editable_service_defaults(
         if key.startswith("IMMICH_MEMORIES_DEPLOYMENT_"):
             monkeypatch.setenv(key, value)
     config = Config.from_yaml(tmp_path / "missing.yaml", stored={})
-    assert config.tier == ("basic" if tier == "nas" else tier)
-    if tier == "nas":
+    assert config.tier == tier
+    if tier == "basic":
         assert set(services) == {"immich-memories"}
         return
     assert int(app["deploy"]["resources"]["limits"]["memory"]) == 8 * 1024**3
@@ -176,13 +176,13 @@ def test_postgres_download_and_container_harness_keep_database_readiness(compose
     assert not services["postgres"].get("ports")
 
 
-@pytest.mark.parametrize("source", ["default", "example", "basic", "nas"])
+@pytest.mark.parametrize("source", ["default", "example", "basic"])
 def test_compose_cpu_install_uses_canonical_basic(compose_cli, tmp_path, monkeypatch, source):
     env = {key: value for key, value in os.environ.items() if key != "TIER"}
     command = [*compose_cli, "--env-file", os.devnull]
     if source == "example":
         command = [*compose_cli, "--env-file", str(ROOT / "example.env")]
-    elif source in {"basic", "nas"}:
+    elif source == "basic":
         env["TIER"] = source
     result = subprocess.run(
         [*command, "-f", str(ROOT / "docker-compose.yml"), "config", "--format", "json"],
@@ -193,9 +193,29 @@ def test_compose_cpu_install_uses_canonical_basic(compose_cli, tmp_path, monkeyp
     )
     app = json.loads(result.stdout)["services"]["immich-memories"]
     tier = app["environment"]["IMMICH_MEMORIES_DEPLOYMENT_TIER"]
-    assert tier == ("nas" if source == "nas" else "basic")
+    assert tier == "basic"
     monkeypatch.setenv("IMMICH_MEMORIES_DEPLOYMENT_TIER", tier)
     config = Config.from_yaml(tmp_path / "missing.yaml", stored={})
     assert config.tier == "basic"
     assert config.editorial.reader == "rules"
     assert config.editorial.preparation.tier == "no_captions"
+
+
+def test_compose_tier_env_rejects_the_legacy_nas_value(compose_cli, tmp_path, monkeypatch):
+    env = {key: value for key, value in os.environ.items() if key != "TIER"}
+    env["TIER"] = "nas"
+    result = subprocess.run(
+        [*compose_cli, "--env-file", os.devnull, "-f", str(ROOT / "docker-compose.yml"),
+         "config", "--format", "json"],
+        env=env,
+        capture_output=True,
+        text=True,
+        check=True,
+    )  # fmt: skip
+    app = json.loads(result.stdout)["services"]["immich-memories"]
+    assert app["environment"]["IMMICH_MEMORIES_DEPLOYMENT_TIER"] == "nas"
+    # WHY: the autouse path guard constructs Config during teardown, before monkeypatch undo.
+    with monkeypatch.context() as invalid:
+        invalid.setenv("IMMICH_MEMORIES_DEPLOYMENT_TIER", "nas")
+        with pytest.raises(ValueError, match="tier 'nas' is now called 'basic': set tier: basic"):
+            Config.from_yaml(tmp_path / "missing.yaml", stored={})

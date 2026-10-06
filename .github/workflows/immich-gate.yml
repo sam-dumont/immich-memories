@@ -112,7 +112,7 @@ jobs:
           prune-cache: false
       - run: uv python install ${{ env.PYTHON_VERSION }}
       - name: Install FFmpeg
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+        uses: ./.github/actions/install-ffmpeg
       - run: make dev-test-integration
 
       - name: Cache NAS model artifacts

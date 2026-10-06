@@ -36,12 +36,14 @@ def test_notification_urls_use_apprise_schemes_and_the_address_policy(url, monke
 
 @pytest.mark.parametrize("host", ["localhost", "192.168.1.2", "10.0.0.5", "[fd00::1]"])
 def test_private_services_stay_available(host):
-    assert Config(tier="nas", inference={"facts_base_url": f"http://{host}"}).inference.enabled
+    assert Config(tier="basic", inference={"facts_base_url": f"http://{host}"}).inference.enabled
 
 
 def test_only_the_environment_can_allow_link_local_urls(monkeypatch):
     monkeypatch.setenv("IMMICH_MEMORIES_ALLOW_LINK_LOCAL_URLS", "true")
-    assert Config(tier="nas", inference={"facts_base_url": "http://169.254.1.1"}).inference.enabled
+    assert Config(
+        tier="basic", inference={"facts_base_url": "http://169.254.1.1"}
+    ).inference.enabled
     with pytest.raises(ValidationError):
         Config(llm={"base_url": "file:///tmp/model"})
 

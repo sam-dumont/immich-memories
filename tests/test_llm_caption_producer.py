@@ -86,12 +86,12 @@ def test_explicit_llm_writer_owns_its_caption_identity_and_accounts_for_image_re
         assert len(requests) == 1
         return
 
-    config = Config(tier="nas", editorial={"description_model": llm_caption_identity(llm)})
+    config = Config(tier="basic", editorial={"description_model": llm_caption_identity(llm)})
     assert not failures
     assert len(requests) == 4
     assert usage.by_stage["caption_controls"].calls == 3
     assert usage.by_stage["caption"].calls == 1
     assert usage.preparation_calls == 4
     assert prepared_captions(config, ("one",)) == {"one": "A cat sleeps."}
-    smol = Config(tier="nas")
+    smol = Config(tier="basic")
     assert prepared_captions(smol, ("one",)) == {}

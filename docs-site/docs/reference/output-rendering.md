@@ -162,7 +162,8 @@ because GeoNames files most islands under a region. No outside call.
 The full title adds the length and the season or month: `TWO WEEKS IN CRETE, GREECE, SUMMER 2025`.
 
 Immich stores places in English. Country, island and region names are translated offline (CLDR and the bundled
-tables). City names stay as Immich stored them unless you switch on `network.geocoding`, which asks Nominatim
+tables). Immich 3.3's GeoNames country names ("The Netherlands", "Turkey", "Timor Leste") and the CLDR names
+earlier servers stored both resolve to the same country. City names stay as Immich stored them unless you switch on `network.geocoding`, which asks Nominatim
 for the city, town or village each picture is in, in the film's language. A place with no name in the film's
 language, or in its base language, keeps its own local name: it is never shown in English. Answers are cached
 for the next film. A Berlin visit stays Berlin across Mitte and Kreuzberg. The same name reaches story titles,
@@ -190,8 +191,11 @@ their own labels. When all known districts agree, missing district data does not
 Visits spread across districts use their shared locality. Different towns and visits separated by more
 than `trips.max_gap_days` do not rename one another. The selected clips retain the names resolved from the
 full source window. Streets and points of interest stay out of captions. A country disagreement keeps the
-source label; failed lookups are retried on a later run. Latvian, Lithuanian and Finnish labels keep the
-name Immich gave them, not the grammatical form a caption would need.
+source label; failed lookups are retried on a later run. A Latvian, Lithuanian or Finnish municipality
+label (`novads`, `pagasts`, `savivaldybė`, `seniūnija`, `kunta`, `kaupunki`) puts the town's name in
+the genitive ("Helsingin kaupunki"), so it is not used as a name: the caption takes Immich's own city
+for that picture ("Helsinki"), and only with no city from Immich does it fall back to the label
+without its admin word ("Helsingin").
 
 A few distant excursions do not turn a local stay into a regional trip: the trip planner checks whether at
 least 85 % of a stay's positioned pictures fit a 25 km group. A town supported by those pictures is not

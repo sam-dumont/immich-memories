@@ -138,7 +138,7 @@ def test_ci_runs_the_hermetic_launch_check_with_runtime_dependencies() -> None:
     # 40, not 30: the PostgreSQL leg runs the same suite against a real server.
     assert launch_job["timeout-minutes"] == 40
     assert '["sqlite","postgresql"]' in launch_job["strategy"]["matrix"]["database"]
-    assert "ffmpeg" in commands
+    assert any(step.get("uses") == "./.github/actions/install-ffmpeg" for step in steps)
     assert "playwright install --with-deps chromium" in commands
     # Exact target: "make launch-check" is a substring of "make launch-check-ci",
     # so a loose check would pass whichever one CI pointed at.

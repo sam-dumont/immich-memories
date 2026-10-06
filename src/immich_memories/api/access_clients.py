@@ -93,6 +93,7 @@ class AccessBoundClient(SyncImmichClient):
         self.routes = routes or AccessRoutes()
         self._accounts: dict[str, OpenAccount] = {}
         self._native_active = False
+        self._stack_map: dict[str, str] | None = None
 
     def open_accounts(self, names: Sequence[str]) -> dict[str, OpenAccount]:
         """The named accounts, opened on first use and kept open until `close`.
@@ -124,6 +125,14 @@ class AccessBoundClient(SyncImmichClient):
         )
         self._native_active = native is not None
         return native
+
+    def stack_map(self, accounts: Sequence[str]) -> Mapping[str, str]:
+        """Member asset id -> stack primary asset id, read once per account for this run."""
+        if self._stack_map is None:
+            from immich_memories.api.stack_discovery import discover_stack_map
+
+            self._stack_map = discover_stack_map(self.open_accounts(accounts or (PRIMARY_ACCOUNT,)))
+        return self._stack_map
 
     def sibling(self) -> AccessBoundClient:
         """A client for another thread: the same routes, its own connections."""
@@ -169,9 +178,14 @@ class AccessBoundClient(SyncImmichClient):
             asset_id, lambda client: SyncImmichClient.get_asset_ocr_text(client, asset_id)
         )
 
-    def get_asset_thumbnail(self, asset_id: str, size: str = "preview") -> bytes:
+    def get_asset_thumbnail(
+        self, asset_id: str, size: str = "preview", *, edited: bool = False
+    ) -> bytes:
         return self._routed(
-            asset_id, lambda client: SyncImmichClient.get_asset_thumbnail(client, asset_id, size)
+            asset_id,
+            lambda client: SyncImmichClient.get_asset_thumbnail(
+                client, asset_id, size, edited=edited
+            ),
         )
 
     def get_video_playback(self, asset_id: str) -> bytes:
@@ -194,12 +208,21 @@ class AccessBoundClient(SyncImmichClient):
         )
 
     def download_asset(
-        self, asset_id: str, output_path: Path, *, expected_size_bytes: int | None = None
+        self,
+        asset_id: str,
+        output_path: Path,
+        *,
+        expected_size_bytes: int | None = None,
+        edited: bool = False,
     ) -> Path:
         return self._routed(
             asset_id,
             lambda client: SyncImmichClient.download_asset(
-                client, asset_id, output_path, expected_size_bytes=expected_size_bytes
+                client,
+                asset_id,
+                output_path,
+                expected_size_bytes=expected_size_bytes,
+                edited=edited,
             ),
         )
 

@@ -102,7 +102,7 @@ class _ServerWithoutThumbnails:
     """WHY: Immich is the external boundary — this is a server that holds no
     thumbnail for the asset, the 8% of a real library the fallback exists for."""
 
-    def get_asset_thumbnail(self, asset_id: str, size: str) -> bytes:
+    def get_asset_thumbnail(self, asset_id: str, size: str, *, edited: bool = False) -> bytes:
         raise LookupError(f"no {size} for {asset_id}")
 
 
@@ -131,3 +131,39 @@ def test_a_cached_clip_that_will_not_decode_is_named_apart(tmp_path, monkeypatch
 
     assert image is None
     assert reason == "would not decode"
+
+
+class _RecordingServer:
+    """WHY: Immich is the external boundary; this records what the sheet asked for."""
+
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, dict]] = []
+
+    def get_asset_thumbnail(self, asset_id: str, size: str, *, edited: bool = False) -> bytes:
+        self.calls.append((asset_id, {"edited": edited}))
+        import io
+
+        from PIL import Image
+
+        buffer = io.BytesIO()
+        Image.new("RGB", (8, 8), "orange").save(buffer, "JPEG")
+        return buffer.getvalue()
+
+
+def test_an_edited_clip_asks_for_the_edited_render(tmp_path, monkeypatch) -> None:
+    """The reviewer sees what the film would render (#2114)."""
+    _cache_at(monkeypatch, tmp_path)
+    server = _RecordingServer()
+
+    contact_sheet._thumbnail(server, "aaedited", edited=True)
+
+    assert server.calls == [("aaedited", {"edited": True})]
+
+
+def test_an_unedited_clip_request_is_unchanged(tmp_path, monkeypatch) -> None:
+    _cache_at(monkeypatch, tmp_path)
+    server = _RecordingServer()
+
+    contact_sheet._thumbnail(server, "aaplain")
+
+    assert server.calls == [("aaplain", {"edited": False})]

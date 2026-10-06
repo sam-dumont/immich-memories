@@ -33,7 +33,7 @@ def hdr_source(tmp_path: Path, request) -> Path:
 
 
 def test_nas_automatic_hdr_uses_available_hardware(hdr_source, tmp_path, monkeypatch):
-    config = Config(tier="nas", output={"codec": "h265", "hdr_mode": "auto", "resolution": "4k"})
+    config = Config(tier="basic", output={"codec": "h265", "hdr_mode": "auto", "resolution": "4k"})
     params = GenerationParams(clips=[], output_path=tmp_path / "film.mp4", config=config)
     # WHY: Model a NAS driver with H.264 encode but no HEVC encode on any test host.
     monkeypatch.setattr(
@@ -54,7 +54,7 @@ def test_nas_reencoded_clip_is_1080p_sdr(hdr_source, tmp_path, caplog, hardware_
     from immich_memories.processing.clips import extract_clip
     from immich_memories.processing.hardware import detect_hardware_acceleration
 
-    config = Config(tier="nas", hardware={"enabled": hardware_enabled})
+    config = Config(tier="basic", hardware={"enabled": hardware_enabled})
     with caplog.at_level("INFO"):
         output = extract_clip(
             hdr_source, 0, 0.1, tmp_path / "clip.mp4", reencode=True, config=config
@@ -74,9 +74,9 @@ def test_nas_reencoded_clip_is_1080p_sdr(hdr_source, tmp_path, caplog, hardware_
     [
         ("full", "prefer_hardware", True, False, "libx265"),
         ("gpu", "prefer_hardware", True, False, "libx265"),
-        ("nas", "strict", True, False, "libx265"),
-        ("nas", "prefer_hardware", False, False, "libx265"),
-        ("nas", "prefer_hardware", True, True, "hevc_vaapi"),
+        ("basic", "strict", True, False, "libx265"),
+        ("basic", "prefer_hardware", False, False, "libx265"),
+        ("basic", "prefer_hardware", True, True, "hevc_vaapi"),
     ],
 )
 def test_hdr_is_preserved_outside_the_nas_h264_policy(

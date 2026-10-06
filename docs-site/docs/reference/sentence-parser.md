@@ -64,13 +64,17 @@ commitment to pay the cost.
    - "No", "without" and each language's own negation word turn that company into an absence
      instead of a requirement: "landscapes, no humans" drops any picture with a face or a
      caption subject who is a person, "sans les enfants" drops children instead of requiring
-     them. A negated name ("without Alex") drops that person's own pictures the same way. Each
+     them. A negated name ("without Alex") drops that person's own pictures the same way. The
+     audience words carry the case a negation puts them in: Russian "без публики", "без толпы",
+     "без зрителей" and Polish "bez publiczności" match. Each
      clause of the sentence is read for its own negation, so "with the kids, no rain" keeps
      the kids filter and a double negation ("not without the kids") cancels back to a
      requirement.
    - "Only" narrows company to the kind named and excludes everyone else of that company:
      "only the performers" keeps musicians, singers, dancers and the rest of that cast, and
-     drops the audience.
+     drops a caption that also names another specific kind. The audience is the one exception
+     for performers: a stage shot whose caption names the crowd too stays, and a shot of the
+     audience alone never matched the performers in the first place.
 3. **When.** Years you write are pattern work. An age ("in our 20s") is read by the model as
    numbers, and the calendar is arithmetic from the birth date in your people registry. If a phrase
    such as "foggy days" supplies no dates, its visible modifier still filters the captions.

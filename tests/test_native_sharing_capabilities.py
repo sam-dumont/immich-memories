@@ -5,8 +5,29 @@ import pytest
 from immich_memories.api.access_clients import AccessBoundClient
 from immich_memories.api.accounts import AccountUnavailable
 from immich_memories.api.compatibility import UnsupportedImmichVersion
+from immich_memories.api.models import ServerInfo
+from immich_memories.api.native_sharing import native_mode
 from immich_memories.config_models import ImmichConfig
 from tests.household_fake import PARTNER_KEY, PRIMARY_KEY, FakeHousehold, immich_config
+
+
+@pytest.mark.parametrize(
+    ("prerelease", "expected"),
+    [
+        (0, None),  # rc.0: not validated, refused
+        (1, "people"),  # rc.1: validated
+        (2, "people"),  # rc.2: immich-app/immich#31620 people-sharing server code is unchanged
+        (3, "people"),  # a later rc, same server code
+        (None, "people"),  # the final 3.3.0 release
+    ],
+)
+def test_native_mode_accepts_rc1_and_later_but_not_rc0(prerelease, expected):
+    version = ServerInfo(major=3, minor=3, patch=0, prerelease=prerelease)
+    if expected is None:
+        with pytest.raises(UnsupportedImmichVersion):
+            native_mode(version)
+    else:
+        assert native_mode(version) == expected
 
 
 @pytest.mark.parametrize("minor", [0, 1, 2, 3, 9])
@@ -33,7 +54,7 @@ def test_pre32_keeps_bindings_with_a_clear_explanation(monkeypatch, caplog, majo
     [
         {"major": 4, "minor": 0, "patch": 0},
         {"major": 3, "minor": 4, "patch": 0},
-        {"major": 3, "minor": 3, "patch": 0, "prerelease": 2},
+        {"major": 3, "minor": 3, "patch": 0, "prerelease": 0},
         {"major": 3, "minor": 2, "patch": 5, "prerelease": 1},
     ],
 )

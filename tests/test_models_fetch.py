@@ -344,7 +344,7 @@ def test_nas_default_fetch_omits_detector_downloads(served, tmp_path, monkeypatc
 
 def test_failed_signed_mirror_download_does_not_print_url_credentials(served, tmp_path):
     config = Config(
-        tier="nas",
+        tier="basic",
         triage={
             "encoder": str(tmp_path / "encoder.onnx"),
             "encoder_url": served.url + "?token=private-signed-mirror-token",

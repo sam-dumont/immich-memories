@@ -89,6 +89,15 @@ def _ken_burns_params(asset: Asset, prepared: Any, fps: int, duration: float) ->
     )
 
 
+def _download_photo(download_fn: Any, asset: Asset, raw_path: Path) -> None:
+    """Download from Immich, asking for Immich's own edited render (crop, rotate,
+    mirror) when the asset carries one -- never the untouched original (#2114)."""
+    if asset.is_edited:
+        download_fn(asset.id, raw_path, edited=True)
+    else:
+        download_fn(asset.id, raw_path)
+
+
 def render_single_photo(
     asset: Asset,
     config: PhotoConfig,
@@ -105,7 +114,7 @@ def render_single_photo(
     try:
         raw_path = _source_photo_path(asset, work_dir) if source_path is None else source_path
         if source_path is None and not raw_path.exists():
-            download_fn(asset.id, raw_path)  # Download from Immich
+            _download_photo(download_fn, asset, raw_path)
         loaded = _prepared_photo_pixels(raw_path, target_w, target_h, work_dir)
         if loaded is None:
             return None

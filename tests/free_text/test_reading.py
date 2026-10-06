@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from immich_memories.free_text.reading import read_request
+from immich_memories.free_text.reading import RequestUnreadable, read_request
 from tests.free_text.banked import BankedAsker
 
 REQUEST = "me and friends partying in our 20s"
@@ -71,6 +71,7 @@ def test_invalid_request_shapes_are_retried_then_fail_visibly():
 
     # WHY: a no-schema endpoint returned strings in place of phrase arrays.
     asker = BankedAsker(*[{"who": "", "when": "", "where": "", "what": "otters"}] * 6)
-    with pytest.raises(ValueError, match="read.*request"):
+    with pytest.raises(RequestUnreadable, match="read.*request") as excinfo:
         read_request("otters", asker)
     assert len(asker.questions) == 6
+    assert excinfo.value.valid_count == 0

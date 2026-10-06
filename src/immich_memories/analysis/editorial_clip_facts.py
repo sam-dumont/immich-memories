@@ -15,8 +15,8 @@ import hashlib
 import logging
 import struct
 import tempfile
-from collections.abc import Callable, Mapping
-from dataclasses import dataclass
+from collections.abc import Callable, Mapping, Sequence
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any, Protocol
 
@@ -60,6 +60,9 @@ class WindowFacts:
     heard: tuple[float, float] | None
     loudness: tuple[tuple[float, float], ...] = ()
     music_fraction: float = 0.0
+    # The seconds a finger-over-the-lens check flagged (#2022), read from its own producer;
+    # a clip never measured for it reads empty, which `choose_window` treats as unflagged.
+    obstructed: tuple[float, ...] = ()
 
 
 def facts_producer(detector_settings: str) -> str:
@@ -84,6 +87,7 @@ class ClipWindowFacts:
         read: Callable[[str, int, int], tuple[bytes, int]],
         detector: SpeechDetector | None,
         detector_settings: str = "",
+        obstructed_by: Mapping[str, Sequence[float]] | None = None,
     ) -> None:
         self._assets, self._store, self._read = assets, store, read
         self._detector = detector if detector is not None and detector.available else None
@@ -91,13 +95,17 @@ class ClipWindowFacts:
         self._banked: dict[str, dict] | None = None
         self._known: dict[str, WindowFacts] = {}
         self._pending = PendingMeasurements(store)
+        # #2022: its own producer, read separately from window facts, so a clip measured
+        # for its window before the obstruction check shipped still reads as unflagged.
+        self._obstructed_by = obstructed_by or {}
 
     def __call__(self, asset_id: str, hold: float) -> WindowFacts | None:
         if asset_id not in self._known:
             facts = self._from_bank(asset_id) or self._measure(asset_id, hold)
             if facts is None:
                 return None
-            self._known[asset_id] = facts
+            flagged = tuple(self._obstructed_by.get(asset_id, ()))
+            self._known[asset_id] = replace(facts, obstructed=flagged) if flagged else facts
         return self._known[asset_id]
 
     def speech_for(self, asset_id: str) -> list[tuple[float, float]] | None:
