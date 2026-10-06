@@ -53,7 +53,11 @@
   "overrides": {
     "esbuild": "^0.28.1",
     "serialize-javascript": "^7.0.5",
-    "uuid": "^11.1.1"
+    "uuid": "^11.1.1",
+    "tinypool": "^2.2.0",
+    "katex": "^0.18.2",
+    "postcss-selector-parser": "^7.1.6",
+    "cookie": "^0.7.2"
   },
   "engines": {
     "node": ">=20.0"
