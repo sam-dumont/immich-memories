@@ -12,6 +12,7 @@ bundled music. It runs on a NAS, a Mac or a cluster without GPU inference. Start
 
 <SetupBuilder />
 
+<Diagram name="decide-install" headline="Pick the lane you already run. Every lane gets the same app." />
 For an existing installation, change service URLs and reader credentials in Settings.
 The generated commands configure reader authentication before preflight.
 
@@ -25,8 +26,7 @@ A **video encoder** speeds up rendering. It does not enable the GPU selection ti
 [Hardware encoding](../run/hardware.md) and the [render worker](../better/gpu-render.md) are
 separate choices.
 
-Use `tier: basic` to select it explicitly. Existing `tier: nas` settings remain accepted as
-an alias and resolve to `basic`; GPU and Full values are unchanged.
+Use `tier: basic` to select it explicitly. GPU and Full values are unchanged.
 
 See [Can I run this?](../run/tested-deployments.md) for exact platform evidence, candidate versions and untested routes.
 
@@ -48,13 +48,12 @@ are not a guarantee that every selected picture is suitable for sharing.
 Rendering has its own limits. HDR, 60 fps, hardware encoding and animated title effects depend
 on the encoder, renderer and output settings. A Basic Mac can use its rendering GPU while
 keeping Basic selection and the 1080p cap. A small CPU-only NAS uses static title plates with
-fades instead of moving kernel effects. Generated music is not a Full-only feature: the
-measured M2 Basic export completed local ACE-Step and four-stem mixing.
+fades instead of moving kernel effects. Generated music is not a Full-only feature: Basic can
+run it locally too.
 
-The [six-configuration June example](../better/measured.md#june-hardware-matrix)
-records uninterrupted cold runs on a NAS, one shared Kubernetes GPU and two Macs, including
-the extra render time and file size for 4K HDR. It names the features exercised, remaining
-warnings and setup corrections. Basic remains 1080p on both NAS and Mac.
+[Measured setups](../better/measured.md#cold-start-time-by-hardware-and-tier) record cold runs
+across a NAS, a shared Kubernetes GPU and two Macs, including the extra render time and file
+size for 4K HDR, and name the features exercised. Basic remains 1080p on both NAS and Mac.
 
 ## Basic: start with the film
 
@@ -68,9 +67,9 @@ and about 25 GB for persistent data, plus room for the image and finished films.
 [NAS notes](../run/nas.md) cover permissions and access from your desktop.
 
 **Cost:** the first cut prepares the pictures in its period. Later cuts reuse compatible facts;
-they still render the video. Basic output stops at 1080p. The
-[finished-film measurements](../better/measured.md#whole-film-controls) include a one-minute
-NAS month that took 7m 23s with picture facts already prepared. That is not a first-install time.
+they still render the video. Basic output stops at 1080p. See
+[measured setups](../better/measured.md#longer-films-memory-and-duration) for render time once
+facts are already prepared; that is not a first-install time.
 
 **Check:** `capabilities` should report Basic. A software encoder is a valid result. Run
 `preflight` after `models fetch` and resolve errors before cutting a month.
@@ -80,9 +79,8 @@ NAS month that took 7m 23s with picture facts already prepared. That is not a fi
 Captions add information beyond dates and faces: what is happening, what objects are present,
 and how a picture fits the story. The GPU tier also adds document and sensitive-content checks
 and a family-viewing pre-screen. Review the cut before sharing it; model checks can miss things.
-See [what GPU changed in one CC0 month](../better/gpu-example.md): two different videos and
-two additional source exclusions. Both tiers kept all four favourites. The example records
-the changed cut and its limits; it does not claim that a model always improves a film.
+See [the Basic vs GPU example](../better/tier-example.md#basic-and-gpu) for one CC0 month's
+changed cut and its limits; it does not claim that a model always improves a film.
 
 **Fast path:** on Apple Silicon, use the [native Mac setup](../run/reference/mac-example.md).
 The `all-mac` extra makes Metal available to automatic tier detection; captions still need a
@@ -102,8 +100,8 @@ Laya runtime/checkpoint. Detecting a GPU alone does not prove either is ready.
 The rules editor still builds the film. A text model reads that draft and can propose small
 changes, such as replacing a weak shot or tightening a story. Each change must pass the selection
 checks. If the reader cannot answer, the app keeps the rules draft and reports why.
-Watch the separate [Basic and Full example](../better/tier-example.md): 13 of 14 shots overlap,
-with one replacement. It is one observed cut, not a quality guarantee.
+Watch the separate [Basic and Full example](../better/tier-example.md) for one observed cut;
+it is not a quality guarantee.
 
 **Fast path:** start with the GPU setup, then enable a [text reader](../better/reader.md).
 Use its exact served model name and URL, and explicitly set `llm.enabled` to `true`.
@@ -133,8 +131,9 @@ service; [bundled music already works](../make/titles-maps-music.md).
 | Apple Silicon Mac | [Native Mac setup](../run/reference/mac-example.md) |
 | Kubernetes cluster | [Kubernetes](../run/kubernetes.md) |
 
-The [tested setups table](../better/measured.md#tested-setups) separates installation checks,
-picture preparation and finished films. It names missing measurements too. Rendering benchmarks
+[Measured setups](../better/measured.md#cold-start-time-by-hardware-and-tier) covers installation
+checks, picture preparation and finished films separately. It names missing measurements too.
+Rendering benchmarks
 alone do not prove that a new user can install and finish a film.
 
 ## Change services later

@@ -81,7 +81,7 @@ uv tool install --python 3.12 "immich-memories[all-mac]"
 ```
 
 VideoToolbox handles encoding and Metal handles title effects. The `mac` extra alone lacks the
-classifiers needed for films. With `tier: auto`, Metal also selects GPU preparation (Full with an enabled reader). Set up the caption service and Laya, or choose `tier: nas` for CPU preparation. [Python installation](./uv-pip.md) also covers the FFmpeg build.
+classifiers needed for films. With `tier: auto`, Metal also selects GPU preparation (Full with an enabled reader). Set up the caption service and Laya, or choose `tier: basic` for CPU preparation. [Python installation](./uv-pip.md) also covers the FFmpeg build.
 
 ### Intel Quick Sync and AMD VAAPI
 

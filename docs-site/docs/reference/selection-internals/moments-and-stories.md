@@ -16,20 +16,8 @@ Everything on this page is the no-model path, which is the draft every film star
 
 ## From pictures to stories
 
-```mermaid
-flowchart TD
-  accTitle: From pictures to stories
-  accDescr: Stages shown: Group nearby pictures, Build episodes and day chunks, Split home weeks or trip legs, Recognise distinct events, Weigh stories.
-  n0["Group nearby pictures"]
-  n1["Build episodes and day chunks"]
-  n2["Split home weeks or trip legs"]
-  n3["Recognise distinct events"]
-  n4["Weigh stories"]
-  n0 --> n1
-  n1 --> n2
-  n2 --> n3
-  n3 --> n4
-```
+Five steps, in order: group nearby pictures, build episodes and day chunks, split home weeks
+or trip legs, recognise distinct events, weigh the stories.
 
 | Unit | Rule | Where |
 |---|---|---|
@@ -77,8 +65,8 @@ A screen or document the next day can add a third shot, never make an event. Whe
 camera made (a screenshot, a scan), taken within 18 hours after the event, has a result, finish,
 time or rank word on it according to Immich's own OCR, the event reserves 3. The words are
 generic ("result", "time", "rank", "record", "score", "certificate", "prize"...), and the read is
-one Immich search per word, only for the events the draft found. The events and whether a
-screen backed them up are listed under `events` in `derived-decisions/period-story.private.json`.
+one Immich search per word, only for the events the draft found. The run record keeps the events
+and whether a screen backed them up.
 
 Known limit: a dinner out photographed like an occasion (40 pictures in 3 bursts across town) is
 an event too. From counts, places and labels alone it looks exactly like one.
@@ -93,18 +81,8 @@ Each happening is first read for whether it is worth remembering, from facts alo
 | `maybe` | A favourite, close family, a video, or the only happening of a required part. |
 | `background` | None of those facts. |
 
-```mermaid
-flowchart TD
-  accTitle: How much a story weighs
-  accDescr: Stages shown: Read worthiness, Apply family and favourite floors, Apply story ceilings, Allocate shot slots.
-  n0["Read worthiness"]
-  n1["Apply family and favourite floors"]
-  n2["Apply story ceilings"]
-  n3["Allocate shot slots"]
-  n0 --> n1
-  n1 --> n2
-  n2 --> n3
-```
+Four steps turn a reading into shot slots: read worthiness, apply the family and favourite
+floors, apply the story ceilings, allocate shot slots.
 
 The mapping from the reading to a weight is `GATE_WEIGHT` in `editorial_story_replies.py`:
 remarkable seeds `minor`, maybe seeds `glimpse`, background gets `none`. Then the floor and ceiling:
@@ -139,6 +117,12 @@ Slots are handed out in order: one for each `major` story, then one `minor` per 
 stories up to their ceiling, the remaining `minor` stories, one `glimpse` per day, and whatever is
 left deepens the heavier stories one moment at a time.
 
+A deeper frame of a moment already shown has to pass the same scene check the final duplicate
+review uses, so a near-copy never takes a slot only to be removed later. A slot that review does
+free goes back to the same moment, then the same story, then to other stories' moments that got
+nothing, in the same funding order. A film only comes out short when the library has run out of
+distinct material.
+
 In a long film the `major` ceiling rarely binds. The budget runs out first, so every `major` story
 ends up at the same depth: a two-evening story with a handful of stars gets as many shots as a
 ten-day trip with a hundred.
@@ -156,13 +140,12 @@ place in one month (three concerts at the same hall, three matches at the same c
 Every story of the kind keeps its own shot. Only the heaviest one (most favourites, then most
 moments) goes deeper, as deep as any other `major` story. A trip and a big family story never fold:
 they carry their own weight, so a birth-sized day next to smaller days of the same label keeps
-everything it had. The kinds found are listed under `same_kind` in
-`derived-decisions/period-story.private.json` (`editorial_same_kind.py`).
+everything it had. The kinds found (`editorial_same_kind.py`) are kept with the run record.
 
 **Every year gets a shot.** A person film with one date window longer than 548 days, a custom film over several date ranges, and an album with a written subject are split into calendar years. A person film with several windows has window partitions but no one-shot-per-window guarantee. Before any story takes a second shot, each year that holds a funded story gets one, from its first story in funding order. When no picture that story offered stands
 on its own, the year's next story gets the shot, and so on down the year. A year where none stands
-stays quiet, and `quiet_partitions` in `derived-decisions/story-selection.private.json` names the
-year and the stories that were tried. The passes that cut for length or taste keep a year's only shot: the favourite
+stays quiet, and the run record names the year and the stories that were tried
+(`quiet_partitions`). The passes that cut for length or taste keep a year's only shot: the favourite
 readmission, the timing trim, the filler drop, and the model polish's vote and standing gate (see
 [Length, quiet weeks and filler](./length-and-filler.md)). The family-viewing gate still removes a
 shot it holds back, whatever year it carries. The finished-cut check reports a year left without

@@ -71,10 +71,9 @@ On the Docker host: [http://localhost:8080](http://localhost:8080).
 If the host is your NAS or another server, [tunnel or enable LAN access](#reaching-the-ui-from-another-machine).
 
 Then make [your first film](../get-started/first-film.mdx). Start with the 20–50-item trial album.
-The [June measurements](../better/measured.md#june-hardware-matrix) record a complete cold
-NAS Basic film in 16m 36s with hardware encoding. A separate [fresh default Docker install](../better/measured.md#june-docker-install)
-on the same NAS completed its first film in **28m 56s** with software encoding and bundled music.
-Both used the same 725-source month, but these separately selected films are not an isolated encoder comparison. See [what to expect](./nas.md#what-to-expect).
+The first film takes longer: it prepares every picture in the period before it renders. See
+[measured examples](../better/measured.md#cold-start-time-by-hardware-and-tier) and
+[what to expect](./nas.md#what-to-expect).
 
 ### When a step is missing
 
@@ -160,9 +159,9 @@ recipe to Immich's trash after the replacement succeeds. It never authorizes a h
 through this app. Originals are not changed.
 
 `stack.read` is separate and optional too. It lets the app fold a stack (an edit and its
-original, a burst) into its primary before selection, so only one of them ships. Without it,
-`GET /stacks` answers 403 and every stack member is read as a separate, unstacked picture, as
-before Immich 3.3.
+original, a burst) into its top picture before selection, so only one of them ships, and a star
+on any picture of the stack counts for it. Without it, `GET /stacks` answers 403, the run logs one
+warning for that account, and every stacked picture is read as its own candidate.
 
 Do not add `timeline.read`, `tag.read`, or album-update permissions to this minimum.
 Timeline routes use `asset.read`. The app reads the key's own permission list through
@@ -226,6 +225,7 @@ The service then reaches Immich over that stack's internal network.
 
 Get the first film working before adding services.
 
+<Diagram name="deploy-compose" headline="Start with one container. Add a file for each upgrade." />
 | Want | Setup |
 |---|---|
 | GPU picture preparation | [Inference service](../better/inference.md), `docker-compose.gpu.yml` |
@@ -254,7 +254,7 @@ listen on an address reachable from the bridge, such as `0.0.0.0`:
 
 ## The product tier in compose {#the-preparation-tier-in-compose}
 
-The base requests Basic through `TIER=basic`. Existing `TIER=nas` values remain aliases. The GPU and Full tier files request their respective
+The base requests Basic through `TIER=basic`. The GPU and Full tier files request their respective
 tiers. Preflight checks whether the selected hardware and services can satisfy that request.
 Saved Settings can override these deployment defaults. See [tier requirements](./requirements.md#the-preparation-tier).
 Keep `IMMICH_MEMORIES_EDITORIAL__PREPARATION__DETECTOR_CACHE_DIR` on the persistent volume when
@@ -268,7 +268,7 @@ The file sets no CPU quota because Synology kernels can refuse `cpus:`. Use
 
 ## Daily automation
 
-Uncomment these in the service's `environment:` block, set `TZ` in `.env`, and recreate:
+Add these two lines to the service's `environment:` block, set `TZ` in `.env`, and recreate:
 
 ```yaml
       IMMICH_MEMORIES_AUTOMATION__ENABLED: "true"

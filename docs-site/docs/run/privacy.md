@@ -12,13 +12,7 @@ can also fetch weights on first use, including during a run.
 Optional features can contact other services. You choose which ones, and whether they run on
 your own hardware or outside your network.
 
-```mermaid
-flowchart TB
-    app[Immich Memories] -->|Default| immich[Your Immich]
-    app -.->|Optional| local[Your model / render services]
-    app -.->|Explicit opt-in| outside[Hosted AI / maps / notifications]
-```
-
+<Diagram name="privacy-map" headline="Immich is the only thing it always talks to. Everything else waits for a setting you choose." />
 ## Before adding a service
 
 | Feature | What it receives |
@@ -67,10 +61,8 @@ Geocoding gets city, village and trip names and names in the film's language. It
 coordinates rounded to two decimals (about a kilometre) to Nominatim, once per place. That can
 include home. Answers stay in the store. Set `geocoding_url` for your own Nominatim.
 
-After upgrading past the fix that dropped the English fallback, each already-geocoded place is
-looked up once more: the cache key changed, so a stored English answer is never reused, and
-English is no longer requested at all. A place with no name in the film's language keeps its own
-local name instead.
+Place names are requested in the film's language; a place without a name in that language keeps
+its local name instead of an English fallback.
 
 Map tiles come from ArcGIS World Imagery for trip maps and location-card backgrounds. Requests
 reveal the area, including home base. With tiles off, ordinary title/location cards still work.
@@ -86,8 +78,10 @@ immich-memories titles fonts --install
 ```
 
 Font files are pinned and digest-checked. A render never fetches a font. Detector downloads are
-off unless allowed; the Compose inference profile allows them and the captioner profile fetches
-its weights at startup. ACE-Step and local Demucs can fetch their own weights on first use.
+off unless allowed; the Compose inference overlay allows them, and the GPU overlay's one-shot
+`immich-memories-caption-models` container fetches the caption model's weights at `compose up`,
+before the captioner starts. `models fetch` and the web UI's **Fetch models** button run the same
+download on demand. ACE-Step and local Demucs can fetch their own weights on first use.
 Those downloads contain no library data. Local ACE-Step uses app-pinned immutable Hugging Face
 snapshots and refuses incomplete downloads; [checkpoint revisions](./reference/privacy-egress.md#ace-step-checkpoint-revisions)
 list the pins. API mode uses the remote music server's checkpoints.
@@ -95,7 +89,8 @@ list the pins. API mode uses the remote music server's checkpoints.
 ## Thumbnails in the web UI
 
 Your browser asks this app for pictures/video, behind the same login. The app fetches or serves
-cached media from Immich. The API key stays on the server.
+cached media from Immich. The API key stays on the server. It only serves a picture one of the
+configured accounts can read: any other ID gets a 404, even when it sits in the cache.
 
 ## Privacy mode
 

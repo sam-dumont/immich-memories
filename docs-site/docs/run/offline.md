@@ -7,26 +7,18 @@ title: "Fetch once, then keep traffic local"
 This recipe runs Basic with the rules reader and bundled music. After preparation, the app
 contacts Immich; it does not need a hosted reader, a caption service or a music generator.
 The network boundary enforces that choice. Turning off features alone is not a firewall.
-Both recipes passed real isolated runs with fresh models and a synthetic CC0 Immich library:
-Docker Desktop on Apple Silicon, and RKE2 1.33.4 with Cilium 1.18.0. Each kept Immich reachable,
-blocked unrelated outbound HTTPS, passed preflight and produced a 19-second 1080p H.264/AAC
-film with a complete audio/video decode.
-
-The Docker run used app source `5466706b` and Compose recipe `00cd41df`; the Kubernetes run
-used candidate source tree `75077f27` and the documented fixed-IP/no-DNS policy variant.
-These were local candidate images, not release-download tests. The DNS-service variant
-needs a check on your cluster: in this run the allowed CoreDNS pod answered directly, but
-its Service IP did not. Community validation is welcome; report your platform/version,
-a denied outbound destination and your first film result in
-[#1804](https://github.com/sam-dumont/immich-memories/issues/1804).
-
-## Fetch before closing the network
-
-Use the same release image for fetching and rendering. Pull it before isolating the app:
+Both the Docker and Kubernetes recipes below are verified against a real isolated run: Immich
+stays reachable, unrelated outbound HTTPS is blocked, preflight passes and the film completes.
+See the [deployment matrix](./tested-deployments.md) for exact test runs, and report your own
+platform there if it's missing.
 
 Basic omits the extra GPU/Full detectors and Laya sharing pre-screen. Choosing **Family**
 instead of **Just us** does not add that missing coverage. Review the film before sharing;
 [the audience guide](../how-it-chooses/family-audience-duplicates.md) explains the limits.
+
+## Fetch before closing the network
+
+Use the same release image for fetching and rendering. Pull it before isolating the app:
 
 ```bash
 export IMMICH_MEMORIES_IMAGE=ghcr.io/sam-dumont/immich-memories:YOUR_RELEASE
@@ -36,7 +28,7 @@ docker run --rm --user 0:0 --entrypoint sh \
   -v immich-memories-offline-models:/models "$IMMICH_MEMORIES_IMAGE" \
   -c 'chown 1000:1000 /models'
 docker run --rm \
-  -e IMMICH_MEMORIES_TIER=nas -e IMMICH_MEMORIES_LLM__ENABLED=false \
+  -e IMMICH_MEMORIES_TIER=basic -e IMMICH_MEMORIES_LLM__ENABLED=false \
   -e IMMICH_MEMORIES_TRIAGE__ENCODER=/models/triage/dinov2-small.onnx \
   -e IMMICH_MEMORIES_FREE_TEXT__WORDNET=/models/wordnet/wordnet.zip \
   -v immich-memories-offline-models:/models "$IMMICH_MEMORIES_IMAGE" \
@@ -156,18 +148,15 @@ as `networkpolicy.offline.yaml` and edit:
 
 After preparation, remove the fetch init container from your maintained manifest/overlay
 and pin the same offline feature settings as the Docker example. To make that transition
-on an already running Basic Deployment:
-
-Basic omits the extra GPU/Full detectors and Laya sharing pre-screen. Choosing **Family**
-instead of **Just us** does not add that missing coverage. Review the film before sharing;
-[the audience guide](../how-it-chooses/family-audience-duplicates.md) explains the limits.
+on an already running Basic Deployment (the [sharing limits above](#fetch-before-closing-the-network)
+still apply):
 
 ```bash
 kubectl rollout status -n immich-memories deployment/immich-memories
 kubectl patch deployment immich-memories -n immich-memories --type=json \
   -p='[{"op":"remove","path":"/spec/template/spec/initContainers"}]'
 kubectl set env deployment/immich-memories -n immich-memories \
-  IMMICH_MEMORIES_TIER=nas IMMICH_MEMORIES_LLM__ENABLED=false \
+  IMMICH_MEMORIES_TIER=basic IMMICH_MEMORIES_LLM__ENABLED=false \
   IMMICH_MEMORIES_RENDER__WORKER_BASE_URL= IMMICH_MEMORIES_INFERENCE__FACTS_BASE_URL= \
   IMMICH_MEMORIES_NETWORK__GEOCODING=false IMMICH_MEMORIES_NETWORK__MAP_TILES=false \
   IMMICH_MEMORIES_ACE_STEP__ENABLED=false IMMICH_MEMORIES_MUSICGEN__ENABLED=false \

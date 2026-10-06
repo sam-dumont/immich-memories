@@ -84,28 +84,17 @@ quiet week among mostly-indicated ones goes short, same as it always did.
 ## Filler nothing vouches for
 
 A quiet month can still have more slots than shots anyone vouches for, and the leftover slots go to
-whatever stands. So every film drafted from the rules gets one last removal pass (`drop_filler_nothing_vouches_for`,
-PR #1250), after the duplicate review:
-
-```mermaid
-flowchart TD
-  accTitle: Filler nothing vouches for
-  accDescr: Stages shown: Read settled shot, Keep indicators and protected coverage, Check empty-frame evidence, Remove unsupported filler without refill.
-  n0["Read settled shot"]
-  n1["Keep indicators and protected coverage"]
-  n2["Check empty-frame evidence"]
-  n3["Remove unsupported filler without refill"]
-  n0 --> n1
-  n1 --> n2
-  n2 --> n3
-```
+whatever stands. So every film drafted from the rules gets one last removal pass
+(`drop_filler_nothing_vouches_for`), after the duplicate review. In order: read the settled
+shot, keep every indicator and protected shot, check the empty-frame evidence, then remove
+unsupported filler without refilling the slot.
 
 It runs on the no-model film and on a polished one alike. The polish refines the no-model film,
 so it never keeps what that film would drop: a caption that misreads a printed recipe as a posed
 child does not get it past this pass. A screen that plays as a Live Photo, or shows someone Immich
 knows, still stays. So does one shot of a year this pass would leave empty, in a film that gives
-every year a shot: the one that stands best. What was left out is listed by id and head label
-in `derived-decisions/unvouched-filler.private.json`.
+every year a shot: the one that stands best. The run record keeps what this pass left out; see
+[what a run leaves behind](./overview.md#what-a-run-leaves-behind).
 
 An album handed over with a written subject (`--from-album ... --subject ...`) skips this pass. Every
 picture in it was picked for that subject, so a loaf in a bread film is the film, not filler
@@ -115,21 +104,29 @@ picture in it was picked for that subject, so a loaf in a bread film is the film
 
 The draft tries to reach its length before it gives up the seconds:
 
-- **Depth.** When a story has slots left after every pass, it spends them inside the moments it
-  already shows (`editorial_story_depth.py`): first moments no pick took, alternating between
-  capture groups, then further frames of each chosen moment, one round at a time, until the
-  slots run out. A 36-minute moment of laps on a track can fill a short film this way. Videos
-  come before stills, frames are spread across the moment's time, and the story's place bound
-  grows with the slots it now spends. Eligible favourites come first;
-  equally preferred frames spread furthest in time from those already in. Every one must stand
-  and must not look like its neighbours. A film of one repeated
-  scene stays short.
+<Diagram name="decide-length" headline="A film is as long as its distinct shots can carry. It's never padded." />
+- **Depth.** When the film still has content seconds free after every pass, it spends them
+  inside the moments it already shows (`editorial_story_depth_fill.py`): first moments no pick
+  took, then further frames of each chosen moment, one round at a time, round-robin across
+  every funded story so one story never drains a round meant for its neighbours. A 36-minute
+  moment of laps on a track can fill a short film this way. A frame only counts once it is its
+  own shot: a video counts once its window clears every kept video's window, anything else
+  counts once it is a real five minutes from every kept shot of the same capture group, and a
+  heap of frames sharing one timestamp (a placeholder date, a burst, a pile of scans) is one
+  shot, not many. Capacity is distinct shots, with no flat per-day or per-moment ceiling: a
+  dense day is not held to the same cap as a quiet one. Videos come before stills, frames are
+  spread across the moment's time, and the story's place bound grows with the slots it now
+  spends. Eligible favourites come first; equally preferred frames spread furthest in time from
+  those already in. Every one must stand and must not look like its neighbours. The fill stops
+  once the film's content seconds reach the budget, minus the usual 15% tolerance; when distinct
+  shots run out first, the run logs how many distinct shots it found and how many seconds short
+  of the budget the film landed. A film of one repeated scene stays short.
 - **Readmission.** A frame refused for looking like another, or for crowding its place, comes back
   when nothing else can fill the slot. A favourite refused for crowding its place comes back sooner.
   While the film has a free slot it takes that one and nobody leaves. Once the film is full, it comes
   back before a shot nothing vouches for keeps the slot it freed. That shot leaves (the weakest
-  first, a story's only shot last, and never a year's only shot in a film that gives every year one)
-  and is listed under `displaced_for_a_favourite` in `derived-decisions/story-selection.private.json`.
+  first, a story's only shot last, and never a year's only shot in a film that gives every year one).
+  The run record keeps which shot was displaced for a favourite.
 - **With a model**, a film still short by S seconds reads up to 2 × ceil(S / 3.5) episodes it never
   reached, and seats the ones whose reading records something
   ([What a model adds](./what-a-model-adds.md#a-short-film-gets-one-more-look)).

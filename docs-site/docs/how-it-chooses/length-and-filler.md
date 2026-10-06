@@ -8,6 +8,7 @@ The target length is a budget, not a promise. A month with three photographed da
 
 The editor tries distinct shots before stopping. It removes repeats even when that leaves the film short. Your title and ending cards also use part of the target length.
 
+<Diagram name="decide-length" headline="A film is as long as its distinct shots can carry. It's never padded." />
 You can change the target in the brief, or use the CLI:
 
 ```bash

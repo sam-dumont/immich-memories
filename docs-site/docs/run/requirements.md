@@ -7,9 +7,7 @@ title: Requirements and tiers
 A plain NAS can make the whole film. No GPU or hosted AI subscription required.
 Start with the machine that already runs Immich.
 
-See [Can I run this?](./tested-deployments.md) for exact platform evidence, candidate versions and untested routes.
-
-[Immich compatibility](./compatibility.md) distinguishes API majors, test targets and candidate-tested patch versions.
+See [Can I run this?](./tested-deployments.md) for platform status, supported Immich versions and untested routes.
 
 ## Hardware
 
@@ -27,9 +25,9 @@ Allow this **in addition to what Immich uses**:
 The 25 GB allows for the default preview and video caches: 10 GB each, plus the store and model
 files. An SSD helps. Finished films need their own space unless you upload them to Immich.
 
-A tested 30-minute NAS film completed at 1080p under a 4 GiB container limit, using swap.
-Your library and output settings still affect memory use. See the
-[measured examples](../better/measured.md#whole-film-controls).
+A 30-minute film fits inside the default 4 GiB container limit on a NAS, with some swap. Your
+library and output settings still affect memory use. See the
+[measured examples](../better/measured.md#longer-films-memory-and-duration).
 
 A few limits worth knowing before you install:
 
@@ -49,6 +47,7 @@ Ready? [Install with Docker Compose](./docker.md), or read the [NAS notes](./nas
 
 Leave `tier: auto`. The app chooses from the inference hardware and model configuration it finds.
 
+<Diagram name="decide-tier" headline="auto picks the most your hardware can do. Set tier yourself to pin one." />
 | Tier | What it adds | What you need |
 |---|---|---|
 | **Basic** | A complete film using metadata, CPU picture classifiers and selection rules | The default install and `models fetch` |
@@ -71,11 +70,13 @@ an enabled `openai-compatible` or `ollama` reader with blank `base_url` starts l
 `llama-server` is installed. Hosted provider presets use their vendor URL instead. The shipped
 Docker and Kubernetes app images need an external reader.
 
-`IMMICH_MEMORIES_TIER` overrides `tier:` in the file. Compose and Kubernetes set it to `auto`.
-You may force `basic`, `gpu` or `full`, but that does not install models or start servers.
-Forcing `tier: full` without an enabled reader fails configuration loading, before the UI or
-`preflight` can start. Return to `auto` or configure and enable the reader first; setting the
-tier alone cannot supply it. Changing tier keeps compatible prepared facts and your review decisions.
+`IMMICH_MEMORIES_DEPLOYMENT_TIER` pins the tier, overriding `tier:` in the file; it accepts
+`basic`, `gpu` or `full`, not `auto`. The shipped Compose file and the Kubernetes base manifest
+both set it to `basic`, so you need the GPU overlay or component before GPU/Full can resolve.
+Terraform and the Kubernetes one-shot job leave `tier: auto` instead. Pinning a tier does not
+install models or start servers on its own. Forcing `tier: full` without an enabled reader fails
+configuration loading, before the UI or `preflight` can start: configure and enable the reader
+first, or go back to `auto`. Changing tier keeps compatible prepared facts and your review decisions.
 
 ## Check this setup
 

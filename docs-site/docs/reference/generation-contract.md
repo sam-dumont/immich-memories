@@ -16,6 +16,7 @@ finished film: it reserves the opening, the ending and the dividers, and credits
 trip's map moves run on top of it ([Maps and film length](output-rendering.md#maps-and-film-length)). A
 period with too little material finishes shorter rather than padding.
 
+<Diagram name="seq-generate-reference" headline="The same five steps, with the names you'll find in the code and in the store." />
 ```bash
 immich-memories generate [OPTIONS]
 ```
@@ -151,23 +152,30 @@ forwarded pictures included. One occasion of one day ("our wedding") goes to the
 product instead. A sentence the library cannot show makes no film and says which filter emptied
 it. The translation is kept with the run, for [`report`](../make/cli/report.md).
 
-## Trips
+Trip detection, naming and its CLI flags are on [Film types: Trip](film-types.mdx#trip).
 
-With `trips.homebase_latitude` and `trips.homebase_longitude` set, the tool finds clusters of
-GPS-tagged pictures at least 50 km away spanning at least 2 nights, split when the gap between
-pictures passes 2 days. The thresholds are in the
-[config reference](config-reference.md#trip-detection).
+## What it reads from Immich
 
-```bash
-immich-memories generate --memory-type trip --year 2024                  # a table of trips, no video
-immich-memories generate --memory-type trip --year 2024 --trip-index 2   # one of them
-immich-memories generate --memory-type trip --year 2024 --all-trips      # all of them
-```
+Every read goes to the accounts the run names, each with its own key. Writes happen only when upload is
+on: the finished film, its tag and its album, plus moving an earlier render of the same recipe to
+Immich's trash when the key has `asset.delete`.
 
-A trip over New Year is one trip, not two. `--trip-index` starts at 1; `--month` chooses the trip
-whose midpoint is nearest that month's 15th, without trimming it to that month. Trip photos need
-GPS at least `trips.min_distance_km` (50 km by default) from home; videos are read by date only.
-The default trip filename starts as `trip_<place>_<start-date>.mp4` before the normal run hash is added.
+| Read | What the run uses it for |
+|---|---|
+| Metadata search and timeline buckets | the period's pictures, with capture time, EXIF, place, people, favourites and whether Immich's editor touched them (`isEdited`) |
+| `GET /assets/{id}/thumbnail` (preview size) | the previews preparation and selection judge; an edited photo's preview is asked for with `edited=true` |
+| `GET /assets/{id}/original` | the photos and clips the renderer plays; an edited photo is downloaded with `edited=true` |
+| `GET /assets/{id}/video/playback` | a video's sound, read for speech and for where to cut |
+| `GET /faces`, `GET /people` | face boxes for framing and the people checks, and the names Immich recognised |
+| `GET /assets/{id}/ocr` | readable documents (Immich 2.2 and later; off for the run on an older server) |
+| `GET /stacks` | stack folding, once per account per run; needs the optional `stack.read`, and a key without it folds no stacks |
+| `GET /albums` | album scopes and the upload destination |
+
+Before the editor sees the pool, three folds turn a picture stored several times into one
+candidate: identical bytes, other files of the same picture (the newest full-size version plays),
+and Immich stacks (the top picture plays). The rules are in
+[Duplicates](selection-internals/family-audience-duplicates.md#duplicates). The permission each
+read needs is in [the API key](../run/docker.md#the-api-key).
 
 ## What the terminal shows while it runs
 
@@ -208,9 +216,19 @@ funnel at a path you choose.
 
 The CHECK line counts the shots in the finished cut that the sensitive-content detector read between
 0.2 and 0.5 and that nothing else already holds to family viewing. It is a list, not a gate: no shot
-was removed or changed for it. The shots themselves are in `review-before-sharing.private.json` in
-the run attempt directory, and `runs why` names one when you ask about it. A run with none prints
+was removed or changed for it. The shots themselves are kept with the run attempt, and
+`runs why` names one when you ask about it. A run with none prints
 `CHECK 0 pictures to check before sharing`, which says the run looked.
+
+### Run state
+
+<Diagram name="state-run" headline="A run stays running until it ends one of four ways." />
+A run's own record (`pipeline_runs.status`) starts `running` and ends one of four ways:
+`completed`, `failed`, `cancelled` (you stopped it, from the CLI or the web UI's **Cancel**), or
+`interrupted` (the process died without a chance to record why: a killed container, a crash).
+Phases are tracked inside a run in order: discovery, download, analysis, selection, render,
+music, delivery, complete. `runs show` prints the status and, for a run that didn't finish,
+which phase it reached.
 
 ## Output
 

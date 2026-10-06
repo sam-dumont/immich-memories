@@ -5,6 +5,7 @@ description: Run Immich Memories with Docker, on a NAS, with Python or in Kubern
 
 Start with [Quick start](../get-started/quick-start.md) for one container beside Immich. Use this section when you need a different deployment or want to manage it over time.
 
+<Diagram name="architecture-overview" headline="Everything runs on your machine. Nothing leaves your network unless you switch it on." />
 ## Choose a deployment
 
 | Your setup | Start here |
@@ -18,6 +19,8 @@ Start with [Quick start](../get-started/quick-start.md) for one container beside
 [Requirements](requirements.md) explains hardware limits and what extra resources buy you.
 
 Already running the app and ready to move work elsewhere? Choose [one GPU service](reference-setup.md) for a shared NVIDIA worker, [distributed Kubernetes services](reference/cluster-example.md) for independently managed workloads, or [local Apple Silicon services](reference/mac-example.md) for a native Mac installation. Each guide explains what you must provide and what stays on the app host.
+
+Want to see everything turned on? [How I run it](how-i-run-it.md) describes my own setup: the app and one GPU worker on Kubernetes, the reader on a Mac, and what each piece costs.
 
 ## Protect access and keep your data
 

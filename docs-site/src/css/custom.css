@@ -332,3 +332,49 @@ h1, h2, h3, h4, h5, h6 {
   .docs-demo-motion { display: none; }
   .docs-demo-still { display: block; }
 }
+
+/* Diagrams (docs-site/diagrams): headline above, the SVG at full column width, click to enlarge */
+.docs-diagram {
+  margin: 1.75rem 0;
+}
+
+.docs-diagram__headline {
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.4;
+  margin-bottom: 0.75rem;
+}
+
+.docs-diagram__open {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: zoom-in;
+}
+
+.docs-diagram__open img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.docs-diagram__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  overflow: auto;
+  cursor: zoom-out;
+  background: var(--ifm-background-color);
+}
+
+.docs-diagram__overlay img {
+  max-width: none;
+  width: min(1800px, 96vw);
+  height: auto;
+}

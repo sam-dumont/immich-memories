@@ -8,6 +8,7 @@ Use the [Docker Compose install](./docker.md). These are the differences on Syno
 TrueNAS SCALE and Unraid. Start with one month: a NAS can make the whole film, but a year's
 first preparation is a bigger job.
 
+<Diagram name="deploy-nas" headline="Every NAS runs the same Compose file. Only the screen you paste it into changes." />
 ## Install
 
 Create an Immich key with the [ten read permissions](./docker.md#the-api-key), adding the
@@ -65,8 +66,8 @@ mkdir -p output
 - Keep your own entry. The home share already has one, and `-addace` leaves it alone. A folder
   whose ACL holds only uid 1000 locks you out of your own films (`d---------`).
 
-Checked on a DS423+ (DSM 7.3.2): a uid-1000 container wrote files, the DSM user read and
-removed them, and a UI render wrote its film through the bind mount.
+This ACL fix is confirmed to work on current DSM: a uid-1000 container can write files, your
+own DSM user can read and remove them, and a UI render writes its film through the bind mount.
 
 **Plain Linux NAS** (no Synology ACLs):
 
@@ -119,18 +120,16 @@ film always renders in English until you set `title_screens.locale: fr` (or add
 ## What to expect
 
 Basic films are capped at 1080p. The default 4 GiB memory limit suits that output.
-In the [June cold matrix](../better/measured.md#june-hardware-matrix), a 60-second film from a
-725-source month took 16m 36s on a J4125 NAS with hardware encoding, including preparation,
-bundled music and rendering. A separate [fresh default Docker install](../better/measured.md#june-docker-install)
-completed its first film in **28m 56s** with software encoding and bundled music. It used default
-settings; these separately selected films are not an isolated encoder comparison. Larger periods, slower storage and different media can still take hours; these
-single-run results are not deadlines for every library.
+The first film takes the longest: it has to read every picture in its period before it can
+render. Larger periods, slower storage and different media can take hours. See
+[measured examples](../better/measured.md#cold-start-time-by-hardware-and-tier) for real numbers on comparable
+hardware.
 The first film reads the pictures in its period and saves the results; later films reuse matching
 results. Rendering still happens every time.
 
 Basic preparation leaves Marqo and Docling off; GPU/Full add those detectors, captions and the
 Laya pre-screen. Compatible facts already in the store stay banked when you change tiers. See
-[what the upgrades add](../get-started/what-a-gpu-or-a-model-adds.md).
+[what the upgrades add](../get-started/choose-your-setup.md).
 
 CPU titles draw their background and text once, then move, scale and fade the text with FFmpeg.
 The background stays still to keep software encoding cheap. No extra package is needed. For cheaper trip
@@ -145,8 +144,9 @@ once a minute.
 
 ## Encoding
 
-An Intel NAS can use Quick Sync for H.264. Uncomment the device block in Compose, and use the
-numeric group that owns the render node:
+An Intel NAS can use Quick Sync for H.264. Add the device block below to the app service in
+Compose (the shipped file has no device mapping by default), and use the numeric group that
+owns the render node:
 
 ```bash
 stat -c '%g' /dev/dri/renderD128
@@ -188,7 +188,7 @@ Stay at 1080p on NAS. For rendering on a stronger machine, use a
 ## What a NAS can't do
 
 GPU selection and local generated music need their respective GPU services. A reader alone still
-helps with titles and music mood. Use the [add-on guide](../get-started/what-a-gpu-or-a-model-adds.md)
+helps with titles and music mood. Use the [add-on guide](../get-started/choose-your-setup.md)
 to choose the next useful piece.
 
 ## Everything else

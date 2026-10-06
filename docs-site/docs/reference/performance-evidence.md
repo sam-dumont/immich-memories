@@ -1,10 +1,13 @@
 ---
-title: Measure your setup
+title: Benchmarking your own setup
 ---
 
-# Measure your setup
+# Benchmarking your own setup
 
-A service benchmark is not a whole-film benchmark. Record the source revision, hardware, resolved tier and cache state before comparing runs. Current deployment choices are in [Requirements](../run/requirements.md) and [Optional upgrades](../better/overview.md).
+A service benchmark is not a whole-film benchmark. Record the release, hardware, resolved tier
+and cache state before comparing runs. For the project's own numbers, see
+[Measure your setup](../better/measured.md). Current deployment choices are in
+[Requirements](../run/requirements.md) and [Optional upgrades](../better/overview.md).
 
 ## Keep four measurements separate
 
@@ -22,7 +25,7 @@ immich-memories runs show RUN_ID
 immich-memories report RUN_ID
 ```
 
-Compare the same saved cut with the same output settings. Record failures and fallback routes rather than counting them as successful accelerated runs. The [measured examples](../better/measured.md#whole-film-controls) show whole-run timings and memory scopes for specific revisions.
+Compare the same saved cut with the same output settings. Record failures and fallback routes rather than counting them as successful accelerated runs. The [measured examples](../better/measured.md#longer-films-memory-and-duration) show whole-run timings and memory scopes by release and hardware.
 
 ## Memory
 

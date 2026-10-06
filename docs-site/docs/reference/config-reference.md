@@ -845,12 +845,12 @@ A scope of ten thousand candidates wants about 3.4 GB; the `0.35` leaves a littl
 
 If the run's working set does not fit, nothing is lost mid-run: previews still in use are never deleted and the cache overflows the limit instead. The *next* run reclaims them, so the next overlapping memory re-downloads every preview. You get one `WARNING` per run saying how far over you are. Raise it rather than ignoring it.
 
-The video cache is not library-sized: it holds the originals being assembled, tens of files per run however big your library is. `preview_cache_max_size_mb` is gone: it capped the clip previews the old web pages played, and the web client streams Immich's own renditions. An old config that still sets it loads with a warning.
+The video cache is not library-sized: it holds the originals being assembled, tens of files per run however big your library is. An old config that still sets `preview_cache_max_size_mb` loads with a warning; it has no effect.
 
 ## Store database
 
 Where the store lives: owner decisions, the people registry, model answers, run history, automation
-state, the special-days catalogue and the settings you edit in the UI, as they move out of loose files ([#871](https://github.com/sam-dumont/immich-memories/issues/871)).
+state, the special-days catalogue and the settings you edit in the UI.
 `cache.database` only names a pre-store `cache.db` for the one-time import, and the directory
 the run lock files sit in.
 

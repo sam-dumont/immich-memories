@@ -10,7 +10,7 @@ sidebar_position: 6
 The Basic tier makes the whole film from metadata, pixels and small CPU classifiers. The `gpu` tier
 adds captions and Laya for the pictures in the cut and their candidates. The `full` tier adds a text
 model that reads the draft, as annotation lines, and polishes it: this page is how. What each tier
-adds, feature by feature: [What a GPU or a model adds](../../get-started/what-a-gpu-or-a-model-adds.md).
+adds, feature by feature: [What a GPU or a model adds](../../get-started/choose-your-setup.md).
 
 The prose model gets text only and never decides sharing. Rules, picture classifiers and Laya
 own that check. A configured LLM can also write titles and music mood on Basic or GPU without
@@ -18,18 +18,9 @@ changing the selection tier. Costs and setup are on [What a model adds, what it 
 
 ## Which route a cut takes
 
-```mermaid
-flowchart TD
-  accTitle: Which route a cut takes
-  accDescr: Stages shown: Resolve product tier, Rules draft on every tier, Full: refine draft or explicitly plan whole film, Shared admission and final checks.
-  n0["Resolve product tier"]
-  n1["Rules draft on every tier"]
-  n2["Full: refine draft or explicitly plan whole film"]
-  n3["Shared admission and final checks"]
-  n0 --> n1
-  n1 --> n2
-  n2 --> n3
-```
+Every cut resolves the product tier first, then drafts with rules on every tier; on Full, it
+either refines that draft or (Route C) plans the whole film explicitly; every route ends through
+the same shared admission and final checks.
 
 - `tier: auto` picks the tier: [The three tiers](../../run/requirements.md#the-preparation-tier).
   The tier owns the reader and preparation switches; they are not independent choices.
@@ -47,20 +38,9 @@ flowchart TD
 
 ## The polish (Route B)
 
-```mermaid
-flowchart TD
-  accTitle: The polish (Route B)
-  accDescr: Stages shown: Read period account, Vote on unprotected draft shots, Try checked replacements, Review newcomers, Read more only if short.
-  n0["Read period account"]
-  n1["Vote on unprotected draft shots"]
-  n2["Try checked replacements"]
-  n3["Review newcomers"]
-  n4["Read more only if short"]
-  n0 --> n1
-  n1 --> n2
-  n2 --> n3
-  n3 --> n4
-```
+In order: read the period account, vote on the draft's unprotected shots, try checked
+replacements, review the newcomers those replacements bring in, then, only if the film is still
+short, read further episodes.
 
 **The vote.** The model gets the draft as text, in blocks of at most 12 shots, under the period's
 account and whose film it is. It answers one question, reject-only: which of these shots add
@@ -102,8 +82,8 @@ from 12 rows at most; the facts then say whether the pick stands, and a failed p
 try, as does an R or T pick a gate refuses. A replacement for a shot the vote named comes from
 another moment: the vote judged the moment, and a frame taken seconds apart adds nothing either. A
 newcomer that repeats a scene the cut already holds (the same scene prints the final duplicate review
-reads) is refused on the spot; the outgoing shot is excluded from this comparison. `thin-polish.private.json` records the shot-kind mix of
-the draft and of the polished cut. Every newcomer is voted
+reads) is refused on the spot; the outgoing shot is excluded from this comparison. The run record
+keeps the shot-kind mix of the draft and of the polished cut. Every newcomer is voted
 on again inside the block it joined. An ordinary candidate named weak in either order is
 revoked: trading one weak picture for another has not improved the draft. Its original comes
 back; an R or T seat can try once more within the existing budget. Protected pictures keep
@@ -119,15 +99,15 @@ stories whose reading records a moment. A story whose reading records nothing ge
 film stays short.
 
 **The budget.** Up to 4 questions per 12 draft shots, 4 per seat, and one per three episodes the
-short-film look reads. Sharing uses no prose-LLM calls. `thin-polish.private.json`
-records what it asked against that budget, and the run logs a warning when it goes over.
+short-film look reads. Sharing uses no prose-LLM calls. The run record
+keeps what it asked against that budget, and the run logs a warning when it goes over.
 
 **When the account can't be read**, it is asked once more. A second failure ships the no-model film
 exactly: the run logs *The model polish did not run (...); the film is the rules draft*, the record
 says `ran: false` with the reason. The filler pass runs either way.
 
-**When an episode can't be read**, the account can still use its factual card. The private
-`plan.private.json` records each demanded episode's availability and exact evidence identity under
+**When an episode can't be read**, the account can still use its factual card. The run record keeps
+each demanded episode's availability and exact evidence identity under
 `episode_reading_health`. An unresolved reading marks that section `degraded` and adds a warning
 to the selection trace. A later successful read is marked `recovered`; it clears the unresolved
 warning and keeps the successful reading banked. A completed film can therefore still have an
@@ -141,18 +121,8 @@ for context, using existing annotations without captioning every neighbour. It a
 one representative and the moments worth a record. The period's account combines those readings
 with rules-based cards for the other episodes. Existing matching readings and captions are reused.
 
-```mermaid
-flowchart TD
-  accTitle: Reading on demand
-  accDescr: Stages shown: Build rules draft, Read demanded episodes, Reuse or write period account, Refine the film.
-  n0["Build rules draft"]
-  n1["Read demanded episodes"]
-  n2["Reuse or write period account"]
-  n3["Refine the film"]
-  n0 --> n1
-  n1 --> n2
-  n2 --> n3
-```
+Four steps: build the rules draft, read the demanded episodes, reuse or write the period account,
+then refine the film.
 
 Accounts are one per calendar month, one per year, and for a longer window one per calendar year it
 touches plus one over the span, up to 8 per request. Each is keyed by exactly what it summarises and

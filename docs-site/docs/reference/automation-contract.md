@@ -16,6 +16,7 @@ immich-memories auto run                # decide and do it
 
 It works on a plain NAS, and makes the same cuts you would get by hand there; a GPU or a model makes them better.
 
+<Diagram name="seq-scheduled-run" headline="Once a day it checks what's due and makes one film at most." />
 ## Docker: switch on the built-in timer
 
 In Docker the container's only process is the web UI, so the timer lives there. One setting:
@@ -37,10 +38,14 @@ Either `automation.upload_to_immich: true` or `upload.enabled: true` requests de
 The UI process then runs the same `auto run` decision once a day, with the same lock, history, upload retry
 and notifications as the CLI. A container that was down at `daily_at` catches up when it starts; if the day's
 run already happened (a manual `docker compose exec immich-memories immich-memories auto run` counts) it waits
-for tomorrow. A run counts when it made a film, tried and failed, or found nothing worth one. A dry run doesn't,
-and neither does a `cooldown active` skip, which is what most HTTP triggers get back. When the timer waits, the log
-says which run it counted. A manual run in progress holds the same lock, so the timer reports `skipped` instead of
-fighting it. `/health/ready` shows the timer under `in_process_scheduler`.
+for tomorrow. A run counts when it made a film, tried and failed, or found nothing worth one. A dry run doesn't
+(a **Check eligibility** or an `auto run --dry-run` leaves the scheduled film in place), and neither does a
+`cooldown active` skip, which is what most HTTP triggers get back. When the timer waits, the log says which run it
+counted. A manual `auto run` in progress holds the same automation lock: the timer's attempt comes back `skipped`
+("automation already running") before it records anything, so `auto history` and `auto status` never show it. A
+manual `generate` in progress holds a different lock (the pipeline lock), so the timer's own attempt does start,
+its child `generate` then fails to get the pipeline lock, and the attempt ends `failed`, not `skipped`.
+`/health/ready` shows the timer under `in_process_scheduler`.
 
 ## Bare metal: auto install
 
@@ -67,6 +72,11 @@ Three things a scheduled job does differently from your shell:
 - `--config` goes before `auto`, and the installed job keeps the resolved path.
 
 On macOS a missed job runs when the Mac wakes; launchd does not wake it.
+
+The launchd job writes its wrapper output to `~/.immich-memories/logs/auto.log` and `auto-error.log`.
+The systemd unit sets no `StandardOutput`, so its output goes to the user journal, which a user outside
+`systemd-journal` may not be allowed to read. The per-attempt transcript under the cache is always
+readable by its owner: see [where a scheduled run's logs go](../make/automate.md#where-a-scheduled-runs-logs-go).
 
 ## How it picks one memory
 
@@ -136,9 +146,15 @@ the top candidate. `--cooldown` (`automation.cooldown_hours`, 24) is measured fr
 `auto suggest --json`; the rules still apply, `--force` skips only the cooldown, and a stale key fails rather
 than making something else.
 
+<Diagram name="state-scheduled-attempt" headline="Every attempt ends one of four ways, and the lock always comes back." />
 The outcomes are `skipped`, `dry_run`, `completed` and `failed`; the first three exit 0.
 Quiet output is a stable JSON object with `runtime` as its first key. Key a wrapper on `outcome`: `action` is
 `generation` or `delivery_retry`. Logging is disabled during `auto run --quiet`; its result is one JSON line, not formatted multiline output.
+
+**Known limitation:** an attempt killed mid-run (the process is terminated rather than exiting on its own)
+stays recorded as `running` forever. `auto status` and the trigger API's `status_url` both keep reporting it
+as active, since nothing marks it otherwise. Restarting the app does not clear it; recognise this case by an
+attempt whose `started_at` is far in the past with no `finished_at`.
 
 ```json
 {"runtime": {"version": "<running version>", "checkout": null, "commit": null, "upstream": null, "commits_behind": null, "stale": false}, "outcome": "dry_run", "action": "generation", "reason": "dry run", "candidate_key": "trip:2026-07-02:2026-07-09:", "category": "trip", "run_id": null, "error": null, "output_path": null, "recent_categories": ["monthly_review", "birthday"], "rejections": []}
@@ -189,7 +205,8 @@ immich-memories auto test-notification
 `auto test-notification` sends one message to every URL and says whether it went through. It ignores the
 cooldown that follows a failed delivery (`cooldown_hours`, 24), and a test that succeeds clears it. Every film
 then sends one: `auto run`, the Docker timer and a plain `generate`. The message carries the memory type, the
-outcome, the duration, the output path and, on a failure, a redacted error tail; no picture unless you set
+outcome, the duration, the output path and, on a failure, the first 200 characters of the redacted output
+(often the lead-up to the error, not the error itself); no picture unless you set
 `attach_thumbnail: true`. The URLs hold credentials, so `config show` masks them and the database stores them encrypted.
 Every key is in the [config reference](config-reference.md#notifications).
 

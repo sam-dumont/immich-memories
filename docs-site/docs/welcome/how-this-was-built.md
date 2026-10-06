@@ -5,7 +5,7 @@ description: Nine months of building Immich Memories, the experiments that faile
 
 # How this was built
 
-This is the project's history through September 2026. It includes retired tools, failed experiments and measurements from those versions. For the current product, start with [what it does](./introduction.mdx); for the current code, see [the architecture](../contribute/architecture.md).
+This is the project's history through its first release candidate, 1.0.0-rc.1, in October 2026. It includes retired tools, failed experiments and measurements from those versions. For the current product, start with [what it does](./introduction.mdx); for the current code, see [the architecture](../contribute/architecture.md).
 
 > "what was supposed to be a weekend project became a 9 month constant refactor but I’m getting where
 > I want"
@@ -30,11 +30,11 @@ Kubernetes and Terraform, and music ducking. It looked almost done. It wasn't.
 
 ## January to March: FFmpeg
 
-The films stuttered: a clip would jump back a few frames at every transition. On January 12 I found
-the cause by comparing frames by hand, "OKAY I FOUND SOMETHING, look at this clio: image 1 = last
-frame of the trimmed clip, image 2 first frame of transition". The same source frame, encoded by two
-different FFmpeg processes, comes out different. Knowing that took a day; fixing it took until
-March 5.
+The films stuttered: a clip would jump back a few frames at every transition. A few weeks in, I
+found the cause by comparing frames by hand, "OKAY I FOUND SOMETHING, look at this clio: image 1 =
+last frame of the trimmed clip, image 2 first frame of transition". The same source frame, encoded
+by two different FFmpeg processes, comes out different. Knowing that took a day; fixing it took
+until early March.
 
 In between, a debug log grew to 27 GB ("I AM GOING MAD, my laptop is FULL FULL FULL FULL I CANNOT FIND
 WHY THE DRIVE IS FILLING UP !!!") and nothing got committed for 56 days. When I came back, the
@@ -65,7 +65,7 @@ tracks, and generated music is an add-on.
 
 ## The gates, and what they bred
 
-On March 7, getting ready for the first public release, I found mypy errors parked behind
+Getting ready for the first public release, I found mypy errors parked behind
 `continue-on-error`: "NO NO THE APPROACH IS TO FIX ALL ! I am releasing this for the first time it
 needs to be clean". The next day the gates went in: security scanners, complexity limits, dead-code
 detection, and a 500-line cap per file.
@@ -78,7 +78,7 @@ still reads like one.
 
 ## Photos, and bugs you can count
 
-On March 14 I gave in: "I know I'm getting into slurm coding mode but _WE SHOULD_ support plain
+In March I gave in: "I know I'm getting into slurm coding mode but _WE SHOULD_ support plain
 photos. I KNOW I KNOW I KNOW I'M FEATURE CREEPING". Photos needed Ken Burns moves (I pasted the
 Wikipedia article in), HDR that didn't come out red, and a pool where photos and videos compete. A
 2023 film had no pictures before May until they shared one pool.
@@ -160,10 +160,10 @@ for hours' it has to be an option for enthusiasts".
 
 ## September: pixels to text, days to stories
 
-On September 2 a cut built only from text already banked about each picture reached 22 of 30 graded
+A cut built only from text already banked about each picture reached 22 of 30 graded
 days, against 18 for the version that looked at the pixels again, at half the cost. The direction became: look at pictures once, cheaply, then let the edit read the banked text.
 
-On September 8 three rules I had already ruled on broke again in one night, and a month I had graded
+A few days later three rules I had already ruled on broke again in one night, and a month I had graded
 "perfect" came back as one picture per day: "Respectfully […] This was litigated weeks ago". The fix
 was to stop coding, write the pipeline out in plain words, and move the weight from
 days to stories that span days: a holiday, a festival, a week away. Graded films went from 23 good and
@@ -203,7 +203,7 @@ could not finish a first cut: "running on docker compose / nas (what 99% of peop
 currently not ready for prime time". That turned into `models fetch`, an inference service modelled
 on Immich's own machine-learning container, and a matrix of real installs.
 
-Then on [#1033](https://github.com/sam-dumont/immich-memories/issues/1033) someone
+Then someone
 rendered a 75-minute film on a two-core Synology with no model at all. A wrong check marked it failed
 after 25 hours (the file was fine), and they still wrote it was "genuinely impressive how well it
 handles transitions between clips" and "feels smooth and well-paced even with zero LLM involvement,
@@ -221,7 +221,7 @@ only is excellent considering it does not look at the pictures".
 By late September there were more open pull requests than anyone could review by hand. The rule
 that followed wasn't a freeze: land what's already open, fix anything touching performance or
 security right now, and turn everything else into a scoped GitHub issue instead of a new PR.
-Multi-account support ([#1500](https://github.com/sam-dumont/immich-memories/issues/1500), one
+Multi-account support (one
 film built from two Immich accounts on the same server) closed under that rule the same day the
 rule was issued.
 
@@ -236,9 +236,8 @@ for something built for that CPU.
 
 October 1 and 2 ran without a single Claude session: every pull request in that window came out
 of Codex alone, 118 of them. Two threads mattered. One took the render engine apart for speed once
-the hardware gate was clear: [#1704](https://github.com/sam-dumont/immich-memories/issues/1704)
-(4K HDR assembly) and [#1702](https://github.com/sam-dumont/immich-memories/issues/1702) (trip
-maps) closed with wall-time cuts of 40-51% on a 14.5 s fixture and 62-72% on a 68.5 s one, measured
+the hardware gate was clear, 4K HDR assembly and trip
+maps both closing with wall-time cuts of 40-51% on a 14.5 s fixture and 62-72% on a 68.5 s one, measured
 separately on both Macs and two older Linux GPUs, a ten-year-old GTX 1070 and a Quadro T1000, with
 the report explicit about what it didn't prove
 (different fixture lengths, gains that don't add up across components). The other was nine audit
@@ -266,15 +265,13 @@ a clip's own loudness and speech once, by byte range, and prefers a motion peak,
 moment starting 1.5 seconds early, then the stretch with the most speech. On the NAS, cold, 15
 clips took 18.3 seconds total, 0.46-2.6 seconds each; a 36-second 4K60 clip took 6. Measured
 before and after, the finish line's riders moved from "0-6 s, empty road" to the 14-to-32-second
-window they're actually in frame. Shipped as
-[#1953](https://github.com/sam-dumont/immich-memories/pull/1953), with a sibling fix for
+window they're actually in frame. It shipped with a sibling fix for
 conversations that stayed intact unless a full second of quiet separated them.
 
 That evening I finally let the thing I'd been putting off actually run:
 [#1719](https://github.com/sam-dumont/immich-memories/issues/1719), 30 real requests rendered
 through both the plain and the full selection tier, 60 outcomes, on one shared cache so the only
-variable was the tier. Codex ran it overnight and logged every defect to
-[#1954](https://github.com/sam-dumont/immich-memories/issues/1954) rather than fixing anything
+variable was the tier. Codex ran it overnight and logged every defect rather than fixing anything
 live, exactly as asked. The worst one: a people filter that checked "are these people somewhere in
 this 90-minute episode" instead of "are these people in *this picture*", which is how a waterfall,
 a food photo and a document with readable text ended up in a film gated on two named people. Of
@@ -285,40 +282,89 @@ English headlines surviving inside French films, long place names clipped on por
 a stripped Greek administrative label left in the wrong grammatical case, audio peaking above full
 scale with silent gaps at music seams, and `has_music` dead since the same commit that broke the
 cut. I drew the release line that morning: only what a rendered film actually shows has to be right
-before anyone outside my house sees it. Translation of the UI and the CLI became
-[#1956](https://github.com/sam-dumont/immich-memories/issues/1956) and its children, filed as
-issues on purpose, not blockers, because fixing forever is also a way of never shipping.
+before anyone outside my house sees it. Translation of the UI and the CLI became its own set of
+issues, filed on purpose, not blockers, because fixing forever is also a way of never shipping.
 
 Every one of those fixes went through an Opus review before it counted as done, and in 8 of the 9
-film-defect PRs that review caught something real. The people filter
-([#1969](https://github.com/sam-dumont/immich-memories/pull/1969)) took four rounds. Round one: the
+film-defect PRs that review caught something real. The people filter took four rounds. Round one: the
 new safety check compared display names against the fetch's resolved face IDs, which would have
 flagged every picture in good films made with saved groups or ID-based people, a false alarm, not
 the bug it was meant to catch. Round two: dropping a picture after the film's timeline was locked
 made the renderer refuse the whole film. Round three: a re-plan could pick a violating picture the
 first pass hadn't. The final design applies the rule to the whole pool before planning starts. The
-audio fix
-([#1973](https://github.com/sam-dumont/immich-memories/pull/1973)) looked done until review found
+audio fix looked done until review found
 its own silence trim cutting every generated track at its *first* internal pause, not the dead air
 at the seams: a 9.6-second block with a half-second pause inside it came out at 2.22 seconds
-instead of 5.80. The map-label fix shrank long place names to fit a portrait card
-([#1975](https://github.com/sam-dumont/immich-memories/pull/1975)), then its own reviewer found the
-first version was dropping whole words at some widths instead of just shrinking them. None of those
-three showed up in the green test suite the fixer had already run.
+instead of 5.80. The map-label fix shrank long place names to fit a portrait card, then its own
+reviewer found the first version was dropping whole words at some widths instead of just shrinking
+them. None of those three showed up in the green test suite the fixer had already run.
 
-In parallel, a second session ran the actual install gate
-([#956](https://github.com/sam-dumont/immich-memories/issues/956)): NAS on Compose, Kubernetes and
+In parallel, a second session ran the actual install gate: NAS on Compose, Kubernetes and
 a Mac, each following only the public docs. What failed became an issue and a fix: the wheel
-shipped without its web fonts (#1979), a setup-builder config the app itself rejected (#2014),
-cancelled renders stuck showing "Running" forever (#2010). A dev rehearsal built from the fixed
+shipped without its web fonts, a setup-builder config the app itself rejected,
+cancelled renders stuck showing "Running" forever. A dev rehearsal built from the fixed
 main was published and verified. Midway through, a one-line tag used for an internal dry run
-quietly broke every version computation on `main`
-([#1974](https://github.com/sam-dumont/immich-memories/pull/1974)); the install-gate session and
+quietly broke every version computation on `main`; the install-gate session and
 the film-fixer session found it independently within the hour and coordinated over a single
 message instead of shipping two competing fixes. By the afternoon of October 4, main carried every
 fix from the defect list and the install gate, and the campaign resumed on the fixed code to check
 its own worst finding: the same people-filter request that had matched 41 of 162 pictures on the
 old build matched 88 of 88 on the new one.
+
+## Two defects, one bug, and a line in the sand
+
+Reading the campaign's actual rendered films, not just its logs, found one more thing the
+selection checks couldn't see: a title model free to invent a relationship nobody had claimed. Given
+only a birth date and an age, it filled the gap with the likeliest story and called a close family
+friend someone's child. The fix made the title model state only what the household's own records
+actually say, and nothing it doesn't.
+
+The sharper bug looked like two separate problems until I read them side by side. One film buried
+43% of its length in near-identical frames of a single photo pile it had already shown once. Another,
+from a day with plenty of real footage to choose from, stayed capped at a flat 30 seconds like it had
+nothing left to say. Both came out of the same step: a pass that tops up a thin moment with more
+material, counting how many pictures it had added instead of how many seconds, with no limit on
+repeating the same shot. Fixed, it counts distinct shots and real seconds, and a film is now allowed
+to come out honestly short when the material actually runs out, with one line in the log saying so
+instead of papering over it.
+
+That fix landed, and so did the ruling that closed the list: fix it now only if it breaks something,
+a crash, a wrong or unsafe video, a privacy problem; everything else becomes an issue for later. Nine
+months of "just one more pass" needed exactly one sentence to end: *polish gets after release, or we
+never stop*.
+
+## What actually works, checked
+
+The first pass at "is everything working" was an inventory, not a test: of 165 advertised features,
+78 had evidence they worked, 21 hadn't been touched in a while, and 61 had never been exercised for
+real at all. I called that out, and the next pass ran every row for real, on my own library, on the
+exact code about to be tagged: 246 checks, every film type, the web app driven in a browser, two
+full 4K renders with music, an upload back to Immich. 181 came back right. 8 were broken and 27
+gave the wrong output, including a config error that printed every secret in the file and a
+`--photo-duration` flag that did nothing at all, all with 12,000 green tests behind them. The
+security problem and every broken or wrong flow outside the experimental free-text feature got fixed, or ruled expected,
+before the tag. The lesson went into the backlog too: tests that check each advertised feature's real
+output, not just the functions underneath it.
+
+The sharpest finding had nothing to do with video: the scheduler. The automation that's supposed to
+make a film every week on its own hadn't had a real run on my own Mac since August, switched off
+after it was caught running from a stale copy of the code during two unrelated crashes. Linux's
+version of the same job had never been tried even once. Both got run for real before anything shipped.
+
+One advertised gap got closed properly instead of papered over: nothing had ever caught a finger
+over the lens. The project's own rule is that a trained model only ever learns from public pictures,
+never the library it runs on, so the fix trains on public "finger over the camera" photo sets instead
+of mine. Tested read-only against real footage, it still isn't accurate enough to drop a shot on its
+own say, so it ships as a warning, not a verdict: a flagged shot loses only to a clean version of the
+same moment, and a favourite still wins outright regardless.
+
+Even this page went through its own round: an early rewrite of the whole docs set still reads like a
+build log, commit numbers and dates on a page a stranger reads before deciding whether to install
+anything. The fix was the same discipline as everywhere else in this project: every page answers the
+one question its own reader actually has, and this is the one page that gets to keep its dates.
+
+That round of fixes, and the one before it, became **1.0.0-rc.1**, the project's first public release
+candidate.
 
 ## Nine months at a glance
 
@@ -331,6 +377,7 @@ old build matched 88 of 88 on the new one.
 | August 2026 | Selection became an edit; model experiments got tested and discarded. |
 | September 2026 | Stories replaced day quotas, the plain NAS became the baseline, and the third web UI arrived. |
 | Late September - early October 2026 | Launch triage, a real-hardware control gate, a render-speed pass and a 256-finding docs audit, then a strict people filter and a restored in-clip cut. |
+| Early October 2026 | A feature-by-feature check of everything the docs advertise, a finger-over-lens warning trained only on public photos, and a rewrite of these docs: **1.0.0-rc.1**. |
 
 ## See what sticks, then cut
 

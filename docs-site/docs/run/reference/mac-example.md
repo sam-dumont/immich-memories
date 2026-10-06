@@ -13,10 +13,11 @@ generation, use the [Python install](../uv-pip.md).
 
 <DeploymentDiagram topology="mac" />
 
-The [generated native Mac check](../../better/measured.md#generated-native-mac) completed a
-19-second film on an M5 Max with Metal and VideoToolbox. It used an isolated candidate wheel,
-warm model weights and an existing caption server. That GPU check did not activate the reader
-or generate music; the Full and optional music steps below need their own configuration checks.
+<Diagram name="deploy-mac" headline="On a Mac it's one Python install and a launchd agent that runs it every day." />
+This path works on Apple Silicon with Metal and VideoToolbox; see
+[measured examples](../../better/measured.md#cold-start-time-by-hardware-and-tier) for real numbers. That check
+didn't activate the reader or generate music; the Full and optional music steps below need their
+own configuration checks.
 
 
 ## Install the app

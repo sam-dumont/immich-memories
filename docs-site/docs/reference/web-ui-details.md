@@ -6,6 +6,7 @@ title: Web UI configuration and job behavior
 
 Operator details for the browser client. The task guide is [Use the web UI](../make/web-ui.mdx).
 
+<Diagram name="seq-web-job" headline="Cut first, look at it, then render. Nothing renders until you press the button." />
 **Cut** runs `generate --no-render` on the server. The panel shows the stage, its count and the last
 pictures it read. With a previous completed run, the bar and time left cover the whole cut: saved
 stage times scale to this picture count, and the current stage uses its measured speed. Without
@@ -21,6 +22,22 @@ lines, and keeps showing them after a reload, because they usually name the comm
 (`immich-memories models fetch` on a fresh install). One job runs at a time.
 The job API accepts saved job IDs; a missing or invalid ID returns HTTP 404.
 
+A job's own record is `running` until it ends `succeeded`, `failed` or `cancelled` (**Cancel**
+sends SIGTERM to the whole process group). A server restart or crash while a job is running
+leaves it `running` with no process behind it; the next time the page asks for it, that gap is
+read as `interrupted` instead of staying `running` forever.
+
+### Input and saved edits
+
+Concurrent saves keep separate numbered cut revisions. Invalid JSON text, NUL characters,
+unpaired Unicode surrogates and nesting beyond 64 levels return a client error before a job
+starts. Music uploads must contain an audio stream with a positive duration; truncated files
+are refused, and an unavailable audio probe asks you to install FFmpeg.
+
+If the cache or output disk fills up, the API returns a storage-full message (HTTP 507).
+Free space before retrying. A failed revision save keeps earlier revisions and removes its
+temporary file. A job whose initial record cannot be saved is stopped before returning the
+error, so it cannot keep working without a job the page can follow or cancel.
 
 ## Saved revisions
 
@@ -28,8 +45,8 @@ The job API accepts saved job IDs; a missing or invalid ID returns HTTP 404.
 seconds; past what the titles left, it says the film grows to hold them. Your edits are the last
 pass, so length never refuses one. **Undo** (or Ctrl/Cmd+Z) walks back one change; **Discard changes** drops them all.
 
-**Save revision** keeps the edits as a numbered revision beside the run
-(`revisions/0001.private.json` in its attempt folder). It only refuses what the renderer cannot
+**Save revision** keeps the edits as a numbered revision beside the run, in its attempt folder.
+It only refuses what the renderer cannot
 play, like a trim past the end of a video, and says which edit. **Revisions** lists every saved
 one; **Open** loads it back into the editor.
 

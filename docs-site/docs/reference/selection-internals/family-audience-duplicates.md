@@ -22,25 +22,11 @@ over the selected shots' captions. No tier asks the prose LLM to decide sharing.
 
 ## After the draft
 
-The order, as `_select` in `editorial_structure_planner.py` runs it:
+The order, as `_select` in `editorial_structure_planner.py` runs it: draft and optional
+refinement, family seats and owner includes, fit timing, sharing and duplicate review, finished-
+cut check.
 
-```mermaid
-flowchart TD
-  accTitle: After the draft
-  accDescr: Stages shown: Draft and optional refinement, Family seats and owner includes, Fit timing, Sharing and duplicate review, Finished-cut check.
-  n0["Draft and optional refinement"]
-  n1["Family seats and owner includes"]
-  n2["Fit timing"]
-  n3["Sharing and duplicate review"]
-  n4["Finished-cut check"]
-  n0 --> n1
-  n1 --> n2
-  n2 --> n3
-  n3 --> n4
-```
-
-Each pass writes what it did to `derived-decisions/<name>.private.json` in the run's attempt
-directory, and `runs why <asset-id>` reads it back.
+Each pass writes what it did to the run's attempt record, and `runs why <asset-id>` reads it back.
 
 ## The family seat
 
@@ -65,9 +51,8 @@ end up in no shot. The seat fixes that on every tier (`editorial_family_seat.py`
 The seat survives the passes after it. The duplicate review never removes a close family member's
 only shot: of two look-alikes, the other one leaves, and a refill must still show them. When
 everything has run, anyone who lost their only shot anyway (to the gate or the trim) is seated
-again, through the same rules plus the gate's verdict on the new frame. Records:
-`family-seat.private.json` and `family-seat-after-review.private.json`, which name people by
-relation only.
+again, through the same rules plus the gate's verdict on the new frame. The record names people by
+relation only, before and after the review passes.
 
 Setting roles takes five minutes: [Home and people](../../get-started/who-is-who.md).
 
@@ -116,20 +101,9 @@ stands in: the moment is dropped and the slot goes to a moment the story doesn't
 favourites and one held, the other one plays. The same rule applies to every later refill: the
 duplicate review, the family seat and the polish.
 
-```mermaid
-flowchart TD
-  accTitle: Sharing levels
-  accDescr: Stages shown: Check source eligibility, Apply owner clearance or existing holds, Read tier-specific audience evidence, Use the strictest verdict, Keep or replace at chosen sharing level.
-  n0["Check source eligibility"]
-  n1["Apply owner clearance or existing holds"]
-  n2["Read tier-specific audience evidence"]
-  n3["Use the strictest verdict"]
-  n4["Keep or replace at chosen sharing level"]
-  n0 --> n1
-  n1 --> n2
-  n2 --> n3
-  n3 --> n4
-```
+Each shot is checked in this order: source eligibility, then owner clearance or an existing hold,
+then the tier's own audience evidence, then the strictest verdict wins, and the film keeps or
+replaces the shot at the sharing level you chose.
 
 **On GPU and Full**, the `nsfw_marqo` detector on the still, on up to eight frames spread
 across a video, and on a Live Photo's clip; the `uncovered_person` head as a second opinion; and the
@@ -186,8 +160,8 @@ Detector and exposure holds apply to shareable films even with
 clearance on a picture can lift a hold. `strict_sharing` (on by default) also allows the Basic
 clean-evidence `share` above; turning it off removes that route. Just-us and family films don't read it.
 
-**The review list.** Every run writes `review-before-sharing.private.json` in its attempt directory:
-the shots whose exposure probability sits between 0.2 and 0.5 that nothing else already holds.
+**The review list.** Every run keeps, in its attempt record, the shots whose exposure probability
+sits between 0.2 and 0.5 that nothing else already holds.
 Nothing in the cut changes. The run summary prints the count, and `runs why` shows the note.
 
 ## Your word on a picture
@@ -216,21 +190,35 @@ prints yours last.
 
 ## Duplicates
 
-Sameness is decided in four places, from what ingest banked (the preview hash and the scene print).
+Sameness is decided in four places, from Immich's own metadata (checksums, file names, capture times, stacks) and what ingest banked (the preview hash and the scene print).
 No tier asks a model to compare two pictures.
 
-1. **Copies, at the source.** A shared album carries no originals, so a curated shot arrives twice:
-   the camera's file and a ~2048 px downscale, same name, same instant to the millisecond. Files
-   with the same camera name, kind and capture instant are one picture. So is a file forwarded
-   back under a UUID name on the same second, when both cached previews sit within 2 bits (a
-   received batch shares a second too, so the pixels have to agree; burst frames hash alike, so
-   the name has to say it was forwarded). The file with the most pixels plays, a star on any copy
-   counts for the picture, and the others are left out as "another file of the same picture". On
-   one measured February that was 352 of 2,028 files. Files with the same bytes (an equal SHA-1) are one
-   picture too: your partner's phone uploaded it as well, or a second account of a
-   `generate --accounts` run holds it. A Live Photo copy stands for it before a plain one, then a
-   starred copy, then the primary account's. A video whose bytes are a Live Photo's own motion
-   folds into that Live Photo (`exact_copies.py`).
+1. **Copies, at the source.** Three folds run before the editor sees the pool, in this order.
+   - *Same bytes* (`exact_copies.py`). Files with an equal SHA-1 and the same kind are one picture:
+     your partner's phone uploaded it as well, or a second account of a `generate --accounts` run
+     holds it. A Live Photo copy stands for it before a plain one, then a starred copy, then the
+     primary account's, then the smallest (owner id, asset id). A video whose bytes are a Live
+     Photo's own motion folds into that Live Photo. A star on any copy stars the kept one, and an
+     `--include` or `--exclude` naming a folded copy names the kept one.
+   - *Same picture, other file* (`picture_copies.py`). A shared album carries no originals, so a
+     curated shot arrives twice: the camera's file and a ~2048 px downscale. An iOS edit arrives
+     twice too: Immich has no replace endpoint, so the edit lands next to the original. Files with
+     the same file-name stem, kind and capture instant (EXIF's own, to the millisecond) are one
+     picture, and where EXIF carries a camera model it has to match as well. So is a file
+     forwarded back under a UUID name on the same second, when both cached previews sit within 2
+     bits (a received batch shares a second too, so the pixels have to agree; burst frames hash
+     alike, so the name has to say it was forwarded). A file under half the pixels of the group's
+     largest is a shared-album downscale and never plays; among the rest, the newest
+     `fileModifiedAt` plays, then the higher asset id on an exact tie. A star, the people
+     recognised on any file, and an `--include` or `--exclude` naming any file carry to the kept
+     one. The others are left out as "another file of the same picture".
+   - *Immich stacks* (`stacks.py`). `GET /stacks` is read once per account per run. Every member
+     of a stack is left out as "another file of the same stack" and the stack's primary (the top
+     picture) plays; a star on any member stars the primary. Only the star moves: people stay on
+     the file they were tagged on, and an `--include` naming a member does not carry to the
+     primary. A member whose primary is outside the pool stays a
+     candidate. The read needs `stack.read`; a key without it, or a server with no stacks
+     endpoint, logs one warning per account and the run folds no stacks.
 2. **Bursts, before the editor.** Photos within `photos.burst_window_seconds` (300) of each other
    **and** within `photos.burst_hash_threshold` (8) bits on a preview hash are one burst; the
    favourite survives it, else the best frame. A photo with no hash is kept.
@@ -274,5 +262,4 @@ the last pass the cut is read once against all of them (`editorial_cut_invariant
 6. the cut is in capture order.
 
 It changes nothing and asks nothing. Each broken promise is a warning in the log, naming the pass
-that last touched the picture, and a row in `derived-decisions/cut-invariants.private.json`.
-`runs show` prints the count.
+that last touched the picture, and a row in the run record. `runs show` prints the count.

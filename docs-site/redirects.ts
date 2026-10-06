@@ -42,4 +42,7 @@ export const redirects: {from: string; to: string}[] = [
   {from: '/docs/deploy/common-setups/kubernetes-gpu', to: '/docs/run/kubernetes'},
   {from: '/docs/deploy/configuration/editorial-preparation', to: '/docs/better/captions'},
   {from: '/docs/being-rewritten/editorial-preparation', to: '/docs/better/captions'},
+  {from: '/docs/run/compatibility', to: '/docs/run/tested-deployments'},
+  {from: '/docs/better/gpu-example', to: '/docs/better/tier-example'},
+  {from: '/docs/get-started/what-a-gpu-or-a-model-adds', to: '/docs/get-started/choose-your-setup'},
 ];

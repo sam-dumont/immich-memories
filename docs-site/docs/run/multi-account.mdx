@@ -81,8 +81,8 @@ The default is `false`, which keeps existing bindings and makes no native discov
 | --- | --- |
 | Immich 2.x or 3.0–3.1 | Existing bindings, with an unsupported-feature explanation |
 | Immich 3.2.x | Shared recognition IDs within a cluster group; tested on 3.2.4 |
-| Immich 3.3 | Experimental people-access discovery; tested on 3.3.0-rc.1 and later |
-| Unknown major, newer minor, an untested RC or 3.3.0-rc.0 | Refused until compatibility is checked |
+| Immich 3.3 | Experimental people-access discovery; every 3.3 release, and 3.3.0-rc.1 or a later 3.3.0 release candidate |
+| Unknown major, newer minor, 3.3.0-rc.0 or a release candidate of any other version | Refused until compatibility is checked |
 
 `api_version: v3` does not enable newer endpoints.
 Each selected connection reports its actual version. The 3.2 path never calls `/people/users`.
@@ -142,7 +142,8 @@ In the web **New memory** page, select both under **Immich accounts to read**.
 The scope is exact: `primary,partner` reads both; `partner` alone excludes your primary.
 Omitting accounts reads primary only. Identical files count once, downloads use the owning
 account, and either owner's favourite counts. If one selected account cannot be read, the run
-stops instead of silently omitting that account’s pictures.
+stops instead of silently omitting that account’s pictures. A [free-text ask](../make/free-text.md)
+follows the same scope: without `--accounts` it only searches the primary's pictures.
 
 Albums and trips still use primary only: `--accounts` is refused for those recipes.
 [Duplicates and sharing](../how-it-chooses/family-audience-duplicates.md) covers the selection rules.
@@ -174,44 +175,26 @@ Trips stay primary-only. Saved-group films can use both accounts.
 
 ## Saved groups
 
-Save a repeated people condition. This example groups two children; you can group any people in the registry:
+Save a repeated people condition, so you don't retype `--person` every time:
 
 ```bash
 immich-memories people group add "Kids" '"<alex-id>" OR "<sam-jr-id>"'
 immich-memories generate --group "Kids" --accounts primary,partner --memory-type multi_person --year 2026
 ```
 
-Use store person IDs from `people show`, so renaming does not break the group. `OR` means either
-person; `AND` means both. The UI has **Saved groups** in People settings and group chips in the
-memory brief. [CLI people tools](../make/cli/prepare.md) gives the complete group syntax.
+Use store person IDs from `people show`, so renaming does not break the group. The UI has
+**Saved groups** in People settings and group chips in the memory brief.
+[The complete group syntax](./reference/household.mdx#saved-groups) is in the reference.
 
 <ThemedScreenshot name="people-saved-groups" alt="Saved people groups in Settings" />
 
 ### Someone only the partner account knows
 
-The scan reads primary only, so a partner-only person needs an explicit entry:
-
-```bash
-immich-memories people export --to people.yaml
-```
-
-Keep every existing entry and add the person:
-
-```yaml
-people:
-  # Keep the exported people above this entry.
-  - name: Jo
-    ids:
-      partner: [<person-id-in-partner-account>]
-```
-
-```bash
-immich-memories people import --from people.yaml --replace
-```
-
-`--replace` replaces the registry from that file; do not discard the exported entries.
-A later primary scan preserves partner-only entries.
-Docker users: follow the [host export and container import commands](../make/cli/people.md#export-and-edit).
+The scan reads primary only, so a partner-only person needs an explicit entry: export the
+registry, add them with the partner's ID, and import it back.
+[The export/add/import steps](./reference/household.mdx#someone-only-the-partner-account-knows)
+are in the reference; Docker users also have the
+[host export and container import commands](../make/cli/people.md#export-and-edit).
 
 ## Privacy notes
 

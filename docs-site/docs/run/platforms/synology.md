@@ -9,17 +9,14 @@ import StackStorage from './_stack-storage.mdx';
 
 Use **Container Manager → Project** on a DSM model that supports Container Manager. Start with the Basic setup; it needs no separate GPU or model server. The project steps follow [Synology's documentation](https://kb.synology.com/en-global/DSM/help/ContainerManager/docker_project?version=7).
 
-:::info Tested on Synology; GUI project wizard not yet exercised
+:::info Tested route: SSH/Compose. GUI Project wizard not yet exercised
 
-The exact generated NAS file passed a fresh-volume SSH/Compose installation on DSM 7.3: explicit model download, preflight, a default first film, playback, and a Settings URL save/reload/restore. The Container Manager **Project wizard** itself was not exercised. See the [cold-install measurement](../../better/measured.md#generated-cold-installs) and earlier [Synology checks](../../better/measured.md#tested-setups).
-
-A later [stock Docker test](../../better/measured.md#june-docker-install), from source `4b98c19926ec`
-and local image `f62dbfa8d8c8`, also passed with a new volume and fresh models: **28m 56s** for
-the first CLI film, software encoding, bundled music and complete decode. It needed no source
-overlay or dependency repair. This is pre-RC evidence; RC1 follows. It does not exercise the wizard
-or the remote access routes below.
-
-We welcome people to try it and [share their results in #1805](https://github.com/sam-dumont/immich-memories/issues/1805). Please include your platform version, app version, selected tier, and whether preflight and the first film worked. Successful runs are useful too.
+A fresh-volume SSH/Compose install passes end to end: model download, preflight, a default
+first film, playback, and a Settings URL save/reload/restore. See the
+[deployment matrix](../tested-deployments.md) for the exact release this covers. The Container
+Manager **Project wizard** itself has not been exercised; if you try it, [report your
+results](https://github.com/sam-dumont/immich-memories/issues), including your DSM version, app
+version, selected tier, and whether preflight and the first film worked.
 
 :::
 
@@ -39,7 +36,9 @@ chmod 600 /volume1/homes/your-user/immich-memories/docker-compose.yml
 stat -c '%a %n' /volume1/homes/your-user/immich-memories /volume1/homes/your-user/immich-memories/docker-compose.yml
 ```
 
-Use your actual project path. Our DSM test created a file with mode `777` despite `umask 077`; explicit `chmod` produced `700` for the folder and `600` for the file. Check the DSM permissions too: these mode numbers alone do not prove that an additional ACL grants nobody access.
+Use your actual project path. DSM can create this file with mode `777` despite `umask 077`; the
+explicit `chmod` above produces `700` for the folder and `600` for the file. Check the DSM
+permissions too: these mode numbers alone do not prove that an additional ACL grants nobody access.
 
 ## 2. Start the project
 
@@ -58,7 +57,11 @@ Alternatively, [enable SSH in DSM](https://kb.synology.com/en-global/DSM/help/DS
 
 ## 4. Open the app
 
-Your SSH account must also be allowed to forward TCP connections. Enabling SSH in DSM does not guarantee this: our DSM 7.3 test account connected but the tunnel failed with `administratively prohibited`. Its server policy had `AllowTcpForwarding no`, with exceptions for two administrator accounts. Ask your NAS administrator for an approved forwarding-enabled account; do not change the NAS's SSH policy just to follow this guide.
+Your SSH account must also be allowed to forward TCP connections. Enabling SSH in DSM does not
+guarantee this: a non-admin account can connect over SSH while the tunnel still fails with
+`administratively prohibited`, because DSM's default policy sets `AllowTcpForwarding no` except
+for administrator accounts. Ask your NAS administrator for an approved forwarding-enabled account;
+do not change the NAS's SSH policy just to follow this guide.
 
 Use the **Private UI access** command generated above; it uses your selected UI port. Replace `your-ssh-user@your-host` with your NAS login and address.
 
@@ -157,23 +160,10 @@ certificate, already configured on the NAS. This does not require internet expos
 If your account can't forward ports and you don't want to set up the proxy, publish the port on
 the LAN with app authentication on. In `.env`, set `IMMICH_MEMORIES_AUTH_USERNAME`,
 `IMMICH_MEMORIES_AUTH_PASSWORD` and `UI_BIND_ADDRESS=0.0.0.0`, then `docker compose up -d`.
-From a second machine, `/api/v1/settings`, thumbnails and film downloads answered 401 without a
-session and 200 after login, and the login and settings survived `restart` and `down`/`up`.
+From a second machine, `/api/v1/settings`, thumbnails and film downloads should answer 401
+without a session and 200 after login, and both should survive `restart` and `down`/`up`.
 The port is plain HTTP, so the password and cookie are visible on your LAN; the proxy route above
 is the one with TLS. `/health/ready` stays anonymous and shows the version and Immich reachability.
 
-### Validation boundary
-
-On 2026-10-04 a DS423+ (DSM 7.3.2-86009 update 3, Docker 24.0.2, Compose 2.20.1) on
-`v0.0.0-dev.37180797983` verified two routes: SSH/Compose with the `synoacltool` output folder
-(a render wrote its film through the bind mount, host sha256 equal to the UI download), and the
-LAN port with app login above. **Not verified:** the DSM reverse proxy, the Container Manager
-GUI project wizard, and a tunnel for a non-admin account (DSM refuses it).
-
-
-The historical test records **DSM 7.3**, x86-64, 17,836 MiB host RAM and a 4 GiB app limit.
-It does not record a Container Manager version. Its UI access used a custom transport, so it
-**does not verify this authenticated proxy route**, the normal tunnel or the Project wizard.
-These routes need a fresh published-candidate test recording DSM/Container Manager versions,
-CPU, image digest, paths, cold timings, denied anonymous access and a playable film.
-See [#1924](https://github.com/sam-dumont/immich-memories/issues/1924).
+See the [deployment matrix](../tested-deployments.md) for which of these routes have a verified
+first run on this platform, and what still needs a report.

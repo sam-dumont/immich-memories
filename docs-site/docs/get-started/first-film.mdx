@@ -153,40 +153,16 @@ when your user is in the `docker` group). On Kubernetes:
 kubectl exec -n <namespace> deploy/immich-memories -c immich-memories -- immich-memories runs render RUN_ID
 ```
 
-[CLI recipes](../make/cli/generate.md) include reviewing a saved cut before rendering.
-
-### Where the film lands
-
-Each render gets its own folder: `<output dir>/<name>_<recipe>_<run id>/<name>_<recipe>.mp4`. A
-real one:
-
-```text
-all_album_20210526-20210527_a4cf0add_<run>/all_album_20210526-20210527_a4cf0add.mp4
-```
-
-The `<recipe>` is a short hash of the final cut, so the same cut renders to the same name. The
-`Output (planned)` line printed before selection shows that same rule, and `runs render` builds
-its name from the people and dates (`all_album_<dates>_<recipe>`), not from the album name.
-`runs render` prints `Video saved to: <path>` when it finishes, so you don't need to go hunting
-in the output folder (`/app/output` in the container).
+[CLI recipes](../make/cli/generate.md) include reviewing a saved cut before rendering. Where the
+finished file lands and its naming pattern are in
+[output and rendering](../reference/output-rendering.md); for a month-or-year render that outlives
+your terminal session, see [the CLI reference](../reference/cli-reference.md).
 
 On Kubernetes, copy only the film, not the whole output volume:
 
 ```bash
 kubectl cp -n <namespace> -c immich-memories <pod>:/app/output/<run folder>/<name>.mp4 ./film.mp4
 ```
-
-### Long renders
-
-The CLI installs no hangup handler, so closing the terminal or dropping an SSH session or
-`kubectl exec` ends the render with it. For a month or a year, detach it:
-
-```bash
-docker compose exec -d immich-memories immich-memories runs render RUN_ID
-```
-
-On Kubernetes, start it with `nohup ... &` inside a `kubectl exec ... -- sh -c`, and follow the
-run with `immich-memories runs list`. A render that was killed does not resume: run it again.
 
 ### Portrait or landscape
 

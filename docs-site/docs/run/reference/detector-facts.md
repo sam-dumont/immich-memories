@@ -5,7 +5,7 @@ title: Detector facts and refreshes
 # Detector facts and refreshes
 
 For inspecting prepared model answers, changing custom weights, or refreshing a known bad answer.
-Normal upgrades do not require this. Back up the [store](../database.md#managing-the-store) before changing it.
+Normal upgrades do not require this. Back up the [store](../maintenance/storage-backups.md#back-up) before changing it.
 
 ## Detector cache contract for 1.0.0
 

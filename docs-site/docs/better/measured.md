@@ -4,539 +4,186 @@ title: Measure your setup
 
 # Measure your setup
 
-Find the slow stage before adding a service. Downloads, picture preparation, captions, selection,
-rendering and music have different costs. A faster picture model does not guarantee a faster film.
+Find the slow stage before adding a service: downloads, picture preparation, captions,
+selection, rendering and music all cost differently. A faster picture model does not
+guarantee a faster film.
 
-## June 2023: six cold runs, 3 October 2026 {#june-hardware-matrix}
+Every number below is a single timed run on the hardware named next to it, not a statistical
+benchmark. Library size, cache state and shared load all move these numbers. Treat them as
+a range to expect, not a speed ranking between machines.
 
-All six configurations completed a fresh 1080p60 SDR film on the same merged application
-revision, `4b98c19926ec`, with no phase restart inside the accepted run. The June 2023 inventory
-contained 725 sources. The target was 60 seconds with titles, transitions and default balanced
-quality. Empty app, analysis and media/render caches were required; installed weights and
-external services stayed in place. These are existing-runtime measurements before RC1, not
-six clean installations of the eventual release artifacts.
+## Cold start time by hardware and tier {#cold-start-time-by-hardware-and-tier}
 
-| Configuration | Cold wall time | Music |
-| --- | --- | --- |
-| NAS Basic | 16m 36s | Bundled |
-| NAS + GPU service | 18m 45s | ACE-Step service + four stems |
-| Kubernetes GPU | 9m 01s | ACE-Step service + four stems |
-| M5 Full | 3m 28s | Local ACE-Step + four stems |
-| M2 Basic | 3m 23s | Local ACE-Step + four stems |
-| M2 Full | 9m 36s | Local ACE-Step + four stems |
+A first film, from an empty cache, requesting a 60-second month from a library of 700 to 2,000
+pictures, default quality, 1080p SDR:
 
-Every film passed complete video/audio decoding. Full used the app-owned llama.cpp reader;
-M2 used the smaller llama.cpp caption service and completed generated music without lowering
-the memory guard. The two GPU configurations ran serially on one physical T1000 8 GB with
-the fixed ACE-Step image deployed. NAS GPU still runs Laya on its Celeron CPU.
+| Hardware | Tier | Cold time | Music |
+| --- | --- | ---: | --- |
+| Synology NAS, Celeron J4125 | Basic | 17 to 25 min | Bundled |
+| Same NAS, with a Kubernetes GPU service | GPU | 17 min | Generated (ACE-Step service) |
+| Kubernetes, NVIDIA T1000 8 GB | GPU | 9 to 13 min | Generated (ACE-Step service) |
+| M2 Pro, 16 GB | Basic | 5 min | Generated (local ACE-Step) |
+| M2 Pro, 16 GB | Full | 10 min | Generated (local ACE-Step) |
+| M5 Max, 128 GB | Full | 3.5 to 4 min | Generated (local ACE-Step) |
 
-**Basic stayed at 1080p on both NAS and M2.** The four GPU/Full setups also completed a
-same-cut 4K60 HEVC, 10-bit PQ HDR export. Each used an empty render cache and generated music
-again. The render span isolates that stage; the maximum wall includes its separate music work.
+A from-scratch Docker install on the same NAS, model download included, takes about 29 minutes
+end to end on top of the cold time above. Captions and a text reader add the GPU/Full download
+and preparation time once, on the first run; later runs reuse what they already prepared.
 
-| Configuration | 4K export wall | Extra render vs 1080p | 1080p file | 4K file |
-| --- | --- | --- | --- | --- |
-| NAS + GPU service | 21m 32s | 791.2 s | 73.74 MB | 145.74 MB |
-| Kubernetes GPU | 15m 20s | 576.3 s | 73.74 MB | 145.71 MB |
-| M5 Full | 2m 16s | 57.0 s | 53.70 MB | 91.38 MB |
-| M2 Full | 4m 10s | 110.0 s | 79.01 MB | 132.12 MB |
+## 4K/HDR render cost vs 1080p {#4k-hdr-render-cost}
 
-The gain is four times the output pixels and 10-bit HDR output; both variants remain 60 fps.
-SDR or lower-resolution originals do not gain native 4K HDR detail. Tier/model decisions
-can choose different cuts across machines, and music can need different numbers of candidates.
-These timings are one sample per configuration, not an isolated hardware speed ranking.
+Same cut, same machine, rendered again at 3840×2160 60 fps HEVC 10-bit HDR instead of 1080p60 SDR:
 
-Those accepted runs reported optional motion-description gaps and used static NAS title plates.
-The [follow-up](https://github.com/sam-dumont/immich-memories/blob/main/docs/research/2026-10-03-cpu-title-followup.md)
-corrects the unused-producer warning and measures CPU text animation against that renderer. It
-keeps still backgrounds and adds no motion-model calls. The original timings above are unchanged.
-Basic also recorded a one-frame clip underrun; that separate limit remains visible.
-The [detailed June report](https://github.com/sam-dumont/immich-memories/blob/main/docs/research/2026-10-03-june-hardware-smoke.md)
-contains phase times, feature counts, failed setup attempts and installation corrections. Failed
-work is kept separately from the accepted cold totals. The library and comparison album are private.
+| Hardware | 1080p render | 4K HDR render | File size growth |
+| --- | ---: | ---: | ---: |
+| M5 Max | 37 s | 91 s | +82% |
+| M2 Pro | 70 s | 180 s | +87% |
+| NAS + GPU render worker | adds about 13 min | | |
+| Kubernetes GPU | adds about 9 to 10 min | | |
 
-### Fresh default Docker install {#june-docker-install}
+4K HDR gives you four times the pixels and 10-bit HDR; both stay at 60 fps. An SDR or
+lower-resolution source does not gain native HDR detail from this step. Music is generated
+separately for each export, so its time is not part of this render cost. The shared-GPU numbers
+move with other load on that card, more than the Mac numbers do.
 
-A separate Basic film passed on the J4125 NAS from a new Compose volume and fresh model download,
-using the shipping Dockerfile and Compose recipe. There was no source overlay, added dependency or
-phase restart. The locally built amd64 pre-RC image is `f62dbfa8d8c8`, from the same application
-revision. The 4 GiB container used software encoding and bundled music. Model fetch took
-6.8 s, preflight 19.2 s,
-and the first film 28m 56s. Full-file decoding and the copied
-file's checksum passed. This eleventh film is separate from the six-machine comparison.
+## Render worker and generated music sharing one GPU {#render-worker-and-music-sharing-one-gpu}
 
-The test used the CLI and checked the web app returned HTTP 200. It did not exercise the DSM
-Project wizard, remote UI authentication or a public RC image pull. RC1 follows this validation.
-The [detailed report](https://github.com/sam-dumont/immich-memories/blob/main/docs/research/2026-10-03-june-hardware-smoke.md#separate-fresh-docker-first-film-gate)
-records image identity, install phases and expected preflight warnings.
+A render worker and ACE-Step can share one small GPU card: tested with both running serially on
+a single NVIDIA T1000 8 GB, including generated music and four-stem separation, with no manual
+unload or restart needed between films.
 
-## One month across six configurations, 3 October 2026 {#february-hardware-matrix}
+ACE-Step on that same card can recover cleanly from memory pressure: after an injected
+out-of-memory failure, a rebuilt service (with the model-loading cleanup fix, see
+[the pinned image](../reference/local-audio.md#in-a-container)) generated an 88-second track in
+about 148 seconds, with no restart. GPU time-slicing gives access to the card, not separate VRAM
+pools: run one film at a time on a shared card, and check an actual generated track rather than
+trusting a passing health check.
 
-The February 2024 smoke workload requested a 60-second film from the same 2,032-source
-inventory on six hardware/tier configurations. The common output was **1080p60 SDR**, with
-titles, transitions, photo/video/Live Photo sources and default **balanced** quality. Each
-initial run started with empty app, analysis and media/render caches; installed model files
-and external services were retained. Upload and full-file verification are outside the timer.
+Render-worker assembly time by hardware, for two film lengths (titles, maps, transitions and
+audio; excludes media download, selection and generated music):
 
-| Configuration | Recorded time | What that time covers | Final music |
-|---|---:|---|---|
-| Synology DS423+, J4125, Basic | 25m 04s | Original uninterrupted cold run | Bundled |
-| Same NAS, GPU tier with Kubernetes services | 16m 42s | Original uninterrupted cold run | ACE-Step service + four stems |
-| Kubernetes GPU, one T1000 8 GB | 12m 32s | Final uninterrupted cold confirmation | ACE-Step service + four stems |
-| M5 Max, 128 GiB, Full | 4m 14s | Cold confirmation with one reader fallback; repaired below | Local ACE-Step + four stems |
-| M2 Pro, 16 GiB, Basic | 4m 59s | Composite: original preparation plus successful render/music phases | Local ACE-Step + four stems |
-| M2 Pro, 16 GiB, Full | 9m 44s | Final uninterrupted cold confirmation | Local ACE-Step + four stems |
+| Hardware | 14.5 s film | 68.5 s film |
+| --- | ---: | ---: |
+| M2 | 75 s | 166 s |
+| M5 | 49 s | 99 s |
+| GTX 1070 | 198 s | 468 s |
+| NVIDIA T1000 | 217 s | 575 s |
 
-All six final films passed complete video/audio decoding. M2 Basic's final saved-cut retry
-itself took **2m 14s**; it was not a new cold run. Its failed render and earlier bundled
-fallback remain in the detailed report. The revisions changed as bugs were repaired, and
-model-driven selection can choose different shots. This is a common-workload checkpoint,
-not six identical cuts on one release or a clean-install speed ranking.
+## Hosted reader: time and cost per provider {#hosted-reader-time-and-cost}
 
-### What the maximum export added
+A hosted reader costs a few cents per request; it does not remove the time spent reading the
+library, checking pictures or rendering locally. Measured on Full tier, M5 Max, local picture
+models, for the same monthly request:
 
-**Basic stayed at 1080p on both NAS and M2.** NAS GPU, Kubernetes GPU, M5 Full and M2 Full
-also delivered 3840×2160, 60 fps, HEVC, 10-bit PQ HDR with BT.2020 primaries. All four passed
-full decoding. The GPU maximums retained their rendered video and needed music-only repairs.
+| Provider | Whole run | Film produced | Estimated cost |
+| --- | ---: | --- | ---: |
+| OpenAI | 78 s | 61 s, 15 pictures | $0.01 |
+| z.ai | 120 s | 61 s, 15 pictures | $0.01 |
+| Melious | 180 s | 61 s, 15 pictures | €0.07 |
 
-The latest Mac pairs reused each machine's selected cut. M5 includes the reader repair below:
+A longer request costs proportionally more: a 5-minute film ran z.ai at about $0.05 and Melious
+at about €0.42. On a 34-case feature suite (titles, free-text, captions, music mood, editorial
+choices), every provider passed 33 or 34 out of 34, in 2 to 9 minutes of combined request time,
+for $0.01 to €0.03.
 
-| Same-cut comparison | M5 Full | M2 Full |
-|---|---:|---:|
-| 1080p render | 36.7 s | 69.9 s |
-| 4K HDR render | 90.5 s | 180.4 s |
-| Extra render time | **53.8 s** | **110.5 s** |
-| 1080p file | 22.31 MB | 39.18 MB |
-| 4K HDR file | 40.62 MB | 73.37 MB |
-| File growth | **82%** | **87%** |
+**Motion direction is the weak spot.** Across every hosted provider tested (OpenAI, z.ai,
+Melious) and the local Gemma reader, direction-of-motion questions (left/right/up/down/still)
+passed 1 to 3 out of 5 controls. Treat a hosted or local reader's motion description as a bonus,
+not a fact to rely on. Other feature checks (captions, story comparisons, titles) passed
+consistently.
 
-You gain four times the output pixels and a 10-bit HDR output. Frame rate stays at 60 fps;
-lower-resolution or SDR sources do not acquire native 4K HDR detail. Music was generated
-separately for each export, so its timing is not part of the resolution penalty. The shared
-GPU measurements include changing load and revisions; their larger export times are not
-isolated resolution costs.
+## Local reader time and accuracy {#local-reader-time-and-accuracy}
 
-### What still limits the claim
+Ollama and oMLX, both running Gemma 4 E4B on an M5 Max with 128 GB, against the same 34-case
+feature suite used for hosted providers above:
 
-- Optional motion descriptions were missing; selection used plain clip facts for those clips.
-  Those descriptions are not counted as exercised just because a film finished. M5 Full also
-  initially left one demanded episode unread: an oMLX workaround had disabled its owned
-  llama.cpp schema. The fix and a selection-onward retry took **1m 45s**, reused preparation,
-  and completed with no unread episodes. Its paired 4K export took **2m 01s**. Both passed
-  generated music, four stems and decoding; the original cold timing remains above.
-- M2's successful Full run used the bundled llama.cpp reader and a separate llama.cpp caption
-  service. Replacing the earlier caption service reduced its measured footprint from about
-  2.3 GiB to 507 MiB. The [smaller-Mac caption recipe](../reference/caption-service.md) records
-  that setup; the local music memory guard was not lowered.
-- One physical T1000 served the Kubernetes path. GPU Operator time slicing did not evict
-  models or prevent other workloads from using VRAM. Upload-triggered Immich ML work caused
-  interference, and ACE-Step retained VRAM after an OOM. A service restart preceded the
-  successful cold confirmation. A separate ACE-Step loading-cleanup fix passed an isolated
-  API test on that same T1000: after a bounded injected load failure, the same process generated
-  a decoded 88-second track in **148.059 s**, without restarting. The patch was mounted into
-  the test pod; a rebuilt production image and arbitrary competing workloads were not tested.
+| Reader | Passed | Combined request time |
+| --- | ---: | ---: |
+| oMLX, thinking off | 33/34 | 53 s |
+| Ollama native API, thinking off | 33/34 | 53 s |
+| Ollama OpenAI-compatible API | 25 to 32/34 | 45 to 345 s |
 
-The [full timing and recovery report](https://github.com/sam-dumont/immich-memories/blob/main/docs/research/2026-10-03-february-hardware-smoke.md)
-contains phase timings, failed attempts, exact source revisions and installation findings.
-The films use a private library and are not public demo assets. For something you can watch,
-use the [CC0 Basic/GPU example](./gpu-example.md) or [Basic/Full example](./tier-example.md).
-[Choose your setup](../get-started/choose-your-setup.md#what-you-give-up-with-basic) separates
-what each tier adds from optional music and rendering services.
+A local reader has no per-request fee; hardware and electricity were not priced here. Turn
+thinking off explicitly on both APIs: leaving it on lets reasoning consume part of a large
+request's token budget and can truncate the answer. See
+[Ollama settings](../reference/llm-providers.md#ollama) for the exact recipe.
 
-## Tested setups, 2 October 2026 {#tested-setups}
+## Longer films: memory and duration {#longer-films-memory-and-duration}
 
-These are separate checks, not four timed clean installs on the current release.
-The [docs-only installation gate](https://github.com/sam-dumont/immich-memories/issues/956)
-records the Mac, Docker, Synology and Kubernetes preflight runs; those runs stopped before generation.
-The finished-film controls below came from later, separate runs with prepared picture facts.
+| Setup | Film | End-to-end time | Output |
+| --- | --- | ---: | --- |
+| NAS, Basic | One-minute month | 7 min | 1080p SDR |
+| NAS, Basic | Ten-minute person film | 79 min | 1080p SDR |
+| M2 Pro, Full | One-minute month | 15 min | 4K HDR10 |
+| M5 Max, Full | One-minute month | 6 min | 4K HDR10 |
+| M5 Max, Full | Ten-minute person film | 40 min | 4K HDR10 |
 
-| Machine | Setup checked | First preparation time | Finished-film evidence |
-|---|---|---|---|
-| M2 Pro, 16 GB | Native Full | Not recorded in these controls | One-minute month: 15m 29s, 4K HDR10 |
-| M5 Max | Native Full; reader and captions on the Mac | Not recorded in these controls | One-minute month: 5m 43s, 4K HDR10 |
-| Synology DS423+, J4125 | Compose app; NAS controls, plus a preflight run with remote reader/captions | Not recorded in these controls | One-minute NAS month: 7m 23s, 1080p SDR |
-| RKE2 cluster, NVIDIA T1000 | App and CUDA captions; install and preflight verified | Not recorded in the installation run | No finished film in that docs-only run; isolated rendering timings are below |
+Picture facts were already prepared for these; preparing a new library adds time on top. A
+30-minute NAS film completed in 4h 21m at 1080p SDR, inside a 4 GiB container limit, peaking
+around 2.9 GiB RAM (3.7 GiB with swap). That is one tested workload, not a guarantee that every
+library or length fits the same container limit.
 
-The Mac controls used generated music and the NAS used bundled music. They are not matched
-NAS-versus-Full quality comparisons. The [paired CC0 month films](./tier-example.md) are available
-with selected-shot differences, provenance and warm-cache/dependency/calibration caveats. That
-example is separate from the [#1719 28-case suite](https://github.com/sam-dumont/immich-memories/issues/1719); do not treat
-these different films as either comparison. Record setup, downloads, preparation and generation
-separately when repeating the [first-run gate](https://github.com/sam-dumont/immich-memories/issues/956).
+Maps can dominate a trip film: nine smooth 4K maps took 15 minutes on an M2 Full trip, about 43%
+of the whole run. Use `preset: fast` for cheaper maps; see
+[titles and maps](../make/titles-maps-music.md).
 
-## Generated cold installs, 2 October 2026 {#generated-cold-installs}
+Process memory for a Full-tier month on M2 Pro ran about 12 GB RSS; a ten-minute Full film on
+M5 Max ran about 17 GB RSS. RSS can count shared memory more than once and is not a minimum RAM
+requirement.
 
-A fresh generated NAS setup ran on DSM 7.3 on x86_64 (reported model `DS423`), with
-17,836 MiB RAM reported by `free -m`, a 4 GiB container limit, empty configuration/output
-volumes and no copied model or picture cache.
-It used 133 public CC0 assets from June 2024 and the unmodified first-film command:
+## Caption service memory {#caption-service-memory}
 
-```bash
-immich-memories generate --year 2024 --month 6 --duration 60
-```
+Switching the Mac caption server from mlxcel to llama.cpp, same SmolVLM2 model, same requests:
+resident memory dropped from about 2.3 GiB to about 507 MiB on a 16 GiB Mac. See
+[the caption service reference](../reference/caption-service.md#apple-silicon-with-llamacpp) for
+the setup.
 
-Explicit model download took **6 seconds**. The recorded film run took **16m 38.8s**, producing
-**57 seconds of 1920×1080 H.264/AAC**, 16,036,267 bytes, with 14 shots (6 videos and 8 stills).
-Bundled music, rules selection and the default output settings remained enabled; no upload was
-requested. A full FFmpeg audio/video decode exited successfully. Preflight completed with
-5 OK, 4 warnings and 9 skipped checks; it was not a warning-free run.
+## Finger over the lens {#finger-over-the-lens}
 
-This was **software encoding**, with no VAAPI device passed through. The title kernel crashed
-on this CPU and fell back to PIL title plates; HDR input was tone-mapped to SDR for the default
-H.264 output. These warnings remained visible on the completed run. Playback and an inactive
-reader URL save/reload/restore passed in the actual NAS UI. The Settings test restored the
-original empty saved-settings state.
+The finger check is a small head trained only on public images (Commons pictures and synthetic
+fingers pasted on them). It was then run against the maintainer's library, which it never saw in
+training.
 
-The runtime candidate came from source tree `75077f27c4eb2f4516a1db5ba5e57d52a314fe18`,
-image `sha256:49cc60a978ce92cc9d9081770f690de9cdfe17650afcb36bc63ebf281ccdb162`.
-The builder generated its byte-exact file at revision `61fa1154` using the local candidate alias
-`0.0.0-rc.75077`; this alias was **not a published release**. The installation used SSH/Compose,
-not the DSM Project wizard. DSM rejected the ordinary SSH tunnel for this account; UI checks
-used a temporary localhost-only SSH stdio transport without changing the NAS SSH policy.
-The [Synology access instructions](../run/platforms/synology.md#4-open-the-app) explain that
-forwarding prerequisite and the authenticated reverse-proxy alternative.
+| Set | Flagged |
+| --- | --- |
+| Real finger-over-the-lens photos | 26 of 49 |
+| Real finger-over-the-lens video previews | 11 of 20 |
+| Look-alike photos with no finger | 32 of 440 |
+| Random photos | 4 of 2,000 |
+| Look-alike video previews with no finger | 6 of 69 |
+| Random video previews | 9 of 384 |
+| Whole library | 240 of 56,372 (0.4%) |
 
-This is one real cold run, not a speed comparison: other NAS workloads and candidate-image
-export were active. The older warm controls and paired films above remain separate evidence.
+It catches about half of the real ones. That's why a flagged picture only loses to a clean shot of
+the same moment and is never dropped: see [picking a shot](../how-it-chooses/picking-shots.md).
 
-### Generated GPU Kubernetes first film {#generated-gpu-first-film}
-
-The generated GPU path ran in a fresh namespace on RKE2 `v1.33.4+rke2r1`, with an NVIDIA
-T1000 8 GB shared between the CUDA inference and caption services. The app had a **4 CPU,
-8 GiB limit** and no GPU device. Empty model volumes fetched the pinned detectors, Laya and
-caption weights; the app database used local/block storage, with models and output on NFS.
-Preflight finished in **11.68 seconds**, with 9 OK, 4 warnings and 5 skipped checks.
-
-Using the same 133 public CC0 assets, a June 2024 monthly film requested for 60 seconds took
-**11m 22.8s** to generate. It produced **56.5 seconds of 1920×1080 H.264 at 30 fps**, with
-stereo AAC audio, 16,154,477 bytes. FFprobe and a complete FFmpeg audio/video decode passed.
-Rules selection, full picture preparation, detectors, Laya and CUDA captions stayed enabled;
-there were no resolution overrides or feature-disable flags. The run used bundled music.
-Encoding used software, titles used CPU static plates, and HDR input was tone-mapped to SDR. Seven clips lacked motion facts and
-used plain clip facts; that warning remained visible.
-
-This used source tree `75077f27c4eb2f4516a1db5ba5e57d52a314fe18`, app image
-`49cc60a978ce` and matching inference image `d079a0da1633`, with generated resources from
-`5f3de520`. It was a local candidate install, **not a published release download**. The first
-attempt paired that app with an older released inference image; the strict facts validator
-refused the incompatible heads. The failed test database was cleared before the paired run,
-so its picture facts were prepared afresh. SQLite also correctly refused an initial NFS data
-volume; the corrected run used local/block storage.
-
-The generation time excludes image builds and transfers, model initialization and preflight.
-App image transfer took 385.9 seconds; the matching inference image import took 343.8 seconds.
-Cold model initialization completed, but no complete cold-install stopwatch was recorded.
-The generated Settings encryption key passed a secret save/masked reload/encrypted-storage
-check; the temporary setting was removed. The test namespace and its volumes were then removed.
-This is one installation and film check, not a matched hardware speed comparison.
-
-## Generated native Mac check, 3 October 2026 {#generated-native-mac}
-
-The generated GPU setup ran on an **Apple M5 Max with 128 GB RAM**, using an isolated
-candidate wheel from `d5b4472b8525e82fefdd78143aca62e16e707ce1`. Installing that local
-`0.0.0rc180503` wheel replaced the generated PyPI install: this was **not a published-release
-installation**. Model-only files and existing Hugging Face snapshots were reused; the app
-configuration, database, picture facts and output were fresh. The existing loopback caption
-server stayed unchanged, so this check does not establish a cold model download or a new
-caption-service installation.
-
-Model verification took **0.90 seconds** and preflight **13.84 seconds**, with 11 OK,
-2 warnings and 5 skipped checks. A June 2024 monthly film from the same 133 public/synthetic
-assets, requested for 20 seconds with photos included, took **35.38 seconds**. It produced
-**19 seconds of 1920×1080 H.264 at 30 fps**, stereo 48 kHz AAC, 5,402,495 bytes.
-FFprobe and complete audio/video decoding passed. Local MLX/Metal picture inference and
-Laya, the existing MLX caption server, Metal title kernels and `h264_videotoolbox` encoding
-were used. The reader and generated music stayed disabled; bundled music remained enabled.
-
-Warnings included unset home coordinates, one clip without motion facts, a Laya confidence
-bucket warning and HDR input tone-mapped to SDR. The loopback UI served the built client;
-its owned process was stopped without changing the caption service or normal app settings.
-The separate ACE-Step setup and import checks passed, but no ACE-Step track was generated.
-This source-informed check is not the source-naive #956 gate or a matched speed comparison.
-
-## NAS app with remote GPU, 3 October 2026 {#generated-nas-remote-gpu}
-
-The physical DSM NAS app used the generated GPU setup against a combined worker on one
-T1000 in an owned Kubernetes namespace. This exercised `GPU_BOX` facts and caption routes;
-it was not a standalone Docker Compose worker deployment. The app used candidate source
-`75077f27` and image `49cc60a978ce`, with matching worker image `d079a0da1633`.
-
-Cold local model acquisition took **26.93 seconds**, including the pinned ONNX Laya file
-(877 MB). The original cold preflight **failed after 20.48 seconds**: its five-second caption
-probe expired while the worker lazily started the caption model. After that model was ready,
-preflight passed in **14.67 seconds**, with 9 OK, 4 warnings and 5 skipped checks.
-
-A separate cold-start check restarted the owned worker and verified that no caption process
-was running. With only the reviewed caption timeout/error changes transplanted into the
-frozen app's preflight file, preflight passed in **32.00 seconds**, with the same check counts
-and no prewarming. This was a single-file test overlay, not a rebuilt current-source image;
-the completed film below used the original candidate.
-
-The film run used `generate --year 2024 --month 6 --duration 20` and took **6m 53.09s**
-from SSH command start through successful exit, including configuration probes, preparation,
-rendering and music. It produced **19 seconds of 1920×1080 H.264/AAC**, with bundled music
-and no upload. Complete FFmpeg audio/video decoding passed. The worker prepared facts for
-133 assets and captions for four selected clips; the NAS encoded in software and used PIL
-title fallback. One clip lacked motion facts. The product tier was GPU; the internal
-captioned preparation mode did not enable a text reader or make this a Full-tier run.
-
-## Read one run
+## Read your own run
 
 ```bash
 immich-memories runs show RUN_ID
 immich-memories report RUN_ID
 ```
 
-The run reports phase timings, memory and delivery. Review the report before sharing it; it sends
-nothing itself. Assembly includes titles, maps, composition and encoding, so its time is not an
-encoder-only benchmark.
-
-## Measured examples, 1 October 2026 {#whole-film-controls}
-
-These are finished films from specific source revisions. They show the range to expect, not a
-speed ranking: the tiers used different edits, output profiles and music backends. Picture facts
-were already prepared; original-media acquisition, fresh selection, titles, rendering and music
-still ran. Preparing a new library takes additional time.
-
-| Setup | Film | End-to-end time | Output | Source revision |
-|---|---|---|---|---|
-| Physical NAS, NAS tier | One-minute month | 7m 23s | 1080p portrait, 60 fps, SDR | `c4c7356304c5` |
-| Physical NAS, NAS tier | Ten-minute person film | 78m 51s | 1080p portrait, 60 fps, SDR | `dec8f20e609c` |
-| M2 with 16 GiB, Full tier | One-minute month | 15m 29s | 4K portrait, 60 fps, HDR10 | `f74936b657d7` |
-| M5, Full tier | One-minute month | 5m 43s | 4K portrait, 60 fps, HDR10 | `cb06e4ba0e0d` |
-| M5, Full tier | Ten-minute person film | 39m 40s | 4K portrait, 60 fps, HDR10 | `f82de21b5bf5` |
-
-`f74936b657d7` was an unpublished measurement checkout, absent from the public repository.
-The M2 month and NAS stress run below are historical observations; that source cannot be
-checked out from this repository to reproduce them.
-
-NAS used bundled music. The Mac films used local ACE-Step music and Demucs stem separation.
-The M2 Full month recorded 12.38 GB process-tree RSS; the M5 Full person recorded 17.02 GB.
-RSS can count shared mappings more than once and is not a minimum RAM requirement.
-
-### Longer films and memory
-
-A separate 30-minute NAS stress film took **4h 20m 45s** at 1080p portrait, 60 fps, SDR, on
-`f74936b657d7`. It completed under a **4 GiB container limit**, peaking at about **2.87 GiB RAM**
-and **3.74 GiB RAM plus swap**. It used swap. This supports that tested workload; a container
-limit alone does not guarantee that every library or film fits.
-
-Maps can dominate a trip render. In one M2 Full trip, nine smooth 4K maps took 911 seconds,
-about 43% of the whole run. The NAS version used lower resolution and reduced motion. For
-cheaper maps, choose `preset: fast`; [titles and maps](../make/titles-maps-music.md) explains it.
-
-## Rendering improvements, 2 October 2026 {#rendering-performance}
-
-The completed [#1704](https://github.com/sam-dumont/immich-memories/issues/1704)
-and [#1702](https://github.com/sam-dumont/immich-memories/issues/1702)
-work reduced title, map and assembly costs. Final combined checks used synthetic
-portrait 4K HDR10 video at 60 fps, with titles, maps, captions, transitions and audio.
-
-| Host | Film length | Before | After | Less time |
-|---|---:|---:|---:|---:|
-| M2 | 14.5 s | 154.6 s | 75.2 s | 51% |
-| M2 | 68.5 s | 592.9 s | 166.4 s | 72% |
-| M5 | 14.5 s | 81.9 s | 49.0 s | 40% |
-| M5 | 68.5 s | 263.2 s | 99.0 s | 62% |
-| GTX 1070 | 14.5 s | 433.4 s | 197.6 s | 54% |
-| T1000 | 14.5 s | 441.7 s | 217.1 s | 51% |
-
-Each final Mac candidate ran once against unchanged earlier controls: two short
-baseline runs and one long run. Linux used one matched short pair per GPU under
-shared-cluster load. These are rendering times, excluding media acquisition,
-selection and generated music. They do not replace the whole-film controls above,
-and the baseline already includes earlier title/cadence improvements.
-
-Both Linux GPUs also completed the 68.5-second, 42-clip film: 467.7 seconds on
-GTX 1070 and 574.7 seconds on T1000. The long Linux baseline checks timed out during
-redundant output verification, so no long-film Linux speedup is claimed. All final
-outputs passed full video/audio decoding, timing and HDR metadata checks. The merged
-assembly files match the isolated source used for these tests.
-
-Mac read-ahead stays enabled only for the measured HEVC VideoToolbox path with enough
-CPU and memory. It slowed the T1000 down, so Linux and software encoders stay synchronous.
-The [full report](https://github.com/sam-dumont/immich-memories/blob/main/docs/research/2026-10-02-render-performance-closeout.md)
-records source revisions, memory, component gains and measurement limits. Separate
-[NAS software-HLG memory work](https://github.com/sam-dumont/immich-memories/issues/1767)
-remains open.
-
-## Hosted reader time and cost, 3 October 2026 {#hosted-reader-cost}
-
-The [#1718 rerun](https://github.com/sam-dumont/immich-memories/issues/1718)
-uses `870b71cab`, the configured hosted routes and prepared picture facts. A hosted reader
-can cost a few cents per task. It does not remove the time spent reading the library,
-checking pictures or rendering the film locally.
-The production examples use Full tier on an Apple M5 Max with local picture models;
-they do not predict NAS render times or the cost of preparing a new library.
-
-The same monthly request produced these complete films:
-
-| Provider | Whole run | Film produced | Estimated API cost | Same tokens without provider cache discount |
-|---|---:|---|---:|---:|
-| OpenAI | 77.5 s | 60.8 s, 15 pictures | $0.0096 | $0.0169 |
-| z.ai | 120.1 s | 60.9 s, 15 pictures | $0.0126 | $0.0126 |
-| Melious | 180.4 s | 60.9 s, 15 pictures | €0.0663 | €0.0671 |
-
-The OpenAI run followed a discarded setup attempt and used provider cache reads; its
-latency is not a cold-start measurement. The last column changes only the token price,
-not the measured timing. All three films used bundled music because the generated-music
-weights were unavailable offline. Decoding passed; that is not editorial approval.
-
-The complete 34-case synthetic suite exercises titles, free-text requests, captions, music
-mood and editorial decisions through the production client. These repeats use the JSON
-contract fix at `8961ccef7`; the monthly films above retain baseline revision `870b71cab`:
-
-| Provider and exact model | Passed | Suite elapsed | Estimated API cost |
-|---|---:|---:|---:|
-| OpenAI, gpt-5.6-luna | 33/34 | 115 s | $0.0097 |
-| z.ai, glm-5.3-flash | 33/34 | 192 s | $0.0062 |
-| Melious, deepseek-v4.1-flash | 34/34 | 543 s | €0.0317 |
-
-These are single repeats on a shared Mac. OpenAI missed motion; z.ai dropped a subject
-from a synthetic request. Melious still left unread months in annual discovery after
-23m 45s and an estimated €0.152. The full report retains baseline scores and all repeated failures.
-Cost estimates use reported tokens and published pay-as-you-go rates checked on the test
-date. They are not billing receipts or subscription allocations. Unknown usage stays unknown.
-
-Longer requests cost more: z.ai Request B took 18m 53s and about $0.0505 for a
-291-second film, but its sampled subject check failed. Melious Request B took 46m 20s
-and about €0.4216 for a 295-second film. The latter generated music; the former used
-bundled music. Neither is a matched speed comparison or an approved cut.
-
-Motion remains unreliable: the separate five-direction controls passed 2/5 on OpenAI,
-3/5 on z.ai and 2/5 on Melious. HTTP success alone does not establish correctness.
-The [full report](https://github.com/sam-dumont/immich-memories/blob/main/docs/research/2026-10-03-hosted-readers.md)
-records routes, response modes, token counts, rate sources and measurement limits.
-
-The merged [Ollama measurements](https://github.com/sam-dumont/immich-memories/blob/ba5b96e53f38ec35a9d8b92f15c6c15b8f232bcc/docs/research/2026-10-03-ollama-validation.md)
-provide the local comparison: native Gemma with thinking off passed 33/34 checks in
-53.01 seconds of summed probe time; its compatible route passed 32/34 in 45.04 seconds.
-They have no hosted API fee; hardware and electricity were not priced. These separate,
-potentially warm runs did not measure a complete film, so they do not establish a
-local-versus-hosted end-to-end speedup.
-
-## Ollama on M5 Max, 3 October 2026 {#ollama-validation}
-
-Gemma 4 E4B was tested through both Ollama APIs using the same 34 synthetic
-production-feature checks as the oMLX validation. This run used Ollama 0.35.1,
-`gemma4:e4b-it-q4_K_M`, an M5 Max with 128 GiB RAM, and a 32,768-token context.
-Source: `a3bfc5dbe66efceaf6985abed72c78600a0fbb37`. The model is the same Gemma
-variant; its Q4_K_M GGUF weights differ from the earlier 6-bit MLX weights.
-
-| API and thinking setting | Passed | Summed probe time | HTTP attempts |
-|---|---:|---:|---:|
-| Native, server default | 34/34 | 318.77 s | 85 |
-| Native, `think: false` | 33/34 | 53.01 s | 85 |
-| Compatible, default app settings | 25/34 | 345.19 s | 97 |
-| Compatible, `reasoning_effort: none` | 32/34 | 45.04 s | 85 |
-
-Use the [explicit thinking-off recipes](../reference/llm-providers.md#ollama)
-for the text reader. Both read all 22 episodes and selected eight story moments
-in the separate larger-prompt checks. Native Ollama with server-default thinking
-truncated its first large episode response: earlier requests in the complete suite
-had already taught the app to budget extra tokens. The compatible route ignores
-the default oMLX-style thinking switch and can return empty answers at small token limits.
-
-With thinking off, both APIs failed the motion example; the compatible API also
-lost the race from a period summary. Image captioning and the other feature checks
-passed. These were single sequential runs with warm server caches, not a throughput
-comparison with oMLX or an end-to-end film validation. The M2 and SmolVLM2 were not tested.
-The [report and reproducible configs](https://github.com/sam-dumont/immich-memories/blob/main/docs/research/2026-10-03-ollama-validation.md)
-and [aggregate CSV](https://github.com/sam-dumont/immich-memories/blob/main/docs/research/2026-10-03-ollama-validation.csv)
-record all four runs, including failures.
-
-## LLM contract fixes, 1 October 2026 {#llm-contract-fixes}
-
-The Gemma conformance results use 6-bit MLX on oMLX, rather than the app-owned Q4_0 GGUF.
-
-The follow-up for [#1645–#1660](https://github.com/sam-dumont/immich-memories/issues/1645)
-uses fixes based on `b96d7d6a`, the four models listed below, and synthetic inputs only.
-Provider runs overlapped on the shared Mac. Raw request/reply evidence stays private.
-Server schema modes were left unchanged, including Melious's `structured_output: false`.
-
-The complete 34-feature command was rerun after the fixes:
-
-| Endpoint | Passed | Summed probe time | HTTP attempts | Failed feature |
-|---|---:|---:|---:|---|
-| Gemma, gemma-4-e4b-it-6bit | 33/34 | 213.63 s | 86 | Video motion |
-| OpenAI, gpt-5.6-luna | 33/34 | 206.59 s | 87 | Video motion |
-| z.ai, glm-5.3-flash | 34/34 | 294.78 s | 85 | None in this run |
-| Melious, deepseek-v4.1-flash | 34/34 | 223.44 s | 85 | None in this run |
-
-The [aggregate CSV](https://github.com/sam-dumont/immich-memories/blob/main/docs/research/2026-10-01-llm-contract-fixes.csv)
-contains the 136 complete-suite rows and 74 separate held-out checks. Blank token counters
-mean unreported. These are single runs with potentially warm server caches; the timings are
-not isolated throughput measurements. The held-out rows are not added to the 34-feature score.
-
-The request reader now states and validates field types before voting, retains complete fenced
-JSON, and stops when too few valid readings remain. Weather modifiers survive the time/subject
-handoff; picture-quality adjectives no longer acquire dictionary noun subjects. Caption prompts
-state their required fields. Story weighting repairs contradictory central/minor assignments,
-and trip-title instructions consistently prefer the recorded place, including a country.
-
-Separate held-out checks passed on Gemma, z.ai and Melious: otters and sailboats in 2030;
-rainy, foggy, sunny and snowy caption pools; Norway-only and Brittany/France trip titles;
-and graduation or wedding scenes against an ordinary desk scene. The weather rows use the final
-rerun after fixing split adjective/time readings and derived noun choices. Young forms
-(puppy, foal, duckling) and restrictive modifiers (striped horse, wooden chair, red car) passed
-on all four providers. These small checks do not establish general selection quality.
-
-### Motion is still a provider limitation
-
-The serialized JPEG was inspected: its three numbered panels preserve the generated positions
-and their order. The prompt explicitly compares positions within each panel. Neither change
-makes every reader reliable. Five separate controls ask for right, left, up, down and stationary:
-
-| Endpoint | Passed | Remaining failures |
-|---|---:|---|
-| Gemma 4 E4B, 6-bit MLX on oMLX | 1/5 | Both horizontal movements called stationary; vertical replies exceeded the 120-character contract |
-| OpenAI | 2/5 | Both horizontal movements called stationary; downward movement also acquired a horizontal direction |
-| z.ai | 3/5 | Both vertical movements also acquired a horizontal direction |
-| Melious | 3/5 | Both vertical movements also acquired a horizontal direction |
-
-All four passed the stationary control in this final set. An earlier Melious run invented leftward
-movement on the same stationary input, so that pass is not a reliability guarantee. Direction
-checks reject orthogonal movement and stationary descriptions of moving frames. The character
-cap remains enforced. [#1650](https://github.com/sam-dumont/immich-memories/issues/1650)
-records the remaining capability gap.
-
-Story comparisons can also vary: z.ai tied the race and routine scene in one complete run,
-although both held-out occasion comparisons passed. Contradictory central/minor answers now
-receive bounded repair; a valid but poor ranking still fails the conformance check
-([#1653](https://github.com/sam-dumont/immich-memories/issues/1653)).
-
-## Compare fairly
-
-Render the same saved cut twice. The first run may acquire media; the second can reuse compatible
-work. Keep cold and warm results separate. When testing an add-on, keep the scope and output
-format fixed, record the revision and hardware, and watch both films.
-
-Measure the app and each service separately. A local reader and local audio can share machine
-memory when the app owns their runtimes. External servers keep memory resident according to
-their own policies, even while idle. Peaks from separate services are not interchangeable with
-whole-machine or whole-container memory measurements.
-
-The [measurement reference](../reference/performance-evidence.md) lists what to record for picture
-work, selection, rendering and music. The [hardware guide](../run/hardware.md) explains which
-steps an encoder accelerates; the [preparation reference](../reference/preparation.md) explains reuse.
-
-## Inspect capabilities
+The report breaks down phase timings, memory and delivery for a run you actually made. Review
+it before sharing; it sends nothing on its own. Assembly includes titles, maps, composition and
+encoding, so its time is not an encoder-only number.
 
 ```bash
 immich-memories capabilities
 ```
 
-This separates configuration and installation checks from generation evidence. It does not
-prove that every selected picture or finished film is right. Run
+`capabilities` separates configuration and installation checks from generation evidence; it
+does not prove that every selected picture or finished film is right. Run
 [preflight](../run/maintenance/health-logs-cache.md) after changing services.
 
-## Finger-over-the-lens detector
+## Compare fairly
 
-Trained on a public corpus only (Commons images and synthetic composites on them; see
-`src/immich_memories/triage/bundled_heads/public-obstruction-v1.md`). Measured against the
-owner's held-out library, never used for training: 26 of 49 flagged real finger-over-the-lens
-photos, 11 of 20 on video previews, 240 of 56,372 pictures across the whole library (0.4%).
-Against public random and hard-negative sets: 32 of 440 hard negatives, 4 of 2,000 random
-stills, 6 of 69 hard negatives and 9 of 384 random on video. That recall is why the check
-ranks a clean sibling ahead of a flagged picture rather than dropping it: see
-[Picking a shot](../how-it-chooses/picking-shots.md).
+Render the same saved cut twice: the first run may acquire media, the second reuses compatible
+work. Keep cold and warm results separate. When testing an add-on, keep the scope and output
+format fixed, note the hardware, and watch both films rather than trusting the numbers alone.
+
+Measure the app and each service separately. A local reader and local audio can share machine
+memory when the app owns their runtimes; external servers keep memory resident on their own
+schedule, even while idle. See [benchmarking your own setup](../reference/performance-evidence.md)
+for what to record, and [two tiers of the same month](./tier-example.md) for a side-by-side film
+comparison.

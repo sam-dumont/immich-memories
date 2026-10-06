@@ -11,13 +11,10 @@ Use a **Docker Standalone** environment in Portainer. This recipe runs the app o
 
 :::info Tested Docker Standalone path
 
-Portainer CE 2.45.1 on Docker 29.2.1 (Apple Silicon) passed the actual Web editor stack deployment,
-app readiness, and browser Console commands below. Model fetch completed; preflight reported
-6 OK, 3 warnings and 9 skipped checks. Version 2.33.3 could not connect to this Docker environment.
-
-This used a local frozen app candidate (`f6d2fb71`), a loopback UI port and synthetic CC0 Immich
-media. It did not test a remote NAS tunnel, a published-release download or another film run.
-Test-owned containers and volumes were removed afterward.
+A recent Portainer CE on Docker Standalone (Apple Silicon host) passes the Web editor stack
+deployment, app readiness, and the browser Console commands below. This hasn't been checked
+against a remote NAS tunnel or a published-release download; see the
+[deployment matrix](../tested-deployments.md) for exact coverage.
 
 :::
 
@@ -50,7 +47,7 @@ Fix any reported connection or storage errors before making a film. Model downlo
 
 ![Portainer Console showing the tested app preflight: 6 OK, 3 warnings and 9 skipped checks.](/img/screenshots/setup-portainer-console.png)
 
-This capture is from the tested candidate above. Its CPU tier still printed the older name NAS; this guide calls that tier Basic.
+The screenshot names this tier NAS; the app calls it Basic.
 
 ## 4. Open the app
 

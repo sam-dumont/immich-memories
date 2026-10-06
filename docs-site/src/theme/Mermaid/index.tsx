@@ -9,6 +9,7 @@ export default function ReadableMermaid(props: Props): ReactNode {
   const viewport = useRef<HTMLDivElement>(null);
   const [overflows, setOverflows] = useState(false);
   const [zoom, setZoom] = useState(1);
+  const [scale, setScale] = useState(1);
   const [expanded, setExpanded] = useState(false);
   useEffect(() => {
     if (!expanded) return;
@@ -31,7 +32,16 @@ export default function ReadableMermaid(props: Props): ReactNode {
     if (!element) return;
     const measure = () => {
       const svg = element.querySelector('svg');
-      if (svg?.viewBox.baseVal.width) svg.style.width = `${svg.viewBox.baseVal.width * zoom}px`;
+      const natural = svg?.viewBox.baseVal.width;
+      if (svg && natural) {
+        // A wide diagram first shrinks to the column, but never below 60% (text stays legible);
+        // past that it scrolls. The buttons zoom from that fitted size.
+        const style = getComputedStyle(element);
+        const room = element.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+        const fitted = Math.min(1, Math.max(.6, room / natural)) * zoom;
+        svg.style.width = `${natural * fitted}px`;
+        setScale(fitted);
+      }
       setOverflows(element.scrollWidth > element.clientWidth + 1);
     };
     const resize = new ResizeObserver(measure);
@@ -55,16 +65,23 @@ export default function ReadableMermaid(props: Props): ReactNode {
     clusterBkg: dark ? '#222222' : '#f6f6f4',
     clusterBorder: dark ? '#555555' : '#d2d7e3',
     edgeLabelBackground: dark ? '#000000' : '#ffffff',
+    noteBkgColor: dark ? '#2a2a20' : '#fbf6e2',
+    noteBorderColor: dark ? '#8a7f4a' : '#d8c98c',
+    noteTextColor: dark ? '#f2ecd0' : '#172247',
+    archEdgeColor: dark ? '#a4b7e8' : '#59678e',
+    archEdgeArrowColor: dark ? '#a4b7e8' : '#59678e',
+    archGroupBorderColor: dark ? '#7d9dec' : '#8f9bc4',
   };
-  const value = `%%{init: ${JSON.stringify({theme: 'base', themeVariables})}}%%\n${props.value}`;
+  const architecture = {iconSize: 64, fontSize: 15, padding: 36, nodeSeparation: 80};
+  const value = `%%{init: ${JSON.stringify({theme: 'base', themeVariables, architecture})}}%%\n${props.value}`;
   return (
     <figure ref={figure} className={`docs-diagram${expanded ? ' docs-diagram-expanded' : ''}`}
       role={expanded ? 'dialog' : undefined} aria-modal={expanded ? true : undefined}
       aria-label={expanded ? 'Expanded diagram' : undefined}>
       <div className="docs-diagram-tools" role="group" aria-label="Diagram size">
         <button type="button" aria-label="Zoom diagram out" disabled={zoom <= .75} onClick={() => setZoom(value => Math.max(.75, value - .25))}>−</button>
-        <span aria-live="polite">{Math.round(zoom * 100)}%</span>
-        <button type="button" aria-label="Zoom diagram in" disabled={zoom >= 2} onClick={() => setZoom(value => Math.min(2, value + .25))}>+</button>
+        <span aria-live="polite">{Math.round(scale * 100)}%</span>
+        <button type="button" aria-label="Zoom diagram in" disabled={zoom >= 2.5} onClick={() => setZoom(value => Math.min(2.5, value + .25))}>+</button>
         <button type="button" aria-expanded={expanded} onClick={() => setExpanded(value => !value)}>
           {expanded ? 'Close expanded view' : 'Expand diagram'}
         </button>

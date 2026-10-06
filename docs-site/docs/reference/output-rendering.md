@@ -11,8 +11,9 @@ of your camera roll:
   (`title_screens.title_duration`). Title and subtitle shrink together when the pair would pass 80 % of the
   frame height.
 - **Month dividers**: at each month change in a single-year film spanning four months or more. The first
-  month gets none: the intro already said it. `month_divider_threshold` sizes a budget, and when the budget
-  binds the first month changes win, so a thin January can keep its card while a busy November loses one.
+  month gets none: the intro already said it. `month_divider_threshold` sizes a budget. When not every card fits, the film keeps as many as
+  do, picked by clip count (ties go to the earlier month), so a busy November keeps its card and a thin
+  March loses its. A tight film never drops to zero while one card still fits.
 - **Trip map**: a satellite fly-over from home to the destination, in place of the intro. Off by default, see
   [The map fly-over](#the-map-fly-over).
 - **Location cards**: the place name where a trip moves on. A hop of more than 30 km to a different place gets one. A
@@ -161,7 +162,8 @@ because GeoNames files most islands under a region. No outside call.
 The full title adds the length and the season or month: `TWO WEEKS IN CRETE, GREECE, SUMMER 2025`.
 
 Immich stores places in English. Country, island and region names are translated offline (CLDR and the bundled
-tables). City names stay as Immich stored them unless you switch on `network.geocoding`, which asks Nominatim
+tables). Immich 3.3's GeoNames country names ("The Netherlands", "Turkey", "Timor Leste") and the CLDR names
+earlier servers stored both resolve to the same country. City names stay as Immich stored them unless you switch on `network.geocoding`, which asks Nominatim
 for the city, town or village each picture is in, in the film's language. A place with no name in the film's
 language, or in its base language, keeps its own local name: it is never shown in English. Answers are cached
 for the next film. A Berlin visit stays Berlin across Mitte and Kreuzberg. The same name reaches story titles,
@@ -182,6 +184,22 @@ full date across years. Each language writes it its own way (`10. AUGUST`, `10 D
 Place captions show the city, town or village, including at home and at familiar places. A repeated label
 stays quiet until the place changes; returning to a city names it again. No home setup or library-history
 scan is needed. Country names remain visible and are translated into the film's language.
+
+Near the configured home base (within 10 km), captions can name the district, such as Montmartre in Paris.
+Away from home, a district covering at least 85 % of a stay's pictures keeps its name; excursions keep
+their own labels. When all known districts agree, missing district data does not erase those local labels.
+Visits spread across districts use their shared locality. Different towns and visits separated by more
+than `trips.max_gap_days` do not rename one another. The selected clips retain the names resolved from the
+full source window. Streets and points of interest stay out of captions. A country disagreement keeps the
+source label; failed lookups are retried on a later run. A Latvian, Lithuanian or Finnish municipality
+label (`novads`, `pagasts`, `savivaldybė`, `seniūnija`, `kunta`, `kaupunki`) puts the town's name in
+the genitive ("Helsingin kaupunki"), so it is not used as a name: the caption takes Immich's own city
+for that picture ("Helsinki"), and only with no city from Immich does it fall back to the label
+without its admin word ("Helsingin").
+
+A few distant excursions do not turn a local stay into a regional trip: the trip planner checks whether at
+least 85 % of a stay's positioned pictures fit a 25 km group. A town supported by those pictures is not
+replaced by a broader label from the trip's centre point.
 
 ## The map fly-over
 

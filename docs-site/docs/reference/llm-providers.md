@@ -31,6 +31,16 @@ immich-memories capabilities --verify-local
 
 `--verify-local` uses synthetic inputs and installed weights to check the configured owned reader and local audio path. It does not certify external services or a complete film, and cannot be combined with `--test-music`, which may download models.
 
+### Local server defaults {#use-an-existing-server}
+
+For an external `openai-compatible` server, the app classifies the `base_url` host. Loopback,
+private IP addresses and single-label service names count as local: one request at a time, with
+prompt-only episode JSON and a repetition penalty of 1.0. A dotted hostname counts as hosted:
+four concurrent requests, episode schemas enabled and no repetition penalty by default. For a
+LAN server with a dotted name, set `reader_concurrency: 1` and `structured_output: false` if its
+constrained decoding stalls; the latter disables schemas for every request, not just episode
+readings.
+
 ## The Laya audience pre-screen
 
 Laya answers the sharing question locally: does the caption describe
@@ -79,9 +89,8 @@ PyTorch nor MLX.
 
 For the audience ONNX export, set `laya_audience_threshold: 0.185`. This threshold was
 chosen on the public calibration split to retain all 15 MLX holds. On 3,143 held-out
-captions it retained all 23 MLX holds and added one. These are classifier checks. The NVIDIA runtime and image work is recorded in the closed
-[#1385](https://github.com/sam-dumont/immich-memories/issues/1385); the counts
-here measure classifier holds, not end-to-end film performance.
+captions it retained all 23 MLX holds and added one. These are classifier checks, not
+end-to-end film performance; the calibration numbers stand on their own.
 
 ## Ollama
 
@@ -104,9 +113,8 @@ advanced:
 Pull that model with `ollama pull gemma4:e4b-it-q4_K_M`. The explicit tag records
 the quantization tested. `extra_params.think: false` overrides thinking on every
 native request, including titles; omit it if you deliberately want reasoning and
-allow enough output tokens for it. With Ollama 0.35.1, omitting it let thinking
-consume part of the first large episode request's 4,000-token budget, leaving
-the JSON answer truncated.
+allow enough output tokens for it. Without it, thinking can consume part of the
+first large episode request's token budget, leaving the JSON answer truncated.
 
 For Ollama's OpenAI route, use its own reasoning switch:
 
@@ -132,9 +140,8 @@ From a container, use the host's reachable address instead of `localhost`.
 Both recipes passed the larger episode and story-selection probes on an M5 Max.
 The native recipe passed 33/34 synthetic feature checks; the compatible recipe
 passed 32/34. Motion failed on both; the compatible route also missed a period-summary
-fact. The [Ollama validation results](../better/measured.md#ollama-validation)
-include the baseline runs and exact model digest. These settings were tested with
-Gemma 4 E4B, not every model Ollama can serve.
+fact. [Measure your setup](../better/measured.md#local-reader-time-and-accuracy) has the
+numbers. These settings were tested with Gemma 4 E4B, not every model Ollama can serve.
 
 ## Providers and dialects
 
@@ -315,10 +322,9 @@ errors can include account details. Use the input, cached-input and completion t
 with the provider's rates to calculate cost. A run with missing usage gives only a cost floor.
 
 Use the report to compare passes, failures, call counts and reported-token cost for your endpoint.
-[Measure your setup](performance-evidence.md#cost-and-quality) explains what to record. The
-[hosted-reader measurements](../better/measured.md#hosted-reader-cost) record tested endpoints,
-elapsed time, token costs and quality limits. The earlier
-[contract-fix follow-up](../better/measured.md#llm-contract-fixes) remains historical evidence.
+[Benchmarking your own setup](performance-evidence.md#cost-and-quality) explains what to record.
+[Measure your setup](../better/measured.md#hosted-reader-time-and-cost) records tested endpoints,
+elapsed time, token costs and quality limits, including the motion-direction weak spot.
 
 These checks measure the configured endpoint on small fixtures. They do not replace checking
 the quality of a complete film or testing asynchronous batch delivery.

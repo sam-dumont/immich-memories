@@ -19,21 +19,11 @@ model then polishes it ([What a model adds](./what-a-model-adds.md)).
 
 ## The chain
 
-```mermaid
-flowchart TD
-  accTitle: The chain
-  accDescr: Stages shown: Offer moments, Rank their frames, Check eligibility and standing, Check spacing and repetition, Admit and deepen.
-  n0["Offer moments"]
-  n1["Rank their frames"]
-  n2["Check eligibility and standing"]
-  n3["Check spacing and repetition"]
-  n4["Admit and deepen"]
-  n0 --> n1
-  n1 --> n2
-  n2 --> n3
-  n3 --> n4
-```
+Five steps, in order: offer moments, rank their frames, check eligibility and standing, check
+spacing and repetition, admit and deepen. The gates below run in that order; where a favourite
+wins outright and where it still has to clear a gate is marked as it comes up.
 
+<Diagram name="decide-keep-drop" headline="A favourite skips two of the six checks. The other four drop it anyway." />
 ## Which frame carries a moment
 
 `rule_representative_rank` (`editorial_rule_quality.py`) sorts a moment's frames by these keys, in
@@ -49,7 +39,7 @@ order. Each key only breaks the ties of the one before it.
    (`subject_framing.py`). In a person film only that person's face counts, and a bigger face of
    someone else costs the rung.
 6. **More of the frame** is that person.
-7. **No pixel warning**: `SOFT (blurry)`, `DARK` or `BLOWN OUT` lose.
+7. **No pixel warning**: `SOFT (blurry)`, `DARK`, `BLOWN OUT` or `OBSTRUCTED (edge)` lose.
 8. **The `people` head saw somebody.**
 9. **The middle of the burst** over its first and last frames.
 10. **The clock.**
@@ -71,8 +61,8 @@ weight and purpose, then passes standing, audience, spacing and repetition check
 shots it would join. Newly acquired caption or motion facts are read before that decision.
 This also applies when replacing a duplicate or giving a missing family member a seat.
 The existing depth pass can add a distinct view inside an already shown moment; that exception
-does not transfer to a replacement. Candidate decisions are recorded in the run's private
-`derived-decisions/picture-admission.private.json` file.
+does not transfer to a replacement. Candidate decisions are kept with the run; `runs why` reads
+them back for one picture.
 
 **Free.** Not already a shot, and not a picture the carrier rules keep as evidence only
 (`excluded_carrier_sources`): a document the detector names, a screen the `screen` head flags, a
@@ -110,9 +100,29 @@ library.
 | Refuses at | 3.0 points | 4.5 points | 4.5 points |
 | `frame_kind` | empty room 4, accidental frame 4, lone object 3.5, body part 2.5, record 2.5, screen or document 2 | the four "nothing" kinds 2, record or screen 1, scenery -1 | the four "nothing" kinds 2.5, record or screen 1.5, scenery -0.5 |
 | People head | two -0.5, small group -1, crowd -1.5 | two -0.5, small group -1, crowd -1.5 | two -0.5, small group or crowd -1 |
-| Flags | children -1, document +1, screen +1, `BLOWN OUT` +1.5, `SOFT` +0.5 | children -0.5, document +1, screen +1, `BLOWN OUT` +1.5, `SOFT` +1 | children -0.5, document +1, screen +1, `BLOWN OUT` +2, `SOFT` +1 |
+| Flags | children -1, document +1, screen +1, `BLOWN OUT` +1.5, `DARK` +1.5, `SOFT` +0.5 | children -0.5, document +1, screen +1, `BLOWN OUT` +1.5, `DARK` +2, `SOFT` +1 | children -0.5, document +1, screen +1, `BLOWN OUT` +2, `DARK` +2, `SOFT` +1 |
 | Face | | people head saw somebody, Immich found no face +1 | |
 | Caption | | nobody alive +1.5; objects +1, screens and devices +1; feet or hands, food, room or furniture, plants, text or signs +0.5 each; goods on display (a shelf, products, a showroom) make the frame a lone object | nobody alive +2; the same words; goods on display +1 |
+
+A `SOFT (blurry)` or `DARK` picture never carries a moment alone: with no cleaner sibling to take
+the frame, the moment goes unfunded. A starred one still ships.
+
+`OBSTRUCTED (edge)` is rank-only. A patch-level probe over the DINOv2 tokens of the preview
+(`public-obstruction-v1`, trained on public pictures and synthetic finger composites) flags a frame
+when its largest above-threshold blob touches a border, covers at least 15 % of the frame, is at
+least half skin tone and is not a shadow; a blob mostly covered by a face box is a face, not a
+finger (`editorial_obstruction.py`). The warning only sorts frames at key 7: it is never a refusal,
+never part of the standing table, and a moment whose only frame is flagged still ships it. A picture
+never measured for it reads as clean. Detection rates are on
+[Measure your setup](../../better/measured.md#finger-over-the-lens).
+
+The public `people` head almost never says "none" (0.66 % of the pictures in one real library, against about a third
+on a hand-checked sample), so its word is checked first: a picture counts as having people only when
+Immich found a face on it or its caption names a person. Anything else is read as `none`. A
+person is read from the curated English person-word list the free-text matcher uses (`skier`,
+`player`, `lady`, `crowd` and the rest), plus `dad`, `mom`, `bride` and `groom`. The check only runs
+over a batch in which at least one picture carries a face box: in a library with face detection off
+or never run, every face list is empty, so an empty one proves nothing and the head's word stands.
 
 Two short cuts sit above the table. A frame the head calls a people moment is never refused when it
 is sharp, not dark, and Immich found a face on it. A picture whose caption names a person is never
@@ -126,7 +136,7 @@ The same face rule decides whether a picture "shows life" for the gate: a pictur
 major or dominant story with more than two pictures is only ordered, never refused, and a person counts only when Immich supplies a recognised face.
 A picture with nobody in it serves its story only when it is starred, or when the story is major,
 dominant or minor and holds more than two pictures. Anywhere else it is refused as context
-(`context_rejected` in `derived-decisions/story-selection.private.json`). A custom film about
+(kept with the run as `context_rejected`). A custom film about
 something you wrote (a renovation, the works on a house) drops that rule: its pictures were chosen
 for the subject, so a stripped wall or a room under construction can carry its story, as long as it
 stands. A custom film of its window alone keeps the rule.
@@ -137,8 +147,8 @@ pictures stand on the subject even with a standing score of 0: a loaf on a count
 like any lone object, and stays. A video whose frames mostly miss its subject is still refused, and
 every other gate still runs: sharing and the family-viewing holds, source eligibility, provenance,
 look-alikes, duplicates and length. The allocation gives every year the album holds a shot, even a
-year whose stories the reader weighed `none`. Each shot that got in this way is listed under
-`stood_on_subject` in `derived-decisions/story-selection.private.json`, with its score and why. A
+year whose stories the reader weighed `none`. Each shot that got in this way is kept with the run
+as `stood_on_subject`, with its score and why. A
 custom date range with a written subject is not a pool and keeps the rules above.
 
 Once a moment's frames are through the gate, the ones that stand are sorted again: favourite first,
@@ -157,22 +167,26 @@ A video always plays, from 2 seconds long (shorter clips are stubs and never bec
 6-second hold. When someone is mid-sentence at the cut, the end stretches to the end of what they
 say, never more than 12 seconds from the start.
 
+The six seconds don't have to be the first six. Once a film's videos are picked, each one is read
+once for where to cut, and the answer is banked for every later film. The picture decides first:
+every predicted frame in the clip's encoding stores only what changed since the one before it, so
+frame sizes jump when something moves across an otherwise still shot. That size is in the clip's
+own frame index, so nothing needs decoding to read it; from a static camera the jump marks the
+action (riders crossing a finish line, not the empty road before them). Each second inside a
+candidate window that the finger check flagged costs that window half a second of score, so of two
+equally busy windows the clean one plays; a clip flagged everywhere pays the same everywhere and
+keeps its window. The sound decides next for
+a handheld clip, which changes everywhere: the loudest moment (the cheer when the candles go out, a
+squeal) with a second and a half of build-up before it, or, with no standout moment, the stretch
+with the most talking. Only the sound is fetched, a minute of it at most, so a five-minute clip
+costs what a one-minute one does. A clip with nothing that stands out keeps its opening.
+
 A Live Photo plays as motion on every tier, Basic included, when its clip moves and shows its
 subject. The motion is measured during the cut, for the Live Photos the cut kept, and banked
 per picture so the next cut reads it instead (`store/cut_measurements`).
 
-```mermaid
-flowchart TD
-  accTitle: Videos and Live Photos
-  accDescr: Stages shown: Selected Live Photo, Read or measure motion, Check subject visibility, Play motion or keep the still.
-  n0["Selected Live Photo"]
-  n1["Read or measure motion"]
-  n2["Check subject visibility"]
-  n3["Play motion or keep the still"]
-  n0 --> n1
-  n1 --> n2
-  n2 --> n3
-```
+A selected Live Photo's clip is read or measured for motion, then checked for subject
+visibility; it plays as motion only when both pass, otherwise it keeps the still.
 
 The residual is the optical flow left after the camera's own movement is taken out, over 12 frames
 at 320x240. A clip only ever costs a Live Photo its motion, never its place: a starred Live Photo
