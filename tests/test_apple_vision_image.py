@@ -49,7 +49,11 @@ def _current_rss_mb() -> float:
 
 def _assert_no_buffer_retention(convert) -> None:
     frame = np.zeros((1080, 1920, 3), dtype=np.uint8)
-    convert(frame)  # warmup: lazy framework imports, colorspace caches
+    # Warm up with a full round: lazy framework imports, colorspace caches, and on
+    # Python 3.11 an allocator that settles ~110 MB higher before it plateaus. A real
+    # per-frame leak keeps growing past that; a settling allocator does not.
+    for _ in range(30):
+        convert(frame)
     base = _current_rss_mb()
     for _ in range(30):
         convert(frame)

@@ -17,7 +17,7 @@ pictures, but only pictures an account owns travel under its name.
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import timedelta
 from types import MappingProxyType
 
@@ -37,8 +37,11 @@ from immich_memories.timeperiod import DateRange
 # The store's capture time and Immich's taken filter can sit in different time zones.
 _MARGIN = timedelta(days=1)
 
-_EMPTY_STR: Mapping[str, str] = MappingProxyType({})
-_EMPTY_FACE: Mapping[str, str | frozenset[str]] = MappingProxyType({})
+
+def _empty() -> Mapping:
+    # A factory, not a shared default: Python 3.11's dataclasses refuse an unhashable
+    # default such as a mappingproxy (3.12 accepts it), and the app image runs 3.11.
+    return MappingProxyType({})
 
 
 @dataclass(frozen=True)
@@ -49,8 +52,8 @@ class AccountScope:
     it always has.
     """
 
-    picture_accounts: Mapping[str, str] = _EMPTY_STR
-    face_accounts: Mapping[str, str | frozenset[str]] = _EMPTY_FACE
+    picture_accounts: Mapping[str, str] = field(default_factory=_empty)
+    face_accounts: Mapping[str, str | frozenset[str]] = field(default_factory=_empty)
 
 
 def visible_pictures(
