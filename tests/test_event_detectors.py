@@ -324,6 +324,31 @@ def _make_person(name: str, *, thumbnail: str | None = "/thumb.jpg") -> MagicMoc
     return p
 
 
+class TestMultiPersonDetectorWindow:
+    """#2182: a pair is proposed for last year only if they share pictures in it."""
+
+    def _detect(self, shared):
+        people = [_make_person("Kim"), _make_person("Robin")]
+        counts = {p.id: 0 for p in people}
+        return MultiPersonDetector().detect(
+            assets_by_month={},
+            people=people,
+            generated_keys=set(),
+            config=Config(),
+            today=date(2026, 3, 1),
+            person_asset_counts=counts,
+            shared_counts=shared(people),
+        )
+
+    def test_a_pair_with_no_shared_pictures_last_year_gets_no_candidate(self):
+        assert self._detect(lambda _people: {}) == []
+
+    def test_a_pair_reports_the_pictures_they_share_in_the_window(self):
+        result = self._detect(lambda p: {tuple(sorted((p[0].id, p[1].id))): 42})
+
+        assert [c.asset_count for c in result] == [42]
+
+
 class TestMultiPersonDetector:
     def test_detects_top_pairs(self):
         """Top pairs by estimated co-occurrence are proposed."""

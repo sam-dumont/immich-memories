@@ -199,7 +199,9 @@ def test_a_first_cut_before_models_fetch_says_to_run_it_and_the_message_stays(
         log.seek(log_before_cut)
         after_cut = log.read()
     assert "/thumbnail" not in after_cut
-    assert "/api/search/" not in after_cut
+    # WHY: only the picture listing; a suggestion refresh may count pictures through
+    # /api/search/statistics in the background, and that is not the cut reading any.
+    assert "/api/search/metadata" not in after_cut
     # The command is what the reader has to copy into a terminal, so the message waits for them.
     page.reload()
     expect(refusal.first).to_be_visible(timeout=30_000)

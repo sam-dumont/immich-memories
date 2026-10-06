@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+import itertools
+from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
 from typing import Any, Protocol
 
 from immich_memories.analysis.person_resolution import store_people
 from immich_memories.api.accounts import AccountUnavailable, OpenAccount, open_accounts
+from immich_memories.automation.calendar_detectors import birthday_film_windows
 from immich_memories.automation.candidate_scorer import score_and_rank
 from immich_memories.automation.candidates import CandidateCategory, MemoryCandidate
 from immich_memories.automation.catalogue import entries_from, load_catalogue
@@ -75,7 +77,15 @@ class _LibrarySnapshot:
 
     assets_by_month: dict[str, int]
     people: list
-    person_asset_counts: dict[str, int]
+    # Per person, the pictures in the windows each person candidate's film will read:
+    # last year for a spotlight, the birthday film's windows for a birthday (#2182).
+    spotlight_counts: dict[str, int]
+    birthday_counts: dict[str, int]
+    # Pairs (canonical ids, sorted) to the pictures holding both in last year, and each
+    # saved-group member to theirs: what multi_person and group films would read.
+    shared_counts: dict[tuple[str, str], int]
+    group_counts: dict[str, int]
+    groups: list[SavedGroup]
     gps_assets: list | None
 
 
@@ -148,7 +158,10 @@ def _run_all_detectors(
     generated_keys: set[str],
     config: Config,
     today: date,
-    person_asset_counts: dict[str, int],
+    spotlight_counts: dict[str, int],
+    birthday_counts: dict[str, int],
+    shared_counts: dict[tuple[str, str], int],
+    group_counts: dict[str, int],
     gps_assets: list | None,
     catalogue: list | None,
     groups: list[SavedGroup],
@@ -189,7 +202,7 @@ def _run_all_detectors(
                 generated_keys,
                 config,
                 today,
-                person_asset_counts=person_asset_counts,
+                person_asset_counts=spotlight_counts,
                 upcoming_birthday_ids=upcoming_birthday_ids,
             )
         )
@@ -200,7 +213,8 @@ def _run_all_detectors(
                 generated_keys,
                 config,
                 today,
-                person_asset_counts=person_asset_counts,
+                person_asset_counts=spotlight_counts,
+                shared_counts=shared_counts,
             )
         )
     if auto_cfg.detect_activity_burst:
@@ -228,7 +242,7 @@ def _run_all_detectors(
                 generated_keys,
                 config,
                 today,
-                person_asset_counts=person_asset_counts,
+                person_asset_counts=birthday_counts,
             )
         )
 
@@ -264,7 +278,7 @@ def _run_all_detectors(
                 config,
                 today,
                 groups=groups,
-                person_asset_counts=person_asset_counts,
+                person_asset_counts=group_counts,
             )
         )
 
@@ -298,7 +312,6 @@ class CandidateDiscovery:
 
         store = open_store(self._config)
         snapshot = self._library_snapshot(auto_cfg, today, store)
-        groups = list_groups(store) if auto_cfg.detect_groups else []
 
         all_candidates = _run_all_detectors(
             auto_cfg,
@@ -307,12 +320,15 @@ class CandidateDiscovery:
             generated_keys,
             self._config,
             today,
-            snapshot.person_asset_counts,
+            snapshot.spotlight_counts,
+            snapshot.birthday_counts,
+            snapshot.shared_counts,
+            snapshot.group_counts,
             snapshot.gps_assets,
             # Read here rather than in _LibrarySnapshot: that exists to bundle
             # the live Immich reads into one session, and this is the store.
             entries_from(load_catalogue(store)),
-            groups,
+            snapshot.groups,
         )
 
         all_candidates, backoff_skips = drop_backed_off(
@@ -350,6 +366,7 @@ class CandidateDiscovery:
         the primary account alone, exactly as before this setting existed.
         """
         document = load_document(store)
+        groups = list_groups(store) if auto_cfg.detect_groups else []
         canon = canonical_person_map(store_people(document))
         accounts = tuple(auto_cfg.accounts) or (PRIMARY_ACCOUNT,)
 
@@ -359,8 +376,8 @@ class CandidateDiscovery:
             raise ImmichDiscoveryError(str(exc)) from exc
 
         try:
-            per_account_months, per_account_people, per_account_counts, gps_assets = (
-                self._read_every_account(opened, auto_cfg, today)
+            reads = self._read_every_account(
+                opened, auto_cfg, today, canon, store_birth_dates(document), groups
             )
         except Exception as exc:
             # Broad on purpose, as this replaces: any transport fault ends discovery,
@@ -371,36 +388,50 @@ class CandidateDiscovery:
                 account.client.close()
 
         people = overlay_birth_dates(
-            merge_people(per_account_people, canon), store_birth_dates(document)
+            merge_people({n: r.people for n, r in reads.per_account.items()}, canon),
+            store_birth_dates(document),
         )
         return _LibrarySnapshot(
-            sum_month_counts(per_account_months),
+            sum_month_counts({n: r.months for n, r in reads.per_account.items()}),
             people,
-            merge_counts(per_account_counts, canon),
-            gps_assets,
+            merge_counts({n: r.spotlight for n, r in reads.per_account.items()}, canon),
+            merge_counts({n: r.birthday for n, r in reads.per_account.items()}, canon),
+            _summed(r.shared for r in reads.per_account.values()),
+            _summed(r.leaves for r in reads.per_account.values()),
+            groups,
+            reads.gps_assets,
         )
 
     def _read_every_account(
-        self, opened: dict[str, OpenAccount], auto_cfg: AutomationConfig, today: date
-    ) -> tuple[dict[str, dict[str, int]], dict[str, list], dict[str, dict[str, int]], list | None]:
+        self,
+        opened: dict[str, OpenAccount],
+        auto_cfg: AutomationConfig,
+        today: date,
+        canon: dict[tuple[str, str], str],
+        store_dates: dict[str, date],
+        groups: list[SavedGroup],
+    ) -> _AccountReads:
         """Every opened account's raw reads, kept separate so the caller can merge them."""
-        per_account_months: dict[str, dict[str, int]] = {}
-        per_account_people: dict[str, list] = {}
-        per_account_counts: dict[str, dict[str, int]] = {}
+        per_account: dict[str, _AccountRead] = {}
         gps_assets: list | None = None
         for name, account in opened.items():
             client = account.client
             buckets = client.get_time_buckets()
-            per_account_months[name] = _time_buckets_to_month_counts(buckets)
-            if auto_cfg.detect_person_spotlight:
-                account_people = client.get_all_people()
-                per_account_people[name] = account_people
-                per_account_counts[name] = _person_asset_counts(client, account_people)
+            read = _AccountRead(months=_time_buckets_to_month_counts(buckets))
+            if auto_cfg.detect_person_spotlight or auto_cfg.detect_groups:
+                read.people = client.get_all_people()
+                read.spotlight = _spotlight_window_counts(client, read.people, today)
+                read.shared = _shared_window_counts(client, name, read.spotlight, canon, today)
+                read.leaves = _group_leaf_counts(client, name, groups, canon, today)
+                read.birthday = _birthday_window_counts(
+                    client, read.people, today, _birth_dates(name, read.people, canon, store_dates)
+                )
+            per_account[name] = read
             # Trips stay primary-account only: --accounts refuses trip memories
             # (cli/run_people.py::refuse_household_scope), so discovery never scopes one.
             if auto_cfg.detect_trips and name == PRIMARY_ACCOUNT and gps_assets is None:
                 gps_assets = self._trip_assets(client, buckets, today)
-        return per_account_months, per_account_people, per_account_counts, gps_assets
+        return _AccountReads(per_account, gps_assets)
 
     def _trip_assets(self, client: Any, buckets: list, today: date) -> list | None:
         """Trips are measured against a homebase; without one there is nothing to measure."""
@@ -417,10 +448,119 @@ class CandidateDiscovery:
         )
 
 
-def _person_asset_counts(client: Any, people: list) -> dict[str, int]:
-    """Count assets for the top named people only — a spotlight cannot use the rest."""
+@dataclass
+class _AccountRead:
+    """What one account's Immich returned, before accounts are merged."""
+
+    months: dict[str, int]
+    people: list = field(default_factory=list)
+    spotlight: dict[str, int] = field(default_factory=dict)
+    birthday: dict[str, int] = field(default_factory=dict)
+    shared: dict[Any, int] = field(default_factory=dict)
+    leaves: dict[Any, int] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class _AccountReads:
+    per_account: dict[str, _AccountRead]
+    gps_assets: list | None
+
+
+def _pictures_in(client: Any, person_ids: list[str], windows: list[DateRange]) -> int:
+    """How many pictures Immich holds of all these people together across these windows."""
+    return sum(
+        client.count_assets_with_people(person_ids, taken_after=w.start, taken_before=w.end)
+        for w in windows
+    )
+
+
+def _spotlight_window_counts(client: Any, people: list, today: date) -> dict[str, int]:
+    """Pictures last year, the one window a spotlight film reads, for the top named people."""
+    year = today.year - 1
+    window = DateRange(start=datetime(year, 1, 1), end=datetime(year, 12, 31, 23, 59, 59))
     named = [p for p in people if p.name and p.thumbnail_path][:10]
-    return {p.id: client.get_person_asset_count(p.id) for p in named}
+    return {p.id: _pictures_in(client, [p.id], [window]) for p in named}
+
+
+def _birthday_window_counts(
+    client: Any, people: list, today: date, birth_dates: dict[str, date]
+) -> dict[str, int]:
+    """Pictures in the film windows of everyone whose birthday is being proposed today."""
+    counts: dict[str, int] = {}
+    for person in people:
+        bday = birth_dates.get(person.id)
+        windows = birthday_film_windows(bday, today) if person.name and bday else None
+        if windows:
+            counts[person.id] = _pictures_in(client, [person.id], windows)
+    return counts
+
+
+def _birth_dates(
+    account: str,
+    people: list,
+    canon: dict[tuple[str, str], str],
+    store_dates: dict[str, date],
+) -> dict[str, date]:
+    """Each account-local person id to the birth date the detector will see (store wins)."""
+    result: dict[str, date] = {}
+    for person in people:
+        stored = store_dates.get(canon.get((account, person.id), person.id))
+        own = getattr(person, "birth_date", None)
+        chosen = stored or (own.date() if isinstance(own, datetime) else own)
+        if chosen:
+            result[person.id] = chosen
+    return result
+
+
+def _last_year(today: date) -> DateRange:
+    year = today.year - 1
+    return DateRange(start=datetime(year, 1, 1), end=datetime(year, 12, 31, 23, 59, 59))
+
+
+def _shared_window_counts(
+    client: Any,
+    account: str,
+    spotlight: dict[str, int],
+    canon: dict[tuple[str, str], str],
+    today: date,
+) -> dict[tuple[str, str], int]:
+    """Pictures holding both people of a pair last year (statistics' personIds is an AND)."""
+    window = [_last_year(today)]
+    present = [pid for pid, count in spotlight.items() if count > 0]
+    result: dict[tuple[str, str], int] = {}
+    for one, other in itertools.combinations(present, 2):
+        first, second = sorted((canon.get((account, one), one), canon.get((account, other), other)))
+        key = (first, second)
+        result[key] = result.get(key, 0) + _pictures_in(client, [one, other], window)
+    return result
+
+
+def _group_leaf_counts(
+    client: Any,
+    account: str,
+    groups: list[SavedGroup],
+    canon: dict[tuple[str, str], str],
+    today: date,
+) -> dict[str, int]:
+    """Last year's pictures of every person a saved group names, by canonical id."""
+    window = [_last_year(today)]
+    leaves = {leaf for group in groups for leaf in group.expression.leaf_values}
+    local_ids: dict[str, list[str]] = {leaf: [leaf] for leaf in leaves}
+    for (acc, face), canonical in canon.items():
+        if acc == account and canonical in leaves:
+            local_ids[canonical].append(face)
+    return {
+        leaf: sum(_pictures_in(client, [pid], window) for pid in ids)
+        for leaf, ids in local_ids.items()
+    }
+
+
+def _summed(per_account: Any) -> dict[Any, int]:
+    result: dict[Any, int] = {}
+    for counts in per_account:
+        for key, count in counts.items():
+            result[key] = result.get(key, 0) + count
+    return result
 
 
 def _attach_accounts(candidates: list[MemoryCandidate], accounts: tuple[str, ...]) -> None:

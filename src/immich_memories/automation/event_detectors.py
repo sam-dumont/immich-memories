@@ -180,7 +180,24 @@ class MultiPersonDetector:
 
     BASE_SCORE = 0.55
     MIN_SHARED_ASSETS = 50
+    MIN_WINDOW_SHARED = 10
     TOP_PAIRS = 3
+
+    def _shared(
+        self,
+        person_a: Any,
+        person_b: Any,
+        counts: dict[str, int],
+        shared_counts: dict[tuple[str, str], int] | None,
+    ) -> int | None:
+        """The pair's shared figure, or None when it is too small for a film."""
+        if shared_counts is None:
+            estimated = int(min(counts.get(person_a.id, 0), counts.get(person_b.id, 0)) * 0.3)
+            return estimated if estimated >= self.MIN_SHARED_ASSETS else None
+        # WHY: a pair with no picture together in the year the film reads has no film (#2182)
+        key = (min(person_a.id, person_b.id), max(person_a.id, person_b.id))
+        shared = shared_counts.get(key, 0)
+        return shared if shared >= self.MIN_WINDOW_SHARED else None
 
     def detect(
         self,
@@ -190,8 +207,14 @@ class MultiPersonDetector:
         config: Config,
         today: date,
         person_asset_counts: dict[str, int] | None = None,
+        shared_counts: dict[tuple[str, str], int] | None = None,
     ) -> list[MemoryCandidate]:
-        """Propose multi_person memories for pairs who frequently appear together."""
+        """Propose multi_person memories for pairs who frequently appear together.
+
+        ``person_asset_counts`` and ``shared_counts`` are last year's pictures, the year the
+        film reads: each person's, and each pair's together (sorted id pair). Without
+        ``shared_counts`` the shared figure is estimated from the individual counts.
+        """
         counts = person_asset_counts or {}
         if not counts:
             return []
@@ -210,11 +233,8 @@ class MultiPersonDetector:
 
         scored_pairs: list[tuple[float, Any, Any, int]] = []
         for person_a, person_b in itertools.combinations(top, 2):
-            count_a = counts.get(person_a.id, 0)
-            count_b = counts.get(person_b.id, 0)
-            estimated_shared = int(min(count_a, count_b) * 0.3)
-
-            if estimated_shared < self.MIN_SHARED_ASSETS:
+            estimated_shared = self._shared(person_a, person_b, counts, shared_counts)
+            if estimated_shared is None:
                 continue
 
             names_sorted = sorted([person_a.name.lower(), person_b.name.lower()])

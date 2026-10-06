@@ -33,6 +33,8 @@ class _FakeClient:
     buckets: list[TimeBucket]
     people: list[Person]
     counts: dict[str, int]
+    # person id -> years they have pictures in, for windowed statistics
+    picture_years: dict[str, set[int]] = field(default_factory=dict)
     closed: bool = field(default=False)
     fail: bool = False
 
@@ -46,6 +48,10 @@ class _FakeClient:
 
     def get_person_asset_count(self, person_id: str) -> int:
         return self.counts.get(person_id, 0)
+
+    def count_assets_with_people(self, person_ids, taken_after=None, taken_before=None):
+        years = set.intersection(*(self.picture_years.get(p, set()) for p in person_ids))
+        return sum(1 for y in years if taken_after.year <= y <= taken_before.year)
 
     def close(self):
         self.closed = True
@@ -117,7 +123,6 @@ def test_asset_counts_and_buckets_are_summed_across_selected_accounts(monkeypatc
     snapshot = discovery._library_snapshot(discovery._config.automation, date(2026, 8, 1), store)
 
     assert snapshot.assets_by_month == {"2026-01": 14}
-    assert snapshot.person_asset_counts == {"kid-primary": 42}
     assert len(snapshot.people) == 1
     assert primary.closed and partner.closed
 
@@ -262,3 +267,69 @@ def test_a_trip_is_still_suggested_from_the_primary_when_accounts_are_selected(
     trips = [c for c in found.candidates if c.memory_type == "trip"]
     assert len(trips) == 1
     assert "accounts" not in trips[0].extra_params
+
+
+def _kim_in_other_years(birth_date=None):
+    return _FakeClient(
+        buckets=[],
+        people=[Person(id="kim", name="Kim", thumbnailPath="/t.jpg", birthDate=birth_date)],
+        counts={"kim": 273},
+        picture_years={"kim": {2019, 2020}},
+    )
+
+
+def test_a_person_with_pictures_only_in_other_years_gets_no_spotlight_for_last_year(monkeypatch):
+    kim = _kim_in_other_years()
+    _patch_open_accounts(monkeypatch, {"primary": _open_account("primary", kim)})
+    store = open_store(_config([]))
+    discovery = CandidateDiscovery(_config([]), _FakeRuns(), _FakeAttempts())
+
+    snapshot = discovery._library_snapshot(discovery._config.automation, date(2026, 8, 1), store)
+
+    assert snapshot.spotlight_counts == {"kim": 0}
+
+
+def test_a_person_with_pictures_last_year_keeps_the_spotlight_with_that_years_count(monkeypatch):
+    kim = _kim_in_other_years()
+    kim.picture_years["kim"] = {2019, 2025}
+    _patch_open_accounts(monkeypatch, {"primary": _open_account("primary", kim)})
+    store = open_store(_config([]))
+    discovery = CandidateDiscovery(_config([]), _FakeRuns(), _FakeAttempts())
+
+    snapshot = discovery._library_snapshot(discovery._config.automation, date(2026, 8, 1), store)
+
+    assert snapshot.spotlight_counts == {"kim": 1}
+
+
+def test_a_birthday_is_counted_over_the_windows_its_film_reads(monkeypatch):
+    from datetime import datetime
+
+    kim = _kim_in_other_years(birth_date=datetime(2000, 7, 10))
+    kim.picture_years["kim"] = {2026}
+    _patch_open_accounts(monkeypatch, {"primary": _open_account("primary", kim)})
+    store = open_store(_config([]))
+    discovery = CandidateDiscovery(_config([]), _FakeRuns(), _FakeAttempts())
+
+    snapshot = discovery._library_snapshot(discovery._config.automation, date(2026, 8, 1), store)
+    kim.picture_years["kim"] = {2019}
+    stale = discovery._library_snapshot(discovery._config.automation, date(2026, 8, 1), store)
+
+    assert snapshot.birthday_counts == {"kim": 1}
+    assert stale.birthday_counts == {"kim": 0}
+
+
+def test_a_pair_and_a_group_are_counted_in_last_year_only(monkeypatch):
+    kim = _kim_in_other_years()
+    kim.people.append(Person(id="robin", name="Robin", thumbnailPath="/t.jpg"))
+    kim.picture_years["robin"] = {2019, 2020}
+    _patch_open_accounts(monkeypatch, {"primary": _open_account("primary", kim)})
+    store = open_store(_config([]))
+    discovery = CandidateDiscovery(_config([]), _FakeRuns(), _FakeAttempts())
+
+    snapshot = discovery._library_snapshot(discovery._config.automation, date(2026, 8, 1), store)
+    assert snapshot.shared_counts == {}
+
+    kim.picture_years = {"kim": {2025}, "robin": {2025}}
+    snapshot = discovery._library_snapshot(discovery._config.automation, date(2026, 8, 1), store)
+
+    assert snapshot.shared_counts == {("kim", "robin"): 1}

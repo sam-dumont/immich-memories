@@ -16,7 +16,8 @@ from immich_memories.automation.candidates import (
 )
 from immich_memories.config_loader import Config
 from immich_memories.i18n import get_ordinal
-from immich_memories.timeperiod import birthday_year, same_day_in_year
+from immich_memories.memory_types.date_builders import build_birthday_windows
+from immich_memories.timeperiod import DateRange, birthday_year, same_day_in_year
 
 
 class MonthlyDetector:
@@ -152,6 +153,7 @@ class PersonSpotlightDetector:
         person_asset_counts: dict[str, int] | None = None,
         upcoming_birthday_ids: set[str] | None = None,
     ) -> list[MemoryCandidate]:
+        """``person_asset_counts`` counts each person's pictures in last year, not their lifetime."""
         if not people:
             return []
 
@@ -165,6 +167,10 @@ class PersonSpotlightDetector:
         # Filter to named people with thumbnails (proxy for "has content")
         # WHY: skip people with upcoming birthdays so BirthdayDetector fires instead
         visible = [p for p in people if p.name and p.thumbnail_path and p.id not in skip_ids]
+        # WHY: counts are for the year the film reads; nobody with no picture in it can
+        # make a film, however many they have across a lifetime (#2182)
+        if person_asset_counts is not None:
+            visible = [p for p in visible if counts.get(p.id, 0) > 0]
         if not visible:
             return []
 
@@ -282,7 +288,11 @@ class BirthdayDetector:
         today: date,
         person_asset_counts: dict[str, int] | None = None,
     ) -> list[MemoryCandidate]:
-        """Emit candidates for people whose birthday was 2-60 days ago."""
+        """Emit candidates for people whose birthday was 2-60 days ago.
+
+        ``person_asset_counts`` counts each person's pictures in the windows the birthday
+        film reads (``birthday_film_windows``), not their lifetime.
+        """
         counts = person_asset_counts or {}
         candidates = []
 
@@ -290,17 +300,13 @@ class BirthdayDetector:
             if not person.name or not person.birth_date:
                 continue
 
-            # Skip people with no content (not worth generating)
-            if counts and counts.get(person.id, 0) == 0:
+            # Skip people with no content in the film's windows (not worth generating)
+            if person_asset_counts is not None and counts.get(person.id, 0) == 0:
                 continue
 
             bday = person.birth_date
-            # WHY: 2-day minimum buffer after birthday to let photo sync happen
-            most_recent_bday = same_day_in_year(bday, today.year)
-            if most_recent_bday > today:
-                most_recent_bday = same_day_in_year(bday, today.year - 1)
-            days_since = (today - most_recent_bday).days
-            if days_since < 2 or days_since > self.WINDOW_DAYS:
+            most_recent_bday = _birthday_in_window(bday, today)
+            if most_recent_bday is None:
                 continue
 
             completed_birthday_year = birthday_year(bday, most_recent_bday.year)
@@ -336,6 +342,30 @@ class BirthdayDetector:
             )
 
         return candidates
+
+
+def _birthday_in_window(bday: date, today: date) -> date | None:
+    """The birthday just gone by, when it is old enough to have synced and recent enough to mark."""
+    # WHY: 2-day minimum buffer after birthday to let photo sync happen
+    most_recent_bday = same_day_in_year(bday, today.year)
+    if most_recent_bday > today:
+        most_recent_bday = same_day_in_year(bday, today.year - 1)
+    days_since = (today - most_recent_bday).days
+    if days_since < 2 or days_since > BirthdayDetector.WINDOW_DAYS:
+        return None
+    return most_recent_bday
+
+
+def birthday_film_windows(bday: date, today: date) -> list[DateRange] | None:
+    """What a birthday candidate's film reads, or None when no birthday is proposed today.
+
+    The same windows ``generate --birthday`` fetches, so a count over them says whether
+    that film will find anything.
+    """
+    most_recent_bday = _birthday_in_window(bday, today)
+    if most_recent_bday is None:
+        return None
+    return build_birthday_windows(bday, most_recent_bday.year)
 
 
 def _last_n_completed_months(today: date, n: int) -> list[tuple[int, int]]:

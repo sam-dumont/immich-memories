@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import subprocess
 from concurrent.futures import ThreadPoolExecutor
-from datetime import date
+from datetime import date, datetime
 from itertools import combinations
 from pathlib import Path
 
@@ -223,6 +223,26 @@ def test_metadata_search_narrows_to_the_named_faces(fake_immich_server) -> None:
         p.asset_id for p in LIBRARY if {"Kit", "Robin"} <= set(p.people)
     }
     assert 0 < len(both) < len(kit) < len(LIBRARY)
+
+
+def test_search_statistics_counts_what_the_metadata_search_would_return(
+    fake_immich_server,
+) -> None:
+    """The count honours every person (AND) and the taken-at window, and returns no assets."""
+    with SyncImmichClient(
+        fake_immich_server.base_url,
+        fake_immich_server.api_key,
+        api_version="v3",
+    ) as client:
+        kit = client.count_assets_with_people(["person-kit"])
+        both = client.count_assets_with_people(["person-kit", "person-robin"])
+        in_the_distant_past = client.count_assets_with_people(
+            ["person-kit"], taken_before=datetime(1990, 1, 1)
+        )
+
+    assert kit == sum("Kit" in p.people for p in LIBRARY)
+    assert both == sum({"Kit", "Robin"} <= set(p.people) for p in LIBRARY)
+    assert in_the_distant_past == 0
 
 
 def test_search_uses_v3_millisecond_duration_on_the_wire(fake_immich_server) -> None:

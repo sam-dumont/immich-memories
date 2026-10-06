@@ -15,6 +15,7 @@ from typing import Any, Protocol
 
 import numpy as np
 
+from immich_memories.onnx_session import open_inference_session
 from immich_memories.triage.preprocess import PREPROCESS_VERSION
 
 LAYOUT_VERSION = "cls+mean+quad2x2/pca256/fp16"
@@ -152,4 +153,4 @@ def _create_session(model_path: Path, provider: str) -> Any:
     options.intra_op_num_threads = max(1, min(8, (os.cpu_count() or 2) - 1))
     options.inter_op_num_threads = 1
     options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
-    return ort.InferenceSession(str(model_path), sess_options=options, providers=providers)
+    return open_inference_session(ort, model_path, options=options, providers=providers)

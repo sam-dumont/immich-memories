@@ -237,11 +237,11 @@ def _fake_onnxruntime(monkeypatch, available, opened, *, refuse=(), running=None
     a session is opened with, and what it answers when one turns the graph down.
     No CUDA host exists on Apple Silicon, so the runtime is what has to be stood in for."""
 
-    def session(path, options, providers):
+    def session(path, sess_options, providers):
         opened.append(list(providers))
         if providers[0] in refuse:
             raise RuntimeError(f"{providers[0]} could not be initialised")
-        return FakeSession(path, options, providers, running)
+        return FakeSession(path, sess_options, providers, running)
 
     monkeypatch.setitem(
         sys.modules,
@@ -252,6 +252,7 @@ def _fake_onnxruntime(monkeypatch, available, opened, *, refuse=(), running=None
                 intra_op_num_threads=0, graph_optimization_level=None
             ),
             GraphOptimizationLevel=SimpleNamespace(ORT_ENABLE_EXTENDED="extended"),
+            disable_telemetry_events=lambda: None,
             InferenceSession=session,
         ),
     )

@@ -99,16 +99,24 @@ class SearchService:
         data = await self._request("POST", "/search/metadata", json=payload)
         return MetadataSearchResult(**data)
 
-    async def count_assets_with_people(self, person_ids: Sequence[str]) -> int:
-        """How many assets hold every one of these people.
+    async def count_assets_with_people(
+        self,
+        person_ids: Sequence[str],
+        taken_after: datetime | None = None,
+        taken_before: datetime | None = None,
+    ) -> int:
+        """How many assets hold every one of these people, optionally taken within a window.
 
         The statistics endpoint answers with a number instead of the assets, so
         the people graph can ask about a thousand pairs in seconds rather than
         paging two libraries' worth of results per pair.
         """
-        data = await self._request(
-            "POST", "/search/statistics", json={"personIds": list(person_ids)}
-        )
+        payload: dict[str, Any] = {"personIds": list(person_ids)}
+        if taken_after:
+            payload["takenAfter"] = _api_datetime(taken_after)
+        if taken_before:
+            payload["takenBefore"] = _api_datetime(taken_before, inclusive_end=True)
+        data = await self._request("POST", "/search/statistics", json=payload)
         return data.get("total", 0) if isinstance(data, dict) else 0
 
     async def get_videos_for_person_and_year(

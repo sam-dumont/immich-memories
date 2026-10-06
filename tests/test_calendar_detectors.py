@@ -228,6 +228,55 @@ class TestPersonSpotlightDetector:
         assert result[0].person_names == ["Bob"]
 
 
+class TestSpotlightNeedsPicturesInTheWindow:
+    """#2182: a spotlight reads last year, so only people with pictures in it qualify."""
+
+    def test_person_with_no_pictures_last_year_gets_no_spotlight(self):
+        people = [_make_person("Kim"), _make_person("Ada")]
+        window_counts = {"id-kim": 0, "id-ada": 40}
+
+        result = PersonSpotlightDetector().detect(
+            {}, people, set(), _make_config(), date(2026, 3, 1), person_asset_counts=window_counts
+        )
+
+        assert [c.person_names for c in result] == [["Ada"]]
+
+    def test_candidate_carries_the_window_count_and_ranks_by_it(self):
+        people = [_make_person("Kim"), _make_person("Ada")]
+        window_counts = {"id-kim": 5, "id-ada": 40}
+
+        result = PersonSpotlightDetector().detect(
+            {}, people, set(), _make_config(), date(2026, 3, 1), person_asset_counts=window_counts
+        )
+
+        assert [(c.person_names[0], c.asset_count) for c in result] == [("Ada", 40), ("Kim", 5)]
+
+
+class TestBirthdayNeedsPicturesInTheWindow:
+    def test_birthday_with_no_pictures_in_the_film_windows_is_not_proposed(self):
+        person = _make_person("Ada", birth_date=date(2000, 3, 1))
+
+        result = BirthdayDetector().detect(
+            {}, [person], set(), _make_config(), date(2026, 3, 10), person_asset_counts={}
+        )
+
+        assert result == []
+
+    def test_birthday_reports_the_window_count(self):
+        person = _make_person("Ada", birth_date=date(2000, 3, 1))
+
+        result = BirthdayDetector().detect(
+            {},
+            [person],
+            set(),
+            _make_config(),
+            date(2026, 3, 10),
+            person_asset_counts={person.id: 12},
+        )
+
+        assert result[0].asset_count == 12
+
+
 # ---------------------------------------------------------------------------
 # OnThisDayDetector
 # ---------------------------------------------------------------------------

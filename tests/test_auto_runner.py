@@ -301,6 +301,7 @@ class TestSuggestReturnsCandidates:
         client.get_time_buckets.return_value = []
         client.get_all_people.return_value = [person]
         client.get_person_asset_count.return_value = 50
+        client.count_assets_with_people.return_value = 50
 
         # WHY: replaces the Immich client, its preflight check, and today's date
         with (
@@ -340,6 +341,7 @@ class TestSuggestReturnsCandidates:
         client.get_time_buckets.return_value = []
         client.get_all_people.return_value = [person]
         client.get_person_asset_count.return_value = 50
+        client.count_assets_with_people.return_value = 50
 
         # WHY: stands in for the Immich client, its preflight check, and the clock
         with (
@@ -1957,6 +1959,7 @@ def test_discovered_store_birthday_reaches_the_generation_command(config, stored
     client.get_time_buckets.return_value = []
     client.get_all_people.return_value = [person]
     client.get_person_asset_count.return_value = 50
+    client.count_assets_with_people.return_value = 50
     # WHY: replace only the Immich transport, its preflight probe and wall clock;
     # the registry, detection and candidate-to-command mapping stay real.
     with (

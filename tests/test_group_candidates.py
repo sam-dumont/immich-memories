@@ -83,3 +83,17 @@ def test_a_generated_group_key_is_skipped_next_time():
 
 def test_no_groups_yields_no_candidates():
     assert GroupCandidateDetector().detect({}, [], set(), _config(), date(2026, 8, 1)) == []
+
+
+def test_a_group_whose_members_have_no_pictures_last_year_is_not_proposed():
+    result = GroupCandidateDetector().detect(
+        {},
+        [],
+        set(),
+        _config(),
+        date(2026, 8, 1),
+        groups=[SavedGroup("Kids", KIDS)],
+        person_asset_counts={"kid-a": 0, "kid-b": 0},
+    )
+
+    assert result == []

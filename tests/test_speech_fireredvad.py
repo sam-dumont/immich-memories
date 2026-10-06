@@ -155,7 +155,10 @@ class TestFireRedSpeechDetectorMocked:
         # WHY: mocks the onnxruntime/kaldi_native_fbank import boundary so
         # _load()'s success path is exercised without the real packages.
         fake_knf = SimpleNamespace()
-        fake_ort = SimpleNamespace(InferenceSession=lambda *_a, **_kw: "fake-session")
+        fake_ort = SimpleNamespace(
+            disable_telemetry_events=lambda: None,
+            InferenceSession=lambda *_a, **_kw: "fake-session",
+        )
 
         with patch.dict("sys.modules", {"kaldi_native_fbank": fake_knf, "onnxruntime": fake_ort}):
             assert detector.available is True
