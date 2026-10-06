@@ -243,6 +243,10 @@ jobs:
     name: Test (Python ${{ matrix.python-version }}, ${{ matrix.os }})
     if: github.repository_id == '1174219883'
     needs: [changes, quality, security]
+    # uv follows .python-version (3.12) unless told otherwise, so without this every cell
+    # ran 3.12 and 3.11, the Python the app image ships, was never tested.
+    env:
+      UV_PYTHON: ${{ matrix.python-version }}
     permissions:
       contents: read
       pull-requests: write
