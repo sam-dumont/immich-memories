@@ -287,6 +287,31 @@ def test_a_cut_opens_as_a_contact_sheet_that_explains_and_plays_each_shot(
     _shoot(page, "web-review")
 
 
+def test_a_trim_before_the_window_moves_the_start_and_the_time_on_screen(
+    page: Page, launch_app_url: str, launch_workspace
+) -> None:
+    """#2157: a seek before the window snapped back, and the header kept the old time."""
+    _seed(launch_workspace)
+    page.goto(f"{launch_app_url}/app/runs")
+    page.get_by_role("link").filter(has_text="20240630_web_cut").click()
+    inspector = page.get_by_role("article", name="Picture review")
+    page.get_by_role("radio", name="Videos").click()
+    page.get_by_role("list", name="Cut contact sheet").get_by_role("button").first.click()
+    expect(inspector.get_by_text("1.5 s on screen")).to_be_visible()
+    player = inspector.locator("video")
+    page.wait_for_function("video => video.readyState >= 2", arg=player.element_handle())
+
+    player.evaluate("video => { video.pause(); video.currentTime = 0.4; }")
+    page.wait_for_function(
+        "video => !video.seeking && Math.abs(video.currentTime - 0.4) < 0.05",
+        arg=player.element_handle(),
+    )
+    inspector.get_by_role("button", name="Start here").click()
+
+    expect(inspector.get_by_text("0.4–2.5 s")).to_be_visible()
+    expect(inspector.get_by_text("2.1 s on screen")).to_be_visible()
+
+
 def test_edits_undo_save_as_a_revision_and_reopen_after_a_reload(
     page: Page, launch_app_url: str, launch_workspace
 ) -> None:

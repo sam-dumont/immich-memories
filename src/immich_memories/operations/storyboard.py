@@ -19,6 +19,7 @@ It lives outside the UI package because the terminal reads the same record:
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
@@ -37,11 +38,35 @@ TRACE_FILE = "selection-trace.private.json"
 MOTION_KINDS = frozenset({"video", "live-motion", "motion"})
 
 
+# An annotation line opens on its capture timestamp: a field the shot's own date already says.
+_TIMESTAMP_FIELD = re.compile(r"^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}\S*\s*(\|\s*)?")
+# The no-model reader's own name for a moment, said in a reader's words.
+_READER_WORDS = {"capture group": "the best frame of its moment"}
+_TITLE_PARTS = 2
+
+
 def carrier_reason(why: object, title: str) -> str:
-    """The editor's reason for a carrier, without the story title it prefixed."""
+    """The editor's reason for a carrier, without the story title it prefixed, in words.
+
+    The no-model reader's "capture group" and the raw annotation line some moments carry
+    are rewritten for a reader: `runs story` printed them as they were stored (#2156).
+    """
     text = str(why or "").strip()
     prefix = f"{title}: "
-    return text[len(prefix) :] if title and text.startswith(prefix) else text
+    text = text[len(prefix) :] if title and text.startswith(prefix) else text
+    text = ", ".join(part.strip() for part in _TIMESTAMP_FIELD.sub("", text).split(" | "))
+    return _READER_WORDS.get(text, text)
+
+
+def short_story_title(title: str) -> str:
+    """A story named by its first two labels and how many more it joins.
+
+    A no-model story joins every moment's label with " / ", five to ten places long.
+    """
+    parts = list(dict.fromkeys(part.strip() for part in title.split(" / ") if part.strip()))
+    if len(parts) <= _TITLE_PARTS:
+        return title
+    return f"{' / '.join(parts[:_TITLE_PARTS])} and {len(parts) - _TITLE_PARTS} more"
 
 
 @dataclass(frozen=True)
@@ -269,7 +294,8 @@ def storyboard_lines(board: Storyboard, *, limit: int | None = None) -> list[str
     """The storyboard as terminal lines: timecode, day, kind, length, story, reason.
 
     One line per shot, a chapter line where the month changes, so the terminal
-    reads the cut the way the page shows it.
+    reads the cut the way the page shows it. Every shot names its day: a blank one
+    read as a shot with no capture date.
     """
     lines: list[str] = []
     shots = board.shots if limit is None else board.shots[:limit]
@@ -277,7 +303,7 @@ def storyboard_lines(board: Storyboard, *, limit: int | None = None) -> list[str
         if shot.chapter:
             lines.append(f"  {shot.chapter}")
         kind = "video" if shot.motion else "photo"
-        day = shot.day if shot.new_day else " " * len(shot.day)
-        head = f"  {shot.timecode:>5}  {day}  {kind:5}  {shot.seconds:>4g} s  {shot.story_title}"
+        story = short_story_title(shot.story_title)
+        head = f"  {shot.timecode:>5}  {shot.day}  {kind:5}  {shot.seconds:>4g} s  {story}"
         lines.append(f"{head}: {shot.reason}" if shot.reason else head)
     return lines

@@ -50,7 +50,7 @@ from immich_memories.analysis.editorial_structure_audience import (
     AudienceBank,
     AudienceGate,
 )
-from immich_memories.analysis.editorial_structure_budget import CONTENT_RESERVE_SECONDS
+from immich_memories.analysis.editorial_structure_budget import CONTENT_RESERVE_SECONDS, still_floor
 from immich_memories.analysis.editorial_structure_contract import (
     RulesDraft,
     StructurePlannerPorts,
@@ -194,6 +194,7 @@ def _plan_structure(
     run = PlanRun(
         final_content_cap=source.case.target_seconds - CONTENT_RESERVE_SECONDS,
         bind_stitch=material.builder.measured_stitch,
+        still_floor=still_floor(source.config.photos.duration),
     )
     reader = ports.laya.cache_identity if ports.laya else "rules"
     library = AudienceBank(
@@ -220,7 +221,9 @@ def _plan_structure(
             library.flush()
     metrics = provider_metrics(counters)
     if run.render_timeline is None:
-        run.shaved += shave_content_duration(run.carriers, run.final_content_cap)
+        run.shaved += shave_content_duration(
+            run.carriers, run.final_content_cap, floor_for_stills=run.still_floor
+        )
     elif sum(c["seconds"] for c in run.carriers) > run.final_content_cap:
         raise ValueError("Certified editorial content grew after its timing was fixed")
     outcome.metrics = metrics
@@ -404,7 +407,7 @@ def _select(
     # second back when the target leaves no room for it. An opening and a closing frame are
     # read rather than glanced at whoever cut them, so this is not the no-model reader's.
     if ports.draft is None:
-        hold_the_ends(run.carriers)
+        hold_the_ends(run.carriers, nominal=source.config.photos.duration)
     chapters = chapters_of(selection, run.carriers, wall.anchor_label)
     beats = [row["beat"] for row in chapters]
     story_worthiness(selection, wall, tier, worth_reason)

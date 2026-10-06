@@ -13,3 +13,19 @@ MIN_MOTION_SECONDS = 2.0
 # A Live Photo plays only when its measured motion residual reaches this; below it the
 # photograph is held.
 RESIDUAL_MIN = 1.5
+
+
+def still_floor(photo_seconds: float) -> float:
+    """The shortest the fit may cut a still to, for the configured photo duration.
+
+    The default four seconds gives the production floor; a longer photo duration raises it, so
+    a full film holds fewer stills for the asked length rather than shaving them back (#2131).
+    """
+    return photo_seconds - (NOMINAL_STILL_SECONDS - MIN_CARRIER_SECONDS)
+
+
+def hold_floor(carrier, floor_for_stills: float) -> float:
+    """The floor one carrier's hold is fitted against: a still's own, or the production one."""
+    if carrier.get("kind") in ("still", "live-still"):
+        return floor_for_stills
+    return MIN_CARRIER_SECONDS

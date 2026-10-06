@@ -226,6 +226,10 @@ immich-memories generate --year 2025 --output ~/Videos/summer.mp4
 # writes ~/Videos/summer_3c9e1f0a_20260105_143052_a7b3/summer_3c9e1f0a.mp4
 ```
 
+`--keep-intermediates` leaves the work files in hidden folders of that run folder: the cut
+segments in `.intermediates`, the title cards in `.title_screens`, prepared photos in
+`.source_preparation`.
+
 Without `--output` the file lands in the same kind of folder in `output.directory` (`~/Videos/Memories/`),
 named `{people}_{memory-type}_{dates}_{hash}.mp4`, with `all` when no one is named. Confirmed Immich delivery removes the local film and its work directory. Local-only runs retain their output; `runs delete` removes a run and its output.
 
@@ -239,12 +243,19 @@ day is what you get when no picture in the cut carries a usable time.
 ## Two ways to skip the video
 
 `--dry-run` is the cheap preview: it discovers the inputs and reports what preparation the period
-still needs. Nothing is selected, so there is nothing to trace.
+still needs, read from the store without fetching anything:
+
+```text
+Preparation: 412 of 1,030 pictures in this period aren't prepared yet (pixel facts 412, captions 380); the run prepares the ones its cut reaches
+```
+
+Only the producers your tier runs are counted. Nothing is selected, so there is nothing to trace.
 
 `--no-render` selects for real, with every reading and every gate, and stops at the encode. The
 pictures it lists are the pictures it would have shipped, and the cut is kept as a run: it prints
 the run id, `runs story <id>` reads the cut, and [`runs render <id>`](../make/cli/runs.md#runs-render)
 turns it into the film later, with or without edits made in the web client. The plan it prints
-ends with the title and subtitle the film would open on, so a title can be tried without producing
-a file. Use it to compare settings, to time selection without paying for an encode, or to review a
+names the title and subtitle the film would open on, the template's own when nothing else names
+it, so a title can be tried without producing a file. It then ends the way a rendered run does,
+with the CHECK line and the cut in order. Use it to compare settings, to time selection without paying for an encode, or to review a
 cut before rendering it. The web client's **Cut** button runs exactly this command.

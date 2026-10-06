@@ -45,6 +45,20 @@ from immich_memories.analysis.editorial_thin_vote import sole_era_shots
 MAX_PASSES = 3
 
 
+_WHY_CHARS = 80
+
+
+def carrier_why(title: str, content: str) -> str:
+    """The reason a carrier is in the cut: its story, then what its moment shows.
+
+    A long moment is cut between words, with an ellipsis, rather than mid-word (#2156).
+    """
+    text = " ".join(content.split())
+    if len(text) > _WHY_CHARS:
+        text = text[:_WHY_CHARS].rsplit(" ", 1)[0].rstrip(" ,;|(") + "…"
+    return f"{title}: {text}"
+
+
 def choice_is_starred(c: DepictedChoice, unit_by_asset: Mapping[str, Any]) -> bool:
     return any(unit_by_asset[a][1].get("favourite") for a in c.members if a in unit_by_asset)
 
@@ -243,7 +257,7 @@ class CarrierAdmission:
             chapter=index,
             line=self._line_of(asset),
         ) | {
-            "why": f"{s['title']}: {choice.content[:80]}",
+            "why": carrier_why(s["title"], choice.content),
             "depicted_moment": choice.key,
             # The rest of this moment, so a later stage can swap the frame without
             # losing it. Written by the reader that keeps a moment's siblings.

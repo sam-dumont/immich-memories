@@ -327,8 +327,13 @@ photos:
   burst_hash_threshold: 8        # Hash bits two photos may differ by and still be one burst (0-64)
 ```
 
-The animation per photo (Ken Burns, face pan, blurred background) is picked from the photo's
-content and is not configurable.
+`duration` is how long the cut holds a still. With no model reader, an empty scene gets half a
+second less and the film's first and last stills half a second more; a full film keeps fewer
+stills rather than shaving them below that. `generate --photo-duration` sets it for one run.
+
+The animation per photo (Ken Burns, face pan) is picked from the photo's content and is not
+configurable. The bands around a photo that does not fill the canvas follow `defaults.scale_mode`,
+as they do for video.
 
 Burst de-duplication keeps only the best-scored frame of a run of near-identical photos, so fifteen
 shots of the same jump do not become fifteen clips. `burst_window_seconds: 0` all but turns it off:

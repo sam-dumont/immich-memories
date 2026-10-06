@@ -25,7 +25,8 @@ immich-memories runs story RUN_ID
 immich-memories runs why ASSET_ID --run RUN_ID
 ```
 
-`story` shows shots in playback order, with timecode, capture date and explanation. `why` shows where one picture was kept or dropped and your current persistent decision about it.
+`story` shows shots in playback order, with timecode, capture date and explanation. A story that
+joins many places is named by its first two and a count of the rest. `why` shows where one picture was kept or dropped and your current persistent decision about it.
 
 Without an ID, `story` reads the most recent completed run; `why` uses that run unless `--run` selects another. The command reports when a decision log is unavailable.
 

@@ -26,8 +26,9 @@ intermediates. Disabling hardware encoding keeps preparation in software.
 
 Video clips are never cropped. A landscape clip in a portrait film keeps its whole frame and
 [`scale_mode`](config-reference.md) fills the rest: `blur` (default) puts a blurred, zoomed
-copy behind the sharp one, `fit` uses black bars. Face-aware video cropping is not offered: a moving
-subject needs per-frame tracking, not one face position.
+copy behind the sharp one, `fit` uses black bars. A photo that does not fill the canvas gets the
+same bands. Face-aware video cropping is not offered: a moving subject needs per-frame tracking,
+not one face position.
 
 ## Live Photos
 
