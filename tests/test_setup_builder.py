@@ -17,7 +17,6 @@ def _build(_sources=None, _build_version="1.2.3", **changes):
         "platform": "linux",
         "tier": "basic",
         "immichUrl": "http://192.168.1.10:2283",
-        "apiKey": "synthetic-fixture-api-key",
         "gpuBox": "",
         "readerUrl": "",
         "readerModel": "",
@@ -93,7 +92,8 @@ def test_release_candidate_builder_uses_its_release_asset_urls():
 
 
 @pytest.mark.parametrize(
-    "values", [{"immichUrl": "javascript:alert(1)"}, {"apiKey": "two\nlines"}, {"tier": "full"}]
+    "values",
+    [{"immichUrl": "javascript:alert(1)"}, {"readerModel": "two\nlines"}, {"tier": "full"}],
 )
 def test_builder_refuses_invalid_connection_fields(values):
     assert _build(**values)["error"]
@@ -157,7 +157,7 @@ def test_kubernetes_builder_preserves_supplied_credentials_and_reader_configurat
     files = {file["name"]: yaml.safe_load(file["content"]) for file in result["files"]}
     secret = files["deploy/kubernetes/custom/secret.yaml"]
     assert secret["stringData"]["IMMICH_URL"] == "http://192.168.1.10:2283"
-    assert secret["stringData"]["IMMICH_API_KEY"] == "synthetic-fixture-api-key"
+    assert secret["stringData"]["IMMICH_API_KEY"] == "replace-with-your-immich-api-key"
     assert secret["stringData"]["IMMICH_MEMORIES_SECRET_KEY"] == "a" * 64
     assert files["deploy/kubernetes/custom/kustomization.yaml"]["resources"] == [
         "../overlays/tier-full",
@@ -228,7 +228,7 @@ def test_builder_single_file_is_real_compose_with_exact_shipped_sources(
     app = services["immich-memories"]
     assert app["image"].endswith(":1.2.3")
     assert app["environment"]["IMMICH_MEMORIES_DEPLOYMENT_TIER"] == tier
-    assert app["environment"]["IMMICH_API_KEY"] == "synthetic-fixture-api-key"
+    assert app["environment"]["IMMICH_API_KEY"] == "replace-with-your-immich-api-key"
     if tier == "full":
         assert app["environment"]["IMMICH_MEMORIES_DEPLOYMENT_READER_ENABLED"] == "true"
     if gpu_box or tier == "basic":
@@ -259,10 +259,9 @@ def test_authenticated_reader_is_configured_before_preflight_on_native_mac():
         tier="full",
         readerUrl="http://reader.example.lan:8000/v1",
         readerModel="served-model",
-        readerApiKey="synthetic-reader-token",
     )
     config = yaml.safe_load(result["files"][0]["content"])
-    assert config["advanced"]["llm"]["api_key"] == "synthetic-reader-token"
+    assert config["advanced"]["llm"]["api_key"] == "replace-with-your-reader-api-key"
     assert "llm.api_key" in result["commands"]
     assert result["commands"].index("secret-key") < result["commands"].index("config move-to-db")
     assert result["commands"].index("config move-to-db") < result["commands"].index("preflight")
@@ -275,14 +274,13 @@ def test_authenticated_reader_is_a_lower_priority_compose_default(tmp_path):
         tier="full",
         readerUrl="http://reader.example.lan:8000/v1",
         readerModel="served-model",
-        readerApiKey="synthetic-reader-token",
     )
     files = {file["name"]: file["content"] for file in result["files"]}
     compose = yaml.safe_load(files["docker-compose.yml"])
     env = compose["services"]["immich-memories"]["environment"]
     assert env["IMMICH_MEMORIES_DEPLOYMENT_READER_API_KEY"] == "${READER_API_KEY:-}"
     assert "IMMICH_MEMORIES_LLM__API_KEY" not in env
-    assert "READER_API_KEY='synthetic-reader-token'" in files[".env"]
+    assert "READER_API_KEY=replace-with-your-reader-api-key" in files[".env"]
 
 
 def test_kubernetes_reader_egress_uses_the_supplied_endpoint_port():
@@ -307,7 +305,6 @@ def test_single_file_stack_export_needs_no_dotenv_and_preserves_literal_dollars(
         _sources=sources,
         inline=True,
         secretKey="a" * 64,
-        apiKey="synthetic-$TOKEN-${OTHER}-key",
         tier="full",
         cuda=True,
         readerUrl="http://reader.example.lan:8000/v1",
@@ -338,7 +335,10 @@ def test_single_file_stack_export_needs_no_dotenv_and_preserves_literal_dollars(
     app = config["services"]["immich-memories"]
     assert app["image"].endswith(":1.2.3")
     # Compose re-escapes literal dollars when serializing its reusable config output.
-    assert app["environment"]["IMMICH_API_KEY"] == "synthetic-$$TOKEN-$${OTHER}-key"
+    assert app["environment"]["IMMICH_MEMORIES_DEPLOYMENT_READER_API_KEY"] == (
+        "replace-with-your-reader-api-key"
+    )
+    assert app["environment"]["IMMICH_API_KEY"] == "replace-with-your-immich-api-key"
     assert app["environment"]["IMMICH_MEMORIES_SECRET_KEY"] == "a" * 64
     assert app["environment"]["IMMICH_MEMORIES_DEPLOYMENT_READER_ENABLED"] == "true"
     assert "openssl rand" not in result["commands"]
@@ -381,7 +381,6 @@ def test_generated_kubernetes_inputs_render_the_current_shipped_base(tmp_path, t
         tier=tier,
         readerUrl="http://reader.example.lan:9999/v1",
         readerModel="served-model",
-        readerApiKey="synthetic-reader-token",
     )
     for file in result["files"]:
         path = tmp_path / file["name"]

@@ -51,10 +51,11 @@ def setup_site(tmp_path_factory):
 
 def test_builder_changes_files_for_full_then_native_mac(page, setup_site):
     page.goto(setup_site)
-    page.get_by_label("Immich API key", exact=True).fill("synthetic-fixture-api-key")
+    expect(page.get_by_label("Immich API key")).to_have_count(0)
     expect(page.get_by_label("Release version", exact=True)).to_have_count(0)
     page.get_by_role("radio", name="Full").check()
     page.get_by_label("Reader URL", exact=True).fill("http://reader.example.lan:8000/v1")
+    assert page.locator("input[type=password]").count() == 0
     page.get_by_label("Reader model", exact=True).fill("served-model")
     page.get_by_text("Preview .env", exact=True).click()
     expect(page.locator("pre").filter(has_text="READER_ENABLED=true")).to_be_visible()
@@ -72,7 +73,7 @@ def test_builder_changes_files_for_full_then_native_mac(page, setup_site):
 def test_builder_mobile_has_no_horizontal_overflow_and_labels_are_usable(page, setup_site):
     page.set_viewport_size({"width": 375, "height": 812})
     page.goto(setup_site)
-    page.get_by_label("Immich API key", exact=True).fill("synthetic-fixture-api-key")
+    expect(page.get_by_label("Immich API key")).to_have_count(0)
     expect(page.get_by_label("Release version", exact=True)).to_have_count(0)
     page.get_by_text("Preview .env", exact=True).click()
     expect(page.locator("pre").filter(has_text="IMMICH_MEMORIES_VERSION=1.2.3")).to_be_visible()
@@ -81,7 +82,7 @@ def test_builder_mobile_has_no_horizontal_overflow_and_labels_are_usable(page, s
 
 def test_generated_file_download_preserves_the_actual_compose_content(page, setup_site, tmp_path):
     page.goto(setup_site)
-    page.get_by_label("Immich API key", exact=True).fill("synthetic-fixture-api-key")
+    expect(page.get_by_label("Immich API key")).to_have_count(0)
     expect(page.get_by_label("Release version", exact=True)).to_have_count(0)
     with page.expect_download() as event:
         page.get_by_role("button", name="Download docker-compose.yml", exact=True).click()
@@ -89,15 +90,15 @@ def test_generated_file_download_preserves_the_actual_compose_content(page, setu
     assert download.suggested_filename == "docker-compose.yml"
     destination = tmp_path / download.suggested_filename
     download.save_as(destination)
-    assert '"immich-memories"' in destination.read_text()
+    assert destination.read_text().startswith("services:")
     expect(page.locator("pre").filter(has_text="docker compose up -d")).to_be_visible()
 
 
 def test_single_file_download_is_ready_for_a_stack_editor(page, setup_site, tmp_path):
-    import json
+    import yaml
 
     page.goto(setup_site)
-    page.get_by_label("Immich API key", exact=True).fill("synthetic-fixture-api-key")
+    expect(page.get_by_label("Immich API key")).to_have_count(0)
     expect(page.get_by_label("Release version", exact=True)).to_have_count(0)
     page.get_by_role("checkbox", name="Single file for a stack editor").check()
     expect(page.get_by_role("button", name="Download .env", exact=True)).to_have_count(0)
@@ -105,7 +106,7 @@ def test_single_file_download_is_ready_for_a_stack_editor(page, setup_site, tmp_
         page.get_by_role("button", name="Download docker-compose.yml", exact=True).click()
     destination = tmp_path / "docker-compose.yml"
     event.value.save_as(destination)
-    config = json.loads(destination.read_text())
+    config = yaml.safe_load(destination.read_text())
     app = config["services"]["immich-memories"]
     assert app["image"].endswith(":1.2.3")
     expect(page.get_by_role("radio", name="Basic")).to_be_checked()

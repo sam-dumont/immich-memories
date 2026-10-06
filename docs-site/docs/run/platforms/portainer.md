@@ -20,7 +20,7 @@ against a remote NAS tunnel or a published-release download; see the
 
 ## 1. Create the stack
 
-Open **Stacks → Add stack**, name it `immich-memories`, and select **Web editor**. Enter your connection details below, then copy the generated `docker-compose.yml` into the editor. No `.env` upload is needed.
+Open **Stacks → Add stack**, name it `immich-memories`, and select **Web editor**. Enter your Immich URL below, then copy the generated `docker-compose.yml` into the editor and replace `replace-with-your-immich-api-key` with your own [API key](../docker.md#the-api-key). The builder never asks for it. No `.env` upload is needed.
 
 <SetupBuilder initialPlatform="linux" initialInline showPlatform={false} showCommands={false} />
 

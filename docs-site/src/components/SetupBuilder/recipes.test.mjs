@@ -1,13 +1,14 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import test from 'node:test';
-import {buildSetup, nativeInstallCommand} from './recipes.ts';
+import {API_KEY_PLACEHOLDER, buildSetup, nativeInstallCommand} from './recipes.ts';
+import {toYaml} from './yaml.ts';
 import {deploymentCommands} from '../InstallationFiles/downloads.ts';
 
 const sources = JSON.parse(readFileSync(new URL('./sources.json', import.meta.url), 'utf8'));
 const setup = {
   platform: 'synology', tier: 'basic', immichUrl: 'http://192.168.1.10:2283',
-  apiKey: 'synthetic-fixture-key', gpuBox: '', readerUrl: '', readerModel: '',
+  gpuBox: '', readerUrl: '', readerModel: '',
   cuda: false, version: '1.2.3', inline: true, secretKey: 'a'.repeat(64),
 };
 
@@ -21,13 +22,13 @@ for (const port of [0, -1, 65536, 8080.5, NaN]) {
 
 test('default port stays private', () => {
   const result = buildSetup(setup, sources, '1.2.3');
-  const compose = JSON.parse(result.files.find(file => file.name === 'docker-compose.yml').content);
+  const compose = (result.files.find(file => file.name === 'docker-compose.yml').data);
   assert.deepEqual(compose.services['immich-memories'].ports, ['127.0.0.1:8080:8080']);
 });
 
 test('free NAS port reaches both generated private mapping and access commands', () => {
   const result = buildSetup({...setup, uiPort: 18081}, sources, '1.2.3');
-  const compose = JSON.parse(result.files.find(file => file.name === 'docker-compose.yml').content);
+  const compose = (result.files.find(file => file.name === 'docker-compose.yml').data);
   assert.deepEqual(compose.services['immich-memories'].ports, ['127.0.0.1:18081:8080']);
   assert.match(result.commands, /http:\/\/localhost:18081/);
   assert.match(result.accessCommands, /ssh -L 18081:localhost:18081/);
@@ -35,7 +36,7 @@ test('free NAS port reaches both generated private mapping and access commands',
 
 test('Kubernetes Secret preserves its generated private Settings key', () => {
   const result = buildSetup({...setup, platform: 'kubernetes', inline: false}, sources, '1.2.3');
-  const secret = JSON.parse(result.files.find(file => file.name.endsWith('/secret.yaml')).content);
+  const secret = (result.files.find(file => file.name.endsWith('/secret.yaml')).data);
   assert.equal(secret.stringData.IMMICH_MEMORIES_SECRET_KEY, setup.secretKey);
 });
 
@@ -52,14 +53,14 @@ test('Basic generates CPU-only files across Docker, Mac and Kubernetes', () => {
   const basic = {...setup, tier: 'basic'};
   const docker = buildSetup(basic, sources, '1.2.3');
   assert.equal(docker.error, null);
-  const compose = JSON.parse(docker.files.find(file => file.name === 'docker-compose.yml').content);
+  const compose = (docker.files.find(file => file.name === 'docker-compose.yml').data);
   assert.deepEqual(Object.keys(compose.services), Object.keys(sources.base.services));
   assert.equal(compose.services['immich-memories'].environment.IMMICH_MEMORIES_DEPLOYMENT_TIER, 'basic');
   const mac = buildSetup({...basic, platform: 'mac'}, sources, '1.2.3');
-  assert.equal(JSON.parse(mac.files[0].content).tier, 'basic');
+  assert.equal(mac.files[0].data.tier, 'basic');
   assert.doesNotMatch(mac.commands, /mlxcel/);
   const kube = buildSetup({...basic, platform: 'kubernetes', inline: false}, sources, '1.2.3');
-  const kustomization = JSON.parse(kube.files.find(file => file.name.endsWith('kustomization.yaml')).content);
+  const kustomization = (kube.files.find(file => file.name.endsWith('kustomization.yaml')).data);
   assert.ok(kustomization.resources.includes('../base'));
   assert.doesNotMatch(kube.commands, /tier-basic|tier-nas/);
 });
@@ -78,7 +79,7 @@ test('vendored inputs pin the docs version and verify before extracting', () => 
 
 test('Mac Basic leaves out the caption endpoint and does not move it', () => {
   const result = buildSetup({...setup, platform: 'mac', inline: false}, sources, '1.2.3');
-  const config = JSON.parse(result.files[0].content);
+  const config = result.files[0].data;
   assert.equal(config.advanced.editorial, undefined);
   assert.doesNotMatch(result.commands, /caption_base_url/);
 });
@@ -129,8 +130,8 @@ const kube = {...setup, platform: 'kubernetes', inline: false};
 
 test('Kubernetes namespace reaches both files and every -n', () => {
   const result = buildSetup({...kube, namespace: 'films'}, sources, '1.2.3');
-  const secret = JSON.parse(result.files.find(file => file.name.endsWith('/secret.yaml')).content);
-  const kustomization = JSON.parse(result.files.find(file => file.name.endsWith('kustomization.yaml')).content);
+  const secret = (result.files.find(file => file.name.endsWith('/secret.yaml')).data);
+  const kustomization = (result.files.find(file => file.name.endsWith('kustomization.yaml')).data);
   assert.equal(secret.metadata.namespace, 'films');
   assert.equal(kustomization.namespace, 'films');
   const flags = [...result.commands.matchAll(/ -n (\S+)/g)].map(match => match[1]);
@@ -158,4 +159,59 @@ test('native install command scopes prerelease to the pinned package, never the 
   const command = nativeInstallCommand('1.2.3', 'all');
   assert.match(command, /--prerelease if-necessary-or-explicit/);
   assert.doesNotMatch(command, /--prerelease allow/);
+});
+
+const platforms = ['linux', 'synology', 'mac', 'kubernetes'];
+const everyOutput = platforms.flatMap(platform => ['basic', 'gpu', 'full'].map(tier => buildSetup({
+  ...setup, platform, tier, inline: false, readerUrl: tier === 'full' ? 'http://192.168.1.20:8000/v1' : '',
+  readerModel: tier === 'full' ? 'gemma-4-E4B-it-Q4_0' : '',
+}, sources, '1.2.3')));
+
+test('every .yml/.yaml output is block YAML, not JSON', () => {
+  for (const result of everyOutput) {
+    assert.equal(result.error, null);
+    for (const file of result.files.filter(file => /\.ya?ml$/.test(file.name))) {
+      assert.doesNotMatch(file.content, /^\s*[{[]/, file.name);
+      assert.doesNotMatch(file.content, /"[A-Za-z_-]+": /, file.name);
+    }
+  }
+});
+
+test('kustomize patches are YAML block scalars', () => {
+  const kube = buildSetup({...setup, platform: 'kubernetes', inline: false}, sources, '1.2.3');
+  const text = kube.files.find(file => file.name.endsWith('kustomization.yaml')).content;
+  assert.match(text, /^ {4}patch: \|$/m);
+  assert.match(text, /^ {6}- op: add$/m);
+});
+
+test('the placeholder stands in for the Immich API key everywhere and no input asks for it', () => {
+  for (const result of everyOutput) {
+    const text = result.files.map(file => file.content).join('\n');
+    assert.ok(text.includes(API_KEY_PLACEHOLDER));
+    assert.doesNotMatch(text, /synthetic|[a-f0-9]{32}.*IMMICH_API_KEY/);
+    assert.match(result.commands, /Put your Immich API key in/);
+  }
+});
+
+test('the emitter quotes everything YAML would read as another type', () => {
+  const tricky = {
+    ports: ['127.0.0.1:8080:8080'], flags: ['true', 'false', 'yes', 'no', 'null', 'on', '~', 'Y'],
+    numbers: ['8080', '1.2', '0x1f', '1e3', '-1', '.5'], empty: '', colon: 'a: b', hash: 'a #b', trailing: 'a:',
+    star: '*x', amp: '&x', bang: '!x', brace: '{x}', bracket: '[x]', dash: '- x', percent: '%x', at: '@x', quote: 'say "hi"',
+    interp: '${IMMICH_MEMORIES_VERSION:-latest}', multi: 'a\nb', unicode: 'café', spaced: ' lead',
+    real: [true, false, 8080, 1.5, null], emptyMap: {}, emptyList: [], 'needs: quote': 1, nested: [[1, 2], {a: [{b: 1}]}],
+  };
+  const text = toYaml(tricky);
+  for (const line of ['  - "127.0.0.1:8080:8080"', '  - "true"', '  - "8080"', 'empty: ""', 'interp: "${IMMICH_MEMORIES_VERSION:-latest}"']) {
+    assert.ok(text.includes(line), line);
+  }
+});
+
+test('a reader URL gets the reader key placeholder and a step; no reader leaves it empty', () => {
+  const withReader = buildSetup({...setup, inline: false, tier: 'full', readerUrl: 'http://r:8000/v1', readerModel: 'm'}, sources, '1.2.3');
+  assert.match(withReader.files.find(file => file.name === '.env').content, /^READER_API_KEY=replace-with-your-reader-api-key$/m);
+  assert.match(withReader.commands, /Put your reader's API key in \.env/);
+  const none = buildSetup({...setup, inline: false, tier: 'basic'}, sources, '1.2.3');
+  assert.match(none.files.find(file => file.name === '.env').content, /^IMMICH_API_KEY=/m);
+  assert.doesNotMatch(none.commands, /reader's API key/);
 });

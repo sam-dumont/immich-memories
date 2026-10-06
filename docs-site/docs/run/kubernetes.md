@@ -28,7 +28,7 @@ Settings save/reload and a complete first film, including full audio/video decod
 [deployment matrix](./tested-deployments.md) for which release and hardware that covers, and
 the [measured run](../better/measured.md#cold-start-time-by-hardware-and-tier) for the numbers.
 
-Use the [setup builder](/setup), select Kubernetes, and enter Immich's reachable URL and API key.
+Use the [setup builder](/setup), select Kubernetes, and enter Immich's reachable URL. The builder never asks for your API key: `secret.yaml` holds `replace-with-your-immich-api-key`, so put your own [key](./docker.md#the-api-key) there before you apply it.
 The builder uses the release version displayed on the page. It generates the Secret, namespace-scoped customization,
 reader settings when Full is selected, and egress rules for the supplied endpoint ports.
 Download each file and save it at its labelled path after extracting that release's bundle.
@@ -55,7 +55,7 @@ are retained. Generated endpoint port rules are port permissions, not host allow
 For manual Full configuration, copy `overlays/tier-full/reader-config.yaml.example` to
 `reader-config.yaml`, set the actual served URL/model, and add its port to your app's egress
 policy if it differs from the example TCP8000. A reader API key can be supplied in the app
-Secret as `IMMICH_MEMORIES_DEPLOYMENT_READER_API_KEY`, or saved in Settings.
+Secret as `IMMICH_MEMORIES_DEPLOYMENT_READER_API_KEY`, or saved in Settings. With a reader URL set, the builder writes `replace-with-your-reader-api-key` there: replace it, or empty it for a reader without auth.
 
 A text model for titles and music mood on a Basic install needs no GPU services: the
 [Kubernetes form of the local text model recipe](./local-models.md#kubernetes-form) runs Ollama

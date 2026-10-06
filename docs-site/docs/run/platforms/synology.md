@@ -22,13 +22,13 @@ version, selected tier, and whether preflight and the first film worked.
 
 ## 1. Create a project
 
-Create a folder for the project in File Station. In Container Manager, open **Project → Create**, name it `immich-memories`, select that folder, and choose the option to create the Compose file in the editor. Enter your connection details below and paste the generated `docker-compose.yml` into the editor:
+Create a folder for the project in File Station. In Container Manager, open **Project → Create**, name it `immich-memories`, select that folder, and choose the option to create the Compose file in the editor. Enter your Immich URL below, paste the generated `docker-compose.yml` into the editor, and replace `replace-with-your-immich-api-key` with your own [API key](../docker.md#the-api-key) (the builder never asks for it):
 
 <SetupBuilder initialPlatform="synology" initialInline showPlatform={false} showCommands={false} />
 
 <StackStorage />
 
-The saved Compose file contains your Immich API key and Settings encryption key. Restrict the project folder and file to your DSM user in **File Station → Properties → Permission**, including inherited entries. For an SSH-created project, set and check the file modes after saving:
+Once you paste your key in, the saved Compose file contains your Immich API key and Settings encryption key. Restrict the project folder and file to your DSM user in **File Station → Properties → Permission**, including inherited entries. For an SSH-created project, set and check the file modes after saving:
 
 ```bash
 chmod 700 /volume1/homes/your-user/immich-memories
