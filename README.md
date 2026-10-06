@@ -52,8 +52,8 @@ CC0 stock pictures, never anyone's family.
 
 [How it chooses](https://sam-dumont.github.io/immich-memories/docs/how-it-chooses/overview)
 explains the selection rules. [Improve a film](https://sam-dumont.github.io/immich-memories/docs/make/improve-a-film)
-covers length, missing people and shot changes. [Known limitations](https://sam-dumont.github.io/immich-memories/docs/how-it-chooses/known-limitations)
-lists what doesn't work yet.
+covers length, missing people and shot changes. What doesn't work yet is in the
+[issue tracker](https://github.com/sam-dumont/immich-memories/issues).
 
 ## Make your first film
 

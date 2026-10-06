@@ -32,8 +32,8 @@ a GPU or a model is the "better, optional" path.
 - Issue or PR numbers, commit hashes, "added in", "since vX", "used to", "no longer".
 - Calendar dates. Two exceptions: example dates in commands, and *How this was built*.
   Measurements in *Measure your setup* name the release and the hardware, not the day.
-- Open bugs. *Known limitations* holds lasting product limits only; everything else lives in
-  the [issue tracker](https://github.com/sam-dumont/immich-memories/issues).
+- Open bugs and limitations. There is no limitations page: what doesn't work yet lives in the
+  [issue tracker](https://github.com/sam-dumont/immich-memories/issues), and pages link it.
 - Test-household or campaign trivia that doesn't help the reader decide.
 - Anything personal: family names, places, dates, asset ids.
 

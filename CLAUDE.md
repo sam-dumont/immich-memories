@@ -308,7 +308,7 @@ The full rules are in `docs-site/docs/contribute/writing-docs.md`. The short ver
 - **No internal detail on public pages:** no issue/PR numbers, commit hashes, calendar dates,
   "added in / since / used to / no longer" history. Dates live only on *How this was built*;
   `measured.md` names the release and hardware. These are for internal LLM use, not readers.
-- **Known limitations = lasting limits only.** Never list open issues; link the tracker.
+- **No limitations page.** What doesn't work yet lives in the GitHub issue tracker; link it.
 - **Real diagrams, drawn from the code:** architecture, deployment per install path, sequence
   for flows, decision charts for choices, state diagrams for lifecycles. Not flowcharts for
   everything.

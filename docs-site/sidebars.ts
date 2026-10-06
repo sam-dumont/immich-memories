@@ -38,7 +38,6 @@ const sidebars: SidebarsConfig = {
         'how-it-chooses/length-and-filler',
         'how-it-chooses/family-audience-duplicates',
         'how-it-chooses/what-a-model-adds',
-        'how-it-chooses/known-limitations',
       ],
     },
     {
