@@ -1,14 +1,14 @@
+import {Block, plain, toYaml} from './yaml.ts';
+
 export type Platform = 'linux' | 'synology' | 'mac' | 'kubernetes';
 export type Tier = 'basic' | 'gpu' | 'full';
 export interface Setup {
   platform: Platform;
   tier: Tier;
   immichUrl: string;
-  apiKey: string;
   gpuBox: string;
   readerUrl: string;
   readerModel: string;
-  readerApiKey?: string;
   cuda: boolean;
   version: string;
   uiPort?: number;
@@ -16,7 +16,23 @@ export interface Setup {
   inline?: boolean;
   secretKey?: string;
 }
-export interface Recipe {name: string; language: string; content: string}
+export interface Recipe {name: string; language: string; content: string; data?: unknown}
+
+// The builder never asks for the Immich API key: files carry this placeholder and the
+// person replaces it in their own editor, so the key never passes through a web form.
+export const API_KEY_PLACEHOLDER = 'replace-with-your-immich-api-key';
+export const READER_KEY_PLACEHOLDER = 'replace-with-your-reader-api-key';
+const readerKey = (setup: Setup): string => (setup.readerUrl ? READER_KEY_PLACEHOLDER : '');
+const readerStep = (files: string): string => `# Put your reader's API key in ${files} (replace "${READER_KEY_PLACEHOLDER}") if it needs one; leave it empty for a reader without auth.`;
+const keyStep = (files: string): string => `# Put your Immich API key in ${files} (replace "${API_KEY_PLACEHOLDER}"): https://sam-dumont.github.io/immich-memories/docs/run/docker#the-api-key`;
+
+// `data` is the JSON-shaped tree behind the text, so tests can check a rewrite changes layout only.
+function yamlFile(name: string, tree: unknown, pin?: string): Recipe {
+  const content = toYaml(tree);
+  const data = plain(tree);
+  return pin === undefined ? {name, language: 'yaml', content, data}
+    : {name, language: 'yaml', content: pinVersion(content, pin), data: JSON.parse(pinVersion(JSON.stringify(data), pin))};
+}
 
 const repository = 'https://github.com/sam-dumont/immich-memories';
 const quote = (value: string): string => `'${value.replace(/'/g, "'\\''")}'`;
@@ -57,7 +73,7 @@ export function validateSetup(setup: Setup): string | null {
   if (setup.version === 'development') return 'Choose a published release version for these setup files.';
   if (!releaseVersion(setup.version) && setup.version !== 'latest') return 'Use a release version such as 1.0.0 or 1.0.0-rc.1.';
   if (setup.platform === 'kubernetes' && !releaseVersion(setup.version)) return 'Kubernetes needs a published release version to select its bundle.';
-  for (const value of [setup.apiKey, setup.gpuBox, setup.readerModel, setup.immichUrl, setup.readerUrl, setup.readerApiKey || '']) {
+  for (const value of [setup.gpuBox, setup.readerModel, setup.immichUrl, setup.readerUrl]) {
     if (/[\r\n\0]/.test(value)) return 'Use one line for each setting.';
   }
   for (const [label, value] of [['Immich', setup.immichUrl], ['Reader', setup.readerUrl]]) {
@@ -70,7 +86,6 @@ export function validateSetup(setup: Setup): string | null {
     } catch { return `${label} needs a complete URL.`; }
   }
   if (setup.gpuBox && ['mac', 'kubernetes'].includes(setup.platform)) return 'Remote GPU box setup is available for Docker Compose.';
-  if (!setup.apiKey) return 'Enter your Immich API key.';
   if ((setup.inline || setup.platform === 'kubernetes') && !/^[a-f0-9]{64}$/.test(setup.secretKey || '')) {
     return setup.platform === 'kubernetes'
       ? 'Generate a private settings key before exporting Kubernetes setup files.'
@@ -130,11 +145,11 @@ const pinVersion = (text: string, version: string): string =>
 function macRecipe(setup: Setup): Result {
   const full = setup.tier === 'full';
   const config: Mapping = {
-    immich: {url: setup.immichUrl, api_key: setup.apiKey}, tier: setup.tier,
+    immich: {url: setup.immichUrl, api_key: API_KEY_PLACEHOLDER}, tier: setup.tier,
     advanced: {
       // An empty caption_base_url is rejected by the app; Basic simply leaves the key out.
       ...(setup.tier === 'basic' ? {} : {editorial: {preparation: {caption_base_url: 'http://127.0.0.1:8092/v1'}}}),
-      llm: {enabled: full, base_url: setup.readerUrl, api_key: setup.readerApiKey || '', model: setup.readerModel || 'gemma-4-E4B-it-Q4_0'},
+      llm: {enabled: full, base_url: setup.readerUrl, api_key: readerKey(setup), model: setup.readerModel || 'gemma-4-E4B-it-Q4_0'},
     },
   };
   const caption = setup.tier === 'basic' ? [] : [
@@ -142,7 +157,7 @@ function macRecipe(setup: Setup): Result {
     'SNAPSHOT=$(uvx --from huggingface-hub hf download mlx-community/SmolVLM2-500M-Video-Instruct-mlx --revision fa57db46815177fbdfd65cc85a2b3416a8332268)',
     'mlxcel serve --model "$SNAPSHOT" --alias smolvlm2-500m-base-public --host 127.0.0.1 --port 8092 > captioner.log 2>&1 &',
   ];
-  return {error: null, files: [{name: 'config.yaml', language: 'yaml', content: JSON.stringify(config, null, 2)}], commands: [
+  return {error: null, files: [yamlFile('config.yaml', config)], commands: [
     `brew install uv ffmpeg${full && !setup.readerUrl ? ' llama.cpp' : ''}`,
     'ffmpeg -hide_banner -filters | grep zscale',
     '# No output? HDR conversion needs zscale: brew install ffmpeg-full, then put $(brew --prefix ffmpeg-full)/bin first on your PATH.',
@@ -150,6 +165,8 @@ function macRecipe(setup: Setup): Result {
     'umask 077',
     'mkdir -p ~/.immich-memories',
     '# Save the generated config.yaml in ~/.immich-memories (after umask 077, so only you can read your API key).',
+    keyStep('~/.immich-memories/config.yaml'),
+    ...(setup.readerUrl ? [readerStep('~/.immich-memories/config.yaml')] : []),
     'test -f ~/.immich-memories/secret-key || openssl rand -hex 32 > ~/.immich-memories/secret-key',
     'export IMMICH_MEMORIES_SECRET_KEY="$(cat ~/.immich-memories/secret-key)"',
     ...caption,
@@ -178,36 +195,36 @@ export function buildSetup(setup: Setup, sources: Sources, buildVersion: string)
     const root = setup.tier === 'basic' ? 'base' : `overlays/tier-${setup.tier}`;
     const secret = {apiVersion: 'v1', kind: 'Secret', metadata: {
       name: 'immich-memories-secrets', namespace: ns,
-    }, type: 'Opaque', stringData: {IMMICH_URL: setup.immichUrl, IMMICH_API_KEY: setup.apiKey, IMMICH_MEMORIES_SECRET_KEY: setup.secretKey!, ...(setup.readerApiKey ? {IMMICH_MEMORIES_DEPLOYMENT_READER_API_KEY: setup.readerApiKey} : {})}};
+    }, type: 'Opaque', stringData: {IMMICH_URL: setup.immichUrl, IMMICH_API_KEY: API_KEY_PLACEHOLDER, IMMICH_MEMORIES_SECRET_KEY: setup.secretKey!, ...(readerKey(setup) ? {IMMICH_MEMORIES_DEPLOYMENT_READER_API_KEY: readerKey(setup)} : {})}};
     const ports = new Set<number>([Number(new URL(setup.immichUrl).port || (setup.immichUrl.startsWith('https:') ? 443 : 80))]);
     if (setup.tier === 'full') ports.add(Number(new URL(setup.readerUrl).port || (setup.readerUrl.startsWith('https:') ? 443 : 80)));
-    const egress = {target: {kind: 'NetworkPolicy', name: 'immich-memories'}, patch: JSON.stringify([{
+    const egress = {target: {kind: 'NetworkPolicy', name: 'immich-memories'}, patch: new Block(toYaml([{
       op: 'add', path: '/spec/egress/-', value: {ports: [...ports].map(port => ({port, protocol: 'TCP'}))},
-    }])};
-    const tierPreset = {target: {kind: 'Deployment', name: 'immich-memories'}, patch: JSON.stringify({
+    }]))};
+    const tierPreset = {target: {kind: 'Deployment', name: 'immich-memories'}, patch: new Block(toYaml({
       apiVersion: 'apps/v1', kind: 'Deployment', metadata: {name: 'immich-memories'},
       spec: {template: {spec: {containers: [{name: 'immich-memories', env: [
         {name: 'IMMICH_MEMORIES_DEPLOYMENT_TIER', value: setup.tier},
       ]}]}}},
-    })};
+    }))};
     const files = [
-      {name: 'deploy/kubernetes/custom/secret.yaml', language: 'yaml', content: JSON.stringify(secret, null, 2)},
-      {name: 'deploy/kubernetes/custom/kustomization.yaml', language: 'yaml', content: JSON.stringify({
+      yamlFile('deploy/kubernetes/custom/secret.yaml', secret),
+      yamlFile('deploy/kubernetes/custom/kustomization.yaml', {
         apiVersion: 'kustomize.config.k8s.io/v1beta1', kind: 'Kustomization', namespace: ns,
         resources: [`../${root}`, 'secret.yaml'], patches: [egress, tierPreset],
-      }, null, 2)},
+      }),
     ];
-    if (setup.tier === 'full') files.push({
-      name: 'deploy/kubernetes/overlays/tier-full/reader-config.yaml', language: 'yaml', content: JSON.stringify({
-        apiVersion: 'v1', kind: 'ConfigMap', metadata: {name: 'immich-memories-reader'},
-        data: {url: setup.readerUrl, model: setup.readerModel},
-      }, null, 2),
-    });
+    if (setup.tier === 'full') files.push(yamlFile('deploy/kubernetes/overlays/tier-full/reader-config.yaml', {
+      apiVersion: 'v1', kind: 'ConfigMap', metadata: {name: 'immich-memories-reader'},
+      data: {url: setup.readerUrl, model: setup.readerModel},
+    }));
     return {files, error: null, commands: [
       `curl -fLO ${quote(`${repository}/releases/download/v${tag}/immich-memories-deploy-${tag}.tar.gz`)}`,
       `tar -xzf ${quote(`immich-memories-deploy-${tag}.tar.gz`)}`,
       'mkdir -p deploy/kubernetes/custom',
       '# Save the generated files at their labelled paths.',
+      keyStep('deploy/kubernetes/custom/secret.yaml'),
+      ...(setup.readerUrl ? [readerStep('deploy/kubernetes/custom/secret.yaml')] : []),
       '# The Secret holds IMMICH_MEMORIES_SECRET_KEY, which seals the credentials saved in Settings.',
       '# Keep a copy: a restored store needs the same key.',
       ...(setup.tier === 'basic' ? [] : ['# GPU tier: the app pod gets no GPU, so encoding and titles run on the CPU; the GPU serves inference and captions.']),
@@ -244,12 +261,12 @@ export function buildSetup(setup: Setup, sources: Sources, buildVersion: string)
   const env = [
     `IMMICH_MEMORIES_VERSION=${releaseVersion(setup.version) || 'latest'}`,
     `TIER=${setup.tier}`,
-    `IMMICH_URL=${dotenv(setup.immichUrl)}`, `IMMICH_API_KEY=${dotenv(setup.apiKey)}`,
+    `IMMICH_URL=${dotenv(setup.immichUrl)}`, `IMMICH_API_KEY=${API_KEY_PLACEHOLDER}`,
     ...(setup.gpuBox ? [`GPU_BOX=${dotenv(setup.gpuBox)}`] : []),
     ...(setup.tier === 'full' ? [
       'READER_ENABLED=true', `READER_URL=${dotenv(setup.readerUrl)}`,
       `READER_MODEL=${dotenv(setup.readerModel)}`,
-      `READER_API_KEY=${dotenv(setup.readerApiKey || '')}`,
+      `READER_API_KEY=${readerKey(setup)}`,
     ] : []),
   ];
   if (setup.inline) {
@@ -261,9 +278,9 @@ export function buildSetup(setup: Setup, sources: Sources, buildVersion: string)
       )}}};
     compose = inlineValues(compose, {
       IMMICH_MEMORIES_VERSION: releaseVersion(setup.version) || 'latest', TIER: setup.tier,
-      IMMICH_URL: setup.immichUrl, IMMICH_API_KEY: setup.apiKey, GPU_BOX: setup.gpuBox,
+      IMMICH_URL: setup.immichUrl, IMMICH_API_KEY: API_KEY_PLACEHOLDER, GPU_BOX: setup.gpuBox,
       READER_ENABLED: setup.tier === 'full' ? 'true' : 'false', READER_URL: setup.readerUrl,
-      READER_MODEL: setup.readerModel, READER_API_KEY: setup.readerApiKey || '',
+      READER_MODEL: setup.readerModel, READER_API_KEY: readerKey(setup),
       IMMICH_MEMORIES_SECRET_KEY: setup.secretKey!,
     }) as Mapping;
   }
@@ -277,7 +294,7 @@ export function buildSetup(setup: Setup, sources: Sources, buildVersion: string)
       ...workerServices['gpu-worker'] as Mapping,
       ports: [`${'${GPU_WORKER_BIND_ADDRESS:-127.0.0.1}'}:${port}:8092`],
     }}};
-    workerFiles.push({name: 'gpu-worker/docker-compose.yml', language: 'yaml', content: pinVersion(JSON.stringify(worker, null, 2), setup.version.replace(/^v/, ''))},
+    workerFiles.push(yamlFile('gpu-worker/docker-compose.yml', worker, setup.version.replace(/^v/, '')),
       {name: 'gpu-worker/.env', language: 'dotenv', content: [
         `IMMICH_MEMORIES_VERSION=${releaseVersion(setup.version) || 'latest'}`,
         `IMMICH_URL=${dotenv(setup.immichUrl)}`, 'GPU_WORKER_BIND_ADDRESS=0.0.0.0',
@@ -290,7 +307,7 @@ export function buildSetup(setup: Setup, sources: Sources, buildVersion: string)
       '# Use this same private worker address and the token in gpu-worker/.env. Offload is not enabled by this recipe.');
   }
   return {error: null, files: [
-    {name: 'docker-compose.yml', language: 'yaml', content: pinVersion(JSON.stringify(compose, null, 2), setup.version.replace(/^v/, ''))},
+    yamlFile('docker-compose.yml', compose, setup.version.replace(/^v/, '')),
     ...(!setup.inline ? [{name: '.env', language: 'dotenv', content: env.join('\n')}] : []),
     ...workerFiles,
   ], workerCommands: workerCommands.join('\n'), accessCommands: [
@@ -300,8 +317,8 @@ export function buildSetup(setup: Setup, sources: Sources, buildVersion: string)
   ].join('\n'), commands: [
     '# On the app host:',
     'mkdir -p immich-memories/output && cd immich-memories',
-    ...(setup.inline ? ['# Save docker-compose.yml here, or paste it into your stack editor.'] : [
-      '# Save the two generated files here, then create your private settings key.',
+    ...(setup.inline ? ['# Save docker-compose.yml here, or paste it into your stack editor.', keyStep('docker-compose.yml'), ...(setup.readerUrl ? [readerStep('docker-compose.yml')] : [])] : [
+      '# Save the two generated files here, then create your private settings key.', keyStep('.env'), ...(setup.readerUrl ? [readerStep('.env')] : []),
       `printf 'IMMICH_MEMORIES_SECRET_KEY=%s\\n' "$(openssl rand -hex 32)" >> .env`,
     ]),
     'docker compose up -d',

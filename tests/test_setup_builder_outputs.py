@@ -26,7 +26,7 @@ const out = {{}};
 for (const platform of ['linux', 'synology', 'mac', 'kubernetes']) {{
   for (const tier of ['basic', 'gpu', 'full']) {{
     out[platform + '/' + tier] = buildSetup({{
-      platform, tier, immichUrl: 'http://192.168.1.10:2283', apiKey: 'fake-key-for-tests',
+      platform, tier, immichUrl: 'http://192.168.1.10:2283',
       gpuBox: '', readerUrl: tier === 'full' ? 'http://192.168.1.20:8000/v1' : '',
       readerModel: tier === 'full' ? 'gemma-4-E4B-it-Q4_0' : '', cuda: false,
       version: '1.2.3', secretKey: {json.dumps(SECRET)},
@@ -109,9 +109,116 @@ def test_mac_commands_follow_the_uv_pip_page(tier):
 def test_kubernetes_namespace_is_one_value_everywhere(tier):
     result = OUTPUTS[f"kubernetes/{tier}"]
     docs = [
-        json.loads(f["content"])
+        yaml.safe_load(f["content"])
         for f in result["files"]
         if f["name"].endswith(("secret.yaml", "kustomization.yaml"))
     ]
     assert {d.get("namespace") or d["metadata"]["namespace"] for d in docs} == {"immich-memories"}
     assert "models fetch" in result["commands"]
+
+
+PLACEHOLDER = "replace-with-your-immich-api-key"
+
+
+def yaml_files():
+    return [
+        (key, f)
+        for key, result in OUTPUTS.items()
+        for f in result["files"]
+        if f["name"].endswith((".yml", ".yaml"))
+    ]
+
+
+@pytest.mark.parametrize(
+    ("key", "file"), yaml_files(), ids=lambda v: v if isinstance(v, str) else v["name"]
+)
+def test_yaml_outputs_are_block_yaml_with_the_data_the_json_had(key, file):
+    assert not file["content"].lstrip().startswith(("{", "["))
+    parsed = yaml.safe_load(file["content"])
+    expected = file["data"]
+    if file["name"].endswith("kustomization.yaml"):
+        # The kustomize patches were JSON strings; they are YAML block scalars now.
+        for patch in (*parsed["patches"], *expected["patches"]):
+            patch["patch"] = yaml.safe_load(patch["patch"])
+    assert parsed == expected
+
+
+@pytest.mark.parametrize(("platform", "tier"), COMBOS)
+def test_no_output_holds_a_key_and_the_placeholder_marks_where_it_goes(platform, tier):
+    result = OUTPUTS[f"{platform}/{tier}"]
+    text = "\n".join(f["content"] for f in result["files"])
+    assert PLACEHOLDER in text
+    assert "fake-key-for-tests" not in text
+    assert "Put your Immich API key in" in result["commands"]
+
+
+def test_emitter_round_trips_values_yaml_would_misread():
+    tricky = [
+        "127.0.0.1:8080:8080",
+        "true",
+        "false",
+        "yes",
+        "no",
+        "null",
+        "on",
+        "off",
+        "~",
+        "Y",
+        "8080",
+        "1.2",
+        "0x1f",
+        "1e3",
+        "-1",
+        ".5",
+        "2024-01-01",
+        "",
+        " lead",
+        "a: b",
+        "a #b",
+        "a:",
+        "*x",
+        "&x",
+        "!x",
+        "{x}",
+        "[x]",
+        "- x",
+        "%x",
+        "@x",
+        "`x",
+        "|",
+        ">",
+        'say "hi"',
+        "it's",
+        "${IMMICH_MEMORIES_VERSION:-latest}",
+        "a\nb",
+        "tab\tx",
+        "café",
+        "\u2028",
+        "back\\slash",
+    ]
+    data = {
+        "strings": tricky,
+        "by_key": {k: k for k in tricky if k != ""} | {"": "empty key"},
+        "real": [True, False, 8080, 1.5, None, {}, []],
+        "nested": [[1, 2], {"a": [{"b": 1}, {"c": {"d": []}}]}],
+    }
+    script = (
+        f"import {{toYaml}} from {json.dumps(str(BUILDER / 'yaml.ts'))};\n"
+        "console.log(JSON.stringify(toYaml(JSON.parse(process.argv[1]))));"
+    )
+    out = subprocess.run(
+        [
+            "node",
+            "--experimental-strip-types",
+            "--input-type=module",
+            "-e",
+            script,
+            json.dumps(data),
+        ],
+        capture_output=True,
+        text=True,
+        timeout=60,
+        check=False,
+    )
+    assert out.returncode == 0, out.stderr
+    assert yaml.safe_load(json.loads(out.stdout)) == data

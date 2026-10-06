@@ -2,7 +2,7 @@ import {useEffect, useState, type ReactNode} from 'react';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import CodeBlock from '@theme/CodeBlock';
 import Link from '@docusaurus/Link';
-import {buildSetup, type Setup, type Sources, type Platform} from './recipes';
+import {API_KEY_PLACEHOLDER, buildSetup, type Setup, type Sources, type Platform} from './recipes';
 import sources from './sources.json';
 import styles from './styles.module.css';
 
@@ -10,8 +10,8 @@ export default function SetupBuilder({initialPlatform = 'linux', initialInline =
   const {siteConfig} = useDocusaurusContext();
   const buildVersion = String(siteConfig.customFields?.version || 'development');
   const [setup, setSetup] = useState<Setup>({
-    platform: initialPlatform, inline: initialInline, uiPort: 8080, namespace: 'immich-memories', tier: 'basic', immichUrl: 'http://192.168.1.10:2283', apiKey: '',
-    gpuBox: '', readerUrl: '', readerModel: '', readerApiKey: '', cuda: false,
+    platform: initialPlatform, inline: initialInline, uiPort: 8080, namespace: 'immich-memories', tier: 'basic', immichUrl: 'http://192.168.1.10:2283',
+    gpuBox: '', readerUrl: '', readerModel: '', cuda: false,
     version: buildVersion,
   });
   const [notice, setNotice] = useState('');
@@ -42,6 +42,8 @@ export default function SetupBuilder({initialPlatform = 'linux', initialInline =
   const compose = setup.platform === 'linux' || setup.platform === 'synology';
   const hostPort = compose || setup.platform === 'mac';
   return <section className={styles.builder} aria-label="Setup builder">
+    <p className={styles.note}><strong>This page runs entirely in your browser.</strong> What you type here is never
+      sent anywhere: no requests, no analytics, no tracking. The files are built on this page and stay on it until you copy or download them.</p>
     <div className={styles.fields}>
       {showPlatform && <label>Where will it run?
         <select aria-label="Where will it run?" value={setup.platform} onChange={event => update({platform: event.target.value as Setup['platform'], gpuBox: '', cuda: false})}>
@@ -56,9 +58,6 @@ export default function SetupBuilder({initialPlatform = 'linux', initialInline =
       <label>Immich URL
         <input type="url" value={setup.immichUrl} onChange={event => update({immichUrl: event.target.value})} />
       </label>
-      <label>Immich API key
-        <input type="password" autoComplete="off" value={setup.apiKey} onChange={event => update({apiKey: event.target.value})} />
-      </label>
       {hostPort && <label>UI host port
         <input type="number" min="1" max="65535" step="1" value={setup.uiPort} onChange={event => update({uiPort: Number(event.target.value)})} />
         <small>Choose a free port if another app already uses 8080. The UI stays localhost-only.</small>
@@ -68,9 +67,10 @@ export default function SetupBuilder({initialPlatform = 'linux', initialInline =
         <small>Applied to both generated files and every command below.</small>
       </label>}
     </div>
-    <p className={styles.note}>Create a key with the <Link to="/docs/run/docker#the-api-key">ten required read permissions</Link>.
-      Add the five upload permissions only to send films back; <code>asset.delete</code> is optional.
-      Avoid the All preset.</p>
+    <p className={styles.note}>The builder does not ask for your Immich API key. The files hold the placeholder
+      {' '}<code>{API_KEY_PLACEHOLDER}</code>: create a key with the <Link to="/docs/run/docker#the-api-key">ten required read permissions</Link>
+      {' '}and paste it over the placeholder in your own editor. Add the five upload permissions only to send films back;
+      {' '}<code>asset.delete</code> is optional. Avoid the All preset.</p>
     <fieldset className={styles.tiers}>
       <legend>Choose a tier</legend>
       {([
@@ -99,16 +99,13 @@ export default function SetupBuilder({initialPlatform = 'linux', initialInline =
         <label>Reader model{setup.platform === 'mac' ? ' (optional)' : ''}
           <input value={setup.readerModel} onChange={event => update({readerModel: event.target.value})} placeholder={setup.platform === 'mac' ? 'Blank: pinned local default' : 'Name advertised by your reader'} />
         </label>
-        <label>Reader API key (optional)
-          <input aria-label="Reader API key (optional)" type="password" autoComplete="off" value={setup.readerApiKey || ''} onChange={event => update({readerApiKey: event.target.value})} />
-          <small>Needed only when your reader requires authentication.</small>
-        </label>
+        <small>The builder does not ask for a reader API key: the files hold <code>replace-with-your-reader-api-key</code> when a reader URL is set. Replace it, or empty it for a reader without auth.</small>
       </>}
     </div>
     {compose && <label className={styles.check}>
       <input type="checkbox" checked={Boolean(setup.inline)} onChange={event => update({inline: event.target.checked})} />
       Single file for a stack editor
-      <small>Includes your credentials and a browser-generated settings key. Store the downloaded file privately.</small>
+      <small>Includes a browser-generated settings key and your reader details. Store the downloaded file privately.</small>
     </label>}
     <p className={styles.note}><Link to="/docs/run/tested-deployments">Can I run this? Check the version and topology matrix.</Link></p>
     <p className={styles.note}><strong>Not yet tested as an end-to-end generated installation</strong> on
@@ -117,8 +114,8 @@ export default function SetupBuilder({initialPlatform = 'linux', initialInline =
       {' '}Earlier NAS, Mac and GPU Kubernetes checks are recorded in the <Link to="/docs/better/measured#cold-start-time-by-hardware-and-tier">measured results</Link>.
       {' '}<Link href="https://github.com/sam-dumont/immich-memories/issues/new">Tried it? Report your platform, release and preflight result.</Link>
     </p>
-    <p className={styles.note}>Your choices produce files in this browser. Nothing is sent to an Immich or model server.
-      {setup.tier === 'full' && ' Full explicitly enables reader calls.'}</p>
+    <p className={styles.note}>Nothing here contacts an Immich or model server.
+      {setup.tier === 'full' && ' Full explicitly enables reader calls once the app runs.'}</p>
     {result.error ? <p className={styles.error} role="status">{result.error}</p> : <div aria-live="polite">
       <p>Save these files for a fresh install. For an existing install, change service URLs in Settings.
         Preflight checks whether the requested tier is ready.</p>

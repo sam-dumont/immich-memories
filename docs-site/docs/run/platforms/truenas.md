@@ -21,7 +21,7 @@ With an Apps storage pool configured, open **Apps → Discover → ⋮ → Insta
 
 ## 2. Paste and save
 
-Enter your connection details below, paste the generated `docker-compose.yml` into **Custom Config**, and click **Save**. There is no adjacent `.env` file in this editor. If adapting a downloaded Compose file instead, resolve **every** `${...}` expression before pasting, including image tags, paths and ports.
+Enter your Immich URL below, paste the generated `docker-compose.yml` into **Custom Config**, replace `replace-with-your-immich-api-key` with your own [API key](../docker.md#the-api-key) (the builder never asks for it), and click **Save**. There is no adjacent `.env` file in this editor. If adapting a downloaded Compose file instead, resolve **every** `${...}` expression before pasting, including image tags, paths and ports.
 
 <SetupBuilder initialPlatform="linux" initialInline showPlatform={false} showCommands={false} />
 
