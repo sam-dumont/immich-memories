@@ -12,7 +12,7 @@
 </g>
 <g id="clust2" class="cluster">
 <title>cluster_server</title>
-<path fill="#14181f" stroke="#4b5563" stroke-width="1.8" d="M117.12,-26C117.12,-26 481.75,-26 481.75,-26 487.75,-26 493.75,-32 493.75,-38 493.75,-38 493.75,-315 493.75,-315 493.75,-321 487.75,-327 481.75,-327 481.75,-327 117.12,-327 117.12,-327 111.13,-327 105.12,-321 105.12,-315 105.12,-315 105.12,-38 105.12,-38 105.12,-32 111.12,-26 117.12,-26"/>
+<path fill="#14181f" stroke="#4b5563" stroke-width="1.8" d="M117.12,-26C117.12,-26 481.75,-26 481.75,-26 487.75,-26 493.75,-32 493.75,-38 493.75,-38 493.75,-315 493.75,-315 493.75,-321 487.75,-327 481.75,-327 481.75,-327 117.12,-327 117.12,-327 111.12,-327 105.12,-321 105.12,-315 105.12,-315 105.12,-38 105.12,-38 105.12,-32 111.12,-26 117.12,-26"/>
 <text text-anchor="start" x="114.12" y="-308.75" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="bold" font-size="15.00" fill="#e5e7eb">Web server process</text>
 <text text-anchor="start" x="337.38" y="-299.62" font-family="Inter, Helvetica, Arial, sans-serif" font-size="15.00" fill="#e5e7eb"> </text>
 <text text-anchor="start" x="114.12" y="-289.85" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12.00" fill="#9ca3af">immich&#45;memories ui, port 8080</text>
