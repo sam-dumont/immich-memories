@@ -12,6 +12,7 @@ from typing import Literal
 
 from immich_memories.processing.hardware_encode import device_args, upload_filter
 from immich_memories.processing.rate_control import quality_args
+from immich_memories.tracking.timing import expected_fallback_level
 
 logger = logging.getLogger(__name__)
 
@@ -130,7 +131,7 @@ def _probe_ffmpeg_encode(encoder_args: list[str], *, upload: str | None = None) 
         warning = _probe_failure_advice(output, encoder_args)
         if warning and warning not in _advice_given:
             _advice_given.add(warning)
-            logger.warning("%s", warning)
+            logger.log(expected_fallback_level(), "%s", warning)
     return success
 
 

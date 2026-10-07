@@ -7,6 +7,9 @@ MIN_CARRIER_SECONDS = 3.5
 NOMINAL_STILL_SECONDS = 4.0
 # The longest a single clip is held before speech is considered.
 MOTION_CAP_SECONDS = 6.0
+# The longest a kept video's hold grows to, and the longest run of speech treated as one
+# exchange: longer runs are a crowd, a PA or a long story, no sentence a cut must finish.
+LONGEST_EXCHANGE_SECONDS = 2 * MOTION_CAP_SECONDS
 # Below this a clip reads as a stub rather than a shot: it is over before the eye
 # settles, and the film pays a transition for it either way.
 MIN_MOTION_SECONDS = 2.0

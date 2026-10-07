@@ -31,6 +31,9 @@ class GenerationPreview:
     title: str = ""
     subtitle: str | None = None
     sharing: str = "family"
+    # A --no-render plan keeps a cut, not a film: `runs render` makes a new run, so the
+    # folder it lands in cannot be named yet.
+    film_pending: bool = False
 
     @property
     def selected_total(self) -> int:
@@ -116,7 +119,12 @@ def print_generation_preview(preview: GenerationPreview) -> None:
         click.echo(f"Subtitle: {preview.subtitle}")
     click.echo(f"Sharing: {preview.sharing}")
     click.echo(f"Music: {preview.music_policy}")
-    click.echo(planned_output_line(preview.output_path))
+    if preview.film_pending:
+        click.echo(
+            f"Film: not rendered yet. `runs render` writes it under {preview.output_path.parent}"
+        )
+    else:
+        click.echo(planned_output_line(preview.output_path))
     click.echo(f"Upload: {'planned' if preview.upload_intent else 'disabled'}")
 
 

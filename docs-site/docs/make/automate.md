@@ -51,12 +51,12 @@ Every attempt that starts a film keeps its full output, credentials redacted, in
 no sudo, no journal access needed. **Runs** in the web UI has a download button for it too.
 
 ```bash
-immich-memories auto status                  # last attempt, outcome and reason
+immich-memories auto status                  # scheduler in use, last attempt, outcome and reason
 ls -t ~/.immich-memories/cache/automation-output/ | head -1   # newest transcript
 ```
 
 That path moves with `cache.directory` if you changed it. A day skipped before any film starts (cooldown, every candidate rejected) leaves no
-transcript: `auto status` says why.
+transcript: `auto status` says why. A period with nothing worth a film ends as one `skipped` attempt with that reason: no film is counted and the cooldown stays free.
 
 The scheduler's own wrapper output goes elsewhere. On macOS it lands in
 `~/.immich-memories/logs/auto.log` and `auto-error.log`. On Linux the systemd unit sends it to your

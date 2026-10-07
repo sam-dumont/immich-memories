@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Button, Heading } from '@immich/ui';
-  import { mdiMusicNote, mdiUpload } from '@mdi/js';
+  import { mdiDownload, mdiMusicNote, mdiUpload } from '@mdi/js';
   import { page } from '$app/state';
   import { onMount } from 'svelte';
   import { api, post, type JobView } from './api';
@@ -72,6 +72,13 @@
 
   const streams: (() => void)[] = [];
 
+  // Render makes a new run, and the film lives on it: the player and the download sit here, under
+  // the progress, and come into view when the render ends (the form below is a long way down).
+  let result = $state<HTMLElement | null>(null);
+  $effect(() => {
+    if (result) result.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  });
+
   function follow(started: JobView, onUpdate: (update: JobView) => void) {
     onUpdate(started);
     streams.push(followJob(started.id, onUpdate));
@@ -142,9 +149,18 @@
   {#if job}
     <JobPanel {job} onCancel={() => job && cancel(job)} />
     {#if job.status === 'succeeded' && job.result_run_id}
-      <!-- svelte-ignore a11y_media_has_caption -->
-      <video class="w-full max-w-3xl rounded-2xl bg-black" controls preload="metadata" src={`/api/v1/runs/${encodeURIComponent(job.result_run_id)}/film`}></video>
-      <a class="w-fit text-sm text-primary hover:underline" href={`/app/runs/${encodeURIComponent(job.result_run_id)}`}>{t('Open the film run')}</a>
+      <div class="flex flex-col items-start gap-3" bind:this={result}>
+        <!-- svelte-ignore a11y_media_has_caption -->
+        <video class="w-full max-w-3xl rounded-2xl bg-black" controls preload="metadata" aria-label={t('The film')} src={`/api/v1/runs/${encodeURIComponent(job.result_run_id)}/film`}></video>
+        <div class="flex flex-wrap items-center gap-4">
+          <a href={`/api/v1/runs/${encodeURIComponent(job.result_run_id)}/download`}
+            class="inline-flex items-center gap-2 rounded-full border border-gray-300 px-4 py-2 text-sm font-medium text-primary dark:border-gray-700">
+            <svg viewBox="0 0 24 24" class="size-4 fill-current" aria-hidden="true"><path d={mdiDownload} /></svg>
+            {t('Download film')}
+          </a>
+          <a class="text-sm text-primary hover:underline" href={`/app/runs/${encodeURIComponent(job.result_run_id)}`}>{t('Open the film run')}</a>
+        </div>
+      </div>
     {/if}
   {/if}
   {#if !job || job.status !== 'running'}

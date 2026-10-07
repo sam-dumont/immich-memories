@@ -44,6 +44,7 @@ docker compose up -d
 | Variable | Purpose |
 |---|---|
 | `IMMICH_URL`, `IMMICH_API_KEY` | Required Immich connection |
+| `IMMICH_MEMORIES_IMMICH__PUBLIC_URL` | Optional: the Immich address your browser opens, for the links the app shows. Unset uses `IMMICH_URL`; add it to `environment:` only when you set it. Requests never use it |
 | `IMMICH_MEMORIES_TRIPS__HOMEBASE_LATITUDE`, `IMMICH_MEMORIES_TRIPS__HOMEBASE_LONGITUDE` | Home coordinates for trips and public holidays |
 | `TZ` | Daily timer and log timezone |
 | `IMMICH_MEMORIES_AUTH_USERNAME`, `IMMICH_MEMORIES_AUTH_PASSWORD` | Set both to enable Basic auth (password: 12+ characters, or startup warns); shipped `.env` support |

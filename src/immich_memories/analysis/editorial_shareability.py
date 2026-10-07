@@ -30,6 +30,7 @@ import sqlalchemy as sa
 
 from immich_memories.analysis.annotation_line_fields import content_of
 from immich_memories.analysis.editorial_exposure_chains import ChainHold
+from immich_memories.analysis.editorial_preparation_heads import PUBLIC_HEAD_VERSIONS
 from immich_memories.analysis.editorial_shareability_audience import (
     HOUSEHOLD_FINDINGS,
     _clean,
@@ -44,7 +45,8 @@ from immich_memories.analysis.editorial_shareability_audience import (
 )
 from immich_memories.analysis.editorial_story_shortlist import capture_space_available
 from immich_memories.analysis.editorial_text_failures import TextCompletionFailure
-from immich_memories.db.tables import asset_flags, head_facts
+from immich_memories.db.tables import asset_flags, face_boxes, head_facts
+from immich_memories.store.asset_annotations import corroborated_people
 from immich_memories.store.batches import id_in, in_chunks
 
 if TYPE_CHECKING:
@@ -161,7 +163,35 @@ def load_detector_heads(
             for asset_id, head, version, label in rows:
                 if wanted.get(str(head)) == str(version) and _clean(label):
                     out.setdefault(str(asset_id), {})[str(head)] = _clean(label)
+        if wanted.get("people") == PUBLIC_HEAD_VERSIONS["people"]:
+            _corroborate_people(connection, ids, out)
     return out
+
+
+def _corroborate_people(connection, ids: Sequence[str], heads: dict[str, dict[str, str]]) -> None:
+    """The same corrected people head the annotation read gives a picture (#2069, #2079).
+
+    A clip has no caption, so only a face box backs its label, and only where the ids read
+    together hold face data at all.
+    """
+    boxed: set[str] = set()
+    for chunk in in_chunks(connection, ids):
+        boxed.update(
+            str(asset_id)
+            for asset_id in connection.execute(
+                sa.select(face_boxes.c.asset_id)
+                .where(id_in(connection, face_boxes.c.asset_id, chunk))
+                .distinct()
+            ).scalars()
+        )
+    for asset_id, row in heads.items():
+        if "people" in row:
+            row["people"] = corroborated_people(
+                row["people"],
+                has_face=asset_id in boxed,
+                description=None,
+                library_has_faces=bool(boxed),
+            )
 
 
 def never_auto_ids(flags: Mapping[str, Sequence[FlagRow]]) -> frozenset[str]:

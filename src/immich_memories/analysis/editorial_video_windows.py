@@ -15,7 +15,10 @@ from collections.abc import Callable, Sequence
 from operator import itemgetter
 from typing import Protocol
 
-from immich_memories.analysis.editorial_structure_budget import MIN_CARRIER_SECONDS
+from immich_memories.analysis.editorial_structure_budget import (
+    LONGEST_EXCHANGE_SECONDS,
+    MIN_CARRIER_SECONDS,
+)
 from immich_memories.speech.cuts import set_duration
 
 # The step a window start moves in; half the activity bin, coarser than a frame.
@@ -141,6 +144,41 @@ class Facts(Protocol):
 
     @property
     def obstructed(self) -> Sequence[float]: ...
+
+
+def grow_holds(carriers: list[dict], spare_seconds: float) -> list[dict]:
+    """A short film's kept videos hold longer, towards the content it still has unspent (#2090).
+
+    The film's videos were all cut at the motion cap before anyone looked at what the film had
+    room for. With ``spare_seconds`` of its content budget unspent, each video that can still
+    play (its own source is longer, no owner edit fixed its interval) takes an equal share, up
+    to ``LONGEST_EXCHANGE_SECONDS``. This runs before the window is placed, so a window
+    against the end of its source grows backwards from the last frame.
+    """
+    growable = [
+        i
+        for i, c in enumerate(carriers)
+        if c["kind"] == "video"
+        and "start_time" not in c
+        and min(float(c.get("raw_seconds") or 0.0), LONGEST_EXCHANGE_SECONDS) > c["seconds"]
+    ]
+    grown = [c.copy() for c in carriers]
+    while spare_seconds > 1e-6 and growable:
+        share = spare_seconds / len(growable)
+        for i in growable:
+            room = (
+                min(float(grown[i]["raw_seconds"]), LONGEST_EXCHANGE_SECONDS) - grown[i]["seconds"]
+            )
+            step = min(share, room)
+            grown[i]["seconds"] = grown[i]["seconds"] + step
+            spare_seconds -= step
+        growable = [
+            i
+            for i in growable
+            if min(float(grown[i]["raw_seconds"]), LONGEST_EXCHANGE_SECONDS) - grown[i]["seconds"]
+            > 1e-6
+        ]
+    return grown
 
 
 def place_windows(

@@ -209,6 +209,8 @@ class AssemblyClip:
     outgoing_transition: str | None = None
     # Photo clip flag — True when this clip was generated from a still image
     is_photo: bool = False
+    # The still carried an HDR gain map (Apple HEIC, UltraHDR JPEG); a plain JPEG did not.
+    gain_map_hdr: bool = False
     # Seek offset: skip this many seconds from the start (used for title trim)
     input_seek: float = 0.0
     # Source audio contains music (PANNs 'music'/'singing'); the added

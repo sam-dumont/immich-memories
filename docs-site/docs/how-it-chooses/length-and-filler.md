@@ -4,7 +4,7 @@ title: Why a film is shorter
 
 # Why a film is shorter
 
-The target length is a budget, not a promise. A month with three photographed days might make twenty seconds of film. Adding the fridge and the ceiling would make it longer. It would not make it better.
+The target length is a budget, not a promise. A month with three photographed days might make twenty seconds of film. Adding the fridge and the ceiling would make it longer. It would not make it better. When the pool says a picture was left out, it names the rule: another frame carries its moment, it repeats a picture already in the cut, its place had its share, or the film's seconds ran out.
 
 The editor tries distinct shots before stopping. It removes repeats even when that leaves the film short. Your title and ending cards also use part of the target length.
 

@@ -194,4 +194,4 @@ def register_render_command(runs: click.Group) -> None:
                 print_error(str(exc))
                 sys.exit(1)
         write_progress(progress_file, {"done": True, "fraction": 1.0, "output_path": str(path)})
-        print_success(saved_path_line(path), highlight=False)
+        print_success(saved_path_line(path), highlight=False, soft_wrap=True)

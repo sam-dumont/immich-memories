@@ -64,3 +64,20 @@ def test_a_few_quiet_years_still_fill_the_film_from_their_own_days(tmp_path):
     content = sum(carrier["seconds"] for carrier in plan["carriers"])
     assert _years(plan) == {"2023", "2024", "2025"}
     assert content >= plan["content_cap_seconds"] - 4.5
+
+
+def _soft_year(source, year):
+    """Every picture of one year carries the blur warning, as a year shot all out of focus."""
+    for asset_id, asset in source.assets.items():
+        if asset.file_created_at.year == year:
+            source.annotations[asset_id] += " | SOFT (blurry)"
+    return source
+
+
+def test_a_year_of_only_blurry_pictures_still_gets_its_shot(tmp_path):
+    # A lone blurry frame leaves its moment unfunded, but a year the film promised a voice has
+    # nothing else to show: leaving it out also left one year of two, and the film was refused.
+    plan = _run(_soft_year(_years_of_this_day(tmp_path, (2008, 2025)), 2008))
+
+    assert plan["status"] != "insufficient_material"
+    assert _years(plan) == {"2008", "2025"}

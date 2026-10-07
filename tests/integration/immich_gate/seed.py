@@ -13,6 +13,8 @@ What it leaves behind, all of it public or synthetic:
 * an admin, and an API key with every permission
 * the June 2024 fixture month (133 pictures, 13 of them videos) with places, favourites
   and three people tagged by hand (no machine learning runs)
+* the busiest June day again in 2023, and 25 December in 2023 and 2024, so on this day and a
+  named holiday have a second year to look back on
 * one album per shipped story, and ``BULK_ALBUM`` holding the paging set
 * ``<home>/.immich-memories/config.yaml``: rules reader, metadata-only
   preparation, no hardware, no music, nothing outside this Immich
@@ -245,11 +247,15 @@ def seed(url: str, media_root: Path, home: Path, timeout: float) -> None:
     seeder = Seeder(url, api_key)
     library = media.library_files(media_root)
     bulk = media.bulk_files(media_root)
+    dated = media.dated_files(media_root)
     library_ids = seeder.upload_all(library)
     bulk_ids = seeder.upload_all(bulk)
+    dated_ids = seeder.upload_all(dated)
     seeder.wait_for_queues()
     seeder.place(library_ids, library)
-    seeder.tag_people(library_ids, library)
+    # The dated sets carry their source pictures' people: a family day has its family in both years.
+    tagged = [(i, f) for i, f in zip(dated_ids, dated, strict=True) if f.picture]
+    seeder.tag_people(library_ids + [i for i, _ in tagged], library + [f for _, f in tagged])
     id_of = {
         gate_file.picture.asset_id: asset_id
         for asset_id, gate_file in zip(library_ids, library, strict=True)
@@ -264,7 +270,7 @@ def seed(url: str, media_root: Path, home: Path, timeout: float) -> None:
     write_config(home, url, api_key)
     print(
         f"Seeded Immich v{seeder.major} at {url}: {len(library_ids)} fixture assets, "
-        f"{len(bulk_ids)} paging assets, {len(CAST)} people "
+        f"{len(bulk_ids)} paging and {len(dated_ids)} dated assets, {len(CAST)} people "
         f"in {time.monotonic() - started:.0f}s ({datetime.now(UTC):%H:%M:%S} UTC)"
     )
 

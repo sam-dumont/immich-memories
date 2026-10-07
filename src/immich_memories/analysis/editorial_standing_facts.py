@@ -40,6 +40,10 @@ _HEADS_KIND = {
     "screen_or_document": 2.0,
 }
 _HEADS_PEOPLE = {"two": -0.5, "small-group": -1.0, "crowd": -1.5}
+# Somebody the people head sees AND Immich found a face for is a subject, whatever the frame head
+# calls the picture: a lone object (3.5) drops under the line, an empty or accidental frame
+# (4.0) or a blurred or blown-out one does not. The head alone can misread legs or a back.
+_HEADS_FOUND_FACE = -1.0
 _HEADS_FLAGS = {
     "children": -1.0,
     "document": 1.0,
@@ -314,7 +318,10 @@ def carries_nothing(
         return _caption_refuses(heads, line, caption, face)
     if heads.get("activity") == "animal-nature":
         return False
-    return _head_points(heads, line, _HEADS_KIND, _HEADS_PEOPLE, _HEADS_FLAGS) >= _HEADS_REFUSE_AT
+    points = _head_points(heads, line, _HEADS_KIND, _HEADS_PEOPLE, _HEADS_FLAGS)
+    if face is True and heads.get("people", "undetermined") not in _NOBODY_SEEN:
+        points += _HEADS_FOUND_FACE
+    return points >= _HEADS_REFUSE_AT
 
 
 def _caption_refuses(heads: Mapping[str, str], line: str, caption: str, face: bool | None) -> bool:

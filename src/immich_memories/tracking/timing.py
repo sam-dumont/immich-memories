@@ -101,6 +101,18 @@ def clock() -> float:
     return collected.now() if collected is not None else time.perf_counter()
 
 
+def expected_fallback_level() -> int:
+    """INFO where the running install's tier makes a fallback the documented default, else WARNING.
+
+    A Basic install has no GPU runtime: CPU titles and software encoding are what it is
+    sold as, so a probe finding no device is no news. The tier is read from the run in
+    progress; outside a run (preflight, a bare title command) the fallback stays a warning.
+    """
+    collected = active()
+    tier = collected.diagnostics.get("tier") if collected is not None else None
+    return logging.INFO if tier == "basic" else logging.WARNING
+
+
 def active() -> Collector | None:
     """Return this task's buffer, or None outside an instrumented run."""
     return _active.get()

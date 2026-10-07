@@ -106,8 +106,11 @@ def test_the_plan_ends_with_the_check_line_and_the_cut(tmp_path, capsys, monkeyp
     assert "A garden lunch" in out
 
 
-def test_the_planned_output_names_the_recipe_hash_once(tmp_path, capsys, monkeypatch):
+def test_a_plan_without_a_film_says_so_instead_of_naming_a_run_it_does_not_have(
+    tmp_path, capsys, monkeypatch
+):
     out = _plan_output(tmp_path, capsys, monkeypatch)
 
-    line = next(line for line in out.splitlines() if line.startswith("Output (planned)"))
-    assert line == "Output (planned): /films/june_3c9e1f0a_<run id>/june_3c9e1f0a.mp4"
+    assert "Film: not rendered yet. `runs render` writes it under /films" in out
+    assert "<run id>" not in out
+    assert "Output (planned)" not in out

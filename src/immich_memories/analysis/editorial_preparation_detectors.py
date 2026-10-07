@@ -610,6 +610,8 @@ def _worker_env(cache_dir: str, allow_downloads: bool) -> dict[str, str]:
     env = os.environ.copy()
     env["OMP_NUM_THREADS"] = "6"
     env["TOKENIZERS_PARALLELISM"] = "false"
+    # The worker cannot import immich_memories, which sets this for everything else (#2217).
+    env["ORT_DISABLE_TELEMETRY"] = "1"
     if cache_dir:
         env["HF_HUB_CACHE"] = str(Path(cache_dir).expanduser())
     if not allow_downloads:

@@ -103,3 +103,18 @@ def test_upload_says_so_when_the_film_file_is_gone(tmp_path):
 
     assert result.exit_code == 1
     assert "film file is gone" in result.output
+
+
+def test_upload_of_a_cut_that_was_never_rendered_says_to_render_it(tmp_path):
+    config = Config()
+    config.immich.url = "https://immich.example"
+    RunDatabase(open_store(config)).save_run(
+        RunMetadata(run_id=RUN, created_at=datetime(2026, 10, 7, tzinfo=UTC), status="completed")
+    )
+
+    result = _invoke(config, FakeImmich(), RUN)
+
+    assert result.exit_code == 1
+    assert "never rendered" in result.output
+    assert f"runs render {RUN}" in result.output
+    assert "gone" not in result.output

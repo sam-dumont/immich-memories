@@ -80,7 +80,7 @@ On Docker, local films land in `./output`. Installed natively, they land in `~/V
 
 Phone footage in HDR gets a tone-mapping step to SDR while it renders. A log line about HDR to SDR conversion is normal.
 
-An album film is named `album_<slug>_<hash>.mp4` (the slug comes from the album name), inside the run's own folder under `output/`. To find it, run `find output -name 'album_*.mp4'` on the host, or use **Download film** on the run page. A later `immich-memories runs render RUN_ID` starts a new run with its own id and its own file, so the cut you rendered before stays where it is.
+An album film is named `album_<slug>_<hash>.mp4` (the slug comes from the album name), inside the run's own folder under `output/`. To find it, run `find output -name 'album_*.mp4'` on the host, or use **Download film** on the run page. **Render** starts a new run, in the browser or with `immich-memories runs render RUN_ID`: it has its own id and its own file, and the cut you rendered from stays where it is. When the render finishes, the page shows the new run's player and **Download film**, with a link to that run.
 
 Play the local film through to the end with sound. Success means a playable MP4 in the run's
 player, a working **Download film** link, and the file in `./output` on the Compose host (`/app/output`

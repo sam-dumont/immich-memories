@@ -23,10 +23,12 @@ from immich_memories.titles.title_guards import (
     refusing_contentless_title,
     refusing_invented_names,
     refusing_single_year_title,
+    refusing_unbacked_subtitle,
     required_years,
     requiring_the_place,
     requiring_the_year,
     restore_fact_casing,
+    separating_the_years,
 )
 from immich_memories.titles.title_routing import (
     OCCASION_MEMORY_TYPES,
@@ -602,6 +604,9 @@ def _guarded_suggestion(
     people_store = facts.people_store if facts else None
     suggestion = eliding_french(parsed, locale)
     suggestion = refusing_invented_names(suggestion, prompt.facts)
+    suggestion = refusing_unbacked_subtitle(
+        suggestion, prompt.facts, memory_type, start_date, end_date, person_names, locale
+    )
     suggestion = refusing_unfounded_relationships(
         suggestion, person_names, locale, people_store, holiday
     )
@@ -615,6 +620,7 @@ def _guarded_suggestion(
     suggestion = refusing_contentless_title(
         suggestion, memory_type, start_date, end_date, person_names, locale
     )
+    suggestion = separating_the_years(suggestion, person_names)
     if memory_type in PEOPLE_MEMORY_TYPES or memory_type in OCCASION_MEMORY_TYPES:
         return suggestion
     return requiring_the_place(suggestion, facts.place if facts else None, locale)

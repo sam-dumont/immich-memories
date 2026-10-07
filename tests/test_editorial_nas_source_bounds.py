@@ -92,8 +92,15 @@ def _video(asset_id, seconds, regions=()):
 
 def test_a_clip_finishing_its_sentence_stops_at_twice_the_motion_cap():
     """The speech-safe end used to follow one utterance to the end of a 17-second source."""
-    [out] = resolve_speech_cuts([_video("long", 30.0)], lambda _a: [(0.0, 25.0)], buffer=0.0)
+    [out] = resolve_speech_cuts([_video("long", 30.0)], lambda _a: [(0.0, 12.0)], buffer=0.0)
     assert out["seconds"] == pytest.approx(2 * MOTION_CAP_SECONDS)
+
+
+def test_a_run_of_speech_longer_than_any_exchange_does_not_stretch_the_cut():
+    """A crowd or a PA read as one utterance is no sentence to finish (#2090): the cut keeps
+    the hold it had instead of following the noise out to twice the motion cap."""
+    [out] = resolve_speech_cuts([_video("crowd", 30.0)], lambda _a: [(0.0, 25.0)], buffer=0.0)
+    assert out["seconds"] == pytest.approx(MOTION_CAP_SECONDS)
 
 
 def test_a_clip_whose_sentence_ends_early_is_not_stretched_to_the_cap():

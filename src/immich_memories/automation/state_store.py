@@ -12,6 +12,7 @@ from uuid import uuid4
 import sqlalchemy as sa
 
 from immich_memories.automation.models import (
+    DECLINED_REASON,
     NO_ELIGIBLE_CANDIDATES,
     AutomationAttempt,
     AutoOutcome,
@@ -32,6 +33,8 @@ class FailureStreak:
 
     count: int
     last_failed_at: datetime | None
+    # The period was read and held nothing worth a film: it will not change by tomorrow.
+    declined: bool = False
 
 
 class AttemptAlreadyFinishedError(RuntimeError):
@@ -208,7 +211,10 @@ class AutomationStateStore:
         )
         decided_nothing = sa.and_(
             _ATTEMPTS.outcome == AutoOutcome.SKIPPED.value,
-            _ATTEMPTS.reason == NO_ELIGIBLE_CANDIDATES,
+            sa.or_(
+                _ATTEMPTS.reason == NO_ELIGIBLE_CANDIDATES,
+                _ATTEMPTS.reason.startswith(DECLINED_REASON),
+            ),
         )
         return self._first(
             sa.select(automation_attempts)
@@ -228,13 +234,22 @@ class AutomationStateStore:
         Read by candidate selection so a memory that cannot render stops being
         chosen every night. Only terminal failures count -- a SKIPPED attempt
         means the runner declined the candidate, which says nothing about
-        whether it would have rendered.
+        whether it would have rendered. The exception is a period the child read
+        and found nothing worth a film in: that candidate is marked declined.
         """
         query = (
-            sa.select(_ATTEMPTS.memory_key, _ATTEMPTS.outcome, _ATTEMPTS.finished_at)
+            sa.select(
+                _ATTEMPTS.memory_key, _ATTEMPTS.outcome, _ATTEMPTS.finished_at, _ATTEMPTS.reason
+            )
             .where(
                 _ATTEMPTS.memory_key.is_not(None),
-                _ATTEMPTS.outcome.in_([AutoOutcome.FAILED.value, AutoOutcome.COMPLETED.value]),
+                sa.or_(
+                    _ATTEMPTS.outcome.in_([AutoOutcome.FAILED.value, AutoOutcome.COMPLETED.value]),
+                    sa.and_(
+                        _ATTEMPTS.outcome == AutoOutcome.SKIPPED.value,
+                        _ATTEMPTS.reason.startswith(DECLINED_REASON),
+                    ),
+                ),
             )
             .order_by(_ATTEMPTS.started_at, _ATTEMPTS.seq)
         )
@@ -251,5 +266,6 @@ class AutomationStateStore:
             streaks[key] = FailureStreak(
                 count=(previous.count if previous else 0) + 1,
                 last_failed_at=from_db(row.finished_at),
+                declined=row.outcome == AutoOutcome.SKIPPED.value,
             )
         return streaks

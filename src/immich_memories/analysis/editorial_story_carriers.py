@@ -171,6 +171,8 @@ class CarrierAdmission:
         self.alternatives_of: dict[str, list[str]] = {}
         self.chosen_by_story: dict[str, list[str]] = {s["key"]: [] for s in stories}
         self.pass_records: list[dict] = []
+        # Whether the content budget was spent once every selection pass was done.
+        self.film_full = False
         self.kept_without_standing: list[str] = []
         self.displaced: list[dict] = []
         self.failed_standing: list[str] = []
@@ -495,7 +497,11 @@ class CarrierAdmission:
     def _repeats_the_story(self, s, choice, index, asset, carrier) -> bool:
         """A further picture of a story that looks like one it already holds waits its turn."""
         kept = [c for c in self.carriers if c["story_episode"] == s["key"]]
-        repeated = self.lookalike.repeats(carrier, neighbours(carrier, kept)) if kept else None
+        repeated = (
+            self.lookalike.repeats(carrier, neighbours(carrier, kept), film=self.carriers)
+            if kept
+            else None
+        )
         if repeated is None:
             return False
 
@@ -599,7 +605,9 @@ class CarrierAdmission:
                 break
         self.calls["selection_passes"] = passes
         self._keep_occasions()
-        DepthFill(self).run()
+        fill = DepthFill(self)
+        fill.run()
+        self.film_full = fill.budget_met()
         self._favourites_before_the_unvouched()
         self.lookalike.readmit(lambda: len(self.carriers) < self.slots)
         self.calls["failed_standing"] = len(self.failed_standing)

@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, Any
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
+from immich_memories.automation.last_trigger import record_trigger
 from immich_memories.automation.models import AutoOutcome
 from immich_memories.automation.runner import (
     AutomationAlreadyRunningError,
@@ -98,9 +99,11 @@ def _execute(started: StartedAutoRun) -> None:
 def _start(config: Config) -> StartedAutoRun | None:
     """Take the automation lease, or None when another run already holds it."""
     try:
-        return AutoRunner(config).start_one(reason=TRIGGER_REASON)
+        started = AutoRunner(config).start_one(reason=TRIGGER_REASON)
     except AutomationAlreadyRunningError:
         return None
+    record_trigger(config)
+    return started
 
 
 def _active_attempt_id(config: Config) -> str | None:

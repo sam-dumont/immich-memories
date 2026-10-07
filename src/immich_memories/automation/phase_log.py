@@ -10,7 +10,8 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
-_POLL_SECONDS = 30.0
+# Under half the heartbeat, so a beat reaches the log within the minute it is due.
+_POLL_SECONDS = 15.0
 
 
 @contextmanager

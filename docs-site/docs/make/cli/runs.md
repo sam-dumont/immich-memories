@@ -43,7 +43,7 @@ A revision is the version saved from the browser editor. Output options such as 
 
 For a film across accounts, the saved cut also keeps the exact file copy and the account that can read it. Moving a favourite to another copy does not change which file a replay uses.
 
-Every render is a new run. A saved cut needs its render inputs to replay; if they are unavailable, make a fresh cut.
+Every render is a new run, with its own id: `runs render` and the browser's **Render** both make one. `runs upload` takes that render run's id, not the cut's; on a cut that was never rendered it says so and points back here. A saved cut needs its render inputs to replay; if they are unavailable, make a fresh cut.
 
 To listen to generated music first (requires a generator):
 

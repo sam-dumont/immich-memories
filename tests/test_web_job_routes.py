@@ -333,6 +333,41 @@ def test_an_uncounted_store_lists_people_in_the_order_immich_returns_them(tmp_pa
     assert [p["name"] for p in client.get("/api/v1/people").json()] == ["Kim", "Robin", "Alex"]
 
 
+def test_two_person_records_with_one_name_are_one_choice_with_their_pictures_added(tmp_path):
+    from types import SimpleNamespace
+
+    from immich_memories.db import open_store
+    from immich_memories.people.transfer import import_document
+    from immich_memories.web.library import immich_client
+
+    class Library:
+        def get_all_people(self):
+            return [
+                SimpleNamespace(id=i, name=n) for i, n in (("1", "Pat"), ("2", "Pat"), ("3", "Bo"))
+            ]
+
+    config = config_in(tmp_path)
+    import_document(
+        open_store(config),
+        {
+            "version": 1,
+            "people": [
+                {"ids": ["1"], "name": "Pat", "inferred": {"evidence": {"count": 700}}},
+                {"ids": ["2"], "name": "Pat", "inferred": {"evidence": {"count": 20}}},
+            ],
+        },
+        replace=True,
+    )
+    client = api_client(config)
+    # WHY: Immich is the external boundary; the registry holds the scan's count of each face.
+    client.app.dependency_overrides[immich_client] = lambda: Library()
+
+    found = client.get("/api/v1/people").json()
+
+    # --person takes a name, so a second pill for the same name picked the same people.
+    assert [(p["name"], p["pictures"]) for p in found] == [("Pat", 720), ("Bo", None)]
+
+
 def test_invalid_job_ids_are_missing_jobs_in_every_endpoint(client):
     for suffix in ("", "/output", "/events"):
         assert client.get(f"/api/v1/jobs/invalid{suffix}").status_code == 404

@@ -59,7 +59,7 @@ def _anchor_name(assets: list, person_ids: list[str]) -> str | None:
     return None
 
 
-def _empty_window_warning(label: str, anchor: str | None) -> str:
+def _empty_window_warning(label: str, anchor: str | None, kind: str = "videos") -> str:
     """Two different diagnoses that look identical from the count alone.
 
     An unfiltered window with nothing in it means the library has nothing from
@@ -71,7 +71,7 @@ def _empty_window_warning(label: str, anchor: str | None) -> str:
             f"{anchor} does not appear in {label} — a memory anchored on them "
             f"cannot span both windows"
         )
-    return f"no videos found for {label} — that window contributes nothing"
+    return f"no {kind} found for {label} — that window contributes nothing"
 
 
 def _report_per_window(
@@ -79,8 +79,13 @@ def _report_per_window(
     date_ranges: list[DateRange],
     person_ids: list[str],
     history_from: int | None = None,
+    kind: str = "videos",
 ) -> None:
     """Say what each window contributed, and shout when one contributed nothing.
+
+    ``assets`` is the pool the memory selects from, and ``kind`` names what it holds:
+    a memory that takes photos counts photos and videos, so a window with pictures
+    and no clips is not reported as empty.
 
     A combined total hides the failure that matters on a multi-window memory: a
     holiday whose oldest year is empty still renders, as a memory of the other
@@ -109,7 +114,7 @@ def _report_per_window(
     )
     for label, n in zip(labels[:reported], counts[:reported], strict=True):
         if n == 0:
-            print_warning(_empty_window_warning(label, anchor))
+            print_warning(_empty_window_warning(label, anchor, kind))
 
     history = counts[reported:]
     if history:
@@ -186,6 +191,7 @@ def fetch_videos(
     person_match: str = "and",
     person_expression: PersonExpression | None = None,
     history_from: int | None = None,
+    report_windows: bool = True,
 ) -> list:
     """Fetch the video assets for the memory's windows.
 
@@ -196,6 +202,7 @@ def fetch_videos(
 
     ``history_from`` names where the memory's expected-sparse windows start, so
     the per-window report can summarise them rather than warn about each.
+    ``report_windows=False`` leaves that report to a caller that also holds the photos.
     """
     task = progress.add_task("Fetching videos...", total=None)
 
@@ -225,7 +232,8 @@ def fetch_videos(
 
     progress.update(task, completed=True)
     print_success(f"Found {len(assets)} videos")
-    _report_per_window(assets, date_ranges, person_ids, history_from)
+    if report_windows:
+        _report_per_window(assets, date_ranges, person_ids, history_from)
 
     return assets
 
@@ -262,10 +270,15 @@ def fetch_media(
             date_ranges=date_ranges,
             person_ids=[],
             history_from=history_from,
+            report_windows=not include_photos,
         )
         if not include_photos:
             return everything, []
-        return everything, fetch_photos(client=client, date_ranges=date_ranges, person_ids=[])
+        pictures = fetch_photos(client=client, date_ranges=date_ranges, person_ids=[])
+        _report_per_window(
+            [*everything, *pictures], date_ranges, [], history_from, kind="photos and videos"
+        )
+        return everything, pictures
     task = progress.add_task("Fetching the pictures these people are in...", total=None)
     videos: list = []
     photos: list = []
@@ -278,8 +291,15 @@ def fetch_media(
     progress.update(task, completed=True)
     videos = _first_of_each(videos)
     print_success(f"Found {len(videos)} videos")
-    _report_per_window(videos, date_ranges, person_ids, history_from)
-    return videos, _first_of_each(photos) if include_photos else []
+    photos = _first_of_each(photos) if include_photos else []
+    _report_per_window(
+        [*videos, *photos],
+        date_ranges,
+        person_ids,
+        history_from,
+        kind="photos and videos" if include_photos else "videos",
+    )
+    return videos, photos
 
 
 def _first_of_each(assets: list) -> list:

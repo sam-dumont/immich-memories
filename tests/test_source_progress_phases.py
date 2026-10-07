@@ -57,3 +57,22 @@ def test_every_twenty_fifth_picture_is_reported_however_fast_they_come():
         reporter(_counted(done))
 
     assert [e[0] for e in events] == [0, 25, 50]
+
+
+def _unbounded(label: str) -> dict:
+    return {"phase_label": label, "indeterminate": True}
+
+
+def test_each_new_uncounted_stage_is_reported_not_only_the_first():
+    """The family-viewing check and the picture review are uncounted stages in a row (#2219)."""
+    events: list = []
+    reporter = _reporter(events, [0.0])
+
+    reporter(_unbounded("Editing the memory: 149 pictures going into the family-viewing check"))
+    reporter(_unbounded("Editing the memory: 149 pictures going into the family-viewing check"))
+    reporter(_unbounded("Editing the memory: 149 pictures going into the picture review"))
+
+    assert [e[2] for e in events] == [
+        "Editing the memory: 149 pictures going into the family-viewing check",
+        "Editing the memory: 149 pictures going into the picture review",
+    ]

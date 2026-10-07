@@ -26,6 +26,22 @@ def test_a_frame_of_nothing_with_nobody_in_it_carries_nothing(kind):
     assert carries_nothing({"frame_kind": kind, "people": "one"}, "")
 
 
+def test_a_lone_object_frame_with_a_face_immich_found_stands_on_that_person():
+    # A Christmas dinner the frame head reads as a table and a cake, with a family member
+    # Immich recognised at it: the person is the subject, on the Basic tier too (no caption).
+    assert not carries_nothing(LONE_OBJECT, "", face=True)
+
+
+def test_a_found_face_does_not_rescue_a_blurred_or_blown_out_lone_object():
+    assert carries_nothing(LONE_OBJECT, "2024-12-25 10:00 | SOFT (blurry)", face=True)
+    assert carries_nothing(LONE_OBJECT, "2024-12-25 10:00 | BLOWN OUT", face=True)
+
+
+def test_a_found_face_does_not_rescue_an_empty_room_or_an_accidental_frame():
+    for kind in ("empty_room_ceiling_or_floor", "accidental_or_blurred_frame"):
+        assert carries_nothing({"frame_kind": kind, "people": "one"}, "", face=True)
+
+
 def test_children_in_a_frame_the_head_calls_a_lone_object_pull_it_back():
     assert not carries_nothing(LONE_OBJECT | {"children": "yes"}, "")
 

@@ -24,6 +24,9 @@ class AutoOutcome(StrEnum):
 
 # The skip that is a decision about today's film, unlike a cooldown or a held lease.
 NO_ELIGIBLE_CANDIDATES = "no eligible candidates"
+# A period the child read and judged not worth a film (#2209): a skipped attempt whose
+# reason starts here, so history and the daily timer can tell it from a cooldown skip.
+DECLINED_REASON = "nothing worth a film"
 
 
 class AutoAction(StrEnum):

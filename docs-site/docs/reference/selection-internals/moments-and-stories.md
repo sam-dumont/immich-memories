@@ -153,7 +153,11 @@ one. A year-in-review film is one year, so this does not apply to it.
 
 On this day is split into calendar years the same way, and goes one step further: the date coming
 back is the subject, so a year speaks even when its stories read as background (`none`) next to the
-busier years. Its pictures still have to stand on their own. Once every year has its shot, a film
+busier years. Its pictures still have to stand on their own, except that a year whose only
+pictures carry a blur or darkness warning still gets its best one: leaving it out would also
+leave the film short of the two years it needs. A year the film has no shot for (more years than
+shots) is named in the story record with the reason, and the finished-cut check does not count
+it as a broken promise. Once every year has its shot, a film
 that is still short takes further distinct shots from those same years, round-robin, and only goes
 short when they run out.
 

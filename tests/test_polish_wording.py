@@ -81,3 +81,21 @@ def test_a_saved_path_under_home_is_shown_with_a_tilde() -> None:
         saved_path_line(Path.home() / "Videos" / "june-2024.mp4")
         == "Video saved to: ~/Videos/june-2024.mp4"
     )
+
+
+def test_a_long_saved_path_is_never_split_across_lines_without_a_terminal(monkeypatch) -> None:
+    import io
+    from pathlib import Path
+
+    from rich.console import Console
+
+    from immich_memories.cli import _helpers
+
+    long_path = Path("/Users/someone/Videos/" + "deeper/" * 6 + "album_first_film_ec6210e5.mp4")
+    out = io.StringIO()
+    # WHY: a pipe has no terminal; Rich guesses 80 columns there, which is what wrapped the path.
+    monkeypatch.setattr(_helpers, "console", Console(file=out, width=80, force_terminal=False))
+
+    _helpers.print_success(saved_path_line(long_path), highlight=False, soft_wrap=True)
+
+    assert f"  {long_path}\n" in out.getvalue()

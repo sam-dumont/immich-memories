@@ -113,7 +113,11 @@ The draft tries to reach its length before it gives up the seconds:
   own shot: a video counts once its window clears every kept video's window, anything else
   counts once it is a real five minutes from every kept shot of the same capture group, and a
   heap of frames sharing one timestamp (a placeholder date, a burst, a pile of scans) is one
-  shot, not many. Capacity is distinct shots, with no flat per-day or per-moment ceiling: a
+  shot, not many. A big event is the exception to the five minutes: a capture group of ten
+  pictures or more earns about one shot per five of them, however close in time (at least five
+  pictures and thirty seconds from every kept shot of it), and a story that reads as a glimpse
+  still deepens that way. Twenty-one obstacle-course pictures from one afternoon make four
+  shots, not one. Capacity is distinct shots, with no flat per-day or per-moment ceiling: a
   dense day is not held to the same cap as a quiet one. Videos come before stills, frames are
   spread across the moment's time, and the story's place bound grows with the slots it now
   spends. Eligible favourites come first; equally preferred frames spread furthest in time from

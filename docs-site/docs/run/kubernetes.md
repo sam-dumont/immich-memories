@@ -145,6 +145,10 @@ kubectl apply -k base
 kubectl rollout status -n immich-memories deploy/immich-memories
 ```
 
+`rollout status` waits. The GPU tier's first start pulls a multi-GB CUDA image (about 5 minutes on a
+test cluster) and the pod sits in `ContainerCreating` the whole time. That is the pull, not a stuck
+pod: `kubectl describe pod -n immich-memories` shows `Pulling image`.
+
 The temporary Secret file is private (mode 0600); remove it after applying.
 The base uses an existing `immich-memories-secrets` Secret. GitOps users can skip the plaintext
 copy and use [SOPS or External Secrets](reference/kubernetes.md#bring-your-own-secret).
@@ -169,7 +173,7 @@ kubectl exec -n immich-memories deploy/immich-memories -- immich-memories prefli
 kubectl port-forward -n immich-memories svc/immich-memories 8080:80
 ```
 
-Open `http://localhost:8080`. Set home coordinates and timezone below, then make
+Open `http://localhost:8080`. Port 8080 taken on your machine? `kubectl port-forward -n immich-memories svc/immich-memories 8081:80` serves it at `http://localhost:8081`: the service port stays 80. Set home coordinates and timezone below, then make
 [your first film](../get-started/first-film.mdx).
 
 :::caution Keep it private until login works

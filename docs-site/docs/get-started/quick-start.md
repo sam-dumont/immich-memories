@@ -21,7 +21,16 @@ Basic needs only `docker-compose.yml` and `example.env` (saved as `.env`). The o
 
 The image is about 2.3 GB. With an empty layer cache the pull in step 3 took 84 seconds on a Synology; budget more on a slow line.
 
-Check the network now: if `ip link` shows an MTU under 1500 on the host's interface (a VPN, Kubernetes node or cloud VM), add the [MTU override](../reference/troubleshooting.md#preflight-says-immich-is-connected-but-cuts-hang-on-thumbnails) before step 3. Otherwise the first cut hangs on thumbnails while preflight stays green.
+Check the network now. Read the MTU of the interface that reaches your Immich: `ip route get 192.168.1.10` prints `dev eth0` (use your Immich address), and `ip link show eth0` prints `mtu 1500` or less. Under 1500 (a VPN, Kubernetes node or cloud VM), save this as `docker-compose.override.yml` next to `docker-compose.yml`, with a value below the one you read:
+
+```yaml
+networks:
+  default:
+    driver_opts:
+      com.docker.network.driver.mtu: "1300"
+```
+
+Otherwise the first cut hangs on thumbnails while preflight stays green. [Why it happens](../reference/troubleshooting.md#preflight-says-immich-is-connected-but-cuts-hang-on-thumbnails).
 
 Create `output` yourself, owned by uid 1000, so Docker does not make it as root. This is where local films land. Run it in the same folder, right after the downloads:
 
@@ -67,18 +76,23 @@ docker compose exec immich-memories immich-memories preflight
 Preflight must pass Immich, required-model and output checks. Basic skips unconfigured optional
 services; a home-coordinate warning does not block an album film.
 
+The Output directory row says where films go and who decided it: `/app/output (from IMMICH_MEMORIES_OUTPUT__DIRECTORY, mounted volume), writable`. The source is the environment variable, `config.yaml` or the built-in default. In a container a path that is not a mount gets its own warning, because films written there vanish on restart. The image sets the variable, and it beats `output.directory` in `config.yaml`: preflight warns when the two disagree.
+
 Over plain SSH with no terminal (a script, `ssh host 'docker compose exec ...'`), add `-T`, and set the table width, or its first column wraps and the row labels disappear:
 `docker compose exec -T -e COLUMNS=140 immich-memories immich-memories preflight`.
 
-Three more warnings are normal on a first run and do not block a film:
+Four more warnings are normal on a first run and do not block a film:
 
 - **Immich** with a read-only key: `upload permissions not granted, films stay local; asset.delete not granted, previous versions are kept`. It only means the key cannot upload.
 - **Title rendering** on a plain CPU host: `Kernels on the CPU (quadrants): no GPU backend started`. Titles render on the CPU, which is what a Basic install does.
+- **Hardware encoding** on a host with no `/dev/dri` (Basic): the log says `libva could not open a device`. There is no GPU to open, so the film encodes on the CPU.
 - **Title rendering** on a CPU without AVX (some Celerons): `kernel backend crashed on this CPU: illegal instruction; titles fall back to the PIL renderer`. Titles use the simpler renderer.
 
 ## 4. Open the app
 
 On the machine running Docker, open [http://localhost:8080](http://localhost:8080).
+
+8080 taken? Change the number before `:8080` in the `ports:` line of `docker-compose.yml` (`127.0.0.1:8081:8080` serves the app at `http://localhost:8081`), then `docker compose up -d` again. Without Docker, `immich-memories ui -p 8081` does the same.
 
 For a headless NAS, run this on your desktop first, replacing the SSH account and server name:
 
@@ -113,6 +127,7 @@ separate film generation from setup; larger periods can still take hours.
 | `Encoder: Pinned DINOv2 export missing` | Run `models fetch` from step 3. |
 | Output directory is not writable | On Linux, `sudo chown -R 1000:1000 output`. On Synology DSM, use the [ACL recipe](../run/nas.md#the-output-folder). |
 | `Immich: Connection failed` | Check the URL and key in `.env`, then run `docker compose up -d` again. |
+| `port is already allocated` on `docker compose up` | Something else holds 8080. Change the host port as in step 4. |
 | The cut hangs on thumbnails while preflight is green | The host's network MTU is below Docker's. See [the MTU fix](../reference/troubleshooting.md#preflight-says-immich-is-connected-but-cuts-hang-on-thumbnails). |
 
 Check the installation at any time:

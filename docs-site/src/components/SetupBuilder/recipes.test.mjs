@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import test from 'node:test';
-import {API_KEY_PLACEHOLDER, buildSetup, nativeInstallCommand} from './recipes.ts';
+import {API_KEY_PLACEHOLDER, buildSetup, looksInternal, nativeInstallCommand} from './recipes.ts';
 import {toYaml} from './yaml.ts';
 import {deploymentCommands} from '../InstallationFiles/downloads.ts';
 
@@ -243,4 +243,35 @@ test('a reader URL gets the reader key placeholder and a step; no reader leaves 
   const none = buildSetup({...setup, inline: false, tier: 'basic'}, sources, '1.2.3');
   assert.match(none.files.find(file => file.name === '.env').content, /^IMMICH_API_KEY=/m);
   assert.doesNotMatch(none.commands, /reader's API key/);
+});
+
+test('an internal Immich address is flagged, a public one is not', () => {
+  for (const url of ['http://immich.immich.svc.cluster.local:2283', 'http://immich-server:2283', 'http://host.docker.internal:2283']) {
+    assert.equal(looksInternal(url), true, url);
+  }
+  for (const url of ['http://192.168.1.10:2283', 'https://photos.example.org', 'http://nas.local:2283', 'nonsense']) {
+    assert.equal(looksInternal(url), false, url);
+  }
+});
+
+test('the browser address reaches every platform without touching the server URL', () => {
+  const withPublic = {...setup, immichUrl: 'http://immich-server:2283', immichPublicUrl: 'https://photos.example.org'};
+  const compose = buildSetup({...withPublic, inline: false}, sources, '1.2.3');
+  const env = compose.files.find(file => file.name === '.env').content;
+  assert.match(env, /^IMMICH_URL='http:\/\/immich-server:2283'$/m);
+  const environment = file => file.data.services['immich-memories'].environment;
+  assert.equal(environment(compose.files.find(file => file.name === 'docker-compose.yml')).IMMICH_MEMORIES_IMMICH__PUBLIC_URL, 'https://photos.example.org');
+  const without = buildSetup({...setup, inline: false}, sources, '1.2.3').files.find(file => file.name === 'docker-compose.yml');
+  assert.equal('IMMICH_MEMORIES_IMMICH__PUBLIC_URL' in environment(without), false);
+  const mac = buildSetup({...withPublic, platform: 'mac', inline: false}, sources, '1.2.3');
+  assert.equal(mac.files.find(file => file.name === 'config.yaml').data.immich.public_url, 'https://photos.example.org');
+  const k8s = buildSetup({...withPublic, platform: 'kubernetes', inline: false}, sources, '1.2.3');
+  const secret = k8s.files.find(file => file.name.endsWith('/secret.yaml')).data;
+  assert.equal(secret.stringData.IMMICH_MEMORIES_IMMICH__PUBLIC_URL, 'https://photos.example.org');
+  assert.equal(secret.stringData.IMMICH_URL, 'http://immich-server:2283');
+});
+
+test('a malformed browser address is refused', () => {
+  const result = buildSetup({...setup, immichPublicUrl: 'photos.example.org'}, sources, '1.2.3');
+  assert.match(result.error, /browser address needs a complete URL/);
 });

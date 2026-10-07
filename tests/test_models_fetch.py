@@ -357,3 +357,14 @@ def test_failed_signed_mirror_download_does_not_print_url_credentials(served, tm
     assert result.exit_code == 1
     assert "is not the pinned" in result.output
     assert "private-signed-mirror-token" not in result.output
+
+
+@pytest.mark.parametrize("tier", ["basic", "gpu"])
+def test_fetch_names_the_tier_before_the_first_download(served, tmp_path, monkeypatch, tier):
+    config = _pinned_everywhere(served, tmp_path, monkeypatch)
+    config.tier = tier
+
+    result = _invoke(["models", "fetch", "--no-detectors"], config)
+
+    assert result.exit_code == 0
+    assert result.output.splitlines()[0] == f"models: tier {tier}"

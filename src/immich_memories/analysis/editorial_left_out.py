@@ -33,4 +33,7 @@ def final_cut_notes(plan: Mapping[str, Any], lost_ids: Iterable[str]) -> dict[st
     unused = NOT_IN_PLAN
     if not plan.get("carriers") and share.get("tightened"):
         unused = f"not used: the family-viewing check held back every shot this {level} film chose"
-    return {asset_id: reasons.get(asset_id, unused) for asset_id in lost_ids}
+    by_rule = plan.get("left_out") or {}
+    return {
+        asset_id: reasons.get(asset_id) or by_rule.get(asset_id) or unused for asset_id in lost_ids
+    }

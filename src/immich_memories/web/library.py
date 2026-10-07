@@ -81,11 +81,19 @@ def people(
     The counts are the last people scan's; anyone it has not counted keeps Immich's own order, which is most pictured first.
     """
     counts = _picture_counts(registry)
-    named = [
-        NamedPerson(id=p.id, name=p.name, pictures=counts.get(p.id))
-        for p in client.get_all_people()
-        if p.name
-    ]
+    # `--person` takes a name, so two Immich records sharing one (a face cluster Immich split)
+    # are one choice here; People flags the split for merging in Immich.
+    merged: dict[str, NamedPerson] = {}
+    for p in client.get_all_people():
+        if not p.name:
+            continue
+        pictures = counts.get(p.id)
+        kept = merged.get(p.name)
+        if kept is None:
+            merged[p.name] = NamedPerson(id=p.id, name=p.name, pictures=pictures)
+        elif pictures is not None:
+            kept.pictures = (kept.pictures or 0) + pictures
+    named = list(merged.values())
     # Stable: ties, and everyone uncounted, stay in the order Immich returned them.
     return sorted(named, key=lambda p: -(p.pictures if p.pictures is not None else -1))
 

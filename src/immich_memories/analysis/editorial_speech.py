@@ -6,7 +6,9 @@ import logging
 from collections.abc import Callable, Mapping
 from typing import Any
 
-from immich_memories.analysis.editorial_structure_budget import MOTION_CAP_SECONDS
+from immich_memories.analysis.editorial_structure_budget import (
+    LONGEST_EXCHANGE_SECONDS,
+)
 from immich_memories.processing.live_material import LiveRenderMaterial
 from immich_memories.speech.cuts import safe_end, set_duration
 from immich_memories.speech.facts import SpeechMeasurementUnavailable
@@ -17,10 +19,9 @@ logger = logging.getLogger(__name__)
 # people trading lines leave gaps of that size, and a cut there keeps the question and
 # drops the answer (#1950). Only a silence this long ends an exchange.
 CONVERSATION_PAUSE_SECONDS = 1.0
-# An exchange stays whole only when it fits the longest cut speech may hold. Longer runs of
+# An exchange stays whole only when it fits `LONGEST_EXCHANGE_SECONDS`. Longer runs of
 # "speech" are a crowd, a PA or a long story: on a finish-line clip the detector heard 17 s
 # of it, and keeping that whole dragged the window back 7 s and the cut out to its cap.
-LONGEST_EXCHANGE_SECONDS = 2 * MOTION_CAP_SECONDS
 
 
 def _merged_ranges(ranges, duration, buffer):
@@ -137,7 +138,7 @@ def resolve_speech_cuts(
         # followed one utterance to the end of a 17-second source.
         end = min(
             duration,
-            start + 2 * MOTION_CAP_SECONDS,
+            start + LONGEST_EXCHANGE_SECONDS,
             safe_end(carrier, carrier["seconds"], expand=True),
         )
         set_duration(carrier, end - start)

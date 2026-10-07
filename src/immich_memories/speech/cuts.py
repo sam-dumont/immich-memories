@@ -2,15 +2,21 @@
 
 from __future__ import annotations
 
+from immich_memories.analysis.editorial_structure_budget import LONGEST_EXCHANGE_SECONDS
+
 
 def safe_end(carrier: dict, seconds: float, *, expand: bool = False) -> float:
-    """Keep the start fixed; move an end in speech to the nearest allowed side."""
+    """Keep the start fixed; move an end in speech to the nearest allowed side.
+
+    A region longer than any kept exchange is no sentence (a crowd, music, wind read as one
+    line), here as for the start of a cut: its edges say nothing about where the cut may end.
+    """
     start = carrier.get("start_time", 0.0)
     end = start + seconds
     ranges = carrier.get("speech_regions", [])
     ordered = ranges if expand else reversed(ranges)
     for left, right in ordered:
-        if left < end < right:
+        if left < end < right and right - left <= LONGEST_EXCHANGE_SECONDS:
             end = right if expand else left
     return end
 

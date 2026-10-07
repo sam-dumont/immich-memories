@@ -9,11 +9,8 @@ from __future__ import annotations
 import calendar
 import logging
 import sys
-import time
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
-
-from sqlalchemy.exc import SQLAlchemyError
 
 from immich_memories.analysis import llm_metrics
 from immich_memories.analysis.editorial_duration_advisory import editorial_duration_warning
@@ -33,8 +30,8 @@ from immich_memories.cli._helpers import (
 from immich_memories.cli._run_inputs import ResolvedRunInputs
 from immich_memories.cli._run_summary import render_run_summary
 from immich_memories.cli._run_timeline import configure_timeline, final_timeline
+from immich_memories.cli.attempt_phase_reporter import AttemptPhaseReporter
 from immich_memories.cli.source_progress import SourceProgressReporter
-from immich_memories.db import open_store
 from immich_memories.filename_builder import name_after_recipe
 from immich_memories.operations.auto_output import NOTHING_WORTH_A_FILM
 from immich_memories.operations.run_index import run_id_for_attempt
@@ -131,6 +128,19 @@ def _nothing_worth_a_film_message(date_range: DateRange, stats: dict) -> str:
     return f"{message}: {reason}" if reason else message
 
 
+def _end_run_without_a_film() -> None:
+    """Close the observed run as "stopped before a film", not as a completed one (#2209).
+
+    A declined period made nothing: history, the cooldown and the last-completed-run
+    read must not count it. Without an observed run there is nothing to close.
+    """
+    from immich_memories.tracking.run_observations import current_tracker
+
+    tracker = current_tracker()
+    if tracker is not None and tracker.current_run is not None:
+        tracker.cancel_run()
+
+
 def _stops_before_rendering(*, dry_run: bool, no_render: bool) -> bool:
     """Whether this run ends at the plan instead of producing a file.
 
@@ -203,6 +213,7 @@ def _finish_without_rendering(
         title=title or template[0],
         subtitle=subtitle if title else template[1],
         sharing=config.defaults.sharing,
+        film_pending=True,
     )
     print_generation_preview(preview)
     progress.update(task, completed=100)
@@ -278,34 +289,6 @@ def _keep_cut_as_run(
     if attempt is not None:
         record_run_attempt(tracker.run_id, attempt, "", store=tracker.db.store)
     return tracker.run_id
-
-
-class _AttemptPhaseReporter:
-    """Share semantic phase messages with CLI and an optional automation attempt."""
-
-    def __init__(self, config: Config, attempt_id: str | None, progress, task) -> None:
-        from immich_memories.automation.state_store import AutomationStateStore
-
-        self._attempt_id = attempt_id
-        self._store = AutomationStateStore(open_store(config)) if attempt_id else None
-        self._progress = progress
-        self._task = task
-        self._started = time.monotonic()
-
-    def emit(self, phase, current: int, total: int, message: str) -> None:
-        from immich_memories.operations.phases import PhaseEvent
-
-        now = time.monotonic()
-        event = PhaseEvent(phase, current, total, message, now - self._started)
-        self._started = now
-        if self._store is not None and self._attempt_id is not None:
-            try:
-                self._store.update_phase(self._attempt_id, event)
-            except (KeyError, OSError, RuntimeError, SQLAlchemyError):
-                logging.getLogger(__name__).warning(
-                    "Could not persist operational phase %s", phase.value
-                )
-        self._progress.update(self._task, description=event.message)
 
 
 def _keep_cut_titles(
@@ -443,12 +426,13 @@ def run_pipeline_and_generate(
     # (Real timing data: analysis ~83s/22%, generation ~295s/78%)
     task = progress.add_task("Analyzing clips...", total=100)
     _pipeline_start = _time.monotonic()
-    phases = _AttemptPhaseReporter(
+    phases = AttemptPhaseReporter(
         config,
         resolved.attempt_id,
         progress,
         task,
     )
+    phases.heartbeat.start()
     phases.emit(OperationalPhase.DISCOVERY, source_count, source_count, "Discovery complete")
     phases.emit(OperationalPhase.DOWNLOAD, 0, source_count, "Preparing source downloads")
 
@@ -557,6 +541,7 @@ def run_pipeline_and_generate(
             print_info(
                 _nothing_worth_a_film_message(date_range, pipeline_result.stats), soft_wrap=True
             )
+            _end_run_without_a_film()
             sys.exit(0)
         print_error("Pipeline selected no clips")
         sys.exit(1)
@@ -661,6 +646,7 @@ def run_pipeline_and_generate(
         progress.update(task, completed=scaled, description=msg)
 
     def generation_phase(event) -> None:
+        phases.heartbeat.note(event.phase, event.current, event.total, event.message)
         progress.update(task, description=event.message)
 
     # WHY: Photos are now in selected_clips as IMAGE-type assets.
@@ -714,7 +700,10 @@ def run_pipeline_and_generate(
         memory_preset_params=resolved.preset_params,
     )
 
-    result_path = generate_memory(gen_params)
+    try:
+        result_path = generate_memory(gen_params)
+    finally:
+        phases.heartbeat.stop()
     _total_time = _time.monotonic() - _pipeline_start
     _gen_time = _total_time - _analysis_time
     progress.update(task, completed=100)

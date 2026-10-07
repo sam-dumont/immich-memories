@@ -36,3 +36,56 @@ def test_rules_tier_selection_over_the_fixture_month_picks_a_cut(tmp_path):
     assert "Selection complete; no video was created" in output, output[-4000:]
     assert trace.exists(), output[-4000:]
     assert trace.stat().st_size > 0
+
+
+def test_on_this_day_looks_back_to_the_same_day_a_year_earlier(tmp_path):
+    result = run_cli(
+        "generate",
+        "--memory-type",
+        "on_this_day",
+        # The fixture's busiest day is 15 June 2024, held again on 15 June 2023.
+        "--day",
+        "2025-06-15",
+        "--years-back",
+        "2",
+        "--include-photos",
+        "--no-music",
+        "--no-render",
+        "--quiet",
+        "--trace-selection",
+        str(tmp_path / "selection-trace.txt"),
+    )
+    output = result.stdout + result.stderr
+
+    assert result.returncode == 0, output[-4000:]
+    assert "Selection complete; no video was created" in output, output[-4000:]
+
+
+def test_the_christmas_holiday_finds_its_two_years(tmp_path):
+    result = run_cli(
+        "generate",
+        "--memory-type",
+        "holiday",
+        "--holiday",
+        "12-25",
+        "--year",
+        "2024",
+        "--years-back",
+        "1",
+        "--include-photos",
+        "--no-music",
+        "--no-render",
+        "--quiet",
+        "--trace-selection",
+        str(tmp_path / "selection-trace.txt"),
+    )
+    output = result.stdout + result.stderr
+
+    assert result.returncode == 0, output[-4000:]
+    assert "Selection complete; no video was created" in output, output[-4000:]
+
+
+def test_a_year_with_no_trips_exits_one():
+    result = run_cli("generate", "--memory-type", "trip", "--year", "2010", "--no-render")
+
+    assert result.returncode == 1, (result.stdout + result.stderr)[-4000:]

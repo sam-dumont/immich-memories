@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import string
-from collections.abc import Mapping, Sequence
+from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from typing import Any
@@ -117,6 +117,20 @@ class AssetAnnotationFactBatch:
         return {fact.asset_id: fact for fact in self.facts}
 
 
+def corroborated_people(
+    label: str, *, has_face: bool, description: str | None, library_has_faces: bool
+) -> str:
+    """The public people head's label after it is checked against a face and the caption (#2069).
+
+    The one rule every reader of the head shares, the annotation read and the clip rows a Live
+    Photo's shareability reads (`editorial_shareability.load_detector_heads`). A library with no
+    face data at all leaves the head its own word (#2079).
+    """
+    if not library_has_faces or label == "none" or has_face:
+        return label
+    return label if description and names_a_person(description) else "none"
+
+
 class AssetAnnotationFactRepository:
     """Read banked facts; a null description producer excludes captions and their fields."""
 
@@ -127,8 +141,12 @@ class AssetAnnotationFactRepository:
         description_model: str | None,
         head_versions: Mapping[str, str],
         pixel_producer_key: str,
+        named_now: Collection[str] = frozenset(),
     ) -> None:
         self._store = store
+        # The pictures Immich names somebody on right now. A face recognised after `prepare`
+        # has no stored box, but it is a face all the same (#2079).
+        self._named_now = frozenset(named_now)
         self._description_model = description_model
         self._head_versions = dict(head_versions)
         self._pixel_producer_key = pixel_producer_key
@@ -328,8 +346,9 @@ class AssetAnnotationFactRepository:
 
         Corroborate once, here, before anything downstream reads a head: a picture counts as
         having people only when it carries a face box, or its caption names a person as
-        subject. Otherwise its label is lowered to "none". A face box is never overruled, and
-        the owner's own head bank (any other version) is trusted as banked.
+        subject, or Immich names somebody on it now. Otherwise its label is lowered to "none". A
+        face box is never overruled, and the owner's own head bank (any other version) is
+        trusted as banked.
 
         #2079: a library with face detection off (or never run) gives every asset in this
         batch the same empty face list, which would otherwise read as "no corroborating box"
@@ -339,15 +358,18 @@ class AssetAnnotationFactRepository:
         """
         if self._head_versions.get("people") != PUBLIC_HEAD_VERSIONS["people"]:
             return
-        if not any(record.faces for record in records.values()):
-            return
-        for record in records.values():
+        faces = {a for a, record in records.items() if record.faces} | (
+            self._named_now & records.keys()
+        )
+        for asset_id, record in records.items():
             label = record.heads.get("people")
-            if label is None or label == "none" or record.faces:
-                continue
-            if record.description and names_a_person(record.description):
-                continue
-            record.heads["people"] = "none"
+            if label is not None:
+                record.heads["people"] = corroborated_people(
+                    label,
+                    has_face=asset_id in faces,
+                    description=record.description,
+                    library_has_faces=bool(faces),
+                )
 
     def _read_pixels(
         self,

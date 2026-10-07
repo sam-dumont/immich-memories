@@ -17,6 +17,7 @@ import numpy as np
 
 from immich_memories.processing.encoding_plan import EncodingPlan, HdrTransfer
 from immich_memories.processing.hdr_utilities import get_hdr_conversion_filter
+from immich_memories.tracking.timing import expected_fallback_level
 
 from .cpu_video import create_title_video
 from .styles import TitleStyle
@@ -92,7 +93,8 @@ class RenderingService:
         card — and titles are the most expensive stage there is.
         """
         if self.backend is None:
-            logger.warning(
+            logger.log(
+                expected_fallback_level(),
                 "Title rendering: %s; using FFmpeg animated titles with raster text",
                 self._no_backend_reason(),
             )
@@ -100,7 +102,8 @@ class RenderingService:
             logger.info("Title rendering on GPU: %s", self.backend)
         else:
             failures = self._kernels.gpu_failures() if self._kernels is not None else ()
-            logger.warning(
+            logger.log(
+                expected_fallback_level(),
                 "Title rendering on CPU: %s; the kernel backend is %s. "
                 "Using FFmpeg animated titles with raster text.",
                 "; ".join(failures) or "the kernel library found no GPU backend",

@@ -385,6 +385,85 @@ class TestATitleMayOnlyNameWhatTheFactsName:
         assert result.title == "Lakeside Half 2022"
         assert result.subtitle is None
 
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "subtitle",
+        ["Salt air and golden light", "Quiet mornings by the sea", "Une douceur infinie"],
+    )
+    async def test_a_subtitle_naming_a_mood_no_fact_carries_is_dropped(self, subtitle):
+        result = await self._titled(f'{{"title": "Lakeside Half 2022", "subtitle": "{subtitle}"}}')
+
+        assert result is not None
+        assert result.title == "Lakeside Half 2022"
+        assert result.subtitle is None
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "subtitle", ["Lakeside Half, 27 March", "27 mars 2022", "Sunday 27 March"]
+    )
+    async def test_a_subtitle_of_dates_and_the_facts_own_words_stands(self, subtitle):
+        result = await self._titled(f'{{"title": "Lakeside Half 2022", "subtitle": "{subtitle}"}}')
+
+        assert result is not None
+        assert result.subtitle == subtitle
+
+
+class TestAYearRangeIsSeparatedFromTheNames:
+    """A multi-person title that runs the years straight into the last name reads as one name (#2082)."""
+
+    NAMES = ["Anna", "Ben", "Chloé", "Dan"]
+
+    @classmethod
+    async def _titled(cls, title: str, names=None, locale="en"):
+        from unittest.mock import AsyncMock, patch
+
+        from immich_memories.titles.llm_titles import generate_title_with_llm
+
+        raw = f'{{"title": "{title}", "subtitle": null}}'
+        # WHY: replaces the reader, the only boundary these cases exercise.
+        with patch(
+            "immich_memories.titles.llm_titles.query_llm",
+            new_callable=AsyncMock,
+            return_value=raw,
+        ):
+            return await generate_title_with_llm(
+                memory_type="multi_person",
+                locale=locale,
+                start_date="2013-01-01",
+                end_date="2026-06-30",
+                duration_days=4929,
+                person_names=cls.NAMES if names is None else names,
+                llm_config=TestATitleMayOnlyNameWhatTheFactsName._config(),
+            )
+
+    @pytest.mark.asyncio
+    async def test_the_years_get_a_separator_after_the_last_name(self):
+        result = await self._titled("Anna, Ben, Chloé and Dan 2013-2026")
+
+        assert result is not None
+        assert result.title == "Anna, Ben, Chloé and Dan \u00b7 2013-2026"
+
+    @pytest.mark.asyncio
+    async def test_a_french_title_is_separated_the_same_way(self):
+        result = await self._titled("Anna, Ben, Chloé et Dan 2013-2026", locale="fr")
+
+        assert result is not None
+        assert result.title == "Anna, Ben, Chloé et Dan \u00b7 2013-2026"
+
+    @pytest.mark.asyncio
+    async def test_a_title_that_already_separates_them_is_left_alone(self):
+        result = await self._titled("Anna, Ben, Chloé and Dan, 2013-2026")
+
+        assert result is not None
+        assert result.title == "Anna, Ben, Chloé and Dan, 2013-2026"
+
+    @pytest.mark.asyncio
+    async def test_a_single_person_title_is_not_touched(self):
+        result = await self._titled("Anna 2013-2026", names=["Anna"])
+
+        assert result is not None
+        assert result.title == "Anna 2013-2026"
+
 
 class TestATitleKeepsTheYearTheTemplateWouldShow:
     """A model title must carry exactly the year(s) the BASIC template's own

@@ -6,6 +6,11 @@ import os
 # Set this before optional imports cache the flag, without blocking explicit model downloads.
 os.environ["HF_HUB_DISABLE_TELEMETRY"] = "1"
 
+# ONNX Runtime 1.30's macOS build carries a Microsoft telemetry uploader; in a full film run it still
+# connected out although every session was opened after disable_telemetry_events() (#2217). The
+# runtime reads this variable itself, so it is set before anything can load the runtime.
+os.environ["ORT_DISABLE_TELEMETRY"] = "1"
+
 __author__ = "Immich Memories Contributors"
 
 # WHY first: a run's `startup` span measures from here, so it must precede the config imports.

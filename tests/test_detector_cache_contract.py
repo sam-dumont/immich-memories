@@ -95,3 +95,28 @@ def test_switching_tiers_preserves_banked_detector_versions_and_gpu_reads():
         ]
         == "table"
     )
+
+
+def test_a_live_photo_clip_reads_the_same_corrected_people_head_as_its_still():
+    """#2079: the clip's detector rows go through the corroboration the annotation read applies,
+    so a people head with no face behind it reads "none" on both."""
+    from immich_memories.analysis.editorial_shareability import load_detector_heads
+    from tests.annotation_rows import add_rows, annotation_store
+
+    store = annotation_store()
+    add_rows(
+        store,
+        "face_boxes",
+        {"asset_id": "still", "named": False, "x1": 0.1, "y1": 0.1, "x2": 0.2, "y2": 0.2},
+    )
+    add_rows(
+        store,
+        "head_facts",
+        {"asset_id": "clip", "head": "people", "version": "public-v1", "label": "group"},
+        {"asset_id": "still", "head": "people", "version": "public-v1", "label": "group"},
+    )
+
+    heads = load_detector_heads(store, ["clip", "still"], {"people": "public-v1"})
+
+    assert heads["clip"]["people"] == "none"
+    assert heads["still"]["people"] == "group"

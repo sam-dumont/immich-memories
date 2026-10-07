@@ -94,3 +94,27 @@ def test_a_people_condition_that_excluded_the_whole_pool_says_so_specifically(tm
     assert stopped.value.code == 0
     assert "Nothing worth a film in February 2019" in said
     assert reason in said
+
+
+def test_a_declined_period_leaves_no_completed_run_behind(tmp_path):
+    """One outcome (#2209): the run the CLI opened ends without a film, never as a
+    completed run that history, cooldown and "last completed auto run" would count."""
+    from immich_memories.db import open_store
+    from immich_memories.tracking.run_database import RunDatabase
+    from immich_memories.tracking.run_observations import observe_run
+
+    config = Config(
+        cache={"database": str(tmp_path / "analysis.db"), "directory": str(tmp_path / "cache")}
+    )
+    store = open_store(config)
+    candidates = [make_clip("floor-1", duration=5.0), make_clip("floor-2", duration=5.0)]
+
+    with (
+        pytest.raises(SystemExit),
+        observe_run(store, source="auto", memory_type="monthly_highlights"),
+    ):
+        _run_with_nothing_kept(tmp_path, FEBRUARY, candidates)
+
+    runs = RunDatabase(store).list_runs(limit=5)
+    assert [run.status for run in runs] == ["cancelled"]
+    assert RunDatabase(store).list_runs(limit=5, status="completed") == []

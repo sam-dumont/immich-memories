@@ -266,7 +266,7 @@ def handle_trip_generation(
         console.print()
     else:
         print_error("No trips detected for this year")
-        sys.exit(0)
+        sys.exit(1)
 
     if not selected:
         print_info(

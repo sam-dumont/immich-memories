@@ -79,6 +79,13 @@ def _nearest_existing(path: Path) -> Path:
     return path
 
 
+def _on_root_layer(directory: Path, device_of: Callable[[Path], int]) -> bool:
+    try:
+        return device_of(_nearest_existing(directory)) == device_of(Path("/"))
+    except OSError:
+        return False
+
+
 def output_directory_warnings(
     directory: Path,
     origin: OutputOrigin,
@@ -104,26 +111,21 @@ def output_directory_warnings(
                 ),
             )
         )
-    if in_container:
-        try:
-            on_root_layer = device_of(_nearest_existing(directory)) == device_of(Path("/"))
-        except OSError:
-            on_root_layer = False
-        if on_root_layer:
-            rows.append(
-                CheckResult(
-                    name="Output directory",
-                    status=CheckStatus.WARNING,
-                    message=(
-                        f"{directory} is not a mounted volume: the films are lost when the "
-                        "container restarts"
-                    ),
-                    details=(
-                        "Mount a volume or a persistent claim at the output directory "
-                        f"(the directory is set {origin.describe()})"
-                    ),
-                )
+    if in_container and _on_root_layer(directory, device_of):
+        rows.append(
+            CheckResult(
+                name="Output directory",
+                status=CheckStatus.WARNING,
+                message=(
+                    f"{directory} is not a mounted volume: the films are lost when the "
+                    "container restarts"
+                ),
+                details=(
+                    "Mount a volume or a persistent claim at the output directory "
+                    f"(the directory is set {origin.describe()})"
+                ),
             )
+        )
     return rows
 
 
@@ -136,7 +138,9 @@ def output_directory_rows(config: Config) -> list[CheckResult]:
     origin = output_origin(
         env=os.environ, config_file_value=config_file_output_directory(get_config_path())
     )
+    in_container = running_in_container()
+    mounted = in_container and not _on_root_layer(directory, _device)
     return [
-        check_output_directory(directory, origin=origin),
-        *output_directory_warnings(directory, origin, in_container=running_in_container()),
+        check_output_directory(directory, origin=origin, mounted=mounted),
+        *output_directory_warnings(directory, origin, in_container=in_container, device_of=_device),
     ]

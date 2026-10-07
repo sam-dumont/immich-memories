@@ -51,6 +51,10 @@ def suppressed_keys(
     """
     suppressed: dict[str, str] = {}
     for key, streak in streaks.items():
+        if streak.declined and streak.last_failed_at is not None:
+            if now - streak.last_failed_at < _MAX_WINDOW:
+                suppressed[key] = "nothing worth a film, retrying after 7d"
+            continue
         window = backoff_window(streak.count)
         if window is None or streak.last_failed_at is None:
             continue

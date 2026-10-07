@@ -6,6 +6,8 @@ export interface Setup {
   platform: Platform;
   tier: Tier;
   immichUrl: string;
+  // What a browser opens Immich at, when immichUrl is only reachable from where the app runs.
+  immichPublicUrl?: string;
   gpuBox: string;
   readerUrl: string;
   readerModel: string;
@@ -64,6 +66,15 @@ export function nativeInstallCommand(version: string, extras: 'all' | 'all-mac')
   return `uv tool install --python 3.12 --prerelease if-necessary-or-explicit "${spec}"${extras === 'all-mac' ? ' --with laya-mlx' : ''}`;
 }
 
+// A cluster service name, a bare container name or the Docker host alias: addresses the app can
+// reach but a browser on another machine cannot, so links built from them would not open.
+export function looksInternal(url: string): boolean {
+  let host: string;
+  try { host = new URL(url).hostname; } catch { return false; }
+  return host.endsWith('.svc.cluster.local') || host.endsWith('.svc') || host === 'host.docker.internal'
+    || (!host.includes('.') && !host.includes(':') && host !== 'localhost');
+}
+
 export function validateSetup(setup: Setup): string | null {
   if (['linux', 'synology', 'mac'].includes(setup.platform) &&
       (!Number.isInteger(setup.uiPort ?? 8080) || (setup.uiPort ?? 8080) < 1 || (setup.uiPort ?? 8080) > 65535)) {
@@ -75,11 +86,11 @@ export function validateSetup(setup: Setup): string | null {
   if (setup.version === 'development') return 'Choose a published release version for these setup files.';
   if (!releaseVersion(setup.version) && setup.version !== 'latest') return 'Use a release version such as 1.0.0 or 1.0.0-rc.1.';
   if (setup.platform === 'kubernetes' && !releaseVersion(setup.version)) return 'Kubernetes needs a published release version to select its bundle.';
-  for (const value of [setup.gpuBox, setup.readerModel, setup.immichUrl, setup.readerUrl]) {
+  for (const value of [setup.gpuBox, setup.readerModel, setup.immichUrl, setup.immichPublicUrl ?? '', setup.readerUrl]) {
     if (/[\r\n\0]/.test(value)) return 'Use one line for each setting.';
   }
-  for (const [label, value] of [['Immich', setup.immichUrl], ['Reader', setup.readerUrl]]) {
-    if (!value && label === 'Reader') continue;
+  for (const [label, value] of [['Immich', setup.immichUrl], ['Immich browser address', setup.immichPublicUrl ?? ''], ['Reader', setup.readerUrl]]) {
+    if (!value && label !== 'Immich') continue;
     try {
       const url = new URL(value);
       if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) {
@@ -150,7 +161,7 @@ const pinVersion = (text: string, version: string): string =>
 function macRecipe(setup: Setup): Result {
   const full = setup.tier === 'full';
   const config: Mapping = {
-    immich: {url: setup.immichUrl, api_key: API_KEY_PLACEHOLDER}, tier: setup.tier,
+    immich: {url: setup.immichUrl, ...(setup.immichPublicUrl ? {public_url: setup.immichPublicUrl} : {}), api_key: API_KEY_PLACEHOLDER}, tier: setup.tier,
     advanced: {
       // An empty caption_base_url is rejected by the app; Basic simply leaves the key out.
       ...(setup.tier === 'basic' ? {} : {editorial: {preparation: {caption_base_url: 'http://127.0.0.1:8092/v1'}}}),
@@ -200,7 +211,7 @@ export function buildSetup(setup: Setup, sources: Sources, buildVersion: string)
     const root = setup.tier === 'basic' ? 'base' : `overlays/tier-${setup.tier}`;
     const secret = {apiVersion: 'v1', kind: 'Secret', metadata: {
       name: 'immich-memories-secrets', namespace: ns,
-    }, type: 'Opaque', stringData: {IMMICH_URL: setup.immichUrl, IMMICH_API_KEY: API_KEY_PLACEHOLDER, IMMICH_MEMORIES_SECRET_KEY: setup.secretKey!, ...(setup.automation ? {IMMICH_MEMORIES_SERVER__TRIGGER_TOKEN: setup.triggerToken!} : {}), ...(readerKey(setup) ? {IMMICH_MEMORIES_DEPLOYMENT_READER_API_KEY: readerKey(setup)} : {})}};
+    }, type: 'Opaque', stringData: {IMMICH_URL: setup.immichUrl, ...(setup.immichPublicUrl ? {IMMICH_MEMORIES_IMMICH__PUBLIC_URL: setup.immichPublicUrl} : {}), IMMICH_API_KEY: API_KEY_PLACEHOLDER, IMMICH_MEMORIES_SECRET_KEY: setup.secretKey!, ...(setup.automation ? {IMMICH_MEMORIES_SERVER__TRIGGER_TOKEN: setup.triggerToken!} : {}), ...(readerKey(setup) ? {IMMICH_MEMORIES_DEPLOYMENT_READER_API_KEY: readerKey(setup)} : {})}};
     const ports = new Set<number>([Number(new URL(setup.immichUrl).port || (setup.immichUrl.startsWith('https:') ? 443 : 80))]);
     if (setup.tier === 'full') ports.add(Number(new URL(setup.readerUrl).port || (setup.readerUrl.startsWith('https:') ? 443 : 80)));
     const egress = {target: {kind: 'NetworkPolicy', name: 'immich-memories'}, patch: new Block(toYaml([{
@@ -267,6 +278,10 @@ export function buildSetup(setup: Setup, sources: Sources, buildVersion: string)
   compose = {...compose, services: Object.fromEntries(Object.entries(services).map(([key, value]) => {
     const service = {...value as Mapping};
     delete service.profiles;
+    // Only when set: even an empty environment value would pin the key against config.yaml and Settings.
+    if (key === 'immich-memories' && setup.immichPublicUrl) {
+      service.environment = {...service.environment as Mapping, IMMICH_MEMORIES_IMMICH__PUBLIC_URL: setup.immichPublicUrl};
+    }
     if (key === 'immich-memories' && Array.isArray(service.ports)) {
       service.ports = service.ports.map(port => typeof port === 'string'
         ? port.replace(/:8080:8080$/, `:${uiPort}:8080`) : port);

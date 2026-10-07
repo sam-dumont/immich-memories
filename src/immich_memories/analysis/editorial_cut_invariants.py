@@ -92,6 +92,9 @@ class FinishedCut:
     era_of: Callable[[str], str | None] | None = None
     era_pictures: Mapping[str, Sequence[str]] = field(default_factory=dict)
     standing_refused: frozenset[str] = frozenset()
+    # Partitions the draft recorded as left out of the film, with their reason: a year the film
+    # has no shot for is a choice it logged, not a promise a later pass broke.
+    left_out: frozenset[str] = frozenset()
     live_motion: bool = True
     live_clip_of: Mapping[str, str] = field(default_factory=dict)
     residuals: Mapping[str, float] = field(default_factory=dict)
@@ -195,7 +198,7 @@ def _eras_without_a_shot(cut: FinishedCut) -> list[Violation]:
     voiced = {cut.era_of(c["taken"]) for c in cut.carriers}
     out = []
     for era, assets in cut.era_pictures.items():
-        if era in voiced or not assets:
+        if era in voiced or not assets or era in cut.left_out:
             continue
         lost = _last_removal(cut, assets)
         if lost is None and cut.standing_refused & set(assets):
@@ -378,7 +381,9 @@ def _finished_cut(source, selection, material, run, gate, banked, share_log) -> 
         cut,
         era_of=era_of,
         era_pictures=_era_pictures(selection, units, era_of, cut.may_carry),
-        standing_refused=_standing_refused(decisions),
+        standing_refused=frozenset(selection.standing_refused) | _standing_refused(decisions),
+        left_out=frozenset(row["partition"] for row in selection.quiet_partitions)
+        | _left_out(decisions),
     )
 
 
@@ -430,6 +435,12 @@ def _standing_refused(decisions: Path) -> frozenset[str]:
             *(row["asset_id"] for row in record.get("context_rejected", ())),
         ]
     )
+
+
+def _left_out(decisions: Path) -> frozenset[str]:
+    """The partitions the draft recorded as having no shot in the film, and said so."""
+    record = _read_decision(decisions, "story-selection")
+    return frozenset(row["partition"] for row in record.get("quiet_partitions", ()))
 
 
 def _era_pictures(selection, units, era_of, may_carry) -> dict[str, list[str]]:

@@ -191,3 +191,67 @@ def test_a_thin_story_with_one_picture_a_moment_is_unchanged(tmp_path):
     plan = _run(source)
 
     assert len(plan["carriers"]) == 3
+
+
+NOVEMBER = (date(2011, 11, 1), date(2011, 11, 30))
+
+
+def _an_event_day(tmp_path, pictures, *, minutes=2):
+    """A month whose one event fills a day: every picture is its own distinct frame."""
+    day = Day(date(2011, 11, 19), "An obstacle course", moments=1)
+    return film_source(
+        tmp_path,
+        [day],
+        seconds=60,
+        span=NOVEMBER,
+        pictures=pictures,
+        picture_gap=timedelta(minutes=minutes),
+    )
+
+
+def test_a_big_event_is_a_shot_for_every_five_distinct_pictures(tmp_path):
+    """Twenty-one distinct pictures of one day's event were one shot, a 14 s film (#2211): the
+    event is several beats, so it earns about one shot per five of its pictures."""
+    plan = _run(_an_event_day(tmp_path, 21))
+
+    taken = [_taken(c) for c in plan["carriers"]]
+    assert 4 <= len(taken) <= 5
+    assert taken == sorted(taken)
+    assert min(b - a for a, b in pairwise(taken)) >= timedelta(minutes=5)
+
+
+def test_a_big_events_favourite_is_still_one_of_its_shots(tmp_path):
+    source = _an_event_day(tmp_path, 21)
+    favourite = "d000-m0-p9"
+    source.assets[favourite].is_favorite = True
+
+    plan = _run(source)
+
+    assert favourite in {c["asset_id"] for c in plan["carriers"]}
+
+
+def test_a_small_event_is_still_one_shot(tmp_path):
+    plan = _run(_an_event_day(tmp_path, 9))
+
+    assert len(plan["carriers"]) == 1
+
+
+def test_a_big_event_shot_in_a_dozen_seconds_is_still_one_shot(tmp_path):
+    """Pictures under a second apart are one beat however many there are."""
+    plan = _run(_an_event_day(tmp_path, 21, minutes=0.01))
+
+    assert len(plan["carriers"]) == 1
+
+
+def test_a_picture_the_plan_passed_over_names_the_rule_that_did(tmp_path):
+    """The pool said "not used in the plan" for the event's other pictures and named no rule."""
+    plan = _run(_an_event_day(tmp_path, 21))
+
+    shown = {c["asset_id"] for c in plan["carriers"]}
+    passed_over = {a: why for a, why in plan["left_out"].items() if a not in shown}
+    assert len(passed_over) == 21 - len(shown)
+    assert set(passed_over.values()) <= {
+        "it is not its own shot: a moment earns one shot for every 5 distinct pictures, "
+        "or one every five minutes",
+        "the film's content seconds were spent before its turn",
+    }

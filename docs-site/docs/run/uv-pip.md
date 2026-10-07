@@ -21,7 +21,9 @@ export PATH="$(brew --prefix ffmpeg-full)/bin:$PATH"
 ```
 
 That `export` only lasts for this shell. Add the same line to `~/.zprofile`, or scheduled and `ssh`
-runs pick up the other `ffmpeg`.
+runs pick up the other `ffmpeg`. `ssh host 'command'` does not read `~/.zprofile` either, so wrap
+a one-liner in a login shell: `ssh host "zsh -l -c 'immich-memories preflight'"`. Without it, the
+command finds Homebrew's `ffmpeg` (no `zscale`) instead of `ffmpeg-full`.
 
 On Debian/Ubuntu, install FFmpeg with `sudo apt install ffmpeg`. Verify HDR support:
 
@@ -52,8 +54,9 @@ A bare install lacks the ONNX runtime needed for picture classifiers and for the
 its loudness, but may start or end mid-sentence. The same model also detects a clip's own music or
 singing; without the ONNX runtime, the soundtrack never steps aside for it.
 
-For GPU or Full on Apple Silicon, append `--with laya-mlx` to the versioned `uv tool install`
-command above. `all-mac` supplies the Metal bindings but does not include this audience-classifier
+The command above includes `--with laya-mlx` on Apple Silicon. Only GPU and Full use it: on Basic
+you can drop that part. For GPU or Full, keep it (or append `--with laya-mlx` to the versioned
+`uv tool install` command). `all-mac` supplies the Metal bindings but does not include this audience-classifier
 runtime. With pip, install `laya-mlx` using the same virtual environment as the app. Downloading
 its checkpoint with `models fetch` does not install the Python runtime. See the
 [Mac recipe](./reference/mac-example.md#install-the-app) for checkout commands.
@@ -63,7 +66,8 @@ reinstall or sync the selected application version with the same extras before t
 film. An old environment with new source files is not an updated install.
 
 `uv tool install` puts the command in `~/.local/bin`. If it warns that this folder is not on your
-`PATH`, run `uv tool update-shell` and open a new terminal.
+`PATH`, run `uv tool update-shell` and open a new terminal. The terminal you ran it in still
+cannot find `immich-memories`: only a new one can.
 
 Create the folder, then `~/.immich-memories/config.yaml`:
 
@@ -92,7 +96,7 @@ immich-memories preflight
 immich-memories ui
 ```
 
-Open [http://localhost:8080](http://localhost:8080) and make [your first film](../get-started/first-film.mdx).
+Open [http://localhost:8080](http://localhost:8080) (`immich-memories ui -p 8081` if 8080 is taken) and make [your first film](../get-started/first-film.mdx).
 The guides on the Docker route (Quick start, first film, after install) show `docker compose exec immich-memories` in front of every command: leave that prefix off and run `immich-memories ...` directly.
 Films default to `~/Videos/Memories`. Set home coordinates for trips and public holidays:
 [Home and people](../get-started/who-is-who.md).

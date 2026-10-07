@@ -9,6 +9,7 @@ reserves that physical capacity in the same order.
 from __future__ import annotations
 
 import math
+import operator
 from collections.abc import Callable, Collection, Mapping, Sequence
 from typing import Any
 
@@ -294,9 +295,14 @@ class PartitionedSlots:
         choices: Mapping[str, Sequence[DepictedChoice]],
         silent: Sequence[str],
         carriers: Sequence[Mapping[str, Any]],
+        *,
+        slots: int | None = None,
     ) -> list[dict[str, Any]]:
-        """The partitions promised a voice that ended with no shot because every story of theirs
-        granted one fell silent (see `eras`), with those stories."""
+        """The partitions promised a voice that ended with no shot, and why.
+
+        Either every story of theirs granted one fell silent (see `eras`), or the film ran out of
+        shots first (`slots`, when every one was spent), or no picture of theirs could be placed.
+        """
         if self.voice_of is None:
             return []
         eras = self.eras(choices) or {}
@@ -305,7 +311,7 @@ class PartitionedSlots:
         for key in silent:
             if (era := eras.get(key)) is not None and era not in voiced:
                 quiet.setdefault(era, []).append(key)
-        return [
+        rows = [
             {
                 "partition": era,
                 "stories": keys,
@@ -313,6 +319,21 @@ class PartitionedSlots:
             }
             for era, keys in sorted(quiet.items())
         ]
+        full = slots is not None and len(carriers) >= slots
+        unplaced = {era for era in eras.values() if era not in voiced and era not in quiet}
+        rows.extend(
+            {
+                "partition": era,
+                "stories": sorted(key for key, of in eras.items() if of == era),
+                "reason": (
+                    "the film has no shot left for it"
+                    if full
+                    else "none of its pictures could be placed"
+                ),
+            }
+            for era in sorted(unplaced)
+        )
+        return sorted(rows, key=operator.itemgetter("partition"))
 
     def of_asset(self, asset: str) -> str | None:
         if self.limit is None or self._partition_of is None:

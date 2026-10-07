@@ -193,3 +193,34 @@ def test_a_year_where_no_story_stands_stays_quiet_and_the_record_says_why(tmp_pa
             "reason": "no picture of these stories stands on its own",
         }
     ]
+
+
+def _six_years_for_three_shots(tmp_path):
+    """Six years of one starred day each, in a film with room for three shots."""
+    days = [Day(date(2014 + n, 4, 7), f"Works day {n + 1}", starred=True) for n in range(6)]
+    source = film_source(
+        tmp_path, days, seconds=12, span=(date(2014, 1, 1), date(2019, 12, 31)), product="custom"
+    )
+    ranges = tuple(
+        DateRange(datetime(year, 3, 1, tzinfo=UTC), datetime(year, 6, 30, 23, 59, 59, tzinfo=UTC))
+        for year in range(2014, 2020)
+    )
+    return replace(
+        source,
+        case=replace(source.case, ranges=ranges, brief=BRIEF),
+        intent=build_editorial_intent("custom", ranges, brief=BRIEF),
+    )
+
+
+def test_years_the_film_has_no_shot_for_are_named_in_the_record_and_break_no_promise(tmp_path):
+    source = _six_years_for_three_shots(tmp_path)
+
+    years = _years(source)
+
+    decisions = source.artifact_dir / "derived-decisions"
+    selection = json.loads((decisions / "story-selection.private.json").read_text())
+    left_out = {row["partition"] for row in selection["quiet_partitions"]}
+    assert len(years) == 3
+    assert left_out == {f"year-{year}" for year in range(2014, 2020) if year not in years}
+    assert all("no shot left" in row["reason"] for row in selection["quiet_partitions"])
+    assert json.loads((decisions / "cut-invariants.private.json").read_text())["violations"] == []

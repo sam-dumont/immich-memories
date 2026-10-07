@@ -16,10 +16,11 @@ must never do.
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Collection, Mapping, Sequence
 from dataclasses import replace
 from typing import Any
 
+from immich_memories.analysis.editorial_repeat_exemptions import repeat_may_be_refused
 from immich_memories.analysis.editorial_story_lookalike import PairLooksAlike
 from immich_memories.analysis.editorial_story_shortlist import (
     DepictedChoice,
@@ -44,12 +45,47 @@ def _capture_group_choices(
     return choices_of
 
 
+def _seat_flagged_voices(
+    stories: Sequence[Mapping[str, Any]],
+    story_units: Mapping[str, list[dict]],
+    offered: dict[str, list[DepictedChoice]],
+    parts: PartitionedSlots,
+    **picking,
+) -> None:
+    """A partition the film promised a voice, whose every moment was left unfunded for a pixel
+    warning, offers its best flagged moment after all (#2210).
+
+    A lone dark or blurry frame is better left out when something else can carry its moment, and
+    a year with nothing else would otherwise be silent: one year of two is no on-this-day film.
+    The standing gate still judges the frame afterwards, so a picture nothing can stand on stays out.
+    """
+    voice_of = parts.voice_of
+    if voice_of is None:
+        return
+    voiced = {voice_of(c.taken) for choices in offered.values() for c in choices}
+    unflagged = picking | {"pixel_disqualified": lambda _asset: False}
+    held_back: dict[str | None, list[tuple[str, DepictedChoice]]] = {}
+    for s in stories:
+        key = s["key"]
+        known = {c.key for c in offered[key]}
+        for c in _capture_group_moments(story_units[key], **unflagged):
+            if c.key not in known and (era := voice_of(c.taken)) not in voiced:
+                held_back.setdefault(era, []).append((key, c))
+    for era, rows in held_back.items():
+        if era is None:
+            continue
+        key, choice = max(rows, key=lambda row: picking["quality"](row[1].primary))
+        choice.episode = key
+        offered[key] = sorted([*offered[key], choice], key=lambda c: c.taken)
+
+
 def distinct_choices(
     choices: Sequence[DepictedChoice],
     unit_by_asset: Mapping[str, tuple[Any, dict]],
     story_key: str,
     hash_alike: PairLooksAlike | None,
     scene_alike: PairLooksAlike | None,
+    close_family_of: Callable[[str], Collection[str]] = lambda _asset: (),
 ) -> list[DepictedChoice]:
     """A story's capacity is the moments it can show distinctly, by the same hash and scene
     rule the final duplicate review applies over the finished cut (``hash_alike`` is
@@ -62,10 +98,11 @@ def distinct_choices(
     the group it came from — ``choices`` itself, and the DepictedChoice objects in it — must
     stay exactly as offered either way.
 
-    A starred frame is never folded into a plain one it would repeat: the favourite wins its
-    moment, the same exemption `LookAlikeCheck.repeats` makes at pick time, and two starred
-    frames close enough to be the owner's one "twin" moment are the final duplicate review's
-    own call to make, over the finished cut, not a capacity question asked before a single
+    The final review's own exemptions hold here too (`repeat_may_be_refused`): a starred frame
+    is never folded into a plain one it would repeat, since the favourite wins its moment, and
+    neither is a group showing a close family member no kept group shows (#2071). Two starred
+    frames close enough to be the owner's one "twin" moment are the final duplicate review's own
+    call to make, over the finished cut, not a capacity question asked before a single
     carrier is picked.
     """
     if hash_alike is None is scene_alike:
@@ -81,10 +118,10 @@ def distinct_choices(
             "story_episode": story_key,
         }
 
-    def repeats(candidate: Mapping[str, Any], keeper: Mapping[str, Any]) -> bool:
-        if candidate.get("favourite"):
-            return False
-        return bool(
+    def repeats(candidate: Mapping[str, Any], keeper: Mapping[str, Any], only_shot: bool) -> bool:
+        return repeat_may_be_refused(
+            candidate, keeper, only_shot=only_shot, twins_stay=True
+        ) and bool(
             (hash_alike and hash_alike(candidate, keeper))
             or (scene_alike and scene_alike(candidate, keeper))
         )
@@ -92,7 +129,11 @@ def distinct_choices(
     kept: list[DepictedChoice] = []
     for choice in choices:
         candidate = as_carrier(choice.primary)
-        match = next((k for k in kept if repeats(candidate, as_carrier(k.primary))), None)
+        shown = {name for k in kept for name in close_family_of(k.primary)}
+        only_shot = bool(set(close_family_of(choice.primary)) - shown)
+        match = next(
+            (k for k in kept if repeats(candidate, as_carrier(k.primary), only_shot)), None
+        )
         if match is None:
             kept.append(replace(choice))
         else:
@@ -153,6 +194,7 @@ def capacity_choices(
     slots: int,
     hash_alike: PairLooksAlike | None,
     scene_alike: PairLooksAlike | None,
+    close_family_of: Callable[[str], Collection[str]] = lambda _asset: (),
     **picking,
 ) -> tuple[dict[str, list[DepictedChoice]], dict[str, int], frozenset[str]]:
     """Every story's capacity: the capture groups offered, what is left once a further group
@@ -172,12 +214,13 @@ def capacity_choices(
     to spare never asked this of a depth frame before this existed, and still never does.
     """
     offered = _capture_group_choices(stories, story_units, **picking)
+    _seat_flagged_voices(stories, story_units, offered, parts, **picking)
     groups_offered = {s["key"]: len(offered[s["key"]]) for s in stories}
     if hash_alike is None is scene_alike:
         return offered, groups_offered, frozenset()
     distinct = {
         s["key"]: distinct_choices(
-            offered[s["key"]], unit_by_asset, s["key"], hash_alike, scene_alike
+            offered[s["key"]], unit_by_asset, s["key"], hash_alike, scene_alike, close_family_of
         )
         for s in stories
     }

@@ -175,6 +175,30 @@ def detect_dominant_hdr_transfer(
     return HdrTransfer.NONE
 
 
+def hdr_source_names(clips: list, *, probe_cache: ProbeCache | None = None) -> list[str]:
+    """The clips that are HDR in the library itself, by asset id (or file name).
+
+    A still is rendered into a PQ intermediate by the app, so its tag says nothing
+    about the photo: only a gain-mapped still counts. Title cards are the app's own.
+    """
+    names: list[str] = []
+    for clip in clips:
+        if getattr(clip, "is_title_screen", False):
+            continue
+        if getattr(clip, "is_photo", False):
+            is_hdr = getattr(clip, "gain_map_hdr", False)
+        else:
+            path = clip.path if hasattr(clip, "path") else clip
+            is_hdr = (
+                _detect_hdr_type(path, probe_cache=probe_cache)
+                if probe_cache is not None
+                else _detect_hdr_type(path)
+            ) is not None
+        if is_hdr:
+            names.append(getattr(clip, "asset_id", "") or Path(str(clip.path)).name)
+    return names
+
+
 def get_colorspace_filter(hdr_type: str) -> str:
     """Get the setparams filter string for the given HDR type.
 

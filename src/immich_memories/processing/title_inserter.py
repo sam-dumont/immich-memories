@@ -417,6 +417,7 @@ class TitleInserter:
         divider_planner = TitleDividerPlanner(generator, title_settings)
         content_clips = divider_planner.select_divider_strategy(clips, progress_callback, is_trip)
         final_clips.extend(content_clips)
+        _t_dividers_done = _time.monotonic()
 
         # 4. Ending screen
         # WHY: ending always uses content-backed (reverse slow-mo) when the
@@ -454,13 +455,15 @@ class TitleInserter:
             final_clips, output_path, assemble_fn, progress_callback, (target_w, target_h)
         )
         _t_encode_done = _time.monotonic()
-        title_dur = _t_title_done - _t_title_start
-        ending_dur = _t_ending_done - _t_title_done
-        encode_dur = _t_encode_done - _t_ending_done
+        # Seconds spent building each part, not seconds of film: the opening card, the
+        # month dividers (and their selection), the ending card, then the encode.
         total_dur = _t_encode_done - _t_title_start
         logger.info(
-            f"Assembly timing ({len(final_clips)} clips, {total_dur:.1f}s): "
-            f"title={title_dur:.1f}s, ending={ending_dur:.1f}s, encode={encode_dur:.1f}s"
+            f"Assembly timing ({len(final_clips)} clips, {total_dur:.1f}s spent): "
+            f"opening card {_t_title_done - _t_title_start:.1f}s, "
+            f"dividers {_t_dividers_done - _t_title_done:.1f}s, "
+            f"ending card {_t_ending_done - _t_dividers_done:.1f}s, "
+            f"encode {_t_encode_done - _t_ending_done:.1f}s"
         )
         return result
 

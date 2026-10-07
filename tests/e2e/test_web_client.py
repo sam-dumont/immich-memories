@@ -390,6 +390,15 @@ def test_a_memory_made_in_the_browser_is_cut_reviewed_revised_rendered_and_playe
         arg=film.element_handle(),
         timeout=60_000,
     )
+    # The film lives on the run Render made, not the cut: the panel offers that run's download (#2220).
+    cut_run = page.url.rsplit("/", 1)[-1]
+    download = render.get_by_role("link", name="Download film")
+    expect(download).to_be_visible()
+    href = download.get_attribute("href") or ""
+    assert f"/runs/{cut_run}/" not in href
+    assert page.request.get(f"{launch_app_url}{href}").ok
+    film_run = render.get_by_role("link", name="Open the film run").get_attribute("href") or ""
+    assert film_run.rsplit("/", 1)[-1] != cut_run
     _shoot(page, "web-rendered")
 
 

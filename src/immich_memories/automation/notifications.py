@@ -252,6 +252,22 @@ def _build_title(memory_type: str, status: str) -> str:
     return f"{label}: {memory_type.replace('_', ' ').title()}"
 
 
+_ERROR_TAIL_CHARS = 300
+
+
+def _error_tail(error: str) -> str:
+    """The last meaningful lines of an error: a child's cause comes at the end, not the start."""
+    kept: list[str] = []
+    used = 0
+    for line in reversed([entry.strip() for entry in error.splitlines() if entry.strip()]):
+        room = _ERROR_TAIL_CHARS - used
+        if room <= 0:
+            break
+        kept.append(line[-room:])
+        used += min(len(line), room) + 3
+    return " | ".join(reversed(kept))
+
+
 def _build_body(
     memory_type: str,
     status: str,
@@ -268,7 +284,7 @@ def _build_body(
     if output_path and status == "completed":
         lines.append(f"Output: {output_path}")
     if error and status == "failed":
-        lines.append(f"Error: {error[:200]}")
+        lines.append(f"Error: {_error_tail(error)}")
     # A run that completed still needs to say so if it is running out of room --
     # the automation channel is the one place a headless deployment sees this at all.
     for warning in warnings or []:

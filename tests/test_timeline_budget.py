@@ -143,10 +143,14 @@ def test_a_capped_budget_keeps_the_heaviest_months_not_the_earliest() -> None:
     )
 
 
-def test_a_budget_too_small_for_even_one_month_divider_logs_once(
+def test_a_budget_too_small_for_even_one_month_divider_drops_to_none(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    """#2065: only a budget that cannot fit a single divider drops to none, and logs once."""
+    """#2065: only a budget that cannot fit a single divider drops to none.
+
+    The plan stays quiet: trial cuts of the editorial pass land here too, and the run
+    reports the drop once, about the plan the film uses (#2124).
+    """
     from immich_memories.processing.timeline_budget import (
         finalize_selected_timeline,
         plan_timeline,
@@ -169,8 +173,76 @@ def test_a_budget_too_small_for_even_one_month_divider_logs_once(
     assert final.eligible_dividers == 5
     assert final.max_dividers == 0
     assert final.title_budget == pytest.approx(7.5)
-    dropped_warnings = [r for r in caplog.records if "Month dividers dropped" in r.message]
-    assert len(dropped_warnings) == 1
+    assert not [r for r in caplog.records if "Month dividers dropped" in r.message]
+
+
+def test_the_run_says_once_that_no_divider_fit_and_its_plan_line_agrees(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    from immich_memories.cli._run_timeline import final_timeline
+    from immich_memories.config_loader import Config
+    from immich_memories.processing.timeline_budget import plan_timeline
+
+    clips = [_clip(str(month), f"2026-{month:02d}-05") for month in range(2, 8)]
+    titles = _titles(ending_duration=4.0)
+    preliminary = plan_timeline(clips, titles, 60.0, "person_spotlight")
+
+    with caplog.at_level("INFO"):
+        plan = final_timeline(
+            preliminary,
+            timing_binding=None,
+            selected_clips=clips,
+            clip_segments={clip.asset_id: (0.0, 13.6) for clip in clips},
+            planning_titles=titles,
+            memory_type="person_spotlight",
+            transition="none",
+            config=Config(),
+        )
+
+    assert plan.divider_policy == "none"
+    said = [r.message for r in caplog.records]
+    assert sum("none of 5 eligible dividers" in m for m in said) == 1
+    assert any("month dividers=none (0/5)" in m for m in said)
+
+
+def test_a_trial_cut_that_drops_every_divider_does_not_contradict_the_final_plan(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    from immich_memories.cli._run_timeline import final_timeline
+    from immich_memories.config_loader import Config
+    from immich_memories.processing.timeline_budget import (
+        finalize_selected_timeline,
+        plan_timeline,
+    )
+
+    clips = [_clip(str(month), f"2026-{month:02d}-05") for month in range(2, 5)]
+    titles = _titles()
+    preliminary = plan_timeline(clips, titles, 60.0, "person_spotlight")
+
+    with caplog.at_level("INFO"):
+        # A trial cut that runs far over, as the editorial pass tries cuts before it settles.
+        trial = finalize_selected_timeline(
+            preliminary,
+            clips,
+            selected_duration=200.0,
+            title_settings=titles,
+            memory_type="person_spotlight",
+        )
+        plan = final_timeline(
+            preliminary,
+            timing_binding=None,
+            selected_clips=clips,
+            clip_segments={clip.asset_id: (0.0, 10.0) for clip in clips},
+            planning_titles=titles,
+            memory_type="person_spotlight",
+            transition="none",
+            config=Config(),
+        )
+
+    assert trial.divider_policy == "none"
+    assert plan.divider_policy == "all"
+    assert not [r for r in caplog.records if "Month dividers dropped" in r.message]
+    assert any("month dividers=all (2/2)" in r.message for r in caplog.records)
 
 
 def test_yearly_timeline_allows_the_complete_month_divider_set() -> None:

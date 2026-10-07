@@ -552,6 +552,7 @@ def _story_selection(
         source.config.trips,
         journey=source.case.product == "trip",
     )
+    close_family = film_close_family(source)
     return select_story_first(
         judge=ports.judge,
         rules=ports.rules,
@@ -615,6 +616,7 @@ def _story_selection(
         film_span=(source.case.ranges[0].start.date(), source.case.ranges[-1].end.date()),
         near_home=near_home_test(source, wall),
         banked=banked,
+        close_family_of=lambda asset_id: close_family(source.annotations.get(asset_id, "")),
     )
 
 

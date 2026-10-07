@@ -1080,10 +1080,10 @@ class TestRunOneOutcomes:
 
         assert result.outcome is AutoOutcome.COMPLETED
 
-    def test_a_period_with_nothing_worth_a_film_fails_with_that_reason(
+    def test_a_period_with_nothing_worth_a_film_is_a_declined_attempt(
         self, config: Config, candidate: MemoryCandidate
     ) -> None:
-        """No film is the honest answer; the attempt still backs off, under its real reason."""
+        """No film is the honest answer: one skipped attempt, never a failure (#2209)."""
         runner = AutoRunner(config)
         runner.execute = lambda _argv: ProcessResult(
             0, "\u2139 Nothing worth a film in February 2019\n", ""
@@ -1091,8 +1091,53 @@ class TestRunOneOutcomes:
         with patch.object(runner, "suggest", return_value=[candidate]):
             result = runner.run_one(force=True)
 
-        assert result.outcome is AutoOutcome.FAILED
+        assert result.outcome is AutoOutcome.SKIPPED
         assert result.reason == "nothing worth a film in this period"
+        assert result.error is None
+
+    def test_a_declined_period_a_child_logged_instead_of_printed_is_still_declined(
+        self, config: Config, candidate: MemoryCandidate
+    ) -> None:
+        """Without a terminal the child's "Nothing worth a film" is a log line on stderr, behind
+        a timestamp and logger name (#2209), and stdout holds only the banner."""
+        runner = AutoRunner(config)
+        runner.execute = lambda _argv: ProcessResult(
+            0,
+            "Immich Memories Generator\n",
+            "2026-10-07 11:34:34,263 [INFO] immich_memories.cli [20261007_113427_92e1]: "
+            "Nothing worth a film in Aug 18, 1996 - Aug 20, 2025: no picture satisfies the "
+            "requested people condition\n",
+        )
+        with patch.object(runner, "suggest", return_value=[candidate]):
+            result = runner.run_one(force=True)
+
+        assert result.outcome is AutoOutcome.SKIPPED
+        assert result.reason == (
+            "nothing worth a film: no picture satisfies the requested people condition"
+        )
+
+    def test_a_declined_period_is_never_a_completed_run_even_if_the_child_left_one(
+        self, config: Config, candidate: MemoryCandidate
+    ) -> None:
+        """A child that recorded a completed run with no film before declining (#2209) is
+        still one declined attempt: no failure, no film counted, no cooldown burnt."""
+        runner = AutoRunner(config)
+
+        def execute(_argv: list[str]) -> ProcessResult:
+            _save_completed_run(runner, candidate, None)
+            return ProcessResult(0, "\u2139 Nothing worth a film in Oct 2025\n", "")
+
+        runner.execute = execute
+        with patch.object(runner, "suggest", return_value=[candidate]):
+            result = runner.run_one(force=True)
+
+        assert result.outcome is AutoOutcome.SKIPPED
+        assert result.reason == "nothing worth a film in this period"
+        status = runner.status()
+        assert status.last_completed_auto_run is None
+        assert not status.cooldown.active
+        assert status.last_attempt is not None
+        assert status.last_attempt.outcome is AutoOutcome.SKIPPED
 
     def test_a_people_condition_that_excluded_the_whole_pool_keeps_its_own_reason(
         self, config: Config, candidate: MemoryCandidate
@@ -1110,10 +1155,10 @@ class TestRunOneOutcomes:
         with patch.object(runner, "suggest", return_value=[candidate]):
             result = runner.run_one(force=True)
 
-        assert result.outcome is AutoOutcome.FAILED
+        assert result.outcome is AutoOutcome.SKIPPED
         assert result.reason == (
-            "No picture satisfies the requested people condition: 2 picture(s) were "
-            "left out before planning, and nothing else was offered."
+            "nothing worth a film: No picture satisfies the requested people condition: "
+            "2 picture(s) were left out before planning, and nothing else was offered."
         )
 
     def test_the_specific_reason_survives_the_cli_s_real_rich_wrapping(
@@ -1147,8 +1192,8 @@ class TestRunOneOutcomes:
         with patch.object(runner, "suggest", return_value=[candidate]):
             result = runner.run_one(force=True)
 
-        assert result.outcome is AutoOutcome.FAILED
-        assert result.reason == reason
+        assert result.outcome is AutoOutcome.SKIPPED
+        assert result.reason == f"nothing worth a film: {reason}"
 
     def test_same_key_run_from_another_attempt_cannot_prove_success(
         self, config: Config, candidate: MemoryCandidate, tmp_path: Path

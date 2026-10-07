@@ -26,6 +26,9 @@ output:
 Both home coordinates are needed for trips. Everything else keeps its default.
 Every server URL (`immich.url`, `llm.base_url`, `network.geocoding_url` and the rest) must start
 with `http://` or `https://`; anything else is refused when the file loads or a setting is saved.
+`immich.public_url` is the one Immich address worth knowing about here: when `immich.url` is a cluster or
+container name your browser cannot open, set it to the address you do open, and the "View in Immich" and
+"Open in Immich" links use it. Requests still go to `immich.url`.
 Keep the file at permissions `600` if it contains credentials.
 Docker can use [environment variables](./environment-variables.md) without a file.
 

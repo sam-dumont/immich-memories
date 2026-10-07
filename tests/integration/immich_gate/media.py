@@ -6,6 +6,10 @@ Two sets, both public and synthetic, never anyone's library:
   1920x1280 JPEG carrying a camera and its capture time in EXIF (selection drops
   a still that names no camera), every video scene a 1080p pan across its
   photograph with a tone under it, stamped with the same time.
+* Two dated sets for the memory types that need a second year on the same days: the
+  busiest June day again a year earlier (``ECHO_DAY``, for on this day) and a set on
+  25 December in two years (``CHRISTMAS_YEARS``, for the named holiday). Their stills are
+  copies of fixture stills with other capture times, so no extra artwork ships.
 * ``BULK_COUNT`` tiny, distinct JPEGs in March 2019 for the album that has to
   page: Immich answers a metadata search at most 1000 items at a time.
 
@@ -18,7 +22,7 @@ from __future__ import annotations
 import hashlib
 import subprocess
 from dataclasses import dataclass
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
 from PIL import Image, ImageOps
@@ -34,6 +38,13 @@ CAMERA = ("FakeCam", "Hermetic One")
 BULK_COUNT = 1010
 BULK_START = datetime(2019, 3, 1, 9, 0, tzinfo=UTC)
 BULK_ALBUM = "Gate paging album"
+
+# The busiest day of the fixture month, repeated a year earlier.
+ECHO_DAY = (2024, 6, 15)
+ECHO_YEAR = 2023
+ECHO_COUNT = 5
+CHRISTMAS_YEARS = (2023, 2024)
+CHRISTMAS_COUNT = 4
 
 _EXIF_MAKE = 0x010F
 _EXIF_MODEL = 0x0110
@@ -74,10 +85,19 @@ def _exif(moment: datetime, *, camera: bool) -> Image.Exif:
     return exif
 
 
-def _write_photo(picture: Picture, target: Path) -> None:
+def _write_photo(
+    picture: Picture, target: Path, moment: datetime | None = None, variant: int = 0
+) -> None:
     with Image.open(picture.source) as source:
-        fitted = ImageOps.fit(source.convert("RGB"), PHOTO_SIZE)
-    fitted.save(target, "JPEG", quality=85, exif=_exif(taken_at(picture), camera=True))
+        image = source.convert("RGB")
+    if variant:
+        # A re-dated copy of the same pixels is one picture in two files, and the app folds
+        # it away; a mirrored crop from another corner reads as a different shot.
+        width, height = image.size
+        left = 0 if variant % 2 else width // 4
+        image = ImageOps.mirror(image.crop((left, height // 8, left + width * 3 // 4, height)))
+    fitted = ImageOps.fit(image, PHOTO_SIZE)
+    fitted.save(target, "JPEG", quality=85, exif=_exif(moment or taken_at(picture), camera=True))
 
 
 def _write_video(picture: Picture, target: Path, tone: int) -> None:
@@ -160,6 +180,47 @@ def library_files(root: Path) -> list[GateFile]:
     ]
 
 
+def _dated_sources() -> tuple[list[Picture], list[Picture]]:
+    """The fixture stills the echo day and the Christmas set borrow their pictures from."""
+    stills = [picture for picture in ALL_PICTURES if not picture.is_video]
+    day = date(*ECHO_DAY)
+    echo = [p for p in stills if taken_at(p).date() == day][:ECHO_COUNT]
+    other = [p for p in stills if taken_at(p).date() != day]
+    return echo, other[:CHRISTMAS_COUNT]
+
+
+def dated_files(root: Path) -> list[GateFile]:
+    """The echo day a year earlier, and 25 December in each of ``CHRISTMAS_YEARS``."""
+    echo, christmas = _dated_sources()
+    files = [
+        GateFile(
+            root / "dated" / f"GATE_ECHO_{index:02d}.jpg",
+            taken_at(picture).replace(year=ECHO_YEAR),
+            picture,
+        )
+        for index, picture in enumerate(echo)
+    ]
+    for year in CHRISTMAS_YEARS:
+        files += [
+            GateFile(
+                root / "dated" / f"GATE_XMAS_{year}_{index:02d}.jpg",
+                datetime(year, 12, 25, 10 + index, 0, tzinfo=UTC),
+                picture,
+            )
+            for index, picture in enumerate(christmas)
+        ]
+    return files
+
+
+def _write_dated(root: Path) -> None:
+    echo, christmas = _dated_sources()
+    sources = [(picture, 1) for picture in echo]
+    for variant, _year in enumerate(CHRISTMAS_YEARS, start=1):
+        sources += [(picture, variant) for picture in christmas]
+    for gate_file, (picture, variant) in zip(dated_files(root), sources, strict=True):
+        _write_photo(picture, gate_file.path, gate_file.taken_at, variant)
+
+
 def bulk_files(root: Path) -> list[GateFile]:
     return [
         GateFile(root / "bulk" / f"GATE_BULK_{index:04d}.jpg", bulk_taken_at(index))
@@ -175,6 +236,8 @@ def build(root: Path) -> None:
         return
     (root / "library").mkdir(parents=True, exist_ok=True)
     (root / "bulk").mkdir(parents=True, exist_ok=True)
+    (root / "dated").mkdir(parents=True, exist_ok=True)
+    _write_dated(root)
     videos = 0
     for gate_file in library_files(root):
         picture = gate_file.picture

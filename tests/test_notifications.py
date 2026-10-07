@@ -171,18 +171,31 @@ class TestBuildBody:
         assert "Error: FFmpeg exit code 1" in body
         assert "Output" not in body
 
-    def test_truncates_long_errors(self) -> None:
-        long_error = "x" * 500
+    def test_a_long_error_keeps_its_tail_not_its_head(self) -> None:
+        """The cause is at the end of a child's output; the head is its preamble (#2183)."""
+        preamble = "\n".join(f"stdout: step {n} fine" for n in range(60))
+        error = f"{preamble}\nstderr:\nTraceback (most recent call last):\nRuntimeError: no GPU"
         body = _build_body(
             memory_type="monthly",
             status="failed",
             duration_seconds=0,
             output_path=None,
-            error=long_error,
+            error=error,
         )
-        # Error is truncated to 200 chars
-        error_line = [line for line in body.split("\n") if line.startswith("Error:")][0]
-        assert len(error_line) < 210
+        assert "RuntimeError: no GPU" in body
+        assert "step 0 fine" not in body
+        assert len(body) < 500
+
+    def test_a_single_huge_line_is_cut_from_its_start(self) -> None:
+        body = _build_body(
+            memory_type="monthly",
+            status="failed",
+            duration_seconds=0,
+            output_path=None,
+            error="x" * 5000 + "THE END",
+        )
+        assert body.rstrip().endswith("THE END")
+        assert len(body) < 500
 
     def test_omits_duration_when_zero(self) -> None:
         body = _build_body(

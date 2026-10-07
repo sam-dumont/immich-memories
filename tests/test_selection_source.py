@@ -1430,6 +1430,62 @@ def test_a_burst_stack_folds_every_member_into_its_primary() -> None:
     assert set(prepared.excluded_ids) == {"second", "third"}
 
 
+def _burst_stack():
+    primary = make_asset("primary", original_file_name="IMG_0001.heic")
+    second = make_asset("second", original_file_name="IMG_0002.heic")
+    for asset in (primary, second):
+        asset.type = AssetType.IMAGE
+    return primary, second
+
+
+def test_a_stack_primary_carries_the_people_tagged_on_a_member() -> None:
+    """The stack fold carries people to the kept picture like the picture-copy fold does (#2119)."""
+    primary, second = _burst_stack()
+    primary.people = [Person(id="grandma")]
+    second.people = [Person(id="grandpa")]
+
+    prepared = prepare_editorial_source(
+        EditorialSelectionRequest(scope=SourceScope()),
+        EditorialDependencies(
+            source_fetcher=lambda _scope: (primary, second),
+            stack_of=lambda: {"second": "primary"},
+        ),
+    )
+
+    assert prepared.candidate_ids == ("primary",)
+    assert {p.id for p in prepared.candidates[0].source.people} == {"grandma", "grandpa"}
+
+
+def test_an_include_naming_a_stack_member_lands_on_the_primary() -> None:
+    primary, second = _burst_stack()
+
+    prepared = prepare_editorial_source(
+        EditorialSelectionRequest(scope=SourceScope(), owner_required_asset_ids=("second",)),
+        EditorialDependencies(
+            source_fetcher=lambda _scope: (primary, second),
+            stack_of=lambda: {"second": "primary"},
+        ),
+    )
+
+    assert prepared.owner_required_asset_ids == ("primary",)
+    assert prepared.candidate_ids == ("primary",)
+
+
+def test_an_exclude_naming_a_stack_member_excludes_the_whole_stack() -> None:
+    primary, second = _burst_stack()
+
+    prepared = prepare_editorial_source(
+        EditorialSelectionRequest(scope=SourceScope(), owner_excluded_asset_ids=("second",)),
+        EditorialDependencies(
+            source_fetcher=lambda _scope: (primary, second),
+            stack_of=lambda: {"second": "primary"},
+        ),
+    )
+
+    assert prepared.candidate_ids == ()
+    assert set(prepared.excluded_ids) == {"primary", "second"}
+
+
 def test_no_stack_read_permission_keeps_todays_behaviour() -> None:
     # A 403 or a pre-stacks server answers an empty map (`access_clients.py`); both
     # files reach the editor exactly as they did before Immich 3.3 added stacking.
