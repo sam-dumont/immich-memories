@@ -181,13 +181,15 @@ def test_variety_rejections_and_all_sidebar_destinations(page, launch_app_url, l
     for label, path in [
         ("Memory", "/app/create"),
         ("Runs", "/app/runs"),
+        ("People", "/app/settings/people"),
         ("Settings", "/app/settings"),
         ("Suggestions", "/app/suggestions"),
     ]:
         sidebar.get_by_role("link", name=label, exact=True).click()
         page.wait_for_url(launch_app_url + path)
+    # The Settings page still offers its own way in, the card under the sidebar's link.
     sidebar.get_by_role("link", name="Settings", exact=True).click()
-    page.get_by_role("link", name="People", exact=False).click()
+    page.get_by_role("main").get_by_role("link", name="People", exact=False).click()
     page.wait_for_url(f"{launch_app_url}/app/settings/people")
 
 
