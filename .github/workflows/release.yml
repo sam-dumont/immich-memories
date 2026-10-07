@@ -97,18 +97,16 @@ jobs:
       contents: read
       pull-requests: write
 
-  # Publish only after the tested app image is available under its release tag.
-  release:
-    name: Create Release
-    needs: [analyze, ci, docker-manifest]
-    if: >-
-      github.repository_id == '1174219883' &&
-      !cancelled() && needs.analyze.outputs.should_release == 'true' &&
-      needs.ci.result == 'success' &&
-      (inputs.dry_run || needs.docker-manifest.result == 'success')
+  # Everything that can fail before anything public happens: build the wheel, attest
+  # it, write the notes. The tag, the GitHub Release and PyPI cannot be taken back,
+  # so they wait for every job that could still fail (see `release`).
+  package:
+    name: Build Package
+    needs: [analyze, ci]
+    if: github.repository_id == '1174219883' && needs.analyze.outputs.should_release == 'true'
     runs-on: ubuntu-24.04
     permissions:
-      contents: write
+      contents: read
       # Provenance: the OIDC token is what identifies this workflow to
       # Sigstore, and attestations is where the signed statement is filed.
       id-token: write
@@ -124,11 +122,6 @@ jobs:
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Configure git
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Install uv
         uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
@@ -229,11 +222,90 @@ jobs:
             echo "" >> release_notes.md
           fi
 
+      - name: Upload artifacts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: dist-release
+          path: dist/
+
+      - name: Upload release notes and attestations
+        if: ${{ !inputs.dry_run }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-assets
+          path: |
+            release_notes.md
+            attestations/*.sigstore.json
+            attestations/*.intoto.jsonl
+          if-no-files-found: error
+
+      - name: Dry run summary
+        if: inputs.dry_run
+        run: |
+          echo "## Dry Run Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Would release version: **v${{ needs.analyze.outputs.next_version }}**" >> $GITHUB_STEP_SUMMARY
+          echo "Release type: **${{ needs.analyze.outputs.release_type }}**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Built packages:" >> $GITHUB_STEP_SUMMARY
+          ls -la dist/ >> $GITHUB_STEP_SUMMARY
+
+  # The point of no return. The tag, the GitHub Release and PyPI cannot be taken back,
+  # so this runs only once nothing that can fail is left: the wheel is built, the
+  # images are smoke-tested and tagged in the registry (overwritable), and the
+  # deployment bundle is packaged.
+  release:
+    name: Create Release
+    needs: [analyze, ci, package, docker-manifest, inference-manifest, deployment-bundle]
+    if: >-
+      github.repository_id == '1174219883' &&
+      !cancelled() && !inputs.dry_run && needs.analyze.outputs.should_release == 'true' &&
+      needs.ci.result == 'success' && needs.package.result == 'success' &&
+      needs.docker-manifest.result == 'success' &&
+      needs.inference-manifest.result == 'success' &&
+      needs.deployment-bundle.result == 'success'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+
+    steps:
+      - name: Audit publication egress
+        uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Download the built package
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: dist-release
+          path: dist/
+
+      - name: Download release notes and attestations
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: release-assets
+          path: .
+
+      - name: Download deployment files
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: deployment-assets
+          path: deployment-assets/
+
       # The tag goes out only after every fallible pre-publication step has
       # succeeded (#1010): a stranded tag must stay a resume signal, not the
       # only evidence that a release completed.
       - name: Push release tag
-        if: ${{ !inputs.dry_run }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NEXT_VERSION: ${{ needs.analyze.outputs.next_version }}
@@ -255,7 +327,6 @@ jobs:
           fi
 
       - name: Create GitHub Release
-        if: ${{ !inputs.dry_run }}
         uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v2
         with:
           tag_name: v${{ needs.analyze.outputs.next_version }}
@@ -266,35 +337,18 @@ jobs:
             dist/*.tar.gz
             attestations/*.sigstore.json
             attestations/*.intoto.jsonl
+            deployment-assets/*
           draft: false
           prerelease: ${{ needs.analyze.outputs.prerelease == 'true' }}
           make_latest: ${{ needs.analyze.outputs.prerelease == 'true' && 'false' || 'true' }}
 
-      - name: Upload artifacts
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: dist-release
-          path: dist/
-
       - name: Summary
-        if: ${{ !inputs.dry_run }}
         env:
           NEXT_VERSION: ${{ needs.analyze.outputs.next_version }}
         run: |
           echo "## Release v$NEXT_VERSION" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Published packages:" >> $GITHUB_STEP_SUMMARY
-          ls -la dist/ >> $GITHUB_STEP_SUMMARY
-
-      - name: Dry run summary
-        if: inputs.dry_run
-        run: |
-          echo "## Dry Run Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Would release version: **v${{ needs.analyze.outputs.next_version }}**" >> $GITHUB_STEP_SUMMARY
-          echo "Release type: **${{ needs.analyze.outputs.release_type }}**" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Built packages:" >> $GITHUB_STEP_SUMMARY
           ls -la dist/ >> $GITHUB_STEP_SUMMARY
 
   # Publish to PyPI using Trusted Publishers (OIDC — no API tokens needed)
@@ -328,6 +382,8 @@ jobs:
   # skip-existing makes a release that does not bump it a no-op rather than a
   # failure. It publishes before the main wheel so that, once `all` requires it
   # again, the dependency is on the index before anything can ask for it.
+  # PyPI cannot be taken back (a version can never be uploaded twice), so it runs
+  # after `release`, which itself waits for every image and the deployment bundle.
   pypi-publish-music:
     name: Publish bundled music to PyPI
     needs: [analyze, release]
@@ -472,7 +528,9 @@ jobs:
   # the exact amd64 image, against the hermetic fake Immich, gates the tags.
   inference-build:
     name: Build Inference Image (${{ matrix.device }}, ${{ matrix.platform }})
-    needs: [analyze, release]
+    # After docker-build so the approval on the app image still guards the first
+    # registry write; the digests pushed here carry no tag until the manifests.
+    needs: [analyze, ci, docker-build]
     # Also runs on a manual dispatch with no release, so a cuda image can be put
     # in front of a real GPU before anyone cuts a version. The tag is then the
     # commit rather than a version, so a test build can never shadow a release.
@@ -480,7 +538,8 @@ jobs:
       github.repository_id == '1174219883' &&
       !cancelled() && needs.analyze.result == 'success' && !inputs.dry_run &&
       (inputs.inference_only ||
-       (needs.release.result == 'success' && needs.analyze.outputs.should_release == 'true'))
+       (needs.ci.result == 'success' && needs.docker-build.result == 'success' &&
+        needs.analyze.outputs.should_release == 'true'))
     runs-on: ${{ matrix.runner }}
     permissions:
       contents: read
@@ -557,11 +616,16 @@ jobs:
 
   inference-manifest:
     name: Create Inference Manifest
-    needs: [analyze, inference-build]
+    # Registry version tags move only once the app image passed its smoke test and
+    # the wheel built, so a failure anywhere in phase 1 leaves every tag where it was.
+    needs: [analyze, ci, package, docker-smoke, inference-build]
     if: >-
       github.repository_id == '1174219883' &&
       !cancelled() && needs.analyze.result == 'success' &&
-      needs.inference-build.result == 'success'
+      needs.inference-build.result == 'success' &&
+      (inputs.inference_only ||
+       (needs.ci.result == 'success' && needs.package.result == 'success' &&
+        needs.docker-smoke.result == 'success'))
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -692,8 +756,15 @@ jobs:
   # Merge per-platform images into a multi-arch manifest
   docker-manifest:
     name: Create Docker Manifest
-    if: github.repository_id == '1174219883'
-    needs: [analyze, docker-build, docker-smoke]
+    # A failing CUDA build must not leave an app version tag or `latest` moved, so
+    # this waits for every phase-1 job, not just the app smoke test.
+    needs: [analyze, ci, package, docker-build, docker-smoke, inference-build]
+    if: >-
+      github.repository_id == '1174219883' &&
+      !cancelled() && needs.docker-smoke.result == 'success' &&
+      (inputs.app_only ||
+       (needs.ci.result == 'success' && needs.package.result == 'success' &&
+        needs.inference-build.result == 'success'))
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -759,12 +830,13 @@ jobs:
           push-to-registry: true
 
   deployment-bundle:
-    name: Publish matching deployment manifests
-    needs: [analyze, release, docker-manifest, inference-manifest]
+    name: Package matching deployment manifests
+    # Packaged here, attached by `release`: there is no GitHub Release to attach to yet.
+    needs: [analyze, package, docker-manifest, inference-manifest]
     if: github.repository_id == '1174219883' && (needs.analyze.outputs.should_release == 'true' && !inputs.dry_run)
     runs-on: ubuntu-24.04
     permissions:
-      contents: write
+      contents: read
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2
@@ -773,17 +845,21 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
-      - name: Package and attach deployment files
+      - name: Download the built wheel
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: dist-release
+          path: ${{ runner.temp }}/dist-release
+      - name: Package deployment files
         env:
           VERSION: ${{ needs.analyze.outputs.next_version }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           bundle="$RUNNER_TEMP/immich-memories-deploy-${VERSION}.tar.gz"
           python3 scripts/package_deployment.py "$VERSION" "$bundle"
           compose_assets="$RUNNER_TEMP/immich-memories-compose-${VERSION}"
           python3 scripts/package_compose.py "$VERSION" "$compose_assets"
           cp "$bundle" "$compose_assets/"
-          gh release download "v$VERSION" --pattern '*.whl' --dir "$compose_assets"
+          cp "$RUNNER_TEMP"/dist-release/*.whl "$compose_assets/"
           for variant in app inference inference-cuda; do
             image="ghcr.io/sam-dumont/immich-memories"
             suffix=""
@@ -800,6 +876,16 @@ jobs:
             > "$compose_assets/installation.json"
           (cd "$compose_assets" && for asset in *; do sha256sum "$asset"; done) > "$RUNNER_TEMP/SHA256SUMS"
           mv "$RUNNER_TEMP/SHA256SUMS" "$compose_assets/SHA256SUMS"
-          # The wheel already belongs to the release; publish only the new setup/evidence assets.
-          gh release upload "v$VERSION" "$compose_assets"/*.yml "$compose_assets/example.env" \
-            "$compose_assets"/*.tar.gz "$compose_assets"/*.json "$compose_assets/SHA256SUMS"
+      # The wheel is in the release already (from dist-release); only the new
+      # setup and evidence assets travel.
+      - name: Upload deployment files
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: deployment-assets
+          path: |
+            ${{ runner.temp }}/immich-memories-compose-${{ needs.analyze.outputs.next_version }}/*.yml
+            ${{ runner.temp }}/immich-memories-compose-${{ needs.analyze.outputs.next_version }}/example.env
+            ${{ runner.temp }}/immich-memories-compose-${{ needs.analyze.outputs.next_version }}/*.tar.gz
+            ${{ runner.temp }}/immich-memories-compose-${{ needs.analyze.outputs.next_version }}/*.json
+            ${{ runner.temp }}/immich-memories-compose-${{ needs.analyze.outputs.next_version }}/SHA256SUMS
+          if-no-files-found: error
