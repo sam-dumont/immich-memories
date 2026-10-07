@@ -10,6 +10,10 @@ telemetry, which sends HTTP by default; there are no app analytics or update che
 Fetch model files during setup. Explicit download switches and some optional music backends
 can also fetch weights on first use, including during a run.
 
+This documentation website counts visits with the maintainer's self-hosted Plausible, served
+through dropbars.be: no cookies, and no personal data stored. That is the website, not the app:
+the app you install sends nothing.
+
 Optional features can contact other services. You choose which ones, and whether they run on
 your own hardware or outside your network.
 

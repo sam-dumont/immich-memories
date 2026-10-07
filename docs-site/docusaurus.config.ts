@@ -32,6 +32,21 @@ const config: Config = {
   organizationName: 'sam-dumont',
   projectName: 'immich-memories',
 
+  // Visit counts for the docs website only, on the maintainer's own Plausible, served through the
+  // maintainer's website (dropbars.be proxies the script and /api/event): no cookies and no personal
+  // data. The app itself sends nothing (see the Privacy page).
+  headTags: [
+    {
+      tagName: 'script',
+      attributes: {
+        defer: 'true',
+        'data-domain': 'sam-dumont.github.io',
+        'data-api': 'https://dropbars.be/api/event',
+        src: 'https://dropbars.be/js/app.js',
+      },
+    },
+  ],
+
   onBrokenLinks: 'throw',
   onBrokenAnchors: 'throw',
   markdown: {
