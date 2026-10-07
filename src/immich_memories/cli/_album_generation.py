@@ -8,7 +8,7 @@ from datetime import timedelta
 from typing import TYPE_CHECKING
 
 from immich_memories.cli._helpers import console, print_error, print_info, print_success
-from immich_memories.filename_builder import safe_slug
+from immich_memories.filename_builder import album_film_path
 from immich_memories.timeperiod import DateRange
 from immich_memories.tracking.timed import timed
 
@@ -48,9 +48,7 @@ def album_output_path(
     """Where the album's film goes: an `--output` the user typed, else a file named after it."""
     if explicit:
         return default_path
-    slug = safe_slug(album_name)
-    stem = f"album_{slug}" if slug else "album"
-    return default_path.parent / f"{stem}.{container}"
+    return album_film_path(default_path.parent, album_name, container)
 
 
 def _preset_params(

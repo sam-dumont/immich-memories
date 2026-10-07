@@ -122,6 +122,7 @@ def test_the_brief_picks_from_the_library_s_named_people_and_albums(tmp_path):
                 SimpleNamespace(id="2", name="zoé"),
                 SimpleNamespace(id="1", name="Ana"),
                 SimpleNamespace(id="3", name=""),
+                SimpleNamespace(id="4", name="Bo"),
             ]
 
         def list_albums(self):
@@ -134,8 +135,8 @@ def test_the_brief_picks_from_the_library_s_named_people_and_albums(tmp_path):
     # WHY: Immich is the external boundary; the unit tier has no library to read.
     client.app.dependency_overrides[immich_client] = lambda: Library()
 
-    # Before a people scan there is no count to go by: alphabetical.
-    assert [p["name"] for p in client.get("/api/v1/people").json()] == ["Ana", "zoé"]
+    # Before a people scan there is no count to go by: Immich's own order (most pictured first).
+    assert [p["name"] for p in client.get("/api/v1/people").json()] == ["zoé", "Ana", "Bo"]
     # Largest first, each with its id: two albums may share a name, and --from-album takes either.
     assert [(a["id"], a["asset_count"]) for a in client.get("/api/v1/albums").json()] == [
         ("b", 300),
@@ -311,6 +312,25 @@ def test_the_brief_offers_the_people_with_the_most_pictures_first(tmp_path):
     found = client.get("/api/v1/people").json()
 
     assert [(p["name"], p["pictures"]) for p in found] == [("Zoé", 900), ("Bo", 40), ("Ana", None)]
+
+
+def test_an_uncounted_store_lists_people_in_the_order_immich_returns_them(tmp_path):
+    from types import SimpleNamespace
+
+    from immich_memories.web.library import immich_client
+
+    class Library:
+        def get_all_people(self):
+            # Immich returns named people most-pictured first.
+            return [
+                SimpleNamespace(id=str(i), name=n) for i, n in enumerate(("Kim", "Robin", "Alex"))
+            ]
+
+    client = api_client(config_in(tmp_path))
+    # WHY: Immich is the external boundary; the registry is empty because no scan ever ran.
+    client.app.dependency_overrides[immich_client] = lambda: Library()
+
+    assert [p["name"] for p in client.get("/api/v1/people").json()] == ["Kim", "Robin", "Alex"]
 
 
 def test_invalid_job_ids_are_missing_jobs_in_every_endpoint(client):

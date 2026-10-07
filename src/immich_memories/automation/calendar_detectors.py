@@ -269,6 +269,7 @@ class OnThisDayDetector:
                 score=round(self.BASE_SCORE * min(1.0, n_years / 10), 3),
                 reason=f"Memories from this date across {n_years} years ({year_span})",
                 asset_count=n_years,
+                extra_params={"source_years": years_with_content},
             )
         ]
 

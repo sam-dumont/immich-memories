@@ -64,7 +64,7 @@ The GPU wrapper requests one `nvidia.com/gpu`, for the inference service only. T
 requests none: it lands on a GPU node through the node selector and toleration, and relies on the
 card being time-sliced. A cluster with one exclusive GPU therefore needs sharing configured, or
 the captioner sits on a card it has not reserved. The app pod gets no GPU either: encoding
-(libx264) and titles run on the CPU, and preflight warns "No GPU acceleration". On this tier the
+(libx264) and titles run on the CPU. On this tier the
 GPU means picture preparation and captions only. To give the app pod a GPU too, add
 `../components/gpu` to the `components:` of your `custom/kustomization.yaml` (see [GPU](#gpu)). The external Full reader has its own resource requirements.
 
@@ -232,17 +232,33 @@ kubectl exec -n immich-memories deploy/immich-memories -c immich-memories -- fin
 kubectl cp -n immich-memories -c immich-memories <pod>:/app/output/<run folder>/<name>.mp4 ./film.mp4
 ```
 
-`kubectl cp` is fine for a short film. For anything over about 100 MB it can fail with
-`unexpected EOF` and leave a truncated, unplayable file (a 128 MB film failed 2 times in 3, a
-6.5 MB one never did). Stream the file through `exec` and compare sizes:
+`kubectl cp` is fine for a short film. For anything over about 100 MB, neither it nor a plain
+`exec ... cat > film.mp4` can be trusted: on a 128 MB film, 4 of 4 streamed copies stopped short
+(130 to 133 MB of 134 MB, one with `connection reset by peer`) and `kubectl cp` gave 1 full copy
+in 2. The size check caught every bad copy, so use it as the loop's exit condition. This copies
+in chunks, resumes from the bytes it already has with `tail -c +N`, and stops only when the local
+size matches the pod's:
 
 ```bash
-kubectl exec -n immich-memories deploy/immich-memories -c immich-memories -- cat "/app/output/<run folder>/<name>.mp4" > film.mp4
-kubectl exec -n immich-memories deploy/immich-memories -c immich-memories -- stat -c %s "/app/output/<run folder>/<name>.mp4"
-stat -f %z film.mp4   # macOS; on Linux: stat -c %s film.mp4
+NS=immich-memories
+FILE="/app/output/<run folder>/<name>.mp4"
+pod() { kubectl exec -n "$NS" deploy/immich-memories -c immich-memories -- "$@"; }
+
+want=$(pod stat -c %s "$FILE")
+: >> film.mp4
+until [ "$(wc -c < film.mp4 | tr -d ' ')" -ge "$want" ]; do
+  have=$(wc -c < film.mp4 | tr -d ' ')
+  pod tail -c +$((have + 1)) "$FILE" >> film.mp4 || sleep 2
+done
+echo "got $(wc -c < film.mp4 | tr -d ' ') of $want bytes"
 ```
 
-The two numbers must match. Play the file to the end before you delete anything.
+It works in bash and zsh, on macOS and Linux. A dropped connection costs one retry from where it
+stopped, not the whole film. Play the file to the end before you delete anything.
+
+Two other routes skip the problem. The film page in the web UI has a **Download film** link under
+the player (port-forward, open the run, click it), and the browser can resume that. Or mount the
+output PVC in a throwaway pod and copy from there, which also works when the app pod is down.
 
 A CLI render dies with the `kubectl exec` that started it. For a month or a year, run it detached
 inside the pod, for example `kubectl exec ... -- sh -c 'nohup immich-memories runs render RUN_ID > /tmp/render.log 2>&1 &'`,
@@ -458,7 +474,7 @@ kubectl logs -n immich-memories job/trigger-test
 `Complete` only means the trigger was accepted: the Job's log is just
 `{"status":"accepted","attempt_id":"...","status_url":"/api/trigger/..."}` and the Job is done in a
 few seconds. The film is made by the running app, detached from that HTTP request, and a year can
-take close to an hour on four CPU cores. Follow it with the attempt id and the token:
+take close to an hour on four CPU cores (55 minutes for a 538 s film on the first trigger of a fresh library). Follow it with the attempt id and the token:
 
 ```bash
 kubectl port-forward -n immich-memories svc/immich-memories 8080:80

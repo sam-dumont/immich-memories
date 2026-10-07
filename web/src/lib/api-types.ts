@@ -528,7 +528,7 @@ export interface paths {
          * People
          * @description Everyone Immich has a name for, the names `--person` takes: most pictured first.
          *
-         *     The counts are the last people scan's; anyone it has not counted follows alphabetically.
+         *     The counts are the last people scan's; anyone it has not counted keeps Immich's own order, which is most pictured first.
          */
         get: operations["people_api_v1_people_get"];
         put?: never;
@@ -617,6 +617,26 @@ export interface paths {
          * @description Add someone Immich has not tagged, or who is never on camera.
          */
         post: operations["add_api_v1_roster_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/roster/flags/keep-apart": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Keep Flag Apart
+         * @description Answer a curation flag "keep apart": the pair stops being flagged.
+         */
+        post: operations["keep_flag_apart_api_v1_roster_flags_keep_apart_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1019,6 +1039,26 @@ export interface paths {
         get: operations["read_story_api_v1_runs__run_id__story_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/runs/{run_id}/upload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload Run Film
+         * @description Upload this run's existing film, optionally into an album, under the render-time key check.
+         */
+        post: operations["upload_run_film_api_v1_runs__run_id__upload_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1509,6 +1549,16 @@ export interface components {
              */
             level: "anyone" | "family" | "just-us";
         };
+        /** FlagAnswer */
+        FlagAnswer: {
+            /** Kind */
+            kind: string;
+            /** Person Ids */
+            person_ids: [
+                string,
+                string
+            ];
+        };
         /** Greeting */
         Greeting: {
             /** User */
@@ -1944,12 +1994,12 @@ export interface components {
         RosterFlag: {
             /** Kind */
             kind: string;
-            /** Message */
-            message: string;
             /** Names */
             names: string[];
             /** Person Ids */
             person_ids: string[];
+            /** Person Urls */
+            person_urls: (string | null)[];
         };
         /** RosterLink */
         RosterLink: {
@@ -2368,6 +2418,22 @@ export interface components {
             refreshing: boolean;
             /** Trips */
             trips: components["schemas"]["TripChoice"][] | null;
+        };
+        /** UploadRequest */
+        UploadRequest: {
+            /** Album */
+            album?: string | null;
+        };
+        /** UploadedFilm */
+        UploadedFilm: {
+            /** Album */
+            album: string | null;
+            /** Asset Id */
+            asset_id: string;
+            /** Asset Url */
+            asset_url: string | null;
+            /** Warnings */
+            warnings: string[];
         };
         /** ValidationError */
         ValidationError: {
@@ -3312,6 +3378,37 @@ export interface operations {
             };
         };
     };
+    keep_flag_apart_api_v1_roster_flags_keep_apart_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FlagAnswer"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     groups_api_v1_roster_groups_get: {
         parameters: {
             query?: never;
@@ -4015,6 +4112,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Story"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_run_film_api_v1_runs__run_id__upload_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UploadRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UploadedFilm"];
                 };
             };
             /** @description Validation Error */

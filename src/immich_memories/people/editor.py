@@ -54,17 +54,8 @@ _LINK_PROMPTS = {
     "duplicate": "the same name on a second person record",
 }
 
-_FLAG_MESSAGES = {
-    "twin": (
-        "Face recognition merges identical faces, so one of these records holds "
-        "nearly all the pictures and the other almost none. Neither count means "
-        "anything on its own. Merge them in Immich or keep them apart — your call."
-    ),
-    "duplicate": (
-        "One name on two person records — a split face cluster. Merge these "
-        "records in Immich; it is the only place it can be fixed."
-    ),
-}
+# The link kinds only Immich can fix. The page words each one itself, through the UI catalogue.
+FLAGGED_KINDS = frozenset({"twin", "duplicate"})
 
 
 @dataclass
@@ -116,7 +107,6 @@ class CurationFlag:
     kind: str
     names: tuple[str, ...]
     person_ids: tuple[str, ...]
-    message: str
 
 
 def load_people(store: Store) -> list[PersonView]:
@@ -212,7 +202,7 @@ def curation_flags(people: list[PersonView]) -> list[CurationFlag]:
     flags: list[CurationFlag] = []
     for person in people:
         for link in person.links:
-            if link.kind not in _FLAG_MESSAGES or link.target_id not in names:
+            if link.kind not in FLAGGED_KINDS or link.target_id not in names:
                 continue
             pair = pair_key(person.person_id, link.target_id)
             if pair in seen:
@@ -223,10 +213,30 @@ def curation_flags(people: list[PersonView]) -> list[CurationFlag]:
                     kind=link.kind,
                     names=(person.name, names[link.target_id]),
                     person_ids=(person.person_id, link.target_id),
-                    message=_FLAG_MESSAGES[link.kind],
                 )
             )
     return flags
+
+
+def keep_apart(store: Store, kind: str, person_id: str, other_id: str) -> None:
+    """Answer a curation flag "no": these two are not one person, nor twins to merge.
+
+    Recorded as the rejection `curation_flags` already honours, so the flag stops
+    coming back. Raises ValueError when the registry holds no such flagged pair.
+    """
+    person = next((p for p in load_people(store) if p.person_id == person_id), None)
+    link = next(
+        (
+            candidate
+            for candidate in (person.links if person else [])
+            if candidate.kind == kind and candidate.target_id == other_id
+        ),
+        None,
+    )
+    if person is None or link is None or kind not in FLAGGED_KINDS:
+        raise ValueError("That pair is not flagged in the people registry.")
+    link.decision = REJECTED
+    save_person(store, person)
 
 
 def _rejected_pairs(people: list[PersonView]) -> set[tuple[str, str]]:

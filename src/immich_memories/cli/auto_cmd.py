@@ -18,6 +18,14 @@ from immich_memories.db import open_store
 logger = logging.getLogger(__name__)
 
 
+def _date_label(c: Any) -> str:
+    """The window a candidate covers; an on-this-day film draws on past years, not today."""
+    years = c.extra_params.get("source_years")
+    if years:
+        return f"{c.date_range_start:%m-%d} in {years[0]} to {years[-1]}"
+    return f"{c.date_range_start} to {c.date_range_end}"
+
+
 def _print_candidates_table(candidates: list) -> None:
     table = Table(title="Memory Candidates")
     table.add_column("#", style="dim", justify="right")
@@ -42,7 +50,7 @@ def _print_candidates_table(candidates: list) -> None:
             str(i),
             label,
             c.category.value,
-            f"{c.date_range_start} to {c.date_range_end}",
+            _date_label(c),
             f"{c.score:.3f}",
             reason,
             str(c.asset_count),
@@ -65,6 +73,7 @@ def _candidates_to_json(candidates: list) -> str:
             # Always present, so a consumer never has to tell "the calendar
             # proposed this" from "field missing".
             "source": c.extra_params.get("source"),
+            "source_years": c.extra_params.get("source_years"),
         }
         for c in candidates
     ]

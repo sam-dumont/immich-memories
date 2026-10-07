@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import logging
 import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -154,13 +153,6 @@ def _configure(ctx: click.Context, url: str | None, api_key: str | None) -> None
             print_error(f"Connection failed: {e}")
 
 
-def _quiet_request_logs(verbose: bool) -> None:
-    # Every check that calls a server logs a request line at INFO, and over SSH
-    # they print above the table and bury it. -v still shows them.
-    if not verbose:
-        logging.getLogger("httpx").setLevel(logging.WARNING)
-
-
 def register_config_commands(main: click.Group) -> None:
     """Register config, people, years, and preflight commands on the main CLI group."""
 
@@ -277,8 +269,6 @@ def register_config_commands(main: click.Group) -> None:
         from immich_memories.preflight import CheckStatus, run_preflight_checks
 
         config = ctx.obj["config"]
-
-        _quiet_request_logs(verbose)
 
         console.print("[bold]Running Preflight Checks[/bold]")
         console.print()

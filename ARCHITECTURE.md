@@ -847,6 +847,7 @@ src/immich_memories/
 │   ├── _config_errors.py       # Config error formatting
 │   ├── _flags.py               # Shared validation for flags more than one command takes
 │   ├── _pipeline_runner.py     # Run SmartPipeline over the fetched assets + generate
+│   ├── source_progress.py      # Source-stage progress bar, plus the throttled phase-log feed
 │   ├── _editorial_context.py   # CLI flags + presets -> one EditorialRunContext
 │   ├── _run_timeline.py        # The run's timeline: selection budget, then the settled plan
 │   ├── _asset_fetch.py         # What a memory asks Immich for: videos, Live Photos, stills
@@ -855,6 +856,7 @@ src/immich_memories/
 │   ├── _ask_generation.py      # generate --ask: model tier required, translate against the store,
 │   │                           # print + save the trace, then a RunScope (pool as album, or special day)
 │   ├── runs_render.py          # `runs render`: a saved cut or revision → generate_saved_cut
+│   ├── runs_upload.py          # `runs upload`: send a finished run's film to Immich, no new render
 │   ├── _trip_generation.py     # Trip detection, selection, per-trip generation
 │   ├── _trip_display.py        # Trip table formatting & selection logic
 │   ├── _date_resolution.py     # Date range resolution for memory types
@@ -874,6 +876,7 @@ src/immich_memories/
 │   ├── reverse_proxy.py        # Secure cookie + trusted X-Forwarded-* settings for uvicorn
 │   ├── request_checks.py       # Outermost ASGI layer: Host allow-list, cross-site write refusal, body cap, no framing
 │   ├── runs.py                 # GET /api/v1/runs[/{id}[/child-output]]: RunDatabase, run index, transcripts
+│   ├── run_upload.py           # POST /api/v1/runs/{id}/upload: a finished film to Immich, capability-checked
 │   ├── cut.py                  # /runs/{id}/cut (storyboard + trace + polish + siblings), /story, /revisions
 │   ├── pool.py                 # /runs/{id}/pool and /pictures/{id}/decision (Never use, Clear hold)
 │   ├── media.py                # /assets/{id}/thumbnail (shared cache), /video (Range-streamed), /people/{id}/face
@@ -1196,6 +1199,7 @@ src/immich_memories/
 ├── preflight_compute.py        # Inference GPU health/device evidence, without changing requested tier
 ├── preflight_network.py        # One row per outside host the config allows; silent when none
 ├── preflight_render.py         # Authenticated worker version and render capability check
+├── preflight_output.py         # Output directory source (env vs config.yaml) + container-mount warnings
 ├── preflight_run.py            # Pinned models + writable output dir; `generate`/`prepare` and the web
 │                               # Cut (`memory_run.install_refusal`, before the pool loads) refuse to start
 ├── preflight_homebase.py       # Trip setup checks that read no library and expose no coordinates

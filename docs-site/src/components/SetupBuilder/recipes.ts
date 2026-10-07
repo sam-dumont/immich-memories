@@ -246,6 +246,8 @@ export function buildSetup(setup: Setup, sources: Sources, buildVersion: string)
       ...(setup.automation ? [
         `# Try a schedule now: kubectl create job -n ${ns} --from=cronjob/immich-memories-auto trigger-test`,
         '# The Job only says the trigger was accepted: follow the film in the app (Runs) or with runs list.',
+        '# The first trigger on a fresh library can pick a whole year: about an hour on 4 CPUs.',
+        '# Follow it with GET /api/trigger/<attempt_id> (the attempt_id is in the Job log, bearer = the trigger token).',
       ] : []),
       `kubectl exec -n ${ns} deploy/immich-memories -- immich-memories models fetch`,
       `kubectl exec -n ${ns} deploy/immich-memories -- immich-memories preflight`,

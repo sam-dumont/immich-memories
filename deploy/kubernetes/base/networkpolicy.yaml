@@ -8,8 +8,10 @@ metadata:
     app.kubernetes.io/component: network-policy
 spec:
   podSelector:
-    matchLabels:
-      app.kubernetes.io/name: immich-memories
+    matchExpressions:
+      - key: app.kubernetes.io/name
+        operator: In
+        values: [immich-memories, immich-memories-batch]
   policyTypes:
     - Ingress
     - Egress

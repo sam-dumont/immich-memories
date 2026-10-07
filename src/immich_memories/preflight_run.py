@@ -12,9 +12,13 @@ import hashlib
 import os
 import tempfile
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from immich_memories.config import Config
 from immich_memories.preflight import CheckResult, CheckStatus
+
+if TYPE_CHECKING:
+    from immich_memories.preflight_output import OutputOrigin
 
 
 def check_encoder(config: Config) -> CheckResult:
@@ -148,7 +152,7 @@ def _unwritable(directory: Path, error: OSError) -> CheckResult:
     )
 
 
-def check_output_directory(directory: Path) -> CheckResult:
+def check_output_directory(directory: Path, origin: OutputOrigin | None = None) -> CheckResult:
     """Create the output directory when it is missing, and prove a file can be written in it.
 
     The probe writes and removes a real temporary file: permission bits and
@@ -164,7 +168,7 @@ def check_output_directory(directory: Path) -> CheckResult:
         name="Output directory",
         status=CheckStatus.OK,
         message="Output directory is writable",
-        details=str(directory),
+        details=f"{directory} ({origin.describe()})" if origin else str(directory),
     )
 
 

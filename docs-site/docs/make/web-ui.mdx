@@ -16,6 +16,7 @@ The browser gives you a contact sheet to review and edit before rendering. Every
 |---|---|
 | **Memory** | Choose a film and start its cut. |
 | **Runs** | Review cuts, save revisions and render films, including automatic runs and failures. |
+| **People** | Check who is close, answer the twin and duplicate flags, and open a person in Immich. |
 | **Suggestions** | See the memories automation would make next, and why. |
 | **Settings** | Change configuration and confirm your people. |
 
@@ -72,6 +73,8 @@ After a confirmed upload reclaims the local copy, the run shows **Delivered to I
 link and still offers **Download film**. The app retrieves that run's recorded original from
 Immich using its server-side key; your browser never receives the key. If the film is gone from
 both places, the download reports that it is unavailable.
+
+A film rendered without the upload box ticked can still go to Immich later. **Upload to Immich** on the run page sends the file already on disk, with an optional album name, and renders nothing again. It follows the same key check as the render option, so it is unavailable, with the reason, when the key lacks upload scope or the film file is gone. From a terminal: `immich-memories runs upload RUN_ID --album NAME`.
 
 Every run has **Copy report** and **Download report**, including failed runs. Review the redacted report before sharing it in an issue: [report](./cli/report.md).
 

@@ -270,6 +270,7 @@ class TestImmichClientRequest:
         )
         assert str(raised.value) == (
             "Request failed: cannot reach immich.example.com (ConnectError: connection rejected ***)"
+            "; Immich has not answered yet, rerun the same command once it does"
         )
         assert api_key not in rendered_traceback
 
@@ -293,6 +294,7 @@ class TestImmichClientRequest:
         )
         assert str(raised.value) == (
             "Request failed: cannot reach immich.example.com (RequestError: request rejected ***)"
+            "; Immich has not answered yet, rerun the same command once it does"
         )
         assert api_key not in rendered_traceback
 

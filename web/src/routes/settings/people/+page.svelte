@@ -13,6 +13,7 @@
   type Link = components['schemas']['RosterLink'];
   type AccountChoice = components['schemas']['AccountChoice'];
   type SavedGroup = components['schemas']['SavedGroupView'];
+  type Flag = components['schemas']['RosterFlag'];
 
   const PAGE = 30;
   let roster = $state<Roster | null>(null);
@@ -65,6 +66,24 @@
   // Pressing the answer already given takes it back: undecided is a real state.
   const answer = (person: Person, link: Link, decision: 'confirmed' | 'rejected') =>
     save(person, {}, [{ kind: link.kind, target_id: link.target_id, decision: link.decision === decision ? null : decision }]);
+
+  // The server sends a stable kind; the sentence is the catalogue's, in the reader's language.
+  function flagText(kind: string): string {
+    if (kind === 'twin')
+      return t('Face recognition merges identical faces, so one of these records holds nearly all the pictures and the other almost none. Neither count means anything on its own. Merge them in Immich or keep them apart.');
+    if (kind === 'duplicate')
+      return t('One name on two person records: a split face cluster. Merge these records in Immich, the only place it can be fixed.');
+    return kind.replaceAll('-', ' ');
+  }
+
+  async function keepApart(flag: Flag) {
+    const response = await fetch('/api/v1/roster/flags/keep-apart', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ kind: flag.kind, person_ids: flag.person_ids }),
+    });
+    if (response.ok && roster) roster = { ...roster, flags: roster.flags.filter((f) => f !== flag) };
+  }
 
   async function addPerson() {
     if (!newName.trim()) return;
@@ -131,7 +150,7 @@
     <div class="flex flex-col gap-1">
       <a href="/app/settings" class="text-sm text-gray-600 hover:text-primary dark:text-gray-400">{t('Settings')}</a>
       <Heading size="large" tag="h1">{t('People')}</Heading>
-      <Text color="muted">{t('The people registry: who is close, their roles, and how they relate. `people scan` writes the guesses; your answers stay across scans. `people export` writes it out as YAML.')}</Text>
+      <Text color="muted">{t('The people registry: who is close, their roles, and how they relate.')} <code>people scan</code> {t('writes the guesses; your answers stay across scans.')} <code>people export</code> {t('writes it out as YAML.')}</Text>
     </div>
     <Button size="small" variant="outline" leadingIcon={mdiRefresh} onclick={rescan} disabled={scan?.status === 'running'}>{t('Rescan the library')}</Button>
   </div>
@@ -144,7 +163,16 @@
     {#if roster.flags.length}
       <section class="flex flex-col gap-2 rounded-2xl border border-warning p-4" aria-label={t('Curation')}>
         <Heading size="tiny" tag="h2">{t('Curation')}</Heading>
-        {#each roster.flags as flag, index (index)}<p class="text-sm">{flag.message}</p>{/each}
+        {#each roster.flags as flag (flag.person_ids.join(':'))}
+          <div class="flex flex-col gap-1 text-sm" data-testid="curation-flag">
+            <p class="font-medium">
+              {#each flag.names as name, index (index)}{#if index}{' · '}{/if}{name}{#if flag.person_urls[index]}
+                {' '}<a href={flag.person_urls[index]} target="_blank" rel="noreferrer" class="font-normal text-primary underline" aria-label={t('Open {name} in Immich', { name })}>{t('Open in Immich')}</a>{/if}{/each}
+            </p>
+            <p>{flagText(flag.kind)}</p>
+            <Button size="tiny" variant="outline" class="w-fit" onclick={() => keepApart(flag)}>{t('Keep apart')}</Button>
+          </div>
+        {/each}
       </section>
     {/if}
 

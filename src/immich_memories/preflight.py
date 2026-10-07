@@ -688,13 +688,13 @@ def run_preflight_checks(config: Config) -> list[CheckResult]:
     from immich_memories.preflight_laya import check_laya
     from immich_memories.preflight_music import check_music
     from immich_memories.preflight_network import outside_call_checks
+    from immich_memories.preflight_output import output_directory_rows
     from immich_memories.preflight_render import check_render_worker
     from immich_memories.preflight_run import (
         check_detector_export,
         check_detector_interpreter,
         check_encoder,
         check_memory,
-        check_output_directory,
     )
     from immich_memories.preflight_settings import check_stored_settings
     from immich_memories.preflight_sign_in import check_sign_in
@@ -717,7 +717,7 @@ def run_preflight_checks(config: Config) -> list[CheckResult]:
         check_laya(config),
         check_host_paths(config),
         check_store_location(config),
-        check_output_directory(config.output.output_path),
+        *output_directory_rows(config),
         check_notifications(config),
         check_render_worker(config),
         check_music(config),

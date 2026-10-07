@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ipaddress
+import logging
 import os
 from pathlib import Path
 
@@ -46,8 +47,60 @@ def _warn_about_unauthenticated_external_bind(config: Config, host: str) -> None
     )
 
 
+def _quiet_request_logs(level: str | None) -> None:
+    """One line per request buries every command's own output; -v shows them again."""
+    if level != "DEBUG":
+        for name in ("httpx", "httpcore"):
+            logging.getLogger(name).setLevel(logging.WARNING)
+
+
+def _load_cli_config(
+    ctx: click.Context, config: str | None, preset: str | None, *, help_only: bool
+) -> None:
+    """Load and validate the config into ctx.obj; a broken file ends the command with one message."""
+    import sys
+    from contextlib import nullcontext
+
+    import yaml
+    from pydantic import ValidationError
+
+    from immich_memories.cli._config_errors import format_validation_error, format_yaml_error
+    from immich_memories.config_tiers import service_probes_off
+    from immich_memories.settings_store import SettingsUnavailable
+
+    try:
+        # Help still rejects a broken config file, but contacts no service to resolve a tier.
+        with service_probes_off() if help_only else nullcontext():
+            if config:
+                config_path = Path(config).expanduser().resolve()
+                ctx.obj["config"] = load_config(config_path)
+                ctx.obj["config_path"] = config_path
+            else:
+                ctx.obj["config"] = get_config()
+                ctx.obj["config_path"] = None
+        if preset:
+            from immich_memories.config_presets import apply_preset
+
+            ctx.obj["config"].preset = preset
+            apply_preset(ctx.obj["config"])
+    except ValidationError as e:
+        print_error(format_validation_error(e))
+        sys.exit(1)
+    except yaml.YAMLError as e:
+        print_error(format_yaml_error(e))
+        sys.exit(1)
+    except SettingsUnavailable as e:
+        print_error(str(e))
+        sys.exit(1)
+
+
 class _MemoriesGroup(click.Group):
     """The command group, ending a run whose Immich stopped answering with its one message."""
+
+    def parse_args(self, ctx: click.Context, args: list[str]) -> list[str]:
+        # The group callback runs before a subcommand's --help is parsed, so remember it here.
+        ctx.meta["help_requested"] = "--help" in args
+        return super().parse_args(ctx, args)
 
     def invoke(self, ctx: click.Context) -> object:
         from immich_memories.api.immich import ImmichStoppedAnswering
@@ -99,46 +152,21 @@ def main(
     ctx.ensure_object(dict)
 
     # Configure logging early
-    import sys
-
     from immich_memories.logging_config import configure_logging
 
     level = "DEBUG" if verbose else (log_level.upper() if log_level else None)
     configure_logging(level=level)
     ctx.obj["log_level"] = level
+    _quiet_request_logs(level)
+    help_only = bool(ctx.meta.get("help_requested"))
 
     # Initialize config directory
     init_config_dir()
 
-    # Load configuration
-    import yaml
-    from pydantic import ValidationError
+    _load_cli_config(ctx, config, preset, help_only=help_only)
 
-    from immich_memories.cli._config_errors import format_validation_error, format_yaml_error
-    from immich_memories.settings_store import SettingsUnavailable
-
-    try:
-        if config:
-            config_path = Path(config).expanduser().resolve()
-            ctx.obj["config"] = load_config(config_path)
-            ctx.obj["config_path"] = config_path
-        else:
-            ctx.obj["config"] = get_config()
-            ctx.obj["config_path"] = None
-        if preset:
-            from immich_memories.config_presets import apply_preset
-
-            ctx.obj["config"].preset = preset
-            apply_preset(ctx.obj["config"])
-    except ValidationError as e:
-        print_error(format_validation_error(e))
-        sys.exit(1)
-    except yaml.YAMLError as e:
-        print_error(format_yaml_error(e))
-        sys.exit(1)
-    except SettingsUnavailable as e:
-        print_error(str(e))
-        sys.exit(1)
+    if help_only:
+        return
 
     from immich_memories.store_migration_notice import log_store_migration_warnings
 

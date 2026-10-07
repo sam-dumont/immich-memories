@@ -92,14 +92,16 @@ chmod 700 .
 chmod 600 .env
 mkdir -p output
 /usr/syno/bin/synoacltool -addace output user:1000:allow:rwxpdDaARWc--:fd--
+/usr/syno/bin/synoacltool -addace output user:$(id -un):allow:rwxp-DaARWc--:fd--
 sudo docker compose -p immich-memories pull
 sudo docker compose -p immich-memories up -d
 sudo docker compose -p immich-memories exec immich-memories immich-memories models fetch
 sudo docker compose -p immich-memories exec immich-memories immich-memories preflight
 ```
 
-The `synoacltool` line gives the container's uid 1000 write access to `output` and keeps your own
-entry; see [the output folder](../nas.md#the-output-folder) for why `chown` isn't enough.
+The two `synoacltool` lines give the container's uid 1000 write access to `output` and give your own
+DSM user an entry too: without the second one, `ls -ld output` shows `d---------+` and you get
+"Permission denied" on your own folder. See [the output folder](../nas.md#the-output-folder) for why `chown` isn't enough.
 `title_screens.locale: auto` follows the host's `LANG`, but the container sets none, so a film
 always renders in English until you set `title_screens.locale: fr` (or add `LANG: fr_FR.UTF-8`
 to `.env`) for a French one. Check DSM ACLs as described above. Run every later Compose command from this directory with
@@ -107,6 +109,9 @@ to `.env`) for a French one. Check DSM ACLs as described above. Run every later 
 This stock release-file route uses host port **8080**. If occupied, change only the number before
 `:8080` in the port line, so it reads `${UI_BIND_ADDRESS:-127.0.0.1}:18081:8080`, and use 18081 for
 both tunnel and proxy upstream. Keep `${UI_BIND_ADDRESS:-127.0.0.1}`: the LAN route depends on it.
+
+When you script these commands over `ssh`, `docker compose exec` swallows the script's stdin.
+Add `-T` and redirect stdin: `ssh nas "sudo docker compose -p immich-memories exec -T immich-memories immich-memories preflight </dev/null"`.
 
 On your **desktop**, the permitted-tunnel route is:
 
@@ -167,8 +172,14 @@ certificate, already configured on the NAS. This does not require internet expos
 ## LAN port with app login (no tunnel, no proxy)
 
 If your account can't forward ports and you don't want to set up the proxy, publish the port on
-the LAN with app authentication on. In `.env`, set `IMMICH_MEMORIES_AUTH_USERNAME`,
-`IMMICH_MEMORIES_AUTH_PASSWORD` and `UI_BIND_ADDRESS=0.0.0.0`, then `docker compose up -d`.
+the LAN with app authentication on. Do it in this order, from the project directory over SSH (DSM only allows SSH tunnels for
+administrators, so a plain account has to take this route):
+
+1. In `.env`, set the login: `IMMICH_MEMORIES_AUTH_USERNAME=admin` and
+   `IMMICH_MEMORIES_AUTH_PASSWORD=` a long password of your own (12 characters or more).
+2. In the same file, set `UI_BIND_ADDRESS=0.0.0.0`.
+3. Start it: `sudo docker compose -p immich-memories up -d`.
+
 From a second machine, `/api/v1/settings`, thumbnails and film downloads should answer 401
 without a session and 200 after login, and both should survive `restart` and `down`/`up`.
 The port is plain HTTP, so the password and cookie are visible on your LAN; the proxy route above

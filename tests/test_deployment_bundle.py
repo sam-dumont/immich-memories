@@ -149,3 +149,24 @@ def test_gpu_services_init_container_runs_on_the_gpu_tier():
     ][0]
     env = {e["name"]: e.get("value") for e in init["env"]}
     assert env["IMMICH_MEMORIES_DEPLOYMENT_TIER"] == "gpu"
+
+
+def test_batch_pods_do_not_share_the_deployment_pod_name_label():
+    # kubectl exec/logs on deploy/immich-memories picks pods by the Deployment's selector;
+    # a Job pod carrying the same name label makes it print "Found 2 pods".
+    from pathlib import Path
+
+    base = Path(__file__).resolve().parents[1] / "deploy/kubernetes/base"
+    pod_labels = []
+    for name in ("cronjobs.yaml", "job.yaml"):
+        for doc in yaml.safe_load_all((base / name).read_text()):
+            spec = doc["spec"]
+            template = (
+                spec["jobTemplate"]["spec"]["template"]
+                if doc["kind"] == "CronJob"
+                else spec["template"]
+            )
+            pod_labels.append(template["metadata"]["labels"])
+    assert len(pod_labels) == 3
+    for labels in pod_labels:
+        assert labels["app.kubernetes.io/name"] == "immich-memories-batch"

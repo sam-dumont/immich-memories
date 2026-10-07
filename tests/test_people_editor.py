@@ -266,7 +266,6 @@ class TestCurationFlags:
         flags = curation_flags(load_people(store))
 
         assert [flag.kind for flag in flags] == ["duplicate"]
-        assert "Immich" in flags[0].message
 
     def test_each_flagged_name_is_paired_with_that_persons_own_record(self):
         # The page turns these into one "open in Immich" link each. Sorting the

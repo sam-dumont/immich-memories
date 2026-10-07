@@ -17,7 +17,11 @@ from uuid import uuid4
 from immich_memories.api.access_clients import AccessBoundClient
 from immich_memories.api.models import VideoClipInfo
 from immich_memories.config_models_render import TitleStyleMode
-from immich_memories.filename_builder import build_memory_output_path, name_after_recipe
+from immich_memories.filename_builder import (
+    album_film_path,
+    build_memory_output_path,
+    name_after_recipe,
+)
 from immich_memories.generate import GenerationParams, generate_memory
 from immich_memories.operations.phases import OperationalPhase
 from immich_memories.operations.revision_render import RenderUnavailable, project_revision
@@ -187,15 +191,20 @@ def _apply_request(
     params.title_source = source.value if source is not None else None
 
 
-def _render_base_path(output_dir: Path, run: Any, date_range: Any, container: str) -> Path:
+def _render_base_path(
+    output_dir: Path, run: Any, date_range: Any, container: str, preset_params: dict[str, Any]
+) -> Path:
     """The film's file name before the recipe hash.
 
-    An album film keeps the `album_<slug>` name `generate --from-album` gave it: the run
-    records no album name to rebuild it from, and a different name per command is a
-    different film to anyone looking in the folder.
+    An album film is named after its album, as `generate --from-album` names it, whichever
+    command renders it. A cut with no album name kept (a free-text subject pool) reuses the
+    name its first render gave the run.
     """
-    if run.memory_type == "album" and run.output_path:
-        return (output_dir / Path(run.output_path).name).with_suffix(f".{container}")
+    if run.memory_type == "album":
+        if album_name := preset_params.get("album_name"):
+            return album_film_path(output_dir, album_name, container)
+        if run.output_path:
+            return (output_dir / Path(run.output_path).name).with_suffix(f".{container}")
     return build_memory_output_path(
         output_dir=output_dir,
         person_names=list(run.memory_people),
@@ -265,7 +274,13 @@ def render_saved_cut(
         format_override=request.output_format,
     ).container
     params.output_path = name_after_recipe(
-        _render_base_path(config.output.output_path, run, date_range, container),
+        _render_base_path(
+            config.output.output_path,
+            run,
+            date_range,
+            container,
+            params.memory_preset_params,
+        ),
         selected_clips=params.clips,
         clip_segments=params.clip_segments,
         editorial_selections=params.editorial_selections,

@@ -24,7 +24,7 @@ def _checks_that_call_a_server(_config):
     return []
 
 
-def _preflight_output(*args):
+def _preflight_output(*group_args):
     runner = CliRunner()
     with (
         patch("immich_memories.cli.init_config_dir"),
@@ -35,12 +35,12 @@ def _preflight_output(*args):
         path = f"{cwd}/c.yaml"
         with open(path, "w") as handle:
             handle.write("immich:\n  url: http://immich\n  api_key: k\n")
-        return runner.invoke(main, ["-c", path, "preflight", *args]).output
+        return runner.invoke(main, ["-c", path, *group_args, "preflight"]).output
 
 
 def test_the_default_preflight_hides_http_request_lines():
     assert REQUEST_LINE not in _preflight_output()
 
 
-def test_a_verbose_preflight_keeps_them():
+def test_a_verbose_run_keeps_them():
     assert REQUEST_LINE in _preflight_output("-v")

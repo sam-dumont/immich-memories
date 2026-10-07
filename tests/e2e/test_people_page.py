@@ -145,3 +145,43 @@ def test_adding_a_person_redraws_the_roster_in_place(
     assert page.evaluate("window.__s7_same_document") is True, "the page was reloaded"
     saved = load_document(store)
     assert any(entry["name"] == "Off Camera Uncle" for entry in saved["people"])
+
+
+def _twin(index: int, name: str, other: int) -> dict:
+    entry = _entry(index)
+    entry["name"] = name
+    entry["inferred"]["links"] = [
+        {"kind": "twin", "with": f"fake-person-{other:02d}", "confidence": 0.9, "via": "birth-date"}
+    ]
+    return entry
+
+
+def test_each_curation_flag_names_both_people_and_can_be_kept_apart(
+    page: Page, launch_app_url: str, launch_workspace
+) -> None:
+    store = launch_workspace.store()
+    pairs = [
+        (_twin(0, "Robin Twin", 1), _twin(1, "Remy Twin", 0)),
+        (_twin(2, "Ana Twin", 3), _twin(3, "Alma Twin", 2)),
+    ]
+    people = [person for pair in pairs for person in pair]
+    import_document(store, {"version": 1, "people": people}, replace=True)
+
+    page.goto(f"{launch_app_url}/settings/people", wait_until="domcontentloaded", timeout=30_000)
+    flags = page.get_by_test_id("curation-flag")
+    expect(flags).to_have_count(2, timeout=30_000)
+    expect(flags.nth(0)).to_contain_text("Robin Twin")
+    expect(flags.nth(0)).to_contain_text("Remy Twin")
+    expect(flags.nth(1)).to_contain_text("Ana Twin")
+    expect(flags.nth(1)).to_contain_text("Alma Twin")
+    expect(flags.nth(0)).not_to_contain_text("—")
+    expect(
+        page.get_by_role("navigation", name="Main navigation")
+        .get_by_role("link", name="People")
+        .first
+    ).to_be_visible()
+
+    flags.nth(0).get_by_role("button", name="Keep apart").click()
+
+    expect(flags).to_have_count(1)
+    expect(flags.first).to_contain_text("Ana Twin")
