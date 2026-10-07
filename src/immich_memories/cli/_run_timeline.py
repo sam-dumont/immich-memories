@@ -91,6 +91,14 @@ def final_timeline(
             transition_mode=transition,
             transition_duration=config.defaults.transition_duration,
         )
+    if plan.divider_policy == "none" and plan.eligible_dividers > 0:
+        logger.warning(
+            "Month dividers dropped: none of %d eligible dividers fit the title budget "
+            "(soft max %.1fs, selected duration %.1fs)",
+            plan.eligible_dividers,
+            plan.soft_max_duration,
+            selected_duration,
+        )
     if plan.divider_policy in {"all", "none"}:
         logger.info(
             "Planned timeline: month dividers=%s (%d/%d), %.1fs estimated, %.1fs soft maximum",

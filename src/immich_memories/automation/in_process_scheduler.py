@@ -83,6 +83,7 @@ class InProcessScheduler:
         self._last_fired_date: date | None = None
         self._last_outcome: str | None = None
         self._last_reason: str | None = None
+        self._remembered = False
 
     def snapshot(self) -> SchedulerSnapshot:
         return SchedulerSnapshot(
@@ -99,6 +100,8 @@ class InProcessScheduler:
         """Re-read config and fire if today's slot is due and unfired. True when it fired."""
         config = self._config_provider()
         automation = config.automation
+        if not self._remembered:
+            await self._remember_last_attempt(config)
         self._enabled = automation.enabled
         self._daily_at = automation.daily_at if automation.enabled else None
         if not automation.enabled:
@@ -125,6 +128,20 @@ class InProcessScheduler:
         self._next_run = slot + timedelta(days=1)
         await self._fire(config)
         return True
+
+    async def _remember_last_attempt(self, config: Config) -> None:
+        """Show the store's last finished attempt, so a restart does not blank /health (#2183)."""
+        try:
+            last = await asyncio.to_thread(_last_finished_attempt, config)
+        except Exception:
+            # WHY: the store being briefly unreadable must not stop the timer; retry next tick.
+            logger.warning("In-process automation could not read its last attempt", exc_info=True)
+            return
+        self._remembered = True
+        if last is not None and self._last_outcome is None:
+            self._last_fired_at = last.started_at.astimezone(self._clock().tzinfo)
+            self._last_outcome = last.outcome.value
+            self._last_reason = last.reason
 
     def _adopt_todays_run(self, attempt: AutomationAttempt, now: datetime) -> None:
         """Today's run already happened in another caller: show it, and say why we wait."""
@@ -172,6 +189,14 @@ def _last_daily_attempt(config: Config) -> AutomationAttempt | None:
     from immich_memories.db import open_store
 
     return AutomationStateStore(open_store(config)).get_last_daily_attempt()
+
+
+def _last_finished_attempt(config: Config) -> AutomationAttempt | None:
+    from immich_memories.automation.state_store import AutomationStateStore
+    from immich_memories.db import open_store
+
+    last = AutomationStateStore(open_store(config)).get_last_attempt()
+    return last if last is not None and last.finished_at is not None else None
 
 
 def _run_auto_once(config: Config) -> AutoRunResult:

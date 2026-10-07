@@ -208,6 +208,54 @@ class TestSparseHistoryReporting:
         assert out.count("no videos found for") == 6
 
 
+class _PhotoLibrary(_EmptyLibrary):
+    """No videos anywhere; the photos it holds are returned for the window they fall in."""
+
+    def __init__(self, photos: list) -> None:
+        self.photos = photos
+
+    def get_photos_for_date_range(self, date_range, progress_callback=None, **_people) -> list:
+        return [p for p in self.photos if date_range.contains(p.file_created_at)]
+
+
+class TestHistoryCountsPhotosToo:
+    """A photo-rich library with no videos has history; the report must not say otherwise (#2041)."""
+
+    def _report(self, photos: list) -> str:
+        from immich_memories.cli._asset_fetch import fetch_media
+
+        display = _RecordingDisplay()
+        set_active_display(display)
+        try:
+            fetch_media(
+                client=_PhotoLibrary(photos),
+                progress=display,
+                date_ranges=build_birthday_windows(date(2018, 2, 7), year=2026),
+                person_ids=[],
+                include_photos=True,
+                history_from=BIRTHDAY_HISTORY_FROM,
+            )
+        finally:
+            set_active_display(None)
+        return "\n".join(display.lines)
+
+    def test_a_photo_in_an_earlier_window_is_history(self):
+        from tests.conftest import make_asset
+
+        day_of_birth = make_asset("party", file_created_at=datetime(2024, 2, 7, 10, 0))
+
+        out = self._report([day_of_birth])
+
+        assert "history: 1 of 5 earlier windows hold material" in out
+        assert "the memory has no history" not in out
+
+    def test_a_library_with_nothing_in_any_earlier_window_still_warns(self):
+        out = self._report([])
+
+        assert "the memory has no history" in out
+        assert "no photos and videos found for 2025-02-08..2026-02-07" in out
+
+
 class TestAutomationRoundTrip:
     """What the nightly runner proposes is what the CLI it spawns renders."""
 

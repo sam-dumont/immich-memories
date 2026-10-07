@@ -7,6 +7,7 @@ import os
 import subprocess
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -17,6 +18,7 @@ from immich_memories.automation.candidate_discovery import (
 from immich_memories.automation.candidates import MemoryCandidate
 from immich_memories.automation.delivery_retry import PendingDeliveryRetry, abandon_if_exhausted
 from immich_memories.automation.models import (
+    DECLINED_REASON,
     NO_ELIGIBLE_CANDIDATES,
     AutoAction,
     AutomationAttempt,
@@ -124,6 +126,13 @@ class StartedAutoRun:
             )
         finally:
             self.lease.release()
+
+
+@dataclass(frozen=True)
+class _Declined:
+    """The child read the period and found nothing worth a film."""
+
+    reason: str
 
 
 @dataclass(frozen=True)
@@ -284,22 +293,32 @@ class AutoRunner:
         return _BoundedProcessDetails("\n".join(details) or "no subprocess output")
 
     def _proven_output(
-        self, attempt_id: str, candidate: MemoryCandidate, stdout: str | None
-    ) -> tuple[RunMetadata, Path] | str:
+        self, attempt_id: str, candidate: MemoryCandidate, output: str | None
+    ) -> tuple[RunMetadata, Path] | _Declined | str:
         """This attempt's completed run and its file on disk, or why there is none."""
         matching_run = self.db.get_completed_run_by_automation_attempt(
             attempt_id, memory_key=candidate.memory_key
         )
-        if matching_run is None and NOTHING_WORTH_A_FILM in (stdout or ""):
-            # Kept a failure so the candidate backs off instead of re-running daily. A
-            # people condition that excluded the whole pool prints its own specific
+        if (matching_run is None or not matching_run.output_path) and NOTHING_WORTH_A_FILM in (
+            output or ""
+        ):
+            # A people condition that excluded the whole pool prints its own specific
             # reason after the marker on the same line (#1954); surface it instead of
             # the generic line.
             marker_line = next(
-                (line for line in (stdout or "").splitlines() if NOTHING_WORTH_A_FILM in line), ""
+                (line for line in (output or "").splitlines() if NOTHING_WORTH_A_FILM in line), ""
             )
-            specific = marker_line.partition(": ")[2].strip()
-            return specific or "nothing worth a film in this period"
+            # A child with no terminal logs the line instead of printing it, behind a
+            # timestamp and logger name that carry their own ": ": cut from the marker on.
+            specific = marker_line[marker_line.index(NOTHING_WORTH_A_FILM) :].partition(": ")[2]
+            specific = specific.strip()
+            if matching_run is not None:
+                self._withdraw_filmless_run(matching_run)
+            return _Declined(
+                f"{DECLINED_REASON}: {specific}"
+                if specific
+                else f"{DECLINED_REASON} in this period"
+            )
         if matching_run is None:
             return "no matching completed auto run"
         if not matching_run.output_path:
@@ -309,6 +328,12 @@ class AutoRunner:
         if not output_path.is_file() and not _delivered_to_immich(matching_run):
             return "generated output file is missing"
         return matching_run, output_path
+
+    def _withdraw_filmless_run(self, run: RunMetadata) -> None:
+        """A run with no film must not read as a completed film or burn the cooldown."""
+        self.db.update_run_status(
+            run.run_id, "cancelled", completed_at=run.completed_at or datetime.now(tz=UTC)
+        )
 
     def _retain_child_output(self, attempt_id: str, stdout: Any, stderr: Any) -> None:
         """Keep one complete transcript per attempt, whatever ended the child."""
@@ -591,6 +616,42 @@ class AutoRunner:
             candidate_key=candidate_key,
         )
 
+    def _settle_process(
+        self, attempt: AutomationAttempt, candidate: MemoryCandidate, process: ProcessResult
+    ) -> AutoRunResult:
+        """Turn a finished generation child into the attempt's one terminal result."""
+        self._retain_child_output(attempt.id, process.stdout, process.stderr)
+
+        if process.returncode != 0:
+            reason = f"generation subprocess exited with code {process.returncode}"
+            process_error = self._process_details(process.stdout, process.stderr)
+            logger.error("%s: %s", reason, process_error.text)
+            return self._fail_candidate(
+                attempt,
+                reason,
+                candidate=candidate,
+                error=process_error,
+            )
+
+        proven = self._proven_output(attempt.id, candidate, f"{process.stdout}\n{process.stderr}")
+        if isinstance(proven, _Declined):
+            logger.info("Declined: %s", proven.reason)
+            return self._finish(attempt, AutoOutcome.SKIPPED, proven.reason, candidate=candidate)
+        if isinstance(proven, str):
+            return self._fail_candidate(attempt, proven, candidate=candidate, error=proven)
+        matching_run, output_path = proven
+
+        logger.info("Generation completed successfully: %s", output_path)
+        return self._finish(
+            attempt,
+            AutoOutcome.COMPLETED,
+            _generation_completion_reason(matching_run),
+            candidate=candidate,
+            run_id=matching_run.run_id,
+            # A delivered film's local copy is gone; don't announce a path that isn't there.
+            output_path=output_path if output_path.is_file() else None,
+        )
+
     def _run_one_under_lease(
         self,
         attempt: AutomationAttempt,
@@ -670,34 +731,7 @@ class AutoRunner:
                     error=launch_error,
                 )
 
-            self._retain_child_output(attempt.id, process.stdout, process.stderr)
-
-            if process.returncode != 0:
-                reason = f"generation subprocess exited with code {process.returncode}"
-                process_error = self._process_details(process.stdout, process.stderr)
-                logger.error("%s: %s", reason, process_error.text)
-                return self._fail_candidate(
-                    attempt,
-                    reason,
-                    candidate=candidate,
-                    error=process_error,
-                )
-
-            proven = self._proven_output(attempt.id, candidate, process.stdout)
-            if isinstance(proven, str):
-                return self._fail_candidate(attempt, proven, candidate=candidate, error=proven)
-            matching_run, output_path = proven
-
-            logger.info("Generation completed successfully: %s", output_path)
-            return self._finish(
-                attempt,
-                AutoOutcome.COMPLETED,
-                _generation_completion_reason(matching_run),
-                candidate=candidate,
-                run_id=matching_run.run_id,
-                # A delivered film's local copy is gone; don't announce a path that isn't there.
-                output_path=output_path if output_path.is_file() else None,
-            )
+            return self._settle_process(attempt, candidate, process)
         except Exception as exc:
             reason = "automation failed"
             outer_error = _safe_tail(exc, self._secrets()) or exc.__class__.__name__

@@ -262,6 +262,39 @@ class TestRestartCatchUp:
         assert len(not_firing) == 1, "say why the timer stays quiet, once"
 
 
+class TestRestartMemory:
+    async def test_a_restarted_scheduler_reports_the_last_attempt_the_store_holds(
+        self, tmp_path: Path
+    ) -> None:
+        """/health/ready must not reset to null after a restart (#2183)."""
+        from immich_memories.automation.state_store import AutomationStateStore
+
+        config = _config(tmp_path, enabled=True, daily_at="09:00")
+        state = AutomationStateStore()
+        attempt = state.start_attempt(reason="daily wake")
+        state.finish_attempt(attempt.id, AutoOutcome.FAILED, "generation failed")
+        # Before today's slot: the memory is for display, it must not decide anything.
+        now = datetime.now().astimezone().replace(hour=8, minute=0, second=0, microsecond=0)
+        scheduler = InProcessScheduler(lambda: config, run_once=_completed, clock=_FakeClock(now))
+
+        assert scheduler.snapshot().last_outcome is None
+        await scheduler.tick()
+
+        snap = scheduler.snapshot()
+        assert snap.last_outcome == "failed"
+        assert snap.last_reason == "generation failed"
+        assert snap.last_fired_at is not None
+
+    async def test_a_scheduler_with_an_empty_store_reports_nothing(self, tmp_path: Path) -> None:
+        config = _config(tmp_path, enabled=True, daily_at="09:00")
+        now = datetime.now().astimezone().replace(hour=8, minute=0, second=0, microsecond=0)
+        scheduler = InProcessScheduler(lambda: config, run_once=_completed, clock=_FakeClock(now))
+
+        await scheduler.tick()
+
+        assert scheduler.snapshot().last_outcome is None
+
+
 class TestFailureIsolation:
     async def test_crashing_run_is_recorded_by_type_only_and_not_retried_today(
         self, tmp_path: Path

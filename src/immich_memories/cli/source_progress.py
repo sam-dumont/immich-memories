@@ -37,6 +37,7 @@ class SourceProgressReporter:
         self._clock = clock
         self._last_phase_time = 0.0
         self._last_phase_items = 0
+        self._unbounded_label = ""
 
     def __call__(self, status: dict) -> None:
         if status.get("indeterminate"):
@@ -54,10 +55,15 @@ class SourceProgressReporter:
         )
 
     def _unbounded_stage(self, status: dict) -> None:
+        label = status["phase_label"]
         if self._mode != "unbounded":
             self._progress.reset(self._task, total=None)
             self._mode = "unbounded"
-            self._report(0, 0, status["phase_label"], new_stage=True)
+        if label != self._unbounded_label:
+            # Every uncounted stage says so, not only the first after a counted one: the
+            # family-viewing check and the picture review follow each other (#2219).
+            self._unbounded_label = label
+            self._report(0, 0, label, new_stage=True)
         self._progress.update(self._task, description=status["phase_label"])
         if status.get("status") == "complete":
             self._progress.reset(self._task, total=100)
@@ -65,6 +71,7 @@ class SourceProgressReporter:
     def _counted_stage(self, status: dict) -> None:
         """Reset on a new stage even when it has the same number of items."""
         total = int(status["total_items"])
+        self._unbounded_label = ""
         identity = status.get("stage_identity", (status.get("current_phase"), total))
         new_stage = self._mode != identity
         if new_stage:

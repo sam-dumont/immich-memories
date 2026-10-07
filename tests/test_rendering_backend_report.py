@@ -95,3 +95,33 @@ def test_a_cpu_that_cannot_run_a_kernel_falls_to_pil_with_its_reason(config, cap
     assert not service.use_gpu
     assert service.backend is None
     assert "illegal instruction" in caplog.text
+
+
+def _cpu_fallback_logged_during(tier: str | None, config, caplog) -> list[logging.LogRecord]:
+    from immich_memories.tracking.timing import collecting
+
+    with (
+        # WHY: same boundary as above; the kernel library is not loaded in a unit test.
+        patch(
+            "immich_memories.titles.rendering_service.load_kernel_renderer",
+            return_value=_renderer_reporting("CPU"),
+        ),
+        collecting() as collected,
+        caplog.at_level(logging.INFO),
+    ):
+        if tier:
+            collected.diagnostics["tier"] = tier
+        RenderingService(config)
+    return [r for r in caplog.records if "on CPU" in r.getMessage()]
+
+
+def test_cpu_titles_on_the_basic_tier_are_info_not_a_warning(config, caplog) -> None:
+    records = _cpu_fallback_logged_during("basic", config, caplog)
+
+    assert [r.levelno for r in records] == [logging.INFO]
+
+
+def test_cpu_titles_on_a_gpu_tier_still_warn(config, caplog) -> None:
+    records = _cpu_fallback_logged_during("gpu", config, caplog)
+
+    assert [r.levelno for r in records] == [logging.WARNING]

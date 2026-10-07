@@ -98,7 +98,9 @@ def remember_origins(
 
 
 def group_origins(
-    asset_ids: Sequence[str], recorded: Mapping[str, str | None]
+    asset_ids: Sequence[str],
+    recorded: Mapping[str, str | None],
+    contracts: Mapping[str, str] | None = None,
 ) -> dict[str, object]:
     """Fold per-asset origins into the distinct ones, largest group first.
 
@@ -107,6 +109,10 @@ def group_origins(
     read one field. The distinct origins are the answer to "is this bank mixed",
     and `by_asset` names only the assets outside the largest group, so the
     exception list is bounded by the size of the seam rather than by the library.
+
+    A caption banked before origins were recorded stays unknown as to server and
+    build, but its row still names the caption model and the contract it was written
+    under (``contracts``), so the report can say which captioner family wrote it.
     """
     members: dict[str, list[str]] = {}
     shapes: dict[str, dict] = {}
@@ -116,7 +122,9 @@ def group_origins(
         elif raw := recorded[asset_id]:
             origin = json.loads(raw)
         else:
-            origin = UNRECORDED.copy()
+            origin = UNRECORDED | (
+                {"contract": contracts[asset_id]} if contracts and asset_id in contracts else {}
+            )
         key = json.dumps(origin, sort_keys=True)
         shapes.setdefault(key, origin)
         members.setdefault(key, []).append(asset_id)
@@ -137,6 +145,7 @@ def origins_for(store: Store, asset_ids: Sequence[str], model: str) -> dict[str,
     llm = model.startswith(LLM_CAPTION_PREFIX)
     d, p = descriptions, caption_provenance
     recorded: dict[str, Any] = {}
+    contracts: dict[str, str] = {}
     with store.connect() as connection:
         chosen = (
             {
@@ -148,7 +157,7 @@ def origins_for(store: Store, asset_ids: Sequence[str], model: str) -> dict[str,
         )
         for chunk in in_chunks(connection, wanted):
             rows = connection.execute(
-                sa.select(d.c.asset_id, d.c.model, p.c.origin)
+                sa.select(d.c.asset_id, d.c.model, p.c.origin, d.c.source)
                 .select_from(
                     d.outerjoin(p, sa.and_(d.c.asset_id == p.c.asset_id, d.c.model == p.c.model))
                 )
@@ -157,9 +166,8 @@ def origins_for(store: Store, asset_ids: Sequence[str], model: str) -> dict[str,
                     id_in(connection, d.c.asset_id, chunk),
                 )
             )
-            recorded.update(
-                (str(asset), origin)
-                for asset, producer, origin in rows
-                if chosen.get(str(asset)) == producer
-            )
-    return group_origins(wanted, recorded)
+            for asset, producer, origin, source in rows:
+                if chosen.get(str(asset)) == producer:
+                    recorded[str(asset)] = origin
+                    contracts[str(asset)] = f"{producer} / {source}"
+    return group_origins(wanted, recorded, contracts)

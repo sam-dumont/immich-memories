@@ -169,6 +169,16 @@ class ImmichConfig(ImmichConnection):
         description="Extra Immich accounts by name, read only when a run selects them",
     )
 
+    public_url: str = Field(
+        default="",
+        description=(
+            "The Immich address a browser can open, for the links shown to a person "
+            "(blank: immich.url). Requests still go to immich.url"
+        ),
+    )
+
+    _http_public_url = field_validator("public_url")(http_url_or_blank)
+
     @field_validator("accounts")
     @classmethod
     def _account_names(cls, value: dict[str, ImmichConnection]) -> dict[str, ImmichConnection]:
@@ -177,17 +187,22 @@ class ImmichConfig(ImmichConnection):
                 raise ValueError(f"account name {name!r} must be {ACCOUNT_NAME_RULE}")
         return value
 
+    @property
+    def link_base(self) -> str:
+        """The address links shown to a person start from: public_url, else the server's own."""
+        return (self.public_url or self.url).rstrip("/")
+
     def asset_url(self, asset_id: str | None) -> str | None:
-        """A link straight to one asset in Immich's web app, or None without a server URL."""
-        if not asset_id or not self.url:
+        """A link straight to one asset in Immich's web app, or None without an address."""
+        if not asset_id or not self.link_base:
             return None
-        return f"{self.url.rstrip('/')}/photos/{asset_id}"
+        return f"{self.link_base}/photos/{asset_id}"
 
     def person_url(self, person_id: str) -> str | None:
-        """A link straight to one person in Immich's web app, or None without a server URL."""
-        if not person_id or not self.url:
+        """A link straight to one person in Immich's web app, or None without an address."""
+        if not person_id or not self.link_base:
             return None
-        return f"{self.url.rstrip('/')}/people/{person_id}"
+        return f"{self.link_base}/people/{person_id}"
 
 
 class DatabaseConfig(BaseModel):

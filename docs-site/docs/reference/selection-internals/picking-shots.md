@@ -101,7 +101,7 @@ library.
 | `frame_kind` | empty room 4, accidental frame 4, lone object 3.5, body part 2.5, record 2.5, screen or document 2 | the four "nothing" kinds 2, record or screen 1, scenery -1 | the four "nothing" kinds 2.5, record or screen 1.5, scenery -0.5 |
 | People head | two -0.5, small group -1, crowd -1.5 | two -0.5, small group -1, crowd -1.5 | two -0.5, small group or crowd -1 |
 | Flags | children -1, document +1, screen +1, `BLOWN OUT` +1.5, `DARK` +1.5, `SOFT` +0.5 | children -0.5, document +1, screen +1, `BLOWN OUT` +1.5, `DARK` +2, `SOFT` +1 | children -0.5, document +1, screen +1, `BLOWN OUT` +2, `DARK` +2, `SOFT` +1 |
-| Face | | people head saw somebody, Immich found no face +1 | |
+| Face | people head saw somebody and Immich found a face -1 (a person at a table stands; an empty room or a blurred frame still does not) | people head saw somebody, Immich found no face +1 | |
 | Caption | | nobody alive +1.5; objects +1, screens and devices +1; feet or hands, food, room or furniture, plants, text or signs +0.5 each; goods on display (a shelf, products, a showroom) make the frame a lone object | nobody alive +2; the same words; goods on display +1 |
 
 A `SOFT (blurry)` or `DARK` picture never carries a moment alone: with no cleaner sibling to take

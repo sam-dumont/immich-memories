@@ -164,6 +164,8 @@ def test_status_json_reports_durable_attempt_rotation_and_scheduler(tmp_path: Pa
     assert payload["pending_delivery_count"] == 0
     assert payload["oldest_pending_delivery"] is None
     assert payload["scheduler"] == {
+        "in_use": ["launchd"],
+        "summary": "launchd, installed, inactive",
         "platform": "launchd",
         "installed": True,
         "active": False,
@@ -632,7 +634,7 @@ def test_status_human_output_distinguishes_installed_from_unknown_active(tmp_pat
         result = _invoke(config, ["auto", "status"])
 
     assert result.exit_code == 0
-    assert "Scheduler: launchd, installed, unknown" in result.output
+    assert "Scheduler: launchd, installed, state unknown" in result.output
     assert "Cooldown: ready (24h)" in result.output
 
 

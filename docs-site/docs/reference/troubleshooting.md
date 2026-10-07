@@ -27,6 +27,8 @@ In Docker, prefix the command with `docker compose exec immich-memories`. The re
 | `public heads need the pinned DINOv2 ONNX export at …` | Run `immich-memories models fetch` once. It puts the encoder and required tier artifacts on the models volume |
 | `nsfw_marqo has no model: …` or `doc_docling has no model: …` | Run `models fetch` with the same tier/config as the failed run, or explicitly use `models fetch --detectors` |
 | `Output directory is not writable` | In Docker the container runs as uid 1000: `mkdir output` before `up`, or `sudo chown 1000:1000 output` |
+| `Output directory … is not a mounted volume` | The films land on the container's own layer and disappear when it restarts. Mount a volume or a persistent claim at that path |
+| `IMMICH_MEMORIES_OUTPUT__DIRECTORY=… overrides config.yaml's output.directory` | Environment variables win over the file, and the image sets this one. Films go where the variable says. Unset it, or point it at the directory you mounted |
 | `Story-first selection needs prepared annotations in the store at …` | The store this run opened has no prepared facts for these pictures: check the store named by `database.url` or the environment. Both `IMMICH_MEMORIES_DATABASE__URL` and `IMMICH_MEMORIES_DATABASE_URL` work. If the store is correct, run `prepare` |
 | `tier: full needs an enabled LLM …` | Enable `advanced.llm.enabled`. For a native install, leave `base_url` empty for the owned local model and install its weights/server. Docker and Kubernetes need an external reader endpoint; `tier: gpu` uses the rules reader |
 | `Waiting for the reader at host:port` | A configured model server stopped answering. This is a message prefix; retry details follow. See [below](#waiting-for-a-model-server) |

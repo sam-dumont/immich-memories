@@ -38,6 +38,7 @@ from typing import Any
 import numpy as np
 
 from immich_memories.analysis.duplicate_hashing import hamming_distance
+from immich_memories.analysis.editorial_repeat_exemptions import repeat_may_be_refused
 from immich_memories.analysis.editorial_shareability import STORY_CONTEXT_KEYS
 from immich_memories.analysis.editorial_story_lookalike import MOTION_KINDS
 from immich_memories.analysis.moment_grouping import MOMENT_WINDOW_MINUTES
@@ -151,7 +152,7 @@ def _scene_reach(candidate: Mapping[str, Any], keeper: Mapping[str, Any]) -> boo
     repeats of a sixth. Pairs on different days are read within the scene window, where every
     repeat the owner named sat.
     """
-    if candidate.get("favourite") and not keeper.get("favourite"):
+    if not repeat_may_be_refused(candidate, keeper):
         return False
     if candidate.get("kind") in MOTION_KINDS and keeper.get("kind") not in MOTION_KINDS:
         return False
@@ -190,7 +191,11 @@ class _Repeats:
         if asset_id not in self.hashes:
             return None
         for other in kept:
-            if other["asset_id"] not in self.hashes or not _within_reach(carrier, other):
+            if (
+                other["asset_id"] not in self.hashes
+                or not _within_reach(carrier, other)
+                or not repeat_may_be_refused(carrier, other)
+            ):
                 continue
             self.compared += 1
             distance = hamming_distance(self.hashes[asset_id], self.hashes[other["asset_id"]])

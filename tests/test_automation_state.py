@@ -174,3 +174,48 @@ class TestConsecutiveFailuresByKey:
         entry = store.consecutive_failures_by_key()["monthly:2026-06"]
 
         assert entry.last_failed_at is not None
+
+
+class TestDeclinedCandidates:
+    """A period that was read and held nothing worth a film is one decision (#2209)."""
+
+    @staticmethod
+    def _declined(store, key: str) -> None:
+        attempt = store.start_attempt(reason="daily wake")
+        store.finish_attempt(
+            attempt.id, AutoOutcome.SKIPPED, "nothing worth a film in this period", memory_key=key
+        )
+
+    def test_a_declined_candidate_waits_a_week_after_one_decline(self) -> None:
+        from datetime import UTC, datetime
+
+        from immich_memories.automation.failure_backoff import suppressed_keys
+
+        store = AutomationStateStore()
+        self._declined(store, "on_this_day:2026-10-07")
+
+        streaks = store.consecutive_failures_by_key()
+        now = datetime.now(tz=UTC)
+
+        assert "on_this_day:2026-10-07" in suppressed_keys(streaks, now)
+        assert "on_this_day:2026-10-07" not in suppressed_keys(streaks, now + timedelta(days=8))
+
+    def test_a_cooldown_skip_never_suppresses_a_candidate(self) -> None:
+        from datetime import UTC, datetime
+
+        from immich_memories.automation.failure_backoff import suppressed_keys
+
+        store = AutomationStateStore()
+        attempt = store.start_attempt(reason="daily wake")
+        store.finish_attempt(attempt.id, AutoOutcome.SKIPPED, "cooldown active", memory_key="k")
+
+        assert suppressed_keys(store.consecutive_failures_by_key(), datetime.now(tz=UTC)) == {}
+
+    def test_a_declined_attempt_is_the_days_run_so_the_timer_waits(self) -> None:
+        store = AutomationStateStore()
+        self._declined(store, "on_this_day:2026-10-07")
+
+        last = store.get_last_daily_attempt()
+
+        assert last is not None
+        assert last.outcome is AutoOutcome.SKIPPED

@@ -174,6 +174,11 @@ class TestPostEnqueuesOneDecision:
         assert stored.outcome is AutoOutcome.RUNNING
         assert stored.reason == "http trigger"
 
+        # `auto status` names the external trigger and when it last fired (#2212).
+        from immich_memories.automation.last_trigger import read_last_trigger
+
+        assert read_last_trigger(config) is not None
+
     def test_a_second_call_while_a_run_is_active_reports_the_active_one(
         self, client: TestClient, tmp_path: Path
     ) -> None:

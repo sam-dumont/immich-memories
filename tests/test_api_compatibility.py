@@ -299,3 +299,23 @@ def test_explicit_policy_ignores_detected_server_major(
     expected: ResolvedApiVersion,
 ) -> None:
     assert resolve_api_version(policy, server_major) is expected
+
+
+def test_preflight_names_the_address_links_open_when_a_public_url_is_set() -> None:
+    config = Config(
+        immich={"url": _TEST_URL, "api_key": _TEST_KEY, "public_url": "https://photos.example.org/"}
+    )
+    client = MagicMock()
+    client.__enter__.return_value = client
+    client.get_api_version.return_value = ResolvedApiVersion.V3
+    client.get_current_user.return_value = SimpleNamespace(name="Sam", email="sam@example.com")
+    client.get_key_capabilities.return_value = ApiKeyCapabilities(
+        frozenset((*READ_PERMISSIONS, *UPLOAD_PERMISSIONS, "asset.delete"))
+    )
+
+    with patch("immich_memories.api.immich.SyncImmichClient", return_value=client):
+        result = check_immich(config)
+
+    assert result.details == (
+        f"Server: {_TEST_URL}; links open https://photos.example.org; API: v3"
+    )

@@ -27,6 +27,11 @@ def _describe(origin: Mapping[str, object]) -> str:
     )
 
 
+def _unknown(origin: Mapping[str, object]) -> str:
+    contract = origin.get("contract")
+    return f"unknown, banked before origins were recorded ({contract})" if contract else _UNKNOWN
+
+
 def _mapping(value: object) -> dict[str, object]:
     return dict(value) if isinstance(value, Mapping) else {}
 
@@ -49,7 +54,7 @@ def caption_origin_summary(provenance: object) -> str:
         return ""
     captions = sum(int(row.get("assets", 0)) for row in origins)
     labels = "; ".join(
-        f"{_UNKNOWN if row.get('status') == _UNKNOWN else _describe(row)} x{row.get('assets', 0)}"
+        f"{_unknown(row) if row.get('status') == _UNKNOWN else _describe(row)} x{row.get('assets', 0)}"
         for row in origins
     )
     mixed = " MIXED" if len(origins) > 1 else ""
@@ -78,5 +83,6 @@ def caption_origin_note(attempt: Path, asset_id: str) -> str:
     if origin.get("status") == _NONE:
         return ""
     if origin.get("status") == _UNKNOWN:
-        return "Caption origin: unknown (not recorded with this caption)"
+        written_under = f"; written as {origin['contract']}" if origin.get("contract") else ""
+        return f"Caption origin: unknown (not recorded with this caption{written_under})"
     return "Caption origin: " + _describe(origin)

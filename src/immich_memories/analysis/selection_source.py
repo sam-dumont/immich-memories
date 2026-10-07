@@ -461,21 +461,26 @@ def _fold_copies_and_stacks(
 
     An owner pin or exclusion named before an edit was ever uploaded still named the
     picture, whichever file the fold kept -- `kept_ids` remaps it the way the exact-copy
-    fold already does. A star or a person tagged on any file belongs to the kept one.
+    fold already does; one naming a stack member means the stack's primary. A star or a
+    person tagged on any file of a picture or a stack belongs to the kept one.
     """
     copies = picture_copies(
         (asset_of(source) for source in sources),
         hash_of=_preview_hash(dependencies.preview_jpeg),
     )
+    stacked = fold_stacks((asset_of(source) for source in sources), dependencies.stack_of())
+    # A pin, an exclusion and a person tagged on any file of a picture or a stack belong to the
+    # file that carries it: a stack member goes to its primary, then the primary's picture to
+    # whichever file the copy fold kept.
+    carried = {**copies, **{member: copies.get(top.id, top) for member, top in stacked.items()}}
     request = replace(
         request,
-        owner_excluded_asset_ids=kept_ids(copies, request.owner_excluded_asset_ids),
-        owner_required_asset_ids=kept_ids(copies, request.owner_required_asset_ids),
+        owner_excluded_asset_ids=kept_ids(carried, request.owner_excluded_asset_ids),
+        owner_required_asset_ids=kept_ids(carried, request.owner_required_asset_ids),
     )
-    stacked = fold_stacks((asset_of(source) for source in sources), dependencies.stack_of())
     starred = starred_keepers(copies, (asset_of(source) for source in sources))
     starred |= starred_primaries(stacked, (asset_of(source) for source in sources))
-    people_by_keeper = merged_people(copies, (asset_of(source) for source in sources))
+    people_by_keeper = merged_people(carried, (asset_of(source) for source in sources))
     sources = tuple(
         _with_people(
             _with_favourite(source, True) if asset_id_of(source) in starred else source,

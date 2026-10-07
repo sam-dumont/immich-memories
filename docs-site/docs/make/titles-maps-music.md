@@ -9,7 +9,7 @@ These are render choices. You can change them after reviewing the cut, without a
 
 ## Titles and language
 
-Under **Render**, type a **Title** and **Subtitle**, or leave them empty for the app's suggestion. Template titles use the dates, people and occasion. An optional [text reader](../better/reader.md) can write a title from the cut's facts. A reader title keeps whichever year the matching template title would show (or both, for a span crossing one); a title that drops it falls back to the template. A holiday, a person spotlight spanning several years and "on this day" carry no year in either.
+Under **Render**, type a **Title** and **Subtitle**, or leave them empty for the app's suggestion. Template titles use the dates, people and occasion. An optional [text reader](../better/reader.md) can write a title from the cut's facts. A reader title keeps whichever year the matching template title would show (or both, for a span crossing one); a title that drops it falls back to the template. A reader subtitle may only carry dates, places, people and words the film's facts use: a mood line the facts do not back ("salt air and golden light") is dropped and the title stands. A title of several names and a year range gets a ` · ` between the last name and the years. A holiday, a person spotlight spanning several years and "on this day" carry no year in either.
 
 The film's language is separate from the interface language. Save **Settings > Title screens > locale**
 (including in Docker), or set it in your configuration. A special day found by the automatic

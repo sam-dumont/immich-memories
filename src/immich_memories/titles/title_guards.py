@@ -125,7 +125,12 @@ def restore_fact_casing(suggestion: TitleSuggestion, facts: str) -> TitleSuggest
     Asked for sentence case, a small model lowercases proper nouns too ("Mai à split"). Only a
     word of three letters or more that the facts themselves capitalise is touched.
     """
-    names = {word.casefold() for word in _name_words(facts) if word[:1].isupper() and len(word) > 2}
+    # An all-capitals word is the condition's own AND/OR, never a name to capitalise.
+    names = {
+        word.casefold()
+        for word in _name_words(facts)
+        if word[:1].isupper() and len(word) > 2 and not word.isupper()
+    }
 
     def capital(match: re.Match[str]) -> str:
         word = match.group(0)
@@ -159,6 +164,92 @@ def refusing_invented_names(
         logger.info("Subtitle names %r, which no fact names; dropping the subtitle", invented)
         return replace(suggestion, subtitle=None)
     return suggestion
+
+
+# A subtitle word must match a backing word this closely; a name may be spelled another way
+# in another language (`_SAME_NAME_RATIO`), a plain word may only be inflected.
+_SAME_WORD_RATIO = 0.85
+# Shorter words are articles, prepositions and numbers' suffixes, not a mood.
+_MIN_CHECKED_WORD = 4
+
+
+def _unbacked_word(line: str, backing: set[str]) -> str | None:
+    """The first word of `line` that is neither a date, a place, a name nor backed by a fact."""
+    for word in _name_words(line):
+        folded = word.casefold()
+        if (
+            len(folded) < _MIN_CHECKED_WORD
+            or not word.isalpha()
+            or folded in _FILLER_WORDS
+            or folded in _calendar_words()
+            or folded in _one_word_places()
+            or folded in backing
+        ):
+            continue
+        if any(
+            SequenceMatcher(None, folded, known).ratio() >= _SAME_WORD_RATIO for known in backing
+        ):
+            continue
+        return word
+    return None
+
+
+def refusing_unbacked_subtitle(
+    suggestion: TitleSuggestion | None,
+    facts: str,
+    memory_type: str,
+    start_date: str,
+    end_date: str,
+    person_names: Sequence[str],
+    locale: str,
+) -> TitleSuggestion | None:
+    """The suggestion, minus a subtitle that names a quality or a mood nothing in the film backs.
+
+    A subtitle may carry dates, places and people, and the words the facts or the template
+    title themselves use. "Salt air and golden light" over a trip film is decoration no
+    fact supports, so the subtitle goes and the title stands.
+    """
+    if suggestion is None or not suggestion.subtitle or not facts:
+        return suggestion
+    template = _template_title_text(
+        memory_type,
+        date.fromisoformat(start_date),
+        date.fromisoformat(end_date),
+        person_names,
+        locale,
+    )
+    backing = {word.casefold() for word in _name_words(f"{facts} {template}")}
+    if unbacked := _unbacked_word(suggestion.subtitle, backing):
+        logger.info(
+            "Subtitle uses %r, which no fact in the film backs; dropping the subtitle", unbacked
+        )
+        return replace(suggestion, subtitle=None)
+    return suggestion
+
+
+# A year or a year range closing a title, set off from the words before it only by a space.
+_TRAILING_YEARS = re.compile(
+    r"(?<=[^\W\d_])\s+(?P<years>(?:19|20)\d{2}(?:\s*[-\u2013\u2014]\s*(?:19|20)?\d{2})?)\s*$"
+)
+_YEAR_SEPARATOR = " \u00b7 "
+
+
+def separating_the_years(
+    suggestion: TitleSuggestion | None, person_names: Sequence[str]
+) -> TitleSuggestion | None:
+    """A title of several names and a year range sets the years off with a separator.
+
+    "Anna, Ben, Chloé et Dan 2013-2026" runs the years into the last name; a
+    middle dot reads the same in every film language and needs no translation.
+    A single name keeps its years as the model wrote them.
+    """
+    if suggestion is None or len(person_names) < 2:
+        return suggestion
+    match = _TRAILING_YEARS.search(suggestion.title)
+    if match is None:
+        return suggestion
+    title = suggestion.title[: match.start()] + _YEAR_SEPARATOR + match["years"]
+    return replace(suggestion, title=title)
 
 
 def names_the_place(title: str, place: str, locale: str) -> bool:

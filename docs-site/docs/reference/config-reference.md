@@ -92,7 +92,16 @@ immich:
   url: "https://photos.example.com"
   api_key: "${IMMICH_API_KEY}"
   api_version: auto  # auto | v2 | v3
+  public_url: ""     # the address your browser opens Immich at; blank = url
 ```
+
+`url` is where the app reaches Immich, and every API call goes there. On Kubernetes
+(`http://immich.immich.svc.cluster.local:2283`) or a shared Docker network (`http://immich-server:2283`)
+that address does not open in your browser, so the links the app shows (**View in Immich** after an
+upload, **Open in Immich** on the People page) would be dead. Set `public_url` to the address you
+use yourself (`https://photos.example.org`) and those links use it. It is used for links only,
+never for a request, and `preflight` prints it next to the server URL when it is set. Env:
+`IMMICH_MEMORIES_IMMICH__PUBLIC_URL`. On Docker, add it under `environment:` only when you set it: an empty line pins the key and hides the one in `config.yaml`.
 
 Keep `api_version` on `auto` for normal use. The client detects and caches the server major for
 each runtime client; you do not choose it for each generation. Explicit `v2` or `v3` is a manual

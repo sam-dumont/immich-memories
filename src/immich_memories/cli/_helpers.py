@@ -95,11 +95,12 @@ def print_warning(message: str) -> None:
         console.print(f"[yellow]Warning:[/yellow] {message}")
 
 
-def print_success(message: str, *, highlight: bool = True) -> None:
+def print_success(message: str, *, highlight: bool = True, soft_wrap: bool = False) -> None:
     """Print a success message.
 
     ``highlight=False`` keeps Rich from colouring paths and numbers inside the
-    message: a saved-file path painted magenta reads as an error.
+    message: a saved-file path painted magenta reads as an error. ``soft_wrap`` keeps a path
+    whole when output goes to a pipe, where Rich would otherwise break it at 80 columns.
     """
     display = _active_display.get()
     if display is not None:
@@ -109,7 +110,7 @@ def print_success(message: str, *, highlight: bool = True) -> None:
         # would print; CodeQL mistakes the home-directory prefix for credentials.
         _logger.info(message)  # codeql[py/clear-text-logging-sensitive-data]
     else:
-        console.print(f"[green]\u2713[/green] {message}", highlight=highlight)
+        console.print(f"[green]\u2713[/green] {message}", highlight=highlight, soft_wrap=soft_wrap)
 
 
 def print_info(message: str, *, soft_wrap: bool = False) -> None:

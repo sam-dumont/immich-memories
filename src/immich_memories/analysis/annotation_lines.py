@@ -214,6 +214,11 @@ class StoredAnnotationLineReader:
                 description_model=description_model,
                 head_versions=head_versions,
                 pixel_producer_key=pixel_producer_key,
+                named_now={
+                    asset_id
+                    for asset_id, candidate in candidate_by_id.items()
+                    if any(p.name.strip() for p in candidate.source.people)
+                },
             )
         self._fact_repository = fact_repository
         self._contract = AnnotationContract(

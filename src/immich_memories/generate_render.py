@@ -15,7 +15,11 @@ from immich_memories.generate_privacy import (
     anonymize_name,
     anonymize_preset_params,
 )
-from immich_memories.generate_progress import _OperationalProgress, _PipelineProgress
+from immich_memories.generate_progress import (
+    _OperationalProgress,
+    _PipelineProgress,
+    render_progress_events,
+)
 from immich_memories.generate_settings import (
     announce_title_source,
     build_assembly_settings,
@@ -305,7 +309,9 @@ def render_local(
 
         # Phase 2: Assemble (includes title generation + streaming encode)
         with span("render.assembly", items=len(assembly_clips)) as assembly:
-            assembly_cb = pp.assembly_callback()
+            assembly_cb = render_progress_events(
+                pp.assembly_callback(), operational, len(assembly_clips)
+            )
             run_tracker.start_phase("assembly", len(assembly_clips))
 
             settings = _build_settings_with_optional_probe_cache(

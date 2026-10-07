@@ -154,6 +154,7 @@ def render_single_photo(
             date=asset.file_created_at.isoformat() if asset.file_created_at else None,
             asset_id=asset.id,
             is_photo=True,
+            gain_map_hdr=prepared.has_gain_map,
             latitude=asset.exif_info.latitude if asset.exif_info else None,
             longitude=asset.exif_info.longitude if asset.exif_info else None,
             location_name=clip_location_name(asset.exif_info),

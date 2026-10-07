@@ -75,3 +75,21 @@ def test_the_check_reports_itself_as_asked_rather_than_unavailable(distance):
     check.repeats(_carrier("twin"), [_carrier("a")])
     assert check.record()["status"] == "asked"
     assert check.record()["checks"] == 1
+
+
+def _robin_on(*assets):
+    return lambda asset_id: {"Robin"} if asset_id in assets else set()
+
+
+def test_a_close_family_members_only_shot_is_never_refused_for_looking_like_another_frame():
+    """The final review keeps a close family member's only shot ahead of its look-alike; the
+    check that runs before it asks the same question (#2071)."""
+    check = LookAlikeCheck(_looks_alike(), slots=10, close_family_of=_robin_on("twin"))
+
+    assert check.repeats(_carrier("twin"), [_carrier("a")], film=[_carrier("a")]) is None
+
+
+def test_a_close_family_member_already_shown_gets_no_such_exemption():
+    check = LookAlikeCheck(_looks_alike(), slots=10, close_family_of=_robin_on("twin", "a"))
+
+    assert check.repeats(_carrier("twin"), [_carrier("a")], film=[_carrier("a")]) == "a"

@@ -38,14 +38,14 @@ Either `automation.upload_to_immich: true` or `upload.enabled: true` requests de
 The UI process then runs the same `auto run` decision once a day, with the same lock, history, upload retry
 and notifications as the CLI. A container that was down at `daily_at` catches up when it starts; if the day's
 run already happened (a manual `docker compose exec immich-memories immich-memories auto run` counts) it waits
-for tomorrow. A run counts when it made a film, tried and failed, or found nothing worth one. A dry run doesn't
+for tomorrow. A run counts when it made a film, tried and failed, or found nothing worth one (a period the child read and judged empty ends as one `skipped` attempt, reason `nothing worth a film: …`, with no completed run behind it, so the 24 h cooldown is untouched and that candidate sits out for 7 days). A dry run doesn't
 (a **Check eligibility** or an `auto run --dry-run` leaves the scheduled film in place), and neither does a
 `cooldown active` skip, which is what most HTTP triggers get back. When the timer waits, the log says which run it
 counted. A manual `auto run` in progress holds the same automation lock: the timer's attempt comes back `skipped`
 ("automation already running") before it records anything, so `auto history` and `auto status` never show it. A
 manual `generate` in progress holds a different lock (the pipeline lock), so the timer's own attempt does start,
 its child `generate` then fails to get the pipeline lock, and the attempt ends `failed`, not `skipped`.
-`/health/ready` shows the timer under `in_process_scheduler`.
+`/health/ready` shows the timer under `in_process_scheduler`; after a restart it starts from the last attempt in the store, so `last_fired_at`, `last_outcome` and `last_reason` are not blank.
 
 ## Bare metal: auto install
 
@@ -166,7 +166,7 @@ carrying the error; the video stays on disk. If the output or cache volume is ru
 film that would not fit at all fails the attempt with the same message before anything is rendered: this is the
 one place a headless cron deployment sees it, since nobody is watching a terminal. Every attempt writes its full
 output to `automation-output/<attempt-id>.private.log` under the cache (owner-readable, credentials redacted,
-downloadable from the **Runs** page). `auto status` shows the running code's version and commit, the timer, the
+downloadable from the **Runs** page). `auto status` shows the running code's version and commit, the scheduler in use, the
 last attempt, the cooldown, notification health and pending deliveries. It refreshes discovery and exposes its outcome/error under `suggestion`, without naming the next candidate; use `auto suggest` for that.
 
 ## Check on it
@@ -176,6 +176,10 @@ immich-memories auto status             # timer state, last attempt, cooldown an
 immich-memories auto status --json      # the same, for a script or jq
 immich-memories auto history --limit 5  # the last five films it made on its own
 ```
+
+The `Scheduler:` line names what actually wakes automation, and lists every one in use: `built-in timer (enabled, daily at 07:45 CEST, next firing 2026-10-08 07:45)`, an installed `launchd`/`systemd`/`cron` unit, or `external trigger (POST /api/trigger), last trigger 2026-10-07 07:45` when a trigger token is set or the trigger API has been called. With none of them it says `none`. `--json` adds `scheduler.in_use` and `scheduler.summary` next to the existing keys. The last trigger time is kept per host, beside the automation lock.
+
+While a run works, its log carries a `Phase …` line at least every 45 seconds: counted steps (preparation, the family-viewing check, the render) show `n/N`, and a step that has no count repeats itself with `still working (Nm in this step)`.
 
 `auto history` lists only completed automatic runs; a film you made with `generate` or the web UI is in
 `runs list` ([runs](../make/cli/runs.md)). In Docker, prefix each with `docker compose exec immich-memories`.
@@ -205,8 +209,7 @@ immich-memories auto test-notification
 `auto test-notification` sends one message to every URL and says whether it went through. It ignores the
 cooldown that follows a failed delivery (`cooldown_hours`, 24), and a test that succeeds clears it. Every film
 then sends one: `auto run`, the Docker timer and a plain `generate`. The message carries the memory type, the
-outcome, the duration, the output path and, on a failure, the first 200 characters of the redacted output
-(often the lead-up to the error, not the error itself); no picture unless you set
+outcome, the duration, the output path and, on a failure, the last lines of the redacted output (up to 300 characters, so the error itself, not the lead-up); no picture unless you set
 `attach_thumbnail: true`. The URLs hold credentials, so `config show` masks them and the database stores them encrypted.
 Every key is in the [config reference](config-reference.md#notifications).
 

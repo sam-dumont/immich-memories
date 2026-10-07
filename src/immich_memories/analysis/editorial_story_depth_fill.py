@@ -28,7 +28,7 @@ from immich_memories.analysis.editorial_story_places import PlaceShares
 from immich_memories.analysis.editorial_story_shortlist import DepictedChoice
 from immich_memories.analysis.editorial_story_slots import PartitionedSlots
 from immich_memories.analysis.editorial_story_standing import WEIGHED_STORY_WEIGHTS, StandingGate
-from immich_memories.planning.distinct_shots import is_new_shot
+from immich_memories.planning.distinct_shots import PICTURES_PER_BEAT, is_new_shot, is_own_beat
 
 logger = logging.getLogger(__name__)
 
@@ -77,6 +77,10 @@ class DepthFill:
         self._deepen_round_robin()
 
     # -- budget -------------------------------------------------------------------
+
+    def budget_met(self) -> bool:
+        """Whether the film has spent the content budget the depth fill works against."""
+        return self._depth_budget_met()
 
     def _depth_budget_met(self) -> bool:
         """Whether the depth fill should stop: content seconds against the real budget when
@@ -165,8 +169,19 @@ class DepthFill:
         """A story the cut already shows deepens when it is weighed, or when every era of the
         film speaks whatever its stories weigh (on this day, #2134)."""
         host = self._host
-        weighed = s["weight"] in WEIGHED_STORY_WEIGHTS or host.parts.every_era_speaks
+        weighed = (
+            s["weight"] in WEIGHED_STORY_WEIGHTS
+            or host.parts.every_era_speaks
+            or self._is_a_big_event(s)
+        )
         return weighed and bool(host.chosen_by_story[s["key"]])
+
+    def _is_a_big_event(self, s) -> bool:
+        """A story holding a capture group of two beats' worth of pictures or more: a day's event
+        is several shots even when the story reads as a glimpse beside the rest (#2211)."""
+        return s["weight"] != "none" and any(
+            len(c.members) >= 2 * PICTURES_PER_BEAT for c in self._host.choices_of[s["key"]]
+        )
 
     def _deepen_once(self, index: int, s) -> bool:
         host = self._host
@@ -195,7 +210,7 @@ class DepthFill:
                 continue
             family, unit = host._unit_by_asset[asset]
             row = host._carrier_row(unit, family, s, choice, index, asset)
-            if not self._is_distinct_shot(s, row):
+            if not self._is_distinct_shot(s, row, choice):
                 continue
             row = row | {"depth": True}
             if host.pictures.admits(row, cut=host.carriers, tier_of={}):
@@ -206,16 +221,27 @@ class DepthFill:
             return True
         return False
 
-    def _is_distinct_shot(self, s, row: dict) -> bool:
+    def _moment_sequence(self, s, choice: Any) -> list[str]:
+        """Every picture of the moment, in capture order, whatever the offer has narrowed to."""
+        host = self._host
+        whole = next((c for c in host.choices_of[s["key"]] if c.key == choice.key), choice)
+        return sorted(whole.members, key=lambda a: host._unit_by_asset[a][1]["taken"])
+
+    def _is_distinct_shot(self, s, row: dict, choice: Any) -> bool:
         """Depth only ever adds a frame that is its own shot (#2083): the shared distinct-shot
         rule against every kept frame of the same capture group, and that the final review's
         own look-alike question still calls new against the story it would join."""
         host = self._host
         kept_in_moment = [c for c in host.carriers if c.get("moment") == row.get("moment")]
-        if not is_new_shot(row, kept_in_moment):
+        if not (
+            is_new_shot(row, kept_in_moment)
+            or is_own_beat(row, kept_in_moment, self._moment_sequence(s, choice))
+        ):
             return False
         # The look-alike question stays story-scoped, as it always was: an unchecked
         # (unhashed) neighbour anywhere in the story must still hold a brand-new moment
         # back, the same conservatism that keeps a thumbnail-less run from filling blind.
         kept_in_story = [c for c in host.carriers if c["story_episode"] == s["key"]]
-        return host.lookalike.shows_something_new(s["key"], row, neighbours(row, kept_in_story))
+        return host.lookalike.shows_something_new(
+            s["key"], row, neighbours(row, kept_in_story), film=host.carriers
+        )

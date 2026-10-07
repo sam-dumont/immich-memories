@@ -256,3 +256,21 @@ def test_a_fold_never_changes_a_neighbours_own_grant(monkeypatch):
     assert len(choices_of["S2"]) == 1  # its own, untouched, full raw capacity
     assert len(choices_of["S3"]) > 1  # it received some of S1's freed slack
     assert calls == [1]  # `parts.allocate` was asked once, with everyone's raw capacity
+
+
+def test_a_group_showing_a_close_family_member_no_kept_group_shows_is_never_folded():
+    """The final review keeps a close family member's only shot ahead of its look-alike; the
+    capacity fold runs before it and asks the same question (#2071)."""
+    choices = [_choice("c1", "a"), _choice("c2", "b")]
+    units = _units(a="t1", b="t2")
+
+    kept = distinct_choices(
+        choices,
+        units,
+        "S1",
+        hash_alike=_always(True),
+        scene_alike=None,
+        close_family_of=lambda asset: {"Robin"} if asset == "b" else set(),
+    )
+
+    assert [c.key for c in kept] == ["c1", "c2"]

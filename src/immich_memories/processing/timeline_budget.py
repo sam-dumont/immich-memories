@@ -286,6 +286,10 @@ def _largest_fitting_month_dividers(
     Starts from the complete eligible set and drops the lightest remaining
     month at a time until what fits — never landing on zero while even a
     single divider fits (the "keep what fits, never none" rule, #2065).
+
+    This runs on trial cuts too, while the editorial pass is still choosing, so
+    it says nothing: the run reports the dropped dividers once, about the plan
+    the film really uses (`cli/_run_timeline.final_timeline`).
     """
     eligible = len(entries)
     chosen = eligible
@@ -308,14 +312,6 @@ def _largest_fitting_month_dividers(
             selected_clips=selected_clips,
             transition_mode=transition_mode,
             transition_duration=transition_duration,
-        )
-    if chosen == 0 and eligible > 0:
-        logger.warning(
-            "Month dividers dropped: none of %d eligible dividers fit the title budget "
-            "(soft max %.1fs, selected duration %.1fs)",
-            eligible,
-            soft_max,
-            selected_duration,
         )
     policy: DividerPolicy = "all" if chosen == eligible else ("capped" if chosen > 0 else "none")
     return replace(plan, divider_policy=policy)

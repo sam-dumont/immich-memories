@@ -636,6 +636,8 @@ src/immich_memories/
 │   │                           # (editorial_story_vote.py: the two-order model vote over a story's shortlisted moments)
 │   ├── editorial_story_trips.py     # Detected trips become one story per leg, with a reserve for each leg's length
 │   ├── editorial_story_lookalike.py # A story's further picture is refused when it repeats one it holds
+│   ├── editorial_repeat_exemptions.py # What no repetition check refuses (favourite, close family's only shot), shared with the final review
+│   ├── editorial_unused_reasons.py # The planning rule that left each unused picture of a story out
 │   ├── editorial_story_capacity.py # A story's capacity: capture groups offered, folded to what it can show
 │   │                               # distinctly (the final review's own hash+scene rule), but only for a
 │   │                               # story whose unfolded grant would have exceeded that; a clean story's
@@ -848,6 +850,7 @@ src/immich_memories/
 │   ├── _flags.py               # Shared validation for flags more than one command takes
 │   ├── _pipeline_runner.py     # Run SmartPipeline over the fetched assets + generate
 │   ├── source_progress.py      # Source-stage progress bar, plus the throttled phase-log feed
+│   ├── attempt_phase_reporter.py # Feeds a scheduled attempt's phase events from the generate child
 │   ├── _editorial_context.py   # CLI flags + presets -> one EditorialRunContext
 │   ├── _run_timeline.py        # The run's timeline: selection budget, then the settled plan
 │   ├── _asset_fetch.py         # What a memory asks Immich for: videos, Live Photos, stills
@@ -1109,6 +1112,8 @@ src/immich_memories/
 │   ├── generation_request.py   # Typed boundary from candidates to the `generate` CLI
 │   ├── state_store.py          # Automation attempts in the store; failure streaks for backoff
 │   ├── phase_log.py            # Logs a generation child's stored phase events while it runs
+│   ├── scheduler_in_use.py     # Which scheduler drives auto runs: built-in timer, system unit or external trigger
+│   ├── last_trigger.py         # Per-host stamp of the last POST /api/trigger, for auto status
 │   ├── status.py               # Cooldown gate + read-only AutomationStatus contract
 │   ├── delivery_retry.py       # Durable state for one pending delivery retry
 │   ├── notification_state.py   # Durable, sanitized notification delivery health (store row id 1)
@@ -1124,6 +1129,7 @@ src/immich_memories/
 │   ├── auto_output.py           # Private complete child transcripts, addressed by automation attempt
 │   ├── call_families.py        # family_of()/calls_by_family(): model calls grouped by stage family
 │   ├── cut_progress.py         # Where a run is, as one record the page and the terminal both read;
+│   ├── phase_heartbeat.py      # Repeats the last phase event every 30 s so a long step never goes silent
 │   │                           #   read_latest_attempt/live_progress_of: any process reads a cut's progress
 │   ├── run_index.py            # A run id resolved to its attempt directory (store table run_attempts);
 │   │                           #   record_cut_run: `generate --no-render` keeps its cut as a run
@@ -1420,7 +1426,7 @@ through Alembic revision `0007_timing`, on SQLite or PostgreSQL. No span writes 
 `ru_maxrss` lifetime high at both ends, plus one sampler thread (libproc on macOS, /proc on Linux).
 
 `tracking/report.py` allowlists diagnostic fields. `report_privacy.py` redacts the chosen strings and
-assigns per-report salted IDs. `report_service.py` assembles the same report for `report` and the HTTP
+assigns per-report salted IDs. `report_logs.py` shortens the pasted log (one line per progress stage, repeats counted); the bundle's log stays whole. `report_service.py` assembles the same report for `report` and the HTTP
 endpoint; neither calls Immich or sends anything. `span_progress.py` reads the saved spans for normalized
 rates and whole-run estimates. A first run has no historical total estimate.
 

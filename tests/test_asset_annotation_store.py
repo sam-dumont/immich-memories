@@ -474,3 +474,45 @@ def test_owner_people_head_is_trusted_as_is() -> None:
     )
 
     assert dict(facts.heads)["people"] == "one"
+
+
+def test_a_person_immich_recognised_after_prepare_keeps_the_people_head() -> None:
+    """#2079: the face box was never stored for a face recognised after `prepare`; Immich's own
+    live people on the picture count as the face evidence the stored boxes lack.
+
+    `asset-a` has no face box and a landscape caption; `asset-z` gives the library face data.
+    """
+    from immich_memories.store.asset_annotations import AssetAnnotationFactRepository
+
+    store = annotation_store()
+    add_rows(
+        store,
+        "descriptions",
+        {"asset_id": "asset-a", "model": "wanted-model", "text": "a mountain at sunset"},
+    )
+    add_rows(
+        store,
+        "face_boxes",
+        {"asset_id": "asset-z", "named": False, "x1": 0.1, "y1": 0.1, "x2": 0.2, "y2": 0.2},
+    )
+    add_rows(
+        store,
+        "head_facts",
+        {"asset_id": "asset-a", "head": "people", "version": "public-v1", "label": "one"},
+        {"asset_id": "asset-z", "head": "people", "version": "public-v1", "label": "one"},
+    )
+
+    def people_head(**options):
+        repository = AssetAnnotationFactRepository(
+            store,
+            description_model="wanted-model",
+            head_versions={"people": "public-v1"},
+            pixel_producer_key="pixel-v1",
+            **options,
+        )
+        return dict(repository.facts_for(("asset-a", "asset-z")).as_mapping()["asset-a"].heads)[
+            "people"
+        ]
+
+    assert people_head() == "none"
+    assert people_head(named_now=frozenset({"asset-a"})) == "one"

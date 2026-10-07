@@ -50,13 +50,19 @@ def upload_finished_film(
 ) -> UploadedFilm:
     """Upload the run's film on disk and record the asset on the run.
 
-    Refuses, with the reason, an unknown run, a film that is gone, or a key without upload scope.
+    Refuses, with the reason, an unknown run, a cut never rendered, a film that is gone, or a key without upload scope.
     """
     db = RunDatabase(open_store(config))
     record = db.get_run(run_id)
     if record is None:
         raise UploadRefused("Run not found. It may have been removed.", 404)
     film = local_film(record) if record.status == "completed" else None
+    if film is None and record.status == "completed" and not record.output_path:
+        # A kept cut is a completed run with no film: it never reached an encode.
+        raise UploadRefused(
+            "This run was never rendered, so there is no film to upload. "
+            f"Run `immich-memories runs render {run_id}` first, then upload the new run it makes."
+        )
     if film is None:
         raise UploadRefused(
             "This run's film file is gone, so there is nothing to upload. Render it again first."

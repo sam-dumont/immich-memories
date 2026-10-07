@@ -199,6 +199,7 @@ def _fetch_models(monkeypatch, tmp_path, editorial, *flags):
 
     monkeypatch.setattr(models_cmd, "fetch_pinned_model", fake_fetch)
     config = type("C", (), {})()
+    config.tier = "basic"
     config.triage = type("T", (), {"encoder_url": "u", "encoder_path": tmp_path / "e"})()
     config.free_text = FreeTextConfig(wordnet=str(tmp_path / "wordnet.zip"))
     config.llm = LLMConfig(enabled=False)

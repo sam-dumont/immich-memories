@@ -230,3 +230,17 @@ def test_generation_settings_bind_actual_source_certificate(tmp_path, monkeypatc
     assert build_assembly_settings(params, [rendered]).certified_content_intervals == {
         "still": (0.0, 4.0)
     }
+
+
+def test_the_assembly_timing_line_names_what_each_figure_measures(title_path, tmp_path, caplog):
+    _, build, _ = title_path
+    inserter, clips, assemble, _ = build({}, [content("first"), content("last")])
+
+    with caplog.at_level("INFO"):
+        inserter.assemble_with_titles(clips, tmp_path / "out.mp4", assemble)
+
+    line = next(r.getMessage() for r in caplog.records if "Assembly timing" in r.getMessage())
+    for part in ("opening card", "dividers", "ending card", "encode"):
+        assert part in line
+    assert "ending=" not in line
+    assert "title=" not in line

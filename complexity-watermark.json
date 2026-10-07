@@ -1,7 +1,4 @@
 {
-  "src/immich_memories/automation/runner.py": {
-    "AutoRunner::_run_one_under_lease": [19]
-  },
   "src/immich_memories/cli/config_cmd.py": {
     "register_config_commands": [29]
   },

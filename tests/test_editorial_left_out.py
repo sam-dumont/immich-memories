@@ -82,3 +82,12 @@ def test_a_finished_run_names_why_each_unused_picture_is_out(tmp_path):
     unused = {asset.id for asset in sources} - selected
     assert unused
     assert all(trace.story_of(asset_id).reason for asset_id in unused)
+
+
+def test_a_picture_the_plan_passed_over_says_which_rule_did():
+    plan = _plan(left_out={"third": "it repeats a picture already in the cut"})
+
+    assert final_cut_notes(plan, ["third", "unknown"]) == {
+        "third": "it repeats a picture already in the cut",
+        "unknown": "kept by every pass, not used in the plan",
+    }

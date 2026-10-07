@@ -37,7 +37,7 @@ Copies and bursts normally become one shot. When Immich holds the same picture m
 
 - **A copy or an edit.** A shared album's smaller copy, or the edited version your phone uploaded next to the original (same file name, same camera, same capture instant): the newest full-size version plays, so your edit wins over the original and a downscaled album copy never does. A star, the people Immich recognised and a `generate --include` or `--exclude` on any of the files count for the one kept.
 - **The same bytes twice.** Your partner's phone uploaded it too, or a second account holds it: one copy plays, and a star on any of them counts.
-- **An Immich stack.** The stack's top picture plays, and a star on any picture in the stack counts for it. Reading stacks needs the optional `stack.read` permission on the [API key](../run/docker.md#the-api-key); without it every stacked picture is its own candidate.
+- **An Immich stack.** The stack's top picture plays. A star, the people Immich recognised and a `generate --include` or `--exclude` on any picture in the stack count for it. Reading stacks needs the optional `stack.read` permission on the [API key](../run/docker.md#the-api-key); without it every stacked picture is its own candidate.
 
 Later checks remove repeated scenes, favouring your stars and useful motion. A shorter film is preferable to the same sunset twice.
 

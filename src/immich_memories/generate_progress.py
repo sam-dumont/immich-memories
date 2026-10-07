@@ -51,6 +51,34 @@ def emit_operational_phase(
     return event
 
 
+def render_progress_events(
+    inner: Callable[[float, str], None] | None,
+    operational: _OperationalProgress,
+    total: int,
+    *,
+    clock: Callable[[], float] = time.monotonic,
+    every_seconds: float = 30.0,
+) -> Callable[[float, str], None]:
+    """Turn the assembler's fraction into render phase events (n of N clips), throttled.
+
+    A render is the longest silent stretch of a scheduled run; the bar hears every report,
+    the phase log one per interval (#2219).
+    """
+    last = float("-inf")
+
+    def report(pct: float, msg: str) -> None:
+        nonlocal last
+        if inner is not None:
+            inner(pct, msg)
+        now = clock()
+        if now - last < every_seconds:
+            return
+        last = now
+        operational.emit(OperationalPhase.RENDER, min(total, int(pct * total)), total, msg)
+
+    return report
+
+
 class _OperationalProgress:
     """Emit one monotonic outer lifecycle around generation internals."""
 

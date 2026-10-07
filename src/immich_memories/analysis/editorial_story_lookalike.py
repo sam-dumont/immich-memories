@@ -19,10 +19,11 @@ alone never makes a film short.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Collection, Mapping, Sequence
 from typing import Any
 
 from immich_memories.analysis.duplicate_hashing import hamming_distance
+from immich_memories.analysis.editorial_repeat_exemptions import repeat_may_be_refused
 
 PairLooksAlike = Callable[[Mapping[str, Any], Mapping[str, Any]], bool | None]
 MOTION_KINDS = frozenset({"video", "live-motion"})
@@ -70,8 +71,12 @@ class LookAlikeCheck:
         slots: int,
         scene_alike: PairLooksAlike | None = None,
         scene_gated_stories: frozenset[str] = frozenset(),
+        close_family_of: Callable[[str], Collection[str]] = lambda _asset: (),
     ) -> None:
         self._looks_alike = looks_alike
+        # Who a picture shows among the owner's close family: the final review keeps their only
+        # shot ahead of its look-alike, so this check never refuses it either (#2071).
+        self._close_family_of = close_family_of
         # The scene print's own rule (`editorial_final_hash_review.scene_pair_relation`), asked
         # only about depth: a further frame of a moment already shown must clear it too, or the
         # final review would only remove it again having spent the slot on it meanwhile.
@@ -103,15 +108,26 @@ class LookAlikeCheck:
             self._answers[pair] = self._looks_alike(candidate, keeper)
         return self._answers[pair]
 
+    def _only_shot(self, candidate: Mapping[str, Any], film: Sequence[Mapping[str, Any]]) -> bool:
+        """Whether the candidate shows a close family member no picture of the film shows yet."""
+        shown = {name for row in film for name in self._close_family_of(row["asset_id"])}
+        return bool(set(self._close_family_of(candidate["asset_id"])) - shown)
+
     def repeats(
-        self, candidate: Mapping[str, Any], kept: Sequence[Mapping[str, Any]]
+        self,
+        candidate: Mapping[str, Any],
+        kept: Sequence[Mapping[str, Any]],
+        *,
+        film: Sequence[Mapping[str, Any]] = (),
     ) -> str | None:
-        """The kept carrier this candidate repeats, if any. A favourite is never refused for
-        looking like a picture the owner did not star."""
+        """The kept carrier this candidate repeats, if any, unless the final review would keep
+        it anyway (`repeat_may_be_refused`): a favourite is never refused for looking like a
+        picture the owner did not star, nor a close family member's only shot of the `film`."""
         if self._looks_alike is None:
             return None
+        only_shot = self._only_shot(candidate, film)
         for keeper in kept:
-            if candidate.get("favourite") and not keeper.get("favourite"):
+            if not repeat_may_be_refused(candidate, keeper, only_shot=only_shot):
                 continue
             try:
                 if self._answer(candidate, keeper) is True:
@@ -122,13 +138,20 @@ class LookAlikeCheck:
         return None
 
     def shows_something_new(
-        self, story: str, candidate: Mapping[str, Any], kept: Sequence[Mapping[str, Any]]
+        self,
+        story: str,
+        candidate: Mapping[str, Any],
+        kept: Sequence[Mapping[str, Any]],
+        *,
+        film: Sequence[Mapping[str, Any]] = (),
     ) -> bool:
         """Depth inside a moment: True only when every compared frame was asked and differs,
         by the hash and, where the scene print is read, by the scene the final review would
         ask about too. A depth frame that review would only remove is never added here."""
+        only_shot = self._only_shot(candidate, film)
+        refusable = [k for k in kept if repeat_may_be_refused(candidate, k, only_shot=only_shot)]
         try:
-            repeated = next((k for k in kept if self._answer(candidate, k) is not False), None)
+            repeated = next((k for k in refusable if self._answer(candidate, k) is not False), None)
         except _Unasked:
             self.depth["unasked"] += 1
             return False
@@ -137,7 +160,7 @@ class LookAlikeCheck:
             and self._scene_alike is not None
             and story in self._scene_gated_stories
         ):
-            repeated = next((k for k in kept if self._scene_alike(candidate, k)), None)
+            repeated = next((k for k in refusable if self._scene_alike(candidate, k)), None)
         if repeated is not None:
             self.depth["refused"].append(
                 {"story": story, "asset_id": candidate["asset_id"], "repeats": repeated["asset_id"]}

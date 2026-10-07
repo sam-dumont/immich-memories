@@ -4,7 +4,7 @@ title: Picking a shot
 
 # Picking a shot
 
-Within a moment, your favourite comes first. Without one, the editor looks for motion, recognisable people, good framing and a sharper picture. Near-identical frames compete for one place.
+Within a moment, your favourite comes first. A big event is several moments: roughly one shot for every five distinct pictures of it, so a month with one real afternoon still makes a film. Without one, the editor looks for motion, recognisable people, good framing and a sharper picture. Near-identical frames compete for one place.
 
 A selected video plays as video, usually up to six seconds. Clips shorter than two seconds are skipped.
 
@@ -15,7 +15,9 @@ The six seconds don't have to be the first six. Once the film's videos are picke
 
 A clip with nothing that stands out keeps its opening.
 
-Detected speech can extend the cut to a pause, up to twelve seconds. A pause means a full second of quiet: the breath between two people trading lines doesn't count, so a joke keeps its punchline and the laugh after it.
+A short film lets a video play longer, up to twelve seconds, when it has content seconds unspent. A clip whose action sits at its very end grows backwards from the last frame.
+
+Detected speech can extend the cut to a pause, up to twelve seconds. A run of "speech" longer than twelve seconds (a crowd, a PA, music) is no sentence and never stretches a cut. A pause means a full second of quiet: the breath between two people trading lines doesn't count, so a joke keeps its punchline and the laugh after it.
 
 A Live Photo plays as motion when its clip moves and keeps its subject in view. Otherwise its still can remain in the film. See [Photos and Live Photos](../make/photos-and-live-photos.md).
 

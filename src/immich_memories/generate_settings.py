@@ -135,12 +135,7 @@ def build_assembly_settings(
         ),
     )
     if encoding_plan.tone_map_to_sdr and hdr_mode is HdrMode.AUTO:
-        logger.warning(
-            "HDR input was detected, but %s output cannot preserve HDR; "
-            "tone-mapping the final video to SDR. Set output.codec: h265 with "
-            "output.hdr_mode: auto to preserve HDR.",
-            encoding_plan.codec.value,
-        )
+        _warn_about_tone_mapped_sources(assembly_clips, encoding_plan, probe_cache)
 
     return AssemblySettings(
         encoding_plan=encoding_plan,
@@ -157,6 +152,25 @@ def build_assembly_settings(
         debug_preserve_intermediates=params.debug_preserve_intermediates,
         privacy_mode=params.privacy_mode,
         certified_content_intervals=certified_intervals,
+    )
+
+
+def _warn_about_tone_mapped_sources(
+    assembly_clips: list[AssemblyClip], plan: EncodingPlan, probe_cache: ProbeCache | None
+) -> None:
+    """Warn only for HDR sources in the library, not for the PQ stills the app renders."""
+    from immich_memories.processing.hdr_utilities import hdr_source_names
+
+    names = hdr_source_names(assembly_clips, probe_cache=probe_cache)
+    if not names:
+        return
+    shown = ", ".join(names[:3]) + (f" and {len(names) - 3} more" if len(names) > 3 else "")
+    logger.warning(
+        "HDR input was detected (%s), but %s output cannot preserve HDR; "
+        "tone-mapping the final video to SDR. Set output.codec: h265 with "
+        "output.hdr_mode: auto to preserve HDR.",
+        shown,
+        plan.codec.value,
     )
 
 

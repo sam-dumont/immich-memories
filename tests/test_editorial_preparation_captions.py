@@ -506,3 +506,21 @@ def test_the_caption_key_does_not_follow_a_redirect_to_another_host(open_endpoin
 
     assert open_endpoint.seen_authorization, "the redirect was never followed"
     assert set(open_endpoint.seen_authorization) == {None}
+
+
+def test_a_caption_banked_without_an_origin_still_names_its_caption_contract():
+    from immich_memories.analysis.editorial_description_contract import (
+        DESCRIPTION_SOURCE,
+        DescriptionEnvelope,
+    )
+    from immich_memories.analysis.editorial_preparation_captions import _remember_captions
+
+    store = annotation_store()
+    # The bank of an earlier build: the row exists, the origin was never recorded.
+    _remember_captions(store, {"a": DescriptionEnvelope(description="A beach.", setting="beach")})
+
+    grouped = origins_for(store, ("a",), DESCRIPTION_MODEL)
+
+    summary = caption_origin_summary(grouped)
+    assert f"{DESCRIPTION_MODEL} / {DESCRIPTION_SOURCE}" in summary
+    assert "banked before origins were recorded" in summary

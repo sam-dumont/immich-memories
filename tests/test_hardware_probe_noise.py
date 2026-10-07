@@ -43,3 +43,19 @@ def test_the_same_advice_is_given_once_however_many_probes_fail(caplog) -> None:
             _failing_probe(encoder, "vaapi")
 
     assert caplog.text.count("libva could not open a device") == 1
+
+
+def test_the_libva_advice_is_info_on_the_basic_tier_and_a_warning_elsewhere(caplog) -> None:
+    from immich_memories.processing import hardware
+    from immich_memories.tracking.timing import collecting
+
+    levels = {}
+    for tier in ("basic", "gpu"):
+        hardware._advice_given.clear()
+        caplog.clear()
+        with collecting() as collected, caplog.at_level(logging.INFO):
+            collected.diagnostics["tier"] = tier
+            _failing_probe("h264_vaapi", "vaapi")
+        levels[tier] = [r.levelno for r in caplog.records if "libva could not" in r.getMessage()]
+
+    assert levels == {"basic": [logging.INFO], "gpu": [logging.WARNING]}

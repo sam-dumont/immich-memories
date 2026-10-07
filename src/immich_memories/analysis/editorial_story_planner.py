@@ -8,8 +8,9 @@ When the moments run out, the film is shorter.
 from __future__ import annotations
 
 import json
+import logging
 from collections import Counter
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Collection, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import date
 from operator import itemgetter
@@ -55,7 +56,10 @@ from immich_memories.analysis.editorial_story_trips import (
     trip_fold,
 )
 from immich_memories.analysis.editorial_structure_budget import CONTENT_RESERVE_SECONDS
+from immich_memories.analysis.editorial_unused_reasons import unused_by_the_plan
 from immich_memories.analysis.subject_framing import SubjectVisibility
+
+logger = logging.getLogger(__name__)
 
 STORY_PLANNER_VERSION = "story-first-selection-v7-prepared-candidates"
 TIER_NAME = {0: "remarkable", 1: "maybe", 2: "background"}
@@ -75,6 +79,12 @@ class StorySelection:
     # Every story's own moments that never took a slot, in the planner's funding order: where
     # a refill looks once a carrier's own moment and its own story have nothing left to offer.
     unfunded_pool: list[str] = field(default_factory=list)
+    # The rule of the plan that left each unused picture of a story out (#2211).
+    left_out: dict[str, str] = field(default_factory=dict)
+    # The partitions the film promised a voice that ended without a shot, with why, and the
+    # pictures the standing or context rule refused: what the finished-cut check reads.
+    quiet_partitions: list[dict[str, Any]] = field(default_factory=list)
+    standing_refused: list[str] = field(default_factory=list)
 
     def record(self) -> dict[str, Any]:
         record: dict[str, Any] = {
@@ -511,6 +521,7 @@ def select_story_first(
     film_span: tuple[date, date] | None = None,
     near_home: Callable[[str], bool | None] | None = None,
     banked: BankedFacts = NO_BANKED_FACTS,
+    close_family_of: Callable[[str], Collection[str]] = lambda _asset: (),
 ) -> StorySelection:
     """Read the period into weighed stories, fund them, and choose captioned pictures.
 
@@ -533,6 +544,8 @@ def select_story_first(
     `near_home(family)` says whether a happening was photographed near the home base.
     `standing(asset)` is a picture's standing score (0 refuses), read from its facts on every
     tier: no model is asked whether a picture stands.
+    `close_family_of(asset)` names the owner's close family a picture shows: the repetition checks
+    that run before the final review never refuse a close family member's only shot, as it does not.
     `banked` answers what a model already said about these pictures on an earlier run; it asks
     nothing, and on a library nothing has read it answers nothing and the draft is unchanged.
     `voice_per_partition` gives every partition (`partition_of`) that holds a story one picture
@@ -637,6 +650,7 @@ def select_story_first(
         slots,
         capacity_hash_alike,
         scene_alike,
+        close_family_of,
         **picking,
     )
     reserve_trip_depth(stories, slots=slots, film_days=_photographed_days(event_units))
@@ -713,6 +727,7 @@ def select_story_first(
             slots=slots,
             scene_alike=scene_alike,
             scene_gated_stories=scene_gated_stories,
+            close_family_of=close_family_of,
         ),
         places=places,
         place_of=place_of,
@@ -735,7 +750,10 @@ def select_story_first(
         calls,
         story_lines,
         unfunded_pool(stories, choices_of, admission.chosen_by_story),
+        unused_by_the_plan(admission, gate, stories, story_units, choices_of),
+        *_quiet_and_refused(parts, admission, gate, choices_of, slots),
     )
+    quiet_partitions = selection.quiet_partitions
     record(
         "story-selection",
         selection.record()
@@ -745,7 +763,7 @@ def select_story_first(
             "lookalike": admission.lookalike.record(),
             "failed_standing": admission.failed_standing,
             # A partition the film promised a voice that ended without one, and why.
-            "quiet_partitions": parts.quiet(choices_of, admission.silent, admission.carriers),
+            "quiet_partitions": quiet_partitions,
             "kept_without_standing": admission.kept_without_standing,
             # Owner ruling 2026-09-28: a pool picture stands on the subject, never silently.
             "stood_on_subject": gate.stood_on_subject_rows(admission.carriers),
@@ -763,6 +781,24 @@ def select_story_first(
     return selection
 
 
+def _quiet_and_refused(parts, admission, gate, choices_of, slots) -> tuple[list, list]:
+    """The partitions left without a shot (logged), and the pictures the standing rules refused."""
+    # A story whose pictures all failed the context rule offered nothing to weigh.
+    silent = [*admission.silent, *sorted({story for story, _asset in gate.context_rejected})]
+    quiet = _logged_quiet(parts.quiet(choices_of, silent, admission.carriers, slots=slots))
+    refused = [*admission.failed_standing, *sorted(asset for _s, asset in gate.context_rejected)]
+    return quiet, refused
+
+
+def _logged_quiet(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    for row in rows:
+        logger.info("%s has no shot in the film: %s", row["partition"], row["reason"])
+    return rows
+
+
 def story_plan_fields(selection: StorySelection) -> dict[str, Any]:
     """Keys the story-first branch adds to the plan dict."""
-    return {"story": json.loads(json.dumps(selection.record(), ensure_ascii=False))}
+    return {
+        "story": json.loads(json.dumps(selection.record(), ensure_ascii=False)),
+        "left_out": selection.left_out.copy(),
+    }

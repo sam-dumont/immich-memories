@@ -42,6 +42,7 @@ def register_models_commands(cli_group: click.Group) -> None:
         if detectors is None:
             detectors = config.editorial.detectors_enabled
         total = len(plan) + int(detectors)
+        click.echo(f"models: tier {config.tier}")
         for index, item in enumerate(plan, 1):
             click.echo(f"models: {index}/{total} {item.cli_label or item.artifact.label}")
             _fetch_pinned(

@@ -96,7 +96,10 @@ def check_immich(config: Config) -> CheckResult:
 def _connected_result(
     config: Config, user: str, version: str, capabilities: ApiKeyCapabilities
 ) -> CheckResult:
-    details = f"Server: {config.immich.url}; API: {version}"
+    details = f"Server: {config.immich.url}"
+    if config.immich.public_url:
+        details += f"; links open {config.immich.link_base}"
+    details += f"; API: {version}"
     warnings = []
     reasons = []
     if capabilities.is_all:

@@ -2,7 +2,7 @@ import {useEffect, useState, type ReactNode} from 'react';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import CodeBlock from '@theme/CodeBlock';
 import Link from '@docusaurus/Link';
-import {API_KEY_PLACEHOLDER, buildSetup, type Setup, type Sources, type Platform} from './recipes';
+import {API_KEY_PLACEHOLDER, buildSetup, looksInternal, type Setup, type Sources, type Platform} from './recipes';
 import sources from './sources.json';
 import styles from './styles.module.css';
 
@@ -58,6 +58,11 @@ export default function SetupBuilder({initialPlatform = 'linux', initialInline =
       <label>Immich URL
         <input type="url" value={setup.immichUrl} onChange={event => update({immichUrl: event.target.value})} />
       </label>
+      {(looksInternal(setup.immichUrl) || setup.immichPublicUrl) && <label>Immich address in your browser
+        <input type="url" placeholder="https://photos.example.org" value={setup.immichPublicUrl ?? ''} onChange={event => update({immichPublicUrl: event.target.value})} />
+        <small>That URL only works from where the app runs, so the "View in Immich" links it shows would not open.
+          Enter the address you open Immich at in your browser. Leave it empty to build links from the URL above.</small>
+      </label>}
       {hostPort && <label>UI host port
         <input type="number" min="1" max="65535" step="1" value={setup.uiPort} onChange={event => update({uiPort: Number(event.target.value)})} />
         <small>Choose a free port if another app already uses 8080. The UI stays localhost-only.</small>

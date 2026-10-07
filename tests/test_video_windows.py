@@ -175,3 +175,73 @@ def test_a_window_whose_action_sits_at_the_end_still_projects_from_the_real_sour
     projected = project_source_rendering([carrier], rows, config=Config(), include_live_photos=True)
 
     assert projected.plan.selections[0].end_time <= duration
+
+
+def _planned_videos(tmp_path, *, pictures, duration=13.0, action=(12.0, 13.0)):
+    """The real planner over `pictures` videos of `duration` seconds, action at `action`."""
+    from dataclasses import replace
+
+    from immich_memories.analysis.editorial_clip_facts import WindowFacts
+    from immich_memories.analysis.editorial_structure_planner import plan_structure
+    from immich_memories.analysis.editorial_video_windows import place_windows
+    from immich_memories.api.models import AssetType
+    from immich_memories.processing.editorial_timing import build_editorial_timing_policy
+    from tests.test_editorial_duration_planner_integration import source
+    from tests.test_editorial_timing import _ports
+
+    captured = source(tmp_path, seconds=60, pictures=pictures)
+    captured = replace(
+        captured,
+        assets={
+            key: asset.model_copy(update={"type": AssetType.VIDEO, "duration_seconds": duration})
+            for key, asset in captured.assets.items()
+        },
+    )
+    timing = build_editorial_timing_policy(
+        config=captured.config,
+        target_seconds=60,
+        memory_type=captured.case.product,
+        transition="cut",
+    )
+    peak = _probes(duration, action)
+    plan = plan_structure(
+        replace(captured, render_timing=timing),
+        replace(
+            _ports(),
+            resolve_windows=lambda cs: place_windows(
+                cs, lambda _id, _hold: WindowFacts(peak, (), None)
+            ),
+        ),
+    ).plan
+    return [c for c in plan["carriers"] if c["kind"] == "video"]
+
+
+def test_a_short_films_video_hold_grows_towards_the_unspent_content_and_ends_at_the_last_frame(
+    tmp_path,
+):
+    """Two videos in a minute of film: the action sits at the very end of each, and the hold
+    grows (backwards from the last frame) instead of staying a clamped six seconds (#2090)."""
+    videos = _planned_videos(tmp_path, pictures=2)
+
+    assert len(videos) == 2
+    for carrier in videos:
+        assert carrier["seconds"] == pytest.approx(12.0, abs=0.1)
+        assert carrier["end_time"] == pytest.approx(13.0, abs=0.3)
+
+
+def test_a_full_films_video_holds_stay_at_six_seconds(tmp_path):
+    videos = _planned_videos(tmp_path, pictures=50)
+
+    assert videos
+    assert all(carrier["seconds"] <= 6.0 + 1e-6 for carrier in videos)
+
+
+def test_a_region_longer_than_any_exchange_is_no_sentence_for_the_end_of_a_cut():
+    from immich_memories.speech.cuts import safe_end
+
+    crowd = {"start_time": 0.0, "speech_regions": [[2.0, 19.0]]}
+    talk = {"start_time": 0.0, "speech_regions": [[4.0, 9.0]]}
+
+    assert safe_end(crowd, 6.0, expand=True) == 6.0
+    assert safe_end(crowd, 6.0) == 6.0
+    assert safe_end(talk, 6.0, expand=True) == 9.0

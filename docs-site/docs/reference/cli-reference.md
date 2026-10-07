@@ -884,8 +884,10 @@ immich-memories runs story [OPTIONS] [RUN_ID]
 
 Upload RUN_ID's finished film to Immich, as it is on disk.
 
-Nothing is rendered again. The key needs the same upload scope the render-time
-option checks, and a film that was removed from disk is refused.
+RUN_ID is the render run's id (`runs list` shows it; it ends the film's folder name):
+the run that holds the film, not the cut it was rendered from. Nothing is rendered again. The key
+needs the same upload scope the render-time option checks, and a cut never rendered
+or a film removed from disk is refused.
 
 ```bash
 immich-memories runs upload [OPTIONS] RUN_ID

@@ -9,6 +9,7 @@ that build one.
 
 from __future__ import annotations
 
+import time
 from collections.abc import Callable, Collection, Mapping, Sequence
 from dataclasses import dataclass, field
 from functools import partial
@@ -40,6 +41,7 @@ from immich_memories.analysis.editorial_unvouched_filler import (
     filler_evidence,
     owner_vouches_for,
 )
+from immich_memories.analysis.editorial_video_windows import grow_holds
 from immich_memories.operations.cut_progress import StageUpdate, announce_stage
 
 
@@ -48,6 +50,37 @@ def announce_count(pictures: int, point: str) -> None:
     announce_stage(
         StageUpdate(f"Editing the memory: {pictures} pictures {point}", key="Editing the memory")
     )
+
+
+def counted_verdicts(
+    verdict_of: Callable[[Mapping[str, Any]], str | None],
+    *,
+    total: int,
+    clock: Callable[[], float] = time.monotonic,
+    every_seconds: float = 5.0,
+) -> Callable[[Mapping[str, Any]], str | None]:
+    """Wrap the family-viewing check so each picture it reads moves a counted stage.
+
+    The check reads one picture at a time and can run for half an hour; without a count the
+    run's log has nothing to say between its two stage lines (#2219).
+    """
+    checked = 0
+    last = float("-inf")
+
+    def counted(carrier: Mapping[str, Any]) -> str | None:
+        nonlocal checked, last
+        verdict = verdict_of(carrier)
+        checked += 1
+        now = clock()
+        done = min(checked, total)
+        if now - last >= every_seconds or checked == total:
+            last = now
+            announce_stage(
+                StageUpdate("the family-viewing check", done=done, total=total, verb="Running")
+            )
+        return verdict
+
+    return counted
 
 
 @dataclass
@@ -87,7 +120,7 @@ def resolve_motion_and_timing(
     run.motion_metrics = retained_motion.metrics
     run.carriers = retire_unprojectable(run.carriers, source, run.cut_carriers)
     if ports.resolve_windows is not None:
-        run.carriers = ports.resolve_windows(run.carriers)
+        run.carriers = ports.resolve_windows(_grown_holds(run.carriers, source))
     if ports.resolve_speech is not None:
         run.carriers = ports.resolve_speech(run.carriers)
     timing = source.render_timing
@@ -115,6 +148,19 @@ def resolve_motion_and_timing(
     )
     if sum(c["seconds"] for c in run.carriers) > run.final_content_cap:
         raise ValueError("Editorial minimum content cannot fit the production title budget")
+
+
+def _grown_holds(carriers: list[dict], source: StructurePlanningInput) -> list[dict]:
+    """The cut with its videos' holds grown into the content budget the film has left (#2090).
+
+    Only a film short by at least one shot's minimum hold is short: anything less is the
+    rounding of a full film, which the fit takes back anyway.
+    """
+    if source.render_timing is None:
+        return carriers
+    budget = source.render_timing.resolve(carriers, source.assets).content_budget
+    spare = budget - sum(c["seconds"] for c in carriers)
+    return grow_holds(carriers, spare) if spare >= MIN_CARRIER_SECONDS else carriers
 
 
 def admit_retained_originals(
@@ -354,7 +400,7 @@ def apply_audience_gate(
         # Same temporal family does not establish editorial equivalence. Let the
         # existing bounded assembly decision judge a new contribution after privacy.
         run.carriers,
-        verdict_of=gate.verdict_of,
+        verdict_of=counted_verdicts(gate.verdict_of, total=len(run.carriers)),
         # Story-first has no ladder to fall back on: the moment's own other pictures are
         # the only replacements a held carrier can have.
         pool_for=alternatives_pool(selection, material.units, wall.anchor_label),

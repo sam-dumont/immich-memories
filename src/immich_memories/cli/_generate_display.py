@@ -175,6 +175,6 @@ def _print_generation_result(
     if no_render:
         print_success("Selection complete; no video was created (--no-render)")
         return
-    print_success(saved_path_line(result_path), highlight=False)
+    print_success(saved_path_line(result_path), highlight=False, soft_wrap=True)
     if should_upload:
         print_success(f"Uploaded to Immich (album: {album_name or 'none'})")

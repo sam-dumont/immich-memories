@@ -11,6 +11,7 @@ from zipfile import ZIP_DEFLATED, ZipFile
 
 from immich_memories import __version__
 from immich_memories.tracking.models import RunMetadata
+from immich_memories.tracking.report_logs import collapse_log
 from immich_memories.tracking.report_privacy import ReportPrivacy
 from immich_memories.tracking.timing import Collector
 
@@ -166,7 +167,7 @@ class RunReport:
             + trace
             + "\n".join(sections)
         )
-        lines = self.data["logs"]
+        lines = collapse_log(self.data["logs"])
         kept: list[str] = []
         budget = max(0, limit - len(prefix) - 300)
         for line in reversed(lines):

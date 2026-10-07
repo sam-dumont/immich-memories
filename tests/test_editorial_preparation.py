@@ -222,7 +222,13 @@ def test_changing_caption_server_preserves_rows_and_marks_legacy_origins_unknown
     assert result.complete
     assert calls == []
     assert result.caption_provenance == {
-        "origins": [{"status": "unknown", "assets": 2}],
+        "origins": [
+            {
+                "status": "unknown",
+                "contract": f"{DESCRIPTION_MODEL} / {DESCRIPTION_SOURCE}",
+                "assets": 2,
+            }
+        ],
         "by_asset": {},
     }
 

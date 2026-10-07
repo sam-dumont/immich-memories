@@ -313,7 +313,13 @@ def status(ctx: click.Context, as_json: bool) -> None:
     scheduler_state = (
         "unknown" if scheduler.active is None else "active" if scheduler.active else "inactive"
     )
+    from immich_memories.automation.last_trigger import read_last_trigger
+    from immich_memories.automation.scheduler_in_use import describe_scheduler
+
+    in_use = describe_scheduler(config, scheduler, read_last_trigger(config))
     payload["scheduler"] = {
+        "in_use": in_use.in_use,
+        "summary": in_use.summary,
         "platform": scheduler.platform,
         "installed": scheduler.installed,
         "active": scheduler.active,
@@ -329,14 +335,7 @@ def status(ctx: click.Context, as_json: bool) -> None:
     last_attempt = payload["last_attempt"]
     last_run = payload["last_completed_auto_run"]
     cooldown_status = payload["cooldown"]
-    scheduler_installation = (
-        "installation unknown"
-        if scheduler.installed is None
-        else "installed"
-        if scheduler.installed
-        else "not installed"
-    )
-    print_info(f"Scheduler: {scheduler.platform}, {scheduler_installation}, {scheduler_state}")
+    print_info(f"Scheduler: {in_use.summary}")
     if provenance.is_stale:
         print_error(f"Running code: {provenance.describe()}")
     else:

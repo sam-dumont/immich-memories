@@ -152,7 +152,9 @@ def _unwritable(directory: Path, error: OSError) -> CheckResult:
     )
 
 
-def check_output_directory(directory: Path, origin: OutputOrigin | None = None) -> CheckResult:
+def check_output_directory(
+    directory: Path, origin: OutputOrigin | None = None, *, mounted: bool | None = None
+) -> CheckResult:
     """Create the output directory when it is missing, and prove a file can be written in it.
 
     The probe writes and removes a real temporary file: permission bits and
@@ -164,11 +166,21 @@ def check_output_directory(directory: Path, origin: OutputOrigin | None = None) 
             pass
     except OSError as error:
         return _unwritable(directory, error)
+    if origin is None:
+        return CheckResult(
+            name="Output directory",
+            status=CheckStatus.OK,
+            message="Output directory is writable",
+            details=str(directory),
+        )
+    where = [origin.describe()]
+    if mounted:
+        where.append("mounted volume")
     return CheckResult(
         name="Output directory",
         status=CheckStatus.OK,
-        message="Output directory is writable",
-        details=f"{directory} ({origin.describe()})" if origin else str(directory),
+        message=f"{directory} ({', '.join(where)}), writable",
+        details=f"{directory} ({origin.describe()})",
     )
 
 
