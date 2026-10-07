@@ -83,6 +83,12 @@ def build_memory_output_path(
     )
 
 
+def album_film_path(output_dir: Path, album_name: str | None, container: str) -> Path:
+    """The file an album film is named after: `album_<slug>`, or `album` when no slug survives."""
+    slug = safe_slug(album_name or "")
+    return output_dir / f"{f'album_{slug}' if slug else 'album'}.{container}"
+
+
 def _people_filename_suffix(expression: PersonExpression | None) -> str:
     if expression is None:
         return ""

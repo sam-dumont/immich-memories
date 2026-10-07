@@ -2,7 +2,7 @@
 
 from immich_memories.analysis.editorial_projection import EditorialStageReporter
 from immich_memories.analysis.progress import ProgressTracker
-from immich_memories.cli._pipeline_runner import _SourceProgressReporter
+from immich_memories.cli.source_progress import SourceProgressReporter
 from immich_memories.operations.cut_progress import StageUpdate, live_progress_of
 from immich_memories.operations.editorial_attempt import EditorialAttempt, read_editorial_attempt
 from tests.test_surface_parity import CountingDisplay
@@ -13,7 +13,7 @@ def test_estimate_uses_only_current_stage_and_survives_reload(tmp_path, monkeypa
     # WHY: advance the run clock without sleeping through a stage.
     monkeypatch.setattr("immich_memories.tracking.timing.time.perf_counter", lambda: now)
     display = CountingDisplay()
-    reporter = EditorialStageReporter(ProgressTracker(), _SourceProgressReporter(display, 0))
+    reporter = EditorialStageReporter(ProgressTracker(), SourceProgressReporter(display, 0))
     with EditorialAttempt(tmp_path, request={}) as attempt:
         reporter(attempt.stage(StageUpdate("previews", "analysis", 2, 10)))
         assert "left" not in display.description

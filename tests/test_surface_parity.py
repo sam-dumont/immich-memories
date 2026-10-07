@@ -588,11 +588,11 @@ class TestProgressParity:
     def test_the_terminal_sees_every_stage_with_its_counts(self) -> None:
         from immich_memories.analysis.editorial_projection import EditorialStageReporter
         from immich_memories.analysis.progress import ProgressTracker
-        from immich_memories.cli._pipeline_runner import _SourceProgressReporter
+        from immich_memories.cli.source_progress import SourceProgressReporter
 
         display = CountingDisplay()
         task = display.add_task("Selecting", total=None)
-        self._run(EditorialStageReporter(ProgressTracker(), _SourceProgressReporter(display, task)))
+        self._run(EditorialStageReporter(ProgressTracker(), SourceProgressReporter(display, task)))
 
         expected = [
             ("Reading dates, places and people", None, None),
@@ -612,12 +612,12 @@ class TestProgressParity:
         """The counted stage carries a total for the estimate."""
         from immich_memories.analysis.editorial_projection import EditorialStageReporter
         from immich_memories.analysis.progress import ProgressTracker
-        from immich_memories.cli._pipeline_runner import _SourceProgressReporter
+        from immich_memories.cli.source_progress import SourceProgressReporter
         from immich_memories.operations.cut_progress import StageUpdate
 
         display = CountingDisplay()
         task = display.add_task("Selecting", total=None)
-        reporter = EditorialStageReporter(ProgressTracker(), _SourceProgressReporter(display, task))
+        reporter = EditorialStageReporter(ProgressTracker(), SourceProgressReporter(display, task))
         reporter(StageUpdate("previews", phase="analysis", done=3, total=6))
         assert (display.total, display.completed) == (6, 3)
         # The stage after it counts nothing, so the task goes back to a spinner.

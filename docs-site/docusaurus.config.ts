@@ -3,11 +3,9 @@ import type {Config} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 import {redirects} from './redirects';
 import {productTagline} from './src/product';
-import {resolveDocsVersion, releaseVersion} from './build-version';
+import {resolveDocsVersion} from './build-version';
 
 const docsVersion = resolveDocsVersion();
-const releaseDocs = releaseVersion.test(docsVersion);
-const sourceRevision = docsVersion.match(/-g([0-9a-f]+)(?:-dirty)?$/)?.[1] || 'main';
 
 const nextDocs = process.env.DOCS_NEXT === 'true';
 
@@ -70,7 +68,7 @@ const config: Config = {
   ],
 
   themeConfig: {
-    image: 'img/trip-map-flyover.jpg',
+    image: 'img/social-card.jpg',
     metadata: [
       {name: 'application-version', content: docsVersion},
       ...(process.env.GOOGLE_SITE_VERIFICATION
@@ -107,9 +105,9 @@ const config: Config = {
           label: 'Start here',
         },
         {
-          href: `https://github.com/sam-dumont/immich-memories/tree/${releaseDocs ? (docsVersion.startsWith('v') ? docsVersion : `v${docsVersion}`) : sourceRevision}`,
-          label: `Docs ${docsVersion}`,
+          type: 'html',
           position: 'right',
+          value: `<span class="navbar__item">Docs ${docsVersion}</span>`,
         },
         {
           href: 'https://github.com/sam-dumont/immich-memories',

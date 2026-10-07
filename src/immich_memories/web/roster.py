@@ -17,6 +17,7 @@ from immich_memories.people.editor import (
     add_relationship,
     bind_person_alias,
     curation_flags,
+    keep_apart,
     load_people,
     remove_relationship,
     save_person,
@@ -64,7 +65,13 @@ class RosterFlag(BaseModel):
     kind: str
     names: list[str]
     person_ids: list[str]
-    message: str
+    # Where each person opens in Immich, in the same order; None without a server URL.
+    person_urls: list[str | None]
+
+
+class FlagAnswer(BaseModel):
+    kind: str
+    person_ids: tuple[str, str]
 
 
 class Choice(BaseModel):
@@ -117,15 +124,33 @@ class NewGroup(BaseModel):
 
 
 @router.get("", response_model=Roster)
-def roster(store: Annotated[Store, Depends(people_store)]) -> Roster:
+def roster(
+    store: Annotated[Store, Depends(people_store)],
+    config: Annotated[Config, Depends(current_config)],
+) -> Roster:
     """Everyone in the people registry, inner circle first, with what needs curating."""
     people = load_people(store)
     return Roster(
         people=[RosterPerson.model_validate(asdict(person)) for person in people],
-        flags=[RosterFlag.model_validate(asdict(flag)) for flag in curation_flags(people)],
+        flags=[
+            RosterFlag(
+                **asdict(flag),
+                person_urls=[config.immich.person_url(pid) for pid in flag.person_ids],
+            )
+            for flag in curation_flags(people)
+        ],
         relationships=[Choice(kind=c.kind, label=c.label) for c in RELATIONSHIP_CHOICES],
         roles=list(ROLE_SUGGESTIONS),
     )
+
+
+@router.post("/flags/keep-apart", status_code=204)
+def keep_flag_apart(answer: FlagAnswer, store: Annotated[Store, Depends(people_store)]) -> None:
+    """Answer a curation flag "keep apart": the pair stops being flagged."""
+    try:
+        keep_apart(store, answer.kind, *answer.person_ids)
+    except ValueError as error:
+        raise HTTPException(404, str(error)) from error
 
 
 @router.put("/{person_id}", response_model=RosterPerson)

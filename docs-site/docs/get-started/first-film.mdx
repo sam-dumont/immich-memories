@@ -78,9 +78,13 @@ Under **Render**, pick the cut or your revision in **What to render**, then pres
 
 On Docker, local films land in `./output`. Installed natively, they land in `~/Videos/Memories` (under whatever `$HOME` the app runs with). If you select **Upload the film to Immich**, a successful upload removes the local copy. This also happens for CLI and automatic uploads. The run remains in **Runs**, with its link to Immich. Leave upload off when you want the file locally.
 
+Phone footage in HDR gets a tone-mapping step to SDR while it renders. A log line about HDR to SDR conversion is normal.
+
+An album film is named `album_<slug>_<hash>.mp4` (the slug comes from the album name), inside the run's own folder under `output/`. To find it, run `find output -name 'album_*.mp4'` on the host, or use **Download film** on the run page. A later `immich-memories runs render RUN_ID` starts a new run with its own id and its own file, so the cut you rendered before stays where it is.
+
 Play the local film through to the end with sound. Success means a playable MP4 in the run's
-player, a working **Download**, and the file in `./output` on the Compose host (`/app/output`
-inside the container), or in `~/Videos/Memories` on a native install. Record the actual duration; selection may produce less than the requested
+player, a working **Download film** link, and the file in `./output` on the Compose host (`/app/output`
+inside the container), or in `~/Videos/Memories` on a native install. **Download film** sits under the player on the run page. The **Download report** button further down is the diagnostics bundle, not the film. Record the actual duration; selection may produce less than the requested
 30 seconds when usable material runs short. An empty or failed render is not success.
 
 ## Progress and recovery
@@ -91,7 +95,7 @@ inside the container), or in `~/Videos/Memories` on a native install. Record the
 | Model preparation | `models fetch` downloads or verifies pinned files | Command succeeds, then preflight passes the required checks |
 | Input preparation and cut | Memory page stage, picture counts and elapsed time | The page opens the saved run (“The cut is ready.” may flash by first) |
 | Review | Shots, Pool and saved revisions on the run page | You select the revision you intend to render |
-| Render | Render progress on the run page | “The film is ready.”, player and Download |
+| Render | Render progress on the run page | “The film is ready.”, player and Download film |
 
 Use `docker compose logs --tail=100 immich-memories` for server/startup errors. Generation
 runs as a separate job: use its progress/error panel and the run's **Copy report**, or
@@ -171,13 +175,7 @@ On Kubernetes, copy only the film, not the whole output volume:
 kubectl cp -n <namespace> -c immich-memories <pod>:/app/output/<run folder>/<name>.mp4 ./film.mp4
 ```
 
-For a film over about 100 MB, `kubectl cp` can die with `unexpected EOF` and leave a truncated, unplayable file (a 128 MB film failed 2 times in 3). Stream it instead and compare the size with the one the pod reports:
-
-```bash
-kubectl exec -n <namespace> deploy/immich-memories -c immich-memories -- cat "/app/output/<run folder>/<name>.mp4" > film.mp4
-kubectl exec -n <namespace> deploy/immich-memories -c immich-memories -- stat -c %s "/app/output/<run folder>/<name>.mp4"
-stat -f %z film.mp4   # macOS; on Linux: stat -c %s film.mp4
-```
+For a film over about 100 MB, `kubectl cp` can die with `unexpected EOF` and leave a truncated, unplayable file, and a plain streamed `cat` does too. The [Kubernetes page](../run/kubernetes.md#getting-the-films) has a copy loop that resumes where it stopped and checks the size.
 
 ### Portrait or landscape
 

@@ -20,6 +20,9 @@ brew install ffmpeg-full   # only if grep zscale finds nothing
 export PATH="$(brew --prefix ffmpeg-full)/bin:$PATH"
 ```
 
+That `export` only lasts for this shell. Add the same line to `~/.zprofile`, or scheduled and `ssh`
+runs pick up the other `ffmpeg`.
+
 On Debian/Ubuntu, install FFmpeg with `sudo apt install ffmpeg`. Verify HDR support:
 
 ```bash
@@ -59,7 +62,14 @@ its checkpoint with `models fetch` does not install the Python runtime. See the
 reinstall or sync the selected application version with the same extras before testing another
 film. An old environment with new source files is not an updated install.
 
-Create `~/.immich-memories/config.yaml`:
+`uv tool install` puts the command in `~/.local/bin`. If it warns that this folder is not on your
+`PATH`, run `uv tool update-shell` and open a new terminal.
+
+Create the folder, then `~/.immich-memories/config.yaml`:
+
+```bash
+mkdir -p ~/.immich-memories
+```
 
 ```yaml
 tier: basic

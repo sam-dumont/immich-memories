@@ -80,7 +80,10 @@ Find field names/defaults in the [config reference](../reference/config-referenc
 
 ## Shorthands
 
-`IMMICH_URL`/`IMMICH_API_KEY` override the corresponding nested variables.
+`IMMICH_URL`/`IMMICH_API_KEY` override the corresponding nested variables. To point one command at
+another Immich, pass `-e IMMICH_URL=...` (for example `docker compose exec -e IMMICH_URL=http://other:2283 ...`):
+that one wins. `IMMICH_MEMORIES_IMMICH__URL` silently loses to an `IMMICH_URL` that is set, and the
+shipped Compose file always sets it.
 The Basic-auth shortcuts only activate when **both** values are present.
 
 `OPENAI_API_KEY` and `ANTHROPIC_API_KEY` are different: a resolved key already in `llm.api_key` (from YAML, stored settings or the nested variable) wins over
@@ -96,6 +99,12 @@ It is not the session signing key. [Generate and keep it](./config-file.md#secre
 Keys supplied only through `.env` or YAML do not need database encryption.
 
 ## Precedence
+
+Environment variables win over `config.yaml`, with no warning when they disagree. That includes
+the ones the image sets itself: `IMMICH_MEMORIES_OUTPUT__DIRECTORY=/app/output`. An
+`output.directory: /output` in your config is ignored, and films land in `/app/output`, which is
+inside the container's writable layer unless a volume is mounted there. Mount your output volume
+at `/app/output`, or set `IMMICH_MEMORIES_OUTPUT__DIRECTORY` to the path you mounted.
 
 Command flags win for that command, followed by the [configuration source order](./config-file.md#where-a-setting-comes-from).
 The generic LLM key shorthands above are the exception to environment-first precedence.

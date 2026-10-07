@@ -50,21 +50,27 @@ The image runs as UID/GID 1000. NAS users often have a different UID, so preflig
 `Output directory is not writable`. The fix depends on the NAS.
 
 **Synology DSM.** `chown` alone does nothing useful on a home share: the share's Synology ACL
-still denies uid 1000. Add an ACL entry for it, over SSH as your DSM user, no `sudo`, in the
-project folder:
+still denies uid 1000. Add an ACL entry for it, and a second one for your own DSM user, over SSH
+as that user, no `sudo`, in the project folder:
 
 ```bash
 mkdir -p output
 /usr/syno/bin/synoacltool -addace output user:1000:allow:rwxpdDaARWc--:fd--
+/usr/syno/bin/synoacltool -addace output user:$(id -un):allow:rwxp-DaARWc--:fd--
 /usr/syno/bin/synoacltool -getace output
+ls -ld output
 ```
+
+Both entries go in. `ls -ld output` should end in `+` and not show `d---------+`: that means
+the ACL holds only uid 1000 and your own account gets "Permission denied" on `touch output/x`.
 
 - `synoacltool` is not on a docker-group user's `PATH`, so use the full path.
 - `-addace` takes numeric ids. `-add user:1000` resolves names and answers "No such user".
 - The `fd` flags make the entry inherit, so files the container creates stay readable and
   deletable by your own DSM user.
-- Keep your own entry. The home share already has one, and `-addace` leaves it alone. A folder
-  whose ACL holds only uid 1000 locks you out of your own films (`d---------`).
+- Your own entry is not guaranteed. A new `output` folder made after `chmod 700 .` is in plain
+  Linux mode, so the first `-addace` creates an ACL with only uid 1000 in it. The second line
+  puts your account back (`$(id -un)` is your DSM user name).
 
 This ACL fix is confirmed to work on current DSM: a uid-1000 container can write files, your
 own DSM user can read and remove them, and a UI render writes its film through the bind mount.

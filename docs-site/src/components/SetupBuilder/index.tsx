@@ -113,12 +113,18 @@ export default function SetupBuilder({initialPlatform = 'linux', initialInline =
       <small>Includes a browser-generated settings key and your reader details. Store the downloaded file privately.</small>
     </label>}
     <p className={styles.note}><Link to="/docs/run/tested-deployments">Can I run this? Check the version and topology matrix.</Link></p>
-    <p className={styles.note}><strong>Not yet tested as an end-to-end generated installation</strong> on
-      {' '}{({linux: 'Linux Docker Compose', synology: 'Synology Container Manager', mac: 'native Mac', kubernetes: 'Kubernetes'})[setup.platform]}.
-      {' '}Files are checked with Compose/Kustomize and the form is checked in a browser. Those checks do not run this installation.
-      {' '}Earlier NAS, Mac and GPU Kubernetes checks are recorded in the <Link to="/docs/better/measured#cold-start-time-by-hardware-and-tier">measured results</Link>.
-      {' '}<Link href="https://github.com/sam-dumont/immich-memories/issues/new">Tried it? Report your platform, release and preflight result.</Link>
-    </p>
+    {setup.platform === 'kubernetes'
+      ? <p className={styles.note}><strong>Tested as a generated installation</strong> on Kubernetes (RKE2): the GPU tier and Basic, each with the CronJobs, were installed from builder output and made a film.
+        {' '}The files are also checked with Kustomize and the form is checked in a browser.
+        {' '}Other clusters, storage classes and tiers are not covered: see the <Link to="/docs/run/tested-deployments">matrix</Link>.
+        {' '}<Link href="https://github.com/sam-dumont/immich-memories/issues/new">Tried it? Report your platform, release and preflight result.</Link>
+      </p>
+      : <p className={styles.note}><strong>Not yet tested as an end-to-end generated installation</strong> on
+        {' '}{({linux: 'Linux Docker Compose', synology: 'Synology Container Manager', mac: 'native Mac'})[setup.platform]}.
+        {' '}Files are checked with Compose and the form is checked in a browser. Those checks do not run this installation.
+        {' '}Earlier NAS, Mac and GPU Kubernetes checks are recorded in the <Link to="/docs/better/measured#cold-start-time-by-hardware-and-tier">measured results</Link>.
+        {' '}<Link href="https://github.com/sam-dumont/immich-memories/issues/new">Tried it? Report your platform, release and preflight result.</Link>
+      </p>}
     <p className={styles.note}>Nothing here contacts an Immich or model server.
       {setup.tier === 'full' && ' Full explicitly enables reader calls once the app runs.'}</p>
     {result.error ? <p className={styles.error} role="status">{result.error}</p> : <div aria-live="polite">

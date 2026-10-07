@@ -880,6 +880,24 @@ immich-memories runs story [OPTIONS] [RUN_ID]
 **Arguments:**
 - `run_id` (text; optional)
 
+### `runs upload`
+
+Upload RUN_ID's finished film to Immich, as it is on disk.
+
+Nothing is rendered again. The key needs the same upload scope the render-time
+option checks, and a film that was removed from disk is refused.
+
+```bash
+immich-memories runs upload [OPTIONS] RUN_ID
+```
+
+| Flag | Type | Default | Description |
+| --- | --- | --- | --- |
+| `--album` | text | - | Immich album for the upload |
+
+**Arguments:**
+- `run_id` (text; required)
+
 ### `runs why`
 
 Say what a run decided about one picture: where it passed, where it was dropped, and why.

@@ -351,6 +351,30 @@ class RunDatabase:
             raise_invalid_delivery_transition,
         )
 
+    def mark_uploaded_later(
+        self, run_id: str, asset_id: str, *, album: str | None = None
+    ) -> RunMetadata:
+        """Record an upload someone asked for after the run finished.
+
+        `mark_delivered` only follows a delivery the run asked for; this one is
+        for a film that was kept local, or whose delivery gave up.
+        """
+        normalized_asset_id = asset_id.strip()
+        if not normalized_asset_id:
+            raise ValueError("Immich delivery requires a nonempty asset ID")
+        return self._transition(
+            run_id,
+            [_RUNS.status == "completed"],
+            {
+                "delivery_status": DeliveryStatus.DELIVERED.value,
+                "delivery_attempts": _RUNS.delivery_attempts + 1,
+                "delivery_error": None,
+                "immich_asset_id": normalized_asset_id,
+                "delivery_album": album,
+            },
+            raise_invalid_delivery_transition,
+        )
+
     def _pending_deliveries(self, source: str) -> sa.Select:
         return sa.select(_RUNS.run_id, _RUNS.output_path).where(
             _RUNS.status == "completed",

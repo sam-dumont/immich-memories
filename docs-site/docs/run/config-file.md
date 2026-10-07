@@ -35,7 +35,7 @@ For each key, the first source that sets it wins:
 
 | Priority | Source |
 |---|---|
-| 1 | Environment variables |
+| 1 | Environment variables, including the ones the image sets |
 | 2 | `config.yaml` |
 | 3 | Values saved from Settings or the config CLI |
 | 4 | Deployment defaults (`IMMICH_MEMORIES_DEPLOYMENT_*`) |
@@ -157,7 +157,11 @@ are in the reference.
 
 Paths refer to the machine **running the app**. Inside Docker, `output.directory` must be a
 container path, not a desktop folder. The image already sets `/app/output`; mount your host folder
-there. Environment variables override file paths. `preflight` flags missing paths; the
+there. Environment variables override file paths, and that includes the image's own
+`IMMICH_MEMORIES_OUTPUT__DIRECTORY=/app/output`: an `output.directory: /output` in `config.yaml`
+is ignored while that variable is set, and films would land in the container's writable layer and
+vanish on restart. Mount the output volume at `/app/output`, or set the environment variable to
+the path you mounted. `preflight` flags missing paths; the
 [reference](./reference/configuration.md#paths-in-the-config-are-host-paths) lists every path key,
 including model/cache overrides.
 

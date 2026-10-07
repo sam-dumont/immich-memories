@@ -135,3 +135,7 @@ _.mlx_dit_compiled
 # StaticMap.render calls this override inside the external staticmap package;
 # real HTTP/pixel tests in test_map_tile_layer exercise it on cold and warm frames.
 _._draw_base_layer
+
+# RosterFlag.person_urls is read by the Svelte people page across JSON (RosterFlag lives in
+# web/roster.py, not the excluded schemas module).
+_.person_urls

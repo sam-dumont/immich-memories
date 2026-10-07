@@ -21,6 +21,8 @@ Basic needs only `docker-compose.yml` and `example.env` (saved as `.env`). The o
 
 The image is about 2.3 GB. With an empty layer cache the pull in step 3 took 84 seconds on a Synology; budget more on a slow line.
 
+Check the network now: if `ip link` shows an MTU under 1500 on the host's interface (a VPN, Kubernetes node or cloud VM), add the [MTU override](../reference/troubleshooting.md#preflight-says-immich-is-connected-but-cuts-hang-on-thumbnails) before step 3. Otherwise the first cut hangs on thumbnails while preflight stays green.
+
 Create `output` yourself, owned by uid 1000, so Docker does not make it as root. This is where local films land. Run it in the same folder, right after the downloads:
 
 ```bash
@@ -68,9 +70,10 @@ services; a home-coordinate warning does not block an album film.
 Over plain SSH with no terminal (a script, `ssh host 'docker compose exec ...'`), add `-T`, and set the table width, or its first column wraps and the row labels disappear:
 `docker compose exec -T -e COLUMNS=140 immich-memories immich-memories preflight`.
 
-Two more warnings are normal on a first run and do not block a film:
+Three more warnings are normal on a first run and do not block a film:
 
 - **Immich** with a read-only key: `upload permissions not granted, films stay local; asset.delete not granted, previous versions are kept`. It only means the key cannot upload.
+- **Title rendering** on a plain CPU host: `Kernels on the CPU (quadrants): no GPU backend started`. Titles render on the CPU, which is what a Basic install does.
 - **Title rendering** on a CPU without AVX (some Celerons): `kernel backend crashed on this CPU: illegal instruction; titles fall back to the PIL renderer`. Titles use the simpler renderer.
 
 ## 4. Open the app

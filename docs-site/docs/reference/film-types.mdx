@@ -310,7 +310,7 @@ immich-memories generate --from-album 59080965-22f0-46a4-be67-135692a9f584
 `--from-album` makes it an album memory, and cannot be combined with `--year`, `--start`/`--end`,
 `--period`, `--birthday`, `--season`, `--month`, `--person` or another `--memory-type`.
 Albums and trips also reject `--accounts`; they read the primary account only. The film is
-titled after the album and named `album_<slug>.mp4` unless `--output` names the file. Two albums with one name stop the CLI with the
+titled after the album and named `album_<slug>_<hash>.mp4` unless `--output` names the file. Two albums with one name stop the CLI with the
 candidates and their IDs; the web UI lists albums largest first and stores the choice by ID.
 
 Smart albums like *Recents* can hold tens of thousands of assets. Album mode reads at most

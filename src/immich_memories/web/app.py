@@ -21,6 +21,7 @@ from immich_memories.web import (
     pool,
     render_capabilities,
     roster,
+    run_upload,
     runs,
     session,
     settings,
@@ -58,6 +59,7 @@ def mount_web(app: FastAPI, *, client_dir: Path = BUILT_CLIENT) -> None:
     """Add the /api/v1 routes and serve the client under /app."""
     app.middleware("http")(validate_json_request)
     app.include_router(runs.router)
+    app.include_router(run_upload.router)
     # The same builder `immich-memories report` prints from, typed for the client (#1428).
     app.include_router(report_api.router)
     app.include_router(cut.router)

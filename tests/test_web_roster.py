@@ -114,3 +114,66 @@ def test_accounts_lists_primary_then_every_configured_extra_account(tmp_path):
         {"name": "primary", "primary": True},
         {"name": "partner", "primary": False},
     ]
+
+
+def _twin_registry(config):
+    from immich_memories.db import open_store
+    from immich_memories.people.transfer import import_document
+
+    def person(index, name, other):
+        return {
+            "ids": [f"id-{index}"],
+            "name": name,
+            "inferred": {
+                "counts_reliable": False,
+                "evidence": {"count": 10},
+                "links": [
+                    {"kind": "twin", "with": f"id-{other}", "confidence": 0.9, "via": "birth"}
+                ],
+            },
+        }
+
+    import_document(
+        open_store(config),
+        {"version": 1, "people": [person(1, "Robin P", 2), person(2, "Remy P", 1)]},
+        replace=True,
+    )
+
+
+def test_a_curation_flag_names_both_people_links_each_to_immich_and_carries_no_english_text(
+    tmp_path,
+):
+    config = config_in(tmp_path)
+    config.immich.url = "https://immich.example/"
+    _twin_registry(config)
+
+    [flag] = api_client(config).get("/api/v1/roster").json()["flags"]
+
+    assert flag["kind"] == "twin"
+    assert flag["names"] == ["Robin P", "Remy P"] and flag["person_ids"] == ["id-1", "id-2"]
+    assert flag["person_urls"] == [
+        "https://immich.example/people/id-1",
+        "https://immich.example/people/id-2",
+    ]
+    assert "message" not in flag, "the client words the flag through the UI catalogue"
+
+
+def test_keeping_a_flagged_pair_apart_through_the_roster_route_clears_the_flag(tmp_path):
+    config = config_in(tmp_path)
+    _twin_registry(config)
+    client = api_client(config)
+    [flag] = client.get("/api/v1/roster").json()["flags"]
+
+    answered = client.post(
+        "/api/v1/roster/flags/keep-apart",
+        json={"kind": flag["kind"], "person_ids": flag["person_ids"]},
+    )
+
+    assert answered.status_code == 204
+    assert client.get("/api/v1/roster").json()["flags"] == []
+    assert (
+        client.post(
+            "/api/v1/roster/flags/keep-apart", json={"kind": "twin", "person_ids": ["x", "y"]}
+        ).status_code
+        == 404
+    )

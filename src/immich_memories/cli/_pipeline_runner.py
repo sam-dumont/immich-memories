@@ -33,6 +33,7 @@ from immich_memories.cli._helpers import (
 from immich_memories.cli._run_inputs import ResolvedRunInputs
 from immich_memories.cli._run_summary import render_run_summary
 from immich_memories.cli._run_timeline import configure_timeline, final_timeline
+from immich_memories.cli.source_progress import SourceProgressReporter
 from immich_memories.db import open_store
 from immich_memories.filename_builder import name_after_recipe
 from immich_memories.operations.auto_output import NOTHING_WORTH_A_FILM
@@ -44,8 +45,6 @@ from immich_memories.tracking.timed import timed
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    from rich.progress import TaskID
-
     from immich_memories.analysis.smart_pipeline import PipelineResult
     from immich_memories.api.immich import SyncImmichClient
     from immich_memories.cli._live_display import ProgressDisplay
@@ -309,52 +308,6 @@ class _AttemptPhaseReporter:
         self._progress.update(self._task, description=event.message)
 
 
-class _SourceProgressReporter:
-    """A source stage owns the whole bar: counted when it reports numbers, a spinner when not."""
-
-    def __init__(self, progress: ProgressDisplay, task: TaskID) -> None:
-        self._progress = progress
-        self._task = task
-        self._mode: str | tuple | None = None
-
-    def __call__(self, status: dict) -> None:
-        if status.get("indeterminate"):
-            self._unbounded_stage(status)
-            return
-        if "total_items" in status:
-            self._counted_stage(status)
-            return
-        pct = status.get("overall_progress", 0)
-        phase_name = status.get("current_phase", "")
-        self._progress.update(
-            self._task,
-            completed=int(pct * 20),
-            description=f"Analyzing: {phase_name}",
-        )
-
-    def _unbounded_stage(self, status: dict) -> None:
-        if self._mode != "unbounded":
-            self._progress.reset(self._task, total=None)
-            self._mode = "unbounded"
-        self._progress.update(self._task, description=status["phase_label"])
-        if status.get("status") == "complete":
-            self._progress.reset(self._task, total=100)
-
-    def _counted_stage(self, status: dict) -> None:
-        """Reset on a new stage even when it has the same number of items."""
-        total = int(status["total_items"])
-        identity = status.get("stage_identity", (status.get("current_phase"), total))
-        if self._mode != identity:
-            self._progress.reset(self._task, total=total)
-            self._mode = identity
-        description = status["phase_label"]
-        if remaining := status.get("remaining_label"):
-            description += f" · {remaining}"
-        self._progress.update(
-            self._task, completed=int(status["current_index"]), description=description
-        )
-
-
 def _keep_cut_titles(
     pipeline_result: Any,
     title: str | None,
@@ -584,7 +537,13 @@ def run_pipeline_and_generate(
     )
     all_candidates, pipeline_result = pipeline.run_editorial_source(
         [*clips, *source_photos],
-        progress_callback=_SourceProgressReporter(progress, task),
+        progress_callback=SourceProgressReporter(
+            progress,
+            task,
+            on_phase=lambda current, total, message: phases.emit(
+                OperationalPhase.SELECTION, current, total, message
+            ),
+        ),
         include_live_photos=use_live_photos and config.analysis.include_live_photos,
     )
     _analysis_time = _time.monotonic() - _pipeline_start

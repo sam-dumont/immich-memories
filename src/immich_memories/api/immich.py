@@ -47,6 +47,8 @@ logger = logging.getLogger(__name__)
 _RETRYABLE_STATUS = TRANSIENT_STATUS
 _MAX_RETRIES = 3
 _BACKOFF_BASE = 1.0
+# A dead server should cost seconds at the start of a run, not three full timeouts.
+_FIRST_CONTACT_CONNECT_SECONDS = 5.0
 # Requests in a row that exhaust their retries on a connect or read error. One flaky call
 # resets on the next answer; a server that has gone away does not, and a month's cut used to
 # spend ten minutes finding that out one request at a time.
@@ -163,6 +165,7 @@ class ImmichClient:
         )
         self._api_version_lock = asyncio.Lock()
         self._unreachable_requests = 0
+        self._has_answered = False
         self._key_capabilities: ApiKeyCapabilities | None = None
         self._key_capabilities_lock = asyncio.Lock()
 
@@ -289,7 +292,8 @@ class ImmichClient:
 
         for attempt in range(_MAX_RETRIES):
             try:
-                response = await self.client.request(method, url, **kwargs)
+                response = await self.client.request(method, url, **self._first_contact(kwargs))
+                self._has_answered = True
                 result = self._check_response(response)
                 self._unreachable_requests = 0
                 return result
@@ -314,7 +318,30 @@ class ImmichClient:
                     return settled
 
         self._note_unreachable(last_exception)
-        raise last_exception or ImmichAPIError("Request failed after retries")
+        final = self._final_error(last_exception)
+        if final is last_exception:
+            raise final
+        # The hint wraps an already-redacted message; chaining the original would carry it twice.
+        raise final from None
+
+    def _final_error(self, last_exception: Exception | None) -> Exception:
+        if (
+            not self._has_answered
+            and isinstance(last_exception, ImmichAPIError)
+            and last_exception.status_code is None
+        ):
+            return ImmichAPIError(
+                f"{last_exception}; Immich has not answered yet, rerun the same command "
+                "once it does"
+            )
+        return last_exception or ImmichAPIError("Request failed after retries")
+
+    def _first_contact(self, kwargs: dict[str, Any]) -> dict[str, Any]:
+        if self._has_answered or "timeout" in kwargs:
+            return kwargs
+        return kwargs | {
+            "timeout": httpx.Timeout(self.timeout, connect=_FIRST_CONTACT_CONNECT_SECONDS)
+        }
 
     def _note_unreachable(self, error: Exception | None) -> None:
         if not isinstance(error, ImmichAPIError) or error.status_code is not None:

@@ -183,6 +183,12 @@ class ImmichConfig(ImmichConnection):
             return None
         return f"{self.url.rstrip('/')}/photos/{asset_id}"
 
+    def person_url(self, person_id: str) -> str | None:
+        """A link straight to one person in Immich's web app, or None without a server URL."""
+        if not person_id or not self.url:
+            return None
+        return f"{self.url.rstrip('/')}/people/{person_id}"
+
 
 class DatabaseConfig(BaseModel):
     """Where the store lives. Read before the store opens, so never kept in it."""

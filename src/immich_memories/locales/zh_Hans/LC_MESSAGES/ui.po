@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-05 03:50+0200\n"
+"POT-Creation-Date: 2026-10-07 05:54+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_Hans\n"
@@ -21,7 +21,7 @@ msgid ""
 " to the reader that answers it (tier: full)."
 msgstr "用一句话生成影片需要模型档位：请把 advanced.llm.base_url 和 advanced.llm.model 设为读取句子的模型（tier: full）。"
 
-#: web/routes/settings/people/+page.svelte:153
+#: web/routes/settings/people/+page.svelte:181
 msgid "A label for a people condition. Pick it on the New memory page, or with generate --group."
 msgstr "人物条件的标签。可在“新建回忆”页面选择,或用 generate --group 使用。"
 
@@ -42,19 +42,19 @@ msgstr "约剩 {amount}"
 msgid "Accept forwarded and downloaded media"
 msgstr "接受转发和下载的媒体"
 
-#: web/routes/settings/people/+page.svelte:252 web/routes/settings/people/+page.svelte:255
+#: web/routes/settings/people/+page.svelte:280 web/routes/settings/people/+page.svelte:283
 msgid "Account"
 msgstr "账户"
 
-#: web/routes/settings/people/+page.svelte:247
+#: web/routes/settings/people/+page.svelte:275
 msgid "Accounts"
 msgstr "账户"
 
-#: web/routes/settings/people/+page.svelte:242
+#: web/routes/settings/people/+page.svelte:270
 msgid "Add"
 msgstr "添加"
 
-#: web/routes/settings/people/+page.svelte:234
+#: web/routes/settings/people/+page.svelte:262
 msgid "Add a relationship"
 msgstr "添加关系"
 
@@ -62,7 +62,7 @@ msgstr "添加关系"
 msgid "Add date overlay"
 msgstr "显示日期"
 
-#: web/routes/settings/people/+page.svelte:179
+#: web/routes/settings/people/+page.svelte:207
 msgid "Add someone not in Immich"
 msgstr "添加 Immich 中没有的人物"
 
@@ -75,8 +75,8 @@ msgstr "添加：{include}·排除：{exclude}"
 msgid "Added for a moment the catalogue records as notable."
 msgstr "因目录记录为值得纪念的时刻而加入。"
 
-#: web/routes/runs/[run_id]/+page.svelte:284 web/routes/runs/[run_id]/+page.svelte:286
-#: web/routes/runs/[run_id]/+page.svelte:289
+#: web/routes/runs/[run_id]/+page.svelte:286 web/routes/runs/[run_id]/+page.svelte:288
+#: web/routes/runs/[run_id]/+page.svelte:291
 msgid "Added from the pool"
 msgstr "从素材中添加"
 
@@ -88,7 +88,7 @@ msgstr "一段时间之后"
 msgid "Album"
 msgstr "相册"
 
-#: web/lib/RenderPanel.svelte:263
+#: web/lib/RenderPanel.svelte:263 web/lib/UploadFilm.svelte:46
 msgid "Album name"
 msgstr "相册名称"
 
@@ -97,7 +97,7 @@ msgstr "相册名称"
 msgid "Also show the {count} pictures outside this memory"
 msgstr "同时显示此回忆之外的 {count} 张照片"
 
-#: web/lib/ShotInspector.svelte:156
+#: web/lib/ShotInspector.svelte:165
 msgid "Alternatives considered"
 msgstr "已考虑的备选项"
 
@@ -121,7 +121,8 @@ msgstr "任何人。仅使用未受限制的画面：没有检测标记，也没
 
 #: web/lib/RenderPanel.svelte:160 web/lib/RenderPanel.svelte:166 web/lib/RenderPanel.svelte:175
 #: web/lib/RenderPanel.svelte:198 web/lib/RenderPanel.svelte:204 web/lib/RenderPanel.svelte:210
-#: web/lib/RenderPanel.svelte:216 web/lib/RenderPanel.svelte:263 web/routes/create/+page.svelte:495
+#: web/lib/RenderPanel.svelte:216 web/lib/RenderPanel.svelte:263 web/lib/UploadFilm.svelte:47
+#: web/routes/create/+page.svelte:495
 msgid "As configured"
 msgstr "按配置"
 
@@ -141,7 +142,7 @@ msgstr "自动"
 msgid "Automatic (as configured)"
 msgstr "自动（按配置）"
 
-#: web/routes/+layout.svelte:43
+#: web/routes/+layout.svelte:47
 msgid "Automatic (browser)"
 msgstr "自动（浏览器）"
 
@@ -153,11 +154,11 @@ msgstr "自动化已在运行。打开任务查看进度。"
 msgid "Autumn"
 msgstr "秋季"
 
-#: web/routes/runs/[run_id]/+page.svelte:276
+#: web/routes/runs/[run_id]/+page.svelte:278
 msgid "Back to pictures"
 msgstr "返回图片"
 
-#: web/routes/runs/[run_id]/+page.svelte:132
+#: web/routes/runs/[run_id]/+page.svelte:133
 msgid "Back to runs"
 msgstr "返回任务列表"
 
@@ -165,7 +166,7 @@ msgstr "返回任务列表"
 msgid "Back to the cut"
 msgstr "返回剪辑"
 
-#: web/routes/settings/people/+page.svelte:261
+#: web/routes/settings/people/+page.svelte:289
 msgid "Bind"
 msgstr "绑定"
 
@@ -185,7 +186,7 @@ msgstr "黑色"
 msgid "Blurred background"
 msgstr "模糊背景"
 
-#: web/lib/ShotInspector.svelte:128
+#: web/lib/ShotInspector.svelte:137
 msgid "Browse the whole pool"
 msgstr "浏览全部素材"
 
@@ -209,7 +210,7 @@ msgstr "在片段上显示地点"
 msgid "Catalogued days"
 msgstr "已收录的日期"
 
-#: web/routes/runs/[run_id]/+page.svelte:300
+#: web/routes/runs/[run_id]/+page.svelte:302
 #, python-brace-format
 msgid "Changes: {count}"
 msgstr "更改：{count}"
@@ -271,7 +272,7 @@ msgstr "配置"
 msgid "Connected as: {name}"
 msgstr "已以 {name} 身份连接"
 
-#: web/lib/ShotInspector.svelte:151
+#: web/lib/ShotInspector.svelte:160
 msgid "Considered by the model"
 msgstr "模型曾考虑"
 
@@ -291,7 +292,7 @@ msgstr "复制报告"
 msgid "Crossfade"
 msgstr "交叉淡化"
 
-#: web/routes/settings/people/+page.svelte:145 web/routes/settings/people/+page.svelte:146
+#: web/routes/settings/people/+page.svelte:164 web/routes/settings/people/+page.svelte:165
 msgid "Curation"
 msgstr "整理"
 
@@ -303,7 +304,7 @@ msgstr "自定义时间范围"
 msgid "Cut"
 msgstr "剪辑"
 
-#: web/routes/runs/[run_id]/+page.svelte:237
+#: web/routes/runs/[run_id]/+page.svelte:239
 msgid "Cut contact sheet"
 msgstr "剪辑缩略图总览"
 
@@ -323,11 +324,11 @@ msgstr "剪辑时决定"
 msgid "Default"
 msgstr "默认"
 
-#: web/routes/runs/[run_id]/+page.svelte:154
+#: web/routes/runs/[run_id]/+page.svelte:155
 msgid "Delivered to Immich. The local file was removed to save disk space."
 msgstr "已交付到 Immich。为节省磁盘空间，本地文件已删除。"
 
-#: web/routes/+layout.svelte:47 web/routes/+layout.svelte:48
+#: web/routes/+layout.svelte:51 web/routes/+layout.svelte:52
 msgid "Demo mode"
 msgstr "演示模式"
 
@@ -343,7 +344,7 @@ msgstr "正在为图片生成描述"
 msgid "Detecting trips from GPS data..."
 msgstr "正在根据 GPS 数据检测旅行…"
 
-#: web/routes/runs/[run_id]/+page.svelte:309
+#: web/routes/runs/[run_id]/+page.svelte:311
 msgid "Discard changes"
 msgstr "放弃更改"
 
@@ -356,11 +357,11 @@ msgstr "搜索失败：{error}"
 msgid "Done."
 msgstr "已完成。"
 
-#: web/routes/runs/[run_id]/+page.svelte:354
+#: web/routes/runs/[run_id]/+page.svelte:356
 msgid "Download child output"
 msgstr "下载关联输出"
 
-#: web/routes/runs/[run_id]/+page.svelte:168
+#: web/routes/runs/[run_id]/+page.svelte:169
 msgid "Download film"
 msgstr "下载影片"
 
@@ -376,7 +377,7 @@ msgstr "下载模型"
 msgid "Download report"
 msgstr "下载报告"
 
-#: web/lib/ShotInspector.svelte:47
+#: web/lib/ShotInspector.svelte:56
 msgid "Edit this shot"
 msgstr "编辑此镜头"
 
@@ -394,7 +395,7 @@ msgstr "未使用描述进行剪辑：图片内容仅被分类，未被读取。
 msgid "Elegant minimal"
 msgstr "Elegant minimal"
 
-#: web/lib/ShotInspector.svelte:101
+#: web/lib/ShotInspector.svelte:110
 msgid "Eligible when this shot was chosen. Open one to compare."
 msgstr "选中此镜头时它们也符合条件。打开一张进行比较。"
 
@@ -402,7 +403,7 @@ msgstr "选中此镜头时它们也符合条件。打开一张进行比较。"
 msgid "Eligible. No video was generated."
 msgstr "符合条件。未生成视频。"
 
-#: web/lib/ShotInspector.svelte:58
+#: web/lib/ShotInspector.svelte:67
 msgid "End here"
 msgstr "在此结束"
 
@@ -436,9 +437,16 @@ msgstr "这一年的所有旅行"
 msgid "Experimental"
 msgstr "实验性"
 
-#: web/routes/settings/people/+page.svelte:169
+#: web/routes/settings/people/+page.svelte:197
 msgid "Expression"
 msgstr "表达式"
+
+#: web/routes/settings/people/+page.svelte:73
+msgid ""
+"Face recognition merges identical faces, so one of these records holds nearly all the "
+"pictures and the other almost none. Neither count means anything on its own. Merge them in "
+"Immich or keep them apart."
+msgstr "人脸识别会合并相同的脸，所以这两条记录里一条几乎有全部照片，另一条几乎没有。单看哪个数字都没有意义。请在 Immich 中合并，或保持分开。"
 
 #: web/routes/create/+page.svelte:496 web/routes/runs/[run_id]/pool/+page.svelte:87
 #: web/routes/runs/[run_id]/pool/+page.svelte:165
@@ -457,7 +465,7 @@ msgstr "符合的图片少于 12 张：影片会很短。"
 msgid "Films that may use it"
 msgstr "可以使用它的影片"
 
-#: web/routes/create/+page.svelte:434 web/routes/settings/people/+page.svelte:176
+#: web/routes/create/+page.svelte:434 web/routes/settings/people/+page.svelte:204
 msgid "Find a name"
 msgstr "搜索姓名"
 
@@ -477,7 +485,7 @@ msgstr "格式"
 msgid "From"
 msgstr "起始"
 
-#: web/routes/settings/people/+page.svelte:178
+#: web/routes/settings/people/+page.svelte:206
 msgid "Full name"
 msgstr "全名"
 
@@ -510,7 +518,7 @@ msgstr "节日"
 msgid "How it read your words"
 msgstr "你的话是如何被理解的"
 
-#: web/lib/ShotInspector.svelte:89
+#: web/lib/ShotInspector.svelte:98
 msgid "How the rules got here"
 msgstr "规则如何得出这一结果"
 
@@ -530,7 +538,7 @@ msgstr "Immich 服务器地址"
 msgid "Immich accounts to read (primary alone when none are picked)"
 msgstr "要读取的 Immich 账户(未选择时仅主账户)"
 
-#: web/routes/runs/[run_id]/+page.svelte:344
+#: web/routes/runs/[run_id]/+page.svelte:346
 #, python-brace-format
 msgid "Immich delivery: {value}"
 msgstr "上传到 Immich：{value}"
@@ -543,7 +551,7 @@ msgstr "无法连接 Immich"
 msgid "Important"
 msgstr "重要"
 
-#: web/lib/ShotInspector.svelte:117
+#: web/lib/ShotInspector.svelte:126
 msgid "In the cut"
 msgstr "在剪辑中"
 
@@ -563,7 +571,7 @@ msgstr "包含已标记照片的说明文字"
 msgid "Include photos"
 msgstr "包含照片"
 
-#: web/routes/+layout.svelte:41
+#: web/routes/+layout.svelte:45
 msgid "Interface language"
 msgstr "界面语言"
 
@@ -576,20 +584,24 @@ msgstr "未能完成。"
 msgid "Just us"
 msgstr "仅自己家"
 
-#: web/lib/ShotInspector.svelte:52
+#: web/routes/settings/people/+page.svelte:173
+msgid "Keep apart"
+msgstr "保持分开"
+
+#: web/lib/ShotInspector.svelte:61
 msgid "Keep the original"
 msgstr "保留原图"
 
-#: web/lib/ShotInspector.svelte:92
+#: web/lib/ShotInspector.svelte:101
 #, python-brace-format
 msgid "Kept at {stage}"
 msgstr "在{stage}被保留"
 
-#: web/lib/ShotInspector.svelte:147
+#: web/lib/ShotInspector.svelte:156
 msgid "Kept because"
 msgstr "保留原因"
 
-#: web/routes/settings/people/+page.svelte:168
+#: web/routes/settings/people/+page.svelte:196
 msgid "Label"
 msgstr "标签"
 
@@ -617,7 +629,7 @@ msgstr "正在浏览媒体库以推荐回忆..."
 msgid "Low"
 msgstr "低"
 
-#: web/routes/+layout.svelte:65 web/routes/+layout.svelte:76
+#: web/routes/+layout.svelte:69 web/routes/+layout.svelte:80
 msgid "Main navigation"
 msgstr "主导航"
 
@@ -673,7 +685,7 @@ msgstr "回忆类型"
 msgid "Model downloads failed to start."
 msgstr "无法开始下载模型。"
 
-#: web/lib/ShotInspector.svelte:133
+#: web/lib/ShotInspector.svelte:142
 msgid "Model polish"
 msgstr "模型润色"
 
@@ -681,7 +693,7 @@ msgstr "模型润色"
 msgid "Model status could not be checked."
 msgstr "无法检查模型状态。"
 
-#: web/lib/ShotInspector.svelte:144
+#: web/lib/ShotInspector.svelte:153
 msgid "Model suggestion"
 msgstr "模型建议"
 
@@ -727,7 +739,7 @@ msgid ""
 "its date."
 msgstr "还没有已收录的日期。运行 `immich-memories discover-days` 来查找，或者按日期为任意一天制作影片。"
 
-#: web/routes/runs/[run_id]/+page.svelte:356
+#: web/routes/runs/[run_id]/+page.svelte:358
 msgid "No child output was retained for this run."
 msgstr "此任务未保留关联输出。"
 
@@ -737,7 +749,7 @@ msgid ""
 "sentence found."
 msgstr "无法制作影片：图库无法呈现这个内容。换个说法试试，或查看下方句子各部分找到了什么。"
 
-#: web/lib/ShotInspector.svelte:135
+#: web/lib/ShotInspector.svelte:144
 msgid "No model read this cut: the rules chose every picture."
 msgstr "没有模型阅读此剪辑：每张图片都由规则选出。"
 
@@ -753,15 +765,15 @@ msgstr "没有匹配的姓名。"
 msgid "No named people in Immich yet."
 msgstr "Immich 中还没有已命名的人物。"
 
-#: web/lib/ShotInspector.svelte:152
+#: web/lib/ShotInspector.svelte:161
 msgid "No outcome recorded."
 msgstr "未记录结果。"
 
-#: web/routes/runs/[run_id]/+page.svelte:267
+#: web/routes/runs/[run_id]/+page.svelte:269
 msgid "No pictures match this filter."
 msgstr "没有符合此筛选条件的图片。"
 
-#: web/lib/ShotInspector.svelte:84
+#: web/lib/ShotInspector.svelte:93
 msgid "No reason recorded for this picture."
 msgstr "未记录选择此图片的原因。"
 
@@ -773,11 +785,11 @@ msgstr "预览能检查的规则不会去掉任何照片。"
 msgid "No runs match this view. Make a memory from Memory or Suggestions."
 msgstr "没有符合筛选条件的任务。请从“回忆”或“建议”创建回忆。"
 
-#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:336
+#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:338
 msgid "No saved cut is available for this run."
 msgstr "此任务没有已保存的剪辑。"
 
-#: web/routes/settings/people/+page.svelte:165
+#: web/routes/settings/people/+page.svelte:193
 msgid "No saved groups yet."
 msgstr "还没有保存的分组。"
 
@@ -789,11 +801,11 @@ msgstr "暂无建议。"
 msgid "No trips detected for this year."
 msgstr "这一年没有检测到旅行。"
 
-#: web/routes/settings/people/+page.svelte:218
+#: web/routes/settings/people/+page.svelte:246
 msgid "No, they are not"
 msgstr "不，不是"
 
-#: web/routes/settings/people/+page.svelte:184
+#: web/routes/settings/people/+page.svelte:212
 msgid "Nobody yet. Rescan the library to read who is in it."
 msgstr "还没有人。重新扫描媒体库即可查看其中都有谁。"
 
@@ -813,11 +825,11 @@ msgstr "不适用于你要求的影片"
 msgid "Not possible"
 msgstr "不可能"
 
-#: web/routes/settings/people/+page.svelte:204
+#: web/routes/settings/people/+page.svelte:232
 msgid "Notes"
 msgstr "备注"
 
-#: web/routes/settings/people/+page.svelte:225
+#: web/routes/settings/people/+page.svelte:253
 msgid "Nothing recorded yet."
 msgstr "尚无记录。"
 
@@ -829,13 +841,23 @@ msgstr "历史上的今天"
 msgid "On a date"
 msgstr "指定日期"
 
+#: web/routes/settings/people/+page.svelte:75
+msgid ""
+"One name on two person records: a split face cluster. Merge these records in Immich, the only"
+" place it can be fixed."
+msgstr "一个名字对应两条人物记录：被拆开的人脸分组。请在 Immich 中合并这些记录，只有那里能修复。"
+
 #: web/routes/create/+page.svelte:432
 msgid "Only with (optional)"
 msgstr "仅包含（可选）"
 
-#: web/routes/runs/[run_id]/+page.svelte:327
+#: web/routes/runs/[run_id]/+page.svelte:329
 msgid "Open"
 msgstr "打开"
+
+#: web/routes/settings/people/+page.svelte:170
+msgid "Open in Immich"
+msgstr "在 Immich 中打开"
 
 #: web/routes/suggestions/+page.svelte:89
 msgid "Open run"
@@ -845,11 +867,16 @@ msgstr "打开任务"
 msgid "Open the film run"
 msgstr "打开影片任务"
 
+#: web/routes/settings/people/+page.svelte:170
+#, python-brace-format
+msgid "Open {name} in Immich"
+msgstr "在 Immich 中打开 {name}"
+
 #: web/lib/RenderPanel.svelte:173
 msgid "Opening and closing fade"
 msgstr "开头和结尾的淡入淡出"
 
-#: web/routes/runs/[run_id]/+page.svelte:202
+#: web/routes/runs/[run_id]/+page.svelte:204
 msgid "Order and timecodes from the saved cut."
 msgstr "已保存剪辑的顺序和时间码。"
 
@@ -857,15 +884,15 @@ msgstr "已保存剪辑的顺序和时间码。"
 msgid "Orientation"
 msgstr "方向"
 
-#: web/lib/ShotInspector.svelte:108 web/lib/ShotInspector.svelte:120
+#: web/lib/ShotInspector.svelte:117 web/lib/ShotInspector.svelte:129
 msgid "Other picture of this moment"
 msgstr "这一时刻的其他图片"
 
-#: web/lib/ShotInspector.svelte:100 web/lib/ShotInspector.svelte:102
+#: web/lib/ShotInspector.svelte:109 web/lib/ShotInspector.svelte:111
 msgid "Other pictures of this moment"
 msgstr "这一时刻的其他图片"
 
-#: web/lib/ShotInspector.svelte:91
+#: web/lib/ShotInspector.svelte:100
 #, python-brace-format
 msgid "Passed {stages}"
 msgstr "通过了{stages}"
@@ -874,8 +901,9 @@ msgstr "通过了{stages}"
 msgid "Password"
 msgstr "密码"
 
-#: web/routes/create/+page.svelte:432 web/routes/settings/+page.svelte:106
-#: web/routes/settings/people/+page.svelte:127 web/routes/settings/people/+page.svelte:133
+#: web/routes/+layout.svelte:24 web/routes/create/+page.svelte:432
+#: web/routes/settings/+page.svelte:106 web/routes/settings/people/+page.svelte:146
+#: web/routes/settings/people/+page.svelte:152
 msgid "People"
 msgstr "人物"
 
@@ -895,7 +923,7 @@ msgstr "人物特辑"
 msgid "Photo duration (seconds)"
 msgstr "照片时长（秒）"
 
-#: web/lib/ShotInspector.svelte:33
+#: web/lib/ShotInspector.svelte:42
 msgid "Picture review"
 msgstr "图片审阅"
 
@@ -911,8 +939,8 @@ msgstr "每一步后剩余的图片"
 msgid "Pictures with"
 msgstr "包含以下人物的图片"
 
-#: web/routes/runs/[run_id]/+page.svelte:142 web/routes/runs/[run_id]/+page.svelte:216
-#: web/routes/settings/people/+page.svelte:195 web/routes/suggestions/+page.svelte:106
+#: web/routes/runs/[run_id]/+page.svelte:143 web/routes/runs/[run_id]/+page.svelte:218
+#: web/routes/settings/people/+page.svelte:223 web/routes/suggestions/+page.svelte:106
 #, python-brace-format
 msgid "Pictures: {count}"
 msgstr "图片：{count}"
@@ -925,7 +953,7 @@ msgstr "Playful bright"
 msgid "Please enter both URL and API key"
 msgstr "请同时填写地址和 API 密钥"
 
-#: web/routes/runs/[run_id]/+page.svelte:203 web/routes/runs/[run_id]/pool/+page.svelte:99
+#: web/routes/runs/[run_id]/+page.svelte:205 web/routes/runs/[run_id]/pool/+page.svelte:99
 #: web/routes/runs/[run_id]/pool/+page.svelte:106 web/routes/runs/[run_id]/pool/+page.svelte:120
 msgid "Pool"
 msgstr "候选媒体"
@@ -958,7 +986,7 @@ msgstr "隐私模式：模糊所有图片并打乱姓名"
 msgid "Progress"
 msgstr "进度"
 
-#: web/lib/ShotInspector.svelte:50
+#: web/lib/ShotInspector.svelte:59
 msgid "Put it back"
 msgstr "放回"
 
@@ -978,7 +1006,7 @@ msgstr "正在读取图片信息"
 msgid "Reading what each picture shows"
 msgstr "正在读取每张图片的内容"
 
-#: web/lib/ShotInspector.svelte:151
+#: web/lib/ShotInspector.svelte:160
 msgid "Recorded alternative"
 msgstr "已记录的备选项"
 
@@ -994,11 +1022,11 @@ msgstr "刷新建议"
 msgid "Refreshing..."
 msgstr "正在刷新…"
 
-#: web/routes/settings/people/+page.svelte:232
+#: web/routes/settings/people/+page.svelte:260
 msgid "Relationship"
 msgstr "关系"
 
-#: web/routes/settings/people/+page.svelte:210
+#: web/routes/settings/people/+page.svelte:238
 msgid "Relationships"
 msgstr "关系"
 
@@ -1006,19 +1034,19 @@ msgstr "关系"
 msgid "Reload from Disk"
 msgstr "从磁盘重新加载"
 
-#: web/routes/settings/people/+page.svelte:160
+#: web/routes/settings/people/+page.svelte:188
 msgid "Remove"
 msgstr "移除"
 
-#: web/lib/ShotInspector.svelte:50
+#: web/lib/ShotInspector.svelte:59
 msgid "Remove from this cut"
 msgstr "从此剪辑中移除"
 
-#: web/routes/settings/people/+page.svelte:221
+#: web/routes/settings/people/+page.svelte:249
 msgid "Remove this relationship"
 msgstr "移除此关系"
 
-#: web/routes/runs/[run_id]/+page.svelte:250
+#: web/routes/runs/[run_id]/+page.svelte:252
 msgid "Removed"
 msgstr "已移除"
 
@@ -1034,7 +1062,7 @@ msgstr "替换了一张模型存疑的图片。"
 msgid "Report preview"
 msgstr "报告预览"
 
-#: web/routes/settings/people/+page.svelte:136
+#: web/routes/settings/people/+page.svelte:155
 msgid "Rescan the library"
 msgstr "重新扫描媒体库"
 
@@ -1046,20 +1074,20 @@ msgstr "分辨率"
 msgid "Review the report, then copy it. Nothing is sent automatically."
 msgstr "请先查看报告，再复制。不会自动发送任何内容。"
 
-#: web/lib/RenderPanel.svelte:155 web/routes/runs/[run_id]/+page.svelte:324
+#: web/lib/RenderPanel.svelte:155 web/routes/runs/[run_id]/+page.svelte:326
 #, python-brace-format
 msgid "Revision {number}"
 msgstr "修订 {number}"
 
-#: web/routes/runs/[run_id]/+page.svelte:320
+#: web/routes/runs/[run_id]/+page.svelte:322
 msgid "Revisions"
 msgstr "修订"
 
-#: web/routes/settings/people/+page.svelte:200
+#: web/routes/settings/people/+page.svelte:228
 msgid "Role (suggestions; type your own)"
 msgstr "角色（可选建议或自行输入）"
 
-#: web/routes/runs/[run_id]/+page.svelte:342
+#: web/routes/runs/[run_id]/+page.svelte:344
 msgid "Run details"
 msgstr "运行详情"
 
@@ -1073,7 +1101,7 @@ msgid "Running on the server: {phase}. It continues if you leave this page."
 msgstr "正在服务器上运行：{phase}。离开此页面后仍会继续。"
 
 #: web/routes/+layout.svelte:23 web/routes/runs/+page.svelte:76 web/routes/runs/+page.svelte:80
-#: web/routes/runs/+page.svelte:93 web/routes/runs/[run_id]/+page.svelte:126
+#: web/routes/runs/+page.svelte:93 web/routes/runs/[run_id]/+page.svelte:127
 msgid "Runs"
 msgstr "任务"
 
@@ -1085,11 +1113,11 @@ msgstr "保存"
 msgid "Save Config"
 msgstr "保存配置"
 
-#: web/routes/settings/people/+page.svelte:170
+#: web/routes/settings/people/+page.svelte:198
 msgid "Save group"
 msgstr "保存分组"
 
-#: web/routes/runs/[run_id]/+page.svelte:311
+#: web/routes/runs/[run_id]/+page.svelte:313
 msgid "Save revision"
 msgstr "保存修订"
 
@@ -1097,13 +1125,13 @@ msgstr "保存修订"
 msgid "Saved - type a new key to replace it"
 msgstr "已保存，输入新密钥可替换它"
 
-#: web/routes/runs/[run_id]/+page.svelte:314
+#: web/routes/runs/[run_id]/+page.svelte:316
 #, python-brace-format
 msgid "Saved as revision {number}."
 msgstr "已保存为修订 {number}。"
 
-#: web/routes/create/+page.svelte:449 web/routes/settings/people/+page.svelte:151
-#: web/routes/settings/people/+page.svelte:152
+#: web/routes/create/+page.svelte:449 web/routes/settings/people/+page.svelte:179
+#: web/routes/settings/people/+page.svelte:180
 msgid "Saved groups"
 msgstr "已保存的分组"
 
@@ -1120,7 +1148,7 @@ msgstr "已在此保存，但 {name} 无法解密：正在使用默认值"
 msgid "Saved to the database"
 msgstr "已保存到数据库"
 
-#: web/routes/runs/[run_id]/+page.svelte:343
+#: web/routes/runs/[run_id]/+page.svelte:345
 #, python-brace-format
 msgid "Saved to: {output_path}"
 msgstr "已保存至：{output_path}"
@@ -1133,7 +1161,7 @@ msgstr "缩放模式"
 msgid "Scheduled"
 msgstr "已计划"
 
-#: web/lib/ShotInspector.svelte:62
+#: web/lib/ShotInspector.svelte:71
 msgid "Screen time (seconds)"
 msgstr "屏幕时长（秒）"
 
@@ -1158,8 +1186,8 @@ msgstr "由 {name} 设置（环境变量）"
 msgid "Set in config.yaml as {key}"
 msgstr "在 config.yaml 中设为 {key}"
 
-#: web/routes/+layout.svelte:24 web/routes/settings/+page.svelte:77
-#: web/routes/settings/+page.svelte:81 web/routes/settings/people/+page.svelte:132
+#: web/routes/+layout.svelte:25 web/routes/settings/+page.svelte:77
+#: web/routes/settings/+page.svelte:81 web/routes/settings/people/+page.svelte:151
 msgid "Settings"
 msgstr "设置"
 
@@ -1167,11 +1195,11 @@ msgstr "设置"
 msgid "Shareable"
 msgstr "可分享"
 
-#: web/routes/runs/[run_id]/+page.svelte:192
+#: web/routes/runs/[run_id]/+page.svelte:194
 msgid "Show"
 msgstr "显示"
 
-#: web/routes/settings/people/+page.svelte:269
+#: web/routes/settings/people/+page.svelte:297
 msgid "Show more"
 msgstr "显示更多"
 
@@ -1184,7 +1212,7 @@ msgstr "登录"
 msgid "Sign in through the proxy in front of this server."
 msgstr "通过此服务器前端的代理登录。"
 
-#: web/routes/+layout.svelte:56
+#: web/routes/+layout.svelte:60
 msgid "Sign out"
 msgstr "退出登录"
 
@@ -1224,7 +1252,7 @@ msgstr "春季"
 msgid "Square"
 msgstr "正方形"
 
-#: web/lib/ShotInspector.svelte:57
+#: web/lib/ShotInspector.svelte:66
 msgid "Start here"
 msgstr "从此开始"
 
@@ -1236,11 +1264,11 @@ msgstr "正在启动"
 msgid "Status"
 msgstr "状态"
 
-#: web/lib/ShotInspector.svelte:76
+#: web/lib/ShotInspector.svelte:85
 msgid "Still"
 msgstr "静态图片"
 
-#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:334
+#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:336
 msgid "Stopped before it saved a film. The cut it came from is under Runs, in its own run."
 msgstr "在保存影片之前已停止。它所基于的剪辑在“任务”中，有自己的一次任务。"
 
@@ -1248,7 +1276,7 @@ msgstr "在保存影片之前已停止。它所基于的剪辑在“任务”中
 msgid "Stopped."
 msgstr "已停止。"
 
-#: web/routes/runs/[run_id]/+page.svelte:209
+#: web/routes/runs/[run_id]/+page.svelte:211
 msgid "Stories"
 msgstr "故事"
 
@@ -1273,11 +1301,11 @@ msgstr "夏季"
 msgid "Supporting"
 msgstr "次要"
 
-#: web/routes/runs/[run_id]/+page.svelte:252
+#: web/routes/runs/[run_id]/+page.svelte:254
 msgid "Swapped"
 msgstr "已替换"
 
-#: web/routes/runs/[run_id]/+page.svelte:290
+#: web/routes/runs/[run_id]/+page.svelte:292
 msgid "Take out"
 msgstr "移除"
 
@@ -1285,7 +1313,7 @@ msgstr "移除"
 msgid "Test Connection"
 msgstr "测试连接"
 
-#: web/routes/settings/people/+page.svelte:100
+#: web/routes/settings/people/+page.svelte:119
 msgid "That expression could not be saved."
 msgstr "该表达式无法保存。"
 
@@ -1297,7 +1325,7 @@ msgstr "此文件不是 MP3、M4A 或 WAV"
 msgid "That file is too large for a soundtrack"
 msgstr "该文件太大，无法用作配乐"
 
-#: web/routes/settings/people/+page.svelte:85
+#: web/routes/settings/people/+page.svelte:104
 msgid "That id could not be bound."
 msgstr "该 id 无法绑定。"
 
@@ -1327,9 +1355,13 @@ msgid ""
 "either of the first two sets is greyed out: change it where its label says."
 msgstr "环境变量优先，其次是 config.yaml，然后是此处保存的值，最后是默认值。由前两者之一设定的选项会显示为灰色：请在其标签所指示的位置修改。"
 
-#: web/lib/AskPanel.svelte:27 web/routes/runs/[run_id]/+page.svelte:150
+#: web/lib/AskPanel.svelte:27 web/routes/runs/[run_id]/+page.svelte:151
 msgid "The film"
 msgstr "影片"
+
+#: web/lib/UploadFilm.svelte:28
+msgid "The film file is gone, so there is nothing to upload."
+msgstr "影片文件已不存在，没有可上传的内容。"
 
 #: web/lib/JobPanel.svelte:61
 msgid "The film is ready."
@@ -1339,7 +1371,7 @@ msgstr "影片已准备好。"
 msgid "The household. Private moments a caption names, like a bath, play too."
 msgstr "家庭内部。也包含描述中提到的私密时刻，例如洗澡。"
 
-#: web/lib/ShotInspector.svelte:137
+#: web/lib/ShotInspector.svelte:146
 msgid "The model had nothing to say about this picture."
 msgstr "模型对这张图片没有任何记录。"
 
@@ -1353,13 +1385,11 @@ msgstr "模型会对照你已准备好的图库理解你的话。先预览：它
 msgid "The model, when one is configured"
 msgstr "已配置模型时使用模型"
 
-#: web/routes/settings/people/+page.svelte:134
-msgid ""
-"The people registry: who is close, their roles, and how they relate. `people scan` writes the"
-" guesses; your answers stay across scans. `people export` writes it out as YAML."
-msgstr "人物档案：谁是亲近的人、他们的角色，以及彼此的关系。`people scan` 会写入推测结果；你的回答会在多次扫描间保留。`people export` 会将其导出为 YAML。"
+#: web/routes/settings/people/+page.svelte:153
+msgid "The people registry: who is close, their roles, and how they relate."
+msgstr "人物登记：谁比较亲近、他们的角色，以及彼此的关系。"
 
-#: web/lib/ShotInspector.svelte:141
+#: web/lib/ShotInspector.svelte:150
 msgid "The picture it replaced"
 msgstr "被替换的图片"
 
@@ -1393,7 +1423,7 @@ msgstr "渲染无法启动。"
 msgid "The report could not be loaded."
 msgstr "无法加载报告。"
 
-#: web/routes/runs/[run_id]/+page.svelte:70 web/routes/runs/[run_id]/pool/+page.svelte:81
+#: web/routes/runs/[run_id]/+page.svelte:71 web/routes/runs/[run_id]/pool/+page.svelte:81
 msgid "The revision could not be saved."
 msgstr "无法保存修订。"
 
@@ -1409,11 +1439,15 @@ msgstr "服务器地址已更改：请输入新服务器的 API 密钥。"
 msgid "The settings could not be saved."
 msgstr "无法保存设置。"
 
+#: web/lib/UploadFilm.svelte:37
+msgid "The upload failed."
+msgstr "上传失败。"
+
 #: web/lib/AskPanel.svelte:164
 msgid "The words changed since this preview: preview again before making the film."
 msgstr "自这次预览以来文字已更改：制作影片前请重新预览。"
 
-#: web/routes/settings/people/+page.svelte:258
+#: web/routes/settings/people/+page.svelte:286
 msgid "Their id in that account"
 msgstr "该账户中对方的 id"
 
@@ -1421,7 +1455,7 @@ msgstr "该账户中对方的 id"
 msgid "These people appear in the last two people memories."
 msgstr "这些人物出现在最近两次人物回忆中。"
 
-#: web/routes/runs/[run_id]/+page.svelte:285
+#: web/routes/runs/[run_id]/+page.svelte:287
 msgid "They play in the order they were taken, prepared like the rest of the cut."
 msgstr "按拍摄顺序播放，像剪辑的其余部分一样经过处理。"
 
@@ -1481,7 +1515,7 @@ msgstr "旅行"
 msgid "Try again"
 msgstr "重试"
 
-#: web/routes/runs/[run_id]/+page.svelte:308 web/routes/runs/[run_id]/pool/+page.svelte:136
+#: web/routes/runs/[run_id]/+page.svelte:310 web/routes/runs/[run_id]/pool/+page.svelte:136
 msgid "Undo"
 msgstr "撤销"
 
@@ -1494,15 +1528,32 @@ msgstr "{when}更新"
 msgid "Upload a track"
 msgstr "上传曲目"
 
+#: web/lib/UploadFilm.svelte:23
+msgid "Upload availability could not be checked."
+msgstr "无法检查上传是否可用。"
+
 #: web/lib/RenderPanel.svelte:261
 msgid "Upload the film to Immich"
 msgstr "将影片上传到 Immich"
+
+#: web/lib/UploadFilm.svelte:49
+msgid "Upload to Immich"
+msgstr "上传到 Immich"
+
+#: web/lib/UploadFilm.svelte:55
+#, python-brace-format
+msgid "Uploaded to Immich, album {album}."
+msgstr "已上传到 Immich，相册 {album}。"
+
+#: web/lib/UploadFilm.svelte:55
+msgid "Uploaded to Immich."
+msgstr "已上传到 Immich。"
 
 #: web/routes/create/+page.svelte:466
 msgid "Use exact library names; each picture must match. It replaces the names above."
 msgstr "使用照片库中的准确姓名，每张图片都必须匹配。此设置会替代上面的姓名。"
 
-#: web/lib/ShotInspector.svelte:125
+#: web/lib/ShotInspector.svelte:134
 msgid "Use this picture instead"
 msgstr "改用这张图片"
 
@@ -1514,8 +1565,8 @@ msgstr "用户名"
 msgid "Verdict"
 msgstr "结论"
 
-#: web/lib/ShotInspector.svelte:76 web/routes/runs/[run_id]/+page.svelte:226
-#: web/routes/runs/[run_id]/+page.svelte:256 web/routes/runs/[run_id]/pool/+page.svelte:127
+#: web/lib/ShotInspector.svelte:85 web/routes/runs/[run_id]/+page.svelte:228
+#: web/routes/runs/[run_id]/+page.svelte:258 web/routes/runs/[run_id]/pool/+page.svelte:127
 msgid "Video"
 msgstr "视频"
 
@@ -1523,16 +1574,16 @@ msgstr "视频"
 msgid "Video cache"
 msgstr "视频缓存"
 
-#: web/routes/runs/[run_id]/+page.svelte:143
+#: web/routes/runs/[run_id]/+page.svelte:144
 #, python-brace-format
 msgid "Videos: {count}"
 msgstr "视频：{count}"
 
-#: web/routes/runs/[run_id]/+page.svelte:184
+#: web/routes/runs/[run_id]/+page.svelte:186
 msgid "View"
 msgstr "查看"
 
-#: web/routes/runs/[run_id]/+page.svelte:156
+#: web/lib/UploadFilm.svelte:56 web/routes/runs/[run_id]/+page.svelte:157
 msgid "View in Immich"
 msgstr "在 Immich 中查看"
 
@@ -1598,11 +1649,11 @@ msgstr "谁来命名影片"
 msgid "Why other suggestions were skipped"
 msgstr "其他建议为何被跳过"
 
-#: web/lib/ShotInspector.svelte:144
+#: web/lib/ShotInspector.svelte:153
 msgid "Why the model replaced the other picture"
 msgstr "模型替换另一张图片的原因"
 
-#: web/lib/ShotInspector.svelte:83
+#: web/lib/ShotInspector.svelte:92
 msgid "Why this picture"
 msgstr "为什么选择此图片"
 
@@ -1610,7 +1661,7 @@ msgstr "为什么选择此图片"
 msgid "Winter"
 msgstr "冬季"
 
-#: web/routes/settings/people/+page.svelte:237 web/routes/settings/people/+page.svelte:239
+#: web/routes/settings/people/+page.svelte:265 web/routes/settings/people/+page.svelte:267
 msgid "With"
 msgstr "对象"
 
@@ -1630,7 +1681,7 @@ msgstr "回溯年数（留空则为全部）"
 msgid "Years to span"
 msgstr "跨越的年数"
 
-#: web/routes/settings/people/+page.svelte:216
+#: web/routes/settings/people/+page.svelte:244
 msgid "Yes, that is right"
 msgstr "是，正确"
 
@@ -1647,7 +1698,7 @@ msgstr "你将被重定向到你的身份提供方"
 msgid "Your first film needs these model files. Nothing downloads until you press the button."
 msgstr "制作第一部影片需要这些模型文件。点击按钮前不会开始下载。"
 
-#: web/routes/runs/[run_id]/+page.svelte:145
+#: web/routes/runs/[run_id]/+page.svelte:146
 #, python-brace-format
 msgid "about {film} of film"
 msgstr "影片约 {film}"
@@ -1668,12 +1719,20 @@ msgstr "我们的猫这些年"
 msgid "starting"
 msgstr "正在启动"
 
-#: web/routes/runs/[run_id]/+page.svelte:144
+#: web/routes/settings/people/+page.svelte:153
+msgid "writes it out as YAML."
+msgstr "会把它导出为 YAML。"
+
+#: web/routes/settings/people/+page.svelte:153
+msgid "writes the guesses; your answers stay across scans."
+msgstr "会写入推测；你的回答在多次扫描之间保留。"
+
+#: web/routes/runs/[run_id]/+page.svelte:145
 #, python-brace-format
 msgid "{content} of pictures and video"
 msgstr "图片和视频共 {content}"
 
-#: web/routes/runs/[run_id]/+page.svelte:303
+#: web/routes/runs/[run_id]/+page.svelte:305
 #, python-brace-format
 msgid "{content}: the film grows past its {budget} to hold them"
 msgstr "{content}：影片会超出其 {budget} 以容纳它们"
@@ -1717,7 +1776,7 @@ msgstr "此期间有 {pictures} 张照片尚未准备好；先准备它们大约
 msgid "{pictures} pictures: {photos} photos, {videos} videos"
 msgstr "{pictures} 张图片：{photos} 张照片，{videos} 个视频"
 
-#: web/lib/ShotInspector.svelte:75
+#: web/lib/ShotInspector.svelte:84
 #, python-brace-format
 msgid "{seconds} s on screen"
 msgstr "在屏幕上 {seconds} 秒"

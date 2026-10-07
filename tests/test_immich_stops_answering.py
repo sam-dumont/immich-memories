@@ -7,6 +7,7 @@ import pytest
 
 from immich_memories.api.immich import (
     UNREACHABLE_AFTER_REQUESTS,
+    ImmichAPIError,
     ImmichClient,
     ImmichStoppedAnswering,
 )
@@ -111,3 +112,40 @@ def test_the_cli_ends_the_run_with_the_one_message_and_no_traceback():
     assert result.exit_code == 1
     assert "Immich at h stopped answering" in result.output
     assert "Traceback" not in result.output
+
+
+def _client_seeing_timeouts(refuse: bool) -> tuple[ImmichClient, list[float | None]]:
+    connect_timeouts: list[float | None] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        connect_timeouts.append(request.extensions["timeout"]["connect"])
+        if refuse:
+            raise httpx.ConnectTimeout("", request=request)
+        return httpx.Response(200, json={"major": 2, "minor": 0, "patch": 0})
+
+    client = ImmichClient("http://immich.internal:2283", "secret-key", timeout=30.0)
+    client._client = httpx.AsyncClient(
+        base_url=client.base_url, transport=httpx.MockTransport(handler), timeout=30.0
+    )
+    return client, connect_timeouts
+
+
+async def test_the_first_contact_gives_up_on_connecting_quickly_then_the_client_relaxes():
+    client, connect_timeouts = _client_seeing_timeouts(refuse=False)
+
+    await client.get_server_info()
+    await client.get_server_info()
+
+    assert connect_timeouts[0] <= 10
+    assert connect_timeouts[1] == 30.0
+
+
+async def test_an_immich_that_never_answered_ends_with_the_rerun_hint(monkeypatch):
+    monkeypatch.setattr("immich_memories.api.immich._BACKOFF_BASE", 0.0)
+    client, _ = _client_seeing_timeouts(refuse=True)
+
+    with pytest.raises(ImmichAPIError) as raised:
+        await client.get_server_info()
+
+    assert "cannot reach immich.internal:2283" in str(raised.value)
+    assert "rerun the same command" in str(raised.value)

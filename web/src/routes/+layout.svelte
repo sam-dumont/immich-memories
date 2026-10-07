@@ -2,7 +2,7 @@
   import '../app.css';
   import { page } from '$app/state';
   import { AppShell, AppShellHeader, AppShellSidebar, NavbarItem, ThemeSwitcher, TooltipProvider } from '@immich/ui';
-  import { mdiCogOutline, mdiHistory, mdiLightbulbOutline, mdiMovieOpenStarOutline } from '@mdi/js';
+  import { mdiAccountMultipleOutline, mdiCogOutline, mdiHistory, mdiLightbulbOutline, mdiMovieOpenStarOutline } from '@mdi/js';
   import { chooseLanguage, chosenLanguage, languages, t } from '$lib/i18n.svelte';
   import { demoMode } from '$lib/demo-mode.svelte';
   import { mdiEyeOffOutline, mdiEyeOutline } from '@mdi/js';
@@ -21,8 +21,12 @@
     { title: t('Memory'), href: '/app/create', icon: mdiMovieOpenStarOutline },
     { title: t('Suggestions'), href: '/app/suggestions', icon: mdiLightbulbOutline },
     { title: t('Runs'), href: '/app/runs', icon: mdiHistory },
+    { title: t('People'), href: '/app/settings/people', icon: mdiAccountMultipleOutline },
     { title: t('Settings'), href: '/app/settings', icon: mdiCogOutline },
   ]);
+  // People lives under /settings, so Settings must not light up with it.
+  const isActive = (href: string) =>
+    page.url.pathname.startsWith(href) && !(href === '/app/settings' && page.url.pathname.startsWith('/app/settings/people'));
 </script>
 
 <TooltipProvider>
@@ -64,7 +68,7 @@
   <AppShellSidebar class="max-md:hidden">
     <nav class="flex w-64 flex-col gap-1 p-3" aria-label={t('Main navigation')}>
       {#each navigation as item (item.href)}
-        <NavbarItem {...item} active={page.url.pathname.startsWith(item.href)} />
+        <NavbarItem {...item} active={isActive(item.href)} />
       {/each}
     </nav>
   </AppShellSidebar>
@@ -75,7 +79,7 @@
 
 <nav class="fixed inset-x-0 bottom-0 z-10 flex justify-around border-t border-gray-200 bg-light/95 dark:border-gray-800 py-1 backdrop-blur md:hidden" aria-label={t('Main navigation')}>
   {#each navigation as item (item.href)}
-    <a href={item.href} class={['flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-lg py-1 text-[11px]', page.url.pathname.startsWith(item.href) ? 'text-primary' : 'text-gray-600 dark:text-gray-400']}>
+    <a href={item.href} class={['flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-lg py-1 text-[11px]', isActive(item.href) ? 'text-primary' : 'text-gray-600 dark:text-gray-400']}>
       <svg viewBox="0 0 24 24" class="size-6 fill-current" aria-hidden="true"><path d={item.icon} /></svg>
       <span class="w-full truncate text-center">{item.title}</span>
     </a>

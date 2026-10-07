@@ -78,7 +78,7 @@ def people(
 ) -> list[NamedPerson]:
     """Everyone Immich has a name for, the names `--person` takes: most pictured first.
 
-    The counts are the last people scan's; anyone it has not counted follows alphabetically.
+    The counts are the last people scan's; anyone it has not counted keeps Immich's own order, which is most pictured first.
     """
     counts = _picture_counts(registry)
     named = [
@@ -86,7 +86,8 @@ def people(
         for p in client.get_all_people()
         if p.name
     ]
-    return sorted(named, key=lambda p: (-(p.pictures or -1), p.name.casefold()))
+    # Stable: ties, and everyone uncounted, stay in the order Immich returned them.
+    return sorted(named, key=lambda p: -(p.pictures if p.pictures is not None else -1))
 
 
 @router.get("/albums", response_model=list[AlbumChoice])

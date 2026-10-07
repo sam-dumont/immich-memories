@@ -1026,6 +1026,34 @@
         "title": "Decision",
         "type": "object"
       },
+      "FlagAnswer": {
+        "properties": {
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "person_ids": {
+            "maxItems": 2,
+            "minItems": 2,
+            "prefixItems": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Person Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "kind",
+          "person_ids"
+        ],
+        "title": "FlagAnswer",
+        "type": "object"
+      },
       "Greeting": {
         "properties": {
           "user": {
@@ -2212,10 +2240,6 @@
             "title": "Kind",
             "type": "string"
           },
-          "message": {
-            "title": "Message",
-            "type": "string"
-          },
           "names": {
             "items": {
               "type": "string"
@@ -2229,13 +2253,27 @@
             },
             "title": "Person Ids",
             "type": "array"
+          },
+          "person_urls": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "title": "Person Urls",
+            "type": "array"
           }
         },
         "required": [
           "kind",
           "names",
           "person_ids",
-          "message"
+          "person_urls"
         ],
         "title": "RosterFlag",
         "type": "object"
@@ -3467,6 +3505,68 @@
         "title": "Trips",
         "type": "object"
       },
+      "UploadRequest": {
+        "properties": {
+          "album": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Album"
+          }
+        },
+        "title": "UploadRequest",
+        "type": "object"
+      },
+      "UploadedFilm": {
+        "properties": {
+          "album": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Album"
+          },
+          "asset_id": {
+            "title": "Asset Id",
+            "type": "string"
+          },
+          "asset_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Asset Url"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "asset_id",
+          "asset_url",
+          "album",
+          "warnings"
+        ],
+        "title": "UploadedFilm",
+        "type": "object"
+      },
       "ValidationError": {
         "properties": {
           "ctx": {
@@ -4532,7 +4632,7 @@
     },
     "/api/v1/people": {
       "get": {
-        "description": "Everyone Immich has a name for, the names `--person` takes: most pictured first.\n\nThe counts are the last people scan's; anyone it has not counted follows alphabetically.",
+        "description": "Everyone Immich has a name for, the names `--person` takes: most pictured first.\n\nThe counts are the last people scan's; anyone it has not counted keeps Immich's own order, which is most pictured first.",
         "operationId": "people_api_v1_people_get",
         "responses": {
           "200": {
@@ -4724,6 +4824,41 @@
           }
         },
         "summary": "Add",
+        "tags": [
+          "people"
+        ]
+      }
+    },
+    "/api/v1/roster/flags/keep-apart": {
+      "post": {
+        "description": "Answer a curation flag \"keep apart\": the pair stops being flagged.",
+        "operationId": "keep_flag_apart_api_v1_roster_flags_keep_apart_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FlagAnswer"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Keep Flag Apart",
         "tags": [
           "people"
         ]
@@ -5761,6 +5896,59 @@
         "summary": "Read Story",
         "tags": [
           "cut"
+        ]
+      }
+    },
+    "/api/v1/runs/{run_id}/upload": {
+      "post": {
+        "description": "Upload this run's existing film, optionally into an album, under the render-time key check.",
+        "operationId": "upload_run_film_api_v1_runs__run_id__upload_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadedFilm"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upload Run Film",
+        "tags": [
+          "runs"
         ]
       }
     },
