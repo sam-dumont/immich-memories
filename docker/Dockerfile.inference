@@ -40,8 +40,8 @@ FROM ${PYTHON_BASE} AS builder-cpu
 
 ENV INFERENCE_EXTRA=editorial
 ENV TORCH_INDEX=cpu
-RUN --mount=type=bind,source=docker/apt-update.sh,target=/tmp/apt-update.sh \
-    sh /tmp/apt-update.sh && apt-get install -y --no-install-recommends \
+RUN --mount=type=bind,source=docker/apt-install.sh,target=/tmp/apt-install.sh \
+    sh /tmp/apt-install.sh \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
@@ -49,8 +49,8 @@ RUN --mount=type=bind,source=docker/apt-update.sh,target=/tmp/apt-update.sh \
 FROM ${CUDA_BASE} AS builder-cuda
 
 # The CUDA images ship no Python at all.
-RUN --mount=type=bind,source=docker/apt-update.sh,target=/tmp/apt-update.sh \
-    sh /tmp/apt-update.sh && apt-get install -y --no-install-recommends \
+RUN --mount=type=bind,source=docker/apt-install.sh,target=/tmp/apt-install.sh \
+    sh /tmp/apt-install.sh \
     build-essential \
     python3 \
     python3-dev \
@@ -126,8 +126,8 @@ ENV TORCH_HOME=/cache/torch
 FROM ${CUDA_BASE} AS prod-cuda
 # The virtual environment copied below refers to its interpreter by path, and
 # the CUDA images ship none. Same base as the builder, so same interpreter.
-RUN --mount=type=bind,source=docker/apt-update.sh,target=/tmp/apt-update.sh \
-    sh /tmp/apt-update.sh && apt-get install -y --no-install-recommends \
+RUN --mount=type=bind,source=docker/apt-install.sh,target=/tmp/apt-install.sh \
+    sh /tmp/apt-install.sh \
     python3 ffmpeg libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=bundled-cuda-models /opt/immich-models /opt/immich-models
@@ -175,8 +175,8 @@ LABEL org.opencontainers.image.version="${APP_VERSION}" \
 WORKDIR /app
 
 # OpenCV is in the application's dependency set, and it dlopens these two.
-RUN --mount=type=bind,source=docker/apt-update.sh,target=/tmp/apt-update.sh \
-    sh /tmp/apt-update.sh && apt-get install -y --no-install-recommends \
+RUN --mount=type=bind,source=docker/apt-install.sh,target=/tmp/apt-install.sh \
+    sh /tmp/apt-install.sh \
     libgl1 \
     libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*

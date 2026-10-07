@@ -21,8 +21,8 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 WORKDIR /app
 
 # Install build dependencies
-RUN --mount=type=bind,source=docker/apt-update.sh,target=/tmp/apt-update.sh \
-    sh /tmp/apt-update.sh && apt-get install -y --no-install-recommends \
+RUN --mount=type=bind,source=docker/apt-install.sh,target=/tmp/apt-install.sh \
+    sh /tmp/apt-install.sh \
     build-essential \
     cmake \
     git \
@@ -141,8 +141,8 @@ WORKDIR /app
 # WHY postgresql-client: `store backup` / `store restore` run pg_dump and
 # pg_restore when the store is on PostgreSQL (#871). Debian's client (17 on
 # this base) dumps any server up to its own major.
-RUN --mount=type=bind,source=docker/apt-update.sh,target=/tmp/apt-update.sh \
-    sh /tmp/apt-update.sh && apt-get install -y --no-install-recommends \
+RUN --mount=type=bind,source=docker/apt-install.sh,target=/tmp/apt-install.sh \
+    sh /tmp/apt-install.sh \
     ffmpeg \
     libfribidi0 \
     libgl1 \
