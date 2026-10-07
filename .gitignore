@@ -154,6 +154,8 @@ docs-site/static/demo/music-candidates/
 !docs-site/static/demo/demo.mp4
 # The trip film the trip memory page plays (make demo-output-trip, tracked in LFS)
 !docs-site/static/demo/trip-preview.mp4
+# The CLI recording the docs homepage plays (make demo-cli copies it here, tracked in LFS)
+!docs-site/static/demo/cli-demo.mp4
 
 # Playwright diagnostics (may contain unredacted frames from a real library)
 test-results/

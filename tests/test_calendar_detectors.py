@@ -271,10 +271,10 @@ class TestBirthdayNeedsPicturesInTheWindow:
             set(),
             _make_config(),
             date(2026, 3, 10),
-            person_asset_counts={person.id: 12},
+            person_asset_counts={person.id: 72},
         )
 
-        assert result[0].asset_count == 12
+        assert result[0].asset_count == 72
 
 
 # ---------------------------------------------------------------------------

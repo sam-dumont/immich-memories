@@ -167,7 +167,8 @@ def test_enabling_without_a_model_reports_the_default_gemma_installation(tmp_pat
     # WHY: model installation lives outside the repository; use an empty test home.
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     from immich_memories.config import Config
-    from immich_memories.preflight import CheckStatus, check_llm
+    from immich_memories.preflight import CheckStatus
+    from immich_memories.preflight_llm import check_llm
 
     config = Config(tier="full", llm={"enabled": True})
     report = check_llm(config)
@@ -178,7 +179,8 @@ def test_enabling_without_a_model_reports_the_default_gemma_installation(tmp_pat
 def test_full_accepts_owned_reader_without_external_endpoint(local_reader):
     from immich_memories.config import Config
     from immich_memories.config_tiers import apply_tier
-    from immich_memories.preflight import CheckStatus, check_llm
+    from immich_memories.preflight import CheckStatus
+    from immich_memories.preflight_llm import check_llm
 
     config = Config(tier="full", llm=local_reader)
     apply_tier(config)
@@ -311,7 +313,8 @@ def test_local_vision_setup_can_be_configured_before_weights_are_downloaded(tmp_
     # WHY: this is a first-install test, regardless of models on the developer machine.
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     from immich_memories.config import Config
-    from immich_memories.preflight import CheckStatus, check_llm
+    from immich_memories.preflight import CheckStatus
+    from immich_memories.preflight_llm import check_llm
 
     config = Config(
         tier="full", llm={"enabled": True}, editorial={"preparation": {"caption_provider": "llm"}}

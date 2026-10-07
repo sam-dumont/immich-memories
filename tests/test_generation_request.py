@@ -12,7 +12,14 @@ import pytest
 from immich_memories.automation.candidates import CandidateCategory, MemoryCandidate
 from immich_memories.automation.generation_request import GenerationRequest
 from immich_memories.self_command import self_command
-from tests.cli_argv_contract import parse_generate_argv
+from tests.cli_argv_contract import memory_scope, parse_generate_argv
+
+# What the categories that name something beyond a window carry from their detector.
+_EXTRA: dict[CandidateCategory, dict] = {
+    CandidateCategory.SEASON: {"season": "summer", "hemisphere": "north"},
+    CandidateCategory.HOLIDAY: {"holiday": "06-21", "year": 2026},
+    CandidateCategory.ALBUM: {"album_id": "album-1"},
+}
 
 
 def _candidate(
@@ -22,6 +29,7 @@ def _candidate(
     start: date = date(2025, 1, 1),
     end: date = date(2025, 12, 31),
     people: list[str] | None = None,
+    extra: dict | None = None,
 ) -> MemoryCandidate:
     return MemoryCandidate(
         memory_type=memory_type,
@@ -33,6 +41,7 @@ def _candidate(
         score=0.75,
         reason="test candidate",
         asset_count=100,
+        extra_params=dict(_EXTRA.get(category, {})) if extra is None else extra,
     )
 
 
@@ -317,3 +326,69 @@ def test_accounts_scope_is_refused_for_a_trip_candidate() -> None:
             end=date(2026, 5, 11),
             accounts=("partner",),
         )
+
+
+def _argv_of(category: CandidateCategory, **kwargs) -> list[str]:
+    return GenerationRequest.from_candidate(
+        _candidate(category, "x", **kwargs), upload=False
+    ).to_argv()
+
+
+def test_a_season_names_its_hemisphere_because_generate_does_not_read_it_from_config() -> None:
+    argv = _argv_of(CandidateCategory.SEASON, start=date(2025, 6, 1), end=date(2025, 8, 31))
+
+    params = parse_generate_argv(argv)
+    window, _ = memory_scope(params)
+
+    assert params["hemisphere"] == "north"
+    assert (window.start.date(), window.end.date()) == (date(2025, 6, 1), date(2025, 8, 31))
+
+
+def test_a_holiday_reads_the_same_five_years_its_candidate_counted() -> None:
+    argv = _argv_of(CandidateCategory.HOLIDAY, start=date(2022, 6, 19), end=date(2026, 6, 23))
+
+    window, windows = memory_scope(parse_generate_argv(argv))
+
+    assert (window.start.date(), window.end.date()) == (date(2022, 6, 19), date(2026, 6, 23))
+    assert len(windows) == 5
+
+
+def test_an_album_is_read_by_id_and_takes_no_accounts() -> None:
+    candidate = _candidate(CandidateCategory.ALBUM, "album")
+    candidate.extra_params["accounts"] = ["partner"]
+
+    with pytest.raises(ValueError, match="album candidate"):
+        GenerationRequest.from_candidate(candidate, upload=False)
+    params = parse_generate_argv(_argv_of(CandidateCategory.ALBUM))
+    assert params["from_album"] == "album-1"
+    memory_scope(params)
+
+
+def test_backfill_and_a_person_month_both_render_as_a_month() -> None:
+    backfill = parse_generate_argv(
+        _argv_of(CandidateCategory.BACKFILL, start=date(2026, 3, 1), end=date(2026, 3, 31))
+    )
+    person = parse_generate_argv(
+        _argv_of(
+            CandidateCategory.PERSON_MONTHLY,
+            start=date(2026, 3, 1),
+            end=date(2026, 3, 31),
+            people=["Kid A"],
+        )
+    )
+
+    assert (backfill["memory_type"], backfill["year"], backfill["month"]) == (
+        "monthly_highlights",
+        2026,
+        3,
+    )
+    assert backfill["memory_category"] == "backfill"
+    assert list(person["person"]) == ["Kid A"] and person["memory_category"] == "person_monthly"
+    assert memory_scope(person)[0].start.date() == date(2026, 3, 1)
+
+
+def test_a_season_candidate_without_its_season_fails_before_launch() -> None:
+    candidate = _candidate(CandidateCategory.SEASON, "season", extra={})
+
+    with pytest.raises(ValueError, match="names no season"):
+        GenerationRequest.from_candidate(candidate, upload=False).to_argv()

@@ -6,8 +6,8 @@ from immich_memories.config_loader import Config
 from immich_memories.preflight import (
     CheckStatus,
     check_caption_endpoint,
-    check_llm,
 )
+from immich_memories.preflight_llm import check_llm
 from immich_memories.preflight_run import (
     check_detector_export,
     check_detector_interpreter,

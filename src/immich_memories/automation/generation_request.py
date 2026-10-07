@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
+from typing import TypeVar
 
 from immich_memories.api.person_expression import PersonExpression
 from immich_memories.automation.candidates import (
@@ -13,6 +14,11 @@ from immich_memories.automation.candidates import (
     bind_people_expression_key,
 )
 from immich_memories.self_command import self_command
+
+_T = TypeVar("_T")
+
+# Categories whose film is not read from the accounts a run selects.
+_NO_ACCOUNTS = frozenset({CandidateCategory.TRIP, CandidateCategory.ALBUM})
 
 
 @dataclass(frozen=True)
@@ -33,12 +39,20 @@ class GenerationRequest:
     birth_date: date | None = None
     person_expression: PersonExpression | None = None
     accounts: tuple[str, ...] = ()
+    # What the calendar and album categories name: a season and the hemisphere it is
+    # counted in, a holiday and the year of the occurrence, or an Immich album.
+    season: str | None = None
+    hemisphere: str | None = None
+    holiday: str | None = None
+    holiday_year: int | None = None
+    album_id: str | None = None
 
     def __post_init__(self) -> None:
-        if self.accounts and self.category is CandidateCategory.TRIP:
+        if self.accounts and self.category in _NO_ACCOUNTS:
             # --accounts reads date-range memories only (cli/run_people.py); a trip
-            # candidate never carries the multi-account scope discovery attaches.
-            raise ValueError("accounts scope is unsupported for a trip candidate")
+            # candidate never carries the multi-account scope discovery attaches, and an
+            # album film reads one album of one account.
+            raise ValueError(f"accounts scope is unsupported for a {self.category.value} candidate")
         if self.person_expression is not None:
             if not isinstance(self.person_expression, PersonExpression):
                 raise ValueError("generation people condition must be a validated expression")
@@ -82,6 +96,14 @@ class GenerationRequest:
                 memory_type = "trip"
             case CandidateCategory.EMERGENT_DAY:
                 memory_type = "special_day"
+            case CandidateCategory.SEASON:
+                memory_type = "season"
+            case CandidateCategory.HOLIDAY:
+                memory_type = "holiday"
+            case CandidateCategory.ALBUM:
+                memory_type = "album"
+            case CandidateCategory.BACKFILL | CandidateCategory.PERSON_MONTHLY:
+                memory_type = "monthly_highlights"
             case _:
                 raise ValueError(f"Unsupported automation category: {candidate.category!r}")
 
@@ -118,6 +140,11 @@ class GenerationRequest:
                 else None
             ),
             accounts=tuple(accounts_record) if accounts_record else (),
+            season=candidate.extra_params.get("season"),
+            hemisphere=candidate.extra_params.get("hemisphere"),
+            holiday=candidate.extra_params.get("holiday"),
+            holiday_year=candidate.extra_params.get("year"),
+            album_id=candidate.extra_params.get("album_id"),
         )
 
     def to_argv(self) -> list[str]:
@@ -184,6 +211,33 @@ class GenerationRequest:
                     "--end",
                     self.end.isoformat(),
                 ]
+            case CandidateCategory.SEASON:
+                return [
+                    "--season",
+                    self._required(self.season, "season"),
+                    "--hemisphere",
+                    self._required(self.hemisphere, "hemisphere"),
+                    "--year",
+                    str(self.start.year),
+                ]
+            case CandidateCategory.HOLIDAY:
+                # No --years-back: the default span is the five years the key was built from.
+                return [
+                    "--holiday",
+                    self._required(self.holiday, "holiday"),
+                    "--year",
+                    str(self._required(self.holiday_year, "holiday year")),
+                ]
+            case CandidateCategory.ALBUM:
+                return ["--from-album", self._required(self.album_id, "album")]
+            case CandidateCategory.BACKFILL | CandidateCategory.PERSON_MONTHLY:
+                return [
+                    "--year",
+                    str(self.start.year),
+                    "--month",
+                    str(self.start.month),
+                    *self._person_args(),
+                ]
             case CandidateCategory.EMERGENT_DAY:
                 # Only the date and opaque selector travel in the logged argv. The child
                 # re-reads the catalogue for private names and members.
@@ -193,6 +247,12 @@ class GenerationRequest:
                 return args
             case _:
                 raise ValueError(f"Unsupported automation category: {self.category!r}")
+
+    @staticmethod
+    def _required(value: _T | None, what: str) -> _T:
+        if value is None:
+            raise ValueError(f"The candidate names no {what}")
+        return value
 
     def _person_args(self) -> list[str]:
         return [f"--person={name}" for name in self.people]

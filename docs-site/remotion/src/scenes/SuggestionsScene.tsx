@@ -27,19 +27,14 @@ const CANDIDATES = [
     meta: `Monthly Highlights · 2024-06-01 – 2024-06-30 · Pictures: ${POOL_TOTAL}`,
   },
   {
-    reason: "1st most featured person, 18 assets",
-    people: "Kit",
-    meta: "Person Spotlight · 2023-01-01 – 2023-12-31 · Pictures: 18",
-  },
-  {
-    reason: "2nd most featured person, 14 assets",
-    people: "Robin",
-    meta: "Person Spotlight · 2023-01-01 – 2023-12-31 · Pictures: 14",
-  },
-  {
-    reason: `${POOL_TOTAL} assets across the year, never generated`,
+    reason: "New album 'The lake week', 33 pictures, never filmed",
     people: "",
-    meta: `Year in Review · 2024-01-01 – 2024-12-31 · Pictures: ${POOL_TOTAL}`,
+    meta: "Album · 2024-06-21 – 2024-06-27 · Pictures: 33",
+  },
+  {
+    reason: "Kit in June 2024, 18 pictures over 13 days",
+    people: "Kit",
+    meta: "Person month · 2024-06-01 – 2024-06-30 · Pictures: 18",
   },
 ];
 
@@ -154,9 +149,14 @@ export const SuggestionsScene: React.FC<Props> = ({ bassIntensity }) => {
                   rendering.
                 </div>
               </div>
-              <Button size="small" variant="outline" icon={mdiRefresh}>
-                Refresh suggestions
-              </Button>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <span style={{ fontSize: 14, color: UI.gray600 }}>
+                  Updated 1 minute ago
+                </span>
+                <Button size="small" variant="outline" icon={mdiRefresh}>
+                  Refresh suggestions
+                </Button>
+              </div>
             </div>
             {checked && (
               <div

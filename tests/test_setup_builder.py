@@ -403,6 +403,15 @@ def test_generated_kubernetes_inputs_render_the_current_shipped_base(tmp_path, t
     env = {item["name"]: item for item in container["env"]}
     assert "IMMICH_MEMORIES_TIER" not in env
     assert env["IMMICH_MEMORIES_DEPLOYMENT_TIER"]["value"] == tier
+    # The init container resolves the tier on its own: unpinned it logs "Tier auto resolved".
+    fetch_models = next(
+        item
+        for item in app["spec"]["template"]["spec"]["initContainers"]
+        if item["name"] == "fetch-models"
+    )
+    assert {i["name"]: i["value"] for i in fetch_models["env"]}[
+        "IMMICH_MEMORIES_DEPLOYMENT_TIER"
+    ] == tier
     assert container["securityContext"]["readOnlyRootFilesystem"] is True
     assert app["metadata"]["namespace"] == "immich-memories"
     if tier != "basic":

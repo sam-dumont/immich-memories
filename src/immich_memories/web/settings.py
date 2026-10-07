@@ -17,6 +17,7 @@ from immich_memories.settings_edit import SettingRefused, save_settings
 from immich_memories.settings_store import is_bootstrap_key, secret_key_from_env
 from immich_memories.web.dependencies import config_file, current_config
 from immich_memories.web.schemas import SettingRow, SettingsForm, SettingsSection, SettingsView
+from immich_memories.web.setting_inputs import describe_input
 
 router = APIRouter(prefix="/api/v1", tags=["settings"])
 
@@ -44,6 +45,14 @@ def _as_text(value: Any) -> str:
     return str(value)
 
 
+def _blank_as_unset(key: str, raw: Any) -> Any:
+    """An emptied choice or number that may be None is "not set", not an invalid empty string."""
+    if raw != "":
+        return raw
+    described = describe_input(key)
+    return None if described.nullable and described.kind in ("choice", "number") else raw
+
+
 def form_changes(entries: list[SettingSource], values: dict[str, Any]) -> dict[str, Any]:
     """The form values that differ from what the page showed, ready for `save_settings`.
 
@@ -68,7 +77,7 @@ def form_changes(entries: list[SettingSource], values: dict[str, Any]) -> dict[s
                 raw = json.loads(raw)
             except json.JSONDecodeError:
                 raise SettingRefused(f"{entry.key}: not valid JSON") from None
-        changes[entry.key] = raw
+        changes[entry.key] = _blank_as_unset(entry.key, raw)
     return changes
 
 
@@ -96,6 +105,7 @@ def _settings_view(path: Path) -> SettingsView:
             secret=entry.secret,
             unreadable=entry.unreadable,
             editable=entry.editable and (can_store or not entry.secret),
+            input=describe_input(entry.key, secret=entry.secret),
         )
         for entry in entries
     ]

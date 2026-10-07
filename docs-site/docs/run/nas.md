@@ -106,8 +106,10 @@ HTTP; use the proxy route if you want TLS.
 
 The shipped Compose file hard-codes host port 8080 and the container name `immich-memories`.
 If another NAS app already has 8080 (UniFi does), edit the left side of the port mapping and
-tunnel to that port. On a shared host, also rename `container_name`, and then replace
-`immich-memories` in the `docker exec` commands above.
+tunnel to that port. Keep the container name: every `docker exec immich-memories` command on
+this site assumes it. If a second stack on the same host already uses that name, move that stack
+instead, or run the commands from this stack's folder with `docker compose exec immich-memories
+immich-memories ...`, which finds the service whatever the container is called.
 
 ### Do not use `cpus:` on a Synology
 

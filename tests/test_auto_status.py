@@ -150,6 +150,7 @@ def test_status_json_reports_durable_attempt_rotation_and_scheduler(tmp_path: Pa
         "oldest_pending_delivery",
         "notification_health",
         "runtime",
+        "local_network",
     }
     assert payload["last_attempt"]["outcome"] == "failed"
     assert payload["last_attempt"]["error"] == "connection refused"

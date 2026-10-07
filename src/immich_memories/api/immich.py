@@ -22,6 +22,7 @@ from immich_memories.api.compatibility import (
     ResolvedApiVersion,
     resolve_api_version,
 )
+from immich_memories.api.local_network import local_network_hint
 from immich_memories.api.models import (
     Asset,
     AssetFace,
@@ -42,6 +43,9 @@ if TYPE_CHECKING:
     from immich_memories.timeperiod import DateRange
 
 logger = logging.getLogger(__name__)
+
+# The last compatibility answer logged per server URL.
+_announced_compatibility: dict[str, tuple[str, str, str]] = {}
 
 
 _RETRYABLE_STATUS = TRANSIENT_STATUS
@@ -261,8 +265,12 @@ class ImmichClient:
         safe_message = sanitize_error_message(str(exc)).replace(self.api_key, "***")
         # A timeout stringifies to "", so the exception type is the only reason left.
         reason = f"{type(exc).__name__}: {safe_message}" if safe_message else type(exc).__name__
-        target = urlsplit(self.base_url).netloc or self.base_url
-        return ImmichAPIError(f"Request failed: cannot reach {target} ({reason})")
+        parts = urlsplit(self.base_url)
+        target = parts.netloc or self.base_url
+        message = f"Request failed: cannot reach {target} ({reason})"
+        if hint := local_network_hint(exc, parts.hostname or ""):
+            message = f"{message}. {hint}"
+        return ImmichAPIError(message)
 
     async def _request(
         self,
@@ -378,11 +386,20 @@ class ImmichClient:
                 self._resolved_api_version = resolve_api_version(
                     self._api_version_policy, server_info.major
                 )
-                logger.info(
-                    "Immich API compatibility: server=%s mode=%s resolved=%s",
+                answer = (
                     server_info.version_string,
                     self._api_version_policy.value,
                     self._resolved_api_version.value,
+                )
+                # Every health check builds a new client: say the answer when it changes.
+                level = (
+                    logging.DEBUG
+                    if _announced_compatibility.get(self.base_url) == answer
+                    else logging.INFO
+                )
+                _announced_compatibility[self.base_url] = answer
+                logger.log(
+                    level, "Immich API compatibility: server=%s mode=%s resolved=%s", *answer
                 )
             return self._resolved_api_version
 

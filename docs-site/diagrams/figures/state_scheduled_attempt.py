@@ -28,7 +28,7 @@ with diagram(STEM, nodesep="0.4", ranksep="0.7"):
             (
                 "<b>skipped</b>",
                 icon("mdi:skip-next-circle-outline", "neutral"),
-                "cooldown, or nothing due",
+                "cooldown, nothing due, or nothing<br/>worth a film (sits out 7 d)",
             ),
             ("<b>dry_run</b>", icon("mdi:eye-outline", "neutral"), code("auto run --dry-run")),
             (
@@ -39,7 +39,7 @@ with diagram(STEM, nodesep="0.4", ranksep="0.7"):
             (
                 "<b>failed</b>",
                 icon("mdi:close-circle-outline", "drop"),
-                "timeout, exit code,<br/>nothing worth a film;<br/>backoff 24 h, 3 d, 7 d",
+                "timeout, exit code, no film;<br/>from the 2nd in a row,<br/>backoff 24 h, 3 d, 7 d",
             ),
         ],
         cols=1,

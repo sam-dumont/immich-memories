@@ -285,6 +285,26 @@ class Greeting(BaseModel):
     user: str
 
 
+class SettingChoice(BaseModel):
+    value: str
+    # English only, outside the translation catalogue (#2234): translating them is a later job.
+    label: str
+
+
+class SettingInput(BaseModel):
+    """What a setting accepts, read from the same schema the save path checks it against."""
+
+    kind: Literal["choice", "number", "bool", "secret", "text"]
+    choices: list[SettingChoice] = []
+    min: float | None = None
+    max: float | None = None
+    # Absent for a float, where any value between the bounds is fine.
+    step: float | None = None
+    # A blank answer saves as "not set".
+    nullable: bool = False
+    hint: str | None = None
+
+
 class SettingRow(BaseModel):
     """One setting as the page shows it: its value, where that value comes from, and whether
     this page may change it. A secret's value is masked (`***`, or empty when none is stored)."""
@@ -298,6 +318,7 @@ class SettingRow(BaseModel):
     # Saved in the database, but the secret key cannot decrypt it: the default is in use.
     unreadable: bool
     editable: bool
+    input: SettingInput
 
 
 class SettingsSection(BaseModel):

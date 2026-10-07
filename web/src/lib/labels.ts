@@ -12,6 +12,9 @@ const MEMORY_TYPES: Record<string, string> = {
   trip: N_('Trip'),
   holiday: N_('Holiday'),
   special_day: N_('Special day'),
+  // What automation proposes for a close person's month and for a month it never made.
+  person_monthly: N_('Person month'),
+  monthly_backfill: N_('Missed month'),
   custom: N_('Custom date range'),
 };
 
@@ -63,6 +66,7 @@ export const weightLabel = (weight: string) => (WEIGHTS[weight] ? t(WEIGHTS[weig
 // The server words the reduced preparation tiers (operations/story_view.py); listed so the
 // catalogues carry them.
 N_('Edited without descriptions — picture content was classified, not read.');
+N_('Some pictures were edited without descriptions.');
 N_('Edited from metadata only — picture content was neither classified nor read, so every picture is held to family viewing.');
 // The connection's refusals (web/connection.py), shown as the server words them.
 N_('The server URL changed: enter the API key for the new server.');

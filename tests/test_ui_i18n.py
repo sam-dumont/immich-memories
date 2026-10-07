@@ -80,3 +80,22 @@ def test_catalogue_extraction_finishes_on_an_unterminated_escaped_label(tmp_path
         "assert list(module['_web_labels']()) == []"
     )
     subprocess.run([sys.executable, "-c", code], check=True, timeout=3)
+
+
+def test_every_memory_type_a_detector_proposes_has_a_web_label():
+    # WHY: no external boundary; reads source files only. The detectors name their memory_type as a
+    # literal, and a missing label would render a suggestion as the generic "Memory".
+    import re
+
+    root = Path(__file__).resolve().parents[1]
+    labels = (root / "web/src/lib/labels.ts").read_text()
+    labelled = set(
+        re.findall(r"^\s*(\w+): N_\(", labels.split("MEMORY_TYPES")[1].split("};")[0], re.M)
+    )
+    emitted = {
+        match
+        for path in (root / "src/immich_memories/automation").glob("*detector*.py")
+        for match in re.findall(r'memory_type="(\w+)"', path.read_text())
+    }
+    assert {"person_monthly", "monthly_backfill", "album", "season", "holiday"} <= emitted
+    assert emitted <= labelled, emitted - labelled

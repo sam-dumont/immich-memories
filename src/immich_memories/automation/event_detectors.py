@@ -14,6 +14,7 @@ from immich_memories.automation.candidates import (
     MemoryCandidate,
     make_memory_key,
 )
+from immich_memories.automation.closeness import group_weight
 from immich_memories.config_loader import Config
 
 logger = logging.getLogger(__name__)
@@ -208,6 +209,7 @@ class MultiPersonDetector:
         today: date,
         person_asset_counts: dict[str, int] | None = None,
         shared_counts: dict[tuple[str, str], int] | None = None,
+        closeness: dict[str, float] | None = None,
     ) -> list[MemoryCandidate]:
         """Propose multi_person memories for pairs who frequently appear together.
 
@@ -243,7 +245,11 @@ class MultiPersonDetector:
             if mem_key in generated_keys:
                 continue
 
-            pair_score = self.BASE_SCORE * min(1.0, estimated_shared / 500)
+            pair_score = (
+                self.BASE_SCORE
+                * min(1.0, estimated_shared / 500)
+                * group_weight([person_a.id, person_b.id], closeness)
+            )
             scored_pairs.append((pair_score, person_a, person_b, estimated_shared))
 
         # Sort by score descending, take top pairs

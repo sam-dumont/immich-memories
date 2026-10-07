@@ -80,6 +80,22 @@ def _section(config: Config, path: tuple[str, ...]) -> Any:
     return section
 
 
+_last_resolution: list[tuple[str, str] | None] = [None]
+
+
+def _say_auto_resolution(tier: str, reason: str) -> None:
+    # The config loads several times per command; say each answer once per process.
+    if (tier, reason) == _last_resolution[0]:
+        return
+    _last_resolution[0] = (tier, reason)
+    logger.info(
+        "Tier auto resolved to %s on this machine. %s. "
+        "A container without the GPU resolves its own; pin the install with tier: gpu or full",
+        tier,
+        reason,
+    )
+
+
 def apply_tier(config: Config) -> dict[str, Any]:
     """Resolve one product tier and apply its preparation and reader contract."""
     applied = _apply_caption_provider(config)
@@ -92,12 +108,7 @@ def apply_tier(config: Config) -> dict[str, Any]:
         if accelerated:
             config.tier = "full" if _llm_configured(config) else "gpu"
         applied["tier"] = config.tier
-        logger.info(
-            "Tier auto resolved to %s on this machine. %s. "
-            "A container without the GPU resolves its own; pin the install with tier: gpu or full",
-            config.tier,
-            reason,
-        )
+        _say_auto_resolution(config.tier, reason)
     if config.tier == "full":
         _require_llm_endpoint(config)
     elif config.llm.enabled and config.llm.model.strip():

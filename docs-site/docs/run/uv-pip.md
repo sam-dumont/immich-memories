@@ -145,8 +145,14 @@ timer on Linux, or a cron command otherwise. On headless Linux, run `loginctl en
 
 Keep credentials in `config.yaml`: scheduled jobs do not inherit your interactive shell.
 On macOS, a missed run happens after wake; launchd does not wake the machine.
-If you run the UI as a permanent service, you can use its built-in daily timer instead.
-Use one scheduler. [Automate it](../make/automate.md#bare-metal-auto-install) covers both.
+
+### macOS and an Immich on your network
+
+macOS blocks a program from reaching other machines on your local network until you allow it, and your NAS is one of them. `curl` and the browser are exempt, which makes this confusing: `curl` reaches Immich while a scheduled `immich-memories` gets `No route to host` (errno 65). The permission belongs to the interpreter the job runs, the Python in your virtual environment or uv's managed `python3.12` (something like `~/.local/share/uv/python/cpython-3.12.x-macos-aarch64-none/bin/python3.12`), not to Terminal. Allowing Terminal, or running a command there, grants nothing to the 09:00 job.
+
+`immich-memories auto install` checks this for you when your Immich is on a private address. It starts a temporary LaunchAgent that runs the same launcher the schedule runs, with `config test` (it only pings Immich), waits up to 20 seconds, removes the agent, and prints a pass or a fail. A fail names the interpreter path: allow that exact file in **System Settings > Privacy & Security > Local Network**, then run `auto install` again. An Immich on the internet or on `localhost` is never blocked, so nothing is checked.
+
+The grant is lost when the interpreter path changes, which a uv Python patch upgrade does. `immich-memories auto status` says when the interpreter is no longer the one that was checked; run `auto install` again.
 
 ## What to keep
 

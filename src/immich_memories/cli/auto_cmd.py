@@ -5,7 +5,7 @@ from __future__ import annotations
 import json as json_mod
 import logging
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import click
 from rich.table import Table
@@ -14,6 +14,9 @@ from immich_memories.automation.models import AutoOutcome, AutoRunResult
 from immich_memories.cli._helpers import console, print_error, print_info, print_success
 from immich_memories.config_loader import Config
 from immich_memories.db import open_store
+
+if TYPE_CHECKING:
+    from immich_memories.automation.system_scheduler import SchedulerInstallResult
 
 logger = logging.getLogger(__name__)
 
@@ -206,6 +209,8 @@ def suggest(ctx: click.Context, as_json: bool, limit: int, memory_type: str | No
     if not as_json:
         for key, reason in sorted(runner.last_backoff_skips.items()):
             print_info(f"Backing off {key} ({reason})")
+        for note in runner.last_notes:
+            print_info(note)
 
     if memory_type:
         candidates = [c for c in candidates if c.memory_type == memory_type]
@@ -327,6 +332,11 @@ def status(ctx: click.Context, as_json: bool) -> None:
         "paths": [str(path) for path in scheduler.paths],
     }
     payload["runtime"] = provenance.to_dict()
+    from immich_memories.automation.local_network_check import interpreter_note
+    from immich_memories.config_loader import config_state_dir
+
+    interpreter_changed = interpreter_note(config_state_dir(ctx.obj["config_path"]))
+    payload["local_network"] = {"interpreter_changed": interpreter_changed}
 
     if as_json:
         click.echo(json_mod.dumps(payload))
@@ -336,6 +346,8 @@ def status(ctx: click.Context, as_json: bool) -> None:
     last_run = payload["last_completed_auto_run"]
     cooldown_status = payload["cooldown"]
     print_info(f"Scheduler: {in_use.summary}")
+    if interpreter_changed:
+        print_error(interpreter_changed)
     if provenance.is_stale:
         print_error(f"Running code: {provenance.describe()}")
     else:
@@ -367,6 +379,29 @@ def status(ctx: click.Context, as_json: bool) -> None:
         print_info(f"Suggestion snapshot unavailable: {suggestion['error']}")
     _print_notification_status(payload)
     _print_pending_delivery_status(payload)
+
+
+def _check_local_network(config: Config, config_path: Path | None, *, shim: Path) -> None:
+    """On macOS, ask launchd whether a scheduled job can reach a LAN Immich (#2242)."""
+    import os
+
+    from immich_memories.automation import local_network_check as check
+    from immich_memories.config_loader import config_state_dir
+
+    if not check.immich_is_on_the_local_network(config.immich.url):
+        return
+    state_dir = config_state_dir(config_path)
+    if changed := check.interpreter_note(state_dir):
+        print_info(f"  {changed}")
+    print_info("  Checking through launchd that a scheduled job can reach Immich...")
+    outcome = check.run_check(
+        shim=shim, config_path=config_path, state_dir=state_dir, uid=os.getuid()
+    )
+    check.record_check(state_dir, outcome)
+    if outcome.passed:
+        print_success("Scheduled runs can reach Immich on your local network.")
+    else:
+        print_error(outcome.advice)
 
 
 @auto.command()
@@ -431,10 +466,18 @@ def install(
     print_info(f"  Deactivate: {result.deactivate_command}")
 
     if result.platform == "launchd":
-        from immich_memories.automation.system_scheduler import resolve_disabled_launchd_label
+        _after_launchd_install(ctx, result, config_path)
 
-        if note := resolve_disabled_launchd_label():
-            print_info(f"  {note}")
+
+def _after_launchd_install(
+    ctx: click.Context, result: SchedulerInstallResult, config_path: Path | None
+) -> None:
+    from immich_memories.automation.system_scheduler import resolve_disabled_launchd_label
+
+    if note := resolve_disabled_launchd_label():
+        print_info(f"  {note}")
+    if result.files_written:
+        _check_local_network(ctx.obj["config"], config_path, shim=result.files_written[0])
 
 
 @auto.command("test-notification")

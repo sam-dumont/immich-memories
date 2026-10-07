@@ -7,6 +7,7 @@ finished video: uploaded back to Immich, and reported on.
 from __future__ import annotations
 
 import re
+from datetime import date
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -88,6 +89,46 @@ class AutomationConfig(BaseModel):
         default=True,
         description="Propose a memory for each saved people group (people group add) with content",
     )
+
+    detect_seasons: bool = Field(
+        default=True, description="Propose the season that just ended (needs the home base)"
+    )
+    detect_holidays: bool = Field(
+        default=True, description="Propose a holiday film across the years with pictures around it"
+    )
+    detect_albums: bool = Field(
+        default=True, description="Propose a film for a new Immich album, or one that has grown"
+    )
+    detect_person_monthly: bool = Field(
+        default=True,
+        description="Propose last month's film of each person close to you, from your people list",
+    )
+    backfill_months: bool = Field(
+        default=True,
+        description="Fill quiet nights with the months of this year and last that never got a film",
+    )
+    extra_holidays: list[str] = Field(
+        default_factory=list,
+        description='Days of your own to film as holidays, each written "MM-DD: name"',
+    )
+    include_shared_albums: bool = Field(
+        default=False, description="Also propose albums other people shared with you"
+    )
+
+    @field_validator("extra_holidays")
+    @classmethod
+    def _check_extra_holidays(cls, value: list[str]) -> list[str]:
+        for entry in value:
+            match = re.fullmatch(r"(\d{2})-(\d{2}):\s*(\S.*)", entry.strip())
+            if not match:
+                raise ValueError(
+                    f'extra_holidays entries look like "12-06: Saint Nicholas": {entry!r}'
+                )
+            try:
+                date(2000, int(match[1]), int(match[2]))
+            except ValueError as exc:
+                raise ValueError(f"extra_holidays has no such day: {entry!r}") from exc
+        return [entry.strip() for entry in value]
 
     @field_validator("daily_at")
     @classmethod

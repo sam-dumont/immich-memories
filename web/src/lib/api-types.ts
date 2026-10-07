@@ -2359,6 +2359,42 @@ export interface components {
             /** Username */
             username: string | null;
         };
+        /** SettingChoice */
+        SettingChoice: {
+            /** Label */
+            label: string;
+            /** Value */
+            value: string;
+        };
+        /**
+         * SettingInput
+         * @description What a setting accepts, read from the same schema the save path checks it against.
+         */
+        SettingInput: {
+            /**
+             * Choices
+             * @default []
+             */
+            choices: components["schemas"]["SettingChoice"][];
+            /** Hint */
+            hint?: string | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "choice" | "number" | "bool" | "secret" | "text";
+            /** Max */
+            max?: number | null;
+            /** Min */
+            min?: number | null;
+            /**
+             * Nullable
+             * @default false
+             */
+            nullable: boolean;
+            /** Step */
+            step?: number | null;
+        };
         /**
          * SettingRow
          * @description One setting as the page shows it: its value, where that value comes from, and whether
@@ -2367,6 +2403,7 @@ export interface components {
         SettingRow: {
             /** Editable */
             editable: boolean;
+            input: components["schemas"]["SettingInput"];
             /** Key */
             key: string;
             /** Override */

@@ -3129,12 +3129,111 @@
         "title": "SessionView",
         "type": "object"
       },
+      "SettingChoice": {
+        "properties": {
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "value",
+          "label"
+        ],
+        "title": "SettingChoice",
+        "type": "object"
+      },
+      "SettingInput": {
+        "description": "What a setting accepts, read from the same schema the save path checks it against.",
+        "properties": {
+          "choices": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/SettingChoice"
+            },
+            "title": "Choices",
+            "type": "array"
+          },
+          "hint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hint"
+          },
+          "kind": {
+            "enum": [
+              "choice",
+              "number",
+              "bool",
+              "secret",
+              "text"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "max": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max"
+          },
+          "min": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min"
+          },
+          "nullable": {
+            "default": false,
+            "title": "Nullable",
+            "type": "boolean"
+          },
+          "step": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Step"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "title": "SettingInput",
+        "type": "object"
+      },
       "SettingRow": {
         "description": "One setting as the page shows it: its value, where that value comes from, and whether\nthis page may change it. A secret's value is masked (`***`, or empty when none is stored).",
         "properties": {
           "editable": {
             "title": "Editable",
             "type": "boolean"
+          },
+          "input": {
+            "$ref": "#/components/schemas/SettingInput"
           },
           "key": {
             "title": "Key",
@@ -3180,7 +3279,8 @@
           "override",
           "secret",
           "unreadable",
-          "editable"
+          "editable",
+          "input"
         ],
         "title": "SettingRow",
         "type": "object"

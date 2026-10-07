@@ -48,7 +48,7 @@
 .ctaPrimary:hover { background: var(--ifm-color-primary-dark); color: var(--im-button-text); text-decoration: none; }
 .ctaSecondary:hover { background: var(--ifm-background-color); text-decoration: none; }
 .heroScreenshot { width: 100%; height: auto; display: block; border-radius: 10px; border: 1px solid var(--im-border); }
-.journeys, .quickstart, .reviewSection { padding: 3.5rem 0; }
+.journeys, .quickstart, .reviewSection, .cliSection { padding: 3.5rem 0; }
 .sectionTitle { font-size: 1.6rem; margin-bottom: 1.5rem; }
 .journeyGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.25rem; }
 .journey {
@@ -66,6 +66,8 @@
 .journeyAction { margin-top: auto; font-size: 0.9rem; color: var(--ifm-color-primary); font-weight: 600; }
 .reviewSection { background: var(--im-bg-surface); border-block: 1px solid var(--im-border); }
 .reviewGrid { grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr); }
+.cliText { max-width: 46rem; }
+.cliVideo { max-width: 1100px; margin-top: 1.5rem; }
 .quickstartGrid { align-items: start; grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr); }
 .trustPanel { border-left: 1px solid var(--im-border); padding-left: 2rem; }
 .trustPanel p { color: var(--im-text-secondary); }
@@ -78,6 +80,6 @@
 }
 @media (max-width: 576px) {
   .hero { padding: 1.5rem 0 2rem; }
-  .journeys, .quickstart, .reviewSection { padding: 2rem 0; }
+  .journeys, .quickstart, .reviewSection, .cliSection { padding: 2rem 0; }
   .heroCtas > a { width: 100%; text-align: center; }
 }

@@ -1130,6 +1130,9 @@ demo-cli-run:  ## Run the CLI demo's real hermetic session in this terminal (no 
 
 demo-cli:  ## Record the CLI demo via VHS → docs-site/remotion/public/cli-demo.mp4 (the Remotion CliScene plays it)
 	vhs docs-site/scripts/demo-cli.tape
+	@# The docs homepage plays the same recording; the poster is a frame with a command and its output.
+	cp docs-site/remotion/public/cli-demo.mp4 docs-site/static/demo/cli-demo.mp4
+	ffmpeg -y -loglevel error -ss 58 -i docs-site/static/demo/cli-demo.mp4 -frames:v 1 -q:v 4 docs-site/static/demo/cli-demo-poster.jpg
 	@# The marks are wall-clock seconds; a recording that dropped frames is shorter than them.
 	@python3 -c "import re,subprocess,sys; end=float(re.search(r'end: ([0-9.]+)',open('docs-site/remotion/src/cli-timing.ts').read()).group(1)); got=float(subprocess.check_output(['ffprobe','-v','error','-show_entries','format=duration','-of','csv=p=0','docs-site/remotion/public/cli-demo.mp4'])); ok=abs(got-end)<=0.03*end+1; print(f'cli-demo.mp4: {got:.1f} s against the last mark {end:.1f} s'); sys.exit(0 if ok else 'the recording dropped frames: run make demo-cli again on an idle machine')"
 

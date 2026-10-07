@@ -49,7 +49,12 @@ class _FakeClient:
     def get_person_asset_count(self, person_id: str) -> int:
         return self.counts.get(person_id, 0)
 
+    def get_albums(self):
+        return []
+
     def count_assets_with_people(self, person_ids, taken_after=None, taken_before=None):
+        if not person_ids:
+            return 0
         years = set.intersection(*(self.picture_years.get(p, set()) for p in person_ids))
         return sum(1 for y in years if taken_after.year <= y <= taken_before.year)
 
@@ -62,6 +67,9 @@ class _FakeRuns:
         return set()
 
     def get_last_run_of_type(self, memory_type: str, source: str | None = None):
+        return None
+
+    def get_last_run_of_category(self, memory_category: str, source: str | None = None):
         return None
 
 

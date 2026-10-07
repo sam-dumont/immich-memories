@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, datetime, time
 from enum import StrEnum
 from typing import Any
 
@@ -26,6 +26,14 @@ class CandidateCategory(StrEnum):
     # a day. A recurring subject aggregated out of the analysis corpus is the
     # same thing at another granularity and reads as this member's sibling.
     EMERGENT_DAY = "emergent_day"
+    # One category per detector that has a cap and a cooldown of its own. Backfill and the
+    # per-person months render as monthly_highlights, but filed under the monthly's category
+    # they would share its cap of three and the "one monthly per calendar month" rule.
+    SEASON = "season"
+    HOLIDAY = "holiday"
+    ALBUM = "album"
+    BACKFILL = "backfill"
+    PERSON_MONTHLY = "person_monthly"
 
 
 @dataclass
@@ -84,6 +92,36 @@ def make_memory_key(
         f"{date_range_end.isoformat()}:{persons}{suffix}"
     )
     return bind_people_expression_key(key, person_expression)
+
+
+def make_manual_memory_key(
+    memory_type: str,
+    first_day: date,
+    last_day: date,
+    person_names: list[str] | None = None,
+    discriminator: str | None = None,
+) -> str:
+    """The key a hand-made `generate` run records for a whole-day window.
+
+    A manual run keeps the window as datetimes (midnight to 23:59:59), so its key reads
+    `...:2025-06-01T00:00:00:2025-06-30T23:59:59:`. A detector that builds its key this way
+    sees a film made by hand as already made.
+    """
+    return make_memory_key(
+        memory_type,
+        datetime.combine(first_day, time.min),
+        datetime.combine(last_day, time(23, 59, 59)),
+        person_names,
+        discriminator,
+    )
+
+
+@dataclass(frozen=True)
+class Detection:
+    """What a detector proposed, and why it proposed nothing where it could have."""
+
+    candidates: list[MemoryCandidate] = field(default_factory=list)
+    notes: tuple[str, ...] = ()
 
 
 def bind_people_expression_key(key: str, expression: PersonExpression | None) -> str:

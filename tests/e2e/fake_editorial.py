@@ -565,6 +565,14 @@ def _stand_in_for_models_fetch() -> None:
     preflight_run.check_encoder = fetched("Encoder")
     preflight_run.check_detector_export = fetched("Sensitive-content detector")
 
+    import immich_memories.web.model_routes as model_routes
+
+    # WHY: the web's model card hashes the real files, so without this a fetched host
+    # still offers "Download models" and every capture of a page shows it. Nothing left
+    # to acquire is what `models fetch` leaves behind.
+    model_routes.acquisition_plan = lambda _config: []
+    model_routes.DETECTOR_SNAPSHOTS = ()
+
 
 def install_fake_editorial_route(
     stage_seconds: float = DEFAULT_STAGE_SECONDS, *, models_fetched: bool = True

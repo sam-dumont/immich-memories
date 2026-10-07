@@ -42,6 +42,8 @@ runtimes must already be installed; downloading their weights does not install P
 
 ## Make and adjust a film
 
+**New memory** opens on the memory types, then the options for the type you pick, then **Cut**. Under the form sits **Describe the film in your own words**, a closed section with an Experimental badge: it makes a film from a sentence, and needs the Full tier ([how it works](./free-text.md)). Open it once and the page keeps it open in that browser.
+
 [Your first film](../get-started/first-film.mdx) walks through the whole process with a month. [Choose a film](./memory-types.mdx) covers trips, people, albums and other types.
 
 <Diagram name="seq-web-job" headline="Cut first, look at it, then render. Nothing renders until you press the button." />
@@ -81,6 +83,8 @@ Every run has **Copy report** and **Download report**, including failed runs. Re
 ## Change settings
 
 Each setting shows where its value came from. A value set by the environment or `config.yaml` is locked here; change it at that source. Other values can be saved from the page.
+
+A setting with a fixed list of values (the tier, the output codec and resolution, the hardware backend, the title style) is a dropdown, so you can't type a value the app refuses. Each choice has a plain label next to its value, such as "H.264, software (libx264)" or "1080p (1920x1080)"; the labels are English in every language for now. A number has its limits (`output.crf` takes 0 to 51), and a value that the environment or the file set to something outside the list still shows, marked "not in the list". `analysis.source_prepare_workers` takes either a number from 1 to 4 or `auto`, so it stays a text box with that hint.
 
 API keys stay masked. To save secrets from the UI, configure `IMMICH_MEMORIES_SECRET_KEY`; keys already supplied through `.env` or `config.yaml` do not need this for normal use. [Configuration and the secret key](../run/environment-variables.md#the-secret-key).
 

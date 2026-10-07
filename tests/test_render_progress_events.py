@@ -45,3 +45,29 @@ def test_a_render_with_no_progress_bar_still_reports_events() -> None:
     callback(1.0, "Done")
 
     assert operational.events == [(OperationalPhase.RENDER, 10, 10, "Done")]
+
+
+def test_clip_preparation_says_which_clip_n_of_total_instead_of_the_finished_selection() -> None:
+    from immich_memories.generate_progress import clip_preparation_events
+
+    operational, clock, inner = _Operational(), _Clock(), []
+    callback = clip_preparation_events(
+        lambda _stage, _pct, msg: inner.append(msg),
+        operational,
+        OperationalPhase.RENDER,
+        10,
+        clock=clock,
+        every_seconds=30,
+    )
+
+    callback("extract", 0.0, "Downloading: a.mov")
+    clock.now = 10
+    callback("extract", 0.35, "Downloading: b.mov")
+    clock.now = 31
+    callback("extract", 0.35, "Prepared 5/10 sources")
+
+    assert operational.events == [
+        (OperationalPhase.RENDER, 0, 10, "Preparing clips (0/10)"),
+        (OperationalPhase.RENDER, 5, 10, "Preparing clips (5/10)"),
+    ]
+    assert len(inner) == 3, "the progress bar still hears every report"

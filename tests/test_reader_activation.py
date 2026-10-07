@@ -9,7 +9,8 @@ from immich_memories.analysis.llm_providers import (
 )
 from immich_memories.config import Config
 from immich_memories.config_models_llm import LLMConfig
-from immich_memories.preflight import CheckStatus, check_llm
+from immich_memories.preflight import CheckStatus
+from immich_memories.preflight_llm import check_llm
 
 
 @pytest.mark.parametrize(

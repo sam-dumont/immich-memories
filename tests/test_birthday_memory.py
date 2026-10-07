@@ -271,7 +271,7 @@ class TestAutomationRoundTrip:
         # WHY: BirthdayDetector reads no config field on this path; the object
         # is only there to satisfy the signature.
         candidate = BirthdayDetector().detect(
-            {}, [person], set(), MagicMock(), date(2026, 2, 20), person_asset_counts={"p1": 40}
+            {}, [person], set(), MagicMock(), date(2026, 2, 20), person_asset_counts={"p1": 80}
         )[0]
         argv = GenerationRequest.from_candidate(candidate, upload=False).to_argv()
         year = int(argv[argv.index("--year") + 1])

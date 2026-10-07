@@ -35,6 +35,8 @@ naming what the two are, which writes the normal relationship on both sides with
 detected link is not shown again for that pair. A link confirmed without a name, which is what older releases
 wrote, stays as "linked, relationship not named" and never counts as a relationship in titles or prompts.
 
+<Diagram name="people-rescan" headline="A rescan redraws the guesses. Your answers stay." />
+
 The registry lives in the [store](../run/database.md), next to every other decision you made. Everything under
 `inferred:` is recomputed on each scan; everything under `confirmed:` is yours and never overwritten, and wins
 where the two disagree. `people export` writes it out in the shape below (to standard output, or to `--to FILE`

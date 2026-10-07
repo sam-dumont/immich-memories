@@ -254,7 +254,7 @@ def test_verify_local_never_calls_an_enabled_reader_disabled(monkeypatch):
     from click.testing import CliRunner
 
     from immich_memories.cli import main
-    from immich_memories.preflight import check_llm
+    from immich_memories.preflight_llm import check_llm
 
     config = Config()
     config.llm.enabled = True

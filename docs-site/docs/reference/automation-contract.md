@@ -80,34 +80,40 @@ readable by its owner: see [where a scheduled run's logs go](../make/automate.md
 
 ## How it picks one memory
 
-Ten detectors propose candidates, hard rotation rules reject some, the rest are scored, and the top one is
+Fifteen detectors propose candidates, hard rotation rules reject some, the rest are scored, and the top one is
 made. The score ranks memories against each other; it never touches which pictures go in a film. That is the
 editor's job, see [How it chooses](../how-it-chooses/overview.md).
 
 | Detector | Proposes | Score |
 |---|---|---|
 | Yearly | past years with content, after 15 January | 0.8, 10 % off per year of age, floor 0.24 |
-| Birthday | a person whose birthday was 2 to 60 days ago | 0.75 |
+| Birthday | a person whose birthday was 2 to 60 days ago, with at least 50 pictures on 3 days in the film's windows | 0.75 × [closeness](#closeness) × their pictures against the busiest person's (floor 0.5) |
 | Monthly | the latest completed month, if not made yet | 0.7, and it never looks further back |
 | Activity burst | a month with more than 2× the rolling 12-month average | 0.7 once over the threshold |
 | Trip | trips in the trailing year, 7 days after coming home | up to 0.75, by length (14 days) × pictures (200) |
-| Person spotlight | the five most-pictured people | 0.6 × their share of the top person's count, floor 0.12 |
-| Multi-person | pairs who appear together | 0.55, by estimated shared pictures up to 500, 50 minimum |
+| Person spotlight | the five most-pictured people | 0.6 × their share of the top person's count (floor 0.2) × closeness |
+| Multi-person | pairs who appear together | 0.55, by estimated shared pictures up to 500, 50 minimum, × the pair's average closeness |
 | On this day | today, when its month has content in 5+ prior years | 0.35 × prior years / 10, capped at 0.35; month counts do not prove pictures exist on this exact date |
 | Special day | a catalogued day whose anniversary is within 3 days | 0.8, ×1.0 for a decade, ×0.85 for a half-decade, ×0.6 otherwise |
-| Saved group | last year's film of each [saved group](../run/multi-account.mdx#saved-groups), once | 0.65, counted as multi-person |
+| Saved group | last year's film of each [saved group](../run/multi-account.mdx#saved-groups), once | 0.65 × the group's average closeness, counted as multi-person |
+| Season | the season that just ended, from 3 to 30 days after its end, once per season-year. At least 40 pictures on 6 days. Needs the home base: without one there is no hemisphere and no season film | 0.6 |
+| Holiday | a holiday of the home base's country, or one you list in `extra_holidays`, from 3 days after it, up to a year back. The film spans the five years around it: at least 2 years with pictures in the plus or minus 2 day window and 20 pictures in all. Once per holiday-year | 0.6 × (0.5 + 0.5 × years with pictures / 5) |
+| Album | one of your albums never filmed (20 pictures or more), or one that grew by 30 pictures and to 1.5× the size it had at its last film. Albums spanning more than six months (a phone's Recents, Favorites, Live Photos) are left out. Shared albums only with `include_shared_albums` | 0.55 |
+| Backfill | a month of this year or last with 20 pictures or more and no film, newest first. The latest completed month is the monthly detector's | 0.35 |
+| Person month | the last completed month of each close person, at least 15 pictures on 4 days. The two months before it are backfill | 0.6, and 0.35 for the two earlier months |
 
 Then, in order: a 1.2× boost for a memory that does not exist yet, recency (linear decay over 365 days from
 when the memory is timely, floor 0.5), content richness (up to 30 % of the score, log scale), and a same-type
-cooldown (0.3× for 7 days, 0.7× for 30 days). Per-type caps: 3 per type, 1 for on-this-day and special day, 2
-for multi-person.
+cooldown (0.3× for 7 days, 0.7× for 30 days). Per-type caps: 3 per type, 1 for on-this-day, special day,
+season, holiday, album, backfill and person month, 2 for multi-person. Backfill and person months render as a
+monthly film, but each has a category, a cap and a cooldown of its own, so they never use up the monthly's.
 
 The rotation rules are hard. If every candidate is rejected the run is skipped; nothing relaxes a rule to get
 another video out:
 
-- a monthly review cannot run twice in the same calendar month; the monthly detector proposes only the latest completed month, while activity bursts can propose months from the trailing year;
-- the previous category cannot repeat;
-- a category cannot appear more than twice in the last six completed automatic runs;
+- a monthly review cannot run twice in the same calendar month (backfill and person months are not monthly reviews, so a month film of either does not count); the monthly detector proposes only the latest completed month, while activity bursts can propose months from the trailing year;
+- the previous category cannot repeat, except backfill, which fills quiet nights and may follow itself (anything fresher still outscores it);
+- a category cannot appear more than twice in the last six completed automatic runs, except backfill, which runs every quiet night;
 - a person cannot come back if they were in either of the last two person runs.
 
 Timing: birthdays fire 2 days after the date and trips 7 days after coming home, so the phone has uploaded.
@@ -115,8 +121,46 @@ Trips need `trips.homebase_latitude` and `trips.homebase_longitude` (see
 [Home and people](../get-started/who-is-who.md)). Special days come from the catalogue `discover-days`
 writes. A birth date you gave the people store wins over the one Immich holds. Automation passes that resolved month and day explicitly to `generate --birthday`, including a leap-day birthday.
 
-`auto suggest` prints eligible candidates in rank order with their reasons. Its terminal output also names failure-backoff skips; it does not list rejected candidates or their rotation rules. `auto status` shows current rejection rules. A candidate that failed twice in a row waits before it comes back (24 hours, then 3 days, then 7);
+`auto suggest` prints eligible candidates in rank order with their reasons, then the reasons a detector proposed nothing where it could have: no home base for a season, a birthday under 50 pictures, a close person with too little in last month, albums left out for spanning more than six months. Its terminal output also names failure-backoff skips; it does not list rejected candidates or their rotation rules. `auto status` shows current rejection rules. A candidate that failed twice in a row waits before it comes back (24 hours, then 3 days, then 7);
 one failure never counts, and a success clears it.
+
+## Closeness
+
+A birthday film of a child is worth more than one of someone you met twice, however many pictures each has.
+Birthdays, spotlights, pairs and saved groups are scored by how close the [people list](../get-started/who-is-who.md)
+says each person is:
+
+| Who | Weight |
+|---|---|
+| inner tier, or a partner, child or parent you confirmed | 1.0 |
+| recurring | 0.6 |
+| episodic | 0.3 |
+| event | 0.15 |
+
+A pair or a group takes the average of its people. Someone the list says nothing about keeps the full weight, so
+a library that never ran the people scan scores as it did before. The same list decides who gets a monthly film:
+inner tier or a confirmed partner, child or parent.
+
+Hand-made films count. A season, holiday, month or per-person month you made yourself with `generate` is the
+same memory as the one `auto` would propose, so it is not proposed again. An album film made by hand is matched
+by the album's dates, and an automatic one carries the album's picture count, so the album comes back only after it
+grows again.
+
+```yaml
+advanced:
+  automation:
+    detect_seasons: true          # all five on by default
+    detect_holidays: true
+    detect_albums: true
+    detect_person_monthly: true
+    backfill_months: true
+    extra_holidays:               # your own days, "MM-DD: name"
+      - "12-06: Saint Nicholas"
+    include_shared_albums: false  # albums other people shared with you
+```
+
+The thresholds above are fixed. Holidays come from the country the home base is in, as Immich's own geodata names
+it; an unknown country keeps only `extra_holidays`.
 
 ## Across accounts, and saved groups
 
@@ -130,8 +174,8 @@ advanced:
 ```
 
 The list is exactly what is read: `["partner"]` alone leaves the primary library out, and trips with it. Every
-candidate but a trip carries that scope to its `generate --accounts` run; trips always come from the primary
-account.
+candidate but a trip or an album carries that scope to its `generate --accounts` run; trips always come from
+the primary account, and an album film reads that one album.
 
 `detect_groups` proposes one `multi_person` film of last year for each saved group (`people group add`). A
 group's film is not proposed again once made, and a group none of whose people is among the most-pictured

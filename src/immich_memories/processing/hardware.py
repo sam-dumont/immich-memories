@@ -8,6 +8,7 @@ import subprocess
 import sys
 from dataclasses import dataclass, field
 from enum import StrEnum
+from pathlib import Path
 from typing import Literal
 
 from immich_memories.processing.hardware_encode import device_args, upload_filter
@@ -131,8 +132,27 @@ def _probe_ffmpeg_encode(encoder_args: list[str], *, upload: str | None = None) 
         warning = _probe_failure_advice(output, encoder_args)
         if warning and warning not in _advice_given:
             _advice_given.add(warning)
-            logger.log(expected_fallback_level(), "%s", warning)
+            logger.log(_advice_level(encoder_args), "%s", warning)
     return success
+
+
+def _advice_level(encoder_args: list[str]) -> int:
+    """How loudly to say a probe failed: only a missing device someone expected is news."""
+    if any(arg.endswith("_nvenc") for arg in encoder_args):
+        return expected_fallback_level()
+    # No /dev/dri and no hardware backend asked for is the Basic install's normal state (#2241);
+    # a render node that exists and still cannot be opened, or a backend the owner named, is not.
+    return logging.WARNING if _dri_present() or _libva_backend_requested() else logging.INFO
+
+
+def _dri_present() -> bool:
+    return Path("/dev/dri").exists()
+
+
+def _libva_backend_requested() -> bool:
+    from immich_memories.config_loader import get_config
+
+    return get_config().hardware.backend in {"vaapi", "qsv"}
 
 
 # Every failed probe of one backend names the same cause; say it once per process.

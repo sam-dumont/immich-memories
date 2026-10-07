@@ -552,6 +552,7 @@ class AutoRunner:
         """Detect, score, and rank memory candidates from the Immich library."""
         self.last_variety_decision = VarietyDecision(eligible=[], rejected=[])
         self.last_backoff_skips: dict[str, str] = {}
+        self.last_notes: tuple[str, ...] = ()
         self.last_recent_categories = ()
         self.last_suggest_status = SuggestStatus()
         immich_result = self._prepared_immich_preflight
@@ -568,6 +569,7 @@ class AutoRunner:
         discovered = self._discovery.discover(limit=limit, recent_auto_runs=recent_auto_runs)
         self.last_variety_decision = discovered.variety_decision
         self.last_backoff_skips = discovered.backoff_skips
+        self.last_notes = discovered.notes
         return discovered.candidates
 
     def start_one(self, *, reason: str = "daily wake") -> StartedAutoRun:

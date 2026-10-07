@@ -8,6 +8,7 @@ import {productDescription, productTagline} from '../product';
 import styles from './index.module.css';
 import DemoPreview, {DemoLink} from '../components/DemoPreview';
 import ThemedScreenshot from '../components/ThemedScreenshot';
+import CliDemo from '../components/CliDemo';
 
 const journeys = [
   {label: 'Start here', title: 'Make your first film', body: 'Install, connect Immich, and try 20–50 pictures. Review the cut before rendering.', to: '/docs/get-started/quick-start', action: 'Quick start'},
@@ -74,6 +75,19 @@ export default function Home(): ReactNode {
               <Link to="/docs/get-started/first-film">See the first-film walkthrough →</Link>
             </div>
           </div>
+        </div>
+      </section>
+
+      <section className={styles.cliSection}>
+        <div className="container">
+          <div className={styles.cliText}>
+            <p className={styles.eyebrow}>No browser needed</p>
+            <Heading as="h2">A first-class CLI</Heading>
+            <p>Every film the web app makes is one command you can copy. The New memory page prints it under the form.</p>
+            <p>Run <code>auto run</code> from cron, a timer or the HTTP trigger and a film gets made every night without you opening anything.</p>
+            <p><Link to="/docs/make/cli/generate">The generate command →</Link> · <Link to="/docs/make/automate">Automate it →</Link></p>
+          </div>
+          <div className={styles.cliVideo}><CliDemo /></div>
         </div>
       </section>
 

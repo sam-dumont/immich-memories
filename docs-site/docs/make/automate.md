@@ -44,6 +44,8 @@ immich-memories auto install --hour 9
 
 This writes a user timer on macOS or Linux and prints its activation command. Run **Activate:** to start it; installation alone does not activate the schedule. On headless Linux, run `loginctl enable-linger "$USER"` so the timer survives logout. Run **Deactivate:** before `auto install --uninstall`, which only deletes files. Scheduled jobs do not inherit your interactive shell's credentials: keep them in the configuration. A scheduled run keeps its history and logs with the config it was installed with, [same as the store](../run/config-file.md#where-the-store-and-logs-live), so a second `--config` never mixes into the main one. On macOS, `auto install` also re-enables the job's launchd label if an earlier `launchctl disable` left it off. [Scheduler details](../reference/automation-contract.md#bare-metal-auto-install) cover the launcher, environment and missed runs.
 
+**On a Mac with Immich on your network, allow Local Network for the interpreter.** macOS blocks a program's connections to your LAN until it is allowed, and the permission belongs to the resolved Python the job runs, not to Terminal. A launchd job at 03:00 has nobody to answer a prompt, so the default is no and the run fails with `No route to host`. `auto install` checks it through launchd itself (a temporary agent that only pings Immich), prints a pass or the interpreter path to allow in **System Settings > Privacy & Security > Local Network**, and `auto status` tells you when an upgrade moved the interpreter. [macOS and an Immich on your network](../run/uv-pip.md#macos-and-an-immich-on-your-network).
+
 ### Where a scheduled run's logs go
 
 Every attempt that starts a film keeps its full output, credentials redacted, in
@@ -56,7 +58,7 @@ ls -t ~/.immich-memories/cache/automation-output/ | head -1   # newest transcrip
 ```
 
 That path moves with `cache.directory` if you changed it. A day skipped before any film starts (cooldown, every candidate rejected) leaves no
-transcript: `auto status` says why. A period with nothing worth a film ends as one `skipped` attempt with that reason: no film is counted and the cooldown stays free.
+transcript: `auto status` says why. A period with nothing worth a film, or with no pictures at all, ends as one `skipped` attempt with that reason (`nothing worth a film: no pictures or videos in this period` for an empty one): no film is counted and the cooldown stays free.
 
 The scheduler's own wrapper output goes elsewhere. On macOS it lands in
 `~/.immich-memories/logs/auto.log` and `auto-error.log`. On Linux the systemd unit sends it to your
@@ -67,6 +69,8 @@ answers "insufficient permissions", so read the transcript above instead.
 ## How it picks one memory
 
 It ranks suitable memories and avoids repeating the same category or person too often. That choice selects the subject; the normal editor still chooses the shots. Trips wait until after you are home and birthdays wait a little for phone uploads. A person is only suggested when they have pictures in the period the film would read (last year for a spotlight), and the count shown is for that period, not their lifetime.
+
+Besides those, it can propose the season that just ended, a holiday across the years you photographed it, a new or grown album, and months that never got a film. It films the last month of each person close to you, and weighs birthdays and spotlights by how close each person is, so a stranger's birthday no longer outranks a trip. Each is a switch under `automation:` in the [config reference](../reference/config-reference.md#automation); the [automation reference](../reference/automation-contract.md#how-it-picks-one-memory) lists the thresholds. A season needs your home base, since the hemisphere comes from it.
 
 **Suggestions** shows each reason. **Check eligibility** previews the checks without rendering, and **Run this suggestion** asks for that candidate. A manual request still respects the automation rules. A check is a dry run: it shows up in the history, and the day's scheduled film still runs at its time.
 

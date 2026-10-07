@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import itertools
+from collections.abc import Collection
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
 from typing import Any, Protocol
@@ -13,6 +14,9 @@ from immich_memories.automation.calendar_detectors import birthday_film_windows
 from immich_memories.automation.candidate_scorer import score_and_rank
 from immich_memories.automation.candidates import CandidateCategory, MemoryCandidate
 from immich_memories.automation.catalogue import entries_from, load_catalogue
+from immich_memories.automation.closeness import closeness_by_person, is_close
+from immich_memories.automation.discovery_extras import ExtraPlan, ExtraReads, read_account_extras
+from immich_memories.automation.extra_detectors import run_extra_detectors
 from immich_memories.automation.failure_backoff import drop_backed_off
 from immich_memories.automation.group_candidates import GroupCandidateDetector
 from immich_memories.automation.people_merge import (
@@ -30,7 +34,9 @@ from immich_memories.config_loader import Config
 from immich_memories.config_models import PRIMARY_ACCOUNT
 from immich_memories.config_models_automation import AutomationConfig
 from immich_memories.db import open_store
+from immich_memories.home_country import known_home_country
 from immich_memories.people.companion import load_document
+from immich_memories.people.context import load_people_prompt_context
 from immich_memories.people.groups import SavedGroup, list_groups
 from immich_memories.timeperiod import DateRange, same_day_in_year
 from immich_memories.tracking.models import RunMetadata
@@ -51,6 +57,12 @@ class MemoryHistoryReader(Protocol):
         source: str | None = None,
     ) -> RunMetadata | None: ...
 
+    def get_last_run_of_category(
+        self,
+        memory_category: str,
+        source: str | None = None,
+    ) -> RunMetadata | None: ...
+
 
 class FailureStreakReader(Protocol):
     """Small attempt-history read seam required by failure backoff."""
@@ -65,6 +77,8 @@ class DiscoveryResult:
     candidates: list[MemoryCandidate]
     variety_decision: VarietyDecision
     backoff_skips: dict[str, str]
+    # Why a detector proposed nothing where it could have, for `auto suggest`.
+    notes: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -87,6 +101,7 @@ class _LibrarySnapshot:
     group_counts: dict[str, int]
     groups: list[SavedGroup]
     gps_assets: list | None
+    extras: ExtraReads = field(default_factory=ExtraReads)
 
 
 def _time_buckets_to_month_counts(
@@ -128,8 +143,20 @@ def _build_last_runs_by_type(db: MemoryHistoryReader) -> dict[str, date]:
         "trip",
         "multi_person",
         "special_day",
+        "season",
+        "holiday",
+        "album",
     ):
         run = db.get_last_run_of_type(mem_type, source="auto")
+        if run and run.created_at:
+            result[mem_type] = (run.completed_at or run.created_at).date()
+    # Backfill and the per-person months render as monthly_highlights: only the category
+    # keeps their cooldown apart from the monthly's.
+    for mem_type, category in (
+        ("monthly_backfill", "backfill"),
+        ("person_monthly", "person_monthly"),
+    ):
+        run = db.get_last_run_of_category(category, source="auto")
         if run and run.created_at:
             result[mem_type] = (run.completed_at or run.created_at).date()
     return result
@@ -165,8 +192,15 @@ def _run_all_detectors(
     gps_assets: list | None,
     catalogue: list | None,
     groups: list[SavedGroup],
+    extras: ExtraReads | None = None,
+    notes: list[str] | None = None,
 ) -> list[MemoryCandidate]:
-    """Run all enabled detectors and collect candidates."""
+    """Run all enabled detectors and collect candidates.
+
+    ``extras`` are the reads behind the season, holiday, album, backfill and per-person month
+    detectors and the closeness weights; without them those detectors stay out. Reasons a
+    detector proposed nothing are appended to ``notes``.
+    """
     from immich_memories.automation.calendar_detectors import (
         BirthdayDetector,
         MonthlyDetector,
@@ -182,6 +216,8 @@ def _run_all_detectors(
     from immich_memories.automation.special_day_detector import SpecialDayDetector
 
     all_candidates: list[MemoryCandidate] = []
+    closeness = extras.closeness if extras else None
+    notes = notes if notes is not None else []
 
     if auto_cfg.detect_monthly:
         all_candidates.extend(
@@ -204,6 +240,7 @@ def _run_all_detectors(
                 today,
                 person_asset_counts=spotlight_counts,
                 upcoming_birthday_ids=upcoming_birthday_ids,
+                closeness=closeness,
             )
         )
         all_candidates.extend(
@@ -215,6 +252,7 @@ def _run_all_detectors(
                 today,
                 person_asset_counts=spotlight_counts,
                 shared_counts=shared_counts,
+                closeness=closeness,
             )
         )
     if auto_cfg.detect_activity_burst:
@@ -243,6 +281,12 @@ def _run_all_detectors(
                 config,
                 today,
                 person_asset_counts=birthday_counts,
+                closeness=closeness,
+                busiest_count=max(spotlight_counts.values(), default=0),
+                distinct_days={k: len(v) for k, v in extras.birthday_days.items()}
+                if extras
+                else None,
+                notes=notes,
             )
         )
 
@@ -279,8 +323,23 @@ def _run_all_detectors(
                 today,
                 groups=groups,
                 person_asset_counts=group_counts,
+                closeness=closeness,
             )
         )
+
+    if extras is not None:
+        found = run_extra_detectors(
+            auto_cfg,
+            extras,
+            hemisphere=config.trips.hemisphere,
+            people=people,
+            assets_by_month=assets_by_month,
+            generated_keys=generated_keys,
+            proposed=all_candidates,
+            today=today,
+        )
+        all_candidates.extend(found.candidates)
+        notes.extend(found.notes)
 
     return all_candidates
 
@@ -311,7 +370,8 @@ class CandidateDiscovery:
         today = date.today()
 
         store = open_store(self._config)
-        snapshot = self._library_snapshot(auto_cfg, today, store)
+        snapshot = self._library_snapshot(auto_cfg, today, store, generated_keys)
+        notes: list[str] = []
 
         all_candidates = _run_all_detectors(
             auto_cfg,
@@ -329,6 +389,8 @@ class CandidateDiscovery:
             # the live Immich reads into one session, and this is the store.
             entries_from(load_catalogue(store)),
             snapshot.groups,
+            snapshot.extras,
+            notes,
         )
 
         all_candidates, backoff_skips = drop_backed_off(
@@ -353,10 +415,15 @@ class CandidateDiscovery:
             candidates=ranked[:limit],
             variety_decision=variety_decision,
             backoff_skips=backoff_skips,
+            notes=tuple(dict.fromkeys([*snapshot.extras.notes, *notes])),
         )
 
     def _library_snapshot(
-        self, auto_cfg: AutomationConfig, today: date, store: Any
+        self,
+        auto_cfg: AutomationConfig,
+        today: date,
+        store: Any,
+        generated_keys: Collection[str] = (),
     ) -> _LibrarySnapshot:
         """Collect every selected account's read in one session (#1500 slice 10).
 
@@ -369,6 +436,22 @@ class CandidateDiscovery:
         groups = list_groups(store) if auto_cfg.detect_groups else []
         canon = canonical_person_map(store_people(document))
         accounts = tuple(auto_cfg.accounts) or (PRIMARY_ACCOUNT,)
+        contexts = load_people_prompt_context(store)
+        store_dates = store_birth_dates(document)
+        plan = ExtraPlan(
+            auto_cfg=auto_cfg,
+            today=today,
+            hemisphere=self._config.trips.hemisphere,
+            # Once per discovery: Immich is asked where the home base is, not once per holiday.
+            country=known_home_country(self._config) if auto_cfg.detect_holidays else None,
+            generated_keys=generated_keys,
+            canon=canon,
+            close_ids={pid for pid, context in contexts.items() if is_close(context)},
+            birth_dates=lambda account, people: _birth_dates(account, people, canon, store_dates),
+        )
+        extras = ExtraReads(
+            closeness=closeness_by_person(contexts), close_ids=plan.close_ids, country=plan.country
+        )
 
         try:
             opened = open_accounts(self._config.immich, accounts)
@@ -377,7 +460,7 @@ class CandidateDiscovery:
 
         try:
             reads = self._read_every_account(
-                opened, auto_cfg, today, canon, store_birth_dates(document), groups
+                opened, auto_cfg, today, canon, store_dates, groups, plan, extras
             )
         except Exception as exc:
             # Broad on purpose, as this replaces: any transport fault ends discovery,
@@ -400,6 +483,7 @@ class CandidateDiscovery:
             _summed(r.leaves for r in reads.per_account.values()),
             groups,
             reads.gps_assets,
+            extras,
         )
 
     def _read_every_account(
@@ -410,6 +494,8 @@ class CandidateDiscovery:
         canon: dict[tuple[str, str], str],
         store_dates: dict[str, date],
         groups: list[SavedGroup],
+        plan: ExtraPlan,
+        extras: ExtraReads,
     ) -> _AccountReads:
         """Every opened account's raw reads, kept separate so the caller can merge them."""
         per_account: dict[str, _AccountRead] = {}
@@ -418,7 +504,8 @@ class CandidateDiscovery:
             client = account.client
             buckets = client.get_time_buckets()
             read = _AccountRead(months=_time_buckets_to_month_counts(buckets))
-            if auto_cfg.detect_person_spotlight or auto_cfg.detect_groups:
+            wants_people = auto_cfg.detect_person_spotlight or auto_cfg.detect_groups
+            if wants_people or auto_cfg.detect_person_monthly:
                 read.people = client.get_all_people()
                 read.spotlight = _spotlight_window_counts(client, read.people, today)
                 read.shared = _shared_window_counts(client, name, read.spotlight, canon, today)
@@ -426,6 +513,16 @@ class CandidateDiscovery:
                 read.birthday = _birthday_window_counts(
                     client, read.people, today, _birth_dates(name, read.people, canon, store_dates)
                 )
+            read_account_extras(
+                client,
+                name,
+                account.user.id,
+                read.people,
+                read.birthday,
+                plan,
+                name == PRIMARY_ACCOUNT,
+                extras,
+            )
             per_account[name] = read
             # Trips stay primary-account only: --accounts refuses trip memories
             # (cli/run_people.py::refuse_household_scope), so discovery never scopes one.
@@ -569,5 +666,5 @@ def _attach_accounts(candidates: list[MemoryCandidate], accounts: tuple[str, ...
     if not accounts:
         return
     for candidate in candidates:
-        if candidate.category is not CandidateCategory.TRIP:
+        if candidate.category not in (CandidateCategory.TRIP, CandidateCategory.ALBUM):
             candidate.extra_params["accounts"] = list(accounts)

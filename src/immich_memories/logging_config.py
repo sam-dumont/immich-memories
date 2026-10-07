@@ -148,6 +148,16 @@ TEXT_FORMAT = "%(asctime)s [%(levelname)s] %(name)s [%(run_id)s]: %(message)s"
 LOG_LINE_FORMAT = "[%(levelname)s] %(message)s"
 
 
+class HealthProbeAccessFilter(logging.Filter):
+    """Drop uvicorn's access line for the health endpoints: an orchestrator asks every 10 s."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        if record.name != "uvicorn.access" or not isinstance(record.args, tuple):
+            return True
+        # uvicorn's args are (client, method, path, http_version, status).
+        return not (len(record.args) > 2 and str(record.args[2]).startswith("/health"))
+
+
 class _LogSink(Protocol):
     """Minimal interface for routing log lines (avoids circular import)."""
 
@@ -254,6 +264,9 @@ def configure_logging(
 
     root = logging.getLogger()
     root.setLevel(getattr(logging, level.upper(), logging.INFO))
+    verbose = root.level <= logging.DEBUG
+    # Start-up migrations narrate every revision; -v brings that back.
+    logging.getLogger("alembic").setLevel(logging.NOTSET if verbose else logging.WARNING)
 
     # Remove existing handlers to avoid duplicates
     for handler in root.handlers.copy():
@@ -262,6 +275,8 @@ def configure_logging(
     stream_handler = logging.StreamHandler(stream if stream is not None else sys.stderr)
     stream_handler.addFilter(RunIdFilter())
     stream_handler.addFilter(SecretRedactionFilter())
+    if not verbose:
+        stream_handler.addFilter(HealthProbeAccessFilter())
 
     if fmt == "json":
         stream_handler.setFormatter(JsonFormatter())
@@ -277,6 +292,8 @@ def configure_logging(
         file_handler = logging.FileHandler(log_file)
         file_handler.addFilter(RunIdFilter())
         file_handler.addFilter(SecretRedactionFilter())
+        if not verbose:
+            file_handler.addFilter(HealthProbeAccessFilter())
         if fmt == "json":
             file_handler.setFormatter(JsonFormatter())
         else:

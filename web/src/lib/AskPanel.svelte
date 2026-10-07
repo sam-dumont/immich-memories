@@ -55,6 +55,14 @@
 
   // The last preview survives a reload, like the page's last cut.
   const LAST_ASK = 'immich-memories:last-ask';
+  // Whether the box is open is the browser's own habit, like the last ask: a restored ask never
+  // forces it open.
+  const ASK_OPEN = 'immich-memories:ask-open';
+  const wasOpen = () => { try { return localStorage.getItem(ASK_OPEN) === '1'; } catch { return false; } };
+  const rememberOpen = (value: boolean) => { try { localStorage.setItem(ASK_OPEN, value ? '1' : '0'); } catch { /* private window */ } };
+  // Read after mount: the page is prerendered, where there is no localStorage to read.
+  let open = $state(false);
+
   const remember = (id: string) => { try { localStorage.setItem(LAST_ASK, id); } catch { /* private window */ } };
   const recalled = () => { try { return localStorage.getItem(LAST_ASK); } catch { return null; } };
 
@@ -76,6 +84,7 @@
   }
 
   onMount(() => {
+    open = wasOpen();
     void api<AskAvailability>('/ask').then((found) => (availability = found)).catch(() => (availability = null));
     void api<JobView | null>('/jobs/active').then(async (running) => {
       if (running?.kind === 'ask') return follow(running);
@@ -106,14 +115,18 @@
   }
 </script>
 
-<section class="flex flex-col gap-4 rounded-2xl border border-gray-200 p-5 dark:border-gray-800" aria-labelledby="ask-heading">
-  <div class="flex flex-wrap items-center gap-3">
-    <h2 id="ask-heading" class="text-base font-semibold">{t('Describe the film you want')}</h2>
+<details class="rounded-2xl border border-gray-200 p-5 dark:border-gray-800" bind:open ontoggle={(event) => rememberOpen(event.currentTarget.open)}>
+  <!-- Saved on the click itself: the toggle event comes a task later, and a reload right
+       after the click would otherwise lose it. A click on the badge's link is not a toggle. -->
+  <summary class="flex cursor-pointer flex-wrap items-center gap-3"
+    onclick={(event) => { if (!(event.target as Element).closest('a')) rememberOpen(!open); }}>
+    <h2 id="ask-heading" class="text-base font-semibold">{t('Describe the film in your own words')}</h2>
     <!-- The filled badge picks its own text colour; amber text on white read at 1.9:1. -->
     <a href={docsPage('make/free-text')} target="_blank" rel="noopener noreferrer" class="rounded-full hover:opacity-80">
       <Badge size="small" color="warning">{t('Experimental')}</Badge>
     </a>
-  </div>
+  </summary>
+  <div class="mt-4 flex flex-col gap-4">
 
   {#if availability && !availability.available}
     <Text size="small" color="muted">
@@ -238,4 +251,5 @@
       </div>
     {/if}
   {/if}
-</section>
+  </div>
+</details>

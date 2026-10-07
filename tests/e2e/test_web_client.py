@@ -474,6 +474,53 @@ def test_expired_sign_in_waits_for_manual_retry(page: Page, launch_app_url: str)
     expect(page).to_have_url(f"{launch_app_url}/auth/authorize")
 
 
+def test_new_memory_leads_with_the_types_and_remembers_the_open_ask_box(
+    page: Page, launch_app_url: str, launch_workspace
+) -> None:
+    _seed(launch_workspace)
+    page.goto(f"{launch_app_url}/app/create")
+    types = page.get_by_text("Memory type", exact=True)
+    ask = page.locator("details").filter(has_text="Describe the film in your own words")
+    expect(types).to_be_visible()
+    expect(ask).not_to_have_attribute("open", "")
+    expect(ask.get_by_text("Experimental")).to_be_visible()
+    assert types.bounding_box()["y"] < ask.bounding_box()["y"]
+    # The ask box is the page's second block, so the first form is still the memory form.
+    expect(
+        page.get_by_role("main").locator("form").first.get_by_text("Memory type")
+    ).to_be_visible()
+
+    # Click and read the stored answer in one browser task: a reload that comes right after the
+    # click must already find it, before the details element's asynchronous toggle event.
+    stored = page.evaluate(
+        """() => {
+            const summary = [...document.querySelectorAll('summary')]
+                .find((node) => node.textContent.includes('Describe the film in your own words'));
+            summary.click();
+            return localStorage.getItem('immich-memories:ask-open');
+        }"""
+    )
+    assert stored == "1"
+    expect(ask).to_have_attribute("open", "")
+    page.reload()
+    expect(ask).to_have_attribute("open", "")
+
+
+def test_the_tier_and_the_codec_are_dropdowns_with_readable_labels(
+    page: Page, launch_app_url: str, launch_workspace
+) -> None:
+    _seed(launch_workspace)
+    page.goto(f"{launch_app_url}/app/settings")
+    page.get_by_text("output", exact=True).click()
+    codec = page.get_by_label("output.codec", exact=True)
+    expect(codec.locator("option")).to_have_text(
+        ["H.264, software (libx264)", "H.265, software (libx265)", "ProRes (large files)"]
+    )
+    tier = page.get_by_label("tier", exact=True)
+    expect(tier.locator("option")).to_have_count(4)
+    expect(tier.locator("option", has_text="nas")).to_have_count(0)
+
+
 def test_fade_controls_save_a_default_and_submit_a_film_override(
     page: Page, launch_app_url: str, launch_workspace
 ) -> None:

@@ -14,6 +14,7 @@ from immich_memories.automation.candidates import (
     MemoryCandidate,
     make_memory_key,
 )
+from immich_memories.automation.closeness import UNKNOWN_WEIGHT
 from immich_memories.config_loader import Config
 from immich_memories.i18n import get_ordinal
 from immich_memories.memory_types.date_builders import build_birthday_windows
@@ -152,8 +153,12 @@ class PersonSpotlightDetector:
         today: date,
         person_asset_counts: dict[str, int] | None = None,
         upcoming_birthday_ids: set[str] | None = None,
+        closeness: dict[str, float] | None = None,
     ) -> list[MemoryCandidate]:
-        """``person_asset_counts`` counts each person's pictures in last year, not their lifetime."""
+        """``person_asset_counts`` counts each person's pictures in last year, not their lifetime.
+
+        ``closeness`` weighs each person by how close the registry says they are (#2232).
+        """
         if not people:
             return []
 
@@ -193,7 +198,8 @@ class PersonSpotlightDetector:
             appearance_ratio = (
                 asset_count / max_count if max_count > 0 else (len(top) - rank) / len(top)
             )
-            score = self.BASE_SCORE * max(0.2, appearance_ratio)
+            weight = (closeness or {}).get(person.id, UNKNOWN_WEIGHT)
+            score = self.BASE_SCORE * max(0.2, appearance_ratio) * weight
 
             ordinal = get_ordinal(rank + 1)
             count_str = f", {asset_count} assets" if asset_count else ""
@@ -279,6 +285,11 @@ class BirthdayDetector:
 
     BASE_SCORE = 0.75
     WINDOW_DAYS = 60
+    # A film of someone seen on two outings is a slideshow of one afternoon (#2232).
+    MIN_PICTURES = 50
+    MIN_DAYS = 3
+    # A birthday of the person seen least still gets half the score its closeness allows.
+    MATERIAL_FLOOR = 0.5
 
     def detect(
         self,
@@ -288,31 +299,31 @@ class BirthdayDetector:
         config: Config,
         today: date,
         person_asset_counts: dict[str, int] | None = None,
+        closeness: dict[str, float] | None = None,
+        busiest_count: int | None = None,
+        distinct_days: dict[str, int] | None = None,
+        notes: list[str] | None = None,
     ) -> list[MemoryCandidate]:
         """Emit candidates for people whose birthday was 2-60 days ago.
 
         ``person_asset_counts`` counts each person's pictures in the windows the birthday
-        film reads (``birthday_film_windows``), not their lifetime.
+        film reads (``birthday_film_windows``), not their lifetime. ``busiest_count`` is the
+        most pictures any one person has, which the others are scaled against;
+        ``distinct_days`` is how many days those pictures were taken on. A birthday that
+        misses the minimum is left out and the reason is appended to ``notes``.
         """
         counts = person_asset_counts or {}
+        busiest = max([busiest_count or 0, *counts.values()])
         candidates = []
 
         for person in people:
             if not person.name or not person.birth_date:
                 continue
 
-            # Skip people with no content in the film's windows (not worth generating)
-            if person_asset_counts is not None and counts.get(person.id, 0) == 0:
+            window = _completed_birthday_window(person.birth_date, today)
+            if window is None:
                 continue
-
-            bday = person.birth_date
-            most_recent_bday = _birthday_in_window(bday, today)
-            if most_recent_bday is None:
-                continue
-
-            completed_birthday_year = birthday_year(bday, most_recent_bday.year)
-            start = completed_birthday_year.start.date()
-            end = completed_birthday_year.end.date()
+            start, end, celebrated = window
             name_lower = person.name.lower()
             mem_key = make_memory_key("person_spotlight", start, end, [name_lower])
 
@@ -320,29 +331,83 @@ class BirthdayDetector:
                 continue
 
             asset_count = counts.get(person.id, 0)
-            age = most_recent_bday.year - bday.year
-            reason = (
-                f"Birthday ({age} years old), {asset_count} assets"
-                if asset_count
-                else f"Birthday ({age} years old)"
-            )
+            if person_asset_counts is not None and not self._enough_material(
+                person, asset_count, (distinct_days or {}).get(person.id), notes
+            ):
+                continue
 
             candidates.append(
-                MemoryCandidate(
-                    memory_type="person_spotlight",
-                    category=CandidateCategory.BIRTHDAY,
-                    date_range_start=start,
-                    date_range_end=end,
-                    person_names=[person.name],
-                    memory_key=mem_key,
-                    score=round(self.BASE_SCORE, 3),
-                    reason=reason,
-                    asset_count=asset_count,
-                    extra_params={"birthday": True, "birth_date": bday.isoformat()},
+                self._candidate(
+                    person,
+                    (start, end),
+                    mem_key,
+                    asset_count,
+                    celebrated.year - person.birth_date.year,
+                    self._score(person.id, asset_count, busiest, closeness),
                 )
             )
 
         return candidates
+
+    def _enough_material(
+        self, person, pictures: int, days: int | None, notes: list[str] | None
+    ) -> bool:
+        if pictures == 0:
+            # Nothing in the film's windows: not worth a note, let alone a film.
+            return False
+        if pictures < self.MIN_PICTURES:
+            shortfall = f"{pictures} pictures, it needs {self.MIN_PICTURES}"
+        elif days is not None and days < self.MIN_DAYS:
+            shortfall = f"{pictures} pictures over {days} days, it needs {self.MIN_DAYS} days"
+        else:
+            return True
+        if notes is not None:
+            notes.append(f"No birthday film for {person.name}: {shortfall}")
+        return False
+
+    def _candidate(
+        self,
+        person,
+        window: tuple[date, date],
+        mem_key: str,
+        asset_count: int,
+        age: int,
+        score: float,
+    ) -> MemoryCandidate:
+        reason = (
+            f"Birthday ({age} years old), {asset_count} assets"
+            if asset_count
+            else f"Birthday ({age} years old)"
+        )
+        return MemoryCandidate(
+            memory_type="person_spotlight",
+            category=CandidateCategory.BIRTHDAY,
+            date_range_start=window[0],
+            date_range_end=window[1],
+            person_names=[person.name],
+            memory_key=mem_key,
+            score=round(score, 3),
+            reason=reason,
+            asset_count=asset_count,
+            extra_params={"birthday": True, "birth_date": person.birth_date.isoformat()},
+        )
+
+    def _score(
+        self, person_id: str, pictures: int, busiest: int, closeness: dict[str, float] | None
+    ) -> float:
+        weight = (closeness or {}).get(person_id, UNKNOWN_WEIGHT)
+        if not busiest or not pictures:
+            return self.BASE_SCORE * weight
+        return self.BASE_SCORE * weight * max(self.MATERIAL_FLOOR, min(1.0, pictures / busiest))
+
+
+def _completed_birthday_window(bday: date, today: date) -> tuple[date, date, date] | None:
+    """The year a birthday film covers and the birthday that closed it, when one is due."""
+    celebrated = _birthday_in_window(bday, today)
+    if celebrated is None:
+        return None
+    span = birthday_year(bday, celebrated.year)
+    return span.start.date(), span.end.date(), celebrated
 
 
 def _birthday_in_window(bday: date, today: date) -> date | None:

@@ -22,12 +22,12 @@ from immich_memories.preflight import (
     CheckStatus,
     check_caption_endpoint,
     check_host_paths,
-    check_llm,
     check_notifications,
     check_title_rendering,
     run_preflight_checks,
 )
 from immich_memories.preflight_immich import check_immich
+from immich_memories.preflight_llm import check_llm
 from immich_memories.preflight_run import check_detector_export, check_encoder
 
 
@@ -353,7 +353,7 @@ def test_title_rendering_on_the_gpu_tier_reads_as_the_design_not_a_fault() -> No
         result = check_title_rendering(Config(), inference_gpu=True)
 
     assert result.status is CheckStatus.OK
-    assert result.message.startswith("GPU is used for picture preparation")
+    assert result.message == "Titles render on the CPU; the GPU is for picture preparation"
 
 
 def test_hardware_row_on_the_gpu_tier_is_not_a_warning() -> None:
@@ -372,7 +372,22 @@ def test_hardware_row_on_the_gpu_tier_is_not_a_warning() -> None:
         result = check_hardware(inference_gpu=True)
 
     assert result.status is CheckStatus.OK
-    assert "encoding and titles stay on the CPU" in result.message
+    assert result.message == "Picture preparation on the GPU; encoding on the CPU (libx264)"
+
+
+def test_hardware_row_names_nvenc_when_the_app_pod_has_the_gpu_too() -> None:
+    from immich_memories.preflight import check_hardware
+    from immich_memories.processing.hardware import HWAccelBackend, HWAccelCapabilities
+
+    # WHY: detection probes the real encoders; this is what a GPU app pod answers.
+    with patch(
+        "immich_memories.processing.hardware.detect_hardware_acceleration",
+        return_value=HWAccelCapabilities(backend=HWAccelBackend.NVIDIA, device_name="RTX 4000"),
+    ):
+        result = check_hardware(inference_gpu=True)
+
+    assert result.status is CheckStatus.OK
+    assert result.message == "Encoding on NVENC (RTX 4000); picture preparation on the GPU"
 
 
 def test_title_rendering_preflight_reports_a_cpu_that_cannot_run_a_kernel() -> None:

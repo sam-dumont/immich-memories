@@ -179,3 +179,67 @@ def test_a_reduced_preparation_tier_says_so_under_the_thesis(tmp_path: Path) -> 
 
     (tmp_path / "preparation.private.json").write_text(json.dumps({"tier": "full"}))
     assert preparation_note(tmp_path) == ""
+
+
+def _attempt_with_refinement(tmp_path: Path, refinement: dict | None) -> Path:
+    """A GPU-tier attempt: the draft pass wrote no captions, refinement captioned what it picked."""
+    (tmp_path / "plan.private.json").write_text(json.dumps(_plan()))
+    (tmp_path / "preparation.private.json").write_text(
+        json.dumps({"tier": "no_captions", "missing_by_producer": {}, "failures": {}})
+    )
+    if refinement is not None:
+        round_dir = tmp_path / "refinement" / "0001"
+        round_dir.mkdir(parents=True)
+        (round_dir / "preparation.private.json").write_text(json.dumps(refinement))
+    return tmp_path
+
+
+def test_a_gpu_cut_whose_refinement_captioned_its_pictures_carries_no_banner(tmp_path):
+    attempt = _attempt_with_refinement(
+        tmp_path,
+        {
+            "tier": "full",
+            "produced": {"descriptions": 7},
+            "missing_by_producer": {},
+            "failures": {},
+        },
+    )
+
+    assert read_story_view(attempt).preparation == ""
+
+
+def test_a_gpu_cut_the_captioner_missed_some_pictures_of_says_so(tmp_path):
+    attempt = _attempt_with_refinement(
+        tmp_path,
+        {
+            "tier": "full",
+            "missing_by_producer": {"description:model@v1": ["a1", "a2"]},
+            "failures": {},
+        },
+    )
+
+    assert read_story_view(attempt).preparation == (
+        "Some pictures were edited without descriptions."
+    )
+
+
+def test_a_gpu_cut_whose_captioner_was_down_says_so(tmp_path):
+    attempt = _attempt_with_refinement(
+        tmp_path,
+        {"tier": "full", "missing_by_producer": {}, "failures": {"captions": "ConnectError: down"}},
+    )
+
+    assert read_story_view(attempt).preparation.startswith("Some pictures were edited without")
+
+
+def test_basic_keeps_the_whole_cut_line_when_nothing_was_refined(tmp_path):
+    attempt = _attempt_with_refinement(tmp_path, None)
+
+    assert "classified, not read" in read_story_view(attempt).preparation
+
+
+def test_metadata_only_is_unchanged_whatever_refinement_did(tmp_path):
+    (tmp_path / "plan.private.json").write_text(json.dumps(_plan()))
+    (tmp_path / "preparation.private.json").write_text(json.dumps({"tier": "metadata_only"}))
+
+    assert "metadata only" in read_story_view(tmp_path).preparation

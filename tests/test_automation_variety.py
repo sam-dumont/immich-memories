@@ -190,3 +190,34 @@ def test_person_outside_last_two_person_runs_is_eligible() -> None:
 
     assert decision.eligible == [carol]
     assert decision.rejected == []
+
+
+def test_a_backfill_may_follow_a_backfill_but_another_category_may_not_repeat():
+    history = [_completed(CandidateCategory.BACKFILL)]
+
+    backfill = apply_variety_rules([_candidate(CandidateCategory.BACKFILL)], history, TODAY)
+    album = apply_variety_rules(
+        [_candidate(CandidateCategory.ALBUM)], [_completed(CandidateCategory.ALBUM)], TODAY
+    )
+
+    assert [c.category for c in backfill.eligible] == [CandidateCategory.BACKFILL]
+    assert [r.rule for r in album.rejected] == ["same_category_as_previous"]
+
+
+def test_six_backfills_in_a_row_still_yield_a_backfill_but_other_categories_stay_capped():
+    backfills = [
+        _completed(CandidateCategory.BACKFILL, created_at=datetime(2026, 8, 5 + i, 9, 0))
+        for i in range(6)
+    ]
+    # Newest first: a trip last, two albums before it.
+    others = [
+        _completed(CandidateCategory.TRIP, created_at=datetime(2026, 8, 9, 9, 0)),
+        _completed(CandidateCategory.ALBUM, created_at=datetime(2026, 8, 8, 9, 0)),
+        _completed(CandidateCategory.ALBUM, created_at=datetime(2026, 8, 7, 9, 0)),
+    ]
+
+    backfill = apply_variety_rules([_candidate(CandidateCategory.BACKFILL)], backfills, TODAY)
+    album = apply_variety_rules([_candidate(CandidateCategory.ALBUM)], others, TODAY)
+
+    assert [c.category for c in backfill.eligible] == [CandidateCategory.BACKFILL]
+    assert [r.rule for r in album.rejected] == ["category_limit_two_of_six"]
