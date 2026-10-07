@@ -1,5 +1,6 @@
 import React from "react";
 import {
+  mdiAccountMultipleOutline,
   mdiCogOutline,
   mdiHistory,
   mdiLightbulbOutline,
@@ -12,16 +13,17 @@ import { Mdi } from "./Mdi";
 /**
  * web/src/routes/+layout.svelte: @immich/ui's AppShell with the app's own mark
  * (the movie-open-star icon and its name, never Immich's logo), the language
- * select, demo mode and the theme switch in the header, and four destinations
+ * select, demo mode and the theme switch in the header, and five destinations
  * in the sidebar.
  */
 
-export type NavPage = "Memory" | "Suggestions" | "Runs" | "Settings";
+export type NavPage = "Memory" | "Suggestions" | "Runs" | "People" | "Settings";
 
 const NAVIGATION: { title: NavPage; icon: string }[] = [
   { title: "Memory", icon: mdiMovieOpenStarOutline },
   { title: "Suggestions", icon: mdiLightbulbOutline },
   { title: "Runs", icon: mdiHistory },
+  { title: "People", icon: mdiAccountMultipleOutline },
   { title: "Settings", icon: mdiCogOutline },
 ];
 
