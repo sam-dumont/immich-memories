@@ -1169,14 +1169,14 @@ class TestRunOneOutcomes:
         lines and the runner's single-line extraction would only recover a fragment
         (#1954). Renders through the CLI's own `print_info`, not a hand-built string."""
         from immich_memories.cli import _helpers
-        from immich_memories.cli._pipeline_runner import _nothing_worth_a_film_message
+        from immich_memories.cli.declined_period import nothing_worth_a_film_message
         from immich_memories.timeperiod import DateRange
 
         reason = (
             "No picture satisfies the requested people condition: 2 picture(s) were "
             "left out before planning, and nothing else was offered."
         )
-        message = _nothing_worth_a_film_message(
+        message = nothing_worth_a_film_message(
             DateRange(start=datetime(2019, 2, 1), end=datetime(2019, 2, 28, 23, 59, 59)),
             {"no_selection_reason": reason},
         )

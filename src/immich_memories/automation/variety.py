@@ -60,9 +60,16 @@ def rejection_rule(
     recent_auto_runs: list[RunMetadata],
     today: date,
 ) -> str | None:
-    if previous is not None and previous.memory_category == candidate.category.value:
+    # Backfill is the filler for quiet nights, so it is exempt from both repeat rules: it has
+    # the lowest base score and loses to anything fresher.
+    repeats_allowed = candidate.category is CandidateCategory.BACKFILL
+    if (
+        previous is not None
+        and previous.memory_category == candidate.category.value
+        and not repeats_allowed
+    ):
         return "same_category_as_previous"
-    if category_counts[candidate.category.value] >= 2:
+    if category_counts[candidate.category.value] >= 2 and not repeats_allowed:
         return "category_limit_two_of_six"
     if candidate.category is CandidateCategory.MONTHLY_REVIEW and any(
         run.memory_category == CandidateCategory.MONTHLY_REVIEW.value

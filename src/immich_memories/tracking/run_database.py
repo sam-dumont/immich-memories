@@ -520,6 +520,24 @@ class RunDatabase:
         runs = self._select_runs(query.order_by(*_COMPLETION_ORDER).limit(1), with_phases=False)
         return runs[0] if runs else None
 
+    def get_last_run_of_category(
+        self,
+        memory_category: str,
+        source: str | None = None,
+    ) -> RunMetadata | None:
+        """The most recent completed run a detector filed under this category.
+
+        Backfill and the per-person months render as `monthly_highlights`, so only the
+        category says which of them a film was.
+        """
+        query = sa.select(pipeline_runs).where(
+            _RUNS.memory_category == memory_category, _RUNS.status == "completed"
+        )
+        if source is not None:
+            query = query.where(_RUNS.source == source)
+        runs = self._select_runs(query.order_by(*_COMPLETION_ORDER).limit(1), with_phases=False)
+        return runs[0] if runs else None
+
     def get_generated_memory_keys(self) -> set[str]:
         """Get all memory_keys a finished film exists for.
 

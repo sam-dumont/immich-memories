@@ -224,3 +224,38 @@ class TestScoreAndRank:
         expected_richness = min(1.0, math.log(100) / math.log(1000))
         expected = 1.0 * 0.7 + 1.0 * 0.3 * expected_richness
         assert abs(c.score - expected) < 0.01
+
+
+class TestNewDetectorsHaveTheirOwnCapAndCooldown:
+    def test_each_new_type_keeps_one_candidate_per_run(self):
+        today = date(2026, 10, 7)
+        candidates = [
+            _make_candidate(memory_type=t, memory_key=f"{t}:{i}", end=date(2026, 9, 1))
+            for t in ("season", "holiday", "album", "monthly_backfill", "person_monthly")
+            for i in range(3)
+        ]
+
+        ranked = score_and_rank(candidates, set(), today, {})
+
+        assert sorted(c.memory_type for c in ranked) == [
+            "album",
+            "holiday",
+            "monthly_backfill",
+            "person_monthly",
+            "season",
+        ]
+
+    def test_a_backfill_is_not_cooled_by_a_monthly_film_made_yesterday(self):
+        today = date(2026, 10, 7)
+        backfill = _make_candidate(memory_type="monthly_backfill", end=date(2026, 8, 31))
+        twin = _make_candidate(memory_type="monthly_backfill", end=date(2026, 8, 31))
+
+        # The monthly's cooldown is filed under monthly_highlights; backfill has its own entry.
+        cooled_by_monthly = score_and_rank(
+            [backfill], set(), today, {"monthly_highlights": date(2026, 10, 6)}
+        )[0].score
+        cooled_by_itself = score_and_rank(
+            [twin], set(), today, {"monthly_backfill": date(2026, 10, 6)}
+        )[0].score
+
+        assert cooled_by_itself < cooled_by_monthly

@@ -35,6 +35,9 @@ export const UI = {
   info100: "var(--immich-ui-info-100)",
   info200: "var(--immich-ui-info-200)",
   info800: "var(--immich-ui-info-800)",
+  warning100: "var(--immich-ui-warning-100)",
+  warning200: "var(--immich-ui-warning-200)",
+  warning800: "var(--immich-ui-warning-800)",
 } as const;
 
 export const FPS = 30;

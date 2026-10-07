@@ -151,6 +151,8 @@ def detect_dominant_hdr_transfer(
 ) -> HdrTransfer:
     """Return the exact dominant source transfer, or NONE for all-SDR input."""
     counts = {HdrTransfer.HLG: 0, HdrTransfer.PQ: 0}
+    # Photo animations carry the app's own PQ intermediate; the log says how many *videos* are HDR.
+    videos = {HdrTransfer.HLG: 0, HdrTransfer.PQ: 0}
     for clip in clips:
         path = clip.path if hasattr(clip, "path") else clip
         hdr_type = (
@@ -158,19 +160,19 @@ def detect_dominant_hdr_transfer(
             if probe_cache is not None
             else _detect_hdr_type(path)
         )
-        if hdr_type == HdrTransfer.HLG.value:
-            counts[HdrTransfer.HLG] += 1
-        elif hdr_type == HdrTransfer.PQ.value:
-            counts[HdrTransfer.PQ] += 1
+        for transfer in counts:
+            if hdr_type == transfer.value:
+                counts[transfer] += 1
+                videos[transfer] += not getattr(clip, "is_photo", False)
 
     if counts[HdrTransfer.PQ] > counts[HdrTransfer.HLG]:
         logger.info(
-            "Detected HDR10/PQ format (Android/Samsung/Pixel) - %d clips",
-            counts[HdrTransfer.PQ],
+            "Detected HDR10/PQ format (Android/Samsung/Pixel) - %d video clips",
+            videos[HdrTransfer.PQ],
         )
         return HdrTransfer.PQ
     if counts[HdrTransfer.HLG] > 0:
-        logger.info("Detected HLG format (iPhone) - %d clips", counts[HdrTransfer.HLG])
+        logger.info("Detected HLG format (iPhone) - %d video clips", videos[HdrTransfer.HLG])
         return HdrTransfer.HLG
     return HdrTransfer.NONE
 

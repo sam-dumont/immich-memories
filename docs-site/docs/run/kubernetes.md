@@ -149,6 +149,19 @@ kubectl rollout status -n immich-memories deploy/immich-memories
 test cluster) and the pod sits in `ContainerCreating` the whole time. That is the pull, not a stuck
 pod: `kubectl describe pod -n immich-memories` shows `Pulling image`.
 
+On the GPU and Full tiers the app is Ready well before the model services are. A `preflight` in
+that gap prints three GPU warnings (`No verified inference GPU for requested gpu tier`, kernels on
+the CPU) that clear on their own about two minutes later. Wait for both first, or re-run
+`preflight` once they are Ready:
+
+```bash
+kubectl rollout status -n immich-memories deploy/immich-memories-inference
+kubectl rollout status -n immich-memories deploy/immich-memories-captioner
+```
+
+The [setup builder](/setup) puts both after the app's own `rollout status` on those tiers, and it
+pins the tier you picked, Basic included, with `IMMICH_MEMORIES_DEPLOYMENT_TIER`.
+
 The temporary Secret file is private (mode 0600); remove it after applying.
 The base uses an existing `immich-memories-secrets` Secret. GitOps users can skip the plaintext
 copy and use [SOPS or External Secrets](reference/kubernetes.md#bring-your-own-secret).
@@ -478,12 +491,17 @@ kubectl logs -n immich-memories job/trigger-test
 `Complete` only means the trigger was accepted: the Job's log is just
 `{"status":"accepted","attempt_id":"...","status_url":"/api/trigger/..."}` and the Job is done in a
 few seconds. The film is made by the running app, detached from that HTTP request, and a year can
-take close to an hour on four CPU cores (55 minutes for a 538 s film on the first trigger of a fresh library). Follow it with the attempt id and the token:
+take close to an hour on four CPU cores (55 minutes for a 538 s film on the first trigger of a fresh library). Follow it with the attempt id and the token.
+
+The app image has no `curl`, so `kubectl exec` can't make this call. Run it from your machine
+instead: this reads the attempt id from the Job's log, forwards a local port, asks, and stops the
+forward.
 
 ```bash
-kubectl port-forward -n immich-memories svc/immich-memories 8080:80
 TOKEN=$(kubectl get secret -n immich-memories immich-memories-secrets -o jsonpath='{.data.IMMICH_MEMORIES_SERVER__TRIGGER_TOKEN}' | base64 -d)
-curl -s -H "Host: localhost" -H "Authorization: Bearer $TOKEN" http://localhost:8080/api/trigger/<attempt_id>
+ATTEMPT=$(kubectl logs -n immich-memories job/trigger-test | sed -n 's/.*"attempt_id":"\([^"]*\)".*/\1/p')
+kubectl port-forward -n immich-memories svc/immich-memories 8081:80 >/dev/null 2>&1 & sleep 3
+curl -s -H "Host: localhost" -H "Authorization: Bearer $TOKEN" "http://localhost:8081/api/trigger/$ATTEMPT"; kill %1
 ```
 
 The answer carries `state` (`running`, then `completed`, `failed` or `skipped`), `phase`, `reason`

@@ -526,6 +526,7 @@ src/immich_memories/
 │   │                           # preview, original, motion, playback) through its owner's account, kept
 │   │                           # open until the run ends; uploads stay primary. AccountReadFailed names it
 │   ├── compatibility.py        # Immich API-version compatibility policy (v2/v3 resolution)
+│   ├── local_network.py        # macOS Local Network permission hint for an unreachable private address
 │   └── models.py               # API data models (Asset, Person, etc.)
 │
 ├── photos/                     # Photo-to-video animation (converts stills to .mp4 clips)
@@ -849,6 +850,7 @@ src/immich_memories/
 │   ├── _config_errors.py       # Config error formatting
 │   ├── _flags.py               # Shared validation for flags more than one command takes
 │   ├── _pipeline_runner.py     # Run SmartPipeline over the fetched assets + generate
+│   ├── declined_period.py      # A period with nothing to film ends as a declined film (marker automation reads)
 │   ├── source_progress.py      # Source-stage progress bar, plus the throttled phase-log feed
 │   ├── attempt_phase_reporter.py # Feeds a scheduled attempt's phase events from the generate child
 │   ├── _editorial_context.py   # CLI flags + presets -> one EditorialRunContext
@@ -897,6 +899,7 @@ src/immich_memories/
 │   ├── roster.py               # /roster: the store's people registry (roles, relationships, alias link/unlink) for People
 │   ├── people_accounts.py      # /roster/owners (who owns each account) and /accounts/{name}/people (pick a person to link)
 │   ├── settings.py             # /settings: every setting + its source, saved to the database; /caches
+│   ├── setting_inputs.py       # What each setting accepts (choices, bounds, secret) read from the config schema
 │   ├── schemas.py              # Pydantic response models = the contract (openapi.json)
 │   ├── dependencies.py         # Config, thumbnail cache, Immich fetches; overridable in tests
 │   ├── openapi.json            # Generated (make web-api); web/src/lib/api-types.ts comes from it
@@ -1108,6 +1111,14 @@ src/immich_memories/
 │   ├── candidate_discovery.py  # CandidateDiscovery: one library snapshot -> ranked candidates
 │   ├── event_detectors.py      # Event-based detectors (activity bursts)
 │   ├── calendar_detectors.py   # Calendar-based detectors (monthly, yearly)
+│   ├── season_holiday_detectors.py  # Season that just ended, holiday across years
+│   ├── album_detector.py       # New or grown Immich albums
+│   ├── backfill_detector.py    # Months with no film yet, quiet-night filler
+│   ├── person_detectors.py     # Last month's film per close person
+│   ├── closeness.py            # Registry tier/role -> score weight for people films
+│   ├── material.py             # Window picture counts the detectors above read
+│   ├── discovery_extras.py     # The Immich reads behind them, each failure a note
+│   ├── extra_detectors.py      # Runs the five new detectors over one snapshot
 │   ├── special_day_scan.py     # Scheduled scan for days worth resurfacing (skips holidays and trips)
 │   ├── special_day_facts.py    # No-model day scan: one loud fact per day, ranked, a few a year
 │   ├── variety.py              # Cadence and rotation rules for candidates
@@ -1127,6 +1138,7 @@ src/immich_memories/
 │   ├── runner.py               # Auto-run orchestrator (lease, subprocess, attempt record)
 │   ├── in_process_scheduler.py # Daily timer inside the UI/Docker process
 │   ├── runtime_provenance.py   # Which code a scheduled job actually ran: version, commit, checkout age
+│   ├── local_network_check.py  # macOS: one-shot launchd check that a scheduled job can reach a LAN Immich
 │   └── system_scheduler.py     # OS scheduler integration (launchd/systemd/cron)
 │
 ├── operations/                 # Public lifecycle contract + read-only ops reports
@@ -1204,6 +1216,7 @@ src/immich_memories/
 ├── place_phrases/              # Per-language trip-title place phrases, one module per language; none = no preposition
 ├── locales/                    # Fourteen languages: messages.po for films, ui.po for the interface
 ├── preflight.py                # Dependency checks
+├── preflight_llm.py            # LLM and reader endpoint checks (Ollama, OpenAI-compatible, Anthropic, local reader)
 ├── preflight_immich.py         # Immich connection and least-privilege diagnostics
 ├── setup_capabilities.py       # ACE-Step profile memory advice and synthetic audio validation
 ├── preflight_compute.py        # Inference GPU health/device evidence, without changing requested tier

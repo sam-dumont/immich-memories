@@ -6,7 +6,6 @@ the assets the CLI fetched, then generates the final video from its cut.
 
 from __future__ import annotations
 
-import calendar
 import logging
 import sys
 from pathlib import Path
@@ -31,9 +30,9 @@ from immich_memories.cli._run_inputs import ResolvedRunInputs
 from immich_memories.cli._run_summary import render_run_summary
 from immich_memories.cli._run_timeline import configure_timeline, final_timeline
 from immich_memories.cli.attempt_phase_reporter import AttemptPhaseReporter
+from immich_memories.cli.declined_period import end_run_without_a_film, nothing_worth_a_film_message
 from immich_memories.cli.source_progress import SourceProgressReporter
 from immich_memories.filename_builder import name_after_recipe
-from immich_memories.operations.auto_output import NOTHING_WORTH_A_FILM
 from immich_memories.operations.run_index import run_id_for_attempt
 from immich_memories.operations.storyboard import read_storyboard
 from immich_memories.timeperiod import DateRange
@@ -106,39 +105,6 @@ def _configure_output_canvas(
         clips=planning_sources,
         hardware_hevc=lambda: hardware_hevc_available(config),
     )
-
-
-def period_name(date_range: DateRange) -> str:
-    """How a person names the period: "2019", "February 2019", or the dates."""
-    start, end = date_range.start, date_range.end
-    if date_range.is_calendar_year:
-        return str(start.year)
-    last_day = calendar.monthrange(start.year, start.month)[1]
-    if start.day == 1 and (end.year, end.month, end.day) == (start.year, start.month, last_day):
-        return start.strftime("%B %Y")
-    return date_range.description
-
-
-def _nothing_worth_a_film_message(date_range: DateRange, stats: dict) -> str:
-    """The marker stays first so automation's substring match keeps working
-    (automation/runner.py); a people condition that excluded the whole pool adds its own
-    specific reason after it (#1954)."""
-    message = f"{NOTHING_WORTH_A_FILM} in {period_name(date_range)}"
-    reason = stats.get("no_selection_reason")
-    return f"{message}: {reason}" if reason else message
-
-
-def _end_run_without_a_film() -> None:
-    """Close the observed run as "stopped before a film", not as a completed one (#2209).
-
-    A declined period made nothing: history, the cooldown and the last-completed-run
-    read must not count it. Without an observed run there is nothing to close.
-    """
-    from immich_memories.tracking.run_observations import current_tracker
-
-    tracker = current_tracker()
-    if tracker is not None and tracker.current_run is not None:
-        tracker.cancel_run()
 
 
 def _stops_before_rendering(*, dry_run: bool, no_render: bool) -> bool:
@@ -539,9 +505,9 @@ def run_pipeline_and_generate(
         # failure; an empty pool is still an error (a filter or connection gone wrong).
         if all_candidates:
             print_info(
-                _nothing_worth_a_film_message(date_range, pipeline_result.stats), soft_wrap=True
+                nothing_worth_a_film_message(date_range, pipeline_result.stats), soft_wrap=True
             )
-            _end_run_without_a_film()
+            end_run_without_a_film()
             sys.exit(0)
         print_error("Pipeline selected no clips")
         sys.exit(1)

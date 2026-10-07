@@ -106,7 +106,8 @@ def test_cli_generate_passes_configured_api_version_to_client(tmp_path: Path) ->
             ],
         )
 
-    assert result.exit_code == 1
+    # An empty period is a declined film now (#2222), so the run ends calmly after the client is built.
+    assert result.exit_code == 0
     client_factory.assert_called_once_with(
         base_url="https://immich.example.com",
         api_key="test-api-key",

@@ -279,7 +279,8 @@ def register_config_commands(main: click.Group) -> None:
         table = Table(title="Provider Status")
         table.add_column("Provider", style="cyan")
         table.add_column("Status")
-        table.add_column("Message")
+        # Fold, never cut: a long path in a message must stay checkable by eye (#2246).
+        table.add_column("Message", overflow="fold")
         if verbose:
             table.add_column("Details", style="dim")
 

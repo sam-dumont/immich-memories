@@ -155,6 +155,36 @@ test('Kubernetes install list fetches models before the first film', () => {
   assert.ok(fetch < rows.findIndex(row => /immich-memories preflight$/.test(row)));
 });
 
+test('Kubernetes GPU tiers wait for the model services before the first preflight; Basic has none', () => {
+  for (const tier of ['gpu', 'full']) {
+    const rows = lines(buildSetup({...kube, tier, readerUrl: 'http://r:8000/v1', readerModel: 'm'}, sources, '1.2.3').commands);
+    const preflight = rows.findIndex(row => /immich-memories preflight$/.test(row));
+    for (const name of ['immich-memories-inference', 'immich-memories-captioner']) {
+      const wait = rows.findIndex(row => row === `kubectl rollout status -n immich-memories deploy/${name}`);
+      assert.ok(wait > -1 && wait < preflight, `${tier} waits for ${name}`);
+    }
+  }
+  assert.doesNotMatch(buildSetup({...kube, tier: 'basic'}, sources, '1.2.3').commands, /deploy\/immich-memories-(inference|captioner)/);
+});
+
+test('Kubernetes pins the tier it was asked for, Basic included', () => {
+  for (const tier of ['basic', 'gpu', 'full']) {
+    const result = buildSetup({...kube, tier, readerUrl: 'http://r:8000/v1', readerModel: 'm'}, sources, '1.2.3');
+    const kustomization = result.files.find(file => file.name.endsWith('custom/kustomization.yaml')).data;
+    const patch = JSON.stringify(kustomization.patches);
+    assert.match(patch, new RegExp(`IMMICH_MEMORIES_DEPLOYMENT_TIER[^}]*${tier}`));
+  }
+});
+
+test('the trigger check is a ready command that does not need curl in the app image', () => {
+  const rows = lines(buildSetup({...kube, automation: true, triggerToken: 'b'.repeat(64)}, sources, '1.2.3').commands);
+  const create = rows.findIndex(row => /^kubectl create job .*trigger-test$/.test(row));
+  const status = rows.findIndex(row => /^curl .*\/api\/trigger\/\$ATTEMPT/.test(row));
+  assert.ok(create > -1 && status > create);
+  assert.ok(rows.some(row => /^kubectl port-forward .*8081:80/.test(row)));
+  assert.doesNotMatch(rows.join('\n'), /kubectl exec[^\n]*curl/);
+});
+
 const triggerToken = 'b'.repeat(64);
 
 test('Kubernetes without automation has no trigger token and leaves the CronJobs off', () => {

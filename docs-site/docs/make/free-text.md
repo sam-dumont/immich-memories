@@ -58,7 +58,7 @@ model). The web client shows the same warning in its preview, before it starts.
 <Diagram name="seq-ask" headline="Ask for a film in a sentence. Pictures that aren't prepared yet get prepared first." />
 ## Preview, then make the film
 
-In the web UI, use **Describe the film you want** on **Memory** and inspect the preview. Read
+In the web UI, open **Describe the film in your own words** under the memory types on **New memory** and inspect the preview. Read
 the translated people, dates, places and subject. Check the pool: a plausible sentence does not
 guarantee the right pictures. The preview's verdict is one of four: **possible** (enough
 pictures, the film is made), **thin** (fewer, a short film is made and the run says why),

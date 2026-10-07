@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from datetime import UTC, datetime
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -755,6 +756,24 @@ class TestDetectDominantHdrTransfer:
         # WHY: _detect_hdr_type shells out to ffprobe
         with patch("immich_memories.processing.hdr_utilities._detect_hdr_type", side_effect=probed):
             assert detect_dominant_hdr_transfer(clips) is expected
+
+
+def test_the_hdr_line_counts_video_clips_and_not_photo_animations(tmp_path, caplog):
+    """A photo's PQ intermediate is the app's own: the "N clips" line was counting them (#2246)."""
+    clips = [
+        AssemblyClip(path=tmp_path / "v.mp4", duration=1.0),
+        AssemblyClip(path=tmp_path / "p1.mp4", duration=1.0, is_photo=True),
+        AssemblyClip(path=tmp_path / "p2.mp4", duration=1.0, is_photo=True),
+    ]
+
+    with (
+        # WHY: _detect_hdr_type shells out to ffprobe
+        patch("immich_memories.processing.hdr_utilities._detect_hdr_type", return_value="pq"),
+        caplog.at_level(logging.INFO, logger="immich_memories.processing.hdr_utilities"),
+    ):
+        assert detect_dominant_hdr_transfer(clips) is HdrTransfer.PQ
+
+    assert "Detected HDR10/PQ format (Android/Samsung/Pixel) - 1 video clips" in caplog.text
 
 
 def _conversion(source, target, primaries=None, *, zscale=True):

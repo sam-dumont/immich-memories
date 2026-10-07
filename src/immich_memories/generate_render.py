@@ -18,6 +18,7 @@ from immich_memories.generate_privacy import (
 from immich_memories.generate_progress import (
     _OperationalProgress,
     _PipelineProgress,
+    clip_preparation_events,
     render_progress_events,
 )
 from immich_memories.generate_settings import (
@@ -175,6 +176,21 @@ def _emit_download_phase(
         operational.emit(OperationalPhase.DOWNLOAD, current, total, message)
 
 
+def _with_clip_preparation_events(
+    params: GenerationParams, operational: _OperationalProgress
+) -> GenerationParams:
+    """Report "Preparing clips (n/N)" while sources download and cut (#2243)."""
+    total = len(params.clips)
+    if operational.phase_is_unperformed(OperationalPhase.DOWNLOAD):
+        phase = OperationalPhase.DOWNLOAD
+    else:
+        # Selection already finished upstream: the next phase the lifecycle allows is render.
+        phase = OperationalPhase.RENDER
+        operational.emit(phase, 0, total, f"Preparing clips (0/{total})")
+    callback = clip_preparation_events(params.progress_callback, operational, phase, total)
+    return replace(params, progress_callback=callback)
+
+
 def _extracted_sources(
     params: GenerationParams, run_output_dir: Path, *, probe_cache: ProbeCache
 ) -> list:
@@ -271,7 +287,11 @@ def render_local(
                 "Preparing source downloads",
             )
 
-            assembly_clips = _extracted_sources(params, run_output_dir, probe_cache=probe_cache)
+            assembly_clips = _extracted_sources(
+                _with_clip_preparation_events(params, operational),
+                run_output_dir,
+                probe_cache=probe_cache,
+            )
             run_tracker.complete_phase(items_processed=len(assembly_clips))
             _emit_download_phase(
                 operational,

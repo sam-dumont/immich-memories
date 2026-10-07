@@ -235,3 +235,31 @@ def test_a_free_form_run_label_of_any_length_is_kept(store):
     assert run is not None
     assert run.source == label
     assert run.memory_key == "k:" + "x" * 900
+
+
+def test_the_last_run_of_a_category_is_told_apart_from_its_memory_type(store):
+    db = RunDatabase(store)
+    db.save_run(
+        _run(
+            "monthly",
+            0,
+            memory_type="monthly_highlights",
+            memory_category="monthly_review",
+            source="auto",
+            status="completed",
+        )
+    )
+    db.save_run(
+        _run(
+            "backfill",
+            10,
+            memory_type="monthly_highlights",
+            memory_category="backfill",
+            source="auto",
+            status="completed",
+        )
+    )
+
+    assert db.get_last_run_of_category("monthly_review", source="auto").run_id == "monthly"
+    assert db.get_last_run_of_category("backfill", source="auto").run_id == "backfill"
+    assert db.get_last_run_of_category("person_monthly", source="auto") is None

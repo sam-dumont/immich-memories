@@ -5,22 +5,24 @@ import { COLORS, UI } from "../theme";
 import { WindowFrame, onScreen } from "../components/WindowFrame";
 import { AppShell, MAIN_X, MAIN_Y } from "../components/AppShell";
 import { AnimatedCursor } from "../components/AnimatedCursor";
-import { Button, CommandLine, Field, Heading } from "../components/ui";
+import { Badge, Button, CommandLine, Field, Heading } from "../components/ui";
 
 /**
  * web/src/routes/create/+page.svelte: the memory type as chips, the fields
  * that type reads, the people, the folded "Length and pictures", then the
- * command the server reads the brief as, and Cut. The fixture library is one
- * household's June 2024, so the brief asks for that month.
+ * command the server reads the brief as, and Cut. Below the form sits the
+ * closed, experimental "Describe the film in your own words"
+ * (web/src/lib/AskPanel.svelte). The fixture library is one household's
+ * June 2024, so the brief asks for that month.
  */
 
 // The page's own order (FIELDS in create/+page.svelte), in the reader's words (labels.ts).
 const TYPES = [
+  "Monthly Highlights",
   "Year in Review",
   "Season",
   "Person Spotlight",
   "Multi-Person",
-  "Monthly Highlights",
   "On This Day",
   "Album",
   "Trip",
@@ -28,6 +30,8 @@ const TYPES = [
   "Special day",
   "Custom date range",
 ];
+// The month select lists names, in the interface language.
+const MONTHS = ["", "January", "February", "March", "April", "May", "June", "July", "August"];
 // The fixture library's cast (tests/e2e/fake_library.py), nobody's family.
 const PEOPLE = ["Robin", "Charlie", "Kit"];
 
@@ -35,7 +39,7 @@ const PICK_TYPE = 45;
 const CLICK_YEAR = 80;
 const TYPE_YEAR = [86, 98];
 const CLICK_MONTH = 112;
-const TYPE_MONTH = 118;
+const TYPE_MONTH = 120;
 export const CLICK_CUT = 150;
 
 // The page asks the server for the command 150 ms after the brief changes.
@@ -49,13 +53,13 @@ const FIELDS_Y = CHIPS_Y + 4 * CHIP_H + 3 * 8 + 24;
 const FIELD_W = (CONTENT_W - 16) / 2;
 const CUT_Y = FIELDS_Y + 66 + 24 + 82 + 24 + 54 + 24 + 48 + 8;
 
-const PICK_XY = onScreen(
-  MAIN_X + CHIP_W + 8 + CHIP_W / 2,
-  CHIPS_Y + CHIP_H + 8 + CHIP_H / 2,
-);
+const PICK_XY = onScreen(MAIN_X + CHIP_W / 2, CHIPS_Y + CHIP_H / 2);
 const YEAR_XY = onScreen(MAIN_X + 120, FIELDS_Y + 45);
 const MONTH_XY = onScreen(MAIN_X + FIELD_W + 16 + 120, FIELDS_Y + 45);
-const CUT_XY = onScreen(MAIN_X + 44, CUT_Y + 18);
+// The experimental box sits below Cut, so the page scrolls to show it once the month is set.
+const SCROLL = 110;
+const SCROLL_AT = [TYPE_MONTH + 4, TYPE_MONTH + 22];
+const CUT_XY = onScreen(MAIN_X + 44, CUT_Y + 18 - SCROLL);
 
 const cursorSteps = [
   { frame: 30, ...PICK_XY },
@@ -65,12 +69,12 @@ const cursorSteps = [
   { frame: CLICK_CUT, ...CUT_XY, click: true },
 ];
 
-const command = (monthly: boolean, year: string, month: string) =>
+const command = (monthly: boolean, year: string, month: number) =>
   [
     "immich-memories generate",
     `--memory-type=${monthly ? "monthly_highlights" : "year_in_review"}`,
     ...(year ? [`--year=${year}`] : []),
-    ...(monthly && month ? [`--month=${month}`] : []),
+    ...(monthly ? [`--month=${month}`] : []),
     "--include-photos --include-live-photos --no-render",
   ].join(" ");
 
@@ -84,7 +88,7 @@ const briefAt = (frame: number) => {
     }),
   );
   const year = frame < CLICK_YEAR ? "2026" : "2024".slice(0, yearTyped);
-  const month = frame < CLICK_MONTH ? "8" : frame < TYPE_MONTH ? "" : "6";
+  const month = frame < TYPE_MONTH ? 8 : 6;
   return { monthly, year, month };
 };
 
@@ -225,13 +229,9 @@ const BriefForm: React.FC<{ frame: number }> = ({ frame }) => {
         {shown.monthly && (
           <Field
             label="Month"
-            value={shown.month}
+            value={MONTHS[shown.month]}
+            select
             focused={frame >= CLICK_MONTH && frame < CLICK_CUT}
-            caret={
-              frame >= CLICK_MONTH &&
-              frame < CLICK_CUT &&
-              Math.floor(frame / 8) % 2 === 0
-            }
           />
         )}
       </div>
@@ -275,6 +275,22 @@ const BriefForm: React.FC<{ frame: number }> = ({ frame }) => {
           Cut
         </Button>
       </div>
+
+      <div
+        style={{
+          border: `1px solid ${UI.gray200}`,
+          borderRadius: 16,
+          padding: 20,
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+        }}
+      >
+        <div style={{ fontSize: 16, lineHeight: "24px", fontWeight: 600 }}>
+          Describe the film in your own words
+        </div>
+        <Badge color="warning">Experimental</Badge>
+      </div>
     </div>
   );
 };
@@ -283,10 +299,14 @@ type Props = { bassIntensity?: number };
 
 export const BriefScene: React.FC<Props> = ({ bassIntensity }) => {
   const frame = useCurrentFrame();
+  const scroll = interpolate(frame, SCROLL_AT, [0, SCROLL], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
   return (
     <AbsoluteFill style={{ backgroundColor: COLORS.bg }}>
       <WindowFrame path="/app/create" bassIntensity={bassIntensity}>
-        <AppShell active="Memory">
+        <AppShell active="Memory" scroll={scroll}>
           <BriefForm frame={frame} />
         </AppShell>
       </WindowFrame>

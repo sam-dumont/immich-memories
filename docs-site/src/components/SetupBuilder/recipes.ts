@@ -219,9 +219,13 @@ export function buildSetup(setup: Setup, sources: Sources, buildVersion: string)
     }]))};
     const tierPreset = {target: {kind: 'Deployment', name: 'immich-memories'}, patch: new Block(toYaml({
       apiVersion: 'apps/v1', kind: 'Deployment', metadata: {name: 'immich-memories'},
-      spec: {template: {spec: {containers: [{name: 'immich-memories', env: [
-        {name: 'IMMICH_MEMORIES_DEPLOYMENT_TIER', value: setup.tier},
-      ]}]}}},
+      // The init container resolves the tier on its own, so it is pinned too.
+      spec: {template: {spec: {
+        initContainers: [{name: 'fetch-models', env: [{name: 'IMMICH_MEMORIES_DEPLOYMENT_TIER', value: setup.tier}]}],
+        containers: [{name: 'immich-memories', env: [
+          {name: 'IMMICH_MEMORIES_DEPLOYMENT_TIER', value: setup.tier},
+        ]}],
+      }}},
     }))};
     const files = [
       yamlFile('deploy/kubernetes/custom/secret.yaml', secret),
@@ -254,11 +258,22 @@ export function buildSetup(setup: Setup, sources: Sources, buildVersion: string)
       `kubectl kustomize deploy/kubernetes/custom`,
       'kubectl apply -k deploy/kubernetes/custom',
       `kubectl rollout status -n ${ns} deploy/immich-memories`,
+      // The app is Ready long before the model services are; a preflight in between warns about GPUs that are only still loading.
+      ...(setup.tier === 'basic' ? [] : [
+        `kubectl rollout status -n ${ns} deploy/immich-memories-inference`,
+        `kubectl rollout status -n ${ns} deploy/immich-memories-captioner`,
+      ]),
       ...(setup.automation ? [
-        `# Try a schedule now: kubectl create job -n ${ns} --from=cronjob/immich-memories-auto trigger-test`,
+        '# Try a schedule now:',
+        `kubectl create job -n ${ns} --from=cronjob/immich-memories-auto trigger-test`,
+        `kubectl wait -n ${ns} --for=condition=complete job/trigger-test --timeout=120s`,
         '# The Job only says the trigger was accepted: follow the film in the app (Runs) or with runs list.',
         '# The first trigger on a fresh library can pick a whole year: about an hour on 4 CPUs.',
-        '# Follow it with GET /api/trigger/<attempt_id> (the attempt_id is in the Job log, bearer = the trigger token).',
+        '# The app image has no curl, so follow it from your machine: the attempt id is in the Job log, the bearer is the trigger token.',
+        `TOKEN=$(kubectl get secret -n ${ns} immich-memories-secrets -o jsonpath='{.data.IMMICH_MEMORIES_SERVER__TRIGGER_TOKEN}' | base64 -d)`,
+        `ATTEMPT=$(kubectl logs -n ${ns} job/trigger-test | sed -n 's/.*"attempt_id":"\\([^"]*\\)".*/\\1/p')`,
+        `kubectl port-forward -n ${ns} svc/immich-memories 8081:80 >/dev/null 2>&1 & sleep 3`,
+        'curl -s -H "Host: localhost" -H "Authorization: Bearer $TOKEN" "http://localhost:8081/api/trigger/$ATTEMPT"; kill %1',
       ] : []),
       `kubectl exec -n ${ns} deploy/immich-memories -- immich-memories models fetch`,
       `kubectl exec -n ${ns} deploy/immich-memories -- immich-memories preflight`,

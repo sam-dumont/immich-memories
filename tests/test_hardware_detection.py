@@ -276,6 +276,8 @@ class TestNvencProbeAdvice:
             patch.object(
                 hardware, "_run_ffmpeg_check", return_value=(False, "Device creation failed: -22.")
             ),
+            # WHY: a render node that exists but cannot be opened is the case worth a warning
+            patch.object(hardware, "_dri_present", return_value=True),
             caplog.at_level(logging.WARNING),
         ):
             assert hardware._probe_ffmpeg_encode(["-c:v", "h264_vaapi"], upload="vaapi") is False

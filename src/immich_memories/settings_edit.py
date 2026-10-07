@@ -41,7 +41,7 @@ class SettingRefused(ValueError):
     """A save or move that would not take effect, or would store something unsafe."""
 
 
-def _field_type(key: str) -> Any:
+def field_type(key: str) -> Any:
     model: type[BaseModel] = Config
     *parents, leaf = key.split(".")
     for part in parents:
@@ -74,7 +74,7 @@ def _field(model: type[BaseModel], name: str, key: str) -> Any:
 
 def _checked(key: str, value: Any) -> Any:
     try:
-        adapter: TypeAdapter[Any] = TypeAdapter(_field_type(key))
+        adapter: TypeAdapter[Any] = TypeAdapter(field_type(key))
         validated = adapter.validate_python(value)
     except ValidationError as error:
         problem = error.errors()[0]["msg"]

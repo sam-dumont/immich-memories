@@ -28,8 +28,13 @@ with diagram(STEM, nodesep="0.3", ranksep="0.4"):
             {
                 "q": "Nothing due?",
                 "icon": icon("mdi:calendar-search", "neutral"),
-                "sub": "month, year, trip, birthday,<br/>on this day, and more",
-                "exit": ("skipped", SKIP, "no eligible candidates", "neutral"),
+                "sub": "month, trip, season, holiday, album,<br/>person month, or a month never made",
+                "exit": (
+                    "skipped",
+                    SKIP,
+                    "no eligible candidates,<br/>rare: old months fill quiet nights",
+                    "neutral",
+                ),
             },
             {
                 "q": "The film run<br/>fails?",

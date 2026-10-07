@@ -18,6 +18,7 @@ from immich_memories.automation.candidates import (
     MemoryCandidate,
     make_memory_key,
 )
+from immich_memories.automation.closeness import group_weight
 from immich_memories.config_loader import Config
 from immich_memories.people.groups import SavedGroup
 
@@ -36,6 +37,7 @@ class GroupCandidateDetector:
         today: date,
         groups: list[SavedGroup] | None = None,
         person_asset_counts: dict[str, int] | None = None,
+        closeness: dict[str, float] | None = None,
     ) -> list[MemoryCandidate]:
         """Emit one candidate per saved group, skipping any with no pictures in last year.
 
@@ -73,7 +75,9 @@ class GroupCandidateDetector:
                     date_range_end=end,
                     person_names=[],
                     memory_key=mem_key,
-                    score=self.BASE_SCORE,
+                    score=round(
+                        self.BASE_SCORE * group_weight(group.expression.leaf_values, closeness), 3
+                    ),
                     reason=reason,
                     asset_count=asset_count,
                     extra_params={"person_expression": group.expression.to_dict()},

@@ -35,6 +35,12 @@ PREPARATION_NOTES = {
 }
 
 
+# GPU and Full make a quick first pass without captions, then caption only the pictures the
+# cut picked, in refinement rounds. The top-level record is that draft, so the banner reads the
+# last refinement instead (#2247).
+SOME_WITHOUT_DESCRIPTIONS = "Some pictures were edited without descriptions."
+
+
 @dataclass(frozen=True)
 class CarrierView:
     asset_id: str
@@ -179,15 +185,46 @@ def story_view_from_plan(
     )
 
 
+def _read_record(path: Path) -> Mapping[str, Any] | None:
+    try:
+        record = json.loads(path.read_text())
+    except (OSError, ValueError):
+        return None
+    return record if isinstance(record, Mapping) else None
+
+
+def _descriptions_fell_short(record: Mapping[str, Any]) -> bool:
+    """Whether the captioner missed pictures it was asked for, or was down."""
+    missing = record.get("missing_by_producer")
+    if isinstance(missing, Mapping) and any(
+        str(key).startswith("description:") and ids for key, ids in missing.items()
+    ):
+        return True
+    failures = record.get("failures")
+    return isinstance(failures, Mapping) and any(
+        key in ("captions", "caption_provider") or str(key).startswith("caption:")
+        for key in failures
+    )
+
+
+def _refined_note(attempt_dir: Path) -> str | None:
+    """The line for a cut that was refined with captions, or None when no round captioned."""
+    rounds = sorted((attempt_dir / "refinement").glob(f"*/{PREPARATION_FILE}"))
+    last = _read_record(rounds[-1]) if rounds else None
+    if last is None or last.get("tier") != "full":
+        return None
+    return SOME_WITHOUT_DESCRIPTIONS if _descriptions_fell_short(last) else ""
+
+
 def preparation_note(attempt_dir: Path) -> str:
     """The line this cut owes its reader when a reduced tier produced it."""
-    path = Path(attempt_dir) / PREPARATION_FILE
-    if not path.is_file():
+    attempt_dir = Path(attempt_dir)
+    record = _read_record(attempt_dir / PREPARATION_FILE)
+    if record is None:
         return ""
-    try:
-        tier = str(json.loads(path.read_text()).get("tier") or "")
-    except (OSError, ValueError):
-        return ""
+    tier = str(record.get("tier") or "")
+    if tier == "no_captions" and (refined := _refined_note(attempt_dir)) is not None:
+        return refined
     return PREPARATION_NOTES.get(tier, "")
 
 

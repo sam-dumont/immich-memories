@@ -6,8 +6,9 @@ from unittest.mock import MagicMock, patch
 
 from immich_memories.api.permissions import READ_PERMISSIONS, UPLOAD_PERMISSIONS, ApiKeyCapabilities
 from immich_memories.config_loader import Config, _apply_env_overrides
-from immich_memories.preflight import CheckStatus, check_llm
+from immich_memories.preflight import CheckStatus
 from immich_memories.preflight_immich import check_immich
+from immich_memories.preflight_llm import check_llm
 
 
 def _immich_row(permissions: set[str]):

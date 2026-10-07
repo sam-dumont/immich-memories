@@ -87,19 +87,29 @@
                 <span class="block text-sm break-all">{name}</span>
                 <span class="block text-xs text-gray-600 dark:text-gray-400">{origin(row)}</span>
               </div>
-              {#if typeof row.value === 'boolean'}
+              {#if row.input.kind === 'bool'}
                 <input type="checkbox" class="size-5 justify-self-start" aria-label={row.key} disabled={!row.editable}
                   checked={(drafts[row.key] ?? row.value) as boolean} onchange={(event) => (drafts[row.key] = event.currentTarget.checked)} />
-              {:else if row.key === 'title_screens.fade_color'}
+              {:else if row.input.kind === 'choice'}
+                {@const current = asText(drafts[row.key] ?? row.value)}
                 <select class={field} aria-label={row.key} disabled={!row.editable}
-                  value={asText(drafts[row.key] ?? row.value)} onchange={(event) => (drafts[row.key] = event.currentTarget.value)}>
-                  <option value="white">{t('White')}</option><option value="black">{t('Black')}</option>
+                  value={current} onchange={(event) => (drafts[row.key] = event.currentTarget.value)}>
+                  {#if !row.input.choices.some((choice) => choice.value === current)}
+                    <option value={current}>{current} (not in the list)</option>
+                  {/if}
+                  {#each row.input.choices as choice (choice.value)}
+                    <option value={choice.value}>{choice.label}</option>
+                  {/each}
                 </select>
-              {:else if row.secret}
+              {:else if row.input.kind === 'number'}
+                <input class={field} type="number" aria-label={row.key} disabled={!row.editable}
+                  min={row.input.min ?? undefined} max={row.input.max ?? undefined} step={row.input.step ?? 'any'}
+                  value={asText(drafts[row.key] ?? row.value)} oninput={(event) => (drafts[row.key] = event.currentTarget.value)} />
+              {:else if row.input.kind === 'secret'}
                 <input class={field} type="password" autocomplete="off" aria-label={row.key} disabled={!row.editable}
                   placeholder={row.value ? t('Saved - type a new key to replace it') : ''} oninput={(event) => (drafts[row.key] = event.currentTarget.value)} />
               {:else}
-                <input class={field} aria-label={row.key} disabled={!row.editable}
+                <input class={field} aria-label={row.key} disabled={!row.editable} placeholder={row.input.hint ?? ''}
                   value={asText(drafts[row.key] ?? row.value)} oninput={(event) => (drafts[row.key] = event.currentTarget.value)} />
               {/if}
             </div>

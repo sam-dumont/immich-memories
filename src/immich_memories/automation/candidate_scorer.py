@@ -13,6 +13,12 @@ _TYPE_CAPS = {
     "on_this_day": 1,  # At most 1 per run — can't verify day-level content quality
     "multi_person": 2,  # At most 2 pair suggestions per run
     "special_day": 1,  # One surprise per run — a queue of them is not a surprise
+    # One of each, so a library with years of unfilmed albums or months gets one a night.
+    "season": 1,
+    "holiday": 1,
+    "album": 1,
+    "monthly_backfill": 1,
+    "person_monthly": 1,
 }
 
 

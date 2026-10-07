@@ -132,53 +132,16 @@ const config: Config = {
       ],
     },
     footer: {
-      style: 'dark',
+      // Light follows the page theme; the dark style is a black band in both.
+      style: 'light',
       links: [
-        {
-          title: 'Docs',
-          items: [
-            {
-              label: 'Quick start',
-              to: '/docs/get-started/quick-start',
-            },
-            {
-              label: 'Improve a film',
-              to: '/docs/make/improve-a-film',
-            },
-          ],
-        },
-        {
-          title: 'Community',
-          items: [
-            {
-              label: 'Why this exists',
-              to: '/docs/welcome/about',
-            },
-            {
-              label: 'How this was built',
-              to: '/docs/welcome/how-this-was-built',
-            },
-            {
-              label: 'GitHub Issues',
-              href: 'https://github.com/sam-dumont/immich-memories/issues',
-            },
-            {
-              label: 'Immich',
-              href: 'https://immich.app/',
-            },
-          ],
-        },
-        {
-          title: 'Operate',
-          items: [
-            {
-              label: 'Operate and configure',
-              to: '/docs/run/overview',
-            },
-          ],
-        },
+        {label: 'Quick start', to: '/docs/get-started/quick-start'},
+        {label: 'Improve a film', to: '/docs/make/improve-a-film'},
+        {label: 'How this was built', to: '/docs/welcome/how-this-was-built'},
+        {label: 'GitHub', href: 'https://github.com/sam-dumont/immich-memories'},
+        {label: 'Immich', href: 'https://immich.app/'},
       ],
-      copyright: `Copyright © 2025-${new Date().getFullYear()} Immich Memories · ${docsVersion}. Built with Docusaurus.`,
+      copyright: `Copyright © 2025-${new Date().getFullYear()} Immich Memories · ${docsVersion}`,
     },
     prism: {
       theme: prismThemes.github,

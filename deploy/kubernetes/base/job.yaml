@@ -58,6 +58,9 @@ spec:
               && test -s /models/wordnet/wordnet.zip
               || immich-memories models fetch
           env:
+            # Pinned like the app container: unpinned, this log says "Tier auto resolved".
+            - name: IMMICH_MEMORIES_DEPLOYMENT_TIER
+              value: basic
             - name: IMMICH_MEMORIES_TRIAGE__ENCODER
               value: /models/triage/dinov2-small.onnx
             - name: IMMICH_MEMORIES_EDITORIAL__PREPARATION__MARQO_ONNX

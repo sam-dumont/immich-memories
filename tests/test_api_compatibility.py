@@ -199,6 +199,13 @@ async def test_concurrent_auto_version_calls_probe_once(
     assert len(requests) == 1
 
 
+@pytest.fixture(autouse=True)
+def _fresh_compatibility_memory():
+    from immich_memories.api import immich
+
+    immich._announced_compatibility.clear()
+
+
 @pytest.mark.asyncio
 async def test_auto_version_resolution_logs_server_policy_and_result(
     version_client: tuple[ImmichClient, list[httpx.Request], ResolvedApiVersion],
@@ -215,6 +222,30 @@ async def test_auto_version_resolution_logs_server_policy_and_result(
     assert [r.getMessage() for r in caplog.records if r.name == "immich_memories.api.immich"] == [
         f"Immich API compatibility: server={expected_server} mode=auto resolved={expected.value}"
     ]
+
+
+@pytest.mark.asyncio
+async def test_the_compatibility_line_is_logged_once_per_change_not_per_client(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """A health check builds a client every 15 s; the same answer is not news (#2244)."""
+    lines = []
+    for body in ({"major": 2, "minor": 9, "patch": 1}, {"major": 2, "minor": 9, "patch": 1},
+                 {"major": 3, "minor": 1, "patch": 0}):  # fmt: skip
+        client, _requests = _client_with_version_response(body)
+        caplog.clear()
+        with caplog.at_level(logging.INFO, logger="immich_memories.api.immich"):
+            await client.get_api_version()
+        await client.close()
+        lines.append(
+            [
+                r
+                for r in caplog.records
+                if r.name == "immich_memories.api.immich" and r.levelno == logging.INFO
+            ]
+        )
+
+    assert [len(found) for found in lines] == [1, 0, 1]
 
 
 @pytest.mark.asyncio

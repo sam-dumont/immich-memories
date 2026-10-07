@@ -956,6 +956,13 @@ advanced:
                                     # primary too, e.g. ["primary", "partner"] (default: primary alone)
     detect_groups: true             # propose last year's film for each saved people group
                                     # (people group add) whose people have pictures
+    detect_seasons: true            # the season that just ended (needs the home base for its hemisphere)
+    detect_holidays: true           # a holiday film across the years with pictures around it
+    detect_albums: true             # a new Immich album, or one that has grown
+    detect_person_monthly: true     # last month's film of each person close to you
+    backfill_months: true           # months of this year and last that never got a film, on quiet nights
+    extra_holidays: []              # days of your own to film as holidays, each "MM-DD: name"
+    include_shared_albums: false    # also propose albums other people shared with you
 ```
 
 `accounts` and saved groups are the automation side of

@@ -79,6 +79,41 @@ def render_progress_events(
     return report
 
 
+# Extraction reports its own fraction of the clip work as 0 to this, the rest being the download.
+_EXTRACT_SHARE = 0.7
+
+
+def clip_preparation_events(
+    inner: Callable[[str, float, str], None] | None,
+    operational: _OperationalProgress,
+    phase: OperationalPhase,
+    total: int,
+    *,
+    clock: Callable[[], float] = time.monotonic,
+    every_seconds: float = 30.0,
+) -> Callable[[str, float, str], None]:
+    """Turn the clip extraction's progress into "Preparing clips (n/N)" phase events, throttled.
+
+    Without it the phase stays on the last thing reported before extraction (the finished
+    selection) for the whole download and cut, and a scheduled run's log and the trigger API
+    keep saying so (#2243).
+    """
+    last = float("-inf")
+
+    def report(stage: str, pct: float, msg: str) -> None:
+        nonlocal last
+        if inner is not None:
+            inner(stage, pct, msg)
+        now = clock()
+        if stage != "extract" or now - last < every_seconds:
+            return
+        last = now
+        done = min(total, int(pct / _EXTRACT_SHARE * total + 0.5))
+        operational.emit(phase, done, total, f"Preparing clips ({done}/{total})")
+
+    return report
+
+
 class _OperationalProgress:
     """Emit one monotonic outer lifecycle around generation internals."""
 

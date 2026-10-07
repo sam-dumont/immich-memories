@@ -31,6 +31,7 @@ from immich_memories.cli._helpers import (
 )
 from immich_memories.cli._pipeline_runner import run_pipeline_and_generate
 from immich_memories.cli._trip_generation import handle_trip_generation, resolve_music_arg
+from immich_memories.cli.declined_period import stop_for_empty_period
 from immich_memories.cli.generate_options import (
     automation_options,
     output_options,
@@ -714,8 +715,7 @@ def register_generate_commands(main: click.Group) -> None:
                     assets = drop_live_photo_components(assets, fetched_photos)
 
                     if not assets and not fetched_photos:
-                        print_error("No videos or photos found matching criteria")
-                        sys.exit(1)
+                        stop_for_empty_period(date_range)
 
                     # Display video summary
                     total_dur = sum(a.duration_seconds or 0 for a in assets)

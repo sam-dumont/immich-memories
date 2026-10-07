@@ -46,7 +46,8 @@ class TestPreflightLLMCheck:
     def test_openai_compatible_sends_test_completion(self, mock_client_cls):
         """Preflight for openai-compatible should send a minimal chat completion."""
         from immich_memories.config import Config
-        from immich_memories.preflight import CheckStatus, check_llm
+        from immich_memories.preflight import CheckStatus
+        from immich_memories.preflight_llm import check_llm
 
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -79,7 +80,8 @@ class TestPreflightLLMCheck:
     def test_ollama_checks_api_tags(self, mock_client_cls):
         """Preflight for ollama should check /api/tags."""
         from immich_memories.config import Config
-        from immich_memories.preflight import CheckStatus, check_llm
+        from immich_memories.preflight import CheckStatus
+        from immich_memories.preflight_llm import check_llm
 
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -112,7 +114,8 @@ class TestPreflightLLMCheck:
     def test_openai_compatible_connection_error(self, mock_client_cls):
         """Should return WARNING when server is unreachable."""
         from immich_memories.config import Config
-        from immich_memories.preflight import CheckStatus, check_llm
+        from immich_memories.preflight import CheckStatus
+        from immich_memories.preflight_llm import check_llm
 
         mock_client = MagicMock()
         mock_client.__enter__ = MagicMock(return_value=mock_client)

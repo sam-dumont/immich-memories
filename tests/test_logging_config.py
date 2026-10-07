@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import io
 import json
 import logging
 import sys
@@ -70,6 +71,46 @@ class TestConfigureLogging:
         assert root.level == logging.DEBUG
 
         # Reset
+        configure_logging(fmt="text", level="INFO")
+
+
+class TestServerLogNoise:
+    """A nightly run's log is mostly probes and start-up lines unless someone asks for them (#2244)."""
+
+    @staticmethod
+    def _access(path: str) -> logging.LogRecord:
+        return logging.LogRecord(
+            "uvicorn.access", logging.INFO, "x.py", 1,
+            '%s - "%s %s HTTP/%s" %d', ("10.0.0.1:1", "GET", path, "1.1", 200), None,
+        )  # fmt: skip
+
+    def test_health_probe_access_lines_are_dropped_and_other_requests_kept(self):
+        stream = io.StringIO()
+        configure_logging(fmt="text", level="INFO", stream=stream)
+        access = logging.getLogger("uvicorn.access")
+
+        for path in ("/health/live", "/health/ready", "/api/v1/runs"):
+            access.handle(self._access(path))
+
+        text = stream.getvalue()
+        assert "/health" not in text
+        assert "/api/v1/runs" in text
+
+    def test_verbose_shows_the_probes_again(self):
+        stream = io.StringIO()
+        configure_logging(fmt="text", level="DEBUG", stream=stream)
+
+        logging.getLogger("uvicorn.access").handle(self._access("/health/live"))
+
+        assert "/health/live" in stream.getvalue()
+        configure_logging(fmt="text", level="INFO")
+
+    def test_alembic_is_quiet_unless_verbose(self):
+        configure_logging(fmt="text", level="INFO")
+        assert logging.getLogger("alembic").level == logging.WARNING
+
+        configure_logging(fmt="text", level="DEBUG")
+        assert logging.getLogger("alembic").level == logging.NOTSET
         configure_logging(fmt="text", level="INFO")
 
 

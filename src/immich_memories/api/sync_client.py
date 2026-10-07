@@ -357,6 +357,10 @@ class SyncImmichClient:
     def list_albums(self) -> list[AlbumRef]:
         return self._run(self._async_client.list_albums())
 
+    def get_albums(self) -> list[dict]:
+        """Every album the key sees, raw: who owns it and whether it is shared are not in `AlbumRef`."""
+        return self._run(self._async_client.albums.get_albums())
+
     def resolve_album(self, name_or_id: str) -> AlbumRef:
         return self._run(self._async_client.resolve_album(name_or_id))
 

@@ -137,6 +137,11 @@ const BADGE_COLORS = {
     color: UI.info800,
     border: `1px solid ${UI.info200}`,
   },
+  warning: {
+    background: UI.warning100,
+    color: UI.warning800,
+    border: `1px solid ${UI.warning200}`,
+  },
   danger: {
     background: UI.danger100,
     color: UI.danger800,

@@ -45,17 +45,30 @@ def test_the_same_advice_is_given_once_however_many_probes_fail(caplog) -> None:
     assert caplog.text.count("libva could not open a device") == 1
 
 
-def test_the_libva_advice_is_info_on_the_basic_tier_and_a_warning_elsewhere(caplog) -> None:
+def _libva_levels(*, backend: str, dri_present: bool, caplog) -> list[int]:
+    from immich_memories.config_loader import Config
     from immich_memories.processing import hardware
-    from immich_memories.tracking.timing import collecting
 
-    levels = {}
-    for tier in ("basic", "gpu"):
-        hardware._advice_given.clear()
-        caplog.clear()
-        with collecting() as collected, caplog.at_level(logging.INFO):
-            collected.diagnostics["tier"] = tier
-            _failing_probe("h264_vaapi", "vaapi")
-        levels[tier] = [r.levelno for r in caplog.records if "libva could not" in r.getMessage()]
+    hardware._advice_given.clear()
+    caplog.clear()
+    config = Config(hardware={"backend": backend})
+    # WHY: the host's real /dev/dri and config must not decide the test.
+    with (
+        patch("immich_memories.processing.hardware._dri_present", return_value=dri_present),
+        patch("immich_memories.config_loader.get_config", return_value=config),
+        caplog.at_level(logging.INFO),
+    ):
+        _failing_probe("h264_vaapi", "vaapi")
+    return [r.levelno for r in caplog.records if "libva could not" in r.getMessage()]
 
-    assert levels == {"basic": [logging.INFO], "gpu": [logging.WARNING]}
+
+def test_no_render_node_and_no_hardware_asked_for_is_an_info_line(caplog) -> None:
+    assert _libva_levels(backend="auto", dri_present=False, caplog=caplog) == [logging.INFO]
+
+
+def test_a_render_node_that_cannot_be_opened_stays_a_warning(caplog) -> None:
+    assert _libva_levels(backend="auto", dri_present=True, caplog=caplog) == [logging.WARNING]
+
+
+def test_hardware_encoding_asked_for_and_missing_is_a_warning(caplog) -> None:
+    assert _libva_levels(backend="vaapi", dri_present=False, caplog=caplog) == [logging.WARNING]

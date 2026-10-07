@@ -59,6 +59,7 @@ never reached the process.
 - A `403 Forbidden` means the key lacks rights. The scopes are on the [Docker page](../run/docker.md).
 - Immich must be v2 or v3. Immich 1.x is refused at connect time.
 - In Docker, `localhost` is the container. Use the host's IP or the Docker network name.
+- On a Mac, `No route to host` or `errno 65` to an address like `192.168.x.x`, while `curl` reaches it, is the Local Network permission: it belongs to the Python the scheduled job runs, not to Terminal. `auto install` checks it and names that Python; [allow it there](../run/uv-pip.md#macos-and-an-immich-on-your-network).
 
 ## Immich v2/v3 version mismatch
 

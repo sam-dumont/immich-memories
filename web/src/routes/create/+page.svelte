@@ -308,7 +308,6 @@
   {#if job && job.status === 'running'}
     <JobPanel {job} onCancel={cancel} />
   {:else}
-    <AskPanel onFilm={cutSentence} accounts={accountsChosen} />
     <form class="flex flex-col gap-6" onsubmit={(event) => { event.preventDefault(); void cut(); }}>
       <fieldset class="flex flex-col gap-3">
         <legend class="mb-2 text-sm font-semibold">{t('Memory type')}</legend>
@@ -511,5 +510,6 @@
         <Button type="submit" leadingIcon={mdiMovieOpenPlayOutline} class="w-fit" disabled={!tripChosen}>{t('Cut')}</Button>
       </div>
     </form>
+    <AskPanel onFilm={cutSentence} accounts={accountsChosen} />
   {/if}
 </div>

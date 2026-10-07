@@ -118,3 +118,15 @@ def test_a_declined_period_leaves_no_completed_run_behind(tmp_path):
     runs = RunDatabase(store).list_runs(limit=5)
     assert [run.status for run in runs] == ["cancelled"]
     assert RunDatabase(store).list_runs(limit=5, status="completed") == []
+
+
+def test_a_period_with_no_pictures_at_all_is_declined_the_same_way(capsys):
+    from immich_memories.cli.declined_period import stop_for_empty_period
+
+    with pytest.raises(SystemExit) as stopped:
+        stop_for_empty_period(FEBRUARY)
+
+    said = capsys.readouterr().out
+    assert stopped.value.code == 0
+    assert "Nothing worth a film in February 2019: no pictures or videos in this period" in said
+    assert "Error" not in said
