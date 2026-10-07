@@ -31,7 +31,7 @@ from immich_memories.automation.runner import (
 from immich_memories.cli.auto_cmd import _candidates_to_json, _print_candidates_table
 from immich_memories.config_loader import Config
 from immich_memories.self_command import self_command
-from immich_memories.tracking.models import RunMetadata
+from immich_memories.tracking.models import DeliveryStatus, RunMetadata
 
 
 @pytest.fixture
@@ -78,6 +78,7 @@ def _save_completed_run(
     source: str = "auto",
     created_at: datetime | None = None,
     automation_attempt_id: str | None = None,
+    immich_asset_id: str | None = None,
 ) -> None:
     """Seed the exact pipeline record that run_one validates after execution."""
     started = created_at or datetime.now() + timedelta(milliseconds=10)
@@ -96,6 +97,10 @@ def _save_completed_run(
             memory_category=candidate.category.value,
             automation_attempt_id=automation_attempt_id,
             output_path=str(output_path) if output_path else None,
+            delivery_status=(
+                DeliveryStatus.DELIVERED if immich_asset_id else DeliveryStatus.NOT_REQUESTED
+            ),
+            immich_asset_id=immich_asset_id,
         )
     )
 
@@ -1592,6 +1597,25 @@ class TestRunOneOutcomes:
         assert result.outcome is AutoOutcome.FAILED
         assert result.reason == "generated output file is missing"
         assert result.run_id is None
+        assert result.output_path is None
+
+    def test_film_removed_after_immich_confirmed_it_is_completed(
+        self, config: Config, candidate: MemoryCandidate, tmp_path: Path
+    ) -> None:
+        # Delivery deletes the local film once Immich holds the copy, by design.
+        delivered = tmp_path / "delivered.mp4"
+        runner = AutoRunner(config)
+
+        def execute(_argv: list[str]) -> ProcessResult:
+            _save_completed_run(runner, candidate, delivered, immich_asset_id="asset-1")
+            return ProcessResult(0, "", "")
+
+        runner.execute = execute
+        with patch.object(runner, "suggest", return_value=[candidate]):
+            result = runner.run_one(force=True)
+
+        assert result.outcome is AutoOutcome.COMPLETED
+        assert result.run_id == "new-auto-run"
         assert result.output_path is None
 
     def test_matching_new_run_and_existing_file_is_completed(

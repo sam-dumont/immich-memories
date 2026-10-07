@@ -46,7 +46,7 @@ from immich_memories.db.leases import Lease, LeaseHeldError
 from immich_memories.operations.auto_output import NOTHING_WORTH_A_FILM, retain_output
 from immich_memories.operations.bounded_process import run_bounded_process
 from immich_memories.security import configured_secret_values, sanitize_error_message
-from immich_memories.tracking.models import RunMetadata
+from immich_memories.tracking.models import DeliveryStatus, RunMetadata
 from immich_memories.tracking.run_database import RunDatabase
 
 logger = logging.getLogger(__name__)
@@ -305,7 +305,8 @@ class AutoRunner:
         if not matching_run.output_path:
             return "matching run has no output path"
         output_path = Path(matching_run.output_path)
-        if not output_path.is_file():
+        # Delivery removes the local film once Immich holds the copy; that run is done.
+        if not output_path.is_file() and not _delivered_to_immich(matching_run):
             return "generated output file is missing"
         return matching_run, output_path
 
@@ -694,7 +695,8 @@ class AutoRunner:
                 _generation_completion_reason(matching_run),
                 candidate=candidate,
                 run_id=matching_run.run_id,
-                output_path=output_path,
+                # A delivered film's local copy is gone; don't announce a path that isn't there.
+                output_path=output_path if output_path.is_file() else None,
             )
         except Exception as exc:
             reason = "automation failed"
@@ -709,6 +711,10 @@ class AutoRunner:
         finally:
             self._prepared_immich_preflight = None
             self._prepared_pending_delivery = None
+
+
+def _delivered_to_immich(run: RunMetadata) -> bool:
+    return run.delivery_status is DeliveryStatus.DELIVERED and bool(run.immich_asset_id)
 
 
 def _generation_completion_reason(run: RunMetadata) -> str:
