@@ -64,6 +64,38 @@ def test_release_publication_waits_for_the_image_smoke_test():
         assert "docker-smoke" in ancestors(publication), publication
 
 
+def test_nothing_irreversible_happens_until_nothing_can_fail():
+    # The tag, the GitHub Release and PyPI cannot be taken back, so every job that
+    # can still fail runs first. rc.6's wheel went out while its CUDA image failed.
+    jobs = release_workflow()["jobs"]
+    dependencies = {name: set(job.get("needs", [])) for name, job in jobs.items()}
+
+    def ancestors(name):
+        return dependencies[name] | {
+            ancestor for parent in dependencies[name] for ancestor in ancestors(parent)
+        }
+
+    fallible = {
+        "ci",
+        "package",
+        "docker-build",
+        "docker-smoke",
+        "inference-build",
+        "docker-manifest",
+        "inference-manifest",
+        "deployment-bundle",
+    }
+    assert fallible <= ancestors("release")
+    for later in ("pypi-publish-music", "pypi-publish", "deploy-docs"):
+        assert "release" in ancestors(later), later
+    for irreversible in ("release", "pypi-publish-music", "pypi-publish"):
+        for job in ("ci", "package", "docker-build", "docker-smoke", "inference-build"):
+            assert irreversible not in ancestors(job), (irreversible, job)
+    # A version tag in the registry only moves once every phase-1 job has succeeded.
+    for manifest in ("docker-manifest", "inference-manifest"):
+        assert {"package", "docker-smoke", "inference-build", "ci"} <= ancestors(manifest)
+
+
 def test_dry_run_uses_boolean_guards_for_publication():
     workflow = release_workflow()
     for job in workflow["jobs"].values():
@@ -72,17 +104,17 @@ def test_dry_run_uses_boolean_guards_for_publication():
             assert "inputs.dry_run != 'true'" not in condition
             assert "inputs.dry_run == 'true'" not in condition
     release_steps = workflow["jobs"]["release"]["steps"]
-    tag_step = next(step for step in release_steps if "git push" in step.get("run", ""))
-    assert "!inputs.dry_run" in tag_step["if"]
+    assert "!inputs.dry_run" in workflow["jobs"]["release"]["if"]
+    assert any("git push" in step.get("run", "") for step in release_steps)
     for name in ("pypi-publish", "pypi-publish-music", "docker-build", "deploy-docs"):
         assert "!inputs.dry_run" in workflow["jobs"][name]["if"]
 
 
 def test_package_build_finishes_before_the_release_tag_is_pushed():
-    steps = release_workflow()["jobs"]["release"]["steps"]
-    build_index = next(i for i, step in enumerate(steps) if step.get("run") == "uv build")
-    tag_index = next(i for i, step in enumerate(steps) if "git push" in step.get("run", ""))
-    assert build_index < tag_index
+    jobs = release_workflow()["jobs"]
+    assert any(step.get("run") == "uv build" for step in jobs["package"]["steps"])
+    assert "package" in jobs["release"]["needs"]
+    assert not any(step.get("run") == "uv build" for step in jobs["release"]["steps"])
 
 
 def test_the_first_registry_push_keeps_the_release_environment_approval():
@@ -339,6 +371,7 @@ def test_app_only_workflow_runs_image_gates_without_release_publication(
     for name in ("ci", "docker-build"):
         assert "inputs.app_only" in jobs[name]["if"]
     for name in (
+        "package",
         "release",
         "pypi-publish",
         "pypi-publish-music",
@@ -382,32 +415,23 @@ def test_app_only_workflow_runs_image_gates_without_release_publication(
 def test_docs_publication_waits_for_matching_deployment_assets():
     jobs = release_workflow()["jobs"]
     assert "deployment-bundle" in jobs["deploy-docs"]["needs"]
-    assert "release" in jobs["deployment-bundle"]["needs"]
+    assert "deployment-bundle" in jobs["release"]["needs"]
 
 
 def test_published_installation_inputs_have_matching_checksums_and_image_identity(tmp_path):
     import hashlib
-    import sys
 
     step = next(
         step
         for step in release_workflow()["jobs"]["deployment-bundle"]["steps"]
-        if step.get("name") == "Package and attach deployment files"
+        if step.get("name") == "Package deployment files"
     )
     binaries = tmp_path / "bin"
     binaries.mkdir()
-    # WHY: registry/release I/O is the boundary; packaging and shell execution stay real.
-    fake_gh = binaries / "gh"
-    fake_gh.write_text(
-        f"#!{sys.executable}\n"
-        "import sys\nfrom pathlib import Path\n"
-        "if sys.argv[2] == 'download':\n"
-        "    destination = Path(sys.argv[sys.argv.index('--dir') + 1])\n"
-        "    (destination / 'immich_memories-0.0.0.dev12345-py3-none-any.whl').write_bytes(b'fixture wheel')\n"
-        "else:\n"
-        "    assert all(Path(name).is_file() for name in sys.argv[4:])\n"
-    )
-    fake_gh.chmod(0o700)
+    # The package job's wheel arrives as a workflow artifact, not from a release.
+    wheels = tmp_path / "dist-release"
+    wheels.mkdir()
+    (wheels / "immich_memories-0.0.0.dev12345-py3-none-any.whl").write_bytes(b"fixture wheel")
     manifest = {
         "digest": "sha256:" + "a" * 64,
         "manifests": [{"platform": {"os": "linux", "architecture": "amd64"}}],

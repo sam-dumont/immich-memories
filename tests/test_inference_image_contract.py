@@ -308,8 +308,8 @@ def test_inference_only_analysis_cannot_create_a_release(tmp_path, monkeypatch):
     assert step["env"]["INFERENCE_ONLY"] == "${{ inputs.inference_only }}"
     guard = workflow["jobs"]["inference-build"]["if"]
     assert "!cancelled()" in guard
-    assert "needs.release.result == 'success'" in guard
-    # The intentionally skipped release ancestor must not skip successful
+    assert "needs.docker-build.result == 'success'" in guard
+    # The intentionally skipped app-image ancestors must not skip successful
     # inference manifests through GitHub's implicit success() condition.
     manifest_guard = workflow["jobs"]["inference-manifest"].get("if", "")
     assert "!cancelled()" in manifest_guard
