@@ -18,6 +18,7 @@ from immich_memories.web import (
     job_routes,
     library,
     media,
+    people_accounts,
     pool,
     render_capabilities,
     roster,
@@ -72,6 +73,7 @@ def mount_web(app: FastAPI, *, client_dir: Path = BUILT_CLIENT) -> None:
     app.include_router(pool.router)
     app.include_router(suggestions.router)
     app.include_router(roster.router)
+    app.include_router(people_accounts.router)
     app.include_router(settings.router)
     app.include_router(connection.router)
     app.include_router(session.router)

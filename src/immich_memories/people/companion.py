@@ -29,8 +29,16 @@ from immich_memories.people.account_ids import (
     place_ids,
     primary_ids,
 )
+from immich_memories.people.owner import (
+    ROLE_DERIVED,
+    apply_owner,
+    confirmed_owner,
+    derive_owner_role,
+    owner_block,
+    owner_ids,
+)
 from immich_memories.people.registry_store import lock_registry, read_document, write_document
-from immich_memories.people.relationships import owner_role, reciprocal_kind
+from immich_memories.people.relationships import DETECTED_KINDS, reciprocal_kind
 
 if TYPE_CHECKING:
     from immich_memories.people.graph import PeopleGraph, PersonNode
@@ -39,6 +47,11 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 SCHEMA_VERSION = 1
+
+# The header keys a scan rewrites; every other key of the document is somebody's answer.
+# Answers to "is this account's person the same as that one": kept in the header, never rescanned.
+DECLINED = "declined_links"
+_SCAN_KEYS = frozenset({"version", "generated", "owner", "people"})
 
 _P = ParamSpec("_P")
 _R = TypeVar("_R")
@@ -68,15 +81,37 @@ def people_entries(document: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def retained_immich_ids(document: dict[str, Any]) -> set[str]:
-    """Primary-account face ids a user deliberately kept, even below the scan floor."""
+    """Primary-account face ids a user deliberately kept, even below the scan floor.
+
+    Somebody a saved group names is kept too: the group is the user's answer about them.
+    """
     retained: set[str] = set()
+    grouped = _grouped_ids(document)
     for entry in people_entries(document):
-        if not (_has_content(entry.get("confirmed")) or entry.get("origin") == "immich"):
+        if not (
+            _has_content(entry.get("confirmed"))
+            or entry.get("origin") == "immich"
+            or grouped.intersection(entry_ids(entry))
+        ):
             continue
         retained.update(
             person_id for person_id in primary_ids(entry) if not person_id.startswith("manual:")
         )
     return retained
+
+
+def _grouped_ids(document: dict[str, Any]) -> set[str]:
+    """Every person id a saved group's expression names."""
+    from immich_memories.api.person_expression import PersonExpression
+
+    found: set[str] = set()
+    groups = document.get("groups")
+    for saved in groups if isinstance(groups, list) else []:
+        try:
+            found.update(PersonExpression.from_dict(saved["expression"]).leaf_values)
+        except (KeyError, TypeError, ValueError):
+            continue
+    return found
 
 
 def _one_writer(
@@ -117,15 +152,32 @@ def save_graph(document: dict[str, Any], graph: PeopleGraph) -> None:
         if node.evidence.person_id not in aliased
     ]
     entries.extend(_annotated_strangers(document, graph))
+    answer = confirmed_owner(document)
+    # A scan owns the readings, not the answers: saved groups and confirmed owners ride along.
+    carried = {key: value for key, value in document.items() if key not in _SCAN_KEYS}
     document.clear()
     document.update(
-        {
+        carried
+        | {
             "version": SCHEMA_VERSION,
             "generated": (graph.built_at or datetime.now()).isoformat(timespec="seconds"),
-            "owner": _owner_block(graph),
+            "owner": _owner_block(graph) if answer is None else owner_block(answer),
             "people": entries,
         }
     )
+
+
+@_one_writer
+def set_owner(
+    document: dict[str, Any], person_id: str | None, *, account: str = PRIMARY_ACCOUNT
+) -> None:
+    """Answer who owns `account`'s library: a person in the registry, or None for nobody.
+
+    The answer is permanent until changed: a scan never overwrites it. Roles the registry
+    derived from the old owner are cleared and derived again from the new one; roles somebody
+    typed stay.
+    """
+    apply_owner(document, person_id, account)
 
 
 @_one_writer
@@ -136,7 +188,16 @@ def save_confirmed(document: dict[str, Any], person_id: str, confirmed: dict[str
         logger.warning("Nothing in the people registry to confirm for that person")
         return
     for entry in entries:
-        entry["confirmed"] = copy.deepcopy(confirmed)
+        previous = entry.get("confirmed")
+        block = copy.deepcopy(confirmed)
+        # Saving a card untouched sends the role back as typed; it is still the derived one.
+        if (
+            isinstance(previous, dict)
+            and previous.get(ROLE_DERIVED)
+            and previous.get("role") == block.get("role")
+        ):
+            block[ROLE_DERIVED] = True
+        entry["confirmed"] = block
 
 
 @_one_writer
@@ -194,6 +255,9 @@ def save_confirmed_relationship(
     source = _entry_with_id(document, source_id)
     target = _entry_with_id(document, target_id)
     reverse = reciprocal_kind(kind)
+    # A real kind answers the detected link between these two, whichever side confirmed it.
+    for entry, other_id in ((source, target_id), (target, source_id)):
+        _drop_detected_placeholders(entry, other_id)
     _upsert_confirmed_link(source, kind, target_id, reverse)
     _upsert_confirmed_link(target, reverse, source_id, kind)
     _fill_owner_role(document, source, kind, target_id)
@@ -251,6 +315,51 @@ def bind_alias(
     place_ids(person, groups, own)
 
 
+@_one_writer
+def unbind_alias(document: dict[str, Any], person_id: str, alias_id: str, *, account: str) -> None:
+    """Take `alias_id` off the person again: the opposite of `bind_alias`.
+
+    Only another account's id can go. The primary account's ids are what the scan reads the
+    person by, and a person without one is a different kind of change.
+    """
+    if account == PRIMARY_ACCOUNT:
+        msg = "the primary account's ids are not unlinked; they are who the scan reads"
+        raise ValueError(msg)
+    person = _entry_with_id(document, person_id)
+    groups = ids_by_account(person)
+    if alias_id not in groups.get(account, []):
+        msg = f"{alias_id!r} is not bound to this person in the {account!r} account"
+        raise ValueError(msg)
+    own = entry_ids(person)[0]
+    groups[account].remove(alias_id)
+    if not any(groups.values()):
+        msg = "that is the only id this person has; they would be left with none"
+        raise ValueError(msg)
+    place_ids(person, groups, None if own == alias_id else own)
+
+
+@_one_writer
+def decline_alias(document: dict[str, Any], person_id: str, account: str, alias_id: str) -> None:
+    """Remember that `alias_id` in `account` is not this person, so it is not suggested again."""
+    person = _entry_with_id(document, person_id)
+    declined = document.setdefault(DECLINED, [])
+    answer = {"person_id": entry_ids(person)[0], "account": account, "alias_id": alias_id}
+    if answer not in declined:
+        declined.append(answer)
+
+
+def declined_aliases(document: dict[str, Any]) -> dict[str, dict[str, list[str]]]:
+    """The "not the same person" answers: person id -> account -> that account's ids."""
+    found: dict[str, dict[str, list[str]]] = {}
+    raw = document.get(DECLINED)
+    for answer in raw if isinstance(raw, list) else []:
+        if isinstance(answer, dict) and {"person_id", "account", "alias_id"} <= answer.keys():
+            found.setdefault(str(answer["person_id"]), {}).setdefault(
+                str(answer["account"]), []
+            ).append(str(answer["alias_id"]))
+    return found
+
+
 def _entry_with_id(document: dict[str, Any], person_id: str) -> dict[str, Any]:
     matches = [entry for entry in people_entries(document) if person_id in entry_ids(entry)]
     if len(matches) != 1:
@@ -268,6 +377,21 @@ def _confirmed_block(entry: dict[str, Any]) -> dict[str, Any]:
     confirmed.setdefault("links", [])
     confirmed.setdefault("notes", None)
     return confirmed
+
+
+def _drop_detected_placeholders(entry: dict[str, Any], other_id: str) -> None:
+    confirmed = _confirmed_block(entry)
+    links = confirmed.get("links")
+    if isinstance(links, list):
+        confirmed["links"] = [
+            link
+            for link in links
+            if not (
+                isinstance(link, dict)
+                and link.get("with") == other_id
+                and link.get("kind") in DETECTED_KINDS
+            )
+        ]
 
 
 def _confirmed_link(entry: dict[str, Any], kind: str, target_id: str) -> dict[str, Any] | None:
@@ -324,11 +448,8 @@ def _remove_confirmed_link(entry: dict[str, Any], kind: str, target_id: str) -> 
 def _fill_owner_role(
     document: dict[str, Any], entry: dict[str, Any], kind: str, target_id: str
 ) -> None:
-    owner = document.get("owner")
-    owner_id = owner.get("person_id") if isinstance(owner, dict) else None
-    confirmed = _confirmed_block(entry)
-    if owner_id == target_id and not confirmed.get("role"):
-        confirmed["role"] = owner_role(kind)
+    if target_id in owner_ids(document):
+        derive_owner_role(entry, kind)
 
 
 def _owner_block(graph: PeopleGraph) -> dict[str, Any] | None:
@@ -440,6 +561,7 @@ def _annotated_strangers(document: dict[str, Any], graph: PeopleGraph) -> list[d
     reads: the primary scan cannot see it, and binding it was the owner's answer.
     """
     present = {node.evidence.person_id for node in graph.people}
+    grouped = _grouped_ids(document)
     return [
         entry
         for entry in people_entries(document)
@@ -447,6 +569,7 @@ def _annotated_strangers(document: dict[str, Any], graph: PeopleGraph) -> list[d
         and (
             _has_content(entry.get("confirmed"))
             or entry.get("origin") == "manual"
+            or grouped.intersection(entry_ids(entry))
             or len(primary_ids(entry)) < len(entry_ids(entry))
         )
     ]

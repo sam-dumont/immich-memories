@@ -39,10 +39,11 @@ trips:
 Name the faces that matter in Immich first. In this app, open **Settings > People**:
 
 1. Press **Rescan the library**.
-2. Set **Role** for the people in your library. Choose the role that fits each person; partner, child and parent are examples.
-3. Confirm or reject the suggested **Relationships**, and add any missing ones.
+2. Check **Account owner**. The scan only guesses whose library this is, and a lot hangs on it: what everyone is "to the library owner", the family seat, the titles. Pick the right person, or **Nobody in this library** for a shared family account. What you pick stays through every rescan.
+3. Set **Role** for the people in your library. Choose the role that fits each person; partner, child and parent are examples.
+4. Answer the links the scan found. It notices pairs that appear together all the time, but it cannot know what they are to each other. Under **Relationships**, pick the real one ("parent of", "partner of") and both sides get written, with the reverse kind. **No, they are not** closes the question for good.
 
-The automatic close-family rules currently recognise partner, child and parent roles. Other roles and saved groups can be recorded, but do not receive the same automatic selection protections. You decide who belongs in your films.
+A pair shows up once. Once you name it, the scan's guess is gone, and a rescan will not bring it back. If you confirmed a link in an older release without naming it, it reads "linked, relationship not named" until you pick a kind. We never guess one for you, and until you do it is left out of titles and prompts.
 
 The scan reads metadata, not pictures. Your confirmations survive a rescan. Its guesses alone never make someone close family.
 

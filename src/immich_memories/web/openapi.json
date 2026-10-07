@@ -19,6 +19,125 @@
         "title": "AccountChoice",
         "type": "object"
       },
+      "AccountOwner": {
+        "properties": {
+          "account": {
+            "title": "Account",
+            "type": "string"
+          },
+          "choices": {
+            "items": {
+              "$ref": "#/components/schemas/OwnerChoice"
+            },
+            "title": "Choices",
+            "type": "array"
+          },
+          "how": {
+            "title": "How",
+            "type": "string"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "nobody": {
+            "title": "Nobody",
+            "type": "boolean"
+          },
+          "person_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Person Id"
+          },
+          "primary": {
+            "title": "Primary",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "account",
+          "primary",
+          "person_id",
+          "name",
+          "nobody",
+          "how",
+          "choices"
+        ],
+        "title": "AccountOwner",
+        "type": "object"
+      },
+      "AccountPerson": {
+        "properties": {
+          "birth_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Birth Date"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "linked_to": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Linked To"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "pictures": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pictures"
+          },
+          "suggested": {
+            "title": "Suggested",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "birth_date",
+          "pictures",
+          "suggested",
+          "linked_to"
+        ],
+        "title": "AccountPerson",
+        "type": "object"
+      },
       "AlbumChoice": {
         "properties": {
           "asset_count": {
@@ -1638,6 +1757,44 @@
         "title": "NewPerson",
         "type": "object"
       },
+      "OwnerAnswer": {
+        "properties": {
+          "person_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Person Id"
+          }
+        },
+        "required": [
+          "person_id"
+        ],
+        "title": "OwnerAnswer",
+        "type": "object"
+      },
+      "OwnerChoice": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "person_id": {
+            "title": "Person Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "person_id",
+          "name"
+        ],
+        "title": "OwnerChoice",
+        "type": "object"
+      },
       "PersonAnswers": {
         "properties": {
           "links": {
@@ -2314,6 +2471,11 @@
             ],
             "title": "Reverse Kind"
           },
+          "status": {
+            "default": "named",
+            "title": "Status",
+            "type": "string"
+          },
           "target_id": {
             "title": "Target Id",
             "type": "string"
@@ -2340,6 +2502,21 @@
       },
       "RosterPerson": {
         "properties": {
+          "alias_urls": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "default": {},
+            "title": "Alias Urls",
+            "type": "object"
+          },
           "aliases": {
             "additionalProperties": {
               "items": {
@@ -2369,6 +2546,17 @@
           "counts_reliable": {
             "title": "Counts Reliable",
             "type": "boolean"
+          },
+          "declined": {
+            "additionalProperties": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "default": {},
+            "title": "Declined",
+            "type": "object"
           },
           "evidence": {
             "title": "Evidence",
@@ -3638,6 +3826,69 @@
         "summary": "Accounts",
         "tags": [
           "library"
+        ]
+      }
+    },
+    "/api/v1/accounts/{name}/people": {
+      "get": {
+        "description": "The named people of one account, with their picture counts (`/people/{id}/face` is\ntheir face).\n\nWith `for_person`, the ones with that person's name (any case) or birth date come first,\nand anybody already declined as \"not the same person\" is left out.",
+        "operationId": "account_people_api_v1_accounts__name__people_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "for_person",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "For Person"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AccountPerson"
+                  },
+                  "title": "Response Account People Api V1 Accounts  Name  People Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Account People",
+        "tags": [
+          "people"
         ]
       }
     },
@@ -4966,6 +5217,85 @@
         ]
       }
     },
+    "/api/v1/roster/owners": {
+      "get": {
+        "description": "Whose library each account is, and how we know; a second account is asked on demand.",
+        "operationId": "owners_api_v1_roster_owners_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AccountOwner"
+                  },
+                  "title": "Response Owners Api V1 Roster Owners Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Owners",
+        "tags": [
+          "people"
+        ]
+      }
+    },
+    "/api/v1/roster/owners/{account}": {
+      "put": {
+        "description": "Say who owns this account's library, or `null` for nobody. A scan never undoes it.",
+        "operationId": "answer_owner_api_v1_roster_owners__account__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "account",
+            "required": true,
+            "schema": {
+              "title": "Account",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OwnerAnswer"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountOwner"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Answer Owner",
+        "tags": [
+          "people"
+        ]
+      }
+    },
     "/api/v1/roster/scan": {
       "post": {
         "description": "Read the library's people again with `people scan`, keeping every answer given.",
@@ -5045,6 +5375,57 @@
       }
     },
     "/api/v1/roster/{person_id}/aliases": {
+      "delete": {
+        "description": "Unlink another account's person from this one. The person and their answers stay.",
+        "operationId": "unbind_alias_route_api_v1_roster__person_id__aliases_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "person_id",
+            "required": true,
+            "schema": {
+              "title": "Person Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AliasBind"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RosterPerson"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Unbind Alias Route",
+        "tags": [
+          "people"
+        ]
+      },
       "post": {
         "description": "Declare that `bind.alias_id`, as `bind.account` reads it, is this person.\n\nThe account has to be `primary` or a name under `immich.accounts` (`people bind`'s own\nrule); an id already bound to somebody else is refused, an id this person already has\nfor this account is a no-op. Name, birth date and confirmations are untouched.",
         "operationId": "bind_alias_route_api_v1_roster__person_id__aliases_post",
@@ -5092,6 +5473,59 @@
           }
         },
         "summary": "Bind Alias Route",
+        "tags": [
+          "people"
+        ]
+      }
+    },
+    "/api/v1/roster/{person_id}/aliases/declined": {
+      "post": {
+        "description": "Say that another account's person is not this one; it is never suggested again.",
+        "operationId": "decline_alias_route_api_v1_roster__person_id__aliases_declined_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "person_id",
+            "required": true,
+            "schema": {
+              "title": "Person Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AliasBind"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RosterPerson"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Decline Alias Route",
         "tags": [
           "people"
         ]

@@ -555,6 +555,27 @@ immich-memories people import [OPTIONS]
 | `--from` | file | - | A YAML file written by `people export` (or an old people.yaml) (required) |
 | `--replace` | boolean | false | Overwrite a registry that already holds people |
 
+### `people owner`
+
+Say whose library an Immich account is, or print the current answer.
+
+PERSON is a store person id or a name exactly one person carries. A scan only
+guesses the owner (you told it, the account's name matched, or the longest span);
+what you say here beats every guess and no scan changes it. Roles the registry
+derived from the old owner are cleared and worked out again from the new one.
+
+```bash
+immich-memories people owner [OPTIONS] [PERSON]
+```
+
+| Flag | Type | Default | Description |
+| --- | --- | --- | --- |
+| `--account` | text | primary | The Immich account whose owner this is: primary, or an extra account's name |
+| `--nobody` | boolean | false | Nobody in this library owns it, as with a shared family account |
+
+**Arguments:**
+- `person` (text; optional)
+
 ### `people scan`
 
 Build or refresh the people registry from Immich.

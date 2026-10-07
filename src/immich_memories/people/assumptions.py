@@ -14,6 +14,7 @@ from typing import Any
 
 from immich_memories.people.account_ids import entry_ids
 from immich_memories.people.companion import people_entries
+from immich_memories.people.relationships import DETECTED_KINDS
 
 _PARENT_KINDS = {"parent-of", "mother-of", "father-of"}
 _CHILD_KINDS = {"child-of", "son-of", "daughter-of"}
@@ -101,6 +102,7 @@ def _confirmed_facts(document: dict[str, Any]) -> set[ConfirmedStep]:
                 isinstance(link, dict)
                 and link.get("with")
                 and link.get("decision", "confirmed") != "rejected"
+                and link.get("kind") not in DETECTED_KINDS
             ):
                 facts.add(
                     ConfirmedStep(

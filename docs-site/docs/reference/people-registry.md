@@ -25,7 +25,15 @@ The scan also flags tight pairs (two people who are each a quarter or more of ea
 (same family name and birth date, marked `counts_reliable: false` because face recognition merges them) and one
 name on two person records. These are metadata-based suggestions, not confirmed relationships; different surnames or missing dates can leave relationships undiscovered. You are behind the camera, so pairs with you are read from month curves, not shared
 frames. The owner comes from `--owner` or `IMMICH_MEMORIES_OWNER` (`identified: told`), else your Immich account
-name (`account`), else the longest-running person (`inferred`: check it).
+name (`account`), else the longest-running person (`inferred`: check it). Those are guesses, and every scan
+rewrites them. What you say with `people owner` (or **Account owner** on the People page) is stored per account
+under `owners:` as `identified: confirmed`, or `person_id: null` for "nobody in this library", and no scan touches
+it. The order is confirmed, then told, then the account name, then inferred.
+
+A pair the scan notices (`tight-dyad`, `twin`, `duplicate`) is a question, not a relationship. You answer it by
+naming what the two are, which writes the normal relationship on both sides with the reverse kind, and the
+detected link is not shown again for that pair. A link confirmed without a name, which is what older releases
+wrote, stays as "linked, relationship not named" and never counts as a relationship in titles or prompts.
 
 The registry lives in the [store](../run/database.md), next to every other decision you made. Everything under
 `inferred:` is recomputed on each scan; everything under `confirmed:` is yours and never overwritten, and wins
@@ -81,6 +89,8 @@ immich-memories people bind "Alex Example" --account partner --id a91e…
 The person is a store id or a name exactly one person carries; if two people share the name, the command lists
 their ids and asks for one. `bind` only adds the id: the name, birth date and your answers stay put. An id somebody
 else holds is refused, never merged, and binding the same id twice changes nothing. Ids are never matched by name.
+`declined_links:` holds the "not the same person" answers from the People page, so a suggestion you refused stays
+refused. Taking an id back off a person is **Unlink** on that page.
 A film reads the second account with `generate --accounts primary,partner`
 ([generate](../make/cli/generate.md)), and a bound person counts as one person across both.
 

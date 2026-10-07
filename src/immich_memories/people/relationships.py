@@ -109,6 +109,11 @@ _OWNER_ROLE = {
 }
 
 
+# What the scan can notice about a pair without anybody saying what they are to each other.
+# A confirmed one is "linked, relationship not named": a placeholder, never a relationship.
+DETECTED_KINDS = frozenset({"tight-dyad", "twin", "duplicate"})
+
+
 def reciprocal_kind(kind: str) -> str:
     """The fact written on the other person after one relationship answer."""
     return _RECIPROCAL.get(kind, kind)

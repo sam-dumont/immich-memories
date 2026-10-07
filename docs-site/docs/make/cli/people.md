@@ -13,7 +13,20 @@ immich-memories people scan
 immich-memories people show
 ```
 
-The scan reads counts and dates, not pictures. It updates its suggestions without overwriting your confirmed roles and relationships. Use `people scan --owner "Alex"` if it inferred the wrong library owner.
+The scan reads counts and dates, not pictures. It updates its suggestions without overwriting your confirmed roles and relationships. A rescan keeps your saved groups too.
+
+## Say whose library it is
+
+The scan guesses the owner: the name you passed with `--owner`, else the Immich account's own name, else whoever has the longest span of pictures. Say it once and no scan changes it:
+
+```bash
+immich-memories people owner "Alex Example"
+immich-memories people owner --nobody
+immich-memories people owner --account partner "Sam Sample"
+immich-memories people owner
+```
+
+`--nobody` is for a shared family account where nobody in the library owns it. Without a person the command prints the current answer and how it was found. Changing the owner clears the roles the registry filled in from the old one and works them out again from the new one. Roles you typed stay. `--owner` on `people scan` still works as the guess for a library nobody has answered for.
 
 ## Export and edit
 

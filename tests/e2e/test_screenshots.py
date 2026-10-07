@@ -475,7 +475,10 @@ def accounts_app_url(
     workspace = _launch_workspace(tmp_path_factory.mktemp("accounts-shots"), fake_immich_server)
     config = yaml.safe_load(workspace.config_path.read_text())
     config["immich"]["accounts"] = {
-        "partner": {"url": fake_immich_server.base_url, "api_key": fake_immich_server.api_key}
+        "partner": {
+            "url": fake_immich_server.base_url,
+            "api_key": fake_immich_server.partner_api_key,
+        }
     }
     workspace.config_path.write_text(yaml.safe_dump(config))
     yield from _serve_launch(workspace, unused_tcp_port_factory(), models_fetched=True)
@@ -485,7 +488,7 @@ def accounts_app_url(
 def test_capture_a_second_account(
     page: Page, accounts_app_url: str, screenshot_dir: Path, theme: str
 ) -> None:
-    """A person bound across two accounts, a saved group, and both on the New memory page."""
+    """A person linked across two accounts, a saved group, and both on the New memory page."""
     d = screenshot_dir
     _open(page, f"{accounts_app_url}/app/settings/people", theme)
     page.wait_for_load_state("networkidle")
@@ -496,20 +499,22 @@ def test_capture_a_second_account(
         has=page.locator("p.font-semibold", has_text="Robin")
     )
     expect(card).to_be_visible(timeout=120_000)
-    bound = card.get_by_text("partner: partner-face-01")
-    # The first theme's pass binds and saves; the second finds both already there.
+    bound = card.get_by_test_id("account-link").get_by_role("link", name="Open in Immich")
+    # The first theme's pass links and saves; the second finds both already there. The partner
+    # account holds a Robin of its own, so it is the first thing offered.
     if not bound.count():
-        card.get_by_label("Account", exact=True).select_option("partner")
-        card.get_by_label("Their id in that account").fill("partner-face-01")
-        card.get_by_role("button", name="Bind", exact=True).click()
+        card.get_by_text("Link a person from partner").click()
+        card.get_by_test_id("link-suggestion").get_by_role(
+            "button", name="Link", exact=True
+        ).click()
     expect(bound).to_be_visible(timeout=15_000)
     groups = page.get_by_role("region", name="Saved groups")
     if not groups.get_by_text("Kids", exact=True).count():
         groups.get_by_label("Label", exact=True).fill("Kids")
-        groups.get_by_label("Expression", exact=True).fill('"person-robin" OR "person-charlie"')
+        groups.get_by_label("Pick the people", exact=True).select_option(label=["Robin", "Charlie"])
         groups.get_by_role("button", name="Save group", exact=True).click()
     expect(groups.get_by_text("Kids", exact=True)).to_be_visible(timeout=15_000)
-    # Opened again, so the bind form is back to empty, as someone returning to the page sees it.
+    # Opened again, so the link picker is closed, as someone returning to the page sees it.
     page.reload()
     expect(bound).to_be_visible(timeout=30_000)
     page.wait_for_load_state("networkidle")
