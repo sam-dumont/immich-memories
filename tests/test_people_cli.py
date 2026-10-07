@@ -180,6 +180,54 @@ class TestScan:
         assert load_document()["owner"]["name"] == "Sam Sample"
 
 
+class TestOwner:
+    def test_without_a_person_it_says_who_the_owner_is_and_how_that_was_found(self):
+        _run(["people", "scan"])
+
+        output = _run(["people", "owner"])
+
+        assert "Alex Example" in output and "matched the Immich account name" in output
+
+    def test_naming_the_owner_is_an_answer_the_next_scan_keeps(self):
+        _run(["people", "scan"])
+
+        _run(["people", "owner", "Sam Sample"])
+        _run(["people", "scan"])
+
+        owner = load_document()["owner"]
+        assert (owner["name"], owner["identified"]) == ("Sam Sample", "confirmed")
+        assert "you confirmed it" in _run(["people", "owner"])
+
+    def test_nobody_in_this_library_is_a_valid_answer(self):
+        _run(["people", "scan"])
+
+        _run(["people", "owner", "--nobody"])
+        _run(["people", "scan"])
+
+        assert load_document()["owner"] is None
+        assert "nobody" in _run(["people", "owner"]).lower()
+
+    def test_each_account_answers_for_itself(self):
+        _run(["people", "scan"])
+
+        _run(["people", "owner", "--account", "partner", "Sam Sample"])
+
+        assert "Alex Example" in _run(["people", "owner"])
+        assert "Sam Sample" in _run(["people", "owner", "--account", "partner"])
+
+    def test_a_person_the_registry_does_not_hold_is_refused(self):
+        _run(["people", "scan"])
+
+        output = _run(["people", "owner", "Nobody Real"], exit_code=1)
+
+        assert "Nobody Real" in output
+
+    def test_a_person_and_nobody_together_make_no_sense(self):
+        _run(["people", "scan"])
+
+        _run(["people", "owner", "--nobody", "Sam Sample"], exit_code=1)
+
+
 class TestTheBareCommand:
     def test_it_still_lists_the_people_immich_knows(self):
         # `immich-memories people` predates the graph and is documented as the

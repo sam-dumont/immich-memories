@@ -412,3 +412,47 @@ class ModelAcquisitionStatus(BaseModel):
 
 class ModelFetchRequest(BaseModel):
     plan_id: str = Field(pattern=r"^[0-9a-f]{128}$", min_length=128, max_length=128)
+
+
+class RosterLink(BaseModel):
+    kind: str
+    target_id: str
+    target_name: str
+    confidence: float
+    via: str
+    inferred: bool
+    decision: str | None = None
+    reverse_kind: str | None = None
+    # detected, unnamed, rejected or named: what the page offers for this row.
+    status: str = "named"
+
+
+class RosterPerson(BaseModel):
+    person_id: str
+    name: str
+    birth_date: str | None
+    tier: str
+    count: int
+    counts_reliable: bool
+    evidence: str
+    links: list[RosterLink]
+    role: str | None = None
+    notes: str | None = None
+    # Every id this person answers to, by the account that reads it: {"primary": [...]}, or
+    # with a bound partner account, {"primary": [...], "partner": [...]}.
+    aliases: dict[str, list[str]] = {}
+    # Where each alias id opens in Immich: its own account's address, or the public one.
+    alias_urls: dict[str, str | None] = {}
+    # Other accounts' people somebody said are not this one, by account.
+    declined: dict[str, list[str]] = {}
+
+
+class AccountPerson(BaseModel):
+    id: str
+    name: str
+    birth_date: str | None
+    pictures: int | None
+    # The same name or birth date as the person being linked: offered first.
+    suggested: bool
+    # The registry person this one is already linked to, if any.
+    linked_to: str | None

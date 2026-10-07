@@ -139,3 +139,4 @@ _._draw_base_layer
 # RosterFlag.person_urls is read by the Svelte people page across JSON (RosterFlag lives in
 # web/roster.py, not the excluded schemas module).
 _.person_urls
+

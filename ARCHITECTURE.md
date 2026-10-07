@@ -894,7 +894,8 @@ src/immich_memories/
 │   ├── library.py              # GET /people, /albums, /trips, /special-days for the brief's pickers
 │   ├── connection.py           # /connection: the Immich URL + key saved to the database; never follows a new URL
 │   ├── suggestions.py          # /suggestions: what `auto suggest` offers, generate one as `auto run` would
-│   ├── roster.py               # /roster: the store's people registry (roles, relationships) for People
+│   ├── roster.py               # /roster: the store's people registry (roles, relationships, alias link/unlink) for People
+│   ├── people_accounts.py      # /roster/owners (who owns each account) and /accounts/{name}/people (pick a person to link)
 │   ├── settings.py             # /settings: every setting + its source, saved to the database; /caches
 │   ├── schemas.py              # Pydantic response models = the contract (openapi.json)
 │   ├── dependencies.py         # Config, thumbnail cache, Immich fetches; overridable in tests
@@ -1004,14 +1005,17 @@ src/immich_memories/
 ├── people/                     # The library's people graph (counts and dates, no pixels)
 │   ├── signatures.py           # Tiers, onset, twins, duplicates, dyads, owner curve pairing
 │   ├── graph.py                # build_graph(): Immich roster + co-occurrence -> PeopleGraph
-│   ├── companion.py            # The people registry's writers (scan, confirm, add, relate), each one
-│   │                           # store transaction under the registry row lock; confirmed beats inferred
+│   ├── companion.py            # The people registry's writers (scan, confirm, add, relate, bind/unbind), each one
+│   │                           # store transaction under the registry row lock; confirmed beats inferred.
+│   │                           # A scan carries every header key it does not own (groups, owners, declined links)
+│   ├── owner.py                # Account owners: the scan's guess (`owner`) beside the confirmed answers (`owners`)
 │   ├── registry_store.py       # The registry document <-> the people tables (the only code that knows the rows)
 │   ├── account_ids.py          # A person's ids: one flat list (primary account) or one list per account
 │   ├── transfer.py             # people export/import (validated, ids kept) and import_legacy(people.yaml)
 │   ├── evidence_graph.py       # ~/.immich-memories/people-graph.json: scan measurements, a derived file
 │   ├── expression_window.py    # The earliest day a people condition can hold, from birth dates
-│   └── editor.py               # The companion editor's model: the registry as rows, and back
+│   └── editor.py               # The companion editor's model: the registry as rows, and back; one row per
+│                               # pair (a detected link hides once the pair has a real relationship)
 │
 ├── free_text/                  # A film asked for in a sentence (#1436, experimental; design in
 │   │                           # docs/designs/free-text-memories.md, user page docs-site/docs/make/free-text.md). Only reading.py and the

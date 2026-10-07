@@ -27,6 +27,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/accounts/{name}/people": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Account People
+         * @description The named people of one account, with their picture counts (`/people/{id}/face` is
+         *     their face).
+         *
+         *     With `for_person`, the ones with that person's name (any case) or birth date come first,
+         *     and anybody already declined as "not the same person" is left out.
+         */
+        get: operations["account_people_api_v1_accounts__name__people_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/albums": {
         parameters: {
             query?: never;
@@ -689,6 +713,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/roster/owners": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Owners
+         * @description Whose library each account is, and how we know; a second account is asked on demand.
+         */
+        get: operations["owners_api_v1_roster_owners_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/roster/owners/{account}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Answer Owner
+         * @description Say who owns this account's library, or `null` for nobody. A scan never undoes it.
+         */
+        put: operations["answer_owner_api_v1_roster_owners__account__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/roster/scan": {
         parameters: {
             query?: never;
@@ -747,6 +811,30 @@ export interface paths {
          *     for this account is a no-op. Name, birth date and confirmations are untouched.
          */
         post: operations["bind_alias_route_api_v1_roster__person_id__aliases_post"];
+        /**
+         * Unbind Alias Route
+         * @description Unlink another account's person from this one. The person and their answers stay.
+         */
+        delete: operations["unbind_alias_route_api_v1_roster__person_id__aliases_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/roster/{person_id}/aliases/declined": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Decline Alias Route
+         * @description Say that another account's person is not this one; it is never suggested again.
+         */
+        post: operations["decline_alias_route_api_v1_roster__person_id__aliases_declined_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1211,6 +1299,38 @@ export interface components {
             name: string;
             /** Primary */
             primary: boolean;
+        };
+        /** AccountOwner */
+        AccountOwner: {
+            /** Account */
+            account: string;
+            /** Choices */
+            choices: components["schemas"]["OwnerChoice"][];
+            /** How */
+            how: string;
+            /** Name */
+            name: string | null;
+            /** Nobody */
+            nobody: boolean;
+            /** Person Id */
+            person_id: string | null;
+            /** Primary */
+            primary: boolean;
+        };
+        /** AccountPerson */
+        AccountPerson: {
+            /** Birth Date */
+            birth_date: string | null;
+            /** Id */
+            id: string;
+            /** Linked To */
+            linked_to: string | null;
+            /** Name */
+            name: string;
+            /** Pictures */
+            pictures: number | null;
+            /** Suggested */
+            suggested: boolean;
         };
         /** AlbumChoice */
         AlbumChoice: {
@@ -1768,6 +1888,18 @@ export interface components {
             /** Name */
             name: string;
         };
+        /** OwnerAnswer */
+        OwnerAnswer: {
+            /** Person Id */
+            person_id: string | null;
+        };
+        /** OwnerChoice */
+        OwnerChoice: {
+            /** Name */
+            name: string;
+            /** Person Id */
+            person_id: string;
+        };
         /** PersonAnswers */
         PersonAnswers: {
             /**
@@ -2013,6 +2145,11 @@ export interface components {
             kind: string;
             /** Reverse Kind */
             reverse_kind?: string | null;
+            /**
+             * Status
+             * @default named
+             */
+            status: string;
             /** Target Id */
             target_id: string;
             /** Target Name */
@@ -2022,6 +2159,13 @@ export interface components {
         };
         /** RosterPerson */
         RosterPerson: {
+            /**
+             * Alias Urls
+             * @default {}
+             */
+            alias_urls: {
+                [key: string]: string | null;
+            };
             /**
              * Aliases
              * @default {}
@@ -2035,6 +2179,13 @@ export interface components {
             count: number;
             /** Counts Reliable */
             counts_reliable: boolean;
+            /**
+             * Declined
+             * @default {}
+             */
+            declined: {
+                [key: string]: string[];
+            };
             /** Evidence */
             evidence: string;
             /** Links */
@@ -2473,6 +2624,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AccountChoice"][];
+                };
+            };
+        };
+    };
+    account_people_api_v1_accounts__name__people_get: {
+        parameters: {
+            query?: {
+                for_person?: string | null;
+            };
+            header?: never;
+            path: {
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountPerson"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -3491,6 +3675,61 @@ export interface operations {
             };
         };
     };
+    owners_api_v1_roster_owners_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountOwner"][];
+                };
+            };
+        };
+    };
+    answer_owner_api_v1_roster_owners__account__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                account: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OwnerAnswer"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountOwner"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     scan_people_api_v1_roster_scan_post: {
         parameters: {
             query?: never;
@@ -3554,6 +3793,76 @@ export interface operations {
         };
     };
     bind_alias_route_api_v1_roster__person_id__aliases_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                person_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AliasBind"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RosterPerson"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unbind_alias_route_api_v1_roster__person_id__aliases_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                person_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AliasBind"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RosterPerson"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    decline_alias_route_api_v1_roster__person_id__aliases_declined_post: {
         parameters: {
             query?: never;
             header?: never;

@@ -62,6 +62,14 @@ class Owner:
 
 
 @dataclass(frozen=True)
+class ConfirmedOwner:
+    """The owner somebody answered for this account; `person_id` None is "nobody in this library"."""
+
+    person_id: str | None
+    name: str
+
+
+@dataclass(frozen=True)
 class PersonNode:
     """One person, as evidence plus what the evidence was read to mean."""
 
@@ -97,6 +105,7 @@ def build_graph(
     *,
     min_assets: int = DEFAULT_MIN_ASSETS,
     owner_name: str | None = None,
+    confirmed_owner: ConfirmedOwner | None = None,
     today: date | None = None,
     include_person_ids: Collection[str] = (),
 ) -> PeopleGraph:
@@ -104,7 +113,8 @@ def build_graph(
 
     One timeline call per named person gives their count and their months
     together; the pairwise pass then costs one small query per pair, which is
-    why the roster is bounded to people the library actually holds.
+    why the roster is bounded to people the library actually holds. A confirmed owner is an
+    answer, so it replaces the guess outright; the guess is only for libraries nobody answered.
     """
     evidence = _roster(
         source,
@@ -112,7 +122,12 @@ def build_graph(
         include_person_ids=include_person_ids,
         library_days=_photographed_days(source),
     )
-    owner = identify_owner(source, evidence, owner_name=owner_name)
+    if confirmed_owner is None:
+        owner = identify_owner(source, evidence, owner_name=owner_name)
+    elif confirmed_owner.person_id is None:
+        owner = None
+    else:
+        owner = Owner(confirmed_owner.person_id, confirmed_owner.name, "confirmed")
     shared = _shared_counts(source, evidence)
     links = _all_links(evidence, owner, shared)
     return PeopleGraph(

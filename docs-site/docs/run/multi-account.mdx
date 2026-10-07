@@ -110,22 +110,32 @@ similar images stay separate. Downloads, previews, reruns and render workers kee
 keys. A people condition holds per picture, not per episode: with AND, every named person
 must be recognised on that same picture, which can span owners when native sharing allows it.
 
-## Bind the same person across accounts
+## Link the same person across accounts
 
-Ask the second account’s owner to open the person in Immich and share their ID from `/people/<id>` in the URL.
-Then bind it to the same person in this app:
+Each Immich account gives the same person its own id, so the app has to be told who is who. It never guesses from names alone.
+
+Open **Settings > People**, find the person, and under **Accounts** open **Link a person from partner**. The list shows everyone the partner account has named, with their picture counts and faces. Anyone with the same name (any case) or the same birth date comes first:
+
+- **Link** connects them.
+- **Not the same person** is remembered, so that suggestion never comes back.
+
+A linked person shows by name, with **Open in Immich** (it uses `immich.public_url` when you set it, the server address otherwise) and **Unlink**. Unlinking takes the other account's id off the person and leaves everything you confirmed about them alone.
+
+<ThemedScreenshot name="people-accounts-bind" alt="Person settings with a partner-account person linked by name" />
+
+Face matching between the two accounts is not part of this. It would mean comparing both libraries' face data, which is a separate pipeline step. For now a person is linked because you picked them.
+
+The same thing from the terminal needs the partner's id, from the `/people/<id>` part of the URL when the other owner opens that person in Immich:
 
 ```bash
 immich-memories people bind "Alex" --account partner --id <person-id-in-partner-account>
 ```
 
-Or use **Settings > People > Accounts**, choose the account, paste the ID and **Bind**.
-The Accounts section appears once a second account is configured.
+A link preserves the person's confirmed details. An ID already linked to somebody else is refused.
 
-<ThemedScreenshot name="people-accounts-bind" alt="Person settings with a partner-account ID binding" />
+### Who owns each account
 
-Names are not used to guess identity. A binding preserves the person's confirmed details.
-An ID already bound to somebody else is refused.
+Each account has its own owner too, because the primary account's owner and the partner's are usually different people. **Settings > People > Account owner** shows one row per account. For the partner account the app asks Immich once who the key belongs to, and matches that name against the people it holds. Pick someone else, or **Nobody in this library**, and the answer stays.
 
 ## Read both accounts into one film
 

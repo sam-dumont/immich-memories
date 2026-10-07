@@ -50,6 +50,27 @@ def _person_payload(name: str) -> dict[str, Any]:
     }
 
 
+# The second account's own people: ids no other account holds, so a link has to be picked.
+# One shares a name with a person the e2e registries hold (a suggestion), one does not.
+PARTNER_PEOPLE = (
+    ("partner-person-01", "Fixture Person 01", "1990-05-06"),
+    ("partner-person-02", "Partner Only Friend", None),
+    ("partner-person-03", "Robin", None),
+)
+PARTNER_USER = "Fixture Person 01"
+
+
+def _partner_person_payload(person_id: str, name: str, born: str | None) -> dict[str, Any]:
+    return {
+        "id": person_id,
+        "name": name,
+        "birthDate": born,
+        "thumbnailPath": f"/fake/people/{person_id}.jpg",
+        "isHidden": False,
+        "updatedAt": "2024-06-01T12:00:00.000Z",
+    }
+
+
 def _asset_payload(picture: Picture) -> dict[str, Any]:
     is_video = picture.is_video
     width, height = _VIDEO_SIZE if is_video else _PHOTO_SIZE
@@ -174,6 +195,8 @@ class FakeImmichServer:
     """Own a fixture-scoped HTTP server implementing the tested Immich surface."""
 
     api_key = "fake-immich-api-key"
+    # A second account on the same server: its own roster and its own user.
+    partner_api_key = "fake-immich-partner-key"
 
     def __init__(
         self,
@@ -388,9 +411,11 @@ def _handler_type(
         protocol_version = "HTTP/1.1"
 
         def do_GET(self) -> None:  # noqa: N802
-            if self.headers.get("x-api-key") != FakeImmichServer.api_key:
+            key = self.headers.get("x-api-key")
+            if key not in (FakeImmichServer.api_key, FakeImmichServer.partner_api_key):
                 self._send_json(401, {"message": "invalid API key"})
                 return
+            partner = key == FakeImmichServer.partner_api_key
             request_url = urlsplit(self.path)
             path = request_url.path
             query = parse_qs(request_url.query)
@@ -406,7 +431,7 @@ def _handler_type(
                     {
                         "id": "fake-user",
                         "email": "fake@example.test",
-                        "name": "Fake Immich User",
+                        "name": PARTNER_USER if partner else "Fake Immich User",
                         "isAdmin": True,
                     },
                 )
@@ -417,17 +442,18 @@ def _handler_type(
                 self._send_json(200, albums)
                 return
             if path == "/api/people":
-                self._send_json(
-                    200,
-                    {
-                        "people": [_person_payload(name) for name in CAST],
-                        "total": len(CAST),
-                        "hidden": 0,
-                    },
+                people = (
+                    [_partner_person_payload(*person) for person in PARTNER_PEOPLE]
+                    if partner
+                    else [_person_payload(name) for name in CAST]
                 )
+                self._send_json(200, {"people": people, "total": len(people), "hidden": 0})
                 return
             if path.startswith("/api/people/") and path.endswith("/statistics"):
                 person_id = path.split("/")[-2]
+                if partner:
+                    self._send_json(200, {"assets": 120 if person_id.endswith("01") else 30})
+                    return
                 count = sum(
                     person_id == f"person-{name.lower()}"
                     for picture in ALL_PICTURES
@@ -456,6 +482,22 @@ def _handler_type(
                 self._send_file(thumbnails[parts[0]], "image/jpeg")
                 return
             person = path.removeprefix("/api/people/").split("/")
+            if path.startswith("/api/people/") and len(person) == 1:
+                # One person by id: the account that holds them answers, the other refuses.
+                held = {p[0]: p for p in PARTNER_PEOPLE} if partner else {}
+                if not partner:
+                    held = {f"person-{name.lower()}": None for name in CAST}
+                if person[0] not in held:
+                    self._send_json(404, {"message": "person not found"})
+                    return
+                found = held[person[0]]
+                self._send_json(
+                    200,
+                    _partner_person_payload(*found)
+                    if found
+                    else _person_payload(person[0].removeprefix("person-").title()),
+                )
+                return
             if (
                 len(person) == 2
                 and person[1] == "thumbnail"

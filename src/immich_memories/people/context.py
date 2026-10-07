@@ -12,7 +12,7 @@ from immich_memories.db import Store
 from immich_memories.people.account_ids import entry_ids
 from immich_memories.people.assumptions import family_assumptions
 from immich_memories.people.companion import load_document, people_entries
-from immich_memories.people.relationships import relationship_label
+from immich_memories.people.relationships import DETECTED_KINDS, relationship_label
 
 
 @dataclass(frozen=True, slots=True)
@@ -139,6 +139,8 @@ def _relationships(
                 not isinstance(raw, dict)
                 or not raw.get("with")
                 or raw.get("decision", "confirmed") == "rejected"
+                # Linked but never named: a placeholder, noise in a title or a prompt.
+                or raw.get("kind") in DETECTED_KINDS
             ):
                 continue
             _add_relationship(

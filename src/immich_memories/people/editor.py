@@ -16,6 +16,7 @@ from immich_memories.db import Store
 from immich_memories.people.account_ids import entry_ids, ids_by_account
 from immich_memories.people.companion import (
     add_confirmed_person,
+    declined_aliases,
     load_document,
     people_entries,
     remove_confirmed_relationship,
@@ -23,7 +24,9 @@ from immich_memories.people.companion import (
     save_confirmed_relationship,
 )
 from immich_memories.people.companion import bind_alias as _bind_alias
-from immich_memories.people.relationships import RELATIONSHIP_CHOICES
+from immich_memories.people.companion import decline_alias as _decline_alias
+from immich_memories.people.companion import unbind_alias as _unbind_alias
+from immich_memories.people.relationships import DETECTED_KINDS, RELATIONSHIP_CHOICES
 from immich_memories.people.signatures import Tier, pair_key
 
 # What inference can suggest, and nothing more. A role the graph cannot propose
@@ -45,6 +48,10 @@ TIER_ORDER = tuple(tier.value for tier in Tier)
 
 CONFIRMED = "confirmed"
 REJECTED = "rejected"
+
+DETECTED = "detected"
+UNNAMED = "unnamed"
+NAMED = "named"
 
 _GONE = "someone no longer in the registry"
 
@@ -70,6 +77,9 @@ class LinkView:
     inferred: bool
     decision: str | None = None
     reverse_kind: str | None = None
+    # detected: the scan noticed it and nobody answered; unnamed: confirmed in an older
+    # release without ever saying what the pair is; rejected; named: a real relationship.
+    status: str = NAMED
 
     @property
     def prompt(self) -> str:
@@ -93,6 +103,8 @@ class PersonView:
     # Every id this person answers to, by the account that reads it (`people bind`'s doing).
     # A one-account registry has only `primary`; there is no reader for other accounts' names.
     aliases: dict[str, list[str]] = field(default_factory=dict)
+    # Other accounts' people somebody said are not this one, by account: never suggested again.
+    declined: dict[str, list[str]] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -115,9 +127,12 @@ def load_people(store: Store) -> list[PersonView]:
     An empty registry reads as an empty roster: somebody opening the page before
     their first scan should be told to run one, not shown a stack trace.
     """
-    entries = people_entries(load_document(store))
+    document = load_document(store)
+    entries = people_entries(document)
     names = _names_by_id(entries)
-    people = [_view(entry, names) for entry in entries]
+    answers = _pair_answers(entries)
+    declined = declined_aliases(document)
+    people = [_view(entry, names, answers, declined) for entry in entries]
     return sorted(people, key=lambda person: (_tier_rank(person.tier), -person.count))
 
 
@@ -181,6 +196,19 @@ def bind_person_alias(store: Store, person_id: str, account: str, alias_id: str)
     if entry is not None and cleaned in ids_by_account(entry).get(account, []):
         return
     _bind_alias(store, person_id, cleaned, account=account)
+
+
+def unbind_person_alias(store: Store, person_id: str, account: str, alias_id: str) -> None:
+    """Take another account's id off this person; the person, their answers and ids stay."""
+    _unbind_alias(store, person_id, alias_id.strip(), account=account)
+
+
+def decline_person_alias(store: Store, person_id: str, account: str, alias_id: str) -> None:
+    """Answer "not the same person" for one other-account person, for good."""
+    cleaned = alias_id.strip()
+    if not cleaned:
+        raise ValueError("An alias id cannot be empty")
+    _decline_alias(store, person_id, account, cleaned)
 
 
 def remove_relationship(store: Store, source_id: str, kind: str, target_id: str) -> None:
@@ -249,7 +277,12 @@ def _rejected_pairs(people: list[PersonView]) -> set[tuple[str, str]]:
     }
 
 
-def _view(entry: dict[str, Any], names: dict[str, str]) -> PersonView:
+def _view(
+    entry: dict[str, Any],
+    names: dict[str, str],
+    answers: dict[frozenset[str], set[str]],
+    declined: dict[str, dict[str, list[str]]],
+) -> PersonView:
     inferred = _mapping(entry.get("inferred"))
     confirmed = _mapping(entry.get(CONFIRMED))
     evidence = _mapping(inferred.get("evidence"))
@@ -261,35 +294,84 @@ def _view(entry: dict[str, Any], names: dict[str, str]) -> PersonView:
         count=int(evidence.get("count") or 0),
         counts_reliable=inferred.get("counts_reliable", True) is not False,
         evidence=_evidence_line(evidence),
-        links=_links(inferred, confirmed, names),
+        links=_links(entry_ids(entry)[0], inferred, confirmed, names, answers),
         role=_text(confirmed.get("role")),
         notes=_text(confirmed.get("notes")),
         aliases=ids_by_account(entry),
+        declined=declined.get(entry_ids(entry)[0], {}),
     )
 
 
 def _links(
-    inferred: dict[str, Any], confirmed: dict[str, Any], names: dict[str, str]
+    own_id: str,
+    inferred: dict[str, Any],
+    confirmed: dict[str, Any],
+    names: dict[str, str],
+    answers: dict[frozenset[str], set[str]],
 ) -> list[LinkView]:
     """Every edge this person has, whether the scan found it or the user wrote it.
 
     A link somebody typed into an import by hand has no inferred counterpart, and
     an editor that only rendered what the scan found would delete it the next
     time the user pressed a button on this person.
+
+    One row per pair: once a pair has a real relationship, the detected link and any
+    placeholder confirmed in an earlier release are the same fact said worse, and a
+    pair somebody said no to on either side is not asked about again.
     """
     decisions = _decisions(confirmed)
-    views = [
-        _link_view(link, names, decisions)
-        for link in _mappings(inferred.get("links"))
-        if link.get("with")
-    ]
+    views: list[LinkView] = []
+    for link in _mappings(inferred.get("links")):
+        if not link.get("with"):
+            continue
+        view = _link_view(link, names, decisions)
+        if _hidden(view, answers.get(frozenset((own_id, view.target_id)), set())):
+            continue
+        if view.decision is None and UNNAMED in answers.get(
+            frozenset((own_id, view.target_id)), set()
+        ):
+            view.status = UNNAMED
+        views.append(view)
     known = {(view.kind, view.target_id) for view in views}
-    views.extend(
-        _hand_written_link(link, names)
-        for link in _mappings(confirmed.get("links"))
-        if link.get("with") and (str(link.get("kind") or "link"), str(link["with"])) not in known
-    )
+    for link in _mappings(confirmed.get("links")):
+        if not link.get("with") or (str(link.get("kind") or "link"), str(link["with"])) in known:
+            continue
+        view = _hand_written_link(link, names)
+        if not _hidden(view, answers.get(frozenset((own_id, view.target_id)), set())):
+            views.append(view)
     return views
+
+
+def _hidden(view: LinkView, pair: set[str]) -> bool:
+    """Whether the pair's answers make this row redundant."""
+    if view.kind not in DETECTED_KINDS:
+        return False
+    if NAMED in pair:
+        return True
+    return view.decision is None and REJECTED in pair
+
+
+def _pair_answers(entries: list[dict[str, Any]]) -> dict[frozenset[str], set[str]]:
+    """What has been answered for each pair, from either person's confirmed links.
+
+    Each pair maps to some of `named` (a real relationship), `unnamed` (a detected kind
+    confirmed, no real kind yet) and `rejected`.
+    """
+    canonical = {pid: entry_ids(entry)[0] for entry in entries for pid in entry_ids(entry)}
+    found: dict[frozenset[str], set[str]] = {}
+    for entry in entries:
+        own = entry_ids(entry)[0]
+        for link in _mappings(_mapping(entry.get(CONFIRMED)).get("links")):
+            other = canonical.get(str(link.get("with")))
+            if other is None:
+                continue
+            decision = str(link.get("decision") or CONFIRMED)
+            kind = str(link.get("kind") or "link")
+            state = (
+                REJECTED if decision == REJECTED else UNNAMED if kind in DETECTED_KINDS else NAMED
+            )
+            found.setdefault(frozenset((own, other)), set()).add(state)
+    return found
 
 
 def _link_view(
@@ -297,6 +379,7 @@ def _link_view(
 ) -> LinkView:
     target_id = str(raw["with"])
     kind = str(raw.get("kind") or "link")
+    decision = decisions.get((kind, target_id))
     return LinkView(
         kind=kind,
         target_id=target_id,
@@ -304,23 +387,35 @@ def _link_view(
         confidence=float(raw.get("confidence") or 0.0),
         via=str(raw.get("via") or ""),
         inferred=True,
-        decision=decisions.get((kind, target_id)),
+        decision=decision,
         reverse_kind=None,
+        status=_status(kind, decision, inferred=True),
     )
+
+
+def _status(kind: str, decision: str | None, *, inferred: bool) -> str:
+    if decision == REJECTED:
+        return REJECTED
+    if kind not in DETECTED_KINDS:
+        return NAMED
+    return UNNAMED if decision == CONFIRMED else DETECTED if inferred else UNNAMED
 
 
 def _hand_written_link(raw: dict[str, Any], names: dict[str, str]) -> LinkView:
     """An edge nobody inferred, because somebody wrote it into an import."""
     target_id = str(raw["with"])
+    kind = str(raw.get("kind") or "link")
+    decision = str(raw.get("decision") or CONFIRMED)
     return LinkView(
-        kind=str(raw.get("kind") or "link"),
+        kind=kind,
         target_id=target_id,
         target_name=names.get(target_id, _GONE),
         confidence=0.0,
         via="you",
         inferred=False,
-        decision=str(raw.get("decision") or CONFIRMED),
+        decision=decision,
         reverse_kind=_text(raw.get("reverse")),
+        status=_status(kind, decision, inferred=False),
     )
 
 

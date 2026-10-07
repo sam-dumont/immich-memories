@@ -112,3 +112,68 @@ def test_import_refuses_a_malformed_group_expression(store):
 
     with pytest.raises(Exception, match="groups\\[0\\]"):
         import_document(store, document)
+
+
+def test_a_scan_keeps_every_saved_group(store):
+    from datetime import date, datetime
+
+    from immich_memories.people.companion import save_graph
+    from immich_memories.people.graph import PeopleGraph, PersonNode
+    from immich_memories.people.signatures import PersonEvidence, Tier
+
+    node = PersonNode(
+        evidence=PersonEvidence(
+            person_id="id-kit",
+            name="Kit Example",
+            count=400,
+            active_months=(date(2019, 1, 1),),
+            birth_date=None,
+        ),
+        tier=Tier.INNER,
+    )
+    add_group(store, "kids", _TWO_KIDS)
+
+    save_graph(store, PeopleGraph(people=(node,), built_at=datetime(2026, 8, 25, 9, 0, 0)))
+
+    assert [saved.label for saved in list_groups(store)] == ["kids"]
+
+
+def _scanned(store, *names_and_ids):
+    from datetime import date, datetime
+
+    from immich_memories.people.companion import save_graph
+    from immich_memories.people.graph import PeopleGraph, PersonNode
+    from immich_memories.people.signatures import PersonEvidence, Tier
+
+    nodes = tuple(
+        PersonNode(
+            evidence=PersonEvidence(pid, name, 400, (date(2019, 1, 1),)),
+            tier=Tier.INNER,
+        )
+        for name, pid in names_and_ids
+    )
+    save_graph(store, PeopleGraph(people=nodes, built_at=datetime(2026, 8, 25, 9, 0, 0)))
+
+
+def test_a_person_a_saved_group_names_is_kept_below_the_picture_floor(store):
+    from immich_memories.people.companion import load_document, retained_immich_ids
+
+    _scanned(store, ("Kit Example", "id-kit"), ("Rowan Example", "id-rowan"))
+    add_group(store, "kids", _TWO_KIDS)
+
+    assert {"id-kit", "id-rowan"} <= retained_immich_ids(load_document(store))
+
+
+def test_a_group_member_the_scan_no_longer_sees_stays_in_the_registry(store):
+    from immich_memories.people.companion import load_document, people_entries
+
+    _scanned(store, ("Kit Example", "id-kit"), ("Rowan Example", "id-rowan"))
+    add_group(store, "kids", _TWO_KIDS)
+
+    _scanned(store, ("Kit Example", "id-kit"))
+
+    assert [e["name"] for e in people_entries(load_document(store))] == [
+        "Kit Example",
+        "Rowan Example",
+    ]
+    assert [saved.label for saved in list_groups(store)] == ["kids"]

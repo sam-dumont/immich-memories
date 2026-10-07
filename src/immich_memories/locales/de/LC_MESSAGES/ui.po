@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version:  immich-memories\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-07 11:14+0200\n"
+"POT-Creation-Date: 2026-10-07 16:24+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: de\n"
@@ -23,7 +23,7 @@ msgstr ""
 "Ein Film aus einem Satz braucht die Modell-Stufe: Setze advanced.llm.base_url und "
 "advanced.llm.model auf den Leser, der ihn beantwortet (tier: full)."
 
-#: web/routes/settings/people/+page.svelte:181
+#: web/lib/people/GroupsSection.svelte:50
 msgid "A label for a people condition. Pick it on the New memory page, or with generate --group."
 msgstr ""
 "Ein Label für eine Personenbedingung. Auf der Seite „Neue Erinnerung“ auswählen, oder mit "
@@ -46,19 +46,19 @@ msgstr "Noch etwa {amount}"
 msgid "Accept forwarded and downloaded media"
 msgstr "Weitergeleitete und heruntergeladene Medien akzeptieren"
 
-#: web/routes/settings/people/+page.svelte:280 web/routes/settings/people/+page.svelte:283
-msgid "Account"
-msgstr "Konto"
+#: web/lib/people/OwnerSection.svelte:41 web/lib/people/OwnerSection.svelte:42
+msgid "Account owner"
+msgstr "Kontoinhaber"
 
-#: web/routes/settings/people/+page.svelte:275
+#: web/lib/people/AccountLinks.svelte:46
 msgid "Accounts"
 msgstr "Konten"
 
-#: web/routes/settings/people/+page.svelte:270
+#: web/lib/people/RelationshipRows.svelte:71
 msgid "Add"
 msgstr "Hinzufügen"
 
-#: web/routes/settings/people/+page.svelte:262
+#: web/lib/people/RelationshipRows.svelte:64
 msgid "Add a relationship"
 msgstr "Eine Beziehung hinzufügen"
 
@@ -66,7 +66,7 @@ msgstr "Eine Beziehung hinzufügen"
 msgid "Add date overlay"
 msgstr "Datum einblenden"
 
-#: web/routes/settings/people/+page.svelte:207
+#: web/routes/settings/people/+page.svelte:127
 msgid "Add someone not in Immich"
 msgstr "Jemanden hinzufügen, der nicht in Immich ist"
 
@@ -84,6 +84,10 @@ msgstr "Hinzugefügt für einen Moment, den der Katalog als bemerkenswert verzei
 msgid "Added from the pool"
 msgstr "Aus dem Pool hinzugefügt"
 
+#: web/lib/people/GroupsSection.svelte:81
+msgid "Advanced: type the expression"
+msgstr "Erweitert: Ausdruck eingeben"
+
 #: web/routes/create/+page.svelte:348
 msgid "After a period"
 msgstr "Nach einer Zeitspanne"
@@ -95,6 +99,10 @@ msgstr "Album"
 #: web/lib/RenderPanel.svelte:279 web/lib/UploadFilm.svelte:46
 msgid "Album name"
 msgstr "Albumname"
+
+#: web/lib/people/GroupsSection.svelte:75
+msgid "All of them"
+msgstr "Alle"
 
 #: web/routes/runs/[run_id]/pool/+page.svelte:113
 #, python-brace-format
@@ -116,6 +124,10 @@ msgstr ""
 #: web/routes/create/+page.svelte:357
 msgid "Another day (MM-DD)"
 msgstr "Anderer Tag (MM-DD)"
+
+#: web/lib/people/GroupsSection.svelte:74
+msgid "Any of them"
+msgstr "Beliebige"
 
 #: web/routes/runs/[run_id]/pool/+page.svelte:87 web/routes/runs/[run_id]/pool/+page.svelte:165
 msgid "Anyone"
@@ -171,10 +183,6 @@ msgstr "Zurück zu den Läufen"
 #: web/routes/runs/[run_id]/pool/+page.svelte:104
 msgid "Back to the cut"
 msgstr "Zurück zum Schnitt"
-
-#: web/routes/settings/people/+page.svelte:289
-msgid "Bind"
-msgstr "Verknüpfen"
 
 #: web/routes/create/+page.svelte:340
 msgid "Birthday (MM-DD; Immich’s birth date when empty)"
@@ -232,6 +240,10 @@ msgstr "Bilder werden auf Familientauglichkeit geprüft"
 #: web/routes/create/+page.svelte:365
 msgid "Choose an album"
 msgstr "Album wählen"
+
+#: web/lib/people/OwnerSection.svelte:49 web/lib/people/OwnerSection.svelte:51
+msgid "Choose the owner"
+msgstr "Inhaber wählen"
 
 #: web/routes/create/+page.svelte:299
 msgid ""
@@ -300,7 +312,7 @@ msgstr "Bericht kopieren"
 msgid "Crossfade"
 msgstr "Überblenden"
 
-#: web/routes/settings/people/+page.svelte:164 web/routes/settings/people/+page.svelte:165
+#: web/routes/settings/people/+page.svelte:100 web/routes/settings/people/+page.svelte:101
 msgid "Curation"
 msgstr "Ordnen"
 
@@ -385,6 +397,15 @@ msgstr "Modelle herunterladen"
 msgid "Download report"
 msgstr "Bericht herunterladen"
 
+#: web/routes/settings/people/+page.svelte:118
+msgid ""
+"Each Immich account gives the same person its own id. Under a person, pick who they are in "
+"the other account. Nothing is matched for you: the same name only comes first in the list."
+msgstr ""
+"Jedes Immich-Konto gibt derselben Person eine eigene ID. Wähle unter einer Person, wer sie im"
+" anderen Konto ist. Nichts wird automatisch zugeordnet: Derselbe Name steht in der Liste nur "
+"zuerst."
+
 #: web/lib/ShotInspector.svelte:56
 msgid "Edit this shot"
 msgstr "Diese Aufnahme bearbeiten"
@@ -452,11 +473,11 @@ msgstr "Jede Reise des Jahres"
 msgid "Experimental"
 msgstr "Experimentell"
 
-#: web/routes/settings/people/+page.svelte:197
+#: web/lib/people/GroupsSection.svelte:67
 msgid "Expression"
 msgstr "Ausdruck"
 
-#: web/routes/settings/people/+page.svelte:73
+#: web/routes/settings/people/+page.svelte:48
 msgid ""
 "Face recognition merges identical faces, so one of these records holds nearly all the "
 "pictures and the other almost none. Neither count means anything on its own. Merge them in "
@@ -483,7 +504,7 @@ msgstr "Weniger als 12 Bilder passen: Der Film wird kurz."
 msgid "Films that may use it"
 msgstr "Filme, die es verwenden dürfen"
 
-#: web/routes/create/+page.svelte:434 web/routes/settings/people/+page.svelte:204
+#: web/routes/create/+page.svelte:434 web/routes/settings/people/+page.svelte:124
 msgid "Find a name"
 msgstr "Einen Namen suchen"
 
@@ -503,7 +524,7 @@ msgstr "Format"
 msgid "From"
 msgstr "Von"
 
-#: web/routes/settings/people/+page.svelte:206
+#: web/routes/settings/people/+page.svelte:126
 msgid "Full name"
 msgstr "Vollständiger Name"
 
@@ -602,7 +623,7 @@ msgstr "Es wurde nicht fertig."
 msgid "Just us"
 msgstr "Nur wir"
 
-#: web/routes/settings/people/+page.svelte:173
+#: web/routes/settings/people/+page.svelte:109
 msgid "Keep apart"
 msgstr "Getrennt halten"
 
@@ -619,7 +640,7 @@ msgstr "Behalten bei {stage}"
 msgid "Kept because"
 msgstr "Beibehalten, weil"
 
-#: web/routes/settings/people/+page.svelte:196
+#: web/lib/people/GroupsSection.svelte:65
 msgid "Label"
 msgstr "Bezeichnung"
 
@@ -635,6 +656,19 @@ msgstr "Länge und Bilder"
 msgid "Length in minutes (fitted to the pictures when empty)"
 msgstr "Länge in Minuten (passt sich den Bildern an, wenn leer)"
 
+#: web/lib/people/AccountLinks.svelte:64 web/lib/people/AccountLinks.svelte:75
+msgid "Link"
+msgstr "Verknüpfen"
+
+#: web/lib/people/AccountLinks.svelte:58
+#, python-brace-format
+msgid "Link a person from {account}"
+msgstr "Person aus {account} verknüpfen"
+
+#: web/lib/people/RelationshipRows.svelte:44
+msgid "Linked to"
+msgstr "Verknüpft mit"
+
 #: web/routes/runs/[run_id]/pool/+page.svelte:127
 msgid "Live"
 msgstr "Live"
@@ -642,6 +676,10 @@ msgstr "Live"
 #: web/routes/suggestions/+page.svelte:98
 msgid "Looking through your library for memories to suggest..."
 msgstr "Deine Mediathek wird nach vorschlagbaren Erinnerungen durchsucht..."
+
+#: web/lib/people/RelationshipRows.svelte:44
+msgid "Looks linked to"
+msgstr "Wirkt verknüpft mit"
 
 #: web/lib/RenderPanel.svelte:227
 msgid "Low"
@@ -813,7 +851,7 @@ msgstr "Keine passenden Läufe. Erstelle eine Erinnerung über Erinnerung oder V
 msgid "No saved cut is available for this run."
 msgstr "Kein gespeicherter Schnitt für diesen Lauf vorhanden."
 
-#: web/routes/settings/people/+page.svelte:193
+#: web/lib/people/GroupsSection.svelte:62
 msgid "No saved groups yet."
 msgstr "Noch keine gespeicherten Gruppen."
 
@@ -825,13 +863,23 @@ msgstr "Zurzeit keine Vorschläge."
 msgid "No trips detected for this year."
 msgstr "Für dieses Jahr wurden keine Reisen erkannt."
 
-#: web/routes/settings/people/+page.svelte:246
+#: web/lib/people/RelationshipRows.svelte:41 web/lib/people/RelationshipRows.svelte:56
 msgid "No, they are not"
 msgstr "Nein, das stimmt nicht"
 
-#: web/routes/settings/people/+page.svelte:212
-msgid "Nobody yet. Rescan the library to read who is in it."
-msgstr "Noch niemand. Mediathek neu scannen, um zu sehen, wer darin vorkommt."
+#: web/lib/people/OwnerSection.svelte:47 web/lib/people/OwnerSection.svelte:53
+msgid "Nobody in this library"
+msgstr "Niemand in dieser Mediathek"
+
+#: web/routes/settings/people/+page.svelte:133
+msgid ""
+"Nobody yet. This list is filled the first time a library is prepared, or when you rescan it. "
+"The person picker on New memory reads Immich directly, so it can show names before this page "
+"does."
+msgstr ""
+"Noch niemand. Diese Liste wird beim ersten Vorbereiten einer Mediathek oder beim erneuten "
+"Scannen gefüllt. Die Personenauswahl unter Neue Erinnerung liest Immich direkt und kann "
+"deshalb schon Namen zeigen, bevor diese Seite es tut."
 
 #: web/lib/RenderPanel.svelte:177
 msgid "None"
@@ -849,11 +897,19 @@ msgstr "Gilt nicht für einen Film, den du angefragt hast"
 msgid "Not possible"
 msgstr "Nicht möglich"
 
-#: web/routes/settings/people/+page.svelte:232
+#: web/lib/people/RelationshipRows.svelte:40
+msgid "Not related to"
+msgstr "Nicht verwandt mit"
+
+#: web/lib/people/AccountLinks.svelte:65
+msgid "Not the same person"
+msgstr "Nicht dieselbe Person"
+
+#: web/lib/people/PersonCard.svelte:32
 msgid "Notes"
 msgstr "Notizen"
 
-#: web/routes/settings/people/+page.svelte:253
+#: web/lib/people/RelationshipRows.svelte:60
 msgid "Nothing recorded yet."
 msgstr "Noch nichts aufgezeichnet."
 
@@ -865,7 +921,7 @@ msgstr "An diesem Tag"
 msgid "On a date"
 msgstr "An einem Datum"
 
-#: web/routes/settings/people/+page.svelte:75
+#: web/routes/settings/people/+page.svelte:50
 msgid ""
 "One name on two person records: a split face cluster. Merge these records in Immich, the only"
 " place it can be fixed."
@@ -881,7 +937,7 @@ msgstr "Nur mit (optional)"
 msgid "Open"
 msgstr "Öffnen"
 
-#: web/routes/settings/people/+page.svelte:170
+#: web/lib/people/AccountLinks.svelte:53 web/routes/settings/people/+page.svelte:106
 msgid "Open in Immich"
 msgstr "In Immich öffnen"
 
@@ -893,7 +949,7 @@ msgstr "Lauf öffnen"
 msgid "Open the film run"
 msgstr "Filmlauf öffnen"
 
-#: web/routes/settings/people/+page.svelte:170
+#: web/routes/settings/people/+page.svelte:106
 #, python-brace-format
 msgid "Open {name} in Immich"
 msgstr "{name} in Immich öffnen"
@@ -918,6 +974,11 @@ msgstr "Weiteres Bild dieses Moments"
 msgid "Other pictures of this moment"
 msgstr "Weitere Bilder dieses Moments"
 
+#: web/lib/people/OwnerSection.svelte:49
+#, python-brace-format
+msgid "Owner of {account}"
+msgstr "Inhaber von {account}"
+
 #: web/lib/ShotInspector.svelte:100
 #, python-brace-format
 msgid "Passed {stages}"
@@ -928,8 +989,8 @@ msgid "Password"
 msgstr "Passwort"
 
 #: web/routes/+layout.svelte:24 web/routes/create/+page.svelte:432
-#: web/routes/settings/+page.svelte:106 web/routes/settings/people/+page.svelte:146
-#: web/routes/settings/people/+page.svelte:152
+#: web/routes/settings/+page.svelte:106 web/routes/settings/people/+page.svelte:82
+#: web/routes/settings/people/+page.svelte:88
 msgid "People"
 msgstr "Personen"
 
@@ -945,9 +1006,18 @@ msgstr "Zeitraum (6m, 1y, 2w)"
 msgid "Person Spotlight"
 msgstr "Eine Person im Fokus"
 
+#: web/lib/people/AccountLinks.svelte:69 web/lib/people/AccountLinks.svelte:70
+#, python-brace-format
+msgid "Person in {account}"
+msgstr "Person in {account}"
+
 #: web/routes/create/+page.svelte:502
 msgid "Photo duration (seconds)"
 msgstr "Fotodauer (Sekunden)"
+
+#: web/lib/people/GroupsSection.svelte:70
+msgid "Pick the people"
+msgstr "Personen auswählen"
 
 #: web/lib/ShotInspector.svelte:42
 msgid "Picture review"
@@ -965,8 +1035,9 @@ msgstr "Verbleibende Bilder nach jedem Schritt"
 msgid "Pictures with"
 msgstr "Bilder mit"
 
+#: web/lib/people/AccountLinks.svelte:63 web/lib/people/PersonCard.svelte:23
 #: web/routes/runs/[run_id]/+page.svelte:143 web/routes/runs/[run_id]/+page.svelte:218
-#: web/routes/settings/people/+page.svelte:223 web/routes/suggestions/+page.svelte:106
+#: web/routes/suggestions/+page.svelte:106
 #, python-brace-format
 msgid "Pictures: {count}"
 msgstr "Bilder: {count}"
@@ -1048,11 +1119,11 @@ msgstr "Vorschläge aktualisieren"
 msgid "Refreshing..."
 msgstr "Wird aktualisiert..."
 
-#: web/routes/settings/people/+page.svelte:260
+#: web/lib/people/RelationshipRows.svelte:63
 msgid "Relationship"
 msgstr "Beziehung"
 
-#: web/routes/settings/people/+page.svelte:238
+#: web/lib/people/RelationshipRows.svelte:33
 msgid "Relationships"
 msgstr "Beziehungen"
 
@@ -1060,7 +1131,7 @@ msgstr "Beziehungen"
 msgid "Reload from Disk"
 msgstr "Von Festplatte neu laden"
 
-#: web/routes/settings/people/+page.svelte:188
+#: web/lib/people/GroupsSection.svelte:57
 msgid "Remove"
 msgstr "Entfernen"
 
@@ -1068,7 +1139,7 @@ msgstr "Entfernen"
 msgid "Remove from this cut"
 msgstr "Aus diesem Schnitt entfernen"
 
-#: web/routes/settings/people/+page.svelte:249
+#: web/lib/people/RelationshipRows.svelte:38
 msgid "Remove this relationship"
 msgstr "Diese Beziehung entfernen"
 
@@ -1088,7 +1159,11 @@ msgstr "Hat ein Bild ersetzt, an dem das Modell zweifelte."
 msgid "Report preview"
 msgstr "Berichtsvorschau"
 
-#: web/routes/settings/people/+page.svelte:155
+#: web/routes/settings/people/+page.svelte:134
+msgid "Rescan now"
+msgstr "Jetzt neu scannen"
+
+#: web/routes/settings/people/+page.svelte:91
 msgid "Rescan the library"
 msgstr "Mediathek neu scannen"
 
@@ -1109,7 +1184,7 @@ msgstr "Revision {number}"
 msgid "Revisions"
 msgstr "Revisionen"
 
-#: web/routes/settings/people/+page.svelte:228
+#: web/lib/people/PersonCard.svelte:28
 msgid "Role (suggestions; type your own)"
 msgstr "Rolle (Vorschläge oder eigene Eingabe)"
 
@@ -1131,6 +1206,11 @@ msgstr "Läuft auf dem Server: {phase}. Geht weiter, wenn du diese Seite verläs
 msgid "Runs"
 msgstr "Läufe"
 
+#: web/lib/people/AccountLinks.svelte:63
+#, python-brace-format
+msgid "Same person as {name}?"
+msgstr "Dieselbe Person wie {name}?"
+
 #: web/lib/SettingsEditor.svelte:110
 msgid "Save"
 msgstr "Speichern"
@@ -1139,7 +1219,7 @@ msgstr "Speichern"
 msgid "Save Config"
 msgstr "Konfiguration speichern"
 
-#: web/routes/settings/people/+page.svelte:198
+#: web/lib/people/GroupsSection.svelte:80
 msgid "Save group"
 msgstr "Gruppe speichern"
 
@@ -1156,8 +1236,8 @@ msgstr "Gespeichert: neuen Schlüssel eingeben, um ihn zu ersetzen"
 msgid "Saved as revision {number}."
 msgstr "Als Revision {number} gespeichert."
 
-#: web/routes/create/+page.svelte:449 web/routes/settings/people/+page.svelte:179
-#: web/routes/settings/people/+page.svelte:180
+#: web/lib/people/GroupsSection.svelte:48 web/lib/people/GroupsSection.svelte:49
+#: web/routes/create/+page.svelte:449
 msgid "Saved groups"
 msgstr "Gespeicherte Gruppen"
 
@@ -1215,7 +1295,7 @@ msgid "Set in config.yaml as {key}"
 msgstr "Gesetzt in config.yaml als {key}"
 
 #: web/routes/+layout.svelte:25 web/routes/settings/+page.svelte:77
-#: web/routes/settings/+page.svelte:81 web/routes/settings/people/+page.svelte:151
+#: web/routes/settings/+page.svelte:81 web/routes/settings/people/+page.svelte:87
 msgid "Settings"
 msgstr "Einstellungen"
 
@@ -1227,7 +1307,7 @@ msgstr "Teilbar"
 msgid "Show"
 msgstr "Anzeigen"
 
-#: web/routes/settings/people/+page.svelte:297
+#: web/routes/settings/people/+page.svelte:143
 msgid "Show more"
 msgstr "Mehr anzeigen"
 
@@ -1343,7 +1423,11 @@ msgstr "Entfernen"
 msgid "Test Connection"
 msgstr "Verbindung testen"
 
-#: web/routes/settings/people/+page.svelte:119
+#: web/lib/people/OwnerSection.svelte:33
+msgid "That could not be saved."
+msgstr "Das konnte nicht gespeichert werden."
+
+#: web/lib/people/GroupsSection.svelte:33
 msgid "That expression could not be saved."
 msgstr "Der Ausdruck konnte nicht gespeichert werden."
 
@@ -1355,7 +1439,7 @@ msgstr "Diese Datei ist keine MP3-, M4A- oder WAV-Datei"
 msgid "That file is too large for a soundtrack"
 msgstr "Diese Datei ist für einen Soundtrack zu groß"
 
-#: web/routes/settings/people/+page.svelte:104
+#: web/lib/people/AccountLinks.svelte:31
 msgid "That id could not be bound."
 msgstr "Die ID konnte nicht verknüpft werden."
 
@@ -1423,7 +1507,7 @@ msgstr ""
 msgid "The model, when one is configured"
 msgstr "Das Modell, wenn eines konfiguriert ist"
 
-#: web/routes/settings/people/+page.svelte:153
+#: web/routes/settings/people/+page.svelte:89
 msgid "The people registry: who is close, their roles, and how they relate."
 msgstr "Das Personenregister: wer nahesteht, welche Rollen sie haben und wie sie zueinander stehen."
 
@@ -1487,10 +1571,6 @@ msgstr "Der Upload ist fehlgeschlagen."
 #: web/lib/AskPanel.svelte:164
 msgid "The words changed since this preview: preview again before making the film."
 msgstr "Die Worte haben sich seit dieser Vorschau geändert: Erst neu vorschauen, dann den Film machen."
-
-#: web/routes/settings/people/+page.svelte:286
-msgid "Their id in that account"
-msgstr "Deren ID in diesem Konto"
 
 #: web/lib/labels.ts:48
 msgid "These people appear in the last two people memories."
@@ -1563,6 +1643,10 @@ msgstr "Erneut versuchen"
 #: web/routes/runs/[run_id]/+page.svelte:310 web/routes/runs/[run_id]/pool/+page.svelte:136
 msgid "Undo"
 msgstr "Rückgängig"
+
+#: web/lib/people/AccountLinks.svelte:54
+msgid "Unlink"
+msgstr "Verknüpfung lösen"
 
 #: web/lib/ago.ts:13
 #, python-brace-format
@@ -1653,6 +1737,11 @@ msgstr ""
 "ausgibt. Starte einen Lauf so, wie `auto run` es täte, oder prüfe ihn zuerst, ohne zu "
 "rendern."
 
+#: web/lib/people/RelationshipRows.svelte:51 web/lib/people/RelationshipRows.svelte:53
+#, python-brace-format
+msgid "What is {name} to {other}?"
+msgstr "Was ist {name} für {other}?"
+
 #: web/lib/AskPanel.svelte:170
 msgid "What the editor's rules would drop"
 msgstr "Was die Regeln des Schnitts aussortieren würden"
@@ -1693,6 +1782,14 @@ msgstr "Wer es sehen darf"
 msgid "Who names the film"
 msgstr "Wer den Film benennt"
 
+#: web/lib/people/OwnerSection.svelte:43
+msgid ""
+"Whose library is this? Relationships to the library owner, the family seat and the titles "
+"depend on it. A scan only guesses; what you pick here stays."
+msgstr ""
+"Wessen Mediathek ist das? Die Beziehungen zum Inhaber der Mediathek, der Familienplatz und "
+"die Titel hängen davon ab. Ein Scan rät nur; was du hier wählst, bleibt."
+
 #: web/routes/suggestions/+page.svelte:120
 msgid "Why other suggestions were skipped"
 msgstr "Warum andere Vorschläge übersprungen wurden"
@@ -1709,7 +1806,7 @@ msgstr "Warum dieses Bild"
 msgid "Winter"
 msgstr "Winter"
 
-#: web/routes/settings/people/+page.svelte:265 web/routes/settings/people/+page.svelte:267
+#: web/lib/people/RelationshipRows.svelte:67 web/lib/people/RelationshipRows.svelte:68
 msgid "With"
 msgstr "Mit"
 
@@ -1729,10 +1826,6 @@ msgstr "Jahre zurück (alle, wenn leer)"
 msgid "Years to span"
 msgstr "Anzahl der Jahre"
 
-#: web/routes/settings/people/+page.svelte:244
-msgid "Yes, that is right"
-msgstr "Ja, das stimmt"
-
 #: web/routes/runs/[run_id]/pool/+page.svelte:93
 #, python-brace-format
 msgid "You cleared its hold for {level}."
@@ -1748,6 +1841,10 @@ msgstr ""
 "Dein erster Film benötigt diese Modelldateien. Der Download beginnt erst, wenn du auf den "
 "Button drückst."
 
+#: web/lib/people/OwnerSection.svelte:20
+msgid "a guess: the longest span and the most pictures"
+msgstr "eine Vermutung: der längste Zeitraum und die meisten Bilder"
+
 #: web/routes/runs/[run_id]/+page.svelte:146
 #, python-brace-format
 msgid "about {film} of film"
@@ -1761,21 +1858,41 @@ msgstr "alle zusammen"
 msgid "any of them"
 msgstr "eine von ihnen"
 
+#: web/lib/people/OwnerSection.svelte:19
+msgid "it matches the Immich account name"
+msgstr "passt zum Namen des Immich-Kontos"
+
+#: web/lib/people/OwnerSection.svelte:21 web/lib/people/OwnerSection.svelte:47
+msgid "not known yet"
+msgstr "noch nicht bekannt"
+
 #: web/lib/AskPanel.svelte:129
 msgid "our cat along the years"
 msgstr "unsere Katze über die Jahre"
+
+#: web/lib/people/RelationshipRows.svelte:47
+msgid "relationship not named"
+msgstr "Beziehung nicht benannt"
 
 #: web/routes/suggestions/+page.svelte:86
 msgid "starting"
 msgstr "wird gestartet"
 
-#: web/routes/settings/people/+page.svelte:153
+#: web/routes/settings/people/+page.svelte:89
 msgid "writes it out as YAML."
 msgstr "schreibt es als YAML aus."
 
-#: web/routes/settings/people/+page.svelte:153
+#: web/routes/settings/people/+page.svelte:89
 msgid "writes the guesses; your answers stay across scans."
 msgstr "schreibt die Vermutungen; deine Antworten bleiben über Scans hinweg erhalten."
+
+#: web/lib/people/OwnerSection.svelte:17
+msgid "you confirmed it"
+msgstr "du hast es bestätigt"
+
+#: web/lib/people/OwnerSection.svelte:18
+msgid "you told the scan"
+msgstr "du hast es dem Scan gesagt"
 
 #: web/routes/runs/[run_id]/+page.svelte:145
 #, python-brace-format

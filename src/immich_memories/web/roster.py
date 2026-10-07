@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import asdict
 from typing import Annotated, Literal
 
@@ -10,21 +11,26 @@ from pydantic import BaseModel
 
 from immich_memories.api.person_expression import PersonExpression
 from immich_memories.config_loader import Config
+from immich_memories.config_models import PRIMARY_ACCOUNT
 from immich_memories.db import Store, open_store
 from immich_memories.people.editor import (
     ROLE_SUGGESTIONS,
+    PersonView,
     add_person,
     add_relationship,
     bind_person_alias,
     curation_flags,
+    decline_person_alias,
     keep_apart,
     load_people,
     remove_relationship,
     save_person,
+    unbind_person_alias,
 )
 from immich_memories.people.groups import add_group, list_groups, remove_group
 from immich_memories.people.relationships import RELATIONSHIP_CHOICES
 from immich_memories.web.dependencies import current_config
+from immich_memories.web.schemas import RosterPerson
 
 router = APIRouter(prefix="/api/v1/roster", tags=["people"])
 
@@ -32,33 +38,6 @@ router = APIRouter(prefix="/api/v1/roster", tags=["people"])
 def people_store(config: Annotated[Config, Depends(current_config)]) -> Store:
     """The store holding the people registry this server reads, the one the CLI writes."""
     return open_store(config)
-
-
-class RosterLink(BaseModel):
-    kind: str
-    target_id: str
-    target_name: str
-    confidence: float
-    via: str
-    inferred: bool
-    decision: str | None = None
-    reverse_kind: str | None = None
-
-
-class RosterPerson(BaseModel):
-    person_id: str
-    name: str
-    birth_date: str | None
-    tier: str
-    count: int
-    counts_reliable: bool
-    evidence: str
-    links: list[RosterLink]
-    role: str | None = None
-    notes: str | None = None
-    # Every id this person answers to, by the account that reads it: {"primary": [...]}, or
-    # with a bound partner account, {"primary": [...], "partner": [...]}.
-    aliases: dict[str, list[str]] = {}
 
 
 class RosterFlag(BaseModel):
@@ -123,6 +102,27 @@ class NewGroup(BaseModel):
     expression: str
 
 
+def _shown(person: PersonView, config: Config) -> RosterPerson:
+    urls = {
+        alias: _alias_url(config, account, alias)
+        for account, ids in person.aliases.items()
+        for alias in ids
+    }
+    return RosterPerson.model_validate({**asdict(person), "alias_urls": urls})
+
+
+def _alias_url(config: Config, account: str, alias_id: str) -> str | None:
+    """Where an account's person opens: the address links use, or that account's own server."""
+    if account == PRIMARY_ACCOUNT:
+        return config.immich.person_url(alias_id)
+    connection = config.immich.accounts.get(account)
+    if connection is None or not connection.url:
+        return None
+    same_server = connection.url.rstrip("/") == config.immich.url.rstrip("/")
+    base = config.immich.link_base if same_server else connection.url.rstrip("/")
+    return f"{base}/people/{alias_id}"
+
+
 @router.get("", response_model=Roster)
 def roster(
     store: Annotated[Store, Depends(people_store)],
@@ -131,7 +131,7 @@ def roster(
     """Everyone in the people registry, inner circle first, with what needs curating."""
     people = load_people(store)
     return Roster(
-        people=[RosterPerson.model_validate(asdict(person)) for person in people],
+        people=[_shown(person, config) for person in people],
         flags=[
             RosterFlag(
                 **asdict(flag),
@@ -155,7 +155,10 @@ def keep_flag_apart(answer: FlagAnswer, store: Annotated[Store, Depends(people_s
 
 @router.put("/{person_id}", response_model=RosterPerson)
 def answer(
-    person_id: str, answers: PersonAnswers, store: Annotated[Store, Depends(people_store)]
+    person_id: str,
+    answers: PersonAnswers,
+    store: Annotated[Store, Depends(people_store)],
+    config: Annotated[Config, Depends(current_config)],
 ) -> RosterPerson:
     """Keep this person's role, notes and answers to the graph's guesses."""
     person = next((p for p in load_people(store) if p.person_id == person_id), None)
@@ -168,23 +171,30 @@ def answer(
             link.decision = decided[(link.kind, link.target_id)]
     save_person(store, person)
     saved = next(p for p in load_people(store) if p.person_id == person_id)
-    return RosterPerson.model_validate(asdict(saved))
+    return _shown(saved, config)
 
 
 @router.post("", response_model=RosterPerson, status_code=201)
-def add(new: NewPerson, store: Annotated[Store, Depends(people_store)]) -> RosterPerson:
+def add(
+    new: NewPerson,
+    store: Annotated[Store, Depends(people_store)],
+    config: Annotated[Config, Depends(current_config)],
+) -> RosterPerson:
     """Add someone Immich has not tagged, or who is never on camera."""
     try:
         person_id = add_person(store, new.name)
     except ValueError as error:
         raise HTTPException(422, str(error)) from error
     person = next(p for p in load_people(store) if p.person_id == person_id)
-    return RosterPerson.model_validate(asdict(person))
+    return _shown(person, config)
 
 
 @router.post("/{person_id}/relationships", response_model=RosterPerson)
 def relate(
-    person_id: str, relationship: Relationship, store: Annotated[Store, Depends(people_store)]
+    person_id: str,
+    relationship: Relationship,
+    store: Annotated[Store, Depends(people_store)],
+    config: Annotated[Config, Depends(current_config)],
 ) -> RosterPerson:
     """Record one relationship; the registry keeps its reciprocal."""
     try:
@@ -192,24 +202,30 @@ def relate(
     except ValueError as error:
         raise HTTPException(422, str(error)) from error
     person = next(p for p in load_people(store) if p.person_id == person_id)
-    return RosterPerson.model_validate(asdict(person))
+    return _shown(person, config)
 
 
 @router.delete("/{person_id}/relationships", response_model=RosterPerson)
 def unrelate(
-    person_id: str, relationship: Relationship, store: Annotated[Store, Depends(people_store)]
+    person_id: str,
+    relationship: Relationship,
+    store: Annotated[Store, Depends(people_store)],
+    config: Annotated[Config, Depends(current_config)],
 ) -> RosterPerson:
     """Remove a relationship somebody recorded, and its reciprocal."""
     if not any(p.person_id == person_id for p in load_people(store)):
         raise HTTPException(404, "Nobody with that id is in the people registry.")
     remove_relationship(store, person_id, relationship.kind, relationship.target_id)
     person = next(p for p in load_people(store) if p.person_id == person_id)
-    return RosterPerson.model_validate(asdict(person))
+    return _shown(person, config)
 
 
 @router.post("/{person_id}/aliases", response_model=RosterPerson)
 def bind_alias_route(
-    person_id: str, bind: AliasBind, store: Annotated[Store, Depends(people_store)]
+    person_id: str,
+    bind: AliasBind,
+    store: Annotated[Store, Depends(people_store)],
+    config: Annotated[Config, Depends(current_config)],
 ) -> RosterPerson:
     """Declare that `bind.alias_id`, as `bind.account` reads it, is this person.
 
@@ -224,7 +240,46 @@ def bind_alias_route(
     person = next((p for p in load_people(store) if p.person_id == person_id), None)
     if person is None:
         raise HTTPException(404, "Nobody with that id is in the people registry.")
-    return RosterPerson.model_validate(asdict(person))
+    return _shown(person, config)
+
+
+def _alias_answer(
+    answered: Callable[[Store, str, str, str], None],
+    person_id: str,
+    bind: AliasBind,
+    store: Store,
+    config: Config,
+) -> RosterPerson:
+    try:
+        answered(store, person_id, bind.account, bind.alias_id)
+    except ValueError as error:
+        raise HTTPException(422, str(error)) from error
+    person = next((p for p in load_people(store) if p.person_id == person_id), None)
+    if person is None:
+        raise HTTPException(404, "Nobody with that id is in the people registry.")
+    return _shown(person, config)
+
+
+@router.delete("/{person_id}/aliases", response_model=RosterPerson)
+def unbind_alias_route(
+    person_id: str,
+    bind: AliasBind,
+    store: Annotated[Store, Depends(people_store)],
+    config: Annotated[Config, Depends(current_config)],
+) -> RosterPerson:
+    """Unlink another account's person from this one. The person and their answers stay."""
+    return _alias_answer(unbind_person_alias, person_id, bind, store, config)
+
+
+@router.post("/{person_id}/aliases/declined", response_model=RosterPerson)
+def decline_alias_route(
+    person_id: str,
+    bind: AliasBind,
+    store: Annotated[Store, Depends(people_store)],
+    config: Annotated[Config, Depends(current_config)],
+) -> RosterPerson:
+    """Say that another account's person is not this one; it is never suggested again."""
+    return _alias_answer(decline_person_alias, person_id, bind, store, config)
 
 
 @router.get("/groups", response_model=list[SavedGroupView])

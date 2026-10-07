@@ -10,7 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date, datetime
 
-from immich_memories.people.graph import build_graph, identify_owner
+from immich_memories.people.graph import ConfirmedOwner, build_graph, identify_owner
 from immich_memories.people.signatures import LinkKind, PersonEvidence, Tier
 
 
@@ -175,6 +175,38 @@ class TestOwner:
         owner = identify_owner(immich, roster)
 
         assert (owner.person_id, owner.identified) == ("p1", "inferred")
+
+
+class TestConfirmedOwner:
+    def _library(self):
+        return FakeImmich(
+            people=[_Person("p1", "Alex Example"), _Person("p2", "Sam Sample")],
+            months={
+                "p1": _monthly(date(2010, 1, 1), 190, 20),
+                "p2": _monthly(date(2018, 6, 1), 90, 20),
+            },
+            account="Alex Example",
+        )
+
+    def test_a_confirmed_owner_beats_the_account_name_and_being_told(self):
+        graph = build_graph(
+            self._library(),
+            owner_name="Alex Example",
+            confirmed_owner=ConfirmedOwner("p2", "Sam Sample"),
+            today=date(2026, 8, 25),
+        )
+
+        assert (graph.owner.person_id, graph.owner.identified) == ("p2", "confirmed")
+
+    def test_nobody_in_this_library_leaves_the_graph_without_an_owner(self):
+        graph = build_graph(
+            self._library(),
+            confirmed_owner=ConfirmedOwner(None, ""),
+            today=date(2026, 8, 25),
+        )
+
+        assert graph.owner is None
+        assert all(not node.links for node in graph.people), "no owner, no curve pairing"
 
 
 class TestLinksOnTheGraph:

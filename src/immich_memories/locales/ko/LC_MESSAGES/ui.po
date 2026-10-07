@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-07 11:14+0200\n"
+"POT-Creation-Date: 2026-10-07 16:24+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ko\n"
@@ -23,7 +23,7 @@ msgstr ""
 "문장으로 만드는 영화에는 모델 등급이 필요합니다: advanced.llm.base_url과 advanced.llm.model을 문장을 읽을 리더로 설정하세요 "
 "(tier: full)."
 
-#: web/routes/settings/people/+page.svelte:181
+#: web/lib/people/GroupsSection.svelte:50
 msgid "A label for a people condition. Pick it on the New memory page, or with generate --group."
 msgstr "인물 조건의 레이블입니다. 새 추억 페이지에서 선택하거나 generate --group으로 사용하세요."
 
@@ -44,19 +44,19 @@ msgstr "약 {amount} 남음"
 msgid "Accept forwarded and downloaded media"
 msgstr "전달되거나 다운로드된 미디어 허용"
 
-#: web/routes/settings/people/+page.svelte:280 web/routes/settings/people/+page.svelte:283
-msgid "Account"
-msgstr "계정"
+#: web/lib/people/OwnerSection.svelte:41 web/lib/people/OwnerSection.svelte:42
+msgid "Account owner"
+msgstr "계정 소유자"
 
-#: web/routes/settings/people/+page.svelte:275
+#: web/lib/people/AccountLinks.svelte:46
 msgid "Accounts"
 msgstr "계정"
 
-#: web/routes/settings/people/+page.svelte:270
+#: web/lib/people/RelationshipRows.svelte:71
 msgid "Add"
 msgstr "추가"
 
-#: web/routes/settings/people/+page.svelte:262
+#: web/lib/people/RelationshipRows.svelte:64
 msgid "Add a relationship"
 msgstr "관계 추가"
 
@@ -64,7 +64,7 @@ msgstr "관계 추가"
 msgid "Add date overlay"
 msgstr "날짜 표시"
 
-#: web/routes/settings/people/+page.svelte:207
+#: web/routes/settings/people/+page.svelte:127
 msgid "Add someone not in Immich"
 msgstr "Immich에 없는 인물 추가"
 
@@ -82,6 +82,10 @@ msgstr "카탈로그가 주목할 만한 순간으로 기록해 추가되었습�
 msgid "Added from the pool"
 msgstr "후보에서 추가됨"
 
+#: web/lib/people/GroupsSection.svelte:81
+msgid "Advanced: type the expression"
+msgstr "고급: 식 직접 입력"
+
 #: web/routes/create/+page.svelte:348
 msgid "After a period"
 msgstr "기간 후"
@@ -93,6 +97,10 @@ msgstr "앨범"
 #: web/lib/RenderPanel.svelte:279 web/lib/UploadFilm.svelte:46
 msgid "Album name"
 msgstr "앨범 이름"
+
+#: web/lib/people/GroupsSection.svelte:75
+msgid "All of them"
+msgstr "모두"
 
 #: web/routes/runs/[run_id]/pool/+page.svelte:113
 #, python-brace-format
@@ -112,6 +120,10 @@ msgstr "기념일을 먼저, 나머지는 그다음에 표시합니다. 예약�
 #: web/routes/create/+page.svelte:357
 msgid "Another day (MM-DD)"
 msgstr "다른 날 (MM-DD)"
+
+#: web/lib/people/GroupsSection.svelte:74
+msgid "Any of them"
+msgstr "하나라도"
 
 #: web/routes/runs/[run_id]/pool/+page.svelte:87 web/routes/runs/[run_id]/pool/+page.svelte:165
 msgid "Anyone"
@@ -167,10 +179,6 @@ msgstr "작업 목록으로 돌아가기"
 #: web/routes/runs/[run_id]/pool/+page.svelte:104
 msgid "Back to the cut"
 msgstr "편집 결과로 돌아가기"
-
-#: web/routes/settings/people/+page.svelte:289
-msgid "Bind"
-msgstr "연결"
 
 #: web/routes/create/+page.svelte:340
 msgid "Birthday (MM-DD; Immich’s birth date when empty)"
@@ -228,6 +236,10 @@ msgstr "가족 시청에 적합한지 확인하는 중"
 #: web/routes/create/+page.svelte:365
 msgid "Choose an album"
 msgstr "앨범을 선택하세요"
+
+#: web/lib/people/OwnerSection.svelte:49 web/lib/people/OwnerSection.svelte:51
+msgid "Choose the owner"
+msgstr "소유자 선택"
 
 #: web/routes/create/+page.svelte:299
 msgid ""
@@ -294,7 +306,7 @@ msgstr "보고서 복사"
 msgid "Crossfade"
 msgstr "크로스페이드"
 
-#: web/routes/settings/people/+page.svelte:164 web/routes/settings/people/+page.svelte:165
+#: web/routes/settings/people/+page.svelte:100 web/routes/settings/people/+page.svelte:101
 msgid "Curation"
 msgstr "정리"
 
@@ -379,6 +391,14 @@ msgstr "모델 다운로드"
 msgid "Download report"
 msgstr "보고서 다운로드"
 
+#: web/routes/settings/people/+page.svelte:118
+msgid ""
+"Each Immich account gives the same person its own id. Under a person, pick who they are in "
+"the other account. Nothing is matched for you: the same name only comes first in the list."
+msgstr ""
+"Immich 계정마다 같은 사람에게 서로 다른 id가 붙습니다. 사람 아래에서 다른 계정의 누구인지 고르세요. 자동으로 맞춰지는 것은 없고, 같은 이름이 목록 맨 앞에"
+" 올 뿐입니다."
+
 #: web/lib/ShotInspector.svelte:56
 msgid "Edit this shot"
 msgstr "이 장면 편집"
@@ -441,11 +461,11 @@ msgstr "그 해의 모든 여행"
 msgid "Experimental"
 msgstr "실험적"
 
-#: web/routes/settings/people/+page.svelte:197
+#: web/lib/people/GroupsSection.svelte:67
 msgid "Expression"
 msgstr "표현식"
 
-#: web/routes/settings/people/+page.svelte:73
+#: web/routes/settings/people/+page.svelte:48
 msgid ""
 "Face recognition merges identical faces, so one of these records holds nearly all the "
 "pictures and the other almost none. Neither count means anything on its own. Merge them in "
@@ -471,7 +491,7 @@ msgstr "맞는 사진이 12장 미만입니다: 영화가 짧아집니다."
 msgid "Films that may use it"
 msgstr "이를 사용할 수 있는 영상"
 
-#: web/routes/create/+page.svelte:434 web/routes/settings/people/+page.svelte:204
+#: web/routes/create/+page.svelte:434 web/routes/settings/people/+page.svelte:124
 msgid "Find a name"
 msgstr "이름 검색"
 
@@ -491,7 +511,7 @@ msgstr "형식"
 msgid "From"
 msgstr "시작"
 
-#: web/routes/settings/people/+page.svelte:206
+#: web/routes/settings/people/+page.svelte:126
 msgid "Full name"
 msgstr "전체 이름"
 
@@ -590,7 +610,7 @@ msgstr "완료되지 않았습니다."
 msgid "Just us"
 msgstr "우리끼리"
 
-#: web/routes/settings/people/+page.svelte:173
+#: web/routes/settings/people/+page.svelte:109
 msgid "Keep apart"
 msgstr "따로 두기"
 
@@ -607,7 +627,7 @@ msgstr "{stage}에서 유지됨"
 msgid "Kept because"
 msgstr "유지한 이유"
 
-#: web/routes/settings/people/+page.svelte:196
+#: web/lib/people/GroupsSection.svelte:65
 msgid "Label"
 msgstr "레이블"
 
@@ -623,6 +643,19 @@ msgstr "길이와 이미지"
 msgid "Length in minutes (fitted to the pictures when empty)"
 msgstr "길이(분, 비워두면 이미지에 맞춰 조정)"
 
+#: web/lib/people/AccountLinks.svelte:64 web/lib/people/AccountLinks.svelte:75
+msgid "Link"
+msgstr "연결"
+
+#: web/lib/people/AccountLinks.svelte:58
+#, python-brace-format
+msgid "Link a person from {account}"
+msgstr "{account}의 사람 연결"
+
+#: web/lib/people/RelationshipRows.svelte:44
+msgid "Linked to"
+msgstr "연결된 상대"
+
 #: web/routes/runs/[run_id]/pool/+page.svelte:127
 msgid "Live"
 msgstr "Live"
@@ -630,6 +663,10 @@ msgstr "Live"
 #: web/routes/suggestions/+page.svelte:98
 msgid "Looking through your library for memories to suggest..."
 msgstr "라이브러리에서 추천할 추억을 찾는 중..."
+
+#: web/lib/people/RelationshipRows.svelte:44
+msgid "Looks linked to"
+msgstr "연결된 것 같은 상대"
 
 #: web/lib/RenderPanel.svelte:227
 msgid "Low"
@@ -795,7 +832,7 @@ msgstr "이 보기에 해당하는 작업이 없습니다. 추억 또는 제안�
 msgid "No saved cut is available for this run."
 msgstr "이 작업에는 저장된 편집 결과가 없습니다."
 
-#: web/routes/settings/people/+page.svelte:193
+#: web/lib/people/GroupsSection.svelte:62
 msgid "No saved groups yet."
 msgstr "저장된 그룹이 아직 없습니다."
 
@@ -807,13 +844,22 @@ msgstr "현재 제안이 없습니다."
 msgid "No trips detected for this year."
 msgstr "이 해에 감지된 여행이 없습니다."
 
-#: web/routes/settings/people/+page.svelte:246
+#: web/lib/people/RelationshipRows.svelte:41 web/lib/people/RelationshipRows.svelte:56
 msgid "No, they are not"
 msgstr "아니요, 아닙니다"
 
-#: web/routes/settings/people/+page.svelte:212
-msgid "Nobody yet. Rescan the library to read who is in it."
-msgstr "아직 아무도 없습니다. 라이브러리를 다시 스캔하면 누가 있는지 알 수 있습니다."
+#: web/lib/people/OwnerSection.svelte:47 web/lib/people/OwnerSection.svelte:53
+msgid "Nobody in this library"
+msgstr "이 라이브러리에는 아무도 없습니다"
+
+#: web/routes/settings/people/+page.svelte:133
+msgid ""
+"Nobody yet. This list is filled the first time a library is prepared, or when you rescan it. "
+"The person picker on New memory reads Immich directly, so it can show names before this page "
+"does."
+msgstr ""
+"아직 아무도 없습니다. 이 목록은 라이브러리를 처음 준비할 때나 다시 스캔할 때 채워집니다. 새 메모리의 사람 선택기는 Immich를 직접 읽으므로 이 페이지보다 먼저"
+" 이름을 보여줄 수 있습니다."
 
 #: web/lib/RenderPanel.svelte:177
 msgid "None"
@@ -831,11 +877,19 @@ msgstr "요청한 영화에는 적용되지 않음"
 msgid "Not possible"
 msgstr "불가능"
 
-#: web/routes/settings/people/+page.svelte:232
+#: web/lib/people/RelationshipRows.svelte:40
+msgid "Not related to"
+msgstr "관계 없는 상대"
+
+#: web/lib/people/AccountLinks.svelte:65
+msgid "Not the same person"
+msgstr "같은 사람 아님"
+
+#: web/lib/people/PersonCard.svelte:32
 msgid "Notes"
 msgstr "메모"
 
-#: web/routes/settings/people/+page.svelte:253
+#: web/lib/people/RelationshipRows.svelte:60
 msgid "Nothing recorded yet."
 msgstr "아직 기록이 없습니다."
 
@@ -847,7 +901,7 @@ msgstr "이날"
 msgid "On a date"
 msgstr "특정 날짜에"
 
-#: web/routes/settings/people/+page.svelte:75
+#: web/routes/settings/people/+page.svelte:50
 msgid ""
 "One name on two person records: a split face cluster. Merge these records in Immich, the only"
 " place it can be fixed."
@@ -861,7 +915,7 @@ msgstr "다음만 포함 (선택)"
 msgid "Open"
 msgstr "열기"
 
-#: web/routes/settings/people/+page.svelte:170
+#: web/lib/people/AccountLinks.svelte:53 web/routes/settings/people/+page.svelte:106
 msgid "Open in Immich"
 msgstr "Immich에서 열기"
 
@@ -873,7 +927,7 @@ msgstr "작업 열기"
 msgid "Open the film run"
 msgstr "영상 작업 열기"
 
-#: web/routes/settings/people/+page.svelte:170
+#: web/routes/settings/people/+page.svelte:106
 #, python-brace-format
 msgid "Open {name} in Immich"
 msgstr "{name} Immich에서 열기"
@@ -898,6 +952,11 @@ msgstr "이 순간의 다른 이미지"
 msgid "Other pictures of this moment"
 msgstr "이 순간의 다른 이미지"
 
+#: web/lib/people/OwnerSection.svelte:49
+#, python-brace-format
+msgid "Owner of {account}"
+msgstr "{account}의 소유자"
+
 #: web/lib/ShotInspector.svelte:100
 #, python-brace-format
 msgid "Passed {stages}"
@@ -908,8 +967,8 @@ msgid "Password"
 msgstr "비밀번호"
 
 #: web/routes/+layout.svelte:24 web/routes/create/+page.svelte:432
-#: web/routes/settings/+page.svelte:106 web/routes/settings/people/+page.svelte:146
-#: web/routes/settings/people/+page.svelte:152
+#: web/routes/settings/+page.svelte:106 web/routes/settings/people/+page.svelte:82
+#: web/routes/settings/people/+page.svelte:88
 msgid "People"
 msgstr "인물"
 
@@ -925,9 +984,18 @@ msgstr "기간 (6m, 1y, 2w)"
 msgid "Person Spotlight"
 msgstr "한 인물 집중"
 
+#: web/lib/people/AccountLinks.svelte:69 web/lib/people/AccountLinks.svelte:70
+#, python-brace-format
+msgid "Person in {account}"
+msgstr "{account}의 사람"
+
 #: web/routes/create/+page.svelte:502
 msgid "Photo duration (seconds)"
 msgstr "사진 표시 시간(초)"
+
+#: web/lib/people/GroupsSection.svelte:70
+msgid "Pick the people"
+msgstr "사람 고르기"
 
 #: web/lib/ShotInspector.svelte:42
 msgid "Picture review"
@@ -945,8 +1013,9 @@ msgstr "단계별로 남은 사진"
 msgid "Pictures with"
 msgstr "다음 인물이 있는 이미지"
 
+#: web/lib/people/AccountLinks.svelte:63 web/lib/people/PersonCard.svelte:23
 #: web/routes/runs/[run_id]/+page.svelte:143 web/routes/runs/[run_id]/+page.svelte:218
-#: web/routes/settings/people/+page.svelte:223 web/routes/suggestions/+page.svelte:106
+#: web/routes/suggestions/+page.svelte:106
 #, python-brace-format
 msgid "Pictures: {count}"
 msgstr "이미지: {count}"
@@ -1028,11 +1097,11 @@ msgstr "제안 새로고침"
 msgid "Refreshing..."
 msgstr "새로고침 중..."
 
-#: web/routes/settings/people/+page.svelte:260
+#: web/lib/people/RelationshipRows.svelte:63
 msgid "Relationship"
 msgstr "관계"
 
-#: web/routes/settings/people/+page.svelte:238
+#: web/lib/people/RelationshipRows.svelte:33
 msgid "Relationships"
 msgstr "관계"
 
@@ -1040,7 +1109,7 @@ msgstr "관계"
 msgid "Reload from Disk"
 msgstr "디스크에서 다시 불러오기"
 
-#: web/routes/settings/people/+page.svelte:188
+#: web/lib/people/GroupsSection.svelte:57
 msgid "Remove"
 msgstr "제거"
 
@@ -1048,7 +1117,7 @@ msgstr "제거"
 msgid "Remove from this cut"
 msgstr "이 편집에서 빼기"
 
-#: web/routes/settings/people/+page.svelte:249
+#: web/lib/people/RelationshipRows.svelte:38
 msgid "Remove this relationship"
 msgstr "이 관계 삭제"
 
@@ -1068,7 +1137,11 @@ msgstr "모델이 의심한 이미지를 대체했습니다."
 msgid "Report preview"
 msgstr "보고서 미리보기"
 
-#: web/routes/settings/people/+page.svelte:155
+#: web/routes/settings/people/+page.svelte:134
+msgid "Rescan now"
+msgstr "지금 다시 스캔"
+
+#: web/routes/settings/people/+page.svelte:91
 msgid "Rescan the library"
 msgstr "라이브러리 다시 스캔"
 
@@ -1089,7 +1162,7 @@ msgstr "리비전 {number}"
 msgid "Revisions"
 msgstr "리비전"
 
-#: web/routes/settings/people/+page.svelte:228
+#: web/lib/people/PersonCard.svelte:28
 msgid "Role (suggestions; type your own)"
 msgstr "역할(제안 선택 또는 직접 입력)"
 
@@ -1111,6 +1184,11 @@ msgstr "서버에서 실행 중: {phase}. 이 페이지를 떠나도 계속됩�
 msgid "Runs"
 msgstr "작업 내역"
 
+#: web/lib/people/AccountLinks.svelte:63
+#, python-brace-format
+msgid "Same person as {name}?"
+msgstr "{name}과(와) 같은 사람인가요?"
+
 #: web/lib/SettingsEditor.svelte:110
 msgid "Save"
 msgstr "저장"
@@ -1119,7 +1197,7 @@ msgstr "저장"
 msgid "Save Config"
 msgstr "설정 저장"
 
-#: web/routes/settings/people/+page.svelte:198
+#: web/lib/people/GroupsSection.svelte:80
 msgid "Save group"
 msgstr "그룹 저장"
 
@@ -1136,8 +1214,8 @@ msgstr "저장됨. 교체하려면 새 키를 입력하세요"
 msgid "Saved as revision {number}."
 msgstr "리비전 {number}(으)로 저장했습니다."
 
-#: web/routes/create/+page.svelte:449 web/routes/settings/people/+page.svelte:179
-#: web/routes/settings/people/+page.svelte:180
+#: web/lib/people/GroupsSection.svelte:48 web/lib/people/GroupsSection.svelte:49
+#: web/routes/create/+page.svelte:449
 msgid "Saved groups"
 msgstr "저장된 그룹"
 
@@ -1193,7 +1271,7 @@ msgid "Set in config.yaml as {key}"
 msgstr "config.yaml의 {key}로 설정됨"
 
 #: web/routes/+layout.svelte:25 web/routes/settings/+page.svelte:77
-#: web/routes/settings/+page.svelte:81 web/routes/settings/people/+page.svelte:151
+#: web/routes/settings/+page.svelte:81 web/routes/settings/people/+page.svelte:87
 msgid "Settings"
 msgstr "설정"
 
@@ -1205,7 +1283,7 @@ msgstr "공유 가능"
 msgid "Show"
 msgstr "표시"
 
-#: web/routes/settings/people/+page.svelte:297
+#: web/routes/settings/people/+page.svelte:143
 msgid "Show more"
 msgstr "더 보기"
 
@@ -1319,7 +1397,11 @@ msgstr "빼기"
 msgid "Test Connection"
 msgstr "연결 테스트"
 
-#: web/routes/settings/people/+page.svelte:119
+#: web/lib/people/OwnerSection.svelte:33
+msgid "That could not be saved."
+msgstr "저장하지 못했습니다."
+
+#: web/lib/people/GroupsSection.svelte:33
 msgid "That expression could not be saved."
 msgstr "해당 표현식을 저장할 수 없습니다."
 
@@ -1331,7 +1413,7 @@ msgstr "이 파일은 MP3, M4A 또는 WAV가 아닙니다"
 msgid "That file is too large for a soundtrack"
 msgstr "이 파일은 배경음악으로 쓰기에 너무 큽니다"
 
-#: web/routes/settings/people/+page.svelte:104
+#: web/lib/people/AccountLinks.svelte:31
 msgid "That id could not be bound."
 msgstr "해당 id를 연결할 수 없습니다."
 
@@ -1394,7 +1476,7 @@ msgstr "모델이 준비된 라이브러리를 기준으로 단어를 읽습니�
 msgid "The model, when one is configured"
 msgstr "설정된 경우 모델"
 
-#: web/routes/settings/people/+page.svelte:153
+#: web/routes/settings/people/+page.svelte:89
 msgid "The people registry: who is close, their roles, and how they relate."
 msgstr "인물 레지스트리: 누가 가까운지, 역할, 서로의 관계."
 
@@ -1457,10 +1539,6 @@ msgstr "업로드에 실패했습니다."
 #: web/lib/AskPanel.svelte:164
 msgid "The words changed since this preview: preview again before making the film."
 msgstr "이 미리보기 이후 단어가 바뀌었습니다: 영화를 만들기 전에 다시 미리보기 하세요."
-
-#: web/routes/settings/people/+page.svelte:286
-msgid "Their id in that account"
-msgstr "해당 계정에서의 상대방 id"
 
 #: web/lib/labels.ts:48
 msgid "These people appear in the last two people memories."
@@ -1529,6 +1607,10 @@ msgstr "다시 시도"
 #: web/routes/runs/[run_id]/+page.svelte:310 web/routes/runs/[run_id]/pool/+page.svelte:136
 msgid "Undo"
 msgstr "되돌리기"
+
+#: web/lib/people/AccountLinks.svelte:54
+msgid "Unlink"
+msgstr "연결 해제"
 
 #: web/lib/ago.ts:13
 #, python-brace-format
@@ -1616,6 +1698,11 @@ msgid ""
 "would, or check it first without rendering."
 msgstr "자동화가 다음에 만들 내용으로, `auto suggest`가 출력하는 목록과 같습니다. `auto run`처럼 실행하거나, 렌더링 없이 먼저 확인할 수 있습니다."
 
+#: web/lib/people/RelationshipRows.svelte:51 web/lib/people/RelationshipRows.svelte:53
+#, python-brace-format
+msgid "What is {name} to {other}?"
+msgstr "{name}은(는) {other}에게 어떤 사이인가요?"
+
 #: web/lib/AskPanel.svelte:170
 msgid "What the editor's rules would drop"
 msgstr "편집 규칙이 제외할 사진"
@@ -1656,6 +1743,12 @@ msgstr "볼 수 있는 사람"
 msgid "Who names the film"
 msgstr "누가 영화 제목을 정하는지"
 
+#: web/lib/people/OwnerSection.svelte:43
+msgid ""
+"Whose library is this? Relationships to the library owner, the family seat and the titles "
+"depend on it. A scan only guesses; what you pick here stays."
+msgstr "이 라이브러리는 누구의 것인가요? 라이브러리 소유자와의 관계, 가족 자리, 제목이 여기에 달려 있습니다. 스캔은 추측만 하며, 여기서 고른 것이 우선합니다."
+
 #: web/routes/suggestions/+page.svelte:120
 msgid "Why other suggestions were skipped"
 msgstr "다른 제안이 제외된 이유"
@@ -1672,7 +1765,7 @@ msgstr "이 이미지를 선택한 이유"
 msgid "Winter"
 msgstr "겨울"
 
-#: web/routes/settings/people/+page.svelte:265 web/routes/settings/people/+page.svelte:267
+#: web/lib/people/RelationshipRows.svelte:67 web/lib/people/RelationshipRows.svelte:68
 msgid "With"
 msgstr "상대"
 
@@ -1692,10 +1785,6 @@ msgstr "지난 연수(비워두면 전체)"
 msgid "Years to span"
 msgstr "포함할 연도 수"
 
-#: web/routes/settings/people/+page.svelte:244
-msgid "Yes, that is right"
-msgstr "네, 맞습니다"
-
 #: web/routes/runs/[run_id]/pool/+page.svelte:93
 #, python-brace-format
 msgid "You cleared its hold for {level}."
@@ -1708,6 +1797,10 @@ msgstr "ID 제공자로 리디렉션됩니다"
 #: web/lib/ModelSetup.svelte:68
 msgid "Your first film needs these model files. Nothing downloads until you press the button."
 msgstr "첫 영상을 만들려면 이 모델 파일이 필요합니다. 버튼을 누르기 전에는 다운로드하지 않습니다."
+
+#: web/lib/people/OwnerSection.svelte:20
+msgid "a guess: the longest span and the most pictures"
+msgstr "추정: 가장 긴 기간과 가장 많은 이미지"
 
 #: web/routes/runs/[run_id]/+page.svelte:146
 #, python-brace-format
@@ -1722,21 +1815,41 @@ msgstr "모두 함께"
 msgid "any of them"
 msgstr "그중 한 명이라도"
 
+#: web/lib/people/OwnerSection.svelte:19
+msgid "it matches the Immich account name"
+msgstr "Immich 계정 이름과 일치"
+
+#: web/lib/people/OwnerSection.svelte:21 web/lib/people/OwnerSection.svelte:47
+msgid "not known yet"
+msgstr "아직 알 수 없음"
+
 #: web/lib/AskPanel.svelte:129
 msgid "our cat along the years"
 msgstr "우리 고양이의 세월"
+
+#: web/lib/people/RelationshipRows.svelte:47
+msgid "relationship not named"
+msgstr "관계 이름 없음"
 
 #: web/routes/suggestions/+page.svelte:86
 msgid "starting"
 msgstr "시작 중"
 
-#: web/routes/settings/people/+page.svelte:153
+#: web/routes/settings/people/+page.svelte:89
 msgid "writes it out as YAML."
 msgstr "이(가) YAML로 내보냅니다."
 
-#: web/routes/settings/people/+page.svelte:153
+#: web/routes/settings/people/+page.svelte:89
 msgid "writes the guesses; your answers stay across scans."
 msgstr "이(가) 추측을 기록합니다. 당신의 답은 스캔이 바뀌어도 남습니다."
+
+#: web/lib/people/OwnerSection.svelte:17
+msgid "you confirmed it"
+msgstr "직접 확인함"
+
+#: web/lib/people/OwnerSection.svelte:18
+msgid "you told the scan"
+msgstr "스캔에 직접 알려줌"
 
 #: web/routes/runs/[run_id]/+page.svelte:145
 #, python-brace-format
