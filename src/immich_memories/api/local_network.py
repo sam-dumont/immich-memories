@@ -62,7 +62,8 @@ def local_network_hint(exc: BaseException, host: str, *, platform: str | None = 
         return None
     return (
         "macOS most likely blocked this program from reaching your local network. The permission "
-        "belongs to the Python that runs immich-memories, not to Terminal: allow it in "
+        "belongs to the Python that runs immich-memories, not to Terminal: click Allow on the "
+        "macOS prompt on the Mac's screen (it waits there until someone answers), or turn it on in "
         "System Settings > Privacy & Security > Local Network. For a scheduled run, "
         "`immich-memories auto install` checks it and names the Python to allow"
     )

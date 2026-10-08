@@ -24,6 +24,7 @@ def test_a_private_address_refused_with_no_route_on_macos_names_the_permission()
     assert hint is not None
     assert "Local Network" in hint
     assert "System Settings > Privacy & Security > Local Network" in hint
+    assert "Allow" in hint and "prompt" in hint
 
 
 @pytest.mark.parametrize(
