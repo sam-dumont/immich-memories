@@ -4,10 +4,12 @@ import type * as Preset from '@docusaurus/preset-classic';
 import {redirects} from './redirects';
 import {productTagline} from './src/product';
 import {resolveDocsVersion} from './build-version';
+import {analyticsHeadTags} from './build-analytics';
 
 const docsVersion = resolveDocsVersion();
 
 const nextDocs = process.env.DOCS_NEXT === 'true';
+const baseUrl = nextDocs ? '/immich-memories/next/' : '/immich-memories/';
 
 const config: Config = {
   title: 'Immich Memories',
@@ -27,25 +29,15 @@ const config: Config = {
   },
 
   url: 'https://sam-dumont.github.io',
-  baseUrl: nextDocs ? '/immich-memories/next/' : '/immich-memories/',
+  baseUrl,
 
   organizationName: 'sam-dumont',
   projectName: 'immich-memories',
 
-  // Visit counts for the docs website only, on the maintainer's own Plausible, served through the
-  // maintainer's website (dropbars.be proxies the script and /api/event): no cookies and no personal
-  // data. The app itself sends nothing (see the Privacy page).
-  headTags: [
-    {
-      tagName: 'script',
-      attributes: {
-        defer: 'true',
-        'data-domain': 'sam-dumont.github.io',
-        'data-api': 'https://dropbars.be/api/event',
-        src: 'https://dropbars.be/js/app.js',
-      },
-    },
-  ],
+  // The docs serve their own pinned tracker; only events go through the collector proxy.
+  // Use normal History API tracking for Docusaurus routes, not the blog's hash variant.
+  // The installed app sends no analytics (see the Privacy page).
+  headTags: analyticsHeadTags(baseUrl),
 
   onBrokenLinks: 'throw',
   onBrokenAnchors: 'throw',

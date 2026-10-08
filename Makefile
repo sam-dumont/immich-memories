@@ -1104,11 +1104,16 @@ docs-dev:
 
 docs-build:
 	cd docs-site && NO_UPDATE_NOTIFIER=1 npm run build
+	$(MAKE) --no-print-directory docs-analytics-check
+
+.PHONY: docs-analytics-check
+docs-analytics-check:  ## Check the built docs tracker without submitting real events
+	cd docs-site && node --experimental-strip-types --test scripts/analytics.test.mjs
 
 docs-check: docs-setup-check
 	@log_file=$$(mktemp "$${TMPDIR:-/tmp}/docs-build.XXXXXX") || exit $$?; \
 	status=0; \
-	(cd docs-site && NO_UPDATE_NOTIFIER=1 npm run build) >"$$log_file" 2>&1 || status=$$?; \
+	($(MAKE) --no-print-directory docs-build) >"$$log_file" 2>&1 || status=$$?; \
 	cat "$$log_file"; \
 	if [ "$$status" -ne 0 ]; then \
 		rm -f "$$log_file"; \

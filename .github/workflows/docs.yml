@@ -17,6 +17,8 @@ on:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   GOOGLE_SITE_VERIFICATION: ${{ vars.GOOGLE_SITE_VERIFICATION }}
+  DOCS_ANALYTICS_DOMAIN: ${{ vars.DOCS_ANALYTICS_DOMAIN }}
+  DOCS_ANALYTICS_ENDPOINT: ${{ vars.DOCS_ANALYTICS_ENDPOINT }}
 
 concurrency:
   group: docs-deploy
@@ -111,7 +113,7 @@ jobs:
           fi
 
       - name: Build site
-        run: cd docs-site && npm run build
+        run: make docs-build
 
       - name: Preserve final documentation beside the candidate
         if: env.DOCS_NEXT == 'true'

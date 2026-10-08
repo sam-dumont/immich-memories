@@ -135,6 +135,13 @@ repos:
         types: [python]
 
 
+      - id: docs-build
+        name: Docs build and analytics
+        entry: make docs-build
+        language: system
+        pass_filenames: false
+        files: ^(docs-site/|Makefile$)
+
       - id: docs-voice
         name: Documentation voice
         entry: make docs-voice
