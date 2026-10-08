@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import logging
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urlsplit
@@ -15,6 +16,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 _oauth_instance: OAuth | None = None
+_oauth_signature: str = ""
 
 
 def _import_authlib() -> type[OAuth]:
@@ -29,6 +31,23 @@ def _import_authlib() -> type[OAuth]:
     return OAuth
 
 
+def _registration_signature(auth_config: AuthConfig) -> str:
+    """What the cached client was registered against: issuer, client id, secret, scope.
+
+    Cached as a digest of the secret, never the secret itself, so the module globals
+    repr-ing in a crash state say nothing an attacker could use."""
+    return hashlib.sha256(
+        "\n".join(
+            (
+                auth_config.issuer_url,
+                auth_config.client_id,
+                auth_config.client_secret,
+                auth_config.scope,
+            )
+        ).encode()
+    ).hexdigest()
+
+
 def create_oidc_client(auth_config: AuthConfig) -> OAuth:
     """Create or return the cached authlib OAuth singleton.
 
@@ -36,10 +55,17 @@ def create_oidc_client(auth_config: AuthConfig) -> OAuth:
     between authorize_redirect and authorize_access_token calls. Using
     different instances would cause state lookup failures.
     """
-    global _oauth_instance  # noqa: PLW0603
+    global _oauth_instance, _oauth_signature  # noqa: PLW0603
 
-    if _oauth_instance is not None:
+    signature = _registration_signature(auth_config)
+    if _oauth_instance is not None and _oauth_signature == signature:
         return _oauth_instance
+    if _oauth_instance is not None:
+        # The registration changed (issuer, client, secret or scope): the cached client
+        # would keep answering for the old provider while `start_session` stamps the new
+        # rules' fingerprint, so drop it and register afresh.
+        logger.info("OIDC settings changed; rebuilding the OIDC client")
+        reset_oidc_client()
 
     oauth_cls = _import_authlib()
     oauth = oauth_cls()
@@ -56,6 +82,7 @@ def create_oidc_client(auth_config: AuthConfig) -> OAuth:
     )
 
     _oauth_instance = oauth
+    _oauth_signature = signature
     return oauth
 
 
@@ -152,6 +179,7 @@ def oidc_redirect_uri(derived_uri: str, public_url: str) -> str:
 
 
 def reset_oidc_client() -> None:
-    """Reset the singleton — for use in tests only."""
-    global _oauth_instance  # noqa: PLW0603
+    """Reset the singleton — for use in tests and after a settings change."""
+    global _oauth_instance, _oauth_signature  # noqa: PLW0603
     _oauth_instance = None
+    _oauth_signature = ""

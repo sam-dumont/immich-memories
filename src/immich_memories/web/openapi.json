@@ -4130,7 +4130,7 @@
     },
     "/api/v1/assets/{asset_id}/thumbnail": {
       "get": {
-        "description": "The picture at grid or preview size; a miss is fetched from Immich and kept.\n\nNo configured account reading this id is a 404 before the cache is even asked, so a\ncached picture never outlives the account that put it there losing access to it.",
+        "description": "The picture at grid or preview size; a miss is fetched from Immich and kept.\n\nWith multiple accounts, the scope check asks which account can still read the id.\nCached bytes also belong to the configured account set: removing an account or\nrotating a key makes its old entries inaccessible, even if a fetch finishes late.",
         "operationId": "thumbnail_api_v1_assets__asset_id__thumbnail_get",
         "parameters": [
           {
@@ -6591,7 +6591,7 @@
     },
     "/api/v1/suggestions": {
       "get": {
-        "description": "Up to twenty candidates and why the others were set aside, from the last discovery.\n\nDiscovery reads the library and takes a while; the last list comes back at once and a fresh\none is worked out behind it when it is a day old or `refresh` asks.",
+        "description": "Up to twenty candidates and why the others were set aside, from the last discovery.\n\nDiscovery reads the library and takes a while; the last list comes back at once and a fresh\none is worked out behind it when it is a day old or `refresh` asks -- but only a page on\nthis origin may ask: a visited site must not be able to start discovery through a\ntop-level navigation.",
         "operationId": "suggestions_api_v1_suggestions_get",
         "parameters": [
           {
@@ -6680,7 +6680,7 @@
     },
     "/api/v1/trips": {
       "get": {
-        "description": "The trips that overlap a year, as `generate` lists them before it cuts one.\n\nDiscovery reads the year's GPS and takes a while; the last answer for the year comes back at\nonce, and a fresh one is worked out behind it when it is a day old or `refresh` asks.",
+        "description": "The trips that overlap a year, as `generate` lists them before it cuts one.\n\nDiscovery reads the year's GPS and takes a while; the last answer for the year comes back at\nonce, and a fresh one is worked out behind it when it is a day old or `refresh` asks -- but\nonly a page on this origin may ask: a visited site must not be able to start library\ndiscovery through a top-level navigation.",
         "operationId": "trips_api_v1_trips_get",
         "parameters": [
           {

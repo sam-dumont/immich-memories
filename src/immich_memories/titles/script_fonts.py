@@ -322,9 +322,19 @@ def _sha256(content: bytes) -> str:
     return hashlib.sha256(content).hexdigest()
 
 
-def _http_fetch(url: str) -> bytes:
+def _http_fetch(url: str, *, hops: int = 3) -> bytes:
     import httpx
 
-    response = httpx.get(url, follow_redirects=True, timeout=120.0)
-    response.raise_for_status()
-    return response.content
+    # WHY: each 3xx hop is followed by hand so it stays on http(s); a library default
+    # would follow onto any scheme, and the digest is only checked after the fetch.
+    for _ in range(hops):
+        response = httpx.get(url, follow_redirects=False, timeout=120.0)
+        if response.status_code not in (301, 302, 303, 307, 308):
+            response.raise_for_status()
+            return response.content
+        from urllib.parse import urljoin
+
+        url = urljoin(url, response.headers.get("location", ""))
+        if not url.lower().startswith(("http://", "https://")):
+            raise ValueError("font download redirected off HTTP(S)")
+    raise ValueError("font download redirected too many times")

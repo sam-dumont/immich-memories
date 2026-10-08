@@ -42,14 +42,22 @@ def current_config() -> Config:
 
 
 @lru_cache(maxsize=4)
-def _open_cache(directory: Path, max_size_mb: int) -> ThumbnailCache:
-    return ThumbnailCache(cache_dir=directory, max_size_mb=max_size_mb)
+def _open_cache(directory: Path, max_size_mb: float, namespace: str) -> ThumbnailCache:
+    return ThumbnailCache(cache_dir=directory, max_size_mb=max_size_mb, namespace=namespace)
 
 
 def thumbnail_cache(config: Annotated[Config, Depends(current_config)]) -> ThumbnailCache:
-    """One cache per server, not per browser session: every client reads the same files."""
+    """Share thumbnails only between requests with the same configured account set.
+
+    A request that began before an account was removed may finish afterward. Its late
+    writes keep the old namespace, so the current account set can never read them.
+    """
+    from immich_memories.web.media_scope import account_set_signature
+
     return _open_cache(
-        config.cache.cache_path / "thumbnails", config.cache.thumbnail_cache_max_size_mb
+        config.cache.cache_path / "thumbnails",
+        config.cache.thumbnail_cache_max_size_mb,
+        account_set_signature(config.immich),
     )
 
 

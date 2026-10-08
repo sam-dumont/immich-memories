@@ -144,8 +144,9 @@ export interface paths {
          * Thumbnail
          * @description The picture at grid or preview size; a miss is fetched from Immich and kept.
          *
-         *     No configured account reading this id is a 404 before the cache is even asked, so a
-         *     cached picture never outlives the account that put it there losing access to it.
+         *     With multiple accounts, the scope check asks which account can still read the id.
+         *     Cached bytes also belong to the configured account set: removing an account or
+         *     rotating a key makes its old entries inaccessible, even if a fetch finishes late.
          */
         get: operations["thumbnail_api_v1_assets__asset_id__thumbnail_get"];
         put?: never;
@@ -1235,7 +1236,9 @@ export interface paths {
          * @description Up to twenty candidates and why the others were set aside, from the last discovery.
          *
          *     Discovery reads the library and takes a while; the last list comes back at once and a fresh
-         *     one is worked out behind it when it is a day old or `refresh` asks.
+         *     one is worked out behind it when it is a day old or `refresh` asks -- but only a page on
+         *     this origin may ask: a visited site must not be able to start discovery through a
+         *     top-level navigation.
          */
         get: operations["suggestions_api_v1_suggestions_get"];
         put?: never;
@@ -1278,7 +1281,9 @@ export interface paths {
          * @description The trips that overlap a year, as `generate` lists them before it cuts one.
          *
          *     Discovery reads the year's GPS and takes a while; the last answer for the year comes back at
-         *     once, and a fresh one is worked out behind it when it is a day old or `refresh` asks.
+         *     once, and a fresh one is worked out behind it when it is a day old or `refresh` asks -- but
+         *     only a page on this origin may ask: a visited site must not be able to start library
+         *     discovery through a top-level navigation.
          */
         get: operations["trips_api_v1_trips_get"];
         put?: never;

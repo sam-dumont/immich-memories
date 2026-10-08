@@ -55,6 +55,7 @@ from immich_memories.db.tables.people import (
     people_relationships,
 )
 from immich_memories.db.tables.places import geocoded_places
+from immich_memories.db.tables.session_generations import session_generations
 from immich_memories.db.tables.settings import settings
 from immich_memories.db.tables.store_meta import store_meta
 from immich_memories.db.tables.timing import run_diagnostics, run_spans
@@ -100,6 +101,7 @@ __all__ = [
     "run_attempts",
     "run_diagnostics",
     "run_spans",
+    "session_generations",
     "settings",
     "special_days",
     "speech_regions",

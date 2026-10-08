@@ -197,3 +197,44 @@ def test_failed_separation_cleans_uploaded_audio(tmp_path):
         assert "private input" not in response.text
         assert not list(tmp_path.glob("demucs-*"))
         assert client.post("/audio/stems", files={"file": ("empty.wav", b"")}).status_code == 400
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("announced", ["1000000", None, "1"])
+async def test_stems_download_stops_before_buffering_an_oversized_body(
+    tmp_path, monkeypatch, announced
+):
+    from immich_memories.audio.generators import inference_demucs
+
+    class CountedStream(httpx.AsyncByteStream):
+        read_chunks = 0
+        closed = False
+
+        async def __aiter__(self):
+            for _ in range(20):
+                self.read_chunks += 1
+                yield b"x" * 8
+
+        async def aclose(self):
+            self.closed = True
+
+    stream = CountedStream()
+    headers = {"content-length": announced} if announced is not None else {}
+    transport = httpx.MockTransport(
+        lambda _request: httpx.Response(200, headers=headers, stream=stream)
+    )
+    client_type = httpx.AsyncClient
+    # WHY: a counted network stream shows how much the real HTTP client reads before refusal.
+    monkeypatch.setattr(httpx, "AsyncClient", lambda **kw: client_type(**kw, transport=transport))
+    # WHY: exercise the byte boundary without allocating a GiB in the test process.
+    monkeypatch.setattr(inference_demucs, "_MAX_RESPONSE_BYTES", 16)
+    source = tmp_path / "source.wav"
+    source.write_bytes(b"audio")
+    output = tmp_path / "out"
+
+    with pytest.raises(ValueError, match="Inference stems response exceeds"):
+        await inference_demucs.InferenceDemucs("http://inference").separate_stems(source, output)
+
+    assert stream.read_chunks == (0 if announced == "1000000" else 3)
+    assert stream.closed
+    assert not output.exists()

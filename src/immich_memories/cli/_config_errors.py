@@ -37,4 +37,6 @@ def format_yaml_error(error: yaml.YAMLError) -> str:
             f"  Check your config file for correct YAML formatting."
         )
 
-    return f"YAML syntax error: {error}\n  Check your config file for correct YAML formatting."
+    # WHY: str(error) can quote source context lines, which may sit next to a secret
+    # in config.yaml; the message says what to do without echoing any of it.
+    return "YAML syntax error.\n  Check your config file for correct YAML formatting."

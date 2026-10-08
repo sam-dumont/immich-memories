@@ -118,6 +118,10 @@ def http_url_or_blank(value: str) -> str:
     url = urlsplit(value)
     if url.scheme not in {"http", "https"} or not url.hostname:
         raise ValueError("must be an http:// or https:// URL")
+    if url.username is not None or url.password is not None:
+        # WHY: `netloc` (which carries `user:pass@`) reaches error messages and logs via
+        # the transport diagnostics; the api key is the credential this app uses.
+        raise ValueError("must not embed a username or password: use immich.api_key")
     return value
 
 

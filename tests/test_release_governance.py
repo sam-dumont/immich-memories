@@ -219,7 +219,8 @@ def test_breaking_squash_messages_produce_a_major_release(tmp_path, message):
     assert "next_version=2.0.0" in output.read_text().splitlines()
 
 
-def test_an_interrupted_release_is_resumed_with_the_same_version(tmp_path):
+@pytest.mark.parametrize("newer_checkout", [False, True])
+def test_an_interrupted_release_is_resumed_with_the_same_version(tmp_path, newer_checkout):
     """Tag pushed, GitHub Release never created: the next run republishes it (#1010)."""
     env = {key: value for key, value in os.environ.items() if not key.startswith("GIT_")}
     for args in (
@@ -232,6 +233,14 @@ def test_an_interrupted_release_is_resumed_with_the_same_version(tmp_path):
         ("tag", "-a", "v1.2.4", "-m", "Release v1.2.4"),
     ):
         subprocess.run(["git", *args], cwd=tmp_path, env=env, check=True, capture_output=True)
+    if newer_checkout:
+        subprocess.run(
+            ["git", "commit", "--allow-empty", "-qm", "docs: another change"],
+            cwd=tmp_path,
+            env=env,
+            check=True,
+            capture_output=True,
+        )
     # WHY: v1.2.4 exists as a tag but its publication failed before the GitHub
     # Release was created, so the fake gh reports no release for it.
     (tmp_path / "gh").write_text("#!/bin/sh\nexit 1\n")
@@ -265,6 +274,22 @@ def test_an_interrupted_release_is_resumed_with_the_same_version(tmp_path):
     lines = output.read_text().splitlines()
     assert "should_release=true" in lines
     assert "next_version=1.2.4" in lines, "the stranded version, not an advance past it"
+    push_tag = next(
+        step
+        for step in release_workflow()["jobs"]["release"]["steps"]
+        if step.get("name") == "Push release tag"
+    )
+    published = subprocess.run(
+        ["bash", "-e", "-o", "pipefail", "-c", push_tag["run"]],
+        cwd=tmp_path,
+        env={**env, "NEXT_VERSION": "1.2.4"},
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
+    assert published.returncode == (1 if newer_checkout else 0)
+    if newer_checkout:
+        assert "but this build is" in published.stdout
 
 
 def test_the_first_release_candidate_of_a_major_is_rc_1(tmp_path):

@@ -21,8 +21,11 @@ class ThumbnailCache:
     # worth of data, which at thumbnail sizes is a few MB.
     _PUTS_BETWEEN_BUDGET_CHECKS = 200
 
-    def __init__(self, cache_dir: Path, max_size_mb: float = 10_000.0) -> None:
+    def __init__(
+        self, cache_dir: Path, max_size_mb: float = 10_000.0, *, namespace: str = ""
+    ) -> None:
         self.cache_dir = cache_dir
+        self._namespace = namespace
         self.max_size_mb = max_size_mb
         self._puts_since_check = 0
         self._run_started_at: float | None = None
@@ -60,7 +63,15 @@ class ThumbnailCache:
 
     def _path(self, asset_id: str, size: str) -> Path:
         subdir = asset_id[:2] if len(asset_id) >= 2 else "00"
-        return self.cache_dir / subdir / f"{asset_id}_{size}.jpg"
+        # Web requests keep the account set they began with, including late writes after
+        # a settings change. Entries still share the same root and eviction budget.
+        prefix = f"{self._namespace}-" if self._namespace else ""
+        path = self.cache_dir / subdir / f"{prefix}{asset_id}_{size}.jpg"
+        if not path.resolve().is_relative_to(self.cache_dir.resolve()):
+            # WHY: the id came from a server response; the API models refuse a hostile
+            # one at the parse, and this keeps every future caller inside the cache too.
+            raise ValueError("an asset id would escape the thumbnail cache")
+        return path
 
     def get(self, asset_id: str, size: str) -> bytes | None:
         path = self._path(asset_id, size)

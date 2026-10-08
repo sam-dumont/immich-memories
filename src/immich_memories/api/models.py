@@ -9,9 +9,14 @@ from datetime import datetime
 from enum import StrEnum
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
 logger = logging.getLogger(__name__)
+
+# Immich ids are UUID-shaped. These ids also build filesystem paths in the caches, so a
+# hostile or broken server's `../../` in one is refused at the parse, the same pattern
+# the web routes gate ids with (`web/media.py`).
+ID_PATTERN = r"^[A-Za-z0-9_-]{1,64}$"
 
 
 def _parse_duration_seconds(value: Any) -> float | None:
@@ -80,6 +85,9 @@ class ExifInfo(BaseModel):
 class Person(BaseModel):
     """Person identified in Immich."""
 
+    # No id pattern here: the store's own people carry `manual:`-prefixed ids
+    # (`free_text/pool.py`), and a person id reaches the filesystem only through the
+    # web routes' own gate and the thumbnail cache's resolve check.
     id: str
     name: str = ""
     birth_date: datetime | None = Field(default=None, alias="birthDate")
@@ -124,7 +132,7 @@ class Stack(BaseModel):
 class AssetFace(BaseModel):
     """Face detected in an asset."""
 
-    id: str
+    id: str = Field(pattern=ID_PATTERN)
     person: Person | None = None
     bounding_box_x1: int = Field(default=0, alias="boundingBoxX1")
     bounding_box_y1: int = Field(default=0, alias="boundingBoxY1")
@@ -162,7 +170,7 @@ class SmartInfo(BaseModel):
 class Asset(BaseModel):
     """An asset (photo or video) from Immich."""
 
-    id: str
+    id: str = Field(pattern=ID_PATTERN)
     device_asset_id: str = Field(default="", alias="deviceAssetId")
     owner_id: str = Field(default="", alias="ownerId")
     device_id: str = Field(default="", alias="deviceId")
@@ -197,7 +205,9 @@ class Asset(BaseModel):
     people: list[Person] = Field(default_factory=list)
     faces: list[AssetFace] = Field(default_factory=list)
     checksum: str | None = None
-    live_photo_video_id: str | None = Field(default=None, alias="livePhotoVideoId")
+    live_photo_video_id: str | None = Field(
+        default=None, alias="livePhotoVideoId", pattern=ID_PATTERN
+    )
     smart_info: SmartInfo | None = None
     # Ours, not Immich's: the selected accounts that can open this asset, its owner's
     # first (#1500). Empty on a run that names no accounts, and then left out of every
@@ -321,6 +331,28 @@ class SearchAssetsResult(BaseModel):
     next_page: str | None = Field(default=None, alias="nextPage")
 
     model_config = ConfigDict(populate_by_name=True)
+
+    @field_validator("items", mode="before")
+    @classmethod
+    def skip_unsafe_identifiers(cls, value: Any) -> Any:
+        """Drop unsafe records without losing the page or its pagination token."""
+        if not isinstance(value, list):
+            return value
+        assets = []
+        for item in value:
+            try:
+                assets.append(Asset.model_validate(item))
+            except ValidationError as exc:
+                errors = exc.errors(include_input=False)
+                if not all(
+                    error["type"] == "string_pattern_mismatch"
+                    and error.get("ctx", {}).get("pattern") == ID_PATTERN
+                    for error in errors
+                ):
+                    raise
+                # Never log the rejected identifier, payload or validation exception.
+                logger.warning("Skipping an Immich search result with an unsafe identifier")
+        return assets
 
 
 class MetadataSearchResult(BaseModel):

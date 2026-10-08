@@ -20,7 +20,7 @@ def _picture(local: datetime, *, original: datetime | None = None) -> Asset:
     instant = local.astimezone(UTC)
     wall_clock = local.replace(tzinfo=UTC)
     return Asset(
-        id=f"picture-{local.isoformat()}",
+        id="picture-" + local.isoformat().replace(":", "-").replace("+", ""),
         type=AssetType.IMAGE,
         fileCreatedAt=instant,
         fileModifiedAt=instant,

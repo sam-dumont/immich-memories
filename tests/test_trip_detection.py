@@ -27,7 +27,9 @@ def _make_asset(
     exif = ExifInfo(latitude=lat, longitude=lon, city=city, country=country) if lat else None
     ldt = datetime.fromisoformat(local_dt) if local_dt else None
     return Asset(
-        id=asset_id or f"asset-{created_at}",
+        # A pattern-safe synthetic id: Immich's ids are UUID-shaped, and these reach
+        # the Asset model, which now refuses anything a cache path could not hold.
+        id=asset_id or f"asset-{created_at.replace(':', '-')}",
         type=asset_type,
         fileCreatedAt=ts,
         fileModifiedAt=ts,

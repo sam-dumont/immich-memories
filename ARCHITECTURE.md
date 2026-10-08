@@ -874,12 +874,13 @@ src/immich_memories/
 │   ├── request_origin.py       # Shared browser-origin check for unsafe requests, including sign-out
 │   ├── session.py              # GET /api/v1/session: who is signed in, and which sign-in the login page offers
 │   ├── auth.py                 # Who gets in: credential check, rate limiter, bypass paths, session helpers
-│   ├── session_validity.py     # Whether a session cookie still stands: TTL, sign-in rules fingerprint, sign-out generations
+│   ├── session_validity.py     # Whether a cookie still stands: TTL, sign-in rules, atomic revocations
+│   │                           # in session_generations (one integer per user plus a global generation)
 │   ├── auth_oidc.py            # OIDC client (authlib starlette integration, singleton)
 │   ├── health.py               # GET /health, /health/live, /health/ready: probe payloads + snapshot cache
 │   ├── trigger.py              # POST /api/trigger: runs what `auto run` decides, 202 + status URL
 │   ├── reverse_proxy.py        # Secure cookie + trusted X-Forwarded-* settings for uvicorn
-│   ├── request_checks.py       # Outermost ASGI layer: Host allow-list, cross-site write refusal, body cap, no framing
+│   ├── request_checks.py       # Host allow-list, cross-site writes, body caps and CSP with built-client hashes
 │   ├── runs.py                 # GET /api/v1/runs[/{id}[/child-output]]: RunDatabase, run index, transcripts
 │   ├── run_upload.py           # POST /api/v1/runs/{id}/upload: a finished film to Immich, capability-checked
 │   ├── cut.py                  # /runs/{id}/cut (storyboard + trace + polish + siblings), /story, /revisions
@@ -929,7 +930,8 @@ src/immich_memories/
 │   │                           # fcntl + BEGIN IMMEDIATE; pending_changes, migration_schema
 │   ├── migrations/             # env.py, script.py.mako, versions/ (shipped in the wheel; alembic.ini is dev only)
 │   ├── metadata.py             # The shared MetaData(schema="immich_memories") and naming convention
-│   ├── tables/                 # One module per domain's Table objects: store_meta; people (people_registry,
+│   ├── tables/                 # One module per domain's Table objects: store_meta; session_generations
+│   │                           # (0013_session_generations, migrated revocation counts); people (people_registry,
 │   │                           # people, people_aliases, people_relationships; 0002_people; the alias's
 │   │                           # Immich account, null = primary, 0009_people_alias_accounts); settings
 │   │                           # (0003_settings); annotations.py (asset facts, captions, heads, pixels, faces,
@@ -965,7 +967,7 @@ src/immich_memories/
 │   ├── judgment_cache.py       # Reasoning-mode LLM verdicts, keyed by the exact prompt asked (store table `judgments`)
 │   ├── editorial_verdicts.py   # Cull's standing per-picture verdicts (store table `editorial_verdicts`)
 │   ├── embedding_cache.py      # HeadFactStore: head answers (store table `head_facts`)
-│   ├── thumbnail_cache.py      # File-based thumbnail storage
+│   ├── thumbnail_cache.py      # File-based thumbnails; web filenames bind bytes to an account-set fingerprint
 │   ├── thumbnail_sizes.py      # The sizes the grid and avatars ask for, and the downscale to them
 │   ├── disk_budget.py          # LRU-by-mtime eviction that holds a cache directory to a size cap
 │   └── video_cache.py          # Downloaded video file cache

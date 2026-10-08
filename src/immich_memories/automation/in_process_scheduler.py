@@ -99,6 +99,12 @@ class InProcessScheduler:
     async def tick(self) -> bool:
         """Re-read config and fire if today's slot is due and unfired. True when it fired."""
         config = self._config_provider()
+        # Housekeeping that belongs to no single page: a run whose process died while the
+        # server was up is marked interrupted here, not by whoever next lists runs.
+        from immich_memories.db import open_store
+        from immich_memories.tracking.orphaned_runs import settle_orphaned_runs
+
+        await asyncio.to_thread(settle_orphaned_runs, open_store(config))
         automation = config.automation
         if not self._remembered:
             await self._remember_last_attempt(config)

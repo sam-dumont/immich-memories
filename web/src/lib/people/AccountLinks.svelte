@@ -50,7 +50,7 @@
       {#each person.aliases[account.name] ?? [] as aliasId (aliasId)}
         <div class="flex flex-wrap items-center gap-2 text-sm">
           <span class="font-medium">{nameOf(account.name, aliasId)}</span>
-          {#if person.alias_urls[aliasId]}<a href={person.alias_urls[aliasId]} target="_blank" rel="noreferrer" class="text-primary underline">{t('Open in Immich')}</a>{/if}
+          {#if person.alias_urls[aliasId] && /^https?:\/\//i.test(person.alias_urls[aliasId])}<a href={person.alias_urls[aliasId]} target="_blank" rel="noreferrer" class="text-primary underline">{t('Open in Immich')}</a>{/if}
           <Button size="tiny" variant="ghost" onclick={() => unlink(account.name, aliasId)}>{t('Unlink')}</Button>
         </div>
       {/each}

@@ -6,7 +6,7 @@ import threading
 from datetime import datetime
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
@@ -102,15 +102,23 @@ def suggestions_answer(cache: AnswerCache, runner: Any, *, refresh: bool = False
 
 @router.get("/suggestions", response_model=Suggestions)
 def suggestions(
+    request: Request,
     runner: Annotated[Any, Depends(automation)],
     cache: Annotated[AnswerCache, Depends(answers)],
+    config: Annotated[Config, Depends(current_config)],
     refresh: bool = False,
 ) -> Suggestions:
     """Up to twenty candidates and why the others were set aside, from the last discovery.
 
     Discovery reads the library and takes a while; the last list comes back at once and a fresh
-    one is worked out behind it when it is a day old or `refresh` asks.
+    one is worked out behind it when it is a day old or `refresh` asks -- but only a page on
+    this origin may ask: a visited site must not be able to start discovery through a
+    top-level navigation.
     """
+    from immich_memories.web.request_origin import cross_site_request
+
+    if refresh and cross_site_request(dict(request.headers), config):
+        refresh = False
     got = suggestions_answer(cache, runner, refresh=refresh)
     body = (
         Suggestions.model_validate(got.value)

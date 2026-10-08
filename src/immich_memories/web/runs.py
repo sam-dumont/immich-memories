@@ -15,7 +15,6 @@ from immich_memories.operations.run_index import attempt_dir_for_run
 from immich_memories.operations.storyboard import read_storyboard
 from immich_memories.tracking import RunDatabase
 from immich_memories.tracking.models import RunMetadata
-from immich_memories.tracking.orphaned_runs import settle_orphaned_runs
 from immich_memories.web.dependencies import current_config
 from immich_memories.web.film_files import local_film
 from immich_memories.web.schemas import PhaseTiming, RunDetail, RunPage, RunSummary
@@ -67,7 +66,8 @@ def list_runs(
 ) -> RunPage:
     """Runs newest first, each with the first pictures its saved cut plays."""
     store = open_store(config)
-    settle_orphaned_runs(store)
+    # A run whose process died is marked interrupted by the scheduler's tick, not here:
+    # a read must not be the thing that writes.
     records = RunDatabase(store).list_runs(limit=limit + 1, offset=offset, status=status)
     return RunPage(
         runs=[_summary(config, record) for record in records[:limit]],

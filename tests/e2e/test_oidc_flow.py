@@ -55,7 +55,6 @@ def oidc_app_url(
     env["IMMICH_MEMORIES_AUTH__ISSUER_URL"] = f"http://localhost:{oidc_mock_server}"
     env["IMMICH_MEMORIES_AUTH__CLIENT_ID"] = "test-client"
     env["IMMICH_MEMORIES_AUTH__CLIENT_SECRET"] = "test-secret"  # noqa: S105
-    env["IMMICH_MEMORIES_AUTH__ALLOW_INSECURE_ISSUER"] = "true"
     env["AUTHLIB_INSECURE_TRANSPORT"] = "1"
     with served_ui(env, unused_tcp_port_factory(), root / "server.log") as url:
         yield url

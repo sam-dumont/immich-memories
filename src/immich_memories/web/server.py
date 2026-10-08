@@ -181,9 +181,11 @@ async def login(credentials: Credentials, request: Request) -> JSONResponse:
         return JSONResponse(
             {"detail": "Too many failed attempts. Try again later."}, status_code=429
         )
-    if config.auth.provider != "basic" or not verify_credentials(
-        user, credentials.password, config.auth
-    ):
+    if config.auth.provider != "basic":
+        # No credential was attempted on this provider, so none failed: counting these
+        # would let anyone pause sign-in for the whole server, pre-auth.
+        return JSONResponse({"detail": "Invalid username or password"}, status_code=401)
+    if not verify_credentials(user, credentials.password, config.auth):
         record_failed_login(client_ip, user)
         return JSONResponse({"detail": "Invalid username or password"}, status_code=401)
     await run_in_threadpool(
@@ -245,7 +247,9 @@ async def oidc_callback(request: Request) -> Response:
     )
 
     if not validate_callback_origin(request, config.auth.public_url):
-        logger.warning("OIDC callback origin mismatch: %s", request.url)
+        # WHY: the query carries code/state and attacker-chosen values; the origin is
+        # all a log needs.
+        logger.warning("OIDC callback origin mismatch: %s", str(request.url).split("?")[0])
         return JSONResponse({"detail": "Invalid callback origin"}, status_code=400)
     try:
         token = await create_oidc_client(config.auth).oidc.authorize_access_token(request)

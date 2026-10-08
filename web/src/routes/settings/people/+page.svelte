@@ -102,7 +102,7 @@
         {#each roster.flags as flag (flag.person_ids.join(':'))}
           <div class="flex flex-col gap-1 text-sm" data-testid="curation-flag">
             <p class="font-medium">
-              {#each flag.names as name, index (index)}{#if index}{' · '}{/if}{name}{#if flag.person_urls[index]}
+              {#each flag.names as name, index (index)}{#if index}{' · '}{/if}{name}{#if flag.person_urls[index] && /^https?:\/\//i.test(flag.person_urls[index])}
                 {' '}<a href={flag.person_urls[index]} target="_blank" rel="noreferrer" class="font-normal text-primary underline" aria-label={t('Open {name} in Immich', { name })}>{t('Open in Immich')}</a>{/if}{/each}
             </p>
             <p>{flagText(flag.kind)}</p>

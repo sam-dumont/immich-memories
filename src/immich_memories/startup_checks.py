@@ -65,12 +65,19 @@ def _forwarding_refusals(config: Config, forwarded_allow_ips: str | None) -> lis
 def startup_warnings(config: Config) -> list[str]:
     """Weak settings worth a line in the log and in preflight, but not a refusal."""
     auth = config.auth
+    warnings = []
     if auth.enabled and auth.provider == "basic" and len(auth.password) < MIN_PASSWORD_LENGTH:
-        return [
+        warnings.append(
             f"auth.password is shorter than {MIN_PASSWORD_LENGTH} characters; "
             "a longer one resists guessing far better"
-        ]
-    return []
+        )
+    if auth.enabled and auth.provider == "oidc" and not auth.public_url:
+        warnings.append(
+            "auth.public_url is empty with auth.provider: oidc; the sign-in redirect URI "
+            "follows whatever Host a request names, and only the identity provider's "
+            "registered redirect list stops a mismatched one. Set auth.public_url."
+        )
+    return warnings
 
 
 def check_startup(config: Config, environ: Mapping[str, str], session_secret: str) -> list[str]:

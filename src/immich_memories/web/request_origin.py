@@ -38,6 +38,15 @@ def cross_site_write(method: str, path: str, headers: Mapping[str, str], config:
         path != "/logout" and not path.startswith(_CHECKED_PREFIXES)
     ):
         return False
+    return cross_site_request(headers, config)
+
+
+def cross_site_request(headers: Mapping[str, str], config: Config) -> bool:
+    """Whether a browser on another site sent this request, write or read.
+
+    A read carries nothing back to the sending page, so this is not a secrecy check:
+    it exists so a visited page cannot make this server do expensive work behind a
+    top-level navigation, the way it could with `?refresh=true`."""
     site = headers.get("sec-fetch-site", "").strip().lower()
     if site in ("cross-site", "same-site"):
         return True

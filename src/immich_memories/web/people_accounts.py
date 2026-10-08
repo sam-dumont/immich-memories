@@ -74,10 +74,13 @@ class _ImmichAccountReads:
         )
 
     def people(self, account: str) -> list[AccountPersonRecord]:
+        from immich_memories.security import credential_fingerprint
         from immich_memories.web.media_scope import connection_for
 
         connection = connection_for(self._config.immich, account)
-        key = (connection.url, connection.api_key)
+        # WHY: a cache key holds a fingerprint, never the key itself, so no debug line
+        # or repr of this dict ever prints an account's credential.
+        key = (connection.url, credential_fingerprint(connection.api_key))
         kept = _kept_people.get(key)
         if kept is not None and time.monotonic() < kept[0]:
             return kept[1]

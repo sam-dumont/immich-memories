@@ -260,15 +260,20 @@ class ImmichClient:
             return False
         return isinstance(exc, ImmichAPIError) and exc.status_code in _RETRYABLE_STATUS
 
+    def _reachable_name(self) -> str:
+        """The host and port to name in diagnostics -- never `netloc`, whose
+        `user:pass@` would print a credential embedded in the URL."""
+        parts = urlsplit(self.base_url)
+        host = parts.hostname or self.base_url
+        return f"{host}:{parts.port}" if parts.port else host
+
     def _request_error(self, exc: httpx.RequestError) -> ImmichAPIError:
         """Build a client-aware sanitized transport diagnostic."""
         safe_message = sanitize_error_message(str(exc)).replace(self.api_key, "***")
         # A timeout stringifies to "", so the exception type is the only reason left.
         reason = f"{type(exc).__name__}: {safe_message}" if safe_message else type(exc).__name__
-        parts = urlsplit(self.base_url)
-        target = parts.netloc or self.base_url
-        message = f"Request failed: cannot reach {target} ({reason})"
-        if hint := local_network_hint(exc, parts.hostname or ""):
+        message = f"Request failed: cannot reach {self._reachable_name()} ({reason})"
+        if hint := local_network_hint(exc, urlsplit(self.base_url).hostname or ""):
             message = f"{message}. {hint}"
         return ImmichAPIError(message)
 
@@ -359,9 +364,8 @@ class ImmichClient:
             raise self._stopped_answering() from error
 
     def _stopped_answering(self) -> ImmichStoppedAnswering:
-        target = urlsplit(self.base_url).netloc or self.base_url
         return ImmichStoppedAnswering(
-            f"Immich at {target} stopped answering; what was prepared is kept; "
+            f"Immich at {self._reachable_name()} stopped answering; what was prepared is kept; "
             "rerun the same command to continue"
         )
 
