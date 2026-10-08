@@ -174,7 +174,7 @@
       <label class={label}>{t('Transition Style')}
         <select class={field} bind:value={transition}>
           <option value="">{t('As configured')}</option><option value="smart">{t('Smart (fades and cuts)')}</option>
-          <option value="crossfade">{t('Crossfade')}</option><option value="cut">{t('Cut')}</option><option value="none">{t('None')}</option>
+          <option value="crossfade">{t('Crossfade')}</option><option value="cut">{t('Hard cut')}</option><option value="none">{t('None')}</option>
         </select>
       </label>
       <label class={label}>{t('Title style')}

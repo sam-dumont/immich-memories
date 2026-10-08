@@ -51,7 +51,7 @@ msgid "title.on_this_day"
 msgstr "{day} {month_lc}"
 
 msgid "title.on_this_day_subtitle"
-msgstr "À travers les années"
+msgstr "Au fil des années"
 
 msgid "title.person_spotlight_subtitle"
 msgstr "Votre année avec {person}"
