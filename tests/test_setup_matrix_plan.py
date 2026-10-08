@@ -708,6 +708,7 @@ def test_anything_but_a_resource_cap_is_refused_before_it_reaches_the_nas(
 
 def test_the_nas_moves_its_files_with_tar_over_ssh(manifest: dict, tmp_path: Path) -> None:
     """The NAS ssh server has the SFTP subsystem off, and a modern scp speaks only SFTP."""
+    tmp_path = tmp_path / "scp-in-output-directory"
     item = next(
         cell
         for cell in _plan(manifest, tmp_path, FULL_ENV).cells
@@ -719,7 +720,12 @@ def test_the_nas_moves_its_files_with_tar_over_ssh(manifest: dict, tmp_path: Pat
     assert steps["push-config"].pipe_to[:2] == ("ssh", "$MATRIX_NAS_SSH")
     assert steps["pull-results"].command[:2] == ("ssh", "$MATRIX_NAS_SSH")
     assert steps["pull-results"].pipe_to[0] == "tar"
-    assert not [step for step in item.steps if "scp" in str(step)]
+    assert all(
+        Path(command[0]).name != "scp"
+        for step in item.steps
+        for command in (step.command, step.pipe_to)
+        if command
+    )
 
 
 _MKDIR = re.compile(r"mkdir -p ([^&|;]+)")

@@ -77,14 +77,17 @@ def test_the_cli_copies_into_another_url(tmp_path, home, monkeypatch):
     from immich_memories.cli import main
 
     source_path = tmp_path / "source.db"
-    fill_every_table(open_store(location=StoreLocation(url=f"sqlite:///{source_path}")), home)
+    source = open_store(location=StoreLocation(url=f"sqlite:///{source_path}"))
+    fill_every_table(source, home)
     monkeypatch.setenv("IMMICH_MEMORIES_DATABASE_URL", f"sqlite:///{source_path}")
     target = tmp_path / "target.db"
 
     result = CliRunner().invoke(main, ["store", "copy", "--to", f"sqlite:///{target}"])
 
     assert result.exit_code == 0, result.output
-    assert "every table matches" in result.output
+    assert "every table matches" in " ".join(result.output.split())
+    copied = open_store(location=StoreLocation(url=f"sqlite:///{target}"))
+    assert _digests(copied) == _digests(source)
     refused = CliRunner().invoke(main, ["store", "copy", "--to", f"sqlite:///{target}"])
     assert refused.exit_code == 1
     assert "--force" in refused.output
