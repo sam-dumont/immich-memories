@@ -316,7 +316,12 @@ class VideoDownloadCache:
 
     def _video_path(self, asset_id: str, ext: str) -> Path:
         subdir = asset_id[:2] if len(asset_id) >= 2 else "00"
-        return self.cache_dir / subdir / f"{asset_id}{ext}"
+        path = self.cache_dir / subdir / f"{asset_id}{ext}"
+        if not path.resolve().is_relative_to(self.cache_dir.resolve()):
+            # WHY: the id came from a server response; the API models refuse a hostile
+            # one at the parse, and this keeps every future caller inside the cache too.
+            raise ValueError("an asset id would escape the video cache")
+        return path
 
     def _find_cached(self, asset_id: str) -> Path | None:
         subdir = asset_id[:2] if len(asset_id) >= 2 else "00"

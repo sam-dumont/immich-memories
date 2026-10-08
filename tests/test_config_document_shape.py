@@ -16,7 +16,10 @@ def test_non_mapping_yaml_has_a_clean_error_without_echoing_its_value(tmp_path, 
         Config.from_yaml(path, stored={})
     result = CliRunner().invoke(main, ["-c", str(path), "config", "--help"])
     assert result.exit_code != 0
-    assert "mapping" in result.output
+    # WHY: the fallback used to echo str(error), which can quote the source context --
+    # exactly where a secret in config.yaml sits. The message names the fix, never the text.
+    assert "YAML syntax error" in result.output
+    assert "mapping" not in result.output
     assert "private-value" not in result.output
 
 

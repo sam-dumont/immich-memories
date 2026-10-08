@@ -321,6 +321,16 @@ jobs:
               exit 1
             fi
             echo "Tag v$NEXT_VERSION already exists with no release; resuming the interrupted publication"
+            # A stranded tag is a resume signal only for the commit it was pushed for.
+            # A retry that built a newer main must not publish newer code under the
+            # older tag: re-run the workflow from the tag's commit to resume it.
+            tagged=$(git rev-parse "v$NEXT_VERSION^{}")
+            built=$(git rev-parse HEAD)
+            if [ "$tagged" != "$built" ]; then
+              echo "::error::Tag v$NEXT_VERSION points at ${tagged} but this build is ${built}."
+              echo "Re-run the workflow from ${tagged} to finish that release under its tag."
+              exit 1
+            fi
           else
             git tag -a "v$NEXT_VERSION" -m "Release v$NEXT_VERSION"
             git push origin "v$NEXT_VERSION"

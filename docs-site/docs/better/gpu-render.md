@@ -14,6 +14,11 @@ The [combined CUDA worker](../run/reference-setup.md#one-gpu-service) puts this 
 picture inference, captions and Demucs in one container on port 8092. Its render URL ends in
 `/render`; the standalone setup below keeps port 8093.
 
+The worker and inference service have no authentication. Their health and queue endpoints expose
+operational details to anyone who can reach them. Bind them to loopback when the app runs on the
+same machine; otherwise use a private network and firewall rules that allow only the app.
+Do not expose these ports to the internet.
+
 ```mermaid
 flowchart TD
     app["App: selection and timing"] -->|"Cut and Immich key"| worker["Trusted NVIDIA worker"]

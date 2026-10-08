@@ -297,3 +297,32 @@ def test_every_response_says_it_may_not_be_framed(monkeypatch, tmp_path):
     ):
         assert response.headers["x-frame-options"] == "DENY"
         assert "frame-ancestors 'none'" in response.headers["content-security-policy"]
+
+
+def test_a_login_without_content_length_is_cut_off_while_streaming(monkeypatch):
+    client = server_client(monkeypatch, basic_auth_config())
+    headers = {"host": "localhost:8080", "content-type": "application/json"}
+    chunks = [b" " * 1024 * 1024] * 8
+
+    answered = _asgi_post(client.app, "/auth/login", headers, chunks)
+
+    assert answered == {"status": 413, "chunks_read": 5}
+
+
+def test_body_limit_does_not_hide_an_unrelated_task_failure():
+    from immich_memories.web.request_checks import RequestChecks
+
+    async def downstream(_scope, receive, _send):
+        try:
+            await receive()
+        except Exception as exc:
+            raise ExceptionGroup(
+                "concurrent request tasks", [exc, ValueError("worker failed")]
+            ) from None
+
+    app = RequestChecks(downstream, config=basic_auth_config)
+    with pytest.raises(ExceptionGroup) as caught:
+        _asgi_post(app, "/auth/login", {"host": "localhost"}, [b" " * 5 * 1024 * 1024])
+    assert len(caught.value.exceptions) == 1
+    assert isinstance(caught.value.exceptions[0], ValueError)
+    assert str(caught.value.exceptions[0]) == "worker failed"

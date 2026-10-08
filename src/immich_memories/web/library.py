@@ -6,7 +6,7 @@ from collections.abc import Callable, Iterator
 from datetime import date, datetime
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from pydantic import BaseModel
 
 from immich_memories.config_loader import Config
@@ -206,6 +206,7 @@ def trips_answer(
 @router.get("/trips", response_model=Trips)
 def trips(
     year: int,
+    request: Request,
     find: Annotated[TripFinder, Depends(trip_finder)],
     cache: Annotated[AnswerCache, Depends(answers)],
     config: Annotated[Config, Depends(current_config)],
@@ -215,10 +216,14 @@ def trips(
     """The trips that overlap a year, as `generate` lists them before it cuts one.
 
     Discovery reads the year's GPS and takes a while; the last answer for the year comes back at
-    once, and a fresh one is worked out behind it when it is a day old or `refresh` asks.
-    """
+    once, and a fresh one is worked out behind it when it is a day old or `refresh` asks -- but
+    only a page on this origin may ask: a visited site must not be able to start library
+    discovery through a top-level navigation."""
     from immich_memories.i18n import resolve_film_locale
+    from immich_memories.web.request_origin import cross_site_request
 
+    if refresh and cross_site_request(dict(request.headers), config):
+        refresh = False
     locale = resolve_film_locale(config.title_screens.locale)
     got = trips_answer(cache, find, year, person or [], locale, refresh=refresh)
     listed = [TripChoice.model_validate(t) for t in got.value["trips"]] if got.value else None

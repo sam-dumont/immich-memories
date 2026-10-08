@@ -26,6 +26,22 @@ def test_client_shows_the_packaged_build_version(page, launch_app_url):
     expect(page.get_by_test_id("build-version")).to_have_text(f"Immich Memories {version}")
 
 
+def test_client_starts_and_blocks_an_untrusted_inline_script(page, launch_app_url):
+    page.goto(f"{launch_app_url}/app/settings")
+    expect(page.get_by_test_id("build-version")).to_be_visible()
+    result = page.evaluate("""() => new Promise(resolve => {
+        document.addEventListener('securitypolicyviolation', event => resolve({
+            directive: event.effectiveDirective,
+            executed: window.cspProbeExecuted === true
+        }), {once: true});
+        const script = document.createElement('script');
+        script.textContent = 'window.cspProbeExecuted = true';
+        document.head.append(script);
+        setTimeout(() => resolve({executed: window.cspProbeExecuted === true}), 1000);
+    })""")
+    assert result == {"directive": "script-src-elem", "executed": False}
+
+
 def test_report_is_previewed_before_copying(page, launch_app_url, launch_workspace):
     _seed(launch_workspace)
     report = "## Immich Memories run report\n\n<details><summary>Logs</summary>redacted</details>"

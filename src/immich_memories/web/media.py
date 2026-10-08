@@ -39,8 +39,9 @@ def thumbnail(
 ) -> Response:
     """The picture at grid or preview size; a miss is fetched from Immich and kept.
 
-    No configured account reading this id is a 404 before the cache is even asked, so a
-    cached picture never outlives the account that put it there losing access to it.
+    With multiple accounts, the scope check asks which account can still read the id.
+    Cached bytes also belong to the configured account set: removing an account or
+    rotating a key makes its old entries inaccessible, even if a fetch finishes late.
     """
     if not _ASSET_ID.match(asset_id):
         return Response(status_code=404)
@@ -54,6 +55,14 @@ def thumbnail(
     if data is None:
         return Response(status_code=404)
     return Response(data, media_type="image/jpeg", headers={"Cache-Control": _CACHE_CONTROL})
+
+
+def _video_media_type(upstream: str | None) -> str:
+    """A video type, never whatever Immich said: the streamed bytes are served on this
+    app's own origin, so an upstream `text/html` must not turn them into a page here."""
+    if upstream and upstream.split(";", 1)[0].strip().lower().startswith("video/"):
+        return upstream
+    return "video/mp4"
 
 
 @router.get("/assets/{asset_id}/video", response_class=StreamingResponse)
@@ -73,7 +82,7 @@ def video(
     if playback is None:
         return Response(status_code=404)
     headers = playback.headers | {"accept-ranges": "bytes", "cache-control": _CACHE_CONTROL}
-    media_type = headers.pop("content-type", "video/mp4")
+    media_type = _video_media_type(headers.pop("content-type", None))
     return StreamingResponse(
         playback.chunks, status_code=playback.status, headers=headers, media_type=media_type
     )

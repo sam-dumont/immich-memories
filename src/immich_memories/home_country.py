@@ -6,7 +6,6 @@ a coordinate lies from the geodata it ships, so asking it stays inside the libra
 
 from __future__ import annotations
 
-import functools
 import logging
 import re
 from typing import TYPE_CHECKING
@@ -52,13 +51,30 @@ def known_home_country(config: Config) -> str | None:
     trips = config.trips
     if trips.homebase_latitude == trips.homebase_longitude == 0.0:
         return None
-    return _country_at(
-        config.immich.url, config.immich.api_key, trips.homebase_latitude, trips.homebase_longitude
+    from immich_memories.security import credential_fingerprint
+
+    # WHY: the cache key carries a fingerprint, never the key itself, so no repr of the
+    # cache ever prints the credential; the uncached fetch below holds the real key only
+    # for the span of one request.
+    key = (
+        config.immich.url,
+        credential_fingerprint(config.immich.api_key),
+        trips.homebase_latitude,
+        trips.homebase_longitude,
     )
+    if key not in _country_cache:
+        cached = _fetch_country(config.immich.url, config.immich.api_key, *key[2:])
+        if len(_country_cache) >= _COUNTRY_CACHE_MAX:
+            _country_cache.clear()
+        _country_cache[key] = cached
+    return _country_cache[key]
 
 
-@functools.lru_cache(maxsize=8)
-def _country_at(url: str, api_key: str, lat: float, lon: float) -> str | None:
+_country_cache: dict[tuple[str, str, float, float], str | None] = {}
+_COUNTRY_CACHE_MAX = 8
+
+
+def _fetch_country(url: str, api_key: str, lat: float, lon: float) -> str | None:
     try:
         response = httpx.get(
             f"{url.rstrip('/')}/api/map/reverse-geocode",

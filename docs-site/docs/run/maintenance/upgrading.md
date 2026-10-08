@@ -9,6 +9,28 @@ Read the [release notes](https://github.com/sam-dumont/immich-memories/releases)
 back up the store, then upgrade. Keep the backup for rollback: a newer release can migrate the
 store to a revision older code will refuse.
 
+## Server addresses
+
+With authentication enabled, setting `auth.public_url` restricts requests to its hostname,
+localhost and entries in `server.allowed_hosts`. If you also open the app by a LAN IP or
+another hostname, add those addresses to `advanced.server.allowed_hosts` before upgrading.
+Otherwise those requests receive HTTP 421.
+
+An `immich.url` containing a username or password fails startup. Remove the credentials
+from the URL and use `immich.api_key`. This also applies to each account's URL under
+`immich.accounts`. If a reverse proxy requires URL credentials, give the app a private route
+to Immich that accepts its API key.
+
+## HTTP monitoring and request limits
+
+With authentication enabled, `/health` and `/health/ready` keep their status codes and JSON
+fields, but return `null` for operational details without a valid session. This includes
+`configuration`, `immich` and `immich_reachable`. Use the HTTP status for readiness probes;
+sign in to read the detailed diagnosis.
+
+Writes under `/api/` and `/auth/`, plus `/logout`, accept bodies up to 4 MiB. Larger requests
+return HTTP 413. The soundtrack upload route keeps its separate 64 MiB file limit.
+
 ## API key permissions
 
 Existing keys with **All** permissions continue to work. Preflight now warns about their broad

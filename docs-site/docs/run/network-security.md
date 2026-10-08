@@ -35,9 +35,10 @@ Every request names a host in its `Host` header. With auth off, the app answers 
 Any other host gets **421 Misdirected Request**. Without this, a web page on another site could
 point its own name at your machine and read the app as if it were that site.
 
-With auth on, any host is answered, so a NAS reached by its IP or hostname keeps working. Set
-`server.allowed_hosts` to restrict it: then only the listed names, the localhost names and the
-host of `auth.public_url` are answered.
+With auth on, any host is answered only when both `auth.public_url` and `server.allowed_hosts`
+are empty. Setting either restricts requests to the public URL's hostname, entries in
+`server.allowed_hosts` and the localhost names above. To also open the app by a LAN IP or
+another name, add it to `server.allowed_hosts`. Other names get **421 Misdirected Request**.
 
 `/health/live` and `/health/ready` answer whatever host they name, since Kubernetes probes use the
 pod IP. They tell an anonymous caller nothing beyond up or down.

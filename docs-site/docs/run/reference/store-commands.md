@@ -65,6 +65,11 @@ Stop the app first: a restore replaces the database under it.
 A SQLite backup restores into SQLite and a PostgreSQL one into PostgreSQL. To change backend,
 restore into the backend the backup came from, then `store copy`.
 
+**A backup file is executable input.** A PostgreSQL archive is a program in disguise: `pg_restore`
+runs whatever SQL the archive carries, including `COPY ... TO PROGRAM`. Only restore archives you
+made yourself or fully trust; a backup received over email or from someone else's server can run
+code on your database host as the database user.
+
 #### Restore in a container {#restore-in-a-container}
 
 In a container the app is the process that holds the store, so `exec` into it is the wrong place.

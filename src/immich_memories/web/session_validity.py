@@ -19,50 +19,49 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql, sqlite
 
 from immich_memories.config_loader import Config
 from immich_memories.config_models_auth import AuthConfig
-from immich_memories.db import now_db, open_store, upsert
-from immich_memories.db.tables.store_meta import store_meta
+from immich_memories.db import now_db, open_store
+from immich_memories.db.tables.session_generations import session_generations
 from immich_memories.web.auth import set_session
 
 logger = logging.getLogger(__name__)
 
-# The `store_meta` row: {"*": n, "<username>": m}. A session's generation is the sum of
-# its user's count and everyone's; both only grow, so any bump changes the sum.
-_GENERATIONS_KEY = "auth.session_generations"
+# One integer row per key: `*` for everyone, a username for one user. A session's
+# generation is the sum of its user's count and everyone's; both only grow, so any bump
+# changes the sum. The bump is a single INSERT .. ON CONFLICT statement, so two
+# concurrent sign-outs each land their own increment even on PostgreSQL.
 _EVERYONE = "*"
-
-
-def _read_generations(config: Config) -> dict[str, int]:
-    with open_store(config).connect() as connection:
-        value = connection.execute(
-            sa.select(store_meta.c.value).where(store_meta.c.key == _GENERATIONS_KEY)
-        ).scalar()
-    return value if isinstance(value, dict) else {}
 
 
 def session_generation(config: Config, username: str) -> int:
     """The generation a cookie for `username` has to carry to be current."""
-    generations = _read_generations(config)
-    return int(generations.get(_EVERYONE, 0)) + int(generations.get(username, 0))
+    with open_store(config).connect() as connection:
+        result = connection.execute(
+            sa.select(session_generations.c.key, session_generations.c.generation).where(
+                session_generations.c.key.in_([_EVERYONE, username])
+            )
+        )
+        counts = {str(row["key"]): int(row["generation"]) for row in result.mappings()}
+    return counts.get(_EVERYONE, 0) + counts.get(username, 0)
 
 
 def end_sessions(config: Config, username: str | None) -> None:
     """Refuse every cookie issued so far to `username`, or to everyone when it is None."""
     key = _EVERYONE if username is None else username
     with open_store(config).begin() as connection:
-        current = connection.execute(
-            sa.select(store_meta.c.value).where(store_meta.c.key == _GENERATIONS_KEY)
-        ).scalar()
-        generations = dict(current) if isinstance(current, dict) else {}
-        generations[key] = int(generations.get(key, 0)) + 1
-        upsert(
-            connection,
-            store_meta,
-            [{"key": _GENERATIONS_KEY, "value": generations, "updated_at": now_db()}],
-            ["key"],
+        dialect = postgresql if connection.dialect.name == "postgresql" else sqlite
+        statement = dialect.insert(session_generations)
+        statement = statement.on_conflict_do_update(
+            index_elements=["key"],
+            set_={
+                "generation": session_generations.c.generation + 1,
+                "updated_at": statement.excluded.updated_at,
+            },
         )
+        connection.execute(statement, [{"key": key, "generation": 1, "updated_at": now_db()}])
 
 
 def auth_fingerprint(auth: AuthConfig, secret: str) -> str:

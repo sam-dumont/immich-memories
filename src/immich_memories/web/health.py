@@ -134,7 +134,8 @@ def _health_detail_allowed(config: Config, request: Request) -> bool:
     return bool(secret) and session_current(session, config, str(secret))
 
 
-# Person names (memory keys) and host paths live here; a probe gets status and version only.
+# Person names (memory keys), host paths, and deployment recon (whether the stored key
+# authenticates, the Immich version) live here; a probe gets status and version only.
 _DETAIL_FIELDS = (
     "automation",
     "last_automation_attempt",
@@ -145,6 +146,9 @@ _DETAIL_FIELDS = (
     "last_successful_run",
     "in_process_scheduler",
     "disk",
+    "configuration",
+    "immich",
+    "immich_reachable",
 )
 
 

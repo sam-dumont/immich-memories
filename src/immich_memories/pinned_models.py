@@ -121,16 +121,28 @@ def _digest_of(path: Path) -> str:
         return hashlib.file_digest(handle, "sha256").hexdigest()
 
 
+class _HttpsOnlyRedirect(urllib.request.HTTPRedirectHandler):
+    """Redirects that stay HTTP(S): urllib's default handler follows a 3xx anywhere,
+    including `ftp://`; the digest still pins the content, but the fetch itself stays
+    on a scheme this code chose to trust."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):  # noqa: D102
+        if urlparse(newurl).scheme not in {"http", "https"}:
+            raise ValueError(f"{newurl}: model downloads must stay HTTP(S)")
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
 def _stream_to(url: str, destination: Path, *, max_bytes: int) -> str:
     if urlparse(url).scheme not in {"http", "https"}:
         raise ValueError(f"{url}: model downloads must be HTTP(S)")
     digest = hashlib.sha256()
     written = 0
+    opener = urllib.request.build_opener(_HttpsOnlyRedirect())
     request = urllib.request.Request(  # noqa: S310 — the scheme is checked above
         url, headers={"User-Agent": "immich-memories"}
     )
     with (
-        urllib.request.urlopen(  # noqa: S310 — the scheme is checked above
+        opener.open(  # noqa: S310 — the scheme and every redirect hop are checked
             request, timeout=DOWNLOAD_TIMEOUT_SECONDS
         ) as response,
         destination.open("wb") as handle,

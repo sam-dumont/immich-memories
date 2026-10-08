@@ -19,6 +19,7 @@ removed account must never let an old entry hand a stale name to `connection_for
 
 from __future__ import annotations
 
+import hashlib
 import time
 from collections import OrderedDict
 from collections.abc import Callable
@@ -26,6 +27,7 @@ from threading import Lock
 from typing import TYPE_CHECKING
 
 from immich_memories.config_models import PRIMARY_ACCOUNT, ImmichConfig, ImmichConnection
+from immich_memories.security import credential_fingerprint
 
 if TYPE_CHECKING:
     from immich_memories.api.sync_client import SyncImmichClient
@@ -60,11 +62,28 @@ def _candidates(immich: ImmichConfig) -> tuple[str, ...]:
 def _signature(immich: ImmichConfig) -> _Signature:
     """The exact accounts a probe would run against: a changed url, key, name or roster
     is a different signature, so an entry a reload or settings edit left behind can only
-    ever miss, never hand a since-renamed or removed account name back to a caller."""
+    ever miss, never hand a since-renamed or removed account name back to a caller.
+
+    Keys enter as fingerprints, never raw: a signature tuple repr'd in a debug line or
+    a crash state must not print an account's credential."""
     return tuple(
-        (name, connection_for(immich, name).url, connection_for(immich, name).api_key)
+        (
+            name,
+            connection_for(immich, name).url,
+            credential_fingerprint(connection_for(immich, name).api_key),
+        )
         for name in _candidates(immich)
     )
+
+
+def account_set_signature(immich: ImmichConfig) -> str:
+    """One digest over the whole account set: any changed url, key, name or roster
+    turns it over. Web thumbnail filenames include it, so a picture can never be
+    served under accounts its bytes were not fetched for."""
+    digest = hashlib.sha256()
+    for name, url, fingerprint in _signature(immich):
+        digest.update(f"{len(name)}:{name}{len(url)}:{url}{fingerprint}".encode())
+    return digest.hexdigest()
 
 
 def _probe_one(
