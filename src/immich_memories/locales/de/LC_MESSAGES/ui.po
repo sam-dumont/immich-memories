@@ -20,18 +20,18 @@ msgid ""
 "A film from a sentence needs the model tier: set advanced.llm.base_url and advanced.llm.model"
 " to the reader that answers it (tier: full)."
 msgstr ""
-"Ein Film aus einem Satz braucht die Modell-Stufe: Setze advanced.llm.base_url und "
-"advanced.llm.model auf den Leser, der ihn beantwortet (tier: full)."
+"Für einen Film aus einem Satz brauchst du die volle Modellstufe (tier: full). Richte das "
+"Modell mit advanced.llm.base_url und advanced.llm.model ein."
 
 #: web/lib/people/GroupsSection.svelte:50
 msgid "A label for a people condition. Pick it on the New memory page, or with generate --group."
 msgstr ""
-"Ein Label für eine Personenbedingung. Auf der Seite „Neue Erinnerung“ auswählen, oder mit "
-"generate --group."
+"Gib diesem Personenfilter einen Namen. Du kannst ihn unter „Neue Erinnerung“ oder mit "
+"generate --group auswählen."
 
 #: web/lib/labels.ts:50
 msgid "A monthly review already finished this month."
-msgstr "Für diesen Monat wurde bereits eine monatliche Überprüfung abgeschlossen."
+msgstr "In diesem Monat wurde bereits ein Monatsrückblick erstellt."
 
 #: web/routes/settings/+page.svelte:91
 msgid "API Key"
@@ -82,7 +82,7 @@ msgstr "Hinzugefügt für einen Moment, den der Katalog als bemerkenswert verzei
 #: web/routes/runs/[run_id]/+page.svelte:286 web/routes/runs/[run_id]/+page.svelte:288
 #: web/routes/runs/[run_id]/+page.svelte:291
 msgid "Added from the pool"
-msgstr "Aus dem Pool hinzugefügt"
+msgstr "Aus den verfügbaren Medien hinzugefügt"
 
 #: web/lib/people/GroupsSection.svelte:81
 msgid "Advanced: type the expression"
@@ -102,7 +102,7 @@ msgstr "Albumname"
 
 #: web/lib/people/GroupsSection.svelte:75
 msgid "All of them"
-msgstr "Alle"
+msgstr "Alle diese Personen"
 
 #: web/routes/runs/[run_id]/pool/+page.svelte:113
 #, python-brace-format
@@ -127,7 +127,7 @@ msgstr "Anderer Tag (MM-DD)"
 
 #: web/lib/people/GroupsSection.svelte:74
 msgid "Any of them"
-msgstr "Beliebige"
+msgstr "Mindestens eine dieser Personen"
 
 #: web/routes/runs/[run_id]/pool/+page.svelte:87 web/routes/runs/[run_id]/pool/+page.svelte:165
 msgid "Anyone"
@@ -146,11 +146,11 @@ msgstr "Wie konfiguriert"
 
 #: web/lib/RenderPanel.svelte:200
 msgid "As generate decides"
-msgstr "Wie beim Erstellen entschieden"
+msgstr "Wie generate entscheidet"
 
 #: web/lib/RenderPanel.svelte:183
 msgid "Auto (match the mood)"
-msgstr "Auto (match the mood)"
+msgstr "Automatisch (passend zur Stimmung)"
 
 #: web/lib/RenderPanel.svelte:208 web/lib/labels.ts:26
 msgid "Automatic"
@@ -186,7 +186,7 @@ msgstr "Zurück zum Schnitt"
 
 #: web/routes/create/+page.svelte:339
 msgid "Birthday (MM-DD; Immich’s birth date when empty)"
-msgstr "Geburtstag (MM-DD; Immichs Geburtsdatum, wenn leer)"
+msgstr "Geburtstag (MM-DD; leer lassen für das in Immich gespeicherte Geburtsdatum)"
 
 #: web/routes/create/+page.svelte:338
 msgid "Birthday to birthday, with earlier birthdays"
@@ -202,7 +202,7 @@ msgstr "Unscharfer Hintergrund"
 
 #: web/lib/ShotInspector.svelte:137
 msgid "Browse the whole pool"
-msgstr "Den ganzen Pool durchsuchen"
+msgstr "Alle verfügbaren Medien ansehen"
 
 #: web/routes/settings/+page.svelte:112 web/routes/settings/+page.svelte:113
 msgid "Caches"
@@ -250,8 +250,8 @@ msgid ""
 "Choose what the film covers. The cut is made the way the command below makes it; you review "
 "it before anything renders."
 msgstr ""
-"Lege fest, was der Film zeigt. Der Schnitt entsteht genau so, wie der Befehl unten ihn "
-"ausführt; du prüfst ihn, bevor etwas gerendert wird."
+"Wähle, was dein Film zeigen soll. Der Befehl unten stellt den Schnitt zusammen; du kannst ihn"
+" prüfen, bevor das Rendern beginnt."
 
 #: web/routes/settings/+page.svelte:118
 msgid "Clear"
@@ -314,7 +314,7 @@ msgstr "Überblenden"
 
 #: web/routes/settings/people/+page.svelte:100 web/routes/settings/people/+page.svelte:101
 msgid "Curation"
-msgstr "Ordnen"
+msgstr "Personeneinträge prüfen"
 
 #: web/lib/labels.ts:18
 msgid "Custom date range"
@@ -338,7 +338,7 @@ msgstr "Tag (MM-DD)"
 
 #: web/lib/AskPanel.svelte:211
 msgid "Decided while cutting"
-msgstr "Wird beim Schnitt entschieden"
+msgstr "Beim Schnitt entschieden"
 
 #: web/lib/SettingsEditor.svelte:41
 msgid "Default"
@@ -383,7 +383,7 @@ msgstr "Fertig."
 
 #: web/routes/runs/[run_id]/+page.svelte:356
 msgid "Download child output"
-msgstr "Zugehöriges Ergebnis herunterladen"
+msgstr "Verarbeitungsprotokoll herunterladen"
 
 #: web/lib/RenderPanel.svelte:159 web/routes/runs/[run_id]/+page.svelte:169
 msgid "Download film"
@@ -419,16 +419,18 @@ msgid ""
 "Edited from metadata only — picture content was neither classified nor read, so every picture"
 " is held to family viewing."
 msgstr ""
-"Nur aus Metadaten bearbeitet: Der Bildinhalt wurde weder klassifiziert noch gelesen, daher "
-"ist jedes Bild auf die Familienansicht beschränkt."
+"Der Schnitt basiert nur auf Metadaten. Die Bildinhalte wurden weder klassifiziert noch "
+"analysiert; alle Bilder sind deshalb nur für die Familie freigegeben."
 
 #: web/lib/labels.ts:68
 msgid "Edited without descriptions — picture content was classified, not read."
-msgstr "Bearbeitet ohne Beschreibungen: Der Bildinhalt wurde klassifiziert, nicht gelesen."
+msgstr ""
+"Ohne Bildbeschreibungen geschnitten: Die Inhalte wurden klassifiziert, aber nicht im Detail "
+"analysiert."
 
 #: web/lib/RenderPanel.svelte:184
 msgid "Elegant minimal"
-msgstr "Elegant minimal"
+msgstr "Elegant und schlicht"
 
 #: web/lib/ShotInspector.svelte:110
 msgid "Eligible when this shot was chosen. Open one to compare."
@@ -457,17 +459,17 @@ msgid ""
 "ticks go into the film as they are, with nothing chosen again. Never use and Clear hold last "
 "across every run."
 msgstr ""
-"Jedes Bild, das dieser Schnitt gesehen hat, in der Reihenfolge der Aufnahme. Häkchen setzen "
-"oder entfernen und dann Vorschau ansehen: Deine Häkchen gehen unverändert in den Film ein, "
-"ohne erneute Auswahl. Nie verwenden und Sperre aufheben gelten über jeden Lauf hinweg."
+"Alle für diesen Schnitt verfügbaren Bilder in Aufnahmereihenfolge. Wähle Bilder an oder ab "
+"und öffne die Vorschau: Deine Auswahl wird genau so in den Film übernommen. „Nie verwenden“ "
+"und „Sperre aufheben“ gelten auch für künftige Läufe."
 
 #: web/routes/settings/+page.svelte:82
 msgid ""
 "Every setting and where its value comes from. What you save here goes to the database; "
 "config.yaml and the environment are never written, and they win over it."
 msgstr ""
-"Jede Einstellung und woher ihr Wert stammt. Was du hier speicherst, geht in die Datenbank; "
-"config.yaml und die Umgebung werden nie beschrieben und haben Vorrang davor."
+"Jede Einstellung und die Herkunft ihres Werts. Deine Änderungen werden in der Datenbank "
+"gespeichert. config.yaml und die Umgebungsvariablen bleiben unverändert und haben Vorrang."
 
 #: web/routes/create/+page.svelte:422
 msgid "Every trip of the year"
@@ -540,6 +542,10 @@ msgstr "Großeltern, Geschwister, der Gruppenchat. Private Momente bleiben drau�
 msgid "Grouped condition"
 msgstr "Gruppierte Bedingung"
 
+#: web/lib/RenderPanel.svelte:177
+msgid "Hard cut"
+msgstr "Harter Schnitt"
+
 #: web/routes/runs/[run_id]/pool/+page.svelte:95
 #, python-brace-format
 msgid "Held: {reasons}."
@@ -559,15 +565,15 @@ msgstr "Feiertag"
 
 #: web/lib/AskPanel.svelte:19
 msgid "How it read your words"
-msgstr "Wie deine Worte gelesen wurden"
+msgstr "Wie deine Anfrage verstanden wurde"
 
 #: web/lib/ShotInspector.svelte:98
 msgid "How the rules got here"
-msgstr "Wie die Regeln hierher kamen"
+msgstr "Wie die Regeln zu dieser Auswahl geführt haben"
 
 #: web/lib/AskPanel.svelte:227
 msgid "How the sentence was read"
-msgstr "Wie der Satz gelesen wurde"
+msgstr "Wie der Satz verstanden wurde"
 
 #: web/routes/settings/+page.svelte:85 web/routes/settings/+page.svelte:86
 msgid "Immich Connection"
@@ -608,7 +614,7 @@ msgstr "Live Photos einbeziehen"
 
 #: web/lib/RunReport.svelte:72
 msgid "Include captions of flagged photos"
-msgstr "Beschriftungen markierter Fotos einbeziehen"
+msgstr "Beschreibungen markierter Fotos einbeziehen"
 
 #: web/routes/create/+page.svelte:499
 msgid "Include photos"
@@ -620,7 +626,7 @@ msgstr "Sprache der Oberfläche"
 
 #: web/lib/JobPanel.svelte:63
 msgid "It did not finish."
-msgstr "Es wurde nicht fertig."
+msgstr "Der Lauf wurde nicht abgeschlossen."
 
 #: web/routes/create/+page.svelte:494 web/routes/runs/[run_id]/pool/+page.svelte:87
 #: web/routes/runs/[run_id]/pool/+page.svelte:165
@@ -679,7 +685,7 @@ msgstr "Live"
 
 #: web/routes/suggestions/+page.svelte:98
 msgid "Looking through your library for memories to suggest..."
-msgstr "Deine Mediathek wird nach vorschlagbaren Erinnerungen durchsucht..."
+msgstr "Deine Mediathek wird nach passenden Erinnerungen durchsucht …"
 
 #: web/lib/people/RelationshipRows.svelte:44
 msgid "Looks linked to"
@@ -699,11 +705,11 @@ msgstr "Hauptgeschichte"
 
 #: web/lib/AskPanel.svelte:148
 msgid "Make the film"
-msgstr "Film machen"
+msgstr "Film erstellen"
 
 #: web/lib/AskPanel.svelte:168
 msgid "Making the film prepares them first."
-msgstr "Den Film zu erstellen bereitet sie zuerst vor."
+msgstr "Die Bilder werden vorbereitet, bevor der Film erstellt wird."
 
 #: web/lib/labels.ts:26
 msgid "Manual"
@@ -753,7 +759,7 @@ msgstr "Der Download der Modelle konnte nicht gestartet werden."
 
 #: web/lib/ShotInspector.svelte:142
 msgid "Model polish"
-msgstr "Feinschliff des Modells"
+msgstr "Feinschliff durch das Modell"
 
 #: web/lib/ModelSetup.svelte:24
 msgid "Model status could not be checked."
@@ -765,7 +771,7 @@ msgstr "Vorschlag des Modells"
 
 #: web/lib/RenderPanel.svelte:184
 msgid "Modern warm"
-msgstr "Modern warm"
+msgstr "Modern und warm"
 
 #: web/routes/create/+page.svelte:326 web/routes/create/+page.svelte:327
 msgid "Month"
@@ -804,24 +810,26 @@ msgid ""
 "No catalogued days yet. Run immich-memories discover-days to find them, or film any day by "
 "its date."
 msgstr ""
-"Noch keine erfassten Tage. Führe `immich-memories discover-days` aus, um sie zu finden, oder "
-"filme jeden Tag anhand seines Datums."
+"Noch keine erfassten Tage. Führe immich-memories discover-days aus, um sie zu finden, oder "
+"wähle ein Datum für deinen Film."
 
 #: web/routes/runs/[run_id]/+page.svelte:358
 msgid "No child output was retained for this run."
-msgstr "Für diesen Lauf wurde kein zugehöriges Ergebnis gespeichert."
+msgstr "Für diesen Lauf wurde kein Verarbeitungsprotokoll gespeichert."
 
 #: web/lib/AskPanel.svelte:172
 msgid ""
 "No film: the library cannot show this. Try other words, or read below what each part of the "
 "sentence found."
 msgstr ""
-"Kein Film: Die Bibliothek kann das nicht zeigen. Versuche andere Worte oder lies unten, was "
-"jeder Teil des Satzes gefunden hat."
+"Mit den Bildern deiner Mediathek lässt sich dieser Film nicht erstellen. Formuliere deine "
+"Anfrage anders oder sieh unten nach, was zu den einzelnen Satzteilen gefunden wurde."
 
 #: web/lib/ShotInspector.svelte:144
 msgid "No model read this cut: the rules chose every picture."
-msgstr "Kein Modell hat diesen Schnitt gelesen: Die Regeln haben jedes Bild gewählt."
+msgstr ""
+"Dieser Schnitt wurde ausschließlich nach Auswahlregeln erstellt, ohne Analyse durch ein "
+"Modell."
 
 #: web/lib/RenderPanel.svelte:250
 msgid "No music"
@@ -1004,7 +1012,7 @@ msgstr "Personen"
 
 #: web/routes/create/+page.svelte:462
 msgid "People condition"
-msgstr "Personenbedingung"
+msgstr "Personenfilter"
 
 #: web/routes/create/+page.svelte:351
 msgid "Period (6m, 1y, 2w)"
@@ -1037,7 +1045,7 @@ msgstr "Bildprüfung"
 
 #: web/lib/JobPanel.svelte:74
 msgid "Pictures just read"
-msgstr "Zuletzt gelesene Bilder"
+msgstr "Zuletzt analysierte Bilder"
 
 #: web/lib/AskPanel.svelte:235
 msgid "Pictures left after each step"
@@ -1056,7 +1064,7 @@ msgstr "Bilder: {count}"
 
 #: web/lib/RenderPanel.svelte:185
 msgid "Playful bright"
-msgstr "Playful bright"
+msgstr "Verspielt und hell"
 
 #: web/lib/labels.ts:73
 msgid "Please enter both URL and API key"
@@ -1081,7 +1089,7 @@ msgstr "Vorschau"
 
 #: web/lib/RenderPanel.svelte:257
 msgid "Preview a track"
-msgstr "Titel anhören"
+msgstr "Musikstück anhören"
 
 #: web/routes/runs/[run_id]/pool/+page.svelte:150
 msgid "Preview with these choices"
@@ -1105,15 +1113,15 @@ msgstr "Qualität"
 
 #: web/lib/RenderPanel.svelte:183
 msgid "Random"
-msgstr "Random"
+msgstr "Zufällig"
 
 #: web/lib/labels.ts:86
 msgid "Reading picture facts"
-msgstr "Bildfakten werden gelesen"
+msgstr "Bilddaten werden gelesen"
 
 #: web/lib/labels.ts:82
 msgid "Reading what each picture shows"
-msgstr "Es wird gelesen, was jedes Bild zeigt"
+msgstr "Bildinhalte werden analysiert"
 
 #: web/lib/ShotInspector.svelte:160
 msgid "Recorded alternative"
@@ -1293,8 +1301,8 @@ msgid ""
 "Secrets cannot be saved here until {name} is set. Set it, or keep them in the environment or "
 "config.yaml."
 msgstr ""
-"Geheimnisse können hier erst gespeichert werden, wenn {name} gesetzt ist. Setze es, oder "
-"behalte sie in der Umgebung oder in config.yaml."
+"Um Zugangsdaten hier zu speichern, musst du zuerst {name} setzen. Alternativ kannst du sie in"
+" den Umgebungsvariablen oder in config.yaml hinterlegen."
 
 #: web/lib/SettingsEditor.svelte:37
 #, python-brace-format
@@ -1350,7 +1358,7 @@ msgstr "Intelligent (Überblendungen und Schnitte)"
 
 #: web/lib/RenderPanel.svelte:186
 msgid "Soft romantic"
-msgstr "Soft romantic"
+msgstr "Sanft und romantisch"
 
 #: web/lib/AskPanel.svelte:199
 msgid "Some of its pictures"
@@ -1358,7 +1366,7 @@ msgstr "Einige seiner Bilder"
 
 #: web/lib/labels.ts:69
 msgid "Some pictures were edited without descriptions."
-msgstr "Einige Bilder wurden ohne Beschreibungen bearbeitet."
+msgstr "Einige Bilder wurden ohne Beschreibungen in den Schnitt aufgenommen."
 
 #: web/routes/create/+page.svelte:334
 msgid "South"
@@ -1374,7 +1382,7 @@ msgstr "Frühling"
 
 #: web/lib/RenderPanel.svelte:209
 msgid "Square"
-msgstr "Quadrat"
+msgstr "Quadratisch"
 
 #: web/lib/ShotInspector.svelte:66
 msgid "Start here"
@@ -1477,7 +1485,7 @@ msgstr "Der Schnitt ist fertig."
 
 #: web/lib/RenderPanel.svelte:202
 msgid "The dates and places, never a model"
-msgstr "Die Daten und Orte, nie ein Modell"
+msgstr "Aufnahmedatum und Ort, ohne Modell"
 
 #: web/lib/SettingsEditor.svelte:74
 msgid ""
@@ -1516,8 +1524,9 @@ msgid ""
 "The model reads your words against your prepared library. Preview first: it shows what each "
 "part of the sentence became and how many pictures fit, and films nothing."
 msgstr ""
-"Das Modell liest deine Worte gegen deine vorbereitete Bibliothek. Erst die Vorschau: Sie "
-"zeigt, was aus jedem Teil des Satzes wurde und wie viele Bilder passen, und filmt nichts."
+"Das Modell gleicht deine Anfrage mit den vorbereiteten Bildern deiner Mediathek ab. Öffne "
+"zuerst die Vorschau: Sie zeigt, wie jeder Satzteil verstanden wurde und wie viele Bilder "
+"passen. Dabei wird noch kein Film erstellt."
 
 #: web/lib/RenderPanel.svelte:201
 msgid "The model, when one is configured"
@@ -1542,7 +1551,7 @@ msgstr ""
 
 #: web/lib/AskPanel.svelte:25
 msgid "The pool"
-msgstr "Die Auswahl"
+msgstr "Die verfügbaren Medien"
 
 #: web/lib/AskPanel.svelte:106
 msgid "The preview could not start."
@@ -1550,7 +1559,7 @@ msgstr "Die Vorschau konnte nicht starten."
 
 #: web/lib/RenderPanel.svelte:251
 msgid "The previewed track"
-msgstr "Der angehörte Titel"
+msgstr "Das angehörte Musikstück"
 
 #: web/lib/labels.ts:48
 msgid "The previous automatic memory used this category."
@@ -1586,7 +1595,9 @@ msgstr "Der Upload ist fehlgeschlagen."
 
 #: web/lib/AskPanel.svelte:177
 msgid "The words changed since this preview: preview again before making the film."
-msgstr "Die Worte haben sich seit dieser Vorschau geändert: Erst neu vorschauen, dann den Film machen."
+msgstr ""
+"Deine Anfrage hat sich seit der Vorschau geändert. Öffne eine neue Vorschau, bevor du den "
+"Film erstellst."
 
 #: web/lib/labels.ts:51
 msgid "These people appear in the last two people memories."
@@ -1600,7 +1611,7 @@ msgstr ""
 
 #: web/lib/AskPanel.svelte:31
 msgid "Thin"
-msgstr "Dünn"
+msgstr "Wenig passendes Material"
 
 #: web/lib/labels.ts:49
 msgid "This category already appears twice in the last six memories."
@@ -1609,8 +1620,8 @@ msgstr "Diese Kategorie erscheint bereits zweimal in den letzten sechs Erinnerun
 #: web/routes/runs/[run_id]/pool/+page.svelte:118
 msgid "This run kept no record of its pool. Cut again to see one."
 msgstr ""
-"Für diesen Lauf wurde kein Datensatz zu den Medien gespeichert. Schneide erneut, um einen zu "
-"erhalten."
+"Für diesen Lauf wurde keine Liste der verfügbaren Medien gespeichert. Erstelle den Schnitt "
+"erneut, um sie zu sehen."
 
 #: web/routes/settings/+page.svelte:29
 msgid "Thumbnail cache"
@@ -1618,11 +1629,11 @@ msgstr "Miniaturbild-Cache"
 
 #: web/lib/RenderPanel.svelte:195
 msgid "Title (decided as generate decides when empty)"
-msgstr "Titel (wird wie bei `generate` entschieden, wenn leer)"
+msgstr "Titel (von generate gewählt, wenn leer)"
 
 #: web/lib/RenderPanel.svelte:180
 msgid "Title style"
-msgstr "Title style"
+msgstr "Titelstil"
 
 #: web/routes/create/+page.svelte:350
 msgid "To"
@@ -1671,7 +1682,7 @@ msgstr "Aktualisiert {when}"
 
 #: web/lib/RenderPanel.svelte:260
 msgid "Upload a track"
-msgstr "Titel hochladen"
+msgstr "Musikstück hochladen"
 
 #: web/lib/UploadFilm.svelte:23
 msgid "Upload availability could not be checked."
@@ -1696,7 +1707,9 @@ msgstr "Zu Immich hochgeladen."
 
 #: web/routes/create/+page.svelte:465
 msgid "Use exact library names; each picture must match. It replaces the names above."
-msgstr "Verwende exakte Namen aus der Bibliothek; jedes Bild muss passen. Ersetzt die Namen oben."
+msgstr ""
+"Verwende die genauen Namen aus der Mediathek; jedes Bild muss diese Bedingung erfüllen. Sie "
+"ersetzt die oben ausgewählten Namen."
 
 #: web/lib/ShotInspector.svelte:134
 msgid "Use this picture instead"
@@ -1734,7 +1747,7 @@ msgstr "In Immich ansehen"
 
 #: web/lib/RenderPanel.svelte:185
 msgid "Vintage charm"
-msgstr "Vintage charm"
+msgstr "Nostalgischer Charme"
 
 #: web/routes/login/+page.svelte:53
 msgid "Watch your memories again, in films you can make your own."
@@ -1764,7 +1777,7 @@ msgstr "Was die Regeln des Schnitts aussortieren würden"
 
 #: web/lib/AskPanel.svelte:24
 msgid "What the library measures"
-msgstr "Was die Bibliothek misst"
+msgstr "Was die Mediathek misst"
 
 #: web/lib/RenderPanel.svelte:168
 msgid "What to render"
@@ -1803,8 +1816,9 @@ msgid ""
 "Whose library is this? Relationships to the library owner, the family seat and the titles "
 "depend on it. A scan only guesses; what you pick here stays."
 msgstr ""
-"Wessen Mediathek ist das? Die Beziehungen zum Inhaber der Mediathek, der Familienplatz und "
-"die Titel hängen davon ab. Ein Scan rät nur; was du hier wählst, bleibt."
+"Wem gehört diese Mediathek? Davon hängen die Beziehungen zu dieser Person, der Platz für die "
+"Familie im Film und die Titel ab. Der Scan schlägt jemanden vor; deine Auswahl bleibt "
+"gespeichert."
 
 #: web/routes/suggestions/+page.svelte:120
 msgid "Why other suggestions were skipped"
@@ -1918,7 +1932,7 @@ msgstr "{content} Bilder und Video"
 #: web/routes/runs/[run_id]/+page.svelte:305
 #, python-brace-format
 msgid "{content}: the film grows past its {budget} to hold them"
-msgstr "{content}: Der Film wird länger als sein {budget}, um sie unterzubringen"
+msgstr "{content}: Der Film wird länger als die geplanten {budget}, damit alles hineinpasst"
 
 #: web/routes/runs/+page.svelte:72
 #, python-brace-format
@@ -1938,7 +1952,7 @@ msgstr "{done} von {total}"
 #: web/lib/AskPanel.svelte:188
 #, python-brace-format
 msgid "{passed} of {checked} pictures pass the rules checked before cutting."
-msgstr "{passed} von {checked} Bildern bestehen die Regeln, die vor dem Schnitt geprüft werden."
+msgstr "{passed} von {checked} Bildern erfüllen die vor dem Schnitt geprüften Kriterien."
 
 #: web/lib/AskPanel.svelte:186
 #, python-brace-format
@@ -1946,8 +1960,8 @@ msgid ""
 "{passed} of {checked} prepared pictures pass the rules checked before cutting; {unread} are "
 "not prepared yet."
 msgstr ""
-"{passed} von {checked} vorbereiteten Bildern bestehen die Regeln, die vor dem Schnitt geprüft"
-" werden; {unread} sind noch nicht vorbereitet."
+"{passed} von {checked} vorbereiteten Bildern erfüllen die vor dem Schnitt geprüften "
+"Kriterien; {unread} sind noch nicht vorbereitet."
 
 #: web/lib/AskPanel.svelte:167
 #, python-brace-format

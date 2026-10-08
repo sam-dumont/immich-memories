@@ -70,7 +70,7 @@ msgstr "A month"
 
 msgid "trip.days"
 msgid_plural "trip.days"
-msgstr[0] "{n} days"
+msgstr[0] "{n} day"
 msgstr[1] "{n} days"
 
 msgid "holiday.new_year"

@@ -50,10 +50,10 @@ msgid "title.on_this_day"
 msgstr "{month_num}월 {day}일"
 
 msgid "title.on_this_day_subtitle"
-msgstr "그해 오늘"
+msgstr "여러 해에 걸친 추억"
 
 msgid "title.person_spotlight_subtitle"
-msgstr "{person}, 우리의 한 해"
+msgstr "{person}: 함께한 한 해"
 
 msgid "trip.day"
 msgstr "하루"

@@ -537,6 +537,10 @@ msgstr "Grandparents, siblings, the group chat. Private moments stay out."
 msgid "Grouped condition"
 msgstr "Grouped condition"
 
+#: web/lib/RenderPanel.svelte:177
+msgid "Hard cut"
+msgstr "Hard cut"
+
 #: web/routes/runs/[run_id]/pool/+page.svelte:95
 #, python-brace-format
 msgid "Held: {reasons}."
