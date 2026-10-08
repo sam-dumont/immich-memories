@@ -25,16 +25,17 @@ updates in place rather than piling up history.
 
 | Platform | Install method | Release verified | Hardware | Tier reached | Status | Notes |
 |---|---|---|---|---|---|---|
-| Linux x86-64 | [Basic Compose](./docker.md) | n/a | any x86-64, software encoding | Basic | Documented, untested | Pull, run, first film not yet recorded |
-| Synology | [SSH + Compose](./platforms/synology.md#sshcompose-installation-from-published-files) | v0.103.0 | DS423+ class, software H.264 | Basic | Verified first run | Clean volume, fresh models, shipping Compose file |
+| Linux x86-64 | [Basic Compose](./docker.md) | v1.0.0-rc.7 | Xeon E3-1240 v6, 4 vCPU, software H.264 | Basic | Verified first run | Docker in Docker on a Kubernetes node; album and month films, network capture: only Immich and GitHub during `models fetch` ([transcript](https://github.com/sam-dumont/immich-memories/issues/956#issuecomment-6053816158)) |
+| Synology | [SSH + Compose](./platforms/synology.md#sshcompose-installation-from-published-files) | v1.0.0-rc.7 | DS423+ (Celeron J4125), software H.264 | Basic | Verified first run | Cold pull; web UI over the LAN with sign-in; 30 s album and 60 s month film ([transcript](https://github.com/sam-dumont/immich-memories/issues/956#issuecomment-6053816158)) |
 | Synology | [Container Manager GUI](./platforms/synology.md) | n/a | any Synology, software encoding | Basic | Documented, untested | Project wizard not yet exercised |
 | Unraid | [GUI template](./platforms/unraid.md) | n/a | any x86-64, software encoding | Basic | Documented, untested | [Report your results](https://github.com/sam-dumont/immich-memories/issues) |
 | TrueNAS | [Custom app](./platforms/truenas.md) | n/a | any x86-64, software encoding | Basic | Documented, untested | [Report your results](https://github.com/sam-dumont/immich-memories/issues) |
 | Linux ARM64 | [Compose](./docker.md) | n/a | ARM64, software encoding | Basic | Documented, untested | GPU overlays need CUDA and don't apply here |
 | Apple Silicon | [Docker Desktop](./offline.md) | v0.103.0 | M-series, software H.264 | Basic | Partial | Isolated runtime, not a public-image pull |
-| Apple Silicon | [Native uv/pip](./uv-pip.md) | v0.103.0 | M-series, Metal/VideoToolbox | Basic | Partial | Install, preflight, an album film and a month film passed; GPU services not exercised |
-| Kubernetes (RKE2) | [Generated manifests, GPU](./kubernetes.md#generated-tier-setup) | v0.103.0 | NVIDIA T1000 8 GB | GPU | Partial | GPU sharing and store placement needed operator fixes |
-| Kubernetes | [Independently managed services](./kubernetes.md#set-the-preparation-tier) | v0.103.0 | NVIDIA T1000 8 GB | GPU | Partial | Services already running; setup corrections disclosed |
+| Apple Silicon | [Native uv/pip](./uv-pip.md) | v1.0.0-rc.7 | M5 Max and M2 Pro, Metal/VideoToolbox | Basic | Verified first run | PyPI install, album and month films; only Immich contacted. A scheduled run against a LAN Immich needs the [Local Network permission](./uv-pip.md) ([transcript](https://github.com/sam-dumont/immich-memories/issues/956#issuecomment-6053816158)) |
+| Kubernetes (RKE2) | [Generated manifests, GPU](./kubernetes.md#generated-tier-setup) | v1.0.0-rc.7 | NVIDIA T1000 8 GB | GPU | Verified first run | Release bundle and setup builder, app pod with its own GPU (NVENC, GPU titles), scheduled film from the CronJob ([transcript](https://github.com/sam-dumont/immich-memories/issues/956#issuecomment-6053816158)) |
+| Kubernetes (RKE2) | [Generated manifests, Basic with scheduled films](./kubernetes.md#batch-jobs) | v1.0.0-rc.5 | 4 CPUs, software H.264 | Basic | Verified first run | The CronJob's first scheduled attempt made a 9 min year film from 659 pictures in about an hour ([transcript](https://github.com/sam-dumont/immich-memories/issues/956#issuecomment-6039162730)) |
+| Kubernetes | [Independently managed services](./kubernetes.md#set-the-preparation-tier) | v1.0.0-rc.5 | NVIDIA T1000 8 GB | GPU | Partial | In daily use: a scheduled film every night, uploaded to Immich; not reinstalled from scratch |
 | NAS app | [Standalone Docker GPU worker](../better/gpu-render.md) | n/a | n/a | GPU | Documented, untested | Kubernetes worker route is verified; Docker worker is not |
 | NAS app | [Kubernetes GPU worker](./kubernetes.md) | v0.103.0 | NVIDIA T1000 8 GB | GPU | Partial | Worker routing needed a fix before the film completed |
 | Basic | [Prepared models, blocked internet](./offline.md) | v0.103.0 | Docker and Kubernetes | Basic | Partial | Isolated runtime and full decode passed; release-download path not separately checked |
@@ -57,9 +58,8 @@ The client implements the **Immich v2 and v3 API contracts** and detects the maj
 `/api/server/version`. Leave `api_version: auto`; forcing `v2` or `v3` is a troubleshooting
 override, not a way to make an unsupported server supported.
 
-Immich 2.7 through the current 3.x releases are covered by that API contract and by the rows
-above. A patch version outside those families should still work if its API major matches; run
-the check below before relying on it.
+The first runs above used Immich 3.2; the test suite also covers 2.7. Newer 3.x releases speak
+the same API contract and should work; run the check below before relying on one.
 
 ```bash
 immich-memories config test
