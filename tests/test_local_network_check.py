@@ -93,6 +93,16 @@ def test_a_failing_job_names_the_interpreter_and_where_to_allow_it(tmp_path):
     assert "System Settings > Privacy & Security > Local Network" in outcome.advice
 
 
+def test_a_failing_check_says_to_answer_the_prompt_on_the_macs_screen(tmp_path):
+    # An unanswered prompt is a no: the fix is clicking Allow on the Mac, then checking again.
+    outcome = _run(tmp_path, FakeLaunchd(1))
+
+    assert f'"{Path(PYTHON).name}"' in outcome.advice
+    assert "on this Mac's screen" in outcome.advice
+    assert "click Allow" in outcome.advice
+    assert "auto install` again" in outcome.advice
+
+
 def test_a_job_that_never_answers_fails_after_the_wait(tmp_path):
     launchd = FakeLaunchd(None)
 

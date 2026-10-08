@@ -76,11 +76,15 @@ def _check_plist(shim: Path, config_path: Path | None, work_dir: Path) -> dict:
 
 
 def _advice(interpreter: str, *, timed_out: bool) -> str:
+    # The check itself makes macOS ask, on the Mac's own screen; an unanswered question is a
+    # no. Clicking Allow there is the fix, so that comes first and Settings is the fallback.
     waited = " It gave no answer in time." if timed_out else ""
     return (
-        f"Immich is on your local network, and macOS did not let a scheduled job reach it.{waited} "
-        f"Allow {interpreter} in {SETTINGS_PATH}, then run `immich-memories auto install` again. "
-        "The permission belongs to that interpreter, not to Terminal."
+        "Immich is on your local network, and macOS has not let a scheduled job reach it yet."
+        f'{waited} macOS is asking on this Mac\'s screen whether "{Path(interpreter).name}" may '
+        "find devices on your local network: click Allow, then run `immich-memories auto install` "
+        f"again. No prompt on the screen? Turn on {interpreter} in {SETTINGS_PATH}. The question "
+        "belongs to that interpreter, not to Terminal, and only someone at the Mac can answer it."
     )
 
 
