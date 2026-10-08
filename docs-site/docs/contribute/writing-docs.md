@@ -61,3 +61,19 @@ load the `sams-voice:sams-voice` skill before writing. `make docs-voice` catches
 ## Gates
 
 `make docs-voice`, `make docs-build`, `make docs-cli-check`, `make docs-config-check`.
+
+## Website analytics
+
+The docs tracker is bundled in `static/js/app.js`. The Pages workflow reads two GitHub Actions
+repository variables at build time: `DOCS_ANALYTICS_DOMAIN` for the Plausible site identifier and
+`DOCS_ANALYTICS_ENDPOINT` for the masked event collector URL. Set both under Settings, Secrets
+and variables, Actions, Variables. These are public configuration: visitors can read them in the
+built HTML and network requests.
+
+With both variables unset, the build loads no tracker. Local builds and forks send no analytics
+by default. Setting only one variable fails the build. The script follows the documentation's
+base path, including candidate docs under `/next/`.
+
+`make docs-build` checks the built pages and runs the bundled tracker against a fake browser and
+collector. CI uses example values; the tests send no network requests. The tracker's source
+revision, build variant and MIT notice are recorded in its header.

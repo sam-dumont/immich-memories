@@ -577,6 +577,10 @@ jobs:
 
   docs:
     name: Docs Build
+    env:
+      # Exercise configured analytics without using the production collector.
+      DOCS_ANALYTICS_DOMAIN: docs.example.com
+      DOCS_ANALYTICS_ENDPOINT: https://metrics.example.com/api/event
     if: github.repository_id == '1174219883' && needs.changes.outputs.docs_site == 'true'
     needs: [changes]
     runs-on: ubuntu-24.04
