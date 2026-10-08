@@ -155,3 +155,44 @@ def test_a_rules_film_holds_its_stills_by_what_they_show():
     assert holds["empty0"] == MIN_CARRIER_SECONDS
     assert holds["people1"] > holds["empty0"]
     assert holds["star2"] > holds["empty0"]
+
+
+@pytest.mark.parametrize("excluded", [None, "never_auto", "document"])
+def test_an_event_reports_burst_deduplication_once(caplog, excluded):
+    import logging
+
+    assets = [_asset("picture0"), _asset("picture1"), _asset("picture2")]
+    source = SimpleNamespace(
+        assets={a.id: a for a in assets},
+        motion_residuals={},
+        clip_frames={},
+        speech_regions={},
+        config=Config(),
+        pixel_facts={},
+    )
+    wall = SimpleNamespace(
+        event_assets={"F01": [a.id for a in assets]},
+        moment_of_asset={a.id: f"M{n}" for n, a in enumerate(assets)},
+    )
+    ports = SimpleNamespace(
+        resolve_motion=None,
+        live_source_integrity=None,
+        thumbnail_hash=lambda _asset_id: "0123456789abcdef",
+        rules=None,
+    )
+    builder = UnitBuilder(
+        source,
+        ports,
+        wall,
+        renderings={},
+        never_auto={"picture0"} if excluded == "never_auto" else set(),
+        document_sources={"picture0": "document"} if excluded == "document" else {},
+    )
+    with caplog.at_level(logging.INFO):
+        units = builder.units_of("F01")
+
+    assert len(units) == 1
+    assert builder.evidence_pictures["F01"] == 1
+    assert len([r for r in caplog.records if "Burst de-duplication:" in r.getMessage()]) == 1
+    if excluded:
+        assert units[0]["asset_id"] != "picture0"

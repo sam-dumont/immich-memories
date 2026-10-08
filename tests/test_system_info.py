@@ -25,6 +25,14 @@ def _reinitialized(**_kwargs) -> None:
 class TestCheckKernelLibrary:
     """Kernel-library detection must distinguish absence from a broken install."""
 
+    @pytest.fixture(autouse=True)
+    def _available_gpu(self, monkeypatch):
+        # WHY: these runtime tests need a usable GPU independent of the host running them.
+        monkeypatch.setattr(
+            "immich_memories.titles.kernel_backend_probe.gpu_backend",
+            lambda _system: ("Metal", ()),
+        )
+
     def test_reuses_initialized_title_runtime_without_reinitializing_it(
         self, monkeypatch: pytest.MonkeyPatch
     ):

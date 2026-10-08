@@ -68,6 +68,15 @@ class RunDatabase:
         except IntegrityError as error:
             raise DuplicateRunError(f"Pipeline run already exists: {run.run_id}") from error
 
+    def record_system_info(self, run_id: str, system_info: dict) -> None:
+        """Attach diagnostics after a run has connected to its library."""
+        with self.store.begin() as conn:
+            conn.execute(
+                sa.update(pipeline_runs)
+                .where(_RUNS.run_id == run_id)
+                .values(system_info=system_info)
+            )
+
     def update_operational_phase(self, run_id: str, event: PhaseEvent) -> bool:
         """Persist a monotonic run phase and mirror its exact automation attempt."""
         with self.store.begin() as conn:

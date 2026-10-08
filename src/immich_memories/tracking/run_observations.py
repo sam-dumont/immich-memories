@@ -26,6 +26,12 @@ def current_tracker() -> RunTracker | None:
     return _tracker.get()
 
 
+def record_connected_system() -> None:
+    """Attach hardware diagnostics to an observed run after Immich answers."""
+    if tracker := current_tracker():
+        tracker.record_system_info()
+
+
 @contextmanager
 def observe_run(
     store: Store,
@@ -166,7 +172,7 @@ def _export_timings(store: Store, run_id: str, collected: timing.Collector) -> N
         logging.getLogger(__name__).warning("Could not mirror timings into the attempt directory")
 
 
-def observed_command(source: str):
+def observed_command(source: str, *, capture_system: bool = True):
     """Wrap a Click command after its context has resolved the configured store."""
 
     def decorate(command):
@@ -181,6 +187,7 @@ def observed_command(source: str):
                 source=kwargs.get("source") or source,
                 memory_type=kwargs.get("memory_type"),
                 startup=process_start.claim(),
+                capture_system=capture_system,
             ):
                 from immich_memories.tracking.report_context import record_config
 

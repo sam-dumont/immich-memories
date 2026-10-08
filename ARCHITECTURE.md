@@ -1293,6 +1293,13 @@ flowchart TD
   timing --> projection["Project render inputs"]
 ```
 
+`photos/encoding.py` resolves each photo intermediate after its gain map has been decoded.
+The generation caller supplies output settings, format overrides and hardware capabilities;
+SDR sources and SDR films use H.264, while an HDR source in an HDR film retains PQ HEVC.
+Title rendering and system diagnostics check the cached GPU probes before loading title kernels.
+CLI generation records its run before connecting, then captures hardware diagnostics only after
+Immich answers, so connection failures still have history without paying for GPU startup.
+
 `titles/map_tiles.py` owns satellite tile fetching and the bounded decoded-pixel cache.
 Map animations reuse tiles across frames and release both caches when a card finishes or fails.
 

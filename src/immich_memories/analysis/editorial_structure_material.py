@@ -469,7 +469,7 @@ class UnitBuilder:
         regions = banked_unit_regions(unit, self._speech, buffer=self._speech_buffer)
         return unit if regions is None else unit | {"speech_regions": regions}
 
-    def _distinct(self, units: list[dict]) -> list[dict]:
+    def _distinct(self, units: list[dict], *, report: bool = True) -> list[dict]:
         # The favourite wins its moment. A reader with no model behind it cannot come back
         # to a moment whose favourite is refused as a carrier, so it keeps the moment's
         # other frames: the capture-group order still puts the favourite in front of them.
@@ -488,7 +488,7 @@ class UnitBuilder:
         ]
         kept = set(
             drop_burst_duplicates(
-                cands, window_seconds=self._window, hash_threshold=self._threshold
+                cands, window_seconds=self._window, hash_threshold=self._threshold, report=report
             )
         )
         # A real duplicate has already been removed. Time alone cannot distinguish
@@ -500,7 +500,6 @@ class UnitBuilder:
         ids.sort(key=lambda a: self._assets[a].file_created_at)
         units = self._raw_units(ids)
         shareable, excluded = _share.partition_units(units, self._never_auto)
-        self.evidence_pictures[f] = len(self._distinct(units))
         if excluded:
             self.never_auto_excluded[f] = [
                 {"asset_id": u["asset_id"], "members": u["members"], "kind": u["kind"]}
@@ -509,7 +508,11 @@ class UnitBuilder:
         scene_units, documents = _share.partition_units(shareable, set(self._document_sources))
         if documents:
             self.document_excluded[f] = [u["asset_id"] for u in documents]
-        return self._distinct(scene_units)
+        distinct = self._distinct(scene_units)
+        self.evidence_pictures[f] = (
+            len(self._distinct(units, report=False)) if excluded or documents else len(distinct)
+        )
+        return distinct
 
 
 # What a unit's rendering decides, as opposed to where the story put it.

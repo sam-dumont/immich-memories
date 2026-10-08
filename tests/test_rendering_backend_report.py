@@ -125,3 +125,47 @@ def test_cpu_titles_on_a_gpu_tier_still_warn(config, caplog) -> None:
     records = _cpu_fallback_logged_during("gpu", config, caplog)
 
     assert [r.levelno for r in records] == [logging.WARNING]
+
+
+def test_host_without_gpu_never_compiles_title_kernels(config, caplog):
+    with (
+        # WHY: a CPU-only host can pass the native CPU safety probe.
+        patch(
+            "immich_memories.titles.kernel_backend_probe.kernel_dispatch_failure", return_value=None
+        ),
+        # WHY: cached driver probes report that no GPU can dispatch here.
+        patch(
+            "immich_memories.titles.kernel_backend_probe.gpu_backend",
+            return_value=(None, ("CUDA: found no device", "Vulkan: found no device")),
+        ),
+        # WHY: native title compilation must never start on this host.
+        patch(
+            "immich_memories.titles.renderer_kernels.init_kernels",
+            side_effect=AssertionError("CPU-only title kernels must not compile"),
+        ),
+        caplog.at_level(logging.INFO),
+    ):
+        service = RenderingService(config)
+
+    assert not service.use_gpu
+    assert "using FFmpeg animated titles with raster text" in caplog.text
+    assert "found no device" in caplog.text
+
+
+def test_system_report_on_cpu_host_does_not_compile_title_kernels():
+    from immich_memories.tracking.system_info import capture_system_info
+
+    with (
+        # WHY: a CPU-only host can pass the native CPU safety probe.
+        patch(
+            "immich_memories.titles.kernel_backend_probe.kernel_dispatch_failure", return_value=None
+        ),
+        # WHY: native GPU probes find no usable device.
+        patch("immich_memories.titles.kernel_backend_probe.gpu_backend", return_value=(None, ())),
+        # WHY: collecting diagnostics must not compile native title kernels.
+        patch(
+            "immich_memories.titles.kernels.init_kernels",
+            side_effect=AssertionError("System reports must not compile title kernels"),
+        ),
+    ):
+        assert not capture_system_info().gpu_kernels_available

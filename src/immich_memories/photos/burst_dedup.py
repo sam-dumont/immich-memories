@@ -37,6 +37,7 @@ def drop_burst_duplicates(
     *,
     window_seconds: float,
     hash_threshold: int,
+    report: bool = True,
 ) -> list[str]:
     """Keep the best-scored photo from each burst, in input order.
 
@@ -65,7 +66,7 @@ def drop_burst_duplicates(
             best = max(burst, key=lambda p: ranking_key(p, p.score))
             superseded.update(p.key for p in burst if p.key != best.key)
 
-    if superseded:
+    if superseded and report:
         logger.info(
             "Burst de-duplication: %d of %d photos dropped as near-identical frames within %.0fs",
             len(superseded),

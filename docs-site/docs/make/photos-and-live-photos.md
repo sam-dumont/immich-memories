@@ -44,6 +44,8 @@ Untick **Include Live Photos**, pass `--no-live-photos`, or set `advanced.analys
 
 ## HDR, end to end
 
-HDR preservation depends on the source and encoding hardware. On the Basic tier, Live Photo merges are limited to 1080p. On that tier, a device with hardware H.264 but no hardware HEVC tone-maps HDR photos and companions to SDR during preparation.
+Plain photos use an SDR H.264 clip during preparation, with hardware encoding when available. Gain-mapped HDR photos keep HDR only when the film uses HDR H.265; an SDR film tone-maps them during preparation. Software H.264 uses CRF 18 for these clips.
+
+On the Basic tier, Live Photo merges are limited to 1080p. With automatic HDR output, a device with hardware H.264 but no hardware HEVC tone-maps HDR photos and companions to SDR during preparation. An explicit HDR output keeps photo HDR through software HEVC.
 
 Use [hardware encoding](../run/hardware.md) to check what your machine supports. The [media processing reference](../reference/media-processing.md) covers frame verification, audio alignment, supported devices, HDR formats and gain maps.

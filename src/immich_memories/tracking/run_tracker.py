@@ -95,13 +95,6 @@ class RunTracker:
         Returns:
             The run ID.
         """
-        system_info = None
-        if self._capture_system:
-            try:
-                system_info = capture_system_info()
-            except (OSError, subprocess.SubprocessError, RuntimeError) as e:
-                logger.warning(f"Failed to capture system info: {e}")
-
         run = RunMetadata(
             run_id=self.run_id,
             created_at=datetime.now(tz=UTC),
@@ -117,13 +110,14 @@ class RunTracker:
             date_range_start=date_range.start.date() if date_range else None,
             date_range_end=date_range.end.date() if date_range else None,
             target_duration_seconds=target_duration_seconds,
-            system_info=system_info,
         )
 
         # The lease comes first: a sweep that sees the row must also see its owner.
         self._hold_lease()
         self.db.save_run(run)
         self._run = run
+        if self._capture_system:
+            self.record_system_info()
         from immich_memories.tracking.timing import active
 
         if collected := active():
@@ -131,6 +125,20 @@ class RunTracker:
         logger.info(f"Started run {self.run_id}")
 
         return self.run_id
+
+    def record_system_info(self) -> None:
+        """Capture diagnostics once, after the caller has connected to Immich."""
+        run = self._require_started()
+        if run.system_info is not None:
+            return
+        try:
+            info = capture_system_info()
+        except (OSError, subprocess.SubprocessError, RuntimeError) as error:
+            logger.warning("Failed to capture system info: %s", error)
+            return
+        if info is not None:
+            run.system_info = info
+            self.db.record_system_info(self.run_id, info.to_dict())
 
     def _hold_lease(self) -> None:
         try:
