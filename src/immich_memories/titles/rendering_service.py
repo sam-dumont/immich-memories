@@ -7,6 +7,7 @@ video creation methods for titles and map backgrounds.
 from __future__ import annotations
 
 import logging
+import platform
 import subprocess
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -49,9 +50,11 @@ def load_kernel_renderer() -> KernelRenderer | None:
     line of output. The probe spends a child interpreter to find out first, and
     nothing is imported until the child has come back alive.
     """
-    from .kernel_backend_probe import kernel_dispatch_failure
+    from .kernel_backend_probe import gpu_backend, kernel_dispatch_failure
 
     if kernel_dispatch_failure() is not None:
+        return None
+    if gpu_backend(platform.system())[0] is None:
         return None
     from .kernel_video import create_title_video_gpu
     from .kernels import gpu_startup_failures
@@ -118,9 +121,12 @@ class RenderingService:
         was actively misleading: the library is installed and imports fine, it
         is the first kernel it compiles that the processor cannot execute.
         """
-        from .kernel_backend_probe import kernel_dispatch_failure
+        from .kernel_backend_probe import gpu_backend, kernel_dispatch_failure
 
-        return kernel_dispatch_failure() or "the kernel library found no usable backend here"
+        if reason := kernel_dispatch_failure():
+            return reason
+        _, failures = gpu_backend(platform.system())
+        return "; ".join(failures) or "the kernel library found no usable backend here"
 
     @property
     def use_gpu(self) -> bool:

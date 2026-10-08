@@ -95,11 +95,11 @@ def test_a_hardware_encode_is_untouched(tmp_path, monkeypatch, container):
 
 
 def test_photo_clips_merge_the_lookahead_into_their_own_x265_params(container, tmp_path):
-    from tests.test_photo_render import _command, _sdr_photo
+    from tests.test_photo_render import _command, _gain_mapped_photo
 
     container(3)
 
-    args = _command(tmp_path, _sdr_photo(tmp_path), zscale=True, frame_size=(2160, 3840))
+    args = _command(tmp_path, _gain_mapped_photo(tmp_path), zscale=True, frame_size=(2160, 3840))
     params = args[args.index("-x265-params") + 1]
     assert params.startswith("hdr-opt=1:")
     assert params.endswith(":rc-lookahead=5")

@@ -1,4 +1,4 @@
-"""A photograph becomes a clip: PQ when FFmpeg can convert it, plain SDR when it cannot."""
+"""A photo clip preserves HDR only when its source and the film need it."""
 
 from __future__ import annotations
 
@@ -89,12 +89,13 @@ def _command(
     return ffmpeg.command
 
 
-def test_a_photo_is_piped_8_bit_and_leaves_as_pq(tmp_path):
+def test_a_plain_photo_uses_sdr_h264_even_with_zscale(tmp_path):
     command = _command(tmp_path, _sdr_photo(tmp_path), zscale=True)
 
     assert command[command.index("-pix_fmt") + 1] == "rgb24"
     assert "zscale=t=smpte2084:tin=iec61966-2-1" in command[command.index("-vf") + 1]
-    assert command[command.index("-color_trc") + 1] == "smpte2084"
+    assert command[command.index("-color_trc") + 1] == "bt709"
+    assert command[command.index("-c:v") + 1] == "libx264"
 
 
 def test_a_gain_mapped_photo_is_piped_16_bit_linear(tmp_path):
@@ -118,7 +119,7 @@ def test_photo_preparation_uses_verified_nvidia_hardware(tmp_path):
             return_value=capabilities,
         ),
     ):
-        clip = _render(tmp_path, _sdr_photo(tmp_path))
+        clip = _render(tmp_path, _gain_mapped_photo(tmp_path))
     assert clip is not None
     assert ffmpeg.command[ffmpeg.command.index("-c:v") + 1] == "hevc_nvenc"
     assert ffmpeg.command[ffmpeg.command.index("-color_trc") + 1] == "smpte2084"
@@ -171,7 +172,7 @@ def test_without_zscale_every_photo_is_plain_sdr_h264(tmp_path, source):
     [("hevc_videotoolbox libx265", "hevc_videotoolbox"), ("libx264 libx265", "libx265")],
 )
 def test_the_hevc_encoder_is_the_hardware_one_when_ffmpeg_has_it(tmp_path, encoders, codec):
-    command = _command(tmp_path, _sdr_photo(tmp_path), zscale=True, encoders=encoders)
+    command = _command(tmp_path, _gain_mapped_photo(tmp_path), zscale=True, encoders=encoders)
 
     assert command[command.index("-c:v") + 1] == codec
 

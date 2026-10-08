@@ -40,10 +40,11 @@ def render_photo_as_clip(
     then streams Ken Burns frames to FFmpeg.
     """
     from immich_memories.config_models_render import normalize_scale_mode
-    from immich_memories.photos.encoding import photo_encoding_plan
     from immich_memories.photos.photo_pipeline import render_single_photo
-    from immich_memories.processing.encoding_plan import HdrTransfer
-    from immich_memories.processing.hdr_utilities import check_zscale_available
+    from immich_memories.processing.hardware import (
+        HWAccelCapabilities,
+        detect_hardware_acceleration,
+    )
 
     if not params.client and source_path is None:
         logger.warning("No Immich client — cannot render photo clip")
@@ -65,9 +66,12 @@ def render_photo_as_clip(
         work_dir=photo_dir,
         download_fn=params.client.download_asset if params.client else None,
         source_path=source_path,
-        encoding_plan=photo_encoding_plan(
-            params.config,
-            transfer=HdrTransfer.PQ if check_zscale_available() else HdrTransfer.NONE,
+        encoding_config=params.config,
+        output_format=params.output_format,
+        capabilities=(
+            detect_hardware_acceleration(params.config.hardware.backend)
+            if params.config.hardware.enabled
+            else HWAccelCapabilities()
         ),
         scale_mode=normalize_scale_mode(params.scale_mode or params.config.defaults.scale_mode),
     )

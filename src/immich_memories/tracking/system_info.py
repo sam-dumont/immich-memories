@@ -291,12 +291,14 @@ def _check_kernel_library() -> bool:
     # GPU underneath it. It also must not import the kernel library by name to
     # find out whether it is here: the seam behind this import is the only place
     # that imports it, once.
-    from immich_memories.titles.kernel_backend_probe import kernel_dispatch_failure
+    from immich_memories.titles.kernel_backend_probe import gpu_backend, kernel_dispatch_failure
 
     # WHY before the import below and not after: `kernels` pulls in the library,
     # and a processor without AVX dies inside that import (#910). Capturing a
     # hardware report must not be the thing that kills the run.
     if kernel_dispatch_failure() is not None:
+        return False
+    if gpu_backend(platform.system())[0] is None:
         return False
 
     from immich_memories.titles.kernels import kernels_available

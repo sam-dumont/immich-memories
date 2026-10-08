@@ -12,7 +12,7 @@ import random
 import subprocess
 from collections.abc import Iterator
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import cv2
 import numpy as np
@@ -33,6 +33,10 @@ from immich_memories.processing.clip_encoder import encoder_args_for_plan
 from immich_memories.processing.encoding_plan import EncodingPlan, HdrTransfer
 from immich_memories.processing.ffmpeg_runner import write_frames_to_ffmpeg
 from immich_memories.processing.hardware_encode import apply_hardware_encode
+
+if TYPE_CHECKING:
+    from immich_memories.config_loader import Config
+    from immich_memories.processing.hardware import HWAccelCapabilities
 
 logger = logging.getLogger(__name__)
 
@@ -109,6 +113,9 @@ def render_single_photo(
     *,
     source_path: Path | None = None,
     encoding_plan: EncodingPlan | None = None,
+    encoding_config: Config | None = None,
+    capabilities: HWAccelCapabilities | None = None,
+    output_format: str | None = None,
     scale_mode: str = "blur",
 ) -> AssemblyClip | None:
     """Download, prepare, render (streaming), and encode a single photo.
@@ -141,6 +148,9 @@ def render_single_photo(
             peak_nits=peak_nits,
             primaries=getattr(prepared, "primaries", "bt709"),
             encoding_plan=encoding_plan,
+            encoding_config=encoding_config,
+            capabilities=capabilities,
+            output_format=output_format,
             scale_mode=scale_mode,
         )
 
@@ -222,11 +232,14 @@ def _stream_render_to_mp4(
     peak_nits: int = 203,
     primaries: str = "bt709",
     encoding_plan: EncodingPlan | None = None,
+    encoding_config: Config | None = None,
+    capabilities: HWAccelCapabilities | None = None,
+    output_format: str | None = None,
     scale_mode: str = "blur",
 ) -> None:
     """Render Ken Burns frames and stream directly to FFmpeg.
 
-    Preserves PQ in HEVC, or tone-maps to SDR for a NAS H.264 hardware plan.
+    Preserves HDR in HEVC only for a gain-mapped source in an HDR film.
 
     For gain-mapped HDR sources (16-bit linear from Apple gain map),
     pipes rgb48le and uses zscale tin=linear. For SDR sources (8-bit sRGB),
@@ -240,14 +253,13 @@ def _stream_render_to_mp4(
     )
 
     has_zscale = check_zscale_available()
-    # WHY: photo clips are PQ, gain-mapped or not. HLG is relative -- its OETF
-    # is sqrt(3L) below 1/12 of peak, so a 12-nit shadow encodes at 0.173 and
-    # any link that skips the display OOTF shows it near 200 nits. That washed
-    # out every photograph, HDR and SDR alike. PQ names an absolute luminance,
-    # so nothing downstream can lift the shadows. Video clips stay HLG, which
-    # is what iPhone video is, and the assembler converts between the two.
+    # Source HDR is known only after decoding its gain map. Filter availability
+    # cannot tell us whether the photograph or the requested film needs HDR.
     plan = encoding_plan or photo_encoding_plan(
-        transfer=HdrTransfer.PQ if has_zscale else HdrTransfer.NONE
+        encoding_config,
+        transfer=HdrTransfer.PQ if has_zscale and gain_map_hdr else HdrTransfer.NONE,
+        capabilities=capabilities,
+        format_override=output_format,
     )
     encoder_args = encoder_args_for_plan(plan, frame_size=(target_w, target_h))
     pix_fmt, vf = photo_filter_chain(

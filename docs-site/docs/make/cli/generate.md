@@ -15,6 +15,8 @@ immich-memories generate --memory-type monthly_highlights --year 2025 --month 6
 ```
 
 Run `immich-memories models fetch` before the first preparation or generation.
+Generation connects to Immich before probing local encoding hardware and title rendering.
+If the server cannot be reached, the run history records the failed attempt.
 
 In Docker, prefix every command with `docker compose exec immich-memories`.
 

@@ -75,7 +75,7 @@ from immich_memories.planning.memory_length import (
 )
 from immich_memories.processing.encoding_plan import resolve_output_selection
 from immich_memories.timeperiod import DateRange
-from immich_memories.tracking.run_observations import observed_command
+from immich_memories.tracking.run_observations import observed_command, record_connected_system
 
 
 def _ask_progress_file(output: str | None, *, dry_run: bool) -> Path | None:
@@ -150,7 +150,7 @@ def register_generate_commands(main: click.Group) -> None:
         help="Silence the live progress display and print log lines instead (cron, logs); -v sets the log level",
     )
     @click.pass_context
-    @observed_command("manual")
+    @observed_command("manual", capture_system=False)
     def generate(
         ctx: click.Context,
         year: int | None,
@@ -527,6 +527,7 @@ def register_generate_commands(main: click.Group) -> None:
 
                 with run_client(config.immich, household) as client:
                     progress.update(task, completed=True)
+                    record_connected_system()
                     # Album flow: the album is the pool, so branch before discovery
                     if from_album:
                         from immich_memories.cli._album_generation import (
