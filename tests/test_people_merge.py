@@ -127,3 +127,32 @@ def _MergedPersonLike(person_id, name, birth_date, thumbnail):
 
     normalized = birth_date.date() if isinstance(birth_date, datetime) else birth_date
     return MergedPerson(person_id, name, normalized, thumbnail)
+
+
+def test_native_identity_keeps_the_saved_canonical_id_across_accounts():
+    from immich_memories.api.native_sharing import NativePeople
+
+    store = [_store_person("saved-person", "Alex", ("shared-face", "primary"))]
+    native = NativePeople(
+        binding_servers={"primary": "https://immich.example.test"},
+        origins={"shared-face": "https://immich.example.test"},
+        scopes={"shared-face": frozenset({"primary", "partner"})},
+    )
+    canon = canonical_person_map(store, native=native)
+    merged = merge_people(
+        {
+            "primary": [_Person("shared-face", "Alex")],
+            "partner": [_Person("shared-face", "Other label")],
+        },
+        canon,
+    )
+    assert [(person.id, person.name) for person in merged] == [("saved-person", "Alex")]
+    assert merge_counts({"primary": {"shared-face": 0}, "partner": {"shared-face": 1}}, canon) == {
+        "saved-person": 1
+    }
+    native.origins["shared-face"] = "https://other.example.test"
+    assert ("partner", "shared-face") not in canonical_person_map(store, native=native)
+
+    native.origins.clear()
+    native.binding_servers.clear()
+    assert ("partner", "shared-face") not in canonical_person_map(store, native=native)

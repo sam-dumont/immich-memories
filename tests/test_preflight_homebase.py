@@ -3,9 +3,9 @@ from immich_memories.preflight import CheckStatus
 from immich_memories.preflight_homebase import check_homebase
 
 
-def test_default_homebase_warns_with_the_exact_settings_to_change():
+def test_unset_homebase_is_optional_and_names_the_settings_to_enable_it():
     result = check_homebase(Config())
-    assert result.status is CheckStatus.WARNING
+    assert result.status is CheckStatus.SKIPPED
     assert "trips.homebase_latitude" in result.details
     assert "trips.homebase_longitude" in result.details
 

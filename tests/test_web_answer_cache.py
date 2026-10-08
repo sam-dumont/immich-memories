@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import stat
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -82,3 +83,45 @@ def test_a_failed_refresh_keeps_the_last_answer_and_says_why(tmp_path):
     assert after.value == {"v": 1}
     assert after.error == "Immich did not answer"
     assert after.refreshing is False
+
+
+def test_private_answers_create_private_directories_and_files(tmp_path):
+    clock, pending = Clock(), []
+    shared_parent = tmp_path / "shared"
+    shared_parent.mkdir(mode=0o755)
+    shared_parent.chmod(0o755)
+    directory = shared_parent / "cache" / "web-answers"
+    cache = _cache(directory, clock, pending)
+
+    cache.read("trips-2026", lambda: {"trips": ["private summary"]})
+    pending.pop()()
+
+    assert cache.read("trips-2026", lambda: {}).value == {"trips": ["private summary"]}
+    stored = list(directory.glob("*.json"))
+    assert len(stored) == 1
+    assert stat.S_IMODE(stored[0].stat().st_mode) == 0o600
+    assert stat.S_IMODE(directory.stat().st_mode) == 0o700
+    assert stat.S_IMODE(directory.parent.stat().st_mode) == 0o700
+    assert stat.S_IMODE(shared_parent.stat().st_mode) == 0o755
+
+    # A refresh replaces a legacy readable answer without retaining its old mode.
+    stored[0].chmod(0o644)
+    cache.read("trips-2026", lambda: {"trips": ["refreshed summary"]}, refresh=True)
+    pending.pop()()
+    assert stat.S_IMODE(stored[0].stat().st_mode) == 0o600
+    assert cache.read("trips-2026", lambda: {}).value == {"trips": ["refreshed summary"]}
+
+
+def test_reading_a_legacy_answer_restricts_its_access_without_recomputing(tmp_path):
+    clock, pending = Clock(), []
+    cache = _cache(tmp_path, clock, pending)
+    cache.read("k", lambda: {"private": "summary"})
+    pending.pop()()
+    stored = next(tmp_path.glob("*.json"))
+    stored.chmod(0o644)
+
+    loaded = _cache(tmp_path, clock, pending).read("k", lambda: {"private": "replacement"})
+
+    assert loaded.value == {"private": "summary"}
+    assert pending == []
+    assert stat.S_IMODE(stored.stat().st_mode) == 0o600

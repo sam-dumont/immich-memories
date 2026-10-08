@@ -1872,7 +1872,7 @@ class TestBuildGenerateCommand:
 
 
 class TestSuggestOutput:
-    def test_json_and_table_include_candidate_category(self) -> None:
+    def test_json_keeps_category_and_table_uses_a_readable_type(self) -> None:
         candidate = MemoryCandidate(
             memory_type="monthly_highlights",
             category=CandidateCategory.MONTHLY_REVIEW,
@@ -1895,8 +1895,9 @@ class TestSuggestOutput:
             _print_candidates_table([candidate])
 
         rendered = console.export_text()
-        assert "Category" in rendered
-        assert "monthly_review" in rendered
+        assert "Monthly Highlights" in rendered
+        assert "Category" not in rendered
+        assert "monthly_review" not in rendered
 
 
 class TestFailedCandidateBackoff:

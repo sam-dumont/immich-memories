@@ -262,6 +262,7 @@ def test_final_assembly_runs_on_the_device(tmp_path) -> None:
 
 
 def test_streaming_encoder_runs_on_the_device(tmp_path) -> None:
+    from io import BytesIO
     from unittest.mock import MagicMock, patch
 
     from immich_memories.processing.streaming_assembler import StreamingEncoder
@@ -270,8 +271,9 @@ def test_streaming_encoder_runs_on_the_device(tmp_path) -> None:
 
     # WHY: Popen launches the real encoder; the command is what is under test.
     with patch("immich_memories.processing.streaming_assembler.subprocess.Popen") as popen:
-        popen.return_value = MagicMock(stderr=None)
+        popen.return_value = MagicMock(stdin=BytesIO(), stderr=BytesIO(), returncode=0)
         encoder.start()
+        encoder.finish()
 
     assert_uploads_to_device(popen.call_args.args[0], "qsv")
 

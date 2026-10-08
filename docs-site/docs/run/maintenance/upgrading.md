@@ -28,8 +28,18 @@ fields, but return `null` for operational details without a valid session. This 
 `configuration`, `immich` and `immich_reachable`. Use the HTTP status for readiness probes;
 sign in to read the detailed diagnosis.
 
-Writes under `/api/` and `/auth/`, plus `/logout`, accept bodies up to 4 MiB. Larger requests
+Every HTTP request accepts a body up to 4 MiB, including reads and sign-in pages. Larger requests
 return HTTP 413. The soundtrack upload route keeps its separate 64 MiB file limit.
+
+## Job progress files
+
+The web job directory becomes accessible only to the app account when the web server opens it.
+Existing job history is kept, including older progress files. The parent cache folder keeps its
+permissions.
+
+Files written by `runs render --progress-file` are readable only by the writing account (0600).
+Run a file watcher as that account. Old progress files outside the web job directory keep their
+permissions until rewritten; restrict them yourself if they contain private output paths.
 
 ## API key permissions
 
@@ -118,8 +128,8 @@ proxy, not an upgrade step. Originals are unchanged.
 - **Stacks.** Add `stack.read` to the key if you want a stack (an edit and its original, a burst)
   to play as its top picture. It is optional: without it the run logs one warning per account and
   treats every stacked picture as its own candidate.
-- **Native people sharing** accepts 3.3.0-rc.1, later 3.3.0 release candidates and every 3.3
-  release. See [A second Immich account](../multi-account.mdx).
+- **Native people sharing** is tested on 3.3.0 final. It also accepts 3.3.0-rc.1, later
+  3.3.0 release candidates and every 3.3 release. See [A second Immich account](../multi-account.mdx).
 
 ## Config compatibility
 

@@ -61,9 +61,9 @@ configuration without this verification work.
 
 All three are unauthenticated, on purpose: a container runtime has no session. The Immich check is
 bounded at 5 seconds, and the answer is reused for up to 10 seconds so a busy poller doesn't hammer
-Immich. With login on, only a logged-in session sees the automation and run detail (it carries
-person names and paths); a probe gets the status and the version. A degraded status never stops
-the app: the UI still serves.
+Immich. With login on, only a logged-in session sees configuration, Immich connection, automation
+and run details. A probe gets the status and version; the detail fields are `null`. A degraded
+status never stops the app: the UI still serves.
 
 Example of `/health/ready` with login enabled and no authenticated session. Operational details
 are present as `null`:
@@ -71,14 +71,9 @@ are present as `null`:
 ```json
 {
   "status": "ready",
-  "configuration": "configured",
-  "immich_reachable": true,
-  "immich": {
-    "status": "ready",
-    "reachable": true,
-    "api_version_policy": "auto",
-    "resolved_api_version": "v3"
-  },
+  "configuration": null,
+  "immich_reachable": null,
+  "immich": null,
   "automation": null,
   "last_automation_attempt": null,
   "last_successful_auto_run": null,

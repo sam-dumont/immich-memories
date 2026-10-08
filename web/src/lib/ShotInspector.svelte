@@ -6,7 +6,7 @@
   import { t } from './i18n.svelte';
   import { clock, seatLabel } from './labels';
 
-  let { shot, modelPolish, editor, runId }: { shot: CutShot; modelPolish: boolean; editor: CutEditor; runId: string } = $props();
+  let { shot, modelPolish, captionsRead, editor, runId }: { shot: CutShot; modelPolish: boolean; captionsRead: boolean; editor: CutEditor; runId: string } = $props();
 
   let player = $state<HTMLVideoElement>();
   let comparing = $state<string | null>(null);
@@ -93,6 +93,13 @@
     <p>{shot.reason || t('No reason recorded for this picture.')}</p>
   </section>
 
+  {#if shot.caption}
+    <section class="flex flex-col gap-1">
+      <h3 class="text-xs font-semibold tracking-wide text-gray-600 uppercase dark:text-gray-400">{t('Picture description')}</h3>
+      <p class="text-sm">{shot.caption}</p>
+    </section>
+  {/if}
+
   {#if shot.selection}
     <section class="flex flex-col gap-1">
       <h3 class="text-xs font-semibold tracking-wide text-gray-600 uppercase dark:text-gray-400">{t('How the rules got here')}</h3>
@@ -141,7 +148,7 @@
   <section class="flex flex-col gap-2">
     <h3 class="text-xs font-semibold tracking-wide text-gray-600 uppercase dark:text-gray-400">{t('Model polish')}</h3>
     {#if !modelPolish}
-      <p class="text-sm text-gray-600 dark:text-gray-400">{t('No model read this cut: the rules chose every picture.')}</p>
+      <p class="text-sm text-gray-600 dark:text-gray-400">{captionsRead ? t('Captions were read; the rules chose this cut.') : t('No model read this cut: the rules chose every picture.')}</p>
     {:else if !shot.model}
       <p class="text-sm text-gray-600 dark:text-gray-400">{t('The model had nothing to say about this picture.')}</p>
     {:else}

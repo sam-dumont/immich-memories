@@ -244,3 +244,14 @@ def test_the_assembly_timing_line_names_what_each_figure_measures(title_path, tm
         assert part in line
     assert "ending=" not in line
     assert "title=" not in line
+
+
+def test_final_timeline_explains_source_time_borrowed_by_titles(title_path, tmp_path, caplog):
+    _, build, _ = title_path
+    inserter, clips, assemble, _ = build({}, [content("first"), content("last")])
+    with caplog.at_level("INFO"):
+        inserter.assemble_with_titles(clips, tmp_path / "out.mp4", assemble)
+    lines = [r.getMessage() for r in caplog.records if "Final timeline:" in r.getMessage()]
+    assert len(lines) == 1
+    assert "7.0s content" in lines[0]
+    assert "1.0s of selected content used in title backgrounds" in lines[0]

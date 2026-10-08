@@ -217,6 +217,13 @@ class EvidencePreparation:
                 detail=f"{len(batch.missing_asset_ids)} unreadable annotation lines; "
                 + "; ".join(batch.warnings),
             )
+        write_secret_file(
+            self.artifact_dir() / Path(self.report_name).parent / "captions.private.json",
+            json.dumps(
+                {line.asset_id: line.description for line in batch.lines if line.description},
+                ensure_ascii=False,
+            ),
+        )
         exclusions: dict[str, Any] = screen_document_rejections(batch)
         write_secret_file(
             self.artifact_dir() / Path(self.report_name).parent / "source-gate.private.json",

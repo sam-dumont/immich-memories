@@ -76,15 +76,15 @@ def _check_plist(shim: Path, config_path: Path | None, work_dir: Path) -> dict:
 
 
 def _advice(interpreter: str, *, timed_out: bool) -> str:
-    # The check itself makes macOS ask, on the Mac's own screen; an unanswered question is a
-    # no. Clicking Allow there is the fix, so that comes first and Settings is the fallback.
+    # A failed config test can be a config or server error; it does not prove a prompt exists.
     waited = " It gave no answer in time." if timed_out else ""
     return (
-        "Immich is on your local network, and macOS has not let a scheduled job reach it yet."
-        f'{waited} macOS is asking on this Mac\'s screen whether "{Path(interpreter).name}" may '
-        "find devices on your local network: click Allow, then run `immich-memories auto install` "
-        f"again. No prompt on the screen? Turn on {interpreter} in {SETTINGS_PATH}. The question "
-        "belongs to that interpreter, not to Terminal, and only someone at the Mac can answer it."
+        f"The scheduled connection check failed.{waited} Check the configured Immich address "
+        "and key with `immich-memories config test`. "
+        f'If macOS asks on this Mac\'s screen whether "{Path(interpreter).name}" may '
+        "find devices on your local network, click Allow, then run `immich-memories auto install` "
+        f"again. For a Local Network denial, turn on {interpreter} in {SETTINGS_PATH}. The "
+        "permission belongs to that interpreter, not to Terminal."
     )
 
 

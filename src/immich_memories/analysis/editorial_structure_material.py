@@ -216,6 +216,8 @@ class UnitBuilder:
         self._bound: dict[tuple, dict] = {}
         self._resolve_motion = ports.resolve_motion
         self._thumbnail_hash = ports.thumbnail_hash
+        bursts = getattr(ports, "burst_deduplicator", None)
+        self._deduplicate_photos = bursts.keep if bursts is not None else drop_burst_duplicates
         self._window = source.config.photos.burst_window_seconds
         self._nominal_still = source.config.photos.duration
         self._threshold = source.config.photos.burst_hash_threshold
@@ -478,22 +480,22 @@ class UnitBuilder:
             units = [u for u in units if u["moment"] not in starred_moments or u["favourite"]]
         cands = [
             PhotoCandidate(
-                key=str(i),
+                key=u["asset_id"],
                 taken_at=datetime.fromisoformat(u["taken"]),
                 thumbnail_hash=None if u["kind"] == "video" else self._thumb_hash(u["asset_id"]),
                 score=self.quality(u["asset_id"]),
                 is_favorite=bool(u["favourite"]),
             )
-            for i, u in enumerate(units)
+            for u in units
         ]
         kept = set(
-            drop_burst_duplicates(
+            self._deduplicate_photos(
                 cands, window_seconds=self._window, hash_threshold=self._threshold, report=report
             )
         )
         # A real duplicate has already been removed. Time alone cannot distinguish
         # an echo from the next action or relationship within the same occasion.
-        return [u for i, u in enumerate(units) if str(i) in kept]
+        return [u for u in units if u["asset_id"] in kept]
 
     def units_of(self, f: str) -> list[dict]:
         ids = [a for a in self._event_assets.get(f, []) if a in self._assets]

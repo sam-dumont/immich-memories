@@ -81,7 +81,7 @@ The default is `false`, which keeps existing bindings and makes no native discov
 | --- | --- |
 | Immich 2.x or 3.0–3.1 | Existing bindings, with an unsupported-feature explanation |
 | Immich 3.2.x | Shared recognition IDs within a cluster group; tested on 3.2.4 |
-| Immich 3.3 | Experimental people-access discovery; every 3.3 release, and 3.3.0-rc.1 or a later 3.3.0 release candidate |
+| Immich 3.3 | People-access discovery, tested on 3.3.0 final; 3.3.0-rc.1 and later 3.3.0 candidates are also accepted |
 | Unknown major, newer minor, 3.3.0-rc.0 or a release candidate of any other version | Refused until compatibility is checked |
 
 `api_version: v3` does not enable newer endpoints.
@@ -95,6 +95,9 @@ face clusters or enable partner timelines.
 
 A proven shared ID needs only one local binding. This also works with `--accounts partner`:
 a saved primary binding is reused when the partner proves that ID on the same server.
+The cross-account People page shows that ID as linked without changing the saved registry.
+Native automation counts each selected account's own pictures, so a partner-visible copy
+of the same asset is counted once.
 Distinct IDs still need explicit bindings;
 names alone never merge people. Native mode verifies requested IDs directly when the roster
 omits them. Missing people access, a changed cluster or a failed read stops the run with an

@@ -67,6 +67,7 @@ class Alternative(BaseModel):
 
 
 class CutShot(BaseModel):
+    caption: str = ""
     asset_id: str
     position: int
     start: float
@@ -96,6 +97,7 @@ class Cut(BaseModel):
     content_budget_seconds: float | None
     film_seconds: float | None
     model_polish: bool
+    captions_read: bool = False
     shots: list[CutShot]
 
 

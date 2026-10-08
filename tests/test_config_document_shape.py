@@ -14,7 +14,7 @@ def test_non_mapping_yaml_has_a_clean_error_without_echoing_its_value(tmp_path, 
     path.write_text(text)
     with pytest.raises(yaml.YAMLError, match="mapping"):
         Config.from_yaml(path, stored={})
-    result = CliRunner().invoke(main, ["-c", str(path), "config", "--help"])
+    result = CliRunner().invoke(main, ["-c", str(path), "config", "show"])
     assert result.exit_code != 0
     # WHY: the fallback used to echo str(error), which can quote the source context --
     # exactly where a secret in config.yaml sits. The message names the fix, never the text.

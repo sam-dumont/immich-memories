@@ -250,11 +250,7 @@ def account_people(
     declined = (
         declined_aliases(document).get(entry_ids(wanted)[0], {}).get(name, []) if wanted else []
     )
-    holders = {
-        alias: entry_ids(entry)[0]
-        for entry in entries
-        for alias in ids_by_account(entry).get(name, [])
-    }
+    holders = _holders_for(entries, name, config)
     found = [
         (
             _match(wanted, person)
@@ -282,6 +278,28 @@ def account_people(
         ),
     )
     return [person.model_copy(update={"suggested": rank < _NO_MATCH}) for rank, person in ordered]
+
+
+def _holders_for(entries: list[dict[str, Any]], account: str, config: Config) -> dict[str, str]:
+    from immich_memories.web.media_scope import connection_for
+
+    accounts = {account}
+    if config.immich.native_sharing:
+        origin = connection_for(config.immich, account).url.rstrip("/")
+        accounts.update(
+            name
+            for name in _known_accounts(config)
+            if connection_for(config.immich, name).url.rstrip("/") == origin
+        )
+    # An ID returned by this account proves access to that server's identity. This
+    # is a view only: revoking a share must never leave a new permanent binding.
+    return {
+        alias: entry_ids(entry)[0]
+        for entry in entries
+        for name, aliases in ids_by_account(entry).items()
+        if name in accounts
+        for alias in aliases
+    }
 
 
 _NO_MATCH = 2

@@ -104,13 +104,18 @@ class SearchService:
         person_ids: Sequence[str],
         taken_after: datetime | None = None,
         taken_before: datetime | None = None,
+        *,
+        owner_id: str | None = None,
     ) -> int:
         """How many assets hold every one of these people, optionally taken within a window.
 
         The statistics endpoint answers with a number instead of the assets, so
         the people graph can ask about a thousand pairs in seconds rather than
-        paging two libraries' worth of results per pair.
+        paging two libraries' worth of results per pair. An explicit owner needs
+        metadata pages: statistics also counts visible partners and has no owner filter.
         """
+        if owner_id is not None:
+            return await self._count_owned_people(person_ids, owner_id, taken_after, taken_before)
         payload: dict[str, Any] = {"personIds": list(person_ids)}
         if taken_after:
             payload["takenAfter"] = _api_datetime(taken_after)
@@ -118,6 +123,28 @@ class SearchService:
             payload["takenBefore"] = _api_datetime(taken_before, inclusive_end=True)
         data = await self._request("POST", "/search/statistics", json=payload)
         return data.get("total", 0) if isinstance(data, dict) else 0
+
+    async def _count_owned_people(
+        self,
+        person_ids: Sequence[str],
+        owner_id: str,
+        taken_after: datetime | None,
+        taken_before: datetime | None,
+    ) -> int:
+        owned: set[str] = set()
+        page = 1
+        while True:
+            result = await self.search_metadata(
+                person_ids=list(person_ids),
+                taken_after=taken_after,
+                taken_before=taken_before,
+                page=page,
+                size=_DATE_RANGE_PAGE_SIZE,
+            )
+            owned.update(asset.id for asset in result.assets.items if asset.owner_id == owner_id)
+            if not result.next_page:
+                return len(owned)
+            page = int(result.next_page)
 
     async def get_videos_for_person_and_year(
         self,

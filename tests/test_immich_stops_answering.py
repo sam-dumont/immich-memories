@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from unittest.mock import AsyncMock
+
 import httpx
 import pytest
 
@@ -32,7 +34,8 @@ def _client_refusing_after(answered: int) -> tuple[ImmichClient, list[int]]:
 async def test_a_server_that_starts_refusing_stops_the_run_after_a_few_failed_requests(
     monkeypatch,
 ):
-    monkeypatch.setattr("immich_memories.api.immich._BACKOFF_BASE", 0.0)
+    # WHY: wall-clock delays are external; the real retry and transport still run.
+    monkeypatch.setattr("immich_memories.api.immich.asyncio.sleep", AsyncMock())
     client, _sent = _client_refusing_after(answered=2)
     await client.get_server_info()
     await client.get_server_info()
@@ -53,7 +56,8 @@ async def test_a_server_that_starts_refusing_stops_the_run_after_a_few_failed_re
 
 
 async def test_once_stopped_no_further_request_is_sent(monkeypatch):
-    monkeypatch.setattr("immich_memories.api.immich._BACKOFF_BASE", 0.0)
+    # WHY: wall-clock delays are external; the real retry and transport still run.
+    monkeypatch.setattr("immich_memories.api.immich.asyncio.sleep", AsyncMock())
     client, sent = _client_refusing_after(answered=0)
     with pytest.raises(ImmichStoppedAnswering):
         for _ in range(UNREACHABLE_AFTER_REQUESTS):
@@ -72,8 +76,9 @@ async def test_once_stopped_no_further_request_is_sent(monkeypatch):
 
 
 async def test_one_flaky_request_between_good_ones_never_stops_the_run(monkeypatch):
-    monkeypatch.setattr("immich_memories.api.immich._BACKOFF_BASE", 0.0)
-    calls = iter([False, False, False, True] * 10)
+    # WHY: wall-clock delays are external; the real retry and transport still run.
+    monkeypatch.setattr("immich_memories.api.immich.asyncio.sleep", AsyncMock())
+    calls = iter(([False] * 7 + [True]) * 10)
 
     def handler(request: httpx.Request) -> httpx.Response:
         if next(calls):
@@ -141,7 +146,8 @@ async def test_the_first_contact_gives_up_on_connecting_quickly_then_the_client_
 
 
 async def test_an_immich_that_never_answered_ends_with_the_rerun_hint(monkeypatch):
-    monkeypatch.setattr("immich_memories.api.immich._BACKOFF_BASE", 0.0)
+    # WHY: wall-clock delays are external; the real retry and transport still run.
+    monkeypatch.setattr("immich_memories.api.immich.asyncio.sleep", AsyncMock())
     client, _ = _client_seeing_timeouts(refuse=True)
 
     with pytest.raises(ImmichAPIError) as raised:

@@ -54,6 +54,18 @@ class PhaseHeartbeat:
             self._last = (phase, current, total, message)
             self._last_report = now
 
+    def activity(self, message: str) -> None:
+        """Remember a live substep without changing its outer phase or item counts."""
+        now = self._clock()
+        with self._lock:
+            if self._last is None:
+                return
+            phase, current, total, previous = self._last
+            if message != previous:
+                self._step_started = now
+            self._last = (phase, current, total, message)
+            self._last_report = now
+
     def tick(self) -> bool:
         """Beat once if the phase has been quiet for a whole interval. True when it did."""
         now = self._clock()

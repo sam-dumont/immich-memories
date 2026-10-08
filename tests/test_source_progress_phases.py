@@ -76,3 +76,29 @@ def test_each_new_uncounted_stage_is_reported_not_only_the_first():
         "Editing the memory: 149 pictures going into the family-viewing check",
         "Editing the memory: 149 pictures going into the picture review",
     ]
+
+
+def test_the_heartbeat_remembers_counts_that_are_not_yet_due_for_persistence():
+    from immich_memories.operations.phase_heartbeat import PhaseHeartbeat
+    from immich_memories.operations.phases import OperationalPhase
+
+    now, persisted, beats = [0.0], [], []
+    heartbeat = PhaseHeartbeat(lambda *event: beats.append(event), clock=lambda: now[0])
+    reporter = SourceProgressReporter(
+        CountingDisplay(),
+        0,
+        on_phase=lambda *event: persisted.append(event),
+        on_activity=lambda current, total, message: heartbeat.note(
+            OperationalPhase.SELECTION, current, total, message
+        ),
+        clock=lambda: now[0],
+    )
+    reporter({**_counted(33, 43, "Preparing faces: 33/43"), "stage_identity": ("faces", 43)})
+    now[0] = 1
+    reporter({**_counted(43, 43, "Preparing faces: 43/43"), "stage_identity": ("faces", 43)})
+    now[0] = 32
+    assert heartbeat.tick()
+
+    assert beats[-1][1:3] == (43, 43)
+    assert beats[-1][3].startswith("Preparing faces: 43/43")
+    assert len(persisted) == 1

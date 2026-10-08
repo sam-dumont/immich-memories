@@ -63,12 +63,11 @@ def check_native_sharing(config: Config) -> list[CheckResult]:
                 "Keeping owner reads and existing bindings.",
             )
         ]
-    experimental = "people" in native.modes.values()
     return [
         CheckResult(
             label,
-            CheckStatus.WARNING if experimental else CheckStatus.OK,
-            "Experimental 3.3 people sharing" if experimental else "Native identities available",
+            CheckStatus.OK,
+            "Native identities available",
             "Selected owner keys remain required for favourites and complete libraries. Person access is checked for each requested identity; it does not grant asset access.",
         )
     ]

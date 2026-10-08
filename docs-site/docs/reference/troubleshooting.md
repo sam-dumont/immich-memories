@@ -107,6 +107,20 @@ networks:
 
 Then `docker compose down && docker compose up -d`. On a host that showed this, a 39-picture cut went from more than 11 minutes unfinished to 21 seconds.
 
+## Immich briefly stops answering
+
+At startup, the first permission check makes one connection attempt, with a five-second
+connection timeout. If Immich has not answered, fix the connection and rerun the command.
+
+Library reads and asset downloads try up to seven times after connection failures, timeouts,
+rate limits or temporary server errors. The waits are 1, 2, 4, 8, 15 and 15 seconds: 45 seconds
+of waiting, plus the time each request takes. A brief restart can recover within that window.
+Authentication failures and missing assets are not retried this way.
+
+If Immich stays unavailable, the run stops with the connection diagnosis. Check Immich, then
+rerun the command; completed preparation remains in the cache. Writes keep their shorter
+retry window.
+
 ## The first cut is slow
 
 A cut prepares the pictures it can reach once (previews, pixel facts, heads, detectors, and on the `gpu` and

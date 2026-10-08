@@ -16,6 +16,7 @@ from typing import Any
 from immich_memories.automation.candidates import (
     CandidateCategory,
     MemoryCandidate,
+    explain_empty,
     make_memory_key,
 )
 from immich_memories.automation.closeness import group_weight
@@ -38,6 +39,7 @@ class GroupCandidateDetector:
         groups: list[SavedGroup] | None = None,
         person_asset_counts: dict[str, int] | None = None,
         closeness: dict[str, float] | None = None,
+        notes: list[str] | None = None,
     ) -> list[MemoryCandidate]:
         """Emit one candidate per saved group, skipping any with no pictures in last year.
 
@@ -83,4 +85,8 @@ class GroupCandidateDetector:
                     extra_params={"person_expression": group.expression.to_dict()},
                 )
             )
-        return candidates
+        return explain_empty(
+            candidates,
+            notes,
+            "No group film: no saved group has an unfilmed year with pictures",
+        )

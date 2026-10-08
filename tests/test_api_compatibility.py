@@ -213,15 +213,17 @@ async def test_auto_version_resolution_logs_server_policy_and_result(
 ) -> None:
     client, _requests, expected = version_client
 
-    with caplog.at_level(logging.INFO, logger="immich_memories.api.immich"):
+    with caplog.at_level(logging.DEBUG, logger="immich_memories.api.immich"):
         await client.get_api_version()
 
     expected_server = "2.9.1" if expected is ResolvedApiVersion.V2 else "3.1.0"
     # Only this module's lines: an earlier CLI test in the same worker can leave the root
     # logger at INFO, and then httpx's request line is captured too.
-    assert [r.getMessage() for r in caplog.records if r.name == "immich_memories.api.immich"] == [
-        f"Immich API compatibility: server={expected_server} mode=auto resolved={expected.value}"
-    ]
+    assert [
+        r.getMessage()
+        for r in caplog.records
+        if r.name == "immich_memories.api.immich" and "API compatibility:" in r.getMessage()
+    ] == [f"Immich API compatibility: server={expected_server} mode=auto resolved={expected.value}"]
 
 
 @pytest.mark.asyncio
@@ -245,7 +247,7 @@ async def test_the_compatibility_line_is_logged_once_per_change_not_per_client(
             ]
         )
 
-    assert [len(found) for found in lines] == [1, 0, 1]
+    assert [len(found) for found in lines] == [0, 0, 1]
 
 
 @pytest.mark.asyncio

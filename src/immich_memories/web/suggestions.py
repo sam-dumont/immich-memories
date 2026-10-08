@@ -8,8 +8,10 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
+from immich_memories.automation.candidates import DEFAULT_SUGGESTION_LIMIT
+from immich_memories.automation.failure_backoff import backoff_label
 from immich_memories.automation.models import AutoOutcome
 from immich_memories.automation.runner import AutomationAlreadyRunningError, AutoRunner
 from immich_memories.automation.state_store import AutomationStateStore
@@ -44,6 +46,7 @@ class Skipped(BaseModel):
 class Suggestions(BaseModel):
     candidates: list[Suggestion]
     skipped: list[Skipped]
+    notes: list[str] = Field(default_factory=list)
     error: str | None
     # When this list was worked out, and whether a fresher one is being worked out now.
     computed_at: datetime | None = None
@@ -69,11 +72,14 @@ def automation(config: Annotated[Config, Depends(current_config)]) -> Any:
 
 
 def _discover(runner: Any) -> Suggestions:
-    found = runner.suggest(limit=20) or []
+    found = runner.suggest(limit=DEFAULT_SUGGESTION_LIMIT) or []
     skipped = [
         Skipped(label=item.candidate.reason, rule=item.rule)
         for item in runner.last_variety_decision.rejected
-    ] + [Skipped(label=key, rule=reason) for key, reason in runner.last_backoff_skips.items()]
+    ] + [
+        Skipped(label=backoff_label(key), rule=reason)
+        for key, reason in runner.last_backoff_skips.items()
+    ]
     return Suggestions(
         candidates=[
             Suggestion(
@@ -89,6 +95,7 @@ def _discover(runner: Any) -> Suggestions:
             for c in found
         ],
         skipped=skipped,
+        notes=list(runner.last_notes),
         error=runner.last_suggest_status.error,
     )
 
@@ -108,7 +115,7 @@ def suggestions(
     config: Annotated[Config, Depends(current_config)],
     refresh: bool = False,
 ) -> Suggestions:
-    """Up to twenty candidates and why the others were set aside, from the last discovery.
+    """Up to ten candidates and why the others were set aside, from the last discovery.
 
     Discovery reads the library and takes a while; the last list comes back at once and a fresh
     one is worked out behind it when it is a day old or `refresh` asks -- but only a page on

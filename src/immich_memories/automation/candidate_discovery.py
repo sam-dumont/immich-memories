@@ -221,11 +221,15 @@ def _run_all_detectors(
 
     if auto_cfg.detect_monthly:
         all_candidates.extend(
-            MonthlyDetector().detect(assets_by_month, people, generated_keys, config, today)
+            MonthlyDetector().detect(
+                assets_by_month, people, generated_keys, config, today, notes=notes
+            )
         )
     if auto_cfg.detect_yearly:
         all_candidates.extend(
-            YearlyDetector().detect(assets_by_month, people, generated_keys, config, today)
+            YearlyDetector().detect(
+                assets_by_month, people, generated_keys, config, today, notes=notes
+            )
         )
     if auto_cfg.detect_person_spotlight:
         # WHY: suppress spotlights for people whose birthday is within 7 days
@@ -241,6 +245,7 @@ def _run_all_detectors(
                 person_asset_counts=spotlight_counts,
                 upcoming_birthday_ids=upcoming_birthday_ids,
                 closeness=closeness,
+                notes=notes,
             )
         )
         all_candidates.extend(
@@ -253,6 +258,7 @@ def _run_all_detectors(
                 person_asset_counts=spotlight_counts,
                 shared_counts=shared_counts,
                 closeness=closeness,
+                notes=notes,
             )
         )
     if auto_cfg.detect_activity_burst:
@@ -264,33 +270,33 @@ def _run_all_detectors(
                 config,
                 today,
                 burst_threshold=auto_cfg.burst_threshold,
-            )
-        )
-
-    all_candidates.extend(
-        OnThisDayDetector().detect(assets_by_month, people, generated_keys, config, today)
-    )
-
-    # Birthday detector — always on, high priority near birthdays
-    if people:
-        all_candidates.extend(
-            BirthdayDetector().detect(
-                assets_by_month,
-                people,
-                generated_keys,
-                config,
-                today,
-                person_asset_counts=birthday_counts,
-                closeness=closeness,
-                busiest_count=max(spotlight_counts.values(), default=0),
-                distinct_days={k: len(v) for k, v in extras.birthday_days.items()}
-                if extras
-                else None,
                 notes=notes,
             )
         )
 
-    if auto_cfg.detect_trips and gps_assets is not None:
+    all_candidates.extend(
+        OnThisDayDetector().detect(
+            assets_by_month, people, generated_keys, config, today, notes=notes
+        )
+    )
+
+    # Birthday detector — always on, high priority near birthdays
+    all_candidates.extend(
+        BirthdayDetector().detect(
+            assets_by_month,
+            people,
+            generated_keys,
+            config,
+            today,
+            person_asset_counts=birthday_counts,
+            closeness=closeness,
+            busiest_count=max(spotlight_counts.values(), default=0),
+            distinct_days={k: len(v) for k, v in extras.birthday_days.items()} if extras else None,
+            notes=notes,
+        )
+    )
+
+    if auto_cfg.detect_trips:
         all_candidates.extend(
             TripDetector().detect(
                 assets_by_month,
@@ -299,6 +305,7 @@ def _run_all_detectors(
                 config,
                 today,
                 assets=gps_assets,
+                notes=notes,
             )
         )
 
@@ -310,10 +317,11 @@ def _run_all_detectors(
             config,
             today,
             catalogue=catalogue,
+            notes=notes,
         )
     )
 
-    if auto_cfg.detect_groups and groups:
+    if auto_cfg.detect_groups:
         all_candidates.extend(
             GroupCandidateDetector().detect(
                 assets_by_month,
@@ -324,6 +332,7 @@ def _run_all_detectors(
                 groups=groups,
                 person_asset_counts=group_counts,
                 closeness=closeness,
+                notes=notes,
             )
         )
 
@@ -459,6 +468,17 @@ class CandidateDiscovery:
             raise ImmichDiscoveryError(str(exc)) from exc
 
         try:
+            if self._config.immich.native_sharing:
+                from immich_memories.api.native_sharing import discover_native_people
+
+                connections = {PRIMARY_ACCOUNT: self._config.immich} | self._config.immich.accounts
+                native = discover_native_people(
+                    opened,
+                    binding_servers={
+                        name: connection.url.rstrip("/") for name, connection in connections.items()
+                    },
+                )
+                canon.update(canonical_person_map(store_people(document), native=native))
             reads = self._read_every_account(
                 opened, auto_cfg, today, canon, store_dates, groups, plan, extras
             )
@@ -502,16 +522,27 @@ class CandidateDiscovery:
         gps_assets: list | None = None
         for name, account in opened.items():
             client = account.client
+            owner_id = account.user.id if self._config.immich.native_sharing else None
             buckets = client.get_time_buckets()
             read = _AccountRead(months=_time_buckets_to_month_counts(buckets))
             wants_people = auto_cfg.detect_person_spotlight or auto_cfg.detect_groups
             if wants_people or auto_cfg.detect_person_monthly:
                 read.people = client.get_all_people()
-                read.spotlight = _spotlight_window_counts(client, read.people, today)
-                read.shared = _shared_window_counts(client, name, read.spotlight, canon, today)
-                read.leaves = _group_leaf_counts(client, name, groups, canon, today)
+                read.spotlight = _spotlight_window_counts(
+                    client, read.people, today, owner_id=owner_id
+                )
+                read.shared = _shared_window_counts(
+                    client, name, read.spotlight, canon, today, owner_id=owner_id
+                )
+                read.leaves = _group_leaf_counts(
+                    client, name, groups, canon, today, owner_id=owner_id
+                )
                 read.birthday = _birthday_window_counts(
-                    client, read.people, today, _birth_dates(name, read.people, canon, store_dates)
+                    client,
+                    read.people,
+                    today,
+                    _birth_dates(name, read.people, canon, store_dates),
+                    owner_id=owner_id,
                 )
             read_account_extras(
                 client,
@@ -563,24 +594,44 @@ class _AccountReads:
     gps_assets: list | None
 
 
-def _pictures_in(client: Any, person_ids: list[str], windows: list[DateRange]) -> int:
+def _pictures_in(
+    client: Any,
+    person_ids: list[str],
+    windows: list[DateRange],
+    *,
+    owner_id: str | None = None,
+) -> int:
     """How many pictures Immich holds of all these people together across these windows."""
+    scope = {"owner_id": owner_id} if owner_id else {}
     return sum(
-        client.count_assets_with_people(person_ids, taken_after=w.start, taken_before=w.end)
+        client.count_assets_with_people(
+            person_ids, taken_after=w.start, taken_before=w.end, **scope
+        )
         for w in windows
     )
 
 
-def _spotlight_window_counts(client: Any, people: list, today: date) -> dict[str, int]:
+def _spotlight_window_counts(
+    client: Any,
+    people: list,
+    today: date,
+    *,
+    owner_id: str | None = None,
+) -> dict[str, int]:
     """Pictures last year, the one window a spotlight film reads, for the top named people."""
     year = today.year - 1
     window = DateRange(start=datetime(year, 1, 1), end=datetime(year, 12, 31, 23, 59, 59))
     named = [p for p in people if p.name and p.thumbnail_path][:10]
-    return {p.id: _pictures_in(client, [p.id], [window]) for p in named}
+    return {p.id: _pictures_in(client, [p.id], [window], owner_id=owner_id) for p in named}
 
 
 def _birthday_window_counts(
-    client: Any, people: list, today: date, birth_dates: dict[str, date]
+    client: Any,
+    people: list,
+    today: date,
+    birth_dates: dict[str, date],
+    *,
+    owner_id: str | None = None,
 ) -> dict[str, int]:
     """Pictures in the film windows of everyone whose birthday is being proposed today."""
     counts: dict[str, int] = {}
@@ -588,7 +639,7 @@ def _birthday_window_counts(
         bday = birth_dates.get(person.id)
         windows = birthday_film_windows(bday, today) if person.name and bday else None
         if windows:
-            counts[person.id] = _pictures_in(client, [person.id], windows)
+            counts[person.id] = _pictures_in(client, [person.id], windows, owner_id=owner_id)
     return counts
 
 
@@ -620,6 +671,8 @@ def _shared_window_counts(
     spotlight: dict[str, int],
     canon: dict[tuple[str, str], str],
     today: date,
+    *,
+    owner_id: str | None = None,
 ) -> dict[tuple[str, str], int]:
     """Pictures holding both people of a pair last year (statistics' personIds is an AND)."""
     window = [_last_year(today)]
@@ -628,7 +681,9 @@ def _shared_window_counts(
     for one, other in itertools.combinations(present, 2):
         first, second = sorted((canon.get((account, one), one), canon.get((account, other), other)))
         key = (first, second)
-        result[key] = result.get(key, 0) + _pictures_in(client, [one, other], window)
+        result[key] = result.get(key, 0) + _pictures_in(
+            client, [one, other], window, owner_id=owner_id
+        )
     return result
 
 
@@ -638,16 +693,18 @@ def _group_leaf_counts(
     groups: list[SavedGroup],
     canon: dict[tuple[str, str], str],
     today: date,
+    *,
+    owner_id: str | None = None,
 ) -> dict[str, int]:
     """Last year's pictures of every person a saved group names, by canonical id."""
     window = [_last_year(today)]
     leaves = {leaf for group in groups for leaf in group.expression.leaf_values}
-    local_ids: dict[str, list[str]] = {leaf: [leaf] for leaf in leaves}
+    local_ids: dict[str, set[str]] = {leaf: {leaf} for leaf in leaves}
     for (acc, face), canonical in canon.items():
         if acc == account and canonical in leaves:
-            local_ids[canonical].append(face)
+            local_ids[canonical].add(face)
     return {
-        leaf: sum(_pictures_in(client, [pid], window) for pid in ids)
+        leaf: sum(_pictures_in(client, [pid], window, owner_id=owner_id) for pid in ids)
         for leaf, ids in local_ids.items()
     }
 

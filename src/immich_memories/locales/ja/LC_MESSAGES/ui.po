@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-07 19:13+0200\n"
+"POT-Creation-Date: 2026-10-08 20:41+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ja\n"
@@ -64,7 +64,7 @@ msgstr "関係を追加"
 msgid "Add date overlay"
 msgstr "日付を表示"
 
-#: web/routes/settings/people/+page.svelte:127
+#: web/routes/settings/people/+page.svelte:161
 msgid "Add someone not in Immich"
 msgstr "Immich にいない人物を追加"
 
@@ -107,7 +107,7 @@ msgstr "選んだ全員"
 msgid "Also show the {count} pictures outside this memory"
 msgstr "この思い出の対象外の素材 {count} 件も表示"
 
-#: web/lib/ShotInspector.svelte:165
+#: web/lib/ShotInspector.svelte:172
 msgid "Alternatives considered"
 msgstr "検討された代替候補"
 
@@ -196,7 +196,7 @@ msgstr "黒"
 msgid "Blurred background"
 msgstr "ぼかした背景"
 
-#: web/lib/ShotInspector.svelte:137
+#: web/lib/ShotInspector.svelte:144
 msgid "Browse the whole pool"
 msgstr "候補の素材をすべて見る"
 
@@ -215,6 +215,10 @@ msgstr "候補キー"
 #: web/lib/RenderPanel.svelte:237
 msgid "Caption clips with their place"
 msgstr "クリップに場所を表示"
+
+#: web/lib/ShotInspector.svelte:151
+msgid "Captions were read; the rules chose this cut."
+msgstr "説明文を読み取り、ルールに基づいてこのカットを選びました。"
 
 #: web/routes/create/+page.svelte:373 web/routes/create/+page.svelte:378
 msgid "Catalogued days"
@@ -286,7 +290,7 @@ msgstr "設定"
 msgid "Connected as: {name}"
 msgstr "{name} として接続中"
 
-#: web/lib/ShotInspector.svelte:160
+#: web/lib/ShotInspector.svelte:167
 msgid "Considered by the model"
 msgstr "モデルが検討"
 
@@ -302,11 +306,15 @@ msgstr "コマンドラインのコマンドとしてコピー"
 msgid "Copy report"
 msgstr "レポートをコピー"
 
+#: web/routes/settings/people/+page.svelte:125
+msgid "Could not load people."
+msgstr "人物を読み込めませんでした。"
+
 #: web/lib/RenderPanel.svelte:177
 msgid "Crossfade"
 msgstr "クロスフェード"
 
-#: web/routes/settings/people/+page.svelte:100 web/routes/settings/people/+page.svelte:101
+#: web/routes/settings/people/+page.svelte:134 web/routes/settings/people/+page.svelte:135
 msgid "Curation"
 msgstr "人物情報の確認"
 
@@ -314,7 +322,7 @@ msgstr "人物情報の確認"
 msgid "Custom date range"
 msgstr "日付範囲を指定"
 
-#: web/lib/RenderPanel.svelte:177 web/routes/create/+page.svelte:510
+#: web/routes/create/+page.svelte:510
 msgid "Cut"
 msgstr "編集する"
 
@@ -395,7 +403,7 @@ msgstr "モデルをダウンロード"
 msgid "Download report"
 msgstr "レポートをダウンロード"
 
-#: web/routes/settings/people/+page.svelte:118
+#: web/routes/settings/people/+page.svelte:152
 msgid ""
 "Each Immich account gives the same person its own id. Under a person, pick who they are in "
 "the other account. Nothing is matched for you: the same name only comes first in the list."
@@ -419,7 +427,7 @@ msgstr "説明文なしで編集しました。素材の内容は分類しまし
 msgid "Elegant minimal"
 msgstr "上品でシンプル"
 
-#: web/lib/ShotInspector.svelte:110
+#: web/lib/ShotInspector.svelte:117
 msgid "Eligible when this shot was chosen. Open one to compare."
 msgstr "このショットが選ばれた時点で候補でした。開いて比較できます。"
 
@@ -465,7 +473,7 @@ msgstr "実験的"
 msgid "Expression"
 msgstr "式"
 
-#: web/routes/settings/people/+page.svelte:48
+#: web/routes/settings/people/+page.svelte:75
 msgid ""
 "Face recognition merges identical faces, so one of these records holds nearly all the "
 "pictures and the other almost none. Neither count means anything on its own. Merge them in "
@@ -489,7 +497,7 @@ msgstr "条件に合う素材が12件未満のため、短いムービーにな�
 msgid "Films that may use it"
 msgstr "この素材を使えるムービー"
 
-#: web/routes/create/+page.svelte:433 web/routes/settings/people/+page.svelte:124
+#: web/routes/create/+page.svelte:433 web/routes/settings/people/+page.svelte:158
 msgid "Find a name"
 msgstr "名前を検索"
 
@@ -509,7 +517,7 @@ msgstr "形式"
 msgid "From"
 msgstr "開始日"
 
-#: web/routes/settings/people/+page.svelte:126
+#: web/routes/settings/people/+page.svelte:160
 msgid "Full name"
 msgstr "氏名"
 
@@ -546,7 +554,7 @@ msgstr "祝日・行事"
 msgid "How it read your words"
 msgstr "リクエストの解釈"
 
-#: web/lib/ShotInspector.svelte:98
+#: web/lib/ShotInspector.svelte:105
 msgid "How the rules got here"
 msgstr "ルールによる選別の流れ"
 
@@ -579,7 +587,7 @@ msgstr "Immich に接続できません"
 msgid "Important"
 msgstr "重要"
 
-#: web/lib/ShotInspector.svelte:126
+#: web/lib/ShotInspector.svelte:133
 msgid "In the cut"
 msgstr "編集に使用"
 
@@ -612,7 +620,7 @@ msgstr "完了しませんでした。"
 msgid "Just us"
 msgstr "私たちだけ"
 
-#: web/routes/settings/people/+page.svelte:109
+#: web/routes/settings/people/+page.svelte:143
 msgid "Keep apart"
 msgstr "別々のままにする"
 
@@ -620,12 +628,12 @@ msgstr "別々のままにする"
 msgid "Keep the original"
 msgstr "元のままにする"
 
-#: web/lib/ShotInspector.svelte:101
+#: web/lib/ShotInspector.svelte:108
 #, python-brace-format
 msgid "Kept at {stage}"
 msgstr "{stage}で残されました"
 
-#: web/lib/ShotInspector.svelte:156
+#: web/lib/ShotInspector.svelte:163
 msgid "Kept because"
 msgstr "残された理由"
 
@@ -734,7 +742,7 @@ msgstr "作っていない月"
 msgid "Model downloads failed to start."
 msgstr "モデルのダウンロードを開始できませんでした。"
 
-#: web/lib/ShotInspector.svelte:142
+#: web/lib/ShotInspector.svelte:149
 msgid "Model polish"
 msgstr "モデルによる仕上げ"
 
@@ -742,7 +750,7 @@ msgstr "モデルによる仕上げ"
 msgid "Model status could not be checked."
 msgstr "モデルの状態を確認できませんでした。"
 
-#: web/lib/ShotInspector.svelte:153
+#: web/lib/ShotInspector.svelte:160
 msgid "Model suggestion"
 msgstr "モデルの提案"
 
@@ -798,7 +806,7 @@ msgid ""
 "sentence found."
 msgstr "このリクエストに合う素材がライブラリに見つからず、ムービーを作れません。別の言葉で試すか、下の結果で文章のどの部分に素材が見つかったかを確認してください。"
 
-#: web/lib/ShotInspector.svelte:144
+#: web/lib/ShotInspector.svelte:151
 msgid "No model read this cut: the rules chose every picture."
 msgstr "この編集は選別ルールだけで行いました。モデルによる分析はしていません。"
 
@@ -814,7 +822,7 @@ msgstr "一致する名前がありません。"
 msgid "No named people in Immich yet."
 msgstr "Immich にはまだ名前付きの人物がいません。"
 
-#: web/lib/ShotInspector.svelte:161
+#: web/lib/ShotInspector.svelte:168
 msgid "No outcome recorded."
 msgstr "結果の記録がありません。"
 
@@ -858,7 +866,7 @@ msgstr "いいえ、違います"
 msgid "Nobody in this library"
 msgstr "このライブラリには誰もいません"
 
-#: web/routes/settings/people/+page.svelte:133
+#: web/routes/settings/people/+page.svelte:167
 msgid ""
 "Nobody yet. This list is filled the first time a library is prepared, or when you rescan it. "
 "The person picker on New memory reads Immich directly, so it can show names before this page "
@@ -907,7 +915,7 @@ msgstr "この日"
 msgid "On a date"
 msgstr "特定の日"
 
-#: web/routes/settings/people/+page.svelte:50
+#: web/routes/settings/people/+page.svelte:77
 msgid ""
 "One name on two person records: a split face cluster. Merge these records in Immich, the only"
 " place it can be fixed."
@@ -921,7 +929,7 @@ msgstr "対象を限定（任意）"
 msgid "Open"
 msgstr "開く"
 
-#: web/lib/people/AccountLinks.svelte:53 web/routes/settings/people/+page.svelte:106
+#: web/lib/people/AccountLinks.svelte:53 web/routes/settings/people/+page.svelte:140
 msgid "Open in Immich"
 msgstr "Immichで開く"
 
@@ -933,7 +941,7 @@ msgstr "実行を開く"
 msgid "Open the film run"
 msgstr "ムービーの実行履歴を開く"
 
-#: web/routes/settings/people/+page.svelte:106
+#: web/routes/settings/people/+page.svelte:140
 #, python-brace-format
 msgid "Open {name} in Immich"
 msgstr "{name}をImmichで開く"
@@ -950,11 +958,11 @@ msgstr "保存済みの編集内容の順序とタイムコードです。"
 msgid "Orientation"
 msgstr "向き"
 
-#: web/lib/ShotInspector.svelte:117 web/lib/ShotInspector.svelte:129
+#: web/lib/ShotInspector.svelte:124 web/lib/ShotInspector.svelte:136
 msgid "Other picture of this moment"
 msgstr "この瞬間のほかの素材"
 
-#: web/lib/ShotInspector.svelte:109 web/lib/ShotInspector.svelte:111
+#: web/lib/ShotInspector.svelte:116 web/lib/ShotInspector.svelte:118
 msgid "Other pictures of this moment"
 msgstr "この瞬間のほかの素材"
 
@@ -963,7 +971,7 @@ msgstr "この瞬間のほかの素材"
 msgid "Owner of {account}"
 msgstr "{account}の所有者"
 
-#: web/lib/ShotInspector.svelte:100
+#: web/lib/ShotInspector.svelte:107
 #, python-brace-format
 msgid "Passed {stages}"
 msgstr "{stages}を通過"
@@ -973,8 +981,8 @@ msgid "Password"
 msgstr "パスワード"
 
 #: web/routes/+layout.svelte:24 web/routes/create/+page.svelte:431
-#: web/routes/settings/+page.svelte:106 web/routes/settings/people/+page.svelte:82
-#: web/routes/settings/people/+page.svelte:88
+#: web/routes/settings/+page.svelte:106 web/routes/settings/people/+page.svelte:109
+#: web/routes/settings/people/+page.svelte:115
 msgid "People"
 msgstr "人物"
 
@@ -1006,6 +1014,10 @@ msgstr "写真の表示時間（秒）"
 #: web/lib/people/GroupsSection.svelte:70
 msgid "Pick the people"
 msgstr "人物を選ぶ"
+
+#: web/lib/ShotInspector.svelte:98
+msgid "Picture description"
+msgstr "写真の説明"
 
 #: web/lib/ShotInspector.svelte:42
 msgid "Picture review"
@@ -1091,7 +1103,7 @@ msgstr "素材の情報を読み取っています"
 msgid "Reading what each picture shows"
 msgstr "素材の内容を分析しています"
 
-#: web/lib/ShotInspector.svelte:160
+#: web/lib/ShotInspector.svelte:167
 msgid "Recorded alternative"
 msgstr "記録された代替候補"
 
@@ -1147,11 +1159,11 @@ msgstr "モデルが疑問を持った素材を置き換えました。"
 msgid "Report preview"
 msgstr "レポートのプレビュー"
 
-#: web/routes/settings/people/+page.svelte:134
+#: web/routes/settings/people/+page.svelte:168
 msgid "Rescan now"
 msgstr "今すぐ再スキャン"
 
-#: web/routes/settings/people/+page.svelte:91
+#: web/routes/settings/people/+page.svelte:118
 msgid "Rescan the library"
 msgstr "ライブラリを再スキャン"
 
@@ -1281,7 +1293,7 @@ msgid "Set in config.yaml as {key}"
 msgstr "config.yaml の {key} で設定"
 
 #: web/routes/+layout.svelte:25 web/routes/settings/+page.svelte:77
-#: web/routes/settings/+page.svelte:81 web/routes/settings/people/+page.svelte:87
+#: web/routes/settings/+page.svelte:81 web/routes/settings/people/+page.svelte:114
 msgid "Settings"
 msgstr "設定"
 
@@ -1293,7 +1305,7 @@ msgstr "共有可能"
 msgid "Show"
 msgstr "表示"
 
-#: web/routes/settings/people/+page.svelte:143
+#: web/routes/settings/people/+page.svelte:177
 msgid "Show more"
 msgstr "もっと見る"
 
@@ -1431,6 +1443,12 @@ msgstr "そのファイルはサウンドトラックには大きすぎます"
 msgid "That id could not be bound."
 msgstr "そのIDは紐付けできませんでした。"
 
+#: web/lib/people/OwnerSection.svelte:56
+msgid ""
+"The API key's account name has not been matched to a named person. Choose the owner, or name "
+"people in Immich and rescan."
+msgstr "APIキーのアカウント名に一致する名前付きの人物が見つかっていません。所有者を選ぶか、Immichで人物に名前を付けて再スキャンしてください。"
+
 #: web/routes/settings/+page.svelte:54
 msgid "The connection could not be checked."
 msgstr "接続を確認できませんでした。"
@@ -1476,7 +1494,7 @@ msgstr "ムービーができました。"
 msgid "The household. Private moments a caption names, like a bath, play too."
 msgstr "同居家族。説明文に記された入浴などの私的な場面も含みます。"
 
-#: web/lib/ShotInspector.svelte:146
+#: web/lib/ShotInspector.svelte:153
 msgid "The model had nothing to say about this picture."
 msgstr "モデルはこの素材について何も記録していません。"
 
@@ -1490,11 +1508,11 @@ msgstr "モデルが、準備済みのライブラリをもとにリクエスト
 msgid "The model, when one is configured"
 msgstr "設定されている場合はモデル"
 
-#: web/routes/settings/people/+page.svelte:89
+#: web/routes/settings/people/+page.svelte:116
 msgid "The people registry: who is close, their roles, and how they relate."
 msgstr "人物レジストリ: 誰が身近か、その役割、互いの関係。"
 
-#: web/lib/ShotInspector.svelte:150
+#: web/lib/ShotInspector.svelte:157
 msgid "The picture it replaced"
 msgstr "置き換えられた素材"
 
@@ -1614,7 +1632,7 @@ msgstr "旅行の検出に失敗しました。"
 msgid "Trips"
 msgstr "旅行"
 
-#: web/routes/runs/+page.svelte:127
+#: web/routes/runs/+page.svelte:127 web/routes/settings/people/+page.svelte:126
 msgid "Try again"
 msgstr "再試行"
 
@@ -1660,7 +1678,7 @@ msgstr "Immichにアップロードしました。"
 msgid "Use exact library names; each picture must match. It replaces the names above."
 msgstr "ライブラリの名前を正確に入力してください。各素材が一致する必要があります。上の名前の代わりに使われます。"
 
-#: web/lib/ShotInspector.svelte:134
+#: web/lib/ShotInspector.svelte:141
 msgid "Use this picture instead"
 msgstr "代わりにこの素材を使う"
 
@@ -1767,7 +1785,7 @@ msgstr "このライブラリの持ち主は誰ですか？ 人物の関係、�
 msgid "Why other suggestions were skipped"
 msgstr "ほかの提案が除外された理由"
 
-#: web/lib/ShotInspector.svelte:153
+#: web/lib/ShotInspector.svelte:160
 msgid "Why the model replaced the other picture"
 msgstr "モデルがもう一方の素材を置き換えた理由"
 
@@ -1849,11 +1867,11 @@ msgstr "関係の名前なし"
 msgid "starting"
 msgstr "開始中"
 
-#: web/routes/settings/people/+page.svelte:89
+#: web/routes/settings/people/+page.svelte:116
 msgid "writes it out as YAML."
 msgstr "がYAMLとして書き出します。"
 
-#: web/routes/settings/people/+page.svelte:89
+#: web/routes/settings/people/+page.svelte:116
 msgid "writes the guesses; your answers stay across scans."
 msgstr "が推測を書き込みます。あなたの回答はスキャンをまたいで残ります。"
 

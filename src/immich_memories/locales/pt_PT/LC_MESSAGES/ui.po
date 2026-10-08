@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-07 19:13+0200\n"
+"POT-Creation-Date: 2026-10-08 20:41+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pt_PT\n"
@@ -66,7 +66,7 @@ msgstr "Adicionar uma relação"
 msgid "Add date overlay"
 msgstr "Mostrar a data"
 
-#: web/routes/settings/people/+page.svelte:127
+#: web/routes/settings/people/+page.svelte:161
 msgid "Add someone not in Immich"
 msgstr "Adicionar alguém que não está no Immich"
 
@@ -109,7 +109,7 @@ msgstr "Todas estas pessoas"
 msgid "Also show the {count} pictures outside this memory"
 msgstr "Mostrar também as {count} imagens fora desta memória"
 
-#: web/lib/ShotInspector.svelte:165
+#: web/lib/ShotInspector.svelte:172
 msgid "Alternatives considered"
 msgstr "Alternativas consideradas"
 
@@ -200,7 +200,7 @@ msgstr "Preto"
 msgid "Blurred background"
 msgstr "Fundo desfocado"
 
-#: web/lib/ShotInspector.svelte:137
+#: web/lib/ShotInspector.svelte:144
 msgid "Browse the whole pool"
 msgstr "Ver todos os conteúdos disponíveis"
 
@@ -219,6 +219,10 @@ msgstr "Chave do candidato"
 #: web/lib/RenderPanel.svelte:237
 msgid "Caption clips with their place"
 msgstr "Mostrar o local nos clips"
+
+#: web/lib/ShotInspector.svelte:151
+msgid "Captions were read; the rules chose this cut."
+msgstr "As descrições foram lidas; as regras escolheram esta montagem."
 
 #: web/routes/create/+page.svelte:373 web/routes/create/+page.svelte:378
 msgid "Catalogued days"
@@ -292,7 +296,7 @@ msgstr "Configuração"
 msgid "Connected as: {name}"
 msgstr "Ligado como: {name}"
 
-#: web/lib/ShotInspector.svelte:160
+#: web/lib/ShotInspector.svelte:167
 msgid "Considered by the model"
 msgstr "Considerada pelo modelo"
 
@@ -308,11 +312,15 @@ msgstr "Copiar como comando da CLI"
 msgid "Copy report"
 msgstr "Copiar relatório"
 
+#: web/routes/settings/people/+page.svelte:125
+msgid "Could not load people."
+msgstr "Não foi possível carregar as pessoas."
+
 #: web/lib/RenderPanel.svelte:177
 msgid "Crossfade"
 msgstr "Fusão"
 
-#: web/routes/settings/people/+page.svelte:100 web/routes/settings/people/+page.svelte:101
+#: web/routes/settings/people/+page.svelte:134 web/routes/settings/people/+page.svelte:135
 msgid "Curation"
 msgstr "Pessoas a rever"
 
@@ -320,7 +328,7 @@ msgstr "Pessoas a rever"
 msgid "Custom date range"
 msgstr "Período personalizado"
 
-#: web/lib/RenderPanel.svelte:177 web/routes/create/+page.svelte:510
+#: web/routes/create/+page.svelte:510
 msgid "Cut"
 msgstr "Montar"
 
@@ -401,7 +409,7 @@ msgstr "Transferir modelos"
 msgid "Download report"
 msgstr "Transferir relatório"
 
-#: web/routes/settings/people/+page.svelte:118
+#: web/routes/settings/people/+page.svelte:152
 msgid ""
 "Each Immich account gives the same person its own id. Under a person, pick who they are in "
 "the other account. Nothing is matched for you: the same name only comes first in the list."
@@ -432,7 +440,7 @@ msgstr ""
 msgid "Elegant minimal"
 msgstr "Elegante e minimalista"
 
-#: web/lib/ShotInspector.svelte:110
+#: web/lib/ShotInspector.svelte:117
 msgid "Eligible when this shot was chosen. Open one to compare."
 msgstr "Estas imagens estavam disponíveis quando este plano foi escolhido. Abre uma para comparar."
 
@@ -483,7 +491,7 @@ msgstr "Experimental"
 msgid "Expression"
 msgstr "Expressão"
 
-#: web/routes/settings/people/+page.svelte:48
+#: web/routes/settings/people/+page.svelte:75
 msgid ""
 "Face recognition merges identical faces, so one of these records holds nearly all the "
 "pictures and the other almost none. Neither count means anything on its own. Merge them in "
@@ -510,7 +518,7 @@ msgstr "Encaixam menos de 12 imagens: o filme vai ser curto."
 msgid "Films that may use it"
 msgstr "Filmes que podem usá-la"
 
-#: web/routes/create/+page.svelte:433 web/routes/settings/people/+page.svelte:124
+#: web/routes/create/+page.svelte:433 web/routes/settings/people/+page.svelte:158
 msgid "Find a name"
 msgstr "Procurar um nome"
 
@@ -530,7 +538,7 @@ msgstr "Formato"
 msgid "From"
 msgstr "De"
 
-#: web/routes/settings/people/+page.svelte:126
+#: web/routes/settings/people/+page.svelte:160
 msgid "Full name"
 msgstr "Nome completo"
 
@@ -567,7 +575,7 @@ msgstr "Festividade"
 msgid "How it read your words"
 msgstr "Como o teu pedido foi interpretado"
 
-#: web/lib/ShotInspector.svelte:98
+#: web/lib/ShotInspector.svelte:105
 msgid "How the rules got here"
 msgstr "Como as regras chegaram a esta seleção"
 
@@ -600,7 +608,7 @@ msgstr "Immich inacessível"
 msgid "Important"
 msgstr "Importante"
 
-#: web/lib/ShotInspector.svelte:126
+#: web/lib/ShotInspector.svelte:133
 msgid "In the cut"
 msgstr "Na montagem"
 
@@ -633,7 +641,7 @@ msgstr "Não terminou."
 msgid "Just us"
 msgstr "Só nós"
 
-#: web/routes/settings/people/+page.svelte:109
+#: web/routes/settings/people/+page.svelte:143
 msgid "Keep apart"
 msgstr "Manter separados"
 
@@ -641,12 +649,12 @@ msgstr "Manter separados"
 msgid "Keep the original"
 msgstr "Manter a original"
 
-#: web/lib/ShotInspector.svelte:101
+#: web/lib/ShotInspector.svelte:108
 #, python-brace-format
 msgid "Kept at {stage}"
 msgstr "Mantida em {stage}"
 
-#: web/lib/ShotInspector.svelte:156
+#: web/lib/ShotInspector.svelte:163
 msgid "Kept because"
 msgstr "Mantida porque"
 
@@ -757,7 +765,7 @@ msgstr "Mês em falta"
 msgid "Model downloads failed to start."
 msgstr "Não foi possível iniciar a transferência dos modelos."
 
-#: web/lib/ShotInspector.svelte:142
+#: web/lib/ShotInspector.svelte:149
 msgid "Model polish"
 msgstr "Afinação da montagem pelo modelo"
 
@@ -765,7 +773,7 @@ msgstr "Afinação da montagem pelo modelo"
 msgid "Model status could not be checked."
 msgstr "Não foi possível verificar o estado dos modelos."
 
-#: web/lib/ShotInspector.svelte:153
+#: web/lib/ShotInspector.svelte:160
 msgid "Model suggestion"
 msgstr "Sugestão do modelo"
 
@@ -825,7 +833,7 @@ msgstr ""
 "Não é possível criar este filme com as imagens da biblioteca. Experimenta reformular o pedido"
 " ou consulta abaixo os resultados para cada parte da frase."
 
-#: web/lib/ShotInspector.svelte:144
+#: web/lib/ShotInspector.svelte:151
 msgid "No model read this cut: the rules chose every picture."
 msgstr "Esta montagem foi criada apenas com as regras de seleção, sem análise de um modelo."
 
@@ -841,7 +849,7 @@ msgstr "Nenhum nome corresponde."
 msgid "No named people in Immich yet."
 msgstr "Ainda não há pessoas identificadas no Immich."
 
-#: web/lib/ShotInspector.svelte:161
+#: web/lib/ShotInspector.svelte:168
 msgid "No outcome recorded."
 msgstr "Nenhum resultado registado."
 
@@ -885,7 +893,7 @@ msgstr "Não, não são"
 msgid "Nobody in this library"
 msgstr "Ninguém nesta biblioteca"
 
-#: web/routes/settings/people/+page.svelte:133
+#: web/routes/settings/people/+page.svelte:167
 msgid ""
 "Nobody yet. This list is filled the first time a library is prepared, or when you rescan it. "
 "The person picker on New memory reads Immich directly, so it can show names before this page "
@@ -935,7 +943,7 @@ msgstr "Neste dia"
 msgid "On a date"
 msgstr "Numa data"
 
-#: web/routes/settings/people/+page.svelte:50
+#: web/routes/settings/people/+page.svelte:77
 msgid ""
 "One name on two person records: a split face cluster. Merge these records in Immich, the only"
 " place it can be fixed."
@@ -951,7 +959,7 @@ msgstr "Apenas com (opcional)"
 msgid "Open"
 msgstr "Abrir"
 
-#: web/lib/people/AccountLinks.svelte:53 web/routes/settings/people/+page.svelte:106
+#: web/lib/people/AccountLinks.svelte:53 web/routes/settings/people/+page.svelte:140
 msgid "Open in Immich"
 msgstr "Abrir no Immich"
 
@@ -963,7 +971,7 @@ msgstr "Abrir execução"
 msgid "Open the film run"
 msgstr "Abrir a execução do filme"
 
-#: web/routes/settings/people/+page.svelte:106
+#: web/routes/settings/people/+page.svelte:140
 #, python-brace-format
 msgid "Open {name} in Immich"
 msgstr "Abrir {name} no Immich"
@@ -980,11 +988,11 @@ msgstr "Ordem e códigos de tempo da montagem guardada."
 msgid "Orientation"
 msgstr "Orientação"
 
-#: web/lib/ShotInspector.svelte:117 web/lib/ShotInspector.svelte:129
+#: web/lib/ShotInspector.svelte:124 web/lib/ShotInspector.svelte:136
 msgid "Other picture of this moment"
 msgstr "Outra imagem deste momento"
 
-#: web/lib/ShotInspector.svelte:109 web/lib/ShotInspector.svelte:111
+#: web/lib/ShotInspector.svelte:116 web/lib/ShotInspector.svelte:118
 msgid "Other pictures of this moment"
 msgstr "Outras imagens deste momento"
 
@@ -993,7 +1001,7 @@ msgstr "Outras imagens deste momento"
 msgid "Owner of {account}"
 msgstr "Dono de {account}"
 
-#: web/lib/ShotInspector.svelte:100
+#: web/lib/ShotInspector.svelte:107
 #, python-brace-format
 msgid "Passed {stages}"
 msgstr "Passou por {stages}"
@@ -1003,8 +1011,8 @@ msgid "Password"
 msgstr "Palavra-passe"
 
 #: web/routes/+layout.svelte:24 web/routes/create/+page.svelte:431
-#: web/routes/settings/+page.svelte:106 web/routes/settings/people/+page.svelte:82
-#: web/routes/settings/people/+page.svelte:88
+#: web/routes/settings/+page.svelte:106 web/routes/settings/people/+page.svelte:109
+#: web/routes/settings/people/+page.svelte:115
 msgid "People"
 msgstr "Pessoas"
 
@@ -1036,6 +1044,10 @@ msgstr "Duração das fotografias (segundos)"
 #: web/lib/people/GroupsSection.svelte:70
 msgid "Pick the people"
 msgstr "Escolher as pessoas"
+
+#: web/lib/ShotInspector.svelte:98
+msgid "Picture description"
+msgstr "Descrição da imagem"
 
 #: web/lib/ShotInspector.svelte:42
 msgid "Picture review"
@@ -1121,7 +1133,7 @@ msgstr "A ler os dados das imagens"
 msgid "Reading what each picture shows"
 msgstr "A analisar o conteúdo das imagens"
 
-#: web/lib/ShotInspector.svelte:160
+#: web/lib/ShotInspector.svelte:167
 msgid "Recorded alternative"
 msgstr "Alternativa registada"
 
@@ -1177,11 +1189,11 @@ msgstr "Substituiu uma imagem de que o modelo duvidava."
 msgid "Report preview"
 msgstr "Pré-visualização do relatório"
 
-#: web/routes/settings/people/+page.svelte:134
+#: web/routes/settings/people/+page.svelte:168
 msgid "Rescan now"
 msgstr "Analisar de novo agora"
 
-#: web/routes/settings/people/+page.svelte:91
+#: web/routes/settings/people/+page.svelte:118
 msgid "Rescan the library"
 msgstr "Analisar novamente a biblioteca"
 
@@ -1313,7 +1325,7 @@ msgid "Set in config.yaml as {key}"
 msgstr "Definido em config.yaml como {key}"
 
 #: web/routes/+layout.svelte:25 web/routes/settings/+page.svelte:77
-#: web/routes/settings/+page.svelte:81 web/routes/settings/people/+page.svelte:87
+#: web/routes/settings/+page.svelte:81 web/routes/settings/people/+page.svelte:114
 msgid "Settings"
 msgstr "Definições"
 
@@ -1325,7 +1337,7 @@ msgstr "Partilhável"
 msgid "Show"
 msgstr "Mostrar"
 
-#: web/routes/settings/people/+page.svelte:143
+#: web/routes/settings/people/+page.svelte:177
 msgid "Show more"
 msgstr "Mostrar mais"
 
@@ -1465,6 +1477,14 @@ msgstr "Esse ficheiro é demasiado grande para uma banda sonora"
 msgid "That id could not be bound."
 msgstr "Não foi possível associar esse id."
 
+#: web/lib/people/OwnerSection.svelte:56
+msgid ""
+"The API key's account name has not been matched to a named person. Choose the owner, or name "
+"people in Immich and rescan."
+msgstr ""
+"O nome da conta da chave API não foi associado a uma pessoa identificada. Escolha o "
+"proprietário ou dê nomes às pessoas no Immich e volte a analisar."
+
 #: web/routes/settings/+page.svelte:54
 msgid "The connection could not be checked."
 msgstr "Não foi possível verificar a ligação."
@@ -1511,7 +1531,7 @@ msgstr "O filme está pronto."
 msgid "The household. Private moments a caption names, like a bath, play too."
 msgstr "As pessoas de casa. Inclui também momentos privados citados por uma descrição, como um banho."
 
-#: web/lib/ShotInspector.svelte:146
+#: web/lib/ShotInspector.svelte:153
 msgid "The model had nothing to say about this picture."
 msgstr "O modelo não tinha nada a dizer sobre esta imagem."
 
@@ -1528,11 +1548,11 @@ msgstr ""
 msgid "The model, when one is configured"
 msgstr "O modelo, quando houver um configurado"
 
-#: web/routes/settings/people/+page.svelte:89
+#: web/routes/settings/people/+page.svelte:116
 msgid "The people registry: who is close, their roles, and how they relate."
 msgstr "O registo de pessoas: quem é próximo, os seus papéis e como se relacionam."
 
-#: web/lib/ShotInspector.svelte:150
+#: web/lib/ShotInspector.svelte:157
 msgid "The picture it replaced"
 msgstr "A imagem que substituiu"
 
@@ -1654,7 +1674,7 @@ msgstr "A deteção de viagens falhou."
 msgid "Trips"
 msgstr "Viagens"
 
-#: web/routes/runs/+page.svelte:127
+#: web/routes/runs/+page.svelte:127 web/routes/settings/people/+page.svelte:126
 msgid "Try again"
 msgstr "Tentar novamente"
 
@@ -1700,7 +1720,7 @@ msgstr "Enviado para o Immich."
 msgid "Use exact library names; each picture must match. It replaces the names above."
 msgstr "Usa os nomes exatos da biblioteca; cada imagem tem de corresponder. Substitui os nomes acima."
 
-#: web/lib/ShotInspector.svelte:134
+#: web/lib/ShotInspector.svelte:141
 msgid "Use this picture instead"
 msgstr "Usar esta imagem em vez disso"
 
@@ -1811,7 +1831,7 @@ msgstr ""
 msgid "Why other suggestions were skipped"
 msgstr "Porque foram ignoradas outras sugestões"
 
-#: web/lib/ShotInspector.svelte:153
+#: web/lib/ShotInspector.svelte:160
 msgid "Why the model replaced the other picture"
 msgstr "Porque é que o modelo substituiu a outra imagem"
 
@@ -1895,11 +1915,11 @@ msgstr "relação sem nome"
 msgid "starting"
 msgstr "a iniciar"
 
-#: web/routes/settings/people/+page.svelte:89
+#: web/routes/settings/people/+page.svelte:116
 msgid "writes it out as YAML."
 msgstr "exporta-o em YAML."
 
-#: web/routes/settings/people/+page.svelte:89
+#: web/routes/settings/people/+page.svelte:116
 msgid "writes the guesses; your answers stay across scans."
 msgstr "grava os palpites; as tuas respostas ficam entre análises."
 

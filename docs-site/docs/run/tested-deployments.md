@@ -1,5 +1,6 @@
 ---
 title: Can I run this?
+description: Tested installs on Linux, Synology, Kubernetes and Apple Silicon, with release, hardware and artifact status.
 ---
 
 # Can I run this?
@@ -13,6 +14,7 @@ turn on GPU; a text reader alone does not turn on Full.
 
 | Status | Meaning |
 |---|---|
+| **Verified candidate** | An unpublished candidate made playable films; the transcript records supplied artifacts, fresh installation or warm upgrade, and remaining checks |
 | **Verified first run** | A tester installed from scratch with public artifacts and docs, got a playable film, and the transcript is linked |
 | **Partial** | A narrower check passed: a warm benchmark, a developer-run install, or preflight without a full film |
 | **Documented, untested** | The steps exist and should work, but nobody has run them end to end yet |
@@ -25,20 +27,32 @@ updates in place rather than piling up history.
 
 | Platform | Install method | Release verified | Hardware | Tier reached | Status | Notes |
 |---|---|---|---|---|---|---|
-| Linux x86-64 | [Basic Compose](./docker.md) | n/a | any x86-64, software encoding | Basic | Documented, untested | Pull, run, first film not yet recorded |
-| Synology | [SSH + Compose](./platforms/synology.md#sshcompose-installation-from-published-files) | v0.103.0 | DS423+ class, software H.264 | Basic | Verified first run | Clean volume, fresh models, shipping Compose file |
+| Linux x86-64 | [Basic Compose](./docker.md) | v1.0.0-rc.8 candidate | Intel Xeon E3-1240 v6, Docker-in-Docker, 4 GiB app limit | Basic | Verified candidate | Fresh app volume, supplied image archive; album and month films, software H.264; recovered from a 15-second connection outage; [transcript][candidate-runs] |
+| Synology | [SSH + Compose](./platforms/synology.md#sshcompose-installation-from-published-files) | v1.0.0-rc.8 candidate | DS423+, Intel J4125, 4 GiB app limit, software H.264 | Basic | Verified candidate | Fresh app volume, supplied image archive; authenticated UI album and CLI month films; restart and download checks; [transcript][candidate-runs] |
 | Synology | [Container Manager GUI](./platforms/synology.md) | n/a | any Synology, software encoding | Basic | Documented, untested | Project wizard not yet exercised |
 | Unraid | [GUI template](./platforms/unraid.md) | n/a | any x86-64, software encoding | Basic | Documented, untested | [Report your results](https://github.com/sam-dumont/immich-memories/issues) |
 | TrueNAS | [Custom app](./platforms/truenas.md) | n/a | any x86-64, software encoding | Basic | Documented, untested | [Report your results](https://github.com/sam-dumont/immich-memories/issues) |
 | Linux ARM64 | [Compose](./docker.md) | n/a | ARM64, software encoding | Basic | Documented, untested | GPU overlays need CUDA and don't apply here |
 | Apple Silicon | [Docker Desktop](./offline.md) | v0.103.0 | M-series, software H.264 | Basic | Partial | Isolated runtime, not a public-image pull |
-| Apple Silicon | [Native uv/pip](./uv-pip.md) | v0.103.0 | M-series, Metal/VideoToolbox | Basic | Partial | Install, preflight, an album film and a month film passed; GPU services not exercised |
-| Kubernetes (RKE2) | [Generated manifests, GPU](./kubernetes.md#generated-tier-setup) | v0.103.0 | NVIDIA T1000 8 GB | GPU | Partial | GPU sharing and store placement needed operator fixes |
+| Apple Silicon | [Native uv/pip](./uv-pip.md) | v1.0.0-rc.8 candidate | M5 Max, 128 GB; M2 Pro, 16 GB; VideoToolbox | Basic | Verified candidate | Supplied wheel, warm upgrades of isolated installs; album and month films on both Macs; [transcript][candidate-runs] |
+| Kubernetes (RKE2) | [Generated manifests, GPU](./kubernetes.md#generated-tier-setup) | v1.0.0-rc.8 candidate | NVIDIA T1000 8 GB, shared GPU | GPU | Verified candidate | Fresh namespace, app and inference images pinned by digest; GPU inference, NVENC, CUDA titles; album and month films; [transcript][candidate-runs] |
 | Kubernetes | [Independently managed services](./kubernetes.md#set-the-preparation-tier) | v0.103.0 | NVIDIA T1000 8 GB | GPU | Partial | Services already running; setup corrections disclosed |
 | NAS app | [Standalone Docker GPU worker](../better/gpu-render.md) | n/a | n/a | GPU | Documented, untested | Kubernetes worker route is verified; Docker worker is not |
 | NAS app | [Kubernetes GPU worker](./kubernetes.md) | v0.103.0 | NVIDIA T1000 8 GB | GPU | Partial | Worker routing needed a fix before the film completed |
 | Basic | [Prepared models, blocked internet](./offline.md) | v0.103.0 | Docker and Kubernetes | Basic | Partial | Isolated runtime and full decode passed; release-download path not separately checked |
 | Basic | [Plus a local text model](./local-models.md) | n/a | n/a | Basic + text | Documented, untested | Model conformance checked separately; a full offline film with it is not |
+
+[candidate-runs]: https://github.com/sam-dumont/immich-memories/issues/956
+
+[first-runs]: https://github.com/sam-dumont/immich-memories/issues/956#issuecomment-6053816158
+
+The candidate rows cover unpublished artifacts built for acceptance. They do not claim a public
+release download or a cold install where a warm upgrade was used. The [published-artifact first
+runs][first-runs] were on v1.0.0-rc.7.
+
+A verified first run covers installation and a playable film through that route. Separate features,
+such as the native macOS scheduler, have their own checks in the linked transcript. Older partial
+rows below a verified route describe different setups, not a lower status for the tested route.
 
 ## What each route needs
 
@@ -57,16 +71,16 @@ The client implements the **Immich v2 and v3 API contracts** and detects the maj
 `/api/server/version`. Leave `api_version: auto`; forcing `v2` or `v3` is a troubleshooting
 override, not a way to make an unsupported server supported.
 
-Immich 2.7 through the current 3.x releases are covered by that API contract and by the rows
-above. A patch version outside those families should still work if its API major matches; run
-the check below before relying on it.
+The real-server CI gate runs Immich **2.7.5, 3.2.2 and 3.3.0**. Other versions may work when
+their API major matches; run the checks below before relying on them.
+[Native person sharing](./multi-account.mdx#native-person-identities) has its own version checks.
 
 ```bash
 immich-memories config test
 immich-memories preflight
 ```
 
-In Docker, prefix these with `docker compose exec immich-memories`. `config test` reports the
+In Docker, prefix these with `docker compose exec -T immich-memories`. `config test` reports the
 server version and whether your key can read; it doesn't upload anything. Use the
 [minimum read permissions](./docker.md#the-api-key) for a new key, and add upload/delete only
 for the delivery features you've turned on.

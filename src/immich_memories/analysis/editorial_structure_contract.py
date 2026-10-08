@@ -28,6 +28,7 @@ if TYPE_CHECKING:
     from immich_memories.analysis.editorial_story_planner import StorySelection
     from immich_memories.analysis.editorial_thin_layer import ThinPolish
     from immich_memories.db import Store
+    from immich_memories.photos.burst_dedup import BurstDeduplicator
 
 
 class StructureJudge(Protocol):
@@ -281,6 +282,8 @@ class StructurePlannerPorts:
         ]
         | None
     ) = None
+
+    burst_deduplicator: BurstDeduplicator | None = None
 
 
 @dataclass(frozen=True)

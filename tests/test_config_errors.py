@@ -76,7 +76,7 @@ class TestCLIConfigErrorIntegration:
 
         runner = CliRunner()
         with patch("immich_memories.cli.init_config_dir"):
-            result = runner.invoke(main, ["-c", str(bad_config), "config", "--help"])
+            result = runner.invoke(main, ["-c", str(bad_config), "config", "show"])
 
         assert result.exit_code != 0
         assert "YAML syntax error" in result.output or "Error" in result.output
@@ -90,7 +90,7 @@ class TestCLIConfigErrorIntegration:
 
         runner = CliRunner()
         with patch("immich_memories.cli.init_config_dir"):
-            result = runner.invoke(main, ["-c", str(bad_config), "config", "--help"])
+            result = runner.invoke(main, ["-c", str(bad_config), "config", "show"])
 
         assert result.exit_code != 0
         assert "transition_duration" in result.output or "Configuration error" in result.output

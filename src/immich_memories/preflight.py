@@ -79,9 +79,9 @@ def check_hardware(inference_gpu: bool = False) -> CheckResult:
                 )
             return CheckResult(
                 name="Hardware",
-                status=CheckStatus.WARNING,
-                message=hint or "No GPU acceleration",
-                details="Video encoding will use CPU (slower)",
+                status=CheckStatus.WARNING if hint else CheckStatus.OK,
+                message=hint or "Software encoding (libx264)",
+                details="Video encoding uses the CPU.",
             )
 
         features = []
@@ -122,7 +122,7 @@ def check_title_rendering(config: Config, inference_gpu: bool = False) -> CheckR
 # The tier's design, not a fault: the GPU lives in the inference service, the app pod has none.
 TITLES_ON_CPU_ON_GPU_TIER = "Titles render on the CPU; the GPU is for picture preparation"
 
-_PIL_RENDERER_MESSAGE = "PIL + FFmpeg: animated raster text, still backgrounds (no SDF effects)"
+_PIL_RENDERER_MESSAGE = "CPU titles (Pillow + FFmpeg); moving backgrounds need a GPU"
 
 
 def _kernel_library_check(inference_gpu: bool = False) -> CheckResult:
@@ -140,17 +140,17 @@ def _kernel_library_check(inference_gpu: bool = False) -> CheckResult:
     from immich_memories.titles.kernel_backend_probe import KERNEL_LIBRARY, python_version_reason
 
     if importlib.util.find_spec(KERNEL_LIBRARY) is None:
-        # The reason leads: details print only under -v, and the interpreter is what a
-        # native install on Homebrew's default 3.14 needs to read first (#1987). On any
-        # other platform with no wheel, say that instead — reinstalling changes nothing.
-        no_wheel_reason = python_version_reason() or (
+        # A Homebrew Python version without wheels has an actionable reinstall warning.
+        # Other unsupported platforms can keep using the working CPU title renderer.
+        python_reason = python_version_reason()
+        no_wheel_reason = python_reason or (
             f"GPU title kernels unavailable: no {KERNEL_LIBRARY} wheel for {_platform_tag()}"
         )
         message = f"{no_wheel_reason}; titles use PIL + FFmpeg (no SDF effects)"
         return CheckResult(
             name="Title rendering",
-            status=CheckStatus.WARNING,
-            message=message,
+            status=CheckStatus.WARNING if python_reason else CheckStatus.OK,
+            message=message if python_reason else _PIL_RENDERER_MESSAGE,
             details=(
                 f"{KERNEL_LIBRARY} publishes no wheel for {_platform_tag()}. "
                 "Wheels exist for Linux x86_64, Linux aarch64, macOS arm64 and Windows AMD64 "
@@ -162,13 +162,12 @@ def _kernel_library_check(inference_gpu: bool = False) -> CheckResult:
     from immich_memories.titles.kernel_backend_probe import kernel_dispatch_failure
 
     if reason := kernel_dispatch_failure():
-        # The reason leads, because `preflight` prints details only under -v and this
-        # is the line that tells a self-hoster their processor is the problem.
+        # No AVX is normal on small NAS processors; the CPU title renderer works there.
         return CheckResult(
             name="Title rendering",
-            status=CheckStatus.WARNING,
-            message=reason,
-            details=_PIL_RENDERER_MESSAGE,
+            status=CheckStatus.OK,
+            message=_PIL_RENDERER_MESSAGE,
+            details=reason,
         )
     return _kernel_backend_check(inference_gpu)
 
@@ -190,9 +189,9 @@ def _kernel_backend_check(inference_gpu: bool = False) -> CheckResult:
     if gpu is None:
         return CheckResult(
             name="Title rendering",
-            status=CheckStatus.WARNING,
-            message=f"Kernels on the CPU ({KERNEL_LIBRARY}): no GPU backend started",
-            details="; ".join((*failures, "titles render markedly slower than on a GPU")),
+            status=CheckStatus.OK,
+            message=_PIL_RENDERER_MESSAGE,
+            details="; ".join(failures),
         )
     return CheckResult(
         name="Title rendering",

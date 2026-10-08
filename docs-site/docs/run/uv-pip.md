@@ -9,27 +9,26 @@ The [Docker install](./docker.md) is the other option.
 
 ## Install
 
-Any FFmpeg build with the `zscale` filter works: HDR conversion needs it. Homebrew's default
-`ffmpeg` has `zscale` on some Macs and not on others (an M2 without it, a Mac with it), so run
-the check below yourself before you trust it. If it prints nothing, install `ffmpeg-full` and put
-it first on your `PATH`:
+Any FFmpeg build with the `zscale` filter works. On a Mac, start with Homebrew's plain package:
 
 ```bash
 brew install uv ffmpeg
-brew install ffmpeg-full   # only if grep zscale finds nothing
-export PATH="$(brew --prefix ffmpeg-full)/bin:$PATH"
-```
-
-That `export` only lasts for this shell. Add the same line to `~/.zprofile`, or scheduled and `ssh`
-runs pick up the other `ffmpeg`. `ssh host 'command'` does not read `~/.zprofile` either, so wrap
-a one-liner in a login shell: `ssh host "zsh -l -c 'immich-memories preflight'"`. Without it, the
-command finds Homebrew's `ffmpeg` (no `zscale`) instead of `ffmpeg-full`.
-
-On Debian/Ubuntu, install FFmpeg with `sudo apt install ffmpeg`. Verify HDR support:
-
-```bash
 ffmpeg -hide_banner -filters | grep zscale
 ```
+
+If that prints a `zscale` line, keep this FFmpeg. If it prints nothing, install the fuller build:
+
+```bash
+brew install ffmpeg-full
+export PATH="$(brew --prefix ffmpeg-full)/bin:$PATH"
+ffmpeg -hide_banner -filters | grep zscale
+```
+
+Keep that PATH entry in `~/.zprofile` if you need `ffmpeg-full`. A command run over SSH does not
+read that file unless you start a login shell, for example
+`ssh host "zsh -l -c 'immich-memories preflight'"`. Check `zscale` in the shell that will run the app.
+
+On Debian/Ubuntu, install FFmpeg with `sudo apt install ffmpeg` and run the same filter check.
 
 Install the package that matches this documentation build. Choose the command for your platform:
 
@@ -67,7 +66,10 @@ film. An old environment with new source files is not an updated install.
 
 `uv tool install` puts the command in `~/.local/bin`. If it warns that this folder is not on your
 `PATH`, run `uv tool update-shell` and open a new terminal. The terminal you ran it in still
-cannot find `immich-memories`: only a new one can.
+cannot find `immich-memories`: add it for the current shell with
+`export PATH="$HOME/.local/bin:$PATH"`. Do the same in a non-login SSH shell. If you run with a
+different home directory, use the installed command's absolute path; changing the home does not
+move the uv installation.
 
 Create the folder, then `~/.immich-memories/config.yaml`:
 
@@ -97,7 +99,7 @@ immich-memories ui
 ```
 
 Open [http://localhost:8080](http://localhost:8080) (`immich-memories ui -p 8081` if 8080 is taken) and make [your first film](../get-started/first-film.mdx).
-The guides on the Docker route (Quick start, first film, after install) show `docker compose exec immich-memories` in front of every command: leave that prefix off and run `immich-memories ...` directly.
+The guides on the Docker route (Quick start, first film, after install) show `docker compose exec -T immich-memories` in front of every command: leave that prefix off and run `immich-memories ...` directly.
 Films default to `~/Videos/Memories`. Set home coordinates for trips and public holidays:
 [Home and people](../get-started/who-is-who.md).
 
@@ -150,9 +152,12 @@ On macOS, a missed run happens after wake; launchd does not wake the machine.
 
 macOS blocks a program from reaching other machines on your local network until you allow it, and your NAS is one of them. `curl` and the browser are exempt, which makes this confusing: `curl` reaches Immich while a scheduled `immich-memories` gets `No route to host` (errno 65). The permission belongs to the interpreter the job runs, the Python in your virtual environment or uv's managed `python3.12` (something like `~/.local/share/uv/python/cpython-3.12.x-macos-aarch64-none/bin/python3.12`), not to Terminal. Allowing Terminal, or running a command there, grants nothing to the 09:00 job.
 
-`immich-memories auto install` checks this for you when your Immich is on a private address. It starts a temporary LaunchAgent that runs the same launcher the schedule runs, with `config test` (it only pings Immich), waits up to 20 seconds, removes the agent, and prints a pass or a fail. The first time, that check makes macOS ask, on the Mac's own screen, whether python3.12 may find devices on your local network. Click **Allow**, then run `auto install` again: it passes, and from then on the night's run reaches Immich. A question nobody answers counts as no, so run `auto install` while you're at the Mac, not over ssh from somewhere else. No prompt? Turn the interpreter on in **System Settings > Privacy & Security > Local Network**. An Immich on the internet or on `localhost` is never blocked, so nothing is checked.
+`immich-memories auto install` checks this for you when your Immich is on a private address. It starts a temporary LaunchAgent that runs the same launcher the schedule runs, with `config test` (it only pings Immich), waits up to 20 seconds, removes the agent, and prints a pass or a fail. If macOS asks whether Python may find devices on your local network, click **Allow**, then run `auto install` again. Run the check while you are at the Mac so you can answer. A failed check can also mean a wrong config, an invalid key or an unreachable server: check `immich-memories config test` before changing permissions. For a Local Network denial without a prompt, check the interpreter in **System Settings > Privacy & Security > Local Network**. An Immich on the internet or on `localhost` is never blocked, so nothing is checked.
 
-The permission is lost when the interpreter path changes, which a uv Python patch upgrade does, and macOS asks again. `immich-memories auto status` says when the interpreter is no longer the one that was checked: run `auto install` again at the Mac.
+If the check failed and you have not run **Activate**, remove the pending installation with
+`immich-memories auto install --uninstall` alone. There is no loaded schedule to deactivate.
+
+A Python upgrade can change the interpreter identity and require another Local Network approval. `immich-memories auto status` says when the interpreter is no longer the one that was checked: run `auto install` again at the Mac.
 
 ## What to keep
 

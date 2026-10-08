@@ -132,6 +132,29 @@ def test_a_store_first_opened_while_its_config_loads_stays_that_configs_store(
     set_config(None)
 
 
+@pytest.mark.parametrize("key", ["database.url", "database.schema"])
+@pytest.mark.parametrize("nested_override", [False, True])
+def test_bootstrap_environment_reports_the_store_actually_opened(
+    config_path, key, nested_override, monkeypatch
+):
+    from immich_memories.db import redact_url, resolve_location
+
+    config_path.write_text(
+        "database:\n  url: sqlite:///ignored-by-environment.db\n  schema: ignored_schema\n"
+    )
+    if nested_override:
+        monkeypatch.setenv("IMMICH_MEMORIES_DATABASE__URL", "sqlite:///nested-override.db")
+        monkeypatch.setenv("IMMICH_MEMORIES_DATABASE__SCHEMA", "nested_schema")
+    load_config(config_path)
+
+    actual = resolve_location()
+    expected = {"database.url": redact_url(actual.url), "database.schema": actual.schema}
+    entry = _source(key)
+    assert entry.value == expected[key]
+    assert entry.source == "env"
+    assert entry.override == "IMMICH_MEMORIES_" + key.upper().replace(".", "_")
+
+
 def test_a_tier_two_section_written_at_the_top_level_is_named_there(config_path):
     config_path.write_text("llm:\n  model: flat-file\n")
     load_config(config_path)

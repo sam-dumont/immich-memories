@@ -773,7 +773,7 @@ def test_the_hdr_line_counts_video_clips_and_not_photo_animations(tmp_path, capl
     ):
         assert detect_dominant_hdr_transfer(clips) is HdrTransfer.PQ
 
-    assert "Detected HDR10/PQ format (Android/Samsung/Pixel) - 1 video clips" in caplog.text
+    assert "Detected HDR10/PQ format - 1 video clips" in caplog.text
 
 
 def _conversion(source, target, primaries=None, *, zscale=True):

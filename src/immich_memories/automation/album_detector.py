@@ -16,6 +16,11 @@ from immich_memories.automation.candidates import (
 
 # album:{first}:{last}::{album id}:{pictures the film was made from}
 _FILMED_KEY = re.compile(r"^album:[^:]*:[^:]*::(?P<id>[^:]+):(?P<count>\d+)$")
+# Older manual films recorded datetimes, including the first/last capture time and timezone.
+_MANUAL_SPAN = re.compile(
+    r"^album:(?P<first>\d{4}-\d{2}-\d{2})(?:T[0-9:.+Z-]+)?:"
+    r"(?P<last>\d{4}-\d{2}-\d{2})(?:T[0-9:.+Z-]+)?:$"
+)
 
 
 class AlbumDetector:
@@ -40,31 +45,52 @@ class AlbumDetector:
     ) -> Detection:
         """``albums`` are Immich's raw rows; ``user_id`` says which of them are yours."""
         filmed = _filmed_sizes(generated_keys)
+        manual_spans = {
+            (match["first"], match["last"])
+            for key in generated_keys
+            if (match := _MANUAL_SPAN.fullmatch(key))
+        }
         candidates = []
         collections = 0
+        skipped: set[str] = set()
         for album in albums:
             if not include_shared and not _is_mine(album, user_id):
+                skipped.add("shared albums are excluded")
                 continue
             count = album.get("assetCount") or 0
             first, last = _span(album, today)
             if (last - first).days > self.MAX_SPAN_DAYS:
                 collections += count >= self.MIN_NEW
+                skipped.add("albums span more than six months")
                 continue
             before = filmed.get(album["id"])
-            if before is None and make_memory_key("album", first, last) in generated_keys:
+            if before is None and (first.isoformat(), last.isoformat()) in manual_spans:
                 # Made by hand, which keeps no id and no size: take it as filmed at this size.
+                skipped.add("albums already have hand-made films")
                 continue
             if not self._worth_a_film(count, before):
+                skipped.add(
+                    f"new albums need {self.MIN_NEW} pictures"
+                    if before is None
+                    else f"filmed albums need {self.MIN_GROWTH} more pictures and {self.GROWTH_RATIO:g} times their previous size"
+                )
                 continue
             candidates.append(self._candidate(album, count, first, last, before))
-        notes = (
+        return Detection(candidates, self._notes(bool(candidates), collections, skipped))
+
+    @staticmethod
+    def _notes(has_candidates: bool, collections: int, skipped: set[str]) -> tuple[str, ...]:
+        notes: tuple[str, ...] = (
             (
                 f"Left out {collections} album(s) that span more than six months: a collection, not a moment",
             )
             if collections
             else ()
         )
-        return Detection(candidates, notes)
+        if not has_candidates:
+            reason = "; ".join(sorted(skipped)) if skipped else "the library has no albums"
+            notes += (f"No album film: {reason}",)
+        return notes
 
     def _worth_a_film(self, count: int, filmed_at: int | None) -> bool:
         if filmed_at is None:
@@ -74,7 +100,7 @@ class AlbumDetector:
     def _candidate(
         self, album: dict[str, Any], count: int, first: date, last: date, filmed_at: int | None
     ) -> MemoryCandidate:
-        name = album.get("albumName") or album["id"]
+        name = album.get("albumName") or "Unnamed album"
         reason = (
             f"Album '{name}' has grown from {filmed_at} to {count} pictures"
             if filmed_at is not None

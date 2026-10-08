@@ -260,6 +260,31 @@ class TestRunsWhy:
         assert result.exit_code == 0, result.output
         assert "Caption origin: unknown (not recorded for this run)" in result.output
 
+    def test_caption_origin_uses_the_round_that_read_this_picture(self, cut):
+        config, attempt = cut
+        self._snapshot(attempt, {"origins": [], "by_asset": {}})
+        for number, asset, model in (
+            (1, "garden-2", "first-captioner"),
+            (2, "other", "second-captioner"),
+        ):
+            directory = attempt / "refinement" / f"{number:04}"
+            directory.mkdir(parents=True)
+            (directory / "preparation.private.json").write_text(
+                json.dumps(
+                    {
+                        "requested_asset_ids": [asset],
+                        "caption_provenance": {
+                            "origins": [{"model_id": model, "assets": 1}],
+                            "by_asset": {},
+                        },
+                    }
+                )
+            )
+        result = _invoke(config, ["runs", "why", "garden-2"])
+        assert result.exit_code == 0, result.output
+        assert "first-captioner" in result.output
+        assert "second-captioner" not in result.output
+
     def test_the_music_answer_names_its_text_source(self, cut):
         config, attempt = cut
         (attempt / "music-mood.private.json").write_text(

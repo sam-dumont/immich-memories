@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import {existsSync, readFileSync} from 'node:fs';
 import {join} from 'node:path';
+import {createHash} from 'node:crypto';
+import sharp from 'sharp';
+import {readPageMetadata} from './social-preview.mjs';
 
 const next = process.env.DOCS_NEXT === 'true';
 const base = `https://sam-dumont.github.io/immich-memories/${next ? 'next/' : ''}`;
@@ -49,3 +52,28 @@ if (next) {
   }
   console.log(`Search checks passed for ${urls.length} sitemap pages.`);
 }
+
+// Check actual generated files: a distinct URL alone can still serve a shared card.
+const previews = JSON.parse(readFileSync(join(build, 'social-previews.json'), 'utf8'));
+const hashes = new Set();
+for (const preview of previews) {
+  const html = readFileSync(join(build, preview.file), 'utf8');
+  const metadata = readPageMetadata(html);
+  assert.equal(metadata.image, preview.image, `${preview.file}: social image drifted`);
+  assert.ok(metadata.title.trim(), `${preview.file}: missing social title`);
+  const tags = [...html.matchAll(/<meta\s[^>]*>/g)].map(([tag]) => attributes(tag));
+  assert.equal(tags.filter(tag => tag.property === 'og:image').length, 1, `${preview.file}: duplicate Open Graph image`);
+  assert.equal(tags.find(tag => tag.name === 'twitter:image')?.content, preview.image, `${preview.file}: Twitter image differs`);
+  assert.ok(preview.image.startsWith(`${base}img/social/`), `${preview.file}: wrong image base`);
+  const png = readFileSync(join(build, preview.image.slice(base.length)));
+  const image = await sharp(png).metadata();
+  assert.equal(image.format, 'png');
+  assert.equal(image.width, 1200);
+  assert.equal(image.height, 630);
+  const hash = createHash('sha256').update(png).digest('hex');
+  assert.ok(!hashes.has(hash), `${preview.file}: duplicates another page's card`);
+  hashes.add(hash);
+}
+assert.ok(previews.some(page => page.file === 'index.html'), 'Homepage social preview missing');
+assert.ok(previews.some(page => page.file === 'docs/run/tested-deployments/index.html'), 'Deployment social preview missing');
+console.log(`Social previews checked for ${previews.length} pages.`);

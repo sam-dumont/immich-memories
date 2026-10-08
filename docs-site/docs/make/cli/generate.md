@@ -18,6 +18,9 @@ Run `immich-memories models fetch` before the first preparation or generation.
 Generation connects to Immich before probing local encoding hardware and title rendering.
 If the server cannot be reached, the run history records the failed attempt.
 
+During a quiet step, the log repeats the latest progress about every 30 seconds.
+Preparing clips includes both fetching sources and rendering photos.
+
 In Docker, prefix every command with `docker compose exec immich-memories`.
 
 ## Review before rendering

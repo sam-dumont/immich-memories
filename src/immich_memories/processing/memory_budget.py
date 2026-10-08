@@ -191,7 +191,7 @@ def encode_lookahead(width: int, height: int) -> int | None:
         budget = memory_budget()
         memory = budget.size if budget else None
     frames = x265_lookahead(memory, pixels=width * height)
-    logger.info("libx265 lookahead at %dx%d: %s", width, height, _frames(frames))
+    logger.debug("libx265 lookahead at %dx%d: %s", width, height, _frames(frames))
     return frames
 
 

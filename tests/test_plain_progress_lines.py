@@ -49,3 +49,27 @@ def test_lines_without_a_count_still_log_every_change(caplog):
     lines = _logged(caplog, ["Downloading clips", "Assembling", "Mixing music"])
 
     assert lines[-3:] == ["Downloading clips", "Assembling", "Mixing music"]
+
+
+def test_each_quiet_heartbeat_reaches_the_log_even_when_its_count_and_text_repeat(caplog):
+    from immich_memories.operations.phase_heartbeat import PhaseHeartbeat
+    from immich_memories.operations.phases import OperationalPhase
+
+    now = [0.0]
+    with caplog.at_level(logging.INFO, logger="immich_memories.progress"):
+        display = QuietDisplay()
+        task = display.add_task("Preparing evidence")
+        display.update(task, description="Preparing faces: 43/43")
+        heartbeat = PhaseHeartbeat(
+            lambda _phase, _current, _total, message: display.update(task, description=message),
+            clock=lambda: now[0],
+        )
+        heartbeat.note(OperationalPhase.SELECTION, 43, 43, "Preparing faces: 43/43")
+        for tick in (31.0, 62.0, 93.0):
+            now[0] = tick
+            assert heartbeat.tick()
+
+    beats = [record.message for record in caplog.records if "still working" in record.message]
+    assert len(beats) == 3
+    assert all(line.startswith("Preparing faces: 43/43") for line in beats)
+    assert beats[-1] == beats[-2], "the same minute label must not suppress the next heartbeat"

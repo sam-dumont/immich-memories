@@ -187,6 +187,18 @@ export const SuggestionsScene: React.FC<Props> = ({ bassIntensity }) => {
                 />
               ))}
             </div>
+            <details
+              style={{
+                border: `1px solid ${UI.gray200}`,
+                borderRadius: 16,
+                padding: 16,
+                fontSize: 14,
+              }}
+            >
+              <summary style={{ fontWeight: 600 }}>
+                Why other suggestions were skipped
+              </summary>
+            </details>
           </div>
         </AppShell>
       </WindowFrame>

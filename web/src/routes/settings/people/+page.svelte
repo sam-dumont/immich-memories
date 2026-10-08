@@ -13,16 +13,27 @@
 
   const PAGE = 30;
   let roster = $state<Roster | null>(null);
+  let loadFailed = $state(false);
   let query = $state('');
   let shown = $state(PAGE);
   let newName = $state('');
   let scan = $state<JobView | null>(null);
+  let ownerRefresh = $state(0);
   let accounts = $state<AccountChoice[]>([]);
   // Who each other account holds, so a linked id reads as a name.
   let known = $state<Record<string, AccountPerson[]>>({});
 
+  let loadVersion = 0;
   async function load() {
-    roster = await api<Roster>('/roster');
+    const version = ++loadVersion;
+    try {
+      const loaded = await api<Roster>('/roster');
+      if (version !== loadVersion) return;
+      roster = loaded;
+      loadFailed = false;
+    } catch {
+      if (version === loadVersion) loadFailed = true;
+    }
   }
   onMount(() => {
     void load();
@@ -38,8 +49,25 @@
 
   const people = $derived((roster?.people ?? []).filter((p) => p.name.toLowerCase().includes(query.trim().toLowerCase())));
 
+  // Choose from visible cards so filtering or pagination cannot hide the only question.
+  const cards = $derived.by(() => {
+    const asked = new Set<string>();
+    return people.slice(0, shown).map((person) => ({
+      ...person,
+      links: person.links.filter((link) => {
+        if (link.status !== 'detected') return true;
+        const pair = JSON.stringify([person.person_id, link.target_id].sort());
+        if (asked.has(pair)) return false;
+        asked.add(pair);
+        return true;
+      }),
+    }));
+  });
+
   function saved(person: Person) {
     if (roster) roster = { ...roster, people: roster.people.map((p) => (p.person_id === person.person_id ? person : p)) };
+    // Relationship and account-link writes also change other cards in the registry.
+    void load();
   }
 
   // The server sends a stable kind; the sentence is the catalogue's, in the reader's language.
@@ -74,7 +102,10 @@
     scan = started;
     followJob(started.id, (update) => {
       scan = update;
-      if (update.status === 'succeeded') void load();
+      if (update.status === 'succeeded') {
+        ownerRefresh += 1;
+        void load();
+      }
     });
   }
 </script>
@@ -93,8 +124,15 @@
 
   {#if scan}<JobPanel job={scan} onCancel={async () => scan && (scan = (await post<JobView>(`/jobs/${scan.id}/cancel`, {})).body)} />{/if}
 
+  {#if loadFailed}
+    <div class="flex items-center gap-3">
+      <p class="text-sm text-danger" role="alert">{t('Could not load people.')}</p>
+      <Button size="small" variant="outline" onclick={load}>{t('Try again')}</Button>
+    </div>
+  {/if}
+
   {#if !roster}
-    <LoadingSpinner />
+    {#if !loadFailed}<LoadingSpinner />{/if}
   {:else}
     {#if roster.flags.length}
       <section class="flex flex-col gap-2 rounded-2xl border border-warning p-4" aria-label={t('Curation')}>
@@ -112,7 +150,7 @@
       </section>
     {/if}
 
-    <OwnerSection />
+    <OwnerSection refresh={ownerRefresh} />
 
     {#if accounts.length > 1}
       <Text size="small" color="muted">{t('Each Immich account gives the same person its own id. Under a person, pick who they are in the other account. Nothing is matched for you: the same name only comes first in the list.')}</Text>
@@ -136,7 +174,7 @@
     {/if}
 
     <ul class="grid gap-4 lg:grid-cols-2">
-      {#each people.slice(0, shown) as person (person.person_id)}
+      {#each cards as person (person.person_id)}
         <PersonCard {person} {roster} {accounts} {known} onSaved={saved} />
       {/each}
     </ul>

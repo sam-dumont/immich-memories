@@ -63,3 +63,31 @@ def test_a_key_the_named_file_leaves_open_is_saved_without_writing_either_file(h
     shown = _invoke(home, target, "show", "immich.url")
     assert "edited.invalid" in shown.output
     assert "database" in shown.output
+
+
+@pytest.mark.parametrize("existing", [False, True])
+def test_an_explicit_config_does_not_create_or_chmod_the_default_home(
+    tmp_path, monkeypatch, existing
+):
+    home = tmp_path / "home"
+    home.mkdir()
+    monkeypatch.setenv("HOME", str(home))
+    assert Path.home() == home
+    owner_state = home / ".immich-memories"
+    if existing:
+        owner_state.mkdir(mode=0o755)
+    config_dir = tmp_path / "other-install"
+    config_dir.mkdir()
+    config_path = config_dir / "config.yaml"
+    config_path.write_text("immich:\n  api_version: auto\n")
+
+    result = CliRunner().invoke(
+        main, ["--config", str(config_path), "config", "show", "immich.api_version"]
+    )
+
+    assert result.exit_code == 0, result.output
+    if existing:
+        assert owner_state.stat().st_mode & 0o777 == 0o755
+        assert not list(owner_state.iterdir())
+    else:
+        assert not owner_state.exists()

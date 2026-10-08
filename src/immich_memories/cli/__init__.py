@@ -54,30 +54,24 @@ def _quiet_request_logs(level: str | None) -> None:
             logging.getLogger(name).setLevel(logging.WARNING)
 
 
-def _load_cli_config(
-    ctx: click.Context, config: str | None, preset: str | None, *, help_only: bool
-) -> None:
+def _load_cli_config(ctx: click.Context, config: str | None, preset: str | None) -> None:
     """Load and validate the config into ctx.obj; a broken file ends the command with one message."""
     import sys
-    from contextlib import nullcontext
 
     import yaml
     from pydantic import ValidationError
 
     from immich_memories.cli._config_errors import format_validation_error, format_yaml_error
-    from immich_memories.config_tiers import service_probes_off
     from immich_memories.settings_store import SettingsUnavailable
 
     try:
-        # Help still rejects a broken config file, but contacts no service to resolve a tier.
-        with service_probes_off() if help_only else nullcontext():
-            if config:
-                config_path = Path(config).expanduser().resolve()
-                ctx.obj["config"] = load_config(config_path)
-                ctx.obj["config_path"] = config_path
-            else:
-                ctx.obj["config"] = get_config()
-                ctx.obj["config_path"] = None
+        if config:
+            config_path = Path(config).expanduser().resolve()
+            ctx.obj["config"] = load_config(config_path)
+            ctx.obj["config_path"] = config_path
+        else:
+            ctx.obj["config"] = get_config()
+            ctx.obj["config_path"] = None
         if preset:
             from immich_memories.config_presets import apply_preset
 
@@ -158,15 +152,14 @@ def main(
     configure_logging(level=level)
     ctx.obj["log_level"] = level
     _quiet_request_logs(level)
-    help_only = bool(ctx.meta.get("help_requested"))
-
-    # Initialize config directory
-    init_config_dir()
-
-    _load_cli_config(ctx, config, preset, help_only=help_only)
-
-    if help_only:
+    if ctx.meta.get("help_requested"):
         return
+
+    # An explicit config belongs to its own installation, including under launchd.
+    if not config:
+        init_config_dir()
+
+    _load_cli_config(ctx, config, preset)
 
     from immich_memories.store_migration_notice import log_store_migration_warnings
 

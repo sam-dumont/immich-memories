@@ -185,3 +185,67 @@ def test_each_curation_flag_names_both_people_and_can_be_kept_apart(
 
     expect(flags).to_have_count(1)
     expect(flags.first).to_contain_text("Ana Twin")
+
+
+def test_a_late_roster_refresh_cannot_undo_a_newer_saved_note(
+    page: Page, launch_app_url: str, launch_workspace
+) -> None:
+    _open_people(page, launch_app_url, launch_workspace)
+    delayed = []
+
+    # WHY: delay one real HTTP response to reproduce a slow earlier refresh;
+    # both saves and roster reads still use the launched app and disposable store.
+    def hold_first_refresh(route):
+        if not delayed:
+            delayed.append(route)
+        else:
+            route.continue_()
+
+    page.route("**/api/v1/roster", hold_first_refresh)
+    with page.expect_request("**/api/v1/roster"):
+        _cards(page).first.get_by_label("Role", exact=False).fill("friend")
+        _cards(page).first.get_by_label("Role", exact=False).press("Tab")
+    response = page.request.get(f"{launch_app_url}/api/v1/roster")
+    assert response.ok
+    assert len(delayed) == 1
+
+    note = _cards(page).nth(1).get_by_label("Notes")
+    with page.expect_response("**/api/v1/roster"):
+        note.fill("visits in summer")
+        note.press("Tab")
+    expect(note).to_have_value("visits in summer")
+
+    with page.expect_response("**/api/v1/roster"):
+        delayed[0].fulfill(response=response)
+    page.wait_for_load_state("networkidle")
+
+    expect(note).to_have_value("visits in summer")
+
+
+def test_a_failed_roster_refresh_keeps_the_save_and_offers_a_retry(
+    page: Page, launch_app_url: str, launch_workspace
+) -> None:
+    _open_people(page, launch_app_url, launch_workspace)
+    errors = []
+    page.on("pageerror", lambda error: errors.append(str(error)))
+    # WHY: fail only the roster read at the HTTP boundary; the save is real.
+    page.route(
+        "**/api/v1/roster",
+        lambda route: route.fulfill(status=503, json={"detail": "Temporarily unavailable"}),
+    )
+    note = _cards(page).first.get_by_label("Notes")
+    with page.expect_response("**/api/v1/roster"):
+        note.fill("visits in summer")
+        note.press("Tab")
+    page.wait_for_load_state("networkidle")
+
+    assert errors == [], "a failed refresh must not reject outside the page's error handling"
+    expect(note).to_have_value("visits in summer")
+    expect(page.get_by_role("alert")).to_have_text("Could not load people.")
+
+    page.unroute("**/api/v1/roster")
+    page.get_by_role("button", name="Try again").click()
+
+    expect(page.get_by_role("alert")).to_have_count(0)
+    expect(note).to_have_value("visits in summer")
+    assert errors == []

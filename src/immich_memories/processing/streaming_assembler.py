@@ -209,17 +209,18 @@ class StreamingEncoder:
             )
 
 
-def _estimate_total_frames(
-    clips: list, transitions: list[str], fps: int, fade_duration: float
-) -> int:
-    """Validate the transition count and estimate frames after crossfade overlap."""
+def _sequence_frame_counts(
+    clips: list, transitions: list[str], fps: int, fade_duration: float, fade_frames: int | None
+) -> tuple[int, int]:
+    """Validate the sequence and return its fade and total frame counts."""
     if len(transitions) != len(clips) - 1:
         raise ValueError(f"Expected {len(clips) - 1} transitions, got {len(transitions)}")
 
-    fade_frames = int(fade_duration * fps)
+    if fade_frames is None:
+        fade_frames = int(fade_duration * fps)
     total = sum(int(c.duration * fps) for c in clips)
     fade_count = sum(1 for t in transitions if t == "fade")
-    return max(1, total - fade_count * fade_frames)
+    return fade_frames, max(1, total - fade_count * fade_frames)
 
 
 def assemble_streaming(
@@ -243,14 +244,18 @@ def assemble_streaming(
     effective_plan_callback: Callable[[EncodingPlan], None] | None = None,
     _allow_runtime_fallback: bool = True,
     probe_cache: ProbeCache | None = None,
+    *,
+    fade_frames: int | None = None,
 ) -> list[Path]:
     """Assemble clips via streaming frame blending (constant memory).
 
     Returns list of per-clip audio WAV paths extracted during decoding.
+    A supplied fade_frames keeps the full assembler's shared audio/video overlap.
     """
-    total_frames = _estimate_total_frames(clips, transitions, fps, fade_duration)
+    fade_frames, total_frames = _sequence_frame_counts(
+        clips, transitions, fps, fade_duration, fade_frames
+    )
     probe_cache = probe_cache or ProbeCache()
-    fade_frames = int(fade_duration * fps)
 
     captions, caption_font = timeline_captions(clips, date_overlay, place_overlay, caption_locale)
     plan = encoding_plan or _default_streaming_plan()
@@ -298,6 +303,7 @@ def assemble_streaming(
             effective_plan_callback,
             _allow_runtime_fallback=False,
             probe_cache=probe_cache,
+            fade_frames=fade_frames,
         )
 
     try:
@@ -461,6 +467,8 @@ def streaming_assemble_full(
     captured_at: datetime | None = None,
 ) -> Path:
     """Full streaming assembly: plan-bound video encode + audio mix + mux."""
+    # Quantize once: a float round trip through seconds can lose another video frame.
+    fade_frames = int(fade_duration * fps)
     probe_cache = probe_cache or ProbeCache()
     plan = encoding_plan or _default_streaming_plan()
     work_dir = output_path.parent / ".streaming_work"
@@ -500,6 +508,7 @@ def streaming_assemble_full(
             height=height,
             fps=fps,
             fade_duration=fade_duration,
+            fade_frames=fade_frames,
             encoding_plan=plan,
             ctx=ctx,
             privacy_mode=privacy_mode,
@@ -526,6 +535,7 @@ def streaming_assemble_full(
             transitions=transitions,
             output_path=audio_only,
             fade_duration=fade_duration,
+            fade_frames=fade_frames,
             fps=fps,
             normalize_audio=normalize_audio,
             privacy_mode=privacy_mode,

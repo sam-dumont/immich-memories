@@ -159,3 +159,30 @@ def test_a_home_configured_by_the_environment_alone_brings_its_owner_edits(store
     assert outcome.imported == 1
     with store.connect() as connection:
         assert connection.execute(sa.select(owner_edits.c.film_stem)).scalars().all() == ["june"]
+
+
+def test_bank_discovery_locates_files_without_resolving_a_runtime_tier(tmp_path, monkeypatch):
+    from unittest.mock import patch
+
+    from immich_memories.store.legacy_banks import bank_roots
+
+    home = tmp_path / "legacy"
+    home.mkdir()
+    cache = tmp_path / "moved-cache"
+    banks = cache / "structure-banks"
+    banks.mkdir(parents=True)
+    output = tmp_path / "films"
+    output.mkdir()
+    monkeypatch.setenv("IMMICH_MEMORIES_CACHE__DIRECTORY", str(cache))
+    monkeypatch.setenv("IMMICH_MEMORIES_OUTPUT__DIRECTORY", str(output))
+    monkeypatch.setenv("IMMICH_MEMORIES_TIER", "auto")
+    # WHY: locating old files must not invoke the machine's GPU detection boundary.
+    with patch(
+        "immich_memories.config_tiers.inference_acceleration",
+        side_effect=AssertionError("legacy discovery must not probe the runtime GPU"),
+    ) as probe:
+        found_banks, found_outputs = bank_roots(home)
+
+    assert banks in found_banks
+    assert output in found_outputs
+    assert not probe.called

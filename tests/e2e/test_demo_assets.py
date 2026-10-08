@@ -17,6 +17,7 @@ from __future__ import annotations
 import re
 import shutil
 import subprocess
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -127,9 +128,6 @@ _TRIP_TRACK = (
     _REPO_ROOT
     / "packages/immich-memories-music/immich_memories_music/tracks/calm/calm_acoustic_s411.opus"
 )
-# CRF 26 came to 8.06 MB once the film carried its soundtrack, over the cap below; 27 keeps
-# the same picture under it. The docs site serves this file to every reader of the trip page.
-_TRIP_WEB_CRF = "27"
 
 
 @pytest.fixture
@@ -216,35 +214,43 @@ def _silences_in(video: Path) -> list[tuple[float, float]]:
 
 
 def _encode_for_the_web(source: Path, destination: Path) -> None:
-    """Re-encode the render for a docs page: same picture, a size a page can carry."""
-    subprocess.run(  # noqa: S603
-        [
-            "ffmpeg",
-            "-hide_banner",
-            "-loglevel",
-            "error",
-            "-y",
-            "-i",
-            str(source),
-            "-c:v",
-            "libx264",
-            "-crf",
-            _TRIP_WEB_CRF,
-            "-preset",
-            "slow",
-            "-pix_fmt",
-            "yuv420p",
-            "-movflags",
-            "+faststart",
-            "-c:a",
-            "aac",
-            "-b:a",
-            "96k",
-            str(destination),
-        ],
-        check=True,
-        capture_output=True,
-    )
+    """Keep the complete film inside the page's byte budget, including its soundtrack."""
+    # Constant quality cannot cap bytes when the render changes. Reserve 5% for
+    # container overhead, then give two-pass x264 the budget left after AAC.
+    video_bitrate = int(_TRIP_MAX_BYTES * 8 * 0.95 / _duration_of(source)) - 96_000
+    with tempfile.TemporaryDirectory(prefix="trip-web-", dir=destination.parent) as scratch:
+        for pass_number in (1, 2):
+            output = (
+                ["-an", "-f", "null", "-"]
+                if pass_number == 1
+                else ["-c:a", "aac", "-b:a", "96k", "-movflags", "+faststart", str(destination)]
+            )
+            subprocess.run(  # noqa: S603
+                [
+                    "ffmpeg",
+                    "-hide_banner",
+                    "-loglevel",
+                    "error",
+                    "-y",
+                    "-i",
+                    str(source),
+                    "-c:v",
+                    "libx264",
+                    "-b:v",
+                    str(video_bitrate),
+                    "-preset",
+                    "slow",
+                    "-pix_fmt",
+                    "yuv420p",
+                    "-pass",
+                    str(pass_number),
+                    "-passlogfile",
+                    str(Path(scratch) / "encode"),
+                    *output,
+                ],
+                check=True,
+                capture_output=True,
+            )
 
 
 def _trip_environment(home: Path) -> dict[str, str]:

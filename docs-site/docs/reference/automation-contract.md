@@ -55,6 +55,11 @@ immich-memories auto install --hour 9
 
 This writes a launcher at `~/.immich-memories/bin/immich-memories-auto` and scheduler files: a launchd plist on macOS, a systemd user timer on Linux, or a crontab command to paste elsewhere. It prints **Activate:** and **Deactivate:** commands; it does not run them. Run the printed activation command to start the schedule. The launcher looks `immich-memories` up on every fire, so an upgrade in place needs no reinstall.
 
+There is one managed launcher per operating-system user, and one launchd job or systemd timer.
+Installing with another `--config` replaces that user's existing schedule; it does not add a
+second one. Use separate operating-system users or containers for independent schedules.
+The launcher stays under `~/.immich-memories/bin` even with an explicit config.
+
 On headless Linux, enable lingering so the user timer survives logout:
 
 ```bash

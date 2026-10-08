@@ -8,13 +8,17 @@ from typing import Any
 
 from fastapi import Request
 from fastapi.responses import JSONResponse, Response
+from starlette.requests import ClientDisconnect
 
 
 async def validate_json_request(request: Request, call_next: Any) -> Response:
     """Validate strings before field errors can echo them or commands consume them."""
     media_type = request.headers.get("content-type", "").split(";", 1)[0].strip().lower()
     if not media_type or media_type == "application/json" or media_type.endswith("+json"):
-        body = await request.body()
+        try:
+            body = await request.body()
+        except ClientDisconnect:
+            return Response(status_code=400)
         if not body:
             return await call_next(request)
         if error := _json_error(body):

@@ -90,10 +90,10 @@ class TestGivesUpAfterMaxRetries:
 
     @pytest.mark.asyncio
     async def test_gives_up_after_max_retries(self, _mock_config):
-        """3x 503 raises ImmichAPIError after all retries exhausted."""
+        """7x 503 raises ImmichAPIError after all retries exhausted."""
         client = _make_client()
         resp_503 = httpx.Response(503, request=httpx.Request("GET", "/test"))
-        # WHY: simulate persistent server outage — all 3 attempts return 503
+        # WHY: simulate persistent server outage — all 7 attempts return 503
         client._client.request = AsyncMock(return_value=resp_503)
 
         # WHY: avoid real sleep in tests — backoff would add seconds
@@ -103,7 +103,7 @@ class TestGivesUpAfterMaxRetries:
         ):
             await client._request("GET", "/test")
 
-        assert client._client.request.call_count == 3
+        assert client._client.request.call_count == 7
 
 
 class TestTransportFailureRedaction:
@@ -115,22 +115,22 @@ class TestTransportFailureRedaction:
         [
             pytest.param(
                 lambda key: httpx.TimeoutException(f"timed out carrying {key}"),
-                3,
+                7,
                 id="timeout-unlabelled",
             ),
             pytest.param(
                 lambda key: httpx.TimeoutException(f"x-api-key={key} timed out"),
-                3,
+                7,
                 id="timeout-labelled",
             ),
             pytest.param(
                 lambda key: httpx.ConnectError(f"connection refused for {key}"),
-                3,
+                7,
                 id="network-unlabelled",
             ),
             pytest.param(
                 lambda key: httpx.ConnectError(f"api_key: {key} connection refused"),
-                3,
+                7,
                 id="network-labelled",
             ),
             pytest.param(

@@ -277,7 +277,7 @@
           <div class="mb-3 lg:hidden">
             <Button size="small" variant="ghost" leadingIcon={mdiArrowLeft} onclick={() => (inspecting = false)}>{t('Back to pictures')}</Button>
           </div>
-          {#if editor}<ShotInspector shot={selected} modelPolish={cut.model_polish} {editor} runId={run.run_id} />{/if}
+          {#if editor}<ShotInspector shot={selected} modelPolish={cut.model_polish} captionsRead={cut.captions_read} {editor} runId={run.run_id} />{/if}
         </div>
       {/if}
     </div>

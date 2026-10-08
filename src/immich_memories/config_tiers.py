@@ -17,9 +17,6 @@ never goes to an LLM on any tier.
 from __future__ import annotations
 
 import logging
-from collections.abc import Iterator
-from contextlib import contextmanager
-from contextvars import ContextVar
 from typing import TYPE_CHECKING, Any, Literal
 
 from immich_memories.analysis.llm_caption_identity import llm_caption_identity
@@ -30,20 +27,6 @@ if TYPE_CHECKING:
     from immich_memories.config_loader import Config
 
 logger = logging.getLogger(__name__)
-
-# Help text reads the config (a broken file still fails) but must contact no service.
-_SERVICE_PROBES_OFF: ContextVar[bool] = ContextVar("_SERVICE_PROBES_OFF", default=False)
-
-
-@contextmanager
-def service_probes_off() -> Iterator[None]:
-    """Resolve an auto tier as basic without asking the inference service."""
-    token = _SERVICE_PROBES_OFF.set(True)
-    try:
-        yield
-    finally:
-        _SERVICE_PROBES_OFF.reset(token)
-
 
 ProductTier = Literal["basic", "gpu", "full"]
 TierSetting = Literal["auto", ProductTier]
@@ -99,9 +82,6 @@ def _say_auto_resolution(tier: str, reason: str) -> None:
 def apply_tier(config: Config) -> dict[str, Any]:
     """Resolve one product tier and apply its preparation and reader contract."""
     applied = _apply_caption_provider(config)
-    if config.tier == "auto" and _SERVICE_PROBES_OFF.get():
-        config.tier = "basic"
-        applied["tier"] = config.tier
     if config.tier == "auto":
         accelerated, reason = inference_acceleration(config.inference)
         config.tier = "basic"

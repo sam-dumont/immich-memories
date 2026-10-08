@@ -14,10 +14,12 @@ down) always comes back rather than being written off forever.
 from __future__ import annotations
 
 import logging
+import re
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 
 from immich_memories.automation.state_store import FailureStreak
+from immich_memories.memory_types.factory import list_memory_types
 
 if TYPE_CHECKING:
     from immich_memories.automation.candidates import MemoryCandidate
@@ -80,5 +82,14 @@ def drop_backed_off(
     """
     suppressed = suppressed_keys(streaks, now)
     for key, reason in sorted(suppressed.items()):
-        logger.info("Skipping candidate %s: %s", key, reason)
+        logger.info("Skipping %s: %s", backoff_label(key), reason)
     return [c for c in candidates if c.memory_key not in suppressed], suppressed
+
+
+def backoff_label(memory_key: str) -> str:
+    """Name a waiting film without showing account, album or person identifiers."""
+    names = {item["type"]: item["name"] for item in list_memory_types()}
+    names["album"] = "Album"
+    kind = names.get(memory_key.partition(":")[0], "Memory")
+    days = re.findall(r"\d{4}-\d{2}-\d{2}", memory_key)[:2]
+    return f"{kind}: {' to '.join(days)}" if days else kind

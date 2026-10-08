@@ -43,12 +43,16 @@ def emit_operational_phase(
         run_tracker.record_phase_event(event)
     except Exception:  # WHY: extension trackers must not make status telemetry fatal
         logger.warning("Could not persist operational phase '%s'", phase.value)
+    _notify_phase(params, event)
+    return event
+
+
+def _notify_phase(params: GenerationParams, event: PhaseEvent) -> None:
     if params.phase_callback is not None:
         try:
             params.phase_callback(event)
         except Exception:  # WHY: observer failures cannot invalidate completed pipeline work
-            logger.warning("Operational phase observer failed for '%s'", phase.value)
-    return event
+            logger.warning("Operational phase observer failed for '%s'", event.phase.value)
 
 
 def render_progress_events(
@@ -71,10 +75,12 @@ def render_progress_events(
         if inner is not None:
             inner(pct, msg)
         now = clock()
+        current = min(total, int(pct * total))
         if now - last < every_seconds:
+            operational.observe(OperationalPhase.RENDER, current, total, msg)
             return
         last = now
-        operational.emit(OperationalPhase.RENDER, min(total, int(pct * total)), total, msg)
+        operational.emit(OperationalPhase.RENDER, current, total, msg)
 
     return report
 
@@ -92,23 +98,26 @@ def clip_preparation_events(
     clock: Callable[[], float] = time.monotonic,
     every_seconds: float = 30.0,
 ) -> Callable[[str, float, str], None]:
-    """Turn the clip extraction's progress into "Preparing clips (n/N)" phase events, throttled.
+    """Report every completed source; throttle only repeats of an unchanged count.
 
     Without it the phase stays on the last thing reported before extraction (the finished
     selection) for the whole download and cut, and a scheduled run's log and the trigger API
     keep saying so (#2243).
     """
     last = float("-inf")
+    last_count = -1
 
     def report(stage: str, pct: float, msg: str) -> None:
-        nonlocal last
+        nonlocal last, last_count
         if inner is not None:
             inner(stage, pct, msg)
-        now = clock()
-        if stage != "extract" or now - last < every_seconds:
+        if stage != "extract":
             return
-        last = now
+        now = clock()
         done = min(total, int(pct / _EXTRACT_SHARE * total + 0.5))
+        if done == last_count and now - last < every_seconds:
+            return
+        last, last_count = now, done
         operational.emit(phase, done, total, f"Preparing clips ({done}/{total})")
 
     return report
@@ -143,6 +152,10 @@ class _OperationalProgress:
         self._started = now
         self._last_phase = phase
         return event
+
+    def observe(self, phase: OperationalPhase, current: int, total: int, message: str) -> None:
+        """Keep live observers current between persisted phase events."""
+        _notify_phase(self._params, PhaseEvent(phase, current, total, message, 0.0))
 
     def emit_unperformed_prerequisites(self, through: OperationalPhase) -> None:
         """Mark only prerequisites not owned by this generation call as complete."""

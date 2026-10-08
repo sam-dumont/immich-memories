@@ -160,19 +160,18 @@ def detect_dominant_hdr_transfer(
             if probe_cache is not None
             else _detect_hdr_type(path)
         )
-        for transfer in counts:
-            if hdr_type == transfer.value:
-                counts[transfer] += 1
-                videos[transfer] += not getattr(clip, "is_photo", False)
+        if hdr_type in {HdrTransfer.HLG.value, HdrTransfer.PQ.value}:
+            transfer = HdrTransfer(hdr_type)
+            counts[transfer] += 1
+            videos[transfer] += not getattr(clip, "is_photo", False)
 
     if counts[HdrTransfer.PQ] > counts[HdrTransfer.HLG]:
-        logger.info(
-            "Detected HDR10/PQ format (Android/Samsung/Pixel) - %d video clips",
-            videos[HdrTransfer.PQ],
-        )
+        if videos[HdrTransfer.PQ]:
+            logger.info("Detected HDR10/PQ format - %d video clips", videos[HdrTransfer.PQ])
         return HdrTransfer.PQ
     if counts[HdrTransfer.HLG] > 0:
-        logger.info("Detected HLG format (iPhone) - %d video clips", videos[HdrTransfer.HLG])
+        if videos[HdrTransfer.HLG]:
+            logger.info("Detected HLG format - %d video clips", videos[HdrTransfer.HLG])
         return HdrTransfer.HLG
     return HdrTransfer.NONE
 

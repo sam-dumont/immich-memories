@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Any
 
@@ -39,6 +40,7 @@ class PhaseEvent:
     total: int
     message: str
     elapsed_seconds: float
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     def __post_init__(self) -> None:
         if self.current < 0 or self.total < 0:
@@ -57,4 +59,5 @@ class PhaseEvent:
             "total": self.total,
             "message": self.message,
             "elapsed_seconds": self.elapsed_seconds,
+            "timestamp": self.timestamp.isoformat(),
         }

@@ -17,6 +17,7 @@ from immich_memories.automation.runtime_provenance import (
     checkout_drift,
     git_checkout_root,
 )
+from immich_memories.security import create_private_directory
 
 
 @dataclass
@@ -206,7 +207,7 @@ def render_launcher_shim(path_env: str) -> str:
 
 def _write_launcher_shim(binary: str) -> Path:
     shim = _launcher_shim_path()
-    shim.parent.mkdir(parents=True, exist_ok=True)
+    create_private_directory(shim.parent)
     shim.write_text(render_launcher_shim(_launcher_search_path(binary)))
     shim.chmod(0o755)
     return shim

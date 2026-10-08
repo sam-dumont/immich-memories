@@ -445,7 +445,11 @@ class TitleInserter:
         from immich_memories.processing.film_timeline import measure_film_timeline
 
         self.settings.film_timeline = measure_film_timeline(final_clips, title_settings)
-        logger.info("Final timeline: %s", self.settings.film_timeline.describe())
+        borrowed = sum(head + tail for head, tail in self._borrowed.values())
+        title_note = (
+            f"; {borrowed:.1f}s of selected content used in title backgrounds" if borrowed else ""
+        )
+        logger.info("Final timeline: %s%s", self.settings.film_timeline.describe(), title_note)
 
         # 5. Assemble
         if progress_callback:

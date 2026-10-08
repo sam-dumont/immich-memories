@@ -230,10 +230,12 @@ class SyncImmichClient:
         person_ids: Sequence[str],
         taken_after: datetime | None = None,
         taken_before: datetime | None = None,
+        *,
+        owner_id: str | None = None,
     ) -> int:
         return self._run(
             self._async_client.search.count_assets_with_people(
-                person_ids, taken_after=taken_after, taken_before=taken_before
+                person_ids, taken_after=taken_after, taken_before=taken_before, owner_id=owner_id
             )
         )
 

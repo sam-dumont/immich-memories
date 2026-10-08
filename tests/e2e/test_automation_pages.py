@@ -47,6 +47,8 @@ def test_suggestions_page_offers_the_discovered_candidates(page, launch_app_url,
     expect(page.get_by_role("heading", name="Suggestions", level=1)).to_be_visible()
     expect(page.get_by_role("button", name="Refresh suggestions")).to_be_visible()
     expect(page.get_by_role("button", name="Check eligibility").first).to_be_visible(timeout=60_000)
+    page.get_by_text("Why other suggestions were skipped", exact=True).click()
+    expect(page.get_by_text("No on this day film:", exact=False)).to_be_visible()
 
 
 def test_runs_page_reads_the_existing_database(page, launch_app_url, launch_workspace):

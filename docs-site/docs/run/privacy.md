@@ -97,6 +97,12 @@ Your browser asks this app for pictures/video, behind the same login. The app fe
 cached media from Immich. The API key stays on the server. It only serves a picture one of the
 configured accounts can read: any other ID gets a 404, even when it sits in the cache.
 
+Cached suggestions and trip summaries are private library data. Their JSON files are readable
+only by the account running the app, including existing answers when the app reads them.
+Job progress files can include the finished film’s path. New files and replacements for older
+progress files are readable only by that account. Opening the web job runner also restricts its
+job directory, protecting older progress files without changing the shared cache folder above it.
+
 ## Privacy mode
 
 For sharing a demonstration without showing the actual film:

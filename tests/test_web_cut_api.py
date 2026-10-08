@@ -213,3 +213,60 @@ def test_a_run_without_a_plan_has_no_story(client, config):
     save_run(config, RUN, cut=False)
 
     assert client.get(f"/api/v1/runs/{RUN}/story").status_code == 404
+
+
+def test_refinement_captions_are_read_from_every_round_of_the_saved_cut(client, config):
+    import json
+
+    attempt = save_run(config, RUN)
+    (attempt / "preparation.private.json").write_text(json.dumps({"tier": "no_captions"}))
+    for number, asset, description in (
+        (1, "garden-1", "People eat at a table outside."),
+        (2, "lake-1", "A tent stands beside the lake."),
+    ):
+        directory = attempt / "refinement" / f"{number:04}"
+        directory.mkdir(parents=True)
+        (directory / "preparation.private.json").write_text(
+            json.dumps(
+                {
+                    "tier": "full",
+                    "requested_asset_ids": [asset],
+                    "caption_provenance": {
+                        "origins": [{"status": "unknown", "assets": 1}],
+                        "by_asset": {},
+                    },
+                }
+            )
+        )
+        (directory / "captions.private.json").write_text(json.dumps({asset: description}))
+
+    cut = client.get(f"/api/v1/runs/{RUN}/cut").json()
+    assert cut["model_polish"] is False
+    assert cut["captions_read"] is True
+    assert [shot["caption"] for shot in cut["shots"]] == [
+        "People eat at a table outside.",
+        "A tent stands beside the lake.",
+    ]
+
+
+def test_older_refinement_records_prove_caption_reads_without_inventing_text(client, config):
+    import json
+
+    attempt = save_run(config, RUN)
+    directory = attempt / "refinement" / "0001"
+    directory.mkdir(parents=True)
+    (directory / "preparation.private.json").write_text(
+        json.dumps(
+            {
+                "tier": "full",
+                "requested_asset_ids": ["garden-1"],
+                "caption_provenance": {
+                    "origins": [{"status": "unknown", "assets": 1}],
+                    "by_asset": {},
+                },
+            }
+        )
+    )
+    cut = client.get(f"/api/v1/runs/{RUN}/cut").json()
+    assert cut["captions_read"] is True
+    assert all(shot["caption"] == "" for shot in cut["shots"])

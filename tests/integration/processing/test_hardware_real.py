@@ -13,6 +13,7 @@ import platform
 
 import pytest
 
+from immich_memories.processing.hardware_detection import _cached_hardware_detection
 from tests.integration.conftest import requires_ffmpeg
 
 pytestmark = [pytest.mark.integration, requires_ffmpeg]
@@ -29,7 +30,7 @@ def test_detect_hardware_returns_valid_backend():
         detect_hardware_acceleration,
     )
 
-    detect_hardware_acceleration.cache_clear()
+    _cached_hardware_detection.cache_clear()
     caps = detect_hardware_acceleration()
 
     assert caps.backend in list(HWAccelBackend)
@@ -42,7 +43,7 @@ def test_apple_backend_has_metal():
         detect_hardware_acceleration,
     )
 
-    detect_hardware_acceleration.cache_clear()
+    _cached_hardware_detection.cache_clear()
     caps = detect_hardware_acceleration()
 
     # On macOS with FFmpeg built with VideoToolbox, Apple backend is detected
@@ -169,7 +170,7 @@ def test_apple_preset_variants(preset):
         get_ffmpeg_encoder,
     )
 
-    detect_hardware_acceleration.cache_clear()
+    _cached_hardware_detection.cache_clear()
     caps = detect_hardware_acceleration()
 
     if caps.backend != HWAccelBackend.APPLE:

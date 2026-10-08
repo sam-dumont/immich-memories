@@ -67,7 +67,7 @@ def _check_vision_available() -> bool:
         _Vision = Vision
         _Quartz = Quartz
         _vision_available = True
-        logger.info("Apple Vision framework available")
+        logger.debug("Apple Vision framework available")
         return True
     except ImportError as e:
         logger.debug(f"Vision framework not available: {e}")

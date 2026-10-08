@@ -15,11 +15,14 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date, datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from immich_memories.analysis.person_resolution import StorePerson
 from immich_memories.people.account_ids import entry_ids
 from immich_memories.people.companion import people_entries
+
+if TYPE_CHECKING:
+    from immich_memories.api.native_sharing import NativePeople
 
 
 @dataclass(frozen=True)
@@ -32,13 +35,29 @@ class MergedPerson:
     thumbnail_path: str | None
 
 
-def canonical_person_map(store: Sequence[StorePerson]) -> dict[tuple[str, str], str]:
+def canonical_person_map(
+    store: Sequence[StorePerson],
+    *,
+    native: NativePeople | None = None,
+) -> dict[tuple[str, str], str]:
     """Every store alias's (account, face id) to the canonical person id that owns it."""
-    return {
+    result = {
         (alias.account, alias.face_id): person.person_id
         for person in store
         for alias in person.aliases
     }
+
+    if native is not None:
+        for person in store:
+            for alias in person.aliases:
+                origin = native.origins.get(alias.face_id)
+                if origin is None or origin != native.binding_servers.get(alias.account):
+                    continue
+                result.update(
+                    ((account, alias.face_id), person.person_id)
+                    for account in native.scopes.get(alias.face_id, ())
+                )
+    return result
 
 
 def merge_people(
@@ -75,7 +94,7 @@ def merge_counts(
     per_account: Mapping[str, Mapping[str, int]],
     canon: Mapping[tuple[str, str], str],
 ) -> dict[str, int]:
-    """Per-account asset counts, summed onto the canonical id each face belongs to."""
+    """Owned-asset counts, summed onto the canonical id each face belongs to."""
     result: dict[str, int] = {}
     for account, counts in per_account.items():
         for person_id, count in counts.items():

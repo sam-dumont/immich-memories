@@ -12,7 +12,7 @@ from playwright.sync_api import Page, expect
 
 from tests.e2e.fake_editorial import PREVIEW_STAGE
 from tests.e2e.fake_library import CARRIERS, HOME, LIBRARY, STORIES, THESIS
-from tests.e2e.web_flow import contact_sheet, cut_june
+from tests.e2e.web_flow import contact_sheet, cut_june, evidence
 
 pytestmark = pytest.mark.e2e
 
@@ -455,3 +455,40 @@ def test_an_album_is_cut_from_its_own_pictures_only(page: Page, launch_app_url: 
         "images => images.map(i => decodeURIComponent(i.src.split('/assets/')[1].split('/')[0]))"
     )
     assert played and set(played) <= ALBUM_ASSETS
+
+
+def test_the_inspector_distinguishes_caption_reading_from_model_polish(
+    page: Page, launch_app_url: str, launch_workspace
+) -> None:
+    before = _attempts(launch_workspace)
+    cut_june(page, launch_app_url, minutes=None)
+    attempt = max(_attempts(launch_workspace) - before, key=lambda path: path.stat().st_mtime)
+    asset = CARRIERS[0].asset_id
+    # WHY: inference is the fixture boundary; the API and browser read real saved records.
+    (attempt / "derived-decisions" / "thin-polish.private.json").unlink(missing_ok=True)
+    folder = attempt / "refinement" / "0001"
+    folder.mkdir(parents=True, exist_ok=True)
+    (folder / "preparation.private.json").write_text(
+        json.dumps(
+            {
+                "tier": "full",
+                "requested_asset_ids": [asset],
+                "caption_provenance": {
+                    "origins": [{"status": "unknown", "assets": 1}],
+                    "by_asset": {},
+                },
+            }
+        )
+    )
+    description = "People sit around a table in the garden."
+    (folder / "captions.private.json").write_text(json.dumps({asset: description}))
+    page.reload(wait_until="domcontentloaded")
+    contact_sheet(page).first.click()
+    inspector = page.get_by_role("article", name="Picture review")
+    expect(inspector.get_by_text(description, exact=True)).to_be_visible()
+    expect(inspector.get_by_text("Captions were read; the rules chose this cut.")).to_be_visible()
+    expect(inspector.get_by_text("No model read this cut", exact=False)).to_have_count(0)
+    inspector.get_by_text(
+        "Captions were read; the rules chose this cut."
+    ).scroll_into_view_if_needed()
+    evidence(page, "caption-review")

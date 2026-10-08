@@ -30,6 +30,25 @@ A from-scratch Docker install on the same NAS, model download included, takes ab
 end to end on top of the cold time above. Captions and a text reader add the GPU/Full download
 and preparation time once, on the first run; later runs reuse what they already prepared.
 
+## Bounded candidate runs
+
+The v1.0.0-rc.8 candidate made an album film and a month film on five platforms against Immich
+3.3.0. The month contains 248 inputs and produces about one minute of 1080p video with bundled
+music. These are command wall times, including selection and rendering:
+
+| Hardware | Tier | Month time | Cache state |
+|---|---|---:|---|
+| M5 Max, 128 GB | Basic | 48 s | Warm |
+| M2 Pro, 16 GB | Basic | 1 min 6 s | Warm |
+| Xeon E3-1240 v6, 4 GiB app | Basic | 5 min 56 s | 39 inputs reused, 209 new; includes a 15-second network interruption |
+| DS423+, J4125, 4 GiB app | Basic | 15 min 43 s | 39 inputs reused, 209 new |
+| T1000 8 GB, shared GPU | GPU | 7 min 48 s | Album facts reused; captions and family checks included |
+
+Package/image acquisition and model download are outside these times. The Macs used warm upgrades;
+the containers used fresh app volumes with unpublished candidate artifacts. Shared load differs,
+and GPU preparation does more work than Basic. See [tested deployments](../run/tested-deployments.md)
+for the install routes and evidence.
+
 ## 4K/HDR render cost vs 1080p {#4k-hdr-render-cost}
 
 Same cut, same machine, rendered again at 3840×2160 60 fps HEVC 10-bit HDR instead of 1080p60 SDR:

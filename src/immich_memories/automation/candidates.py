@@ -9,6 +9,8 @@ from typing import Any
 
 from immich_memories.api.person_expression import PersonExpression
 
+DEFAULT_SUGGESTION_LIMIT = 10
+
 
 class CandidateCategory(StrEnum):
     """The detector identity of a proposed memory."""
@@ -134,3 +136,12 @@ def bind_people_expression_key(key: str, expression: PersonExpression | None) ->
     serialized = json.dumps(expression.to_dict(), sort_keys=True, separators=(",", ":"))
     suffix = ":people-" + hashlib.sha256(serialized.encode()).hexdigest()[:16]
     return key if key.endswith(suffix) else key + suffix
+
+
+def explain_empty(
+    candidates: list[MemoryCandidate], notes: list[str] | None, reason: str
+) -> list[MemoryCandidate]:
+    """Keep a detector's decision and report why it returned no candidates."""
+    if not candidates and notes is not None:
+        notes.append(reason)
+    return candidates

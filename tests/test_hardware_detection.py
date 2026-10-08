@@ -18,6 +18,7 @@ from immich_memories.processing.hardware import (
     get_opencv_backend,
 )
 from immich_memories.processing.hardware_detection import (
+    _cached_hardware_detection,
     _detect_apple_chip_info,
     _detect_apple_vram,
     _detect_nvidia,
@@ -390,7 +391,7 @@ class TestDetectQsv:
 class TestDetectHardwareAcceleration:
     def test_no_backends_returns_none_backend(self):
         # Clear the lru_cache so we get fresh detection
-        detect_hardware_acceleration.cache_clear()
+        _cached_hardware_detection.cache_clear()
         # WHY: no backend may talk to real hardware in a unit test
         with (
             patch(
@@ -402,10 +403,10 @@ class TestDetectHardwareAcceleration:
         ):
             caps = detect_hardware_acceleration()
         assert caps.backend == HWAccelBackend.NONE
-        detect_hardware_acceleration.cache_clear()
+        _cached_hardware_detection.cache_clear()
 
     def test_first_backend_with_encoding_wins(self):
-        detect_hardware_acceleration.cache_clear()
+        _cached_hardware_detection.cache_clear()
         nvidia_caps = HWAccelCapabilities(
             backend=HWAccelBackend.NVIDIA,
             supports_h264_encode=True,
@@ -421,7 +422,7 @@ class TestDetectHardwareAcceleration:
         ):
             caps = detect_hardware_acceleration()
         assert caps.backend == HWAccelBackend.NVIDIA
-        detect_hardware_acceleration.cache_clear()
+        _cached_hardware_detection.cache_clear()
 
     def test_a_named_backend_probes_that_one_and_no_other(self):
         """`hardware.backend` exists so a measurement can say which chip it ran on.
@@ -429,7 +430,7 @@ class TestDetectHardwareAcceleration:
         On a box with two encode paths, first-hit-wins would quietly hand the run
         the other one, and the row would carry a number about the wrong hardware.
         """
-        detect_hardware_acceleration.cache_clear()
+        _cached_hardware_detection.cache_clear()
         apple = HWAccelCapabilities(backend=HWAccelBackend.APPLE, supports_h264_encode=True)
         # WHY: a detector talks to ffmpeg, and no unit test may reach real hardware.
         with (
@@ -445,7 +446,7 @@ class TestDetectHardwareAcceleration:
         assert caps.backend == HWAccelBackend.NONE, "software, rather than the other chip"
         assert nvidia_probe.called
         assert not apple_probe.called
-        detect_hardware_acceleration.cache_clear()
+        _cached_hardware_detection.cache_clear()
 
 
 # ---------------------------------------------------------------------------

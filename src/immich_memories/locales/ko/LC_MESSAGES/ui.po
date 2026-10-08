@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-07 19:13+0200\n"
+"POT-Creation-Date: 2026-10-08 20:41+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ko\n"
@@ -62,7 +62,7 @@ msgstr "관계 추가"
 msgid "Add date overlay"
 msgstr "날짜 표시"
 
-#: web/routes/settings/people/+page.svelte:127
+#: web/routes/settings/people/+page.svelte:161
 msgid "Add someone not in Immich"
 msgstr "Immich에 없는 인물 추가"
 
@@ -105,7 +105,7 @@ msgstr "선택한 인물 모두"
 msgid "Also show the {count} pictures outside this memory"
 msgstr "이 추억에 포함되지 않은 소재 {count}개도 보기"
 
-#: web/lib/ShotInspector.svelte:165
+#: web/lib/ShotInspector.svelte:172
 msgid "Alternatives considered"
 msgstr "검토한 대안"
 
@@ -194,7 +194,7 @@ msgstr "검은색"
 msgid "Blurred background"
 msgstr "흐린 배경"
 
-#: web/lib/ShotInspector.svelte:137
+#: web/lib/ShotInspector.svelte:144
 msgid "Browse the whole pool"
 msgstr "후보 소재 전체 보기"
 
@@ -213,6 +213,10 @@ msgstr "후보 키"
 #: web/lib/RenderPanel.svelte:237
 msgid "Caption clips with their place"
 msgstr "클립에 장소 표시"
+
+#: web/lib/ShotInspector.svelte:151
+msgid "Captions were read; the rules chose this cut."
+msgstr "설명을 읽은 뒤 규칙에 따라 이 컷을 선택했습니다."
 
 #: web/routes/create/+page.svelte:373 web/routes/create/+page.svelte:378
 msgid "Catalogued days"
@@ -284,7 +288,7 @@ msgstr "설정"
 msgid "Connected as: {name}"
 msgstr "{name}(으)로 연결됨"
 
-#: web/lib/ShotInspector.svelte:160
+#: web/lib/ShotInspector.svelte:167
 msgid "Considered by the model"
 msgstr "모델이 검토함"
 
@@ -300,11 +304,15 @@ msgstr "CLI 명령어로 복사"
 msgid "Copy report"
 msgstr "보고서 복사"
 
+#: web/routes/settings/people/+page.svelte:125
+msgid "Could not load people."
+msgstr "인물을 불러오지 못했습니다."
+
 #: web/lib/RenderPanel.svelte:177
 msgid "Crossfade"
 msgstr "크로스페이드"
 
-#: web/routes/settings/people/+page.svelte:100 web/routes/settings/people/+page.svelte:101
+#: web/routes/settings/people/+page.svelte:134 web/routes/settings/people/+page.svelte:135
 msgid "Curation"
 msgstr "인물 정보 확인"
 
@@ -312,7 +320,7 @@ msgstr "인물 정보 확인"
 msgid "Custom date range"
 msgstr "직접 지정한 기간"
 
-#: web/lib/RenderPanel.svelte:177 web/routes/create/+page.svelte:510
+#: web/routes/create/+page.svelte:510
 msgid "Cut"
 msgstr "편집하기"
 
@@ -393,7 +401,7 @@ msgstr "모델 다운로드"
 msgid "Download report"
 msgstr "보고서 다운로드"
 
-#: web/routes/settings/people/+page.svelte:118
+#: web/routes/settings/people/+page.svelte:152
 msgid ""
 "Each Immich account gives the same person its own id. Under a person, pick who they are in "
 "the other account. Nothing is matched for you: the same name only comes first in the list."
@@ -419,7 +427,7 @@ msgstr "설명 없이 편집했습니다. 소재의 내용을 분류했지만 �
 msgid "Elegant minimal"
 msgstr "우아하고 간결하게"
 
-#: web/lib/ShotInspector.svelte:110
+#: web/lib/ShotInspector.svelte:117
 msgid "Eligible when this shot was chosen. Open one to compare."
 msgstr "이 장면이 선택될 때 후보였습니다. 열어서 비교하세요."
 
@@ -467,7 +475,7 @@ msgstr "실험적"
 msgid "Expression"
 msgstr "표현식"
 
-#: web/routes/settings/people/+page.svelte:48
+#: web/routes/settings/people/+page.svelte:75
 msgid ""
 "Face recognition merges identical faces, so one of these records holds nearly all the "
 "pictures and the other almost none. Neither count means anything on its own. Merge them in "
@@ -493,7 +501,7 @@ msgstr "조건에 맞는 소재가 12개 미만이라 짧은 영상이 만들어
 msgid "Films that may use it"
 msgstr "이를 사용할 수 있는 영상"
 
-#: web/routes/create/+page.svelte:433 web/routes/settings/people/+page.svelte:124
+#: web/routes/create/+page.svelte:433 web/routes/settings/people/+page.svelte:158
 msgid "Find a name"
 msgstr "이름 검색"
 
@@ -513,7 +521,7 @@ msgstr "형식"
 msgid "From"
 msgstr "시작"
 
-#: web/routes/settings/people/+page.svelte:126
+#: web/routes/settings/people/+page.svelte:160
 msgid "Full name"
 msgstr "전체 이름"
 
@@ -550,7 +558,7 @@ msgstr "명절·기념일"
 msgid "How it read your words"
 msgstr "요청을 이해한 방식"
 
-#: web/lib/ShotInspector.svelte:98
+#: web/lib/ShotInspector.svelte:105
 msgid "How the rules got here"
 msgstr "규칙에 따라 선별한 과정"
 
@@ -583,7 +591,7 @@ msgstr "Immich에 연결할 수 없습니다"
 msgid "Important"
 msgstr "중요"
 
-#: web/lib/ShotInspector.svelte:126
+#: web/lib/ShotInspector.svelte:133
 msgid "In the cut"
 msgstr "편집본에 포함"
 
@@ -616,7 +624,7 @@ msgstr "완료되지 않았습니다."
 msgid "Just us"
 msgstr "우리끼리"
 
-#: web/routes/settings/people/+page.svelte:109
+#: web/routes/settings/people/+page.svelte:143
 msgid "Keep apart"
 msgstr "따로 두기"
 
@@ -624,12 +632,12 @@ msgstr "따로 두기"
 msgid "Keep the original"
 msgstr "원본 유지"
 
-#: web/lib/ShotInspector.svelte:101
+#: web/lib/ShotInspector.svelte:108
 #, python-brace-format
 msgid "Kept at {stage}"
 msgstr "{stage}에서 유지됨"
 
-#: web/lib/ShotInspector.svelte:156
+#: web/lib/ShotInspector.svelte:163
 msgid "Kept because"
 msgstr "유지한 이유"
 
@@ -738,7 +746,7 @@ msgstr "만들지 않은 달"
 msgid "Model downloads failed to start."
 msgstr "모델 다운로드를 시작할 수 없습니다."
 
-#: web/lib/ShotInspector.svelte:142
+#: web/lib/ShotInspector.svelte:149
 msgid "Model polish"
 msgstr "모델이 편집본 다듬기"
 
@@ -746,7 +754,7 @@ msgstr "모델이 편집본 다듬기"
 msgid "Model status could not be checked."
 msgstr "모델 상태를 확인할 수 없습니다."
 
-#: web/lib/ShotInspector.svelte:153
+#: web/lib/ShotInspector.svelte:160
 msgid "Model suggestion"
 msgstr "모델의 제안"
 
@@ -802,7 +810,7 @@ msgid ""
 "sentence found."
 msgstr "라이브러리에서 요청에 맞는 소재를 찾지 못해 영상을 만들 수 없습니다. 다른 표현으로 시도하거나 아래에서 문장별 검색 결과를 확인하세요."
 
-#: web/lib/ShotInspector.svelte:144
+#: web/lib/ShotInspector.svelte:151
 msgid "No model read this cut: the rules chose every picture."
 msgstr "모델의 분석 없이 선별 규칙만으로 만든 편집본입니다."
 
@@ -818,7 +826,7 @@ msgstr "일치하는 이름이 없습니다."
 msgid "No named people in Immich yet."
 msgstr "Immich에 아직 이름이 지정된 인물이 없습니다."
 
-#: web/lib/ShotInspector.svelte:161
+#: web/lib/ShotInspector.svelte:168
 msgid "No outcome recorded."
 msgstr "기록된 결과가 없습니다."
 
@@ -862,7 +870,7 @@ msgstr "아니요, 아닙니다"
 msgid "Nobody in this library"
 msgstr "이 라이브러리에는 아무도 없습니다"
 
-#: web/routes/settings/people/+page.svelte:133
+#: web/routes/settings/people/+page.svelte:167
 msgid ""
 "Nobody yet. This list is filled the first time a library is prepared, or when you rescan it. "
 "The person picker on New memory reads Immich directly, so it can show names before this page "
@@ -911,7 +919,7 @@ msgstr "이날"
 msgid "On a date"
 msgstr "특정 날짜에"
 
-#: web/routes/settings/people/+page.svelte:50
+#: web/routes/settings/people/+page.svelte:77
 msgid ""
 "One name on two person records: a split face cluster. Merge these records in Immich, the only"
 " place it can be fixed."
@@ -925,7 +933,7 @@ msgstr "다음만 포함 (선택)"
 msgid "Open"
 msgstr "열기"
 
-#: web/lib/people/AccountLinks.svelte:53 web/routes/settings/people/+page.svelte:106
+#: web/lib/people/AccountLinks.svelte:53 web/routes/settings/people/+page.svelte:140
 msgid "Open in Immich"
 msgstr "Immich에서 열기"
 
@@ -937,7 +945,7 @@ msgstr "작업 열기"
 msgid "Open the film run"
 msgstr "영상 작업 열기"
 
-#: web/routes/settings/people/+page.svelte:106
+#: web/routes/settings/people/+page.svelte:140
 #, python-brace-format
 msgid "Open {name} in Immich"
 msgstr "{name} Immich에서 열기"
@@ -954,11 +962,11 @@ msgstr "저장된 편집본의 순서와 타임코드입니다."
 msgid "Orientation"
 msgstr "방향"
 
-#: web/lib/ShotInspector.svelte:117 web/lib/ShotInspector.svelte:129
+#: web/lib/ShotInspector.svelte:124 web/lib/ShotInspector.svelte:136
 msgid "Other picture of this moment"
 msgstr "이 순간의 다른 소재"
 
-#: web/lib/ShotInspector.svelte:109 web/lib/ShotInspector.svelte:111
+#: web/lib/ShotInspector.svelte:116 web/lib/ShotInspector.svelte:118
 msgid "Other pictures of this moment"
 msgstr "이 순간의 다른 소재"
 
@@ -967,7 +975,7 @@ msgstr "이 순간의 다른 소재"
 msgid "Owner of {account}"
 msgstr "{account}의 소유자"
 
-#: web/lib/ShotInspector.svelte:100
+#: web/lib/ShotInspector.svelte:107
 #, python-brace-format
 msgid "Passed {stages}"
 msgstr "{stages} 통과"
@@ -977,8 +985,8 @@ msgid "Password"
 msgstr "비밀번호"
 
 #: web/routes/+layout.svelte:24 web/routes/create/+page.svelte:431
-#: web/routes/settings/+page.svelte:106 web/routes/settings/people/+page.svelte:82
-#: web/routes/settings/people/+page.svelte:88
+#: web/routes/settings/+page.svelte:106 web/routes/settings/people/+page.svelte:109
+#: web/routes/settings/people/+page.svelte:115
 msgid "People"
 msgstr "인물"
 
@@ -1010,6 +1018,10 @@ msgstr "사진 표시 시간(초)"
 #: web/lib/people/GroupsSection.svelte:70
 msgid "Pick the people"
 msgstr "사람 고르기"
+
+#: web/lib/ShotInspector.svelte:98
+msgid "Picture description"
+msgstr "사진 설명"
 
 #: web/lib/ShotInspector.svelte:42
 msgid "Picture review"
@@ -1095,7 +1107,7 @@ msgstr "소재 정보를 읽는 중"
 msgid "Reading what each picture shows"
 msgstr "소재의 내용을 분석하는 중"
 
-#: web/lib/ShotInspector.svelte:160
+#: web/lib/ShotInspector.svelte:167
 msgid "Recorded alternative"
 msgstr "기록된 대안"
 
@@ -1151,11 +1163,11 @@ msgstr "모델이 의심한 소재를 대체했습니다."
 msgid "Report preview"
 msgstr "보고서 미리보기"
 
-#: web/routes/settings/people/+page.svelte:134
+#: web/routes/settings/people/+page.svelte:168
 msgid "Rescan now"
 msgstr "지금 다시 스캔"
 
-#: web/routes/settings/people/+page.svelte:91
+#: web/routes/settings/people/+page.svelte:118
 msgid "Rescan the library"
 msgstr "라이브러리 다시 스캔"
 
@@ -1285,7 +1297,7 @@ msgid "Set in config.yaml as {key}"
 msgstr "config.yaml의 {key}로 설정됨"
 
 #: web/routes/+layout.svelte:25 web/routes/settings/+page.svelte:77
-#: web/routes/settings/+page.svelte:81 web/routes/settings/people/+page.svelte:87
+#: web/routes/settings/+page.svelte:81 web/routes/settings/people/+page.svelte:114
 msgid "Settings"
 msgstr "설정"
 
@@ -1297,7 +1309,7 @@ msgstr "공유 가능"
 msgid "Show"
 msgstr "표시"
 
-#: web/routes/settings/people/+page.svelte:143
+#: web/routes/settings/people/+page.svelte:177
 msgid "Show more"
 msgstr "더 보기"
 
@@ -1435,6 +1447,12 @@ msgstr "이 파일은 배경음악으로 쓰기에 너무 큽니다"
 msgid "That id could not be bound."
 msgstr "해당 id를 연결할 수 없습니다."
 
+#: web/lib/people/OwnerSection.svelte:56
+msgid ""
+"The API key's account name has not been matched to a named person. Choose the owner, or name "
+"people in Immich and rescan."
+msgstr "API 키의 계정 이름이 이름이 지정된 인물과 연결되지 않았습니다. 소유자를 선택하거나 Immich에서 인물의 이름을 지정한 뒤 다시 스캔하세요."
+
 #: web/routes/settings/+page.svelte:54
 msgid "The connection could not be checked."
 msgstr "연결을 확인할 수 없습니다."
@@ -1480,7 +1498,7 @@ msgstr "영상이 준비되었습니다."
 msgid "The household. Private moments a caption names, like a bath, play too."
 msgstr "집안 식구. 설명에 언급된 목욕 같은 사적인 순간도 포함합니다."
 
-#: web/lib/ShotInspector.svelte:146
+#: web/lib/ShotInspector.svelte:153
 msgid "The model had nothing to say about this picture."
 msgstr "모델이 이 소재에 대해 남긴 말이 없습니다."
 
@@ -1496,11 +1514,11 @@ msgstr ""
 msgid "The model, when one is configured"
 msgstr "설정된 경우 모델"
 
-#: web/routes/settings/people/+page.svelte:89
+#: web/routes/settings/people/+page.svelte:116
 msgid "The people registry: who is close, their roles, and how they relate."
 msgstr "인물 레지스트리: 누가 가까운지, 역할, 서로의 관계."
 
-#: web/lib/ShotInspector.svelte:150
+#: web/lib/ShotInspector.svelte:157
 msgid "The picture it replaced"
 msgstr "대체된 소재"
 
@@ -1620,7 +1638,7 @@ msgstr "여행 감지에 실패했습니다."
 msgid "Trips"
 msgstr "여행"
 
-#: web/routes/runs/+page.svelte:127
+#: web/routes/runs/+page.svelte:127 web/routes/settings/people/+page.svelte:126
 msgid "Try again"
 msgstr "다시 시도"
 
@@ -1666,7 +1684,7 @@ msgstr "Immich에 업로드했습니다."
 msgid "Use exact library names; each picture must match. It replaces the names above."
 msgstr "라이브러리에 등록된 이름을 정확히 쓰세요. 각 소재가 이 조건에 맞아야 합니다. 이 조건은 위에서 선택한 이름을 대체합니다."
 
-#: web/lib/ShotInspector.svelte:134
+#: web/lib/ShotInspector.svelte:141
 msgid "Use this picture instead"
 msgstr "대신 이 소재 사용"
 
@@ -1773,7 +1791,7 @@ msgstr "이 라이브러리의 주인은 누구인가요? 인물 관계, 영상�
 msgid "Why other suggestions were skipped"
 msgstr "다른 제안이 제외된 이유"
 
-#: web/lib/ShotInspector.svelte:153
+#: web/lib/ShotInspector.svelte:160
 msgid "Why the model replaced the other picture"
 msgstr "모델이 다른 소재를 대체한 이유"
 
@@ -1855,11 +1873,11 @@ msgstr "관계 이름 없음"
 msgid "starting"
 msgstr "시작 중"
 
-#: web/routes/settings/people/+page.svelte:89
+#: web/routes/settings/people/+page.svelte:116
 msgid "writes it out as YAML."
 msgstr "이(가) YAML로 내보냅니다."
 
-#: web/routes/settings/people/+page.svelte:89
+#: web/routes/settings/people/+page.svelte:116
 msgid "writes the guesses; your answers stay across scans."
 msgstr "이(가) 추정 결과를 저장합니다. 직접 입력한 답은 다시 스캔해도 유지됩니다."
 

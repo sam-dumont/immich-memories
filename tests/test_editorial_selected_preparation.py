@@ -138,12 +138,21 @@ def _film(
     return {clip.asset.id for clip in result.selected_clips}, calls
 
 
-def test_full_refinement_reuses_gpu_captions_instead_of_recaptioning(tmp_path):
+def test_full_refinement_reuses_gpu_captions_instead_of_recaptioning(tmp_path, caplog):
     first = datetime(2024, 2, 1, 12, tzinfo=UTC)
     sources = [photo(f"picture-{n:02}", at=first + timedelta(days=n)) for n in range(24)]
     for asset in sources:
         asset.is_favorite = True
-    gpu, _ = _film(tmp_path, sources, tier="gpu")
+    with caplog.at_level("INFO"):
+        gpu, _ = _film(tmp_path, sources, tier="gpu")
+    assert sum(r.getMessage() == "Refining the picked pictures" for r in caplog.records) == 1
+    snapshots = list((tmp_path / "artifacts").glob("**/refinement/*/captions.private.json"))
+    assert snapshots
+    saved_captions = {
+        key: text for path in snapshots for key, text in json.loads(path.read_text()).items()
+    }
+    assert gpu <= saved_captions.keys()
+    assert all(saved_captions[asset] for asset in gpu)
 
     full, calls = _film(tmp_path, sources, tier="full")
 

@@ -100,6 +100,8 @@ def resolve_music(
     source: MusicSource = MusicSource.AUTO,
     editorial_attempt_dir: Path | None = None,
     video_duration: float | None = None,
+    fps: float = 30,
+    work_dir: Path | None = None,
 ) -> MusicSelection:
     """Determine the music to use: provided path, generated, bundled, or none.
 
@@ -112,6 +114,7 @@ def resolve_music(
     has it, a bundled fallback that would otherwise loop one short track for
     the whole film instead plays a varied playlist (#2070). Callers that
     cannot supply it (most existing call sites) keep the single-track pick.
+    ``work_dir`` holds disposable bundled playlist and mastering files until mixing ends.
     """
     if no_music:
         return MusicSelection(None)
@@ -135,6 +138,7 @@ def resolve_music(
                 memory_type,
                 report_fn,
                 transition_overlap=transition_overlap,
+                fps=fps,
                 mood_detail=mood_detail,
             )
         except Exception as exc:  # WHY: optional music must not invalidate the base artifact
@@ -157,8 +161,9 @@ def resolve_music(
         assembly_clips,
         transition_overlap,
         video_duration,
-        run_output_dir,
+        work_dir if work_dir is not None else run_output_dir,
         warning,
+        fps=fps,
     )
 
 
@@ -170,9 +175,11 @@ def _resolve_bundled_music(
     video_duration: float | None,
     run_output_dir: Path,
     warning: str | None,
+    *,
+    fps: float = 30,
 ) -> MusicSelection:
     """The bundled fallback: one track, or a varied playlist for a long film."""
-    cadence = photo_cadence_seconds(assembly_clips, transition_overlap=transition_overlap)
+    cadence = photo_cadence_seconds(assembly_clips, transition_overlap=transition_overlap, fps=fps)
     # The mood used to be read off a `clip.mood` field AssemblyClip has never
     # had, so it was always None and the bundled mood folders never served their
     # purpose. What the clips actually carry is llm_emotion, which the title
@@ -286,25 +293,26 @@ def transition_overlap_seconds(transition: str, transition_duration: float) -> f
 
 
 def photo_cadence_seconds(
-    assembly_clips: list[AssemblyClip], *, transition_overlap: float
+    assembly_clips: list[AssemblyClip], *, transition_overlap: float, fps: float = 30
 ) -> float | None:
     """How often a photo cut lands, or None when there is no rhythm to sync to.
 
     Read off the clips rather than ``config.photos.duration`` because the final
     budget trim rescales every clip: by the time music is chosen, a photo the
-    config called 4 s may be 3.7 s on screen.
+    config called 4 s may be 3.7 s on screen. Quantize the clip and overlap
+    independently to whole frames at the finished film's ``fps``, then subtract.
 
     ``transition_overlap`` is not optional on purpose. The cut lands before the
     clip ends: a crossfade starts the next clip at ``duration - fade``, which is
-    the clock ``_estimate_total_frames`` and ``music_mute_windows`` already keep.
+    the clock ``_sequence_frame_counts`` and ``music_mute_windows`` already keep.
     Aligning tempo to the raw duration instead drifted 0.75 beats per photo at
     90 bpm with the default 0.5 s fade (#514), so a caller that has not thought
     about the overlap should not be able to ask for a cadence at all.
     """
-    durations = sorted(clip.duration for clip in assembly_clips if clip.is_photo)
+    durations = sorted(int(clip.duration * fps) for clip in assembly_clips if clip.is_photo)
     if len(durations) < 2:
         return None
-    cadence = durations[len(durations) // 2] - transition_overlap
+    cadence = (durations[len(durations) // 2] - int(transition_overlap * fps)) / fps
     # A fade wider than the photos themselves leaves no interval to sync to.
     # The assembler downgrades those boundaries to cuts, and the tempo search
     # divides by the cadence, so a zero or negative one is "no rhythm", not 0.
@@ -319,6 +327,7 @@ def auto_generate_music(
     report_fn: Callable[[str, float, str], None] | None = None,
     *,
     transition_overlap: float,
+    fps: float = 30,
     mood_detail: VideoMood | None = None,
 ) -> GeneratedMusic | None:
     """Auto-generate music using configured AI backends.
@@ -373,7 +382,7 @@ def auto_generate_music(
                 app_config=config,
                 memory_type=memory_type,
                 photo_cadence_seconds=photo_cadence_seconds(
-                    assembly_clips, transition_overlap=transition_overlap
+                    assembly_clips, transition_overlap=transition_overlap, fps=fps
                 ),
                 mood_detail=mood_detail,
                 quality_gate=score_track,

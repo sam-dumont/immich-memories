@@ -120,12 +120,20 @@ def test_a_timestamp_heap_counts_as_one_shot_and_the_film_goes_short(tmp_path, c
         tmp_path, [day], seconds=600, span=MAY, pictures=17, picture_gap=timedelta(seconds=0)
     )
 
-    with caplog.at_level("INFO", logger="immich_memories.analysis.editorial_story_depth_fill"):
+    with caplog.at_level("INFO", logger="immich_memories.analysis"):
         plan = _run(source)
 
     assert len(plan["carriers"]) == 1
     assert plan["duration_realization"]["status"] != "near_target"
-    assert any("distinct shots" in record.message for record in caplog.records)
+    realization = plan["duration_realization"]
+    lines = [
+        record.getMessage() for record in caplog.records if "distinct shots" in record.getMessage()
+    ]
+    assert lines == [
+        f"{len(plan['carriers'])} distinct shots, final cut contains "
+        f"{realization['selected_content_seconds']:.1f} s of "
+        f"{realization['content_budget_seconds']:.1f} s available for content"
+    ]
 
 
 def test_a_party_evening_is_capped_by_five_minute_spacing(tmp_path):

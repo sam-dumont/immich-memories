@@ -58,6 +58,19 @@ Mermaid is available (11.x). Check a new block renders in `make docs-build` befo
 Write like the owner: direct, specific, real numbers, no chatbot words, no em dashes. AI agents
 load the `sams-voice:sams-voice` skill before writing. `make docs-voice` catches the worst of it.
 
+## Social previews
+
+Every page gets a 1200 × 630 image with its title and description. The docs build generates it
+from the page metadata, the bundled Inter font and the site logo. Set a front matter
+`description` when the first paragraph is not a useful summary of the page.
+
+The renderer uses `static/fonts/inter-latin.ttf`, decoded from the browser font
+`inter-latin.woff2`. Update both copies when changing Inter; the Linux image renderer needs
+the TrueType file.
+
+`make docs-social-check` checks the renderer. `make docs-build` checks the generated images and
+the Open Graph and Twitter tags, including the candidate site paths.
+
 ## Gates
 
 `make docs-voice`, `make docs-build`, `make docs-cli-check`, `make docs-config-check`.

@@ -181,6 +181,8 @@ test('the trigger check is a ready command that does not need curl in the app im
   const create = rows.findIndex(row => /^kubectl create job .*trigger-test$/.test(row));
   const status = rows.findIndex(row => /^curl .*\/api\/trigger\/\$ATTEMPT/.test(row));
   assert.ok(create > -1 && status > create);
+  const preflight = rows.findIndex(row => /immich-memories preflight$/.test(row));
+  assert.ok(preflight > -1 && preflight < create, 'preflight runs before the test trigger');
   assert.ok(rows.some(row => /^kubectl port-forward .*8081:80/.test(row)));
   assert.doesNotMatch(rows.join('\n'), /kubectl exec[^\n]*curl/);
 });
@@ -304,4 +306,12 @@ test('the browser address reaches every platform without touching the server URL
 test('a malformed browser address is refused', () => {
   const result = buildSetup({...setup, immichPublicUrl: 'photos.example.org'}, sources, '1.2.3');
   assert.match(result.error, /browser address needs a complete URL/);
+});
+
+
+test('Kubernetes GPU instructions explain how to give the app its own GPU', () => {
+  const gpu = buildSetup({...kube, tier: 'gpu'}, sources, '1.2.3');
+  assert.match(gpu.commands, /components: \[\.\.\/components\/gpu\]/);
+  assert.match(gpu.commands, /NVENC.*CUDA titles/);
+  assert.doesNotMatch(buildSetup({...kube, tier: 'basic'}, sources, '1.2.3').commands, /components\/gpu/);
 });

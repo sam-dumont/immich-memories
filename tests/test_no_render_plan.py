@@ -42,7 +42,9 @@ def _attempt(tmp_path: Path, *, review: int = 0) -> Path:
     return attempt
 
 
-def _plan_output(tmp_path, capsys, monkeypatch, *, title=None, review=0) -> str:
+def _plan_output(
+    tmp_path, capsys, monkeypatch, *, title=None, review=0, output_path=Path("/films/june.mp4")
+) -> str:
     # WHY: keeping the cut writes a run row to the store; the plan text is what is under test.
     monkeypatch.setattr(_pipeline_runner, "_keep_cut_as_run", lambda *_a, **_k: "run-1")
     attempt = _attempt(tmp_path, review=review)
@@ -65,9 +67,9 @@ def _plan_output(tmp_path, capsys, monkeypatch, *, title=None, review=0) -> str:
         ),
         assets=[],
         photo_assets=[],
-        config=Config(),
+        config=Config(output={"directory": "/films"}, title_screens={"locale": "en"}),
         output_canvas=OutputCanvas(width=1920, height=1080, orientation="landscape"),
-        output_path=apply_recipe_hash(Path("/films/june.mp4"), "3c9e1f0a"),
+        output_path=apply_recipe_hash(output_path, "3c9e1f0a"),
         memory_type="monthly_highlights",
         date_range=JUNE,
         should_upload=False,
@@ -114,3 +116,14 @@ def test_a_plan_without_a_film_says_so_instead_of_naming_a_run_it_does_not_have(
     assert "Film: not rendered yet. `runs render` writes it under /films" in out
     assert "<run id>" not in out
     assert "Output (planned)" not in out
+
+
+def test_a_web_cut_names_the_configured_film_directory_not_its_progress_directory(
+    tmp_path, capsys, monkeypatch
+):
+    out = _plan_output(
+        tmp_path, capsys, monkeypatch, output_path=tmp_path / "web-jobs" / "web-cut.mp4"
+    )
+
+    assert "Film: not rendered yet. `runs render` writes it under /films" in out
+    assert "web-jobs" not in out

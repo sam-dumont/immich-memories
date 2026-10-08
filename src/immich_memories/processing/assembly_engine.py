@@ -257,7 +257,9 @@ class AssemblyEngine:
 
         # The engine is the only place the FINAL sequence (titles included)
         # and its transitions coexist — the music phase runs later (#466).
-        self.settings.music_mute_windows = music_mute_windows(clips, transitions, fade_duration)
+        self.settings.music_mute_windows = music_mute_windows(
+            clips, transitions, fade_duration, fps=ctx.target_fps
+        )
         plan = self.settings.encoding_plan
         if plan.hdr:
             logger.info("Streaming %s HDR assembly with %s", ctx.hdr_type.upper(), plan.encoder)

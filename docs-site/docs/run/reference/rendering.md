@@ -65,7 +65,8 @@ Metal on Apple Silicon, CUDA on NVIDIA and Vulkan where supported render animate
 Each GPU backend is tested in a child process first; a failed backend is skipped and named in the
 log. Kernels are cached in `~/.immich-memories/cache/kernels`.
 
-CPU rendering uses a still title plate drawn once with PIL, then FFmpeg fades. This also covers
+CPU rendering draws the text once with Pillow, then FFmpeg slides, scales and fades it over a
+still background. This also covers
 `IMMICH_FORCE_CPU=1`, a CPU-only kernel backend, a missing compatible Quadrants wheel or a CPU
 without AVX. It keeps text and timing without animated kernel effects. Preflight reports the
 renderer selected on your machine.

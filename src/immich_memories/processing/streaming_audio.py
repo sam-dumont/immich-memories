@@ -95,14 +95,16 @@ def _build_merge_graph(
     if not transitions:
         return f"[0:a]{AUDIO_FORMAT}[aout]{tail}"
     filter_parts = [f"[{i}:a]{AUDIO_FORMAT}[a{i}]" for i in range(count)]
+    # A zero-frame fade is a cut; FFmpeg's d=0 would use its default overlap.
+    fade_samples = round(fade_duration * 48_000)
     current_label = "a0"
     for i, transition in enumerate(transitions):
         next_label = f"a{i + 1}"
         out_label = f"mix{i}" if i < len(transitions) - 1 else "aout"
-        if transition == "fade":
+        if transition == "fade" and fade_samples > 0:
             filter_parts.append(
                 f"[{current_label}][{next_label}]"
-                f"acrossfade=d={fade_duration}:c1=tri:c2=tri[{out_label}]"
+                f"acrossfade=ns={fade_samples}:c1=tri:c2=tri[{out_label}]"
             )
         else:
             filter_parts.append(f"[{current_label}][{next_label}]concat=n=2:v=0:a=1[{out_label}]")
@@ -348,12 +350,15 @@ def extract_and_mix_audio(
     pre_extracted_audio: list[Path] | None = None,
     video_duration: float | None = None,
     probe_cache: ProbeCache | None = None,
+    *,
+    fade_frames: int | None = None,
 ) -> None:
     """Extract audio from clips and mix with crossfade transitions.
 
     Renders each clip's audio to its own WAV, then crossfades those segments
     together in bounded groups, so peak memory does not grow with the clip
     count (#782). Output bitrate matches the highest source bitrate.
+    The assembler supplies fade_frames; standalone calls quantize fade_duration themselves.
     Applies loudnorm and privacy muffle matching the old filter graph pipeline.
 
     When privacy_mode is on, audio is pre-processed with segment-wise waveform
@@ -363,6 +368,8 @@ def extract_and_mix_audio(
     reading audio from the original clip files — avoids a redundant decode pass
     and guarantees audio/video timing alignment.
     """
+    if fade_frames is None:
+        fade_frames = int(fade_duration * fps)
     audio_bitrate = _probe_max_audio_bitrate(clips, probe_cache=probe_cache)
     logger.info(f"Audio output bitrate: {audio_bitrate} (matched to source max)")
 
@@ -421,7 +428,7 @@ def extract_and_mix_audio(
             segments,
             transitions,
             output_path,
-            fade_duration,
+            fade_frames / fps,
             work_dir,
             tail=tail,
             map_label=map_label,

@@ -35,6 +35,19 @@ def credential_fingerprint(secret: str) -> str:
     return hashlib.scrypt(secret.encode(), salt=_FINGERPRINT_SALT, n=2**14, r=8, p=1).hex()
 
 
+def create_private_directory(path: Path) -> None:
+    """Create missing directories at 0700, preserving existing ancestors' permissions.
+
+    Path.mkdir(parents=True) uses the process umask for intermediate directories,
+    even when its leaf requests 0700. Cached library data needs private parents too.
+    """
+    try:
+        path.mkdir(mode=0o700, exist_ok=True)
+    except FileNotFoundError:
+        create_private_directory(path.parent)
+        path.mkdir(mode=0o700, exist_ok=True)
+
+
 def write_secret_file(path: Path, text: str) -> None:
     """Write a file that only its owner can read, from the moment it exists.
 
@@ -45,7 +58,7 @@ def write_secret_file(path: Path, text: str) -> None:
     by the time anyone inspects it. Creating at 0600 and renaming into place also
     means a crash mid-write cannot leave a truncated secret behind.
     """
-    path.parent.mkdir(parents=True, exist_ok=True)
+    create_private_directory(path.parent)
     fd, temp_name = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=path.parent)
     tmp = Path(temp_name)
     try:

@@ -46,7 +46,15 @@ class PersonMonthlyDetector:
                     candidates.append(found)
                 elif short and back == 0:
                     thin.append(person.name)
-        return Detection(candidates, self._note(thin, today))
+        notes = self._note(thin, today)
+        if not candidates and not notes:
+            reason = (
+                "no named people are marked close in the people registry"
+                if not any(p.id in close_ids and p.name for p in people)
+                else f"no unfilmed month in the last three has {self.MIN_PICTURES} pictures over {self.MIN_DAYS} days"
+            )
+            notes = (f"No person month film: {reason}",)
+        return Detection(candidates, notes)
 
     def _note(self, thin: list[str], today: date) -> tuple[str, ...]:
         if not thin:

@@ -48,3 +48,29 @@ def test_fresh_live_frame_quality_changes_playback_but_keeps_the_photo(tmp_path)
         c["asset_id"] for c in baseline.plan["carriers"]
     }
     assert all(c["kind"] == "live-still" for c in result.plan["carriers"])
+
+
+def test_unchanged_bursts_are_reported_once_across_draft_and_refinement(tmp_path, caplog):
+    import logging
+
+    captured = source(tmp_path, seconds=30, pictures=8)
+    captured.config.photos.burst_window_seconds = 1200
+    ports = StructurePlannerPorts(
+        judge=NoModelJudge(),
+        rules=RuleStructureReader(captured),
+        thumbnail_hash=lambda key: "0000000000000000" if key.endswith(("000", "001")) else None,
+    )
+    refinements = []
+
+    def refine(current, draft):
+        refinements.append(draft)
+        return current, replace(ports, draft=draft)
+
+    with caplog.at_level(logging.INFO):
+        result = plan_structure(captured, replace(ports, refine=refine))
+
+    assert len(refinements) == 1
+    assert result.plan["carriers"]
+    messages = [r.getMessage() for r in caplog.records if "Burst de-duplication:" in r.getMessage()]
+    assert len(messages) == 1
+    assert "1 of 8 photos dropped" in messages[0]

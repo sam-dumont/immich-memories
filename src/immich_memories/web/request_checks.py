@@ -38,11 +38,8 @@ _MISDIRECTED = (
     "or enable authentication.\n"
 )
 _CROSS_SITE = "A write from another site is refused.\n"
-_UNSAFE_METHODS = frozenset({"POST", "PUT", "PATCH", "DELETE"})
-# Every write the API takes is a small JSON document; the one route that carries more
-# (a soundtrack upload) names its own larger limit below. Without a default, any
-# unauthenticated request could make the process buffer megabytes before a single
-# credential was checked.
+# HTTP allows a body even on a read or an unknown route. Bound every request before
+# a parser or auth-exempt endpoint can buffer it; soundtrack uploads have a larger cap.
 _DEFAULT_BODY_LIMIT = 4 * 1024 * 1024
 # A soundtrack plus its multipart envelope; the route checks the file itself to the byte.
 _BODY_LIMITS = {("POST", "/api/v1/music"): MAX_MUSIC_UPLOAD_BYTES + 64 * 1024}
@@ -96,17 +93,9 @@ _FRAMING = [
 ]
 
 
-def _limit_for(method: str, path: str) -> int | None:
-    """The most body bytes this request may carry, or None when it carries none.
-
-    A route-specific limit wins (a soundtrack upload); otherwise every write under
-    /api or /auth gets the default, so the pre-auth routes (`/auth/login` above all)
-    cannot be used as an unauthenticated memory sink. Reads and pages take no body."""
-    if (method, path) in _BODY_LIMITS:
-        return _BODY_LIMITS[(method, path)]
-    if method in _UNSAFE_METHODS and (path.startswith(("/api/", "/auth/")) or path == "/logout"):
-        return _DEFAULT_BODY_LIMIT
-    return None
+def _limit_for(method: str, path: str) -> int:
+    """Bound every request body, with a larger allowance for soundtrack uploads."""
+    return _BODY_LIMITS.get((method, path), _DEFAULT_BODY_LIMIT)
 
 
 def host_name(value: str) -> str:
@@ -174,9 +163,6 @@ class RequestChecks:
             await _respond(framed, *refusal)
             return
         limit = _limit_for(scope["method"], scope["path"])
-        if limit is None:
-            await self.app(scope, receive, framed)
-            return
         await _within(limit, headers, self.app, scope, receive, framed)
 
     def _refusal(self, scope: Scope, headers: Mapping[str, str]) -> tuple[int, str] | None:

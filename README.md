@@ -29,7 +29,7 @@ It runs on a plain NAS with no GPU and no model. A GPU or a model makes it bette
   <sub><a href="https://sam-dumont.github.io/immich-memories/demo/demo.mp4">▶ Play the demo with music</a> · <a href="https://sam-dumont.github.io/immich-memories/demo/trip-preview.mp4">Watch a finished trip film</a> · CC0 stock pictures, <a href="tests/e2e/fixtures/library/CREDITS.md">credited here</a> · <a href="https://sam-dumont.github.io/immich-memories/docs/">Documentation</a></sub>
 </p>
 
-The first link is a screen recording of the app, the second a finished trip film. Both use
+The first link is a demo of the app, the second a finished trip film. Both use
 CC0 stock pictures, never anyone's family.
 
 ## What you can do

@@ -7,7 +7,6 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { COLORS } from "../theme";
 import { fontFamily } from "../fonts";
 
 export const TitleScene: React.FC = () => {
@@ -40,7 +39,7 @@ export const TitleScene: React.FC = () => {
   });
 
   return (
-    <AbsoluteFill style={{ backgroundColor: COLORS.bg }}>
+    <AbsoluteFill style={{ backgroundColor: "#09090b" }}>
       <Img
         src={staticFile("library/lake-sunset.jpg")}
         style={{
@@ -70,7 +69,7 @@ export const TitleScene: React.FC = () => {
             style={{
               fontSize: 88,
               fontWeight: 700,
-              color: "var(--immich-ui-light)",
+              color: "#ffffff",
               fontFamily,
               opacity: titleOpacity,
               transform: `translateY(${titleY}px)`,
@@ -82,7 +81,7 @@ export const TitleScene: React.FC = () => {
           <div
             style={{
               fontSize: 28,
-              color: COLORS.text,
+              color: "#e5e7eb",
               fontFamily,
               fontWeight: 400,
               opacity: subOpacity,

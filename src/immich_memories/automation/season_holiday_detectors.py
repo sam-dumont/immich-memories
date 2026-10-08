@@ -76,7 +76,12 @@ class SeasonDetector:
             )
         due = self.due(today, hemisphere, generated_keys)
         if due is None:
-            return Detection()
+            reason = (
+                "the season already has a film"
+                if self.due(today, hemisphere, ()) is not None
+                else "no season ended between 3 and 30 days ago"
+            )
+            return Detection(notes=(f"No season film: {reason}",))
         counted = days.get(due.window, {})
         pictures, distinct = sum(counted.values()), len(counted)
         if pictures < self.MIN_PICTURES or distinct < self.MIN_DAYS:
@@ -175,7 +180,8 @@ class HolidayDetector:
     ) -> Detection:
         """``pictures`` holds the count for every window `due` names."""
         candidates = []
-        for due in self.due(today, country, extra_holidays, generated_keys):
+        due_holidays = self.due(today, country, extra_holidays, generated_keys)
+        for due in due_holidays:
             counts = [pictures.get(window, 0) for window in due.windows]
             total, years = sum(counts), sum(1 for n in counts if n > 0)
             if years < self.MIN_YEARS or total < self.MIN_PICTURES:
@@ -199,7 +205,15 @@ class HolidayDetector:
                     },
                 )
             )
-        return Detection(candidates)
+        if candidates:
+            return Detection(candidates)
+        if not country and not extra_holidays:
+            reason = "no home country or extra holidays are set"
+        elif not due_holidays:
+            reason = "no unfilmed holiday is due"
+        else:
+            reason = f"no unfilmed holiday has {self.MIN_PICTURES} pictures across {self.MIN_YEARS} years"
+        return Detection(notes=(f"No holiday film: {reason}",))
 
 
 def _occurrences(

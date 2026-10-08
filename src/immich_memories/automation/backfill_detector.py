@@ -57,7 +57,14 @@ class BackfillDetector:
                         asset_count=count,
                     )
                 )
-        return Detection(candidates)
+        return Detection(
+            candidates,
+            ()
+            if candidates
+            else (
+                f"No missed month film: no older unfilmed month from this year or last has {self.MIN_PICTURES} pictures",
+            ),
+        )
 
 
 def _taken(first: date, last: date, keys: Collection[str]) -> bool:

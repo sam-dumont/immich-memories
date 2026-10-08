@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Any
 from immich_memories.automation.candidates import (
     CandidateCategory,
     MemoryCandidate,
+    explain_empty,
     make_memory_key,
 )
 from immich_memories.automation.catalogue import hours_awake
@@ -49,10 +50,13 @@ class SpecialDayDetector:
         config: Any,
         today: date,
         catalogue: list[DiscoveredDay] | None = None,
+        notes: list[str] | None = None,
     ) -> list[MemoryCandidate]:
         """Emit one candidate per catalogued day with an anniversary near today."""
         if not catalogue:
-            return []
+            return explain_empty(
+                [], notes, "No special day film: the catalogue has no days to suggest"
+            )
 
         candidates: list[MemoryCandidate] = []
         for entry, years in anniversaries_due(catalogue, today, window_days=self.WINDOW_DAYS):
@@ -91,4 +95,8 @@ class SpecialDayDetector:
                     },
                 )
             )
-        return candidates
+        return explain_empty(
+            candidates,
+            notes,
+            "No special day film: no unfilmed anniversary is within three days of today",
+        )
