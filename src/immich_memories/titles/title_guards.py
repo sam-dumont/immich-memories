@@ -312,6 +312,8 @@ def required_years(
     end: date,
     person_names: tuple[str, ...],
     holiday: str | None,
+    *,
+    birthday: bool = False,
 ) -> frozenset[int]:
     """The year(s) the BASIC template's own title would show for this memory.
 
@@ -327,6 +329,8 @@ def required_years(
     a lone year in full, but English abbreviates a cross-year season's end
     year ("Summer 2024–25"), which would under-read a two-year span here.
     """
+    if memory_type == "person_spotlight" and birthday:
+        return frozenset({end.year})
     if is_trip(memory_type):
         years = {start.year}
         if end.year != start.year:
@@ -369,6 +373,8 @@ def requiring_the_year(
     end_date: str,
     person_names: tuple[str, ...],
     holiday: str | None,
+    *,
+    birthday: bool = False,
 ) -> TitleSuggestion | None:
     """The suggestion, unless it drops a year the template title would show.
 
@@ -380,7 +386,7 @@ def requiring_the_year(
     if suggestion is None:
         return suggestion
     start, end = date.fromisoformat(start_date), date.fromisoformat(end_date)
-    required = required_years(memory_type, start, end, person_names, holiday)
+    required = required_years(memory_type, start, end, person_names, holiday, birthday=birthday)
     if not required:
         return suggestion
     combined = f"{suggestion.title} {suggestion.subtitle or ''}"

@@ -764,6 +764,7 @@ def register_generate_commands(main: click.Group) -> None:
                         memory_preset_params={
                             **(special_day or {}),
                             "hemisphere": hemisphere,
+                            "birthday": bool(birthday),
                             "person_names": person_names,
                             "person_display_names": run_people.display_names,
                             "person_match": person_match,

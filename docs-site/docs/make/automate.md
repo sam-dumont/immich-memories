@@ -102,6 +102,10 @@ For a safe preview:
 immich-memories auto run --dry-run
 ```
 
+Automatic birthday films cover only the completed birthday-to-birthday year. Their opening title or
+subtitle names the year of the birthday being celebrated. Earlier birthdays remain available in
+[manually requested birthday compilations](../reference/film-types.mdx#birthday-compilations).
+
 ## Get told when it runs
 
 Notifications support ntfy, email, Discord and other [Apprise](https://github.com/caronc/apprise) targets, off by default. Configure the URLs, then test them:
@@ -123,6 +127,17 @@ immich-memories auto test-notification
 ```
 
 The test sends a message to each configured target. The success message comes from any rendered film, manual or automatic; the failure message comes only from the automation runner, and only once it has picked a candidate to run for the day. A day skipped before that (cooldown, no eligible candidate) sends nothing. Thumbnails remain off unless you enable them. Use a private, authenticated ntfy topic: public ones can be read by others. [What each message carries](../reference/automation-contract.md#get-told-when-it-runs) covers the full payload.
+
+After an upload, the success message includes a direct link to the film in Immich. If the app talks to
+Immich through a container or cluster address, set `immich.public_url` to the address your browser opens:
+
+```yaml
+immich:
+  public_url: "https://photos.example.com"
+```
+
+This also sets the app's **Open in Immich** links. `auth.public_url` is a separate setting for the
+Immich Memories app itself.
 
 ## Trigger it over HTTP
 

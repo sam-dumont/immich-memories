@@ -258,7 +258,7 @@ immich-memories auto test-notification
 `auto test-notification` sends one message to every URL and says whether it went through. It ignores the
 cooldown that follows a failed delivery (`cooldown_hours`, 24), and a test that succeeds clears it. Every film
 then sends one: `auto run`, the Docker timer and a plain `generate`. The message carries the memory type, the
-outcome, the duration, the output path and, on a failure, the last lines of the redacted output (up to 300 characters, so the error itself, not the lead-up); no picture unless you set
+outcome, the duration, the output path, a direct Immich link when the run has an uploaded asset, and, on a failure, the last lines of the redacted output (up to 300 characters, so the error itself, not the lead-up); no picture unless you set
 `attach_thumbnail: true`. The URLs hold credentials, so `config show` masks them and the database stores them encrypted.
 Every key is in the [config reference](config-reference.md#notifications).
 

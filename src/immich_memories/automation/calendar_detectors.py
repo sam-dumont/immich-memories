@@ -464,13 +464,13 @@ def _birthday_in_window(bday: date, today: date) -> date | None:
 def birthday_film_windows(bday: date, today: date) -> list[DateRange] | None:
     """What a birthday candidate's film reads, or None when no birthday is proposed today.
 
-    The same windows ``generate --birthday`` fetches, so a count over them says whether
-    that film will find anything.
+    The same single year ``generate --birthday --years-back 0`` fetches for automation,
+    so earlier birthdays cannot make a sparse annual film eligible.
     """
     most_recent_bday = _birthday_in_window(bday, today)
     if most_recent_bday is None:
         return None
-    return build_birthday_windows(bday, most_recent_bday.year)
+    return build_birthday_windows(bday, most_recent_bday.year, years_back=0)
 
 
 def _last_n_completed_months(today: date, n: int) -> list[tuple[int, int]]:
