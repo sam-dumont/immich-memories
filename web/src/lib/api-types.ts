@@ -1767,6 +1767,8 @@ export interface components {
             cancel_requested: boolean;
             /** Command */
             command: string;
+            /** Error */
+            error?: string | null;
             /** Exit Code */
             exit_code?: number | null;
             /** Finished At */

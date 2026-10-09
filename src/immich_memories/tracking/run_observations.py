@@ -2,23 +2,43 @@
 
 from __future__ import annotations
 
+import logging
+import sys
 from collections.abc import Iterator
 from contextlib import ExitStack, contextmanager
 from contextvars import ContextVar
 from dataclasses import asdict
 from functools import wraps
 
+from sqlalchemy.exc import SQLAlchemyError
+
 from immich_memories import process_start
 from immich_memories.analysis import llm_metrics
 from immich_memories.db import Store, open_store
 from immich_memories.logging_config import set_current_run_id
 from immich_memories.operations.cancellation import PipelineCancelled
+from immich_memories.storage_errors import storage_failure_message
 from immich_memories.tracking import timing
 from immich_memories.tracking.run_database import RunDatabase
 from immich_memories.tracking.run_tracker import RunTracker
 from immich_memories.tracking.span_store import SpanStore
 
 _tracker: ContextVar[RunTracker | None] = ContextVar("observed_run", default=None)
+
+
+@contextmanager
+def _saving_outcome() -> Iterator[None]:
+    # Reporting a failure must not replace it with a second failed disk/database write.
+    original = sys.exception()
+    try:
+        yield
+    except (OSError, SQLAlchemyError) as error:
+        if original is None or (isinstance(original, SystemExit) and timing.clean_exit(original)):
+            raise
+        logging.getLogger(__name__).warning(
+            "Could not save run status or diagnostics. %s",
+            storage_failure_message(error) or "Check storage permissions and free space.",
+        )
 
 
 def current_tracker() -> RunTracker | None:
@@ -65,21 +85,25 @@ def observe_run(
                 timing.open_at(root, startup)
                 yield tracker
         except (PipelineCancelled, KeyboardInterrupt):
-            if _still_running(tracker):
-                tracker.cancel_run()
+            with _saving_outcome():
+                if _still_running(tracker):
+                    tracker.cancel_run()
             raise
         except SystemExit as error:
-            if _still_running(tracker):
-                _end_on_exit(tracker, error)
+            with _saving_outcome():
+                if _still_running(tracker):
+                    _end_on_exit(tracker, error)
             raise
         except BaseException as error:
-            tracker.fail_run(str(error))
+            with _saving_outcome():
+                tracker.fail_run(storage_failure_message(error) or str(error))
             raise
         else:
             if _still_running(tracker):
                 tracker.complete_run()
         finally:
-            _save_observations(tracker.db, tracker.run_id, collected, counters)
+            with _saving_outcome():
+                _save_observations(tracker.db, tracker.run_id, collected, counters)
 
 
 def _still_running(tracker: RunTracker) -> bool:
@@ -114,9 +138,10 @@ def observe_render(config) -> Iterator[None]:
                 yield
         finally:
             if collected.run_id is not None:
-                _save_observations(
-                    RunDatabase(open_store(config)), collected.run_id, collected, counters
-                )
+                with _saving_outcome():
+                    _save_observations(
+                        RunDatabase(open_store(config)), collected.run_id, collected, counters
+                    )
 
 
 def _save_observations(

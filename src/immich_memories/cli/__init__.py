@@ -97,12 +97,19 @@ class _MemoriesGroup(click.Group):
         return super().parse_args(ctx, args)
 
     def invoke(self, ctx: click.Context) -> object:
+        from sqlalchemy.exc import SQLAlchemyError
+
         from immich_memories.api.immich import ImmichStoppedAnswering
+        from immich_memories.storage_errors import storage_failure_message
 
         try:
             return super().invoke(ctx)
         except ImmichStoppedAnswering as error:
             raise click.ClickException(str(error)) from error
+        except (OSError, SQLAlchemyError) as error:
+            if message := storage_failure_message(error):
+                raise click.ClickException(message) from error
+            raise
 
 
 @click.group(cls=_MemoriesGroup)

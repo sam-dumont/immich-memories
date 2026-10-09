@@ -27,6 +27,7 @@ from immich_memories.security import (
     sanitize_error_message,
     write_secret_file,
 )
+from immich_memories.storage_errors import storage_failure_message
 from immich_memories.web.schemas import Job, JobKind, JobStatus
 
 
@@ -61,6 +62,7 @@ class JobRunner:
         # Reentrant: start() holds it while active() reads records through get().
         self._lock = threading.RLock()
         self._processes: dict[str, subprocess.Popen] = {}
+        self._unsaved: dict[str, Job] = {}
 
     def _path(self, job_id: str, suffix: str, *, progress: bool = False) -> Path:
         if re.fullmatch(r"[0-9a-f]{32}", job_id) is None:
@@ -85,22 +87,40 @@ class JobRunner:
         create_private_directory(self._dir)
         write_secret_file(self._record(job.id), job.model_dump_json(indent=2))
 
+    def _keep(self, job: Job) -> Job:
+        # A failed status write must not turn a finished child back into a running job.
+        # Retry persistence on reads, so recovery does not require a server restart.
+        try:
+            self._save(job)
+        except OSError as error:
+            job = job.model_copy(
+                update={
+                    "error": job.error
+                    or storage_failure_message(error)
+                    or (
+                        "Could not save job status. Check storage permissions and free space, then retry."
+                    )
+                }
+            )
+            self._unsaved[job.id] = job
+        else:
+            self._unsaved.pop(job.id, None)
+        return job
+
     def get(self, job_id: str) -> Job | None:
         """The job as its record says, a vanished child reading as interrupted."""
         path = self._record(job_id)
-        if not path.is_file():
-            return None
-        job = Job.model_validate(json.loads(path.read_text()))
-        if job.status == "running" and job_id not in self._processes and not _alive(job.pid):
-            with self._lock:
-                # Read again under the lock: the follower may have just saved how it ended.
-                job = Job.model_validate(json.loads(path.read_text()))
-                if job.status == "running":
-                    job = job.model_copy(
-                        update={"status": "interrupted", "finished_at": time.time()}
-                    )
-                    self._save(job)
-        return job
+        with self._lock:
+            if job_id in self._unsaved:
+                return self._keep(self._unsaved[job_id])
+            if not path.is_file():
+                return None
+            job = Job.model_validate(json.loads(path.read_text()))
+            if job.status == "running" and job_id not in self._processes and not _alive(job.pid):
+                job = self._keep(
+                    job.model_copy(update={"status": "interrupted", "finished_at": time.time()})
+                )
+            return job
 
     def jobs(self) -> list[Job]:
         """Every job this cache remembers, newest first."""
@@ -189,7 +209,7 @@ class JobRunner:
             if on_finish is not None and status == "succeeded":
                 job = self._finish(job, on_finish)
             with self._lock:
-                self._save(job)
+                self._keep(job)
                 self._processes.pop(job_id, None)
         finally:
             # Out of the live set whatever happened above: get() then reads a record still
@@ -200,9 +220,18 @@ class JobRunner:
         try:
             return on_finish(job)
         except Exception as error:  # noqa: BLE001 - any failure reading the result fails the job
-            with self._log(job.id).open("a") as log:
-                log.write(f"\nThe job finished but its result could not be read: {error}\n")
-            return job.model_copy(update={"status": "failed"})
+            message = "The job finished but its result could not be read."
+            reason = storage_failure_message(error)
+            try:
+                with self._log(job.id).open("a") as log:
+                    log.write(f"\nThe job finished but its result could not be read: {error}\n")
+            except OSError as log_error:
+                reason = (
+                    reason or storage_failure_message(log_error) or "Its log could not be saved."
+                )
+            return job.model_copy(
+                update={"status": "failed", "error": message + (f" {reason}" if reason else "")}
+            )
 
     def cancel(self, job_id: str) -> Job | None:
         """Stop the child: SIGTERM to its whole process group.
@@ -210,15 +239,15 @@ class JobRunner:
         The job records the cancel itself; the cut's own attempt, whose lease frees when the
         child dies, reads as interrupted, which is what happened to it.
         """
-        job = self.get(job_id)
-        if job is None or job.status != "running":
+        with self._lock:
+            job = self.get(job_id)
+            if job is None or job.status != "running":
+                return job
+            job = self._keep(job.model_copy(update={"cancel_requested": True}))
+            if job.pid is not None:
+                with suppress(ProcessLookupError):
+                    os.killpg(job.pid, signal.SIGTERM)
             return job
-        job = job.model_copy(update={"cancel_requested": True})
-        self._save(job)
-        if job.pid is not None:
-            with suppress(ProcessLookupError):
-                os.killpg(job.pid, signal.SIGTERM)
-        return job
 
     def output(self, job_id: str) -> str:
         """What the child printed, with anything secret-shaped and every configured secret removed."""

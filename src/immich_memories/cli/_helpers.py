@@ -64,7 +64,10 @@ def described_error(error: BaseException) -> str:
     diagnosable without reading file timestamps.
     """
     from immich_memories.operations.cut_progress import last_announced_stage
+    from immich_memories.storage_errors import storage_failure_message
 
+    if storage_message := storage_failure_message(error):
+        return storage_message
     message = str(error).strip()
     if message:
         return message

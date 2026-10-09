@@ -221,6 +221,7 @@ class Job(BaseModel):
     cancel_requested: bool = False
     meta: dict[str, str | int | None] = {}
     result_run_id: str | None = None
+    error: str | None = None
 
 
 class JobProgress(BaseModel):

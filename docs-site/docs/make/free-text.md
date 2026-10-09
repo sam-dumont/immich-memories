@@ -30,6 +30,10 @@ Preview first, on the CLI or in the web UI: a preview only checks and warns, it 
 prepares anything. **Make the film** stays on even when the window needs preparing; that
 button is what pays the cost.
 
+For a request covering years, [check cache capacity](../run/maintenance/storage-backups.md#caches)
+before starting. Preparation keeps the period's previews for all its analysis stages; the
+thumbnail retention budget does not cap that active working set.
+
 ```bash
 immich-memories generate --ask "our cat along the years" --dry-run
 ```
