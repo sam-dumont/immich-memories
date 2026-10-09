@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+from collections.abc import Collection
 from dataclasses import dataclass, field
 from datetime import date, datetime, time
 from enum import StrEnum
@@ -103,11 +105,10 @@ def make_manual_memory_key(
     person_names: list[str] | None = None,
     discriminator: str | None = None,
 ) -> str:
-    """The key a hand-made `generate` run records for a whole-day window.
+    """Keep the whole-day timestamp key used by existing automatic detectors.
 
-    A manual run keeps the window as datetimes (midnight to 23:59:59), so its key reads
-    `...:2025-06-01T00:00:00:2025-06-30T23:59:59:`. A detector that builds its key this way
-    sees a film made by hand as already made.
+    Manual generation also saves date-only keys. Discovery expands completed history
+    to recognize both forms without changing persisted keys or candidate identities.
     """
     return make_memory_key(
         memory_type,
@@ -116,6 +117,31 @@ def make_manual_memory_key(
         person_names,
         discriminator,
     )
+
+
+def completed_memory_key_aliases(keys: Collection[str]) -> set[str]:
+    """Recognize date-only and whole-day timestamp history without rewriting it.
+
+    Only midnight-to-23:59:59 windows have an alias. Keep the suffix intact: people,
+    anniversary discriminators and grouped conditions still distinguish memories.
+    """
+    result = set(keys)
+    pattern = r"([^:]+):(\d{4}-\d{2}-\d{2})(T00:00:00)?:(\d{4}-\d{2}-\d{2})(T23:59:59)?:(.*)"
+    for key in keys:
+        match = re.fullmatch(pattern, key)
+        if match is None:
+            continue
+        kind, first, start_time, last, end_time, suffix = match.groups()
+        if bool(start_time) != bool(end_time):
+            continue
+        try:
+            date.fromisoformat(first)
+            date.fromisoformat(last)
+        except ValueError:
+            continue
+        result.add(f"{kind}:{first}:{last}:{suffix}")
+        result.add(f"{kind}:{first}T00:00:00:{last}T23:59:59:{suffix}")
+    return result
 
 
 @dataclass(frozen=True)

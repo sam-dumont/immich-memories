@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import date, timedelta
+from datetime import date, datetime, time, timedelta
+
+import pytest
 
 from immich_memories.api.accounts import OpenAccount
 from immich_memories.api.compatibility import ResolvedApiVersion
@@ -13,7 +15,10 @@ from immich_memories.automation.candidate_discovery import CandidateDiscovery
 from immich_memories.automation.candidates import CandidateCategory
 from immich_memories.config_loader import Config
 from immich_memories.db import open_store
+from immich_memories.generate import GenerationParams, build_memory_key
 from immich_memories.people.companion import add_confirmed_person
+from immich_memories.tracking.models import RunMetadata
+from immich_memories.tracking.run_database import RunDatabase
 
 TODAY = date.today()
 
@@ -86,7 +91,7 @@ class _Attempts:
         return {}
 
 
-def _discover(monkeypatch, immich: _Immich, role: str | None):
+def _discover(monkeypatch, immich: _Immich, role: str | None, completed_run=None):
     config = Config(
         immich={"url": "https://immich.example.test", "api_key": "key"},
         automation={"detect_trips": False},
@@ -106,7 +111,10 @@ def _discover(monkeypatch, immich: _Immich, role: str | None):
     store = open_store(config)
     if role:
         add_confirmed_person(store, "Kid A", person_id="kid", role=role)
-    return CandidateDiscovery(config, _Runs(), _Attempts()).discover(limit=20, recent_auto_runs=[])
+    runs = RunDatabase(store)
+    if completed_run is not None:
+        runs.save_run(completed_run)
+    return CandidateDiscovery(config, runs, _Attempts()).discover(limit=20, recent_auto_runs=[])
 
 
 def _library(person_days: list[date]) -> _Immich:
@@ -208,3 +216,41 @@ def test_switching_the_new_detectors_off_proposes_none_of_them_and_asks_for_noth
     }
     assert new.isdisjoint({c.category for c in result.candidates})
     assert immich.asked_for_albums == 0
+
+
+@pytest.mark.parametrize("timestamp_key", [False, True])
+@pytest.mark.parametrize("person_name", ["Kid A", None])
+def test_completed_manual_month_is_not_proposed_again(
+    monkeypatch, tmp_path, timestamp_key, person_name
+):
+    first = _month_ago(1)
+    last = TODAY.replace(day=1) - timedelta(days=1)
+    params = GenerationParams(
+        clips=[],
+        output_path=tmp_path / "manual.mp4",
+        config=Config(),
+        memory_type="monthly_highlights",
+        person_name=person_name,
+        date_start=datetime.combine(first, time.min) if timestamp_key else first,
+        date_end=datetime.combine(last, time(23, 59, 59)) if timestamp_key else last,
+    )
+    completed = RunMetadata(
+        run_id="manual-month",
+        created_at=_at(TODAY),
+        status="completed",
+        source="manual",
+        memory_type=params.memory_type,
+        memory_key=build_memory_key(params),
+        date_range_start=first,
+        date_range_end=last,
+        output_path=str(params.output_path),
+    )
+    pictures = [first + timedelta(days=i) for i in range(10)] * 2
+
+    result = _discover(monkeypatch, _library(pictures), role="son", completed_run=completed)
+
+    category = CandidateCategory.PERSON_MONTHLY if person_name else CandidateCategory.MONTHLY_REVIEW
+    assert category not in {c.category for c in result.candidates}
+    assert result.candidates  # Unrelated memories remain available.
+    # Matching history must not rewrite the original identity on disk.
+    assert RunDatabase().get_run("manual-month").memory_key == completed.memory_key

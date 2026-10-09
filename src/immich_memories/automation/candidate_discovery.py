@@ -12,7 +12,11 @@ from immich_memories.analysis.person_resolution import store_people
 from immich_memories.api.accounts import AccountUnavailable, OpenAccount, open_accounts
 from immich_memories.automation.calendar_detectors import birthday_film_windows
 from immich_memories.automation.candidate_scorer import score_and_rank
-from immich_memories.automation.candidates import CandidateCategory, MemoryCandidate
+from immich_memories.automation.candidates import (
+    CandidateCategory,
+    MemoryCandidate,
+    completed_memory_key_aliases,
+)
 from immich_memories.automation.catalogue import entries_from, load_catalogue
 from immich_memories.automation.closeness import closeness_by_person, is_close
 from immich_memories.automation.discovery_extras import ExtraPlan, ExtraReads, read_account_extras
@@ -374,7 +378,7 @@ class CandidateDiscovery:
     ) -> DiscoveryResult:
         """Detect, score, and rank memory candidates from the Immich library."""
         auto_cfg = self._config.automation
-        generated_keys = self._runs.get_generated_memory_keys()
+        generated_keys = completed_memory_key_aliases(self._runs.get_generated_memory_keys())
         last_runs = _build_last_runs_by_type(self._runs)
         today = date.today()
 
