@@ -62,6 +62,30 @@ def test_the_pass_samples_a_videos_frames_and_leaves_a_still_its_preview(tmp_pat
     assert result.pictures_by_stage["detector_frames"] == 1
 
 
+@requires_ffmpeg
+def test_preparation_keeps_sampled_frames_in_its_cache_when_system_temp_is_unavailable(
+    tmp_path, monkeypatch
+):
+    import tempfile
+
+    from tests.test_playback_keyframes import encode
+
+    data = encode(tmp_path / "clip.mp4", gop=30)
+    unavailable = tmp_path / "unavailable-system-temp"
+    unavailable.write_text("The system temp directory is not writable storage.")
+    # WHY: reproduce a container whose system scratch cannot accept work; playback and
+    # FFmpeg still use real bytes through the existing Immich endpoint boundary.
+    monkeypatch.setattr(tempfile, "tempdir", str(unavailable))
+
+    result, handed = _wiring(
+        tmp_path, lambda _id, start, length: (data[start : start + length], len(data))
+    )
+
+    assert result.complete
+    assert handed["vv1"] and all(handed["vv1"])
+    assert unavailable.is_file()
+
+
 def test_a_clip_whose_playback_cannot_be_read_falls_back_to_its_preview_and_says_so(tmp_path):
     # WHY: the Immich playback endpoint, refusing the way a dropped connection does.
     def read(*_args):
@@ -79,7 +103,7 @@ def test_without_a_playback_reader_no_source_is_owed_frames(tmp_path):
     from immich_memories.analysis.editorial_preparation_detector_frames import DetectorFrames
     from tests.test_editorial_preparation_motion import prepared_video
 
-    assert DetectorFrames([prepared_video("vv1")], None).video_ids == frozenset()
+    assert DetectorFrames([prepared_video("vv1")], None, tmp_path).video_ids == frozenset()
 
 
 def _live_photo(asset_id, clip_id):

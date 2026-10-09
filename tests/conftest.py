@@ -28,6 +28,7 @@ _TEST_ROOT: Path | None = None
 _TEST_ENV_KEYS = {
     "IMMICH_MEMORIES_CACHE__DATABASE": "cache.db",
     "IMMICH_MEMORIES_CACHE__DIRECTORY": "cache",
+    "IMMICH_MEMORIES_INFERENCE_CACHE_DIR": "inference-cache",
     "IMMICH_MEMORIES_OUTPUT__DIRECTORY": "output",
     # The scene-print encoder defaults to a model under the developer's home. A machine that
     # fetched it read real scene prints of synthetic previews, and a suite green in CI failed

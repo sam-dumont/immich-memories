@@ -168,6 +168,12 @@ def main(
 
     _load_cli_config(ctx, config, preset)
 
+    # Config inspection must stay read-only, including when its default cache is absent.
+    if ctx.invoked_subcommand and ctx.invoked_subcommand != "config":
+        from immich_memories.security import runtime_scratch
+
+        ctx.with_resource(runtime_scratch(ctx.obj["config"].cache.cache_path))
+
     from immich_memories.store_migration_notice import log_store_migration_warnings
 
     log_store_migration_warnings(ctx.obj["config"])

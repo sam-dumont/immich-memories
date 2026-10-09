@@ -169,6 +169,22 @@ same volume. For example, a 100 GiB data volume with a 50,000 MB thumbnail budge
 around a large preview set. This is a sizing example, not a reservation or a hard preparation
 limit. Finished films are separate, at `~/Videos/Memories` on Python or `/app/output` in the image.
 
+### Temporary working files
+
+Keep `cache.directory` and the output directory on mounted storage with free space. The CLI
+and web app put temporary working files under the cache, including sampled video frames.
+Python and child processes use `cache.directory/scratch` as their default temporary directory.
+The inference service uses its configured cache; the render worker uses its configured output
+directory. The combined GPU worker uses the render worker's output directory.
+
+Video and Live Photo preparation samples at most `advanced.editorial.preparation.batch_size`
+sources at a time (32 by default). Each batch saves its facts before releasing its frames.
+An interrupted run reuses finished batches when you retry the same request.
+
+Scratch needs space beyond the preview and video cache budgets. Temporary files are removed
+when their work finishes; a killed process can leave files behind. Stop the app and its workers
+before removing leftover scratch files. Keep the store and retained run inputs.
+
 ### Full disk during preparation
 
 The CLI exits with an error; the web job stops its progress bar and displays the storage failure.

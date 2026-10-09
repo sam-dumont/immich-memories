@@ -9,6 +9,7 @@ import os
 import re
 import stat
 import tempfile
+from collections.abc import Iterator
 from pathlib import Path
 
 from pydantic import BaseModel
@@ -82,7 +83,7 @@ def _assert_private(path: Path) -> None:
 
 
 def private_temp_dir(name: str) -> Path:
-    """A scratch directory under the system temp dir that only this user can enter.
+    """A scratch directory under the runtime temp dir that only this user can enter.
 
     `tempfile.gettempdir()` is shared and world-writable, so a fixed path under
     it is a name another user can claim first -- as a symlink we then write
@@ -99,6 +100,43 @@ def private_temp_dir(name: str) -> Path:
     target.mkdir(mode=0o700, parents=True, exist_ok=True)
     _assert_private(target)
     return target
+
+
+@contextlib.contextmanager
+def runtime_scratch(directory: Path) -> Iterator[Path]:
+    """Keep Python and subprocess scratch on configured storage for a process lifetime.
+
+    Enter at CLI/service startup, before launching threads or models. Setting the
+    environment alone misses Python's cached tempdir; setting tempdir alone misses
+    model and media subprocesses. An unusable mount must never fall back to /tmp.
+    Nested CLI/web lifetimes restore the outer choice when they close.
+    """
+    scratch = directory.expanduser().absolute() / "scratch"
+    try:
+        create_private_directory(scratch)
+        _assert_private(scratch)
+        # Verify writes now: tempfile's own directory search would silently fall back.
+        with tempfile.TemporaryFile(dir=scratch):
+            pass
+    except OSError as error:
+        raise OSError(
+            error.errno, "Cannot use runtime scratch storage; check the configured volume."
+        ) from None
+    except RuntimeError:
+        raise RuntimeError("Runtime scratch storage must be a private directory.") from None
+    previous = tempfile.tempdir
+    environment = {key: os.environ.get(key) for key in ("TMPDIR", "TEMP", "TMP")}
+    tempfile.tempdir = str(scratch)
+    os.environ.update(dict.fromkeys(environment, str(scratch)))
+    try:
+        yield scratch
+    finally:
+        tempfile.tempdir = previous
+        for key, value in environment.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
 
 
 def _collect_model_secrets(value: BaseModel, secrets: set[str], pending: list[object]) -> None:

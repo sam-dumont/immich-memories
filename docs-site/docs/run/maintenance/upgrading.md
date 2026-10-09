@@ -40,6 +40,17 @@ sign in to read the detailed diagnosis.
 Every HTTP request accepts a body up to 4 MiB, including reads and sign-in pages. Larger requests
 return HTTP 413. The soundtrack upload route keeps its separate 64 MiB file limit.
 
+## Temporary working files
+
+Runtime temporary files use configured cache/output storage. Mount `cache.directory` for the
+app and the configured cache or output directory for each worker, and leave room for temporary
+media alongside retained files. The app establishes Python and subprocess temporary-directory
+defaults at startup; an unusable scratch directory stops startup instead of choosing another
+filesystem. A custom `TMPDIR` is replaced by that configured storage while the app runs.
+
+See [temporary working files](./storage-backups.md#temporary-working-files) for the locations
+and interrupted-run recovery.
+
 ## Job progress files
 
 The web job directory becomes accessible only to the app account when the web server opens it.

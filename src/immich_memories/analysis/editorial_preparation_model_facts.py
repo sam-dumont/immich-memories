@@ -31,6 +31,7 @@ from immich_memories.analysis.editorial_preparation_heads import PUBLIC_HEAD_VER
 from immich_memories.analysis.editorial_preparation_remote_frames import prepare_remote_frame_facts
 from immich_memories.analysis.remote_facts import RemoteFactsError, offloaded_versions
 from immich_memories.api.models import Asset
+from immich_memories.config_models_editorial_preparation import EditorialPreparationConfig
 from immich_memories.config_models_inference import InferenceConfig
 from immich_memories.db import Store
 from immich_memories.store.editorial_preparation import carry_head_answers, heads_missing_for
@@ -50,6 +51,9 @@ class ModelFactStage(Protocol):
 
     @property
     def inference_config(self) -> InferenceConfig: ...
+
+    @property
+    def preparation_config(self) -> EditorialPreparationConfig: ...
 
     @property
     def check(self) -> Callable[[], None]: ...
@@ -166,19 +170,22 @@ def acquire_clip_companions(
     no_preview = {
         asset_id: stage.unservable.pop(asset_id) for asset_id in set(stage.unservable) - refused
     }
-    with frames.sampled(
-        owed,
-        check=stage.check,
-        report=stage.report,
-        failures=stage.failures,
-        timed=stage.timed,
-    ) as sampled:
-        for asset_id, reason in no_preview.items():
-            if asset_id not in sampled:
-                stage.failures[f"{CLIP_COMPANION}:{asset_id}"] = reason
-        readable = tuple(asset_id for asset_id in owed if asset_id in paths or asset_id in sampled)
-        if readable:
-            _sampled_models(stage, {MARQO_HEAD: readable}, paths, sampled, {})
+    for batch, offset, total in frames.batches(owed, stage.preparation_config.batch_size):
+        with frames.sampled(
+            batch,
+            check=stage.check,
+            report=stage.report,
+            failures=stage.failures,
+            timed=stage.timed,
+            offset=offset,
+            total=total,
+        ) as sampled:
+            for asset_id in batch:
+                if asset_id in no_preview and asset_id not in sampled:
+                    stage.failures[f"{CLIP_COMPANION}:{asset_id}"] = no_preview[asset_id]
+            readable = tuple(key for key in batch if key in paths or key in sampled)
+            if readable:
+                _sampled_models(stage, {MARQO_HEAD: readable}, paths, sampled, {})
 
 
 def acquire_model_facts(
@@ -214,21 +221,39 @@ def acquire_model_facts(
     if obstruction_ids:
         stage.obstruction_heads(obstruction_ids)
     detector_pending = _detector_pending(pending, head_versions, offloaded_exposure)
-    if detector_pending or clips or motion:
-        exposure = detector_pending.get(MARQO_HEAD, ())
+    _acquire_frame_batches(stage, detector_pending, preview_paths, frames, clips, motion)
+    _record_unpackaged_heads(pending, head_versions, stage.failures)
+
+
+def _acquire_frame_batches(stage, pending, previews, frames, clips, motion):
+    exposure = [key for key in pending.get(MARQO_HEAD, ()) if key in frames.clip_ids]
+    ids = tuple(dict.fromkeys((*exposure, *clips, *motion)))
+    wanted = set(ids)
+    # Stills need no temporary frames. Keep their model pass together so a local
+    # detector process is not reloaded once per small disk working set.
+    stills = {
+        head: tuple(key for key in keys if key not in wanted) for head, keys in pending.items()
+    }
+    _sampled_models(stage, stills, previews, {}, {})
+    for batch, offset, total in frames.batches(ids, stage.preparation_config.batch_size):
+        batch_ids = set(batch)
+        batch_pending = {
+            head: tuple(key for key in keys if key in batch_ids) for head, keys in pending.items()
+        }
         with frames.sampled(
-            tuple(dict.fromkeys((*exposure, *clips, *motion))),
+            batch,
             check=stage.check,
             report=stage.report,
             failures=stage.failures,
             timed=stage.timed,
+            offset=offset,
+            total=total,
         ) as sampled:
             owed = {clip: sampled[clip] for clip in clips if clip in sampled}
-            _sampled_models(stage, detector_pending, preview_paths, sampled, owed)
+            _sampled_models(stage, batch_pending, previews, sampled, owed)
             if measurable := {video: sampled[video] for video in motion if video in sampled}:
                 stage.video_motion(measurable, motion)
                 stage.obstruction_frames(measurable, motion)
-    _record_unpackaged_heads(pending, head_versions, stage.failures)
 
 
 def _sampled_models(stage, pending, previews, frames, clips) -> None:

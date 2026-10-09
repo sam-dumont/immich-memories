@@ -11,6 +11,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
 from starlette.background import BackgroundTask
 
+from immich_memories.security import runtime_scratch
 from immich_memories_render_worker.admission import EnvelopeDrift, certify_envelope
 from immich_memories_render_worker.jobs import RenderJobs
 from immich_memories_render_worker.models import RenderRequest
@@ -50,15 +51,16 @@ def create_app(
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        reaper = asyncio.create_task(reap())
-        try:
-            app.state.capabilities = await asyncio.to_thread(jobs.health)
-            yield
-        finally:
-            reaper.cancel()
-            with suppress(asyncio.CancelledError):
-                await reaper
-            await asyncio.to_thread(jobs.close)
+        with runtime_scratch(settings.directory):
+            reaper = asyncio.create_task(reap())
+            try:
+                app.state.capabilities = await asyncio.to_thread(jobs.health)
+                yield
+            finally:
+                reaper.cancel()
+                with suppress(asyncio.CancelledError):
+                    await reaper
+                await asyncio.to_thread(jobs.close)
 
     app = FastAPI(
         title="Immich Memories render worker", lifespan=lifespan, dependencies=[Depends(authorize)]
