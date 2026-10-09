@@ -83,7 +83,9 @@ too little material or missing setup. The page lists these under **Why other sug
 skipped**. The CLI prints them above its table. Use `auto suggest --json` for scripts that need
 the candidate keys, or `--limit 20` to see more candidates.
 
-Albums filmed by hand count as already made for their recorded date span. An automatically
+Completed manual films count as already made for the same people and calendar window,
+including older runs saved with whole-day timestamps. A reviewed cut without a rendered film
+does not count. Albums filmed by hand count as already made for their recorded date span. An automatically
 filmed album can return when it gains at least 30 pictures and reaches 1.5 times its previous
 size.
 
