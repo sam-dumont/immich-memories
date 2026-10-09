@@ -209,7 +209,7 @@ jobs:
           "
 
       - name: Upload coverage
-        uses: codecov/codecov-action@75cd11691c0faa626561e295848008c8a7dddffe # v5
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v5
         if: always()
         with:
           files: tests/assembly-coverage.xml,tests/audio-coverage.xml,tests/auth-coverage.xml,tests/automation-coverage.xml,tests/cli-coverage.xml,tests/e2e-coverage.xml,tests/live-photos-coverage.xml,tests/photos-coverage.xml,tests/pipeline-coverage.xml,tests/processing-coverage.xml,tests/titles-coverage.xml

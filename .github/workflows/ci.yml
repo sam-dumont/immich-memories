@@ -358,7 +358,7 @@ jobs:
           fi
 
       - name: Upload unit test coverage to Codecov
-        uses: codecov/codecov-action@75cd11691c0faa626561e295848008c8a7dddffe # v5
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v5
         if: matrix.python-version == '3.12' && matrix.os == 'ubuntu-24.04'
         with:
           files: coverage.xml
@@ -371,7 +371,7 @@ jobs:
       # which runs real FFmpeg with hardware encoding on a self-hosted runner.
 
       - name: Upload test results to Codecov
-        uses: codecov/codecov-action@75cd11691c0faa626561e295848008c8a7dddffe # v5
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v5
         if: ${{ !cancelled() && matrix.python-version == '3.12' && matrix.os == 'ubuntu-24.04' }}
         with:
           files: junit.xml
