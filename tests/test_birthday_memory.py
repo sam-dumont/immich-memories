@@ -276,7 +276,13 @@ class TestAutomationRoundTrip:
         argv = GenerationRequest.from_candidate(candidate, upload=False).to_argv()
         year = int(argv[argv.index("--year") + 1])
 
-        rolling = build_birthday_windows(person.birth_date, year)[0]
+        years_back = int(argv[argv.index("--years-back") + 1]) if "--years-back" in argv else None
+        windows = build_birthday_windows(person.birth_date, year, years_back=years_back)
+        assert len(windows) == 1
+        rolling = windows[0]
+        from immich_memories.automation.calendar_detectors import birthday_film_windows
+
+        assert birthday_film_windows(person.birth_date, date(2026, 2, 20)) == windows
 
         assert rolling.start.date() == candidate.date_range_start
         assert rolling.end.date() == candidate.date_range_end

@@ -21,27 +21,29 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def run_completion_warnings(config: Config, attempt_dir: Path | None) -> list[str]:
-    """A finished run's own warnings (e.g. low disk space), for its completion notice.
+def run_completion_details(
+    config: Config, attempt_dir: Path | None
+) -> tuple[list[str], str | None]:
+    """A finished run's warnings and uploaded film link, for its completion notice.
 
     Reads the same run row the Runs page does, through the run id -> attempt
     directory link `runs story`/`runs why` already use. Best-effort: a
     notification is never worth failing a successful render over.
     """
     if attempt_dir is None:
-        return []
+        return [], None
     from immich_memories.db import open_store
     from immich_memories.operations.run_index import run_id_for_attempt
     from immich_memories.tracking import RunDatabase
 
     run_id = run_id_for_attempt(attempt_dir)
     if run_id is None:
-        return []
+        return [], None
     try:
         run = RunDatabase(open_store(config)).get_run(run_id)
     except (OSError, RuntimeError, SQLAlchemyError):
-        return []
-    return list(run.warnings) if run else []
+        return [], None
+    return (list(run.warnings), config.immich.asset_url(run.immich_asset_id)) if run else ([], None)
 
 
 def send_configured_notification(
@@ -86,6 +88,7 @@ def notify_job_complete(
     attach_thumbnail: bool = False,
     cooldown_hours: int = 24,
     bypass_cooldown: bool = False,
+    immich_asset_url: str | None = None,
 ) -> bool:
     """Send a notification about job completion via Apprise.
 
@@ -109,7 +112,9 @@ def notify_job_complete(
         return False
 
     title = _build_title(memory_type, status)
-    body = _build_body(memory_type, status, duration_seconds, output_path, error, warnings)
+    body = _build_body(
+        memory_type, status, duration_seconds, output_path, error, warnings, immich_asset_url
+    )
 
     attach = (
         _extract_thumbnail(output_path)
@@ -275,6 +280,7 @@ def _build_body(
     output_path: str | None,
     error: str | None,
     warnings: list[str] | None = None,
+    immich_asset_url: str | None = None,
 ) -> str:
     lines = [f"Type: {memory_type}"]
     if duration_seconds > 0:
@@ -283,6 +289,8 @@ def _build_body(
         lines.append(f"Processing time: {mins}m {secs:02d}s")
     if output_path and status == "completed":
         lines.append(f"Output: {output_path}")
+    if immich_asset_url and status == "completed":
+        lines.append(f"Watch in Immich: {immich_asset_url}")
     if error and status == "failed":
         lines.append(f"Error: {_error_tail(error)}")
     # A run that completed still needs to say so if it is running out of room --

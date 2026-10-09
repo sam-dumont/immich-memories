@@ -100,6 +100,7 @@ class MemoryTitleFacts:
     occasion_name: str | None = None
     album_name: str | None = None
     holiday: str | None = None
+    birthday: bool = False
     # The trip's place as trip naming chose it ("Crete, Greece"): the title must name it.
     place: str | None = None
     people_store: Store | None = None
@@ -236,6 +237,7 @@ def memory_title_facts(
         occasion_name=_occasion_name(preset) or (str(preset.get("subject") or "").strip() or None),
         album_name=album_name or preset.get("album_name") or None,
         holiday=preset.get("holiday") or None,
+        birthday=bool(preset.get("birthday")),
         place=preset.get("location_name") or None,
     )
 
@@ -426,6 +428,8 @@ def _people_prompt(
     span = span_title_facts(
         start, end, person_names, people_store=facts.people_store, today=facts.today
     )
+    if facts.birthday:
+        span += f"; birthday celebrated: {end}"
     return TitlePrompt(
         _load_prompt_template("title_people.md")
         .replace("{lang}", lang)
@@ -511,7 +515,9 @@ def build_title_prompt(
     names = list(person_names or ())
     start, end = date.fromisoformat(start_date), date.fromisoformat(end_date)
     year_line = _year_requirement_line(
-        required_years(memory_type, start, end, tuple(names), known.holiday)
+        required_years(
+            memory_type, start, end, tuple(names), known.holiday, birthday=known.birthday
+        )
     )
     if memory_type in PEOPLE_MEMORY_TYPES:
         return _people_prompt(lang, memory_type, start, end, names, known, year_line)
@@ -612,7 +618,13 @@ def _guarded_suggestion(
     )
     suggestion = refusing_a_wrong_year(suggestion, start_date, end_date)
     suggestion = requiring_the_year(
-        suggestion, memory_type, start_date, end_date, person_names, holiday
+        suggestion,
+        memory_type,
+        start_date,
+        end_date,
+        person_names,
+        holiday,
+        birthday=bool(facts and facts.birthday),
     )
     suggestion = refusing_single_year_title(
         suggestion, memory_type, start_date, end_date, person_names, holiday

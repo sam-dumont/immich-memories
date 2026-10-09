@@ -28,7 +28,8 @@ Every server URL (`immich.url`, `llm.base_url`, `network.geocoding_url` and the 
 with `http://` or `https://`; anything else is refused when the file loads or a setting is saved.
 `immich.public_url` is the one Immich address worth knowing about here: when `immich.url` is a cluster or
 container name your browser cannot open, set it to the address you do open, and the "View in Immich" and
-"Open in Immich" links use it. Requests still go to `immich.url`.
+"Open in Immich" links and notification links use it. Requests still go to `immich.url`.
+`auth.public_url` is the address of Immich Memories itself; it does not set the Immich link address.
 Keep the file at permissions `600` if it contains credentials.
 Docker can use [environment variables](./environment-variables.md) without a file.
 

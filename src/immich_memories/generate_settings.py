@@ -257,13 +257,22 @@ def build_title_settings(
         )
         settings.show_ending_screen = plan.ending_duration > 0.0
 
-    from immich_memories.titles.film_title import holiday_title
+    from immich_memories.titles.film_title import birthday_title, holiday_title
 
     if occasion := holiday_title(
         params.memory_preset_params, params.memory_type, params.date_end, resolved_locale
     ):
         settings.title_override, settings.subtitle_override = occasion
         settings.title_source = TitleSource.OCCASION
+
+    if birthday := birthday_title(
+        params.memory_preset_params,
+        params.memory_type,
+        params.date_end,
+        title_person_name,
+        resolved_locale,
+    ):
+        settings.title_override, settings.subtitle_override = birthday
 
     # Apply LLM-generated title overrides
     if params.title:

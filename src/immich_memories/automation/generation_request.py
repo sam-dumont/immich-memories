@@ -193,6 +193,8 @@ class GenerationRequest:
                     str(self.end.year),
                     "--birthday",
                     (self.birth_date or self.end).strftime("%m-%d"),
+                    "--years-back",
+                    "0",
                     *self._person_args(),
                 ]
             case CandidateCategory.MULTI_PERSON:

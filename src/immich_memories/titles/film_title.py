@@ -320,6 +320,24 @@ def holiday_title(
     return holiday_label(holiday, end.year, locale), title_pattern("on_this_day_subtitle", locale)
 
 
+def birthday_title(
+    preset_params: dict,
+    memory_type: str | None,
+    end: Any,
+    person_name: str | None,
+    locale: str,
+) -> tuple[str, str | None] | None:
+    """Name the birthday being celebrated, even when the search includes earlier birthdays."""
+    if memory_type != "person_spotlight" or not preset_params.get("birthday") or end is None:
+        return None
+    from immich_memories.titles.text_builder import SelectionType, generate_title
+
+    info = generate_title(
+        SelectionType.PERSON_SPOTLIGHT, year=end.year, person_name=person_name, locale=locale
+    )
+    return info.main_title, info.subtitle
+
+
 def template_title(
     config: Config,
     *,
@@ -349,6 +367,8 @@ def template_title(
         person_name=person_name,
         use_first_name_only=config.title_screens.use_first_name_only,
     )
+    if birthday := birthday_title(params, memory_type, date_range.end, name, locale):
+        return birthday
     selection = infer_selection_type(
         start_date=date_range.start, end_date=date_range.end, memory_type=memory_type
     )

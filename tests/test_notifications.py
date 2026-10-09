@@ -354,7 +354,7 @@ class TestSendNotificationHelper:
 class TestRunCompletionWarnings:
     def test_reads_the_finished_runs_own_warnings(self, tmp_path) -> None:
         """The CLI's end-of-run notice reads warnings off the same run row the Runs page does."""
-        from immich_memories.automation.notifications import run_completion_warnings
+        from immich_memories.automation.notifications import run_completion_details
         from immich_memories.config_loader import Config
         from immich_memories.db import open_store
         from immich_memories.operations.run_index import record_run_attempt
@@ -377,15 +377,15 @@ class TestRunCompletionWarnings:
         )
         record_run_attempt("run-warn-1", attempt, attempt / "film.mp4", store=open_store(config))
 
-        warnings = run_completion_warnings(config, attempt)
+        warnings, link = run_completion_details(config, attempt)
 
         assert warnings == ["Low disk space on output (/videos): 2.0 GB free, below 5 GB."]
 
     def test_a_run_with_no_attempt_directory_has_no_warnings(self) -> None:
-        from immich_memories.automation.notifications import run_completion_warnings
+        from immich_memories.automation.notifications import run_completion_details
         from immich_memories.config_loader import Config
 
-        assert run_completion_warnings(Config(), None) == []
+        assert run_completion_details(Config(), None) == ([], None)
 
 
 class TestSendTestNotification:
