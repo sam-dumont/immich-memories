@@ -120,7 +120,7 @@ class TitleBackgroundRenderer:
 
         frame_count = 0
 
-        def _frames() -> Iterator[bytes]:
+        def _frames() -> Iterator[memoryview]:
             nonlocal frame_count
             max_frames = fps * 1  # 1 second
             for frame in decoder:

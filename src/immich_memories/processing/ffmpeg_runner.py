@@ -183,7 +183,7 @@ def stop_owned_process(
         logger.error("Child pid %s survived SIGKILL; it stays unreaped", process.pid)
 
 
-def _feed_frames(stdin: IO[bytes], frames: Iterable[bytes]) -> None:
+def _feed_frames(stdin: IO[bytes], frames: Iterable[bytes | bytearray | memoryview]) -> None:
     """Write every frame, and close stdin whatever happened.
 
     FFmpeg only finishes its output file once stdin reaches EOF, so a frame
@@ -221,7 +221,7 @@ def _arm_kill_watchdog(process: subprocess.Popen[Any], deadline: float) -> tuple
 
 def write_frames_to_ffmpeg(
     cmd: list[str],
-    frames: Iterable[bytes],
+    frames: Iterable[bytes | bytearray | memoryview],
     *,
     wait_timeout: float,
     total_timeout: float | None = None,
