@@ -156,9 +156,30 @@ cache:
   thumbnail_cache_max_size_mb: 10000
 ```
 
-A preview averages about 315 KB: allow roughly 0.35 MB per candidate picture. A run can temporarily
-exceed the preview cap to keep its active inputs. Finished films are separate, at
-`~/Videos/Memories` on Python or `/app/output` in the image.
+A preview averages about 315 KB: allow roughly **0.35 MB per candidate picture**. Preparing
+60,000 pictures needs about 21 GB for previews alone. Use the number of pictures in the requested
+period, including pictures preparation will later exclude from the film.
+
+The thumbnail budget controls retention. Preparation protects its current previews until every
+analysis stage has read them, so that working set can exceed the budget. Lowering the budget
+does not make a large preparation fit on a small disk. Increasing it does not grow the volume.
+
+Leave room for the store, job records, model runtime caches and downloaded video clips on the
+same volume. For example, a 100 GiB data volume with a 50,000 MB thumbnail budget leaves space
+around a large preview set. This is a sizing example, not a reservation or a hard preparation
+limit. Finished films are separate, at `~/Videos/Memories` on Python or `/app/output` in the image.
+
+### Full disk during preparation
+
+The CLI exits with an error; the web job stops its progress bar and displays the storage failure.
+If the full disk also prevents saving the job status, the running server keeps that status in
+memory. After a server restart, a job whose process has disappeared is marked interrupted.
+
+Expand the data volume, or stop work and [clear only disposable caches](#clearing). Check both
+free bytes and free inodes with `df -h` and `df -i` on the filesystem holding `cache.directory`.
+For Kubernetes, verify the mounted filesystem has grown as well as the PVC's requested size.
+Keep the store and retry the same request: completed facts and usable cached previews are reused.
+Deleting the whole data volume loses those facts, settings and run history.
 
 ### Clearing
 

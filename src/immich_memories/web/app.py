@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import errno
 from pathlib import Path
 
 from fastapi import FastAPI, Request
@@ -10,6 +9,7 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response
 
 from immich_memories.api.immich import ImmichAPIError
 from immich_memories.security import sanitize_error_message
+from immich_memories.storage_errors import storage_failure_message
 from immich_memories.tracking import report_api
 from immich_memories.web import (
     connection,
@@ -48,10 +48,11 @@ async def _immich_refused(_request: Request, error: Exception) -> JSONResponse:
 
 
 async def _storage_refused(_request: Request, error: Exception) -> JSONResponse:
-    if not isinstance(error, OSError) or error.errno not in (errno.ENOSPC, errno.EDQUOT):
+    message = storage_failure_message(error)
+    if message is None:
         raise error
     return JSONResponse(
-        {"detail": "Storage is full. Free space in the cache or output folder, then retry."},
+        {"detail": message},
         status_code=507,
     )
 

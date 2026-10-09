@@ -306,8 +306,15 @@ and a read-only root.
 The app requests 2Gi RAM and one CPU, with limits of 8Gi and four CPUs. The fetch init
 container requests 512Mi/250m and is capped at 2Gi/two CPUs. Compose's app limit is 4 GB;
 these are different budgets. The 30Gi data claim leaves room beyond the two default 10 GB
-preview/video caches. Existing claims do not automatically grow: your StorageClass must allow
-expansion, or lower the cache caps until you can resize it.
+preview/video caches. Size larger claims for the largest period you prepare: 60,000 pictures
+need about 21 GB of previews alone, before the store, runtime caches and video clips.
+[Cache sizing and recovery](./maintenance/storage-backups.md#caches) explains the headroom.
+
+Existing claims do not automatically grow when you raise a cache budget. Your StorageClass must
+allow expansion; increase the PVC request through your deployment configuration and verify the
+mounted filesystem's free space afterwards. If expansion is unavailable, prepare smaller periods
+and clear disposable caches while idle. Lower cache caps only reduce retained files: a run keeps
+the previews it is actively using even when they exceed the cap.
 
 Base settings come from environment variables and the Secret. Settings saves go to the store;
 [environment variables win](./config-file.md#where-a-setting-comes-from).

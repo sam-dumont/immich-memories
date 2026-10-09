@@ -1363,6 +1363,17 @@
             "title": "Command",
             "type": "string"
           },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
           "exit_code": {
             "anyOf": [
               {

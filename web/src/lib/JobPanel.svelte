@@ -22,7 +22,8 @@
     if (job.status !== 'failed' && job.status !== 'interrupted') return;
     void fetch(`/api/v1/jobs/${encodeURIComponent(job.id)}/output`)
       .then((response) => response.json())
-      .then((body) => (output = String(body.output ?? '').split('\n').slice(-25).join('\n')));
+      .then((body) => (output = String(body.output ?? '').split('\n').slice(-25).join('\n')))
+      .catch(() => { output = ''; });
   });
 
   const elapsed = $derived.by(() => {
@@ -79,6 +80,10 @@
         {/each}
       </ul>
     {/if}
+  {/if}
+
+  {#if job.error}
+    <p role="alert" class="text-red-700 dark:text-red-300">{job.error}</p>
   {/if}
 
   {#if output}
