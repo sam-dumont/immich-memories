@@ -278,6 +278,7 @@ async def oidc_callback(request: Request) -> Response:
 @asynccontextmanager
 async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
     from immich_memories.automation.in_process_scheduler import automation_scheduler
+    from immich_memories.security import runtime_scratch
 
     if get_config_path() == Config.get_default_path():
         init_config_dir()
@@ -285,14 +286,15 @@ async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
     logger.info(
         "Application initialized (auth=%s)", "enabled" if config.auth.enabled else "disabled"
     )
-    _settle_dead_runs(config)
-    scheduler = asyncio.ensure_future(automation_scheduler.run_forever())
-    _warm_answers(config)
-    try:
-        yield
-    finally:
-        scheduler.cancel()
-        logger.info("Application shutting down")
+    with runtime_scratch(config.cache.cache_path):
+        _settle_dead_runs(config)
+        scheduler = asyncio.ensure_future(automation_scheduler.run_forever())
+        _warm_answers(config)
+        try:
+            yield
+        finally:
+            scheduler.cancel()
+            logger.info("Application shutting down")
 
 
 def _settle_dead_runs(config: Any) -> None:

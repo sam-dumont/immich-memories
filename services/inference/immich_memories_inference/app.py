@@ -25,6 +25,7 @@ from PIL import Image
 from pydantic import BaseModel, Field
 
 from immich_memories.audio.generators.base import StemSeparator
+from immich_memories.security import runtime_scratch
 from immich_memories.triage.encoder import provider_chain
 from immich_memories_inference.audio import STEMS_PATH, register_audio, stems_limit
 from immich_memories_inference.limits import ENVELOPE_BYTES, BoundedBodies, RouteLimit
@@ -149,25 +150,29 @@ def facts_limit(settings: InferenceSettings) -> RouteLimit:
 def _lifespan(settings: InferenceSettings, runtime: ProducerRuntime) -> Callable[[FastAPI], Any]:
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-        # A thread pool in front of ORT: its sessions block, and an event loop
-        # that blocks stops answering /ping while a picture is being decided.
-        app.state.pool = ThreadPoolExecutor(
-            max_workers=settings.request_threads, thread_name_prefix="inference"
-        )
-        app.state.queue = InferenceQueue(
-            runtime.names, app.state.pool, settings.request_threads, settings.max_queued_requests
-        )
-        if settings.preload:
-            await _preload(app, runtime)
-        sweeper = asyncio.create_task(_sweep_forever(runtime))
-        try:
-            yield
-        finally:
-            sweeper.cancel()
-            with suppress(asyncio.CancelledError):
-                await sweeper
-            runtime.unload_all()
-            app.state.pool.shutdown(wait=True)
+        with runtime_scratch(settings.cache_dir):
+            # A thread pool in front of ORT: its sessions block, and an event loop
+            # that blocks stops answering /ping while a picture is being decided.
+            app.state.pool = ThreadPoolExecutor(
+                max_workers=settings.request_threads, thread_name_prefix="inference"
+            )
+            app.state.queue = InferenceQueue(
+                runtime.names,
+                app.state.pool,
+                settings.request_threads,
+                settings.max_queued_requests,
+            )
+            if settings.preload:
+                await _preload(app, runtime)
+            sweeper = asyncio.create_task(_sweep_forever(runtime))
+            try:
+                yield
+            finally:
+                sweeper.cancel()
+                with suppress(asyncio.CancelledError):
+                    await sweeper
+                runtime.unload_all()
+                app.state.pool.shutdown(wait=True)
 
     return lifespan
 

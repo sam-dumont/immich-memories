@@ -53,8 +53,10 @@ class DetectorFrames:
         self,
         assets: Sequence[Asset],
         read_playback: Callable[[str, int, int], tuple[bytes, int]] | None,
+        scratch_root: Path,
     ) -> None:
         self._read = read_playback
+        self._scratch_root = scratch_root
         prepared = {asset.id for asset in assets}
         self.video_ids = (
             frozenset(asset.id for asset in assets if asset.is_video)
@@ -78,6 +80,17 @@ class DetectorFrames:
         """Every source this pass may read on frames: prepared videos and attached clips."""
         return self.video_ids | self.companion_ids
 
+    def batches(
+        self, asset_ids: Sequence[str], size: int
+    ) -> Iterator[tuple[Sequence[str], int, int]]:
+        """Bound each working set while keeping frame progress relative to the whole pass."""
+        total = len(self.clip_ids.intersection(asset_ids))
+        offset = 0
+        for start in range(0, len(asset_ids), size):
+            batch = asset_ids[start : start + size]
+            yield batch, offset, total
+            offset += len(self.clip_ids.intersection(batch))
+
     @contextmanager
     def sampled(
         self,
@@ -87,6 +100,8 @@ class DetectorFrames:
         report: Callable[[str, int, int], None],
         failures: dict[str, str],
         timed: Callable[[str, int], AbstractContextManager[None]],
+        offset: int = 0,
+        total: int | None = None,
     ) -> Iterator[dict[str, list[Path]]]:
         """Frames on disk for each clip among ``asset_ids``, for as long as the block runs.
 
@@ -97,13 +112,15 @@ class DetectorFrames:
         if not wanted:
             yield {}
             return
-        with tempfile.TemporaryDirectory(prefix="immich-detector-frames-") as directory:
+        with tempfile.TemporaryDirectory(
+            prefix="immich-detector-frames-", dir=self._scratch_root
+        ) as directory:
             paths: dict[str, list[Path]] = {}
             with timed(STAGE, len(wanted)):
                 for index, asset_id in enumerate(wanted, 1):
                     check()
                     self._sample(asset_id, Path(directory), paths, failures)
-                    report(STAGE, index, len(wanted))
+                    report(STAGE, offset + index, len(wanted) if total is None else total)
             yield paths
 
     def _sample(

@@ -301,13 +301,13 @@ and a read-only root.
 | `/home/immich/.cache` | The same data PVC, mounted again: writable persistent Torch/HF runtime caches |
 | `/app/output` | Output PVC: local films |
 | `/models` | Models PVC: encoder, WordNet, sensitive-content export and detector cache |
-| `/tmp` | 4Gi emptyDir; allow more for 4K |
+| `/tmp` | 4Gi emptyDir for container utilities; app media scratch uses the data/output PVCs |
 
 The app requests 2Gi RAM and one CPU, with limits of 8Gi and four CPUs. The fetch init
 container requests 512Mi/250m and is capped at 2Gi/two CPUs. Compose's app limit is 4 GB;
 these are different budgets. The 30Gi data claim leaves room beyond the two default 10 GB
 preview/video caches. Size larger claims for the largest period you prepare: 60,000 pictures
-need about 21 GB of previews alone, before the store, runtime caches and video clips.
+need about 21 GB of previews alone, before the store, runtime caches, video clips and scratch.
 [Cache sizing and recovery](./maintenance/storage-backups.md#caches) explains the headroom.
 
 Existing claims do not automatically grow when you raise a cache budget. Your StorageClass must
@@ -684,7 +684,11 @@ node can actually hold, and expect downtime while a Recreate rollout reschedules
 
 Reserving 4 CPU/8Gi can leave the pod Pending on a busy node and reduces how many other workloads
 fit there; it does not add another UI replica. `/tmp` remains a disk-backed **4Gi emptyDir** under
-node ephemeral storage. Budget node free disk plus logs/image layers and explicit ephemeral-storage
+node ephemeral storage for container utilities. The app directs Python and subprocess scratch
+to its configured cache on the data PVC. Video preparation saves and releases one frame batch
+at a time. Keep free space on that PVC; enlarging `/tmp` does not enlarge the cache or output.
+[Temporary working files](./maintenance/storage-backups.md#temporary-working-files) lists the
+worker locations too. Budget node free disk plus logs/image layers and explicit ephemeral-storage
 requests/limits as needed. Increasing the emptyDir limit requires available disk; a memory-backed
 emptyDir would instead count against memory. Models, caches and output have separate PVC budgets.
 

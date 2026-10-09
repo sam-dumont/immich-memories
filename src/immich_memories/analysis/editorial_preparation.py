@@ -727,7 +727,7 @@ def prepare_editorial_annotations(
     _acquire_pixels(stage, pending(f"pixel:{pixel_producer_key}"), pixel_producer_key)
     stage.faces(source, fetch_faces, flipped_edits=flipped_edits)
     if preparation_config.demands_models:
-        frames = DetectorFrames(source, read_playback)
+        frames = DetectorFrames(source, read_playback, cache_path)
         clips = heads_missing_for(
             store, sorted(frames.video_ids), CLIP_FRAMES_HEAD, CLIP_FRAMES_VERSION
         )
