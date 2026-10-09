@@ -23,6 +23,15 @@ to Immich that accepts its API key.
 
 ## HTTP monitoring and request limits
 
+For custom Kubernetes or Terraform deployments, set liveness to `/health/live` and readiness
+to `/health/ready` before applying the new image. Both accept the pod IP in the probe's `Host`
+header. The shipped manifests already use these paths.
+
+A probe still using `/health` can receive HTTP 421 when `auth.public_url` or
+`server.allowed_hosts` restricts the accepted hosts. This can keep the pod unready or make
+Kubernetes restart it. Change the probe paths in the manifests or Terraform that own the
+deployment. `/health` is a compatibility endpoint, not a readiness check.
+
 With authentication enabled, `/health` and `/health/ready` keep their status codes and JSON
 fields, but return `null` for operational details without a valid session. This includes
 `configuration`, `immich` and `immich_reachable`. Use the HTTP status for readiness probes;

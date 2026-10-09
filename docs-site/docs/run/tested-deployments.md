@@ -15,6 +15,7 @@ turn on GPU; a text reader alone does not turn on Full.
 | Status | Meaning |
 |---|---|
 | **Verified candidate** | An unpublished candidate made playable films; the transcript records supplied artifacts, fresh installation or warm upgrade, and remaining checks |
+| **Verified upgrade** | An existing installation was upgraded with public release artifacts and made a playable film; setup corrections are disclosed |
 | **Verified first run** | A tester installed from scratch with public artifacts and docs, got a playable film, and the transcript is linked |
 | **Partial** | A narrower check passed: a warm benchmark, a developer-run install, or preflight without a full film |
 | **Documented, untested** | The steps exist and should work, but nobody has run them end to end yet |
@@ -36,7 +37,7 @@ updates in place rather than piling up history.
 | Apple Silicon | [Docker Desktop](./offline.md) | v0.103.0 | M-series, software H.264 | Basic | Partial | Isolated runtime, not a public-image pull |
 | Apple Silicon | [Native uv/pip](./uv-pip.md) | v1.0.0-rc.8 candidate | M5 Max, 128 GB; M2 Pro, 16 GB; VideoToolbox | Basic | Verified candidate | Supplied wheel, warm upgrades of isolated installs; album and month films on both Macs; [transcript][candidate-runs] |
 | Kubernetes (RKE2) | [Generated manifests, GPU](./kubernetes.md#generated-tier-setup) | v1.0.0-rc.8 candidate | NVIDIA T1000 8 GB, shared GPU | GPU | Verified candidate | Fresh namespace, app and inference images pinned by digest; GPU inference, NVENC, CUDA titles; album and month films; [transcript][candidate-runs] |
-| Kubernetes | [Independently managed services](./kubernetes.md#set-the-preparation-tier) | v0.103.0 | NVIDIA T1000 8 GB | GPU | Partial | Services already running; setup corrections disclosed |
+| Kubernetes | [Independently managed services](./kubernetes.md#set-the-preparation-tier) | v1.0.0-rc.8 | NVIDIA T1000 8 GB | Full | Verified upgrade | Published app and CUDA images pinned by digest; automatic film, upload and public delivery link checked. Custom probes needed the [dedicated health endpoints](./maintenance/upgrading.md) |
 | NAS app | [Standalone Docker GPU worker](../better/gpu-render.md) | n/a | n/a | GPU | Documented, untested | Kubernetes worker route is verified; Docker worker is not |
 | NAS app | [Kubernetes GPU worker](./kubernetes.md) | v0.103.0 | NVIDIA T1000 8 GB | GPU | Partial | Worker routing needed a fix before the film completed |
 | Basic | [Prepared models, blocked internet](./offline.md) | v0.103.0 | Docker and Kubernetes | Basic | Partial | Isolated runtime and full decode passed; release-download path not separately checked |

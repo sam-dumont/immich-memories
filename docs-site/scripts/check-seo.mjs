@@ -32,7 +32,7 @@ function checkPage(url) {
 }
 
 const home = checkPage(base);
-assert.ok(home.some(tag => tag.property === 'og:image' && tag.content.startsWith(base)), 'Missing local social preview');
+assert.ok(home.some(tag => tag.property === 'og:image' && tag.content === `${base}img/social-card.jpg`), 'Homepage must keep its photographic preview');
 if (process.env.GOOGLE_SITE_VERIFICATION) {
   assert.ok(home.some(tag => tag.name === 'google-site-verification' && tag.content === process.env.GOOGLE_SITE_VERIFICATION), 'Missing Search Console verification');
 }
@@ -64,14 +64,17 @@ for (const preview of previews) {
   const tags = [...html.matchAll(/<meta\s[^>]*>/g)].map(([tag]) => attributes(tag));
   assert.equal(tags.filter(tag => tag.property === 'og:image').length, 1, `${preview.file}: duplicate Open Graph image`);
   assert.equal(tags.find(tag => tag.name === 'twitter:image')?.content, preview.image, `${preview.file}: Twitter image differs`);
-  assert.ok(preview.image.startsWith(`${base}img/social/`), `${preview.file}: wrong image base`);
+  assert.ok(preview.image.startsWith(base), `${preview.file}: wrong image base`);
   const png = readFileSync(join(build, preview.image.slice(base.length)));
   const image = await sharp(png).metadata();
-  assert.equal(image.format, 'png');
+  assert.ok(['png', 'jpeg'].includes(image.format));
+  assert.equal(tags.find(tag => tag.property === 'og:image:type')?.content, `image/${image.format}`);
   assert.equal(image.width, 1200);
   assert.equal(image.height, 630);
   const hash = createHash('sha256').update(png).digest('hex');
-  assert.ok(!hashes.has(hash), `${preview.file}: duplicates another page's card`);
+  if (preview.image.startsWith(`${base}img/social/`)) {
+    assert.ok(!hashes.has(hash), `${preview.file}: duplicates another generated card`);
+  }
   hashes.add(hash);
 }
 assert.ok(previews.some(page => page.file === 'index.html'), 'Homepage social preview missing');

@@ -8,7 +8,8 @@ import {readPageMetadata, renderSocialCard} from './social-preview.mjs';
 const siteDir = process.cwd();
 
 test('release and candidate routes each point to their own local card', () => {
-  assert.equal(socialPreviewPath('/immich-memories/', '/immich-memories/'), 'img/social/index.png');
+  assert.equal(socialPreviewPath('/immich-memories/', '/immich-memories/'), 'img/social-card.jpg');
+  assert.equal(socialPreviewPath('/immich-memories/next/', '/immich-memories/next/'), 'img/social-card.jpg');
   assert.equal(socialPreviewPath('/immich-memories/docs/run/docker/', '/immich-memories/'), 'img/social/docs/run/docker.png');
   assert.equal(socialPreviewPath('/immich-memories/next/docs/run/docker/', '/immich-memories/next/'), 'img/social/docs/run/docker.png');
   assert.throws(() => socialPreviewPath('/elsewhere/', '/immich-memories/'));
@@ -37,4 +38,25 @@ test('different topics produce complete, distinct 1200 by 630 PNG cards', async 
     assert.ok(png.length < 500000);
   }
   assert.notEqual(createHash('sha256').update(first).digest('hex'), createHash('sha256').update(second).digest('hex'));
+});
+
+
+test('media previews use article content, never the navigation logo', () => {
+  const head = '<head><meta property="og:title" content="A film"><meta property="og:image" content="https://example.test/img/social/film.png"></head>';
+  const withVideo = readPageMetadata(`${head}<nav><img src="/img/logo.png"></nav><article><video poster="/demo/film.jpg"></video><img src="/img/screenshot.png"></article>`);
+  assert.equal(withVideo.media, '/demo/film.jpg');
+  const withScreenshot = readPageMetadata(`${head}<article><img src="/img/screenshots/cut.png"></article>`);
+  assert.equal(withScreenshot.media, '/img/screenshots/cut.png');
+  assert.equal(readPageMetadata(head).media, undefined);
+});
+
+
+test('media cards render real pictures and screenshots at social-preview size', async () => {
+  for (const mediaPath of ['static/img/trip-map-flyover.jpg', 'static/img/screenshots/first-film-edit.png']) {
+    const png = await renderSocialCard({title: 'Your first film', route: 'docs/get-started/first-film/', mediaPath}, siteDir);
+    const info = await sharp(png).metadata();
+    assert.equal(info.width, 1200);
+    assert.equal(info.height, 630);
+    assert.ok(png.length > 10000);
+  }
 });

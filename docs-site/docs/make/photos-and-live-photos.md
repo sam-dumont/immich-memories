@@ -25,7 +25,7 @@ A Live Photo enters the cut as one photograph. If its video shows useful motion,
 
 Three overlapping Live Photos can become this continuous 4.5-second shot:
 
-<Video src="/demos/live-photos/italian_hilltop/merged.mp4" width={480} controls />
+<Video poster="/img/live-photo-preview.jpg" src="/demos/live-photos/italian_hilltop/merged.mp4" width={480} controls />
 
 Six Live Photos at a bike race become 8.1 seconds:
 

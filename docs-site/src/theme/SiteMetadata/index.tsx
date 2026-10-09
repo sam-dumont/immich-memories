@@ -8,13 +8,14 @@ import {socialPreviewPath} from '../../social-preview';
 export default function SiteMetadata(): ReactNode {
   const {pathname} = useLocation();
   const {siteConfig: {baseUrl}} = useDocusaurusContext();
+  const image = socialPreviewPath(pathname, baseUrl);
   return (
     <>
       <OriginalSiteMetadata />
-      <PageMetadata image={socialPreviewPath(pathname, baseUrl)}>
+      <PageMetadata image={image}>
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
-        <meta property="og:image:type" content="image/png" />
+        <meta property="og:image:type" content={image.endsWith('.jpg') ? 'image/jpeg' : 'image/png'} />
       </PageMetadata>
     </>
   );
