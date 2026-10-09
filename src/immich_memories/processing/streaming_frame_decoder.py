@@ -354,6 +354,7 @@ class FrameDecoder:
         # the last complete frame, which a crossfade may need to hold.
         storage = [bytearray(self._frame_size) for _ in range(2)] if reuse_buffer else None
         index = 0
+        raw: bytes | bytearray
         while True:
             if storage is None:
                 raw = pipe.read(self._frame_size)
