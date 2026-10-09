@@ -1,0 +1,9 @@
+# Wheels for the pinned CPython 3.12 / linux-amd64 Alpine diagram renderer.
+# Regenerate hashes when changing a package version or renderer platform.
+
+diagrams==0.25.1 --hash=sha256:90698eaa74c027dfffd8306ba7f08ee543959205024050a6357f34eae9961345
+graphviz==0.20.3 --hash=sha256:81f848f2904515d8cd359cc611faba817598d2feaac4027b266aa3eda7b3dde5
+jinja2==3.1.6 --hash=sha256:85ece4451f492d0c13c5dd7c13a64681a86afae63a5f347908daf103ce6d2f67
+markupsafe==3.0.4 --hash=sha256:c9a7f43c0b202b334cc9184af09bb8f21d3a209e038efaf106936fb69e6b026e
+fonttools==4.66.1 --hash=sha256:8aed2bbcd6216253ef1b015763593365ee8084f621dfa53bb957c19d5e05f7cd
+brotli==1.2.0 --hash=sha256:af43b8711a8264bb4e7d6d9a6d004c3a2019c04c01127a868709ec29962b6036
