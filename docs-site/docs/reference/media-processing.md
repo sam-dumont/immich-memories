@@ -71,7 +71,7 @@ and a rapid burst of them is several seconds of continuous footage nobody meant 
 Three photos of an Italian hilltop, fired off in a row, each about 3 seconds and overlapping:
 
 <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap'}}>
-  <Video src="/demos/live-photos/italian_hilltop/source_1.mp4" width={240} controls muted />
+  <Video poster="/img/live-photo-preview.jpg" src="/demos/live-photos/italian_hilltop/source_1.mp4" width={240} controls muted />
   <Video src="/demos/live-photos/italian_hilltop/source_2.mp4" width={240} controls muted />
   <Video src="/demos/live-photos/italian_hilltop/source_3.mp4" width={240} controls muted />
 </div>

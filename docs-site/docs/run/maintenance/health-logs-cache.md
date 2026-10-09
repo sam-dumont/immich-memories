@@ -57,7 +57,7 @@ configuration without this verification work.
 |---|---|---|
 | `GET /health/live` | `200` while the web process answers, `{"status": "alive", "version": …}`. Never contacts Immich | liveness probe |
 | `GET /health/ready` | `200` with `status: ready` when configuration and authenticated Immich access work; `503` with `status: degraded` otherwise | readiness probe, Uptime Kuma, blackbox exporter |
-| `GET /health` | always `200`: a ready payload is rewritten to `ok`, a degraded one passes through as `degraded` | compatibility only, never a probe |
+| `GET /health` | After host validation, always `200`: a ready payload is rewritten to `ok`, a degraded one passes through as `degraded`; an unaccepted host receives `421` | compatibility only, never a probe |
 
 All three are unauthenticated, on purpose: a container runtime has no session. The Immich check is
 bounded at 5 seconds, and the answer is reused for up to 10 seconds so a busy poller doesn't hammer

@@ -41,7 +41,9 @@ are empty. Setting either restricts requests to the public URL's hostname, entri
 another name, add it to `server.allowed_hosts`. Other names get **421 Misdirected Request**.
 
 `/health/live` and `/health/ready` answer whatever host they name, since Kubernetes probes use the
-pod IP. They tell an anonymous caller nothing beyond up or down.
+pod IP. They tell an anonymous caller nothing beyond up or down. The compatibility `/health`
+endpoint keeps the host checks above: a pod-IP request can receive 421. Use the dedicated
+[liveness and readiness paths](./kubernetes.md#probes) for Kubernetes probes.
 
 An unauthenticated LAN install (`allow_unauthenticated_lan: true`) must list the names it is
 reached by:

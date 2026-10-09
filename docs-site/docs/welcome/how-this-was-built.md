@@ -5,7 +5,7 @@ description: Nine months of building Immich Memories, the experiments that faile
 
 # How this was built
 
-This is the project's history through its first release candidate, 1.0.0-rc.1, in October 2026. It includes retired tools, failed experiments and measurements from those versions. For the current product, start with [what it does](./introduction.mdx); for the current code, see [the architecture](../contribute/architecture.md).
+This is the project's history through release candidate 1.0.0-rc.8, in October 2026. It includes retired tools, failed experiments and measurements from those versions. For the current product, start with [what it does](./introduction.mdx); for the current code, see [the architecture](../contribute/architecture.md).
 
 > "what was supposed to be a weekend project became a 9 month constant refactor but I’m getting where
 > I want"
@@ -144,8 +144,8 @@ The plan was a large vision model doing everything. It could classify a picture 
 against each other (0 of 12 when asked which picture was the peak), and comparing a year's pictures in pairs
 cost about 8 hours. So I tried to train smaller ones:
 
-- Flipping one worked example in a prompt took a 2B model from 0 of 119 correct verdicts to 107 of
-  107. It wasn't reading the picture; it was copying the example.
+- Flipping one worked example in a prompt took a 2B model from 0 positive verdicts in 119 pictures to 107 in
+  107. Those counts describe its answers, not accuracy. It wasn't reading the picture; it was copying the example.
 - A distilled 0.5B describer looked great until it turned out human captions had leaked into its
   validation set.
 - Small classification heads on a frozen picture encoder trained cleanly and then failed their own
@@ -366,6 +366,35 @@ one question its own reader actually has, and this is the one page that gets to 
 That round of fixes, and the one before it, became **1.0.0-rc.1**, the project's first public release
 candidate.
 
+## Release candidates: install what is about to ship
+
+The first candidate was followed by seven more. The awkward part was getting the installed product
+to match the checkout that had passed its tests. One Python matrix said “3.11” on the job while
+`uv` actually ran 3.12. A successful test under the wrong interpreter proves very little.
+
+By rc.8 I wanted the candidate frozen before another round of installation tests: two native Macs,
+Linux Compose, a Synology NAS over SSH, and Kubernetes with a GPU. The final source replay used the
+same wheel on all five routes, with existing dependencies where the report said warm upgrade. That
+was source acceptance. The release workflow then built, checked and signed the public artifacts.
+Those are two different claims, and both need evidence.
+
+One old audio bug made the point nicely. At 30 fps, a quarter-second video fade is seven frames:
+0.233333 seconds. The audio still overlapped a full quarter second. That tiny disagreement took 800
+extra samples at every join and could put the sound more than a second ahead by the end of a film.
+The fix gave both tracks the same duration. A test film with 40 flashes and beeps then held between
+14.0 and 14.7 ms of offset, instead of drifting farther apart with every fade.
+
+The release also had to survive the boring end of a real night: title the film with the right year,
+upload it, and send a link that opens outside the cluster. A birthday recap means birthday to birthday;
+earlier birthdays belong to an explicit compilation. An internal service address is useful to a pod
+and useless in a notification on my phone.
+
+Deployment still found something the generated manifests could not test: my older custom health
+probe. It called an endpoint that rejected the pod's Host header. The dedicated liveness and readiness
+endpoints were already in the shipped examples. My deployment needed to use them, and the upgrade
+docs needed to say so. The first automatic film after the upgrade uploaded successfully, with its
+public link and notification checked against the delivered file.
+
 ## Nine months at a glance
 
 | Period | What changed |
@@ -378,6 +407,7 @@ candidate.
 | September 2026 | Stories replaced day quotas, the plain NAS became the baseline, and the third web UI arrived. |
 | Late September - early October 2026 | Launch triage, a real-hardware control gate, a render-speed pass and a 256-finding docs audit, then a strict people filter and a restored in-clip cut. |
 | Early October 2026 | A feature-by-feature check of everything the docs advertise, a finger-over-lens warning trained only on public photos, and a rewrite of these docs: **1.0.0-rc.1**. |
+| October 7–9, 2026 | Five routes on the frozen rc.8 source, a clapper test for accumulated audio drift, public delivery links and a production upgrade. |
 
 ## See what sticks, then cut
 

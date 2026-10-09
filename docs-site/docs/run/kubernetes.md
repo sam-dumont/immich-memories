@@ -530,7 +530,12 @@ Deployment stopped. Caches are disposable; the store is not.
 ## Probes
 
 Liveness uses `/health/live`; readiness uses `/health/ready`, which returns 503 when Immich/config
-is unavailable. `/health` always returns 200 and must not be used as a probe.
+is unavailable. Both accept the pod IP in the probe's `Host` header.
+
+For a custom manifest, check both probe paths before upgrading. `/health` keeps the normal host
+validation and can return 421 for a pod-IP request. When accepted, it returns 200 even if Immich
+is unavailable, so it must not be used as a probe. Keep the correction in the manifests or
+Terraform that own the deployment; a later apply can overwrite a live patch.
 [Diagnostics](./maintenance/health-logs-cache.md#health-endpoints) gives response/access details.
 
 ## Logs
