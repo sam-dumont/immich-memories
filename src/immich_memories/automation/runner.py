@@ -15,7 +15,7 @@ from immich_memories.automation.candidate_discovery import (
     CandidateDiscovery,
     ImmichDiscoveryError,
 )
-from immich_memories.automation.candidates import MemoryCandidate
+from immich_memories.automation.candidates import DEFAULT_SUGGESTION_LIMIT, MemoryCandidate
 from immich_memories.automation.delivery_retry import PendingDeliveryRetry, abandon_if_exhausted
 from immich_memories.automation.models import (
     DECLINED_REASON,
@@ -548,7 +548,7 @@ class AutoRunner:
             error=preflight_error,
         )
 
-    def suggest(self, limit: int | None = 10) -> list[MemoryCandidate]:
+    def suggest(self, limit: int | None = DEFAULT_SUGGESTION_LIMIT) -> list[MemoryCandidate]:
         """Detect, score, and rank memory candidates from the Immich library."""
         self.last_variety_decision = VarietyDecision(eligible=[], rejected=[])
         self.last_backoff_skips: dict[str, str] = {}

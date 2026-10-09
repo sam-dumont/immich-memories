@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+from unittest.mock import AsyncMock
 
 import httpx
 import pytest
@@ -146,8 +147,8 @@ def test_an_account_whose_key_is_refused_is_named_without_its_key(immich_server)
 
 
 def test_an_unreachable_account_fails_the_open(immich_server, monkeypatch):
-    # WHY: the client's retry backoff is real sleep; the retries still happen, just instantly.
-    monkeypatch.setattr("immich_memories.api.immich._BACKOFF_BASE", 0.0)
+    # WHY: wall-clock delays are external; the real retry and transport still run.
+    monkeypatch.setattr("immich_memories.api.immich.asyncio.sleep", AsyncMock())
     household = _household(grandma={"url": DOWN_URL, "api_key": GRANDMA_KEY, "api_version": "v2"})
 
     with pytest.raises(AccountUnavailable, match="'grandma' failed: Request failed"):

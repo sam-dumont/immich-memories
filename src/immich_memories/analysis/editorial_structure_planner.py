@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import re
 from copy import deepcopy
 from dataclasses import replace
@@ -108,9 +109,12 @@ from immich_memories.analysis.editorial_unvouched_filler import (
 )
 from immich_memories.analysis.subject_framing import framing_visibility
 from immich_memories.config_tiers import nas_draft_config
+from immich_memories.photos.burst_dedup import BurstDeduplicator
 from immich_memories.processing.editorial_timing import bind_editorial_timeline
 from immich_memories.security import write_secret_file
 from immich_memories.tracking.timed import timed
+
+logger = logging.getLogger(__name__)
 
 FLAGGED_LINE = re.compile(r"nsfw=yes|exposure=(partial|nude)")
 
@@ -120,6 +124,8 @@ def plan_structure(
     source: StructurePlanningInput, ports: StructurePlannerPorts
 ) -> StructurePlanningResult:
     """Run the shared editorial algorithm on an already captured production wall."""
+    bursts = ports.burst_deduplicator or BurstDeduplicator()
+    ports = replace(ports, burst_deduplicator=bursts)
     if ports.refine is not None:
         nas = replace(
             source,
@@ -155,7 +161,17 @@ def plan_structure(
         if not drafted.draft.carriers or drafted.plan.get("status") == "planning_incomplete":
             return drafted
         source, ports = ports.refine(source, drafted.draft)
-    return _plan_structure(source, ports)
+        ports = replace(ports, burst_deduplicator=bursts)
+    result = _plan_structure(source, ports)
+    duration = result.plan.get("duration_realization") or {}
+    if duration.get("status") in {"editorial_shortfall", "search_limited"}:
+        logger.info(
+            "%d distinct shots, final cut contains %.1f s of %.1f s available for content",
+            len(result.plan["carriers"]),
+            duration["selected_content_seconds"],
+            duration["content_budget_seconds"],
+        )
+    return result
 
 
 def _plan_structure(

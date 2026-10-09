@@ -16,7 +16,7 @@ from pydantic import ValidationError
 
 from immich_memories.api.album_service import AlbumRef, AlbumService, FilmScope
 from immich_memories.api.all_assets_service import AllAssetsService
-from immich_memories.api.asset_service import TRANSIENT_STATUS, AssetService
+from immich_memories.api.asset_service import READ_RETRY_DELAYS, TRANSIENT_STATUS, AssetService
 from immich_memories.api.compatibility import (
     ApiVersionPolicy,
     ResolvedApiVersion,
@@ -49,14 +49,22 @@ _announced_compatibility: dict[str, tuple[str, str, str]] = {}
 
 
 _RETRYABLE_STATUS = TRANSIENT_STATUS
-_MAX_RETRIES = 3
-_BACKOFF_BASE = 1.0
-# A dead server should cost seconds at the start of a run, not three full timeouts.
+_WRITE_RETRY_DELAYS = (1.0, 2.0)
+_SEARCH_READS = frozenset({"/search/metadata", "/search/statistics"})
+# Bound each initial connect attempt so the backoff budget is not multiplied by long timeouts.
 _FIRST_CONTACT_CONNECT_SECONDS = 5.0
 # Requests in a row that exhaust their retries on a connect or read error. One flaky call
 # resets on the next answer; a server that has gone away does not, and a month's cut used to
 # spend ten minutes finding that out one request at a time.
 UNREACHABLE_AFTER_REQUESTS = 3
+
+
+def _request_retry_delays(method: str, endpoint: str, *, retry: bool = True) -> tuple[float, ...]:
+    if not retry:
+        return ()
+    if method in {"GET", "HEAD"} or (method == "POST" and endpoint in _SEARCH_READS):
+        return READ_RETRY_DELAYS
+    return _WRITE_RETRY_DELAYS
 
 
 @dataclass(frozen=True)
@@ -283,13 +291,14 @@ class ImmichClient:
         endpoint: str,
         *,
         before_retry: Callable[[], Awaitable[Any]] | None = None,
+        retry: bool = True,
         **kwargs,
     ) -> dict | list | bytes:
         """Make an API request with retry on transient failures.
 
-        Retries up to _MAX_RETRIES times on timeout, network errors, and
-        retryable status codes (429, 500-504). Non-retryable errors (401, 404,
-        other 4xx) raise immediately.
+        Reads wait through 45 seconds of backoff on transient failures. Writes
+        retain two retries. The initial permission probe disables retries so startup
+        fails promptly. Non-retryable errors (401, 404, other 4xx) raise immediately.
 
         ``before_retry`` runs after each backoff, before the request is sent
         again; anything it returns other than None is taken as the answer and
@@ -303,7 +312,9 @@ class ImmichClient:
 
         last_exception: Exception | None = None
 
-        for attempt in range(_MAX_RETRIES):
+        delays = _request_retry_delays(method, endpoint, retry=retry)
+        attempts = len(delays) + 1
+        for attempt in range(attempts):
             try:
                 response = await self.client.request(method, url, **self._first_contact(kwargs))
                 self._has_answered = True
@@ -320,11 +331,11 @@ class ImmichClient:
                 last_exception = self._request_error(e)
                 break
 
-            if attempt < _MAX_RETRIES - 1:
-                backoff = _BACKOFF_BASE * (2**attempt)
+            if attempt < len(delays):
+                backoff = delays[attempt]
                 logger.warning(
                     f"{method} {url} attempt {attempt + 1} failed ({last_exception}); "
-                    f"retrying ({attempt + 2}/{_MAX_RETRIES}) in {backoff:.1f}s"
+                    f"retrying ({attempt + 2}/{attempts}) in {backoff:.1f}s"
                 )
                 await asyncio.sleep(backoff)
                 if before_retry is not None and (settled := await before_retry()) is not None:
@@ -395,11 +406,12 @@ class ImmichClient:
                     self._api_version_policy.value,
                     self._resolved_api_version.value,
                 )
-                # Every health check builds a new client: say the answer when it changes.
+                # Routine health checks need no announcement; a change of API mode does.
+                previous = _announced_compatibility.get(self.base_url)
                 level = (
-                    logging.DEBUG
-                    if _announced_compatibility.get(self.base_url) == answer
-                    else logging.INFO
+                    logging.INFO
+                    if previous is not None and previous[2] != answer[2]
+                    else logging.DEBUG
                 )
                 _announced_compatibility[self.base_url] = answer
                 logger.log(
@@ -423,7 +435,7 @@ class ImmichClient:
         """Read this key's rights once per client; malformed replies cannot grant access."""
         async with self._key_capabilities_lock:
             if self._key_capabilities is None:
-                data = await self._request("GET", "/api-keys/me")
+                data = await self._request("GET", "/api-keys/me", retry=self._has_answered)
                 permissions = data.get("permissions") if isinstance(data, dict) else None
                 if not isinstance(permissions, list) or not all(
                     isinstance(permission, str) for permission in permissions

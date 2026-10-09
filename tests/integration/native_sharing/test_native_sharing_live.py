@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
 
 import pytest
 
@@ -16,7 +17,7 @@ from immich_memories.api.person_expression import PersonExpression
 from immich_memories.api.person_scope import people_in_window
 from immich_memories.cli.run_people import resolve_run_people
 from immich_memories.config_models import ImmichConfig
-from immich_memories.db import Store, StoreLocation, open_store
+from immich_memories.db import Store, StoreLocation, close_stores, open_store
 from immich_memories.people.transfer import import_document
 from immich_memories.timeperiod import DateRange
 
@@ -33,7 +34,26 @@ class Household:
 
 
 @pytest.fixture
-def household(tmp_path):
+def sharing_store(tmp_path):
+    from tests.store.backends import drop_schema
+
+    url = os.environ.get("IMMICH_SHARING_DATABASE_URL")
+    schema = f"sharing_{uuid4().hex[:12]}"
+    location = (
+        StoreLocation(url=url, schema=schema)
+        if url
+        else StoreLocation(url=f"sqlite:///{tmp_path / 'store.db'}")
+    )
+    try:
+        yield open_store(location=location)
+    finally:
+        close_stores()
+        if url:
+            drop_schema(url, schema)
+
+
+@pytest.fixture
+def household(sharing_store):
     path = os.environ.get("IMMICH_SHARING_STATE")
     if not path:
         pytest.skip("Set IMMICH_SHARING_STATE to the disposable sharing probe state")
@@ -45,7 +65,7 @@ def household(tmp_path):
         native_sharing=True,
         accounts={"partner": {"url": url, "api_key": state["keys"]["partner"]}},
     )
-    store = open_store(location=StoreLocation(url=f"sqlite:///{tmp_path / 'store.db'}"))
+    store = sharing_store
     import_document(
         store,
         {
@@ -63,7 +83,7 @@ def household(tmp_path):
         yield Household(state, store, client)
 
 
-def _verify_episode(household, tmp_path):
+def _verify_person_filter(household, tmp_path):
     state, store, client = household
     resolved = resolve_run_people(
         client,
@@ -84,13 +104,14 @@ def _verify_episode(household, tmp_path):
     )
     selected = {asset.id for asset in [*videos, *photos]}
     assert state["target"] in selected
-    assert len(selected) == 4
+    # Only the target has a face; nearby pictures must not widen a people filter.
+    assert selected == {state["target"]}
     assert state["outside_asset"] not in selected
     assert client.download_asset(state["target"], tmp_path / "target.jpg").stat().st_size > 0
 
 
-def test_partner_only_shared_person_keeps_the_whole_episode(household, tmp_path):
-    _verify_episode(household, tmp_path)
+def test_shared_person_keeps_only_pictures_with_that_face(household, tmp_path):
+    _verify_person_filter(household, tmp_path)
 
 
 def test_partner_only_run_uses_the_existing_primary_binding(household, tmp_path):
@@ -193,10 +214,10 @@ def test_people_role_downgrade_and_revocation_are_checked_each_run(household):
             assert resolve().face_accounts[person] == frozenset({"primary", "partner"})
         a.call("DELETE", "/people/users", json=[{"personId": person, "sharedWithId": partner}])
         # Revocation removes shared metadata, but this recipient owns a recognition
-        # record for the same group. Owner reads must still produce the complete episode.
+        # record for the same group. Owner reads must still find the tagged picture.
         assert resolve().face_accounts[person] == frozenset({"primary", "partner"})
         assert a.call("GET", "/people/users", params={"personId": person}) == []
-        _verify_episode(household, Path(os.environ["IMMICH_SHARING_STATE"]).parent)
+        _verify_person_filter(household, Path(os.environ["IMMICH_SHARING_STATE"]).parent)
     finally:
         a.call(
             "PUT",
@@ -244,7 +265,7 @@ def test_native_discovery_and_owner_download_need_only_documented_read_permissio
             accounts={"partner": {"url": url, "api_key": keys["partner"]}},
         )
         with AccessBoundClient(config) as client:
-            _verify_episode(Household(state, store, client), tmp_path)
+            _verify_person_filter(Household(state, store, client), tmp_path)
             assert client.get_asset_thumbnail(state["target"])
             assert client.get_asset_faces(state["target"])
     finally:
@@ -291,3 +312,131 @@ def test_upstream_merge_never_rewrites_a_saved_local_identity(household):
         assert load_document(store) == before
     finally:
         a.http.close()
+
+
+def test_shared_person_stays_one_registry_identity_and_cross_account_link(household):
+    from immich_memories.analysis.person_resolution import store_people
+    from immich_memories.automation.people_merge import canonical_person_map, merge_people
+    from immich_memories.config_loader import Config
+    from immich_memories.people.companion import load_document, people_entries
+    from immich_memories.web.people_accounts import account_people, account_reads
+
+    state, store, client = household
+    before = load_document(store)
+    opened = client.open_accounts(("primary", "partner"))
+    rosters = {name: account.client.get_all_people() for name, account in opened.items()}
+    merged = merge_people(rosters, canonical_person_map(store_people(before)))
+    assert [person.id for person in merged] == [state["person"]]
+    config = Config(
+        immich=ImmichConfig(
+            url=state["url"],
+            api_key=state["keys"]["primary"],
+            native_sharing=True,
+            accounts={"partner": {"url": state["url"], "api_key": state["keys"]["partner"]}},
+        )
+    )
+    linked = account_people("partner", store, config, account_reads(config))
+    assert len(linked) == 1
+    assert linked[0].linked_to == state["person"]
+    assert linked[0].suggested is False
+    assert len(people_entries(load_document(store))) == 1
+    assert load_document(store) == before
+
+
+def test_shared_person_counts_each_owned_picture_once(household):
+    from immich_memories.analysis.person_resolution import store_people
+    from immich_memories.automation.people_merge import canonical_person_map, merge_counts
+    from immich_memories.people.companion import load_document
+
+    state, store, client = household
+    opened = client.open_accounts(("primary", "partner"))
+    counts = {
+        name: {
+            state["person"]: account.client.count_assets_with_people(
+                [state["person"]], owner_id=account.user.id
+            )
+        }
+        for name, account in opened.items()
+    }
+    merged = merge_counts(counts, canonical_person_map(store_people(load_document(store))))
+    assert merged == {state["person"]: 1}
+
+
+def test_native_automation_uses_owned_counts(household):
+    from datetime import date
+
+    from immich_memories.automation.candidate_discovery import CandidateDiscovery
+    from immich_memories.automation.state_store import AutomationStateStore
+    from immich_memories.config_loader import Config
+    from immich_memories.tracking import RunDatabase
+
+    state, store, _ = household
+    import_document(
+        store,
+        {
+            "version": 1,
+            "people": [
+                {
+                    "ids": ["manual:shared", state["person"]],
+                    "name": "Shared Child",
+                    "confirmed": {"notes": "Preserve this answer"},
+                }
+            ],
+        },
+        replace=True,
+    )
+    config = Config(
+        immich=ImmichConfig(
+            url=state["url"],
+            api_key=state["keys"]["primary"],
+            native_sharing=True,
+            accounts={"partner": {"url": state["url"], "api_key": state["keys"]["partner"]}},
+        )
+    )
+    config.automation.accounts = ["primary", "partner"]
+    config.automation.detect_trips = False
+    config.automation.detect_holidays = False
+    discovery = CandidateDiscovery(config, RunDatabase(store), AutomationStateStore(store))
+    snapshot = discovery._library_snapshot(config.automation, date(2025, 1, 20), store)
+    assert snapshot.spotlight_counts == {"manual:shared": 1}
+    assert [person.id for person in snapshot.people] == ["manual:shared"]
+
+
+def test_mobile_edit_stack_plays_the_edit_instead_of_the_original(household):
+    from tests.integration.immich_gate.seed import Seeder
+
+    from immich_memories.analysis.stacks import fold_stacks
+    from immich_memories.api.stack_discovery import discover_stack_map
+
+    state, _, client = household
+    api = Seeder(state["url"], state["keys"]["primary"])
+    window = DateRange(datetime(2024, 6, 1), datetime(2024, 6, 30, 23, 59, 59))
+    original, edit = [
+        asset.id
+        for asset in client.get_photos_for_date_range(window)
+        if asset.owner_id == state["users"]["primary"]["id"]
+    ][:2]
+    stack = api.call("POST", "/stacks", json={"assetIds": [edit, original]})
+    try:
+        assert stack["primaryAssetId"] == edit
+        mapping = discover_stack_map(client.open_accounts(("primary", "partner")))
+        assert mapping[original] == edit
+        folded = fold_stacks([client.get_asset(original), client.get_asset(edit)], mapping)
+        assert folded[original].id == edit
+    finally:
+        api.call("DELETE", f"/stacks/{stack['id']}")
+        api.http.close()
+
+
+def test_normalized_multilingual_ocr_reaches_the_personal_document_gate(household):
+    from tests.integration.native_sharing.ocr_fixture import OCR_TEXT
+
+    from immich_memories.analysis.editorial_carrier_eligibility import personal_document
+    from immich_memories.analysis.editorial_document_ocr import document_ocr_port
+
+    state, _, client = household
+    reader = document_ocr_port(client, accounts=("primary", "partner"))
+    assert reader is not None
+    text = reader(state["target"], True)
+    assert text == OCR_TEXT
+    assert personal_document("", {"frame_kind": "screen_or_document"}, ocr_text=text)

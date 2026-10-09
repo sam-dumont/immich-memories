@@ -641,7 +641,7 @@ def _log_phase_timing(times: dict[str, float], clip_count: int) -> None:
     """Log phase durations to help tune progress bar estimates."""
     total = times.get("total", 0)
     parts = []
-    for phase in ("download", "assembly", "music"):
+    for phase in ("prepare", "assembly", "music"):
         dur = times.get(phase, 0)
         pct = (dur / total * 100) if total > 0 else 0
         parts.append(f"{phase}={dur:.1f}s ({pct:.0f}%)")

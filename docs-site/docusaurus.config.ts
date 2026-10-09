@@ -75,7 +75,6 @@ const config: Config = {
   ],
 
   themeConfig: {
-    image: 'img/social-card.jpg',
     metadata: [
       {name: 'application-version', content: docsVersion},
       ...(process.env.GOOGLE_SITE_VERIFICATION

@@ -176,3 +176,24 @@ def test_a_person_unlinked_is_offered_again_as_a_suggestion(tmp_path):
     listed = client.get("/api/v1/accounts/partner/people", params={"for_person": "id-ana"}).json()
 
     assert [(p["id"], p["suggested"]) for p in listed] == [("p-ana", True)]
+
+
+def test_native_shared_id_is_already_linked_only_on_the_same_server(tmp_path):
+    from immich_memories.people.companion import load_document
+    from immich_memories.web.dependencies import current_config
+
+    reads = _Reads({"partner": [AccountPersonRecord("shared-face", "Alex", None, 1)]}, {})
+    client = _setup(tmp_path, [_entry("shared-face", "Alex")], reads=reads)
+    config = client.app.dependency_overrides[current_config]()
+    before = load_document(open_store(config))
+    for native, same_server, expected in (
+        (False, True, None),
+        (True, False, None),
+        (True, True, "shared-face"),
+    ):
+        config.immich.native_sharing = native
+        config.immich.url = "https://p.example" if same_server else "https://other.example"
+        listed = client.get("/api/v1/accounts/partner/people").json()
+        assert listed[0]["linked_to"] == expected
+        assert listed[0]["suggested"] is False
+    assert load_document(open_store(config)) == before

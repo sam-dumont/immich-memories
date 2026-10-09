@@ -7,6 +7,7 @@ from playwright.sync_api import Page, expect
 
 from immich_memories.people.companion import load_document
 from immich_memories.people.transfer import import_document
+from tests.e2e.web_flow import evidence
 
 pytestmark = pytest.mark.e2e
 
@@ -74,23 +75,40 @@ def test_a_detected_link_is_one_row_and_naming_it_leaves_one_row_on_each_side(
     page: Page, launch_app_url: str, launch_workspace
 ) -> None:
     store = launch_workspace.store()
-    people = [_entry(0, "Ana Example", _dyad(1)), _entry(1, "Luc Sample", _dyad(0))]
+    people = [_entry(0, "Ana Example", _dyad(31)), _entry(31, "Luc Sample", _dyad(0))]
+    people.extend(_entry(index, f"Person {index}") for index in range(1, 30))
     import_document(store, {"version": 1, "people": people}, replace=True)
 
     page.goto(f"{launch_app_url}/settings/people", wait_until="domcontentloaded", timeout=30_000)
     ana = _card(page, "Ana Example")
+    expect(page.get_by_role("combobox", name="What is", exact=False)).to_have_count(
+        1, timeout=30_000
+    )
     expect(ana.get_by_test_id("relationship-row")).to_have_count(1, timeout=30_000)
     expect(ana.get_by_test_id("relationship-row")).to_contain_text("Looks linked to Luc Sample")
 
+    page.get_by_role("textbox", name="Find a name").fill("Luc")
+    expect(page.get_by_label("What is Luc Sample to Ana Example?")).to_be_visible()
+    page.get_by_role("textbox", name="Find a name").clear()
     ana.get_by_label("What is Ana Example to Luc Sample?").select_option(label="parent of")
 
     row = ana.get_by_test_id("relationship-row")
     expect(row).to_have_count(1)
     expect(row).to_have_attribute("data-status", "named")
     expect(row).to_contain_text("parent of")
+    page.get_by_role("button", name="Show more").click()
     luc = _card(page, "Luc Sample").get_by_test_id("relationship-row")
     expect(luc).to_have_count(1)
     expect(luc).to_contain_text("child of")
+    expect(page.get_by_role("combobox", name="What is", exact=False)).to_have_count(0)
+
+    luc.get_by_role("button", name="Remove this relationship").click()
+    expect(page.locator('[data-testid="relationship-row"][data-status="named"]')).to_have_count(0)
+    expect(page.get_by_role("combobox", name="What is", exact=False)).to_have_count(1)
+    ana.get_by_role("button", name="No, they are not").click()
+    expect(page.get_by_role("combobox", name="What is", exact=False)).to_have_count(0)
+    expect(ana.get_by_test_id("relationship-row")).to_have_attribute("data-status", "rejected")
+    expect(luc).to_have_count(0)
 
 
 def test_a_link_confirmed_in_an_older_release_reads_as_not_named(
@@ -124,3 +142,58 @@ def test_an_unscanned_library_says_what_it_is_waiting_for_and_offers_the_scan(
     expect(empty).to_contain_text("filled the first time a library is prepared", timeout=30_000)
     expect(empty).to_contain_text("New memory reads Immich directly")
     expect(empty.get_by_role("button", name="Rescan now")).to_be_enabled()
+
+
+def test_an_unknown_owner_explains_the_account_name_match(
+    page: Page, launch_app_url: str, launch_workspace
+):
+    import_document(
+        launch_workspace.store(), {"version": 1, "people": [_entry(0, "Ana Example")]}, replace=True
+    )
+    page.goto(f"{launch_app_url}/settings/people", wait_until="domcontentloaded")
+    owner = page.get_by_test_id("owner-row")
+    expect(owner).to_contain_text(
+        "The API key's account name has not been matched to a named person."
+    )
+    expect(owner).to_contain_text("Choose the owner, or name people in Immich and rescan.")
+    evidence(page, "unknown-owner")
+    owner.get_by_label("Choose the owner").select_option(label="Ana Example")
+    expect(owner).not_to_contain_text("has not been matched")
+
+
+def test_a_successful_scan_refreshes_the_owner_and_keeps_a_saved_choice_without_reloading(
+    page: Page, launch_app_url: str, launch_workspace
+) -> None:
+    store = launch_workspace.store()
+    import_document(store, {"version": 1, "people": []}, replace=True)
+    page.goto(f"{launch_app_url}/settings/people", wait_until="domcontentloaded", timeout=30_000)
+    owner = page.get_by_test_id("owner-row")
+    expect(owner.get_by_test_id("owner-name")).to_have_text("not known yet", timeout=30_000)
+    choices = owner.get_by_label("Choose the owner")
+    expect(choices.locator("option")).to_have_count(2)
+    page.evaluate("window.__owner_scan_same_document = true")
+
+    with page.expect_response("**/api/v1/roster", timeout=60_000):
+        page.get_by_role("button", name="Rescan now").click()
+
+    expect(page.get_by_role("region", name="Progress")).to_contain_text("Done.")
+    expect(_card(page, "Robin")).to_be_visible()
+    evidence(page, "owner-after-first-scan")
+    expect(choices.get_by_role("option", name="Robin", exact=True)).to_have_count(1)
+    expect(owner.get_by_test_id("owner-name")).not_to_have_text("not known yet")
+    assert page.evaluate("window.__owner_scan_same_document") is True
+
+    choices.select_option(label="Robin")
+    expect(owner.get_by_test_id("owner-name")).to_have_text("Robin")
+    expect(owner).to_contain_text("you confirmed it")
+    with (
+        page.expect_response("**/api/v1/roster", timeout=60_000),
+        page.expect_response("**/api/v1/roster/owners", timeout=60_000),
+    ):
+        page.get_by_role("button", name="Rescan the library").click()
+
+    expect(owner.get_by_test_id("owner-name")).to_have_text("Robin")
+    expect(owner).to_contain_text("you confirmed it")
+    assert load_document(store)["owners"]["primary"]["person_id"] == "person-robin"
+    assert page.evaluate("window.__owner_scan_same_document") is True
+    evidence(page, "owner-confirmed-after-rescan")

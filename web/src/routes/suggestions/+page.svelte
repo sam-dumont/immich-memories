@@ -115,10 +115,11 @@
         <li><Text color="muted">{t('No suggestions right now.')}</Text></li>
       {/each}
     </ul>
-    {#if data.skipped.length}
+    {#if data.skipped.length || data.notes?.length}
       <details class="rounded-xl border border-gray-200 p-4 dark:border-gray-800">
         <summary class="cursor-pointer text-sm font-semibold">{t('Why other suggestions were skipped')}</summary>
         <ul class="mt-2 flex flex-col gap-1 text-sm">
+          {#each data.notes ?? [] as note}<li>{note}</li>{/each}
           {#each data.skipped as item, index (index)}<li><span class="font-medium">{item.label}</span>: {ruleLabel(item.rule)}</li>{/each}
         </ul>
       </details>

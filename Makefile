@@ -321,19 +321,21 @@ test-integration-processing:  ## Run ONLY processing probing/runner/filter tests
 # Starts a digest-pinned Immich (no machine learning) in Docker, seeds the CC0
 # fixture month plus a >1000-asset paging album, and runs the small gate suite
 # in tests/integration/immich_gate/. REQUIRE_IMMICH=1: an Immich that never
-# answers FAILS the run, it does not skip. CI runs it for v2 and v3.
+# answers FAILS the run, it does not skip. CI covers v2, v3.2 and v3.3.
 IMMICH_GATE_VERSION ?= v3
 IMMICH_GATE_PORT ?= 2299
 IMMICH_GATE_DIR ?= .immich-gate
 IMMICH_GATE_SERVER_v2 := ghcr.io/immich-app/immich-server:v2.7.5@sha256:c15bff75068effb03f4355997d03dc7e0fc58720c2b54ad6f7f10d1bc57efaa5
 IMMICH_GATE_VALKEY_v2 := docker.io/valkey/valkey:9@sha256:3b55fbaa0cd93cf0d9d961f405e4dfcc70efe325e2d84da207a0a8e6d8fde4f9
-IMMICH_GATE_SERVER_v3 := ghcr.io/immich-app/immich-server:v3.2.2@sha256:79cc1623323d5894922686d8743b4780181428f98eecbfb58ce12c41ef02d1ea
+IMMICH_GATE_SERVER_v32 := ghcr.io/immich-app/immich-server:v3.2.2@sha256:79cc1623323d5894922686d8743b4780181428f98eecbfb58ce12c41ef02d1ea
+IMMICH_GATE_SERVER_v3 := ghcr.io/immich-app/immich-server:v3.3.0@sha256:be56bc12c17a84617a979ad1eab1d9105bbec1955ffa7da09b3f9cf79d3bd09d
 IMMICH_GATE_VALKEY_v3 := docker.io/valkey/valkey:9@sha256:70739f85ad2ee01a726a965584a0f94895f01b0c60b3cc8b0aeef11eaa6888cf
-# Native identity gates: stable 3.2 and the exact experimental 3.3 RC.
+IMMICH_GATE_VALKEY_v32 := $(IMMICH_GATE_VALKEY_v3)
+# Native identity gates: stable 3.2 and 3.3 final.
 IMMICH_GATE_SERVER_v32-sharing := ghcr.io/immich-app/immich-server:v3.2.4@sha256:d317916b28090c33eb36b308464ea391f8b7df1d850fcfea227a39ec879718c2
-IMMICH_GATE_SERVER_v33-sharing := ghcr.io/immich-app/immich-server:v3.3.0-rc.1@sha256:b281989600c55905b1ac347f29aeed3a96bc94dec544b086c3299f2ce002d13f
+IMMICH_GATE_SERVER_v33-sharing := $(IMMICH_GATE_SERVER_v3)
 IMMICH_GATE_VALKEY_v32-sharing := valkey/valkey:9@sha256:418652cfb58ef879d4978c33553735d7147016032d5aefaa14c828e611eb9dfd
-IMMICH_GATE_VALKEY_v33-sharing := $(IMMICH_GATE_VALKEY_v32-sharing)
+IMMICH_GATE_VALKEY_v33-sharing := $(IMMICH_GATE_VALKEY_v3)
 IMMICH_GATE_COMPOSE = IMMICH_GATE_SERVER_IMAGE=$(IMMICH_GATE_SERVER_$(IMMICH_GATE_VERSION)) \
 	IMMICH_GATE_VALKEY_IMAGE=$(IMMICH_GATE_VALKEY_$(IMMICH_GATE_VERSION)) \
 	IMMICH_GATE_PORT=$(IMMICH_GATE_PORT) \
@@ -343,12 +345,12 @@ IMMICH_GATE_IMAGES_TAR ?= $(IMMICH_GATE_DIR)/images/$(IMMICH_GATE_VERSION).tar
 
 .PHONY: test-immich-gate immich-gate-up immich-gate-down immich-gate-logs immich-gate-pull \
 	immich-gate-images immich-gate-fetch immich-gate-save
-immich-gate-pull:  ## Pull the pinned images for IMMICH_GATE_VERSION (v2|v3)
-	@test -n "$(IMMICH_GATE_SERVER_$(IMMICH_GATE_VERSION))" || { echo "IMMICH_GATE_VERSION must be v2 or v3"; exit 2; }
+immich-gate-pull:  ## Pull the pinned images for IMMICH_GATE_VERSION (v2|v32|v3)
+	@test -n "$(IMMICH_GATE_SERVER_$(IMMICH_GATE_VERSION))" || { echo "IMMICH_GATE_VERSION must be v2, v32 or v3"; exit 2; }
 	$(IMMICH_GATE_COMPOSE) pull --quiet
 
 immich-gate-images:  ## Print the pinned image refs for IMMICH_GATE_VERSION, one per line
-	@test -n "$(IMMICH_GATE_SERVER_$(IMMICH_GATE_VERSION))" || { echo "IMMICH_GATE_VERSION must be v2 or v3"; exit 2; }
+	@test -n "$(IMMICH_GATE_SERVER_$(IMMICH_GATE_VERSION))" || { echo "IMMICH_GATE_VERSION must be v2, v32 or v3"; exit 2; }
 	@$(IMMICH_GATE_COMPOSE) config --images | sort
 
 immich-gate-fetch:  ## Load the pinned images from IMMICH_GATE_IMAGES_TAR, pulling (3 tries) whatever it lacks
@@ -358,7 +360,7 @@ immich-gate-save:  ## docker save the pinned images for IMMICH_GATE_VERSION into
 	@scripts/immich_gate_images.sh save $(IMMICH_GATE_IMAGES_TAR) $$($(MAKE) -s --no-print-directory immich-gate-images)
 
 immich-gate-up:  ## Start a fresh gate Immich for IMMICH_GATE_VERSION; fails if it is not healthy in 5 min
-	@test -n "$(IMMICH_GATE_SERVER_$(IMMICH_GATE_VERSION))" || { echo "IMMICH_GATE_VERSION must be v2 or v3"; exit 2; }
+	@test -n "$(IMMICH_GATE_SERVER_$(IMMICH_GATE_VERSION))" || { echo "IMMICH_GATE_VERSION must be v2, v32 or v3"; exit 2; }
 	$(IMMICH_GATE_COMPOSE) down --remove-orphans
 	$(IMMICH_GATE_COMPOSE) up -d --wait --wait-timeout 300
 
@@ -373,22 +375,37 @@ immich-gate-logs:
 # The state contains disposable credentials and stays under the ignored gate directory.
 NATIVE_GATE_VERSION ?= v32-sharing
 NATIVE_GATE_PORT ?= 2304
+NATIVE_GATE_DATABASE ?= sqlite
+NATIVE_GATE_HOME = $(CURDIR)/$(IMMICH_GATE_DIR)/home-native-$(NATIVE_GATE_VERSION)-$(NATIVE_GATE_DATABASE)
 NATIVE_GATE_STATE = $(CURDIR)/$(IMMICH_GATE_DIR)/$(NATIVE_GATE_VERSION)
-.PHONY: test-native-sharing
+.PHONY: test-native-sharing native-sharing-run
 test-native-sharing:  ## Pinned native identities + owner reads; NATIVE_GATE_VERSION=v32-sharing|v33-sharing
+	@case "$(NATIVE_GATE_DATABASE)" in sqlite|postgresql) ;; \
+		*) echo "NATIVE_GATE_DATABASE must be sqlite or postgresql"; exit 2 ;; esac
 	@set -eu; \
 	trap '$(MAKE) --no-print-directory immich-gate-down IMMICH_GATE_VERSION=$(NATIVE_GATE_VERSION) IMMICH_GATE_PORT=127.0.0.1:$(NATIVE_GATE_PORT)' EXIT; \
 	$(MAKE) --no-print-directory immich-gate-up IMMICH_GATE_VERSION=$(NATIVE_GATE_VERSION) IMMICH_GATE_PORT=127.0.0.1:$(NATIVE_GATE_PORT); \
 	uv run python -m tests.integration.native_sharing.seed --url http://127.0.0.1:$(NATIVE_GATE_PORT) \
 		--state-dir $(NATIVE_GATE_STATE) --media $(IMMICH_GATE_DIR)/media \
 		--database-container immich-gate-$(NATIVE_GATE_VERSION)-database-1; \
-	IMMICH_SHARING_STATE=$(NATIVE_GATE_STATE)/state.json uv run pytest tests/integration/native_sharing -m integration -v
+	if [ "$(NATIVE_GATE_DATABASE)" = postgresql ]; then \
+		scripts/with_throwaway_postgres.sh IMMICH_SHARING_DATABASE_URL $(STORE_TEST_POSTGRES_IMAGE) -- \
+			$(MAKE) --no-print-directory native-sharing-run; \
+	else \
+		$(MAKE) --no-print-directory native-sharing-run; \
+	fi
+
+native-sharing-run:
+	@mkdir -p $(NATIVE_GATE_HOME)
+	IMMICH_SHARING_STATE=$(NATIVE_GATE_STATE)/state.json uv run env HOME=$(NATIVE_GATE_HOME) \
+		pytest tests/integration/native_sharing -m integration -v --tb=short -p no:cacheprovider \
+		--junitxml=tests/native-sharing-$(NATIVE_GATE_VERSION)-$(NATIVE_GATE_DATABASE)-junit.xml
 
 IMMICH_GATE_DATABASE ?= sqlite
 IMMICH_GATE_RUN_HOME = $(CURDIR)/$(IMMICH_GATE_DIR)/home-$(IMMICH_GATE_VERSION)-$(IMMICH_GATE_DATABASE)
 IMMICH_GATE_JUNIT = tests/immich-gate-$(IMMICH_GATE_VERSION)-$(IMMICH_GATE_DATABASE)-junit.xml
 
-test-immich-gate:  ## Real Immich in Docker + CC0 fixture library + gate tests (IMMICH_GATE_VERSION=v2|v3, IMMICH_GATE_DATABASE=sqlite|postgresql, ~5 min)
+test-immich-gate:  ## Real Immich in Docker + CC0 fixture library + gate tests (IMMICH_GATE_VERSION=v2|v32|v3, IMMICH_GATE_DATABASE=sqlite|postgresql, ~5 min)
 	@case "$(IMMICH_GATE_DATABASE)" in sqlite|postgresql) ;; \
 		*) echo "IMMICH_GATE_DATABASE must be sqlite or postgresql"; exit 2 ;; esac
 	$(MAKE) immich-gate-up
@@ -1102,7 +1119,11 @@ web-check: web-install  ## Type-check the web client, check the contract and typ
 docs-dev:
 	cd docs-site && NO_UPDATE_NOTIFIER=1 npm start
 
-docs-build:
+.PHONY: docs-social-check
+docs-social-check:  ## Check social image routes and rendered cards
+	cd docs-site && node --import tsx --test scripts/social-preview.test.ts
+
+docs-build: docs-social-check
 	cd docs-site && NO_UPDATE_NOTIFIER=1 npm run build
 	$(MAKE) --no-print-directory docs-analytics-check
 
@@ -1110,7 +1131,7 @@ docs-build:
 docs-analytics-check:  ## Check the built docs tracker without submitting real events
 	cd docs-site && node --experimental-strip-types --test scripts/analytics.test.mjs
 
-docs-check: docs-setup-check
+docs-check: docs-setup-check docs-social-check
 	@log_file=$$(mktemp "$${TMPDIR:-/tmp}/docs-build.XXXXXX") || exit $$?; \
 	status=0; \
 	($(MAKE) --no-print-directory docs-build) >"$$log_file" 2>&1 || status=$$?; \
@@ -1137,7 +1158,8 @@ demo-cli:  ## Record the CLI demo via VHS → docs-site/remotion/public/cli-demo
 	vhs docs-site/scripts/demo-cli.tape
 	@# The docs homepage plays the same recording; the poster is a frame with a command and its output.
 	cp docs-site/remotion/public/cli-demo.mp4 docs-site/static/demo/cli-demo.mp4
-	ffmpeg -y -loglevel error -ss 58 -i docs-site/static/demo/cli-demo.mp4 -frames:v 1 -q:v 4 docs-site/static/demo/cli-demo-poster.jpg
+	@poster_second=$$(python3 -c "import re; s=open('docs-site/remotion/src/cli-timing.ts').read(); marks=[float(re.search(name+r': ([0-9.]+)',s).group(1)) for name in ('story','why')]; print(sum(marks)/2)"); \
+	ffmpeg -y -loglevel error -ss "$$poster_second" -i docs-site/static/demo/cli-demo.mp4 -frames:v 1 -q:v 4 -update 1 docs-site/static/demo/cli-demo-poster.jpg
 	@# The marks are wall-clock seconds; a recording that dropped frames is shorter than them.
 	@python3 -c "import re,subprocess,sys; end=float(re.search(r'end: ([0-9.]+)',open('docs-site/remotion/src/cli-timing.ts').read()).group(1)); got=float(subprocess.check_output(['ffprobe','-v','error','-show_entries','format=duration','-of','csv=p=0','docs-site/remotion/public/cli-demo.mp4'])); ok=abs(got-end)<=0.03*end+1; print(f'cli-demo.mp4: {got:.1f} s against the last mark {end:.1f} s'); sys.exit(0 if ok else 'the recording dropped frames: run make demo-cli again on an idle machine')"
 

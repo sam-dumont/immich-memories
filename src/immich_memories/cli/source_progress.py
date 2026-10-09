@@ -20,7 +20,8 @@ class SourceProgressReporter:
     """A source stage owns the whole bar: counted when it reports numbers, a spinner when not.
 
     `on_phase` also hears the stage, throttled, so the phase log of a scheduled run does not
-    go silent for the half hour a year's evidence takes.
+    go silent for the half hour a year's evidence takes. `on_activity` hears every update
+    so a heartbeat can remember the latest count without writing each one to the store.
     """
 
     def __init__(
@@ -29,11 +30,13 @@ class SourceProgressReporter:
         task: TaskID,
         on_phase: Callable[[int, int, str], None] | None = None,
         clock: Callable[[], float] = time.monotonic,
+        on_activity: Callable[[int, int, str], None] | None = None,
     ) -> None:
         self._progress = progress
         self._task = task
         self._mode: str | tuple | None = None
         self._on_phase = on_phase
+        self._on_activity = on_activity
         self._clock = clock
         self._last_phase_time = 0.0
         self._last_phase_items = 0
@@ -85,6 +88,8 @@ class SourceProgressReporter:
         self._progress.update(self._task, completed=done, description=description)
 
     def _report(self, done: int, total: int, label: str, *, new_stage: bool) -> None:
+        if self._on_activity is not None:
+            self._on_activity(min(done, total) if total else 0, total, label)
         if self._on_phase is None:
             return
         now = self._clock()

@@ -47,3 +47,42 @@ class TestCountAssetsWithPeople:
         body = request.await_args.kwargs["json"]
         assert body["takenAfter"].startswith("2025-01-01T00:00:00")
         assert body["takenBefore"].startswith("2025-12-31T23:59:59")
+
+
+@pytest.mark.asyncio
+async def test_owned_counts_page_past_partner_pictures_and_deduplicate_ids():
+    def asset(identity, owner):
+        return {
+            "id": identity,
+            "ownerId": owner,
+            "type": "IMAGE",
+            "fileCreatedAt": "2030-04-01T12:00:00Z",
+            "fileModifiedAt": "2030-04-01T12:00:00Z",
+            "updatedAt": "2030-04-01T12:00:00Z",
+        }
+
+    # WHY: Immich's HTTP boundary; a partner-only first page must not end paging.
+    request = AsyncMock(
+        side_effect=[
+            {"assets": {"items": [asset("partner-picture", "partner")], "nextPage": "2"}},
+            {
+                "assets": {
+                    "items": [
+                        asset("own-one", "owner"),
+                        asset("own-two", "owner"),
+                        asset("own-one", "owner"),
+                    ],
+                    "nextPage": None,
+                }
+            },
+        ]
+    )
+    total = await SearchService(request).count_assets_with_people(
+        ["shared-person"], taken_after=datetime(2030, 4, 1), owner_id="owner"
+    )
+    assert total == 2
+    assert [call.kwargs["json"]["page"] for call in request.await_args_list] == [1, 2]
+    assert all(call.args == ("POST", "/search/metadata") for call in request.await_args_list)
+    assert all(
+        call.kwargs["json"]["personIds"] == ["shared-person"] for call in request.await_args_list
+    )

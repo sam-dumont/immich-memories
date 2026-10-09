@@ -173,7 +173,8 @@ def _finish_without_rendering(
         selected_duration=sum(end - start for start, end in pipeline_result.clip_segments.values()),
         timeline=timeline_plan,
         canvas=output_canvas,
-        output_path=output_path,
+        # A web cut's output path tracks progress; saved-cut renders use the configured directory.
+        output_path=config.output.output_path / output_path.name,
         upload_intent=should_upload,
         music_policy=music_policy(config=config, music=music, no_music=no_music),
         title=title or template[0],
@@ -493,6 +494,9 @@ def run_pipeline_and_generate(
             on_phase=lambda current, total, message: phases.emit(
                 OperationalPhase.SELECTION, current, total, message
             ),
+            on_activity=lambda current, total, message: phases.heartbeat.note(
+                OperationalPhase.SELECTION, current, total, message
+            ),
         ),
         include_live_photos=use_live_photos and config.analysis.include_live_photos,
     )
@@ -608,6 +612,7 @@ def run_pipeline_and_generate(
         )
 
     def gen_progress(phase: str, frac: float, msg: str) -> None:
+        phases.heartbeat.activity(msg)
         scaled = 20 + int(frac * 80)
         progress.update(task, completed=scaled, description=msg)
 

@@ -60,3 +60,17 @@ def test_a_gain_mapped_photo_counts_as_an_hdr_source(tmp_path, caplog: pytest.Lo
     _settings(tmp_path, clips, caplog)
 
     assert "heic-hdr" in caplog.text
+
+
+@pytest.mark.parametrize("transfer", ["pq", "hlg"])
+def test_photo_intermediates_do_not_claim_hdr_videos(tmp_path, caplog, transfer):
+    from immich_memories.processing.hdr_utilities import detect_dominant_hdr_transfer
+
+    clips = [_clip(tmp_path, "photo", is_photo=True)]
+    # WHY: ffprobe is the media boundary; the intermediate's transfer is known.
+    with (
+        patch("immich_memories.processing.hdr_utilities._detect_hdr_type", return_value=transfer),
+        caplog.at_level("INFO"),
+    ):
+        assert detect_dominant_hdr_transfer(clips).value == transfer
+    assert "video clips" not in caplog.text

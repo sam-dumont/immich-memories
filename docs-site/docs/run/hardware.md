@@ -136,17 +136,17 @@ SSIM measurements and bitrate comparisons are in [Encoder calibration](./referen
 
 ## Without a GPU
 
-The CPU still prepares, selects and renders films. Titles use a static background and text drawn once by Pillow, with FFmpeg opacity fades. Hardware encoding can still encode those title frames. Moving gradients, bokeh and animated deblur need a rendering GPU. [Measured](../better/measured.md) separates picture analysis from rendering costs.
+The CPU still prepares, selects and renders films. Preflight reports `Software encoding (libx264)` as OK when no GPU is available. Titles use a static background and text drawn once by Pillow; FFmpeg slides, scales and fades the text. Hardware encoding can still encode those title frames. Moving gradients, bokeh and animated deblur need a rendering GPU. [Measured](../better/measured.md) separates picture analysis from rendering costs.
 
 ## Title kernels
 
-`preflight` reports whether animated title kernels or the CPU still-plate fallback will run. `IMMICH_FORCE_CPU=1` selects that fallback for title videos.
+`preflight` names the title renderer: GPU kernels, or Pillow text animated by FFmpeg on the CPU. `IMMICH_FORCE_CPU=1` selects the CPU path for title videos.
 [Renderer backends and memory budgets](./reference/rendering.md) have the technical details.
 
 ### CPUs without AVX
 
 Older Celerons and Atoms can lack AVX. The app tests the kernel renderer in a child process, then
-falls back to Pillow still plates with FFmpeg fades if it crashes. Font, layout, palette, duration and frame rate remain; moving gradients and kernel effects do not.
+uses Pillow raster text animated by FFmpeg if the probe cannot start. Preflight reports this supported path as OK: `CPU titles (Pillow + FFmpeg); moving backgrounds need a GPU`. Font, layout, palette, duration and frame rate remain; moving gradients and kernel effects do not.
 
 ## What the card is actually worth
 

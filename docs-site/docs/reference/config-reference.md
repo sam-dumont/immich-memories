@@ -120,7 +120,7 @@ and the primary is the only account a film is ever uploaded to.
 immich:
   url: "https://photos.example.com"
   api_key: "${IMMICH_API_KEY}"
-  native_sharing: false  # opt into verified native person identities (3.2+; 3.3 experimental)
+  native_sharing: false  # opt into verified native person identities on Immich 3.2 or 3.3
   accounts: {}  # name -> url, api_key, api_version (default: none)
   # accounts:
   #   partner:

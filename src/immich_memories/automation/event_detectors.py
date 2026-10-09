@@ -12,6 +12,7 @@ from immich_memories.api.models import Asset
 from immich_memories.automation.candidates import (
     CandidateCategory,
     MemoryCandidate,
+    explain_empty,
     make_memory_key,
 )
 from immich_memories.automation.closeness import group_weight
@@ -34,14 +35,14 @@ class TripDetector:
         config: Config,
         today: date,
         assets: list[Asset] | None = None,
+        notes: list[str] | None = None,
     ) -> list[MemoryCandidate]:
         """Emit candidates for detected trips that haven't been generated yet."""
-        if assets is None:
-            return []
-
         trips_cfg = config.trips
         if trips_cfg.homebase_latitude == trips_cfg.homebase_longitude == 0.0:
-            return []
+            return explain_empty([], notes, "No trip film: the home base is not set")
+        if assets is None:
+            return explain_empty([], notes, "No trip film: no location data was available")
 
         # Lazy import to avoid circular deps and keep module lightweight
         from immich_memories.analysis.trip_detection import detect_trips, geocoder_for
@@ -85,7 +86,11 @@ class TripDetector:
                 ),
             )
 
-        return candidates
+        return explain_empty(
+            candidates,
+            notes,
+            "No trip film: no unfilmed trip meets the distance and duration rules and ended at least seven days ago",
+        )
 
 
 def _month_end(year: int, month: int) -> date:
@@ -140,11 +145,14 @@ class ActivityBurstDetector:
         config: Config,
         today: date,
         burst_threshold: float | None = None,
+        notes: list[str] | None = None,
     ) -> list[MemoryCandidate]:
         """Emit monthly_highlights candidates for burst months in the last 12 months."""
         threshold = burst_threshold or self._DEFAULT_BURST_THRESHOLD
         if len(assets_by_month) < 2:
-            return []
+            return explain_empty(
+                [], notes, "No busy month film: at least two months of history are needed"
+            )
 
         # WHY: only detect bursts in last 12 months — older content is for manual exploration
         cutoff_key = f"{today.year - 1}-{today.month:02d}"
@@ -173,7 +181,11 @@ class ActivityBurstDetector:
             if candidate:
                 candidates.append(candidate)
 
-        return candidates
+        return explain_empty(
+            candidates,
+            notes,
+            f"No busy month film: no unfilmed month in the last year exceeds {threshold:g} times its earlier monthly average",
+        )
 
 
 class MultiPersonDetector:
@@ -210,6 +222,7 @@ class MultiPersonDetector:
         person_asset_counts: dict[str, int] | None = None,
         shared_counts: dict[tuple[str, str], int] | None = None,
         closeness: dict[str, float] | None = None,
+        notes: list[str] | None = None,
     ) -> list[MemoryCandidate]:
         """Propose multi_person memories for pairs who frequently appear together.
 
@@ -219,7 +232,11 @@ class MultiPersonDetector:
         """
         counts = person_asset_counts or {}
         if not counts:
-            return []
+            return explain_empty(
+                [],
+                notes,
+                "No people together film: fewer than two named people have pictures in the previous year",
+            )
 
         # Top 10 named people with thumbnails, sorted by asset count
         visible = [p for p in people if p.name and getattr(p, "thumbnail_path", None)]
@@ -227,7 +244,11 @@ class MultiPersonDetector:
         top = visible[:10]
 
         if len(top) < 2:
-            return []
+            return explain_empty(
+                [],
+                notes,
+                "No people together film: fewer than two named people have pictures in the previous year",
+            )
 
         year = today.year - 1
         start = date(year, 1, 1)
@@ -278,4 +299,8 @@ class MultiPersonDetector:
                 ),
             )
 
-        return candidates
+        return explain_empty(
+            candidates,
+            notes,
+            "No people together film: no unfilmed pair has enough shared pictures in the previous year",
+        )

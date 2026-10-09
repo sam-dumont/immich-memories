@@ -12,7 +12,11 @@ import pytest
 from click.testing import CliRunner, Result
 
 import immich_memories
-from immich_memories.automation.candidates import CandidateCategory, MemoryCandidate
+from immich_memories.automation.candidates import (
+    CandidateCategory,
+    MemoryCandidate,
+    make_memory_key,
+)
 from immich_memories.automation.models import AutoAction, AutoOutcome, AutoRejection, AutoRunResult
 from immich_memories.automation.runtime_provenance import CheckoutDrift, RuntimeProvenance
 from immich_memories.automation.system_scheduler import (
@@ -810,7 +814,12 @@ class TestAutoRunOutput:
         for _ in range(2):
             attempt = store.start_attempt(reason="daily wake")
             store.finish_attempt(
-                attempt.id, AutoOutcome.FAILED, reason="exit 1", memory_key="monthly:2026-06"
+                attempt.id,
+                AutoOutcome.FAILED,
+                reason="exit 1",
+                memory_key=make_memory_key(
+                    "monthly_highlights", date(2026, 6, 1), date(2026, 6, 30)
+                ),
             )
 
         client = MagicMock()
@@ -831,7 +840,8 @@ class TestAutoRunOutput:
         ):
             result = _invoke(["auto", "suggest"], config=config)
 
-        assert "Backing off monthly:2026-06" in result.output
+        assert "Backing off Monthly Highlights" in result.output
+        assert "2026-06-01 to 2026-06-30" in result.output
         assert "failed 2x" in result.output
 
 

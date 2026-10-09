@@ -11,6 +11,7 @@ from uuid import UUID
 import httpx
 from tests.integration.immich_gate import media
 from tests.integration.immich_gate.seed import ADMIN_PASSWORD, Seeder, _api_key, _checked
+from tests.integration.native_sharing.ocr_fixture import seed_ocr
 
 
 def _user(admin: Seeder, url: str, name: str) -> tuple[Seeder, str]:
@@ -134,6 +135,7 @@ COMMIT;"""
                 check=True,
                 capture_output=True,
             )
+        seed_ocr(database_container, target)
         root.mkdir(parents=True, exist_ok=True)
         state = root / "state.json"
         state.touch(mode=0o600)

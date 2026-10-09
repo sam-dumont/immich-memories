@@ -23,6 +23,7 @@ from uuid import uuid4
 from immich_memories.config import get_config
 from immich_memories.security import (
     configured_secret_values,
+    create_private_directory,
     sanitize_error_message,
     write_secret_file,
 )
@@ -54,6 +55,9 @@ class JobRunner:
 
     def __init__(self, root: Path) -> None:
         self._dir = Path(root) / "web-jobs"
+        # Old progress files have unique IDs and will never be rewritten privately.
+        if self._dir.is_dir():
+            self._dir.chmod(0o700)
         # Reentrant: start() holds it while active() reads records through get().
         self._lock = threading.RLock()
         self._processes: dict[str, subprocess.Popen] = {}
@@ -78,7 +82,7 @@ class JobRunner:
         return self._path(job_id, "json", progress=True)
 
     def _save(self, job: Job) -> None:
-        self._dir.mkdir(parents=True, exist_ok=True)
+        create_private_directory(self._dir)
         write_secret_file(self._record(job.id), job.model_dump_json(indent=2))
 
     def get(self, job_id: str) -> Job | None:
@@ -130,7 +134,7 @@ class JobRunner:
             if running := self.active():
                 raise JobBusy(running)
             job_id = job_id or uuid4().hex
-            self._dir.mkdir(parents=True, exist_ok=True)
+            create_private_directory(self._dir)
             with os.fdopen(os.open(self._log(job_id), os.O_WRONLY | os.O_CREAT, 0o600), "w") as log:
                 process = subprocess.Popen(  # noqa: S603 - argv from typed requests, never a shell
                     argv,

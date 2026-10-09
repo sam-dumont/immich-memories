@@ -131,3 +131,36 @@ def test_nothing_to_import_says_so(store, tmp_path):
 
     assert (outcome.imported, outcome.skipped) == (0, 0)
     assert outcome.notes
+
+
+def test_legacy_discovery_keeps_relocated_paths_without_probing_runtime_hardware(
+    tmp_path, monkeypatch, caplog
+):
+    from unittest.mock import patch
+
+    from immich_memories.store.legacy_annotations import legacy_sources
+
+    home = tmp_path / "legacy"
+    home.mkdir()
+    annotations = write_annotations(tmp_path / "moved" / "annotations.sqlite")
+    monkeypatch.setenv("IMMICH_MEMORIES_CACHE__DIRECTORY", str(annotations.parent))
+    monkeypatch.setenv("IMMICH_MEMORIES_TIER", "auto")
+    # WHY: hardware detection is a machine boundary unrelated to locating legacy files.
+    with patch(
+        "immich_memories.config_tiers.inference_acceleration",
+        side_effect=AssertionError("legacy discovery must not probe the runtime GPU"),
+    ) as probe:
+        found = legacy_sources(home)
+
+    assert annotations in found
+    assert not probe.called
+    assert not caplog.records
+
+
+def test_unreadable_legacy_config_warns_without_echoing_its_contents(tmp_path, caplog):
+    from immich_memories.store.legacy_annotations import legacy_sources
+
+    (tmp_path / "config.yaml").write_text("immich: {api_key: synthetic-private-corpus, broken: [\n")
+    assert legacy_sources(tmp_path) == []
+    assert "config.yaml unreadable for the import" in caplog.text
+    assert "synthetic-private-corpus" not in caplog.text

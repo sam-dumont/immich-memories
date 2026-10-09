@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from unittest.mock import AsyncMock
 
 import httpx
 import pytest
@@ -23,7 +24,8 @@ async def _client_that_times_out() -> ImmichClient:
 
 
 async def test_outage_error_names_the_host_and_the_exception(monkeypatch):
-    monkeypatch.setattr("immich_memories.api.immich._BACKOFF_BASE", 0.0)
+    # WHY: wall-clock delays are external; the real retry and transport still run.
+    monkeypatch.setattr("immich_memories.api.immich.asyncio.sleep", AsyncMock())
     client = await _client_that_times_out()
 
     with pytest.raises(ImmichAPIError) as raised:
@@ -36,12 +38,13 @@ async def test_outage_error_names_the_host_and_the_exception(monkeypatch):
 
 
 async def test_outage_prints_retry_progress(monkeypatch, caplog):
-    monkeypatch.setattr("immich_memories.api.immich._BACKOFF_BASE", 0.0)
+    # WHY: wall-clock delays are external; the real retry and transport still run.
+    monkeypatch.setattr("immich_memories.api.immich.asyncio.sleep", AsyncMock())
     client = await _client_that_times_out()
 
     with caplog.at_level(logging.WARNING), pytest.raises(ImmichAPIError):
         await client.get_server_info()
 
     text = caplog.text
-    assert "retrying (2/3)" in text
-    assert "retrying (3/3)" in text
+    assert "retrying (2/7)" in text
+    assert "retrying (7/7)" in text

@@ -43,7 +43,10 @@ Name the faces that matter in Immich first. In this app, open **Settings > Peopl
 3. Set **Role** for the people in your library. Choose the role that fits each person; partner, child and parent are examples.
 4. Answer the links the scan found. It notices pairs that appear together all the time, but it cannot know what they are to each other. Under **Relationships**, pick the real one ("parent of", "partner of") and both sides get written, with the reverse kind. **No, they are not** closes the question for good.
 
-A pair shows up once. Once you name it, the scan's guess is gone, and a rescan will not bring it back. If you confirmed a link in an older release without naming it, it reads "linked, relationship not named" until you pick a kind. We never guess one for you, and until you do it is left out of titles and prompts.
+An unanswered pair shows up once among the visible cards, including when you filter by name. Naming it updates both cards. Once you name it, the scan's guess is gone, and a rescan will not bring it back. If you confirmed a link in an older release without naming it, it reads "linked, relationship not named" until you pick a kind. We never guess one for you, and until you do it is left out of titles and prompts.
+
+If **Account owner** says **not known yet**, the account name has not been matched to a named
+person. Choose the owner yourself, or name people in Immich and rescan.
 
 The scan reads metadata, not pictures. Your confirmations survive a rescan. Its guesses alone never make someone close family.
 

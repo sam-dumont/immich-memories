@@ -67,3 +67,20 @@ def test_cg_image_conversion_does_not_accumulate_frame_buffers() -> None:
     from immich_memories.analysis.apple_vision_image import create_cg_image_from_numpy
 
     _assert_no_buffer_retention(create_cg_image_from_numpy)
+
+
+def test_vision_availability_is_quiet_until_verbose(caplog, monkeypatch):
+    import logging
+
+    pytest.importorskip("Vision")
+    from immich_memories.analysis import apple_vision
+
+    # WHY: exercise first discovery even if another test has already cached the framework.
+    monkeypatch.setattr(apple_vision, "_vision_available", None)
+    apple_vision.is_vision_available.cache_clear()
+    with caplog.at_level(logging.DEBUG, logger=apple_vision.__name__):
+        assert apple_vision.is_vision_available()
+
+    messages = [record for record in caplog.records if "framework available" in record.message]
+    assert messages
+    assert all(record.levelno == logging.DEBUG for record in messages)

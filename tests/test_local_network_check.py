@@ -152,3 +152,12 @@ def test_the_resolved_interpreter_is_recorded_and_a_change_is_reported(tmp_path)
 
 def test_nothing_is_said_before_a_check_was_ever_recorded(tmp_path):
     assert check.interpreter_note(tmp_path, current=PYTHON) is None
+
+
+def test_a_failed_probe_does_not_claim_a_permission_prompt_is_open(tmp_path):
+    outcome = _run(tmp_path, FakeLaunchd(1))
+
+    assert "scheduled connection check failed" in outcome.advice.lower()
+    assert "macOS is asking" not in outcome.advice
+    assert "If macOS asks" in outcome.advice
+    assert "config test" in outcome.advice

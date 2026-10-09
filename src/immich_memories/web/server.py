@@ -29,7 +29,7 @@ from starlette.concurrency import run_in_threadpool
 from starlette.middleware.sessions import SessionMiddleware
 
 from immich_memories.config import get_config, init_config_dir
-from immich_memories.config_loader import Config
+from immich_memories.config_loader import Config, get_config_path
 from immich_memories.security import write_secret_file
 from immich_memories.startup_checks import StartupRefused, check_startup
 from immich_memories.web import mount_web
@@ -279,7 +279,8 @@ async def oidc_callback(request: Request) -> Response:
 async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
     from immich_memories.automation.in_process_scheduler import automation_scheduler
 
-    init_config_dir()
+    if get_config_path() == Config.get_default_path():
+        init_config_dir()
     config = get_config(reload=True)
     logger.info(
         "Application initialized (auth=%s)", "enabled" if config.auth.enabled else "disabled"
@@ -322,6 +323,9 @@ def _warm_answers(config: Any) -> None:
 
     cache = answer_cache(config)
     suggestions_answer(cache, AutoRunner(config))
+    if config.trips.hemisphere is None:
+        logger.info("Trip suggestions are off until home coordinates are configured")
+        return
     from immich_memories.i18n import resolve_film_locale
 
     find = trip_finder(config)
@@ -418,8 +422,7 @@ def main(
     open_store(config)
     if not _is_port_free(host, port):
         logger.error(
-            "Port %s is already in use. Stop the existing process: lsof -ti :%s | xargs kill",
-            port,
+            "Port %s is already in use. Choose another port: immich-memories ui --port <free>",
             port,
         )
         sys.exit(1)
@@ -433,4 +436,5 @@ def main(
         proxy_headers=True,
         forwarded_allow_ips=proxy.get("forwarded_allow_ips"),
         log_config=None,
+        access_log=logger.isEnabledFor(logging.DEBUG),
     )

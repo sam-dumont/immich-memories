@@ -244,6 +244,8 @@ The separate model-planning route can read banked lines or use plain clip facts.
   and playback have the narrower selected/candidate scope. The rest of the window is read as
   Immich metadata (`editorial_film_reach.py`). Each acquisition is recorded under the attempt's
   `refinement/<sequence>/preparation.private.json`, with requested IDs and producer timings.
+  Each pass also saves `captions.private.json`; the review reads these immutable descriptions
+  across refinement rounds instead of consulting the current annotation bank.
 - **Fill on demand**: a film reads only the episodes its shots sit in, and banks them; reading a
   whole scope ahead is optional (`prepare --overviews`). A model-tier film left short by S seconds
   reads at most 2 * ceil(S / 3.5) more unread episodes (`episode_demand.py`,
@@ -467,6 +469,9 @@ frames to a `FrameSink` and crossfades across clip boundaries, and `StreamingEnc
 sink it is constructed with) pipes them into FFmpeg. Large-frame decoders may read ahead into
 three borrowed slots when CPU/memory limits permit; the assembler closes every decoder
 on clip completion and failure, including when an exception traceback remains live.
+The full assembler quantizes each fade to a frame count once, shares that count with the video
+and clip-audio paths, and converts the overlap to 48 kHz samples for audio mixing. A zero-frame
+fade joins audio without overlap. Soundtrack block/loop fades have their own musical timing.
 
 **KernelTitleRenderer** (titles/renderer_kernels.py) owns the background and the per-frame
 GPU pipeline, and composes 3 services (all take Protocol-typed config/buffers):
@@ -482,7 +487,7 @@ these helper modules:
 - `generate_photos.py`: photo rendering, budget allocation, clip merging
 - `generate_music.py`: music resolution, AI generation, audio mixing
 - `generate_privacy.py`: GPS anonymization, fake names/cities, trip titles
-- `generate_settings.py`: assembly/title settings, assembler creation
+- `generate_settings.py`: assembly/title settings, assembler creation; owns temporary bundled-music work through mixing
 - `generate_render.py`: local source preparation/assembly or configured worker handoff
 - `generate_saved_cut.py`: render a saved cut or revision (CLI `runs render`, web export) from the
   cut's own `render-inputs.private.json` (`processing/render_inputs.py`, written by every cut)
@@ -990,6 +995,7 @@ src/immich_memories/
 │   │                           # run_import (resumable, per-importer fingerprint records), verify_import,
 │   │                           # import_on_first_open (the CLI/UI enable it after the config loads; a lease
 │   │                           # makes concurrent starts import once)
+│   ├── legacy_paths.py         # YAML/environment path settings for importers, without runtime tier or store setup
 │   ├── legacy_verify.py        # verify_rows: every legacy key in the store with equal values
 │   ├── audience_bank.py        # The audience bank's rows: answers by answerer + evidence key, hold slots
 │   │                           # (permanent / text) per picture, merged a batch per transaction
@@ -1110,11 +1116,11 @@ src/immich_memories/
 │   ├── __init__.py             # Public API re-exports
 │   ├── candidates.py           # Memory candidate detection
 │   ├── candidate_scorer.py     # Candidate scoring & ranking
-│   ├── candidate_discovery.py  # CandidateDiscovery: one library snapshot -> ranked candidates
+│   ├── candidate_discovery.py  # CandidateDiscovery: one library snapshot -> ranked candidates and detector notes
 │   ├── event_detectors.py      # Event-based detectors (activity bursts)
 │   ├── calendar_detectors.py   # Calendar-based detectors (monthly, yearly)
 │   ├── season_holiday_detectors.py  # Season that just ended, holiday across years
-│   ├── album_detector.py       # New or grown Immich albums
+│   ├── album_detector.py       # New or grown Immich albums, including manual film history
 │   ├── backfill_detector.py    # Months with no film yet, quiet-night filler
 │   ├── person_detectors.py     # Last month's film per close person
 │   ├── closeness.py            # Registry tier/role -> score weight for people films
@@ -1124,7 +1130,7 @@ src/immich_memories/
 │   ├── special_day_scan.py     # Scheduled scan for days worth resurfacing (skips holidays and trips)
 │   ├── special_day_facts.py    # No-model day scan: one loud fact per day, ranked, a few a year
 │   ├── variety.py              # Cadence and rotation rules for candidates
-│   ├── failure_backoff.py      # Keep a candidate that keeps failing out of the nightly slot
+│   ├── failure_backoff.py      # Failure waits and readable labels for skipped films
 │   ├── models.py               # Typed values returned/persisted by automation
 │   ├── generation_request.py   # Typed boundary from candidates to the `generate` CLI
 │   ├── state_store.py          # Automation attempts in the store; failure streaks for backoff
@@ -1486,4 +1492,8 @@ owners for a shared face. Owner download routing stays in `AccessBoundClient`.
 `HouseholdWindows` coalesces repeated asset reads before CLI discovery deduplicates IDs,
 preserving unioned favourites and people. Stored canonical identities are not migrated or
 replaced by transient upstream grants. Stale bindings and incomplete native access fail
-explicitly. Live validation lives in `tests/integration/native_sharing/`.
+explicitly. Automation expands saved canonical aliases only across accounts proven to read the
+same native identity on the same server. People counts use each account's owned pictures, since
+Immich's statistics also include partner-visible assets. The web linking view uses these native
+identities without rewriting saved bindings. Live validation against the pinned final server,
+with both store backends, lives in `tests/integration/native_sharing/`.

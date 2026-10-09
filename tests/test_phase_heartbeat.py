@@ -134,3 +134,17 @@ def test_a_scheduled_attempt_keeps_getting_phase_events_while_its_phase_works(tm
     beats = [e for e in events if "still working" in e["message"]]
     assert len(beats) >= 2
     assert all(e["total"] == 149 and e["phase"] == "selection" for e in beats)
+
+
+def test_live_progress_keeps_the_current_music_substep_in_the_heartbeat() -> None:
+    clock, sent = _Clock(), []
+    heartbeat = _heartbeat(clock, sent)
+    heartbeat.activity("Starting")
+    assert not heartbeat.tick()
+    heartbeat.note(OperationalPhase.MUSIC, 0, 0, "Generating music")
+    clock.now += 10
+    heartbeat.activity("Mixing music...")
+    clock.now += 61
+    assert heartbeat.tick()
+    assert sent[-1][:3] == (OperationalPhase.MUSIC, 0, 0)
+    assert sent[-1][3].startswith("Mixing music...")

@@ -24,7 +24,7 @@ from immich_memories.config_loader import (
     get_config,
     get_config_path,
 )
-from immich_memories.db import redact_url
+from immich_memories.db import redact_url, resolve_location
 from immich_memories.settings_store import (
     is_bootstrap_key,
     is_secret_key,
@@ -73,16 +73,17 @@ def leaf_values(model: BaseModel, prefix: str = "") -> Iterator[tuple[str, Any]]
 
 
 def _env_override(key: str, env_names: Mapping[str, str], aliases: Mapping[str, str]) -> str | None:
+    # The store bootstrap gives its dedicated variables priority over nested settings.
+    if is_store_location_key(key):
+        name = "IMMICH_MEMORIES_" + key.upper().replace(".", "_")
+        if os.environ.get(name):
+            return name
     parts = key.upper().split(".")
     # The most specific name wins the report; a whole-section variable covers its keys too.
     for depth in range(len(parts), 0, -1):
         name = "IMMICH_MEMORIES_" + "__".join(parts[:depth])
         if name in env_names:
             return env_names[name]
-    if is_store_location_key(key):
-        name = "IMMICH_MEMORIES_" + key.upper().replace(".", "_")
-        if os.environ.get(name):
-            return name
     return aliases.get(key)
 
 
@@ -146,8 +147,11 @@ def describe_settings(
     aliases = env_alias_overrides(config)
     stored, unreadable = _stored_keys(config) if stored_keys is None else (stored_keys, set())
 
+    location = resolve_location(config)
+    store_values = {"database.url": location.url, "database.schema": location.schema}
     report = []
     for key, value in leaf_values(config):
+        value = store_values.get(key, value)
         secret = is_secret_key(key)
         source: Source = "default"
         override = _env_override(key, env_names, aliases)

@@ -247,7 +247,11 @@ export function buildSetup(setup: Setup, sources: Sources, buildVersion: string)
       ...(setup.readerUrl ? [readerStep('deploy/kubernetes/custom/secret.yaml')] : []),
       '# The Secret holds IMMICH_MEMORIES_SECRET_KEY, which seals the credentials saved in Settings.',
       '# Keep a copy: a restored store needs the same key.',
-      ...(setup.tier === 'basic' ? [] : ['# GPU tier: the app pod gets no GPU, so encoding and titles run on the CPU; the GPU serves inference and captions.']),
+      ...(setup.tier === 'basic' ? [] : [
+        '# GPU tier: the GPU serves inference and captions; the app pod encodes video and animates title text on the CPU.',
+        '# For NVENC encoding and CUDA titles in the app pod, add components: [../components/gpu] to deploy/kubernetes/custom/kustomization.yaml.',
+        '# That component requests another GPU allocation for the app pod.',
+      ]),
       ...(setup.automation ? [
         '# Scheduled films: switch on the two CronJobs in the base. They read the trigger token from secret.yaml.',
         "sed -i.bak 's/^  # - cronjobs.yaml$/  - cronjobs.yaml/' deploy/kubernetes/base/kustomization.yaml && rm deploy/kubernetes/base/kustomization.yaml.bak",
@@ -263,6 +267,9 @@ export function buildSetup(setup: Setup, sources: Sources, buildVersion: string)
         `kubectl rollout status -n ${ns} deploy/immich-memories-inference`,
         `kubectl rollout status -n ${ns} deploy/immich-memories-captioner`,
       ]),
+      `kubectl exec -n ${ns} deploy/immich-memories -- immich-memories models fetch`,
+      `kubectl exec -n ${ns} deploy/immich-memories -- immich-memories preflight`,
+      `kubectl exec -n ${ns} deploy/immich-memories -- immich-memories capabilities`,
       ...(setup.automation ? [
         '# Try a schedule now:',
         `kubectl create job -n ${ns} --from=cronjob/immich-memories-auto trigger-test`,
@@ -275,9 +282,6 @@ export function buildSetup(setup: Setup, sources: Sources, buildVersion: string)
         `kubectl port-forward -n ${ns} svc/immich-memories 8081:80 >/dev/null 2>&1 & sleep 3`,
         'curl -s -H "Host: localhost" -H "Authorization: Bearer $TOKEN" "http://localhost:8081/api/trigger/$ATTEMPT"; kill %1',
       ] : []),
-      `kubectl exec -n ${ns} deploy/immich-memories -- immich-memories models fetch`,
-      `kubectl exec -n ${ns} deploy/immich-memories -- immich-memories preflight`,
-      `kubectl exec -n ${ns} deploy/immich-memories -- immich-memories capabilities`,
       '# Keep this private forwarding command running in this terminal.',
       `kubectl port-forward -n ${ns} svc/immich-memories 8080:80`,
       '# Open http://localhost:8080 in your browser and start your first monthly cut.',
@@ -367,9 +371,9 @@ export function buildSetup(setup: Setup, sources: Sources, buildVersion: string)
       `printf 'IMMICH_MEMORIES_SECRET_KEY=%s\\n' "$(openssl rand -hex 32)" >> .env`,
     ]),
     'docker compose up -d',
-    'docker compose exec immich-memories immich-memories models fetch',
-    'docker compose exec immich-memories immich-memories preflight',
-    'docker compose exec immich-memories immich-memories capabilities',
+    'docker compose exec -T immich-memories immich-memories models fetch',
+    'docker compose exec -T immich-memories immich-memories preflight',
+    'docker compose exec -T immich-memories immich-memories capabilities',
     `# Open http://localhost:${uiPort} in your browser.`,
   ].join('\n')};
 }

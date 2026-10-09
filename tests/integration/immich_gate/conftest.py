@@ -33,10 +33,10 @@ BULK_YEAR = DateRange(start=datetime(2019, 1, 1), end=datetime(2019, 12, 31, 23,
 
 @pytest.fixture(scope="session")
 def gate_version() -> str:
-    """The Immich major the Makefile started: 'v2' or 'v3'."""
+    """The pinned Immich line the Makefile started: v2, v32 or v3."""
     version = os.environ.get("IMMICH_GATE_VERSION", "")
-    if version not in {"v2", "v3"}:
-        pytest.fail(f"IMMICH_GATE_VERSION must be v2 or v3, got {version!r}")
+    if version not in {"v2", "v32", "v3"}:
+        pytest.fail(f"IMMICH_GATE_VERSION must be v2, v32 or v3, got {version!r}")
     return version
 
 

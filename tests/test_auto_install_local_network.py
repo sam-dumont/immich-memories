@@ -69,3 +69,12 @@ def test_the_check_is_skipped_for_the_internet_and_for_other_platforms(tmp_path)
 
     assert not internet.called
     assert not systemd.called
+
+
+def test_failed_check_prints_a_copyable_interpreter_path(tmp_path, monkeypatch):
+    from immich_memories.cli._helpers import console
+
+    monkeypatch.setattr(console, "width", 40)
+    outcome = CheckOutcome(False, True, PYTHON, advice=f"Allow {PYTHON} in Local Network")
+    result, _ = _install("http://192.168.1.20:2283", outcome, tmp_path)
+    assert PYTHON in result.output.splitlines()

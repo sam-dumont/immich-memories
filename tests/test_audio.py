@@ -280,6 +280,18 @@ class TestMusicMuteWindows:
 
         assert windows == [(0.0, 18.0)]
 
+    def test_music_window_stays_with_its_clip_after_fractional_frame_trims(self):
+        from immich_memories.audio.mixer import music_mute_windows
+
+        clips = [self._clip(1.029) for _ in range(20)]
+        clips.append(self._clip(1.029, has_music=True))
+
+        windows = music_mute_windows(clips, ["fade"] * 20, fade_duration=0.5)
+
+        # At the assembler's default 30 fps, each clip contributes 30 frames,
+        # and each overlap consumes 15. Music starts with frame 300, not 317.
+        assert windows == [(10.0, 11.0)]
+
     def test_no_music_no_windows(self):
         from immich_memories.audio.mixer import music_mute_windows
 

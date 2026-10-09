@@ -17,8 +17,7 @@ RequestFn = Callable[..., Any]
 DEFAULT_DOWNLOAD_LIMIT = 25 * 1024**3
 
 TRANSIENT_STATUS = frozenset({429, 500, 502, 503, 504})
-_TRANSFER_ATTEMPTS = 3
-_BACKOFF_BASE = 1.0
+READ_RETRY_DELAYS = (1.0, 2.0, 4.0, 8.0, 15.0, 15.0)
 _T = TypeVar("_T")
 
 logger = logging.getLogger(__name__)
@@ -31,18 +30,17 @@ def _is_transient(exc: Exception) -> bool:
 
 
 async def _retrying(label: str, attempt: Callable[[], Awaitable[_T]]) -> _T:
-    """Run one idempotent GET, again after a transient failure, at most three times.
+    """Retry an idempotent GET across a brief outage, with 45 seconds of backoff.
 
     A timeout, a dropped connection, 429 or a 5xx is worth another try; a 404
     or a size mismatch answers the same every time, so it raises at once.
     """
-    for number in range(1, _TRANSFER_ATTEMPTS):
+    for backoff in READ_RETRY_DELAYS:
         try:
             return await attempt()
         except httpx.HTTPError as exc:
             if not _is_transient(exc):
                 raise
-            backoff = _BACKOFF_BASE * 2 ** (number - 1)
             logger.warning("%s failed (%s), retrying in %.0fs", label, type(exc).__name__, backoff)
             await asyncio.sleep(backoff)
     return await attempt()

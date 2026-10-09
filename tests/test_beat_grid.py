@@ -50,6 +50,12 @@ class TestPhotoCadence:
 
         assert photo_cadence_seconds(clips, transition_overlap=0.0) == 3.7
 
+    def test_tempo_uses_the_whole_frames_of_each_photo_and_fade(self):
+        clips = [_clip(3.719, is_photo=True), _clip(3.719, is_photo=True)]
+
+        # 111 photo frames minus 15 dissolve frames at the default 30 fps.
+        assert photo_cadence_seconds(clips, transition_overlap=0.5) == 3.2
+
     def test_a_single_photo_has_no_cadence(self):
         """One photo is not a rhythm; syncing tempo to it would be arbitrary."""
         clips = [_clip(4.0, is_photo=True), _clip(9.1, is_photo=False)]

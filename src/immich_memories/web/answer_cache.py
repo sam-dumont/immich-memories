@@ -19,7 +19,11 @@ from pathlib import Path
 from typing import Any
 
 from immich_memories.config_loader import Config
-from immich_memories.security import sanitize_error_message
+from immich_memories.security import (
+    create_private_directory,
+    sanitize_error_message,
+    write_secret_file,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +67,10 @@ class AnswerCache:
 
     def _load(self, key: str) -> tuple[dict[str, Any] | None, datetime | None]:
         try:
-            stored = json.loads(self._path(key).read_text())
+            path = self._path(key)
+            # Restrict answers written by older installs before serving them from cache.
+            path.chmod(0o600)
+            stored = json.loads(path.read_text())
             return stored["value"], datetime.fromisoformat(stored["computed_at"])
         except (OSError, ValueError, KeyError):
             return None, None
@@ -103,9 +110,9 @@ class AnswerCache:
             with _LOCK:
                 _ERRORS[qualified] = sanitize_error_message(str(error))
         else:
-            self._dir.mkdir(parents=True, exist_ok=True)
+            create_private_directory(self._dir)
             stored = {"computed_at": self._clock().isoformat(), "value": value}
-            self._path(key).write_text(json.dumps(stored, default=str))
+            write_secret_file(self._path(key), json.dumps(stored, default=str))
             with _LOCK:
                 _ERRORS.pop(qualified, None)
         finally:

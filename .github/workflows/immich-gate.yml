@@ -56,11 +56,11 @@ jobs:
     needs: [changes]
     if: github.repository_id == '1174219883' && needs.changes.outputs.docs_only != 'true'
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
-        immich: [v2, v3]
+        immich: [v2, v32, v3]
         database: ${{ fromJSON(needs.changes.outputs.store == 'true' && '["sqlite","postgresql"]' || '["sqlite"]') }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -140,6 +140,10 @@ jobs:
       - name: Real-Immich gate (${{ matrix.immich }}, ${{ matrix.database }})
         run: make test-immich-gate IMMICH_GATE_VERSION=${{ matrix.immich }} IMMICH_GATE_DATABASE=${{ matrix.database }}
 
+      - name: Native shared people (3.3 final, ${{ matrix.database }})
+        if: matrix.immich == 'v3'
+        run: make test-native-sharing NATIVE_GATE_VERSION=v33-sharing NATIVE_GATE_DATABASE=${{ matrix.database }}
+
       # Saved after the tests so a cold run's tests do not wait on docker save.
       # A failed save only costs the next run a pull; it never fails the gate.
       - name: Save images for the next run
@@ -164,6 +168,7 @@ jobs:
           path: |
             .immich-gate/*.log
             tests/immich-gate-*-junit.xml
+            tests/native-sharing-*-junit.xml
 
   # The one check branch protection requires. A matrix job reports one check
   # per leg; this folds them into a name that survives adding a version or a backend.

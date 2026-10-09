@@ -199,9 +199,6 @@ def _read_roster(account: OpenAccount, mode: str) -> list[Person]:
     try:
         shares = []
         if mode == "people":
-            logger.warning(
-                "Immich 3.3 native people sharing is experimental; validated against 3.3.0-rc.1 only"
-            )
             shares = account.client.get_people_access()
         reading_grants = False
         roster = account.client.get_all_people(with_hidden=True)

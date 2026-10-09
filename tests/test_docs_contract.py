@@ -414,9 +414,19 @@ def test_output_docs_explain_effective_resolution_and_hardware_quality() -> None
     assert "When `--resolution` is omitted, the command uses `output.resolution`" in cli
 
 
-def test_docs_check_preserves_the_underlying_build_exit_status(tmp_path: Path) -> None:
+@pytest.mark.parametrize("build_exit", [0, 23])
+def test_docs_check_preserves_the_underlying_build_exit_status(
+    tmp_path: Path, build_exit: int
+) -> None:
+    # WHY: this tests make's build status handling, without installing Node or
+    # Python packages for the independent setup and social-image prerequisites.
+    for command in ("node", "uv"):
+        executable = tmp_path / command
+        executable.write_text("#!/bin/sh\nexit 0\n")
+        executable.chmod(0o755)
+    # WHY: the external docs builder supplies a controlled success or failure.
     fake_npm = tmp_path / "npm"
-    fake_npm.write_text("#!/bin/sh\nprintf '%s\\n' 'synthetic nonzero build'\nexit 23\n")
+    fake_npm.write_text(f"#!/bin/sh\nprintf '%s\\n' 'synthetic docs build'\nexit {build_exit}\n")
     fake_npm.chmod(0o755)
     environment = os.environ | {"PATH": f"{tmp_path}:{os.environ['PATH']}"}
 
@@ -429,8 +439,8 @@ def test_docs_check_preserves_the_underlying_build_exit_status(tmp_path: Path) -
         check=False,
     )
 
-    assert "synthetic nonzero build" in result.stdout
-    assert result.returncode != 0
+    assert "synthetic docs build" in result.stdout
+    assert (result.returncode == 0) == (build_exit == 0)
 
 
 def test_kubernetes_and_terraform_docs_describe_the_fixed_manifests() -> None:

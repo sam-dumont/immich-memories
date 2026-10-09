@@ -10,8 +10,8 @@ def check_homebase(config: Config) -> CheckResult:
     except ValueError:
         return CheckResult(
             name="Homebase",
-            status=CheckStatus.WARNING,
-            message="Home coordinates are not configured",
+            status=CheckStatus.SKIPPED,
+            message="Home coordinates not set; configure them to enable trips and seasons",
             details="Set trips.homebase_latitude and trips.homebase_longitude before finding trips; distance-based rules use this location.",
         )
     return CheckResult(

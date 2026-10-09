@@ -80,3 +80,34 @@ def test_input_order_survives() -> None:
     )
 
     assert kept == ["x", "y", "z"]
+
+
+def test_a_silent_burst_check_does_not_consume_the_films_single_report(caplog):
+    import logging
+
+    from immich_memories.photos.burst_dedup import BurstDeduplicator
+
+    photos = [photo("a", 0, SCENE, 0.4), photo("b", 1, SCENE_SHIFTED, 0.9)]
+    bursts = BurstDeduplicator()
+    with caplog.at_level(logging.INFO):
+        first = bursts.keep(photos, window_seconds=300, hash_threshold=8, report=False)
+        first.append("caller-change")
+        for _ in range(2):
+            assert bursts.keep(photos, window_seconds=300, hash_threshold=8) == ["b"]
+        assert len(caplog.records) == 1
+        BurstDeduplicator().keep(photos, window_seconds=300, hash_threshold=8)
+    assert len(caplog.records) == 2
+
+
+def test_refreshed_merit_and_thresholds_change_the_burst_decision():
+    from dataclasses import replace
+
+    from immich_memories.photos.burst_dedup import BurstDeduplicator
+
+    photos = [photo("a", 0, SCENE, 0.4), photo("b", 1, SCENE_SHIFTED, 0.9)]
+    bursts = BurstDeduplicator()
+    assert bursts.keep(photos, window_seconds=300, hash_threshold=8) == ["b"]
+    refreshed = [replace(photos[0], is_favorite=True), photos[1]]
+    assert bursts.keep(refreshed, window_seconds=300, hash_threshold=8) == ["a"]
+    assert bursts.keep(photos, window_seconds=300, hash_threshold=0) == ["a", "b"]
+    assert bursts.keep(photos, window_seconds=0, hash_threshold=8) == ["a", "b"]

@@ -48,6 +48,7 @@ def test_zero_work_phase_is_still_a_named_event() -> None:
         "total": 0,
         "message": "Downloads already cached",
         "elapsed_seconds": 0.0,
+        "timestamp": event.timestamp.isoformat(),
     }
 
 

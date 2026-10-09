@@ -132,6 +132,14 @@ The first film takes the longest: it has to read every picture in its period bef
 render. Larger periods, slower storage and different media can take hours. See
 [measured examples](../better/measured.md#cold-start-time-by-hardware-and-tier) for real numbers on comparable
 hardware.
+
+A Synology DS423+ with a Celeron J4125 rendered a 60.5-second, 1080 × 1920 H.264 film from
+15 selected shots in **10 minutes 16 seconds** using software encoding. Preparing the source clips
+took 5 minutes 38 seconds; assembly took 3 minutes 55 seconds. The whole command, including
+selection from 248 inputs, took **15 minutes 43 seconds**. It reused 39 prepared inputs from an
+earlier album and read 209 new ones. Model download is extra. These are candidate acceptance
+timings on a shared host, not a first-run deadline; see the [test record](./tested-deployments.md).
+
 The first film reads the pictures in its period and saves the results; later films reuse matching
 results. Rendering still happens every time.
 

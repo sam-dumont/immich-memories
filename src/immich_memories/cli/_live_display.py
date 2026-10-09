@@ -88,9 +88,11 @@ class QuietDisplay:
     def update(self, task_id: TaskID, **kwargs: Any) -> None:
         if "description" in kwargs:
             description = kwargs["description"]
-            if description != self._tasks.get(task_id):
+            # A quiet phase repeats its count and minute label; that is the point of a heartbeat.
+            heartbeat = ", still working (" in description
+            if description != self._tasks.get(task_id) or heartbeat:
                 self._tasks[task_id] = description
-                if self._stage_lines.keeps_line(description):
+                if heartbeat or self._stage_lines.keeps_line(description):
                     self._logger.info(description)
         if kwargs.get("completed"):
             desc = self._tasks.get(task_id, "")

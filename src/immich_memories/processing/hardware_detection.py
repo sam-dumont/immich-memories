@@ -297,8 +297,13 @@ def _detectors() -> tuple[
     )
 
 
-@lru_cache(maxsize=6)
 def detect_hardware_acceleration(backend: str = "auto") -> HWAccelCapabilities:
+    """Resolve the default argument before caching a hardware probe."""
+    return _cached_hardware_detection(backend)
+
+
+@lru_cache(maxsize=6)
+def _cached_hardware_detection(backend: str) -> HWAccelCapabilities:
     """Detect available hardware acceleration.
 
     `backend` is `hardware.backend`. `auto` walks NVIDIA, Apple, QSV, VAAPI and
@@ -307,7 +312,7 @@ def detect_hardware_acceleration(backend: str = "auto") -> HWAccelCapabilities:
     claims to have used NVENC has to fail visibly rather than quietly encode on
     the other chip. A named backend that cannot encode here falls to software.
     """
-    logger.info("Detecting hardware acceleration capabilities...")
+    logger.debug("Detecting hardware acceleration capabilities...")
 
     for name, candidate, detector in _detectors():
         if backend not in ("auto", candidate.value):
@@ -315,7 +320,7 @@ def detect_hardware_acceleration(backend: str = "auto") -> HWAccelCapabilities:
         try:
             caps = detector()
             if caps and caps.has_encoding:
-                logger.info(f"Detected {name} hardware acceleration: {caps}")
+                logger.debug(f"Detected {name} hardware acceleration: {caps}")
                 return caps
         except (RuntimeError, OSError, subprocess.SubprocessError) as e:
             logger.debug(f"Error detecting {name}: {e}")
@@ -327,5 +332,5 @@ def detect_hardware_acceleration(backend: str = "auto") -> HWAccelCapabilities:
             backend,
         )
     else:
-        logger.info("No hardware acceleration detected, using software encoding")
+        logger.debug("No hardware acceleration detected, using software encoding")
     return HWAccelCapabilities(backend=HWAccelBackend.NONE)

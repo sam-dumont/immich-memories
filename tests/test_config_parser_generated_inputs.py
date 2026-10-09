@@ -28,7 +28,7 @@ def test_random_yaml_has_a_clean_cli_result(tmp_path, text):
     try:
         Config.from_yaml(path, stored={})
     except (yaml.YAMLError, ValidationError, SettingsError):
-        result = CliRunner().invoke(main, ["-c", str(path), "config", "--help"])
+        result = CliRunner().invoke(main, ["-c", str(path), "config", "show"])
         assert result.exit_code != 0
         assert "Traceback" not in result.output
 

@@ -529,23 +529,26 @@ def music_mute_windows(
     clips: list,
     transitions: list[str],
     fade_duration: float,
+    *,
+    fps: float = 30,
 ) -> list[tuple[float, float]]:
     """Timeline windows of clips whose own audio is music (#466).
 
-    Follows the assembler's clock: a crossfade overlaps the next clip into
-    the previous one by ``fade_duration``. Adjacent music windows merge so
+    Count whole clip and overlap frames, just as the assembler does, before
+    converting to seconds. Adjacent music windows merge so
     the soundtrack does not pump between back-to-back concert clips.
     """
-    windows: list[tuple[float, float]] = []
-    start = 0.0
+    windows: list[tuple[int, int]] = []
+    fade_frames = int(fade_duration * fps)
+    start = 0
     for idx, clip in enumerate(clips):
         if idx > 0 and idx - 1 < len(transitions) and transitions[idx - 1] == "fade":
-            start -= fade_duration
-        end = start + clip.duration
+            start -= fade_frames
+        end = start + int(clip.duration * fps)
         if getattr(clip, "has_music", False):
             if windows and start <= windows[-1][1]:
                 windows[-1] = (windows[-1][0], end)
             else:
                 windows.append((start, end))
         start = end
-    return windows
+    return [(start / fps, end / fps) for start, end in windows]

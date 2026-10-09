@@ -19,17 +19,18 @@ is needed. Use the [minimum read key](../run/docker.md#the-api-key).
 
 ## Prepare and check first
 
-From the Compose project directory, after the image pull and container start. Installed without Docker ([pip / uv](../run/uv-pip.md))? Drop `docker compose exec immich-memories` from every command on this page and run `immich-memories ...` directly.
+From the Compose project directory, after the image pull and container start. Installed without Docker ([pip / uv](../run/uv-pip.md))? Drop `docker compose exec -T immich-memories` from every command on this page and run `immich-memories ...` directly.
 
 ```bash
-docker compose exec immich-memories immich-memories models fetch
-docker compose exec immich-memories immich-memories preflight
+docker compose exec -T immich-memories immich-memories models fetch
+docker compose exec -T immich-memories immich-memories preflight
 ```
 
 Continue when Immich authentication, pinned encoder/WordNet assets and writable output pass.
-Basic can skip the reader, captions, GPU and generated-music checks. Missing home coordinates
-can warn without blocking this album. Fix connection, required-model or storage failures before
-Cut; a count of warnings alone does not tell you whether the install can run.
+Basic can skip the reader, captions, GPU and generated-music checks. Home coordinates are
+optional for this album; preflight marks that check as skipped until you set them. Fix connection,
+required-model or storage failures before Cut; a count of warnings alone does not tell you
+whether the install can run.
 
 ## Pick the trial album
 
@@ -58,7 +59,7 @@ The finished cut is a run under **Runs**; the page may take you to it. If it doe
 
 Favourites help a moment earn its place. Videos often carry it better than a still. Quiet weeks can be empty: the film goes short instead of padding.
 
-Expect fewer shots than pictures. On the trial album (39 pictures from two days: 38 photos and 1 video) a 0.5 minute film held 7 shots, 6 photos and 1 video, about 26 s of pictures and video. Titles and fades made up the rest of the 30 s. Bursts and near-identical frames count as one shot, and a photo that sits within five minutes of one already kept in its moment is not a new shot, so 20 to 50 pictures from one outing make a handful of shots, not 39. That is the editor working, not a failed cut. [How it chooses](../how-it-chooses/overview.md) has the rules. [How it chooses](../how-it-chooses/overview.md) explains this without requiring you to configure it.
+Expect fewer shots than pictures. On the trial album (39 pictures from two days: 38 photos and 1 video) a 0.5 minute film held 7 shots, 6 photos and 1 video, about 26 s of pictures and video. Titles and fades made up the rest of the 30 s. Bursts and near-identical frames count as one shot, and a photo that sits within five minutes of one already kept in its moment is not a new shot, so 20 to 50 pictures from one outing make a handful of shots, not 39. That is the editor working, not a failed cut. [How it chooses](../how-it-chooses/overview.md) has the rules.
 
 ## Fix it
 
@@ -72,7 +73,7 @@ For a missing shot, open **Pool**, tick the picture and press **Preview with the
 
 ## Render and watch
 
-Under **Render**, pick the cut or your revision in **What to render**, then press **Render**. Leave **Upload the film to Immich** off. Bundled music is enough for this trial.
+On the saved run page, scroll below the contact sheet and revisions to the **Render** section. Pick the cut or your revision in **What to render**, then press **Render**. Leave **Upload the film to Immich** off. Bundled music is enough for this trial.
 
 <ThemedScreenshot name="memory-export" alt="The finished film in the player" />
 
@@ -157,7 +158,7 @@ immich-memories runs render RUN_ID
 off unless you pass `--upload-to-immich`. Dropping `--no-render` from `generate` selects and renders
 in one go. Keep `upload.enabled: false` in Settings/file/environment, including for CLI runs.
 
-On Docker, prefix either command with `docker compose exec immich-memories` (no `sudo` needed
+On Docker, prefix either command with `docker compose exec -T immich-memories` (no `sudo` needed
 when your user is in the `docker` group). On Kubernetes:
 
 ```bash

@@ -59,14 +59,14 @@ async def test_a_download_rides_out_one_transient_failure(tmp_path, failure):
 
 
 @pytest.mark.asyncio
-async def test_a_download_that_keeps_failing_gives_up_after_three_tries(tmp_path):
-    server = Flaky(502, 502, 502, 502)
+async def test_a_download_that_keeps_failing_gives_up_after_seven_tries(tmp_path):
+    server = Flaky(*([502] * 8))
     target = tmp_path / "clip.mov"
 
     with pytest.raises(httpx.HTTPStatusError):
         await run(server, lambda s: s.download_asset("clip", target))
 
-    assert len(server.paths) == 3
+    assert len(server.paths) == 7
     assert not target.exists()
 
 

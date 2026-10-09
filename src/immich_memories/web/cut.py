@@ -12,6 +12,7 @@ from immich_memories.analysis.selection_trace import Trace
 from immich_memories.config_loader import Config
 from immich_memories.db import open_store
 from immich_memories.operations.candidate_fates import CandidateFates
+from immich_memories.operations.caption_origins import read_captions
 from immich_memories.operations.cut_review import model_polish_ran, read_cut_decisions
 from immich_memories.operations.cut_revisions import (
     CutEdits,
@@ -68,6 +69,7 @@ class _Evidence:
     intervals: dict[str, tuple[float, float]]
     fates: CandidateFates
     siblings: dict[str, list[str]]
+    captions: dict[str, str]
 
     def facts(self, asset_id: str) -> str:
         return self.fates.trace.clips.get(asset_id, "") if self.fates.trace else ""
@@ -92,6 +94,7 @@ def _shot(position: int, shot: Shot, evidence: _Evidence) -> CutShot:
         story_title=shot.story_title,
         moment=shot.moment,
         reason=shot.reason,
+        caption=evidence.captions.get(shot.asset_id, ""),
         motion=shot.motion,
         recorded_seconds=_recorded(evidence.intervals.get(shot.asset_id), shot.seconds),
         source_interval=evidence.intervals.get(shot.asset_id) if shot.motion else None,
@@ -118,6 +121,7 @@ def read_cut(run_id: str, config: Annotated[Config, Depends(current_config)]) ->
         intervals=source_intervals(attempt),
         fates=CandidateFates.read(attempt),
         siblings=moment_alternatives(attempt),
+        captions=read_captions(attempt, [shot.asset_id for shot in board.shots]),
     )
     return Cut(
         run_id=run_id,
@@ -126,6 +130,7 @@ def read_cut(run_id: str, config: Annotated[Config, Depends(current_config)]) ->
         content_budget_seconds=board.content_budget_seconds,
         film_seconds=board.film_seconds,
         model_polish=model_polish_ran(attempt),
+        captions_read=bool(evidence.captions),
         shots=[_shot(index, shot, evidence) for index, shot in enumerate(board.shots, 1)],
     )
 

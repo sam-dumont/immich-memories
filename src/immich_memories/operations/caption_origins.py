@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Mapping
+from collections.abc import Iterator, Mapping, Sequence
 from pathlib import Path
 
 # The two sentinel groups `store.caption_provenance` folds assets into.
@@ -61,28 +61,65 @@ def caption_origin_summary(provenance: object) -> str:
     return f"caption origins: {len(origins)} distinct over {captions} captions{mixed} [{labels}]"
 
 
-def caption_origin_note(attempt: Path, asset_id: str) -> str:
-    """What produced one picture's caption, out of the snapshot rather than the live bank.
-
-    Reconfiguring the caption server after the fact must not change this answer,
-    which is why it is read from the run and never from the current config.
-    """
+def _record(path: Path) -> dict[str, object]:
     try:
-        preparation = json.loads((attempt / "preparation.private.json").read_text())
+        return _mapping(json.loads(path.read_text()))
     except (OSError, ValueError):
-        return "Caption origin: unknown (not recorded for this run)"
-    provenance = preparation.get("caption_provenance")
-    if not isinstance(provenance, Mapping):
-        return "Caption origin: unknown (not recorded for this run)"
+        return {}
+
+
+def _preparations(attempt: Path) -> Iterator[tuple[Path, dict[str, object]]]:
+    paths = [attempt / "preparation.private.json"]
+    paths.extend(sorted((attempt / "refinement").glob("*/preparation.private.json")))
+    for path in paths:
+        if record := _record(path):
+            yield path.parent, record
+
+
+def _origin(record: Mapping[str, object], asset_id: str) -> dict | None:
+    provenance = _mapping(record.get("caption_provenance"))
     origins = _origins(provenance)
+    by_asset = _mapping(provenance.get("by_asset"))
+    requested = record.get("requested_asset_ids")
+    if isinstance(requested, list) and asset_id not in requested:
+        return None
     if not origins:
-        # A tier that asked for no captions records no origins and owes no sentence.
+        return None
+    index = by_asset.get(asset_id, 0)
+    return origins[index] if type(index) is int and 0 <= index < len(origins) else origins[0]
+
+
+def read_captions(attempt: Path, asset_ids: Sequence[str]) -> dict[str, str]:
+    """Captions the saved run read, including every refinement round.
+
+    An empty value means the run recorded a caption read but predates text snapshots.
+    Never consult the live annotation bank: its captions may have changed since the cut.
+    """
+    captions: dict[str, str] = {}
+    for directory, record in _preparations(attempt):
+        saved = _record(directory / "captions.private.json")
+        for asset in asset_ids:
+            origin = _origin(record, asset)
+            if origin is not None and origin.get("status") != _NONE:
+                captions.setdefault(asset, "")
+            if isinstance(text := saved.get(asset), str) and text:
+                captions[asset] = text
+    return captions
+
+
+def caption_origin_note(attempt: Path, asset_id: str) -> str:
+    """What produced a picture's caption, from its own saved refinement or initial pass."""
+    records = [record for _, record in _preparations(attempt)]
+    for record in reversed(records):
+        origin = _origin(record, asset_id)
+        if origin is None:
+            continue
+        if origin.get("status") == _NONE:
+            return ""
+        if origin.get("status") == _UNKNOWN:
+            written_under = f"; written as {origin['contract']}" if origin.get("contract") else ""
+            return f"Caption origin: unknown (not recorded with this caption{written_under})"
+        return "Caption origin: " + _describe(origin)
+    if any(isinstance(record.get("caption_provenance"), Mapping) for record in records):
         return ""
-    index = _mapping(provenance.get("by_asset")).get(asset_id, 0)
-    origin = origins[index] if isinstance(index, int) and index < len(origins) else origins[0]
-    if origin.get("status") == _NONE:
-        return ""
-    if origin.get("status") == _UNKNOWN:
-        written_under = f"; written as {origin['contract']}" if origin.get("contract") else ""
-        return f"Caption origin: unknown (not recorded with this caption{written_under})"
-    return "Caption origin: " + _describe(origin)
+    return "Caption origin: unknown (not recorded for this run)"

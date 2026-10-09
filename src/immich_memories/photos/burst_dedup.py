@@ -66,14 +66,55 @@ def drop_burst_duplicates(
             best = max(burst, key=lambda p: ranking_key(p, p.score))
             superseded.update(p.key for p in burst if p.key != best.key)
 
-    if superseded and report:
+    if report:
+        _report_drops(len(superseded), len(photos), window_seconds)
+    return [p.key for p in photos if p.key not in superseded]
+
+
+def _report_drops(dropped: int, total: int, window_seconds: float) -> None:
+    if dropped:
         logger.info(
             "Burst de-duplication: %d of %d photos dropped as near-identical frames within %.0fs",
-            len(superseded),
-            len(photos),
+            dropped,
+            total,
             window_seconds,
         )
-    return [p.key for p in photos if p.key not in superseded]
+
+
+_BurstKey = tuple[tuple[PhotoCandidate, ...], float, int]
+
+
+class BurstDeduplicator:
+    """Reuse identical burst decisions within one film, reporting each input only once."""
+
+    def __init__(self) -> None:
+        self._kept: dict[_BurstKey, tuple[str, ...]] = {}
+        self._reported: set[_BurstKey] = set()
+
+    def keep(
+        self,
+        photos: list[PhotoCandidate],
+        *,
+        window_seconds: float,
+        hash_threshold: int,
+        report: bool = True,
+    ) -> list[str]:
+        """Changed pictures, merit, hashes or thresholds get a fresh decision."""
+        key = tuple(photos), window_seconds, hash_threshold
+        if key not in self._kept:
+            self._kept[key] = tuple(
+                drop_burst_duplicates(
+                    photos,
+                    window_seconds=window_seconds,
+                    hash_threshold=hash_threshold,
+                    report=False,
+                )
+            )
+        kept = self._kept[key]
+        if report and key not in self._reported:
+            _report_drops(len(photos) - len(kept), len(photos), window_seconds)
+            self._reported.add(key)
+        return list(kept)
 
 
 def _burst_starting_at(

@@ -52,7 +52,7 @@ Both ship inside the package (OFL-1.1).
 `style_mode: random` picks a named style. Set `title_screens.style_mode: elegant_minimal` to choose one
 explicitly; all five names in the table are accepted. In the web UI, use **Render → Title style**.
 
-The renderer is picked for you: GPU kernels where Metal, CUDA or Vulkan start. On a CPU or NAS, Pillow draws the background and text once, and FFmpeg fades the text in and out at the film’s frame rate. The font, layout and palette stay the same. Bokeh, moving gradients and animated deblur need a rendering GPU; hardware video encoding still works on the NAS. See [Hardware encoding](../run/hardware.md#title-kernels).
+The renderer is picked for you: GPU kernels where Metal, CUDA or Vulkan start. On a CPU or NAS, Pillow draws the background and text once, and FFmpeg slides, scales and fades the text at the film’s frame rate. The font, layout and palette stay the same. Bokeh, moving gradients and animated deblur need a rendering GPU; hardware video encoding still works on the NAS. See [Hardware encoding](../run/hardware.md#title-kernels).
 
 Preview a card without running anything:
 

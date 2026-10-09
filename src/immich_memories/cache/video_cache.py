@@ -26,6 +26,8 @@ if TYPE_CHECKING:
     from immich_memories.api.immich import SyncImmichClient
     from immich_memories.api.models import Asset
 
+from immich_memories.security import create_private_directory
+
 logger = logging.getLogger(__name__)
 
 _PARTIAL_SUFFIX = ".part"
@@ -291,7 +293,8 @@ class VideoDownloadCache:
         self._batch_lock = threading.RLock()
         self._active_batch: CacheBatch | None = None
         self._probe_cache = ProbeCache()
-        self.cache_dir.mkdir(parents=True, exist_ok=True)
+        create_private_directory(self.cache_dir)
+        self.cache_dir.chmod(0o700)
 
     def begin_batch(self) -> CacheBatch:
         """Start an explicit bounded cache lifecycle.

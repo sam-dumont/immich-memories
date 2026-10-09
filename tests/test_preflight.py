@@ -293,9 +293,8 @@ def test_title_rendering_preflight_says_what_the_pil_fallback_costs() -> None:
     with patch("immich_memories.preflight.importlib.util.find_spec", return_value=None):
         result = check_title_rendering(Config())
 
-    assert result.status is CheckStatus.WARNING
-    assert result.message.startswith("GPU title kernels unavailable: no quadrants wheel for ")
-    assert "titles use PIL + FFmpeg" in result.message
+    assert result.status is CheckStatus.OK
+    assert result.message == "CPU titles (Pillow + FFmpeg); moving backgrounds need a GPU"
     details = result.details or ""
     assert "quadrants publishes no wheel" in details
     assert "Python 3.10-3.13" in details
@@ -340,8 +339,8 @@ def test_title_rendering_preflight_says_a_container_without_a_gpu_draws_on_the_c
     ):
         result = check_title_rendering(Config())
 
-    assert result.status is CheckStatus.WARNING
-    assert result.message == "Kernels on the CPU (quadrants): no GPU backend started"
+    assert result.status is CheckStatus.OK
+    assert result.message == "CPU titles (Pillow + FFmpeg); moving backgrounds need a GPU"
     assert "found no device" in (result.details or "")
 
 
@@ -406,23 +405,20 @@ def test_title_rendering_preflight_reports_a_cpu_that_cannot_run_a_kernel() -> N
     ):
         result = check_title_rendering(Config())
 
-    assert result.status is CheckStatus.WARNING
-    # The reason is the message, not the details: `preflight` only prints details under -v,
-    # and a NAS user meeting this needs the sentence on the first run.
-    assert result.message == crash
-    assert (
-        result.details == "PIL + FFmpeg: animated raster text, still backgrounds (no SDF effects)"
-    )
+    assert result.status is CheckStatus.OK
+    assert result.message == "CPU titles (Pillow + FFmpeg); moving backgrounds need a GPU"
+    assert result.details == crash
 
 
-def test_preflight_run_lists_every_absent_optional_feature() -> None:
-    """The degraded-install summary is the whole point: one line per lost feature."""
+def test_preflight_run_lists_supported_cpu_titles_without_warning() -> None:
+    """The table names the working renderer even when optional kernels are absent."""
     # WHY: replaces the installed-package probe with what a bare pip install sees.
     with patch("immich_memories.preflight.importlib.util.find_spec", return_value=None):
         checks = run_preflight_checks(Config())
 
-    degraded = {c.name for c in checks if c.status is CheckStatus.WARNING}
-    assert {"Title rendering"} <= degraded
+    titles = next(c for c in checks if c.name == "Title rendering")
+    assert titles.status is CheckStatus.OK
+    assert "CPU titles" in titles.message
 
 
 class _CaptionEndpoint:
@@ -664,7 +660,8 @@ def test_hardware_row_says_nothing_about_nvidia_on_a_card_less_host() -> None:
     ):
         result = check_hardware()
 
-    assert result.message == "No GPU acceleration"
+    assert result.status is CheckStatus.OK
+    assert result.message == "Software encoding (libx264)"
 
 
 _PY314 = collections.namedtuple("V", "major minor micro releaselevel serial")(3, 14, 0, "final", 0)

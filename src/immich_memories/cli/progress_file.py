@@ -3,19 +3,17 @@
 from __future__ import annotations
 
 import json
-import os
 import time
 from pathlib import Path
+
+from immich_memories.security import write_secret_file
 
 
 def write_progress(path: Path | None, record: dict) -> None:
     """Replace the file with this record, whole: a reader never sees half of one."""
     if path is None:
         return
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_name(f".{path.name}.tmp")
-    temporary.write_text(json.dumps(record | {"updated_at": time.time()}))
-    os.replace(temporary, path)
+    write_secret_file(path, json.dumps(record | {"updated_at": time.time()}))
 
 
 def progress_writer(path: Path | None):

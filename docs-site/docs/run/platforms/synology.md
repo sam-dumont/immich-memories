@@ -111,7 +111,7 @@ This stock release-file route uses host port **8080**. If occupied, change only 
 both tunnel and proxy upstream. Keep `${UI_BIND_ADDRESS:-127.0.0.1}`: the LAN route depends on it.
 
 When you script these commands over `ssh`, `docker compose exec` swallows the script's stdin.
-Add `-T` and redirect stdin: `ssh nas "sudo docker compose -p immich-memories exec -T immich-memories immich-memories preflight </dev/null"`.
+Inside `ssh host 'bash -s'`, add `-T` and `</dev/null` to each Compose `exec` command so the next script line stays available. The same form works for a one-liner: `ssh nas "sudo docker compose -p immich-memories exec -T immich-memories immich-memories preflight </dev/null"`.
 
 On your **desktop**, the permitted-tunnel route is:
 

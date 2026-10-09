@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import replace
 from typing import Any
@@ -15,6 +16,8 @@ from immich_memories.analysis.editorial_runtime_evidence import (
 from immich_memories.analysis.editorial_shareability import load_detector_heads, load_flags
 from immich_memories.analysis.editorial_structure_contract import StructurePlanningInput
 from immich_memories.config_tiers import nas_draft_config
+
+logger = logging.getLogger(__name__)
 
 
 class FilmPreparation:
@@ -43,6 +46,8 @@ class FilmPreparation:
             for asset_id in (carrier["asset_id"], *carrier.get("members", ()))
             if asset_id in source.assets
         )
+        if self._round == 0:
+            logger.info("Refining the picked pictures")
         self._round += 1
         evidence = replace(self._evidence, report_name=f"refinement/{self._round:04}/preparation")
         evidence(self._prepared, self._on_stage, ids)

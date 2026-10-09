@@ -2,16 +2,23 @@
   import { Heading, Text } from '@immich/ui';
   import { api } from '$lib/api';
   import { t } from '$lib/i18n.svelte';
-  import { onMount } from 'svelte';
   import type { AccountOwner } from './types';
 
   // The sentinel for "Nobody in this library"; a person id is never this.
   const NOBODY = '__nobody__';
 
+  let { refresh = 0 }: { refresh?: number } = $props();
   let owners = $state<AccountOwner[]>([]);
   let problem = $state('');
 
-  onMount(() => void api<AccountOwner[]>('/roster/owners').then((found) => (owners = found)).catch(() => (owners = [])));
+  let loadVersion = 0;
+  $effect(() => {
+    refresh;
+    const version = ++loadVersion;
+    void api<AccountOwner[]>('/roster/owners')
+      .then((found) => { if (version === loadVersion) owners = found; })
+      .catch(() => { if (version === loadVersion) owners = []; });
+  });
 
   function how(owner: AccountOwner): string {
     if (owner.how === 'confirmed') return t('you confirmed it');
@@ -34,6 +41,8 @@
       return;
     }
     const saved = (await response.json()) as AccountOwner;
+    // A scan read started before this save must not replace the confirmed answer.
+    loadVersion += 1;
     owners = owners.map((o) => (o.account === saved.account ? saved : o));
   }
 </script>
@@ -52,6 +61,9 @@
         {#each owner.choices as choice (choice.person_id)}<option value={choice.person_id}>{choice.name}</option>{/each}
         <option value={NOBODY}>{t('Nobody in this library')}</option>
       </select>
+      {#if !owner.nobody && !owner.person_id}
+        <p class="basis-full text-xs text-gray-600 dark:text-gray-400">{t('The API key\'s account name has not been matched to a named person. Choose the owner, or name people in Immich and rescan.')}</p>
+      {/if}
     </div>
   {/each}
   {#if problem}<p class="text-xs text-danger" role="alert">{problem}</p>{/if}

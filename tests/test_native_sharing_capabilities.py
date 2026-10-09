@@ -148,3 +148,20 @@ def test_preflight_explains_discovery_permission_failures(monkeypatch):
     )
     assert result[0].status == CheckStatus.ERROR
     assert "person.read" in result[0].details
+
+
+def test_final_33_reports_validated_native_sharing(monkeypatch, caplog):
+    from immich_memories.config_loader import Config
+    from immich_memories.preflight import CheckStatus
+    from immich_memories.preflight_accounts import check_native_sharing
+
+    # WHY: HTTP transport for the two synthetic Immich accounts.
+    FakeHousehold(
+        version={"major": 3, "minor": 3, "patch": 0},
+        clusters={PRIMARY_KEY: "cluster", PARTNER_KEY: "cluster"},
+    ).install(monkeypatch)
+    result = check_native_sharing(
+        Config(immich=ImmichConfig(**immich_config(), native_sharing=True))
+    )
+    assert result[0].status == CheckStatus.OK
+    assert "rc.1 only" not in caplog.text

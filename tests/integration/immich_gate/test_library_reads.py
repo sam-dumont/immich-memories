@@ -22,8 +22,12 @@ _STILLS = sorted(picture.filename for picture in LIBRARY if not picture.is_video
 
 def test_connects_and_speaks_the_major_it_was_started_on(gate_client, gate_version):
     assert gate_client.validate_connection()
-    assert f"v{gate_client.get_server_info().major}" == gate_version
-    assert gate_client.get_api_version().value == gate_version
+    major, minor = {"v2": (2, 7), "v32": (3, 2), "v3": (3, 3)}[gate_version]
+    version = gate_client.get_server_info()
+    assert (version.major, version.minor) == (major, minor)
+    assert gate_client.get_api_version().value == f"v{major}"
+    if gate_version == "v3":
+        assert version.patch == 0 and version.prerelease is None
 
 
 def test_the_fixture_month_reads_every_video_and_still(gate_client):

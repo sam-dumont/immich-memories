@@ -15,7 +15,7 @@
     "typecheck": "tsc",
     "ui-theme": "node scripts/sync-ui-theme.mjs",
     "prebuild": "npm run ui-theme -- --check",
-    "postbuild": "node scripts/check-seo.mjs"
+    "postbuild": "node scripts/build-social-previews.mjs && node scripts/check-seo.mjs"
   },
   "dependencies": {
     "@docusaurus/core": "3.10.2",

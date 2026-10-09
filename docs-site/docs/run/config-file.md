@@ -175,7 +175,13 @@ beside the config file that was loaded, not always under `~/.immich-memories`. A
 `immich-memories` run still gets `~/.immich-memories/store.db` and `~/.immich-memories/logs/`,
 since that is where the default config lives. `--config /path/to/other/config.yaml` gets
 `/path/to/other/store.db` and `/path/to/other/logs/` instead, so a second setup, a test library
-say, never mixes into the main one. Upgrading a `--config` run that already has history under
+say, never mixes into the main one. Loading an explicit config leaves the default home's
+application directory and permissions alone. Other storage settings keep their own defaults:
+cache paths still point under `~/.immich-memories`, and the web session signing key stays in
+`~/.immich-memories/.storage_secret` unless `IMMICH_MEMORIES_STORAGE_SECRET` is set. Newly created
+thumbnail and video cache directories are owner-only. For an isolated installation, set absolute
+cache paths and supply a separate session signing key. Paths written with `~` refer to the running
+process's home. Upgrading a `--config` run that already has history under
 the old path gets a startup warning and a `preflight` line naming both paths, with how to
 keep the old store (`database.url`) or move it (`store backup` / `store restore`).
 
@@ -209,7 +215,7 @@ Follow [A second account](./multi-account.mdx) to connect a partner's library, b
 and select both accounts. The primary remains the only upload target.
 
 Set `immich.native_sharing: true` to use verified shared person IDs on Immich 3.2,
-or experimental 3.3 people sharing. It defaults to `false`. Both owner keys remain required;
+or people sharing on Immich 3.3. It defaults to `false`. Both owner keys remain required;
 see [native identities](./multi-account.mdx#native-person-identities).
 
 ## Footage the camera roll did not shoot

@@ -1233,7 +1233,7 @@ export interface paths {
         };
         /**
          * Suggestions
-         * @description Up to twenty candidates and why the others were set aside, from the last discovery.
+         * @description Up to ten candidates and why the others were set aside, from the last discovery.
          *
          *     Discovery reads the library and takes a while; the last list comes back at once and a fresh
          *     one is worked out behind it when it is a day old or `refresh` asks -- but only a page on
@@ -1519,6 +1519,11 @@ export interface components {
         };
         /** Cut */
         Cut: {
+            /**
+             * Captions Read
+             * @default false
+             */
+            captions_read: boolean;
             /** Content Budget Seconds */
             content_budget_seconds: number | null;
             /** Content Seconds */
@@ -1626,6 +1631,11 @@ export interface components {
             alternatives: components["schemas"]["Alternative"][];
             /** Asset Id */
             asset_id: string;
+            /**
+             * Caption
+             * @default
+             */
+            caption: string;
             /** Chapter */
             chapter: string;
             /** Day */
@@ -2565,6 +2575,8 @@ export interface components {
             computed_at?: string | null;
             /** Error */
             error: string | null;
+            /** Notes */
+            notes?: string[];
             /**
              * Refreshing
              * @default false

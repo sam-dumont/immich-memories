@@ -581,6 +581,11 @@
       },
       "Cut": {
         "properties": {
+          "captions_read": {
+            "default": false,
+            "title": "Captions Read",
+            "type": "boolean"
+          },
           "content_budget_seconds": {
             "anyOf": [
               {
@@ -998,6 +1003,11 @@
           },
           "asset_id": {
             "title": "Asset Id",
+            "type": "string"
+          },
+          "caption": {
+            "default": "",
+            "title": "Caption",
             "type": "string"
           },
           "chapter": {
@@ -3657,6 +3667,13 @@
               }
             ],
             "title": "Error"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Notes",
+            "type": "array"
           },
           "refreshing": {
             "default": false,
@@ -6591,7 +6608,7 @@
     },
     "/api/v1/suggestions": {
       "get": {
-        "description": "Up to twenty candidates and why the others were set aside, from the last discovery.\n\nDiscovery reads the library and takes a while; the last list comes back at once and a fresh\none is worked out behind it when it is a day old or `refresh` asks -- but only a page on\nthis origin may ask: a visited site must not be able to start discovery through a\ntop-level navigation.",
+        "description": "Up to ten candidates and why the others were set aside, from the last discovery.\n\nDiscovery reads the library and takes a while; the last list comes back at once and a fresh\none is worked out behind it when it is a day old or `refresh` asks -- but only a page on\nthis origin may ask: a visited site must not be able to start discovery through a\ntop-level navigation.",
         "operationId": "suggestions_api_v1_suggestions_get",
         "parameters": [
           {

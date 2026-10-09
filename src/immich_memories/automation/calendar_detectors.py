@@ -12,6 +12,7 @@ from datetime import date
 from immich_memories.automation.candidates import (
     CandidateCategory,
     MemoryCandidate,
+    explain_empty,
     make_memory_key,
 )
 from immich_memories.automation.closeness import UNKNOWN_WEIGHT
@@ -34,6 +35,7 @@ class MonthlyDetector:
         generated_keys: set[str],
         config: Config,
         today: date,
+        notes: list[str] | None = None,
     ) -> list[MemoryCandidate]:
         months = _last_n_completed_months(today, self.LOOKBACK_MONTHS)
         candidates = []
@@ -76,7 +78,12 @@ class MonthlyDetector:
                 )
             )
 
-        return candidates
+        reason = (
+            "the last completed month has no pictures"
+            if not any(assets_by_month.get(f"{year}-{month:02d}", 0) for year, month in months)
+            else "the last completed month already has a film"
+        )
+        return explain_empty(candidates, notes, f"No month film: {reason}")
 
 
 class YearlyDetector:
@@ -93,6 +100,7 @@ class YearlyDetector:
         generated_keys: set[str],
         config: Config,
         today: date,
+        notes: list[str] | None = None,
     ) -> list[MemoryCandidate]:
         years_with_content = _years_from_assets(assets_by_month)
         candidates = []
@@ -135,7 +143,11 @@ class YearlyDetector:
                 )
             )
 
-        return candidates
+        return explain_empty(
+            candidates,
+            notes,
+            "No year film: no unfilmed year with pictures has reached January 15 of the following year",
+        )
 
 
 class PersonSpotlightDetector:
@@ -154,13 +166,18 @@ class PersonSpotlightDetector:
         person_asset_counts: dict[str, int] | None = None,
         upcoming_birthday_ids: set[str] | None = None,
         closeness: dict[str, float] | None = None,
+        notes: list[str] | None = None,
     ) -> list[MemoryCandidate]:
         """``person_asset_counts`` counts each person's pictures in last year, not their lifetime.
 
         ``closeness`` weighs each person by how close the registry says they are (#2232).
         """
         if not people:
-            return []
+            return explain_empty(
+                [],
+                notes,
+                "No person spotlight film: no named person with pictures in the previous year is eligible",
+            )
 
         target_year = today.year - 1
         start = date(target_year, 1, 1)
@@ -177,7 +194,11 @@ class PersonSpotlightDetector:
         if person_asset_counts is not None:
             visible = [p for p in visible if counts.get(p.id, 0) > 0]
         if not visible:
-            return []
+            return explain_empty(
+                [],
+                notes,
+                "No person spotlight film: no named person with pictures in the previous year is eligible",
+            )
 
         # Sort by asset count if available, otherwise keep Immich default order
         if counts:
@@ -219,7 +240,11 @@ class PersonSpotlightDetector:
                 )
             )
 
-        return candidates
+        return explain_empty(
+            candidates,
+            notes,
+            "No person spotlight film: the eligible people already have films for the previous year",
+        )
 
 
 class OnThisDayDetector:
@@ -240,6 +265,7 @@ class OnThisDayDetector:
         generated_keys: set[str],
         config: Config,
         today: date,
+        notes: list[str] | None = None,
     ) -> list[MemoryCandidate]:
         """Emit candidate if multiple prior years have content in today's month."""
         target_month_key = f"-{today.month:02d}"
@@ -250,7 +276,11 @@ class OnThisDayDetector:
         )
 
         if len(years_with_content) < self.MIN_YEARS:
-            return []
+            return explain_empty(
+                [],
+                notes,
+                f"No on this day film: this month has pictures in {len(years_with_content)} prior years; it needs {self.MIN_YEARS}",
+            )
 
         mem_key = make_memory_key(
             "on_this_day",
@@ -259,7 +289,7 @@ class OnThisDayDetector:
         )
 
         if mem_key in generated_keys:
-            return []
+            return explain_empty([], notes, "No on this day film: today's film already exists")
 
         n_years = len(years_with_content)
         year_span = f"{years_with_content[0]}-{years_with_content[-1]}"
@@ -315,6 +345,7 @@ class BirthdayDetector:
         counts = person_asset_counts or {}
         busiest = max([busiest_count or 0, *counts.values()])
         candidates = []
+        local_notes: list[str] = []
 
         for person in people:
             if not person.name or not person.birth_date:
@@ -332,7 +363,7 @@ class BirthdayDetector:
 
             asset_count = counts.get(person.id, 0)
             if person_asset_counts is not None and not self._enough_material(
-                person, asset_count, (distinct_days or {}).get(person.id), notes
+                person, asset_count, (distinct_days or {}).get(person.id), local_notes
             ):
                 continue
 
@@ -347,6 +378,14 @@ class BirthdayDetector:
                 )
             )
 
+        if notes is not None:
+            notes.extend(local_notes)
+        if not local_notes:
+            return explain_empty(
+                candidates,
+                notes,
+                "No birthday film: no unfilmed birthday from 2 to 60 days ago has enough pictures",
+            )
         return candidates
 
     def _enough_material(

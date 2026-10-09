@@ -47,9 +47,9 @@ are not a guarantee that every selected picture is suitable for sharing.
 
 Rendering has its own limits. HDR, 60 fps, hardware encoding and animated title effects depend
 on the encoder, renderer and output settings. A Basic Mac can use its rendering GPU while
-keeping Basic selection and the 1080p cap. A small CPU-only NAS uses static title plates with
-fades instead of moving kernel effects. Generated music is not a Full-only feature: Basic can
-run it locally too.
+keeping Basic selection and the 1080p cap. A small CPU-only NAS draws the title text once,
+then slides, scales and fades it with FFmpeg over a still background. Generated music is not a
+Full-only feature: Basic can run it locally too.
 
 [Measured setups](../better/measured.md#cold-start-time-by-hardware-and-tier) record cold runs
 across a NAS, a shared Kubernetes GPU and two Macs, including the extra render time and file

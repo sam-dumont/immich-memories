@@ -55,14 +55,12 @@ def bank_roots(home: Path) -> tuple[list[Path], list[Path]]:
     # Docker image names its output directory in the environment and ships no file. The
     # default directory stays a candidate, so films reviewed before a move still count.
     try:
-        from immich_memories.config_loader import Config
+        from immich_memories.store.legacy_paths import legacy_path_settings
 
-        # stored={}: only the file's paths matter here, and reading saved settings would open
-        # the default store under `home`, not the one being imported into.
-        config = Config.from_yaml(home / "config.yaml", stored={})
-        cache = _expand(home, config.cache.directory)
-        roots += [cache, config.editorial.resolve_bank_root(cache)]
-        outputs.append(_expand(home, config.output.directory))
+        cache_settings, editorial, output = legacy_path_settings(home)
+        cache = _expand(home, cache_settings.directory)
+        roots += [cache, editorial.resolve_bank_root(cache)]
+        outputs.append(_expand(home, output.directory))
     except Exception as exc:  # WHY: a config that no longer loads still has default files
         logger.warning("config.yaml unreadable for the import (%s): default paths only", exc)
     return _existing([root / "structure-banks" for root in roots]), _existing(outputs)

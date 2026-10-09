@@ -194,7 +194,7 @@ def _attempt_with_refinement(tmp_path: Path, refinement: dict | None) -> Path:
     return tmp_path
 
 
-def test_a_gpu_cut_whose_refinement_captioned_its_pictures_carries_no_banner(tmp_path):
+def test_a_gpu_cut_says_its_picked_pictures_were_captioned(tmp_path):
     attempt = _attempt_with_refinement(
         tmp_path,
         {
@@ -205,7 +205,7 @@ def test_a_gpu_cut_whose_refinement_captioned_its_pictures_carries_no_banner(tmp
         },
     )
 
-    assert read_story_view(attempt).preparation == ""
+    assert read_story_view(attempt).preparation == "Captions were read for the picked pictures."
 
 
 def test_a_gpu_cut_the_captioner_missed_some_pictures_of_says_so(tmp_path):

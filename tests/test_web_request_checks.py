@@ -188,8 +188,10 @@ def test_the_trigger_is_checked_for_origin_too_but_a_bare_machine_call_passes(
     assert from_a_cron_job.status_code == 401
 
 
-def _asgi_post(app, path: str, headers: dict[str, str], chunks: list[bytes]) -> dict:
-    """POST straight through the ASGI app, recording what it answered and what it read."""
+def _asgi_post(
+    app, path: str, headers: dict[str, str], chunks: list[bytes], *, method: str = "POST"
+) -> dict:
+    """Request the ASGI app, recording what it answered and what it read."""
     sent: list[dict] = []
     read = {"chunks": 0}
     pending = list(chunks)
@@ -206,7 +208,7 @@ def _asgi_post(app, path: str, headers: dict[str, str], chunks: list[bytes]) -> 
         "type": "http",
         "asgi": {"version": "3.0"},
         "http_version": "1.1",
-        "method": "POST",
+        "method": method,
         "scheme": "http",
         "path": path,
         "raw_path": path.encode(),
@@ -326,3 +328,28 @@ def test_body_limit_does_not_hide_an_unrelated_task_failure():
     assert len(caught.value.exceptions) == 1
     assert isinstance(caught.value.exceptions[0], ValueError)
     assert str(caught.value.exceptions[0]) == "worker failed"
+
+
+@pytest.mark.parametrize(
+    ("method", "path"),
+    [
+        ("GET", "/health/live"),
+        ("GET", "/api/v1/session"),
+        ("HEAD", "/login"),
+        ("OPTIONS", "/health/live"),
+        ("POST", "/login"),
+    ],
+)
+@pytest.mark.parametrize("announce_length", [False, True])
+def test_every_request_body_is_bounded_before_authentication(
+    monkeypatch, method, path, announce_length
+):
+    client = server_client(monkeypatch, basic_auth_config())
+    headers = {"host": "localhost:8080"}
+    chunks = [b" " * 1024 * 1024] * 8
+    if announce_length:
+        headers["content-length"] = str(8 * 1024 * 1024)
+
+    answered = _asgi_post(client.app, path, headers, chunks, method=method)
+
+    assert answered == {"status": 413, "chunks_read": 0 if announce_length else 5}

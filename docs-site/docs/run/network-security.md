@@ -65,7 +65,10 @@ when it is present; otherwise an `Origin` that differs from the request's host i
 Calls without either header (curl, CronJobs, the CLI) pass, so `POST /api/trigger` with its token
 works as before.
 
-Uploaded soundtracks are capped at 64 MiB each, refused before the body is read when the request
+Every HTTP request accepts a body up to 4 MiB, including reads and sign-in pages. Larger requests
+receive **413 Content Too Large**, including streamed requests without a content length.
+
+Uploaded soundtracks have a separate limit: 64 MiB each, refused before the body is read when the request
 announces more. Together they may use `server.music_upload_quota_mb` (default 1024); past it the
 oldest uploads are removed.
 

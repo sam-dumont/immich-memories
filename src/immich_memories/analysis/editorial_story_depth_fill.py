@@ -15,7 +15,6 @@ When distinct shots run out before the budget does, the film stops and says so i
 
 from __future__ import annotations
 
-import logging
 from collections.abc import Mapping, Sequence
 from dataclasses import replace
 from datetime import datetime
@@ -29,8 +28,6 @@ from immich_memories.analysis.editorial_story_shortlist import DepictedChoice
 from immich_memories.analysis.editorial_story_slots import PartitionedSlots
 from immich_memories.analysis.editorial_story_standing import WEIGHED_STORY_WEIGHTS, StandingGate
 from immich_memories.planning.distinct_shots import PICTURES_PER_BEAT, is_new_shot, is_own_beat
-
-logger = logging.getLogger(__name__)
 
 
 def _seconds_apart(taken: str, others: Sequence[str]) -> float:
@@ -97,19 +94,6 @@ class DepthFill:
     def _content_seconds(self) -> float:
         return sum(float(c.get("seconds") or 0.0) for c in self._host.carriers)
 
-    def _log_depth_shortfall(self) -> None:
-        """One line when distinct shots ran out before the budget did: an honest short film,
-        not a silently repeated one (#2083)."""
-        host = self._host
-        if host._content_budget_seconds is None or self._depth_budget_met():
-            return
-        logger.info(
-            "%d distinct shots, film runs %.1f s of %.1f s",
-            len(host.carriers),
-            self._content_seconds(),
-            host._content_budget_seconds,
-        )
-
     # -- the round-robin walk ------------------------------------------------------
 
     def _deepen_round_robin(self) -> None:
@@ -125,7 +109,6 @@ class DepthFill:
                     break
                 if self._deepen_once(index, s):
                     progressed = True
-        self._log_depth_shortfall()
 
     def _offerable(self, s) -> list[DepictedChoice]:
         """This story's moments, holding only the pictures that could carry a frame.

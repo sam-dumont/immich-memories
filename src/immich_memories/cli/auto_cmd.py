@@ -10,10 +10,13 @@ from typing import TYPE_CHECKING, Any
 import click
 from rich.table import Table
 
+from immich_memories.automation.candidates import DEFAULT_SUGGESTION_LIMIT
+from immich_memories.automation.failure_backoff import backoff_label
 from immich_memories.automation.models import AutoOutcome, AutoRunResult
 from immich_memories.cli._helpers import console, print_error, print_info, print_success
 from immich_memories.config_loader import Config
 from immich_memories.db import open_store
+from immich_memories.memory_types.factory import list_memory_types
 
 if TYPE_CHECKING:
     from immich_memories.automation.system_scheduler import SchedulerInstallResult
@@ -32,15 +35,16 @@ def _date_label(c: Any) -> str:
 def _print_candidates_table(candidates: list) -> None:
     table = Table(title="Memory Candidates")
     table.add_column("#", style="dim", justify="right")
-    table.add_column("Type", style="cyan")
-    table.add_column("Category", style="magenta")
+    table.add_column("Type", style="cyan", min_width=18, no_wrap=True)
     table.add_column("Date Range", style="green")
     table.add_column("Score", justify="right")
     table.add_column("Reason")
     table.add_column("Assets", justify="right")
 
+    names = {item["type"]: item["name"] for item in list_memory_types()}
+    names.update(album="Album", person_monthly="Person month", monthly_backfill="Missed month")
     for i, c in enumerate(candidates, 1):
-        label = c.memory_type
+        label = names.get(c.memory_type, "Memory")
         if c.person_names:
             label += f"\n({', '.join(c.person_names)})"
         reason = c.reason
@@ -52,7 +56,6 @@ def _print_candidates_table(candidates: list) -> None:
         table.add_row(
             str(i),
             label,
-            c.category.value,
             _date_label(c),
             f"{c.score:.3f}",
             reason,
@@ -186,7 +189,7 @@ def auto() -> None:
 
 @auto.command()
 @click.option("--json", "as_json", is_flag=True, help="Machine-readable output")
-@click.option("--limit", default=10, help="Max candidates to show")
+@click.option("--limit", default=DEFAULT_SUGGESTION_LIMIT, help="Max candidates to show")
 @click.option("--type", "memory_type", default=None, help="Filter by memory type")
 @click.pass_context
 def suggest(ctx: click.Context, as_json: bool, limit: int, memory_type: str | None) -> None:
@@ -208,7 +211,7 @@ def suggest(ctx: click.Context, as_json: bool, limit: int, memory_type: str | No
 
     if not as_json:
         for key, reason in sorted(runner.last_backoff_skips.items()):
-            print_info(f"Backing off {key} ({reason})")
+            print_info(f"Backing off {backoff_label(key)} ({reason})")
         for note in runner.last_notes:
             print_info(note)
 
@@ -401,7 +404,9 @@ def _check_local_network(config: Config, config_path: Path | None, *, shim: Path
     if outcome.passed:
         print_success("Scheduled runs can reach Immich on your local network.")
     else:
-        print_error(outcome.advice)
+        print_error(outcome.advice.replace(outcome.interpreter, "this interpreter"))
+        print_info("Scheduled interpreter:")
+        click.echo(outcome.interpreter)
 
 
 @auto.command()

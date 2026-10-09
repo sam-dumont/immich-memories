@@ -87,6 +87,10 @@ that one wins. `IMMICH_MEMORIES_IMMICH__URL` silently loses to an `IMMICH_URL` t
 shipped Compose file always sets it.
 The Basic-auth shortcuts only activate when **both** values are present.
 
+`IMMICH_MEMORIES_DATABASE_URL` and `IMMICH_MEMORIES_DATABASE_SCHEMA` win over the nested
+`DATABASE__URL` and `DATABASE__SCHEMA` variables. `immich-memories config show database`
+shows the store location actually in use, with credentials masked.
+
 `OPENAI_API_KEY` and `ANTHROPIC_API_KEY` are different: a resolved key already in `llm.api_key` (from YAML, stored settings or the nested variable) wins over
 those generic shortcuts. To replace it explicitly, use `IMMICH_MEMORIES_LLM__API_KEY`.
 The caption server needs its own `IMMICH_MEMORIES_EDITORIAL__PREPARATION__CAPTION_API_KEY`.

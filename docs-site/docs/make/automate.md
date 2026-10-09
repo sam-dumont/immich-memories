@@ -42,9 +42,9 @@ Or omit those Compose lines and save **Settings > Automation > enabled** and
 immich-memories auto install --hour 9
 ```
 
-This writes a user timer on macOS or Linux and prints its activation command. Run **Activate:** to start it; installation alone does not activate the schedule. On headless Linux, run `loginctl enable-linger "$USER"` so the timer survives logout. Run **Deactivate:** before `auto install --uninstall`, which only deletes files. Scheduled jobs do not inherit your interactive shell's credentials: keep them in the configuration. A scheduled run keeps its history and logs with the config it was installed with, [same as the store](../run/config-file.md#where-the-store-and-logs-live), so a second `--config` never mixes into the main one. On macOS, `auto install` also re-enables the job's launchd label if an earlier `launchctl disable` left it off. [Scheduler details](../reference/automation-contract.md#bare-metal-auto-install) cover the launcher, environment and missed runs.
+This writes a user timer on macOS or Linux and prints its activation command. Run **Activate:** to start it; installation alone does not activate the schedule. On headless Linux, run `loginctl enable-linger "$USER"` so the timer survives logout. Run **Deactivate:** before `auto install --uninstall`, which only deletes files. Scheduled jobs do not inherit your interactive shell's credentials: keep them in the configuration. A scheduled run keeps its history and logs with the config it was installed with, [same as the store](../run/config-file.md#where-the-store-and-logs-live), so another `--config` keeps its own history. The managed timer is shared by that operating-system user: installing another config replaces the existing schedule. On macOS, `auto install` also re-enables the job's launchd label if an earlier `launchctl disable` left it off. [Scheduler details](../reference/automation-contract.md#bare-metal-auto-install) cover the launcher, environment and missed runs.
 
-**On a Mac with Immich on your network, allow Local Network for the interpreter.** macOS blocks a program's connections to your LAN until it is allowed, and the permission belongs to the resolved Python the job runs, not to Terminal. A launchd job at 03:00 has nobody to answer a prompt, so the default is no and the run fails with `No route to host`. `auto install` checks it through launchd itself (a temporary agent that only pings Immich). Run it at the Mac: the first check makes macOS ask whether Python may find devices on your local network. Click **Allow** and run `auto install` again. `auto status` tells you when an upgrade moved the interpreter, which brings the question back. [macOS and an Immich on your network](../run/uv-pip.md#macos-and-an-immich-on-your-network).
+**On a Mac with Immich on your network, allow Local Network for the interpreter.** macOS blocks a program's connections to your LAN until it is allowed, and the permission belongs to the resolved Python the job runs, not to Terminal. A launchd job at 03:00 has nobody to answer a prompt, so the default is no and the run fails with `No route to host`. `auto install` checks it through launchd itself (a temporary agent that only pings Immich). Run it at the Mac so you can click **Allow** if macOS asks, then run `auto install` again. A failed check alone does not prove a permission denial: check the config, key and server connection too. `auto status` tells you when an upgrade moved the interpreter, which brings the question back. [macOS and an Immich on your network](../run/uv-pip.md#macos-and-an-immich-on-your-network).
 
 ### Where a scheduled run's logs go
 
@@ -73,6 +73,19 @@ It ranks suitable memories and avoids repeating the same category or person too 
 Besides those, it can propose the season that just ended, a holiday across the years you photographed it, a new or grown album, and months that never got a film. It films the last month of each person close to you, and weighs birthdays and spotlights by how close each person is, so a stranger's birthday no longer outranks a trip. Each is a switch under `automation:` in the [config reference](../reference/config-reference.md#automation); the [automation reference](../reference/automation-contract.md#how-it-picks-one-memory) lists the thresholds. A season needs your home base, since the hemisphere comes from it.
 
 **Suggestions** shows each reason. **Check eligibility** previews the checks without rendering, and **Run this suggestion** asks for that candidate. A manual request still respects the automation rules. A check is a dry run: it shows up in the history, and the day's scheduled film still runs at its time.
+
+The page and `immich-memories auto suggest` show up to ten candidates by default, in the same
+order for the same library and history. The page keeps its last result and shows when it was
+computed; use **Refresh suggestions** after changing your library or making a film.
+
+Every enabled detector that finds nothing gives a reason: no pictures, an existing film,
+too little material or missing setup. The page lists these under **Why other suggestions were
+skipped**. The CLI prints them above its table. Use `auto suggest --json` for scripts that need
+the candidate keys, or `--limit 20` to see more candidates.
+
+Albums filmed by hand count as already made for their recorded date span. An automatically
+filmed album can return when it gains at least 30 pictures and reaches 1.5 times its previous
+size.
 
 ## Check on it
 

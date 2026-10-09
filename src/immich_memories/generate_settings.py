@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING
 
 from immich_memories.config_models_render import normalize_scale_mode
@@ -377,19 +378,19 @@ def _complete_music_failure(
     return MusicPhaseResult(applied=False, warning=warning)
 
 
-def _assembled_video_duration(result_path: Path) -> float | None:
-    """The already-assembled film's length, or None when the probe fails.
+def _assembled_video_timing(result_path: Path) -> tuple[float | None, float]:
+    """Read the playlist length and cadence clock from the finished film.
 
-    Feeds the bundled-music playlist (#2070) its covering target; a probe
-    failure here must cost variety, not the whole optional music phase.
+    A failed probe preserves the optional-music fallback and the default frame rate.
     """
-    from immich_memories.audio.mixer import get_video_duration
+    from immich_memories.processing.probe_cache import ProbeCache, ProbeError
 
     try:
-        duration = get_video_duration(result_path)
-    except (OSError, ValueError):
-        return None
-    return duration if duration > 0 else None
+        probe = ProbeCache().get(result_path)
+    except (OSError, ValueError, ProbeError):
+        return None, 30
+    duration = probe.duration_seconds
+    return (duration if duration > 0 else None), (probe.fps if probe.fps > 0 else 30)
 
 
 @timed("render.music.generate")
@@ -422,41 +423,41 @@ def run_music_phase(
         # optional stem separation, so the phase must include that work.
         run_tracker.start_phase("music", 1)
     try:
-        selection = resolve_music(
-            config=params.config,
-            music_path=params.music_path,
-            no_music=params.no_music,
-            assembly_clips=assembly_clips,
-            run_output_dir=run_output_dir,
-            memory_type=params.memory_type,
-            report_fn=_report_fn,
-            transition_overlap=transition_overlap_seconds(
-                params.transition, params.transition_duration
-            ),
-            source=source,
-            editorial_attempt_dir=params.editorial_attempt_dir,
-            video_duration=_assembled_video_duration(result_path),
-        )
-        if not selection.path:
-            if phase_started and selection.warning:
-                run_tracker.complete_phase(items_processed=0, errors=[{"error": selection.warning}])
-            elif phase_started:
-                run_tracker.complete_phase(items_processed=0)
-            return MusicPhaseResult(applied=False, warning=selection.warning)
-        _report_fn("music", 0.9, "Mixing music...")
-        if not phase_started:
-            # Defensive fallback for custom resolvers that produce a track
-            # without an explicit path or configured generation backend.
-            run_tracker.start_phase("music", 1)
-            phase_started = True
-        apply_music_file(
-            result_path,
-            selection.path,
-            params.music_volume,
-            encoding_plan,
-            mute_windows=mute_windows,
-            stems=selection.stems,
-        )
+        with TemporaryDirectory(prefix=".music-work-", dir=run_output_dir) as music_work:
+            video_duration, fps = _assembled_video_timing(result_path)
+            selection = resolve_music(
+                config=params.config,
+                music_path=params.music_path,
+                no_music=params.no_music,
+                assembly_clips=assembly_clips,
+                run_output_dir=run_output_dir,
+                work_dir=Path(music_work),
+                memory_type=params.memory_type,
+                report_fn=_report_fn,
+                transition_overlap=transition_overlap_seconds(
+                    params.transition, params.transition_duration
+                ),
+                source=source,
+                editorial_attempt_dir=params.editorial_attempt_dir,
+                video_duration=video_duration,
+                fps=fps,
+            )
+            if not selection.path:
+                return _complete_music_without_track(selection.warning, phase_started, run_tracker)
+            _report_fn("music", 0.9, "Mixing music...")
+            if not phase_started:
+                # Defensive fallback for custom resolvers that produce a track
+                # without an explicit path or configured generation backend.
+                run_tracker.start_phase("music", 1)
+                phase_started = True
+            apply_music_file(
+                result_path,
+                selection.path,
+                params.music_volume,
+                encoding_plan,
+                mute_windows=mute_windows,
+                stems=selection.stems,
+            )
     except Exception as exc:  # WHY: optional music must not invalidate the base artifact
         return _complete_music_failure(
             exc,
@@ -466,6 +467,18 @@ def run_music_phase(
         )
     run_tracker.complete_phase(items_processed=1)
     return MusicPhaseResult(applied=True, warning=selection.warning)
+
+
+def _complete_music_without_track(
+    warning: str | None, phase_started: bool, run_tracker: RunTracker
+) -> MusicPhaseResult:
+    from immich_memories.generate_music import MusicPhaseResult
+
+    if phase_started:
+        run_tracker.complete_phase(
+            items_processed=0, errors=[{"error": warning}] if warning else []
+        )
+    return MusicPhaseResult(applied=False, warning=warning)
 
 
 @timed("delivery")

@@ -213,7 +213,11 @@ def _refined_note(attempt_dir: Path) -> str | None:
     last = _read_record(rounds[-1]) if rounds else None
     if last is None or last.get("tier") != "full":
         return None
-    return SOME_WITHOUT_DESCRIPTIONS if _descriptions_fell_short(last) else ""
+    return (
+        SOME_WITHOUT_DESCRIPTIONS
+        if _descriptions_fell_short(last)
+        else "Captions were read for the picked pictures."
+    )
 
 
 def preparation_note(attempt_dir: Path) -> str:

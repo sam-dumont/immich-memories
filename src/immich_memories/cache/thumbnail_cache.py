@@ -9,6 +9,7 @@ import time
 from pathlib import Path
 
 from immich_memories.cache.disk_budget import evict_to_budget
+from immich_memories.security import create_private_directory
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +31,8 @@ class ThumbnailCache:
         self._puts_since_check = 0
         self._run_started_at: float | None = None
         self._overflow_announced = False
-        self.cache_dir.mkdir(parents=True, exist_ok=True)
+        create_private_directory(self.cache_dir)
+        self.cache_dir.chmod(0o700)
 
     def begin_run(self) -> None:
         """Mark everything written or read from here on as this run's working set.

@@ -21,7 +21,7 @@ Basic needs only `docker-compose.yml` and `example.env` (saved as `.env`). The o
 
 The image is about 2.3 GB. With an empty layer cache the pull in step 3 took 84 seconds on a Synology; budget more on a slow line.
 
-Check the network now. Read the MTU of the interface that reaches your Immich: `ip route get 192.168.1.10` prints `dev eth0` (use your Immich address), and `ip link show eth0` prints `mtu 1500` or less. Under 1500 (a VPN, Kubernetes node or cloud VM), save this as `docker-compose.override.yml` next to `docker-compose.yml`, with a value below the one you read:
+Check the network now. `ip route get 192.168.1.10` prints the device that reaches Immich after `dev` (use your Immich address). Read that device's MTU from `/sys/class/net/<dev>/mtu`: for `dev eth0`, run `cat /sys/class/net/eth0/mtu`; on Synology it may be `cat /sys/class/net/ovs_eth0/mtu`. Below 1500 (a VPN, Kubernetes node or cloud VM), save this as `docker-compose.override.yml` next to `docker-compose.yml`, with a value below the one you read:
 
 ```yaml
 networks:
@@ -68,25 +68,28 @@ you want to send films back to Immich; leave **All** unchecked.
 ```bash
 docker compose pull
 docker compose up -d
-docker compose exec immich-memories immich-memories models fetch
-docker compose exec immich-memories immich-memories preflight
+docker compose exec -T immich-memories immich-memories models fetch
+docker compose exec -T immich-memories immich-memories preflight
 ```
 
 `models fetch` downloads the pinned local model and dictionary. Picture processing runs on your CPU.
 Preflight must pass Immich, required-model and output checks. Basic skips unconfigured optional
-services; a home-coordinate warning does not block an album film.
+services; home coordinates are optional for an album film.
 
 The Output directory row says where films go and who decided it: `/app/output (from IMMICH_MEMORIES_OUTPUT__DIRECTORY, mounted volume), writable`. The source is the environment variable, `config.yaml` or the built-in default. In a container a path that is not a mount gets its own warning, because films written there vanish on restart. The image sets the variable, and it beats `output.directory` in `config.yaml`: preflight warns when the two disagree.
 
-Over plain SSH with no terminal (a script, `ssh host 'docker compose exec ...'`), add `-T`, and set the table width, or its first column wraps and the row labels disappear:
+The commands use `-T` so they also work without a terminal. Over SSH, set the table width to keep the row labels readable:
 `docker compose exec -T -e COLUMNS=140 immich-memories immich-memories preflight`.
+Inside a script sent with `ssh host 'bash -s'`, append `</dev/null` to each Compose `exec` command so it cannot consume the rest of the script.
 
-Four more warnings are normal on a first run and do not block a film:
+These are normal on Basic:
 
-- **Immich** with a read-only key: `upload permissions not granted, films stay local; asset.delete not granted, previous versions are kept`. It only means the key cannot upload.
-- **Title rendering** on a plain CPU host: `Kernels on the CPU (quadrants): no GPU backend started`. Titles render on the CPU, which is what a Basic install does.
-- **Hardware encoding** on a host with no `/dev/dri` (Basic): the log says `libva could not open a device`. There is no GPU to open, so the film encodes on the CPU.
-- **Title rendering** on a CPU without AVX (some Celerons): `kernel backend crashed on this CPU: illegal instruction; titles fall back to the PIL renderer`. Titles use the simpler renderer.
+- **Hardware**: `Software encoding (libx264)` is OK on a CPU-only host.
+- **Title rendering**: `CPU titles (Pillow + FFmpeg); moving backgrounds need a GPU` is OK, including on Celerons without AVX.
+- **Homebase**: skipped until you set home coordinates for trips and seasons.
+- **Immich** with a read-only key still warns that upload permissions are missing. Films stay local; the connection works.
+
+A detected NVIDIA card whose encoder cannot start is a separate warning: check the device and driver setup.
 
 ## 4. Open the app
 
@@ -111,7 +114,7 @@ Follow [Your first film](./first-film.mdx): create an Immich album with **20–5
 photos/videos**, choose **Album**, and set the length to **0.5 minutes**. Review the cut and render
 with upload off. Shortening a film alone does not reduce how many inputs need preparation.
 
-No Docker? The same steps work natively: use [pip / uv](../run/uv-pip.md) and drop `docker compose exec immich-memories` from every command on this page and on [Your first film](./first-film.mdx). Films then land in `~/Videos/Memories`, not `./output`.
+No Docker? The same steps work natively: use [pip / uv](../run/uv-pip.md) and drop `docker compose exec -T immich-memories` from every command on this page and on [Your first film](./first-film.mdx). Films then land in `~/Videos/Memories`, not `./output`.
 
 Cold setup includes the image pull, model download, input preparation and render. Hardware,
 input count and cache state matter. [Measured numbers](../better/measured.md#cold-start-time-by-hardware-and-tier)
@@ -133,7 +136,7 @@ separate film generation from setup; larger periods can still take hours.
 Check the installation at any time:
 
 ```bash
-docker compose exec immich-memories immich-memories preflight
+docker compose exec -T immich-memories immich-memories preflight
 ```
 
 For NAS-specific permissions and CPU settings: [On a NAS](../run/nas.md). Without Docker: [pip / uv](../run/uv-pip.md).

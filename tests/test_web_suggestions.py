@@ -16,6 +16,7 @@ from tests.web_api_fixtures import api_client, config_in
 class _Runner:
     def __init__(self, busy: bool = False) -> None:
         self.busy = busy
+        self.last_notes = ()
         self.executed = threading.Event()
         self.kwargs: dict = {}
         self.last_variety_decision = SimpleNamespace(
@@ -71,7 +72,7 @@ def test_suggestions_list_candidates_and_why_others_were_set_aside(tmp_path):
     assert body["candidates"][0]["memory_key"] == "monthly_highlights:2024-06"
     assert body["candidates"][0]["asset_count"] == 133
     assert {"label": "May 2024", "rule": "category_limit_two_of_six"} in body["skipped"]
-    assert {"label": "trip:2023", "rule": "failed twice"} in body["skipped"]
+    assert {"label": "Trip", "rule": "failed twice"} in body["skipped"]
 
 
 def test_running_a_suggestion_executes_it_like_auto_run_and_refuses_a_second(tmp_path):

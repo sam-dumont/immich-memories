@@ -243,7 +243,7 @@ class TestImmichClientRequest:
             warnings.count(
                 "Request failed: cannot reach immich.example.com (TimeoutException: timed out with ***)"
             )
-            == 2
+            == 6
         )
 
     @pytest.mark.asyncio

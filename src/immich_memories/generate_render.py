@@ -277,14 +277,14 @@ def render_local(
     try:
         with span("render.clip_extraction", items=len(params.clips)) as extraction:
             # Phase 1: Download and extract clips
-            pp.report("download", 0.0, "Downloading clips...")
+            pp.report("download", 0.0, "Preparing clips...")
             run_tracker.start_phase("clip_extraction", len(params.clips))
             _emit_download_phase(
                 operational,
                 params,
                 0,
                 len(params.clips),
-                "Preparing source downloads",
+                "Preparing clips",
             )
 
             assembly_clips = _extracted_sources(
@@ -302,8 +302,8 @@ def render_local(
             )
             operational.emit_unperformed_prerequisites(OperationalPhase.SELECTION)
             operational.emit(OperationalPhase.RENDER, 0, len(params.clips), "Rendering memory")
-        phase_times["download"] = extraction.duration
-        pp.report("download", 1.0, "Clips downloaded")
+        phase_times["prepare"] = extraction.duration
+        pp.report("download", 1.0, "Clips prepared")
 
         # Pre-assembly validation: skip clips with missing/empty files
         assembly_clips, skipped = validate_clips(assembly_clips)
