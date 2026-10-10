@@ -1404,7 +1404,9 @@ The Kubernetes base separates the optional one-off CLI writer (`base/job.yaml`) 
 scheduled HTTP triggers (`base/cronjobs.yaml`). The app Service selects only `web-ui` pods;
 CronJobs reach its 8080 backend through a scoped egress rule and never mount the store PVC.
 App and init runtime caches share the persistent data claim at `~/.cache` as well as the
-settings path; the Terraform deployment uses the same layout.
+settings path; the Terraform deployment uses the same layout. App, batch, inference, captioner
+and worker pod contexts use `OnRootMismatch` for `fsGroup` changes so remounting an initialized
+volume preserves private scratch permissions; Terraform sets the same policy.
 
 ## Conventions
 

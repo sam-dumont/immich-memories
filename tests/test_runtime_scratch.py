@@ -33,7 +33,7 @@ def test_python_and_child_processes_use_configured_storage_and_restore_defaults(
     assert {key: os.environ.get(key) for key in previous_env} == previous_env
 
 
-@pytest.mark.parametrize("problem", ["file", "symlink", "public-directory"])
+@pytest.mark.parametrize("problem", ["file", "symlink", "public-directory", "group-directory"])
 def test_unusable_configured_scratch_fails_without_falling_back_or_exposing_paths(
     tmp_path, problem
 ):
@@ -47,7 +47,8 @@ def test_unusable_configured_scratch_fails_without_falling_back_or_exposing_path
     elif problem == "symlink":
         scratch.symlink_to(tmp_path, target_is_directory=True)
     else:
-        scratch.mkdir(mode=0o755)
+        scratch.mkdir()
+        scratch.chmod(0o2770 if problem == "group-directory" else 0o755)
     previous = tempfile.gettempdir()
     with pytest.raises((OSError, RuntimeError)) as failure, runtime_scratch(mounted):
         pytest.fail("An unusable scratch directory must not fall back to system storage")

@@ -56,10 +56,11 @@ resource "kubernetes_deployment_v1" "captioner" {
         automount_service_account_token = false
 
         security_context {
-          run_as_non_root = true
-          run_as_user     = 1000
-          run_as_group    = 1000
-          fs_group        = 1000
+          run_as_non_root        = true
+          run_as_user            = 1000
+          run_as_group           = 1000
+          fs_group               = 1000
+          fs_group_change_policy = "OnRootMismatch"
           seccomp_profile { type = "RuntimeDefault" }
         }
 

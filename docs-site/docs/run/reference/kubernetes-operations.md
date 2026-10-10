@@ -612,13 +612,20 @@ node can actually hold, and expect downtime while a Recreate rollout reschedules
 
 Reserving 4 CPU/8Gi can leave the pod Pending on a busy node and reduces how many other workloads
 fit there; it does not add another UI replica. `/tmp` remains a disk-backed **4Gi emptyDir** under
-node ephemeral storage. Sampled video frames use it unless you redirect temporary files with
-`TMPDIR`; a large preparation can exceed those 4Gi even when the data PVC has room. Enlarging
-`/tmp` does not enlarge the cache or output.
+node ephemeral storage. The app and workers direct Python and child-process temporary files,
+including sampled video frames, to private scratch on their configured storage at startup.
+Other tools can still use `/tmp`. Enlarging it does not enlarge the cache, scratch or output.
 [Temporary working files](.././maintenance/storage-backups.md#temporary-working-files) covers
 relocation and worker locations. Budget node free disk plus logs/image layers and explicit ephemeral-storage
 requests/limits as needed. Increasing the emptyDir limit requires available disk; a memory-backed
 emptyDir would instead count against memory. Models, caches and output have separate PVC budgets.
+
+The app, CLI Job, inference service and worker use `fsGroupChangePolicy: OnRootMismatch`.
+A matching volume root keeps Kubernetes from recursively widening private directories on
+pod replacement. Preserve group 1000 and the setgid bit on that root; keep application scratch
+at 0700 beneath it. Render sidecars inherit the app pod policy, and the Terraform module sets
+the same policy. If startup reports `Runtime scratch storage must be a private directory.`,
+follow [scratch permission recovery](../maintenance/upgrading.md#kubernetes-scratch-permissions).
 
 ## Reproducible GitOps inputs
 
