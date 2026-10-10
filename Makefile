@@ -755,7 +755,7 @@ test-integration-render-worker:
 	$(MAKE) -C services/render-worker coverage
 
 integration-coverage-for-diff:  ## Run only the local integration suites the diff touches (used by CI before diff-cover)
-	@CHANGED=$$(git diff --name-only origin/main...HEAD -- 'src/immich_memories/**/*.py' 'services/render-worker/**/*.py' 2>/dev/null); \
+	@CHANGED=$$(git diff --name-only origin/main...HEAD -- ':(glob)src/immich_memories/**/*.py' ':(glob)services/render-worker/**/*.py' 2>/dev/null); \
 	SUITES=""; \
 	case "$$CHANGED" in *src/immich_memories/titles/*) SUITES="$$SUITES titles";; esac; \
 	case "$$CHANGED" in *src/immich_memories/processing/*) SUITES="$$SUITES processing assembly";; esac; \
