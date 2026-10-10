@@ -33,6 +33,7 @@ from immich_memories.processing.output_contract import (
     validate_output,
 )
 from immich_memories.timeperiod import DateRange
+from immich_memories.tracking.timed import timed
 
 if TYPE_CHECKING:
     from immich_memories.analysis.editorial_planner import EditorialSelection
@@ -169,12 +170,15 @@ class PreparedGeneration:
         """Where the film is now, and where post-processing writes."""
         return self.staged_path or self.path
 
+    @timed("render.playback_check")
     def publish(self, decode_check: DecodeCheck | None = None) -> OutputProbe:
         """Decode the film once, as it stands after its last write, then publish it at ``path``.
 
         A decode that already vouches for the same bytes is reused. A film that
         fails stays where it is, and the error names it.
         """
+        if decode_check is not None and decode_check.progress is not None:
+            decode_check.progress("Checking the finished film")
         if self.staged_path is None:
             return validate_output(
                 self.path, self.encoding_plan, decode_check, verified=self.verified

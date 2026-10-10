@@ -13,8 +13,10 @@ def test_the_preview_is_generated_from_the_cut_s_own_timeline_and_mood(cut, tmp_
     params, attempt = cut
     params.config.musicgen.enabled = True
     asked: dict = {}
+    progress = []
 
     async def mood_for_cut(config, attempt_dir, asset_ids):
+        assert progress == [(0, "Reading the cut for music", 0.0, "")]
         asked["mood_ids"] = asset_ids
         return SimpleNamespace(mood=SimpleNamespace(primary_mood="happy"))
 
@@ -30,7 +32,14 @@ def test_the_preview_is_generated_from_the_cut_s_own_timeline_and_mood(cut, tmp_
         "immich_memories.audio.cut_music_preview.generate_music_for_video", generate
     )
 
-    track = asyncio.run(preview_music_for_cut(params.config, attempt, tmp_path / "preview"))
+    track = asyncio.run(
+        preview_music_for_cut(
+            params.config,
+            attempt,
+            tmp_path / "preview",
+            progress=lambda *event: progress.append(event),
+        )
+    )
 
     assert track == tmp_path / "preview" / "track.wav"
     assert asked["mood_ids"] == tuple(clip.asset.id for clip in params.clips)

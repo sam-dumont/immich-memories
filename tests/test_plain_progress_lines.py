@@ -69,7 +69,11 @@ def test_each_quiet_heartbeat_reaches_the_log_even_when_its_count_and_text_repea
             now[0] = tick
             assert heartbeat.tick()
 
-    beats = [record.message for record in caplog.records if "still working" in record.message]
+    beats = [
+        record.message
+        for record in caplog.records
+        if "process alive; no new progress" in record.message
+    ]
     assert len(beats) == 3
     assert all(line.startswith("Preparing faces: 43/43") for line in beats)
     assert beats[-1] == beats[-2], "the same minute label must not suppress the next heartbeat"

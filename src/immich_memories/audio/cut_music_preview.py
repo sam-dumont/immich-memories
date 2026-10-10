@@ -58,6 +58,8 @@ async def preview_music_for_cut(
     timeline = _timeline(config, attempt_dir)
     inputs = read_render_inputs(attempt_dir)
     ids = tuple(clip.asset.id for clip in inputs.clips) if inputs else ()
+    if progress is not None:
+        progress(0, "Reading the cut for music", 0.0, "")
     choice = await mood_for_cut(config, attempt_dir, ids)
     for clip in timeline.clips:
         clip.mood = choice.mood.primary_mood

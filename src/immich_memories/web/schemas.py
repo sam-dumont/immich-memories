@@ -224,6 +224,35 @@ class Job(BaseModel):
     error: str | None = None
 
 
+class JobStage(BaseModel):
+    label: str
+    done: int | None = None
+    total: int | None = None
+    unit: str = ""
+    pass_id: int = 0
+    scope: str = ""
+    state: Literal["processed", "previous", "reused"] = "previous"
+
+
+class PhaseProgress(BaseModel):
+    key: str
+    state: Literal["pending", "running", "completed", "skipped"]
+    elapsed_seconds: float = 0.0
+    remaining_seconds: float | None = None
+    known_remaining_seconds: float = 0.0
+
+
+class JobForecast(BaseModel):
+    observed_at: float | None = None
+    target: Literal["cut", "film"]
+    phases: list[PhaseProgress]
+    remaining_seconds: float | None = None
+    known_remaining_seconds: float = 0.0
+    unknown_phases: list[str] = []
+    estimate_basis: str = "incomplete"
+    revision: int = 0
+
+
 class JobProgress(BaseModel):
     label: str = ""
     # The stage's own name ("previews", "public_heads"), for the page to word; `label` is the
@@ -237,6 +266,16 @@ class JobProgress(BaseModel):
     # Only ever a whole-job estimate; a first cut has none and shows the stage's instead.
     remaining_seconds: float | None = None
     stage_remaining_seconds: float | None = None
+    # Explicit semantics beside the legacy mixed-scope fraction.
+    fraction_scope: Literal["stage", "job", "unknown"] = "unknown"
+    stage_fraction: float | None = None
+    unit: str = ""
+    scope: str = ""
+    pass_id: int = 0
+    updated_at: float | None = None
+    last_completed_at: float | None = None
+    forecast: JobForecast | None = None
+    history: list[JobStage] = []
     recent_asset_ids: list[str] = []
 
 

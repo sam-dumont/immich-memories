@@ -43,6 +43,8 @@ class SourceProgressReporter:
         self._unbounded_label = ""
 
     def __call__(self, status: dict) -> None:
+        if forecast := status.get("forecast"):
+            self._progress.update(self._task, forecast=forecast)
         if status.get("indeterminate"):
             self._unbounded_stage(status)
             return

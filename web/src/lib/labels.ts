@@ -76,6 +76,12 @@ N_('That file is too large for a soundtrack');
 
 // The preparation passes report under their engine names; readers get what each pass looks at.
 const PREPARATION_PASSES: Record<string, string> = {
+  reused: N_('Reusing saved picture checks'),
+  skipped_models: N_('Model checks not requested'),
+  skipped_captions: N_('Descriptions not requested'),
+  'videos.detectors': N_('Checking video frames for the family audience'),
+  'live_photos.previews': N_('Fetching Live Photo clip previews'),
+  'live_photos.detectors': N_('Checking Live Photo frames for the family audience'),
   previews: N_('Fetching picture previews'),
   pixels: N_('Measuring the pictures'),
   faces: N_('Finding faces'),
@@ -84,6 +90,25 @@ const PREPARATION_PASSES: Record<string, string> = {
   motion: N_('Measuring motion in the videos'),
   captions: N_('Describing the pictures'),
   remote_facts: N_('Reading picture facts'),
+  obstruction: N_('Checking for a covered lens'),
+  'videos.detector_frames': N_('Sampling video frames'),
+  'videos.remote_frames': N_('Checking video clips'),
+  'videos.clip_frames': N_('Reading what each video shows'),
+  'videos.video_motion': N_('Measuring motion in video clips'),
+  'videos.obstruction_frames': N_('Checking video clips for a covered lens'),
+  'live_photos.detector_frames': N_('Sampling Live Photo frames'),
+  'live_photos.remote_frames': N_('Checking Live Photo clips'),
+  'live_photos.clip_frames': N_('Reading what each Live Photo clip shows'),
+  'live_photos.obstruction_frames': N_('Checking Live Photo clips for a covered lens'),
 };
 
 export const stageLabel = (label: string) => (PREPARATION_PASSES[label] ? t(PREPARATION_PASSES[label]) : label);
+
+const PROGRESS_UNITS: Record<string, string> = {
+  clips: N_('{done} of {total} clips'),
+  pictures: N_('{done} of {total} pictures'),
+  checks: N_('{done} of {total} checks'),
+  bytes: N_('{done} of {total} bytes'),
+};
+export const progressCount = (unit: string, done: number, total: number) =>
+  t(PROGRESS_UNITS[unit] ?? N_('{done} of {total}'), { done, total });

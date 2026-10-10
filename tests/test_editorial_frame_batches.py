@@ -79,9 +79,10 @@ def test_frame_batches_bank_answers_and_release_files_before_the_next_read(tmp_p
 
     assert result.complete
     assert result.pictures_by_stage["detector_frames"] == len(clip_ids)
-    assert [(done, total) for stage, done, total in progress if stage == "detector_frames"] == [
-        (done, len(clip_ids)) for done in range(1, len(clip_ids) + 1)
-    ]
+    scope = "live_photos" if companions else "videos"
+    assert [
+        (done, total) for stage, done, total in progress if stage == f"{scope}.detector_frames"
+    ] == [(done, len(clip_ids)) for done in (0, 1, 2, 2, 3, 4, 4, 5)]
     assert not any(path.exists() for path in consumed)
     assert set(clip_ids) <= {
         row["asset_id"]
@@ -171,3 +172,51 @@ def test_remote_frame_answers_are_committed_before_sampling_the_next_batch(tmp_p
     )
     assert result.complete
     assert not result.failures
+
+
+@requires_ffmpeg
+def test_sampling_announces_video_and_live_photo_work_before_fetching_each_batch(
+    tmp_path, monkeypatch
+):
+    import json
+
+    import httpx
+
+    from immich_memories.config_models_inference import InferenceConfig
+    from tests.test_editorial_preparation import refusing_ports
+    from tests.test_remote_facts_preparation import ENDPOINT, answer, transport
+
+    data = encode(tmp_path / "clip.mp4", gop=30)
+    progress = []
+    # WHY: inference and Immich media are the outside boundaries; sampling and banking are real.
+    transport(
+        monkeypatch,
+        lambda request: httpx.Response(200, json=answer(json.loads(request.content)["producers"])),
+    )
+
+    def read(key, start, length):
+        scope = "live_photos" if key.startswith("attached") else "videos"
+        assert progress[-1][0] == f"{scope}.detector_frames"
+        assert progress[-1][1] < progress[-1][2]
+        return data[start : start + length], len(data)
+
+    result = run(
+        tmp_path,
+        assets=[
+            *[prepared_video(f"video-{i}") for i in range(3)],
+            *[_live_photo(f"still-{i}", f"attached-{i}") for i in range(3)],
+        ],
+        ports=refusing_ports("heads", "detectors", "captions")[0],
+        preparation_config=EditorialPreparationConfig(tier="no_captions", batch_size=2),
+        inference_config=InferenceConfig(facts_base_url=ENDPOINT, fallback_to_local=False),
+        fetch_preview=lambda _: preview(),
+        read_playback=read,
+        progress=lambda stage, done, total: progress.append((stage, done, total)),
+    )
+
+    assert result.complete and not result.failures
+    for scope in ("videos", "live_photos"):
+        sampled = [event[1:] for event in progress if event[0] == f"{scope}.detector_frames"]
+        assert sampled == [(0, 3), (1, 3), (2, 3), (2, 3), (3, 3)]
+        checked = [event[1:] for event in progress if event[0] == f"{scope}.remote_frames"]
+        assert checked == [(0, 2), (1, 2), (2, 2), (0, 1), (1, 1)]

@@ -473,3 +473,18 @@ class TestConfigureLoggingFile:
         finally:
             Path(log_path).unlink(missing_ok=True)
             configure_logging(fmt="text", level="INFO")
+
+
+def test_failed_task_does_not_get_a_success_checkmark():
+    from io import StringIO
+
+    import pytest
+
+    stream = StringIO()
+    console = Console(file=stream, force_terminal=False)
+    display = LiveDisplay(console)
+    with pytest.raises(RuntimeError), display:
+        display.add_task("Checking film", total=None)
+        raise RuntimeError("Decoder failed")
+    console.print(display.render_final())
+    assert "✓" not in stream.getvalue()

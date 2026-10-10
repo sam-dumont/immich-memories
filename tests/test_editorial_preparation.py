@@ -136,6 +136,9 @@ def successful_ports(calls):
                 for asset_id in kwargs["asset_ids"]
             ],
         )
+        # WHY: the inference boundary banks facts before reporting completed work.
+        count = len(kwargs["asset_ids"])
+        kwargs["progress"]("obstruction", count, count)
         return {}
 
     def obstruction_frames(**kwargs):
@@ -187,7 +190,11 @@ def test_cold_full_source_then_warm_has_zero_provider_calls(tmp_path):
     assert first.complete and first.requested == 2
     assert ("captions", ("aa1", "bb2")) in calls
     calls.clear()
-    second = run(tmp_path, ports=successful_ports(calls))
+    updates = []
+    second = run(
+        tmp_path, ports=successful_ports(calls), progress=lambda *event: updates.append(event)
+    )
+    assert ("reused", 2, 2) in updates
     assert second.complete
     assert calls == []
     db_path = annotation_store().location.sqlite_path

@@ -63,6 +63,8 @@ class ModelFactStage(Protocol):
 
     def timed(self, stage: str, pictures: int) -> AbstractContextManager[None]: ...
 
+    def scoped(self, scope: str) -> ModelFactStage: ...
+
     def public_heads(self, asset_ids: Sequence[str], head_versions: Mapping[str, str]) -> None: ...
 
     def obstruction_heads(self, asset_ids: Sequence[str]) -> None: ...
@@ -163,6 +165,7 @@ def acquire_clip_companions(
     owed = heads_missing_for(stage.store, sorted(frames.companion_ids), MARQO_HEAD, version)
     if not owed:
         return
+    stage = stage.scoped("live_photos")
     refused = set(stage.unservable)
     paths, _unusable = stage.previews(owed, cache_path, fetch_preview)
     # A clip Immich will not preview is not a source leaving the film: its still stays.
@@ -235,6 +238,7 @@ def _acquire_frame_batches(stage, pending, previews, frames, clips, motion):
         head: tuple(key for key in keys if key not in wanted) for head, keys in pending.items()
     }
     _sampled_models(stage, stills, previews, {}, {})
+    stage = stage.scoped("videos")
     for batch, offset, total in frames.batches(ids, stage.preparation_config.batch_size):
         batch_ids = set(batch)
         batch_pending = {
@@ -303,6 +307,7 @@ def _read_remote_samples(stage, exposure, clips, previews, frames) -> None:
                 store=stage.store,
                 config=config,
                 check=stage.check,
+                progress=stage.report,
             )
         if charged is not None:
             stage.service_seconds["remote_frames"] = (

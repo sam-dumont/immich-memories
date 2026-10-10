@@ -22,6 +22,7 @@ def prepare_remote_frame_facts(
     store: Store,
     config: InferenceConfig,
     check: Callable[[], None],
+    progress: Callable[[str, int, int], None] | None = None,
 ) -> float | None:
     """Read frames once for both models, retaining preview exposure but excluding its kind.
 
@@ -29,8 +30,11 @@ def prepare_remote_frame_facts(
     endpoint or execution provider never changes their model identity.
     """
     charged: list[float] = []
+    asset_ids = tuple(dict.fromkeys((*exposure, *clips)))
+    report = progress or (lambda _stage, _done, _total: None)
+    report("remote_frames", 0, len(asset_ids))
     with RemoteFactsClient(config) as remote, PendingHeadFacts(HeadFactStore(store)) as bank:
-        for asset_id in dict.fromkeys((*exposure, *clips)):
+        for index, asset_id in enumerate(asset_ids, 1):
             answers, kinds = _read_clip(
                 remote,
                 frame_paths.get(asset_id, ()),
@@ -46,6 +50,9 @@ def prepare_remote_frame_facts(
             check()
             for key, fact in rows:
                 bank.add(asset_id, [fact], encoder_key=key)
+            # A completed clip must be durable before a watcher counts it.
+            bank.flush()
+            report("remote_frames", index, len(asset_ids))
             charged.extend(a.service_seconds for a in answers if a.service_seconds is not None)
     return sum(charged) if charged else None
 

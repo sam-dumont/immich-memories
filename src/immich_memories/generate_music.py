@@ -371,7 +371,7 @@ def auto_generate_music(
 
         def music_progress(version_idx: int, status: str, progress: float, detail: object) -> None:
             if report_fn:
-                report_fn("music", 0.85 + (progress / 100.0) * 0.05, f"Music: {status}")
+                report_fn("music", progress / 100.0, f"Music candidate {version_idx + 1}: {status}")
 
         result = asyncio.run(
             generate_music_for_video(

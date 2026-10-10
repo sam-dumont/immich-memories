@@ -168,13 +168,25 @@ def test_the_producer_banks_each_clips_reading_of_its_own_frames(tmp_path):
         def embed(self, batch):
             return np.zeros((len(batch), pack_dim), dtype=np.float32)
 
+    progress = []
+
+    def publish(stage, done, total):
+        progress.append((stage, done, total))
+        if done:
+            assert len(read_rows(annotation_store(), "head_facts")) == 1
+
+    def open_encoder(_path, **_kwargs):
+        assert progress == [("clip_frames", 0, 2)]
+        return Encoder()
+
     failures = prepare_clip_frames(
         frame_paths={"clip": frames, "unreadable": [tmp_path / "absent.jpg"]},
         store=annotation_store(),
         bundle_path=tmp_path / "heads.npz",
         encoder_path=tmp_path / "encoder.onnx",
         check_cancelled=lambda: None,
-        open_encoder=lambda _path, **_kwargs: Encoder(),
+        open_encoder=open_encoder,
+        progress=publish,
     )
 
     rows = [
@@ -185,6 +197,7 @@ def test_the_producer_banks_each_clips_reading_of_its_own_frames(tmp_path):
         ("clip", CLIP_FRAMES_HEAD, "frame_kind-public-v1/8-frames", SUBJECT_OFTEN_MISSING, 0.0)
     ]
     assert set(failures) == {"unreadable"}
+    assert progress == [("clip_frames", 0, 2), ("clip_frames", 1, 2), ("clip_frames", 2, 2)]
 
 
 def _live_unit(*, rules, favourite, clip_frames, residual=9.0):

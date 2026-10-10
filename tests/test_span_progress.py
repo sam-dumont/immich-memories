@@ -54,13 +54,14 @@ def test_stage_clock_publishes_one_overall_estimate_from_spans(monkeypatch):
     assert update.total_fraction == 20 / 34
 
 
-def test_unseen_stage_keeps_the_measured_total_bar_without_inventing_an_eta():
+def test_unseen_stage_discards_the_old_total_plan_without_inventing_an_eta():
     from immich_memories.operations.cut_progress import StageClock, StageUpdate
 
     clock = StageClock(plan=SpanPlan([Span(1, "stage.analysis.detectors", None, 0, 20)]))
     known = clock.measure(StageUpdate("detectors", "analysis", 5, 10))
     unseen = clock.measure(StageUpdate("New reader stage", "selection"))
-    assert unseen.total_fraction == known.total_fraction
+    assert known.total_fraction is not None
+    assert unseen.total_fraction is None
     assert unseen.total_remaining_seconds is None
 
 
@@ -129,3 +130,52 @@ def test_the_span_tree_shows_each_measured_peak():
     lines = span_tree(spans, 10.0)
     assert lines[0] == "run: 10.000 s, peak 512 MB (with children 2048 MB)"
     assert lines[1] == "  render.assembly: 9.000 s"
+
+
+def test_a_repeated_preparation_pass_discards_the_previous_runs_whole_cut_estimate():
+    from immich_memories.operations.cut_progress import StageClock, StageUpdate
+
+    clock = StageClock(
+        plan=SpanPlan(
+            [
+                Span(1, "stage.analysis.detectors", None, 0, 20),
+                Span(2, "stage.selection.Editing", None, 20, 10),
+            ]
+        )
+    )
+    clock.measure(StageUpdate("detectors", "analysis", 0, 10))
+    first = clock.measure(StageUpdate("detectors", "analysis", 5, 10))
+    assert first.total_fraction is not None
+    clock.measure(StageUpdate("Editing", "selection", 0, 1))
+
+    refinement = clock.measure(StageUpdate("detectors", "analysis", 0, 10))
+
+    assert refinement.total_fraction is None
+    assert refinement.total_remaining_seconds is None
+    assert refinement.remaining_seconds is None
+
+
+def test_finishing_the_last_historical_stage_is_not_job_completion():
+    from immich_memories.operations.cut_progress import StageClock, StageUpdate
+
+    clock = StageClock(plan=SpanPlan([Span(1, "stage.analysis.detectors", None, 0, 20)]))
+    clock.measure(StageUpdate("detectors", "analysis", 0, 1))
+    update = clock.measure(StageUpdate("detectors", "analysis", 1, 1))
+
+    assert update.fraction == 1
+    assert update.total_fraction is None
+    assert update.total_remaining_seconds is None
+
+
+def test_returning_to_sampling_with_a_saved_offset_is_not_new_completed_work():
+    from immich_memories.operations.cut_progress import StageClock, StageUpdate
+
+    clock = StageClock()
+    clock.measure(StageUpdate("videos.detector_frames", "analysis", 0, 10))
+    clock.measure(StageUpdate("videos.detector_frames", "analysis", 5, 10))
+    clock.measure(StageUpdate("videos.remote_frames", "analysis", 0, 5))
+    completed = clock.measure(StageUpdate("videos.remote_frames", "analysis", 5, 5))
+    resumed = clock.measure(StageUpdate("videos.detector_frames", "analysis", 5, 10))
+
+    assert resumed.last_completed_at == completed.last_completed_at
+    assert resumed.updated_at >= completed.updated_at

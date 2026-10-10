@@ -15,6 +15,7 @@ from typing import Any
 from immich_memories.logging_config import SecretRedactionFilter, redact_secrets
 from immich_memories.process_start import Startup
 from immich_memories.tracking import peak_memory
+from immich_memories.tracking.phase_forecast import PhaseForecast
 
 # The lines a run keeps for its report; the report shows the tail, the counts cover all.
 LOG_LINES = 5000
@@ -50,6 +51,7 @@ class Collector:
     spans: list[Span] = field(default_factory=list)
     logs: list[str] = field(default_factory=list)
     diagnostics: dict[str, Any] = field(default_factory=dict)
+    forecast: PhaseForecast | None = None
     private_terms: set[str] = field(default_factory=set)
     private_ids: set[str] = field(default_factory=set)
     _ids: Any = field(default_factory=lambda: count(1), repr=False)

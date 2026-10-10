@@ -10,6 +10,7 @@ from urllib.parse import urlsplit
 from immich_memories import __version__
 from immich_memories.logging_config import install_secret_redaction
 from immich_memories.security import configured_secret_values
+from immich_memories.tracking.forecast_reference import execution_profile
 from immich_memories.tracking.timing import active
 
 
@@ -63,6 +64,17 @@ def record_config(config, arguments: dict) -> None:
         version=__version__,
         install_method=install_method(),
         tier=config.tier,
+        progress_profile=execution_profile(
+            config,
+            resolution=arguments.get("resolution"),
+            output_format=arguments.get("output_format"),
+        ),
+        progress_request={
+            "film": arguments.get("no_render") is False,
+            "no_music": bool(arguments.get("no_music")),
+            "upload": bool(arguments.get("upload_to_immich") or config.upload.enabled),
+            "worker": config.render.enabled,
+        },
         config_shape={
             "llm": "configured" if config.llm.model else "not configured",
             "location": "local"

@@ -152,6 +152,17 @@ def test_a_videos_flagged_frames_bank_as_seconds_on_its_own_producer(tmp_path):
     encoder_path.write_bytes(b"")
     frames = [_jpeg(tmp_path / f"frame-{i}.jpg") for i in range(3)]
 
+    progress = []
+
+    def publish(stage, done, total):
+        progress.append((stage, done, total))
+        if done:
+            assert read_rows(annotation_store(), "motion_residuals")
+
+    def open_encoder(_path, **_kwargs):
+        assert progress == [("obstruction_frames", 0, 1)]
+        return FakeEncoder()
+
     failures = prepare_obstruction_frames(
         store=annotation_store(),
         videos={"vid": _video("vid", duration=8.0)},
@@ -159,10 +170,12 @@ def test_a_videos_flagged_frames_bank_as_seconds_on_its_own_producer(tmp_path):
         bundle_path=bundle_path,
         encoder_path=encoder_path,
         check_cancelled=lambda: None,
-        open_encoder=lambda _path, **_kwargs: FakeEncoder(),
+        open_encoder=open_encoder,
+        progress=publish,
     )
 
     assert failures == {}
+    assert progress == [("obstruction_frames", 0, 1), ("obstruction_frames", 1, 1)]
     store = annotation_store()
     from immich_memories.analysis.editorial_bound_sample import source_metadata_digest
 

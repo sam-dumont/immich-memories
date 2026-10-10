@@ -57,7 +57,10 @@ class SpanStore:
                 .order_by(run_spans.c.span_id)
             ).scalars()
             spans = [Span(**row) for row in rows]
-        return Collector(spans=spans, logs=self.diagnostics(run_id).get("logs", []))
+        diagnostics = self.diagnostics(run_id)
+        return Collector(
+            run_id=run_id, spans=spans, logs=diagnostics.get("logs", []), diagnostics=diagnostics
+        )
 
     def diagnostics(self, run_id: str) -> dict[str, Any]:
         """Return private observations for the allowlisted report builder."""
@@ -69,20 +72,30 @@ class SpanStore:
                 or {}
             )
 
-    def latest(self, source: str, *, prefix: str = "") -> Collector | None:
+    def latest(
+        self, source: str, *, prefix: str = "", profile: dict | None = None
+    ) -> Collector | None:
         """Use only completed runs with measured work as progress references."""
         with self.store.connect() as conn:
-            run_id = conn.execute(
-                sa.select(pipeline_runs.c.run_id)
-                .where(
-                    pipeline_runs.c.status == "completed",
-                    pipeline_runs.c.source == source,
-                    sa.exists().where(
-                        run_spans.c.run_id == pipeline_runs.c.run_id,
-                        run_spans.c.record["name"].as_string().startswith(prefix),
-                    ),
+            run_ids = (
+                conn.execute(
+                    sa.select(pipeline_runs.c.run_id)
+                    .where(
+                        pipeline_runs.c.status == "completed",
+                        pipeline_runs.c.source == source,
+                        sa.exists().where(
+                            run_spans.c.run_id == pipeline_runs.c.run_id,
+                            run_spans.c.record["name"].as_string().startswith(prefix),
+                        ),
+                    )
+                    .order_by(pipeline_runs.c.completed_at.desc())
+                    .limit(20)
                 )
-                .order_by(pipeline_runs.c.completed_at.desc())
-                .limit(1)
-            ).scalar()
-        return self.load(run_id) if run_id else None
+                .scalars()
+                .all()
+            )
+        for run_id in run_ids:
+            reference = self.load(run_id)
+            if profile is None or reference.diagnostics.get("progress_profile") == profile:
+                return reference
+        return None

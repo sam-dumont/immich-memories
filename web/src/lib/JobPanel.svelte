@@ -3,7 +3,9 @@
   import { mdiContentCopy, mdiStop } from '@mdi/js';
   import { thumbnail, type JobView } from './api';
   import { t } from './i18n.svelte';
-  import { stageLabel } from './labels';
+  import { progressCount, stageLabel } from './labels';
+  import { jobConnection } from './job.svelte';
+  import PhaseTimeline from './PhaseTimeline.svelte';
 
   let { job, onCancel }: { job: JobView; onCancel: () => void } = $props();
 
@@ -31,7 +33,14 @@
     const minutes = Math.floor(seconds / 60);
     return minutes ? `${minutes}m ${String(seconds % 60).padStart(2, '0')}s` : `${seconds}s`;
   });
-  const fraction = $derived(job.progress.fraction ?? null);
+  const connection = $derived(jobConnection(job.id));
+  const fraction = $derived(job.progress.fraction_scope === 'stage'
+    ? job.progress.stage_fraction ?? null
+    : job.progress.fraction_scope === 'job' ? job.progress.fraction ?? null : null);
+  const fractionLabel = $derived(fraction == null ? '' : job.progress.fraction_scope === 'stage'
+    ? t('{percent}% of this stage', { percent: Math.round(fraction * 100) })
+    : t('About {percent}% overall', { percent: Math.round(fraction * 100) }));
+  const stale = $derived(job.progress.updated_at != null && now / 1000 - job.progress.updated_at > 30);
   const heading = $derived(
     job.progress.stage_name && stageLabel(job.progress.stage_name) !== job.progress.stage_name
       ? stageLabel(job.progress.stage_name)
@@ -42,7 +51,7 @@
   // Rounded on purpose, as the terminal rounds it: an estimate, not a countdown.
   const remaining = $derived.by(() => {
     const total = job.progress.remaining_seconds;
-    if (total != null) return t('About {amount} left', { amount: clockText(total) });
+    if (!job.progress.forecast && total != null) return t('About {amount} left overall', { amount: clockText(total) });
     const stage = job.progress.stage_remaining_seconds;
     return stage == null ? '' : t('~{amount} left in this stage', { amount: clockText(stage) });
   });
@@ -67,10 +76,31 @@
   </div>
 
   {#if job.status === 'running'}
-    <ProgressBar value={fraction ?? 0} valueLabel={fraction == null ? heading : `${Math.round(fraction * 100)}%`} aria-label={t('Progress')} />
+    {#if job.progress.forecast}<PhaseTimeline forecast={job.progress.forecast} />{/if}
+    {#if fraction != null}
+      <ProgressBar value={fraction} valueLabel={fractionLabel} aria-label={t('Progress')} />
+    {/if}
     <p class="text-sm text-gray-600 tabular-nums dark:text-gray-400">
-      {#if job.progress.total}{t('{done} of {total}', { done: job.progress.done ?? 0, total: job.progress.total })}{#if remaining}{' · '}{/if}{/if}{remaining}
+      {#if job.progress.total}{progressCount(job.progress.unit ?? '', job.progress.done ?? 0, job.progress.total)}{#if remaining}{' · '}{/if}{/if}{remaining}
     </p>
+    {#if !job.progress.forecast && job.kind === 'cut' && job.progress.phase === 'analysis'}
+      <p class="text-sm">{t('Next: select pictures and save the cut. More checks may be needed during selection.')}</p>
+    {:else if !job.progress.forecast && job.kind === 'render' && job.progress.phase !== 'check' && job.progress.phase !== 'done'}
+      <p class="text-sm">{t('The film still needs its playback check before it is ready.')}</p>
+    {/if}
+    {#if !job.progress.forecast && job.progress.remaining_seconds == null}
+      <p class="text-sm text-gray-600 dark:text-gray-400">{t('Overall time remaining is not known yet.')}</p>
+    {/if}
+    {#if connection === 'unauthorized'}
+      <p role="status">{t('Your login expired. Sign in again to see the job’s status.')} <a class="underline" href="/app/login">{t('Sign in')}</a></p>
+    {:else if connection === 'reconnecting'}
+      <p role="status">{t('Live updates disconnected. Checking the saved job status.')}</p>
+    {:else if stale}
+      <p role="status">{t('No new progress for {amount}. The job is still running.', { amount: clockText(now / 1000 - job.progress.updated_at!) })}</p>
+    {/if}
+    {#if job.progress.last_completed_at != null && job.progress.total}
+      <p class="text-xs text-gray-600 dark:text-gray-400">{t('Last measured progress: {amount} ago.', { amount: clockText(Math.max(0, now / 1000 - job.progress.last_completed_at)) })}</p>
+    {/if}
     {#if job.progress.recent_asset_ids.length}
       <ul class="flex gap-2 overflow-hidden" aria-label={t('Pictures just read')}>
         {#each job.progress.recent_asset_ids.slice(-8) as asset (asset)}
@@ -80,6 +110,19 @@
         {/each}
       </ul>
     {/if}
+  {/if}
+
+  {#if job.progress.history?.length}
+    <details class="text-sm text-gray-600 dark:text-gray-400">
+      <summary class="cursor-pointer">{t('Previous stages')}</summary>
+      <ol class="mt-2 list-inside list-decimal space-y-1">
+        {#each job.progress.history as stage}
+          <li>{stageLabel(stage.label)}{#if stage.total != null}: {progressCount(stage.unit, stage.done ?? 0, stage.total)}{/if}
+            {#if stage.state === 'processed'} · {t('Processed')}{:else if stage.state === 'reused'} · {t('Reused')}{/if}
+          </li>
+        {/each}
+      </ol>
+    </details>
   {/if}
 
   {#if job.error}

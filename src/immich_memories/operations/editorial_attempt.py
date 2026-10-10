@@ -53,23 +53,36 @@ class EditorialAttempt:
             "restart": "Run the same request; completed exact judgments remain reusable.",
         }
         self._lease = _attempt_lease(self.directory, self.attempt_id, store)
+        from immich_memories.tracking import timing
+        from immich_memories.tracking.forecast_reference import render_durations
         from immich_memories.tracking.run_observations import current_tracker
         from immich_memories.tracking.span_progress import SpanPlan
         from immich_memories.tracking.span_store import SpanStore
 
+        collected = timing.active()
+        profile = collected.diagnostics.get("progress_profile") if collected else None
         pictures = len(request.get("requested_assets", [])) or None
+        future = None
         plan = None
         tracker = current_tracker()
         if tracker is not None and tracker.current_run is not None:
             history = SpanStore(tracker.db.store).latest(
-                tracker.current_run.source, prefix="stage."
+                tracker.current_run.source, prefix="stage.", profile=profile
             )
             if history:
                 plan = SpanPlan(
                     [span for span in history.spans if span.name.startswith("stage.")],
                     items=pictures,
                 )
-        self._stage_clock = StageClock(plan=plan, items=pictures)
+            if collected and collected.diagnostics.get("progress_request", {}).get("film"):
+                future = render_durations(
+                    SpanStore(tracker.db.store).latest(
+                        tracker.current_run.source,
+                        prefix="render.",
+                        profile=profile,
+                    )
+                )
+        self._stage_clock = StageClock(plan=plan, items=pictures, future=future)
         self._usage_scope = ExitStack()
         self._usage: LLMCounters | None = None
 
@@ -102,6 +115,10 @@ class EditorialAttempt:
         if previous and previous.identity == update.identity and previous.done == update.done:
             return previous  # The lease proves liveness; no disk heartbeat needed.
         update = self._stage_clock.measure(update)
+        if previous and previous.pass_id and previous.pass_id != update.pass_id:
+            history = self.record.setdefault("stage_history", [])
+            history.append(previous.history_record())
+            del history[:-24]
         self.record["stage"] = update.stage_label
         self.record["progress"] = update.as_record()
         self._save()
@@ -117,6 +134,7 @@ class EditorialAttempt:
         reason: str | None = None,
     ) -> None:
         self.record.update(status="complete", outcome=outcome, selected_carriers=selected)
+        self.record["progress"]["forecast"] = self._stage_clock.complete()
         if duration_realization is not None:
             self.record["duration_realization"] = duration_realization
         if calls_by_stage is not None:

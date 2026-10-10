@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-08 20:41+0200\n"
+"POT-Creation-Date: 2026-10-10 16:22+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -35,16 +35,36 @@ msgstr "A monthly review already finished this month."
 msgid "API Key"
 msgstr "API Key"
 
-#: web/lib/JobPanel.svelte:44
+#: web/lib/JobPanel.svelte:54
 #, python-brace-format
-msgid "About {amount} left"
-msgstr "About {amount} left"
+msgid "About {amount} left overall"
+msgstr "About {amount} left overall"
+
+#: web/lib/PhaseTimeline.svelte:25
+#, python-brace-format
+msgid "About {amount} of estimated work left"
+msgstr "About {amount} of estimated work left"
+
+#: web/lib/PhaseTimeline.svelte:21
+#, python-brace-format
+msgid "About {amount} until the cut is ready"
+msgstr "About {amount} until the cut is ready"
+
+#: web/lib/PhaseTimeline.svelte:20
+#, python-brace-format
+msgid "About {amount} until the film is ready"
+msgstr "About {amount} until the film is ready"
+
+#: web/lib/JobPanel.svelte:42
+#, python-brace-format, python-format
+msgid "About {percent}% overall"
+msgstr "About {percent}% overall"
 
 #: web/routes/create/+page.svelte:502
 msgid "Accept forwarded and downloaded media"
 msgstr "Accept forwarded and downloaded media"
 
-#: web/lib/people/OwnerSection.svelte:41 web/lib/people/OwnerSection.svelte:42
+#: web/lib/people/OwnerSection.svelte:50 web/lib/people/OwnerSection.svelte:51
 msgid "Account owner"
 msgstr "Account owner"
 
@@ -64,7 +84,7 @@ msgstr "Add a relationship"
 msgid "Add date overlay"
 msgstr "Add date overlay"
 
-#: web/routes/settings/people/+page.svelte:161
+#: web/routes/settings/people/+page.svelte:165
 msgid "Add someone not in Immich"
 msgstr "Add someone not in Immich"
 
@@ -81,6 +101,11 @@ msgstr "Added for a moment the catalogue records as notable."
 #: web/routes/runs/[run_id]/+page.svelte:291
 msgid "Added from the pool"
 msgstr "Added from the pool"
+
+#: web/lib/PhaseTimeline.svelte:27
+#, python-brace-format
+msgid "Additional time not estimated: {phases}."
+msgstr "Additional time not estimated: {phases}."
 
 #: web/lib/people/GroupsSection.svelte:81
 msgid "Advanced: type the expression"
@@ -206,7 +231,7 @@ msgstr "Browse the whole pool"
 msgid "Caches"
 msgstr "Caches"
 
-#: web/lib/JobPanel.svelte:92 web/routes/runs/[run_id]/pool/+page.svelte:171
+#: web/lib/JobPanel.svelte:140 web/routes/runs/[run_id]/pool/+page.svelte:171
 msgid "Cancel"
 msgstr "Cancel"
 
@@ -235,15 +260,47 @@ msgstr "Changes: {count}"
 msgid "Check eligibility"
 msgstr "Check eligibility"
 
-#: web/lib/labels.ts:83
+#: web/lib/PhaseTimeline.svelte:8
+msgid "Check playback"
+msgstr "Check playback"
+
+#: web/lib/labels.ts:100
+msgid "Checking Live Photo clips"
+msgstr "Checking Live Photo clips"
+
+#: web/lib/labels.ts:102
+msgid "Checking Live Photo clips for a covered lens"
+msgstr "Checking Live Photo clips for a covered lens"
+
+#: web/lib/labels.ts:84
+msgid "Checking Live Photo frames for the family audience"
+msgstr "Checking Live Photo frames for the family audience"
+
+#: web/lib/labels.ts:93
+msgid "Checking for a covered lens"
+msgstr "Checking for a covered lens"
+
+#: web/lib/labels.ts:89
 msgid "Checking pictures for the family audience"
 msgstr "Checking pictures for the family audience"
+
+#: web/lib/labels.ts:95
+msgid "Checking video clips"
+msgstr "Checking video clips"
+
+#: web/lib/labels.ts:98
+msgid "Checking video clips for a covered lens"
+msgstr "Checking video clips for a covered lens"
+
+#: web/lib/labels.ts:82
+msgid "Checking video frames for the family audience"
+msgstr "Checking video frames for the family audience"
 
 #: web/routes/create/+page.svelte:364
 msgid "Choose an album"
 msgstr "Choose an album"
 
-#: web/lib/people/OwnerSection.svelte:49 web/lib/people/OwnerSection.svelte:51
+#: web/lib/people/OwnerSection.svelte:58 web/lib/people/OwnerSection.svelte:60
 msgid "Choose the owner"
 msgstr "Choose the owner"
 
@@ -280,6 +337,10 @@ msgstr "Clipboard unavailable. Select the report below and copy it."
 msgid "Command"
 msgstr "Command"
 
+#: web/lib/PhaseTimeline.svelte:11
+msgid "Completed"
+msgstr "Completed"
+
 #: web/lib/SettingsEditor.svelte:72
 #, python-brace-format
 msgid "Config file: {config_path}"
@@ -298,11 +359,11 @@ msgstr "Connected as: {name}"
 msgid "Considered by the model"
 msgstr "Considered by the model"
 
-#: web/lib/JobPanel.svelte:90 web/lib/RunReport.svelte:76
+#: web/lib/JobPanel.svelte:138 web/lib/RunReport.svelte:76
 msgid "Copied"
 msgstr "Copied"
 
-#: web/lib/JobPanel.svelte:90
+#: web/lib/JobPanel.svelte:138
 msgid "Copy as CLI command"
 msgstr "Copy as CLI command"
 
@@ -310,7 +371,7 @@ msgstr "Copy as CLI command"
 msgid "Copy report"
 msgstr "Copy report"
 
-#: web/routes/settings/people/+page.svelte:125
+#: web/routes/settings/people/+page.svelte:129
 msgid "Could not load people."
 msgstr "Could not load people."
 
@@ -318,7 +379,7 @@ msgstr "Could not load people."
 msgid "Crossfade"
 msgstr "Crossfade"
 
-#: web/routes/settings/people/+page.svelte:134 web/routes/settings/people/+page.svelte:135
+#: web/routes/settings/people/+page.svelte:138 web/routes/settings/people/+page.svelte:139
 msgid "Curation"
 msgstr "Curation"
 
@@ -366,9 +427,13 @@ msgstr "Describe the film in your own words"
 msgid "Describe the film you want"
 msgstr "Describe the film you want"
 
-#: web/lib/labels.ts:85
+#: web/lib/labels.ts:91
 msgid "Describing the pictures"
 msgstr "Describing the pictures"
+
+#: web/lib/labels.ts:81
+msgid "Descriptions not requested"
+msgstr "Descriptions not requested"
 
 #: web/routes/create/+page.svelte:406
 msgid "Detecting trips from GPS data..."
@@ -383,7 +448,7 @@ msgstr "Discard changes"
 msgid "Discovery failed: {error}"
 msgstr "Discovery failed: {error}"
 
-#: web/lib/JobPanel.svelte:61
+#: web/lib/JobPanel.svelte:71
 msgid "Done."
 msgstr "Done."
 
@@ -407,7 +472,7 @@ msgstr "Download models"
 msgid "Download report"
 msgstr "Download report"
 
-#: web/routes/settings/people/+page.svelte:152
+#: web/routes/settings/people/+page.svelte:156
 msgid ""
 "Each Immich account gives the same person its own id. Under a person, pick who they are in "
 "the other account. Nothing is matched for you: the same name only comes first in the list."
@@ -456,6 +521,10 @@ msgstr "Ends"
 msgid "Entries: {count}"
 msgstr "Entries: {count}"
 
+#: web/lib/PhaseTimeline.svelte:22
+msgid "Estimate based on available measurements. It can change as work progresses."
+msgstr "Estimate based on available measurements. It can change as work progresses."
+
 #: web/routes/runs/[run_id]/pool/+page.svelte:107
 msgid ""
 "Every picture this cut saw, in the order they were taken. Tick or untick, then preview: your "
@@ -486,7 +555,7 @@ msgstr "Experimental"
 msgid "Expression"
 msgstr "Expression"
 
-#: web/routes/settings/people/+page.svelte:75
+#: web/routes/settings/people/+page.svelte:76
 msgid ""
 "Face recognition merges identical faces, so one of these records holds nearly all the "
 "pictures and the other almost none. Neither count means anything on its own. Merge them in "
@@ -501,7 +570,11 @@ msgstr ""
 msgid "Family"
 msgstr "Family"
 
-#: web/lib/labels.ts:79
+#: web/lib/labels.ts:83
+msgid "Fetching Live Photo clip previews"
+msgstr "Fetching Live Photo clip previews"
+
+#: web/lib/labels.ts:85
 msgid "Fetching picture previews"
 msgstr "Fetching picture previews"
 
@@ -513,11 +586,11 @@ msgstr "Fewer than 12 pictures fit: the film will be short."
 msgid "Films that may use it"
 msgstr "Films that may use it"
 
-#: web/routes/create/+page.svelte:433 web/routes/settings/people/+page.svelte:158
+#: web/routes/create/+page.svelte:433 web/routes/settings/people/+page.svelte:162
 msgid "Find a name"
 msgstr "Find a name"
 
-#: web/lib/labels.ts:81
+#: web/lib/labels.ts:87
 msgid "Finding faces"
 msgstr "Finding faces"
 
@@ -533,7 +606,7 @@ msgstr "Format"
 msgid "From"
 msgstr "From"
 
-#: web/routes/settings/people/+page.svelte:160
+#: web/routes/settings/people/+page.svelte:164
 msgid "Full name"
 msgstr "Full name"
 
@@ -627,7 +700,7 @@ msgstr "Include photos"
 msgid "Interface language"
 msgstr "Interface language"
 
-#: web/lib/JobPanel.svelte:63
+#: web/lib/JobPanel.svelte:73
 msgid "It did not finish."
 msgstr "It did not finish."
 
@@ -636,7 +709,7 @@ msgstr "It did not finish."
 msgid "Just us"
 msgstr "Just us"
 
-#: web/routes/settings/people/+page.svelte:143
+#: web/routes/settings/people/+page.svelte:147
 msgid "Keep apart"
 msgstr "Keep apart"
 
@@ -660,6 +733,11 @@ msgstr "Label"
 #: web/lib/RenderPanel.svelte:208
 msgid "Landscape"
 msgstr "Landscape"
+
+#: web/lib/JobPanel.svelte:102
+#, python-brace-format
+msgid "Last measured progress: {amount} ago."
+msgstr "Last measured progress: {amount} ago."
 
 #: web/routes/create/+page.svelte:489
 msgid "Length and pictures"
@@ -685,6 +763,10 @@ msgstr "Linked to"
 #: web/routes/runs/[run_id]/pool/+page.svelte:127
 msgid "Live"
 msgstr "Live"
+
+#: web/lib/JobPanel.svelte:97
+msgid "Live updates disconnected. Checking the saved job status."
+msgstr "Live updates disconnected. Checking the saved job status."
 
 #: web/routes/suggestions/+page.svelte:98
 msgid "Looking through your library for memories to suggest..."
@@ -730,11 +812,15 @@ msgstr "Marked Never use. Tick it to include it in this revision."
 msgid "Match the sources"
 msgstr "Match the sources"
 
-#: web/lib/labels.ts:84
+#: web/lib/labels.ts:90
 msgid "Measuring motion in the videos"
 msgstr "Measuring motion in the videos"
 
-#: web/lib/labels.ts:80
+#: web/lib/labels.ts:97
+msgid "Measuring motion in video clips"
+msgstr "Measuring motion in video clips"
+
+#: web/lib/labels.ts:86
 msgid "Measuring the pictures"
 msgstr "Measuring the pictures"
 
@@ -753,6 +839,10 @@ msgstr "Memory type"
 #: web/lib/labels.ts:17
 msgid "Missed month"
 msgstr "Missed month"
+
+#: web/lib/labels.ts:80
+msgid "Model checks not requested"
+msgstr "Model checks not requested"
 
 #: web/lib/ModelSetup.svelte:54 web/lib/ModelSetup.svelte:57
 msgid "Model downloads failed to start."
@@ -786,7 +876,7 @@ msgstr "Monthly Highlights"
 msgid "Multi-Person"
 msgstr "Multi-Person"
 
-#: web/lib/RenderPanel.svelte:247
+#: web/lib/PhaseTimeline.svelte:8 web/lib/RenderPanel.svelte:247
 msgid "Music"
 msgstr "Music"
 
@@ -805,6 +895,10 @@ msgstr "Never use"
 #: web/routes/create/+page.svelte:294 web/routes/create/+page.svelte:298
 msgid "New memory"
 msgstr "New memory"
+
+#: web/lib/JobPanel.svelte:87
+msgid "Next: select pictures and save the cut. More checks may be needed during selection."
+msgstr "Next: select pictures and save the cut. More checks may be needed during selection."
 
 #: web/routes/create/+page.svelte:391
 msgid ""
@@ -841,6 +935,11 @@ msgstr "No name matches."
 #: web/routes/create/+page.svelte:443
 msgid "No named people in Immich yet."
 msgstr "No named people in Immich yet."
+
+#: web/lib/JobPanel.svelte:99
+#, python-brace-format
+msgid "No new progress for {amount}. The job is still running."
+msgstr "No new progress for {amount}. The job is still running."
 
 #: web/lib/ShotInspector.svelte:168
 msgid "No outcome recorded."
@@ -882,11 +981,11 @@ msgstr "No trips detected for this year."
 msgid "No, they are not"
 msgstr "No, they are not"
 
-#: web/lib/people/OwnerSection.svelte:47 web/lib/people/OwnerSection.svelte:53
+#: web/lib/people/OwnerSection.svelte:56 web/lib/people/OwnerSection.svelte:62
 msgid "Nobody in this library"
 msgstr "Nobody in this library"
 
-#: web/routes/settings/people/+page.svelte:167
+#: web/routes/settings/people/+page.svelte:171
 msgid ""
 "Nobody yet. This list is filled the first time a library is prepared, or when you rescan it. "
 "The person picker on New memory reads Immich directly, so it can show names before this page "
@@ -936,7 +1035,7 @@ msgstr "On This Day"
 msgid "On a date"
 msgstr "On a date"
 
-#: web/routes/settings/people/+page.svelte:77
+#: web/routes/settings/people/+page.svelte:78
 msgid ""
 "One name on two person records: a split face cluster. Merge these records in Immich, the only"
 " place it can be fixed."
@@ -952,7 +1051,7 @@ msgstr "Only with (optional)"
 msgid "Open"
 msgstr "Open"
 
-#: web/lib/people/AccountLinks.svelte:53 web/routes/settings/people/+page.svelte:140
+#: web/lib/people/AccountLinks.svelte:53 web/routes/settings/people/+page.svelte:144
 msgid "Open in Immich"
 msgstr "Open in Immich"
 
@@ -964,7 +1063,7 @@ msgstr "Open run"
 msgid "Open the film run"
 msgstr "Open the film run"
 
-#: web/routes/settings/people/+page.svelte:140
+#: web/routes/settings/people/+page.svelte:144
 #, python-brace-format
 msgid "Open {name} in Immich"
 msgstr "Open {name} in Immich"
@@ -989,7 +1088,11 @@ msgstr "Other picture of this moment"
 msgid "Other pictures of this moment"
 msgstr "Other pictures of this moment"
 
-#: web/lib/people/OwnerSection.svelte:49
+#: web/lib/JobPanel.svelte:92 web/lib/PhaseTimeline.svelte:26
+msgid "Overall time remaining is not known yet."
+msgstr "Overall time remaining is not known yet."
+
+#: web/lib/people/OwnerSection.svelte:58
 #, python-brace-format
 msgid "Owner of {account}"
 msgstr "Owner of {account}"
@@ -1003,9 +1106,13 @@ msgstr "Passed {stages}"
 msgid "Password"
 msgstr "Password"
 
+#: web/lib/PhaseTimeline.svelte:11
+msgid "Pending"
+msgstr "Pending"
+
 #: web/routes/+layout.svelte:24 web/routes/create/+page.svelte:431
-#: web/routes/settings/+page.svelte:106 web/routes/settings/people/+page.svelte:109
-#: web/routes/settings/people/+page.svelte:115
+#: web/routes/settings/+page.svelte:106 web/routes/settings/people/+page.svelte:113
+#: web/routes/settings/people/+page.svelte:119
 msgid "People"
 msgstr "People"
 
@@ -1030,6 +1137,10 @@ msgstr "Person in {account}"
 msgid "Person month"
 msgstr "Person month"
 
+#: web/lib/PhaseTimeline.svelte:30
+msgid "Phases"
+msgstr "Phases"
+
 #: web/routes/create/+page.svelte:501
 msgid "Photo duration (seconds)"
 msgstr "Photo duration (seconds)"
@@ -1046,7 +1157,7 @@ msgstr "Picture description"
 msgid "Picture review"
 msgstr "Picture review"
 
-#: web/lib/JobPanel.svelte:74
+#: web/lib/JobPanel.svelte:105
 msgid "Pictures just read"
 msgstr "Pictures just read"
 
@@ -1086,6 +1197,14 @@ msgstr "Portrait"
 msgid "Possible"
 msgstr "Possible"
 
+#: web/lib/PhaseTimeline.svelte:7
+msgid "Prepare pictures"
+msgstr "Prepare pictures"
+
+#: web/lib/PhaseTimeline.svelte:7
+msgid "Prepare selected clips"
+msgstr "Prepare selected clips"
+
 #: web/lib/AskPanel.svelte:146 web/lib/AskPanel.svelte:156
 msgid "Preview"
 msgstr "Preview"
@@ -1098,11 +1217,19 @@ msgstr "Preview a track"
 msgid "Preview with these choices"
 msgstr "Preview with these choices"
 
+#: web/lib/JobPanel.svelte:117
+msgid "Previous stages"
+msgstr "Previous stages"
+
 #: web/lib/RenderPanel.svelte:243
 msgid "Privacy mode: blur every picture and scramble names"
 msgstr "Privacy mode: blur every picture and scramble names"
 
-#: web/lib/JobPanel.svelte:57 web/lib/JobPanel.svelte:69
+#: web/lib/JobPanel.svelte:121
+msgid "Processed"
+msgstr "Processed"
+
+#: web/lib/JobPanel.svelte:67 web/lib/JobPanel.svelte:81
 msgid "Progress"
 msgstr "Progress"
 
@@ -1118,13 +1245,21 @@ msgstr "Quality"
 msgid "Random"
 msgstr "Random"
 
-#: web/lib/labels.ts:86
+#: web/lib/labels.ts:92
 msgid "Reading picture facts"
 msgstr "Reading picture facts"
 
-#: web/lib/labels.ts:82
+#: web/lib/labels.ts:101
+msgid "Reading what each Live Photo clip shows"
+msgstr "Reading what each Live Photo clip shows"
+
+#: web/lib/labels.ts:88
 msgid "Reading what each picture shows"
 msgstr "Reading what each picture shows"
+
+#: web/lib/labels.ts:96
+msgid "Reading what each video shows"
+msgstr "Reading what each video shows"
 
 #: web/lib/ShotInspector.svelte:167
 msgid "Recorded alternative"
@@ -1174,6 +1309,10 @@ msgstr "Removed"
 msgid "Render"
 msgstr "Render"
 
+#: web/lib/PhaseTimeline.svelte:8
+msgid "Render film"
+msgstr "Render film"
+
 #: web/lib/labels.ts:32
 msgid "Replaced a picture the model doubted."
 msgstr "Replaced a picture the model doubted."
@@ -1182,17 +1321,25 @@ msgstr "Replaced a picture the model doubted."
 msgid "Report preview"
 msgstr "Report preview"
 
-#: web/routes/settings/people/+page.svelte:168
+#: web/routes/settings/people/+page.svelte:172
 msgid "Rescan now"
 msgstr "Rescan now"
 
-#: web/routes/settings/people/+page.svelte:118
+#: web/routes/settings/people/+page.svelte:122
 msgid "Rescan the library"
 msgstr "Rescan the library"
 
 #: web/lib/RenderPanel.svelte:212
 msgid "Resolution"
 msgstr "Resolution"
+
+#: web/lib/JobPanel.svelte:121
+msgid "Reused"
+msgstr "Reused"
+
+#: web/lib/labels.ts:79
+msgid "Reusing saved picture checks"
+msgstr "Reusing saved picture checks"
 
 #: web/lib/RunReport.svelte:70
 msgid "Review the report, then copy it. Nothing is sent automatically."
@@ -1219,6 +1366,10 @@ msgstr "Run details"
 msgid "Run this suggestion"
 msgstr "Run this suggestion"
 
+#: web/lib/PhaseTimeline.svelte:11
+msgid "Running"
+msgstr "Running"
+
 #: web/routes/suggestions/+page.svelte:86
 #, python-brace-format
 msgid "Running on the server: {phase}. It continues if you leave this page."
@@ -1233,6 +1384,14 @@ msgstr "Runs"
 #, python-brace-format
 msgid "Same person as {name}?"
 msgstr "Same person as {name}?"
+
+#: web/lib/labels.ts:99
+msgid "Sampling Live Photo frames"
+msgstr "Sampling Live Photo frames"
+
+#: web/lib/labels.ts:94
+msgid "Sampling video frames"
+msgstr "Sampling video frames"
 
 #: web/lib/SettingsEditor.svelte:120
 msgid "Save"
@@ -1307,6 +1466,10 @@ msgstr ""
 "Secrets cannot be saved here until {name} is set. Set it, or keep them in the environment or "
 "config.yaml."
 
+#: web/lib/PhaseTimeline.svelte:7
+msgid "Select pictures"
+msgstr "Select pictures"
+
 #: web/lib/SettingsEditor.svelte:37
 #, python-brace-format
 msgid "Set by {name} (environment)"
@@ -1318,7 +1481,7 @@ msgid "Set in config.yaml as {key}"
 msgstr "Set in config.yaml as {key}"
 
 #: web/routes/+layout.svelte:25 web/routes/settings/+page.svelte:77
-#: web/routes/settings/+page.svelte:81 web/routes/settings/people/+page.svelte:114
+#: web/routes/settings/+page.svelte:81 web/routes/settings/people/+page.svelte:118
 msgid "Settings"
 msgstr "Settings"
 
@@ -1330,11 +1493,11 @@ msgstr "Shareable"
 msgid "Show"
 msgstr "Show"
 
-#: web/routes/settings/people/+page.svelte:177
+#: web/routes/settings/people/+page.svelte:181
 msgid "Show more"
 msgstr "Show more"
 
-#: web/routes/login/+page.svelte:46 web/routes/login/+page.svelte:58
+#: web/lib/JobPanel.svelte:95 web/routes/login/+page.svelte:46 web/routes/login/+page.svelte:58
 #: web/routes/login/+page.svelte:69
 msgid "Sign in"
 msgstr "Sign in"
@@ -1350,6 +1513,10 @@ msgstr "Sign out"
 #: web/routes/login/+page.svelte:20
 msgid "Sign-in expired. Try again."
 msgstr "Sign-in expired. Try again."
+
+#: web/lib/PhaseTimeline.svelte:11
+msgid "Skipped"
+msgstr "Skipped"
 
 #: web/lib/labels.ts:61
 msgid "Small moment"
@@ -1391,7 +1558,7 @@ msgstr "Square"
 msgid "Start here"
 msgstr "Start here"
 
-#: web/lib/JobPanel.svelte:60
+#: web/lib/JobPanel.svelte:70
 msgid "Starting"
 msgstr "Starting"
 
@@ -1407,7 +1574,7 @@ msgstr "Still"
 msgid "Stopped before it saved a film. The cut it came from is under Runs, in its own run."
 msgstr "Stopped before it saved a film. The cut it came from is under Runs, in its own run."
 
-#: web/lib/JobPanel.svelte:62
+#: web/lib/JobPanel.svelte:72
 msgid "Stopped."
 msgstr "Stopped."
 
@@ -1448,7 +1615,7 @@ msgstr "Take out"
 msgid "Test Connection"
 msgstr "Test Connection"
 
-#: web/lib/people/OwnerSection.svelte:33
+#: web/lib/people/OwnerSection.svelte:40
 msgid "That could not be saved."
 msgstr "That could not be saved."
 
@@ -1468,7 +1635,7 @@ msgstr "That file is too large for a soundtrack"
 msgid "That id could not be bound."
 msgstr "That id could not be bound."
 
-#: web/lib/people/OwnerSection.svelte:56
+#: web/lib/people/OwnerSection.svelte:65
 msgid ""
 "The API key's account name has not been matched to a named person. Choose the owner, or name "
 "people in Immich and rescan."
@@ -1488,7 +1655,7 @@ msgstr "The cut as chosen"
 msgid "The cut could not start."
 msgstr "The cut could not start."
 
-#: web/lib/JobPanel.svelte:61
+#: web/lib/JobPanel.svelte:71
 msgid "The cut is ready."
 msgstr "The cut is ready."
 
@@ -1513,9 +1680,13 @@ msgstr "The film"
 msgid "The film file is gone, so there is nothing to upload."
 msgstr "The film file is gone, so there is nothing to upload."
 
-#: web/lib/JobPanel.svelte:61
+#: web/lib/JobPanel.svelte:71
 msgid "The film is ready."
 msgstr "The film is ready."
+
+#: web/lib/JobPanel.svelte:89
+msgid "The film still needs its playback check before it is ready."
+msgstr "The film still needs its playback check before it is ready."
 
 #: web/routes/create/+page.svelte:36
 msgid "The household. Private moments a caption names, like a bath, play too."
@@ -1537,7 +1708,7 @@ msgstr ""
 msgid "The model, when one is configured"
 msgstr "The model, when one is configured"
 
-#: web/routes/settings/people/+page.svelte:116
+#: web/routes/settings/people/+page.svelte:120
 msgid "The people registry: who is close, their roles, and how they relate."
 msgstr "The people registry: who is close, their roles, and how they relate."
 
@@ -1568,6 +1739,10 @@ msgstr "The previewed track"
 #: web/lib/labels.ts:48
 msgid "The previous automatic memory used this category."
 msgstr "The previous automatic memory used this category."
+
+#: web/lib/PhaseTimeline.svelte:49
+msgid "The remaining work changed. The estimate has been revised."
+msgstr "The remaining work changed. The estimate has been revised."
 
 #: web/lib/RenderPanel.svelte:112
 msgid "The render could not start."
@@ -1625,6 +1800,10 @@ msgstr "This run kept no record of its pool. Cut again to see one."
 msgid "Thumbnail cache"
 msgstr "Thumbnail cache"
 
+#: web/lib/PhaseTimeline.svelte:42
+msgid "Time not known yet"
+msgstr "Time not known yet"
+
 #: web/lib/RenderPanel.svelte:195
 msgid "Title (decided as generate decides when empty)"
 msgstr "Title (decided as generate decides when empty)"
@@ -1661,7 +1840,7 @@ msgstr "Trip detection failed."
 msgid "Trips"
 msgstr "Trips"
 
-#: web/routes/runs/+page.svelte:127 web/routes/settings/people/+page.svelte:126
+#: web/routes/runs/+page.svelte:127 web/routes/settings/people/+page.svelte:130
 msgid "Try again"
 msgstr "Try again"
 
@@ -1685,6 +1864,10 @@ msgstr "Upload a track"
 #: web/lib/UploadFilm.svelte:23
 msgid "Upload availability could not be checked."
 msgstr "Upload availability could not be checked."
+
+#: web/lib/PhaseTimeline.svelte:8
+msgid "Upload film"
+msgstr "Upload film"
 
 #: web/lib/RenderPanel.svelte:277
 msgid "Upload the film to Immich"
@@ -1806,7 +1989,7 @@ msgstr "Who may see it"
 msgid "Who names the film"
 msgstr "Who names the film"
 
-#: web/lib/people/OwnerSection.svelte:43
+#: web/lib/people/OwnerSection.svelte:52
 msgid ""
 "Whose library is this? Relationships to the library owner, the family seat and the titles "
 "depend on it. A scan only guesses; what you pick here stays."
@@ -1863,7 +2046,11 @@ msgstr "You will be redirected to your identity provider"
 msgid "Your first film needs these model files. Nothing downloads until you press the button."
 msgstr "Your first film needs these model files. Nothing downloads until you press the button."
 
-#: web/lib/people/OwnerSection.svelte:20
+#: web/lib/JobPanel.svelte:95
+msgid "Your login expired. Sign in again to see the job’s status."
+msgstr "Your login expired. Sign in again to see the job’s status."
+
+#: web/lib/people/OwnerSection.svelte:27
 msgid "a guess: the longest span and the most pictures"
 msgstr "a guess: the longest span and the most pictures"
 
@@ -1880,11 +2067,11 @@ msgstr "all of them together"
 msgid "any of them"
 msgstr "any of them"
 
-#: web/lib/people/OwnerSection.svelte:19
+#: web/lib/people/OwnerSection.svelte:26
 msgid "it matches the Immich account name"
 msgstr "it matches the Immich account name"
 
-#: web/lib/people/OwnerSection.svelte:21 web/lib/people/OwnerSection.svelte:47
+#: web/lib/people/OwnerSection.svelte:28 web/lib/people/OwnerSection.svelte:56
 msgid "not known yet"
 msgstr "not known yet"
 
@@ -1900,21 +2087,26 @@ msgstr "relationship not named"
 msgid "starting"
 msgstr "starting"
 
-#: web/routes/settings/people/+page.svelte:116
+#: web/routes/settings/people/+page.svelte:120
 msgid "writes it out as YAML."
 msgstr "writes it out as YAML."
 
-#: web/routes/settings/people/+page.svelte:116
+#: web/routes/settings/people/+page.svelte:120
 msgid "writes the guesses; your answers stay across scans."
 msgstr "writes the guesses; your answers stay across scans."
 
-#: web/lib/people/OwnerSection.svelte:17
+#: web/lib/people/OwnerSection.svelte:24
 msgid "you confirmed it"
 msgstr "you confirmed it"
 
-#: web/lib/people/OwnerSection.svelte:18
+#: web/lib/people/OwnerSection.svelte:25
 msgid "you told the scan"
 msgstr "you told the scan"
+
+#: web/lib/PhaseTimeline.svelte:36
+#, python-brace-format
+msgid "{amount} elapsed"
+msgstr "{amount} elapsed"
 
 #: web/routes/runs/[run_id]/+page.svelte:145
 #, python-brace-format
@@ -1936,10 +2128,30 @@ msgstr "{date_range_start} to {date_range_end}"
 msgid "{days} days · {count} pictures"
 msgstr "{days} days · {count} pictures"
 
-#: web/lib/JobPanel.svelte:71
+#: web/lib/labels.ts:114
 #, python-brace-format
 msgid "{done} of {total}"
 msgstr "{done} of {total}"
+
+#: web/lib/labels.ts:111
+#, python-brace-format
+msgid "{done} of {total} bytes"
+msgstr "{done} of {total} bytes"
+
+#: web/lib/labels.ts:110
+#, python-brace-format
+msgid "{done} of {total} checks"
+msgstr "{done} of {total} checks"
+
+#: web/lib/labels.ts:108
+#, python-brace-format
+msgid "{done} of {total} clips"
+msgstr "{done} of {total} clips"
+
+#: web/lib/labels.ts:109
+#, python-brace-format
+msgid "{done} of {total} pictures"
+msgstr "{done} of {total} pictures"
 
 #: web/lib/AskPanel.svelte:188
 #, python-brace-format
@@ -1954,6 +2166,11 @@ msgid ""
 msgstr ""
 "{passed} of {checked} prepared pictures pass the rules checked before cutting; {unread} are "
 "not prepared yet."
+
+#: web/lib/JobPanel.svelte:41
+#, python-brace-format, python-format
+msgid "{percent}% of this stage"
+msgstr "{percent}% of this stage"
 
 #: web/lib/AskPanel.svelte:167
 #, python-brace-format
@@ -1979,7 +2196,17 @@ msgstr "{seconds} s on screen"
 msgid "{years} years ago"
 msgstr "{years} years ago"
 
-#: web/lib/JobPanel.svelte:46
+#: web/lib/PhaseTimeline.svelte:41
+#, python-brace-format
+msgid "~{amount} estimated, plus unmeasured work"
+msgstr "~{amount} estimated, plus unmeasured work"
+
+#: web/lib/PhaseTimeline.svelte:39
+#, python-brace-format
+msgid "~{amount} left"
+msgstr "~{amount} left"
+
+#: web/lib/JobPanel.svelte:56
 #, python-brace-format
 msgid "~{amount} left in this stage"
 msgstr "~{amount} left in this stage"

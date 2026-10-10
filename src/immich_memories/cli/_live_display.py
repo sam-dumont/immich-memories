@@ -16,6 +16,7 @@ from rich.progress import Progress as RichProgress
 from rich.text import Text
 
 from immich_memories.cli._helpers import set_active_display
+from immich_memories.cli.forecast_display import forecast_lines
 from immich_memories.logging_config import install_live_handler, restore_handlers
 from immich_memories.progress_lines import StageLines
 
@@ -58,6 +59,9 @@ class QuietDisplay:
         self._tasks: dict[TaskID, str] = {}
         self._stage_lines = StageLines()
         self._next_id = 0
+        self._forecast_key: tuple = ()
+        self._forecast_at = 0.0
+        self._forecast: dict | None = None
 
     def __enter__(self) -> Self:
         return self
@@ -86,10 +90,11 @@ class QuietDisplay:
         return tid
 
     def update(self, task_id: TaskID, **kwargs: Any) -> None:
+        self._report_forecast(kwargs.get("forecast"))
         if "description" in kwargs:
             description = kwargs["description"]
             # A quiet phase repeats its count and minute label; that is the point of a heartbeat.
-            heartbeat = ", still working (" in description
+            heartbeat = ", process alive; no new progress (" in description
             if description != self._tasks.get(task_id) or heartbeat:
                 self._tasks[task_id] = description
                 if heartbeat or self._stage_lines.keeps_line(description):
@@ -98,6 +103,25 @@ class QuietDisplay:
             desc = self._tasks.get(task_id, "")
             if desc and "description" not in kwargs:
                 self._logger.info(f"Done: {desc}")
+
+    def _report_forecast(self, forecast: dict | None) -> None:
+        self._forecast = forecast or self._forecast
+        forecast = self._forecast
+        if not forecast:
+            return
+        key = tuple(
+            (
+                row["key"],
+                row["state"],
+                row.get("known_remaining_seconds", 0) > 0,
+                row.get("remaining_seconds") is not None,
+            )
+            for row in forecast["phases"]
+        )
+        now = time.monotonic()
+        if key != self._forecast_key or now - self._forecast_at >= 60:
+            self._forecast_key, self._forecast_at = key, now
+            self._logger.info(" | ".join(forecast_lines(forecast)))
 
     def reset(self, task_id: TaskID, *, total: float | None = None) -> None:
         """No graphical progress state exists in quiet mode."""
@@ -142,6 +166,7 @@ class LiveDisplay:
         self._tasks: dict[int, _TaskState] = {}
         self._active_task_id: int | None = None
         self._start_time: float | None = None
+        self._forecast: dict | None = None
 
     def __enter__(self) -> LiveDisplay:
         self._start_time = time.monotonic()
@@ -170,8 +195,8 @@ class LiveDisplay:
             restore_handlers(self._original_handlers)
             self._original_handlers = None
 
-        # Complete any remaining active task
-        if self._active_task_id is not None:
+        # Exceptions leave an unfinished task; a success marker would contradict the error.
+        if _exc_type is None and self._active_task_id is not None:
             state = self._tasks.get(self._active_task_id)
             if state and not state.done:
                 self._finish_task(self._active_task_id)
@@ -224,6 +249,8 @@ class LiveDisplay:
         with self._lock:
             if kwargs == {"description": state.description}:
                 return
+            if forecast := kwargs.pop("forecast", None):
+                self._forecast = forecast
             completed = kwargs.get("completed", _MISSING)
             description = kwargs.get("description", _MISSING)
 
@@ -323,6 +350,9 @@ class LiveDisplay:
                 time_line = self._build_time_line()
                 if time_line:
                     parts.append(time_line)
+
+        if self._forecast and self._active_task_id is not None:
+            parts.extend(Text(line) for line in forecast_lines(self._forecast))
 
         # Log lines panel
         parts.extend(Text(f"  │ {log_line}", style="dim") for log_line in self._log_lines)

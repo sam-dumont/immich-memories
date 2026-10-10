@@ -1,4 +1,4 @@
-"""The render reports clips encoded n/N as phase events while it works (#2219)."""
+"""A render reports its activity without converting encoder time into invented clip counts."""
 
 from __future__ import annotations
 
@@ -36,8 +36,8 @@ def test_assembly_progress_becomes_render_events_at_most_every_interval() -> Non
     clock.now = 31
     callback(0.5, "Encoding video...")
 
-    assert [e[1] for e in operational.events] == [0, 74]
-    assert all(e[0] is OperationalPhase.RENDER and e[2] == 149 for e in operational.events)
+    assert [e[1] for e in operational.events] == [0, 0]
+    assert all(e[0] is OperationalPhase.RENDER and e[2] == 0 for e in operational.events)
     assert len(inner) == 3, "the progress bar still hears every report"
 
 
@@ -47,7 +47,7 @@ def test_a_render_with_no_progress_bar_still_reports_events() -> None:
 
     callback(1.0, "Done")
 
-    assert operational.events == [(OperationalPhase.RENDER, 10, 10, "Done")]
+    assert operational.events == [(OperationalPhase.RENDER, 0, 0, "Done")]
 
 
 def test_clip_preparation_says_which_clip_n_of_total_instead_of_the_finished_selection() -> None:
@@ -104,6 +104,6 @@ def test_a_quiet_audio_mix_never_repeats_an_older_encoding_percentage(tmp_path) 
     clock.now = 32
     assert heartbeat.tick()
 
-    assert beats[-1][1:3] == (15, 15)
+    assert beats[-1][1:3] == (0, 0)
     assert beats[-1][3].startswith("Mixing audio...")
     assert tracker.record_phase_event.call_count == 1

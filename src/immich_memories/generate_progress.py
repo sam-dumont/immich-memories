@@ -63,10 +63,10 @@ def render_progress_events(
     clock: Callable[[], float] = time.monotonic,
     every_seconds: float = 30.0,
 ) -> Callable[[float, str], None]:
-    """Turn the assembler's fraction into render phase events (n of N clips), throttled.
+    """Report render activity without converting encoder time into completed clip counts.
 
-    A render is the longest silent stretch of a scheduled run; the bar hears every report,
-    the phase log one per interval (#2219).
+    The assembler also reports audio mixing and muxing on this callback. Its fraction
+    cannot say how many clips are finished, so phase events leave the counts unknown.
     """
     last = float("-inf")
 
@@ -75,12 +75,12 @@ def render_progress_events(
         if inner is not None:
             inner(pct, msg)
         now = clock()
-        current = min(total, int(pct * total))
+        current = 0
         if now - last < every_seconds:
-            operational.observe(OperationalPhase.RENDER, current, total, msg)
+            operational.observe(OperationalPhase.RENDER, current, 0, msg)
             return
         last = now
-        operational.emit(OperationalPhase.RENDER, current, total, msg)
+        operational.emit(OperationalPhase.RENDER, current, 0, msg)
 
     return report
 
@@ -190,10 +190,21 @@ class _PipelineProgress:
     def __init__(self, params: GenerationParams, clip_count: int) -> None:
         self._params = params
         from immich_memories.db import open_store
+        from immich_memories.tracking import timing
+        from immich_memories.tracking.forecast_reference import execution_profile, render_durations
         from immich_memories.tracking.span_progress import SpanPlan
         from immich_memories.tracking.span_store import SpanStore
 
-        history = SpanStore(open_store(params.config)).latest(params.source, prefix="render.")
+        profile = execution_profile(
+            params.config, resolution=params.output_resolution, output_format=params.output_format
+        )
+        history = SpanStore(open_store(params.config)).latest(
+            params.source,
+            prefix="render.",
+            profile=profile,
+        )
+        if collected := timing.active():
+            collected.diagnostics["progress_profile"] = profile
         names = {
             "render.clip_extraction": "download",
             "render.assembly": "assembly",
@@ -216,6 +227,24 @@ class _PipelineProgress:
             "upload": 30.0 if params.upload_enabled else 0.0,
         }
         self._plan = SpanPlan(spans, items=clip_count, defaults=defaults)
+        from immich_memories.tracking.phase_forecast import PhaseForecast
+
+        durations = render_durations(history, items=clip_count)
+        skipped = set()
+        if params.no_music:
+            skipped.add("music")
+        if not params.upload_enabled:
+            skipped.add("upload")
+        if params.config.render.enabled:
+            skipped.add("download")  # Worker owns preparation inside render.assembly.
+        collected = timing.active()
+        self._forecast = (collected.forecast if collected else None) or PhaseForecast(
+            durations,
+            target="film",
+            skipped=skipped,
+        )
+        if collected:
+            collected.forecast = self._forecast
         self._last = 0.0
         self.remaining_seconds: float | None = None
         self._phase = ""
@@ -223,12 +252,10 @@ class _PipelineProgress:
 
     def report(self, phase: str, pct: float, msg: str) -> None:
         """Report one monotonic total; an ETA only once history measured what is left."""
-        from immich_memories.tracking.timing import active
+        from immich_memories.tracking.timing import active, clock
 
-        if not self._params.progress_callback:
-            return
         name = "download" if phase == "extract" else phase
-        now = time.monotonic()
+        now = clock()
         if name != self._phase:
             self._phase, self._phase_started = name, now
         remaining = (now - self._phase_started) * (1 - pct) / pct if 0 < pct < 1 else None
@@ -237,13 +264,28 @@ class _PipelineProgress:
             self._last = max(self._last, min(0.99, estimate.fraction))
         if phase == "done":
             self._last = 1.0
-        self.remaining_seconds = estimate.remaining_seconds if estimate else None
+        # Legacy callbacks keep their monotonic display scale. It contains fixed phase
+        # shares (music, mux, upload), not enough measured work for a current-stage ETA.
+        canonical = "assembly" if phase.startswith("worker_") else name
+        if phase == "done":
+            self._forecast.finish(now=now)
+        elif canonical in {"download", "assembly", "music", "check", "upload"}:
+            self._forecast.enter(canonical, now=now)
+            self._forecast.measure_remaining(
+                canonical, remaining if phase == "worker_download" else None, now=now, partial=True
+            )
+        forecast = self._forecast.snapshot(now=now)
+        self.remaining_seconds = forecast["remaining_seconds"]
         if collected := active():
             collected.diagnostics["progress"] = {
+                "forecast": forecast,
                 "fraction": self._last,
                 "remaining_seconds": self.remaining_seconds,
+                "fraction_scope": "stage" if phase == "worker_download" else "unknown",
+                "stage_fraction": pct if phase == "worker_download" else None,
             }
-        self._params.progress_callback(phase, self._last, msg)
+        if self._params.progress_callback:
+            self._params.progress_callback(phase, self._last, msg)
 
     def assembly_callback(self) -> Callable[[float, str], None] | None:
         """Create a 2-arg callback for assemble_with_titles."""

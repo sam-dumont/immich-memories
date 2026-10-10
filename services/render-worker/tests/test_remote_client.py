@@ -50,7 +50,12 @@ def test_remote_client_returns_a_validated_film_and_exact_cut_metadata(tmp_path)
     ]
     assert artifact.music_mute_windows == [(0.5, 1.5)]
     assert [(clip.start, clip.end) for clip in seen[0].plan.clips] == [(2.5, 5.75)]
-    assert progress
+    phases = [phase for phase, _, _ in progress]
+    assert phases[0] == "worker_connect"
+    assert "worker_download" in phases
+    assert phases[-1] == "worker_check"
+    transfers = [fraction for phase, fraction, _ in progress if phase == "worker_download"]
+    assert transfers[0] == 0 and transfers[-1] == 1
 
 
 def test_normal_generation_uses_the_worker_and_completes_the_local_run(tmp_path, monkeypatch):

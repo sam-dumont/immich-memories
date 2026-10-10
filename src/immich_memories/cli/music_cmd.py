@@ -206,10 +206,19 @@ def _register_preview(music: click.Group) -> None:
             print_error(str(exc))
             sys.exit(1)
 
-        def progress(_version: int, status: str, percent: float, _detail: str) -> None:
+        def progress(version: int, status: str, percent: float, _detail: str) -> None:
             write_progress(
                 progress_file,
-                {"done": False, "phase": "music", "fraction": percent / 100, "message": status},
+                {
+                    "done": False,
+                    "phase": "music",
+                    "fraction": percent / 100,
+                    "fraction_scope": "unknown",
+                    "stage_fraction": None,
+                    "scope": f"candidate/{version + 1}",
+                    "stage_name": status,
+                    "message": f"Music candidate {version + 1}: {status}",
+                },
             )
 
         target = out_dir or config.cache.cache_path / "music-previews" / resolved
