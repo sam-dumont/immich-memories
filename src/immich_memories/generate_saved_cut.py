@@ -8,11 +8,15 @@ projection, and the film is recorded as a new run on the same attempt.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from datetime import datetime, time
 from pathlib import Path
+from time import monotonic
 from typing import TYPE_CHECKING, Any, Literal
 from uuid import uuid4
+
+from sqlalchemy.exc import SQLAlchemyError
 
 from immich_memories.api.access_clients import AccessBoundClient
 from immich_memories.api.models import VideoClipInfo
@@ -304,12 +308,32 @@ def render_saved_cut(
 
 
 def _render_as_new_run(config: Config, run: RunMetadata, params: GenerationParams) -> Path:
+    from immich_memories.automation.notifications import (
+        run_completion_details,
+        send_configured_notification,
+    )
     from immich_memories.db import open_store
     from immich_memories.free_text.trace import carry_to_render
     from immich_memories.tracking.run_observations import observe_render
     from immich_memories.tracking.span_store import SpanStore
 
     # The film is a new run: it opens its observations here, so the cut's request joins them.
+    started = monotonic()
     with observe_render(config):
         carry_to_render(SpanStore(open_store(config)).diagnostics(run.run_id))
-        return generate_memory(params)
+        path = generate_memory(params)
+    try:
+        warnings, asset_url = run_completion_details(config, params.editorial_attempt_dir)
+        send_configured_notification(
+            config,
+            params.memory_type or "unknown",
+            success=True,
+            duration_seconds=monotonic() - started,
+            output_path=str(path),
+            warnings=warnings,
+            immich_asset_url=asset_url,
+        )
+    except (OSError, RuntimeError, SQLAlchemyError):
+        # The film is already complete; delivery trouble must not mark it as failed.
+        logging.getLogger(__name__).warning("Could not send saved-render completion notification")
+    return path

@@ -54,6 +54,7 @@ def send_configured_notification(
     output_path: str | None = None,
     error: str | None = None,
     warnings: list[str] | None = None,
+    immich_asset_url: str | None = None,
 ) -> None:
     """Send one enabled success/failure notification using the shared policy."""
     notif = config.notifications
@@ -73,6 +74,7 @@ def send_configured_notification(
         store=notification_store(config),
         attach_thumbnail=notif.attach_thumbnail,
         cooldown_hours=notif.cooldown_hours,
+        immich_asset_url=immich_asset_url,
     )
 
 
