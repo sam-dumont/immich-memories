@@ -100,7 +100,7 @@ export default function SetupBuilder({initialPlatform = 'linux', initialInline =
       {compose && setup.tier !== 'basic' && !setup.gpuBox && <label className={styles.check}>
         <input type="checkbox" checked={setup.cuda} onChange={event => update({cuda: event.target.checked})} />
         Use NVIDIA CUDA containers
-        <small>Needs the NVIDIA driver and container toolkit. A CPU container does not satisfy GPU readiness.</small>
+        <small>Select this for services on this NVIDIA host. Needs the NVIDIA driver and Container Toolkit; CPU images do not satisfy GPU readiness.</small>
       </label>}
       {setup.tier === 'full' && <>
         <label>Reader URL{setup.platform === 'mac' ? ' (optional)' : ''}
@@ -117,7 +117,9 @@ export default function SetupBuilder({initialPlatform = 'linux', initialInline =
       Single file for a stack editor
       <small>Includes a browser-generated settings key and your reader details. Store the downloaded file privately.</small>
     </label>}
-    <p className={styles.note}><Link to="/docs/run/tested-deployments">Can I run this? Check the version and topology matrix.</Link></p>
+    <details>
+      <summary>Platform coverage and tested installations</summary>
+      <p><Link to="/docs/run/tested-deployments">See the deployment matrix for exact release and platform coverage.</Link></p>
     {setup.platform === 'kubernetes'
       ? <p className={styles.note}><strong>Tested as a generated installation</strong> on Kubernetes (RKE2): the GPU tier and Basic, each with the CronJobs, were installed from builder output and made a film.
         {' '}The files are also checked with Kustomize and the form is checked in a browser.
@@ -130,11 +132,12 @@ export default function SetupBuilder({initialPlatform = 'linux', initialInline =
         {' '}Earlier NAS, Mac and GPU Kubernetes checks are recorded in the <Link to="/docs/better/measured#cold-start-time-by-hardware-and-tier">measured results</Link>.
         {' '}<Link href="https://github.com/sam-dumont/immich-memories/issues/new">Tried it? Report your platform, release and preflight result.</Link>
       </p>}
+    </details>
     <p className={styles.note}>Nothing here contacts an Immich or model server.
       {setup.tier === 'full' && ' Full explicitly enables reader calls once the app runs.'}</p>
     {result.error ? <p className={styles.error} role="status">{result.error}</p> : <div aria-live="polite">
       <p>Save these files for a fresh install. For an existing install, change service URLs in Settings.
-        Preflight checks whether the requested tier is ready.</p>
+        Preflight checks whether the requested tier is ready. After it passes, make <Link to="/docs/get-started/first-film">your first film</Link>.</p>
       {result.files.map(file => <div key={file.name} className={styles.file}>
         <div className={styles.fileHeader}>
           <code>{file.name}</code>
@@ -152,7 +155,12 @@ export default function SetupBuilder({initialPlatform = 'linux', initialInline =
       </div>)}
       <p role="status">{notice}</p>
       {result.workerCommands && <CodeBlock language="bash" title="On the NVIDIA GPU host">{result.workerCommands}</CodeBlock>}
-      {result.accessCommands && <CodeBlock language="bash" title="Private UI access">{result.accessCommands}</CodeBlock>}
+      {result.accessCommands && <details>
+        <summary>Private UI access with an SSH tunnel</summary>
+        <CodeBlock language="bash" title="Private UI access">{result.accessCommands}</CodeBlock>
+      </details>}
+      {compose && <p>On a server or NAS, configure <Link to={setup.inline ? "/docs/run/docker#stack-editor-lan-access" : "/docs/get-started/quick-start#2-connect-immich"}>app login for LAN access</Link> before starting, or use the private SSH tunnel above.</p>}
+      {compose && !setup.inline && <p>Create <code>output</code> with write access for UID/GID 1000 before starting. On Linux: <code>sudo chown 1000:1000 output</code>. On Synology use the <Link to="/docs/run/nas#the-output-folder">folder permissions recipe</Link>.</p>}
       {showCommands && <CodeBlock language="bash" title={result.workerCommands ? "On the app host" : "Install and check"}>{result.commands}</CodeBlock>}
     </div>}
   </section>;

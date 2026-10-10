@@ -4,17 +4,9 @@ title: "Terraform"
 
 # Terraform
 
-The module in `deploy/terraform/` deploys the app to Kubernetes. Use it if you already manage
-the cluster with Terraform. The [existing-Secret validation runs](./reference/kubernetes.md#verified-terraform-runs)
-include an unmodified-module rollout with a published app release. Read the plan before applying
-it to your cluster.
-
-The project supports this module and the [Kustomize deployment](./kubernetes.md#supported-deployment-paths).
-There is no project Helm chart; request one if your setup needs it.
-
-Read [configuration ownership, probes and resources](./kubernetes.md#configuration-ownership)
-for environment/file versus Settings precedence, singleton behavior and Immich outages.
-Use [pinned bundle vendoring](./gitops.md) for repeatable module inputs.
+The module in `deploy/terraform/` runs the app in an existing Kubernetes cluster. Use this
+route when you already manage that cluster with Terraform. For a setup that also generates
+the GPU model-service deployments, use [Kustomize](./kubernetes.md).
 
 ## Prerequisites
 
@@ -23,14 +15,29 @@ Immich must be reachable from the pod. For NVIDIA scheduling, add GPU Operator a
 
 ## Quick start
 
-From the release deployment bundle, choose the private CPU example:
+Download the [matching release bundle](./gitops.md), then choose the private CPU example:
 
 ```bash
 cd deploy/terraform/examples/basic
 cp terraform.tfvars.example terraform.tfvars
 ```
 
-Edit the Immich URL, API key and pinned `image_tag`. Then:
+Edit the Immich URL, [scoped API key](./docker.md#the-api-key) and pinned `image_tag`.
+Choose the tier through the example's `env` map:
+
+| Tier | Configuration |
+|---|---|
+| **Basic** | `IMMICH_MEMORIES_TIER = "basic"`; no model services |
+| **GPU** | `IMMICH_MEMORIES_TIER = "gpu"`; set the [inference and caption endpoints](../get-started/choose-your-setup.md#gpu-understand-more-of-the-pictures) |
+| **Full** | GPU configuration with `IMMICH_MEMORIES_TIER = "full"`, `IMMICH_MEMORIES_LLM__ENABLED = "true"`, plus `llm_base_url`, `llm_model` and any `llm_api_key` |
+
+GPU/Full require working CUDA inference, captions and Laya; Full also needs a reader with 32k
+context. The module does not deploy an inference or reader server. See the
+[service inputs](./reference/terraform.md#additional-supported-inputs) for the optional captioner.
+`gpu_enabled` controls app GPU scheduling for rendering; it does not start those services.
+Keep `replicas = 1`. Terraform state and plan artifacts can contain keys, so protect them.
+
+Then:
 
 ```bash
 terraform init
@@ -71,9 +78,9 @@ For home coordinates, timezone and uploads, use the `env` map.
 
 ## Model preparation and tiers
 
-The init container fetches pinned files. The app starts with automatic tier selection.
+The init container fetches pinned files. Without an explicit tier in `env`, the app uses automatic tier selection.
 After adding GPU/Full services, run `models fetch` and `preflight` in the app container.
-[Model preparation caveats](./kubernetes.md#the-models-the-first-cut-needs).
+[Model preparation caveats](reference/kubernetes-operations.md#the-models-the-first-cut-needs).
 
 ## Daily automation
 
@@ -95,6 +102,10 @@ Back up the store, change `image_tag`, plan/apply, fetch current pins and run pr
 [config, captioner and sidecar inputs](./reference/terraform.md#additional-supported-inputs).
 
 ## Troubleshooting
+
+[Configuration ownership and monitoring](./reference/kubernetes-operations.md#configuration-ownership)
+covers deployment-controlled settings, probes and Immich outages.
+[Deployment evidence](./tested-deployments.md) records tested versions and routes.
 
 [Pod, storage and GPU checks](./reference/terraform.md#troubleshooting).
 

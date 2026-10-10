@@ -4,85 +4,42 @@ title: Docker Compose
 
 # Docker Compose
 
-One container, next to your existing Immich server. This is the recommended install.
+Docker Compose runs the app beside your existing Immich server. Basic uses one container;
+GPU and Full add model services. This is the recommended container install.
 You need Docker Compose v2 and [4 GB free for the app](./requirements.md). On a NAS, check the
 [NAS notes](./nas.md) for folder permissions and device access.
 
 ## Install
 
+Follow [Quick start](../get-started/quick-start.md) and select **Basic**, **GPU** or **Full**.
+It covers the release files, Immich connection, access, model preparation and first film.
+For a single file to paste into a stack editor, use the [setup builder](/setup).
+
+This page covers operating that installation. [Installation help](../reference/installation-help.md)
+has port, permissions and startup fixes.
+
 ### 1. Get the files
 
-import InstallationFiles from '@site/src/components/InstallationFiles';
-
-<InstallationFiles />
+Use the [download block for your tier](../get-started/quick-start.md#1-download-the-files).
 
 ### 2. Connect Immich
 
-In Immich, open **Account Settings > API Keys > New API Key** and select the
-[ten read permissions](#the-api-key). Leave **All** unchecked. An existing All key is a broad
-legacy configuration; replace it with the minimum read set unless you separately enable uploads. Fill in `.env`:
-
-```ini
-IMMICH_URL=http://192.168.1.10:2283
-IMMICH_API_KEY=your-api-key-here
-TZ=Europe/Brussels
-```
-
-Use the address **the container can reach**. `localhost` means the container itself.
-For trips and local public holidays, set home coordinates in **Settings** after startup.
-To fix them in the deployment instead, add these entries to the app's `environment:` block
-in `docker-compose.yml`:
-
-```yaml
-      IMMICH_MEMORIES_TRIPS__HOMEBASE_LATITUDE: "50.8503"
-      IMMICH_MEMORIES_TRIPS__HOMEBASE_LONGITUDE: "4.3517"
-```
-
-Putting these coordinates in `.env` alone has no effect with the shipped Compose file.
-
-`title_screens.locale: auto` follows the host's `LANG`, but the container sets none, so a
-film always renders in English until you set `title_screens.locale: fr` (or add
-`LANG: fr_FR.UTF-8` to the `environment:` block) for a French one.
+Set the [Immich connection](../get-started/quick-start.md#2-connect-immich) and use the
+[API-key permissions](#the-api-key) below. Home coordinates and film language can be set after
+installation in [Settings](../get-started/after-install.md).
 
 ### 3. Start and check
 
-```bash
-mkdir -p output
-docker compose up -d
-docker compose exec immich-memories immich-memories models fetch
-docker compose exec immich-memories immich-memories preflight
-```
-
-Create `output` first so Docker does not create it as root. The container runs as UID/GID 1000.
-If preflight reports **Output directory is not writable**, on plain Linux:
-
-```bash
-sudo chown -R 1000:1000 output
-```
-
-On Synology DSM this isn't enough, because the share's ACL still denies uid 1000. Use the
-`synoacltool` line in the [NAS permissions recipe](./nas.md#the-output-folder).
-`models fetch` downloads the pinned encoder and WordNet data. The published image has no `llama-server`; use an [external reader server](../better/reader.md#use-an-existing-server) for Docker or Kubernetes. GPU/Full also fetch detector models
-and Laya. Files stay on the persistent volume; a recreate keeps them.
+Run the [start and model commands](../get-started/quick-start.md#3-start-and-download-the-local-models)
+from the same Compose project directory.
 
 ### 4. Open the app
 
-On the Docker host: [http://localhost:8080](http://localhost:8080).
-If the host is your NAS or another server, [tunnel or enable LAN access](#reaching-the-ui-from-another-machine).
-
-Then make [your first film](../get-started/first-film.mdx). Start with the 20–50-item trial album.
-The first film takes longer: it prepares every picture in the period before it renders. See
-[measured examples](../better/measured.md#cold-start-time-by-hardware-and-tier) and
-[what to expect](./nas.md#what-to-expect).
+[Open the app and make a film](../get-started/quick-start.md#4-open-the-app).
 
 ### When a step is missing
 
-| Preflight says | Fix |
-|---|---|
-| `Encoder: Pinned DINOv2 export missing` or `Not the pinned DINOv2 export` | Run `models fetch` |
-| Output directory is not writable | Fix ownership in step 3 |
-| `Immich: Connection failed` | Check URL/key; do not use container `localhost` |
-| Home coordinates are not configured | Set both coordinates; films work, trips stay off |
+Use [Installation help](../reference/installation-help.md#read-preflight).
 
 ## Reaching the UI from another machine
 
@@ -126,6 +83,23 @@ Keep one UI replica.
 :::
 
 For OIDC or a proxy with HTTPS, see [Authentication](./authentication.mdx).
+
+### Stack editor LAN access {#stack-editor-lan-access}
+
+The builder's **Single file for a stack editor** output has no `.env`. Before deploying it on
+a trusted LAN, set these entries directly under the app service's existing `environment:`:
+
+```yaml
+IMMICH_MEMORIES_AUTH_USERNAME: admin
+IMMICH_MEMORIES_AUTH_PASSWORD: replace-with-your-own-long-password
+```
+
+Choose a password of at least 12 characters. In the same app service, change its `ports:` entry
+from `127.0.0.1:8080:8080` to `0.0.0.0:8080:8080` (keep your chosen host port if it differs).
+Deploy the stack, open `http://your-server-address:8080`, and sign in. The container manager's
+login does not protect this port. This is HTTP on your LAN; for encrypted access, keep localhost
+and use the [SSH tunnel above](#reaching-the-ui-from-another-machine) or
+[HTTPS proxy setup](./authentication.mdx#behind-a-reverse-proxy-with-tls).
 
 ## The API key
 
@@ -223,7 +197,8 @@ The service then reaches Immich over that stack's internal network.
 
 ## Add-on services
 
-Get the first film working before adding services.
+For a fresh GPU or Full installation, use the tier tab in [Quick start](../get-started/quick-start.md).
+The guides below cover changing individual services on an existing install.
 
 <Diagram name="deploy-compose" headline="Start with one container. Add a file for each upgrade." />
 | Want | Setup |

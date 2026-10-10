@@ -320,7 +320,7 @@ kubectl kustomize deploy/kubernetes/base
 kubectl apply -k deploy/kubernetes/base
 ```
 
-A `Complete` Job only means the trigger was accepted (`202`); the film is made by the running app. Follow it with `GET /api/trigger/<attempt_id>` and the token, as shown under [Batch jobs](../run/kubernetes.md#batch-jobs). `concurrencyPolicy: Forbid` does not stop overlapping runs: the run lease answers a second trigger with `409`.
+A `Complete` Job only means the trigger was accepted (`202`); the film is made by the running app. Follow it with `GET /api/trigger/<attempt_id>` and the token, as shown under [Batch jobs](../run/reference/kubernetes-operations.md#batch-jobs). `concurrencyPolicy: Forbid` does not stop overlapping runs: the run lease answers a second trigger with `409`.
 
 The base NetworkPolicy permits their app-pod backend on 8080 after Service-port translation.
 The separate `base/job.yaml` runs a one-off `generate` command and mounts the SQLite PVCs;

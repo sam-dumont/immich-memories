@@ -330,6 +330,6 @@ concurrency; a missing reservation does not mean zero consumption.
 Only the app and its init/maintenance jobs need the app state volumes. Inference, caption and
 external reader use their own caches; HTTP endpoints do not require sharing SQLite or app paths.
 Keep SQLite on local/block storage. PostgreSQL removes that file constraint but does not make
-multiple UI replicas safe. See [mounts, backups and probes](./kubernetes.md#how-the-pod-is-wired).
+multiple UI replicas safe. See [mounts, backups and probes](reference/kubernetes-operations.md#how-the-pod-is-wired).
 Existing services can be reused once `preflight` confirms the expected facts contract, caption
 alias and reader configuration.

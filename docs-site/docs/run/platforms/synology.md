@@ -1,5 +1,6 @@
 ---
 title: Synology DSM
+description: Create a Container Manager project, choose a tier and make a film.
 ---
 
 import SetupBuilder from '@site/src/components/SetupBuilder';
@@ -7,197 +8,69 @@ import StackStorage from './_stack-storage.mdx';
 
 # Synology DSM
 
-Use **Container Manager → Project** on a DSM model that supports Container Manager. Start with the Basic setup; it needs no separate GPU or model server. The project steps follow [Synology's documentation](https://kb.synology.com/en-global/DSM/help/ContainerManager/docker_project?version=7).
+Use **Container Manager → Project** on a DSM model that supports Container Manager.
+Basic runs on the NAS. For GPU or Full, use a separate NVIDIA machine and enter its private
+address in **GPU box address** below. Full also needs a reader.
+[Requirements](../requirements.md) covers memory and storage.
 
-:::info Tested route: SSH/Compose. GUI Project wizard not yet exercised
-
-A fresh-volume SSH/Compose install passes end to end: model download, preflight, a default
-first film, playback, and a Settings URL save/reload/restore. See the
-[deployment matrix](../tested-deployments.md) for the exact release this covers. The Container
-Manager **Project wizard** itself has not been exercised; if you try it, [report your
-results](https://github.com/sam-dumont/immich-memories/issues), including your DSM version, app
-version, selected tier, and whether preflight and the first film worked.
-
-:::
+The SSH/Compose route has completed a first film; the GUI Project wizard has not been exercised.
+See [tested deployments](../tested-deployments.md) for exact coverage.
 
 ## 1. Create a project
 
-Create a folder for the project in File Station. In Container Manager, open **Project → Create**, name it `immich-memories`, select that folder, and choose the option to create the Compose file in the editor. Enter your Immich URL below, paste the generated `docker-compose.yml` into the editor, and replace `replace-with-your-immich-api-key` with your own [API key](../docker.md#the-api-key) (the builder never asks for it):
+Create a dedicated project folder in File Station. In **Container Manager → Project → Create**,
+name the project `immich-memories`, select that folder and choose the Compose editor.
+
+Choose your tier below. Enter the Immich URL the NAS can reach, copy `docker-compose.yml` into
+the editor, and replace `replace-with-your-immich-api-key` with your
+[Immich API key](../docker.md#the-api-key). For Full, also replace the reader key placeholder,
+or empty it for a reader without authentication.
 
 <SetupBuilder initialPlatform="synology" initialInline showPlatform={false} showCommands={false} />
 
 <StackStorage />
 
-Once you paste your key in, the saved Compose file contains your Immich API key and Settings encryption key. Restrict the project folder and file to your DSM user in **File Station → Properties → Permission**, including inherited entries. For an SSH-created project, set and check the file modes after saving:
+Keep the saved file private using **File Station → Properties → Permission**. It contains keys.
 
-```bash
-chmod 700 /volume1/homes/your-user/immich-memories
-chmod 600 /volume1/homes/your-user/immich-memories/docker-compose.yml
-stat -c '%a %n' /volume1/homes/your-user/immich-memories /volume1/homes/your-user/immich-memories/docker-compose.yml
-```
+## 2. Choose access and start {#2-start-the-project}
 
-Use your actual project path. DSM can create this file with mode `777` despite `umask 077`; the
-explicit `chmod` above produces `700` for the folder and `600` for the file. Check the DSM
-permissions too: these mode numbers alone do not prove that an additional ACL grants nobody access.
+To open the app directly from another computer on your trusted LAN, follow
+[app login for a stack editor](../docker.md#stack-editor-lan-access) before deploying.
+Keep the default localhost mapping if you prefer the **Private UI access** SSH tunnel above.
 
-## 2. Start the project
-
-Finish the project wizard and start it. No Web Station portal is needed for the SSH tunnel below. The file deliberately has no `cpus:` quota: some DSM kernels reject it before the container starts. See [Synology CPU limits](../nas.md#do-not-use-cpus-on-a-synology) if you want to reserve cores for other apps.
+Finish the wizard and start the project. No Web Station portal is needed.
+For a separate GPU machine, run the generated GPU-host commands there first; keep its model
+service port accessible only from your app host on your private network.
 
 ## 3. Prepare and check
 
-Open a `/bin/sh` terminal in the running `immich-memories` container and run:
+Open a `/bin/sh` terminal in the running app container:
 
 ```bash
 immich-memories models fetch
 immich-memories preflight
 ```
 
-Alternatively, [enable SSH in DSM](https://kb.synology.com/en-global/DSM/help/DSM/AdminCenter/system_terminal?version=7) and run `docker exec immich-memories immich-memories models fetch` (add `sudo` if your user isn't in the `docker` group), followed by the same command ending in `preflight`. Fix connection or storage errors before making a film. Without a terminal the preflight table wraps at 80 columns and loses its row labels: run it as `docker exec -e COLUMNS=140 immich-memories immich-memories preflight`.
+Wait for downloads and your model services, then resolve any failed required check.
+The default Basic setup supports software encoding and CPU titles.
 
 ## 4. Open the app
 
-Three ways in, from simplest to most work. Pick one:
+For LAN access, open `http://your-nas-address:8080` and sign in. For a tunnel, use the localhost
+URL printed by the builder. Then make [your first film](../../get-started/first-film.mdx).
+DSM's own login does not protect the app's port.
 
-1. **SSH tunnel.** Needs an SSH account that is allowed to forward ports (below). Nothing is published on the LAN.
-2. **DSM reverse proxy with login**, when tunnelling is disabled and you have a LAN DNS name and a TLS certificate: [Authenticated proxy](#authenticated-proxy).
-3. **LAN port with app login**, when you have neither a tunnel nor a certificate: [LAN port with app login](#lan-port-with-app-login-no-tunnel-no-proxy). Plain HTTP on your LAN.
+## Other access routes and troubleshooting
 
-Your SSH account must also be allowed to forward TCP connections. Enabling SSH in DSM does not
-guarantee this: a non-admin account can connect over SSH while the tunnel still fails with
-`administratively prohibited`, because DSM's default policy sets `AllowTcpForwarding no` except
-for administrator accounts. Ask your NAS administrator for an approved forwarding-enabled account;
-do not change the NAS's SSH policy just to follow this guide.
+[Synology access and troubleshooting](../reference/synology-operations.md) covers an HTTPS
+reverse proxy, forwarding restrictions and a release-file installation over SSH.
+[Installation help](../../reference/installation-help.md) covers readiness errors.
 
-Use the **Private UI access** command generated above; it uses your selected UI port. Replace `your-ssh-user@your-host` with your NAS login and address.
+<span id="sshcompose-installation-from-published-files" />
+<span id="authenticated-proxy" />
+<span id="lan-port-with-app-login-no-tunnel-no-proxy" />
+<span id="checking-auth-with-curl" />
 
-If forwarding is unavailable, use [the authenticated proxy procedure below](#authenticated-proxy). DSM's login alone does not authenticate the app.
-
-Open the localhost URL shown by the builder and make [your first film](../../get-started/first-film.mdx). DSM's login does not protect a separately published app port. For direct LAN access, [turn on app authentication first](../docker.md#reaching-the-ui-from-another-machine).
-
-## SSH/Compose installation from published files
-
-This is a separate route from the Project wizard. On the NAS, enable SSH for an approved
-account and open a terminal in a new app-only directory under your DSM home. Follow
-[Quick start, Download the files](../../get-started/quick-start.md#1-download-the-files) there,
-using that documentation build's published assets. A preview without downloads cannot supply
-this prebuilt route. Never use the Immich project's directory.
-
-Edit `.env` on the NAS: set `IMMICH_URL`, `IMMICH_API_KEY`, `TZ`, and keep `TIER=basic` and
-`UI_BIND_ADDRESS=127.0.0.1`. Use the [ten read permissions](../docker.md#the-api-key).
-From the resulting `immich-memories` project directory on the NAS:
-
-```bash
-chmod 700 .
-chmod 600 .env
-mkdir -p output
-/usr/syno/bin/synoacltool -addace output user:1000:allow:rwxpdDaARWc--:fd--
-/usr/syno/bin/synoacltool -addace output user:$(id -un):allow:rwxp-DaARWc--:fd--
-sudo docker compose -p immich-memories pull
-sudo docker compose -p immich-memories up -d
-sudo docker compose -p immich-memories exec immich-memories immich-memories models fetch
-sudo docker compose -p immich-memories exec immich-memories immich-memories preflight
-```
-
-The two `synoacltool` lines give the container's uid 1000 write access to `output` and give your own
-DSM user an entry too: without the second one, `ls -ld output` shows `d---------+` and you get
-"Permission denied" on your own folder. See [the output folder](../nas.md#the-output-folder) for why `chown` isn't enough.
-`title_screens.locale: auto` follows the host's `LANG`, but the container sets none, so a film
-always renders in English until you set `title_screens.locale: fr` (or add `LANG: fr_FR.UTF-8`
-to `.env`) for a French one. Check DSM ACLs as described above. Run every later Compose command from this directory with
-`-p immich-memories`; the explicit project name also determines its named volume prefix.
-This stock release-file route uses host port **8080**. If occupied, change only the number before
-`:8080` in the port line, so it reads `${UI_BIND_ADDRESS:-127.0.0.1}:18081:8080`, and use 18081 for
-both tunnel and proxy upstream. Keep `${UI_BIND_ADDRESS:-127.0.0.1}`: the LAN route depends on it.
-
-When you script these commands over `ssh`, `docker compose exec` swallows the script's stdin.
-Inside `ssh host 'bash -s'`, add `-T` and `</dev/null` to each Compose `exec` command so the next script line stays available. The same form works for a one-liner: `ssh nas "sudo docker compose -p immich-memories exec -T immich-memories immich-memories preflight </dev/null"`.
-
-On your **desktop**, the permitted-tunnel route is:
-
-```bash
-ssh -o ExitOnForwardFailure=yes -L 8080:127.0.0.1:8080 your-user@your-nas
-```
-
-Keep that session open and visit `http://localhost:8080` on the desktop. A forwarding-denied
-message when the browser connects requires the proxy route below, even if SSH itself logged in.
-
-## Authenticated proxy when forwarding is disabled {#authenticated-proxy}
-
-Use DSM's HTTPS reverse proxy on the NAS with **application Basic auth**. The app remains
-published on `127.0.0.1:8080`; there is no unauthenticated LAN mapping in this procedure.
-`memories.example.com` below is an example: substitute your LAN DNS name and its valid TLS
-certificate, already configured on the NAS. This does not require internet exposure or router forwarding.
-
-1. On the NAS, edit the project's `.env` and set both `IMMICH_MEMORIES_AUTH_USERNAME` and
-   `IMMICH_MEMORIES_AUTH_PASSWORD` to your chosen login and a unique password of at least
-   12 characters. Keep `UI_BIND_ADDRESS=127.0.0.1`.
-2. In `docker-compose.yml`, under the app's `environment`, add
-   `IMMICH_MEMORIES_AUTH__PUBLIC_URL: https://memories.example.com` and
-   `IMMICH_MEMORIES_SERVER__SECURE_COOKIES: "true"`. Configure the exact proxy peer as
-   `IMMICH_MEMORIES_AUTH__TRUSTED_PROXIES: '["YOUR_PROXY_PEER_IP"]'` using the
-   [peer-address check](../network-security.md#https-reverse-proxy). Keep these edits in your
-   deployment files; `.env` alone passes only variables the Compose file references.
-3. Recreate the app on the **NAS**, before creating/enabling the proxy:
-
-   ```bash
-   sudo docker compose -p immich-memories up -d
-   curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8080/api/v1/settings
-   ```
-
-   The protected settings endpoint must answer **401** without a session (and 200 after login).
-   Add `-u user:password` and it still answers 401: the login is a form that sets a session
-   cookie, not HTTP Basic, so `curl -u` never signs in. To test the 200, sign in the way the page
-   does and reuse its cookie, see [Checking auth with curl](#checking-auth-with-curl).
-   Stop if it returns settings. The public health endpoint is deliberately anonymous and is not an auth test.
-4. In DSM **Control Panel → Login Portal → Advanced → Reverse Proxy**, create a source
-   **HTTPS**, hostname `memories.example.com`, port **443**, and destination **HTTP**,
-   hostname `127.0.0.1`, port **8080**. Assign the matching certificate in DSM's certificate
-   settings. Preserve `Host`, set `X-Forwarded-Proto` to `https`, and overwrite forwarded
-   client headers as in the [proxy checklist](../network-security.md#https-reverse-proxy).
-   Menu labels depend on DSM; this GUI sequence still needs the validation below.
-5. On a **second LAN machine**, open a private browser window at
-   `https://memories.example.com`. Confirm it requires app login before showing settings or
-   media. Sign in, then follow [the bounded trial](../../get-started/first-film.mdx).
-6. Restart with `sudo docker compose -p immich-memories restart`, and repeat the signed-out,
-   login and saved-run checks from the second machine.
-
-| Symptom | Check |
-|---|---|
-| 502 or connection refused | Proxy destination is HTTP to the NAS loopback host port, not HTTPS or container port 80; check `sudo docker compose -p immich-memories ps` |
-| Login works over HTTP but fails through HTTPS | Check public URL, secure cookies, actual trusted peer and forwarded protocol; use [the auth guide](../authentication.mdx) |
-| Wrong password / temporary lockout | Use the app login from `.env`, not the DSM password; repeated failures trigger the documented rate limit |
-| Output permission failure | Check this project's `output` owner and DSM ACLs, then rerun preflight; do not change Immich's media directories |
-
-## LAN port with app login (no tunnel, no proxy)
-
-If your account can't forward ports and you don't want to set up the proxy, publish the port on
-the LAN with app authentication on. Do it in this order, from the project directory over SSH (DSM only allows SSH tunnels for
-administrators, so a plain account has to take this route):
-
-1. In `.env`, set the login: `IMMICH_MEMORIES_AUTH_USERNAME=admin` and
-   `IMMICH_MEMORIES_AUTH_PASSWORD=` a long password of your own (12 characters or more).
-2. In the same file, set `UI_BIND_ADDRESS=0.0.0.0`.
-3. Start it: `sudo docker compose -p immich-memories up -d`.
-
-From a second machine, `/api/v1/settings`, thumbnails and film downloads should answer 401
-without a session and 200 after login, and both should survive `restart` and `down`/`up`.
-The port is plain HTTP, so the password and cookie are visible on your LAN; the proxy route above
-is the one with TLS. `/health/ready` stays anonymous and shows the version and Immich reachability.
-
-### Checking auth with curl {#checking-auth-with-curl}
-
-The app's "Basic auth" is a username and password typed into a login form. It does not read an
-HTTP `Authorization: Basic` header, so `curl -u user:password .../api/v1/settings` gets 401 whatever
-the password. Sign in over `/auth/login`, keep the cookie, and ask again:
-
-```bash
-curl -s -c jar.txt -H 'Content-Type: application/json' \
-  -d '{"username":"admin","password":"your-password"}' http://nas-address:8080/auth/login
-curl -s -b jar.txt -o /dev/null -w '%{http_code}\n' http://nas-address:8080/api/v1/settings   # 200
-```
-
-Use your own address and port. A wrong password gets 401 here too, and repeated failures trigger the rate limit.
-
-See the [deployment matrix](../tested-deployments.md) for which of these routes have a verified
-first run on this platform, and what still needs a report.
+[HTTPS proxy](../reference/synology-operations.md#authenticated-proxy) ·
+[LAN login](../docker.md#stack-editor-lan-access) ·
+[SSH/Compose](../reference/synology-operations.md#sshcompose-installation-from-published-files)

@@ -4,8 +4,8 @@ title: Requirements and tiers
 
 # Requirements and tiers
 
-A plain NAS can make the whole film. No GPU or hosted AI subscription required.
-Start with the machine that already runs Immich.
+Basic runs on a plain NAS. GPU adds inference and captions; Full adds a text reader.
+[Choose your setup](../get-started/choose-your-setup.md) links the installation path for each tier.
 
 See [Can I run this?](./tested-deployments.md) for platform status, supported Immich versions and untested routes.
 
@@ -43,9 +43,19 @@ A few limits worth knowing before you install:
 See [performance guidance](../better/measured.md) and [platform scope](#supported-and-tested).
 Ready? [Install with Docker Compose](./docker.md), or read the [NAS notes](./nas.md).
 
+### GPU and Full resources
+
+The NVIDIA Compose files limit the app to 8 GiB, inference to 4 GiB and captions to 3 GiB, plus
+512 MiB for the one-time caption downloader. These are separate container limits, not a total
+host budget. Leave room for Immich, the host and any reader too. Model images and service caches
+need disk space beyond the app's 25 GB. GPU and Full also require the NVIDIA driver and
+[NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html).
+A native Apple Silicon install uses Metal instead.
+
 ## The three tiers {#the-preparation-tier}
 
-Leave `tier: auto`. The app chooses from the inference hardware and model configuration it finds.
+The installation guides pin the tier you choose. On a custom installation, `tier: auto` chooses
+from the inference hardware and model configuration it finds. Preflight checks its requirements.
 
 <Diagram name="decide-tier" headline="auto picks the most your hardware can do. Set tier yourself to pin one." />
 | Tier | What it adds | What you need |

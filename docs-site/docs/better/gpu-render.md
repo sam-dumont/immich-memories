@@ -71,7 +71,7 @@ On Kubernetes, `deploy/kubernetes/overlays/render-sidecar` runs the worker as a 
 in the app's own pod instead of its own Deployment: the two share a network namespace, so the app
 reaches it at `http://127.0.0.1:8093`, loopback, with neither HTTPS nor
 `render.allow_insecure_http` needed. See
-[the Kubernetes page](../run/kubernetes.md#render-worker-as-a-sidecar).
+[the Kubernetes page](../run/reference/kubernetes-operations.md#render-worker-as-a-sidecar).
 
 ## Give long jobs both deadlines
 

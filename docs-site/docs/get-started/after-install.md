@@ -1,60 +1,34 @@
 ---
 title: After install
-description: Prepare models, check the installation, set home and people, then make and back up a film.
+description: Set home and people, choose film language, keep backups and schedule films.
 ---
 
 # After install
 
-The app is running and can reach Immich. Do these once before making a larger film.
-The commands below use Docker Compose; on a native install, omit
-`docker compose exec immich-memories`.
+Once you have made [your first film](./first-film.mdx), configure the parts you want to use
+regularly. These steps apply to every tier.
 
-## 1. Fetch the models
+## Set home and people {#3-set-home}
 
-```bash
-docker compose exec immich-memories immich-memories models fetch
-```
+In **Settings**, set your home coordinates for trips and local holidays. Name important people
+in Immich, then use **Settings → People → Rescan the library** and confirm relationships.
+[Home and people](./who-is-who.md) explains the choices. An album film works without them.
 
-This downloads the models required by your configuration. Wait for it to finish. It does not
-prepare the whole library; the first cut prepares the pictures in the period you choose.
+<span id="4-confirm-people" />
 
-## 2. Check the installation
+## Choose film language
 
-```bash
-docker compose exec immich-memories immich-memories preflight
-docker compose exec immich-memories immich-memories capabilities
-```
+Set `title_screens.locale` in Settings to the language you want, for example `fr`.
+`auto` follows the process language; a stock container renders English. The interface and the
+film have separate language settings. [Titles and music](../make/titles-maps-music.md) covers format.
 
-Resolve errors using the fix printed beside each check. Missing home coordinates are addressed
-in the next step. Software encoding and simpler titles are expected on some NAS CPUs.
-`capabilities` shows the resolved tier; it does not prove a film has rendered.
+## Make a larger film {#5-make-one-month}
 
-## 3. Set home
+Try **Monthly Highlights** for a month with pictures you like, or choose a trip, a birthday or a
+year. A larger period needs more preparation. Compatible picture facts from earlier films are
+reused. Review the cut and finished film before sharing.
 
-Set `trips.homebase_latitude` and `trips.homebase_longitude` in **Settings** using your home
-coordinates in decimal degrees. Both are needed to distinguish travel from ordinary days at home.
-If the fields are controlled by your deployment, use the source shown beside them;
-[configuration sources](../run/config-file.md#where-a-setting-comes-from) explains the priority.
-
-The coordinates do not enable online place lookup. That has a
-[separate switch](../run/privacy.md#geocoding-and-maps).
-
-## 4. Confirm people
-
-Name important faces in Immich. In **Settings > People**, press **Rescan the library**, set the
-roles, and confirm or reject suggested relationships. The scan reads metadata; its guesses alone
-do not make someone close family. [Home and people](./who-is-who.md) explains what changes.
-
-## 5. Make one month
-
-Open [http://localhost:8080](http://localhost:8080). Choose **Monthly Highlights**, a year and a
-month with a few busy days, favourites and videos. Press **Cut**, review the shots, then **Render**.
-The [first-film walkthrough](./first-film.mdx) shows the review controls.
-
-On a headless NAS, use the [Quick start's SSH tunnel](./quick-start.md#4-open-the-app).
-Local Docker films go into `./output`. Watch the finished film before sharing it.
-
-## 6. Keep a backup
+## Keep a backup {#6-keep-a-backup}
 
 ```bash
 docker compose exec immich-memories immich-memories store backup
@@ -65,7 +39,20 @@ Copy backups off the host. Keep each backup with its `.manifest.json`, your depl
 and the saved-credential encryption key. Losing the key means re-entering saved credentials.
 [Storage and backups](../run/maintenance/storage-backups.md) covers restore and PostgreSQL.
 
-## 7. Add what you need
 
-Got a film you like? Keep this setup. For captions, extra sharing checks or a model's edit pass,
-[Choose your setup](./choose-your-setup.md) explains the benefit and cost of each tier.
+## Upload or schedule films
+
+To send films back to Immich, add the [upload permissions](../run/docker.md#the-api-key) and select
+**Upload the film to Immich** when rendering. A successful upload removes the local copy.
+[Automatic films](../make/automate.md) covers daily selection, scheduling and delivery.
+
+## Change the tier or services {#7-add-what-you-need}
+
+[Choose your setup](./choose-your-setup.md) explains Basic, GPU and Full. When you change tiers,
+run `models fetch`, `preflight` and `capabilities` for that configuration. Compatible facts and
+review decisions stay in your store.
+
+<span id="1-fetch-the-models" /><span id="2-check-the-installation" />
+
+Still completing installation? Use [Quick start](./quick-start.md) or
+[Installation help](../reference/installation-help.md).
