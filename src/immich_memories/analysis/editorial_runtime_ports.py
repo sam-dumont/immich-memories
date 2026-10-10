@@ -10,10 +10,6 @@ from immich_memories.analysis.catalogue_runtime import catalogue_requester
 from immich_memories.analysis.editorial_bound_sample import source_metadata_digest
 from immich_memories.analysis.editorial_preparation_motion import BankedMotionLines, motion_producer
 from immich_memories.analysis.editorial_preparation_obstruction import OBSTRUCTION_FRAME_PRODUCER
-from immich_memories.analysis.editorial_source import (
-    FullEditorialSource,
-    fetch_full_window_source,
-)
 from immich_memories.analysis.editorial_structure_contract import (
     StructurePlannerPorts,
     StructurePlanningInput,
@@ -22,7 +18,6 @@ from immich_memories.analysis.editorial_structure_contract import (
 from immich_memories.analysis.editorial_structure_planner import plan_structure
 from immich_memories.analysis.editorial_text_gateway import SyncTextPromptRequester
 from immich_memories.analysis.llm_batch import BatchCoordinator, BatchPolicy
-from immich_memories.analysis.selection_source import SourceScope
 from immich_memories.analysis.subject_framing import FaceBox, face_boxes_of
 from immich_memories.analysis.text_episode_paging import TEXT_EPISODE_MAX_OUTPUT_TOKENS
 from immich_memories.api.models import Asset, VideoClipInfo
@@ -102,9 +97,6 @@ class EditorialRuntimePorts:
             asset_id, start, length
         )
     )
-    fetch_full_source: Callable[
-        [FullEditorialSource, SourceScope], Sequence[Asset | VideoClipInfo]
-    ] = fetch_full_window_source
     # The episode reads are the one stage with a fan-out worth queueing, so the
     # batch coordinator is built here and nowhere else. Story picks depend on
     # the stages before them.

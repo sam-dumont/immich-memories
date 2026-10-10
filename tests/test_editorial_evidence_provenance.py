@@ -13,6 +13,7 @@ from immich_memories.analysis.editorial_evidence_provenance import (
     AttemptEvidenceProvenance,
     EpisodeEvidenceLines,
 )
+from immich_memories.analysis.editorial_pool import EditorialSourcePool
 
 
 def _episode(group_id: str, lines: dict[str, str]) -> EpisodeEvidenceLines:
@@ -133,6 +134,7 @@ def test_the_runtime_records_evidence_into_the_attempt_that_is_running(
         tmp_path / "artifacts",
     )
     planner = runtime.build_editorial_planner(
+        source_pool=EditorialSourcePool(()),
         client=object(),
         thumbnail_cache=object(),
         context=context,

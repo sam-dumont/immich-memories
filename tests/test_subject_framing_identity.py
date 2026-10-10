@@ -10,6 +10,7 @@ from pathlib import Path
 
 from immich_memories.analysis.annotation_lines import StoredAnnotationLineReader
 from immich_memories.analysis.editorial_contracts import EditorialCandidate
+from immich_memories.analysis.editorial_pool import EditorialSourcePool
 from immich_memories.analysis.editorial_story_shortlist import _capture_group_moments
 from immich_memories.analysis.subject_framing import face_boxes_of, framing_visibility
 from immich_memories.api.models import AssetFace, Person
@@ -139,6 +140,7 @@ def test_the_runtime_reads_lines_about_the_people_the_memory_is_about(tmp_path: 
     # Isolate the metadata reading path from the model acquisition component.
     config.editorial.preparation.tier = "metadata_only"
     planner = build_editorial_planner(
+        source_pool=EditorialSourcePool(()),
         client=object(),
         config=config,
         thumbnail_cache=ThumbnailCache(tmp_path / "thumbnails"),

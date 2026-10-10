@@ -8,6 +8,7 @@ import pytest
 from immich_memories.analysis.editorial_final_hash_review import (
     POLICY as FINAL_HASH_REVIEW_POLICY,
 )
+from immich_memories.analysis.editorial_pool import EditorialSourcePool
 from immich_memories.analysis.editorial_rule_reader import RuleStructureReader
 from immich_memories.analysis.editorial_story_slots import allocate_slots
 from immich_memories.config_models_editorial import EditorialConfig, EditorialPeopleConfig
@@ -82,6 +83,7 @@ def test_rules_finish_product_selection_without_constructing_inference(tmp_path,
 
     cache = ThumbnailCache(tmp_path / "thumbnails")
     planner = build_editorial_planner(
+        source_pool=EditorialSourcePool(tuple(sources)),
         client=object(),
         config=config,
         thumbnail_cache=cache,
@@ -89,15 +91,13 @@ def test_rules_finish_product_selection_without_constructing_inference(tmp_path,
             "rules",
             "February",
             product,
-            () if product == "album" else windows,
+            windows,
             60,
             tmp_path / "artifacts",
-            album_sources=tuple(sources) if product == "album" else (),
             album_ref="fixture-album" if product == "album" else None,
         ),
         ports=EditorialRuntimePorts(
             load_people=lambda: {},
-            fetch_full_source=lambda *_: sources,
             fetch_preview=lambda _client, key: _distinct_preview(key),
             episode_requester_factory=forbidden,
         ),
@@ -177,6 +177,7 @@ def test_rules_refuse_free_text_subjects_before_creating_an_annotation_store(tmp
     config = Config(editorial={"reader": "rules", "annotation_database": str(database)})
     with pytest.raises(ValueError, match="written subject needs a model reader"):
         build_editorial_planner(
+            source_pool=EditorialSourcePool(()),
             client=object(),
             config=config,
             thumbnail_cache=ThumbnailCache(tmp_path / "previews"),
@@ -284,6 +285,7 @@ def test_a_rules_film_may_play_a_live_photo_and_can_measure_one(tmp_path):
         return plan_structure(source, ports)
 
     planner = build_editorial_planner(
+        source_pool=EditorialSourcePool(tuple(sources)),
         client=object(),
         config=config,
         thumbnail_cache=ThumbnailCache(tmp_path / "thumbnails"),
@@ -292,7 +294,6 @@ def test_a_rules_film_may_play_a_live_photo_and_can_measure_one(tmp_path):
         ),
         ports=EditorialRuntimePorts(
             load_people=lambda: {},
-            fetch_full_source=lambda *_: sources,
             fetch_preview=lambda _client, key: _distinct_preview(key),
             structure_planner=planner_seeing,
         ),

@@ -8,6 +8,7 @@ from datetime import UTC, datetime, timedelta
 import pytest
 
 from immich_memories.analysis.editorial_description_contract import validate_envelope
+from immich_memories.analysis.editorial_pool import EditorialSourcePool
 from immich_memories.analysis.editorial_preparation import prepare_editorial_annotations
 from immich_memories.analysis.editorial_preparation_captions import _remember_captions
 from immich_memories.analysis.editorial_runtime import EditorialRunContext, build_editorial_planner
@@ -117,6 +118,7 @@ def _film(
     # WHY: the Immich transport supplies synthetic metadata and generated previews;
     # the requested film goes through the same public pipeline as the CLI and UI.
     planner = build_editorial_planner(
+        source_pool=EditorialSourcePool(tuple(sources)),
         client=object(),
         config=config,
         thumbnail_cache=ThumbnailCache(directory / "thumbnails"),
@@ -125,7 +127,6 @@ def _film(
         ),
         ports=EditorialRuntimePorts(
             load_people=lambda: {},
-            fetch_full_source=lambda *_: sources,
             fetch_preview=lambda _client, key: _distinct_preview(key),
             fetch_playback_range=read_playback,
             prepare_annotations=prepare,

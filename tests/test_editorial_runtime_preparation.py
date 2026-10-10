@@ -9,6 +9,7 @@ import pytest
 import sqlalchemy as sa
 
 from immich_memories.analysis.editorial_planner import EditorialPlan
+from immich_memories.analysis.editorial_pool import EditorialSourcePool
 from immich_memories.analysis.editorial_preparation import prepare_editorial_annotations
 from immich_memories.analysis.editorial_runtime import (
     EditorialRunContext,
@@ -16,6 +17,7 @@ from immich_memories.analysis.editorial_runtime import (
 )
 from immich_memories.analysis.editorial_runtime_evidence import EditorialInputsRequired
 from immich_memories.analysis.editorial_runtime_ports import EditorialRuntimePorts
+from immich_memories.analysis.selection_source import SourceScope
 from immich_memories.analysis.selection_trace import Trace
 from immich_memories.api.immich import ImmichAPIError, ImmichNotFoundError
 from immich_memories.cache.thumbnail_cache import ThumbnailCache
@@ -67,6 +69,9 @@ def build(
         return prepare_editorial_annotations(**kwargs, ports=providers)
 
     planner = build_editorial_planner(
+        source_pool=EditorialSourcePool(
+            tuple(acquire(object(), SourceScope(date_ranges=(window,))))
+        ),
         client=object(),
         config=config,
         thumbnail_cache=ThumbnailCache(tmp_path / "previews"),
@@ -75,7 +80,6 @@ def build(
         ),
         ports=EditorialRuntimePorts(
             load_people=lambda: {},
-            fetch_full_source=acquire,
             fetch_preview=lambda _client, asset_id: fetch(asset_id),
             prepare_annotations=prepare,
         ),

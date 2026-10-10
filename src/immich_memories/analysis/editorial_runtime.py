@@ -22,6 +22,7 @@ from immich_memories.analysis.editorial_motion_outcomes import MotionOutcomeRepl
 from immich_memories.analysis.editorial_orchestration import TextEditorialPlanner
 from immich_memories.analysis.editorial_people import adapt_editorial_people
 from immich_memories.analysis.editorial_planner import EditorialPlan
+from immich_memories.analysis.editorial_pool import EditorialSourcePool
 from immich_memories.analysis.editorial_rule_episodes import (
     EpisodeReader,
     RuleEpisodeReader,
@@ -32,7 +33,10 @@ from immich_memories.analysis.editorial_runtime_evidence import (
     EvidencePreparation,
 )
 from immich_memories.analysis.editorial_runtime_ports import EditorialRuntimePorts, KnownEditedCache
-from immich_memories.analysis.editorial_source import FullEditorialSource, library_source_scope
+from immich_memories.analysis.editorial_source import (
+    FullEditorialSource,
+    library_source_scope,
+)
 from immich_memories.analysis.editorial_source_route import (
     EditorialSourcePlan,
     metadata_demand,
@@ -45,11 +49,7 @@ from immich_memories.analysis.editorial_text_gateway import (
     semantic_text_model_identity,
 )
 from immich_memories.analysis.episode_demand import demand_reader_factory
-from immich_memories.analysis.household_source import (
-    fetch_household_source,
-    primary_owned_only,
-    source_accounts,
-)
+from immich_memories.analysis.household_source import source_accounts
 from immich_memories.analysis.place_names import place_names_for
 from immich_memories.analysis.selection_source import (
     EditorialDependencies,
@@ -59,7 +59,6 @@ from immich_memories.analysis.selection_source import (
 from immich_memories.analysis.selection_trace import Trace
 from immich_memories.analysis.special_event_scope import (
     SpecialEventAdmission,
-    select_source_members,
     validate_special_event_scope,
 )
 from immich_memories.analysis.text_episode_answers import TEXT_EPISODE_SCHEMA_VERSION
@@ -117,7 +116,6 @@ class EditorialRunContext:
     special_event_id: str | None = None
     event_asset_ids: tuple[str, ...] = ()
     event_admission: SpecialEventAdmission | None = None
-    album_sources: tuple[Asset | VideoClipInfo, ...] = ()
     owner_excluded_asset_ids: tuple[str, ...] = ()
     owner_required_asset_ids: tuple[str, ...] = ()
     target_source: str = "runtime"
@@ -160,7 +158,8 @@ class EditorialRunContext:
         # Birthday history can overlap its rolling year. Keep both semantic
         # windows; acquisition coalesces repeated asset IDs before selection.
         object.__setattr__(self, "date_ranges", ordered)
-        self._check_acquisition_shape(ordered)
+        if not ordered:
+            raise ValueError("editorial runs need exact semantic date windows")
 
     def _check_render_policy(self) -> None:
         if self.hemisphere not in ("north", "south"):
@@ -221,22 +220,10 @@ class EditorialRunContext:
             raise ValueError("special event admission must be an explicit validated record")
         self.event_admission.validate_scope(self.special_event_id, members, product=self.product)
 
-    def _check_acquisition_shape(self, ordered: tuple[DateRange, ...]) -> None:
-        if self.product == "album":
-            if ordered or not self.album_sources:
-                raise ValueError("album editorial runs need captured sources and no fetch windows")
-            if self.album_ref is None or not self.album_ref.strip():
-                raise ValueError("album editorial runs need an album reference")
-        elif not ordered or self.album_sources or self.album_ref is not None:
-            raise ValueError("non-album editorial runs need exact fetch windows only")
-
     @property
     def case_ranges(self) -> tuple[DateRange, ...]:
-        """Return semantic ranges without turning an album span into acquisition scope."""
-        if self.date_ranges:
-            return self.date_ranges
-        taken_at = tuple(_asset(source).file_created_at for source in self.album_sources)
-        return (DateRange(min(taken_at), max(taken_at)),)
+        """The dates the film describes, independent of how its pool was discovered."""
+        return self.date_ranges
 
 
 def _asset(source: Asset | VideoClipInfo) -> Asset:
@@ -534,6 +521,7 @@ def build_editorial_planner(
     config: Config,
     thumbnail_cache: ThumbnailCache,
     context: EditorialRunContext,
+    source_pool: EditorialSourcePool,
     dry_run: bool = False,
     ports: EditorialRuntimePorts | None = None,
 ) -> RuntimeEditorialPlanner:
@@ -570,9 +558,7 @@ def build_editorial_planner(
         primary_owner_id=_primary_owner_id(client, accounts),
     )
 
-    source_snapshot: tuple[Asset | VideoClipInfo, ...] | None = (
-        context.album_sources if context.product == "album" else None
-    )
+    source_snapshot = source_pool.sources
     source_snapshots = AttemptSourceSnapshots()
     evidence_provenance = AttemptEvidenceProvenance()
     # Every place a viewer reads is named here, once, and travels on the pictures (#1591).
@@ -580,21 +566,7 @@ def build_editorial_planner(
     named = False
 
     def source_fetcher(requested_scope: SourceScope) -> Sequence[Asset | VideoClipInfo]:
-        nonlocal source_snapshot, named
-        if source_snapshot is None:
-            source_snapshot = select_source_members(
-                fetch_household_source(
-                    cast(AccessBoundClient, client),
-                    accounts,
-                    requested_scope,
-                    runtime_ports.fetch_full_source,
-                )
-                if accounts
-                else primary_owned_only(
-                    client, runtime_ports.fetch_full_source(client, requested_scope)
-                ),
-                requested_scope.asset_ids,
-            )
+        nonlocal named
         if not named:
             place_names.name(source_snapshot)
             named = True
@@ -681,7 +653,7 @@ def build_editorial_planner(
         fetch_preview=lambda asset_id: runtime_ports.preview_reader(
             client, known_edited.for_pool(source_snapshot)
         )(asset_id),
-        attached_sources=lambda: source_snapshot or (),
+        attached_sources=lambda: source_snapshot,
         episode_demand=demand,
         prepare_refinement=refinement.refine if refinement else None,
         printed_near=_printed_near(client),
@@ -710,7 +682,11 @@ def build_editorial_planner(
     )
     runtime = RuntimeEditorialPlanner(
         planner,
-        asset_ids=scope.asset_ids,
+        asset_ids=tuple(
+            _asset(source).id
+            for source in source_pool.selectable
+            if scope.asset_ids is None or _asset(source).id in scope.asset_ids
+        ),
         config=config,
         backend=backend,
     )
@@ -726,6 +702,7 @@ def build_smart_pipeline(
     *,
     app_config: Config,
     editorial_context: EditorialRunContext,
+    source_pool: EditorialSourcePool,
     dry_run: bool = False,
     editorial_ports: EditorialRuntimePorts | None = None,
 ) -> SmartPipeline:
@@ -737,6 +714,7 @@ def build_smart_pipeline(
         config=app_config,
         thumbnail_cache=thumbnail_cache,
         context=editorial_context,
+        source_pool=source_pool,
         dry_run=dry_run,
         ports=editorial_ports,
     )

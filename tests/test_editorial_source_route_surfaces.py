@@ -4,13 +4,14 @@ from __future__ import annotations
 
 import socket
 from datetime import UTC, datetime
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, create_autospec, patch
 
 import pytest
 
 from immich_memories.analysis.editorial_planner import EditorialSelection
 from immich_memories.analysis.smart_pipeline import PipelineResult
 from immich_memories.api.models import Asset, AssetType, VideoClipInfo
+from immich_memories.api.sync_client import SyncImmichClient
 from immich_memories.config_loader import Config
 from immich_memories.timeperiod import DateRange
 from tests.conftest import make_asset, make_clip
@@ -143,12 +144,12 @@ def test_cli_source_route_uses_timed_clips_and_preserves_exact_render_handoff(tm
     sources = pipeline.run_editorial_source.call_args.args[0]
     assert [clip.asset for clip in sources[:4]] == videos
     assert [clip.duration_seconds for clip in sources[:4]] == [7.5, 0.25, 0.0, 8.0]
-    assert sources[4:] == photos
+    assert list(sources[4:]) == photos
     assert pipeline.run_editorial_source.call_args.kwargs["include_live_photos"] is False
     context = build.call_args.kwargs["editorial_context"]
-    assert context.album_sources == (*videos, *photos)
+    assert build.call_args.kwargs["source_pool"].selectable == tuple(sources)
     assert context.album_ref == "album-source"
-    assert context.date_ranges == ()
+    assert context.date_ranges == (_WINDOW,)
     assert build.call_args.kwargs["dry_run"] is False
     if no_render:
         generate.assert_not_called()
@@ -176,6 +177,11 @@ def test_cli_short_and_unknown_videos_reach_editor_as_timed_clips(tmp_path, dura
     assert assets_to_clips([asset]) == []
     pipeline = _source_pipeline(_finished_selection())
     pipeline.run_editorial_source.side_effect = RuntimeError("source route reached")
+    # WHY: Immich discovery returns the same short source passed into this CLI run.
+    client = create_autospec(SyncImmichClient, instance=True)
+    client.get_videos_for_date_range.return_value = [asset]
+    client.get_photos_for_date_range.return_value = []
+    client.generated_asset_ids.return_value = frozenset()
     # WHY: stop at the model boundary; unknown timing belongs to the editor.
     with (
         # WHY: the collaborator under inspection; its call args are asserted after the raise.
@@ -186,7 +192,7 @@ def test_cli_short_and_unknown_videos_reach_editor_as_timed_clips(tmp_path, dura
     ):
         run_pipeline_and_generate(
             assets=[asset],
-            client=MagicMock(),
+            client=client,
             config=_config(tmp_path),
             progress=MagicMock(),
             duration=60.0,

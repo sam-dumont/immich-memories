@@ -11,6 +11,7 @@ import pytest
 import sqlalchemy as sa
 
 from immich_memories.analysis.editorial_planner import EditorialPlan, EditorialSelection
+from immich_memories.analysis.editorial_pool import EditorialSourcePool
 from immich_memories.analysis.editorial_rule_reader import NoModelJudge
 from immich_memories.analysis.editorial_runtime import (
     EditorialRunContext,
@@ -154,6 +155,7 @@ def test_missing_store_is_initialized_and_old_flag_cannot_bypass_preparation(tmp
     )
 
     planner = build_editorial_planner(
+        source_pool=EditorialSourcePool(()),
         client=object(),
         config=disabled,
         thumbnail_cache=object(),
@@ -166,6 +168,7 @@ def test_missing_store_is_initialized_and_old_flag_cannot_bypass_preparation(tmp
     assert store_file.is_file()
     with pytest.raises(ValueError, match="Dry-run"):
         build_editorial_planner(
+            source_pool=EditorialSourcePool(()),
             client=object(),
             config=enabled,
             thumbnail_cache=object(),
@@ -201,6 +204,7 @@ def test_smart_pipeline_factory_preserves_the_existing_constructor_seam(tmp_path
         ) as smart_pipeline,
     ):
         actual = build_smart_pipeline(
+            source_pool=EditorialSourcePool(()),
             client="client",
             thumbnail_cache="thumbnail-cache",
             config="pipeline-config",
@@ -233,6 +237,7 @@ def test_explicit_model_runtime_rejects_blank_model_before_opening_the_store(
 
     with pytest.raises(ValueError, match="LLM model"):
         build_editorial_planner(
+            source_pool=EditorialSourcePool(()),
             client=object(),
             config=config,
             thumbnail_cache=object(),
@@ -244,7 +249,7 @@ def test_explicit_model_runtime_rejects_blank_model_before_opening_the_store(
     assert not store_file.exists()
 
 
-def test_album_context_keeps_acquisition_windows_empty_and_derives_only_case_span(
+def test_album_context_describes_its_span_without_carrying_a_separate_source_pool(
     tmp_path,
 ) -> None:
     later = make_asset("later", file_created_at=datetime(2026, 8, 20, tzinfo=UTC))
@@ -254,15 +259,12 @@ def test_album_context_keeps_acquisition_windows_empty_and_derives_only_case_spa
         key="album-1",
         label="Owner album",
         product="album",
-        date_ranges=(),
+        date_ranges=(DateRange(earlier.file_created_at, later.file_created_at),),
         target_seconds=120,
         artifact_dir=tmp_path,
         album_ref="album-1",
-        album_sources=(later, earlier),
     )
 
-    assert context.date_ranges == ()
-    assert context.album_sources == (later, earlier)
     assert context.case_ranges == (DateRange(earlier.file_created_at, later.file_created_at),)
 
 
@@ -291,13 +293,15 @@ def test_runtime_acquires_each_exact_window_through_the_real_text_lane(tmp_path)
         return (clip,)
 
     planner = build_editorial_planner(
+        source_pool=EditorialSourcePool(
+            tuple(acquire(object(), SourceScope(date_ranges=context.date_ranges)))
+        ),
         client=object(),
         config=config,
         thumbnail_cache=object(),
         context=context,
         ports=EditorialRuntimePorts(
             load_people=lambda: {},
-            fetch_full_source=acquire,
         ),
     )
     assert planner is not None
@@ -345,24 +349,20 @@ def test_album_runtime_uses_only_the_captured_album_corpus(tmp_path) -> None:
         key="album-1",
         label="Owner album",
         product="album",
-        date_ranges=(),
+        date_ranges=(_window(2026, 7, 1),),
         target_seconds=60,
         artifact_dir=tmp_path / "artifacts",
         album_ref="album-1",
-        album_sources=(clip,),
     )
 
-    def forbidden_fetch(_client, _scope):
-        raise AssertionError("album runtime must not fetch a min/max date span")
-
     planner = build_editorial_planner(
+        source_pool=EditorialSourcePool((clip,)),
         client=object(),
         config=config,
         thumbnail_cache=object(),
         context=context,
         ports=EditorialRuntimePorts(
             load_people=lambda: {},
-            fetch_full_source=forbidden_fetch,
         ),
     )
     assert planner is not None
@@ -484,13 +484,13 @@ def test_post_card_runtime_projects_selected_wall_rows_in_chronological_order(
         )
 
     planner = build_editorial_planner(
+        source_pool=EditorialSourcePool((later, earlier)),
         client=object(),
         config=config,
         thumbnail_cache=object(),
         context=context,
         ports=EditorialRuntimePorts(
             load_people=load_people,
-            fetch_full_source=lambda _client, _scope: (later, earlier),
             episode_requester_factory=episode_requester,
             structure_planner=structure_planner,
             structure_ports_factory=lambda _source: StructurePlannerPorts(

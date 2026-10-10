@@ -436,6 +436,9 @@ def _handler_type(
                     },
                 )
                 return
+            if path == "/api/tags":
+                self._send_json(200, [])
+                return
             if path == "/api/albums":
                 holding = query.get("assetId", [None])[0]
                 albums = [a for a in ALBUMS if holding is None or holding in ALBUM_ASSETS]

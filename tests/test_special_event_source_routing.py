@@ -15,6 +15,7 @@ from pathlib import Path
 
 import pytest
 
+from immich_memories.analysis.editorial_pool import EditorialSourcePool
 from immich_memories.analysis.editorial_rule_reader import NoModelJudge
 from immich_memories.analysis.editorial_runtime import (
     EditorialRunContext,
@@ -211,13 +212,13 @@ def test_production_wall_receives_only_selected_event_even_if_port_returns_whole
         ],
     }
     planner = build_editorial_planner(
+        source_pool=EditorialSourcePool(tuple(clips.values())),
         client=object(),
         config=config,
         thumbnail_cache=object(),
         context=context,
         ports=EditorialRuntimePorts(
             load_people=lambda: {},
-            fetch_full_source=lambda _client, _scope: tuple(clips.values()),
             episode_requester_factory=lambda _config: lambda _prompt: json.dumps(episode),
             structure_planner=plan,
             structure_ports_factory=lambda _source: StructurePlannerPorts(
@@ -288,6 +289,7 @@ def test_an_events_live_photo_with_real_motion_plays_as_its_clip(tmp_path):
         )
 
     planner = build_editorial_planner(
+        source_pool=EditorialSourcePool((*stills, *companions)),
         client=object(),
         config=config,
         thumbnail_cache=ThumbnailCache(tmp_path / "thumbnails"),
@@ -303,7 +305,6 @@ def test_an_events_live_photo_with_real_motion_plays_as_its_clip(tmp_path):
         ),
         ports=EditorialRuntimePorts(
             load_people=lambda: {},
-            fetch_full_source=lambda *_: (*stills, *companions),
             fetch_preview=lambda _client, key: _distinct_preview(key),
             structure_planner=plan,
         ),

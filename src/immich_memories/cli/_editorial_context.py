@@ -7,6 +7,7 @@ that may be acquired, and the timing policy the render must honour.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import TYPE_CHECKING, Literal
 
 from immich_memories.analysis.editorial_runtime import EditorialRunContext
@@ -17,6 +18,9 @@ from immich_memories.planning.auto_duration import DURATION_FROM_DURATION_FLAG
 from immich_memories.timeperiod import DateRange
 
 if TYPE_CHECKING:
+    from immich_memories.analysis.editorial_pool import EditorialSourcePool
+    from immich_memories.api.models import Asset, VideoClipInfo
+    from immich_memories.api.sync_client import SyncImmichClient
     from immich_memories.cli._run_inputs import ResolvedRunInputs
     from immich_memories.config_loader import Config
 
@@ -73,10 +77,9 @@ def build_editorial_context(
 
     product = str(memory_type or "custom")
     person_expression = _person_expression(resolved)
-    label, album_ref, album_sources = _naming(
+    label, album_ref = _naming(
         product,
         resolved=resolved,
-        assets=assets,
         date_range=date_range,
         title_override=title_override,
     )
@@ -94,7 +97,7 @@ def build_editorial_context(
         key=key,
         label=label,
         product=product,
-        date_ranges=tuple(date_ranges) if date_ranges is not None else (date_range,),
+        date_ranges=tuple(date_ranges) if date_ranges else (date_range,),
         target_seconds=duration,
         duration_source=duration_source,
         hemisphere=resolved.preset_params.get("hemisphere", "north"),
@@ -124,7 +127,6 @@ def build_editorial_context(
         pool_is_subject=pool_subject is not None,
         trip=product == "trip",
         album_ref=album_ref,
-        album_sources=album_sources,
         special_event_id=resolved.preset_params.get("event_id") if special_event else None,
         event_admission=read_special_event_admission(resolved.preset_params.get("event_admission")),
         event_asset_ids=(
@@ -167,18 +169,45 @@ def _naming(
     product: str,
     *,
     resolved: ResolvedRunInputs,
-    assets: list,
     date_range: DateRange,
     title_override: str | None,
-) -> tuple[str, str | None, tuple]:
-    """Album runs carry their captured sources; every other product fetches windows."""
+) -> tuple[str, str | None]:
+    """Name the film without deciding how the editor acquires its pictures."""
     if product == "album":
         return (
             str(resolved.preset_params.get("album_name") or date_range.description),
             str(resolved.preset_params.get("album_id") or ""),
-            (*assets, *(resolved.photo_assets or [])),
         )
     if product == "trip":
         location = resolved.preset_params.get("location_name")
-        return str(title_override or location or date_range.description), None, ()
-    return title_override or date_range.description, None, ()
+        return str(title_override or location or date_range.description), None
+    return title_override or date_range.description, None
+
+
+def resolve_editorial_pool(
+    *,
+    client: SyncImmichClient,
+    config: Config,
+    context: EditorialRunContext,
+    selected: Sequence[Asset | VideoClipInfo],
+) -> EditorialSourcePool:
+    """Finish discovery before editing, preserving the source's explicit membership."""
+    from immich_memories.analysis.editorial_pool import discover_source_context, resolve_source_pool
+    from immich_memories.analysis.editorial_source import library_source_scope
+
+    # Albums already define their context. Window discovery reads surrounding
+    # metadata for events and capture runs before entering the same source boundary.
+    contextual = None
+    if context.product != "album":
+        contextual = discover_source_context(
+            client,
+            library_source_scope(
+                client,
+                config,
+                context.date_ranges,
+                asset_ids=context.event_asset_ids if context.special_event_id else None,
+                accept_any_provenance=context.accept_any_provenance,
+            ),
+            accounts=context.accounts,
+        )
+    return resolve_source_pool(client, selected, context=contextual)

@@ -18,8 +18,10 @@ from pathlib import Path
 import httpx
 import pytest
 
+from immich_memories.analysis.editorial_pool import discover_source_context, resolve_source_pool
 from immich_memories.analysis.editorial_runtime import EditorialRunContext, build_editorial_planner
 from immich_memories.analysis.editorial_runtime_ports import EditorialRuntimePorts
+from immich_memories.analysis.editorial_source import library_source_scope
 from immich_memories.analysis.editorial_source_snapshot import SNAPSHOT_NAME
 from immich_memories.analysis.selection_source import prepare_editorial_source
 from immich_memories.api.access_clients import AccessBoundClient, AccountReadFailed, reads_for
@@ -110,6 +112,8 @@ def immich(monkeypatch) -> FakeImmich:
         server.reads.append((user, asset_id, served))
         if not served:
             return httpx.Response(403, json={"message": "Not found or no asset.read access"})
+        if read.group(2) is None:
+            return httpx.Response(200, json=_asset(asset_id, user))
         return httpx.Response(200, content=f"bytes-of-{asset_id}".encode())
 
     # WHY: the HTTP boundary; every Immich request goes to the in-process fake server above.
@@ -151,6 +155,14 @@ def run(tmp_path, immich):
             accounts=accounts,
         )
         planner = build_editorial_planner(
+            source_pool=resolve_source_pool(
+                client,
+                discover_source_context(
+                    client,
+                    library_source_scope(client, config, context.date_ranges),
+                    accounts=accounts,
+                ),
+            ),
             client=client,
             thumbnail_cache=object(),
             context=context,
@@ -373,3 +385,21 @@ def test_the_attempt_names_its_pictures_once_and_the_snapshot_keeps_the_name(
     [kept] = [row["value"] for row in snapshot["sources"] if row["value"]["id"] == "own-video"]
     assert kept["exif_info"]["place_name"] == "Antwerpen"
     assert len(asked) == 1
+
+
+def test_companion_resolution_and_later_reads_use_the_stills_owner(tmp_path, immich, run):
+    still = Asset.model_validate(
+        _asset("partner-still", "user-partner", companion="partner-motion")
+    ).model_copy(update={"access_accounts": ("partner", "primary")})
+    immich.owners["partner-motion"] = "user-partner"
+    client, _ = run
+    pool = resolve_source_pool(client, [still])
+    assert pool.selectable == (still,)
+    assert pool.companions[0].access_accounts == ("partner", "primary")
+    assert immich.reads_of("partner-motion") == [("user-partner", True)]
+    stage = reads_for(_config(tmp_path).immich, pool.sources)
+    try:
+        assert stage.get_video_playback("partner-motion") == b"bytes-of-partner-motion"
+    finally:
+        stage.close()
+    assert immich.reads_of("partner-motion") == [("user-partner", True)] * 2
