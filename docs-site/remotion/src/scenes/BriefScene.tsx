@@ -35,12 +35,12 @@ const MONTHS = ["", "January", "February", "March", "April", "May", "June", "Jul
 // The fixture library's cast (tests/e2e/fake_library.py), nobody's family.
 const PEOPLE = ["Robin", "Charlie", "Kit"];
 
-const PICK_TYPE = 45;
-const CLICK_YEAR = 80;
-const TYPE_YEAR = [86, 98];
-const CLICK_MONTH = 112;
-const TYPE_MONTH = 120;
-export const CLICK_CUT = 150;
+const PICK_TYPE = 48;
+const CLICK_YEAR = 88;
+const TYPE_YEAR = [98, 116];
+const CLICK_MONTH = 138;
+const TYPE_MONTH = 148;
+export const CLICK_CUT = 186;
 
 // The page asks the server for the command 150 ms after the brief changes.
 const DEBOUNCE = 5;
@@ -305,9 +305,7 @@ const BriefForm: React.FC<{ frame: number }> = ({ frame }) => {
   );
 };
 
-type Props = { bassIntensity?: number };
-
-export const BriefScene: React.FC<Props> = ({ bassIntensity }) => {
+export const BriefScene: React.FC = () => {
   const frame = useCurrentFrame();
   const scroll = interpolate(frame, SCROLL_AT, [0, SCROLL], {
     extrapolateLeft: "clamp",
@@ -315,7 +313,7 @@ export const BriefScene: React.FC<Props> = ({ bassIntensity }) => {
   });
   return (
     <AbsoluteFill style={{ backgroundColor: COLORS.bg }}>
-      <WindowFrame path="/app/create" bassIntensity={bassIntensity}>
+      <WindowFrame path="/app/create">
         <AppShell active="Memory" scroll={scroll}>
           <BriefForm frame={frame} />
         </AppShell>

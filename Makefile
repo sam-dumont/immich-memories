@@ -1169,7 +1169,7 @@ demo-cli:  ## Record the CLI demo via VHS → docs-site/remotion/public/cli-demo
 	@python3 -c "import re,subprocess,sys; end=float(re.search(r'end: ([0-9.]+)',open('docs-site/remotion/src/cli-timing.ts').read()).group(1)); got=float(subprocess.check_output(['ffprobe','-v','error','-show_entries','format=duration','-of','csv=p=0','docs-site/remotion/public/cli-demo.mp4'])); ok=abs(got-end)<=0.03*end+1; print(f'cli-demo.mp4: {got:.1f} s against the last mark {end:.1f} s'); sys.exit(0 if ok else 'the recording dropped frames: run make demo-cli again on an idle machine')"
 
 demo-output:  ## Cut the demo's output clip + poster on the hermetic launch
-	uv run pytest tests/e2e/test_demo_assets.py::test_cut_the_demo_output_clip -v -m demo \
+	LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 uv run pytest tests/e2e/test_demo_assets.py::test_cut_the_demo_output_clip -v -m demo \
 		--log-cli-level=INFO --tb=short
 
 # Needs the network: the fly-over's satellite tiles come from ArcGIS World Imagery
@@ -1186,6 +1186,7 @@ demo-ui-install:  ## Install Remotion demo dependencies
 	rm -rf docs-site/remotion/public/fonts docs-site/remotion/public/library
 	cp -R src/immich_memories/web/static/fonts docs-site/remotion/public/fonts
 	cp -R tests/e2e/fixtures/library docs-site/remotion/public/library
+	cp docs-site/static/img/logo.svg docs-site/remotion/public/logo.svg
 
 .PHONY: demo-ui-check demo-ui-still
 demo-ui-check:  ## Check the Remotion scene types and code
@@ -1207,34 +1208,24 @@ demo-fixture:  ## Export the hermetic fixture library into the Remotion demo (do
 
 .PHONY: demo-soundtrack
 demo-soundtrack:  ## Rebuild the demo's music from a bundled MIT-licensed acoustic track
-	@# The track read twice, not asplit: asplit into acrossfade buffers differently across
-	@# FFmpeg versions, and 6.1 made a 28.7 s track the demo outran.
 	ffmpeg -y -loglevel error \
 	  -i packages/immich-memories-music/immich_memories_music/tracks/happy/happy_acoustic_s411.opus \
 	  -i packages/immich-memories-music/immich_memories_music/tracks/happy/happy_acoustic_s411.opus \
-	  -filter_complex "[0:a][1:a]acrossfade=d=3:c1=tri:c2=tri,loudnorm=I=-18:TP=-2:LRA=9[music]" \
-	  -map "[music]" -t 60 -ar 48000 -ac 2 -c:a pcm_s16le docs-site/remotion/public/demo-music.wav
+	  -i packages/immich-memories-music/immich_memories_music/tracks/happy/happy_acoustic_s411.opus \
+	  -i packages/immich-memories-music/immich_memories_music/tracks/happy/happy_acoustic_s411.opus \
+	  -filter_complex "[0:a][1:a]acrossfade=d=3:c1=tri:c2=tri[a];[a][2:a]acrossfade=d=3:c1=tri:c2=tri[b];[b][3:a]acrossfade=d=3:c1=tri:c2=tri,loudnorm=I=-18:TP=-2:LRA=9[music]" \
+	  -map "[music]" -ar 48000 -ac 2 -c:a pcm_s16le docs-site/remotion/public/demo-music.wav
 
 DEMO_RENDER_ARGS ?=
 demo-ui: demo-ui-install demo-fixture demo-soundtrack  ## Render Remotion demo → docs-site/static/demo/demo.mp4
 	@mkdir -p docs-site/static/demo
 	cd docs-site/remotion && npx remotion render src/index.ts DemoVideo ../static/demo/$(DEMO_VIDEO).mp4 --props='{"theme":"$(DEMO_THEME)"}' --codec h264 --crf 18 $(DEMO_RENDER_ARGS)
+	ffmpeg -y -loglevel error -ss 2.166667 -i docs-site/static/demo/$(DEMO_VIDEO).mp4 -frames:v 1 -q:v 2 -update 1 docs-site/static/demo/$(DEMO_VIDEO)-poster.jpg
 
-# The homepage and README hero tells the product's loop without a jump: the brief, the cut
-# and the review (demo 4.0 to 13.6 s), then Render pressed, the film arriving on the page and
-# the zoom into its player (29.0 s to 34.43 s, demo frame 1033, where the slide to Runs starts),
-# then the same film full bleed from the moment that player shows: FilmScene plays it from
-# FILM_FROM 19.2 s, so frame 1033 is film second 21.13 and the tail starts half a second earlier
-# to cover its crossfade. Moving a scene in Composition.tsx moves these numbers.
-# 720 px, 9 fps, about 17.7 s and under 4 MB. The README loads it from GitHub Pages on every visit,
-# so 4 MB is the ceiling. The film tail is what costs (LZW gets nothing on moving photographs);
-# a 60-colour palette fit easily but posterised the film, so it takes the full 255 and a light
-# hqdn3d. Re-run after `make demo-ui` and re-check the size.
-HERO_FILTER := fps=9,scale=720:405:flags=lanczos,format=yuv420p
-demo-hero:  ## Cut the README hero GIF: brief, cut, review, render, and the film it made
-	ffmpeg -y -loglevel error -i docs-site/static/demo/$(DEMO_VIDEO).mp4 -i docs-site/remotion/public/output-preview.mp4 \
-	  -filter_complex "[0:v]trim=4.0:13.6,setpts=PTS-STARTPTS,$(HERO_FILTER)[a];[0:v]trim=29.0:34.43,setpts=PTS-STARTPTS,$(HERO_FILTER)[b];[1:v]trim=20.63:24.13,setpts=PTS-STARTPTS,$(HERO_FILTER)[c];[a][b]xfade=transition=fade:duration=0.3:offset=9.3[ab];[ab][c]xfade=transition=fade:duration=0.5:offset=14.23,hqdn3d,split[x][y];[y]palettegen=max_colors=255:stats_mode=diff[p];[x][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle" \
-	  docs-site/static/img/$(DEMO_HERO).gif
+# The shared Remotion timeline supplies the cuts, including the exact player-to-film handoff.
+# 720 px, 10 fps, under 4 MB; review both themes after moving scenes.
+demo-hero:  ## Cut the README hero GIF from the demo's shared scene timings
+	DEMO_THEME=$(DEMO_THEME) node --experimental-strip-types docs-site/remotion/scripts/hero.mjs
 
 .PHONY: llm-conformance
 llm-conformance:  ## Exercise production LLM features on synthetic evidence: CONFIG=provider.yaml

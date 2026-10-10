@@ -62,13 +62,6 @@ const RUNS: {
     ),
   },
   {
-    type: "Person Spotlight",
-    span: "Jan 1, 2023 to Dec 31, 2023",
-    status: "Failed",
-    when: "2 days ago · Scheduled",
-    pictures: [],
-  },
-  {
     type: "Custom date range",
     span: "Jun 15, 2024 to Jun 15, 2024",
     status: "Completed",
@@ -142,9 +135,7 @@ const Mosaic: React.FC<{ pictures: string[] }> = ({ pictures }) => (
   </div>
 );
 
-type Props = { bassIntensity?: number };
-
-export const RunsScene: React.FC<Props> = ({ bassIntensity }) => {
+export const RunsScene: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const reveal = (delay: number) =>
@@ -152,7 +143,7 @@ export const RunsScene: React.FC<Props> = ({ bassIntensity }) => {
 
   return (
     <AbsoluteFill style={{ backgroundColor: COLORS.bg }}>
-      <WindowFrame path="/app/runs" bassIntensity={bassIntensity} enter={false}>
+      <WindowFrame path="/app/runs" enter={false}>
         <AppShell active="Runs">
           <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>

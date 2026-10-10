@@ -24,7 +24,6 @@ type Props = {
   /** The address bar's path, after localhost:8099. */
   path: string;
   zoom?: CameraZoom;
-  bassIntensity?: number;
   /** False when the scene continues the previous one on the same page: no float-in. */
   enter?: boolean;
 };
@@ -61,19 +60,18 @@ const cameraProgress = (frame: number, zoom: CameraZoom) => {
   return Easing.inOut(Easing.cubic)(Math.min(inward, outward));
 };
 
-/** A browser window on the dark stage, the web client inside it. */
+/** A browser window on the themed stage, the web client inside it. */
 export const WindowFrame: React.FC<Props> = ({
   children,
   path,
   zoom,
-  bassIntensity = 0,
   enter = true,
 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
   const entry = enter
-    ? spring({ frame, fps, config: { damping: 15, stiffness: 80, mass: 1.2 } })
+    ? spring({ frame, fps, config: { damping: 28, stiffness: 100, mass: 1 } })
     : 1;
   const entryY = interpolate(entry, [0, 1], [60, 0]);
   const entryScale = interpolate(entry, [0, 1], [0.92, 1]);
@@ -93,9 +91,9 @@ export const WindowFrame: React.FC<Props> = ({
       ((WINDOW_H / 2 - zoom.targetY * WINDOW_H) * (camScale - 1)) / camScale;
   }
 
-  const shadowY = 30 + bassIntensity * 20;
-  const shadowBlur = 60 + bassIntensity * 40;
-  const shadowAlpha = 0.45 + bassIntensity * 0.2;
+  const shadowY = 12;
+  const shadowBlur = 32;
+  const shadowAlpha = 0.16;
 
   return (
     <div

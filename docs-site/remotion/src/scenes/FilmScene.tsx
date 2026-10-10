@@ -13,6 +13,7 @@ import { AnimatedCursor } from "../components/AnimatedCursor";
 import { FloatingEditBar, RUN_ID, RunPage } from "../components/RunPage";
 import { EDITED } from "./EditScene";
 import { JOB_SCROLL } from "./RenderScene";
+import { PLAYER_FROM, PLAYER_PLAY } from "../timeline";
 import { CUT_CONTENT_BUDGET } from "../fixture";
 
 /**
@@ -23,15 +24,13 @@ import { CUT_CONTENT_BUDGET } from "../fixture";
 // The film element's top, from the top of the page, once the job panel above it has finished.
 const FILM_Y = 1416 + 32 + 124 + 16;
 const FILM_SCROLL = FILM_Y - 200;
-const PLAY = 30;
-const FILM_FROM = 19.2;
+const PLAY = PLAYER_PLAY;
+const FILM_FROM = PLAYER_FROM;
 
 const FILM_CENTRE = { x: MAIN_X + 384, y: FILM_Y + 216 - FILM_SCROLL };
 const PLAY_XY = onScreen(FILM_CENTRE.x, FILM_CENTRE.y);
 
-type Props = { bassIntensity?: number };
-
-export const FilmScene: React.FC<Props> = ({ bassIntensity }) => {
+export const FilmScene: React.FC = () => {
   const frame = useCurrentFrame();
   const scroll = interpolate(frame, [0, 22], [JOB_SCROLL, FILM_SCROLL], {
     extrapolateLeft: "clamp",
@@ -42,7 +41,7 @@ export const FilmScene: React.FC<Props> = ({ bassIntensity }) => {
     <AbsoluteFill style={{ backgroundColor: COLORS.bg }}>
       <WindowFrame
         path={`/app/runs/${RUN_ID}`}
-        bassIntensity={bassIntensity}
+
         enter={false}
         zoom={{
           targetX: FILM_CENTRE.x / WINDOW_W,

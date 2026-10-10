@@ -38,7 +38,7 @@ const CANDIDATES = [
   },
 ];
 
-const CHECK = 40;
+const CHECK = 72;
 const SETTLED = CHECK + 14;
 // The first card's "Check eligibility", before the attempt's own box pushes the cards down:
 // the heading block (64), the gap, then the card's padding, reason, meta and key lines.
@@ -109,9 +109,7 @@ const Card: React.FC<{
   </div>
 );
 
-type Props = { bassIntensity?: number };
-
-export const SuggestionsScene: React.FC<Props> = ({ bassIntensity }) => {
+export const SuggestionsScene: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const reveal = (delay: number) =>
@@ -122,7 +120,7 @@ export const SuggestionsScene: React.FC<Props> = ({ bassIntensity }) => {
     <AbsoluteFill style={{ backgroundColor: COLORS.bg }}>
       <WindowFrame
         path="/app/suggestions"
-        bassIntensity={bassIntensity}
+
         enter={false}
       >
         <AppShell active="Suggestions">

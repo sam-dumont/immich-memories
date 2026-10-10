@@ -39,11 +39,3 @@ export const UI = {
   warning200: "var(--immich-ui-warning-200)",
   warning800: "var(--immich-ui-warning-800)",
 } as const;
-
-export const FPS = 30;
-
-// The whole demo, in frames. Scene lengths live in Composition.tsx's D map.
-export const TOTAL_FRAMES = 1486;
-
-// Music fades out over the last 5 seconds.
-export const MUSIC_FADE_START = TOTAL_FRAMES - 150;

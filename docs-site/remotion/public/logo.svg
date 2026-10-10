@@ -1,0 +1,34 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="warm" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f59f00"/>
+      <stop offset="100%" stop-color="#e8590c"/>
+    </linearGradient>
+    <linearGradient id="film" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#343a40"/>
+      <stop offset="100%" stop-color="#212529"/>
+    </linearGradient>
+  </defs>
+  <!-- Film strip body -->
+  <rect x="30" y="25" width="140" height="150" rx="12" fill="url(#film)"/>
+  <!-- Sprocket holes top -->
+  <rect x="38" y="32" width="12" height="8" rx="2" fill="#495057"/>
+  <rect x="58" y="32" width="12" height="8" rx="2" fill="#495057"/>
+  <rect x="78" y="32" width="12" height="8" rx="2" fill="#495057"/>
+  <rect x="98" y="32" width="12" height="8" rx="2" fill="#495057"/>
+  <rect x="118" y="32" width="12" height="8" rx="2" fill="#495057"/>
+  <rect x="138" y="32" width="12" height="8" rx="2" fill="#495057"/>
+  <!-- Sprocket holes bottom -->
+  <rect x="38" y="160" width="12" height="8" rx="2" fill="#495057"/>
+  <rect x="58" y="160" width="12" height="8" rx="2" fill="#495057"/>
+  <rect x="78" y="160" width="12" height="8" rx="2" fill="#495057"/>
+  <rect x="98" y="160" width="12" height="8" rx="2" fill="#495057"/>
+  <rect x="118" y="160" width="12" height="8" rx="2" fill="#495057"/>
+  <rect x="138" y="160" width="12" height="8" rx="2" fill="#495057"/>
+  <!-- Screen area -->
+  <rect x="40" y="48" width="120" height="104" rx="6" fill="#1a1b1e"/>
+  <!-- Play triangle with warm gradient -->
+  <polygon points="85,72 85,128 135,100" fill="url(#warm)"/>
+  <!-- Subtle shine on play button -->
+  <polygon points="85,72 85,100 110,86" fill="rgba(255,255,255,0.15)"/>
+</svg>

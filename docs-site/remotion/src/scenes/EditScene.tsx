@@ -32,12 +32,12 @@ const ALTERNATIVE = alternativesOf(SHOTS[SWAPPED])[0].picture;
 
 const PICK_SWAP = 22;
 const SCROLL_DOWN = [30, 56];
-const OPEN_ALTERNATIVE = 68;
-const USE_IT = 96;
-const SCROLL_UP = [108, 134];
-const PICK_REMOVE = 150;
-const REMOVE = 172;
-const SAVE = 200;
+const OPEN_ALTERNATIVE = 76;
+const USE_IT = 144;
+const SCROLL_UP = [160, 188];
+const PICK_REMOVE = 212;
+const REMOVE = 240;
+const SAVE = 290;
 const SAVED = SAVE + 8;
 
 // How far the page scrolls to bring the alternatives and the swap button into view.
@@ -77,9 +77,7 @@ const pulse = (frame: number, at: number) =>
     extrapolateRight: "clamp",
   });
 
-type Props = { bassIntensity?: number };
-
-export const EditScene: React.FC<Props> = ({ bassIntensity }) => {
+export const EditScene: React.FC = () => {
   const frame = useCurrentFrame();
   const scroll = interpolate(
     frame,
@@ -107,7 +105,7 @@ export const EditScene: React.FC<Props> = ({ bassIntensity }) => {
     <AbsoluteFill style={{ backgroundColor: COLORS.bg }}>
       <WindowFrame
         path={`/app/runs/${RUN_ID}`}
-        bassIntensity={bassIntensity}
+
         enter={false}
       >
         <AppShell active="Runs" scroll={scroll}>

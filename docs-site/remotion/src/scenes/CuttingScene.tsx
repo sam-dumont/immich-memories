@@ -39,9 +39,7 @@ const TIMELINE = [
 const COUNT_FROM = 12;
 const COUNT_TO = 90;
 
-type Props = { bassIntensity?: number };
-
-export const CuttingScene: React.FC<Props> = ({ bassIntensity }) => {
+export const CuttingScene: React.FC = () => {
   const frame = useCurrentFrame();
   const stage =
     [...TIMELINE].reverse().find((step) => frame >= step.at) ?? TIMELINE[0];
@@ -71,7 +69,7 @@ export const CuttingScene: React.FC<Props> = ({ bassIntensity }) => {
     <AbsoluteFill style={{ backgroundColor: COLORS.bg }}>
       <WindowFrame
         path="/app/create"
-        bassIntensity={bassIntensity}
+
         enter={false}
       >
         <AppShell active="Memory">

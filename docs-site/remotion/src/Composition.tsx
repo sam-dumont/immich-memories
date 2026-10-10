@@ -1,11 +1,14 @@
-import { AbsoluteFill, useCurrentFrame } from "remotion";
+import { AbsoluteFill } from "remotion";
 import { Audio } from "@remotion/media";
 import { staticFile, interpolate } from "remotion";
 import { TransitionSeries, linearTiming } from "@remotion/transitions";
 import { fade } from "@remotion/transitions/fade";
 import { slide } from "@remotion/transitions/slide";
-import { COLORS, MUSIC_FADE_START, TOTAL_FRAMES } from "./theme";
-import { useBassIntensity } from "./hooks/useBassIntensity";
+import { COLORS } from "./theme";
+import { SCENE_FRAMES as D, FADE, SLIDE, FILM_TRANSITION, CLOSING_TRANSITION,
+  MUSIC_FADE_START, MUSIC_FADE_END } from "./timeline";
+import { DemoHeading } from "./components/DemoHeading";
+import { ClosingScene } from "./scenes/ClosingScene";
 import { TitleScene } from "./scenes/TitleScene";
 import { BriefScene } from "./scenes/BriefScene";
 import { CuttingScene } from "./scenes/CuttingScene";
@@ -15,45 +18,14 @@ import { RenderScene } from "./scenes/RenderScene";
 import { FilmScene } from "./scenes/FilmScene";
 import { RunsScene } from "./scenes/RunsScene";
 import { SuggestionsScene } from "./scenes/SuggestionsScene";
-import { CLI_FRAMES, CliScene } from "./scenes/CliScene";
+import { CliScene } from "./scenes/CliScene";
 import { OutputPreviewScene } from "./scenes/OutputPreviewScene";
 
-const FADE = 15; // 0.5s
-const SLIDE = 12; // 0.4s
-
-// Scene durations (frames at 30fps). TransitionSeries overlaps each pair it
-// joins by the transition's length, so the video runs sum(D) - sum(transitions):
-// 1570 - 84 = 1486 frames, which is TOTAL_FRAMES in theme.ts. Scenes on the
-// same page (the brief and its cut; the run page from review to film) follow
-// each other with no transition, the way the browser shows them.
-//
-// The ceiling is demo-music.wav: 49.97 s, or 1499 frames. A demo that outruns
-// its own track ends on an audible cut, which is why the terminal and the film
-// tail are cut to the frame rather than rounded up.
-const D = {
-  title: 75, // 2.5s
-  brief: 170, // 5.7s — Monthly Highlights, June 2024, the command follows; Cut
-  cutting: 140, // 4.7s — the job panel: stage, bar, "N of M · ~Ns left", pictures just read
-  review: 190, // 6.3s — the contact sheet; a video shot and why it is there; Stories and back
-  edit: 240, // 8.0s — swap one shot, remove one, Save revision
-  render: 160, // 5.3s — Revision 1, date overlay, Render; the render's own stages
-  film: 100, // 3.3s — the film plays on the page
-  runs: 80, // 2.7s — the film's run and the cut's, with the older ones
-  suggestions: 85, // 2.8s — what automation would make next; check one
-  // CliScene cuts the recording at the seconds the recording script wrote down
-  // (cli-timing.ts): generate as a time-lapse, then runs story and runs why held
-  // long enough to read, then the `open` that hands over to the film.
-  cli: CLI_FRAMES, // 5.5s
-  output: 165, // 5.5s — the film it made, ending on its last picture, full bleed
-};
-
 export const DemoVideo: React.FC<{theme: "light" | "dark"}> = ({theme}) => {
-  const frame = useCurrentFrame();
-  const bass = useBassIntensity(frame);
 
-  // Ease the soundtrack in, then fade out over the last five seconds.
+  // Ease the soundtrack in, then fade out over the closing frame, leaving half a second of silence.
   const musicVolume = (f: number) =>
-    interpolate(f, [0, 30, MUSIC_FADE_START, TOTAL_FRAMES], [0, 0.7, 0.7, 0], {
+    interpolate(f, [0, 30, MUSIC_FADE_START, MUSIC_FADE_END], [0, 0.7, 0.7, 0], {
       extrapolateLeft: "clamp",
       extrapolateRight: "clamp",
     });
@@ -75,12 +47,14 @@ export const DemoVideo: React.FC<{theme: "light" | "dark"}> = ({theme}) => {
 
         {/* 2. Brief — the memory type, the month, the command it stands for; Cut */}
         <TransitionSeries.Sequence durationInFrames={D.brief}>
-          <BriefScene bassIntensity={bass} />
+          <BriefScene />
+          <DemoHeading title="Choose what the film covers" />
         </TransitionSeries.Sequence>
 
         {/* 3. The cut in progress, on the same page */}
         <TransitionSeries.Sequence durationInFrames={D.cutting}>
-          <CuttingScene bassIntensity={bass} />
+          <CuttingScene />
+          <DemoHeading title="Let the app prepare a cut" note="Preparation sped up" />
         </TransitionSeries.Sequence>
 
         <TransitionSeries.Transition
@@ -90,22 +64,26 @@ export const DemoVideo: React.FC<{theme: "light" | "dark"}> = ({theme}) => {
 
         {/* 4. Review — the contact sheet, the inspector, the stories */}
         <TransitionSeries.Sequence durationInFrames={D.review}>
-          <ReviewScene bassIntensity={bass} />
+          <ReviewScene />
+          <DemoHeading title="See what made the cut, and why" />
         </TransitionSeries.Sequence>
 
         {/* 5. Change it — swap, remove, save a revision */}
         <TransitionSeries.Sequence durationInFrames={D.edit}>
-          <EditScene bassIntensity={bass} />
+          <EditScene />
+          <DemoHeading title="Change the cut before rendering" />
         </TransitionSeries.Sequence>
 
         {/* 6. Render revision 1 */}
         <TransitionSeries.Sequence durationInFrames={D.render}>
-          <RenderScene bassIntensity={bass} />
+          <RenderScene />
+          <DemoHeading title="Render the revision you reviewed" note="Render sped up" />
         </TransitionSeries.Sequence>
 
         {/* 7. The film on the page */}
         <TransitionSeries.Sequence durationInFrames={D.film}>
-          <FilmScene bassIntensity={bass} />
+          <FilmScene />
+          <DemoHeading title="Play the finished film" />
         </TransitionSeries.Sequence>
 
         <TransitionSeries.Transition
@@ -115,7 +93,8 @@ export const DemoVideo: React.FC<{theme: "light" | "dark"}> = ({theme}) => {
 
         {/* 8. Runs — every run kept, the film's first */}
         <TransitionSeries.Sequence durationInFrames={D.runs}>
-          <RunsScene bassIntensity={bass} />
+          <RunsScene />
+          <DemoHeading title="Keep your films and their cuts" />
         </TransitionSeries.Sequence>
 
         <TransitionSeries.Transition
@@ -125,7 +104,8 @@ export const DemoVideo: React.FC<{theme: "light" | "dark"}> = ({theme}) => {
 
         {/* 9. Suggestions — what it would make next, on its own */}
         <TransitionSeries.Sequence durationInFrames={D.suggestions}>
-          <SuggestionsScene bassIntensity={bass} />
+          <SuggestionsScene />
+          <DemoHeading title="See what automation would make next" />
         </TransitionSeries.Sequence>
 
         <TransitionSeries.Transition
@@ -136,16 +116,24 @@ export const DemoVideo: React.FC<{theme: "light" | "dark"}> = ({theme}) => {
         {/* 10. CLI — its final `open` leads straight into the rendered film */}
         <TransitionSeries.Sequence durationInFrames={D.cli}>
           <CliScene />
+          <DemoHeading title="Use the same workflow from your terminal" note="Run sped up" />
         </TransitionSeries.Sequence>
 
         <TransitionSeries.Transition
           presentation={fade()}
-          timing={linearTiming({ durationInFrames: FADE })}
+          timing={linearTiming({ durationInFrames: FILM_TRANSITION })}
         />
 
         {/* 11. The film it made, last: full bleed, real time */}
         <TransitionSeries.Sequence durationInFrames={D.output}>
-          <OutputPreviewScene frames={D.output} />
+          <OutputPreviewScene />
+        </TransitionSeries.Sequence>
+        <TransitionSeries.Transition
+          presentation={fade()}
+          timing={linearTiming({ durationInFrames: CLOSING_TRANSITION })}
+        />
+        <TransitionSeries.Sequence durationInFrames={D.closing}>
+          <ClosingScene />
         </TransitionSeries.Sequence>
       </TransitionSeries>
     </AbsoluteFill>
