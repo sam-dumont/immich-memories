@@ -69,16 +69,20 @@ jobs:
           INPUT_VERSION: ${{ inputs.version }}
           RELEASE_TAG: ${{ github.event.release.tag_name }}
           EVENT_NAME: ${{ github.event_name }}
+          GH_TOKEN: ${{ github.token }}
         run: |
-          # Use workflow_call input, release tag, or git describe
+          # Manual runs keep the selected docs branch and pin downloads to a published app.
           if [[ -n "$INPUT_VERSION" ]]; then
             VERSION="$INPUT_VERSION"
           elif [[ "$EVENT_NAME" == "release" ]]; then
             VERSION="$RELEASE_TAG"
+          elif [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            VERSION=$(gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/releases?per_page=100" \
+              | python3 scripts/docs_release.py --latest-published)
           else
             VERSION=$(node --experimental-strip-types --input-type=module -e "import {resolveDocsVersion} from './docs-site/build-version.ts'; console.log(resolveDocsVersion());")
           fi
-          echo "DOCS_VERSION=${VERSION}" >> $GITHUB_ENV
+          echo "DOCS_VERSION=${VERSION}" >> "$GITHUB_ENV"
           echo "Building docs for version: ${VERSION}"
 
           # Set version in docusaurus config via env var
