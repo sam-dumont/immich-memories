@@ -44,7 +44,7 @@ services:
       # List-valued fields take JSON; a range works as well as an address.
       # The app listens on 0.0.0.0 inside its container, so a proxy reaches
       # it either as a container on this network or from the host through
-      # 127.0.0.1:8080 (arriving from the gateway, 172.30.10.1). Both come
+      # 127.0.0.1:22830 (arriving from the gateway, 172.30.10.1). Both come
       # from the compose network the `networks:` block at the bottom pins, so
       # trusting that range covers either. Anything else on the network is
       # trusted too; to narrow it, set TRUSTED_PROXY in .env to the proxy's

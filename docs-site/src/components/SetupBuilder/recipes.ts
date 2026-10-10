@@ -1,4 +1,5 @@
 import {Block, plain, toYaml} from './yaml.ts';
+import {composeHostPort} from '../../compose-port.ts';
 
 export type Platform = 'linux' | 'synology' | 'mac' | 'kubernetes';
 export type Tier = 'basic' | 'gpu' | 'full';
@@ -76,8 +77,9 @@ export function looksInternal(url: string): boolean {
 }
 
 export function validateSetup(setup: Setup): string | null {
+  const uiPort = setup.uiPort ?? (setup.platform === 'mac' ? 8080 : composeHostPort(setup.version));
   if (['linux', 'synology', 'mac'].includes(setup.platform) &&
-      (!Number.isInteger(setup.uiPort ?? 8080) || (setup.uiPort ?? 8080) < 1 || (setup.uiPort ?? 8080) > 65535)) {
+      (!Number.isInteger(uiPort) || uiPort < 1 || uiPort > 65535)) {
     return 'UI host port must be a whole number from 1 to 65535.';
   }
   if (setup.platform === 'kubernetes' && !/^[a-z0-9]([-a-z0-9]{0,61}[a-z0-9])?$/.test(setup.namespace ?? 'immich-memories')) {
@@ -287,7 +289,7 @@ export function buildSetup(setup: Setup, sources: Sources, buildVersion: string)
       '# Open http://localhost:8080 in your browser and start your first monthly cut.',
     ].join('\n')};
   }
-  const uiPort = setup.uiPort ?? 8080;
+  const uiPort = setup.uiPort ?? composeHostPort(setup.version);
   let compose = sources.base;
   if (setup.tier !== 'basic' && !setup.gpuBox) compose = merge(compose, sources.gpu);
   if (setup.tier === 'full') compose = merge(compose, sources.full);
@@ -303,7 +305,7 @@ export function buildSetup(setup: Setup, sources: Sources, buildVersion: string)
     }
     if (key === 'immich-memories' && Array.isArray(service.ports)) {
       service.ports = service.ports.map(port => typeof port === 'string'
-        ? port.replace(/:8080:8080$/, `:${uiPort}:8080`) : port);
+        ? port.replace(/:\d+:8080$/, `:${uiPort}:8080`) : port);
     }
     return [key, service];
   }))};

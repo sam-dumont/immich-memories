@@ -10,9 +10,9 @@
   <Project>https://github.com/sam-dumont/immich-memories</Project>
   <Overview>Make films from your Immich library. NAS setup: allow 4 GiB RAM and 25 GB persistent state plus finished films. Not yet tested on Unraid; please report results in issue #1801. The UI holds your library API key. Localhost-only by default. Enable BOTH authentication fields before exposing it to your LAN. Keep bridge networking; host networking bypasses the private port binding.</Overview>
   <Category>MediaApp:Video</Category>
-  <WebUI>http://localhost:8080</WebUI>
+  <WebUI>http://localhost:22830</WebUI>
   <Icon>https://raw.githubusercontent.com/sam-dumont/immich-memories/main/docs-site/static/img/favicon.png</Icon>
-  <ExtraParams>--publish=127.0.0.1:8080:8080/tcp --security-opt=no-new-privileges:true</ExtraParams>
+  <ExtraParams>--publish=127.0.0.1:22830:8080/tcp --security-opt=no-new-privileges:true</ExtraParams>
   <PostArgs />
   <Config Name="Immich URL" Target="IMMICH_URL" Default="http://your-immich-host:2283" Mode="" Description="Required: reachable Immich server URL, not localhost inside this container." Type="Variable" Display="always" Required="true" Mask="false">http://your-immich-host:2283</Config>
   <Config Name="Immich API key" Target="IMMICH_API_KEY" Default="" Mode="" Description="Required: your Immich API key. Never share an exported configured template." Type="Variable" Display="always" Required="true" Mask="true" />

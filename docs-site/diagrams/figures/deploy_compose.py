@@ -16,7 +16,7 @@ with diagram(STEM, nodesep="0.6", ranksep="0.9"):
     ):
         base = group(
             [
-                ("immich-memories", icon("si:docker", "machine"), code("127.0.0.1:8080")),
+                ("immich-memories", icon("si:docker", "machine"), "host port → container :8080"),
                 ("config + store", icon("mdi:harddisk", "machine"), "named config volume"),
                 ("Films", icon("mdi:folder-play-outline", "machine"), code("./output")),
             ],

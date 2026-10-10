@@ -390,7 +390,7 @@ def test_quickstart_compose_publishes_the_ui_on_loopback_only() -> None:
     compose = yaml.safe_load((REPO_ROOT / "docker-compose.yml").read_text())
     published = [str(p) for p in compose["services"]["immich-memories"]["ports"]]
 
-    assert published == ["${UI_BIND_ADDRESS:-127.0.0.1}:8080:8080"], published
+    assert published == ["${UI_BIND_ADDRESS:-127.0.0.1}:22830:8080"], published
 
 
 def test_quickstart_compose_resolves_to_basic_without_a_second_service() -> None:

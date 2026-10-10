@@ -34,8 +34,9 @@ The [threat model](docs/security/threat-model.md) describes assets, trust bounda
 ## Deployment posture (short version)
 
 - Authentication is **off by default**. Outside Docker the UI then binds `127.0.0.1` unless you
-  name another address. The container listens on `0.0.0.0:8080` and the shipped compose file
-  publishes `127.0.0.1:8080:8080`, so the port mapping is the boundary. Enable
+  name another address. The container listens on `0.0.0.0:8080` and the shipped
+  [Compose file](docker-compose.yml) publishes it only on host address `127.0.0.1`,
+  so the port mapping is the boundary. Enable
   [authentication](https://sam-dumont.github.io/immich-memories/docs/run/authentication)
   before exposing the port beyond localhost, and put a TLS reverse proxy in front.
 - The UI never sends the saved Immich key to a URL typed into it: a new server URL needs its key

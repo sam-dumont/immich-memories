@@ -20,8 +20,9 @@ def test_unraid_launch_stays_private_without_duplicate_port_mapping():
     assert template.findtext("Privileged") == "false"
     args = shlex.split(template.findtext("ExtraParams") or "")
     assert [arg for arg in args if arg.startswith("--publish=")] == [
-        "--publish=127.0.0.1:8080:8080/tcp"
+        "--publish=127.0.0.1:22830:8080/tcp"
     ]
+    assert template.findtext("WebUI") == "http://localhost:22830"
     assert not template.findall("Config[@Type='Port']")
     assert "--security-opt=no-new-privileges:true" in args
     assert "Not yet tested on Unraid" in template.findtext("Overview")

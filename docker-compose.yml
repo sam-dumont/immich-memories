@@ -6,7 +6,7 @@ services:
     image: ghcr.io/sam-dumont/immich-memories:${IMMICH_MEMORIES_VERSION:-latest}
     container_name: immich-memories
     ports:
-    - ${UI_BIND_ADDRESS:-127.0.0.1}:8080:8080
+    - ${UI_BIND_ADDRESS:-127.0.0.1}:22830:8080
     volumes:
     - immich-memories-config:/home/immich/.immich-memories
     - ./output:/app/output

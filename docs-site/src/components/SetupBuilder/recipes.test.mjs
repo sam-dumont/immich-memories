@@ -3,7 +3,8 @@ import {readFileSync} from 'node:fs';
 import test from 'node:test';
 import {API_KEY_PLACEHOLDER, buildSetup, looksInternal, nativeInstallCommand} from './recipes.ts';
 import {toYaml} from './yaml.ts';
-import {deploymentCommands, installationCommands} from '../InstallationFiles/downloads.ts';
+import {composeHostPort} from '../../compose-port.ts';
+import {deploymentCommands, installationCommands, unraidCommands} from '../InstallationFiles/downloads.ts';
 
 const sources = JSON.parse(readFileSync(new URL('./sources.json', import.meta.url), 'utf8'));
 const setup = {
@@ -20,18 +21,71 @@ for (const port of [0, -1, 65536, 8080.5, NaN]) {
   });
 }
 
-test('default port stays private', () => {
-  const result = buildSetup(setup, sources, '1.2.3');
-  const compose = (result.files.find(file => file.name === 'docker-compose.yml').data);
-  assert.deepEqual(compose.services['immich-memories'].ports, ['127.0.0.1:8080:8080']);
+test('Compose default follows the published release without moving development back to rc.9', () => {
+  for (const version of ['0.9.0', 'v0.9.9', '1.0.0-dev.1', '1.0.0-rc.1', 'v1.0.0-rc.9']) {
+    assert.equal(composeHostPort(version), 8080, version);
+  }
+  for (const version of ['1.0.0', 'v1.0.0', '1.0.1', '1.1.0-rc.1', '2.0.0', 'development', 'development-abc123', '1.0.0-rc.9-3-gabc123-dirty']) {
+    assert.equal(composeHostPort(version), 22830, version);
+  }
 });
 
-test('free NAS port reaches both generated private mapping and access commands', () => {
-  const result = buildSetup({...setup, uiPort: 18081}, sources, '1.2.3');
-  const compose = (result.files.find(file => file.name === 'docker-compose.yml').data);
-  assert.deepEqual(compose.services['immich-memories'].ports, ['127.0.0.1:18081:8080']);
-  assert.match(result.commands, /http:\/\/localhost:18081/);
-  assert.match(result.accessCommands, /ssh -L 18081:localhost:18081/);
+for (const version of ['1.0.0-rc.9', '1.0.0', '1.2.3']) {
+  for (const tier of ['basic', 'gpu', 'full']) {
+    test(`${version} ${tier} publishes only its release's default host port on loopback`, () => {
+      const result = buildSetup({...setup, version, tier, readerUrl: 'http://reader:8000/v1', readerModel: 'model'}, sources, version);
+      assert.equal(result.error, null);
+      const compose = result.files.find(file => file.name === 'docker-compose.yml').data;
+      const port = version === '1.0.0-rc.9' ? 8080 : 22830;
+      assert.deepEqual(compose.services['immich-memories'].ports, [`127.0.0.1:${port}:8080`]);
+      assert.ok(result.commands.includes(`http://localhost:${port}`));
+      assert.ok(result.accessCommands.includes(`ssh -L ${port}:localhost:${port}`));
+    });
+  }
+}
+
+for (const templatePort of [8080, 22830]) {
+  test(`custom host port overrides a ${templatePort} template and reaches access commands`, () => {
+    const templates = structuredClone(sources);
+    templates.base.services['immich-memories'].ports = ['${UI_BIND_ADDRESS:-127.0.0.1}:' + templatePort + ':8080'];
+    const result = buildSetup({...setup, uiPort: 18081}, templates, '1.2.3');
+    const compose = result.files.find(file => file.name === 'docker-compose.yml').data;
+    assert.deepEqual(compose.services['immich-memories'].ports, ['127.0.0.1:18081:8080']);
+    assert.match(result.commands, /http:\/\/localhost:18081/);
+    assert.match(result.accessCommands, /ssh -L 18081:localhost:18081/);
+  });
+}
+
+for (const version of ['1.0.0-rc.9', '1.0.0']) {
+  test(`${version} keeps native and Kubernetes access on 8080`, () => {
+    const native = buildSetup({...setup, version, platform: 'mac'}, sources, version);
+    assert.equal(native.error, null);
+    assert.match(native.commands, /^immich-memories ui --host 127\.0\.0\.1 --port 8080$/m);
+    const customNative = buildSetup({...setup, version, platform: 'mac', uiPort: 18081}, sources, version);
+    assert.match(customNative.commands, /^immich-memories ui --host 127\.0\.0\.1 --port 18081$/m);
+    const kube = buildSetup({...setup, version, platform: 'kubernetes', uiPort: 18081}, sources, version);
+    assert.equal(kube.error, null);
+    assert.match(kube.commands, /^kubectl port-forward -n immich-memories svc\/immich-memories 8080:80$/m);
+    assert.ok(kube.commands.includes('http://localhost:8080'));
+    assert.doesNotMatch(kube.commands, /18081|22830/);
+  });
+}
+
+for (const version of ['1.0.0-rc.9', 'v1.0.0-rc.9', '1.0.0', 'v1.0.0']) {
+  test(`Unraid downloads the ${version} template without following main`, () => {
+    const commands = unraidCommands(version);
+    const tag = `v${version.replace(/^v/, '')}`;
+    assert.ok(commands.includes(`https://raw.githubusercontent.com/sam-dumont/immich-memories/${tag}/deploy/unraid/immich-memories.xml`));
+    assert.ok(commands.startsWith('mkdir -p /boot/config/plugins/dockerMan/templates-user\n'));
+    assert.match(commands, /curl --fail --location .+ -o \/boot\/config\/plugins\/dockerMan\/templates-user\/my-immich-memories\.xml$/);
+    assert.doesNotMatch(commands, /\/main\/|latest/);
+  });
+}
+
+test('Unraid previews cannot download an unversioned template', () => {
+  for (const version of ['development', 'development-abc123', '1.0.0-rc.9-3-gabc123-dirty', 'latest']) {
+    assert.equal(unraidCommands(version), '', version);
+  }
 });
 
 test('Kubernetes Secret preserves its generated private Settings key', () => {
