@@ -119,7 +119,7 @@ Back up, change the pinned image tag, apply, then run `models fetch` and `prefli
 container. The base init container skips fetching when its required paths are present, so changed
 pins need the explicit fetch. The generated GPU setup runs `models fetch --detectors --laya`
 whenever its model init container runs, verifying existing artifact digests.
-See [Kubernetes upgrades](../kubernetes.md#upgrading-and-rollback) or
+See [Kubernetes upgrades](../reference/kubernetes-operations.md#upgrading-and-rollback) or
 [Terraform upgrades](../terraform.md#upgrading).
 
 ## Upgrading Immich from v2 to v3

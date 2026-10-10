@@ -262,7 +262,7 @@ Set the trigger token and uncomment `- cronjobs.yaml` in the kustomization, then
 apply that root (the [setup builder](/setup) does both when you tick **Scheduled films
 (CronJobs)**). `concurrencyPolicy: Forbid` on them guards nothing, because each Job returns in
 under a second; the app's run lease answers a second trigger with 409. How to test a schedule and
-follow the film it starts: [Batch jobs](../kubernetes.md#batch-jobs). The separate `base/job.yaml` contains only the one-off `generate` Job;
+follow the film it starts: [Batch jobs](kubernetes-operations.md#batch-jobs). The separate `base/job.yaml` contains only the one-off `generate` Job;
 include it only with the Deployment scaled to zero.
 
 The store defaults to a SQLite file on the `immich-memories-cache` PVC, one writer at a time; a second pod on
@@ -278,7 +278,7 @@ Deployment, and keep the Job for a batch cluster where the Deployment stays scal
 runs.
 
 Whichever clock fires it, the daily film stays on the output PVC unless upload is on
-([Getting the films](../kubernetes.md#getting-the-films)); `IMMICH_MEMORIES_AUTOMATION__UPLOAD_TO_IMMICH=true`
+([Getting the films](kubernetes-operations.md#getting-the-films)); `IMMICH_MEMORIES_AUTOMATION__UPLOAD_TO_IMMICH=true`
 uploads the daily runs only. The trigger route itself: [Trigger it over HTTP](../../make/automate.md#trigger-it-over-http).
 
 
@@ -298,7 +298,7 @@ kubectl apply -k overlays/postgres           # instead of base, not after it
 The overlay builds on `base/` and only adds the database Secret to the Deployment; it does not run
 PostgreSQL for you. For GPU plus PostgreSQL, list `components/gpu` and `components/postgres`
 in one root alongside `base` and your database Secret. The
-[composition recipe](../kubernetes.md#database) also shows the optional render sidecar.
+[composition recipe](kubernetes-operations.md#database) also shows the optional render sidecar.
 The one-off `generate` Job in `base/job.yaml` does not get the database Secret either;
 add the second `secretRef` there if you run it. The four modes, and the SQL for a dedicated schema
 in Immich's own database, are on [Database and the store](.././database.md).

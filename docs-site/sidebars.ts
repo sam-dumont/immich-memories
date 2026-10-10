@@ -6,9 +6,10 @@ const sidebars: SidebarsConfig = {
       type: 'category', label: 'Start here', collapsed: false,
       items: [
         {type: 'doc', id: 'welcome/introduction', label: 'What it does'},
+        'get-started/choose-your-setup',
         'get-started/quick-start',
-        'get-started/after-install',
         {type: 'doc', id: 'get-started/first-film', label: 'Your first film'},
+        'get-started/after-install',
         'get-started/who-is-who',
       ],
     },
@@ -64,14 +65,13 @@ const sidebars: SidebarsConfig = {
         ]},
         {type: 'category', label: 'Storage and maintenance', items: [
           'run/database', 'run/maintenance/storage-backups',
-          'run/maintenance/upgrading', 'run/maintenance/health-logs-cache', 'run/lifecycle',
+          'run/maintenance/upgrading', 'run/maintenance/health-logs-cache', 'run/film-progress', 'run/lifecycle',
         ]},
       ],
     },
     {
       type: 'category', label: 'Optional upgrades',
       items: [
-        'get-started/choose-your-setup',
         {type: 'doc', id: 'better/tier-example', label: 'Basic, GPU and Full example'},
         'better/reader', 'better/captions', 'better/inference',
         'run/hardware', 'better/gpu-render', 'better/music', 'better/measured',
@@ -99,13 +99,14 @@ const sidebars: SidebarsConfig = {
           'run/reference/database', 'run/reference/store-commands',
           'run/reference/privacy-egress', 'run/reference/household',
           'run/reference/detector-facts', 'run/reference/rendering',
-          'run/reference/python-install', 'run/reference/kubernetes', 'run/reference/terraform',
+          'run/reference/python-install', 'run/reference/kubernetes', 'run/reference/kubernetes-operations',
+          'run/reference/synology-operations', 'run/reference/terraform',
         ]},
       ],
     },
     {
       type: 'category', label: 'Help',
-      items: ['reference/troubleshooting', 'reference/faq', 'how-it-chooses/glossary'],
+      items: ['reference/installation-help', 'reference/troubleshooting', 'reference/faq', 'how-it-chooses/glossary'],
     },
     {
       type: 'category', label: 'Background',

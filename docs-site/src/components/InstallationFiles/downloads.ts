@@ -1,12 +1,17 @@
-import {assetBase} from '../SetupBuilder/recipes.ts';
+import {assetBase, type Tier} from '../SetupBuilder/recipes.ts';
 
-export function installationCommands(version: string): string {
+export function installationCommands(version: string, tier: Tier = 'basic'): string {
   const released = /^v?\d+\.\d+\.\d+(?:-(?:rc|dev)\.\d+)?$/.test(version);
   if (!released) return '';
   const tag = version.replace(/^v/, '');
-  const files = ['docker-compose.yml', 'example.env', 'docker-compose.gpu.yml', 'docker-compose.full.yml', 'docker-compose.cuda.yml', 'docker-compose.gpu-worker.yml', 'docker-compose.postgres.yml'];
+  const files = ['docker-compose.yml', 'example.env',
+    ...(tier === 'basic' ? [] : ['docker-compose.gpu.yml', ...(tier === 'full' ? ['docker-compose.full.yml'] : []), 'docker-compose.cuda.yml'])];
   const acquire = ['mkdir -p immich-memories && cd immich-memories', ...files.map(file => `curl -fLO "${assetBase(version)}/${file}"`)];
-  return [...acquire, 'cp example.env .env', `sed -i.bak 's/^IMMICH_MEMORIES_VERSION=.*/IMMICH_MEMORIES_VERSION=${tag}/' .env && rm .env.bak`].join('\n');
+  const select = tier === 'basic' ? [] : [
+    `sed -i.bak 's/^TIER=.*/TIER=${tier}/' .env && rm .env.bak`,
+    `echo 'COMPOSE_FILE=${files.filter(file => file.endsWith('.yml')).join(':')}' >> .env`,
+  ];
+  return [...acquire, 'cp example.env .env', `sed -i.bak 's/^IMMICH_MEMORIES_VERSION=.*/IMMICH_MEMORIES_VERSION=${tag}/' .env && rm .env.bak`, ...select].join('\n');
 }
 
 

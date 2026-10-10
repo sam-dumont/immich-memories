@@ -4,6 +4,8 @@ title: Add captions
 
 # Add captions
 
+For a new GPU or Full install, [Quick start](../get-started/quick-start.md) starts the required services together. The recipes below cover an existing installation.
+
 Captions are short descriptions used by selection and sharing checks. They are not the date and place labels printed on the film.
 
 Basic works without them. GPU and Full describe the selected pictures and replacement candidates, then reuse those descriptions on later cuts. You do not need to caption the whole library before making a film.
@@ -37,7 +39,7 @@ For NVIDIA, use the CUDA image and device reservation together. The exact [CUDA 
 
 ## Apple Silicon
 
-Use the [mlxcel recipe](../reference/caption-service.md#apple-silicon-with-mlxcel) to serve the pinned model natively. Point the app at it:
+Use the [native Mac setup](../run/uv-pip.md#apple-silicon) to serve the pinned model natively. Point the app at it:
 
 ```yaml
 advanced:

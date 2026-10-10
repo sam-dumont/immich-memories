@@ -4,6 +4,8 @@ title: Run inference on another machine
 
 # Run inference on another machine
 
+For a new GPU or Full install, use the matching tier in [Quick start](../get-started/quick-start.md). This page covers moving inference to another machine.
+
 Move picture analysis off a slow NAS. On NVIDIA, one CUDA worker can also caption pictures,
 split music into stems and render the film. Start with the app alone; add this when preparation
 or rendering takes too long.

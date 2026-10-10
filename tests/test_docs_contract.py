@@ -454,6 +454,9 @@ def test_kubernetes_and_terraform_docs_describe_the_fixed_manifests() -> None:
         text = _read(relative_path)
         if relative_path == "docs-site/docs/run/terraform.md":
             text += _read("docs-site/docs/run/reference/terraform.md")
+        if relative_path == "docs-site/docs/run/kubernetes.md":
+            assert "./reference/kubernetes-operations.md" in text
+            text += _read("docs-site/docs/run/reference/kubernetes-operations.md")
         assert "Known gaps" not in text, relative_path
         assert "appuser" not in text, relative_path
         assert "configmap.yaml" not in text, relative_path

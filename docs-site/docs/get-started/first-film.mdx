@@ -1,186 +1,91 @@
 ---
 title: Your first film
-sidebar_label: Your first film
-description: Try 20–50 pictures, review the cut and render a 30-second local film.
+description: Choose an album, review the cut, then render and watch your first film on any tier.
 ---
 
 import ThemedScreenshot from '@site/src/components/ThemedScreenshot';
 
 # Your first film
 
-Start with **20–50 photos/videos in one Immich album** and request **30 seconds**.
-A short output does not limit preparation: the album bounds the input too. Use ordinary JPEGs
-and short supported videos you own, without archived, hidden or forwarded media for this trial.
+Use an Immich album with **20–50 photos and short videos**, and make a **30-second film**.
+A small album keeps the first preparation manageable. These steps work on Basic, GPU and Full.
 
-This assumes the [prebuilt Basic installation](./quick-start.md): one app container, two CPU
-cores, 4 GiB for this app in addition to Immich and the host, and 25 GB for app data plus images
-and finished output. No GPU, reader, caption server, generated music service or cloud account
-is needed. Use the [minimum read key](../run/docker.md#the-api-key).
+## Before you start {#prepare-and-check-first}
 
-## Prepare and check first
+Finish your [installation](./quick-start.md), including `models fetch` and `preflight` for the
+tier you chose. Open the app in your browser. There is no need to prepare your whole library
+or configure home and people before an album film.
 
-From the Compose project directory, after the image pull and container start. Installed without Docker ([pip / uv](../run/uv-pip.md))? Drop `docker compose exec -T immich-memories` from every command on this page and run `immich-memories ...` directly.
+## 1. Choose an album {#pick-the-trial-album}
 
-```bash
-docker compose exec -T immich-memories immich-memories models fetch
-docker compose exec -T immich-memories immich-memories preflight
-```
+In Immich, use an existing small album or create one from 20–50 photos and videos.
+In Immich Memories:
 
-Continue when Immich authentication, pinned encoder/WordNet assets and writable output pass.
-Basic can skip the reader, captions, GPU and generated-music checks. Home coordinates are
-optional for this album; preflight marks that check as skipped until you set them. Fix connection,
-required-model or storage failures before Cut; a count of warnings alone does not tell you
-whether the install can run.
+1. Open **Memory** and choose **Album** under **Memory type**.
+2. Select your album. Its picture count appears in the dropdown.
+3. Open **Length and pictures** and set **Length in minutes** to **0.5**.
 
-## Pick the trial album
+Keep your tier's configured services. Bundled music is ready to use; leave upload off for
+this first film so you can download it locally.
 
-1. In **Immich**, select 20–50 existing supported assets and add them to an album named
-   **First film trial**. This groups the originals; it does not copy or edit them. Check its count
-   in Immich before proceeding. Do not add more pictures until the trial finishes.
-2. In **Immich Memories**, open **Memory**, choose **Album** under **Memory type**, then choose
-   **First film trial**. The album dropdown shows its asset count. Stop if it exceeds 50.
-3. Open **Length and pictures**. Set **Length in minutes** to **0.5**. **Include photos** and **Include Live Photos** are on by default; leave them on.
-   Leave optional services and upload disabled. The supported pool can be smaller than the album
-   count after exclusions; the album remains the upper bound on its selected entries.
+## 2. Make the cut {#cut}
 
-The album needs enough usable moments for a film. If exclusions leave too little, replace those
-entries in Immich within the same 20–50-item bound and make a new cut. Do not expand to an entire
-month to diagnose a first-install problem.
+Press **Cut**. The app prepares the pictures and chooses the shots. The first cut takes longer;
+compatible preparation is reused for later films. A shorter output does not reduce the input
+pool, which is why this first film uses a small album.
 
-## Cut
+When the cut finishes, its run opens. You can also find it under **Runs**.
 
-Press **Cut**. The app prepares the pictures and builds the edit. The first cut takes longer; compatible preparation results are reused on later cuts. You can reload the page while it works; return to **Memory** to follow the active cut.
+## 3. Review the shots {#read-the-cut}
 
-When the cut finishes, the page opens its run by itself. The progress panel's "The cut is ready." can go by too fast to see, so do not wait for it: if the panel is gone and a run page is showing, the cut is done.
+The contact sheet shows the shots in playback order. Open one to see it larger, watch its video
+interval and read why it was selected. Fewer shots than source pictures is normal: bursts and
+similar pictures often become one shot.
 
-## Read the cut
+### Make a change {#fix-it}
 
-The finished cut is a run under **Runs**; the page may take you to it. If it doesn't move and returns to the empty form (this happens after a reload during the cut), open **Runs**. The contact sheet shows the shots in playback order. Open one to see it larger, watch its video interval and read why it stayed. **Stories** groups the same shots by story.
-
-Favourites help a moment earn its place. Videos often carry it better than a still. Quiet weeks can be empty: the film goes short instead of padding.
-
-Expect fewer shots than pictures. On the trial album (39 pictures from two days: 38 photos and 1 video) a 0.5 minute film held 7 shots, 6 photos and 1 video, about 26 s of pictures and video. Titles and fades made up the rest of the 30 s. Bursts and near-identical frames count as one shot, and a photo that sits within five minutes of one already kept in its moment is not a new shot, so 20 to 50 pictures from one outing make a handful of shots, not 39. That is the editor working, not a failed cut. [How it chooses](../how-it-chooses/overview.md) has the rules.
-
-## Fix it
-
-For a wrong shot, open its inspector. **Remove from this cut**, trim with **Start here** and **End here**, or choose **Use this picture instead**. Press **Save revision**.
-
-For a missing shot, open **Pool**, tick the picture and press **Preview with these choices**. These edits make a revision of this cut; they do not rerun selection.
+Use **Remove from this cut**, **Start here** / **End here** to trim, or **Use this picture instead**
+to swap a shot. Press **Save revision**. To add a missing picture, open **Pool**, select it and
+press **Preview with these choices**.
 
 <ThemedScreenshot name="first-film-edit" alt="Editing a shot and viewing its alternatives" />
 
-**Never use** is different: it excludes the picture from future films. Undo that decision before trying to add it again. [Improve a cut](../how-it-chooses/overrule-it.md) covers lasting changes.
+[Editing a cut](../how-it-chooses/overrule-it.md) covers the other controls, including choices that
+apply to future films.
 
-## Render and watch
+## 4. Render and watch {#render-and-watch}
 
-On the saved run page, scroll below the contact sheet and revisions to the **Render** section. Pick the cut or your revision in **What to render**, then press **Render**. Leave **Upload the film to Immich** off. Bundled music is enough for this trial.
+Below the contact sheet, find **Render**. Choose your cut or saved revision under **What to render**,
+then press **Render**. Leave **Upload the film to Immich** off.
+
+When the film is ready, the run shows a player and **Download film** underneath it.
+Watch it with sound, then download the MP4.
 
 <ThemedScreenshot name="memory-export" alt="The finished film in the player" />
 
-On Docker, local films land in `./output`. Installed natively, they land in `~/Videos/Memories` (under whatever `$HOME` the app runs with). If you select **Upload the film to Immich**, a successful upload removes the local copy. This also happens for CLI and automatic uploads. The run remains in **Runs**, with its link to Immich. Leave upload off when you want the file locally.
+Films stay in your configured output storage: `./output` with the release Compose file,
+a Docker volume with the stack-editor setup, or `~/Videos/Memories` on a native install.
+A successful upload to Immich removes the local copy; leave upload off to keep it here.
 
-Phone footage in HDR gets a tone-mapping step to SDR while it renders. A log line about HDR to SDR conversion is normal.
+## While it works {#progress-and-recovery}
 
-An album film is named `album_<slug>_<hash>.mp4` (the slug comes from the album name), inside the run's own folder under `output/`. To find it, run `find output -name 'album_*.mp4'` on the host, or use **Download film** on the run page. **Render** starts a new run, in the browser or with `immich-memories runs render RUN_ID`: it has its own id and its own file, and the cut you rendered from stays where it is. When the render finishes, the page shows the new run's player and **Download film**, with a link to that run.
+The app reports preparation, cut and render progress. Reloading the browser does not cancel
+work. Return to **Memory** for an active cut or **Runs** for a saved cut or render.
 
-Play the local film through to the end with sound. Success means a playable MP4 in the run's
-player, a working **Download film** link, and the file in `./output` on the Compose host (`/app/output`
-inside the container), or in `~/Videos/Memories` on a native install. **Download film** sits under the player on the run page. The **Download report** button further down is the diagnostics bundle, not the film. Record the actual duration; selection may produce less than the requested
-30 seconds when usable material runs short. An empty or failed render is not success.
+Use **Cancel** to stop a job. For a failure or interrupted run, see
+[film progress and recovery](../run/film-progress.md); compatible prepared facts remain cached.
 
-## Progress and recovery
+## Your next film {#next}
 
-| Phase | What you see | Complete when |
-|---|---|---|
-| Image pull | `docker compose pull` layer progress in the terminal | Pull exits successfully; `docker compose up -d` starts the app |
-| Model preparation | `models fetch` downloads or verifies pinned files | Command succeeds, then preflight passes the required checks |
-| Input preparation and cut | Memory page stage, picture counts and elapsed time | The page opens the saved run (“The cut is ready.” may flash by first) |
-| Review | Shots, Pool and saved revisions on the run page | You select the revision you intend to render |
-| Render | Render progress on the run page | “The film is ready.”, player and Download film |
+Choose **Monthly Highlights**, a year and a month. A larger period needs more preparation.
+Set [home and people](./who-is-who.md) for trips and family films, or follow
+[After install](./after-install.md) for backups and automatic films.
 
-Use `docker compose logs --tail=100 immich-memories` for server/startup errors. Generation
-runs as a separate job: use its progress/error panel and the run's **Copy report**, or
-`immich-memories report RUN_ID`, for run diagnostics. A first job may have only a stage estimate.
-The [measurements](../better/measured.md) separate warm tests from cold preparation and rendering;
-no fixed first-film time is promised. A real month's first preparation can take hours on a NAS.
+### Using the CLI {#the-same-on-the-cli}
 
-Press **Cancel** on an active job to cancel it; cancellation can wait for active native work.
-Cancelling marks the run **Cancelled** and clears its scratch folder; the saved cut stays, so
-**Render again** still works. Reloading the browser does not cancel it. Return to **Memory** for
-the active cut or **Runs** for its saved cut/render. Restarting the app/container does not resume
-a vanished job: the run shows as **Interrupted** after the next start. Rerun Cut if no cut was
-saved, or render the saved revision again. Compatible picture facts remain cached. Keep the store
-and run files.
+[CLI generation](../make/cli/generate.md) covers albums, saved cuts and rendering.
 
-| Problem | Diagnostic and next action |
-|---|---|
-| Immich unreachable or key rejected | Run preflight; correct the container-reachable URL and [read permissions](../run/docker.md#the-api-key) in `.env`, then `docker compose up -d` |
-| Missing or wrong model pin | Run `models fetch` again, then preflight; see [offline preparation](../run/offline.md) if downloads are blocked |
-| Output not writable | Fix UID/GID ownership of this project's `output` using [the NAS permissions recipe](../run/nas.md#the-output-folder), then preflight |
-| Memory pressure or exit 137 | Check `docker stats --no-stream` and container state; keep Basic/1080p and give this app its own 4 GiB budget; see [render budgets](../run/reference/rendering.md) |
-| The cut hangs on thumbnails while preflight is green | The host's network MTU is below Docker's: [set a lower Compose network MTU](../reference/troubleshooting.md#preflight-says-immich-is-connected-but-cuts-hang-on-thumbnails) |
-| A cut fails with “cannot reach” your Immich | A busy or shared Immich can drop connections for several minutes in the middle of preparation. What the cut already prepared is kept: run the same command again and it fetches only what is missing. A month on a shared Immich failed after 10 minutes this way and finished on the immediate rerun, fetching 159 missing previews |
-| Interrupted work | Inspect the job error and saved run, then retry Cut or Render as above; [diagnostics](../run/maintenance/health-logs-cache.md) explains logs and reports |
+### Portrait or landscape {#portrait-or-landscape}
 
-For a deliberate fresh trial or uninstall, use [the scoped lifecycle procedures](../run/lifecycle.md).
-They are separate from retrying an interrupted film.
-
-## Next
-
-After the small trial, choose **Monthly Highlights**, a year and a month. Record its input count
-and actual film length separately. The CLI line, next to the album one:
-
-```bash
-immich-memories generate --memory-type monthly_highlights --year 2021 --month 5 --include-photos
-```
-
-Replace the year and month with your own. With no `--duration`, a month film aims for 60 s (the trial month gave 60.5 s, portrait). That larger run has a different preparation cost; the small
-trial does not validate a full month or year.
-
-The default render adds the date and place name to the film (`--add-date --add-place`). Place names come from Immich's own place data unless you turn on `network.geocoding`, which asks the public Nominatim (or the server you set in `network.geocoding_url`). It is off by default, so a stock install makes no Nominatim call. [Privacy](../run/privacy.md#geocoding-and-maps) lists everything that can leave your network.
-
-
-Set [home and people](./who-is-who.md), then choose [another kind of film](../make/memory-types.mdx). Titles, format and music can wait until you like the cut.
-
-## The same on the CLI
-
-```bash
-immich-memories generate --memory-type album --from-album "First film trial" --duration 30 --include-photos --no-render
-```
-
-This saves a cut for review in **Runs**. Without the UI, render the saved cut from the CLI:
-
-```bash
-immich-memories runs render RUN_ID
-```
-
-`generate --no-render` prints the run id; `immich-memories runs list` shows it later. Without an id, `runs render` takes the most recent completed run. Upload stays
-off unless you pass `--upload-to-immich`. Dropping `--no-render` from `generate` selects and renders
-in one go. Keep `upload.enabled: false` in Settings/file/environment, including for CLI runs.
-
-On Docker, prefix either command with `docker compose exec -T immich-memories` (no `sudo` needed
-when your user is in the `docker` group). On Kubernetes:
-
-```bash
-kubectl exec -n <namespace> deploy/immich-memories -c immich-memories -- immich-memories runs render RUN_ID
-```
-
-[CLI recipes](../make/cli/generate.md) include reviewing a saved cut before rendering. Where the
-finished file lands and its naming pattern are in
-[output and rendering](../reference/output-rendering.md); for a month-or-year render that outlives
-your terminal session, see [the CLI reference](../reference/cli-reference.md).
-
-On Kubernetes, copy only the film, not the whole output volume:
-
-```bash
-kubectl cp -n <namespace> -c immich-memories <pod>:/app/output/<run folder>/<name>.mp4 ./film.mp4
-```
-
-For a film over about 100 MB, `kubectl cp` can die with `unexpected EOF` and leave a truncated, unplayable file, and a plain streamed `cat` does too. The [Kubernetes page](../run/kubernetes.md#getting-the-films) has a copy loop that resumes where it stopped and checks the size.
-
-### Portrait or landscape
-
-The film follows the pictures: if more of the chosen clips are portrait than landscape the canvas
-is portrait (a month of phone shots gave 1080x1920), otherwise landscape (the album trial gave
-1920x1080). Only a tie falls back to `output.resolution`. To force it, pass
-`--orientation landscape` to `generate` or `runs render`.
+The app follows the orientation of the selected pictures. To choose it yourself, use the
+[format settings](../make/titles-maps-music.md).

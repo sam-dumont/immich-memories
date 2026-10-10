@@ -3,7 +3,7 @@ import {readFileSync} from 'node:fs';
 import test from 'node:test';
 import {API_KEY_PLACEHOLDER, buildSetup, looksInternal, nativeInstallCommand} from './recipes.ts';
 import {toYaml} from './yaml.ts';
-import {deploymentCommands} from '../InstallationFiles/downloads.ts';
+import {deploymentCommands, installationCommands} from '../InstallationFiles/downloads.ts';
 
 const sources = JSON.parse(readFileSync(new URL('./sources.json', import.meta.url), 'utf8'));
 const setup = {
@@ -315,3 +315,25 @@ test('Kubernetes GPU instructions explain how to give the app its own GPU', () =
   assert.match(gpu.commands, /NVENC.*CUDA titles/);
   assert.doesNotMatch(buildSetup({...kube, tier: 'basic'}, sources, '1.2.3').commands, /components\/gpu/);
 });
+
+// The first-install download block must be usable without optional deployment files.
+test('Basic installation downloads only its two required release files', () => {
+  const commands = installationCommands('v1.2.3');
+  const files = [...commands.matchAll(/curl -fLO "[^"\n]+\/([^/"\n]+)"/g)].map(match => match[1]);
+  assert.deepEqual(files, ['docker-compose.yml', 'example.env']);
+  assert.match(commands, /IMMICH_MEMORIES_VERSION=1\.2\.3/);
+  assert.doesNotMatch(commands, /gpu|cuda|full|postgres|worker/);
+});
+
+for (const tier of ['gpu', 'full']) {
+  test(`${tier} installation selects every downloaded NVIDIA tier file`, () => {
+    const commands = installationCommands('v1.2.3', tier);
+    const files = [...commands.matchAll(/curl -fLO "[^"\n]+\/([^/"\n]+)"/g)].map(match => match[1]);
+    const expected = ['docker-compose.yml', 'example.env', 'docker-compose.gpu.yml',
+      ...(tier === 'full' ? ['docker-compose.full.yml'] : []), 'docker-compose.cuda.yml'];
+    assert.deepEqual(files, expected);
+    assert.ok(commands.includes(`TIER=${tier}`));
+    assert.ok(commands.includes(`COMPOSE_FILE=${expected.filter(file => file.endsWith('.yml')).join(':')}`));
+    assert.doesNotMatch(commands, /postgres|gpu-worker/);
+  });
+}

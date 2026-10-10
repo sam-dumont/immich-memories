@@ -11,7 +11,7 @@ import ThemedScreenshot from '../components/ThemedScreenshot';
 import CliDemo from '../components/CliDemo';
 
 const journeys = [
-  {label: 'Start here', title: 'Make your first film', body: 'Install, connect Immich, and try 20–50 pictures. Review the cut before rendering.', to: '/docs/get-started/quick-start', action: 'Quick start'},
+  {label: 'Start here', title: 'Make your first film', body: 'Choose Basic, GPU or Full, connect Immich, and try 20–50 pictures. Review the cut before rendering.', to: '/docs/get-started/quick-start', action: 'Quick start'},
   {label: 'After your first film', title: 'Get a better cut', body: 'Fix a missing person, change the length, swap a shot or choose the music.', to: '/docs/make/improve-a-film', action: 'Improve a film'},
   {label: 'For operators', title: 'Run it your way', body: 'Storage, authentication, networking and optional services. The details live here.', to: '/docs/run/overview', action: 'Operate and configure'},
 ];
@@ -34,7 +34,7 @@ export default function Home(): ReactNode {
                 <Link className={styles.ctaPrimary} to="/docs/get-started/quick-start">Make your first film</Link>
                 <Link className={styles.ctaSecondary} to="/docs/how-it-chooses/overview">How it chooses</Link>
               </div>
-              <p className={styles.heroNote}>One container is enough to start. A GPU and a text model are optional.</p>
+              <p className={styles.heroNote}>Basic runs in one container. GPU adds picture descriptions; Full adds a text reader.</p>
             </div>
             <div className={styles.heroVisual}>
               <DemoPreview />
@@ -114,8 +114,8 @@ export default function Home(): ReactNode {
               <Link to="/docs/run/privacy">See what leaves your network →</Link>
               <hr />
               <Heading as="h3">Add more when you need it</Heading>
-              <p>Start with the default cut. Add captions, model refinement or faster rendering later.</p>
-              <Link to="/docs/better/overview">Optional upgrades →</Link>
+              <p>Choose Basic, GPU or Full for your installation. Encoding, remote rendering and generated music are separate options.</p>
+              <Link to="/docs/get-started/choose-your-setup">Compare the tiers →</Link>
             </div>
           </div>
         </div>

@@ -14,7 +14,7 @@ decide, act or understand, it goes.
 |---|---|---|---|
 | README | someone who just found the repo | what it makes, one film, one install command, links | measurements, internals |
 | Welcome | a newcomer deciding in a minute | what it is, what a film looks like, what it needs | internals, history |
-| Get started | a newcomer installing it | the default path to a first film, nothing else | options they don't need yet |
+| Get started | a newcomer installing it | a complete path to a first film for each tier | options they don't need yet |
 | Make | someone making films | the steps for a task and what you get | why it picks what it picks |
 | How it chooses | a user wondering "why these pictures?" | the reasons in plain words, and which setting changes them | file or function names, "used to" |
 | Run | the operator | commands, paths, ports, what breaks and how to fix it; one test-status table by release and hardware | selection internals, history |
@@ -25,7 +25,10 @@ decide, act or understand, it goes.
 | Contribute | developers | internal names, tests, CI | private test-household detail |
 
 Go from general to specific on every page and in the sidebar. The plain NAS path comes first;
-a GPU or a model is the "better, optional" path.
+Basic, GPU and Full must each have a prominent, complete installation path. Keep required
+prerequisites beside the step that needs them. Put troubleshooting, operator variants and
+acceptance-test procedures in their own pages, linked from the relevant step. Avoid making
+readers repeat setup in Quick start, platform guides and After install.
 
 ## Never on a public page
 

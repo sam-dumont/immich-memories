@@ -4,45 +4,29 @@ title: On a NAS
 
 # On a NAS
 
-Use the [Docker Compose install](./docker.md). These are the differences on Synology, QNAP,
-TrueNAS SCALE and Unraid. Start with one month: a NAS can make the whole film, but a year's
-first preparation is a bigger job.
+Choose your container manager and follow its install steps:
 
-<Diagram name="deploy-nas" headline="Every NAS runs the same Compose file. Only the screen you paste it into changes." />
-## Install
+| Platform | Install |
+|---|---|
+| Synology DSM | [Container Manager project](./platforms/synology.md) |
+| Unraid | [Docker template or Compose Manager](./platforms/unraid.md) |
+| TrueNAS 24.10+ | [Custom app](./platforms/truenas.md) |
+| Portainer | [Docker Standalone stack](./platforms/portainer.md) |
+| QNAP or another NAS with Compose | [Docker Compose](../get-started/quick-start.md) |
 
-Create an Immich key with the [ten read permissions](./docker.md#the-api-key), adding the
-upload set only if you want films sent back to Immich. Leave **All** unchecked.
+**Basic** runs on the NAS CPU. **GPU** uses NVIDIA inference and captions, either on a supported
+host or a separate GPU machine. **Full** adds a reader. Each stack-editor guide includes the
+builder's three tier choices. Allow memory and storage in addition to what Immich uses:
+[requirements](./requirements.md).
 
-Import `docker-compose.yml` as a project in your NAS's container manager. For a file-based
-project, put `.env` and an `output` folder beside it. Fill in the Immich URL/key and timezone.
-Set home coordinates in Settings or the app's `environment:` block as in
-[Docker step 2](./docker.md#2-connect-immich).
+The generated single-file route uses Docker-managed volumes. It does not need a hand-created
+output folder. The release Compose file uses `./output`; use the permissions below for that
+route, or when choosing a NAS share for films.
 
-For the interface-specific steps, use [Synology DSM](./platforms/synology.md),
-[Unraid](./platforms/unraid.md), [Portainer](./platforms/portainer.md), or
-[TrueNAS](./platforms/truenas.md). These guides include one self-contained Compose file for
-stack editors that do not read a separate `.env` file. Unraid also has a
-[native Docker XML template](https://raw.githubusercontent.com/sam-dumont/immich-memories/main/deploy/unraid/immich-memories.xml); see the [Unraid guide](./platforms/unraid.md#native-docker-template).
+## NAS operating notes {#install}
 
-After starting, use your platform guide's **container console** to run `immich-memories models fetch`
-and `immich-memories preflight`; no SSH is needed for preparation. From a host terminal instead,
-the shipped container name works regardless of the project name or current folder:
-
-```bash
-docker exec immich-memories immich-memories models fetch
-docker exec immich-memories immich-memories preflight
-```
-
-Add `sudo` only if your user isn't in the `docker` group. Inside the container terminal, run
-just `immich-memories models fetch` and `immich-memories preflight`; leave off
-`docker exec immich-memories`.
-The [Portainer Stack and Console route](./platforms/portainer.md) passed preparation checks,
-and [Synology through SSH/Compose](./platforms/synology.md) completed a first film.
-The DSM Project wizard, Unraid and TrueNAS interface routes have not been tested.
-
-Then [reach the UI](#reaching-the-ui) and make [your first film](../get-started/first-film.mdx).
-The default Basic tier needs no caption server or text model.
+The following sections cover storage, network access, encoding and resource tuning.
+For first startup, use the platform guide above, then [make a film](../get-started/first-film.mdx).
 
 ### The output folder
 
@@ -133,12 +117,6 @@ render. Larger periods, slower storage and different media can take hours. See
 [measured examples](../better/measured.md#cold-start-time-by-hardware-and-tier) for real numbers on comparable
 hardware.
 
-A Synology DS423+ with a Celeron J4125 rendered a 60.5-second, 1080 × 1920 H.264 film from
-15 selected shots in **10 minutes 16 seconds** using software encoding. Preparing the source clips
-took 5 minutes 38 seconds; assembly took 3 minutes 55 seconds. The whole command, including
-selection from 248 inputs, took **15 minutes 43 seconds**. It reused 39 prepared inputs from an
-earlier album and read 209 new ones. Model download is extra. These are candidate acceptance
-timings on a shared host, not a first-run deadline; see the [test record](./tested-deployments.md).
 
 The first film reads the pictures in its period and saves the results; later films reuse matching
 results. Rendering still happens every time.

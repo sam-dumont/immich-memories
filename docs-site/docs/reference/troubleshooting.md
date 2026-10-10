@@ -4,6 +4,9 @@ title: Troubleshooting
 
 # Troubleshooting
 
+Still installing? Start with [Installation help](./installation-help.md). For an active or
+interrupted film, see [Film progress and recovery](../run/film-progress.md).
+
 **Help, in four steps:** read the table below and the [FAQ](./faq.md); check the
 [release notes](https://github.com/sam-dumont/immich-memories/releases) for your version;
 [search the issues](https://github.com/sam-dumont/immich-memories/issues?q=is%3Aissue); then open
@@ -59,7 +62,7 @@ never reached the process.
 - A `403 Forbidden` means the key lacks rights. The scopes are on the [Docker page](../run/docker.md).
 - Immich must be v2 or v3. Immich 1.x is refused at connect time.
 - In Docker, `localhost` is the container. Use the host's IP or the Docker network name.
-- On a Mac, `No route to host` or `errno 65` to an address like `192.168.x.x`, while `curl` reaches it, is the Local Network permission: it belongs to the Python the scheduled job runs, not to Terminal. `auto install` checks it at the Mac: macOS asks on the screen whether that Python may find devices on your local network, and waits there until someone answers. Click **Allow** and run `auto install` again, or turn it on in System Settings ([details](../run/uv-pip.md#macos-and-an-immich-on-your-network)).
+- On a Mac, `No route to host` or `errno 65` to an address like `192.168.x.x`, while `curl` reaches it, is the Local Network permission: it belongs to the Python the scheduled job runs, not to Terminal. `auto install` checks it at the Mac: macOS asks on the screen whether that Python may find devices on your local network, and waits there until someone answers. Click **Allow** and run `auto install` again, or turn it on in System Settings ([details](../run/reference/python-install.md#macos-and-an-immich-on-your-network)).
 
 ## Immich v2/v3 version mismatch
 

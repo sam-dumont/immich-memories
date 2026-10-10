@@ -9,11 +9,7 @@ import StackStorage from './_stack-storage.mdx';
 
 Use the native Docker template for the Basic setup, or the Compose Manager alternative below. The app needs its own 4 GiB memory budget alongside Immich. These steps follow the Compose Manager documentation; a recorded installation on Unraid is still pending.
 
-:::info Not yet tested on Unraid
-
-We have not tested these steps on this platform. Local template, manifest and browser checks do not establish a tested installation. Please [report your results](https://github.com/sam-dumont/immich-memories/issues), including platform/app versions and whether preflight and the first film worked. The [deployment matrix](../tested-deployments.md) tracks status by platform.
-
-:::
+This platform route has not been tested end to end. See [tested deployments](../tested-deployments.md) for coverage.
 
 ## Native Docker template
 
@@ -32,9 +28,7 @@ Choose persistent host directories for configuration/models and finished films. 
 
 Keep **Network Type: Bridge** and the existing **Extra Parameters**. Its `--publish=127.0.0.1:8080:8080/tcp` mapping is deliberately private. There is no separate port entry. For direct LAN access, set **both UI username and UI password** before changing this mapping. Host networking bypasses it. The Unraid admin login does not protect the app.
 
-`title_screens.locale: auto` follows the host's `LANG`, but the container sets none, so a film
-always renders in English until you set `title_screens.locale: fr` (or add a `LANG: fr_FR.UTF-8`
-variable to the template) for a French one.
+Set film language after startup in [Settings](../../get-started/after-install.md).
 
 Click **Apply**, then use the container console instructions below to fetch models and check readiness. No SSH is needed for these steps. A configured template contains your API key: do not share it.
 
@@ -46,11 +40,17 @@ Enable Docker in Unraid and install [Docker Compose Manager from Community Appli
 
 ## 2. Paste and start
 
-Enter your connection details below. Copy the generated `docker-compose.yml` into the stack's Compose editor, save, and use the manager's **Compose Up** action. This file needs no separate `.env`.
+Choose Basic, GPU or Full and enter your connection details below. GPU/Full need an NVIDIA host with the Container Toolkit or a separate GPU box; Full also needs a reader. Copy the generated `docker-compose.yml` into the stack's Compose editor, configure access below, then save and use the manager's **Compose Up** action. This file needs no separate `.env`.
 
 <SetupBuilder initialPlatform="linux" initialInline showPlatform={false} showCommands={false} />
 
 <StackStorage />
+
+Before deploying, choose how you will open the app: configure
+[app login for LAN access](../docker.md#stack-editor-lan-access), or keep localhost and use
+**Private UI access with an SSH tunnel** in the builder. On this NVIDIA host, select **Use NVIDIA
+CUDA containers** for GPU/Full; for a separate worker, fill in **GPU box address** and start the
+provided worker files on that machine first.
 
 ## 3. Prepare and check
 
@@ -65,8 +65,14 @@ These are container commands: do not add `docker exec`. Fix reported connection 
 
 ## 4. Open the app
 
-From your computer, tunnel to the Unraid host:
+For Compose Manager access from another computer on your trusted LAN, configure
+[app login in the stack file](../docker.md#stack-editor-lan-access) before deploying it.
+Then open `http://your-server-address:8080` and sign in. The container manager's own login does
+not protect the app's port.
 
-Use the **Private UI access** command generated above; it uses your selected UI port. Replace `your-ssh-user@your-host` with your NAS login and address.
+For private access, keep the localhost binding and use the builder's **Private UI access with
+an SSH tunnel** instructions. Tunnel to the host running Docker, which may differ from the
+container manager's host. Use your selected host port in either route.
 
-Open the localhost URL shown by the builder and make [your first film](../../get-started/first-film.mdx). For direct LAN access, [enable authentication before changing the port binding](../docker.md#reaching-the-ui-from-another-machine). If 8080 is occupied, choose a different **UI host port** in the builder.
+Make [your first film](../../get-started/first-film.mdx).
+[Installation help](../../reference/installation-help.md) covers port, permission and startup errors.
