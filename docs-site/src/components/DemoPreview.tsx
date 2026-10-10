@@ -1,7 +1,6 @@
-import type {ReactNode} from 'react';
+import {useEffect, useRef, type ReactNode} from 'react';
 import {useColorMode} from '@docusaurus/theme-common';
 import useBaseUrl from '@docusaurus/useBaseUrl';
-import ThemedImage from '@theme/ThemedImage';
 
 export function DemoLink({children}: {children: ReactNode}) {
   const {colorMode} = useColorMode();
@@ -10,21 +9,39 @@ export function DemoLink({children}: {children: ReactNode}) {
 }
 
 export default function DemoPreview() {
-  const animations = {
-    light: useBaseUrl('/img/demo-hero.gif'),
-    dark: useBaseUrl('/img/dark-demo-hero.gif'),
-  };
-  const stills = {
-    light: useBaseUrl('/img/screenshots/memory-story.png'),
-    dark: useBaseUrl('/img/screenshots/dark-memory-story.png'),
-  };
-  const alt = 'Choose a month, review its cut, and watch the finished film';
+  const video = useRef<HTMLVideoElement>(null);
+  const {colorMode} = useColorMode();
+  const name = colorMode === 'dark' ? 'dark-demo' : 'demo';
+  const src = useBaseUrl(`/demo/${name}.mp4`);
+  const poster = useBaseUrl(`/demo/${name}-poster.jpg`);
+  useEffect(() => {
+    const preference = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const applyPreference = () => {
+      if (preference.matches) video.current?.pause();
+      else void video.current?.play().catch(() => undefined);
+    };
+    applyPreference();
+    preference.addEventListener('change', applyPreference);
+    return () => preference.removeEventListener('change', applyPreference);
+  }, [src]);
   return (
     <figure className="docs-screenshot docs-demo-preview">
-      <DemoLink>
-        <span className="docs-demo-motion"><ThemedImage sources={animations} alt={alt} width={720} height={405} fetchPriority="high" /></span>
-        <span className="docs-demo-still"><ThemedImage sources={stills} alt={alt} width={1440} height={900} /></span>
-      </DemoLink>
+      <video
+        key={src}
+        ref={video}
+        src={src}
+        poster={poster}
+        controls
+        muted
+        playsInline
+        preload="none"
+        width={1920}
+        height={1080}
+        aria-label="Immich Memories demo: choose pictures, review and edit the cut, then watch the finished film"
+        style={{width: '100%', height: 'auto', display: 'block', borderRadius: 10}}
+      >
+        <a href={src}>Watch the demo</a>
+      </video>
     </figure>
   );
 }

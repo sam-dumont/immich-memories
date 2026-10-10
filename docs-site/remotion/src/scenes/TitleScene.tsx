@@ -1,97 +1,36 @@
-import {
-  AbsoluteFill,
-  Img,
-  interpolate,
-  spring,
-  staticFile,
-  useCurrentFrame,
-  useVideoConfig,
-} from "remotion";
+import { AbsoluteFill, Img, interpolate, staticFile, useCurrentFrame } from "remotion";
 import { fontFamily } from "../fonts";
+import { COLORS } from "../theme";
 
 export const TitleScene: React.FC = () => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-
-  const titleProgress = spring({
-    frame,
-    fps,
-    config: { damping: 18, stiffness: 120 },
-    delay: 5,
-  });
-  const subProgress = spring({
-    frame,
-    fps,
-    config: { damping: 18, stiffness: 120 },
-    delay: 18,
-  });
-
-  const titleOpacity = interpolate(titleProgress, [0, 1], [0, 1]);
-  const titleY = interpolate(titleProgress, [0, 1], [25, 0]);
-  const subOpacity = interpolate(subProgress, [0, 1], [0, 1]);
-  const subY = interpolate(subProgress, [0, 1], [15, 0]);
-
-  const bgScale = interpolate(frame, [0, 158], [1.05, 1.12], {
-    extrapolateRight: "clamp",
-  });
-  const bgOpacity = interpolate(frame, [0, 20], [0, 0.35], {
-    extrapolateRight: "clamp",
-  });
-
+  const opacity = interpolate(frame, [0, 15], [0, 1], { extrapolateRight: "clamp" });
   return (
-    <AbsoluteFill style={{ backgroundColor: "#09090b" }}>
-      <Img
-        src={staticFile("library/lake-sunset.jpg")}
-        style={{
-          position: "absolute",
-          width: "130%",
-          height: "130%",
-          top: "-15%",
-          left: "-15%",
-          objectFit: "cover",
-          filter: "blur(50px) brightness(0.3)",
-          opacity: bgOpacity,
-          transform: `scale(${bgScale})`,
-        }}
-      />
-      <AbsoluteFill
-        style={{ justifyContent: "center", alignItems: "center" }}
-      >
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 20,
-          }}
-        >
-          <div
-            style={{
-              fontSize: 88,
-              fontWeight: 700,
-              color: "#ffffff",
-              fontFamily,
-              opacity: titleOpacity,
-              transform: `translateY(${titleY}px)`,
-              letterSpacing: -1.5,
-            }}
-          >
-            Immich Memories
+    <AbsoluteFill style={{ backgroundColor: COLORS.bg, color: COLORS.text, fontFamily }}>
+      <div style={{
+        position: "absolute", inset: "108px 140px", display: "grid",
+        gridTemplateColumns: "1.05fr 1fr", gap: 88, alignItems: "center", opacity,
+      }}>
+        <div>
+          <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 42 }}>
+            <Img src={staticFile("logo.svg")} style={{ width: 72, height: 72 }} />
+            <span style={{ fontSize: 34, fontWeight: 600 }}>Immich Memories</span>
           </div>
-          <div
-            style={{
-              fontSize: 28,
-              color: "#e5e7eb",
-              fontFamily,
-              fontWeight: 400,
-              opacity: subOpacity,
-              transform: `translateY(${subY}px)`,
-            }}
-          >
+          <h1 style={{ fontSize: 72, lineHeight: 1.12, letterSpacing: -2.5, fontWeight: 600, margin: 0 }}>
             Watch your memories again, in films you can make your own.
+          </h1>
+          <div style={{ fontSize: 28, lineHeight: 1.5, marginTop: 36, color: COLORS.textSecondary }}>
+            A self-hosted companion for Immich.<br />Open source.
           </div>
         </div>
-      </AbsoluteFill>
+        <div style={{ display: "grid", gap: 18 }}>
+          {["trip-lake-arrival-01.jpg", "garden-cake.jpg", "woods-stream-01.jpg"].map((picture) => (
+            <Img key={picture} src={staticFile(`library/${picture}`)} style={{
+              width: "100%", height: 242, objectFit: "cover", borderRadius: 10,
+            }} />
+          ))}
+        </div>
+      </div>
     </AbsoluteFill>
   );
 };

@@ -39,7 +39,7 @@ export default function Home(): ReactNode {
             <div className={styles.heroVisual}>
               <DemoPreview />
               <p className={styles.heroCredit}>
-                <DemoLink>Play the demo with music</DemoLink> · <a href={trip}>Watch a trip film</a><br />
+                <DemoLink>Open the demo in a new page</DemoLink> · <a href={trip}>Watch a trip film</a><br />
                 CC0 stock pictures. <a href="https://github.com/sam-dumont/immich-memories/blob/main/tests/e2e/fixtures/library/CREDITS.md">Credits</a>
               </p>
             </div>

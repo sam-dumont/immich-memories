@@ -1,7 +1,7 @@
 import "./index.css";
 import { Composition } from "remotion";
 import { DemoVideo } from "./Composition";
-import { FPS, TOTAL_FRAMES } from "./theme";
+import { FPS, TOTAL_FRAMES } from "./timeline";
 
 export const RemotionRoot: React.FC = () => (
   <Composition

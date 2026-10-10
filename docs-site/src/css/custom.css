@@ -351,11 +351,6 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .docs-demo-preview { margin: 0; }
-.docs-demo-still { display: none; }
-@media (prefers-reduced-motion: reduce) {
-  .docs-demo-motion { display: none; }
-  .docs-demo-still { display: block; }
-}
 
 /* Diagrams (docs-site/diagrams): headline above, the SVG at full column width, click to enlarge */
 .docs-diagram {

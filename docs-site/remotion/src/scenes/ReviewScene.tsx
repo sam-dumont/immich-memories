@@ -21,9 +21,9 @@ import {
 
 const PICK = 45;
 const ZOOM_IN = 58;
-const ZOOM_OUT = 110;
-const STORIES_AT = 140;
-export const SHEET_AGAIN = 176;
+const ZOOM_OUT = 166;
+const STORIES_AT = 196;
+export const SHEET_AGAIN = 282;
 
 const PICKED = 2;
 const card = cardAt(PICKED);
@@ -43,9 +43,7 @@ const cursorSteps = [
 const ZOOM = { targetX: 1, targetY: 1, scale: 1.3, durationFrames: 18 };
 const LEAN_SCROLL = 110;
 
-type Props = { bassIntensity?: number };
-
-export const ReviewScene: React.FC<Props> = ({ bassIntensity }) => {
+export const ReviewScene: React.FC = () => {
   const frame = useCurrentFrame();
   const view = frame >= STORIES_AT && frame < SHEET_AGAIN ? "stories" : "sheet";
   const scroll = interpolate(
@@ -62,7 +60,7 @@ export const ReviewScene: React.FC<Props> = ({ bassIntensity }) => {
     <AbsoluteFill style={{ backgroundColor: COLORS.bg }}>
       <WindowFrame
         path={`/app/runs/${RUN_ID}`}
-        bassIntensity={bassIntensity}
+
         enter={false}
         zoom={{ ...ZOOM, startFrame: ZOOM_IN, outFrame: ZOOM_OUT }}
       >

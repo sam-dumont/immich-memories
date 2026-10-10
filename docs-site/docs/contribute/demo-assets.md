@@ -18,7 +18,7 @@ make demo-ui DEMO_THEME=dark
 make demo-hero DEMO_THEME=dark
 ```
 
-The trip preview needs the network for map tiles and place naming. The other demo media use the public fixture. The README’s hosted hero updates when the docs site deploys. The homepage selects matching light/dark screenshots, hero animation and walkthrough video. Finished films have no UI theme and use one shared preview.
+The trip preview needs the network for map tiles and place naming. The other demo media use the public fixture. The README’s hosted hero updates when the docs site deploys. The homepage selects matching light/dark screenshots, video posters and walkthrough video. Finished films have no UI theme and use one shared preview.
 
 The docs use the app’s pinned `@immich/ui` theme tokens. After updating that package in both projects, run `npm --prefix docs-site run ui-theme`; the docs build checks for token drift.
 
@@ -61,8 +61,8 @@ selection, so the pool count can differ from the file count.
 
 | Command (repo root) | Produces |
 |---|---|
-| `make demo-ui` | `docs-site/static/demo/demo.mp4`, 1,486 video frames at 30 fps (about 50 s), 1920×1080 H.264; it ends on the film the product made |
-| `make demo-hero` | `docs-site/static/img/demo-hero.gif`, the README and homepage hero: the brief, the cut and the review, then Render pressed and the film arriving on the page, then that film full bleed from the moment the page's player shows (the Makefile comment has the windows), 720 px, 9 fps, under 4 MB |
+| `make demo-ui` | `docs-site/static/demo/demo.mp4`, 2,754 video frames at 30 fps (about 92 s), 1920×1080 H.264; it shows the film the product made, then holds a closing frame with the docs address |
+| `make demo-hero` | `docs-site/static/img/demo-hero.gif`, the README hero: the brief, the cut and the review, then Render pressed and the film arriving on the page, then that film full bleed from the moment the page's player shows (the shared timeline supplies the windows), 720 px, 10 fps, under 4 MB |
 | `make demo-compose-setup` | `docs-site/static/img/screenshots/compose-basic-setup.png`, actual Basic release downloads and Compose validation; requires VHS, curl, Docker and `docker-compose` on PATH |
 | `make demo-cli` | `docs-site/remotion/public/cli-demo.mp4` and `docs-site/remotion/src/cli-timing.ts`, VHS recording the real CLI: `scripts/demo-cli-hermetic.py` runs `generate`, `runs story` and `runs why` against the hermetic fakes from `tests/e2e`, types each command, and writes the second each one starts at so the scene cuts there; it also copies the video to `docs-site/static/demo/cli-demo.mp4` and cuts its poster `cli-demo-poster.jpg`, which the homepage's CLI section plays (`make demo-cli-run` plays the same session without recording; as root in a container, set `VHS_NO_SANDBOX=true`) |
 | `make demo-output` | `docs-site/remotion/public/output-preview.mp4` and `output-frame.jpg`, cut on the hermetic launch |
@@ -84,11 +84,13 @@ docs site, so it reaches the README on the next docs deploy, not on the next pus
 
 The soundtrack uses `happy_acoustic_s411.opus` from the project's bundled music package, under
 the same MIT licence (see `packages/immich-memories-music/LICENSE-MUSIC`). The recipe crossfades
-two copies over three seconds, normalises to -18 LUFS with a -2 dB true-peak ceiling, and leaves
+four copies with three-second overlaps, normalises to -18 LUFS with a -2 dB true-peak ceiling, and leaves
 the fade-in and fade-out to Remotion. It needs no model, API key or media download.
 
-The homepage and README show the hero GIF and link to the full demo with sound. The homepage
-uses a still screenshot when the browser requests reduced motion. The finished trip film remains
+The homepage embeds the full demo with controls and a matching light or dark poster. It autoplays
+muted, with controls to enable sound. When reduced motion is enabled, the poster stays still
+until the viewer presses Play. The README shows the
+short hero GIF and links to the full demo with sound. The finished trip film remains
 available beside the demo.
 
 The scenes live in `docs-site/remotion/src/scenes/`, the client's pieces (the app shell, the job
@@ -110,8 +112,17 @@ client's layout.
 The demo shows the product working: an error card, even a helpful one, reads as the product
 failing, so refusals live in the install docs, not in a scene.
 
-The last scene plays the closing seconds of `output-preview.mp4` and must stop before the film's
-blurred ending card: the demo ends on a picture, not on a blur. It does
-not hold that moment in a constant: `make demo-fixture` measures the film with `edgedetect`, which
-reads a flat zero on that card and 8 to 12 on a photograph, and writes `FILM_PICTURES_END` into
-`fixture.ts`. Re-cutting the film moves the window with it.
+The opening and closing frames use the docs logo, Inter and the shared colour tokens. Scene
+headings name the action outside the app window. Preparation and rendering are labelled as sped
+up; the finished film plays at normal speed.
+
+`docs-site/remotion/src/timeline.ts` holds scene lengths, transition overlaps and the selected
+passage of the fixture film. The composition and hero script both read it. After re-cutting the
+fixture film, review that passage at normal speed: keep complete shots and end before the next
+shot begins. The last picture holds before the dissolve into the closing frame. The soundtrack
+fades with that frame and ends half a second before the video.
+
+Check every scene in both themes: text and controls must be readable, the cursor must hit the
+control it demonstrates, and the UI must match the client. `make demo-ui` extracts frame 65 from each full demo
+as its homepage poster, saved as `demo-poster.jpg` and `dark-demo-poster.jpg` under
+`docs-site/static/demo/`. The fixture film's titles and dates are rendered in English.

@@ -9,8 +9,8 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
+import { SCENE_FRAMES } from "../timeline";
 import { COLORS } from "../theme";
-import { fontFamily } from "../fonts";
 import { CLI_TIMING } from "../cli-timing";
 
 // The recording is the real CLI, a couple of minutes from the first prompt to
@@ -18,17 +18,17 @@ import { CLI_TIMING } from "../cli-timing";
 // time-lapse; `runs story` and `runs why` are held
 // long enough to read. The cut points are the seconds the recording script wrote
 // down as it typed each command (cli-timing.ts), so a new recording moves them.
-export const CLI_FRAMES = 165;
+const CLI_FRAMES = SCENE_FRAMES.cli;
 const FPS = 30;
-// The command is typed in about three seconds: shown at 3x so it can be read,
-// then the run itself as a time-lapse.
+// Keep the typed command and the explanations readable; accelerate the run itself.
 const TYPED = CLI_TIMING.generate + 4.5;
 const LEGS: { from: number; to: number; frames: number }[] = [
-  { from: CLI_TIMING.generate, to: TYPED, frames: 45 },
-  { from: TYPED, to: CLI_TIMING.story, frames: 38 },
-  { from: CLI_TIMING.story, to: CLI_TIMING.why, frames: 36 },
-  { from: CLI_TIMING.why, to: CLI_TIMING.open, frames: 34 },
-  { from: CLI_TIMING.open, to: CLI_TIMING.end, frames: CLI_FRAMES - 45 - 38 - 36 - 34 },
+  { from: CLI_TIMING.generate, to: TYPED, frames: 105 },
+  { from: TYPED, to: CLI_TIMING.story, frames: 30 },
+  { from: CLI_TIMING.story, to: CLI_TIMING.why, frames: 105 },
+  { from: CLI_TIMING.why, to: CLI_TIMING.whyNot, frames: 105 },
+  { from: CLI_TIMING.whyNot, to: CLI_TIMING.open, frames: 90 },
+  { from: CLI_TIMING.open, to: CLI_TIMING.end, frames: CLI_FRAMES - 435 },
 ];
 
 const Recording: React.FC = () => {
@@ -61,7 +61,7 @@ export const CliScene: React.FC = () => {
   const entry = spring({
     frame,
     fps,
-    config: { damping: 14, stiffness: 80 },
+    config: { damping: 28, stiffness: 100 },
   });
   const entryY = interpolate(entry, [0, 1], [50, 0]);
   const entryScale = interpolate(entry, [0, 1], [0.93, 1]);
@@ -70,36 +70,8 @@ export const CliScene: React.FC = () => {
   });
   const floatY = 0;
 
-  // "Also available as CLI" label
-  const labelOpacity = interpolate(frame, [8, 25], [0, 1], {
-    extrapolateRight: "clamp",
-  });
-
   return (
     <AbsoluteFill style={{ backgroundColor: COLORS.bg }}>
-      <div
-        style={{
-          position: "absolute",
-          top: 30,
-          left: 0,
-          right: 0,
-          textAlign: "center",
-          opacity: labelOpacity,
-        }}
-      >
-        <span
-          style={{
-            fontSize: 18,
-            color: COLORS.textSecondary,
-            fontFamily,
-            fontWeight: 500,
-            letterSpacing: 1,
-          }}
-        >
-          Also available as CLI
-        </span>
-      </div>
-
       <div
         style={{
           position: "absolute",

@@ -118,10 +118,13 @@ const Form: React.FC<{ state: RenderState }> = ({ state }) => (
         display: "flex",
         flexDirection: "column",
         gap: 12,
-        height: 104,
       }}
     >
       <div style={{ fontSize: 14, fontWeight: 600 }}>Music</div>
+      <Check label="Keep original audio" checked />
+      <p style={{ fontSize: 14, lineHeight: "20px", color: UI.gray600, margin: 0 }}>
+        Sound recorded in videos and Live Photos. Turn off for music only, or silence with No music.
+      </p>
       <div style={{ display: "flex", gap: 8 }}>
         <Radio label="Automatic (as configured)" />
         <Radio label="No music" checked />

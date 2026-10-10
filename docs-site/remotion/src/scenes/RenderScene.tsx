@@ -7,6 +7,7 @@ import { AnimatedCursor } from "../components/AnimatedCursor";
 import { FloatingEditBar, RUN_ID, RunPage } from "../components/RunPage";
 import { elapsedLabel } from "../components/JobPanel";
 import { EDITED } from "./EditScene";
+import { SCENE_FRAMES } from "../timeline";
 import { CUT_CONTENT_BUDGET } from "../fixture";
 
 /**
@@ -19,13 +20,13 @@ import { CUT_CONTENT_BUDGET } from "../fixture";
 const RENDER_Y = 1416;
 const FORM_Y = RENDER_Y + 32;
 const PANEL_SCROLL = 1306;
-const BUTTON_SCROLL = 1624;
+const BUTTON_SCROLL = 1688;
 // Once the form is gone the page is shorter, and the browser pulls the scroll back with it.
 export const JOB_SCROLL = 860;
 
 const OPEN_SELECT = 38;
-const PICK_REVISION = 54;
-const RENDER = 108;
+const PICK_REVISION = 64;
+const RENDER = 162;
 const JOB_START = RENDER + 4;
 
 const SELECT_XY = onScreen(MAIN_X + 188, FORM_Y + 45 - PANEL_SCROLL);
@@ -36,7 +37,7 @@ const REVISION_XY = onScreen(
 // Six field rows, then the place explanation and privacy checkbox, followed by music.
 const RENDER_XY = onScreen(
   MAIN_X + 40,
-  FORM_Y + 6 * 82 + 160 + 16 + 104 + 16 + 20 + 16 + 31 - BUTTON_SCROLL,
+  FORM_Y + 6 * 82 + 160 + 16 + 168 + 16 + 20 + 16 + 31 - BUTTON_SCROLL,
 );
 
 const cursorSteps = [
@@ -52,8 +53,8 @@ const STAGES = [
   { at: 0, label: "Preparing the render", fraction: 0 },
   { at: 6, label: "Generating month dividers...", fraction: 0.05 },
   { at: 12, label: "Streaming video assembly...", fraction: 0.07 },
-  { at: 34, label: "Mixing audio...", fraction: 0.85 },
-  { at: 42, label: "Muxing final output...", fraction: 0.95 },
+  { at: 48, label: "Mixing audio...", fraction: 0.85 },
+  { at: 60, label: "Muxing final output...", fraction: 0.95 },
 ];
 
 export const renderJobAt = (frame: number) => {
@@ -62,20 +63,18 @@ export const renderJobAt = (frame: number) => {
     [...STAGES].reverse().find((step) => since >= step.at) ?? STAGES[0];
   const fraction =
     stage.label === "Streaming video assembly..."
-      ? interpolate(since, [12, 34], [0.07, 0.8], { extrapolateRight: "clamp" })
+      ? interpolate(since, [12, 48], [0.07, 0.8], { extrapolateRight: "clamp" })
       : stage.fraction;
-  // The render runs faster than life: two minutes to every second shown.
+  // The time-lapse ends at the same elapsed time the completed panel shows.
   return {
     label: stage.label,
     fraction,
-    elapsed: elapsedLabel((since / 30) * 120),
+    elapsed: elapsedLabel((since / (SCENE_FRAMES.render - JOB_START)) * 192),
     done: false,
   };
 };
 
-type Props = { bassIntensity?: number };
-
-export const RenderScene: React.FC<Props> = ({ bassIntensity }) => {
+export const RenderScene: React.FC = () => {
   const frame = useCurrentFrame();
   const easing = Easing.inOut(Easing.cubic);
   const scroll =
@@ -83,7 +82,7 @@ export const RenderScene: React.FC<Props> = ({ bassIntensity }) => {
       ? JOB_SCROLL
       : interpolate(
           frame,
-          [0, 26, 76, 96],
+          [0, 26, 116, 146],
           [0, PANEL_SCROLL, PANEL_SCROLL, BUTTON_SCROLL],
           {
             extrapolateLeft: "clamp",
@@ -111,7 +110,7 @@ export const RenderScene: React.FC<Props> = ({ bassIntensity }) => {
     <AbsoluteFill style={{ backgroundColor: COLORS.bg }}>
       <WindowFrame
         path={`/app/runs/${RUN_ID}`}
-        bassIntensity={bassIntensity}
+
         enter={false}
       >
         <AppShell active="Runs" scroll={scroll}>
