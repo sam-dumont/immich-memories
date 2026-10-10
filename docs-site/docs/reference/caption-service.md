@@ -14,9 +14,13 @@ restarts it on demand. The standalone Compose/Kubernetes recipes below run their
 do not add one just to use unified captions.
 
 The unified caption route has no authentication, even though `/render` on the same listener
-requires a token. Keep it private. The standalone recipes explicitly set `--cache-ram 128` and
-`--parallel 1`; the unified bundled command does not set those bounds. Context size is 8192
-in both llama.cpp recipes. Neither configuration guarantees a fixed VRAM peak.
+requires a token. Keep it private. Both deployments default to a 128 MiB host prompt cache.
+The bundled command sets `LLAMA_ARG_CACHE_RAM=128` unless you provide a value; an explicit
+`--cache-ram` argument takes precedence. This cache holds reusable model state in RAM, not the
+descriptions saved in the app's database. It is not a limit on the worker's total RAM or VRAM.
+
+The standalone recipes also set `--parallel 1`; the unified bundled command keeps llama.cpp's
+automatic slot count. Context size is 8192 in both recipes. Neither guarantees a fixed VRAM peak.
 
 ## Explicit LLM captions
 
