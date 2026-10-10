@@ -2211,3 +2211,10 @@ msgstr "~{amount} left"
 msgid "~{amount} left in this stage"
 msgstr "~{amount} left in this stage"
 
+#: web/lib/RenderPanel.svelte:250
+msgid "Keep original audio"
+msgstr "Keep original audio"
+
+#: web/lib/RenderPanel.svelte:251
+msgid "Sound recorded in videos and Live Photos. Turn off for music only, or silence with No music."
+msgstr "Sound recorded in videos and Live Photos. Turn off for music only, or silence with No music."

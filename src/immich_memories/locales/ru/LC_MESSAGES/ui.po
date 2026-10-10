@@ -2230,3 +2230,10 @@ msgstr "Осталось ~{amount}"
 msgid "~{amount} left in this stage"
 msgstr "~{amount} осталось на этом этапе"
 
+#: web/lib/RenderPanel.svelte:250
+msgid "Keep original audio"
+msgstr "Сохранить исходный звук"
+
+#: web/lib/RenderPanel.svelte:251
+msgid "Sound recorded in videos and Live Photos. Turn off for music only, or silence with No music."
+msgstr "Звук, записанный в видео и Live Photos. Отключите, чтобы оставить только музыку, или выберите также «Без музыки» для фильма без звука."

@@ -2180,3 +2180,10 @@ msgstr "약 {amount} 남음"
 msgid "~{amount} left in this stage"
 msgstr "이 단계에 약 {amount} 남음"
 
+#: web/lib/RenderPanel.svelte:250
+msgid "Keep original audio"
+msgstr "원본 오디오 유지"
+
+#: web/lib/RenderPanel.svelte:251
+msgid "Sound recorded in videos and Live Photos. Turn off for music only, or silence with No music."
+msgstr "동영상과 Live Photos에 녹음된 소리입니다. 끄면 음악만 재생되며, 음악 없음도 선택하면 무음이 됩니다."

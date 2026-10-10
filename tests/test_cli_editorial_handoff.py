@@ -6,6 +6,8 @@ from datetime import datetime
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from immich_memories.analysis.editorial_planner import EditorialSelection
 from immich_memories.analysis.smart_pipeline import PipelineResult
 from immich_memories.config_loader import Config
@@ -13,8 +15,10 @@ from immich_memories.timeperiod import DateRange
 from tests.conftest import make_clip
 
 
+@pytest.mark.parametrize("original_audio", [True, False])
 def test_cli_passes_exact_selected_carriers_and_editorial_decisions_to_generation(
     tmp_path,
+    original_audio,
 ) -> None:
     from immich_memories.cli._pipeline_runner import run_pipeline_and_generate
 
@@ -55,6 +59,7 @@ def test_cli_passes_exact_selected_carriers_and_editorial_decisions_to_generatio
             transition="cut",
             music=None,
             no_music=True,
+            original_audio=original_audio,
             output_path=output_path,
             memory_type="year_in_review",
             person_names=[],
@@ -68,6 +73,7 @@ def test_cli_passes_exact_selected_carriers_and_editorial_decisions_to_generatio
 
     params = generate.call_args.args[0]
     assert actual == output_path
+    assert params.original_audio is original_audio
     assert params.clips is selected_clips
     assert params.clips[0] is clip
     assert params.editorial_selections is decisions

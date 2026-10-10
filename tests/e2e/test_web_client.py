@@ -402,9 +402,12 @@ def test_a_memory_made_in_the_browser_is_cut_reviewed_revised_rendered_and_playe
     render = page.get_by_role("region", name="Render")
     render.get_by_label("What to render").select_option(label="Revision 1")
     render.get_by_label("No music").check()
+    expect(render.get_by_label("Keep original audio")).to_be_checked()
+    render.get_by_label("Keep original audio").uncheck()
     render.get_by_role("button", name="Render", exact=True).click()
     film = render.locator("video")
     expect(film).to_be_visible(timeout=600_000)
+    expect(render.locator("code")).to_contain_text("--no-original-audio")
     page.wait_for_function(
         "video => video.readyState >= 1 && video.duration > 1",
         arg=film.element_handle(),

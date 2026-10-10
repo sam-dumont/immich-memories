@@ -122,6 +122,14 @@ With maps off, a trip uses ordinary title and location cards. Smooth maps fly be
 
 In **Render**, choose **Automatic**, **No music**, or upload your own MP3, M4A or WAV. **Music volume** changes the mix; the music drops under the clips' own sound. When a clip's own sound is music or singing, the soundtrack steps aside for its whole window instead of competing with it.
 
+Untick **Keep original audio** to remove all sound recorded in videos and Live Photos, including speech. The film keeps its motion and plays only the soundtrack. With **No music** selected too, it is silent. Original audio stays on by default.
+
+For the same choice on the CLI, add `--no-original-audio` to `generate` or `runs render`:
+
+```bash
+immich-memories runs render RUN_ID --no-original-audio --music ~/Music/track.mp3
+```
+
 Automatic uses a bundled track by default. A configured [music generator](../better/music.md) can make an original one and enables **Preview a track** so you can listen first. A failed generator falls back to a bundled track and leaves a warning.
 
 Temporary files used to join and master bundled tracks are removed after mixing, including

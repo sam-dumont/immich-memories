@@ -2166,3 +2166,10 @@ msgstr "剩余约 {amount}"
 msgid "~{amount} left in this stage"
 msgstr "此阶段约剩 {amount}"
 
+#: web/lib/RenderPanel.svelte:250
+msgid "Keep original audio"
+msgstr "保留原始音频"
+
+#: web/lib/RenderPanel.svelte:251
+msgid "Sound recorded in videos and Live Photos. Turn off for music only, or silence with No music."
+msgstr "视频和实况照片中录制的声音。关闭后只播放音乐，同时选择“无音乐”则生成无声影片。"

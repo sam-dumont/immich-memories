@@ -271,6 +271,11 @@ def output_options(command: FC) -> FC:
             default=False,
             help="Disable all music (skip both provided files and AI generation)",
         ),
+        click.option(
+            "--original-audio/--no-original-audio",
+            default=True,
+            help="Keep recordings from videos and Live Photos (default: on); off leaves only music",
+        ),
     ]
     return _apply(command, options)
 

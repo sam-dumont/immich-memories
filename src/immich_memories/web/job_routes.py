@@ -86,6 +86,7 @@ class RenderOptions(BaseModel):
     # "none", "auto" (as configured), or the id of a previewed or uploaded track.
     music: str = "auto"
     music_volume: float | None = None
+    original_audio: bool | None = None
     # None follows defaults.add_date / add_place, as `runs render` does with neither flag.
     add_date: bool | None = None
     add_place: bool | None = None
@@ -113,7 +114,7 @@ class RenderOptions(BaseModel):
             "album",
         )
         switches = ("privacy_mode", "upload_to_immich")
-        either_way = ("add_date", "add_place")
+        either_way = ("add_date", "add_place", "original_audio")
         return [
             *(
                 f"--{n.replace('_', '-')}={getattr(self, n)}"

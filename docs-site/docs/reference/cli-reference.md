@@ -324,6 +324,7 @@ immich-memories generate [OPTIONS]
 | `--output`, `-o`, `-O` | path | - | Output file path. The run writes it inside its own directory and adds a recipe hash to the name; each rerun gets a new run directory |
 | `--music`, `-m` | text | - | Music: path to audio file, 'auto' to generate from config, or omit for default behavior |
 | `--no-music` | boolean | false | Disable all music (skip both provided files and AI generation) |
+| `--original-audio`, `--no-original-audio` | boolean | true | Keep recordings from videos and Live Photos (default: on); off leaves only music |
 | `--dry-run` | boolean | false | Discover inputs and show preparation needs without selection or generation |
 | `--no-render` | boolean | false | Run story-first selection and its audience and media checks, then stop before encoding. Unlike --dry-run, this picks the clips it would actually ship |
 | `--trace-selection` | file | - | Write a stage-by-stage report of how the clips were chosen |
@@ -842,6 +843,7 @@ immich-memories runs render [OPTIONS] [RUN_ID]
 | `--quality` | choice: `high` \| `medium` \| `low` | - | Output quality: high, medium (balanced), low (fast); default: from config |
 | `--music` | text | - | A track to use, or 'auto' to choose as configured |
 | `--no-music` | boolean | false | Render without a music track |
+| `--original-audio`, `--no-original-audio` | boolean | true | Keep recordings from videos and Live Photos (default: on); off leaves only music |
 | `--music-volume` | float | 0.5 | Music volume from 0.0 to 1.0 |
 | `--add-date`, `--no-add-date` | boolean | - | Caption each clip with its date (default: defaults.add_date, on) |
 | `--add-place`, `--no-add-place` | boolean | - | Caption each clip with its place (default: defaults.add_place, on) |

@@ -17,6 +17,7 @@ from enum import StrEnum
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from immich_memories.delivery_timestamp import CARRY_CONTAINER_METADATA
 from immich_memories.processing.assembly_config import AssemblyClip
 from immich_memories.processing.encoding_plan import EncodingPlan
 from immich_memories.processing.output_contract import (
@@ -504,6 +505,48 @@ def music_staging_path(video_path: Path, encoding_plan: EncodingPlan) -> Path:
             f"encoding plan container {encoding_plan.container!r}"
         )
     return video_path.with_suffix(f".with_music.{encoding_plan.container}")
+
+
+def mute_original_audio(video_path: Path, encoding_plan: EncodingPlan) -> OutputProbe:
+    """Replace every source recording with silence before music is mixed or a film published."""
+    duration = check_output(video_path, encoding_plan).duration_seconds
+    with staged_music_output(video_path, encoding_plan) as staged_path:
+        try:
+            subprocess.run(
+                [
+                    "ffmpeg",
+                    "-v",
+                    "error",
+                    "-y",
+                    "-i",
+                    str(video_path),
+                    "-f",
+                    "lavfi",
+                    "-i",
+                    "anullsrc=r=48000:cl=stereo",
+                    "-map",
+                    "0:v:0",
+                    "-map",
+                    "1:a:0",
+                    "-c:v",
+                    "copy",
+                    "-c:a",
+                    "aac",
+                    "-t",
+                    str(duration),
+                    *CARRY_CONTAINER_METADATA,
+                    str(staged_path),
+                ],
+                capture_output=True,
+                check=True,
+                timeout=_AUDIO_DECODE_TIMEOUT_SECONDS,
+            )
+        except (OSError, subprocess.SubprocessError):
+            # Muting is required output behavior, never an optional-music fallback.
+            raise InvalidOutputArtifact(
+                "Could not mute original audio; film was not published"
+            ) from None
+        return publish_music_mix(video_path, encoding_plan)
 
 
 def apply_music_file(

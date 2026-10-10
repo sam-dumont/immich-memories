@@ -2380,6 +2380,17 @@
             ],
             "title": "Orientation"
           },
+          "original_audio": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Original Audio"
+          },
           "privacy_mode": {
             "default": false,
             "title": "Privacy Mode",

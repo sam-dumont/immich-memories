@@ -72,6 +72,7 @@ class CutRenderRequest:
     music_path: Path | None = None
     music_volume: float = 0.5
     no_music: bool = False
+    original_audio: bool = True
     upload: bool = False
     album: str | None = None
 
@@ -170,6 +171,7 @@ def _apply_request(
     params.music_path = request.music_path
     params.music_volume = request.music_volume
     params.no_music = request.no_music
+    params.original_audio = request.original_audio
     params.upload_enabled = request.upload
     params.upload_album = request.album or config.upload.album_name
     # The title `generate` gave the cut stands (a special day's catalogue name, a trip's place)
