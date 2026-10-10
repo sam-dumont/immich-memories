@@ -2,6 +2,8 @@
 title: Docker Compose
 ---
 
+import ComposePort from '@site/src/components/ComposePort';
+
 # Docker Compose
 
 Docker Compose runs the app beside your existing Immich server. Basic uses one container;
@@ -26,12 +28,10 @@ has port, permissions and startup fixes.
 
 ## Reaching the UI from another machine
 
-The shipped mapping is `127.0.0.1:8080:8080`: only the host can reach it.
+The shipped mapping is <code>127.0.0.1:<ComposePort />:8080</code>: only the host can reach it.
 From your desktop, a tunnel needs no port change:
 
-```bash
-ssh -L 8080:localhost:8080 you@your-server
-```
+<pre><code>ssh -L 8080:localhost:<ComposePort /> you@your-server</code></pre>
 
 Open `http://localhost:8080` on the desktop.
 
@@ -43,15 +43,15 @@ IMMICH_MEMORIES_AUTH_PASSWORD=choose-a-long-password
 UI_BIND_ADDRESS=0.0.0.0
 ```
 
-`UI_BIND_ADDRESS` is the switch: the shipped mapping is `${UI_BIND_ADDRESS:-127.0.0.1}:8080:8080`,
-so there is no need to edit it. Run `docker compose up -d`, then open `http://your-server:8080`.
-If 8080 is taken, change the left-hand 8080 in the mapping, for example `8081:8080`.
+`UI_BIND_ADDRESS` is the switch: the shipped mapping is
+<code>{"${UI_BIND_ADDRESS:-127.0.0.1}:"}<ComposePort />:8080</code>, so there is no need to edit it.
+Run `docker compose up -d`, then open <code><ComposePort host="your-server" /></code>.
+If that host port is taken, change only the number before the final `:8080`, for example
+`22831:8080`. Keep the bind address and container port.
 
 To check that auth is on, call a protected route without logging in, from another machine:
 
-```bash
-curl -s -o /dev/null -w '%{http_code}\n' http://your-server:8080/api/v1/settings
-```
+<pre><code>{"curl -s -o /dev/null -w '%{http_code}\\n' http://your-server:"}<ComposePort />/api/v1/settings</code></pre>
 
 It answers 401 without an app session and 200 with one. `/health/ready` is anonymous on purpose:
 it reports the app version and overall readiness, while detailed connection results require a
@@ -79,8 +79,9 @@ IMMICH_MEMORIES_AUTH_PASSWORD: replace-with-your-own-long-password
 ```
 
 Choose a password of at least 12 characters. In the same app service, change its `ports:` entry
-from `127.0.0.1:8080:8080` to `0.0.0.0:8080:8080` (keep your chosen host port if it differs).
-Deploy the stack, open `http://your-server-address:8080`, and sign in. The container manager's
+from <code>127.0.0.1:<ComposePort />:8080</code> to <code>0.0.0.0:<ComposePort />:8080</code>
+(keep your chosen host port if it differs). Deploy the stack, open
+<code><ComposePort host="your-server-address" /></code>, and sign in. The container manager's
 login does not protect this port. This is HTTP on your LAN; for encrypted access, keep localhost
 and use the [SSH tunnel above](#reaching-the-ui-from-another-machine) or
 [HTTPS proxy setup](./authentication.mdx#behind-a-reverse-proxy-with-tls).

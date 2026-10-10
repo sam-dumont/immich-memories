@@ -2,6 +2,8 @@
 title: On a NAS
 ---
 
+import ComposePort from '@site/src/components/ComposePort';
+
 # On a NAS
 
 Choose your container manager and follow its install steps:
@@ -104,11 +106,9 @@ that local copy to survive container replacement.
 
 ### Reaching the UI
 
-The default port is local to the NAS. From your desktop:
+The default host port, <ComposePort />, is local to the NAS. From your desktop:
 
-```bash
-ssh -L 8080:localhost:8080 you@your-nas
-```
+<pre><code>ssh -L 8080:localhost:<ComposePort /> you@your-nas</code></pre>
 
 Open `http://localhost:8080` on the desktop. If SSH forwarding is denied, the browser cannot
 reach the app through that tunnel. For LAN access
@@ -116,9 +116,9 @@ without a tunnel, turn on authentication and set `UI_BIND_ADDRESS=0.0.0.0` in `.
 [Docker access recipe](./docker.md#reaching-the-ui-from-another-machine). That port is plain
 HTTP; use the proxy route if you want TLS.
 
-The shipped Compose file hard-codes host port 8080 and the container name `immich-memories`.
-If another NAS app already has 8080 (UniFi does), edit the left side of the port mapping and
-tunnel to that port. For a second installation, give this project a different `container_name` and host port. Run
+The shipped Compose file uses host port <ComposePort /> and the container name `immich-memories`.
+If another NAS app already uses that port, change the host port in the mapping and tunnel to it.
+The container port remains 8080. For a second installation, give this project a different `container_name` and host port. Run
 commands from its project folder with `docker compose exec immich-memories immich-memories ...`,
 which finds the service whatever the container is called. A command using `docker exec` needs
 your chosen container name.

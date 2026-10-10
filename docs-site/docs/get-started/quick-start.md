@@ -7,6 +7,7 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import InstallationFiles from '@site/src/components/InstallationFiles';
 import ThemedScreenshot, {Screenshot} from '@site/src/components/ThemedScreenshot';
+import ComposePort from '@site/src/components/ComposePort';
 
 # Quick start
 
@@ -46,7 +47,7 @@ This starts one app container. No GPU or separate model server is needed.
 
 <Screenshot src="/img/screenshots/compose-basic-setup.png" alt="Terminal showing the two Basic downloads and Compose resolving one app service and its image" />
 
-The two downloads and the resulting Compose configuration. The app has not started yet.
+The two downloads and the resulting Compose configuration, captured with rc.9. The app has not started yet.
 Tap the screenshot to read it at full size.
 
 </TabItem>
@@ -138,8 +139,8 @@ Later starts reuse the downloaded files.
 
 ## 4. Open the app and download models {#4-open-the-app}
 
-- **On this computer:** open [http://localhost:8080](http://localhost:8080).
-- **From another computer:** open `http://your-server-address:8080`, using the Docker host's LAN address,
+- **On this computer:** open <ComposePort host="localhost" link />.
+- **From another computer:** open <code><ComposePort host="your-server-address" /></code>, using the Docker host's LAN address,
   and sign in with the Immich Memories username and password you set above.
 
 Open **Memory**. In the **Download models** card, review the files and press **Download models**.

@@ -3,9 +3,9 @@ import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import CodeBlock from '@theme/CodeBlock';
 import Link from '@docusaurus/Link';
 import {nativeInstallCommand, type Tier} from '../SetupBuilder/recipes';
-import {installationCommands, deploymentCommands} from './downloads';
+import {installationCommands, deploymentCommands, unraidCommands} from './downloads';
 
-export default function InstallationFiles({kind = 'compose', tier = 'basic'}: {kind?: 'compose' | 'bundle' | 'native'; tier?: Tier}): ReactNode {
+export default function InstallationFiles({kind = 'compose', tier = 'basic'}: {kind?: 'compose' | 'bundle' | 'native' | 'unraid'; tier?: Tier}): ReactNode {
   const {siteConfig} = useDocusaurusContext();
   const version = String(siteConfig.customFields?.version || 'development');
   const released = /^v?\d+\.\d+\.\d+(?:-(?:rc|dev)\.\d+)?$/.test(version);
@@ -20,6 +20,9 @@ export default function InstallationFiles({kind = 'compose', tier = 'basic'}: {k
   </aside>;
   if (kind === 'native') return <CodeBlock language="bash" title={`Install ${version}: choose your platform`}>
     {`# Linux / Intel Mac\n${nativeInstallCommand(version, 'all')}\n# Apple Silicon: use this instead\n${nativeInstallCommand(version, 'all-mac')}`}
+  </CodeBlock>;
+  if (kind === 'unraid') return <CodeBlock language="bash" title={`Download the Unraid template (${version})`}>
+    {unraidCommands(version)}
   </CodeBlock>;
   if (kind === 'bundle') return <CodeBlock language="bash" title={`Vendor ${version}`}>
     {deploymentCommands(version)}

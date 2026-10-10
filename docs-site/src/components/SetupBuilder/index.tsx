@@ -5,12 +5,13 @@ import Link from '@docusaurus/Link';
 import {API_KEY_PLACEHOLDER, buildSetup, looksInternal, type Setup, type Sources, type Platform} from './recipes';
 import sources from './sources.json';
 import styles from './styles.module.css';
+import {composeHostPort} from '../../compose-port';
 
 export default function SetupBuilder({initialPlatform = 'linux', initialInline = false, showCommands = true, showPlatform = true}: {initialPlatform?: Platform; initialInline?: boolean; showCommands?: boolean; showPlatform?: boolean} = {}): ReactNode {
   const {siteConfig} = useDocusaurusContext();
   const buildVersion = String(siteConfig.customFields?.version || 'development');
   const [setup, setSetup] = useState<Setup>({
-    platform: initialPlatform, inline: initialInline, uiPort: 8080, namespace: 'immich-memories', tier: 'basic', immichUrl: 'http://192.168.1.10:2283',
+    platform: initialPlatform, inline: initialInline, namespace: 'immich-memories', tier: 'basic', immichUrl: 'http://192.168.1.10:2283',
     gpuBox: '', readerUrl: '', readerModel: '', cuda: false,
     version: buildVersion,
   });
@@ -41,6 +42,7 @@ export default function SetupBuilder({initialPlatform = 'linux', initialInline =
   const result = buildSetup(setup, sources as Sources, buildVersion);
   const compose = setup.platform === 'linux' || setup.platform === 'synology';
   const hostPort = compose || setup.platform === 'mac';
+  const uiPort = setup.uiPort ?? (setup.platform === 'mac' ? 8080 : composeHostPort(setup.version));
   return <section className={styles.builder} aria-label="Setup builder">
     <p className={styles.note}><strong>This page runs entirely in your browser.</strong> What you type here is never
       sent anywhere: no requests, no analytics, no tracking. The files are built on this page and stay on it until you copy or download them.</p>
@@ -64,8 +66,8 @@ export default function SetupBuilder({initialPlatform = 'linux', initialInline =
           Enter the address you open Immich at in your browser. Leave it empty to build links from the URL above.</small>
       </label>}
       {hostPort && <label>UI host port
-        <input type="number" min="1" max="65535" step="1" value={setup.uiPort} onChange={event => update({uiPort: Number(event.target.value)})} />
-        <small>Choose a free port if another app already uses 8080. The UI stays localhost-only.</small>
+        <input type="number" min="1" max="65535" step="1" value={uiPort} onChange={event => update({uiPort: Number(event.target.value)})} />
+        <small>Choose a free port if another app already uses this one. The UI stays localhost-only.</small>
       </label>}
       {setup.platform === 'kubernetes' && <label>Namespace
         <input value={setup.namespace} onChange={event => update({namespace: event.target.value})} />

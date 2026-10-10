@@ -2,6 +2,9 @@
 title: Unraid
 ---
 
+import ComposePort from '@site/src/components/ComposePort';
+import InstallationFiles from '@site/src/components/InstallationFiles';
+
 import SetupBuilder from '@site/src/components/SetupBuilder';
 import StackStorage from './_stack-storage.mdx';
 import StackAccess from './_stack-access.mdx';
@@ -14,20 +17,17 @@ This platform route has not been tested end to end. See [tested deployments](../
 
 ## Native Docker template
 
-[Download the Unraid XML template](https://raw.githubusercontent.com/sam-dumont/immich-memories/main/deploy/unraid/immich-memories.xml). This is a distributable Community Applications format template; it is not yet listed in the Community Applications catalog.
+The XML template uses the Community Applications format; it is not yet listed in the Community Applications catalog.
 
 In Unraid's **Terminal** in the browser, install the unconfigured template:
 
-```bash
-mkdir -p /boot/config/plugins/dockerMan/templates-user
-curl --fail --location https://raw.githubusercontent.com/sam-dumont/immich-memories/main/deploy/unraid/immich-memories.xml -o /boot/config/plugins/dockerMan/templates-user/my-immich-memories.xml
-```
+<InstallationFiles kind="unraid" />
 
 Open **Docker → Add Container**, select **immich-memories** from **Template**, and fill in the required Immich URL and API key. The template defaults to `latest`. To pin the app release shown in [Quick start](../../get-started/quick-start.md), set **Repository** to `ghcr.io/sam-dumont/immich-memories:X.Y.Z`, replacing `X.Y.Z` with that version (no `v` prefix).
 
 Choose persistent host directories for configuration/models and finished films. They must be writable by UID/GID 1000; allow at least 25 GB for state plus films. Do not change permissions on an entire existing share. Set **Settings encryption key** to a random secret of at least 32 characters if you want to save credentials in Settings, and retain it across upgrades.
 
-Keep **Network Type: Bridge** and the existing **Extra Parameters**. Its `--publish=127.0.0.1:8080:8080/tcp` mapping is deliberately private. There is no separate port entry. For direct LAN access, set **both UI username and UI password**, then change it to `--publish=0.0.0.0:8080:8080/tcp`. Choose another host port if 8080 is taken. Host networking bypasses it. The Unraid admin login does not protect the app.
+Keep **Network Type: Bridge** and the existing **Extra Parameters**. Its <code>--publish=127.0.0.1:<ComposePort />:8080/tcp</code> mapping is deliberately private. There is no separate port entry. For direct LAN access, set **both UI username and UI password**, then change it to <code>--publish=0.0.0.0:<ComposePort />:8080/tcp</code>. Choose another host port if <ComposePort /> is taken. Host networking bypasses it. The Unraid admin login does not protect the app.
 
 Set film language after startup in [Settings](../../get-started/after-install.md).
 
@@ -54,7 +54,7 @@ fill in **GPU box address** and start the provided worker files on that machine 
 
 ## 3. Open the app and download models {#3-prepare-and-check}
 
-Open `http://your-server-address:8080` (use your chosen host port) and sign in with the app
+Open <code><ComposePort host="your-server-address" /></code> (use your chosen host port) and sign in with the app
 username and password you just set. If you chose private localhost access, use its forwarded URL.
 
 On **Memory**, click **Download models** and wait for it to finish. The card lists the files and

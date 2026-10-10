@@ -31,3 +31,12 @@ export function deploymentCommands(version: string): string {
     'tar -xzf "$BUNDLE" -C vendor/immich-memories',
   ].join('\n');
 }
+
+export function unraidCommands(version: string): string {
+  if (!/^v?\d+\.\d+\.\d+(?:-(?:rc|dev)\.\d+)?$/.test(version)) return '';
+  const tag = version.replace(/^v/, '');
+  return [
+    'mkdir -p /boot/config/plugins/dockerMan/templates-user',
+    `curl --fail --location https://raw.githubusercontent.com/sam-dumont/immich-memories/v${tag}/deploy/unraid/immich-memories.xml -o /boot/config/plugins/dockerMan/templates-user/my-immich-memories.xml`,
+  ].join('\n');
+}
