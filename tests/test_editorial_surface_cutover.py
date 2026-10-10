@@ -214,7 +214,8 @@ def test_cli_album_runtime_uses_the_immutable_captured_corpus_not_its_display_sp
     assert context.key == "album-holiday"
     assert context.label == "Holiday"
     assert context.product == "album"
-    assert context.date_ranges == ()
+    assert context.date_ranges == (display_span,)
     assert context.album_ref == "album-42"
-    assert context.album_sources == (clip.asset, photo)
+    pool = build_pipeline.call_args.kwargs["source_pool"]
+    assert [getattr(item, "asset", item) for item in pool.selectable] == [clip.asset, photo]
     assert context.target_seconds == 75.0

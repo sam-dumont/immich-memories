@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 from datetime import UTC, datetime, timedelta
 
+from immich_memories.analysis.editorial_pool import EditorialSourcePool
 from immich_memories.analysis.editorial_preparation import prepare_editorial_annotations
 from immich_memories.analysis.editorial_runtime import EditorialRunContext, build_editorial_planner
 from immich_memories.analysis.editorial_runtime_ports import EditorialRuntimePorts
@@ -71,6 +72,7 @@ def _film(tmp_path, library: _Library):
     # This scope test exercises pixel acquisition without loading model weights.
     config.editorial.preparation.tier = "metadata_only"
     planner = build_editorial_planner(
+        source_pool=EditorialSourcePool(tuple(library.window)),
         client=object(),
         config=config,
         thumbnail_cache=ThumbnailCache(tmp_path / "thumbnails"),
@@ -79,7 +81,6 @@ def _film(tmp_path, library: _Library):
         ),
         ports=EditorialRuntimePorts(
             load_people=lambda: {},
-            fetch_full_source=lambda *_: library.window,
             fetch_preview=lambda _client, key: _distinct_preview(key),
             prepare_annotations=prepare,
         ),

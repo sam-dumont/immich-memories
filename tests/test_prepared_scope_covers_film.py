@@ -9,6 +9,7 @@ from click.testing import CliRunner
 
 from immich_memories.analysis import editorial_preparation
 from immich_memories.analysis.editorial_planner import EditorialPlan
+from immich_memories.analysis.editorial_pool import EditorialSourcePool
 from immich_memories.analysis.editorial_preparation import prepare_editorial_annotations
 from immich_memories.analysis.editorial_runtime import EditorialRunContext, build_editorial_planner
 from immich_memories.analysis.editorial_runtime_ports import EditorialRuntimePorts
@@ -89,6 +90,7 @@ def _prepare(library, config, monkeypatch, produced) -> None:
 
 def _film(library, config, tmp_path, produced, monkeypatch) -> None:
     planner = build_editorial_planner(
+        source_pool=EditorialSourcePool((*library.photos, *library.videos)),
         client=library,
         config=config,
         thumbnail_cache=config.cache.cache_path / "thumbnails",

@@ -60,6 +60,14 @@ attempt is durable under `<cache>/editorial-runs/<key>/attempts/<id>/`
 it reads live in the store (`db/`, repositories in `store/`). The design is summarised in
 `docs/designs/2026-09-10-story-first-selection.md`.
 
+Discovery finishes before constructing the editor. `analysis/editorial_pool.py` resolves an
+`EditorialSourcePool` with three roles: selectable pictures, context-only pictures, and linked
+companion videos. Window discovery retains surrounding metadata for event grouping and capture-run
+checks; an album supplies its own membership. Both enter `resolve_source_pool`, which reuses known
+companions, reads missing links through their owning account, and never adds them as candidates.
+`RuntimeEditorialPlanner` reads that snapshot for every memory type and cannot refetch a window.
+A confirmed missing companion is reported; account and transport failures stop the run.
+
 Selection carries the exact episode reading identities into its audit lineage. The former
 pre-card period-insight pass only supplied audit prose and no selection decisions; it is no
 longer requested. Existing database rows are left untouched; no new period-insight rows are written.

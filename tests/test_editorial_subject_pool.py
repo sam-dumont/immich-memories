@@ -229,11 +229,10 @@ def _captured_case(tmp_path, **pool):
         "bread",
         "Bread",
         "album",
-        (),
+        source.case.ranges,
         60,
         tmp_path / "artifacts",
         album_ref="album-1",
-        album_sources=tuple(source.assets.values()),
         **pool,
     )
     captured = {}

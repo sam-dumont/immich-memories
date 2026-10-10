@@ -1,11 +1,12 @@
 """Observed CLI/UI editorial progress without invented completion counts or ETA."""
 
 from io import StringIO
-from unittest.mock import MagicMock, patch
+from unittest.mock import create_autospec, patch
 
 import pytest
 from rich.console import Console
 
+from immich_memories.api.sync_client import SyncImmichClient
 from tests.test_editorial_source_route_surfaces import (
     _WINDOW,
     _config,
@@ -35,6 +36,14 @@ def test_cli_real_display_enters_indeterminate_then_reports_actual_terminal_stag
     result = _finished_selection()
     pipeline = _source_pipeline(result)
     observed = []
+    # WHY: Immich discovery must return the pictures whose progress this display reports.
+    client = create_autospec(SyncImmichClient, instance=True)
+    client.get_videos_for_date_range.return_value = [
+        result.selected_clips[0].asset,
+        result.selected_clips[2].asset,
+    ]
+    client.get_photos_for_date_range.return_value = []
+    client.generated_asset_ids.return_value = frozenset()
 
     def source(_sources, *, progress_callback, **_kwargs):
         for payload in [
@@ -71,7 +80,7 @@ def test_cli_real_display_enters_indeterminate_then_reports_actual_terminal_stag
         def run():
             return run_pipeline_and_generate(
                 assets=[result.selected_clips[0].asset, result.selected_clips[2].asset],
-                client=MagicMock(),
+                client=client,
                 config=_config(tmp_path),
                 progress=display,
                 duration=60.0,

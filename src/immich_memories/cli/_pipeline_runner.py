@@ -18,6 +18,7 @@ from immich_memories.analysis.llm_usage_record import write_llm_usage
 from immich_memories.cli._editorial_context import (
     build_editorial_context,
     narrow_to_special_event,
+    resolve_editorial_pool,
 )
 from immich_memories.cli._helpers import (
     console,
@@ -471,12 +472,16 @@ def run_pipeline_and_generate(
         max_size_mb=config.cache.thumbnail_cache_max_size_mb,
     )
     thumbnail_cache.begin_run()
+    source_pool = resolve_editorial_pool(
+        client=client, config=config, context=editorial_context, selected=[*clips, *source_photos]
+    )
     pipeline = build_smart_pipeline(
         client=client,
         thumbnail_cache=thumbnail_cache,
         config=pipeline_config,
         app_config=config,
         editorial_context=editorial_context,
+        source_pool=source_pool,
         dry_run=False,
     )
 
@@ -487,7 +492,7 @@ def run_pipeline_and_generate(
         "Preparing canonical editorial evidence",
     )
     all_candidates, pipeline_result = pipeline.run_editorial_source(
-        [*clips, *source_photos],
+        list(source_pool.selectable),
         progress_callback=SourceProgressReporter(
             progress,
             task,

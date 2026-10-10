@@ -480,3 +480,12 @@ def test_serving_the_same_root_twice_reuses_its_media_directory(
         server.close()
 
     assert (root / "media" / "thumbnails").is_dir()
+
+
+def test_source_discovery_can_exclude_generated_films(fake_immich_server):
+    with SyncImmichClient(
+        base_url=fake_immich_server.base_url,
+        api_key=fake_immich_server.api_key,
+        api_version="auto",
+    ) as client:
+        assert client.generated_asset_ids() == frozenset()

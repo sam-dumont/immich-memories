@@ -601,6 +601,7 @@ def install_fake_editorial_route(
         *,
         app_config: Any,
         editorial_context: Any,
+        source_pool: Any,
         dry_run: bool = False,
         editorial_ports: Any = None,
     ) -> _FakeEditorialPipeline:

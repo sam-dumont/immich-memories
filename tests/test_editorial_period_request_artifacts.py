@@ -10,6 +10,7 @@ import pytest
 
 from immich_memories.analysis import editorial_runtime as runtime
 from immich_memories.analysis import editorial_text_gateway as gateway
+from immich_memories.analysis.editorial_pool import EditorialSourcePool
 from immich_memories.analysis.selection_trace import Trace
 from immich_memories.config_loader import Config
 from immich_memories.config_models_llm import LLMConfig
@@ -225,6 +226,7 @@ def test_production_episode_recording_follows_each_active_attempt_even_on_failur
         editorial={"thin_model_layer": False},
     )
     planner = runtime.build_editorial_planner(
+        source_pool=EditorialSourcePool(()),
         client=object(),
         thumbnail_cache=object(),
         context=context,
@@ -277,6 +279,7 @@ def test_the_episode_stage_keeps_its_own_prompt_transcript(tmp_path, monkeypatch
         editorial={"thin_model_layer": False},
     )
     planner = runtime.build_editorial_planner(
+        source_pool=EditorialSourcePool(()),
         client=object(),
         thumbnail_cache=object(),
         context=context,

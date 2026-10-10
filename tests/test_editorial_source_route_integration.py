@@ -8,6 +8,7 @@ import pytest
 import sqlalchemy as sa
 
 from immich_memories.analysis.duplicate_hashing import compute_thumbnail_hash
+from immich_memories.analysis.editorial_pool import EditorialSourcePool
 from immich_memories.analysis.editorial_preparation import PreparationResult
 from immich_memories.analysis.editorial_runtime import (
     EditorialRunContext,
@@ -16,6 +17,7 @@ from immich_memories.analysis.editorial_runtime import (
 from immich_memories.analysis.editorial_runtime_evidence import EditorialInputsRequired
 from immich_memories.analysis.editorial_runtime_ports import EditorialRuntimePorts
 from immich_memories.analysis.editorial_structure_contract import StructurePlannerPorts
+from immich_memories.analysis.selection_source import SourceScope
 from immich_memories.analysis.selection_trace import Trace
 from immich_memories.analysis.smart_pipeline import PipelineConfig, SmartPipeline
 from immich_memories.config_loader import Config
@@ -104,13 +106,15 @@ def setup_runtime(
         if default_structure is not None:
             options = {"structure_planner": default_structure, "fetch_preview": fetch_preview}
         return build_editorial_planner(
+            source_pool=EditorialSourcePool(
+                tuple(acquire(object(), SourceScope(date_ranges=context.date_ranges)))
+            ),
             client=object(),
             config=config,
             thumbnail_cache=thumbnail_cache or object(),
             context=context,
             ports=EditorialRuntimePorts(
                 load_people=lambda: {},
-                fetch_full_source=acquire,
                 # This fixture starts with synthetic student-v1 annotations;
                 # producer acquisition has separate integration coverage.
                 prepare_annotations=lambda *, assets, **_: PreparationResult(

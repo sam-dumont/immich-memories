@@ -38,9 +38,12 @@ and the `content_analysis` scorer keys still parse and do nothing on this route.
 Before any judgment is asked, selection has one canonical description of what the request
 admitted (`selection_source.py`, `editorial_source.py`): every eligible source with its
 provenance, duration, Live companion and — for what was left out — its exclusion reason. The
-window is fetched whole, without person filtering; people conditions are applied afterwards as
+window context is fetched during discovery, without person filtering; people conditions are applied as
 an expression (`--people-expression`, or repeated `--person` with `--person-match and|or`).
-Three deterministic gates run here and nowhere else: forwarded re-encodes without camera EXIF
+An album supplies its explicit membership instead of a window search. Both routes complete one
+`EditorialSourcePool` before constructing the editor: selectable pictures, context-only evidence,
+and linked video companions. The editor reads that snapshot for every memory type and cannot
+reacquire the source. Three deterministic gates run here and nowhere else: forwarded re-encodes without camera EXIF
 (`source_quality.py`, widened by `--accept-any-provenance`), files a memory must never use by
 name alone (`source_filter.py`), and the screen/document gate over the detector facts
 (`editorial_source_gate.py`). Known screens and documents remain evidence for the readers; they

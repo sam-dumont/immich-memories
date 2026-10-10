@@ -23,6 +23,11 @@ To make a video-only film, untick **Include photos** under **Length and pictures
 
 A Live Photo enters the cut as one photograph. If its video shows useful motion, it plays as motion; if not, the still stays. Nearby Live Photos can be stitched into a longer clip. The app verifies selected motion companions before sealing the cut: a malformed video keeps the photograph as a still, while unavailable sources or tools stop the check.
 
+Album films use the same Live Photo handling as date, people and event films. Add the
+photographs to your album; the app reads their linked videos automatically. Those videos support
+the photographs and do not appear as separate clips. A companion that Immich reports as missing
+leaves a still and a warning; a failed connection stops the run.
+
 Three overlapping Live Photos can become this continuous 4.5-second shot:
 
 <Video poster="/img/live-photo-preview.jpg" src="/demos/live-photos/italian_hilltop/merged.mp4" width={480} controls />

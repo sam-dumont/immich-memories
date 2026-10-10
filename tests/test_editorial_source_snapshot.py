@@ -14,6 +14,7 @@ from unittest.mock import patch
 import pytest
 
 from immich_memories.analysis.editorial_planner import EditorialPlan
+from immich_memories.analysis.editorial_pool import EditorialSourcePool
 from immich_memories.analysis.editorial_runtime import (
     EditorialRunContext,
     build_editorial_planner,
@@ -115,21 +116,14 @@ def test_runtime_captures_once_per_attempt_without_refetch_or_mutation(tmp_path,
         key="snapshot",
         label="A request",
         product="album" if album else "multi_person",
-        date_ranges=() if album else (DateRange(NOW, NOW),),
+        date_ranges=(DateRange(NOW, NOW),),
         target_seconds=60,
         artifact_dir=tmp_path / "runs",
         person_expression=EXPRESSION,
         album_ref="album-id" if album else None,
-        album_sources=sources if album else (),
     )
-    fetches = []
-
-    def fetch(_client, scope):
-        assert not album, "preloaded album sources must not be fetched again"
-        fetches.append(scope)
-        return sources
-
     planner = build_editorial_planner(
+        source_pool=EditorialSourcePool(sources),
         client=object(),
         thumbnail_cache=object(),
         context=context,
@@ -137,7 +131,9 @@ def test_runtime_captures_once_per_attempt_without_refetch_or_mutation(tmp_path,
             llm={"enabled": True, "model": "no-model-calls"},
             cache={"directory": str(tmp_path / "cache")},
         ),
-        ports=EditorialRuntimePorts(load_people=lambda: {}, fetch_full_source=fetch),
+        ports=EditorialRuntimePorts(
+            load_people=lambda: {},
+        ),
     )
     captured_paths = []
 
@@ -166,7 +162,6 @@ def test_runtime_captures_once_per_attempt_without_refetch_or_mutation(tmp_path,
     ):
         for _ in range(2):
             planner.plan_source(sources, trace=Trace())
-    assert len(fetches) == (0 if album else 1)
     assert len(captured_paths) == len(set(captured_paths)) == 2
     assert not (context.artifact_dir / SNAPSHOT_NAME).exists()
     for path in captured_paths:

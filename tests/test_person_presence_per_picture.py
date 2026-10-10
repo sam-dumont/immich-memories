@@ -12,6 +12,7 @@ from datetime import timedelta
 import sqlalchemy as sa
 
 from immich_memories.analysis.editorial_planner import EditorialPlan
+from immich_memories.analysis.editorial_pool import EditorialSourcePool
 from immich_memories.analysis.editorial_preparation import prepare_editorial_annotations
 from immich_memories.analysis.editorial_runtime import EditorialRunContext, build_editorial_planner
 from immich_memories.analysis.editorial_runtime_ports import EditorialRuntimePorts
@@ -73,6 +74,7 @@ def selectable(tmp_path, monkeypatch, *, window, fetched=None, providers=None, *
         editorial={"preparation": {"tier": "full"}},
     )
     planner = build_editorial_planner(
+        source_pool=EditorialSourcePool(tuple(window)),
         client=object(),
         config=config,
         thumbnail_cache=tmp_path / "previews",
@@ -81,7 +83,6 @@ def selectable(tmp_path, monkeypatch, *, window, fetched=None, providers=None, *
         ),
         ports=EditorialRuntimePorts(
             load_people=lambda: {},
-            fetch_full_source=lambda _client, _scope: window,
             fetch_preview=lambda _client, _asset_id: preview(),
             fetch_faces=lambda _client, _asset_id: (),
             prepare_annotations=lambda **kwargs: prepare_editorial_annotations(
