@@ -104,6 +104,11 @@ Partner accounts need the read set only.
 | `album.read` | Finding albums |
 | `map.search` | Finding the home country from Immich's own map data |
 
+| Optional read permission | Used for |
+|---|---|
+| `tag.read` | Finding generated films directly through the tag index, with fewer requests on large libraries |
+| `stack.read` | Keeping one picture from each stack instead of selecting its members separately |
+
 | Optional upload permission | Used for |
 |---|---|
 | `asset.upload` | Uploading the film and checking for duplicate uploads |
@@ -121,9 +126,14 @@ original, a burst) into its top picture before selection, so only one of them sh
 on any picture of the stack counts for it. Without it, `GET /stacks` answers 403, the run logs one
 warning for that account, and every stacked picture is read as its own candidate.
 
-Do not add `timeline.read`, `tag.read`, or album-update permissions to this minimum.
-Timeline routes use `asset.read`. The app reads the key's own permission list through
+Timeline routes use `asset.read`; there is no additional `timeline.read` requirement.
+Album-update permissions are not needed. The app reads the key's own permission list through
 `GET /api-keys/me`, which needs API-key authentication but no extra permission.
+
+Tagged films are excluded from source footage across every page of results. Add `tag.read`
+to use the tag index on each account. Without it, the app checks video tags through `asset.read`;
+large libraries take more requests but need no extra permission. Uploading and tagging a film
+uses `tag.create` and `tag.asset`, independently of this optional read permission.
 
 Run `immich-memories preflight` or `immich-memories config test` after creating the key.
 A missing read permission is an error naming the missing permissions, and a cut will not start.

@@ -29,7 +29,7 @@ async def generated_asset_ids(
     if not matches or not isinstance(matches[0].get("id"), str):
         return frozenset()
     found: set[str] = set()
-    page: int | None = 1
+    page = 1
     while page:
         result = await request(
             "POST",
@@ -40,13 +40,13 @@ async def generated_asset_ids(
         found.update(
             row["id"] for row in assets.get("items", ()) if isinstance(row, dict) and row.get("id")
         )
-        page = assets.get("nextPage")
+        page = int(assets.get("nextPage") or 0)
     return frozenset(found)
 
 
 async def _generated_films_from_assets(request: Callable[..., Any]) -> frozenset[str]:
     found = set()
-    page: int | str | None = 1
+    page = 1
     while page:
         result = await request(
             "POST", "/search/metadata", json={"type": "VIDEO", "size": 250, "page": page}
@@ -63,7 +63,7 @@ async def _generated_films_from_assets(request: Callable[..., Any]) -> frozenset
                     raise detail
                 if any(tag.get("value") == GENERATED_MEMORY_TAG for tag in detail.get("tags", ())):
                     found.add(row["id"])
-        page = assets.get("nextPage")
+        page = int(assets.get("nextPage") or 0)
     return frozenset(found)
 
 

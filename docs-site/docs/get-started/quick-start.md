@@ -89,6 +89,10 @@ select these ten read permissions:
 `user.read`, `asset.read`, `asset.statistics`, `asset.view`, `asset.download`,
 `face.read`, `person.read`, `person.statistics`, `album.read` and `map.search`.
 
+For a larger library, optional `tag.read` finds previously generated films through the tag index
+instead of checking video tags individually. The [API-key guide](../run/docker.md#the-api-key)
+lists the other optional read and upload permissions.
+
 Copy the key. Open `.env` and fill in:
 
 ```ini
