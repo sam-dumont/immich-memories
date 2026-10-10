@@ -192,9 +192,12 @@ def test_malformed_permission_reply_cannot_grant_read_access(permissions):
 
 
 def test_generated_film_exclusion_pages_video_reads_with_inline_or_detail_tags():
+    pages = []
+
     def page(query):
+        pages.append(query["page"])
         assert query["type"] == "VIDEO"
-        if int(query["page"]) == 1:
+        if query["page"] == 1:
             return {
                 "assets": {
                     "items": [{"id": "first", "tags": [{"value": "immich-memories/generated"}]}],
@@ -212,8 +215,40 @@ def test_generated_film_exclusion_pages_video_reads_with_inline_or_detail_tags()
         SyncImmichClient(url, "synthetic-key") as client,
     ):
         assert client.generated_asset_ids() == frozenset({"first", "second"})
+        assert pages == [1, 2]
         assert requests.count("/api/search/metadata") == 2
         assert "/api/assets/first" not in requests
+
+
+@pytest.mark.parametrize("last_page", [{"nextPage": None}, {"nextPage": ""}, {}])
+def test_generated_film_tag_search_reads_every_page_with_integer_page_numbers(last_page):
+    pages = []
+
+    def page(query):
+        pages.append(query["page"])
+        assert query["tagIds"] == ["generated-tag"]
+        assert query["size"] == 250
+        number = int(query["page"])
+        start = (number - 1) * 250
+        return {
+            "assets": {
+                "items": [{"id": f"film-{i}"} for i in range(start, min(start + 250, 501))],
+                **({"nextPage": str(number + 1)} if number < 3 else last_page),
+            }
+        }
+
+    assets = {
+        "/api/tags": [{"id": "generated-tag", "value": "immich-memories/generated"}],
+        "/api/search/metadata": page,
+    }
+    with (
+        permission_server([*READ_PERMISSIONS, "tag.read"], assets=assets) as (url, requests),
+        SyncImmichClient(url, "synthetic-key") as client,
+    ):
+        assert client.generated_asset_ids() == frozenset(f"film-{i}" for i in range(501))
+        assert pages == [1, 2, 3]
+        assert requests.count("/api/search/metadata") == 3
+        assert not any(path.startswith("/api/assets/") for path in requests)
 
 
 def test_generated_details_overlap_without_unbounded_http_requests():

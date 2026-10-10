@@ -19,7 +19,9 @@ def album_of(total: int):
         body = json.loads(request.content)
         requests.append(body)
         assert body["albumIds"] == [ALBUM]
-        page, size = int(body.get("page", 1)), int(body["size"])
+        if type(body.get("page")) is not int or type(body["size"]) is not int:
+            return httpx.Response(400, json={"message": "Validation failed"})
+        page, size = body["page"], body["size"]
         items = [{"id": f"asset-{i}"} for i in range((page - 1) * size, min(page * size, total))]
         more = page * size < total
         return httpx.Response(
