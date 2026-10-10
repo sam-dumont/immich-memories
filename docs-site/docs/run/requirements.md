@@ -60,7 +60,7 @@ from the inference hardware and model configuration it finds. Preflight checks i
 <Diagram name="decide-tier" headline="auto picks the most your hardware can do. Set tier yourself to pin one." />
 | Tier | What it adds | What you need |
 |---|---|---|
-| **Basic** | A complete film using metadata, CPU picture classifiers and selection rules | The default install and `models fetch` |
+| **Basic** | A complete film using metadata, CPU picture classifiers and selection rules | The default install and the app's **Download models** step |
 | **GPU** | Image captions, extra document/sensitive-content checks and a family-viewing pre-screen | GPU inference, a caption server and the Laya checkpoint |
 | **Full** | The GPU features, plus a text model's reading of the period and refinement of the draft | The GPU setup and a configured reader with 32k context |
 
@@ -80,13 +80,15 @@ an enabled `openai-compatible` or `ollama` reader with blank `base_url` starts l
 `llama-server` is installed. Hosted provider presets use their vendor URL instead. The shipped
 Docker and Kubernetes app images need an external reader.
 
-`IMMICH_MEMORIES_DEPLOYMENT_TIER` pins the tier, overriding `tier:` in the file; it accepts
-`basic`, `gpu` or `full`, not `auto`. The shipped Compose file and the Kubernetes base manifest
-both set it to `basic`, so you need the GPU overlay or component before GPU/Full can resolve.
-Terraform and the Kubernetes one-shot job leave `tier: auto` instead. Pinning a tier does not
-install models or start servers on its own. Forcing `tier: full` without an enabled reader fails
+`IMMICH_MEMORIES_DEPLOYMENT_TIER` supplies a deployment default: it accepts `basic`, `gpu` or
+`full`, and YAML or saved Settings can override it. The base Compose and Kubernetes files default
+to Basic; their GPU/Full files add the selected tier and its service connections. Use the runtime
+variable `IMMICH_MEMORIES_TIER` when the deployment must fix the tier above YAML and Settings.
+Terraform and the Kubernetes one-shot job default to `auto`.
+
+Selecting a tier does not install models or start servers. Full without an enabled reader fails
 configuration loading, before the UI or `preflight` can start: configure and enable the reader
-first, or go back to `auto`. Changing tier keeps compatible prepared facts and your review decisions.
+first, or select Basic/GPU. Changing tier keeps compatible prepared facts and your review decisions.
 
 ## Check this setup
 

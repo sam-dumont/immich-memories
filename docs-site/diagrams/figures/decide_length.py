@@ -11,7 +11,7 @@ with diagram(STEM, nodesep="0.3", ranksep="0.4"):
             {
                 "q": code("--duration") + "?",
                 "icon": icon("mdi:ruler", "neutral"),
-                "exit": ("that length", icon("mdi:check-circle-outline", "machine"), "", "machine"),
+                "exit": ("that target", icon("mdi:check-circle-outline", "machine"), "", "machine"),
             },
             {
                 "q": code("--short-form") + "?",
@@ -26,7 +26,7 @@ with diagram(STEM, nodesep="0.3", ranksep="0.4"):
             {
                 "q": "Too few<br/>distinct shots?",
                 "icon": icon("mdi:content-copy", "neutral"),
-                "sub": "the type's length: a month 60 s,<br/>a trip 30 s + 10 s a day",
+                "sub": "month: 60 s; trip: 60–300 s<br/>from photographed days",
                 "exit": (
                     "shorter",
                     icon("mdi:arrow-collapse-horizontal", "star"),
@@ -48,7 +48,7 @@ with diagram(STEM, nodesep="0.3", ranksep="0.4"):
         (
             "The film",
             icon("mdi:movie-check-outline", "keep"),
-            "rounded down to 5 s;<br/>titles get a 20% share",
+            "auto target rounded down to 5 s;<br/>ordinary titles: up to 20%",
         ),
     )
 

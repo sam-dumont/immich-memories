@@ -8,8 +8,6 @@ Your film already gets music: a bundled track, or an audio file you choose. A ge
 
 Without a generator, a film longer than one bundled track plays a varied, crossfaded playlist from the mood's folder instead of looping a single track, and the bundled mix is mastered to the same loudness as a generated one.
 
-Without a generator, a film longer than one bundled track plays a varied, crossfaded playlist from the mood's folder instead of looping a single track, and the bundled mix is mastered to the same level as a generated one.
-
 Choose the route for your machine:
 
 | Setup | Route |
@@ -86,6 +84,9 @@ not prove generation fits: check an actual generated track and its stem separati
 [MusicGen configuration](../reference/local-audio.md#musicgen) uses its own server and endpoint.
 
 ## Check the result
+
+In Docker, prefix `immich-memories` commands with `docker compose exec immich-memories`
+from the app's installation folder.
 
 ```bash
 immich-memories preflight

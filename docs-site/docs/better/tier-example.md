@@ -12,8 +12,8 @@ import Video from '@site/src/components/Video';
 These are finished films from the same June 2024 fixture library: 133 assets and three
 synthetic people in a disposable Immich instance. The pictures are
 <StaticFile href="/demo/tier-fixture-credits.txt">credited CC0 stock photographs</StaticFile>;
-the dates, names and household story are invented. No personal library was used. The bundled
-soundtrack, `calm_acoustic_1.opus`, is <StaticFile href="/demo/tier-music-license.txt">MIT licensed</StaticFile>.
+the dates, names and household story are invented. No personal library was used. The linked
+provenance files record the code revisions, software and models used for these examples.
 
 Every request asked for a 60-second monthly highlight with photos, family sharing and template
 titles. Upload was disabled.
@@ -37,7 +37,14 @@ shipping unsafe footage. Both films passed complete audio/video decoding.
 <StaticFile href="/demo/basic-gpu/provenance.json">Frame and film provenance</StaticFile> records
 source filenames and sampling times.
 
+The sampled Basic and GPU films used different bundled tracks and title styles. These still
+frames carry no audio; they compare which pictures made the cut. Model weights were already
+cached, but each tier used a fresh, separate store. GPU had no motion evidence for seven clips.
+
 ## Basic and Full
+
+Both films use the bundled `calm_acoustic_1.opus` soundtrack, which is
+<StaticFile href="/demo/tier-music-license.txt">MIT licensed</StaticFile>.
 
 <Video src="/demo/tier-nas.mp4" poster="/demo/tier-nas-contact.png" controls playsInline width="100%" />
 
@@ -67,10 +74,11 @@ not proof that one tier always makes a better film.
 
 ## Limits of these runs
 
-Seven clips had no motion evidence in the Full run, so Full used plain clip facts for them.
-The store and cache started fresh and were shared between tiers; Full reused Basic's facts and
-acquired its own missing model facts. Both machines ran the same software environment, so these
-numbers are not a cross-platform speed comparison. Both finished files passed `ffprobe` stream
+In the Basic/Full pair, seven clips had no motion evidence in the Full run, so Full used plain
+clip facts for them. The store and cache started fresh and were shared; Full reused Basic's facts and
+acquired its own missing model facts. Basic selection used ONNX Runtime 1.28.0 and PyTorch 2.14.0;
+Full selection and both renders used ONNX Runtime 1.30.0 and PyTorch 2.14.1. These recorded timings
+include that environment difference. Both finished files passed `ffprobe` stream
 inspection and complete video/audio decoding with `ffmpeg`.
 
 The <StaticFile href="/demo/tier-provenance.json">sanitized provenance</StaticFile> records the

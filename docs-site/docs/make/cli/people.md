@@ -6,6 +6,9 @@ title: People commands
 
 Scan the people Immich knows, confirm their roles, and reuse them in films. The browser's **Settings > People** edits the same registry. [People and home](../../get-started/who-is-who.md) is the simplest setup path.
 
+In Docker, run these commands from the installation folder with
+`docker compose exec immich-memories` before `immich-memories`.
+
 ## Scan and inspect
 
 ```bash

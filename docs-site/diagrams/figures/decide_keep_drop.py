@@ -1,4 +1,4 @@
-"""Keep or drop. Message: a star helps at two checks; four ignore it."""
+"""Keep or drop: a favourite helps, but source and sharing checks still apply."""
 
 from kit import diagram, finish, icon, ladder
 
@@ -18,7 +18,12 @@ with diagram(STEM, nodesep="0.3", ranksep="0.35"):
             {
                 "q": "Screenshot or<br/>document?",
                 "icon": icon("mdi:file-document-outline", "neutral"),
-                "exit": ("dropped", DROP, "unless you pinned it", "drop"),
+                "exit": (
+                    "dropped",
+                    DROP,
+                    "a pin exempts only the<br/>personal-document check",
+                    "drop",
+                ),
             },
             {
                 "q": "Shot<br/>elsewhere?",
@@ -39,9 +44,9 @@ with diagram(STEM, nodesep="0.3", ranksep="0.35"):
                 "q": "Repeats a<br/>kept shot?",
                 "icon": icon("mdi:content-copy", "neutral"),
                 "exit": (
-                    "a favourite<br/>gets through",
+                    "favourites win<br/>over unstarred shots",
                     STAR,
-                    "others fold into<br/>the kept one",
+                    "two starred repeats<br/>can still become one",
                     "star",
                 ),
             },

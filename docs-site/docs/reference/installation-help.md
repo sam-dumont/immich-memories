@@ -8,14 +8,29 @@ description: Fix installation problems with permissions, ports, model preparatio
 For a first installation, follow [Quick start](../get-started/quick-start.md) or your
 [platform guide](../run/overview.md). Use this page when a step fails.
 
-## Read preflight {#read-preflight}
+## Download models from the CLI
 
-Run this inside the app container, or directly on a native install:
+The app's **Download models** button and the CLI fetch the same files for your configured tier.
+Use either one. For Docker Compose, run from the installation folder:
 
 ```bash
-immich-memories preflight
-immich-memories capabilities
+docker compose exec -T immich-memories immich-memories models fetch
 ```
+
+On a native install, run `immich-memories models fetch` as the user who runs the app.
+Wait for it to finish before making a film. Later runs reuse verified files.
+
+## Read preflight {#read-preflight}
+
+With Docker Compose, run from your installation folder:
+
+```bash
+docker compose exec -T immich-memories immich-memories preflight
+docker compose exec -T immich-memories immich-memories capabilities
+```
+
+On a native install, use `immich-memories preflight` and `immich-memories capabilities`
+directly. For a container manager, run those two commands in its app container console.
 
 `preflight` checks the Immich connection, required models, output and configured services.
 `capabilities` reports the resolved tier. Read the individual checks; a warning count alone

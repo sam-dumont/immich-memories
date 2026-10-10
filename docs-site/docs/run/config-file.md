@@ -11,6 +11,7 @@ want the deployment to control it. Settings saves to the database; the app norma
 ## Quick start config
 
 ```yaml
+tier: basic
 immich:
   url: "https://photos.example.com"
   api_key: "${IMMICH_API_KEY}"
@@ -164,7 +165,7 @@ container path, not a desktop folder. The image already sets `/app/output`; moun
 there. Environment variables override file paths, and that includes the image's own
 `IMMICH_MEMORIES_OUTPUT__DIRECTORY=/app/output`: an `output.directory: /output` in `config.yaml`
 is ignored while that variable is set, and films would land in the container's writable layer and
-vanish on restart. Mount the output volume at `/app/output`, or set the environment variable to
+vanish when that container is replaced. Mount the output volume at `/app/output`, or set the environment variable to
 the path you mounted. `preflight` flags missing paths; the
 [reference](./reference/configuration.md#paths-in-the-config-are-host-paths) lists every path key,
 including model/cache overrides.
@@ -196,8 +197,10 @@ the config CLI. For any config key, the reliable alternative is its
 
 ## Compute tier
 
-Leave `tier: auto`. [Requirements and tiers](./requirements.md#the-preparation-tier) explains the
-choice and required services.
+Keep the tier you selected during installation. Use `tier: auto` only when you want the app to
+choose from detected inference hardware and reader configuration. It can select GPU on an Apple
+Silicon Mac before captions are ready. [Requirements and tiers](./requirements.md#the-preparation-tier)
+explains the required services and how deployment defaults interact with Settings.
 
 ## Immich API compatibility
 

@@ -1151,6 +1151,11 @@ docs-check: docs-setup-check docs-social-check
 demo-music:  ## Generate 12 ACE-Step candidate tracks for demo video
 	uv run python scripts/generate-demo-music.py
 
+.PHONY: demo-compose-setup
+demo-compose-setup:  ## Capture Basic release downloads and Compose validation, without starting containers
+	vhs docs-site/scripts/demo-compose-setup.tape
+	ffmpeg -y -loglevel error -sseof -0.1 -i /tmp/immich-compose-setup.mp4 -frames:v 1 -update 1 docs-site/static/img/screenshots/compose-basic-setup.png
+
 demo-cli-run:  ## Run the CLI demo's real hermetic session in this terminal (no recording, for iteration)
 	uv run python scripts/demo-cli-hermetic.py
 
@@ -1221,11 +1226,11 @@ demo-ui: demo-ui-install demo-fixture demo-soundtrack  ## Render Remotion demo â
 # then the same film full bleed from the moment that player shows: FilmScene plays it from
 # FILM_FROM 19.2 s, so frame 1033 is film second 21.13 and the tail starts half a second earlier
 # to cover its crossfade. Moving a scene in Composition.tsx moves these numbers.
-# 720 px, 10 fps, about 17.7 s and 3.6 MB. The README loads it from GitHub Pages on every visit,
+# 720 px, 9 fps, about 17.7 s and under 4 MB. The README loads it from GitHub Pages on every visit,
 # so 4 MB is the ceiling. The film tail is what costs (LZW gets nothing on moving photographs);
 # a 60-colour palette fit easily but posterised the film, so it takes the full 255 and a light
 # hqdn3d. Re-run after `make demo-ui` and re-check the size.
-HERO_FILTER := fps=10,scale=720:405:flags=lanczos,format=yuv420p
+HERO_FILTER := fps=9,scale=720:405:flags=lanczos,format=yuv420p
 demo-hero:  ## Cut the README hero GIF: brief, cut, review, render, and the film it made
 	ffmpeg -y -loglevel error -i docs-site/static/demo/$(DEMO_VIDEO).mp4 -i docs-site/remotion/public/output-preview.mp4 \
 	  -filter_complex "[0:v]trim=4.0:13.6,setpts=PTS-STARTPTS,$(HERO_FILTER)[a];[0:v]trim=29.0:34.43,setpts=PTS-STARTPTS,$(HERO_FILTER)[b];[1:v]trim=20.63:24.13,setpts=PTS-STARTPTS,$(HERO_FILTER)[c];[a][b]xfade=transition=fade:duration=0.3:offset=9.3[ab];[ab][c]xfade=transition=fade:duration=0.5:offset=14.23,hqdn3d,split[x][y];[y]palettegen=max_colors=255:stats_mode=diff[p];[x][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle" \

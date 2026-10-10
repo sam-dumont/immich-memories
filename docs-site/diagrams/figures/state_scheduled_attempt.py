@@ -14,7 +14,7 @@ with diagram(STEM, nodesep="0.4", ranksep="0.7"):
         "held elsewhere",
         icon("mdi:skip-next-circle-outline", "neutral"),
         px=36,
-        sub="409, no attempt row",
+        sub="HTTP: 409, no attempt row",
     )
     running = node(
         "<b>running</b>",

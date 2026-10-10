@@ -23,6 +23,33 @@ The generated single-file route uses Docker-managed volumes. It does not need a 
 output folder. The release Compose file uses `./output`; use the permissions below for that
 route, or when choosing a NAS share for films.
 
+## Existing model services
+
+If you already run separate inference and caption services, including in Kubernetes, reuse them.
+In your platform's builder, choose **GPU** or **Full** and enter the inference host and port in
+**GPU box address**, such as `192.168.1.50:8092`. This exports an app-only Compose file.
+In its app `environment`, replace `IMMICH_MEMORIES_DEPLOYMENT_GPU_BOX` with both URLs:
+
+```yaml
+IMMICH_MEMORIES_DEPLOYMENT_INFERENCE_URL: http://192.168.1.50:8092
+IMMICH_MEMORIES_DEPLOYMENT_CAPTION_URL: http://192.168.1.51:8092/v1
+```
+
+Use your services' private addresses, reachable from the NAS. Kubernetes-internal service names
+usually cannot be reached from there. Skip the generated GPU-worker files and commands: those
+would start another worker. [Inference](../better/inference.md#classifiers-and-stems-only) and
+[captions](../better/captions.md) explain the two services.
+
+For **Full**, enter the reader's `/v1` URL and served model name in the builder. It enables the
+reader; replace the generated reader-key placeholder, or empty it if the server needs no key.
+The [reader needs a 32k context](../better/reader.md#use-an-existing-server).
+
+This app-only file keeps the base `memory: 4G` limit. Keep output at 1080p with that limit.
+For 4K on GPU/Full, raise the app limit to `8G` and allow that RAM on the NAS. The model services
+need their own memory. Laya still runs in the app; remote inference does not move rendering.
+After starting, use **Download models** in the app and run `immich-memories preflight` in its
+container, as your platform guide describes.
+
 ## NAS operating notes {#install}
 
 The following sections cover storage, network access, encoding and resource tuning.
@@ -71,8 +98,9 @@ and owned by 1000, so the app crashes at start with
 
 If you replace a named output volume with this bind mount, earlier runs show the film as
 unavailable: their files stayed in the old volume. Nothing is broken, new films land in `output`.
-If you remove the bind mount altogether, turn on [upload-back](./docker.md#films-into-immich)
-so films reach Immich.
+Keep either a bind mount or a named volume at `/app/output`, including when
+[upload-back](./docker.md#films-into-immich) is enabled. An interrupted or failed upload needs
+that local copy to survive container replacement.
 
 ### Reaching the UI
 
@@ -82,18 +110,18 @@ The default port is local to the NAS. From your desktop:
 ssh -L 8080:localhost:8080 you@your-nas
 ```
 
-Open `http://localhost:8080` on the desktop. Some NAS accounts can't forward ports (DSM allows
-it for administrators only), and then the browser gets "Connection reset by peer". For LAN access
+Open `http://localhost:8080` on the desktop. If SSH forwarding is denied, the browser cannot
+reach the app through that tunnel. For LAN access
 without a tunnel, turn on authentication and set `UI_BIND_ADDRESS=0.0.0.0` in `.env`:
 [Docker access recipe](./docker.md#reaching-the-ui-from-another-machine). That port is plain
 HTTP; use the proxy route if you want TLS.
 
 The shipped Compose file hard-codes host port 8080 and the container name `immich-memories`.
 If another NAS app already has 8080 (UniFi does), edit the left side of the port mapping and
-tunnel to that port. Keep the container name: every `docker exec immich-memories` command on
-this site assumes it. If a second stack on the same host already uses that name, move that stack
-instead, or run the commands from this stack's folder with `docker compose exec immich-memories
-immich-memories ...`, which finds the service whatever the container is called.
+tunnel to that port. For a second installation, give this project a different `container_name` and host port. Run
+commands from its project folder with `docker compose exec immich-memories immich-memories ...`,
+which finds the service whatever the container is called. A command using `docker exec` needs
+your chosen container name.
 
 ### Do not use `cpus:` on a Synology
 

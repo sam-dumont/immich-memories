@@ -4,6 +4,7 @@ title: Unraid
 
 import SetupBuilder from '@site/src/components/SetupBuilder';
 import StackStorage from './_stack-storage.mdx';
+import StackAccess from './_stack-access.mdx';
 
 # Unraid
 
@@ -22,15 +23,15 @@ mkdir -p /boot/config/plugins/dockerMan/templates-user
 curl --fail --location https://raw.githubusercontent.com/sam-dumont/immich-memories/main/deploy/unraid/immich-memories.xml -o /boot/config/plugins/dockerMan/templates-user/my-immich-memories.xml
 ```
 
-Open **Docker → Add Container**, select **immich-memories** from **Template**, and fill in the required Immich URL and API key. Choose the published image tag in **Repository** if pinning a release. The default image is `latest`, matching the standalone Compose file.
+Open **Docker → Add Container**, select **immich-memories** from **Template**, and fill in the required Immich URL and API key. The template defaults to `latest`. To pin the app release shown in [Quick start](../../get-started/quick-start.md), set **Repository** to `ghcr.io/sam-dumont/immich-memories:X.Y.Z`, replacing `X.Y.Z` with that version (no `v` prefix).
 
 Choose persistent host directories for configuration/models and finished films. They must be writable by UID/GID 1000; allow at least 25 GB for state plus films. Do not change permissions on an entire existing share. Set **Settings encryption key** to a random secret of at least 32 characters if you want to save credentials in Settings, and retain it across upgrades.
 
-Keep **Network Type: Bridge** and the existing **Extra Parameters**. Its `--publish=127.0.0.1:8080:8080/tcp` mapping is deliberately private. There is no separate port entry. For direct LAN access, set **both UI username and UI password** before changing this mapping. Host networking bypasses it. The Unraid admin login does not protect the app.
+Keep **Network Type: Bridge** and the existing **Extra Parameters**. Its `--publish=127.0.0.1:8080:8080/tcp` mapping is deliberately private. There is no separate port entry. For direct LAN access, set **both UI username and UI password**, then change it to `--publish=0.0.0.0:8080:8080/tcp`. Choose another host port if 8080 is taken. Host networking bypasses it. The Unraid admin login does not protect the app.
 
 Set film language after startup in [Settings](../../get-started/after-install.md).
 
-Click **Apply**, then use the container console instructions below to fetch models and check readiness. No SSH is needed for these steps. A configured template contains your API key: do not share it.
+Click **Apply**, then continue at [Open the app and download models](#3-prepare-and-check). A configured template contains your API key: do not share it.
 
 ## Compose Manager alternative
 
@@ -40,39 +41,41 @@ Enable Docker in Unraid and install [Docker Compose Manager from Community Appli
 
 ## 2. Paste and start
 
-Choose Basic, GPU or Full and enter your connection details below. GPU/Full need an NVIDIA host with the Container Toolkit or a separate GPU box; Full also needs a reader. Copy the generated `docker-compose.yml` into the stack's Compose editor, configure access below, then save and use the manager's **Compose Up** action. This file needs no separate `.env`.
+Choose Basic, GPU or Full and enter your connection details below. GPU/Full need an NVIDIA host with the Container Toolkit or a separate GPU box; Full also needs a reader. Copy the generated `docker-compose.yml` into the stack's Compose editor and replace `replace-with-your-immich-api-key` with your [scoped Immich key](../docker.md#the-api-key). For Full, replace the reader-key placeholder too, or empty it if that server does not require one. Configure access below, then save and use the manager's **Compose Up** action. This file needs no separate `.env`.
 
 <SetupBuilder initialPlatform="linux" initialInline showPlatform={false} showCommands={false} />
 
 <StackStorage />
 
-Before deploying, choose how you will open the app: configure
-[app login for LAN access](../docker.md#stack-editor-lan-access), or keep localhost and use
-**Private UI access with an SSH tunnel** in the builder. On this NVIDIA host, select **Use NVIDIA
-CUDA containers** for GPU/Full; for a separate worker, fill in **GPU box address** and start the
-provided worker files on that machine first.
+For GPU/Full on this NVIDIA host, select **Use NVIDIA CUDA containers**. For a separate worker,
+fill in **GPU box address** and start the provided worker files on that machine first.
 
-## 3. Prepare and check
+<StackAccess />
 
-On the **Docker** tab, click the `immich-memories` container icon and select **Console**. The template selects `sh`. Run these commands inside that console:
+## 3. Open the app and download models {#3-prepare-and-check}
+
+Open `http://your-server-address:8080` (use your chosen host port) and sign in with the app
+username and password you just set. If you chose private localhost access, use its forwarded URL.
+
+On **Memory**, click **Download models** and wait for it to finish. The card lists the files and
+download hosts; it disappears when the required files are ready. If it is absent and no error is
+shown, those files are already present. Downloads are kept on the config volume for later starts.
+
+## 4. Check and make a film {#4-open-the-app}
+
+**Basic:** continue to [your first film](../../get-started/first-film.mdx).
+
+**GPU and Full:** the browser download does not check the external model services. On the **Docker** tab, click the `immich-memories` container icon and select **Console**. The template selects `sh`.
+Run:
 
 ```bash
-immich-memories models fetch
 immich-memories preflight
 ```
 
-These are container commands: do not add `docker exec`. Fix reported connection or storage errors before making a film. See [Unraid's container controls](https://docs.unraid.net/unraid-os/using-unraid-to/run-docker-containers/managing-and-customizing-containers/).
+This runs inside the app container, so do not add `docker exec`. Wait for inference and captions
+(and the Full reader) to become ready, and resolve any required-service or storage errors before
+making [your first film](../../get-started/first-film.mdx). Optional upload permissions can warn
+while still allowing local films.
 
-## 4. Open the app
-
-For Compose Manager access from another computer on your trusted LAN, configure
-[app login in the stack file](../docker.md#stack-editor-lan-access) before deploying it.
-Then open `http://your-server-address:8080` and sign in. The container manager's own login does
-not protect the app's port.
-
-For private access, keep the localhost binding and use the builder's **Private UI access with
-an SSH tunnel** instructions. Tunnel to the host running Docker, which may differ from the
-container manager's host. Use your selected host port in either route.
-
-Make [your first film](../../get-started/first-film.mdx).
-[Installation help](../../reference/installation-help.md) covers port, permission and startup errors.
+[Installation help](../../reference/installation-help.md) covers connection, port, permission and
+startup errors. It also gives the CLI model-download command if you need it.

@@ -15,7 +15,7 @@ import { POOL, POOL_TOTAL, SHOTS } from "../fixture";
  */
 
 export const CUT_COMMAND =
-  "immich-memories generate --memory-type=monthly_highlights --year=2024 --month=6 --include-photos --include-live-photos --no-render";
+  "immich-memories generate --memory-type=monthly_highlights --year=2024 --month=6 --duration=120 --include-photos --include-live-photos --no-render";
 
 // The pictures the reading pass goes through, in the order the pool lists them.
 const READ_ORDER = [

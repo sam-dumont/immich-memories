@@ -5,8 +5,11 @@ description: CLI recipes for a month, a person, a trip and a saved cut.
 
 # Generate a film
 
-`generate` prepares pictures, selects a cut and renders it. Fetch the pinned models once before
-the first run, then start with one month:
+`generate` prepares pictures, selects a cut and renders it. For a first run, use a small
+[album](../memory-types.mdx#album) of 20–50 pictures; a whole month can take much longer to prepare.
+The month below is an example once your installation is ready.
+
+Run `models fetch` only if you have not already used **Download models** in the browser:
 
 ```bash
 immich-memories models fetch
@@ -14,7 +17,6 @@ immich-memories preflight
 immich-memories generate --memory-type monthly_highlights --year 2025 --month 6
 ```
 
-Run `immich-memories models fetch` before the first preparation or generation.
 Generation connects to Immich before probing local encoding hardware and title rendering.
 If the server cannot be reached, the run history records the failed attempt.
 

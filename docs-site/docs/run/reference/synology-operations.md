@@ -34,19 +34,26 @@ sudo docker compose -p immich-memories exec immich-memories immich-memories mode
 sudo docker compose -p immich-memories exec immich-memories immich-memories preflight
 ```
 
-The two `synoacltool` lines give the container's uid 1000 write access to `output` and give your own
-DSM user an entry too: without the second one, `ls -ld output` shows `d---------+` and you get
-"Permission denied" on your own folder. See [the output folder](../nas.md#the-output-folder) for why `chown` isn't enough.
-`title_screens.locale: auto` follows the host's `LANG`, but the container sets none, so a film
-always renders in English until you set `title_screens.locale: fr` (or add `LANG: fr_FR.UTF-8`
-to `.env`) for a French one. Check DSM ACLs as described above. Run every later Compose command from this directory with
-`-p immich-memories`; the explicit project name also determines its named volume prefix.
-This stock release-file route uses host port **8080**. If occupied, change only the number before
-`:8080` in the port line, so it reads `${UI_BIND_ADDRESS:-127.0.0.1}:18081:8080`, and use 18081 for
-both tunnel and proxy upstream. Keep `${UI_BIND_ADDRESS:-127.0.0.1}`: the LAN route depends on it.
+The two `synoacltool` lines give the container's uid 1000 write access to `output` and keep your
+DSM user able to read and remove the files. Without the second entry, the ACL can deny your own
+account access to the folder. See [the output folder](../nas.md#the-output-folder) for why `chown`
+isn't enough. Run every later Compose command from this directory with `-p immich-memories`;
+the explicit project name also determines its named volume prefix.
 
-When you script these commands over `ssh`, `docker compose exec` swallows the script's stdin.
-Inside `ssh host 'bash -s'`, add `-T` and `</dev/null` to each Compose `exec` command so the next script line stays available. The same form works for a one-liner: `ssh nas "sudo docker compose -p immich-memories exec -T immich-memories immich-memories preflight </dev/null"`.
+For French films, open **Settings**, set `title_screens.locale` to **French** and save.
+For a file-based setting, add `locale: fr` under `title_screens:` in `config.yaml`.
+Automatic language detection reads the container's locale, not DSM's. Adding `LANG` to `.env`
+has no effect because the release Compose file does not pass it into the container.
+
+This stock release-file route uses host port **8080**. If occupied, change only the number before
+`:8080` in the port line, so it reads `${UI_BIND_ADDRESS:-127.0.0.1}:18081:8080`.
+Keep `${UI_BIND_ADDRESS:-127.0.0.1}`: the LAN route depends on it. Use the new NAS port in the
+tunnel and proxy destinations below.
+
+When you script these commands over `ssh`, `docker compose exec` can consume the script's stdin.
+Change to the project directory in the remote script, and add `-T` and `</dev/null` to each
+Compose `exec` command so the next script line stays available. Scripted Docker commands also
+need permission to run without an interactive `sudo` password prompt.
 
 On your **desktop**, the permitted-tunnel route is:
 
@@ -54,8 +61,10 @@ On your **desktop**, the permitted-tunnel route is:
 ssh -o ExitOnForwardFailure=yes -L 8080:127.0.0.1:8080 your-user@your-nas
 ```
 
-Keep that session open and visit `http://localhost:8080` on the desktop. A forwarding-denied
-message when the browser connects requires the proxy route below, even if SSH itself logged in.
+Keep that session open and visit `http://localhost:8080` on the desktop. If you changed the NAS
+port to 18081, use `-L 8080:127.0.0.1:18081`; the browser URL stays the same. If forwarding is
+denied, use either the [HTTPS proxy](#authenticated-proxy) or
+[LAN port with app login](#lan-port-with-app-login-no-tunnel-no-proxy) below.
 
 ## Authenticated proxy when forwarding is disabled {#authenticated-proxy}
 
@@ -107,8 +116,7 @@ certificate, already configured on the NAS. This does not require internet expos
 ## LAN port with app login (no tunnel, no proxy)
 
 If your account can't forward ports and you don't want to set up the proxy, publish the port on
-the LAN with app authentication on. Do it in this order, from the project directory over SSH (DSM only allows SSH tunnels for
-administrators, so a plain account has to take this route):
+the LAN with app authentication on. Do it in this order, from the project directory on the NAS:
 
 1. In `.env`, set the login: `IMMICH_MEMORIES_AUTH_USERNAME=admin` and
    `IMMICH_MEMORIES_AUTH_PASSWORD=` a long password of your own (12 characters or more).
@@ -118,7 +126,9 @@ administrators, so a plain account has to take this route):
 From a second machine, `/api/v1/settings`, thumbnails and film downloads should answer 401
 without a session and 200 after login, and both should survive `restart` and `down`/`up`.
 The port is plain HTTP, so the password and cookie are visible on your LAN; the proxy route above
-is the one with TLS. `/health/ready` stays anonymous and shows the version and Immich reachability.
+is the one with TLS. `/health/ready` stays anonymous: it returns readiness status and the app
+version, with Immich details set to `null` until you sign in. It cannot confirm that login is
+required.
 
 ### Checking auth with curl {#checking-auth-with-curl}
 
@@ -126,13 +136,20 @@ The app's "Basic auth" is a username and password typed into a login form. It do
 HTTP `Authorization: Basic` header, so `curl -u user:password .../api/v1/settings` gets 401 whatever
 the password. Sign in over `/auth/login`, keep the cookie, and ask again:
 
+Set `memories_url` to the URL you use in the browser. For the proxy route, use
+`https://memories.example.com`: its secure session cookie is not sent over plain HTTP.
+Replace the sample credentials with your app login.
+
 ```bash
-curl -s -c jar.txt -H 'Content-Type: application/json' \
-  -d '{"username":"admin","password":"your-password"}' http://nas-address:8080/auth/login
-curl -s -b jar.txt -o /dev/null -w '%{http_code}\n' http://nas-address:8080/api/v1/settings   # 200
+memories_url=http://nas-address:8080
+umask 077
+curl -fsS -c jar.txt -H 'Content-Type: application/json' \
+  -d '{"username":"admin","password":"your-password"}' "$memories_url/auth/login"
+curl -sS -b jar.txt -o /dev/null -w '%{http_code}\n' "$memories_url/api/v1/settings"   # 200
+rm jar.txt
 ```
 
-Use your own address and port. A wrong password gets 401 here too, and repeated failures trigger the rate limit.
+A wrong password gets 401. Repeated failures trigger the rate limit and return 429.
 
 See the [deployment matrix](../tested-deployments.md) for which of these routes have a verified
 first run on this platform, and what still needs a report.

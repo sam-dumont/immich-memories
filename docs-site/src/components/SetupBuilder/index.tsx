@@ -83,6 +83,7 @@ export default function SetupBuilder({initialPlatform = 'linux', initialInline =
       {' '}<code>asset.delete</code> is optional. Avoid the All preset.</p>
     <fieldset className={styles.tiers}>
       <legend>Choose a tier</legend>
+      <p className={styles.note}>Start with Basic if you are unsure. Every tier makes a complete film.</p>
       {([
         ['basic', 'Basic', 'A complete film from metadata and small classifiers.'],
         ['gpu', 'GPU', 'Picture descriptions, intent and extra sharing checks.'],
@@ -160,7 +161,7 @@ export default function SetupBuilder({initialPlatform = 'linux', initialInline =
         <CodeBlock language="bash" title="Private UI access">{result.accessCommands}</CodeBlock>
       </details>}
       {compose && <p>On a server or NAS, configure <Link to={setup.inline ? "/docs/run/docker#stack-editor-lan-access" : "/docs/get-started/quick-start#2-connect-immich"}>app login for LAN access</Link> before starting, or use the private SSH tunnel above.</p>}
-      {compose && !setup.inline && <p>Create <code>output</code> with write access for UID/GID 1000 before starting. On Linux: <code>sudo chown 1000:1000 output</code>. On Synology use the <Link to="/docs/run/nas#the-output-folder">folder permissions recipe</Link>.</p>}
+      {compose && !setup.inline && <p>The commands below use <code>immich-memories/output</code> for finished films. On Linux, run <code>mkdir -p immich-memories/output &amp;&amp; sudo chown 1000:1000 immich-memories/output</code> before those commands. On Synology, give that folder write access for UID/GID 1000 using the <Link to="/docs/run/nas#the-output-folder">folder permissions recipe</Link>.</p>}
       {showCommands && <CodeBlock language="bash" title={result.workerCommands ? "On the app host" : "Install and check"}>{result.commands}</CodeBlock>}
     </div>}
   </section>;

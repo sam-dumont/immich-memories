@@ -27,8 +27,9 @@ overlays/postgres/     optional: point the store at PostgreSQL instead of the de
 ## Prerequisites
 
 1. A storage class for three `ReadWriteOnce` PVCs: `immich-memories-cache` 30Gi,
-   `immich-memories-output` 50Gi, `immich-memories-models` 5Gi. A deployment made before the
-   models claim existed has to add it, or the pod stays `Pending` on a volume that is not there.
+   `immich-memories-output` 50Gi, `immich-memories-models` 5Gi. The cache PVC holds SQLite:
+   use local/block storage. The app refuses a SQLite store on NFS/SMB; use PostgreSQL if the
+   store must live on another machine. All three claims must exist before the pod can start.
 2. Immich reachable from the cluster (in-cluster or external, port 2283 by default)
 3. GPU overlay only: the [NVIDIA GPU Operator](https://github.com/NVIDIA/gpu-operator)
    (RuntimeClass `nvidia`, `nvidia.com/gpu` resources, `nvidia.com/gpu.present` node label)
@@ -141,8 +142,10 @@ two; the image already sets host, port and the two cache directories.
 To use it, set `IMMICH_MEMORIES_INFERENCE__FACTS_BASE_URL` (two underscores, app side) on the app
 Deployment to `http://inference:8092`, or
 `http://inference.immich-memories.svc.cluster.local:8092` from another namespace. The base
-NetworkPolicy already allows egress on 8092. The encoder and Marqo ONNX exports have to be on the
-cache PVC; `ALLOW_MODEL_DOWNLOADS=true` in the overlay only covers the detector snapshots.
+NetworkPolicy already allows egress on 8092. The overlay sets
+`IMMICH_MEMORIES_INFERENCE_ALLOW_MODEL_DOWNLOADS=true`: on first use, the service fetches the
+pinned encoder, Marqo ONNX export and detector snapshots into its cache PVC. With downloads
+disabled, populate that cache before using the service.
 
 `overlays/inference-lan` is for callers that are not in the cluster: a NAS, a laptop, the setup
 matrix. It adds a second Service, `inference-lan`, type LoadBalancer, on the same pods and port,

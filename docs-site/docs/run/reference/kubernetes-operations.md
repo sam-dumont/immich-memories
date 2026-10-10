@@ -88,7 +88,7 @@ kubectl rollout status -n immich-memories deploy/immich-memories-captioner
 ```
 
 The [setup builder](/setup) puts both after the app's own `rollout status` on those tiers, and it
-pins the tier you picked, Basic included, with `IMMICH_MEMORIES_DEPLOYMENT_TIER`.
+sets the tier you picked, Basic included, as an editable `IMMICH_MEMORIES_DEPLOYMENT_TIER` default.
 
 The temporary Secret file is private (mode 0600); remove it after applying.
 The base uses an existing `immich-memories-secrets` Secret. GitOps users can skip the plaintext
@@ -229,7 +229,7 @@ and a read-only root.
 | `/home/immich/.cache` | The same data PVC, mounted again: writable persistent Torch/HF runtime caches |
 | `/app/output` | Output PVC: local films |
 | `/models` | Models PVC: encoder, WordNet, sensitive-content export and detector cache |
-| `/tmp` | 4Gi emptyDir for container utilities; app media scratch uses the data/output PVCs |
+| `/tmp` | 4Gi emptyDir for temporary files, including sampled video frames |
 
 The app requests 2Gi RAM and one CPU, with limits of 8Gi and four CPUs. The fetch init
 container requests 512Mi/250m and is capped at 2Gi/two CPUs. Compose's app limit is 4 GB;
@@ -294,8 +294,10 @@ CPU service variants are `overlays/inference` and `overlays/captioner`. The CUDA
 deliberately requests no `nvidia.com/gpu`; it depends on device sharing/time-slicing and has no
 scheduler GPU reservation. Configure that on your cluster or add a GPU request on a separate
 card. Applying the overlay alone does not make a GPU available.
-The default `tier: auto` sees GPU inference separately from encoding.
-Add an explicitly enabled [external reader](../../better/reader.md) for Full. The app image has no
+The base deployment defaults to Basic. After connecting both services, set the tier to GPU in
+Settings or your controlling configuration. Use `IMMICH_MEMORIES_TIER=gpu` in the app
+environment if the deployment must fix that choice. For Full, configure and explicitly enable an
+[external reader](../../better/reader.md), then select Full. The app image has no
 owned `llama-server`. One `advanced.llm` configuration serves titles, selection, music mood,
 special days and explicitly opted-in LLM captions. The commented Deployment recipe uses native
 Ollama and `options.num_ctx: 32768`; the `/v1` route needs server-side context configuration. After changing tier/services, run `models fetch` in
@@ -550,7 +552,7 @@ Back up the store **and** keys using [backup/restore](.././maintenance/storage-b
 |---|---|---|
 | `/health/live` | 200 while the web process responds | No Immich probe. Repeated liveness failures can restart the container |
 | `/health/ready` | 200 ready; 503 missing/invalid config, unsupported API, failed authentication or unreachable Immich | Authenticated Immich access is required. Failure removes the pod from ready Service endpoints; Terraform can keep waiting even with a live web process |
-| `/health` | 200 with detailed status payload | Read the body rather than treating HTTP 200 as readiness. Run/automation/disk detail is gated by the app session when auth is on |
+| `/health` | 200 after host validation; 421 for an unaccepted host | Compatibility endpoint. With app authentication enabled, operational fields are null without a valid session; use `/health/ready` for probes |
 
 During an Immich outage, inspect `kubectl logs`, pod events, the configured URL/key and NetworkPolicy.
 Port-forward directly to `deployment/immich-memories` to diagnose a live but unready pod.
@@ -562,8 +564,6 @@ The app exposes **no Prometheus scrape or OpenTelemetry export endpoint** in thi
 Use the [existing JSON logs with run IDs](.././maintenance/health-logs-cache.md), the health endpoints,
 `runs show`, `report`, per-run timings and `llm-usage.json` for model-call usage.
 The inference service's `/queue` reports that service's work, not app-wide metrics or readiness.
-There's no Prometheus/OpenTelemetry export yet; use the structured logs and health endpoints
-above instead.
 
 ## Resource requests, QoS and scratch
 
@@ -612,11 +612,11 @@ node can actually hold, and expect downtime while a Recreate rollout reschedules
 
 Reserving 4 CPU/8Gi can leave the pod Pending on a busy node and reduces how many other workloads
 fit there; it does not add another UI replica. `/tmp` remains a disk-backed **4Gi emptyDir** under
-node ephemeral storage for container utilities. The app directs Python and subprocess scratch
-to its configured cache on the data PVC. Video preparation saves and releases one frame batch
-at a time. Keep free space on that PVC; enlarging `/tmp` does not enlarge the cache or output.
-[Temporary working files](.././maintenance/storage-backups.md#temporary-working-files) lists the
-worker locations too. Budget node free disk plus logs/image layers and explicit ephemeral-storage
+node ephemeral storage. Sampled video frames use it unless you redirect temporary files with
+`TMPDIR`; a large preparation can exceed those 4Gi even when the data PVC has room. Enlarging
+`/tmp` does not enlarge the cache or output.
+[Temporary working files](.././maintenance/storage-backups.md#temporary-working-files) covers
+relocation and worker locations. Budget node free disk plus logs/image layers and explicit ephemeral-storage
 requests/limits as needed. Increasing the emptyDir limit requires available disk; a memory-backed
 emptyDir would instead count against memory. Models, caches and output have separate PVC budgets.
 

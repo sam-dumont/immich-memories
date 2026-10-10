@@ -30,17 +30,13 @@ Only `/render` requires the render bearer token. Classifiers, captions and stems
 unauthenticated. Keep the entire address on a trusted private network. The render worker also
 receives your Immich API key to download originals.
 
-## Classifiers and stems only
+## Separate inference and captions {#classifiers-and-stems-only}
 
-The GPU tier file starts the inference and caption services. Its default CPU images are useful
-for diagnosis, but GPU readiness needs CUDA-capable inference:
+For an existing Compose install, [select the GPU and CUDA files](../reference/compose-files.md#select-the-files)
+from the same release as the app. They start separate inference and caption services on NVIDIA.
+Keep the file selection in `.env` so later `docker compose up -d` commands keep both services.
 
-```bash
-docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
-curl -s http://localhost:8092/health
-```
-
-Connect the app using the shipped Compose service name:
+When the app and inference share that Compose network, the inference address is:
 
 ```yaml
 advanced:
@@ -49,11 +45,15 @@ advanced:
     fallback_to_local: true
 ```
 
-From another machine, use its private LAN address. For NVIDIA standalone inference, select the
-CUDA image **and** its GPU device reservation; [deployment recipes](../reference/inference-service.md#running-it-with-compose)
-show both. This profile does not start the unified worker or a caption server.
+From another machine, use its private LAN address and publish the service on that address;
+the shipped Compose file binds its ports to localhost. [Deployment recipes](../reference/inference-service.md#running-it-with-compose)
+cover the images and device reservations. These separate services do not include remote rendering;
+use the combined worker above when you need that too.
 
 ## Check it
+
+In Docker, prefix `immich-memories` commands with `docker compose exec immich-memories`
+from the app's installation folder.
 
 ```bash
 immich-memories preflight

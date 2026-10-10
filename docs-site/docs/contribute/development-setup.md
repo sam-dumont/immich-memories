@@ -9,25 +9,24 @@ The full contribution guidelines are in [CONTRIBUTING.md](https://github.com/sam
 You need Python 3.11 to 3.13, FFmpeg, [uv](https://docs.astral.sh/uv/) and GNU Make. The web UI
 also needs Node 22: a checkout builds its own client (see [The web client](#the-web-client)). On
 3.14, `uv sync` installs fine but skips the GPU title renderer (`quadrants` has no wheel for it
-yet): pin the checkout's virtualenv with `uv venv --python 3.12` before `make dev-test`.
+yet): pin the checkout's virtualenv with `uv venv --python 3.12` before `make dev`.
 
 ```bash
 git clone https://github.com/sam-dumont/immich-memories.git
 cd immich-memories
-make dev-test
+make dev
 ```
 
-`make dev-test` is `uv sync --extra dev --locked`: the dev tools (pytest, ruff, mypy and the other
-CI gates) and nothing else. No torch, no CUDA, and it is what the CI test jobs install. There is no
-`gpu` extra to add: the GPU title kernels are a base dependency wherever they publish a wheel. Run
-it before any other make target.
+Run `make dev` in every clone and worktree before another make target. It installs the dev tools,
+optional CPU and Mac dependencies, and builds the web client. There is no `gpu` extra to add:
+the GPU title kernels are a base dependency wherever they publish a wheel.
 
 | Target | Installs | When |
 |--------|----------|------|
-| `make dev-test` | dev tools only | Default for contributors (what CI tests with) |
+| `make dev` | CPU `all` + `mac` + `dev`, and the built web client; includes torch and demucs | Default contributor setup |
+| `make dev-test` | dev tools only | Reproduce CI's lightweight test environment |
 | `make dev-ci` | dev tools only | Identical to `dev-test` today |
 | `make dev-mac` | dev + `all-mac` (Apple Vision, Metal, the editorial stack) | Apple Silicon app dependencies; Laya and ACE-Step need the installs below |
-| `make dev` | CPU `all` + `mac` + `dev`, and the built web client; includes torch and demucs | Only if you work across all optional backends |
 
 For CUDA editorial development on Linux, use `uv sync --extra dev --extra editorial-cuda`.
 Do not combine it with `editorial`, `all` or `all-mac`: CPU and GPU ONNX distributions
@@ -63,8 +62,11 @@ unit tests. If it passes, your setup is correct. `make ci` adds everything else 
 before opening a PR: passing locally catches the checks you can reproduce before CI. Both depend on `ensure-dev`, which
 syncs the same CPU extras as `make dev`, so either adds the heavy optional packages to a `make dev-test` environment. On Linux, demucs pulls torch and NVIDIA wheels even though ONNX stays on the CPU variant. To keep a prepared lightweight environment, set `ENSURE_DEV_COMMAND=true` explicitly.
 
-`make help` lists common targets; the Makefile contains the full list. Never run `ruff`, `pytest` or `mypy` directly: the make targets
-match what CI runs, so local results are consistent. Use
+`make help` lists common targets; the Makefile contains the full list. Use the make targets for
+the checks CI runs. While changing a feature, run its targeted tests with
+`uv run pytest tests/test_example.py` (replace the path with the test file you are working on).
+Keep pytest's default options for unit tests: they seal the test home and store away from your
+own data. Use
 [conventional commit](https://www.conventionalcommits.org/) messages.
 
 The test tiers, what each needs, and what to do when diff-cover fails on your PR are in the

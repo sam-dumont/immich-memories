@@ -46,7 +46,7 @@ with diagram(STEM, nodesep="0.3", ranksep="0.4"):
         (
             "The film",
             icon("mdi:movie-check-outline", "keep"),
-            "made like an album film;<br/>titled in your film language",
+            "album or special-day film;<br/>titled in your film language",
         ),
     )
 

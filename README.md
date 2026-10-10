@@ -10,13 +10,14 @@
 
 **Watch your memories again, in films you can make your own.**
 
-Immich Memories turns the photos and videos in your Immich library into finished MP4 memory
-films. Pick a month, a year, a trip, an album or a person. It reads Immich's dates, favourites,
-people and places, groups pictures into moments and proposes a cut in time order, with the
-reason each shot is there. You review it, swap what you don't like, then render with titles and
-music. A quiet month makes a short film rather than 3 minutes of filler.
+Immich Memories turns the photos and videos in your Immich library into MP4 films with titles
+and music. Pick a month, a year, a trip, an album or a person. Review the proposed cut, swap what
+you don't like, then render. A quiet month makes a short film rather than 3 minutes of filler.
 
-It runs on a plain NAS with no GPU and no model. A GPU or a model makes it better.
+It runs on a plain NAS with no GPU or text reader. Basic uses small local picture classifiers;
+GPU adds descriptions and extra checks, and Full adds a text reader to refine the cut.
+
+**[Quick start](#make-your-first-film)** · **[Documentation](https://sam-dumont.github.io/immich-memories/docs/)** · **[Install guides](https://sam-dumont.github.io/immich-memories/docs/run/overview)** · **[Demo](https://sam-dumont.github.io/immich-memories/demo/demo.mp4)**
 
 <p align="center">
   <a href="https://sam-dumont.github.io/immich-memories/demo/demo.mp4">
@@ -29,8 +30,82 @@ It runs on a plain NAS with no GPU and no model. A GPU or a model makes it bette
   <sub><a href="https://sam-dumont.github.io/immich-memories/demo/demo.mp4">▶ Play the demo with music</a> · <a href="https://sam-dumont.github.io/immich-memories/demo/trip-preview.mp4">Watch a finished trip film</a> · CC0 stock pictures, <a href="tests/e2e/fixtures/library/CREDITS.md">credited here</a> · <a href="https://sam-dumont.github.io/immich-memories/docs/">Documentation</a></sub>
 </p>
 
-The first link is a demo of the app, the second a finished trip film. Both use
-CC0 stock pictures, never anyone's family.
+## Make your first film
+
+**Docker Compose is the recommended install. Start with Basic if you are unsure.** Every tier
+makes a complete film, and you can change tiers later.
+
+| Tier | What it adds | What it needs | Install |
+|---|---|---|---|
+| **Basic** | Dates, favourites, people, places and small picture classifiers guide the cut; up to 1080p. | 2 CPU cores and 4 GiB RAM for the app, in addition to Immich. | Follow the steps below. |
+| **GPU** | Picture descriptions, document/sensitive-content checks and a family-viewing pre-screen. | NVIDIA services with the Container Toolkit, or native Apple Silicon. Allow 8 GiB for the Compose app plus its model services. | Select **GPU** in [Quick start](https://sam-dumont.github.io/immich-memories/docs/get-started/quick-start), or use [native Mac](https://sam-dumont.github.io/immich-memories/docs/run/uv-pip#apple-silicon). |
+| **Full** | A text reader refines the cut and writes titles. | The GPU setup plus an enabled reader with a 32k context window. | Select **Full** in [Quick start](https://sam-dumont.github.io/immich-memories/docs/get-started/quick-start). |
+
+You need an existing Immich server, Docker Compose v2 and **25 GB for app data, plus images and
+finished films**. Immich v2 and v3 both work; the [deployment matrix](https://sam-dumont.github.io/immich-memories/docs/run/tested-deployments)
+records tested versions. GPU services can run on another machine.
+For a NAS container manager, [use its platform guide](https://sam-dumont.github.io/immich-memories/docs/run/nas).
+
+1. **Download the two Basic files** into a new folder:
+
+   ```bash
+   mkdir -p immich-memories && cd immich-memories
+   VERSION=1.0.0-rc.9
+   curl -fLO "https://github.com/sam-dumont/immich-memories/releases/download/v${VERSION}/docker-compose.yml"
+   curl -fL "https://github.com/sam-dumont/immich-memories/releases/download/v${VERSION}/example.env" -o .env
+   ```
+
+   The downloaded `.env` pins the app image to the same release. Keep `TIER=basic`.
+
+2. **Edit `.env`** with your Immich address, API key and timezone:
+
+   ```ini
+   IMMICH_URL=http://192.168.1.10:2283
+   IMMICH_API_KEY=your-api-key
+   TZ=Etc/UTC
+   ```
+
+   In Immich, create the key under **Account Settings → API Keys** with the
+   [ten read permissions](https://sam-dumont.github.io/immich-memories/docs/run/docker#the-api-key).
+   Use an Immich address the container can reach; `localhost` means the container itself.
+
+   To open the app from another computer on your LAN, also set these in `.env`:
+
+   ```ini
+   IMMICH_MEMORIES_AUTH_USERNAME=admin
+   IMMICH_MEMORIES_AUTH_PASSWORD=replace-with-your-own-long-password
+   UI_BIND_ADDRESS=0.0.0.0
+   ```
+
+   Choose a password of at least 12 characters. This is the **Immich Memories app login**.
+   LAN access uses HTTP; [HTTPS setup](https://sam-dumont.github.io/immich-memories/docs/run/authentication#behind-a-reverse-proxy-with-tls)
+   is separate. Otherwise, keep the default localhost binding.
+
+3. **Prepare the output folder and start the app.** On Linux:
+
+   ```bash
+   mkdir -p output
+   sudo chown 1000:1000 output
+   chmod 600 .env
+   docker compose up -d
+   ```
+
+   The app writes films as UID/GID 1000. For a Synology bind mount, use the
+   [DSM folder permissions](https://sam-dumont.github.io/immich-memories/docs/run/nas#the-output-folder)
+   instead of `chown`.
+
+4. **Open the app** at `http://localhost:8080`, or `http://your-server-address:8080` for LAN
+   access and sign in with the app login above. On **Memory**, click **Download models** and
+   wait for the card to disappear. If no card or error appears, the required files are ready.
+
+   Make [your first film](https://sam-dumont.github.io/immich-memories/docs/get-started/first-film)
+   from an album of **20–50 photos and short videos**: choose **Album**, set the length to
+   **0.5 minutes**, then **Cut**, review and **Render**. Leave upload off and use **Download film**
+   to keep the MP4. A full month can take hours on a NAS; a small album limits the first preparation.
+
+For a failed step, use [Installation help](https://sam-dumont.github.io/immich-memories/docs/reference/installation-help).
+Once the first film works, [After install](https://sam-dumont.github.io/immich-memories/docs/get-started/after-install)
+covers home, people, language, backups and automation.
 
 ## What you can do
 
@@ -54,25 +129,6 @@ CC0 stock pictures, never anyone's family.
 explains the selection rules. [Improve a film](https://sam-dumont.github.io/immich-memories/docs/make/improve-a-film)
 covers length, missing people and shot changes. What doesn't work yet is in the
 [issue tracker](https://github.com/sam-dumont/immich-memories/issues).
-
-## Make your first film
-
-The default is **one prebuilt Docker container** next to your existing Immich. No GPU, no hosted
-model account, no caption server. You need Docker Compose v2, two CPU cores, **4 GiB RAM for
-this app on top of Immich**, and **25 GB for app data, images and finished films**. Immich v2 and
-v3 both work; [the deployment matrix](https://sam-dumont.github.io/immich-memories/docs/run/tested-deployments)
-says which versions and setups were actually tested.
-
-The first run downloads the image and model files, then prepares the pictures you pick. A full
-month can take hours on a NAS, so start with **20–50 photos/videos and a 30-second film**. A short
-film alone doesn't shrink the preparation: pick a short period too.
-[Progress and recovery](https://sam-dumont.github.io/immich-memories/docs/get-started/first-film#progress-and-recovery)
-shows each phase and where to look when it stops.
-
-Follow the [quick start](https://sam-dumont.github.io/immich-memories/docs/get-started/quick-start),
-then [Your first film](https://sam-dumont.github.io/immich-memories/docs/get-started/first-film).
-Use the docs that match your release: a development preview says so when its downloads don't
-exist yet. Upload stays off on the first run, and you end with a local file you can play.
 
 ## Access and privacy
 

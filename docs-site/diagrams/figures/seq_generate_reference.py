@@ -18,7 +18,7 @@ with diagram(STEM, direction="TB", nodesep="0.6", ranksep="0.35"):
         code("load_config")
         + "<br/>"
         + code("RunTracker.start_run")
-        + "<br/>run blockers: encoder, output dir",
+        + "<br/>run blockers: models, output dir",
     )
     read = stage(
         1,

@@ -23,7 +23,7 @@ Five steps, in order: offer moments, rank their frames, check eligibility and st
 spacing and repetition, admit and deepen. The gates below run in that order; where a favourite
 wins outright and where it still has to clear a gate is marked as it comes up.
 
-<Diagram name="decide-keep-drop" headline="A favourite skips two of the six checks. The other four drop it anyway." />
+<Diagram name="decide-keep-drop" headline="Favourites help pictures stay. Source, sharing and repeated-scene checks still apply." />
 ## Which frame carries a moment
 
 `rule_representative_rank` (`editorial_rule_quality.py`) sorts a moment's frames by these keys, in
@@ -148,8 +148,7 @@ like any lone object, and stays. A video whose frames mostly miss its subject is
 every other gate still runs: sharing and the family-viewing holds, source eligibility, provenance,
 look-alikes, duplicates and length. The allocation gives every year the album holds a shot, even a
 year whose stories the reader weighed `none`. Each shot that got in this way is kept with the run
-as `stood_on_subject`, with its score and why. A
-custom date range with a written subject is not a pool and keeps the rules above.
+as `stood_on_subject`, with its score and why. `--subject` requires `--from-album`; it cannot be combined with a date-range-only request.
 
 Once a moment's frames are through the gate, the ones that stand are sorted again: favourite first,
 then the higher standing score, then the order above. A still that scores 2 can beat a video that
@@ -160,6 +159,16 @@ bits, compared inside the same story or the same calendar day, against the shots
 and the kept shot just before and after it. A video or a moving Live Photo is never a repeat of a
 still, and a favourite is never refused for looking like a picture you did not star. A refused frame
 comes back when nothing else can fill its slot. No model compares pictures, on any tier.
+
+## Personal documents
+
+The document check runs on every tier. It excludes a photographed ID card, passport, bank card, letter, form or event voucher when its caption or recognised text identifies the personal document. A caption naming the document holds the shot outright, including a family holding boarding passes in an ordinary photo.
+
+Without that caption evidence, it uses Immich's own OCR. The frame head matters: a personal-record field label (date of birth, national number, and their equivalents across a dozen languages and scripts), the document's own title word, a passport's machine-readable zone, a card or IBAN number that passes its own check digit, or a gift voucher naming who it's for, counts on a frame the head calls a document or a record, or hasn't read at all; it does not count on a frame the head already calls something else, like an ordinary scene or a person. A generic ski, bus or day pass is not a document; a boarding pass still is, since it carries the traveller's name. An ordinary scene with a sign or a programme in it stays in.
+
+OCR comes from Immich's own server (2.2 and up), read through a cheap keyword search first so the full per-picture read only runs on the few pictures worth it, plus a direct read for any picture the frame head already calls a document (an MRZ line or a card number can't be found by a keyword search); on an older server, or if a read fails, that signal is just off for the run and every other check still applies.
+
+For a new cut, an explicit `generate --include` bypasses this document check; a favourite star does not. A saved owner revision can also include a picture from the pool.
 
 ## Videos and Live Photos
 

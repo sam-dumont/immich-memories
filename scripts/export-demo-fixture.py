@@ -63,7 +63,7 @@ def _taken_label(taken_at: str) -> str:
 
 
 def _board(pictures):
-    """The same fixture cut and 60-second title policy as the hermetic UI."""
+    """The same fixture cut and two-minute request as the hermetic UI."""
     carriers = [
         {
             "asset_id": p.asset_id,
@@ -76,7 +76,7 @@ def _board(pictures):
     assets = {raw["id"]: Asset.model_validate(raw) for raw in TIMELINE_ASSETS}
     policy = build_editorial_timing_policy(
         config=Config(),
-        target_seconds=60,
+        target_seconds=120,
         memory_type="monthly_highlights",
         date_start=date(2024, 6, 1),
         date_end=date(2024, 6, 30),

@@ -18,7 +18,9 @@ from kit import (
 STEM = "deploy-nas"
 
 with diagram(STEM, nodesep="0.55", ranksep="0.9"):
-    browser = node("Your browser", icon("mdi:web", "neutral"), px=48, sub="port 8080")
+    browser = node(
+        "Your browser", icon("mdi:web", "neutral"), px=48, sub="app login for LAN access"
+    )
     with Cluster("Your network", graph_attr=cluster("network")):
         with Cluster(
             "nas",
@@ -33,14 +35,14 @@ with diagram(STEM, nodesep="0.55", ranksep="0.9"):
             folders = group(
                 [
                     (
-                        "config folder",
+                        "config volume",
                         icon("mdi:harddisk", "machine"),
                         "config, SQLite store, cache",
                     ),
                     (
-                        "output folder",
+                        "output volume or folder",
                         icon("mdi:folder-play-outline", "machine"),
-                        "writable by UID 1000",
+                        "bind folders: writable by UID 1000",
                     ),
                 ],
                 cols=2,

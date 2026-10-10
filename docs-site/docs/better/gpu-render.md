@@ -14,10 +14,10 @@ The [combined CUDA worker](../run/reference-setup.md#one-gpu-service) puts this 
 picture inference, captions and Demucs in one container on port 8092. Its render URL ends in
 `/render`; the standalone setup below keeps port 8093.
 
-The worker and inference service have no authentication. Their health and queue endpoints expose
-operational details to anyone who can reach them. Bind them to loopback when the app runs on the
-same machine; otherwise use a private network and firewall rules that allow only the app.
-Do not expose these ports to the internet.
+The render API requires a bearer token, including its health endpoint. The combined worker's
+inference, caption and stem routes are unauthenticated. Bind the service to loopback when the app
+runs on the same machine; otherwise use a private network and firewall rules that allow only
+the app. Keep these ports off the internet.
 
 ```mermaid
 flowchart TD
@@ -104,6 +104,9 @@ The geocoding server is the worker's own choice, never the job's. The worker ign
 the app has `network.geocoding: true`; the film keeps the place names Immich gave.
 
 ## Check it
+
+In Docker, prefix `immich-memories` commands with `docker compose exec immich-memories`
+from the app's installation folder.
 
 ```bash
 immich-memories preflight -v

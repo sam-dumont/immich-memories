@@ -5,7 +5,7 @@ import { COLORS, UI } from "../theme";
 import { WindowFrame, onScreen } from "../components/WindowFrame";
 import { AppShell, MAIN_X, MAIN_Y } from "../components/AppShell";
 import { AnimatedCursor } from "../components/AnimatedCursor";
-import { Badge, Button, CommandLine, Field, Heading } from "../components/ui";
+import { Badge, Button, Check, CommandLine, Field, Heading } from "../components/ui";
 
 /**
  * web/src/routes/create/+page.svelte: the memory type as chips, the fields
@@ -51,13 +51,13 @@ const CHIP_H = 38;
 const CHIPS_Y = MAIN_Y + 140;
 const FIELDS_Y = CHIPS_Y + 4 * CHIP_H + 3 * 8 + 24;
 const FIELD_W = (CONTENT_W - 16) / 2;
-const CUT_Y = FIELDS_Y + 66 + 24 + 82 + 24 + 54 + 24 + 48 + 8;
+const CUT_Y = FIELDS_Y + 66 + 24 + 82 + 24 + 274 + 24 + 48 + 8;
 
 const PICK_XY = onScreen(MAIN_X + CHIP_W / 2, CHIPS_Y + CHIP_H / 2);
 const YEAR_XY = onScreen(MAIN_X + 120, FIELDS_Y + 45);
 const MONTH_XY = onScreen(MAIN_X + FIELD_W + 16 + 120, FIELDS_Y + 45);
 // The experimental box sits below Cut, so the page scrolls to show it once the month is set.
-const SCROLL = 110;
+const SCROLL = 330;
 const SCROLL_AT = [TYPE_MONTH + 4, TYPE_MONTH + 22];
 const CUT_XY = onScreen(MAIN_X + 44, CUT_Y + 18 - SCROLL);
 
@@ -75,6 +75,7 @@ const command = (monthly: boolean, year: string, month: number) =>
     `--memory-type=${monthly ? "monthly_highlights" : "year_in_review"}`,
     ...(year ? [`--year=${year}`] : []),
     ...(monthly ? [`--month=${month}`] : []),
+    "--duration=120",
     "--include-photos --include-live-photos --no-render",
   ].join(" ");
 
@@ -131,7 +132,8 @@ const Disclosure: React.FC<{
   children: React.ReactNode;
   muted?: boolean;
   bold?: boolean;
-}> = ({ children, muted, bold }) => (
+  open?: boolean;
+}> = ({ children, muted, bold, open }) => (
   <div
     style={{
       display: "flex",
@@ -147,7 +149,7 @@ const Disclosure: React.FC<{
       viewBox="0 0 24 24"
       width={12}
       height={12}
-      style={{ fill: "currentColor" }}
+      style={{ fill: "currentColor", transform: open ? "rotate(90deg)" : undefined }}
     >
       <path d="M8,5V19L19,12L8,5Z" />
     </svg>
@@ -264,7 +266,15 @@ const BriefForm: React.FC<{ frame: number }> = ({ frame }) => {
           padding: 16,
         }}
       >
-        <Disclosure bold>Length and pictures</Disclosure>
+        <Disclosure bold open>Length and pictures</Disclosure>
+        <div style={{ marginTop: 16, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+          <Field label="Length in minutes (fitted to the pictures when empty)" value="2" />
+          <Field label="Who may see it" value="As configured" select />
+          <Check label="Include photos" checked />
+          <Check label="Include Live Photos" checked />
+          <Field label="Photo duration (seconds)" value="4" />
+          <Check label="Accept forwarded and downloaded media" />
+        </div>
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>

@@ -60,7 +60,7 @@ export const OutputPreviewScene: React.FC<Props> = ({ frames }) => {
           Immich Memories
         </div>
         <div style={{ fontSize: 16, color: "rgba(255,255,255,0.85)", marginTop: 6 }}>
-          Your library, cut into the videos it deserves. Self-hosted, open source.
+          Short films from your Immich library. Self-hosted, open source.
         </div>
       </div>
 

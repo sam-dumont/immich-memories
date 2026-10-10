@@ -11,7 +11,7 @@ Start with the cut you can see. Open a picture to read why it stayed, then chang
 |---|---|
 | Remove a shot or trim a video | [Edit the reviewed cut](../how-it-chooses/overrule-it.md) |
 | Replace a picture with another from the same moment | [Choose a replacement](../how-it-chooses/overrule-it.md) |
-| Include someone important who is missing | Open **Pool**, find their picture and preview with it ticked. Undo **Never use** first if necessary. |
+| Include someone important who is missing | Open **Pool**, find their picture and preview with it ticked. That explicit choice can override **Never use** for this revision. |
 | Understand a missing or rejected picture | Open its explanation; [selection rules](../how-it-chooses/overview.md) explain the general idea |
 | Change the titles, music or trip map | [Titles, maps and music](titles-maps-music.md) |
 | Render a saved revision again | [Saved runs](cli/runs.md) |

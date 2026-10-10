@@ -1,4 +1,4 @@
-"""A Mac. Message: one Python install, and a launchd agent that runs it once a day."""
+"""A Mac: native app and caption service; reader, music and a daily timer are optional."""
 
 from diagrams import Cluster, Edge
 from kit import (
@@ -19,18 +19,19 @@ STEM = "deploy-mac"
 
 with diagram(STEM, nodesep="0.55", ranksep="0.9"):
     with Cluster("Your Mac", graph_attr=cluster("machine")):
+        entry = node("Browser or CLI", icon("mdi:console", "machine"), px=48)
         launchd = node(
             "launchd agent",
             icon("si:apple", "machine"),
             px=48,
-            sub=code("auto install") + ", daily",
+            sub=code("auto install") + ", optional",
         )
         app = node(
             "<b>immich-memories</b>",
             icon("si:python", "machine"),
             px=72,
             group="spine",
-            sub=code(".venv") + " from uv",
+            sub="native Python install",
         )
         local = group(
             [
@@ -44,6 +45,11 @@ with diagram(STEM, nodesep="0.55", ranksep="0.9"):
         with Cluster("helpers", graph_attr=titled("optional", "Optional, on the Mac", dashed=True)):
             helpers = group(
                 [
+                    (
+                        "Caption server",
+                        icon("mdi:closed-caption-outline", "machine"),
+                        "GPU and Full tiers",
+                    ),
                     (
                         "llama-server reader",
                         icon("mdi:robot-outline", "machine"),
@@ -60,7 +66,8 @@ with diagram(STEM, nodesep="0.55", ranksep="0.9"):
         )
         aceapi = node("ACE-Step API", icon("mdi:music-note", "network"), px=40, sub="optional")
 
-    launchd >> Edge(**main_edge()) >> app
+    entry >> Edge(**main_edge()) >> app
+    launchd >> Edge(**opt_edge()) >> app
     app >> Edge(**main_edge(weight="20")) >> immich
     same_rank(app, local, helpers)
     helpers >> Edge(style="invis") >> local >> Edge(style="invis") >> app

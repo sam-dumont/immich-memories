@@ -38,7 +38,9 @@ No ConfigMap by default. `immich_url` / `immich_api_key` (and `llm_api_key`, `mu
 
 1. **Terraform** >= 1.9, `hashicorp/kubernetes` provider >= 2.20
 2. **Kubernetes cluster** with a storage class for PVCs and Immich reachable from it
-   (port 2283 by default). GPU only: NVIDIA GPU Operator + RuntimeClass `nvidia`
+   (port 2283 by default). Use local/block storage for the cache PVC's SQLite store: the app
+   refuses SQLite on NFS/SMB. Use PostgreSQL if the store must live on another machine.
+   GPU only: NVIDIA GPU Operator + RuntimeClass `nvidia`
 3. **kubeconfig** configured
 
 ## Quick Start

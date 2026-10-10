@@ -17,13 +17,22 @@ release; `example.env` and every image default carry that release's version, inc
 | `docker-compose.gpu-worker.yml` | Standalone combined inference/caption/render worker on one GPU box |
 | `docker-compose.postgres.yml` | Optional PostgreSQL store, persistent data and app readiness dependency |
 
-<Diagram name="deploy-compose" headline="Start with one container. Add a file for each upgrade." />
+<Diagram name="deploy-compose" headline="Basic is one container. GPU adds inference and captions; Full connects your reader." />
 ## Select the files
 
-The base file runs alone. Add the GPU file for its services, then Full or CUDA when needed:
+The base file runs Basic alone. For NVIDIA, download the GPU and CUDA files from the same
+release as your app; Full also needs its tier file and a configured reader. The matching tab in
+[Quick start](../get-started/quick-start.md#1-download-the-files) has the downloads.
+
+GPU:
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
+docker compose -f docker-compose.yml -f docker-compose.gpu.yml -f docker-compose.cuda.yml up -d
+```
+
+Full:
+
+```bash
 docker compose -f docker-compose.yml -f docker-compose.gpu.yml -f docker-compose.full.yml -f docker-compose.cuda.yml up -d
 ```
 
@@ -33,7 +42,7 @@ You can put that selection in `.env` instead, so updates use plain `docker compo
 COMPOSE_FILE=docker-compose.yml:docker-compose.gpu.yml:docker-compose.cuda.yml
 ```
 
-The GPU file's default images run on CPU. The CUDA file needs NVIDIA Container Toolkit and
+Without the CUDA file, the GPU file's default images run on CPU for diagnosis. The CUDA file needs NVIDIA Container Toolkit and
 an exposed NVIDIA GPU. Selecting a tier expresses intent; it does not prove the hardware works.
 `preflight` reports inference compute separately from video encoding and warns when acceleration
 is missing. It leaves the requested tier unchanged.

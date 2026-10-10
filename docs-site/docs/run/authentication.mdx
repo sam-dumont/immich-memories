@@ -19,12 +19,18 @@ or trusted headers when an authenticated proxy is the only route to the app.
 
 ## Basic auth
 
-Two variables, in a `.env` beside `docker-compose.yml` or in the service's `environment:`:
+This is the Immich Memories app login. Choose its username and password yourself; your Immich,
+NAS and operating-system accounts do not set them. It is independent of the Basic installation tier.
+
+Set these two variables in the shipped Compose setup's `.env`:
 
 ```ini
 IMMICH_MEMORIES_AUTH_USERNAME=admin
-IMMICH_MEMORIES_AUTH_PASSWORD=your-password-here
+IMMICH_MEMORIES_AUTH_PASSWORD=choose-a-long-password
 ```
+
+Run `docker compose up -d` to apply the change. In a stack editor with no `.env`, add both
+variables to the app service's `environment:` block and redeploy the stack.
 
 "Basic" names the provider: a username and password typed into the login page, which starts a session cookie. The app does not accept an HTTP `Authorization: Basic` header, so `curl -u` gets 401; script it with `POST /auth/login` and the cookie (a [Synology example](reference/synology-operations.md#checking-auth-with-curl) shows the calls).
 
