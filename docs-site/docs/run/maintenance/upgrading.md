@@ -44,10 +44,10 @@ return HTTP 413. The soundtrack upload route keeps its separate 64 MiB file limi
 
 ## Temporary working files
 
-Keep cache and output directories on mounted storage with free space. Some working files,
-including sampled video frames, use the system temporary directory, usually `/tmp`. They need
-space there even when the cache volume has room. To move Python temporary files, set `TMPDIR`
-to an existing writable directory on the intended mount before starting the app or worker.
+Keep cache and output directories on mounted storage with free space. At startup the app and
+workers put Python and child-process temporary files in a private `scratch` directory on their
+configured storage. An existing directory with group or other access is refused. Setting
+`TMPDIR` does not override this startup choice.
 
 See [temporary working files](./storage-backups.md#temporary-working-files) for the locations
 and interrupted-run recovery.
@@ -133,6 +133,62 @@ pins need the explicit fetch. The generated GPU setup runs `models fetch --detec
 whenever its model init container runs, verifying existing artifact digests.
 See [Kubernetes upgrades](../reference/kubernetes-operations.md#upgrading-and-rollback) or
 [Terraform upgrades](../terraform.md#upgrading).
+
+### Kubernetes scratch permissions
+
+Use this pod-level setting in custom manifests too (Terraform: `fs_group_change_policy`):
+
+```yaml
+securityContext:
+  fsGroup: 1000
+  fsGroupChangePolicy: OnRootMismatch
+```
+
+With the default `Always` policy, mounting an existing PVC can widen private scratch directories
+from 0700 to 2770. Startup then stops with `Runtime scratch storage must be a private directory.`
+`OnRootMismatch` prevents another recursive change when the volume root already has the expected
+group and permissions. It does not repair directories already changed.
+
+To recover an affected installation:
+
+1. Stop active work, scale affected Deployments to zero and stop any Jobs sharing their PVCs.
+   Update their pod policy before restarting. Keep the store and cache data.
+2. Mount each affected PVC in a maintenance pod running as UID/GID 1000, with the same `fsGroup`
+   and `OnRootMismatch` policy. Check that the volume root has group 1000, group read/write/execute
+   and the setgid bit (the shipped writable roots normally have mode 2775). If the root does not
+   match, correct that mount's ownership policy first: another recursive pass would undo the repair.
+   Do not make the volume root private or recursively change ownership of the PVC.
+3. Inside that stopped workload's maintenance mount, check the scratch directory is a real
+   directory owned by UID 1000. Keep the old scratch aside at 0700 so the next startup creates a
+   clean private tree. For the app's default cache, run this in the maintenance pod:
+
+   ```bash
+   set -eu
+   scratch=/home/immich/.immich-memories/cache/scratch
+   saved="${scratch}.before-permission-repair"
+   test "$(id -u)" = 1000
+   test -d "$scratch"
+   test ! -L "$scratch"
+   test "$(stat -c %u -- "$scratch")" = 1000
+   test ! -e "$saved"
+   test ! -L "$saved"
+   chmod 0700 -- "$scratch"
+   mv -T -- "$scratch" "$saved"
+   ```
+
+   Use the actual mounted path when the cache is customized. The inference service uses
+   `<inference cache>/scratch` (`/cache/scratch` by default); the render worker uses
+   `<worker directory>/scratch` (`/app/output/render-worker/scratch` in the shipped worker).
+   Check both for a combined inference/render deployment. Refuse symlinks or unexpected owners
+   instead of taking ownership. Keep the saved scratch for inspection; do not move the whole
+   cache, store or output directory.
+4. Remove the maintenance pod, restore the replica counts, and check health and `preflight`.
+   Replace a pod once more and verify scratch stays 0700 and startup succeeds.
+
+The standalone worker's shipped `emptyDir` volumes are recreated with its pod. The retained-volume
+repair applies when you replace those with PVCs. A CSI driver that handles `VOLUME_MOUNT_GROUP`
+itself controls the ownership changes; check its policy if permissions still change with
+`OnRootMismatch`. See [Kubernetes volume ownership rules](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#configure-volume-permission-and-ownership-change-policy-for-pods).
 
 ## Upgrading Immich from v2 to v3
 

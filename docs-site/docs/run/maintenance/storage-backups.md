@@ -171,14 +171,17 @@ limit. Finished films are separate, at `~/Videos/Memories` on Python or `/app/ou
 
 ### Temporary working files
 
-Keep `cache.directory` and the output directory on mounted storage with free space. Some
-working files, including sampled video frames, use the system temporary directory, usually
-`/tmp`. To move Python temporary files, set `TMPDIR` to an existing writable directory on the
-intended mount before starting the app or worker. Changing the cache path alone does not move them.
+Keep `cache.directory` and the output directory on mounted storage with free space. The app
+uses `<cache.directory>/scratch` for Python and child-process temporary files, including sampled
+video frames. The inference service uses `<cache_dir>/scratch`; the render worker uses
+`<directory>/scratch`. Startup sets Python's temporary directory and `TMPDIR`, `TEMP` and `TMP`
+together. An unusable scratch directory stops startup instead of falling back to `/tmp`.
 
-The inference service keeps each Demucs job under its configured cache. Render jobs keep their
-working files under the worker's configured output directory, including on the combined GPU
-worker. These job directories do not redirect every library's temporary files.
+Scratch directories must belong to the process user and allow no group or other access (0700).
+On Kubernetes, preserve that mode across PVC remounts with `fsGroupChangePolicy: OnRootMismatch`.
+See [scratch permission recovery](./upgrading.md#kubernetes-scratch-permissions) for an existing
+directory whose permissions were widened. Demucs and render jobs also keep their own working
+directories under their configured storage, including on the combined GPU worker.
 
 Video and Live Photo preparation can keep sampled frames for many source clips at once. The
 `advanced.editorial.preparation.batch_size` setting does not cap that disk usage.
