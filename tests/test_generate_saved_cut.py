@@ -194,3 +194,11 @@ def test_an_album_cut_rendered_for_the_first_time_is_named_after_its_album(cut, 
     assert re.fullmatch(
         r"album_first_film_trial_[0-9a-f]{8}\.mp4", handed["params"].output_path.name
     )
+
+
+def test_muting_is_a_render_choice_and_leaves_the_saved_cut_intact(cut, monkeypatch):  # noqa: F811
+    params, attempt = cut
+    muted = _render(params, attempt, monkeypatch, CutRenderRequest(original_audio=False))
+    assert muted.original_audio is False
+    assert [c.asset.id for c in muted.clips] == [c.asset.id for c in params.clips]
+    assert _render(params, attempt, monkeypatch, CutRenderRequest()).original_audio is True

@@ -88,6 +88,11 @@ def register_render_command(runs: click.Group) -> None:
     @click.option("--music", default=None, help="A track to use, or 'auto' to choose as configured")
     @click.option("--no-music", is_flag=True, default=False, help="Render without a music track")
     @click.option(
+        "--original-audio/--no-original-audio",
+        default=True,
+        help="Keep recordings from videos and Live Photos (default: on); off leaves only music",
+    )
+    @click.option(
         "--music-volume",
         type=float,
         default=0.5,
@@ -173,6 +178,7 @@ def register_render_command(runs: click.Group) -> None:
             music_path=Path(options["music"]) if options["music"] not in {None, "auto"} else None,
             music_volume=options["music_volume"],
             no_music=options["no_music"],
+            original_audio=options["original_audio"],
             upload=options["upload_to_immich"],
             album=options["album"],
         )

@@ -2223,3 +2223,10 @@ msgstr "~{amount} kvar"
 msgid "~{amount} left in this stage"
 msgstr "~{amount} kvar i detta steg"
 
+#: web/lib/RenderPanel.svelte:250
+msgid "Keep original audio"
+msgstr "Behåll originalljud"
+
+#: web/lib/RenderPanel.svelte:251
+msgid "Sound recorded in videos and Live Photos. Turn off for music only, or silence with No music."
+msgstr "Ljud inspelat i videor och Live Photos. Stäng av för enbart musik, eller välj även ”Ingen musik” för en tyst film."

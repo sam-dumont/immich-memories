@@ -93,6 +93,7 @@ class GenerationParams:
     music_path: Path | None = None
     music_volume: float = 0.5
     no_music: bool = False
+    original_audio: bool = True
 
     # Upload
     upload_enabled: bool = False
@@ -348,6 +349,14 @@ def _complete_music_phase(
     mute_windows: list[tuple[float, float]] | None = None,
 ):
     """Run or explicitly skip music while emitting the shared outer phase."""
+    if not params.original_audio:
+        from immich_memories.generate_music import mute_original_audio
+
+        progress.report("music", 0.0, "Muting original audio...")
+        mute_original_audio(result_path, encoding_plan)
+        # Source music is gone too: it must not silence the requested soundtrack.
+        mute_windows = None
+
     if params.no_music:
         from immich_memories.generate_music import MusicPhaseResult
 

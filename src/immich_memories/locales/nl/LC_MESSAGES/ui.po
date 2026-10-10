@@ -2237,3 +2237,10 @@ msgstr "Nog ~{amount}"
 msgid "~{amount} left in this stage"
 msgstr "~{amount} over in deze fase"
 
+#: web/lib/RenderPanel.svelte:250
+msgid "Keep original audio"
+msgstr "Origineel geluid behouden"
+
+#: web/lib/RenderPanel.svelte:251
+msgid "Sound recorded in videos and Live Photos. Turn off for music only, or silence with No music."
+msgstr "Geluid opgenomen in video’s en Live Photos. Zet uit voor alleen muziek, of kies ook ‘Geen muziek’ voor een stille film."

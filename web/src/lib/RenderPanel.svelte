@@ -39,6 +39,7 @@
   let naming = $state<'' | 'model' | 'rules'>('');
   let music = $state<string>('auto');
   let volume = $state(0.5);
+  let originalAudio = $state(true);
   let upload = $state(false);
   let album = $state('');
 
@@ -103,6 +104,7 @@
       privacy_mode: privacy,
       llm_title: naming === '' ? null : naming === 'model',
       music,
+      original_audio: originalAudio,
       music_volume: music === 'none' ? null : volume,
       upload_to_immich: upload && !!uploadCapability?.upload_available,
       album: upload ? orNull(album) : null,
@@ -245,6 +247,8 @@
 
       <fieldset class="flex flex-col gap-3 sm:col-span-2">
         <legend class="mb-1 text-sm font-semibold">{t('Music')}</legend>
+        <label class="flex items-center gap-2 text-sm"><input type="checkbox" bind:checked={originalAudio} aria-describedby="original-audio-help" />{t('Keep original audio')}</label>
+        <p id="original-audio-help" class="text-sm text-gray-600 dark:text-gray-400">{t('Sound recorded in videos and Live Photos. Turn off for music only, or silence with No music.')}</p>
         <div class="flex flex-wrap gap-2 text-sm">
           <label class="flex items-center gap-2"><input type="radio" bind:group={music} value="auto" />{t('Automatic (as configured)')}</label>
           <label class="flex items-center gap-2"><input type="radio" bind:group={music} value="none" />{t('No music')}</label>

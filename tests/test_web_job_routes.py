@@ -452,3 +452,10 @@ def test_an_unreadable_progress_sidecar_does_not_hide_the_terminal_job(client, t
     response = client.get(f"/api/v1/jobs/{job_id}")
     assert response.status_code == 200
     assert response.json()["status"] == "succeeded"
+
+
+def test_render_can_remove_original_recordings(client):
+    started = client.post(f"/api/v1/runs/{RUN}/renders", json={"original_audio": False})
+    job = _finished(client, started.json()["id"])
+    assert job["status"] == "succeeded"
+    assert "--no-original-audio" in json.loads(client.recorded.read_text())

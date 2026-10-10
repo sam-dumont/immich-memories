@@ -2141,6 +2141,8 @@ export interface components {
             music_volume?: number | null;
             /** Orientation */
             orientation?: string | null;
+            /** Original Audio */
+            original_audio?: boolean | null;
             /**
              * Privacy Mode
              * @default false

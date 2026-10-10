@@ -2174,3 +2174,10 @@ msgstr "残り約{amount}"
 msgid "~{amount} left in this stage"
 msgstr "この段階、残り約 {amount}"
 
+#: web/lib/RenderPanel.svelte:250
+msgid "Keep original audio"
+msgstr "元の音声を残す"
+
+#: web/lib/RenderPanel.svelte:251
+msgid "Sound recorded in videos and Live Photos. Turn off for music only, or silence with No music."
+msgstr "動画とLive Photosに録音された音声です。オフにすると音楽のみになり、「音楽なし」も選ぶと無音になります。"
