@@ -1261,6 +1261,76 @@
         "title": "HolidayChoice",
         "type": "object"
       },
+      "JobForecast": {
+        "properties": {
+          "estimate_basis": {
+            "default": "incomplete",
+            "title": "Estimate Basis",
+            "type": "string"
+          },
+          "known_remaining_seconds": {
+            "default": 0.0,
+            "title": "Known Remaining Seconds",
+            "type": "number"
+          },
+          "observed_at": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observed At"
+          },
+          "phases": {
+            "items": {
+              "$ref": "#/components/schemas/PhaseProgress"
+            },
+            "title": "Phases",
+            "type": "array"
+          },
+          "remaining_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Remaining Seconds"
+          },
+          "revision": {
+            "default": 0,
+            "title": "Revision",
+            "type": "integer"
+          },
+          "target": {
+            "enum": [
+              "cut",
+              "film"
+            ],
+            "title": "Target",
+            "type": "string"
+          },
+          "unknown_phases": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Unknown Phases",
+            "type": "array"
+          }
+        },
+        "required": [
+          "target",
+          "phases"
+        ],
+        "title": "JobForecast",
+        "type": "object"
+      },
       "JobProgress": {
         "properties": {
           "done": {
@@ -1274,6 +1344,16 @@
             ],
             "title": "Done"
           },
+          "forecast": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JobForecast"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "fraction": {
             "anyOf": [
               {
@@ -1285,10 +1365,44 @@
             ],
             "title": "Fraction"
           },
+          "fraction_scope": {
+            "default": "unknown",
+            "enum": [
+              "stage",
+              "job",
+              "unknown"
+            ],
+            "title": "Fraction Scope",
+            "type": "string"
+          },
+          "history": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/JobStage"
+            },
+            "title": "History",
+            "type": "array"
+          },
           "label": {
             "default": "",
             "title": "Label",
             "type": "string"
+          },
+          "last_completed_at": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Completed At"
+          },
+          "pass_id": {
+            "default": 0,
+            "title": "Pass Id",
+            "type": "integer"
           },
           "phase": {
             "default": "",
@@ -1313,6 +1427,22 @@
               }
             ],
             "title": "Remaining Seconds"
+          },
+          "scope": {
+            "default": "",
+            "title": "Scope",
+            "type": "string"
+          },
+          "stage_fraction": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stage Fraction"
           },
           "stage_name": {
             "default": "",
@@ -1340,9 +1470,85 @@
               }
             ],
             "title": "Total"
+          },
+          "unit": {
+            "default": "",
+            "title": "Unit",
+            "type": "string"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
           }
         },
         "title": "JobProgress",
+        "type": "object"
+      },
+      "JobStage": {
+        "properties": {
+          "done": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Done"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "pass_id": {
+            "default": 0,
+            "title": "Pass Id",
+            "type": "integer"
+          },
+          "scope": {
+            "default": "",
+            "title": "Scope",
+            "type": "string"
+          },
+          "state": {
+            "default": "previous",
+            "enum": [
+              "processed",
+              "previous",
+              "reused"
+            ],
+            "title": "State",
+            "type": "string"
+          },
+          "total": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total"
+          },
+          "unit": {
+            "default": "",
+            "title": "Unit",
+            "type": "string"
+          }
+        },
+        "required": [
+          "label"
+        ],
+        "title": "JobStage",
         "type": "object"
       },
       "JobView": {
@@ -1850,6 +2056,51 @@
           }
         },
         "title": "PersonAnswers",
+        "type": "object"
+      },
+      "PhaseProgress": {
+        "properties": {
+          "elapsed_seconds": {
+            "default": 0.0,
+            "title": "Elapsed Seconds",
+            "type": "number"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "known_remaining_seconds": {
+            "default": 0.0,
+            "title": "Known Remaining Seconds",
+            "type": "number"
+          },
+          "remaining_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Remaining Seconds"
+          },
+          "state": {
+            "enum": [
+              "pending",
+              "running",
+              "completed",
+              "skipped"
+            ],
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "state"
+        ],
+        "title": "PhaseProgress",
         "type": "object"
       },
       "PhaseTiming": {

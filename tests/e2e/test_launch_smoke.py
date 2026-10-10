@@ -196,19 +196,20 @@ def test_launch_flow_renders_real_video(
     before = set(launch_workspace.output_dir.rglob("*.mp4"))
     cut_june(page, launch_app_url)
     page.evaluate("""() => {
-        window.exportProgress = [];
+        window.exportPhases = [];
         new MutationObserver(() => {
-            const bar = document.querySelector('[role="progressbar"]');
-            if (bar) window.exportProgress.push(Number(bar.getAttribute('aria-valuenow')));
-        }).observe(document.body, {subtree: true, childList: true, attributes: true,
-                                   attributeFilter: ['aria-valuenow']});
+            const phases = document.querySelector('[aria-label="Phases"]');
+            if (phases) window.exportPhases.push(phases.textContent);
+        }).observe(document.body, {subtree: true, childList: true, characterData: true});
     }""")
     render(page, resolution="720p")
 
     wait_for_the_film(page, timeout=600_000)
-    fractions = page.evaluate("window.exportProgress")
-    assert len(set(fractions)) > 2
-    assert fractions == sorted(fractions)
+    phases = "\n".join(page.evaluate("window.exportPhases"))
+    assert "Prepare selected clips" in phases
+    assert "Render film" in phases
+    assert "Check playback" in phases
+    assert "Running" in phases and "Pending" in phases
 
     outputs = sorted(set(launch_workspace.output_dir.rglob("*.mp4")) - before)
     assert len(outputs) == 1
@@ -275,6 +276,9 @@ def _verify_cli_timing(workspace, database: RunDatabase) -> None:
         transcript.replace(str(workspace.root), "<fixture-workspace>")
     )
     assert result.returncode == 0, transcript
+    assert "Prepare pictures: running" in transcript
+    assert "Check playback: pending" in transcript
+    assert "Render film: running" in transcript
     terminal = database.list_runs(status="completed", order_by_completion=True)[0]
     assert terminal.output_path and Path(terminal.output_path).is_file()
     assert any(event["elapsed_seconds"] > 0 for event in terminal.phase_events)

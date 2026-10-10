@@ -387,12 +387,9 @@ def run_pipeline_and_generate(
 
     print_success(f"{len(clips)} video clips and {len(source_photos)} photos ready for selection")
 
-    # WHY: ONE unified task covers the entire pipeline (analysis → generation).
-    # The adaptive ETA in LiveDisplay uses elapsed/percentage, so it
-    # auto-adjusts whether analysis is cached (fast) or uncached (slow).
-    # Analysis: 0-20%, Generation: 20-100%.
-    # (Real timing data: analysis ~83s/22%, generation ~295s/78%)
-    task = progress.add_task("Analyzing clips...", total=100)
+    # Preparation supplies measured counts; later assembly callbacks also include
+    # unmeasured audio/mux waits and must not extrapolate a whole-film percentage.
+    task = progress.add_task("Analyzing clips...", total=None)
     _pipeline_start = _time.monotonic()
     phases = AttemptPhaseReporter(
         config,
@@ -616,10 +613,15 @@ def run_pipeline_and_generate(
             preset_params=resolved.preset_params,
         )
 
+    progress.reset(task, total=None)
+
     def gen_progress(phase: str, frac: float, msg: str) -> None:
         phases.heartbeat.activity(msg)
-        scaled = 20 + int(frac * 80)
-        progress.update(task, completed=scaled, description=msg)
+        from immich_memories.tracking.timing import active
+
+        collected = active()
+        estimate = collected.diagnostics.get("progress", {}) if collected else {}
+        progress.update(task, description=msg, forecast=estimate.get("forecast"))
 
     def generation_phase(event) -> None:
         phases.heartbeat.note(event.phase, event.current, event.total, event.message)
@@ -682,6 +684,7 @@ def run_pipeline_and_generate(
         phases.heartbeat.stop()
     _total_time = _time.monotonic() - _pipeline_start
     _gen_time = _total_time - _analysis_time
+    progress.reset(task, total=100)
     progress.update(task, completed=100)
 
     _runner_logger.info(

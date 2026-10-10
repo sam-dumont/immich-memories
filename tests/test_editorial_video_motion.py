@@ -291,9 +291,15 @@ def test_a_clip_whose_frames_cannot_be_decoded_stays_unmeasured(tmp_path):
     broken.write_bytes(b"not a jpeg")
     clip = clip_video("clip")
 
+    progress = []
     failures = bank_video_motion(
-        store=store, videos={"clip": clip}, frame_paths={"clip": [broken, broken]}
+        store=store,
+        videos={"clip": clip},
+        frame_paths={"clip": [broken, broken]},
+        progress=lambda *update: progress.append(update),
     )
+
+    assert progress == [("video_motion", 0, 1), ("video_motion", 1, 1)]
 
     assert failures == {"clip": "0 of 2 frames readable"}
     assert read_motion_residuals(store, [clip]) == {}

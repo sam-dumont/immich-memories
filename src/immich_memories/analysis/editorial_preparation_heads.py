@@ -85,6 +85,7 @@ def prepare_clip_frames(
     bundle_path: Path,
     encoder_path: Path,
     check_cancelled: Callable[[], None],
+    progress: Callable[[str, int, int], None] | None = None,
     provider: str = "auto",
     open_encoder: Callable[..., DinoEncoder] = DinoEncoder.open,
 ) -> dict[str, str]:
@@ -93,20 +94,25 @@ def prepare_clip_frames(
     Returns the clips whose frames could not be read, with why; they keep the reading of their
     preview, which is all any clip had before.
     """
+    report = progress or (lambda *_args: None)
+    report("clip_frames", 0, len(frame_paths))
     bundle = HeadBundle.load(bundle_path)
     encoder = open_encoder(encoder_path, provider=provider)
     if bundle.encoder_key != encoder.key:
         raise ValueError("head bundle was trained on another encoder")
     failures: dict[str, str] = {}
     with PendingHeadFacts(HeadFactStore(store)) as bank:
-        for asset_id, paths in frame_paths.items():
+        for index, (asset_id, paths) in enumerate(frame_paths.items(), 1):
             check_cancelled()
             try:
                 pixels = np.stack([preprocess_image_bytes(Path(p).read_bytes()) for p in paths])
             except (OSError, ValueError, UnidentifiedImageError) as exc:
                 failures[asset_id] = f"{type(exc).__name__}: {exc}"
+                report("clip_frames", index, len(frame_paths))
                 continue
             kinds = [fact.label for fact in bundle.decide(encoder.embed(pixels))["frame_kind"]]
             if fact := clip_frames_fact(kinds):
                 bank.add(asset_id, [fact], encoder_key=encoder.key)
+                bank.flush()
+            report("clip_frames", index, len(frame_paths))
     return failures

@@ -25,6 +25,44 @@ runs as a separate job: use its progress/error panel and the run's **Copy report
 The [measurements](../better/measured.md) separate warm tests from cold preparation and rendering;
 no fixed first-film time is promised. A real month's first preparation can take hours on a NAS.
 
+A percentage labelled **of this stage** covers only the named pass. Sampling video frames can
+reach 100%, then frame checks start at zero. Regular videos and Live Photo clips have separate
+passes. Counts name their unit: pictures, clips or checks. One picture can need several checks.
+**Previous stages** keeps the most recent passes across a reload. **Processed** counts inputs
+visited, including inputs a check could not read; it does not mean every check succeeded.
+
+Saved picture checks are reused when they still match the source. Work the selected tier does
+not request is labelled that way. Selection can bring in more pictures and start another
+preparation pass, so there is no fixed number of stages left.
+
+Both the CLI and browser list the phases: preparation, selection, clip preparation, rendering,
+music, playback checking and upload, as applicable. Each shows whether it is pending, running,
+completed or skipped, with its elapsed time and estimated time left. A browser cut ends when the
+cut is saved. A full CLI `generate` includes the later render phases from the start.
+
+Stage time estimates use results from that pass. **About … until the film is ready** includes
+all remaining phases, including playback checking and upload if requested. It combines this run’s measured rate
+with timings from completed runs with matching tier and output settings. It is an estimate: cache reuse, service
+queues and changes in the pictures can change it. An unexpected pass or a phase that outlasts
+its reference makes that part unknown instead of counting down to zero.
+
+The first run can estimate work too. If 100 of 1,000 pictures take 30 seconds, that pass has
+about 4½ minutes left at its current rate. The summary adds this to any estimates for later
+work. When some costs are still unknown, it shows **About … of estimated work left** and names
+the phases with additional unestimated work. The rate resets when the producer or pass changes;
+preview download speed does not predict model inference time. Fixed render and music percentages do not count as
+measured work. A worker download can show a stage percentage when the server supplies the file
+size. Otherwise it reports bytes received.
+
+A quiet stage shows how long it has gone without a progress update. The CLI heartbeat says
+**process alive; no new progress**: a live process can still be waiting for a model or service.
+A heartbeat does not count as completed work. Music status identifies its candidate; a retry or
+another candidate is more work, even if the preceding candidate reached its last step.
+
+If live updates disconnect, the page says so and checks the saved job status. Returning to a
+background tab also refreshes it. An expired app login asks you to sign in again; it does not
+mean the film failed. Reconnect or reload to read the saved result before starting another job.
+
 Press **Cancel** on an active job to cancel it; cancellation can wait for active native work.
 Cancelling marks the run **Cancelled** and clears its scratch folder; the saved cut stays, so
 **Render again** still works. Reloading the browser does not cancel it. Return to **Memory** for

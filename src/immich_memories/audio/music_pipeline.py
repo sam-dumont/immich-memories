@@ -371,11 +371,13 @@ class MusicPipeline:
 
         for gen in self._generators:
             try:
+                _progress("Checking music service", 0, None)
                 if not await gen.is_available():
                     logger.info(f"{gen.name} unavailable, trying next...")
                     continue
 
                 logger.info(f"Generating with {gen.name}")
+                _progress("Generating music", 0, None)
                 result = await gen.generate(request, _progress)
                 if reason := validate_generated_audio(result.audio_path):
                     logger.warning(
@@ -393,6 +395,7 @@ class MusicPipeline:
                 # still propagates.
                 # No exc_info: a backend's exception text can carry its URL or
                 # key, and these logs are kept deliberately quiet about that.
+                _progress("Music service failed; trying the next service", 0, None)
                 logger.warning("Music backend %s failed; trying next backend", gen.name)
                 continue
 
@@ -415,6 +418,7 @@ class MusicPipeline:
                 progress_callback(version_idx, f"Separating stems: {status}", scaled, detail)
 
         try:
+            _progress("Checking stem separator", 0, None)
             if not await self._stem_separator.is_available():
                 logger.warning("Stem separator unavailable, skipping")
                 return None

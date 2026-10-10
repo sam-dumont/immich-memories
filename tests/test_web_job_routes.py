@@ -397,3 +397,58 @@ def test_render_title_style_is_validated_and_becomes_a_cli_flag():
     assert not any("title-style" in flag for flag in RenderOptions().flags())
     with pytest.raises(ValidationError):
         RenderOptions(title_style="made_up")
+
+
+def test_reloaded_progress_keeps_pass_identity_units_and_actual_work_freshness(client, tmp_path):
+    from immich_memories.operations.cut_progress import StageUpdate
+    from immich_memories.operations.editorial_attempt import EditorialAttempt
+
+    started = client.post("/api/v1/cuts", json={"memory_type": "year_in_review", "year": 2023})
+    job_id = started.json()["id"]
+    root = tmp_path / "cache" / "editorial-runs" / f"web-{job_id}"
+
+    def shown():
+        return client.get(f"/api/v1/jobs/{job_id}").json()["progress"]
+
+    with EditorialAttempt(root, request={"key": "k"}) as attempt:
+        attempt.stage(StageUpdate("live_photos.detector_frames", "analysis", 0, 1))
+        attempt.stage(StageUpdate("live_photos.detector_frames", "analysis", 1, 1))
+        sampled = shown()
+        assert sampled["fraction_scope"] == "stage"
+        assert sampled["stage_fraction"] == 1
+        assert sampled["unit"] == "clips"
+        assert sampled["last_completed_at"] is not None
+
+        checking = StageUpdate("live_photos.remote_frames", "analysis", 0, 1)
+        attempt.stage(checking)
+        active = shown()
+        assert active["pass_id"] != sampled["pass_id"]
+        assert active["stage_fraction"] == 0
+        assert active["stage_remaining_seconds"] is None
+        assert active["updated_at"] >= sampled["updated_at"]
+        assert active["last_completed_at"] == sampled["last_completed_at"]
+
+        # A repeated heartbeat is not another completed clip or a fresh work event.
+        attempt.stage(checking)
+        repeated = shown()
+        assert {k: v for k, v in repeated.items() if k != "forecast"} == {
+            k: v for k, v in active.items() if k != "forecast"
+        }
+
+        attempt.stage(StageUpdate("live_photos.remote_frames", "analysis", 1, 1))
+        attempt.stage(StageUpdate("live_photos.detector_frames", "analysis", 0, 1))
+        repeated = shown()
+        assert repeated["pass_id"] not in {sampled["pass_id"], active["pass_id"]}
+        assert repeated["stage_remaining_seconds"] is None
+
+
+def test_an_unreadable_progress_sidecar_does_not_hide_the_terminal_job(client, tmp_path):
+    started = client.post(f"/api/v1/runs/{RUN}/renders", json={"music": "none"})
+    job_id = started.json()["id"]
+    finished = _finished(client, job_id)
+    path = Path(finished["meta"]["progress_file"])
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("[]")
+    response = client.get(f"/api/v1/jobs/{job_id}")
+    assert response.status_code == 200
+    assert response.json()["status"] == "succeeded"

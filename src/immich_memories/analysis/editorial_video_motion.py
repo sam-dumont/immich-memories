@@ -12,7 +12,7 @@ banked under its own producer and never answers for a Live Photo's, nor the othe
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 
 from immich_memories.analysis.editorial_bound_sample import source_metadata_digest
@@ -56,18 +56,22 @@ def bank_video_motion(
     store: Store,
     videos: Mapping[str, Asset],
     frame_paths: Mapping[str, Sequence[Path]],
+    progress: Callable[[str, int, int], None] | None = None,
 ) -> dict[str, str]:
     """Bank each video's residual over its sampled frames, with what it was measured on.
 
     Returns the videos whose frames could not be measured, with why. They stay unmeasured,
     which is what every video was before: their motion is still taken on what they are.
     """
+    report = progress or (lambda *_args: None)
+    report(STAGE, 0, len(frame_paths))
     failures: dict[str, str] = {}
     with PendingMeasurements(store) as pending:
-        for asset_id, paths in frame_paths.items():
+        for index, (asset_id, paths) in enumerate(frame_paths.items(), 1):
             fact = measure_frame_motion(paths)
             if "residual" not in fact:
                 failures[asset_id] = f"{fact.get('frames', 0)} of {len(paths)} frames readable"
+                report(STAGE, index, len(frame_paths))
                 continue
             pending.motion_residual(
                 asset_id=asset_id,
@@ -76,4 +80,6 @@ def bank_video_motion(
                 measured=fact
                 | {"producer": VIDEO_RESIDUAL_PRODUCER, "sampled_by": "detector_frames"},
             )
+            pending.flush()
+            report(STAGE, index, len(frame_paths))
     return failures

@@ -117,6 +117,7 @@ class DetectorFrames:
         ) as directory:
             paths: dict[str, list[Path]] = {}
             with timed(STAGE, len(wanted)):
+                report(STAGE, offset, len(wanted) if total is None else total)
                 for index, asset_id in enumerate(wanted, 1):
                     check()
                     self._sample(asset_id, Path(directory), paths, failures)

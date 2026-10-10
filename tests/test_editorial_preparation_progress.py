@@ -3,6 +3,8 @@
 from dataclasses import replace
 from functools import partial
 
+import pytest
+
 from immich_memories.analysis.editorial_preparation import prepare_editorial_annotations
 from immich_memories.analysis.editorial_runtime_evidence import (
     AnnotationReadings,
@@ -21,7 +23,7 @@ from immich_memories.operations.cut_progress import read_stage_progress
 from tests.test_editorial_preparation import asset, preview, successful_ports
 
 
-def _prepare_with_progress(tmp_path, updates):
+def _prepare_with_progress(tmp_path, updates, *, before_update=lambda: None):
     sources = [asset(f"photo-{index}") for index in range(45)]
     prepared = prepare_editorial_source(
         EditorialSelectionRequest(scope=SourceScope(min_source_short_side=0)),
@@ -35,6 +37,7 @@ def _prepare_with_progress(tmp_path, updates):
     def detectors(**kwargs):
         # WHY: simulate two detector workers' progress without loading ONNX models.
         for update in updates:
+            before_update()
             kwargs["progress"](*update)
         return providers.detectors(**kwargs)
 
@@ -71,7 +74,10 @@ def test_detector_progress_continues_after_a_partial_producer_batch(tmp_path):
 
     published = _prepare_with_progress(tmp_path, updates)
 
-    assert published == [("detectors", done, 90) for done in (0, 32, 77, 90)]
+    # Entry counts the actual fixture workload; the worker then publishes its own totals.
+    assert published == [("detectors", 0, 2)] + [
+        ("detectors", done, 90) for done in (0, 32, 77, 90)
+    ]
 
 
 def test_stage_changes_resets_and_completion_are_visible_between_batches(tmp_path):
@@ -92,6 +98,7 @@ def test_stage_changes_resets_and_completion_are_visible_between_batches(tmp_pat
     published = _prepare_with_progress(tmp_path, updates)
 
     assert published == [
+        ("detectors", 0, 2),
         ("detectors", 0, 100),
         ("detectors", 32, 100),
         ("detectors", 40, 100),
@@ -101,3 +108,47 @@ def test_stage_changes_resets_and_completion_are_visible_between_batches(tmp_pat
         ("next detector", 5, 120),
         ("next detector", 120, 120),
     ]
+
+
+@pytest.mark.parametrize("producer", ["captions", "detectors"])
+def test_a_cold_provider_is_announced_before_its_first_answer(tmp_path, producer):
+    from tests.test_editorial_preparation import run
+
+    updates = []
+    providers = successful_ports([])
+
+    def model(**kwargs):
+        # WHY: only replace the model boundary; preparation and its store are real.
+        total = (
+            len(kwargs["asset_ids"])
+            if producer == "captions"
+            else sum(len(ids) for ids in kwargs["pending"].values())
+        )
+        assert updates[-1] == (producer, 0, total)
+        return getattr(providers, producer)(**kwargs)
+
+    result = run(
+        tmp_path,
+        ports=replace(providers, **{producer: model}),
+        fetch_preview=lambda _asset: preview(),
+        progress=lambda stage, done, total: updates.append((stage, done, total)),
+    )
+
+    assert result.complete, result.failures
+
+
+def test_slow_results_publish_without_waiting_for_a_full_batch(tmp_path, monkeypatch):
+    # WHY: advance time at the model boundary instead of sleeping for each clip.
+    import time
+
+    now = [0.0]
+    monkeypatch.setattr(time, "monotonic", lambda: now[0])
+
+    def completed_one():
+        now[0] += 5.0
+
+    updates = [("detectors", done, 90) for done in (0, 1, 2)]
+    published = _prepare_with_progress(tmp_path, updates, before_update=completed_one)
+
+    assert ("detectors", 1, 90) in published
+    assert ("detectors", 2, 90) in published

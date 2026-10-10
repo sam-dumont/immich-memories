@@ -27,6 +27,7 @@ from typing import Any
 
 from immich_memories.security import write_secret_file
 from immich_memories.tracking import timing
+from immich_memories.tracking.phase_forecast import PhaseForecast
 from immich_memories.tracking.span_progress import SpanPlan
 
 PROGRESS_FILE = "stage-progress.private.json"
@@ -61,14 +62,48 @@ class StageUpdate:
     # The name history keeps this stage under. Labels carry counts and months, which
     # would give every run its own stage and leave nothing to estimate from.
     key: str = ""
+    scope: str = ""
+    pass_id: int = 0
+    updated_at: float | None = None
+    last_completed_at: float | None = None
+    forecast: dict[str, Any] | None = None
 
     @property
     def stage_key(self) -> str:
         return self.key or _COUNTS.sub("#", self.label.split(":", 1)[0]).strip()
 
     @property
-    def identity(self) -> tuple[str, str, str, int | None]:
-        return self.phase, self.label, self.verb, self.total
+    def identity(self) -> tuple[str, str, str, int | None, str]:
+        return self.phase, self.label, self.verb, self.total, self.scope
+
+    @property
+    def unit(self) -> str:
+        """What the producer counts; a detector can check one picture more than once."""
+        stage = self.label.rsplit(".", 1)[-1]
+        if stage == "reused":
+            return "pictures"
+        if stage == "detectors":
+            return "checks"
+        if stage in {
+            "detector_frames",
+            "remote_frames",
+            "clip_frames",
+            "video_motion",
+            "obstruction_frames",
+            "motion",
+        }:
+            return "clips"
+        if stage in {
+            "previews",
+            "pixels",
+            "faces",
+            "public_heads",
+            "remote_facts",
+            "captions",
+            "obstruction",
+        }:
+            return "pictures"
+        return "items"
 
     @property
     def remaining_label(self) -> str:
@@ -86,7 +121,27 @@ class StageUpdate:
     @property
     def stage_label(self) -> str:
         """The sentence a phase row shows for this position."""
+        names = {
+            "reused": "Reusing saved picture checks",
+            "skipped_models": "Model checks not requested",
+            "skipped_captions": "Descriptions not requested",
+        }
+        if self.label in names:
+            return names[self.label] + (f": {self.done}/{self.total}" if self.total else "")
         if self.counted:
+            scope, _, stage = self.label.partition(".")
+            if scope in {"videos", "live_photos"}:
+                subject = "video clips" if scope == "videos" else "Live Photo clips"
+                activity = {
+                    "detector_frames": "Sampling",
+                    "remote_frames": "Checking",
+                    "clip_frames": "Reading",
+                    "video_motion": "Measuring motion in",
+                    "obstruction_frames": "Checking for a covered lens in",
+                    "previews": "Fetching previews for",
+                    "detectors": "Checking",
+                }.get(stage, self.verb)
+                return f"{activity} {subject}: {self.done}/{self.total} {self.unit}"
             return f"{self.verb} {self.label}: {self.done}/{self.total}"
         return self.label
 
@@ -97,9 +152,31 @@ class StageUpdate:
             return None
         return min(1.0, max(0.0, self.done / self.total))
 
+    def history_record(self) -> dict[str, Any]:
+        """A finished processing count is not a promise that every input produced a fact."""
+        return {
+            "label": self.label,
+            "done": self.done,
+            "total": self.total,
+            "unit": self.unit,
+            "pass_id": self.pass_id,
+            "scope": self.scope,
+            "state": "reused"
+            if self.label == "reused"
+            else "processed"
+            if self.fraction == 1
+            else "previous",
+        }
+
     def as_record(self) -> dict[str, Any]:
         return {
             "phase": self.phase,
+            "key": self.key,
+            "scope": self.scope,
+            "pass_id": self.pass_id,
+            "updated_at": self.updated_at,
+            "last_completed_at": self.last_completed_at,
+            "forecast": self.forecast,
             "label": self.label,
             "done": self.done,
             "total": self.total,
@@ -118,6 +195,12 @@ class StageUpdate:
             total = record.get("total")
             return cls(
                 label=str(record["label"]),
+                key=str(record.get("key") or ""),
+                scope=str(record.get("scope") or ""),
+                pass_id=int(record.get("pass_id") or 0),
+                updated_at=record.get("updated_at"),
+                last_completed_at=record.get("last_completed_at"),
+                forecast=record.get("forecast"),
                 phase=str(record.get("phase") or SELECTION_PHASE),
                 done=None if done is None else int(done),
                 total=None if total is None else int(total),
@@ -138,13 +221,51 @@ class StageClock:
     stage itself counts (packs, calls), so the next run can scale them by its own pictures.
     """
 
-    def __init__(self, *, plan: SpanPlan | None = None, items: int | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        plan: SpanPlan | None = None,
+        items: int | None = None,
+        forecast: PhaseForecast | None = None,
+        future: Mapping[str, float | None] | None = None,
+    ) -> None:
+        durations = {}
+        for phase in (ANALYSIS_PHASE, SELECTION_PHASE):
+            weights = [
+                value
+                for key, value in (plan.weights if plan else {}).items()
+                if key.startswith(f"stage.{phase}.")
+            ]
+            durations[phase] = sum(weights) if weights else None
+        collected = timing.active()
+        request = collected.diagnostics.get("progress_request", {}) if collected else {}
+        skipped = set()
+        if request.get("film"):
+            durations.update(dict.fromkeys(("download", "assembly", "music", "check", "upload")))
+            durations.update(future or {})
+            if request.get("no_music"):
+                skipped.add("music")
+            if not request.get("upload"):
+                skipped.add("upload")
+            if request.get("worker"):
+                skipped.add("download")
+        self._forecast = forecast or PhaseForecast(
+            durations,
+            target="film" if request.get("film") else "cut",
+            skipped=skipped,
+        )
+        if collected is not None:
+            collected.forecast = self._forecast
         self._previous: StageUpdate | None = None
         self._started = 0.0
         self._baseline = 0
         self._plan = plan
         self._items = items
         self._total_fraction = 0.0
+        self._pass_id = 0
+        self._seen: set[str] = set()
+        self._known_stages = set(plan.weights) if plan else set()
+        self._last_completed_at: float | None = None
 
     def finish(self, now: float | None = None) -> None:
         """Keep the last stage too, including when its enclosing attempt failed."""
@@ -158,8 +279,13 @@ class StageClock:
             )
         self._previous = None
 
-    def measure(self, update: StageUpdate) -> StageUpdate:
+    def complete(self) -> dict[str, Any]:
+        """Persist completion only when the attempt owner saved its cut."""
         now = timing.clock()
+        self._forecast.complete_cut(now=now)
+        return self._forecast.snapshot(now=now)
+
+    def _begin_pass(self, update: StageUpdate, now: float) -> None:
         previous = self._previous
         if (
             previous is None
@@ -167,8 +293,42 @@ class StageClock:
             or (update.done or 0) < (previous.done or 0)
         ):
             self.finish(now)
+            name = _span_name(update)
+            # A repeat, changed workload or new stage invalidates the old run's plan.
+            if name in self._seen or name not in self._known_stages:
+                self._plan = None
+                self._forecast.invalidate(update.phase)
+            self._seen.add(name)
             self._started = now
             self._baseline = update.done or 0
+            self._pass_id += 1
+
+    def _measure_phase(self, update: StageUpdate, remaining: float | None, now: float) -> None:
+        # The current rate replaces only this pass's history, never another producer's cost.
+        partial = True
+        name = _span_name(update)
+        if remaining is not None and self._plan and name in self._plan.weights:
+            names = list(self._plan.weights)
+            remaining += sum(
+                self._plan.weights[key]
+                for key in names[names.index(name) + 1 :]
+                if key.startswith(f"stage.{update.phase}.")
+            )
+            partial = False
+        self._forecast.measure_remaining(update.phase, remaining, now=now, partial=partial)
+
+    def measure(self, update: StageUpdate) -> StageUpdate:
+        now = timing.clock()
+        previous = self._previous
+        self._forecast.enter(update.phase, now=now)
+        stamp = datetime.now(UTC).timestamp()
+        self._begin_pass(update, now)
+        if update.done and (
+            previous is not None
+            and previous.identity == update.identity
+            and update.done > (previous.done or 0)
+        ):
+            self._last_completed_at = stamp
         self._previous = update
         completed = (update.done or 0) - self._baseline
         remaining = None
@@ -183,10 +343,19 @@ class StageClock:
             if self._plan
             else None
         )
+        if estimate is not None and estimate.fraction >= 1.0:
+            self._plan = None
+            self._forecast.invalidate(update.phase)
+            estimate = None
         if estimate is not None:
             self._total_fraction = max(self._total_fraction, estimate.fraction)
+        self._measure_phase(update, remaining, now)
         return replace(
             update,
+            pass_id=self._pass_id,
+            updated_at=stamp,
+            last_completed_at=self._last_completed_at,
+            forecast=self._forecast.snapshot(now=now),
             remaining_seconds=remaining,
             total_fraction=self._total_fraction if self._plan and self._plan.weights else None,
             total_remaining_seconds=estimate.remaining_seconds if estimate else None,
@@ -249,8 +418,11 @@ class StageProgressWriter:
     the write rate follows the run's batch size rather than its library size.
     """
 
-    def __init__(self, directory: Callable[[], Path], limit: int = RECENT_ASSET_LIMIT) -> None:
+    def __init__(
+        self, directory: Callable[[], Path], limit: int = RECENT_ASSET_LIMIT, *, scope: str = ""
+    ) -> None:
         self._directory = directory
+        self._scope = scope
         self._recent: deque[str] = deque(maxlen=limit)
 
     def note_asset(self, asset_id: str) -> None:
@@ -258,7 +430,9 @@ class StageProgressWriter:
 
     def publish(self, label: str, done: int, total: int) -> StageUpdate:
         """Write the snapshot and return the record the caller announces."""
-        progress = StageUpdate(label, ANALYSIS_PHASE, done, total, tuple(self._recent))
+        progress = StageUpdate(
+            label, ANALYSIS_PHASE, done, total, tuple(self._recent), scope=self._scope
+        )
         payload = progress.as_record() | {"recent_asset_ids": list(progress.recent_asset_ids)}
         # A file nobody renders from is not worth failing a cut that is
         # otherwise fine, so a display write never propagates.

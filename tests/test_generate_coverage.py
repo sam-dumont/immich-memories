@@ -1486,3 +1486,72 @@ def test_cleanup_leaves_a_clip_outside_the_scratch_dir_alone(tmp_path):
     cleanup_temp_clips([AssemblyClip(path=outside, duration=3.0)])
 
     assert outside.exists()
+
+
+def test_music_progress_names_the_candidate_without_applying_a_render_offset(tmp_path, monkeypatch):
+    from immich_memories.generate_music import auto_generate_music
+
+    seen = []
+
+    async def generate(**kwargs):
+        # WHY: the music service is external; retain the real generation adapter.
+        kwargs["progress_callback"](1, "Generating", 40.0, None)
+        return None
+
+    monkeypatch.setattr("immich_memories.generate_music.music_config_available", lambda _: True)
+    monkeypatch.setattr("immich_memories.audio.music_generator.generate_music_for_video", generate)
+    auto_generate_music(
+        Config(), [], tmp_path, None, lambda *event: seen.append(event), transition_overlap=0.0
+    )
+
+    assert ("music", 0.4, "Music candidate 2: Generating") in seen
+
+
+def test_playback_check_is_announced_and_timed_before_the_film_is_ready(tmp_path):
+    import subprocess
+
+    from immich_memories.generate import PreparedGeneration
+    from immich_memories.processing.output_contract import DecodeCheck
+    from immich_memories.tracking.timing import collecting
+    from tests.test_output_contract import _h264_plan
+
+    staged, final = tmp_path / "staged.mp4", tmp_path / "film.mp4"
+    subprocess.run(
+        [
+            "ffmpeg",
+            "-v",
+            "error",
+            "-f",
+            "lavfi",
+            "-i",
+            "color=s=64x64:d=0.2",
+            "-c:v",
+            "libx264",
+            "-pix_fmt",
+            "yuv420p",
+            "-color_trc",
+            "bt709",
+            "-colorspace",
+            "bt709",
+            "-color_primaries",
+            "bt709",
+            "-x264-params",
+            "colorprim=bt709:transfer=bt709:colormatrix=bt709",
+            str(staged),
+        ],
+        check=True,
+        capture_output=True,
+    )
+    prepared = PreparedGeneration(final, _h264_plan(), (), 0, 0, staged_path=staged)
+    events = []
+
+    def report(message):
+        assert staged.exists() and not final.exists()
+        events.append(message)
+
+    with collecting() as collected:
+        probe = prepared.publish(DecodeCheck(progress=report))
+    assert events[0] == "Checking the finished film"
+    assert probe.decoded_frames > 0 and final.exists()
+    assert collected.spans[-1].name == "render.playback_check"
+    assert collected.spans[-1].duration > 0

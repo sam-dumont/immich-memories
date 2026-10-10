@@ -128,3 +128,41 @@ def test_live_companion_offloads_exposure_under_its_own_id(monkeypatch, tmp_path
     rows = [r for r in read_rows(annotation_store(), "head_facts") if r["asset_id"] == "companion"]
     assert len(rows) == 1 and rows[0]["head"] == "nsfw_marqo"
     assert all(names == ["nsfw_marqo"] for names in asked[1:])
+
+
+@requires_ffmpeg
+def test_live_clip_checks_publish_before_the_first_request_and_after_banking(monkeypatch, tmp_path):
+    from tests.test_editorial_preparation import asset
+
+    data = encode(tmp_path / "clip.mp4", gop=30)
+    updates = []
+    checked = []
+
+    def handle(request):
+        payload = json.loads(request.content)
+        if payload["producers"] == ["nsfw_marqo"]:
+            assert updates[-1] == ("live_photos.remote_frames", 0, 1)
+            checked.append(True)
+        return httpx.Response(200, json=answer(payload["producers"]))
+
+    def progress(stage, done, total):
+        updates.append((stage, done, total))
+        if stage == "live_photos.remote_frames" and done == total:
+            rows = read_rows(annotation_store(), "head_facts")
+            assert any(row["asset_id"] == "companion" for row in rows)
+
+    # WHY: replace only the inference HTTP endpoint and Immich's media bytes.
+    transport(monkeypatch, handle)
+    result = remote_run(
+        tmp_path,
+        assets=[asset("still").model_copy(update={"live_photo_video_id": "companion"})],
+        read_playback=lambda _id, start, length: (data[start : start + length], len(data)),
+        progress=progress,
+    )
+
+    assert result.complete and result.failures == {}
+    assert checked
+    assert [event for event in updates if event[0] == "live_photos.remote_frames"] == [
+        ("live_photos.remote_frames", 0, 1),
+        ("live_photos.remote_frames", 1, 1),
+    ]

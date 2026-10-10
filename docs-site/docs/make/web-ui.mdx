@@ -53,6 +53,11 @@ runtimes must already be installed; downloading their weights does not install P
 <Diagram name="seq-web-job" headline="Cut first, look at it, then render. Nothing renders until you press the button." />
 The cut runs on the server, so you can close the tab and return later. The app follows the running job again. **Cancel** stops it; only one job runs at a time.
 
+The progress panel lists completed, current, pending and skipped phases. Its overall ETA includes
+all the phases left in that job; the percentage below it belongs to the current stage. A first
+run may not have an overall estimate yet. [Film progress and recovery](../run/film-progress.md)
+explains the counts, estimates and what happens after a lost connection.
+
 For a failed job, read the log shown below its status. A full disk can leave the status stale
 and the log incomplete. [Free space or expand the volume](../run/maintenance/storage-backups.md#full-disk-during-preparation),
 then reload the page and retry the request. Completed preparation facts remain in the store.

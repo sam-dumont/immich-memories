@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-08 20:41+0200\n"
+"POT-Creation-Date: 2026-10-10 16:22+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_Hans\n"
@@ -33,16 +33,36 @@ msgstr "本月已经制作过一部月度回顾影片。"
 msgid "API Key"
 msgstr "API 密钥"
 
-#: web/lib/JobPanel.svelte:44
+#: web/lib/JobPanel.svelte:54
 #, python-brace-format
-msgid "About {amount} left"
-msgstr "约剩 {amount}"
+msgid "About {amount} left overall"
+msgstr "总计剩余约 {amount}"
+
+#: web/lib/PhaseTimeline.svelte:25
+#, python-brace-format
+msgid "About {amount} of estimated work left"
+msgstr "已估算的工作还需约 {amount}"
+
+#: web/lib/PhaseTimeline.svelte:21
+#, python-brace-format
+msgid "About {amount} until the cut is ready"
+msgstr "剪辑方案完成还需约 {amount}"
+
+#: web/lib/PhaseTimeline.svelte:20
+#, python-brace-format
+msgid "About {amount} until the film is ready"
+msgstr "影片完成还需约 {amount}"
+
+#: web/lib/JobPanel.svelte:42
+#, python-brace-format, python-format
+msgid "About {percent}% overall"
+msgstr "总体约 {percent}%"
 
 #: web/routes/create/+page.svelte:502
 msgid "Accept forwarded and downloaded media"
 msgstr "接受转发和下载的媒体"
 
-#: web/lib/people/OwnerSection.svelte:41 web/lib/people/OwnerSection.svelte:42
+#: web/lib/people/OwnerSection.svelte:50 web/lib/people/OwnerSection.svelte:51
 msgid "Account owner"
 msgstr "账户所有者"
 
@@ -62,7 +82,7 @@ msgstr "添加关系"
 msgid "Add date overlay"
 msgstr "显示日期"
 
-#: web/routes/settings/people/+page.svelte:161
+#: web/routes/settings/people/+page.svelte:165
 msgid "Add someone not in Immich"
 msgstr "添加 Immich 中没有的人物"
 
@@ -79,6 +99,11 @@ msgstr "因目录记录为值得纪念的时刻而加入。"
 #: web/routes/runs/[run_id]/+page.svelte:291
 msgid "Added from the pool"
 msgstr "从候选素材中添加"
+
+#: web/lib/PhaseTimeline.svelte:27
+#, python-brace-format
+msgid "Additional time not estimated: {phases}."
+msgstr "额外耗时尚未估算：{phases}。"
 
 #: web/lib/people/GroupsSection.svelte:81
 msgid "Advanced: type the expression"
@@ -202,7 +227,7 @@ msgstr "浏览全部候选素材"
 msgid "Caches"
 msgstr "缓存"
 
-#: web/lib/JobPanel.svelte:92 web/routes/runs/[run_id]/pool/+page.svelte:171
+#: web/lib/JobPanel.svelte:140 web/routes/runs/[run_id]/pool/+page.svelte:171
 msgid "Cancel"
 msgstr "取消"
 
@@ -231,15 +256,47 @@ msgstr "更改：{count}"
 msgid "Check eligibility"
 msgstr "检查是否符合条件"
 
-#: web/lib/labels.ts:83
+#: web/lib/PhaseTimeline.svelte:8
+msgid "Check playback"
+msgstr "检查播放"
+
+#: web/lib/labels.ts:100
+msgid "Checking Live Photo clips"
+msgstr "正在检查 Live Photo 片段"
+
+#: web/lib/labels.ts:102
+msgid "Checking Live Photo clips for a covered lens"
+msgstr "正在检查 Live Photo 片段是否存在镜头遮挡"
+
+#: web/lib/labels.ts:84
+msgid "Checking Live Photo frames for the family audience"
+msgstr "正在检查 Live Photo 帧是否适合家庭观看"
+
+#: web/lib/labels.ts:93
+msgid "Checking for a covered lens"
+msgstr "正在检查镜头遮挡"
+
+#: web/lib/labels.ts:89
 msgid "Checking pictures for the family audience"
 msgstr "正在检查素材是否适合全家观看"
+
+#: web/lib/labels.ts:95
+msgid "Checking video clips"
+msgstr "正在检查视频片段"
+
+#: web/lib/labels.ts:98
+msgid "Checking video clips for a covered lens"
+msgstr "正在检查视频片段是否存在镜头遮挡"
+
+#: web/lib/labels.ts:82
+msgid "Checking video frames for the family audience"
+msgstr "正在检查视频帧是否适合家庭观看"
 
 #: web/routes/create/+page.svelte:364
 msgid "Choose an album"
 msgstr "请选择相册"
 
-#: web/lib/people/OwnerSection.svelte:49 web/lib/people/OwnerSection.svelte:51
+#: web/lib/people/OwnerSection.svelte:58 web/lib/people/OwnerSection.svelte:60
 msgid "Choose the owner"
 msgstr "选择所有者"
 
@@ -274,6 +331,10 @@ msgstr "剪贴板不可用。请选中下方报告并复制。"
 msgid "Command"
 msgstr "命令"
 
+#: web/lib/PhaseTimeline.svelte:11
+msgid "Completed"
+msgstr "已完成"
+
 #: web/lib/SettingsEditor.svelte:72
 #, python-brace-format
 msgid "Config file: {config_path}"
@@ -292,11 +353,11 @@ msgstr "已以 {name} 身份连接"
 msgid "Considered by the model"
 msgstr "模型曾考虑"
 
-#: web/lib/JobPanel.svelte:90 web/lib/RunReport.svelte:76
+#: web/lib/JobPanel.svelte:138 web/lib/RunReport.svelte:76
 msgid "Copied"
 msgstr "已复制"
 
-#: web/lib/JobPanel.svelte:90
+#: web/lib/JobPanel.svelte:138
 msgid "Copy as CLI command"
 msgstr "复制为 CLI 命令"
 
@@ -304,7 +365,7 @@ msgstr "复制为 CLI 命令"
 msgid "Copy report"
 msgstr "复制报告"
 
-#: web/routes/settings/people/+page.svelte:125
+#: web/routes/settings/people/+page.svelte:129
 msgid "Could not load people."
 msgstr "无法加载人物。"
 
@@ -312,7 +373,7 @@ msgstr "无法加载人物。"
 msgid "Crossfade"
 msgstr "交叉淡化"
 
-#: web/routes/settings/people/+page.svelte:134 web/routes/settings/people/+page.svelte:135
+#: web/routes/settings/people/+page.svelte:138 web/routes/settings/people/+page.svelte:139
 msgid "Curation"
 msgstr "待核对的人物"
 
@@ -360,9 +421,13 @@ msgstr "用你自己的话描述影片"
 msgid "Describe the film you want"
 msgstr "描述你想要的影片"
 
-#: web/lib/labels.ts:85
+#: web/lib/labels.ts:91
 msgid "Describing the pictures"
 msgstr "正在为素材生成描述"
+
+#: web/lib/labels.ts:81
+msgid "Descriptions not requested"
+msgstr "未请求描述"
 
 #: web/routes/create/+page.svelte:406
 msgid "Detecting trips from GPS data..."
@@ -377,7 +442,7 @@ msgstr "放弃更改"
 msgid "Discovery failed: {error}"
 msgstr "搜索失败：{error}"
 
-#: web/lib/JobPanel.svelte:61
+#: web/lib/JobPanel.svelte:71
 msgid "Done."
 msgstr "已完成。"
 
@@ -401,7 +466,7 @@ msgstr "下载模型"
 msgid "Download report"
 msgstr "下载报告"
 
-#: web/routes/settings/people/+page.svelte:152
+#: web/routes/settings/people/+page.svelte:156
 msgid ""
 "Each Immich account gives the same person its own id. Under a person, pick who they are in "
 "the other account. Nothing is matched for you: the same name only comes first in the list."
@@ -446,6 +511,10 @@ msgstr "结束方式"
 msgid "Entries: {count}"
 msgstr "记录：{count}"
 
+#: web/lib/PhaseTimeline.svelte:22
+msgid "Estimate based on available measurements. It can change as work progresses."
+msgstr "根据现有测量数据估算。估算可能随处理进度变化。"
+
 #: web/routes/runs/[run_id]/pool/+page.svelte:107
 msgid ""
 "Every picture this cut saw, in the order they were taken. Tick or untick, then preview: your "
@@ -471,7 +540,7 @@ msgstr "实验性"
 msgid "Expression"
 msgstr "表达式"
 
-#: web/routes/settings/people/+page.svelte:75
+#: web/routes/settings/people/+page.svelte:76
 msgid ""
 "Face recognition merges identical faces, so one of these records holds nearly all the "
 "pictures and the other almost none. Neither count means anything on its own. Merge them in "
@@ -483,7 +552,11 @@ msgstr "人脸识别会合并相同的脸，所以这两条记录里一条几乎
 msgid "Family"
 msgstr "家人"
 
-#: web/lib/labels.ts:79
+#: web/lib/labels.ts:83
+msgid "Fetching Live Photo clip previews"
+msgstr "正在获取 Live Photo 片段预览"
+
+#: web/lib/labels.ts:85
 msgid "Fetching picture previews"
 msgstr "正在获取素材预览"
 
@@ -495,11 +568,11 @@ msgstr "符合条件的素材不足 12 个，影片会比较短。"
 msgid "Films that may use it"
 msgstr "可以使用它的影片"
 
-#: web/routes/create/+page.svelte:433 web/routes/settings/people/+page.svelte:158
+#: web/routes/create/+page.svelte:433 web/routes/settings/people/+page.svelte:162
 msgid "Find a name"
 msgstr "搜索姓名"
 
-#: web/lib/labels.ts:81
+#: web/lib/labels.ts:87
 msgid "Finding faces"
 msgstr "正在查找人脸"
 
@@ -515,7 +588,7 @@ msgstr "格式"
 msgid "From"
 msgstr "起始"
 
-#: web/routes/settings/people/+page.svelte:160
+#: web/routes/settings/people/+page.svelte:164
 msgid "Full name"
 msgstr "全名"
 
@@ -609,7 +682,7 @@ msgstr "包含照片"
 msgid "Interface language"
 msgstr "界面语言"
 
-#: web/lib/JobPanel.svelte:63
+#: web/lib/JobPanel.svelte:73
 msgid "It did not finish."
 msgstr "未能完成。"
 
@@ -618,7 +691,7 @@ msgstr "未能完成。"
 msgid "Just us"
 msgstr "仅自己家"
 
-#: web/routes/settings/people/+page.svelte:143
+#: web/routes/settings/people/+page.svelte:147
 msgid "Keep apart"
 msgstr "保持分开"
 
@@ -642,6 +715,11 @@ msgstr "标签"
 #: web/lib/RenderPanel.svelte:208
 msgid "Landscape"
 msgstr "横屏"
+
+#: web/lib/JobPanel.svelte:102
+#, python-brace-format
+msgid "Last measured progress: {amount} ago."
+msgstr "上次测得进度：{amount}前。"
 
 #: web/routes/create/+page.svelte:489
 msgid "Length and pictures"
@@ -667,6 +745,10 @@ msgstr "已关联到"
 #: web/routes/runs/[run_id]/pool/+page.svelte:127
 msgid "Live"
 msgstr "Live"
+
+#: web/lib/JobPanel.svelte:97
+msgid "Live updates disconnected. Checking the saved job status."
+msgstr "实时更新已断开。正在检查已保存的任务状态。"
 
 #: web/routes/suggestions/+page.svelte:98
 msgid "Looking through your library for memories to suggest..."
@@ -712,11 +794,15 @@ msgstr "已标记为“永不使用”。勾选可将其加入此修订版本。
 msgid "Match the sources"
 msgstr "与源一致"
 
-#: web/lib/labels.ts:84
+#: web/lib/labels.ts:90
 msgid "Measuring motion in the videos"
 msgstr "正在测量视频中的动态"
 
-#: web/lib/labels.ts:80
+#: web/lib/labels.ts:97
+msgid "Measuring motion in video clips"
+msgstr "正在测量视频片段中的运动"
+
+#: web/lib/labels.ts:86
 msgid "Measuring the pictures"
 msgstr "正在分析素材的特征"
 
@@ -735,6 +821,10 @@ msgstr "回忆类型"
 #: web/lib/labels.ts:17
 msgid "Missed month"
 msgstr "遗漏的月份"
+
+#: web/lib/labels.ts:80
+msgid "Model checks not requested"
+msgstr "未请求模型检查"
 
 #: web/lib/ModelSetup.svelte:54 web/lib/ModelSetup.svelte:57
 msgid "Model downloads failed to start."
@@ -768,7 +858,7 @@ msgstr "月度精选"
 msgid "Multi-Person"
 msgstr "多人"
 
-#: web/lib/RenderPanel.svelte:247
+#: web/lib/PhaseTimeline.svelte:8 web/lib/RenderPanel.svelte:247
 msgid "Music"
 msgstr "音乐"
 
@@ -787,6 +877,10 @@ msgstr "永不使用"
 #: web/routes/create/+page.svelte:294 web/routes/create/+page.svelte:298
 msgid "New memory"
 msgstr "新建回忆"
+
+#: web/lib/JobPanel.svelte:87
+msgid "Next: select pictures and save the cut. More checks may be needed during selection."
+msgstr "接下来：选择图片并保存剪辑方案。选择过程中可能还需要其他检查。"
 
 #: web/routes/create/+page.svelte:391
 msgid ""
@@ -819,6 +913,11 @@ msgstr "没有匹配的姓名。"
 #: web/routes/create/+page.svelte:443
 msgid "No named people in Immich yet."
 msgstr "Immich 中还没有已命名的人物。"
+
+#: web/lib/JobPanel.svelte:99
+#, python-brace-format
+msgid "No new progress for {amount}. The job is still running."
+msgstr "已有 {amount}没有新进度。任务仍在运行。"
 
 #: web/lib/ShotInspector.svelte:168
 msgid "No outcome recorded."
@@ -860,11 +959,11 @@ msgstr "这一年没有检测到旅行。"
 msgid "No, they are not"
 msgstr "不，不是"
 
-#: web/lib/people/OwnerSection.svelte:47 web/lib/people/OwnerSection.svelte:53
+#: web/lib/people/OwnerSection.svelte:56 web/lib/people/OwnerSection.svelte:62
 msgid "Nobody in this library"
 msgstr "此媒体库中没有人"
 
-#: web/routes/settings/people/+page.svelte:167
+#: web/routes/settings/people/+page.svelte:171
 msgid ""
 "Nobody yet. This list is filled the first time a library is prepared, or when you rescan it. "
 "The person picker on New memory reads Immich directly, so it can show names before this page "
@@ -911,7 +1010,7 @@ msgstr "历史上的今天"
 msgid "On a date"
 msgstr "指定日期"
 
-#: web/routes/settings/people/+page.svelte:77
+#: web/routes/settings/people/+page.svelte:78
 msgid ""
 "One name on two person records: a split face cluster. Merge these records in Immich, the only"
 " place it can be fixed."
@@ -925,7 +1024,7 @@ msgstr "仅包含（可选）"
 msgid "Open"
 msgstr "打开"
 
-#: web/lib/people/AccountLinks.svelte:53 web/routes/settings/people/+page.svelte:140
+#: web/lib/people/AccountLinks.svelte:53 web/routes/settings/people/+page.svelte:144
 msgid "Open in Immich"
 msgstr "在 Immich 中打开"
 
@@ -937,7 +1036,7 @@ msgstr "打开任务"
 msgid "Open the film run"
 msgstr "打开影片任务"
 
-#: web/routes/settings/people/+page.svelte:140
+#: web/routes/settings/people/+page.svelte:144
 #, python-brace-format
 msgid "Open {name} in Immich"
 msgstr "在 Immich 中打开 {name}"
@@ -962,7 +1061,11 @@ msgstr "这一时刻的其他素材"
 msgid "Other pictures of this moment"
 msgstr "这一时刻的其他素材"
 
-#: web/lib/people/OwnerSection.svelte:49
+#: web/lib/JobPanel.svelte:92 web/lib/PhaseTimeline.svelte:26
+msgid "Overall time remaining is not known yet."
+msgstr "总剩余时间尚不清楚。"
+
+#: web/lib/people/OwnerSection.svelte:58
 #, python-brace-format
 msgid "Owner of {account}"
 msgstr "{account} 的所有者"
@@ -976,9 +1079,13 @@ msgstr "通过了{stages}"
 msgid "Password"
 msgstr "密码"
 
+#: web/lib/PhaseTimeline.svelte:11
+msgid "Pending"
+msgstr "等待中"
+
 #: web/routes/+layout.svelte:24 web/routes/create/+page.svelte:431
-#: web/routes/settings/+page.svelte:106 web/routes/settings/people/+page.svelte:109
-#: web/routes/settings/people/+page.svelte:115
+#: web/routes/settings/+page.svelte:106 web/routes/settings/people/+page.svelte:113
+#: web/routes/settings/people/+page.svelte:119
 msgid "People"
 msgstr "人物"
 
@@ -1003,6 +1110,10 @@ msgstr "{account} 中的人物"
 msgid "Person month"
 msgstr "人物月度回顾"
 
+#: web/lib/PhaseTimeline.svelte:30
+msgid "Phases"
+msgstr "阶段"
+
 #: web/routes/create/+page.svelte:501
 msgid "Photo duration (seconds)"
 msgstr "照片时长（秒）"
@@ -1019,7 +1130,7 @@ msgstr "照片描述"
 msgid "Picture review"
 msgstr "素材审阅"
 
-#: web/lib/JobPanel.svelte:74
+#: web/lib/JobPanel.svelte:105
 msgid "Pictures just read"
 msgstr "刚分析的素材"
 
@@ -1059,6 +1170,14 @@ msgstr "竖屏"
 msgid "Possible"
 msgstr "可以"
 
+#: web/lib/PhaseTimeline.svelte:7
+msgid "Prepare pictures"
+msgstr "准备图片"
+
+#: web/lib/PhaseTimeline.svelte:7
+msgid "Prepare selected clips"
+msgstr "准备选中的片段"
+
 #: web/lib/AskPanel.svelte:146 web/lib/AskPanel.svelte:156
 msgid "Preview"
 msgstr "预览"
@@ -1071,11 +1190,19 @@ msgstr "试听曲目"
 msgid "Preview with these choices"
 msgstr "按此选择预览"
 
+#: web/lib/JobPanel.svelte:117
+msgid "Previous stages"
+msgstr "之前的步骤"
+
 #: web/lib/RenderPanel.svelte:243
 msgid "Privacy mode: blur every picture and scramble names"
 msgstr "隐私模式：模糊所有素材并打乱姓名"
 
-#: web/lib/JobPanel.svelte:57 web/lib/JobPanel.svelte:69
+#: web/lib/JobPanel.svelte:121
+msgid "Processed"
+msgstr "已处理"
+
+#: web/lib/JobPanel.svelte:67 web/lib/JobPanel.svelte:81
 msgid "Progress"
 msgstr "进度"
 
@@ -1091,13 +1218,21 @@ msgstr "画质"
 msgid "Random"
 msgstr "随机"
 
-#: web/lib/labels.ts:86
+#: web/lib/labels.ts:92
 msgid "Reading picture facts"
 msgstr "正在读取素材信息"
 
-#: web/lib/labels.ts:82
+#: web/lib/labels.ts:101
+msgid "Reading what each Live Photo clip shows"
+msgstr "正在分析各个 Live Photo 片段的内容"
+
+#: web/lib/labels.ts:88
 msgid "Reading what each picture shows"
 msgstr "正在分析素材内容"
+
+#: web/lib/labels.ts:96
+msgid "Reading what each video shows"
+msgstr "正在分析各个视频的内容"
 
 #: web/lib/ShotInspector.svelte:167
 msgid "Recorded alternative"
@@ -1147,6 +1282,10 @@ msgstr "已移除"
 msgid "Render"
 msgstr "渲染"
 
+#: web/lib/PhaseTimeline.svelte:8
+msgid "Render film"
+msgstr "渲染影片"
+
 #: web/lib/labels.ts:32
 msgid "Replaced a picture the model doubted."
 msgstr "替换了模型认为不太合适的素材。"
@@ -1155,17 +1294,25 @@ msgstr "替换了模型认为不太合适的素材。"
 msgid "Report preview"
 msgstr "报告预览"
 
-#: web/routes/settings/people/+page.svelte:168
+#: web/routes/settings/people/+page.svelte:172
 msgid "Rescan now"
 msgstr "立即重新扫描"
 
-#: web/routes/settings/people/+page.svelte:118
+#: web/routes/settings/people/+page.svelte:122
 msgid "Rescan the library"
 msgstr "重新扫描媒体库"
 
 #: web/lib/RenderPanel.svelte:212
 msgid "Resolution"
 msgstr "分辨率"
+
+#: web/lib/JobPanel.svelte:121
+msgid "Reused"
+msgstr "已复用"
+
+#: web/lib/labels.ts:79
+msgid "Reusing saved picture checks"
+msgstr "正在复用已保存的图片检查结果"
 
 #: web/lib/RunReport.svelte:70
 msgid "Review the report, then copy it. Nothing is sent automatically."
@@ -1192,6 +1339,10 @@ msgstr "任务详情"
 msgid "Run this suggestion"
 msgstr "运行此建议"
 
+#: web/lib/PhaseTimeline.svelte:11
+msgid "Running"
+msgstr "运行中"
+
 #: web/routes/suggestions/+page.svelte:86
 #, python-brace-format
 msgid "Running on the server: {phase}. It continues if you leave this page."
@@ -1206,6 +1357,14 @@ msgstr "任务"
 #, python-brace-format
 msgid "Same person as {name}?"
 msgstr "和 {name} 是同一个人吗？"
+
+#: web/lib/labels.ts:99
+msgid "Sampling Live Photo frames"
+msgstr "正在采样 Live Photo 帧"
+
+#: web/lib/labels.ts:94
+msgid "Sampling video frames"
+msgstr "正在采样视频帧"
 
 #: web/lib/SettingsEditor.svelte:120
 msgid "Save"
@@ -1278,6 +1437,10 @@ msgid ""
 "config.yaml."
 msgstr "在设置 {name} 之前，无法在此保存密钥。请设置它，或将其保留在环境变量或 config.yaml 中。"
 
+#: web/lib/PhaseTimeline.svelte:7
+msgid "Select pictures"
+msgstr "选择图片"
+
 #: web/lib/SettingsEditor.svelte:37
 #, python-brace-format
 msgid "Set by {name} (environment)"
@@ -1289,7 +1452,7 @@ msgid "Set in config.yaml as {key}"
 msgstr "在 config.yaml 中设为 {key}"
 
 #: web/routes/+layout.svelte:25 web/routes/settings/+page.svelte:77
-#: web/routes/settings/+page.svelte:81 web/routes/settings/people/+page.svelte:114
+#: web/routes/settings/+page.svelte:81 web/routes/settings/people/+page.svelte:118
 msgid "Settings"
 msgstr "设置"
 
@@ -1301,11 +1464,11 @@ msgstr "可分享"
 msgid "Show"
 msgstr "显示"
 
-#: web/routes/settings/people/+page.svelte:177
+#: web/routes/settings/people/+page.svelte:181
 msgid "Show more"
 msgstr "显示更多"
 
-#: web/routes/login/+page.svelte:46 web/routes/login/+page.svelte:58
+#: web/lib/JobPanel.svelte:95 web/routes/login/+page.svelte:46 web/routes/login/+page.svelte:58
 #: web/routes/login/+page.svelte:69
 msgid "Sign in"
 msgstr "登录"
@@ -1321,6 +1484,10 @@ msgstr "退出登录"
 #: web/routes/login/+page.svelte:20
 msgid "Sign-in expired. Try again."
 msgstr "登录已过期。请重试。"
+
+#: web/lib/PhaseTimeline.svelte:11
+msgid "Skipped"
+msgstr "已跳过"
 
 #: web/lib/labels.ts:61
 msgid "Small moment"
@@ -1362,7 +1529,7 @@ msgstr "正方形"
 msgid "Start here"
 msgstr "从此开始"
 
-#: web/lib/JobPanel.svelte:60
+#: web/lib/JobPanel.svelte:70
 msgid "Starting"
 msgstr "正在启动"
 
@@ -1378,7 +1545,7 @@ msgstr "静态素材"
 msgid "Stopped before it saved a film. The cut it came from is under Runs, in its own run."
 msgstr "任务在保存影片前已停止。原始剪辑保存在“任务”中创建它的那次任务里。"
 
-#: web/lib/JobPanel.svelte:62
+#: web/lib/JobPanel.svelte:72
 msgid "Stopped."
 msgstr "已停止。"
 
@@ -1419,7 +1586,7 @@ msgstr "移除"
 msgid "Test Connection"
 msgstr "测试连接"
 
-#: web/lib/people/OwnerSection.svelte:33
+#: web/lib/people/OwnerSection.svelte:40
 msgid "That could not be saved."
 msgstr "无法保存。"
 
@@ -1439,7 +1606,7 @@ msgstr "该文件太大，无法用作配乐"
 msgid "That id could not be bound."
 msgstr "该 id 无法绑定。"
 
-#: web/lib/people/OwnerSection.svelte:56
+#: web/lib/people/OwnerSection.svelte:65
 msgid ""
 "The API key's account name has not been matched to a named person. Choose the owner, or name "
 "people in Immich and rescan."
@@ -1457,7 +1624,7 @@ msgstr "当前选择的剪辑"
 msgid "The cut could not start."
 msgstr "剪辑无法启动。"
 
-#: web/lib/JobPanel.svelte:61
+#: web/lib/JobPanel.svelte:71
 msgid "The cut is ready."
 msgstr "剪辑已准备好。"
 
@@ -1480,9 +1647,13 @@ msgstr "影片"
 msgid "The film file is gone, so there is nothing to upload."
 msgstr "影片文件已不存在，没有可上传的内容。"
 
-#: web/lib/JobPanel.svelte:61
+#: web/lib/JobPanel.svelte:71
 msgid "The film is ready."
 msgstr "影片已准备好。"
+
+#: web/lib/JobPanel.svelte:89
+msgid "The film still needs its playback check before it is ready."
+msgstr "影片还需要通过播放检查才能完成。"
 
 #: web/routes/create/+page.svelte:36
 msgid "The household. Private moments a caption names, like a bath, play too."
@@ -1502,7 +1673,7 @@ msgstr "模型会根据媒体库中已准备好的素材理解你的描述。先
 msgid "The model, when one is configured"
 msgstr "已配置模型时使用模型"
 
-#: web/routes/settings/people/+page.svelte:116
+#: web/routes/settings/people/+page.svelte:120
 msgid "The people registry: who is close, their roles, and how they relate."
 msgstr "人物登记：谁比较亲近、他们的角色，以及彼此的关系。"
 
@@ -1531,6 +1702,10 @@ msgstr "已试听的曲目"
 #: web/lib/labels.ts:48
 msgid "The previous automatic memory used this category."
 msgstr "上一次自动生成的回忆使用了这个分类。"
+
+#: web/lib/PhaseTimeline.svelte:49
+msgid "The remaining work changed. The estimate has been revised."
+msgstr "剩余工作已变化。估算已更新。"
 
 #: web/lib/RenderPanel.svelte:112
 msgid "The render could not start."
@@ -1588,6 +1763,10 @@ msgstr "此任务未保存候选素材列表。重新剪辑即可查看。"
 msgid "Thumbnail cache"
 msgstr "缩略图缓存"
 
+#: web/lib/PhaseTimeline.svelte:42
+msgid "Time not known yet"
+msgstr "时间尚不清楚"
+
 #: web/lib/RenderPanel.svelte:195
 msgid "Title (decided as generate decides when empty)"
 msgstr "标题（留空则由 generate 决定）"
@@ -1624,7 +1803,7 @@ msgstr "旅行检测失败。"
 msgid "Trips"
 msgstr "旅行"
 
-#: web/routes/runs/+page.svelte:127 web/routes/settings/people/+page.svelte:126
+#: web/routes/runs/+page.svelte:127 web/routes/settings/people/+page.svelte:130
 msgid "Try again"
 msgstr "重试"
 
@@ -1648,6 +1827,10 @@ msgstr "上传曲目"
 #: web/lib/UploadFilm.svelte:23
 msgid "Upload availability could not be checked."
 msgstr "无法检查上传是否可用。"
+
+#: web/lib/PhaseTimeline.svelte:8
+msgid "Upload film"
+msgstr "上传影片"
 
 #: web/lib/RenderPanel.svelte:277
 msgid "Upload the film to Immich"
@@ -1767,7 +1950,7 @@ msgstr "谁可以看到"
 msgid "Who names the film"
 msgstr "谁来命名影片"
 
-#: web/lib/people/OwnerSection.svelte:43
+#: web/lib/people/OwnerSection.svelte:52
 msgid ""
 "Whose library is this? Relationships to the library owner, the family seat and the titles "
 "depend on it. A scan only guesses; what you pick here stays."
@@ -1822,7 +2005,11 @@ msgstr "你将被重定向到你的身份提供方"
 msgid "Your first film needs these model files. Nothing downloads until you press the button."
 msgstr "制作第一部影片需要这些模型文件。点击按钮前不会开始下载。"
 
-#: web/lib/people/OwnerSection.svelte:20
+#: web/lib/JobPanel.svelte:95
+msgid "Your login expired. Sign in again to see the job’s status."
+msgstr "登录已过期。请重新登录以查看任务状态。"
+
+#: web/lib/people/OwnerSection.svelte:27
 msgid "a guess: the longest span and the most pictures"
 msgstr "猜测：时间跨度最长且素材最多"
 
@@ -1839,11 +2026,11 @@ msgstr "所有人同时出现"
 msgid "any of them"
 msgstr "其中任意一人"
 
-#: web/lib/people/OwnerSection.svelte:19
+#: web/lib/people/OwnerSection.svelte:26
 msgid "it matches the Immich account name"
 msgstr "与 Immich 账户名一致"
 
-#: web/lib/people/OwnerSection.svelte:21 web/lib/people/OwnerSection.svelte:47
+#: web/lib/people/OwnerSection.svelte:28 web/lib/people/OwnerSection.svelte:56
 msgid "not known yet"
 msgstr "暂未知"
 
@@ -1859,21 +2046,26 @@ msgstr "关系未命名"
 msgid "starting"
 msgstr "正在启动"
 
-#: web/routes/settings/people/+page.svelte:116
+#: web/routes/settings/people/+page.svelte:120
 msgid "writes it out as YAML."
 msgstr "会把它导出为 YAML。"
 
-#: web/routes/settings/people/+page.svelte:116
+#: web/routes/settings/people/+page.svelte:120
 msgid "writes the guesses; your answers stay across scans."
 msgstr "会写入推测；你的回答在多次扫描之间保留。"
 
-#: web/lib/people/OwnerSection.svelte:17
+#: web/lib/people/OwnerSection.svelte:24
 msgid "you confirmed it"
 msgstr "你已确认"
 
-#: web/lib/people/OwnerSection.svelte:18
+#: web/lib/people/OwnerSection.svelte:25
 msgid "you told the scan"
 msgstr "你在扫描时指定"
+
+#: web/lib/PhaseTimeline.svelte:36
+#, python-brace-format
+msgid "{amount} elapsed"
+msgstr "已用时 {amount}"
 
 #: web/routes/runs/[run_id]/+page.svelte:145
 #, python-brace-format
@@ -1895,10 +2087,30 @@ msgstr "{date_range_start} 至 {date_range_end}"
 msgid "{days} days · {count} pictures"
 msgstr "{days} 天 · {count} 个素材"
 
-#: web/lib/JobPanel.svelte:71
+#: web/lib/labels.ts:114
 #, python-brace-format
 msgid "{done} of {total}"
 msgstr "{done}/{total}"
+
+#: web/lib/labels.ts:111
+#, python-brace-format
+msgid "{done} of {total} bytes"
+msgstr "{done} / {total} 字节"
+
+#: web/lib/labels.ts:110
+#, python-brace-format
+msgid "{done} of {total} checks"
+msgstr "{done} / {total} 项检查"
+
+#: web/lib/labels.ts:108
+#, python-brace-format
+msgid "{done} of {total} clips"
+msgstr "{done} / {total} 个片段"
+
+#: web/lib/labels.ts:109
+#, python-brace-format
+msgid "{done} of {total} pictures"
+msgstr "{done} / {total} 张图片"
 
 #: web/lib/AskPanel.svelte:188
 #, python-brace-format
@@ -1911,6 +2123,11 @@ msgid ""
 "{passed} of {checked} prepared pictures pass the rules checked before cutting; {unread} are "
 "not prepared yet."
 msgstr "已准备好的 {checked} 个素材中有 {passed} 个符合剪辑前检查的条件；还有 {unread} 个尚未准备。"
+
+#: web/lib/JobPanel.svelte:41
+#, python-brace-format, python-format
+msgid "{percent}% of this stage"
+msgstr "此步骤的 {percent}%"
 
 #: web/lib/AskPanel.svelte:167
 #, python-brace-format
@@ -1934,7 +2151,17 @@ msgstr "在屏幕上 {seconds} 秒"
 msgid "{years} years ago"
 msgstr "{years} 年前"
 
-#: web/lib/JobPanel.svelte:46
+#: web/lib/PhaseTimeline.svelte:41
+#, python-brace-format
+msgid "~{amount} estimated, plus unmeasured work"
+msgstr "估算约 {amount}，另有未测量的工作"
+
+#: web/lib/PhaseTimeline.svelte:39
+#, python-brace-format
+msgid "~{amount} left"
+msgstr "剩余约 {amount}"
+
+#: web/lib/JobPanel.svelte:56
 #, python-brace-format
 msgid "~{amount} left in this stage"
 msgstr "此阶段约剩 {amount}"

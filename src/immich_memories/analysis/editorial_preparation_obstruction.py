@@ -119,6 +119,7 @@ def prepare_obstruction_frames(
     bundle_path: Path,
     encoder_path: Path,
     check_cancelled: Callable[[], None],
+    progress: Callable[[str, int, int], None] | None = None,
     provider: str = "auto",
     open_encoder: Callable[..., DinoEncoder] = DinoEncoder.open,
 ) -> dict[str, str]:
@@ -127,6 +128,8 @@ def prepare_obstruction_frames(
     head. No playback is fetched for it, and `choose_window` only avoids the seconds this
     banks; a video never measured for it plays exactly as it did before this head existed.
     """
+    report = progress or (lambda *_args: None)
+    report("obstruction_frames", 0, len(frame_paths))
     bundle = PatchHeadBundle.load(bundle_path)
     if not encoder_path.is_file():
         raise FileNotFoundError(
@@ -139,9 +142,11 @@ def prepare_obstruction_frames(
         raise ValueError("obstruction head bundle was trained on another encoder")
     failures: dict[str, str] = {}
     with PendingMeasurements(store) as pending:
-        for asset_id, paths in frame_paths.items():
+        for index, (asset_id, paths) in enumerate(frame_paths.items(), 1):
             check_cancelled()
             _bank_video_frames(asset_id, paths, videos, bundle, encoder, pending, failures)
+            pending.flush()
+            report("obstruction_frames", index, len(frame_paths))
     return failures
 
 

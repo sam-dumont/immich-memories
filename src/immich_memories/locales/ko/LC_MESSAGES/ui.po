@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-08 20:41+0200\n"
+"POT-Creation-Date: 2026-10-10 16:22+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ko\n"
@@ -33,16 +33,36 @@ msgstr "이번 달에는 이미 월간 추억 영상을 만들었습니다."
 msgid "API Key"
 msgstr "API 키"
 
-#: web/lib/JobPanel.svelte:44
+#: web/lib/JobPanel.svelte:54
 #, python-brace-format
-msgid "About {amount} left"
-msgstr "약 {amount} 남음"
+msgid "About {amount} left overall"
+msgstr "전체 약 {amount} 남음"
+
+#: web/lib/PhaseTimeline.svelte:25
+#, python-brace-format
+msgid "About {amount} of estimated work left"
+msgstr "추정된 작업 약 {amount} 남음"
+
+#: web/lib/PhaseTimeline.svelte:21
+#, python-brace-format
+msgid "About {amount} until the cut is ready"
+msgstr "편집안 완료까지 약 {amount}"
+
+#: web/lib/PhaseTimeline.svelte:20
+#, python-brace-format
+msgid "About {amount} until the film is ready"
+msgstr "영상 완료까지 약 {amount}"
+
+#: web/lib/JobPanel.svelte:42
+#, python-brace-format, python-format
+msgid "About {percent}% overall"
+msgstr "전체 약 {percent}%"
 
 #: web/routes/create/+page.svelte:502
 msgid "Accept forwarded and downloaded media"
 msgstr "전달되거나 다운로드된 미디어 허용"
 
-#: web/lib/people/OwnerSection.svelte:41 web/lib/people/OwnerSection.svelte:42
+#: web/lib/people/OwnerSection.svelte:50 web/lib/people/OwnerSection.svelte:51
 msgid "Account owner"
 msgstr "계정 소유자"
 
@@ -62,7 +82,7 @@ msgstr "관계 추가"
 msgid "Add date overlay"
 msgstr "날짜 표시"
 
-#: web/routes/settings/people/+page.svelte:161
+#: web/routes/settings/people/+page.svelte:165
 msgid "Add someone not in Immich"
 msgstr "Immich에 없는 인물 추가"
 
@@ -79,6 +99,11 @@ msgstr "카탈로그가 주목할 만한 순간으로 기록해 추가되었습�
 #: web/routes/runs/[run_id]/+page.svelte:291
 msgid "Added from the pool"
 msgstr "후보 소재에서 추가됨"
+
+#: web/lib/PhaseTimeline.svelte:27
+#, python-brace-format
+msgid "Additional time not estimated: {phases}."
+msgstr "추가 시간을 아직 추정하지 않은 단계: {phases}."
 
 #: web/lib/people/GroupsSection.svelte:81
 msgid "Advanced: type the expression"
@@ -202,7 +227,7 @@ msgstr "후보 소재 전체 보기"
 msgid "Caches"
 msgstr "캐시"
 
-#: web/lib/JobPanel.svelte:92 web/routes/runs/[run_id]/pool/+page.svelte:171
+#: web/lib/JobPanel.svelte:140 web/routes/runs/[run_id]/pool/+page.svelte:171
 msgid "Cancel"
 msgstr "취소"
 
@@ -231,15 +256,47 @@ msgstr "변경: {count}"
 msgid "Check eligibility"
 msgstr "사용 가능 여부 확인"
 
-#: web/lib/labels.ts:83
+#: web/lib/PhaseTimeline.svelte:8
+msgid "Check playback"
+msgstr "재생 확인"
+
+#: web/lib/labels.ts:100
+msgid "Checking Live Photo clips"
+msgstr "Live Photo 클립 확인 중"
+
+#: web/lib/labels.ts:102
+msgid "Checking Live Photo clips for a covered lens"
+msgstr "Live Photo 클립의 렌즈 가림 확인 중"
+
+#: web/lib/labels.ts:84
+msgid "Checking Live Photo frames for the family audience"
+msgstr "Live Photo 프레임의 가족 시청 적합성 확인 중"
+
+#: web/lib/labels.ts:93
+msgid "Checking for a covered lens"
+msgstr "렌즈 가림 확인 중"
+
+#: web/lib/labels.ts:89
 msgid "Checking pictures for the family audience"
 msgstr "가족 시청에 적합한지 확인하는 중"
+
+#: web/lib/labels.ts:95
+msgid "Checking video clips"
+msgstr "동영상 클립 확인 중"
+
+#: web/lib/labels.ts:98
+msgid "Checking video clips for a covered lens"
+msgstr "동영상 클립의 렌즈 가림 확인 중"
+
+#: web/lib/labels.ts:82
+msgid "Checking video frames for the family audience"
+msgstr "동영상 프레임의 가족 시청 적합성 확인 중"
 
 #: web/routes/create/+page.svelte:364
 msgid "Choose an album"
 msgstr "앨범을 선택하세요"
 
-#: web/lib/people/OwnerSection.svelte:49 web/lib/people/OwnerSection.svelte:51
+#: web/lib/people/OwnerSection.svelte:58 web/lib/people/OwnerSection.svelte:60
 msgid "Choose the owner"
 msgstr "소유자 선택"
 
@@ -274,6 +331,10 @@ msgstr "클립보드를 사용할 수 없습니다. 아래 보고서를 선택�
 msgid "Command"
 msgstr "명령어"
 
+#: web/lib/PhaseTimeline.svelte:11
+msgid "Completed"
+msgstr "완료됨"
+
 #: web/lib/SettingsEditor.svelte:72
 #, python-brace-format
 msgid "Config file: {config_path}"
@@ -292,11 +353,11 @@ msgstr "{name}(으)로 연결됨"
 msgid "Considered by the model"
 msgstr "모델이 검토함"
 
-#: web/lib/JobPanel.svelte:90 web/lib/RunReport.svelte:76
+#: web/lib/JobPanel.svelte:138 web/lib/RunReport.svelte:76
 msgid "Copied"
 msgstr "복사됨"
 
-#: web/lib/JobPanel.svelte:90
+#: web/lib/JobPanel.svelte:138
 msgid "Copy as CLI command"
 msgstr "CLI 명령어로 복사"
 
@@ -304,7 +365,7 @@ msgstr "CLI 명령어로 복사"
 msgid "Copy report"
 msgstr "보고서 복사"
 
-#: web/routes/settings/people/+page.svelte:125
+#: web/routes/settings/people/+page.svelte:129
 msgid "Could not load people."
 msgstr "인물을 불러오지 못했습니다."
 
@@ -312,7 +373,7 @@ msgstr "인물을 불러오지 못했습니다."
 msgid "Crossfade"
 msgstr "크로스페이드"
 
-#: web/routes/settings/people/+page.svelte:134 web/routes/settings/people/+page.svelte:135
+#: web/routes/settings/people/+page.svelte:138 web/routes/settings/people/+page.svelte:139
 msgid "Curation"
 msgstr "인물 정보 확인"
 
@@ -360,9 +421,13 @@ msgstr "원하는 영상을 직접 설명하기"
 msgid "Describe the film you want"
 msgstr "만들고 싶은 영상을 설명하세요"
 
-#: web/lib/labels.ts:85
+#: web/lib/labels.ts:91
 msgid "Describing the pictures"
 msgstr "소재를 설명하는 중"
+
+#: web/lib/labels.ts:81
+msgid "Descriptions not requested"
+msgstr "설명을 요청하지 않음"
 
 #: web/routes/create/+page.svelte:406
 msgid "Detecting trips from GPS data..."
@@ -377,7 +442,7 @@ msgstr "변경 취소"
 msgid "Discovery failed: {error}"
 msgstr "검색 실패: {error}"
 
-#: web/lib/JobPanel.svelte:61
+#: web/lib/JobPanel.svelte:71
 msgid "Done."
 msgstr "완료되었습니다."
 
@@ -401,7 +466,7 @@ msgstr "모델 다운로드"
 msgid "Download report"
 msgstr "보고서 다운로드"
 
-#: web/routes/settings/people/+page.svelte:152
+#: web/routes/settings/people/+page.svelte:156
 msgid ""
 "Each Immich account gives the same person its own id. Under a person, pick who they are in "
 "the other account. Nothing is matched for you: the same name only comes first in the list."
@@ -448,6 +513,10 @@ msgstr "종료"
 msgid "Entries: {count}"
 msgstr "항목: {count}"
 
+#: web/lib/PhaseTimeline.svelte:22
+msgid "Estimate based on available measurements. It can change as work progresses."
+msgstr "사용 가능한 측정값을 기준으로 추정합니다. 작업이 진행되면서 달라질 수 있습니다."
+
 #: web/routes/runs/[run_id]/pool/+page.svelte:107
 msgid ""
 "Every picture this cut saw, in the order they were taken. Tick or untick, then preview: your "
@@ -475,7 +544,7 @@ msgstr "실험적"
 msgid "Expression"
 msgstr "표현식"
 
-#: web/routes/settings/people/+page.svelte:75
+#: web/routes/settings/people/+page.svelte:76
 msgid ""
 "Face recognition merges identical faces, so one of these records holds nearly all the "
 "pictures and the other almost none. Neither count means anything on its own. Merge them in "
@@ -489,7 +558,11 @@ msgstr ""
 msgid "Family"
 msgstr "가족"
 
-#: web/lib/labels.ts:79
+#: web/lib/labels.ts:83
+msgid "Fetching Live Photo clip previews"
+msgstr "Live Photo 클립 미리보기 가져오는 중"
+
+#: web/lib/labels.ts:85
 msgid "Fetching picture previews"
 msgstr "소재 미리보기를 가져오는 중"
 
@@ -501,11 +574,11 @@ msgstr "조건에 맞는 소재가 12개 미만이라 짧은 영상이 만들어
 msgid "Films that may use it"
 msgstr "이를 사용할 수 있는 영상"
 
-#: web/routes/create/+page.svelte:433 web/routes/settings/people/+page.svelte:158
+#: web/routes/create/+page.svelte:433 web/routes/settings/people/+page.svelte:162
 msgid "Find a name"
 msgstr "이름 검색"
 
-#: web/lib/labels.ts:81
+#: web/lib/labels.ts:87
 msgid "Finding faces"
 msgstr "얼굴을 찾는 중"
 
@@ -521,7 +594,7 @@ msgstr "형식"
 msgid "From"
 msgstr "시작"
 
-#: web/routes/settings/people/+page.svelte:160
+#: web/routes/settings/people/+page.svelte:164
 msgid "Full name"
 msgstr "전체 이름"
 
@@ -615,7 +688,7 @@ msgstr "사진 포함"
 msgid "Interface language"
 msgstr "화면 언어"
 
-#: web/lib/JobPanel.svelte:63
+#: web/lib/JobPanel.svelte:73
 msgid "It did not finish."
 msgstr "완료되지 않았습니다."
 
@@ -624,7 +697,7 @@ msgstr "완료되지 않았습니다."
 msgid "Just us"
 msgstr "우리끼리"
 
-#: web/routes/settings/people/+page.svelte:143
+#: web/routes/settings/people/+page.svelte:147
 msgid "Keep apart"
 msgstr "따로 두기"
 
@@ -648,6 +721,11 @@ msgstr "레이블"
 #: web/lib/RenderPanel.svelte:208
 msgid "Landscape"
 msgstr "가로"
+
+#: web/lib/JobPanel.svelte:102
+#, python-brace-format
+msgid "Last measured progress: {amount} ago."
+msgstr "마지막으로 측정된 진행: {amount} 전."
 
 #: web/routes/create/+page.svelte:489
 msgid "Length and pictures"
@@ -673,6 +751,10 @@ msgstr "연결된 상대"
 #: web/routes/runs/[run_id]/pool/+page.svelte:127
 msgid "Live"
 msgstr "Live"
+
+#: web/lib/JobPanel.svelte:97
+msgid "Live updates disconnected. Checking the saved job status."
+msgstr "실시간 업데이트 연결이 끊겼습니다. 저장된 작업 상태를 확인 중입니다."
 
 #: web/routes/suggestions/+page.svelte:98
 msgid "Looking through your library for memories to suggest..."
@@ -718,11 +800,15 @@ msgstr "‘사용하지 않기’로 표시되었습니다. 이번 수정본에 
 msgid "Match the sources"
 msgstr "원본 해상도에 맞춤"
 
-#: web/lib/labels.ts:84
+#: web/lib/labels.ts:90
 msgid "Measuring motion in the videos"
 msgstr "동영상의 움직임을 측정하는 중"
 
-#: web/lib/labels.ts:80
+#: web/lib/labels.ts:97
+msgid "Measuring motion in video clips"
+msgstr "동영상 클립의 움직임 측정 중"
+
+#: web/lib/labels.ts:86
 msgid "Measuring the pictures"
 msgstr "소재의 특성을 분석하는 중"
 
@@ -741,6 +827,10 @@ msgstr "추억 유형"
 #: web/lib/labels.ts:17
 msgid "Missed month"
 msgstr "만들지 않은 달"
+
+#: web/lib/labels.ts:80
+msgid "Model checks not requested"
+msgstr "모델 검사를 요청하지 않음"
 
 #: web/lib/ModelSetup.svelte:54 web/lib/ModelSetup.svelte:57
 msgid "Model downloads failed to start."
@@ -774,7 +864,7 @@ msgstr "이달의 하이라이트"
 msgid "Multi-Person"
 msgstr "여러 인물"
 
-#: web/lib/RenderPanel.svelte:247
+#: web/lib/PhaseTimeline.svelte:8 web/lib/RenderPanel.svelte:247
 msgid "Music"
 msgstr "음악"
 
@@ -793,6 +883,10 @@ msgstr "사용하지 않기"
 #: web/routes/create/+page.svelte:294 web/routes/create/+page.svelte:298
 msgid "New memory"
 msgstr "새 추억"
+
+#: web/lib/JobPanel.svelte:87
+msgid "Next: select pictures and save the cut. More checks may be needed during selection."
+msgstr "다음: 사진을 선택하고 편집안을 저장합니다. 선택 중에 추가 검사가 필요할 수 있습니다."
 
 #: web/routes/create/+page.svelte:391
 msgid ""
@@ -825,6 +919,11 @@ msgstr "일치하는 이름이 없습니다."
 #: web/routes/create/+page.svelte:443
 msgid "No named people in Immich yet."
 msgstr "Immich에 아직 이름이 지정된 인물이 없습니다."
+
+#: web/lib/JobPanel.svelte:99
+#, python-brace-format
+msgid "No new progress for {amount}. The job is still running."
+msgstr "{amount} 동안 새로운 진행이 없습니다. 작업은 아직 실행 중입니다."
 
 #: web/lib/ShotInspector.svelte:168
 msgid "No outcome recorded."
@@ -866,11 +965,11 @@ msgstr "이 해에 감지된 여행이 없습니다."
 msgid "No, they are not"
 msgstr "아니요, 아닙니다"
 
-#: web/lib/people/OwnerSection.svelte:47 web/lib/people/OwnerSection.svelte:53
+#: web/lib/people/OwnerSection.svelte:56 web/lib/people/OwnerSection.svelte:62
 msgid "Nobody in this library"
 msgstr "이 라이브러리에는 아무도 없습니다"
 
-#: web/routes/settings/people/+page.svelte:167
+#: web/routes/settings/people/+page.svelte:171
 msgid ""
 "Nobody yet. This list is filled the first time a library is prepared, or when you rescan it. "
 "The person picker on New memory reads Immich directly, so it can show names before this page "
@@ -919,7 +1018,7 @@ msgstr "이날"
 msgid "On a date"
 msgstr "특정 날짜에"
 
-#: web/routes/settings/people/+page.svelte:77
+#: web/routes/settings/people/+page.svelte:78
 msgid ""
 "One name on two person records: a split face cluster. Merge these records in Immich, the only"
 " place it can be fixed."
@@ -933,7 +1032,7 @@ msgstr "다음만 포함 (선택)"
 msgid "Open"
 msgstr "열기"
 
-#: web/lib/people/AccountLinks.svelte:53 web/routes/settings/people/+page.svelte:140
+#: web/lib/people/AccountLinks.svelte:53 web/routes/settings/people/+page.svelte:144
 msgid "Open in Immich"
 msgstr "Immich에서 열기"
 
@@ -945,7 +1044,7 @@ msgstr "작업 열기"
 msgid "Open the film run"
 msgstr "영상 작업 열기"
 
-#: web/routes/settings/people/+page.svelte:140
+#: web/routes/settings/people/+page.svelte:144
 #, python-brace-format
 msgid "Open {name} in Immich"
 msgstr "{name} Immich에서 열기"
@@ -970,7 +1069,11 @@ msgstr "이 순간의 다른 소재"
 msgid "Other pictures of this moment"
 msgstr "이 순간의 다른 소재"
 
-#: web/lib/people/OwnerSection.svelte:49
+#: web/lib/JobPanel.svelte:92 web/lib/PhaseTimeline.svelte:26
+msgid "Overall time remaining is not known yet."
+msgstr "전체 남은 시간은 아직 알 수 없습니다."
+
+#: web/lib/people/OwnerSection.svelte:58
 #, python-brace-format
 msgid "Owner of {account}"
 msgstr "{account}의 소유자"
@@ -984,9 +1087,13 @@ msgstr "{stages} 통과"
 msgid "Password"
 msgstr "비밀번호"
 
+#: web/lib/PhaseTimeline.svelte:11
+msgid "Pending"
+msgstr "대기 중"
+
 #: web/routes/+layout.svelte:24 web/routes/create/+page.svelte:431
-#: web/routes/settings/+page.svelte:106 web/routes/settings/people/+page.svelte:109
-#: web/routes/settings/people/+page.svelte:115
+#: web/routes/settings/+page.svelte:106 web/routes/settings/people/+page.svelte:113
+#: web/routes/settings/people/+page.svelte:119
 msgid "People"
 msgstr "인물"
 
@@ -1011,6 +1118,10 @@ msgstr "{account}의 사람"
 msgid "Person month"
 msgstr "한 인물의 한 달"
 
+#: web/lib/PhaseTimeline.svelte:30
+msgid "Phases"
+msgstr "단계"
+
 #: web/routes/create/+page.svelte:501
 msgid "Photo duration (seconds)"
 msgstr "사진 표시 시간(초)"
@@ -1027,7 +1138,7 @@ msgstr "사진 설명"
 msgid "Picture review"
 msgstr "소재 검토"
 
-#: web/lib/JobPanel.svelte:74
+#: web/lib/JobPanel.svelte:105
 msgid "Pictures just read"
 msgstr "방금 분석한 소재"
 
@@ -1067,6 +1178,14 @@ msgstr "세로"
 msgid "Possible"
 msgstr "가능"
 
+#: web/lib/PhaseTimeline.svelte:7
+msgid "Prepare pictures"
+msgstr "사진 준비"
+
+#: web/lib/PhaseTimeline.svelte:7
+msgid "Prepare selected clips"
+msgstr "선택한 클립 준비"
+
 #: web/lib/AskPanel.svelte:146 web/lib/AskPanel.svelte:156
 msgid "Preview"
 msgstr "미리보기"
@@ -1079,11 +1198,19 @@ msgstr "트랙 미리듣기"
 msgid "Preview with these choices"
 msgstr "이 선택으로 미리보기"
 
+#: web/lib/JobPanel.svelte:117
+msgid "Previous stages"
+msgstr "이전 단계"
+
 #: web/lib/RenderPanel.svelte:243
 msgid "Privacy mode: blur every picture and scramble names"
 msgstr "개인정보 보호 모드: 모든 소재를 흐리게 하고 이름을 가립니다"
 
-#: web/lib/JobPanel.svelte:57 web/lib/JobPanel.svelte:69
+#: web/lib/JobPanel.svelte:121
+msgid "Processed"
+msgstr "처리됨"
+
+#: web/lib/JobPanel.svelte:67 web/lib/JobPanel.svelte:81
 msgid "Progress"
 msgstr "진행 상황"
 
@@ -1099,13 +1226,21 @@ msgstr "화질"
 msgid "Random"
 msgstr "무작위"
 
-#: web/lib/labels.ts:86
+#: web/lib/labels.ts:92
 msgid "Reading picture facts"
 msgstr "소재 정보를 읽는 중"
 
-#: web/lib/labels.ts:82
+#: web/lib/labels.ts:101
+msgid "Reading what each Live Photo clip shows"
+msgstr "각 Live Photo 클립의 내용 분석 중"
+
+#: web/lib/labels.ts:88
 msgid "Reading what each picture shows"
 msgstr "소재의 내용을 분석하는 중"
+
+#: web/lib/labels.ts:96
+msgid "Reading what each video shows"
+msgstr "각 동영상의 내용 분석 중"
 
 #: web/lib/ShotInspector.svelte:167
 msgid "Recorded alternative"
@@ -1155,6 +1290,10 @@ msgstr "뺌"
 msgid "Render"
 msgstr "렌더링"
 
+#: web/lib/PhaseTimeline.svelte:8
+msgid "Render film"
+msgstr "영상 렌더링"
+
 #: web/lib/labels.ts:32
 msgid "Replaced a picture the model doubted."
 msgstr "모델이 의심한 소재를 대체했습니다."
@@ -1163,17 +1302,25 @@ msgstr "모델이 의심한 소재를 대체했습니다."
 msgid "Report preview"
 msgstr "보고서 미리보기"
 
-#: web/routes/settings/people/+page.svelte:168
+#: web/routes/settings/people/+page.svelte:172
 msgid "Rescan now"
 msgstr "지금 다시 스캔"
 
-#: web/routes/settings/people/+page.svelte:118
+#: web/routes/settings/people/+page.svelte:122
 msgid "Rescan the library"
 msgstr "라이브러리 다시 스캔"
 
 #: web/lib/RenderPanel.svelte:212
 msgid "Resolution"
 msgstr "해상도"
+
+#: web/lib/JobPanel.svelte:121
+msgid "Reused"
+msgstr "재사용됨"
+
+#: web/lib/labels.ts:79
+msgid "Reusing saved picture checks"
+msgstr "저장된 사진 검사 결과 재사용 중"
 
 #: web/lib/RunReport.svelte:70
 msgid "Review the report, then copy it. Nothing is sent automatically."
@@ -1200,6 +1347,10 @@ msgstr "작업 세부 정보"
 msgid "Run this suggestion"
 msgstr "이 제안 실행"
 
+#: web/lib/PhaseTimeline.svelte:11
+msgid "Running"
+msgstr "실행 중"
+
 #: web/routes/suggestions/+page.svelte:86
 #, python-brace-format
 msgid "Running on the server: {phase}. It continues if you leave this page."
@@ -1214,6 +1365,14 @@ msgstr "작업 내역"
 #, python-brace-format
 msgid "Same person as {name}?"
 msgstr "{name}과(와) 같은 사람인가요?"
+
+#: web/lib/labels.ts:99
+msgid "Sampling Live Photo frames"
+msgstr "Live Photo 프레임 샘플링 중"
+
+#: web/lib/labels.ts:94
+msgid "Sampling video frames"
+msgstr "동영상 프레임 샘플링 중"
 
 #: web/lib/SettingsEditor.svelte:120
 msgid "Save"
@@ -1286,6 +1445,10 @@ msgid ""
 "config.yaml."
 msgstr "{name}이(가) 설정되기 전에는 여기에 비밀 값을 저장할 수 없습니다. 설정하거나, 환경 변수나 config.yaml에 보관하세요."
 
+#: web/lib/PhaseTimeline.svelte:7
+msgid "Select pictures"
+msgstr "사진 선택"
+
 #: web/lib/SettingsEditor.svelte:37
 #, python-brace-format
 msgid "Set by {name} (environment)"
@@ -1297,7 +1460,7 @@ msgid "Set in config.yaml as {key}"
 msgstr "config.yaml의 {key}로 설정됨"
 
 #: web/routes/+layout.svelte:25 web/routes/settings/+page.svelte:77
-#: web/routes/settings/+page.svelte:81 web/routes/settings/people/+page.svelte:114
+#: web/routes/settings/+page.svelte:81 web/routes/settings/people/+page.svelte:118
 msgid "Settings"
 msgstr "설정"
 
@@ -1309,11 +1472,11 @@ msgstr "공유 가능"
 msgid "Show"
 msgstr "표시"
 
-#: web/routes/settings/people/+page.svelte:177
+#: web/routes/settings/people/+page.svelte:181
 msgid "Show more"
 msgstr "더 보기"
 
-#: web/routes/login/+page.svelte:46 web/routes/login/+page.svelte:58
+#: web/lib/JobPanel.svelte:95 web/routes/login/+page.svelte:46 web/routes/login/+page.svelte:58
 #: web/routes/login/+page.svelte:69
 msgid "Sign in"
 msgstr "로그인"
@@ -1329,6 +1492,10 @@ msgstr "로그아웃"
 #: web/routes/login/+page.svelte:20
 msgid "Sign-in expired. Try again."
 msgstr "로그인 시간이 만료되었습니다. 다시 시도해 주세요."
+
+#: web/lib/PhaseTimeline.svelte:11
+msgid "Skipped"
+msgstr "건너뜀"
 
 #: web/lib/labels.ts:61
 msgid "Small moment"
@@ -1370,7 +1537,7 @@ msgstr "정사각형"
 msgid "Start here"
 msgstr "여기서 시작"
 
-#: web/lib/JobPanel.svelte:60
+#: web/lib/JobPanel.svelte:70
 msgid "Starting"
 msgstr "시작 중"
 
@@ -1386,7 +1553,7 @@ msgstr "정지 소재"
 msgid "Stopped before it saved a film. The cut it came from is under Runs, in its own run."
 msgstr "영상을 저장하기 전에 중지되었습니다. 원본 편집본은 작업 내역에서 해당 편집 작업을 열면 볼 수 있습니다."
 
-#: web/lib/JobPanel.svelte:62
+#: web/lib/JobPanel.svelte:72
 msgid "Stopped."
 msgstr "중지되었습니다."
 
@@ -1427,7 +1594,7 @@ msgstr "빼기"
 msgid "Test Connection"
 msgstr "연결 테스트"
 
-#: web/lib/people/OwnerSection.svelte:33
+#: web/lib/people/OwnerSection.svelte:40
 msgid "That could not be saved."
 msgstr "저장하지 못했습니다."
 
@@ -1447,7 +1614,7 @@ msgstr "이 파일은 배경음악으로 쓰기에 너무 큽니다"
 msgid "That id could not be bound."
 msgstr "해당 id를 연결할 수 없습니다."
 
-#: web/lib/people/OwnerSection.svelte:56
+#: web/lib/people/OwnerSection.svelte:65
 msgid ""
 "The API key's account name has not been matched to a named person. Choose the owner, or name "
 "people in Immich and rescan."
@@ -1465,7 +1632,7 @@ msgstr "선택한 그대로의 편집본"
 msgid "The cut could not start."
 msgstr "편집을 시작할 수 없습니다."
 
-#: web/lib/JobPanel.svelte:61
+#: web/lib/JobPanel.svelte:71
 msgid "The cut is ready."
 msgstr "편집본이 준비되었습니다."
 
@@ -1490,9 +1657,13 @@ msgstr "이 영상"
 msgid "The film file is gone, so there is nothing to upload."
 msgstr "영상 파일이 없어 업로드할 수 없습니다."
 
-#: web/lib/JobPanel.svelte:61
+#: web/lib/JobPanel.svelte:71
 msgid "The film is ready."
 msgstr "영상이 준비되었습니다."
+
+#: web/lib/JobPanel.svelte:89
+msgid "The film still needs its playback check before it is ready."
+msgstr "영상이 완료되려면 아직 재생 확인이 필요합니다."
 
 #: web/routes/create/+page.svelte:36
 msgid "The household. Private moments a caption names, like a bath, play too."
@@ -1514,7 +1685,7 @@ msgstr ""
 msgid "The model, when one is configured"
 msgstr "설정된 경우 모델"
 
-#: web/routes/settings/people/+page.svelte:116
+#: web/routes/settings/people/+page.svelte:120
 msgid "The people registry: who is close, their roles, and how they relate."
 msgstr "인물 레지스트리: 누가 가까운지, 역할, 서로의 관계."
 
@@ -1545,6 +1716,10 @@ msgstr "미리 들은 트랙"
 #: web/lib/labels.ts:48
 msgid "The previous automatic memory used this category."
 msgstr "이전 자동 추억은 이 카테고리를 사용했습니다."
+
+#: web/lib/PhaseTimeline.svelte:49
+msgid "The remaining work changed. The estimate has been revised."
+msgstr "남은 작업이 변경되었습니다. 추정 시간이 갱신되었습니다."
 
 #: web/lib/RenderPanel.svelte:112
 msgid "The render could not start."
@@ -1602,6 +1777,10 @@ msgstr "이 작업은 후보 소재 목록을 저장하지 않았습니다. 다�
 msgid "Thumbnail cache"
 msgstr "썸네일 캐시"
 
+#: web/lib/PhaseTimeline.svelte:42
+msgid "Time not known yet"
+msgstr "시간을 아직 알 수 없음"
+
 #: web/lib/RenderPanel.svelte:195
 msgid "Title (decided as generate decides when empty)"
 msgstr "제목(비워두면 generate가 결정)"
@@ -1638,7 +1817,7 @@ msgstr "여행 감지에 실패했습니다."
 msgid "Trips"
 msgstr "여행"
 
-#: web/routes/runs/+page.svelte:127 web/routes/settings/people/+page.svelte:126
+#: web/routes/runs/+page.svelte:127 web/routes/settings/people/+page.svelte:130
 msgid "Try again"
 msgstr "다시 시도"
 
@@ -1662,6 +1841,10 @@ msgstr "트랙 업로드"
 #: web/lib/UploadFilm.svelte:23
 msgid "Upload availability could not be checked."
 msgstr "업로드를 쓸 수 있는지 확인하지 못했습니다."
+
+#: web/lib/PhaseTimeline.svelte:8
+msgid "Upload film"
+msgstr "영상 업로드"
 
 #: web/lib/RenderPanel.svelte:277
 msgid "Upload the film to Immich"
@@ -1781,7 +1964,7 @@ msgstr "볼 수 있는 사람"
 msgid "Who names the film"
 msgstr "영상 제목을 정하는 방식"
 
-#: web/lib/people/OwnerSection.svelte:43
+#: web/lib/people/OwnerSection.svelte:52
 msgid ""
 "Whose library is this? Relationships to the library owner, the family seat and the titles "
 "depend on it. A scan only guesses; what you pick here stays."
@@ -1836,7 +2019,11 @@ msgstr "ID 제공자로 리디렉션됩니다"
 msgid "Your first film needs these model files. Nothing downloads until you press the button."
 msgstr "첫 영상을 만들려면 이 모델 파일이 필요합니다. 버튼을 누르기 전에는 다운로드하지 않습니다."
 
-#: web/lib/people/OwnerSection.svelte:20
+#: web/lib/JobPanel.svelte:95
+msgid "Your login expired. Sign in again to see the job’s status."
+msgstr "로그인이 만료되었습니다. 작업 상태를 보려면 다시 로그인하세요."
+
+#: web/lib/people/OwnerSection.svelte:27
 msgid "a guess: the longest span and the most pictures"
 msgstr "추정: 가장 긴 기간과 가장 많은 소재"
 
@@ -1853,11 +2040,11 @@ msgstr "모두 함께"
 msgid "any of them"
 msgstr "그중 한 명이라도"
 
-#: web/lib/people/OwnerSection.svelte:19
+#: web/lib/people/OwnerSection.svelte:26
 msgid "it matches the Immich account name"
 msgstr "Immich 계정 이름과 일치"
 
-#: web/lib/people/OwnerSection.svelte:21 web/lib/people/OwnerSection.svelte:47
+#: web/lib/people/OwnerSection.svelte:28 web/lib/people/OwnerSection.svelte:56
 msgid "not known yet"
 msgstr "아직 알 수 없음"
 
@@ -1873,21 +2060,26 @@ msgstr "관계 이름 없음"
 msgid "starting"
 msgstr "시작 중"
 
-#: web/routes/settings/people/+page.svelte:116
+#: web/routes/settings/people/+page.svelte:120
 msgid "writes it out as YAML."
 msgstr "이(가) YAML로 내보냅니다."
 
-#: web/routes/settings/people/+page.svelte:116
+#: web/routes/settings/people/+page.svelte:120
 msgid "writes the guesses; your answers stay across scans."
 msgstr "이(가) 추정 결과를 저장합니다. 직접 입력한 답은 다시 스캔해도 유지됩니다."
 
-#: web/lib/people/OwnerSection.svelte:17
+#: web/lib/people/OwnerSection.svelte:24
 msgid "you confirmed it"
 msgstr "직접 확인함"
 
-#: web/lib/people/OwnerSection.svelte:18
+#: web/lib/people/OwnerSection.svelte:25
 msgid "you told the scan"
 msgstr "스캔에 직접 알려줌"
+
+#: web/lib/PhaseTimeline.svelte:36
+#, python-brace-format
+msgid "{amount} elapsed"
+msgstr "{amount} 경과"
 
 #: web/routes/runs/[run_id]/+page.svelte:145
 #, python-brace-format
@@ -1909,10 +2101,30 @@ msgstr "{date_range_start}부터 {date_range_end}까지"
 msgid "{days} days · {count} pictures"
 msgstr "{days}일 · 소재 {count}개"
 
-#: web/lib/JobPanel.svelte:71
+#: web/lib/labels.ts:114
 #, python-brace-format
 msgid "{done} of {total}"
 msgstr "{done} / {total}"
+
+#: web/lib/labels.ts:111
+#, python-brace-format
+msgid "{done} of {total} bytes"
+msgstr "{total}바이트 중 {done}바이트"
+
+#: web/lib/labels.ts:110
+#, python-brace-format
+msgid "{done} of {total} checks"
+msgstr "{total}개 검사 중 {done}개"
+
+#: web/lib/labels.ts:108
+#, python-brace-format
+msgid "{done} of {total} clips"
+msgstr "{total}개 클립 중 {done}개"
+
+#: web/lib/labels.ts:109
+#, python-brace-format
+msgid "{done} of {total} pictures"
+msgstr "{total}장 중 {done}장"
 
 #: web/lib/AskPanel.svelte:188
 #, python-brace-format
@@ -1925,6 +2137,11 @@ msgid ""
 "{passed} of {checked} prepared pictures pass the rules checked before cutting; {unread} are "
 "not prepared yet."
 msgstr "준비된 소재 {checked}개 중 {passed}개가 편집 전에 확인할 수 있는 조건을 충족합니다. {unread}개는 아직 준비되지 않았습니다."
+
+#: web/lib/JobPanel.svelte:41
+#, python-brace-format, python-format
+msgid "{percent}% of this stage"
+msgstr "이 단계의 {percent}%"
 
 #: web/lib/AskPanel.svelte:167
 #, python-brace-format
@@ -1948,7 +2165,17 @@ msgstr "화면에 {seconds}초"
 msgid "{years} years ago"
 msgstr "{years}년 전"
 
-#: web/lib/JobPanel.svelte:46
+#: web/lib/PhaseTimeline.svelte:41
+#, python-brace-format
+msgid "~{amount} estimated, plus unmeasured work"
+msgstr "약 {amount}로 추정, 미측정 작업 별도"
+
+#: web/lib/PhaseTimeline.svelte:39
+#, python-brace-format
+msgid "~{amount} left"
+msgstr "약 {amount} 남음"
+
+#: web/lib/JobPanel.svelte:56
 #, python-brace-format
 msgid "~{amount} left in this stage"
 msgstr "이 단계에 약 {amount} 남음"

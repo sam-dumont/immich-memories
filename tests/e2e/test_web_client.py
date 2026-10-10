@@ -122,6 +122,8 @@ def test_a_first_cut_shows_its_stage_s_share_and_time_left(page, launch_app_url)
             "total": 120,
             # No finished run measured the whole cut: the server sends the stage's own numbers.
             "fraction": 0.5,
+            "fraction_scope": "stage",
+            "stage_fraction": 0.5,
             "remaining_seconds": None,
             "stage_remaining_seconds": 42.0,
             "recent_asset_ids": [],
@@ -137,7 +139,9 @@ def test_a_first_cut_shows_its_stage_s_share_and_time_left(page, launch_app_url)
     page.goto(f"{launch_app_url}/app/create")
 
     panel = page.get_by_role("region", name="Progress")
-    expect(panel.get_by_role("progressbar")).to_have_attribute("aria-valuetext", "50%")
+    expect(panel.get_by_role("progressbar")).to_have_attribute(
+        "aria-valuetext", "50% of this stage"
+    )
     expect(panel.get_by_text("~42s left in this stage")).to_be_visible()
 
 

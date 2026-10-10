@@ -1723,17 +1723,70 @@ export interface components {
             /** Name */
             name: string;
         };
+        /** JobForecast */
+        JobForecast: {
+            /**
+             * Estimate Basis
+             * @default incomplete
+             */
+            estimate_basis: string;
+            /**
+             * Known Remaining Seconds
+             * @default 0
+             */
+            known_remaining_seconds: number;
+            /** Observed At */
+            observed_at?: number | null;
+            /** Phases */
+            phases: components["schemas"]["PhaseProgress"][];
+            /** Remaining Seconds */
+            remaining_seconds?: number | null;
+            /**
+             * Revision
+             * @default 0
+             */
+            revision: number;
+            /**
+             * Target
+             * @enum {string}
+             */
+            target: "cut" | "film";
+            /**
+             * Unknown Phases
+             * @default []
+             */
+            unknown_phases: string[];
+        };
         /** JobProgress */
         JobProgress: {
             /** Done */
             done?: number | null;
+            forecast?: components["schemas"]["JobForecast"] | null;
             /** Fraction */
             fraction?: number | null;
+            /**
+             * Fraction Scope
+             * @default unknown
+             * @enum {string}
+             */
+            fraction_scope: "stage" | "job" | "unknown";
+            /**
+             * History
+             * @default []
+             */
+            history: components["schemas"]["JobStage"][];
             /**
              * Label
              * @default
              */
             label: string;
+            /** Last Completed At */
+            last_completed_at?: number | null;
+            /**
+             * Pass Id
+             * @default 0
+             */
+            pass_id: number;
             /**
              * Phase
              * @default
@@ -1747,6 +1800,13 @@ export interface components {
             /** Remaining Seconds */
             remaining_seconds?: number | null;
             /**
+             * Scope
+             * @default
+             */
+            scope: string;
+            /** Stage Fraction */
+            stage_fraction?: number | null;
+            /**
              * Stage Name
              * @default
              */
@@ -1755,6 +1815,43 @@ export interface components {
             stage_remaining_seconds?: number | null;
             /** Total */
             total?: number | null;
+            /**
+             * Unit
+             * @default
+             */
+            unit: string;
+            /** Updated At */
+            updated_at?: number | null;
+        };
+        /** JobStage */
+        JobStage: {
+            /** Done */
+            done?: number | null;
+            /** Label */
+            label: string;
+            /**
+             * Pass Id
+             * @default 0
+             */
+            pass_id: number;
+            /**
+             * Scope
+             * @default
+             */
+            scope: string;
+            /**
+             * State
+             * @default previous
+             * @enum {string}
+             */
+            state: "processed" | "previous" | "reused";
+            /** Total */
+            total?: number | null;
+            /**
+             * Unit
+             * @default
+             */
+            unit: string;
         };
         /** JobView */
         JobView: {
@@ -1928,6 +2025,28 @@ export interface components {
             notes?: string | null;
             /** Role */
             role?: string | null;
+        };
+        /** PhaseProgress */
+        PhaseProgress: {
+            /**
+             * Elapsed Seconds
+             * @default 0
+             */
+            elapsed_seconds: number;
+            /** Key */
+            key: string;
+            /**
+             * Known Remaining Seconds
+             * @default 0
+             */
+            known_remaining_seconds: number;
+            /** Remaining Seconds */
+            remaining_seconds?: number | null;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "pending" | "running" | "completed" | "skipped";
         };
         /** PhaseTiming */
         PhaseTiming: {

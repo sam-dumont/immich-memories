@@ -78,7 +78,12 @@ class PhaseHeartbeat:
             self._last_report = now
             spent = _spent(now - self._step_started)
         try:
-            self._emit(phase, current, total, f"{message}, still working ({spent} in this step)")
+            self._emit(
+                phase,
+                current,
+                total,
+                f"{message}, process alive; no new progress ({spent} in this step)",
+            )
         except Exception:  # WHY: a heartbeat must never fail the run it reports on
             logger.debug("Phase heartbeat could not be recorded", exc_info=True)
         return True

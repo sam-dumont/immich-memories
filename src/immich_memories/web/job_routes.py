@@ -26,12 +26,14 @@ from immich_memories.config_loader import Config
 from immich_memories.config_models_render import TitleStyleMode
 from immich_memories.db import open_store
 from immich_memories.operations.cut_progress import (
+    StageUpdate,
     live_progress_of,
     read_latest_attempt,
     recent_pictures_of,
 )
 from immich_memories.operations.run_index import attempt_dir_for_run, run_id_for_attempt
 from immich_memories.tracking import RunDatabase
+from immich_memories.tracking.phase_forecast import forecast_at
 from immich_memories.web.brief import CutBrief
 from immich_memories.web.dependencies import current_config
 from immich_memories.web.film_downloads import (
@@ -147,8 +149,9 @@ def _cut_root(config: Config, job_id: str) -> Path | None:
 def _progress_file_record(job: Job) -> dict[str, Any]:
     path = Path(str(job.meta.get("progress_file") or ""))
     try:
-        return json.loads(path.read_text()) if path.is_file() else {}
-    except ValueError:
+        record = json.loads(path.read_text()) if path.is_file() else {}
+        return record if isinstance(record, dict) else {}
+    except (ValueError, OSError):
         return {}
 
 
@@ -163,6 +166,13 @@ def _preparing_progress(job: Job) -> JobProgress | None:
         phase=str(record.get("phase") or ""),
         fraction=record.get("fraction"),
         remaining_seconds=record.get("remaining_seconds"),
+        fraction_scope=record.get("fraction_scope", "unknown"),
+        stage_fraction=record.get("stage_fraction"),
+        stage_name=str(record.get("stage_name") or ""),
+        scope=str(record.get("scope") or ""),
+        pass_id=record.get("pass_id", 0),
+        updated_at=record.get("updated_at"),
+        last_completed_at=record.get("last_completed_at"),
     )
 
 
@@ -170,22 +180,33 @@ def _cut_progress(config: Config, job: Job) -> JobProgress:
     record = read_latest_attempt(_cut_root(config, job.id))
     if record is None:
         return _preparing_progress(job) or JobProgress(label="Preparing the pool")
-    live = live_progress_of(record)
+    live = live_progress_of(record) or StageUpdate.from_record(record.get("progress"))
     if live is None:
         return JobProgress(
             label=str(record.get("stage") or ""),
             stage_name=str((record.get("progress") or {}).get("label") or ""),
             recent_asset_ids=list(recent_pictures_of(record)),
         )
-    # A cold library has no finished run to measure the whole cut from: the stage carries the bar.
+    forecast = forecast_at(live.forecast)
     return JobProgress(
         label=str(record.get("stage") or ""),
         stage_name=live.label,
+        history=record.get("stage_history", []),
+        forecast=forecast,
+        fraction_scope="stage" if live.fraction is not None else "unknown",
+        stage_fraction=live.fraction,
+        unit=live.unit,
+        scope=live.scope,
+        pass_id=live.pass_id,
+        updated_at=live.updated_at,
+        last_completed_at=live.last_completed_at,
         phase=live.phase,
         done=live.done,
         total=live.total,
         fraction=live.fraction if live.total_fraction is None else live.total_fraction,
-        remaining_seconds=live.total_remaining_seconds,
+        remaining_seconds=forecast["remaining_seconds"]
+        if forecast
+        else live.total_remaining_seconds,
         stage_remaining_seconds=live.remaining_seconds if live.remaining_label else None,
         recent_asset_ids=list(recent_pictures_of(record)),
     )
@@ -193,11 +214,23 @@ def _cut_progress(config: Config, job: Job) -> JobProgress:
 
 def _render_progress(job: Job) -> JobProgress:
     record = _progress_file_record(job)
+    forecast = forecast_at(record.get("forecast"))
     return JobProgress(
         label=str(record.get("message") or "Preparing the render"),
+        history=record.get("stage_history", []),
+        forecast=forecast,
         phase=str(record.get("phase") or ""),
         fraction=record.get("fraction"),
-        remaining_seconds=record.get("remaining_seconds"),
+        remaining_seconds=forecast["remaining_seconds"]
+        if forecast
+        else record.get("remaining_seconds"),
+        fraction_scope=record.get("fraction_scope", "unknown"),
+        stage_fraction=record.get("stage_fraction"),
+        stage_name=str(record.get("stage_name") or ""),
+        scope=str(record.get("scope") or ""),
+        pass_id=record.get("pass_id", 0),
+        updated_at=record.get("updated_at"),
+        last_completed_at=record.get("last_completed_at"),
     )
 
 
@@ -216,7 +249,12 @@ def _view(config: Config, job: Job) -> JobView:
             index, total, label = matches[-1]
             done = int(index) - 1
             progress = JobProgress(
-                label=label, done=done, total=int(total), fraction=done / int(total)
+                label=label,
+                done=done,
+                total=int(total),
+                fraction=done / int(total),
+                fraction_scope="stage",
+                stage_fraction=done / int(total),
             )
         else:
             progress = JobProgress(label="Downloading pinned models")

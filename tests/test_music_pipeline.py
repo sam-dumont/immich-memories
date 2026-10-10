@@ -892,3 +892,26 @@ class TestLongVideoBlocks:
         assert gen.calls == 1, "a short video is one shot, never assembled into blocks"
         assemble.assert_not_called()
         assert len(result.versions) == 1
+
+
+@pytest.mark.asyncio
+async def test_music_reports_service_waits_before_the_first_generated_audio(tmp_path):
+    events = []
+
+    class ObservedGenerator(FakeGenerator):
+        async def is_available(self):
+            assert events[-1][1] == "Checking music service"
+            return True
+
+        async def generate(self, request, progress_callback=None):
+            assert events[-1][1] == "Generating music"
+            return await super().generate(request, progress_callback)
+
+    async with MusicPipeline([ObservedGenerator()]) as pipeline:
+        result = await pipeline.generate_music_for_video(
+            timeline=VideoTimeline(),
+            output_dir=tmp_path,
+            num_versions=1,
+            progress_callback=lambda *event: events.append(event),
+        )
+    assert len(result.versions) == 1

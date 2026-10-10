@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterator, Mapping, Sequence
 from contextlib import contextmanager
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
 from typing import Any
 
@@ -253,6 +253,12 @@ class _Acquisition:
     service_seconds: dict[str, float] = field(default_factory=dict)
     transfer: dict[str, dict[str, int]] = field(default_factory=dict)
 
+    def scoped(self, scope: str) -> _Acquisition:
+        """Keep video and attached-clip work distinct without changing their fact producers."""
+        return replace(
+            self, report=lambda stage, done, total: self.report(f"{scope}.{stage}", done, total)
+        )
+
     def transfers(self) -> dict[str, dict[str, int]]:
         return {stage: counts.copy() for stage, counts in self.transfer.items()}
 
@@ -282,6 +288,9 @@ class _Acquisition:
 
     @contextmanager
     def timed(self, stage: str, pictures: int) -> Iterator[None]:
+        # These producers announce their own entry, including whole-pass frame offsets.
+        if stage not in {"detector_frames", "remote_frames"}:
+            self.report(stage, 0, pictures)
         with timing.span(f"preparation.{stage}", items=pictures) as measured:
             try:
                 yield
@@ -493,6 +502,7 @@ class _Acquisition:
                     encoder_path=self.triage_config.encoder_path,
                     check_cancelled=self.check,
                     provider=self.triage_config.provider,
+                    progress=self.report,
                 )
             self.failures.update({f"{CLIP_FRAMES_HEAD}:{k}": v for k, v in errors.items()})
         except AccountReadFailed:
@@ -509,7 +519,7 @@ class _Acquisition:
         try:
             with self.timed(VIDEO_MOTION, len(frame_paths)):
                 errors = self.providers.video_motion(
-                    store=self.store, videos=videos, frame_paths=frame_paths
+                    store=self.store, videos=videos, frame_paths=frame_paths, progress=self.report
                 )
             self.failures.update({f"{VIDEO_MOTION}:{k}": v for k, v in errors.items()})
         except AccountReadFailed:
@@ -532,6 +542,7 @@ class _Acquisition:
                     encoder_path=self.triage_config.encoder_path,
                     check_cancelled=self.check,
                     provider=self.triage_config.provider,
+                    progress=self.report,
                 )
             self.failures.update({f"obstruction_frames:{k}": v for k, v in errors.items()})
         except AccountReadFailed:
@@ -634,6 +645,18 @@ class _Acquisition:
         }
 
 
+def _report_reused_work(stage, before, ids, preparation_config) -> None:
+    demanded = _demanded_producers(preparation_config)
+    owing = {asset_id for key, values in before.items() if demanded(key) for asset_id in values}
+    reused = len(set(ids) - owing)
+    if reused:
+        stage.report("reused", reused, len(ids))
+    if not preparation_config.demands_models:
+        stage.report("skipped_models", 0, 0)
+    if not preparation_config.demands_captions:
+        stage.report("skipped_captions", 0, 0)
+
+
 def prepare_editorial_annotations(
     *,
     assets: Sequence[Asset],
@@ -719,6 +742,7 @@ def prepare_editorial_annotations(
     before = owing_flipped_edits(
         before, flipped_edits, pixel_producer_key, description_model, head_versions
     )
+    _report_reused_work(stage, before, ids, preparation_config)
     available = set(preview_paths)
 
     def pending(key: str) -> tuple[str, ...]:

@@ -102,6 +102,7 @@ class RemoteRenderClient:
         # A received film that is returned, or that fails its check, stays on disk.
         keep_staged = False
         try:
+            progress("worker_connect", 0.0, "Checking the render worker")
             self.health()
             request = build_render_request(params)
             deadline = time.monotonic() + self.settings.timeout_seconds
@@ -111,7 +112,8 @@ class RemoteRenderClient:
             clips = _assembly_clips(status["clips"], output_path.parent)
             windows = status.get("music_mute_windows")
             output_path.parent.mkdir(parents=True, exist_ok=True)
-            digest, expected_digest = self._download(status["job_id"], staged, deadline)
+            digest, expected_digest = self._download(status["job_id"], staged, deadline, progress)
+            progress("worker_check", 0.0, "Checking the downloaded film")
             if expected_digest and expected_digest != digest:
                 raise GenerationError("Render worker output does not match its digest")
             from immich_memories.generate_timeline import validate_final_duration
@@ -159,7 +161,18 @@ class RemoteRenderClient:
             ):
                 raise GenerationError("Render worker returned a different cut")
             message = self._safe_message(str(status.get("message", "")), params)[:500]
-            progress("assembly", max(0, min(1, float(status.get("progress", 0)))), message)
+            phase = status.get("phase")
+            phase = (
+                phase
+                if phase in {"download", "extract", "assembly", "check", "done"}
+                else "assembly"
+            )
+            if status["state"] == "queued":
+                progress("worker_queue", 0.0, "Waiting for the render worker")
+            else:
+                progress(
+                    f"worker_{phase}", max(0, min(1, float(status.get("progress", 0)))), message
+                )
             if status["state"] == "ready":
                 return status
             if status["state"] not in {"queued", "running"}:
@@ -169,11 +182,14 @@ class RemoteRenderClient:
             time.sleep(min(0.5, max(0, deadline - time.monotonic())))
             status = self._json("GET", f"/jobs/{job_id}")
 
-    def _download(self, job_id: str, path: Path, deadline: float) -> tuple[str, str | None]:
+    def _download(
+        self, job_id: str, path: Path, deadline: float, progress: Progress
+    ) -> tuple[str, str | None]:
         """Write the worker's film to ``path``.
 
         Returns the SHA-256 of what was written and the one the worker sent with it.
         """
+        progress("worker_download", 0.0, "Downloading the finished film")
         digest = hashlib.sha256()
         with self._http.stream(
             "GET",
@@ -183,12 +199,21 @@ class RemoteRenderClient:
         ) as response:
             if response.status_code != 200:
                 raise GenerationError(f"Render worker output returned HTTP {response.status_code}")
+            total = int(response.headers.get("content-length", "0"))
+            received = 0
             announced = _announced_sha256(response.headers.get("repr-digest"))
             with path.open("wb") as handle:
                 for chunk in response.iter_bytes(1024 * 1024):
                     _check_deadline(deadline)
                     handle.write(chunk)
                     digest.update(chunk)
+                    received += len(chunk)
+                    progress(
+                        "worker_download" if total > 0 else "worker_transfer",
+                        min(1.0, received / total) if total > 0 else 0.0,
+                        f"Downloading the finished film: {received}"
+                        + (f"/{total} bytes" if total > 0 else " bytes received"),
+                    )
         return digest.hexdigest(), announced
 
 

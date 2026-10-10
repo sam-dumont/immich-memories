@@ -196,3 +196,22 @@ def test_selection_attempts_have_separate_spend_without_erasing_the_run_total(tm
         10,
         20,
     ]
+
+
+def test_repeated_pass_history_survives_reload_without_claiming_unfinished_work_completed(tmp_path):
+    from immich_memories.operations.cut_progress import StageUpdate
+
+    with EditorialAttempt(tmp_path, request={}) as attempt:
+        attempt.stage(StageUpdate("videos.detector_frames", "analysis", 0, 2))
+        attempt.stage(StageUpdate("videos.detector_frames", "analysis", 2, 2))
+        attempt.stage(StageUpdate("videos.remote_frames", "analysis", 0, 2))
+        attempt.stage(StageUpdate("videos.remote_frames", "analysis", 1, 2))
+        attempt.stage(StageUpdate("Reading the story"))
+        history = read_editorial_attempt(attempt.directory)["stage_history"]
+
+    assert history[-2]["label"] == "videos.detector_frames"
+    assert history[-2]["done"] == history[-2]["total"] == 2
+    assert history[-2]["state"] == "processed"
+    assert history[-1]["label"] == "videos.remote_frames"
+    assert history[-1]["state"] == "previous"
+    assert history[-1]["pass_id"] != history[-2]["pass_id"]

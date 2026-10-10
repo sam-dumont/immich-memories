@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import logging
+import time
 from collections.abc import Callable, Mapping
 from dataclasses import asdict, dataclass
 from functools import partial
@@ -158,12 +159,16 @@ class EvidencePreparation:
         batch_size = config.editorial.preparation.batch_size
         # The sentence and the numbers are published together, on one throttle,
         # so a watcher never sees a bar disagreeing with the row above it.
-        live = StageProgressWriter(self.artifact_dir)
+        live = StageProgressWriter(self.artifact_dir, scope=self.report_name)
         last_published: tuple[str, int, int] | None = None
         last_seen = 0
+        last_published_at = 0.0
 
         def progress(stage: str, done: int, total: int) -> None:
-            nonlocal last_published, last_seen
+            nonlocal last_published, last_seen, last_published_at
+            now = time.monotonic()
+            if last_published == (stage, done, total):
+                return
             reset = done < last_seen
             last_seen = done
             if (
@@ -172,9 +177,11 @@ class EvidencePreparation:
                 and done not in {0, total}
                 and not reset
                 and 0 <= done - last_published[1] < batch_size
+                and now - last_published_at < 2.0
             ):
                 return
             last_published = (stage, done, total)
+            last_published_at = now
             if on_stage is not None:
                 on_stage(live.publish(stage, done, total))
 

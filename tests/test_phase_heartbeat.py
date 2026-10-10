@@ -31,7 +31,7 @@ def test_a_quiet_phase_repeats_itself_with_its_last_count_once_the_interval_pass
     phase, current, total, message = sent[0]
     assert (phase, current, total) == (OperationalPhase.RENDER, 12, 149)
     assert message.startswith("Rendering memory")
-    assert "still working" in message
+    assert "process alive; no new progress" in message
     assert "1m" in message
 
 
@@ -57,7 +57,7 @@ def test_the_beats_keep_coming_every_interval_and_count_the_time_in_the_step() -
 
     assert len(sent) == 3
     assert "3m" in sent[-1][3]
-    assert sent[-1][3].count("still working") == 1
+    assert sent[-1][3].count("process alive; no new progress") == 1
 
 
 def test_nothing_beats_before_the_first_phase_or_after_completion() -> None:
@@ -131,7 +131,7 @@ def test_a_scheduled_attempt_keeps_getting_phase_events_while_its_phase_works(tm
     finally:
         reporter.heartbeat.stop()
 
-    beats = [e for e in events if "still working" in e["message"]]
+    beats = [e for e in events if "process alive; no new progress" in e["message"]]
     assert len(beats) >= 2
     assert all(e["total"] == 149 and e["phase"] == "selection" for e in beats)
 

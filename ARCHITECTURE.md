@@ -1160,7 +1160,7 @@ src/immich_memories/
 ├── operations/                 # Public lifecycle contract + read-only ops reports
 │   ├── auto_output.py           # Private complete child transcripts, addressed by automation attempt
 │   ├── call_families.py        # family_of()/calls_by_family(): model calls grouped by stage family
-│   ├── cut_progress.py         # Where a run is, as one record the page and the terminal both read;
+│   ├── cut_progress.py         # Stage counts, pass identity, freshness and measured estimates shared by UI/CLI;
 │   ├── phase_heartbeat.py      # Repeats the last phase event every 30 s so a long step never goes silent
 │   │                           #   read_latest_attempt/live_progress_of: any process reads a cut's progress
 │   ├── run_index.py            # A run id resolved to its attempt directory (store table run_attempts);
@@ -1468,7 +1468,9 @@ through Alembic revision `0007_timing`, on SQLite or PostgreSQL. No span writes 
 `tracking/report.py` allowlists diagnostic fields. `report_privacy.py` redacts the chosen strings and
 assigns per-report salted IDs. `report_logs.py` shortens the pasted log (one line per progress stage, repeats counted); the bundle's log stays whole. `report_service.py` assembles the same report for `report` and the HTTP
 endpoint; neither calls Immich or sends anything. `span_progress.py` reads the saved spans for normalized
-rates and whole-run estimates. A first run has no historical total estimate.
+rates and whole-run estimates. `phase_forecast.py` keeps phase states and remaining time separate
+from stage counters; `forecast_reference.py` selects compatible measured timings. CLI and web read
+the same saved forecast. A first run has no historical total estimate.
 
 **Provider conformance** (`conformance/`): synthetic feature probes use the production prompt,
 transport and parser. The AST inventory discovers model-asking functions; HTTP observation
