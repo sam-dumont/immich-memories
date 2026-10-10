@@ -4,6 +4,7 @@ title: Portainer
 
 import SetupBuilder from '@site/src/components/SetupBuilder';
 import StackStorage from './_stack-storage.mdx';
+import StackAccess from './_stack-access.mdx';
 
 # Portainer
 
@@ -15,49 +16,47 @@ The Docker Standalone Web editor and Console route has been checked; see [tested
 
 Open **Stacks → Add stack**, name it `immich-memories`, and select **Web editor**. Enter your Immich URL below, then copy the generated `docker-compose.yml` into the editor and replace `replace-with-your-immich-api-key` with your own [API key](../docker.md#the-api-key). The builder never asks for it. No `.env` upload is needed.
 
-GPU and Full need an NVIDIA host with the Container Toolkit, or a separate GPU box. Full also needs a reader.
+GPU and Full need an NVIDIA host with the Container Toolkit, or a separate GPU box. Full also needs a reader. Replace the generated reader-key placeholder with its API key, or empty it if that server does not require one.
 
 <SetupBuilder initialPlatform="linux" initialInline showPlatform={false} showCommands={false} />
 
 <StackStorage />
 
-Before deploying, choose how you will open the app: configure
-[app login for LAN access](../docker.md#stack-editor-lan-access), or keep localhost and use
-**Private UI access with an SSH tunnel** in the builder. On this NVIDIA host, select **Use NVIDIA
-CUDA containers** for GPU/Full; for a separate worker, fill in **GPU box address** and start the
-provided worker files on that machine first.
+For GPU/Full on this NVIDIA host, select **Use NVIDIA CUDA containers**. For a separate worker,
+fill in **GPU box address** and start the provided worker files on that machine first.
+
+<StackAccess />
 
 ## 2. Deploy
 
-Click **Deploy the stack**. Wait for `immich-memories` to be running. If the host already uses port 8080, change the left-hand port in the mapping, keeping `127.0.0.1`.
+Click **Deploy the stack**. Wait for `immich-memories` to be running.
 
 Set film language after startup in [Settings](../../get-started/after-install.md).
 
-## 3. Prepare and check
+## 3. Open the app and download models {#3-prepare-and-check}
 
-Open **Containers → immich-memories → Console**, connect with `/bin/sh`, then run:
+Open `http://your-server-address:8080` (use your chosen host port) and sign in with the app
+username and password you just set. If you chose private localhost access, use its forwarded URL.
+
+On **Memory**, click **Download models** and wait for it to finish. The card lists the files and
+download hosts; it disappears when the required files are ready. If it is absent and no error is
+shown, those files are already present. Downloads are kept on the config volume for later starts.
+
+## 4. Check and make a film {#4-open-the-app}
+
+**Basic:** continue to [your first film](../../get-started/first-film.mdx).
+
+**GPU and Full:** the browser download does not check the external model services. Open **Containers → immich-memories → Console** and connect with `/bin/sh`.
+Run:
 
 ```bash
-immich-memories models fetch
 immich-memories preflight
 ```
 
-Fix any reported connection or storage errors before making a film. Model downloads run once; later starts reuse the config volume.
+This runs inside the app container, so do not add `docker exec`. Wait for inference and captions
+(and the Full reader) to become ready, and resolve any required-service or storage errors before
+making [your first film](../../get-started/first-film.mdx). Optional upload permissions can warn
+while still allowing local films.
 
-On Basic, software encoding and CPU titles are supported results. Unconfigured optional
-services and home coordinates are skipped. Read the individual rows: a read-only Immich key
-can warn about uploads while still allowing you to make and download a film.
-
-## 4. Open the app
-
-For direct access from another computer on your trusted LAN, configure
-[app login in the stack file](../docker.md#stack-editor-lan-access) before deploying it.
-Then open `http://your-server-address:8080` and sign in. The container manager's own login does
-not protect the app's port.
-
-For private access, keep the localhost binding and use the builder's **Private UI access with
-an SSH tunnel** instructions. Tunnel to the host running Docker, which may differ from the
-container manager's host. Use your selected host port in either route.
-
-Make [your first film](../../get-started/first-film.mdx).
-[Installation help](../../reference/installation-help.md) covers port, permission and startup errors.
+[Installation help](../../reference/installation-help.md) covers connection, port, permission and
+startup errors. It also gives the CLI model-download command if you need it.

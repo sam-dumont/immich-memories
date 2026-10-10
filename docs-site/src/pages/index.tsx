@@ -83,8 +83,8 @@ export default function Home(): ReactNode {
           <div className={styles.cliText}>
             <p className={styles.eyebrow}>No browser needed</p>
             <Heading as="h2">A first-class CLI</Heading>
-            <p>Every film the web app makes is one command you can copy. The New memory page prints it under the form.</p>
-            <p>Run <code>auto run</code> from cron, a timer or the HTTP trigger and a film gets made every night without you opening anything.</p>
+            <p>The Memory page shows the CLI command for your cut. You can also render saved cuts from the terminal.</p>
+            <p>Schedule <code>auto run</code> to check for a memory worth making each day. It skips the day when nothing qualifies.</p>
             <p><Link to="/docs/make/cli/generate">The generate command →</Link> · <Link to="/docs/make/automate">Automate it →</Link></p>
           </div>
           <div className={styles.cliVideo}><CliDemo /></div>
@@ -102,10 +102,10 @@ export default function Home(): ReactNode {
                 A real month can take hours on a NAS. Start with 20–50 pictures and a 30-second film;
                 <Link to="/docs/get-started/first-film#progress-and-recovery">follow each phase here</Link>.</p>
               <p>The <Link to="/docs/get-started/quick-start">quick start</Link> supplies the Compose file and walks you through the connection. Once configured:</p>
-              <CodeBlock language="bash" title="Start and prepare the app">
-                {'docker compose up -d\ndocker compose exec immich-memories immich-memories models fetch\ndocker compose exec immich-memories immich-memories preflight'}
+              <CodeBlock language="bash" title="Start the app">
+                {'docker compose up -d'}
               </CodeBlock>
-              <p className={styles.quickstartAlt}>Then open <code>http://localhost:8080</code>. For a remote host, follow the access instructions in the quick start.</p>
+              <p className={styles.quickstartAlt}>Open the app and press <strong>Download models</strong>. Quick start gives the browser address and checks for your tier.</p>
             </div>
             <div className={styles.trustPanel}>
               <Heading as="h3">Your originals stay yours</Heading>

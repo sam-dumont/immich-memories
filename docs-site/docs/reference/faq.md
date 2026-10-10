@@ -47,13 +47,17 @@ A tick outranks the editor. See [Edit the cut](../how-it-chooses/overrule-it.md)
 
 **Why is the first cut slow and the second fast?**
 
-The first cut measures each picture it can reach once and banks the result; the second is mostly the render.
-`prepare` does a period ahead of time, overnight if you like.
+The first cut prepares picture facts and saves them. Later cuts over the same pictures reuse
+compatible facts, but still choose their shots. Rendering is a separate step: it downloads originals,
+processes the selected media and encodes a film. [`prepare`](../make/cli/prepare.md) can do a period's
+preparation ahead of time, overnight if you like.
 
 **How much disk?**
 
-Caches are capped by config: 10 GB of downloaded video (kept 7 days), 10 GB of Immich previews, plus the
-store (`store.db`). Films come on top, sized by length, resolution and codec.
+The default retention budgets are 10 GB of downloaded video (kept up to 7 days) and 10 GB of
+Immich previews. An active preparation keeps the previews it is using and can exceed that budget.
+Models, the store, temporary render files and finished films need space too. See
+[storage and cache sizing](../run/maintenance/storage-backups.md#caches).
 
 **Can it make films on its own?**
 

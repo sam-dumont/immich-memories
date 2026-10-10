@@ -24,11 +24,11 @@ The docs use the app’s pinned `@immich/ui` theme tokens. After updating that p
 
 ## Fixture and asset contracts
 
-Use only the credited CC0 demo fixture for public visual assets. The private test households are separate: their real-person photos must never appear in screenshots, demos, hosted previews or the public website. Only anonymous aggregate test results may leave them.
+Use only the credited CC0 demo fixture for public library pictures. The private test households are separate: their real-person photos must never appear in screenshots, demos, hosted previews or the public website. Only anonymous aggregate test results may leave them.
 
 Nothing on the docs site or in the README is a screenshot of a real library. The demo is a
 React recreation of the UI rendered with Remotion over a CC0 fixture library, the CLI demo is a
-VHS recording, and the screenshots come from a hermetic run over the same library. The library
+VHS recording, and the app screenshots come from a hermetic run over the same library. The library
 is 136 stock pictures under `tests/e2e/fixtures/library/` that tell one household's June 2024:
 ordinary days at home, a birthday in the garden, a Saturday in the woods, a week by a lake 590 km
 away and the drive home. `tests/e2e/fake_library.py` is the script: which picture belongs to
@@ -39,10 +39,22 @@ The clips are pans over those stills, so their captions describe the visible sce
 `tests/test_fixture_library.py` pins
 the credits, the hashes and the 60 MB ceiling.
 
-The demo reviews the fixture's cut (18 pictures), swaps the rain on the window for another
-picture of the same moment, removes the garden table and saves that as revision 1 before it
-renders. The generated fixture carries the cut's timeline positions, its weighed stories and the
-seconds the titles leave the pictures.
+The Synology setup screenshots under `docs-site/static/img/platforms/` come from the real DSM
+project and folder dialogs. Capture only the relevant dialog, with generic example names.
+Exclude server addresses, account names, keys and unrelated projects before saving the image.
+These captures verify the controls shown, not a completed installation.
+
+The Compose setup screenshot comes from `make demo-compose-setup`. It downloads the two Basic
+release files into a disposable folder, copies `example.env` to `.env`, and runs the real Compose
+parser. It uses a separate Docker configuration and never pulls or starts a container. The image
+shows downloaded files and a valid configuration, not a running app. The release is pinned in
+`scripts/demo-compose-setup.py`; update it when installation downloads change.
+
+The demo asks for a two-minute film and reviews the fixture's cut (18 pictures). It swaps the
+rain on the window for another picture of the same moment, removes the garden table and saves
+that as revision 1 before rendering at 1080p without music. The finished film is about 80 seconds;
+the walkthrough adds its own soundtrack. The generated fixture carries the cut's timeline
+positions, its weighed stories and the seconds the titles leave the pictures.
 
 The fixture has 136 files on disk. Visibility and metadata rules can reduce the pool before
 selection, so the pool count can differ from the file count.
@@ -50,7 +62,8 @@ selection, so the pool count can differ from the file count.
 | Command (repo root) | Produces |
 |---|---|
 | `make demo-ui` | `docs-site/static/demo/demo.mp4`, 1,486 video frames at 30 fps (about 50 s), 1920×1080 H.264; it ends on the film the product made |
-| `make demo-hero` | `docs-site/static/img/demo-hero.gif`, the README and homepage hero: the brief, the cut and the review, then Render pressed and the film arriving on the page, then that film full bleed from the moment the page's player shows (the Makefile comment has the windows), 720 px, 10 fps, under 4 MB |
+| `make demo-hero` | `docs-site/static/img/demo-hero.gif`, the README and homepage hero: the brief, the cut and the review, then Render pressed and the film arriving on the page, then that film full bleed from the moment the page's player shows (the Makefile comment has the windows), 720 px, 9 fps, under 4 MB |
+| `make demo-compose-setup` | `docs-site/static/img/screenshots/compose-basic-setup.png`, actual Basic release downloads and Compose validation; requires VHS, curl, Docker and `docker-compose` on PATH |
 | `make demo-cli` | `docs-site/remotion/public/cli-demo.mp4` and `docs-site/remotion/src/cli-timing.ts`, VHS recording the real CLI: `scripts/demo-cli-hermetic.py` runs `generate`, `runs story` and `runs why` against the hermetic fakes from `tests/e2e`, types each command, and writes the second each one starts at so the scene cuts there; it also copies the video to `docs-site/static/demo/cli-demo.mp4` and cuts its poster `cli-demo-poster.jpg`, which the homepage's CLI section plays (`make demo-cli-run` plays the same session without recording; as root in a container, set `VHS_NO_SANDBOX=true`) |
 | `make demo-output` | `docs-site/remotion/public/output-preview.mp4` and `output-frame.jpg`, cut on the hermetic launch |
 | `make demo-output-trip` | `docs-site/static/demo/trip-preview.mp4` and `docs-site/static/img/trip-map-flyover.jpg`, the fixture's lake week cut as a trip memory and the still of its map fly-over, both played by the trip memory page. Needs the network: the satellite tiles come from ArcGIS World Imagery and the trip's name from Nominatim, and neither has an offline stand-in |

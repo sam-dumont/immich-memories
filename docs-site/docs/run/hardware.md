@@ -76,9 +76,8 @@ The app image's CPU Torch build is intentional; use the CUDA inference service f
 
 ### Apple Silicon
 
-```bash
-uv tool install --python 3.12 "immich-memories[all-mac]"
-```
+Use the versioned [native Apple Silicon installation](./uv-pip.md#apple-silicon). An existing
+`all-mac` installation already includes the hardware bindings; there is no second app install.
 
 VideoToolbox handles encoding and Metal handles title effects. The `mac` extra alone lacks the
 classifiers needed for films. With `tier: auto`, Metal also selects GPU preparation (Full with an enabled reader). Set up the caption service and Laya, or choose `tier: basic` for CPU preparation. [Python installation](./uv-pip.md) also covers the FFmpeg build.

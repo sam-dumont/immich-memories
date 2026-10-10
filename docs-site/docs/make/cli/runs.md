@@ -6,6 +6,9 @@ title: runs
 
 Find previous cuts and films, read their decisions, or render another version. CLI and browser runs share the same history.
 
+In Docker, run these commands from the installation folder with
+`docker compose exec immich-memories` before `immich-memories`.
+
 ## Find a run
 
 ```bash

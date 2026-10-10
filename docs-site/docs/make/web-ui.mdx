@@ -53,9 +53,9 @@ runtimes must already be installed; downloading their weights does not install P
 <Diagram name="seq-web-job" headline="Cut first, look at it, then render. Nothing renders until you press the button." />
 The cut runs on the server, so you can close the tab and return later. The app follows the running job again. **Cancel** stops it; only one job runs at a time.
 
-A failed job stops the progress bar and shows its error. Storage failures include recovery advice
-even when the disk cannot save a complete log. [Free space or expand the volume](../run/maintenance/storage-backups.md#full-disk-during-preparation),
-then retry the request. Completed preparation facts remain in the store.
+For a failed job, read the log shown below its status. A full disk can leave the status stale
+and the log incomplete. [Free space or expand the volume](../run/maintenance/storage-backups.md#full-disk-during-preparation),
+then reload the page and retry the request. Completed preparation facts remain in the store.
 
 When the cut is ready, the app opens its run page under **Runs**. Open a shot to read its explanation or edit it. Use **Pool** to see pictures that did not make it. [Review and adjust](../how-it-chooses/overrule-it.md) explains revisions, missing shots and persistent exclusions.
 

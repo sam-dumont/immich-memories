@@ -54,7 +54,7 @@ explicitly; all five names in the table are accepted. In the web UI, use **Rende
 
 The renderer is picked for you: GPU kernels where Metal, CUDA or Vulkan start. On a CPU or NAS, Pillow draws the background and text once, and FFmpeg slides, scales and fades the text at the film’s frame rate. The font, layout and palette stay the same. Bokeh, moving gradients and animated deblur need a rendering GPU; hardware video encoding still works on the NAS. See [Hardware encoding](../run/hardware.md#title-kernels).
 
-Preview a card without running anything:
+Preview a title card without selecting a film:
 
 ```bash
 immich-memories titles test --year 2025 --style elegant_minimal
@@ -182,8 +182,10 @@ full date across years. Each language writes it its own way (`10. AUGUST`, `10 D
 `8月10日`).
 
 Place captions show the city, town or village, including at home and at familiar places. A repeated label
-stays quiet until the place changes; returning to a city names it again. No home setup or library-history
-scan is needed. Country names remain visible and are translated into the film's language.
+stays quiet until the place changes; returning to a city names it again. No library-history scan
+is needed. When the home country is known, its name stays hidden. Abroad, the country appears
+on entry unless the opening title already names it, then stays quiet until the country changes.
+Country names use the film's language.
 
 Near the configured home base (within 10 km), captions can name the district, such as Montmartre in Paris.
 Away from home, a district covering at least 85 % of a stay's pictures keeps its name; excursions keep
@@ -339,7 +341,7 @@ labels, captions of kept pictures) and gets back a mood, an energy, a tempo and 
 goes out. Without a reader, or when that call fails, the film gets the mood its clips carry, else `calm`.
 
 A generator that fails falls through to a bundled track, and the swap comes back as a warning on the finished
-video and in the notification, so a dead backend never passes for working music.
+video and in any completion notification, so a dead backend never passes for working music.
 
 The bundled tracks come with the `music` extra, which the Docker image and the `all` extra include: 28
 royalty-free tracks in five moods (calm, energetic, happy, nostalgic, tender), about 30 s each, looped with a

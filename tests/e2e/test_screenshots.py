@@ -60,6 +60,10 @@ def _settle(page: Page) -> None:
     page.evaluate(
         "document.querySelectorAll('[aria-label=\"Demo mode\"]').forEach(b => b.style.display = 'none')"
     )
+    # Public docs describe the UI, not this checkout's inferred version or commit hash.
+    page.get_by_test_id("build-version").evaluate_all(
+        "elements => elements.forEach(el => el.style.visibility = 'hidden')"
+    )
     page.wait_for_function(
         # Only what the frame shows: a lazy thumbnail below the fold is never fetched.
         "() => [...document.images].filter(i => { const r = i.getBoundingClientRect();"
@@ -434,6 +438,30 @@ def test_capture_the_pages_around_the_film(
     expect(roster.first).to_be_visible(timeout=30_000)
     page.wait_for_load_state("networkidle")
     _save(page, d, _name("settings-people", theme))
+
+
+@pytest.fixture(scope="session")
+def first_launch_workspace(first_launch_workspace):
+    """Use the shipped Basic tier, independent of the capture host's GPU."""
+    config = yaml.safe_load(first_launch_workspace.config_path.read_text())
+    config["tier"] = "basic"
+    first_launch_workspace.config_path.write_text(yaml.safe_dump(config))
+    return first_launch_workspace
+
+
+@pytest.mark.parametrize("theme", _THEMES)
+def test_capture_first_run_model_setup(
+    page: Page, first_launch_app_url: str, screenshot_dir: Path, tmp_path: Path, theme: str
+) -> None:
+    """The first-install consent card, readable at a phone's documentation width."""
+    _open(page, f"{first_launch_app_url}/app/create", theme)
+    card = page.get_by_role("region", name="Download models", exact=True)
+    expect(card.get_by_role("button", name="Download models", exact=True)).to_be_enabled()
+    # Keep a desktop capture in test artifacts for review, without publishing its empty margins.
+    _save(page, tmp_path, _name("model-setup-desktop", theme))
+    page.set_viewport_size({"width": 390, "height": 844})
+    _to_top(card, 96)
+    _save_part(page, card, screenshot_dir, _name("model-setup", theme))
 
 
 @pytest.mark.parametrize("theme", _THEMES)

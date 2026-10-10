@@ -27,8 +27,8 @@ from playwright.sync_api import Page, expect
 from tests.e2e.cli_bootstrap import CLI_BOOTSTRAP
 from tests.e2e.conftest import _REPO_ROOT, _build_launch_environment
 from tests.e2e.web_flow import (
+    contact_sheet,
     cut_june,
-    preview_without_the_first_kept,
     render,
     the_film,
 )
@@ -49,8 +49,23 @@ def demo_public_dir() -> Path:
 
 def _render_at_1080p(page: Page, launch_app_url: str) -> None:
     cut_june(page, launch_app_url)
-    # The Remotion owner unticks one kept picture and previews that revision before rendering.
-    preview_without_the_first_kept(page)
+    # Match EditScene: replace the window photo, remove the garden table, save revision 1.
+    shots = contact_sheet(page)
+    inspector = page.get_by_role("article", name="Picture review")
+    shots.nth(1).click()
+    inspector.get_by_role("list", name="Other pictures of this moment").get_by_role(
+        "button"
+    ).first.click()
+    inspector.get_by_role("button", name="Use this picture instead").click()
+    shots.nth(4).click()
+    inspector.get_by_role("button", name="Remove from this cut").click()
+    page.get_by_role("button", name="Save revision").click()
+    expect(page.get_by_role("status")).to_have_text("Saved as revision 1.")
+    expect(contact_sheet(page).nth(1).get_by_text("Swapped", exact=True)).to_be_visible()
+    expect(contact_sheet(page).nth(4).get_by_text("Removed", exact=True)).to_be_visible()
+    expect(page.get_by_role("region", name="Render").get_by_label("What to render")).to_have_value(
+        "1"
+    )
     # WHY no music: the demo composition lays its own track over this clip and mutes the video.
     render(page, resolution="1080p")
     expect(the_film(page)).to_be_visible(timeout=900_000)

@@ -15,10 +15,11 @@ Immich must be reachable from the pod. For NVIDIA scheduling, add GPU Operator a
 
 ## Quick start
 
-Download the [matching release bundle](./gitops.md), then choose the private CPU example:
+Download and extract the [matching release bundle](./gitops.md) into `vendor/immich-memories`,
+then choose the private CPU example:
 
 ```bash
-cd deploy/terraform/examples/basic
+cd vendor/immich-memories/deploy/terraform/examples/basic
 cp terraform.tfvars.example terraform.tfvars
 ```
 

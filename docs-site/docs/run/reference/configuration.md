@@ -6,7 +6,7 @@ title: "Configuration sources and secrets"
 
 ## Where a setting comes from
 
-Four sources, strongest first:
+Five sources, strongest first:
 
 1. **Environment**: `IMMICH_MEMORIES_<SECTION>__<FIELD>` and the shortcuts in
    [environment variables](.././environment-variables.md) (`IMMICH_URL`, `IMMICH_API_KEY`, ...).
@@ -14,14 +14,16 @@ Four sources, strongest first:
 3. **Database**: what the settings page, **Save Config** on the Settings page, and
    `immich-memories config --url URL --api-key KEY` saved. One row per key; a key you never saved has no
    row, so a new default still reaches you after an upgrade.
-4. **Default**: the value in the [config reference](../../reference/config-reference.md).
+4. **Deployment defaults**: `IMMICH_MEMORIES_DEPLOYMENT_*` values supplied by Compose or
+   Kubernetes. These set the starting tier and service connections; saved Settings can override them.
+5. **Default**: the value in the [config reference](../../reference/config-reference.md).
 
 If a store is configured (a PostgreSQL URL, or a SQLite file that exists) and its settings cannot
 be read, the app does not start: the CLI exits with the error and the web UI refuses to start.
 The message names the store (password masked) and the cause, such as a refused connection or a
 corrupt file. Starting anyway on half the settings could send an automated run somewhere you did
 not mean. Fix the database or its URL, or set `IMMICH_MEMORIES_SKIP_STORED_SETTINGS=1` to start on
-env, `config.yaml` and defaults only. A SQLite store that does not exist yet is a fresh install and
+environment, `config.yaml`, deployment defaults and built-in defaults only. A SQLite store that does not exist yet is a fresh install and
 starts silently.
 
 The first source that sets a key wins, key by key: `advanced.llm.model` in the file and `llm.base_url`
@@ -109,8 +111,8 @@ Unknown keys inside a section are ignored; unknown top-level keys and invalid va
 
 ## Paths in the config are host paths
 
-Everything else in this file travels to another machine. These keys don't: they name paths on the
-machine that wrote them. `immich-memories preflight` prints one `Config paths` warning naming every
+These keys name paths on the machine running the app. Inside a container, they name container
+paths; use mounts to connect them to host storage. `immich-memories preflight` prints one `Config paths` warning naming every
 path that is missing here, so a copied config fails up front instead of hours into a run.
 
 | Key | What it points at |

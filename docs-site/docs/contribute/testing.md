@@ -20,7 +20,10 @@ Start with unit tests, then run the checks for the boundaries your change touche
 `make test-fast` excludes slow, integration, e2e and container tests; the full suite is `make test`.
 Integration suites skip rather than fail when their services aren't there, unless `REQUIRE_IMMICH=1` (the gate below sets it). The Makefile lists the per-suite targets. Three suites are outside `make test-integration`: `cli`, which
 re-runs the pipeline `pipeline` already covers and is the slowest in the tree; `audio`, which wants
-the demucs and ACE-Step packages; and `automation`, which has no dedicated make target. For that suite only, use `uv run pytest tests/integration/automation`.
+the demucs and ACE-Step packages; and `automation`, which has no dedicated make target. For that
+suite only, use `uv run pytest -m integration tests/integration/automation`. The marker override
+is required: pytest's default options exclude integration tests. This command reads your configured
+Immich library and uses your real app home, so it needs the same setup as the other integration suites.
 
 ## The real-Immich gate
 
@@ -163,19 +166,23 @@ The [CI guide](./ci.md) describes change scope, matrix jobs and required rollups
 
 ## Hardware encoders are absent on CI
 
-`render_single_photo` picks its encoder from `check_zscale_available()`: with zscale it uses
-`hevc_videotoolbox`, without it `libx264`. VideoToolbox writes no file inside CI's macOS VM, and
-the function returns `None` when encoding produces nothing, so the failure surfaces as whatever the
-test asserted next, not as an encoder error. Any unit test that reaches the photo encoder needs the
-software path forced:
+`render_single_photo` chooses its encoder from the encoding plan and verified hardware
+capabilities. The `zscale` filter controls colour conversion; its presence does not prove a
+hardware encoder works. For a test that needs real FFmpeg output on the CPU, pass
+`capabilities=HWAccelCapabilities()` to `render_single_photo`. To exercise a caller that probes
+the hardware itself, replace that probe:
 
 ```python
+from immich_memories.processing.hardware import HWAccelCapabilities
+
+# WHY: the test needs software encoding regardless of the machine running it.
 monkeypatch.setattr(
-    "immich_memories.processing.hdr_utilities.check_zscale_available", lambda: False
+    "immich_memories.processing.hardware.detect_hardware_acceleration",
+    lambda *args, **kwargs: HWAccelCapabilities(),
 )
 ```
 
-It passes on a real Mac either way, which is what makes this one easy to merge and hard to notice.
+Keep the real filter checks when the test verifies HDR or colour conversion.
 
 ## Native Immich sharing
 
@@ -191,7 +198,7 @@ its containers. `NATIVE_GATE_PORT` defaults to `2304`. Disposable keys stay unde
 `.immich-gate` directory. Never publish its state file.
 
 The gates cover the partner-only person episode, selected-owner scope, timeline changes,
-favourites on absorbed copies, read-only keys and upstream person merges. The 3.3 RC also
+favourites on absorbed copies, read-only keys and upstream person merges. The 3.3 gate also
 checks people-sharing roles and revocation. The 3.2 fixture connects manually assigned faces
 through the disposable database; it does not test recognition accuracy. Production fetching
-never writes cluster or sharing state. 3.3 stable validation remains pending.
+never writes cluster or sharing state. The pinned versions are 3.2.4 and 3.3.0.

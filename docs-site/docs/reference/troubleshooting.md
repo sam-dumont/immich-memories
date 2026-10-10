@@ -21,7 +21,15 @@ immich-memories preflight
 immich-memories report --bundle report.zip
 ```
 
-In Docker, prefix the command with `docker compose exec immich-memories`. The report is redacted and nothing is sent automatically. Review it before attaching it to an issue. [Report details](../make/cli/report.md).
+In Docker, prefix commands with `docker compose exec immich-memories`. To save the report on the
+host, use the mounted output folder:
+
+```bash
+docker compose exec immich-memories immich-memories report --bundle /app/output/report.zip
+```
+
+The file is `./output/report.zip` on the host. The report is redacted and nothing is sent
+automatically. Review it before attaching it to an issue. [Report details](../make/cli/report.md).
 
 ## When it stops
 
@@ -29,8 +37,8 @@ In Docker, prefix the command with `docker compose exec immich-memories`. The re
 |---|---|
 | `public heads need the pinned DINOv2 ONNX export at …` | Run `immich-memories models fetch` once. It puts the encoder and required tier artifacts on the models volume |
 | `nsfw_marqo has no model: …` or `doc_docling has no model: …` | Run `models fetch` with the same tier/config as the failed run, or explicitly use `models fetch --detectors` |
-| `Output directory is not writable` | In Docker the container runs as uid 1000: `mkdir output` before `up`, or `sudo chown 1000:1000 output` |
-| `Output directory … is not a mounted volume` | The films land on the container's own layer and disappear when it restarts. Mount a volume or a persistent claim at that path |
+| `Output directory is not writable` | The container runs as UID 1000. Create `output` and give that user write permission; creating the folder alone is not enough. See [output permissions](../run/nas.md#the-output-folder) |
+| `Output directory … is not a mounted volume` | The films land on the container's own layer and are lost when the container is replaced. Mount a volume or a persistent claim at that path |
 | `IMMICH_MEMORIES_OUTPUT__DIRECTORY=… overrides config.yaml's output.directory` | Environment variables win over the file, and the image sets this one. Films go where the variable says. Unset it, or point it at the directory you mounted |
 | `Story-first selection needs prepared annotations in the store at …` | The store this run opened has no prepared facts for these pictures: check the store named by `database.url` or the environment. Both `IMMICH_MEMORIES_DATABASE__URL` and `IMMICH_MEMORIES_DATABASE_URL` work. If the store is correct, run `prepare` |
 | `tier: full needs an enabled LLM …` | Enable `advanced.llm.enabled`. For a native install, leave `base_url` empty for the owned local model and install its weights/server. Docker and Kubernetes need an external reader endpoint; `tier: gpu` uses the rules reader |
@@ -126,8 +134,10 @@ retry window.
 
 ## The first cut is slow
 
-A cut prepares the pictures it can reach once (previews, pixel facts, heads, detectors, and on the `gpu` and
-`full` tiers a caption for the pictures it selects and their candidates) and banks them. The second cut over the same period is mostly the render. The levers, in order:
+A cut prepares previews, pixel facts and small classifier results for the pictures it can reach.
+GPU and Full add detectors and captions for selected pictures and replacement candidates. Later
+cuts reuse compatible facts. Rendering still downloads originals, processes media and encodes the film.
+To reduce preparation time, the steps are:
 keep the cache volume, prepare ahead with [`prepare`](../make/cli/prepare.md) overnight, and move the heads to a
 faster box with [the inference service](../better/inference.md). `immich-memories runs show` prints where
 a run spent its time, and `immich-memories report` puts the same phase table in a shareable report.

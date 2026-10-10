@@ -23,10 +23,13 @@ in the app; captions alone do not enable GPU selection.
 
 ## Separate Docker Compose captioner
 
-The released GPU file starts inference, the caption weight downloader and the caption server:
+For an existing Compose install, [select the GPU and CUDA files](../reference/compose-files.md#select-the-files)
+from the same release as the app. They start inference, the caption weight downloader and the
+caption server. Keep the file selection in `.env` for later restarts and updates.
+
+Check the caption server from the host running Compose:
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
 curl -s localhost:8094/v1/models
 ```
 
@@ -52,11 +55,14 @@ From Docker Desktop, replace `localhost` with `host.docker.internal`. A Docker c
 
 ## Check it
 
+In Docker, prefix `immich-memories` commands with `docker compose exec immich-memories`
+from the app's installation folder.
+
 ```bash
 immich-memories preflight
 ```
 
-Look for **Captions OK Serving smolvlm2-500m-base-public**. The app checks the served model and synthetic control pictures before sending your library’s pictures. GPU and Full need a working caption provider; Basic with default settings skips it.
+Look for **Captions OK Serving smolvlm2-500m-base-public**. Preflight checks the served model name; preparation checks synthetic control pictures before sending your library’s pictures. GPU and Full need a working caption provider; Basic with default settings skips it.
 
 The [service reference](../reference/caption-service.md#how-preflight-reports-it) explains unreachable, wrong-model and authentication failures.
 

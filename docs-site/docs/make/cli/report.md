@@ -12,6 +12,16 @@ immich-memories report RUN_ID
 immich-memories report RUN_ID --bundle report.zip
 ```
 
+In Docker, prefix commands with `docker compose exec immich-memories`. Save a ZIP through the
+output mount so you can open it on the host:
+
+```bash
+docker compose exec immich-memories immich-memories report RUN_ID --bundle /app/output/report.zip
+```
+
+The host file is `./output/report.zip`. The browser's **Copy report** and **Download report**
+buttons need no terminal.
+
 Without an ID it uses the latest run. A supplied `RUN_ID` must be the full ID; unlike `runs` commands, `report` does not resolve prefixes. The ZIP includes the report and full redacted logs. `--json` gives the report as data.
 
 ## What it includes

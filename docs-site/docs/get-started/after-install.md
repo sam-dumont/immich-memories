@@ -28,15 +28,26 @@ Try **Monthly Highlights** for a month with pictures you like, or choose a trip,
 year. A larger period needs more preparation. Compatible picture facts from earlier films are
 reused. Review the cut and finished film before sharing.
 
+## Save credentials in Settings
+
+The Immich URL and API key in `.env` work without further setup. To save credentials through
+Settings instead, [set an encryption key](../run/config-file.md#secrets-in-the-database) and
+[remove the corresponding environment values](../run/config-file.md#where-a-setting-comes-from).
+Environment values take precedence over Settings.
+
 ## Keep a backup {#6-keep-a-backup}
+
+With Docker Compose, run from your installation folder:
 
 ```bash
 docker compose exec immich-memories immich-memories store backup
 docker compose cp immich-memories:/home/immich/.immich-memories/backups ./backups
 ```
 
+On a native install, run `immich-memories store backup`; it prints the backup path.
 Copy backups off the host. Keep each backup with its `.manifest.json`, your deployment config
-and the saved-credential encryption key. Losing the key means re-entering saved credentials.
+and the encryption key if you save credentials in Settings. Losing that key means re-entering
+those credentials.
 [Storage and backups](../run/maintenance/storage-backups.md) covers restore and PostgreSQL.
 
 
@@ -48,9 +59,9 @@ To send films back to Immich, add the [upload permissions](../run/docker.md#the-
 
 ## Change the tier or services {#7-add-what-you-need}
 
-[Choose your setup](./choose-your-setup.md) explains Basic, GPU and Full. When you change tiers,
-run `models fetch`, `preflight` and `capabilities` for that configuration. Compatible facts and
-review decisions stay in your store.
+[Choose your setup](./choose-your-setup.md) explains Basic, GPU and Full. Follow its
+[tier-change steps](./choose-your-setup.md#change-services-later) to download any missing models and check the new configuration. Compatible facts and review
+decisions stay in your store.
 
 <span id="1-fetch-the-models" /><span id="2-check-the-installation" />
 

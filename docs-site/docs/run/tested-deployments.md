@@ -30,7 +30,7 @@ updates in place rather than piling up history.
 |---|---|---|---|---|---|---|
 | Linux x86-64 | [Basic Compose](./docker.md) | v1.0.0-rc.8 candidate | Intel Xeon E3-1240 v6, Docker-in-Docker, 4 GiB app limit | Basic | Verified candidate | Fresh app volume, supplied image archive; album and month films, software H.264; recovered from a 15-second connection outage; [transcript][candidate-runs] |
 | Synology | [SSH + Compose](reference/synology-operations.md#sshcompose-installation-from-published-files) | v1.0.0-rc.8 candidate | DS423+, Intel J4125, 4 GiB app limit, software H.264 | Basic | Verified candidate | Fresh app volume, supplied image archive; authenticated UI album and CLI month films; restart and download checks; [transcript][candidate-runs] |
-| Synology | [Container Manager GUI](./platforms/synology.md) | n/a | any Synology, software encoding | Basic | Documented, untested | Project wizard not yet exercised |
+| Synology | [Container Manager GUI](./platforms/synology.md) | n/a | any Synology, software encoding | Basic | Documented, untested | Project and folder dialogs inspected; creating and starting the app through the GUI is untested |
 | Unraid | [GUI template](./platforms/unraid.md) | n/a | any x86-64, software encoding | Basic | Documented, untested | [Report your results](https://github.com/sam-dumont/immich-memories/issues) |
 | TrueNAS | [Custom app](./platforms/truenas.md) | n/a | any x86-64, software encoding | Basic | Documented, untested | [Report your results](https://github.com/sam-dumont/immich-memories/issues) |
 | Linux ARM64 | [Compose](./docker.md) | n/a | ARM64, software encoding | Basic | Documented, untested | GPU overlays need CUDA and don't apply here |
@@ -60,7 +60,7 @@ rows below a verified route describe different setups, not a lower status for th
 | Route | Infrastructure and budgets | Reader |
 |---|---|---|
 | Basic Compose or vendor GUI | Docker/Compose or a vendor manager, 2 cores, 4 GiB app, 25 GB app data plus image/output | None required by default; Immich access only |
-| Generated Kubernetes GPU | Cluster with a GPU device plugin, storage class, two schedulable GPU allocations; 8 GiB/4 CPUs plus [service budgets](./local-models.md#kubernetes-services) | External reader for Full |
+| Generated Kubernetes GPU | Cluster with NVIDIA device access, a storage class and configured GPU sharing: inference reserves one allocation; captions share the device without a reservation. App: 8 GiB/4 CPUs plus [service budgets](./local-models.md#kubernetes-services) | External reader for Full |
 | Independent Kubernetes | Operator-supplied model/worker endpoints and their own RAM/VRAM/storage | External reader; operator controls GPU sharing and egress |
 | Native Apple Silicon | Python, FFmpeg, app/model memory | App-owned `llama-server`, or an external server |
 | NAS + GPU box | NAS app budget plus a separate worker/model host | Inference/caption traffic to that host; rendering only moves there if a render endpoint is configured |

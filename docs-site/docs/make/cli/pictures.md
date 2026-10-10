@@ -6,6 +6,9 @@ title: pictures
 
 Set a persistent decision on one picture: clear a sharing hold or never use it. These commands write the same decisions as the browser pool's **Clear hold**, **Never use** and **Undo** buttons.
 
+In Docker, run these commands from the installation folder with
+`docker compose exec immich-memories` before `immich-memories`.
+
 Open the picture in Immich and copy the ID from the end of its URL: `/photos/ASSET_ID`. Replace `ASSET_ID` below with that ID.
 
 ## Inspect a hold
@@ -44,7 +47,9 @@ immich-memories pictures undo ASSET_ID
 immich-memories pictures list
 ```
 
-**Never use** excludes the picture from future cuts. Undo that decision before including it again. `undo` also removes a clearance, letting the app's normal holds apply again.
+**Never use** excludes the picture from future automatic selections. Undo it to allow automatic
+selection again; an explicit pool tick can still include it in one saved revision. `undo` also
+removes a clearance, letting the app's normal holds apply again.
 
 A Live Photo decision covers its still and motion clip. To change only this film, use a saved review revision instead: [Review and adjust](../../how-it-chooses/overrule-it.md).
 

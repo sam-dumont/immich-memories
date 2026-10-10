@@ -35,7 +35,7 @@ These examples are the author's own footage, published with permission.
 
 ```mermaid
 flowchart TD
-  A[Selected Live Photo] --> B{Useful motion?}
+  A[Selected Live Photo] --> B{Useful motion and<br/>playable original?}
   B -- Yes --> C[Play the clip or stitched burst]
   B -- No --> D[Animate the still]
 ```

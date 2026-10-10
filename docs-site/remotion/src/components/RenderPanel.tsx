@@ -1,10 +1,11 @@
 import React from "react";
 import { Img, OffthreadVideo, staticFile } from "remotion";
-import { mdiMusicNote, mdiPlay, mdiUpload } from "@mdi/js";
+import { mdiPlay, mdiUpload } from "@mdi/js";
 import { UI } from "../theme";
 import { Mdi } from "./Mdi";
 import { JobPanel } from "./JobPanel";
 import { Button, Check, Field, Heading } from "./ui";
+import { FILM_SECONDS } from "../fixture";
 
 /**
  * web/src/lib/RenderPanel.svelte: what to render (the cut as chosen or a saved
@@ -23,7 +24,7 @@ export type RenderState = {
 };
 
 export const RENDER_COMMAND = (runId: string) =>
-  `immich-memories runs render ${runId} --revision=1 --music-volume=0.5 --add-date`;
+  `immich-memories runs render ${runId} --revision=1 --resolution=1080p --format=mp4 --add-date --add-place --no-music`;
 
 const Radio: React.FC<{ label: string; checked?: boolean }> = ({
   label,
@@ -92,17 +93,22 @@ const Form: React.FC<{ state: RenderState }> = ({ state }) => (
       {state.open && <Options hover={state.open} />}
     </div>
     <Field label="Transition Style" value="As configured" select />
+    <Field label="Title style" value="As configured" select />
+    <Field label="Opening and closing fade" value="As configured" select />
     <Field label="Title (decided as generate decides when empty)" value="" />
     <Field label="Subtitle" value="" />
     <Field label="Who names the film" value="As generate decides" select />
     <Field label="Orientation" value="Automatic" select />
-    <Field label="Resolution" value="As configured" select />
-    <Field label="Format" value="As configured" select />
+    <Field label="Resolution" value="1080p" select />
+    <Field label="Format" value="MP4 (H.264)" select />
     <Field label="Quality" value="As configured" select />
     <Field label="Scaling Mode" value="As configured" select />
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       <Check label="Add date overlay" checked={state.addDate} />
       <Check label="Caption clips with their place" checked />
+      <p style={{ fontSize: 12, lineHeight: "16px", color: UI.gray600, margin: "-4px 0 0 24px" }}>
+        The place is Immich&apos;s. With geocoding on (Settings, network), it names the district in the film&apos;s language, through the public Nominatim or network.geocoding_url.
+      </p>
       <Check label="Privacy mode: blur every picture and scramble names" />
     </div>
     <div />
@@ -112,18 +118,15 @@ const Form: React.FC<{ state: RenderState }> = ({ state }) => (
         display: "flex",
         flexDirection: "column",
         gap: 12,
-        height: 132,
+        height: 104,
       }}
     >
       <div style={{ fontSize: 14, fontWeight: 600 }}>Music</div>
       <div style={{ display: "flex", gap: 8 }}>
-        <Radio label="Automatic (as configured)" checked />
-        <Radio label="No music" />
+        <Radio label="Automatic (as configured)" />
+        <Radio label="No music" checked />
       </div>
       <div style={{ display: "flex", gap: 8 }}>
-        <Button size="small" variant="outline" icon={mdiMusicNote}>
-          Preview a track
-        </Button>
         <div
           style={{
             display: "flex",
@@ -138,41 +141,6 @@ const Form: React.FC<{ state: RenderState }> = ({ state }) => (
           <Mdi path={mdiUpload} size={16} />
           Upload a track
         </div>
-      </div>
-      <div
-        style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 14 }}
-      >
-        Music volume:
-        <div
-          style={{
-            position: "relative",
-            width: 192,
-            height: 4,
-            borderRadius: 2,
-            background: UI.gray300,
-          }}
-        >
-          <div
-            style={{
-              width: "50%",
-              height: "100%",
-              borderRadius: 2,
-              background: UI.primary,
-            }}
-          />
-          <div
-            style={{
-              position: "absolute",
-              left: 88,
-              top: -6,
-              width: 16,
-              height: 16,
-              borderRadius: 999,
-              background: UI.primary,
-            }}
-          />
-        </div>
-        <span>50%</span>
       </div>
     </div>
     <div style={{ gridColumn: "span 2" }}>
@@ -223,7 +191,7 @@ const Film: React.FC<{ film: NonNullable<RenderState["film"]> }> = ({
           }}
         >
           <Mdi path={mdiPlay} size={22} />
-          0:00 / 1:02
+          0:00 / {Math.floor(FILM_SECONDS / 60)}:{String(Math.round(FILM_SECONDS) % 60).padStart(2, "0")}
         </div>
       </>
     )}
@@ -258,7 +226,9 @@ export const RenderPanel: React.FC<{ runId: string; state: RenderState }> = ({
     {state.job?.done && state.film && (
       <>
         <Film film={state.film} />
-        <div style={{ fontSize: 14, color: UI.primary }}>Open the film run</div>
+        <div style={{ display: "flex", gap: 16, fontSize: 14, color: UI.primary }}>
+          <span>Download film</span><span>Open the film run</span>
+        </div>
       </>
     )}
     {(!state.job || state.job.done) && <Form state={state} />}

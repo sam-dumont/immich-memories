@@ -18,28 +18,11 @@ For a single file to paste into a stack editor, use the [setup builder](/setup).
 This page covers operating that installation. [Installation help](../reference/installation-help.md)
 has port, permissions and startup fixes.
 
-### 1. Get the files
-
-Use the [download block for your tier](../get-started/quick-start.md#1-download-the-files).
-
-### 2. Connect Immich
-
-Set the [Immich connection](../get-started/quick-start.md#2-connect-immich) and use the
-[API-key permissions](#the-api-key) below. Home coordinates and film language can be set after
-installation in [Settings](../get-started/after-install.md).
-
-### 3. Start and check
-
-Run the [start and model commands](../get-started/quick-start.md#3-start-and-download-the-local-models)
-from the same Compose project directory.
-
-### 4. Open the app
-
-[Open the app and make a film](../get-started/quick-start.md#4-open-the-app).
-
-### When a step is missing
-
-Use [Installation help](../reference/installation-help.md#read-preflight).
+<span id="1-get-the-files" />
+<span id="2-connect-immich" />
+<span id="3-start-and-check" />
+<span id="4-open-the-app" />
+<span id="when-a-step-is-missing" />
 
 ## Reaching the UI from another machine
 
@@ -70,8 +53,9 @@ To check that auth is on, call a protected route without logging in, from anothe
 curl -s -o /dev/null -w '%{http_code}\n' http://your-server:8080/api/v1/settings
 ```
 
-It answers 401 without a session and 200 after login. `/health/ready` is anonymous on purpose
-and returns the app version and whether Immich is reachable, so it isn't an auth test.
+It answers 401 without an app session and 200 with one. `/health/ready` is anonymous on purpose:
+it reports the app version and overall readiness, while detailed connection results require a
+session when authentication is enabled. Use the protected settings route to check authentication.
 
 This port speaks plain HTTP: the password and session cookie cross your LAN in the clear. For
 TLS, put a reverse proxy in front and keep `UI_BIND_ADDRESS=127.0.0.1`
@@ -200,7 +184,7 @@ The service then reaches Immich over that stack's internal network.
 For a fresh GPU or Full installation, use the tier tab in [Quick start](../get-started/quick-start.md).
 The guides below cover changing individual services on an existing install.
 
-<Diagram name="deploy-compose" headline="Start with one container. Add a file for each upgrade." />
+<Diagram name="deploy-compose" headline="Basic is one container. GPU adds inference and captions; Full connects your reader." />
 | Want | Setup |
 |---|---|
 | GPU picture preparation | [Inference service](../better/inference.md), `docker-compose.gpu.yml` |

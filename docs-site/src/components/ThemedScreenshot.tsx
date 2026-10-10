@@ -21,3 +21,14 @@ export default function ThemedScreenshot({name, alt}: Props) {
     </figure>
   );
 }
+
+export function Screenshot({src, alt}: {src: string; alt: string}) {
+  const url = useBaseUrl(src);
+  return (
+    <figure className="docs-screenshot">
+      <a href={url} aria-label={`Open full-size screenshot: ${alt}`} target="_blank" rel="noopener noreferrer">
+        <img src={url} alt={alt} loading="lazy" style={{cursor: 'zoom-in'}} />
+      </a>
+    </figure>
+  );
+}

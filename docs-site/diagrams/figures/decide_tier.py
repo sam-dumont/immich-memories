@@ -20,9 +20,9 @@ with diagram(STEM, nodesep="0.3", ranksep="0.45"):
                 ),
             },
             {
-                "q": "No GPU found?",
+                "q": "No inference<br/>GPU found?",
                 "icon": icon("mdi:expansion-card", "neutral"),
-                "sub": "CUDA, MLX, Metal",
+                "sub": "local CUDA/Metal<br/>or remote CUDA inference",
                 "exit": (
                     "<b>Basic</b>",
                     icon("mdi:cpu-64-bit", "keep"),

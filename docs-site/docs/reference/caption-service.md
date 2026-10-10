@@ -14,13 +14,10 @@ restarts it on demand. The standalone Compose/Kubernetes recipes below run their
 do not add one just to use unified captions.
 
 The unified caption route has no authentication, even though `/render` on the same listener
-requires a token. Keep it private. Both deployments default to a 128 MiB host prompt cache.
-The bundled command sets `LLAMA_ARG_CACHE_RAM=128` unless you provide a value; an explicit
-`--cache-ram` argument takes precedence. This cache holds reusable model state in RAM, not the
-descriptions saved in the app's database. It is not a limit on the worker's total RAM or VRAM.
-
-The standalone recipes also set `--parallel 1`; the unified bundled command keeps llama.cpp's
-automatic slot count. Context size is 8192 in both recipes. Neither guarantees a fixed VRAM peak.
+requires a token. Keep it private. The standalone recipes explicitly set `--cache-ram 128` and
+`--parallel 1`; the unified bundled command does not set those bounds. Context size is 8192
+in both recipes. The prompt cache holds reusable model state in RAM, not saved picture
+descriptions. These settings do not cap the worker's total RAM or VRAM.
 
 ## Explicit LLM captions
 
@@ -161,11 +158,13 @@ A passing caption check does not certify the whole selection/render/music handof
 
 ## Docker and Linux, with llama.cpp
 
-The released GPU tier file includes a weight downloader and a caption server. The downloader
-checks both pinned digests before starting the server:
+The released GPU tier file includes a weight downloader and a caption server. For NVIDIA,
+include the CUDA file too ([device prerequisites](#on-an-nvidia-host)); the GPU file alone uses
+CPU images for diagnosis. [Compose setup files](./compose-files.md#select-the-files) covers downloads
+and keeping the selection in `.env`. The downloader checks both pinned digests before starting:
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
+docker compose -f docker-compose.yml -f docker-compose.gpu.yml -f docker-compose.cuda.yml up -d
 curl -s localhost:8094/v1/models
 ```
 

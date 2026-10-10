@@ -101,12 +101,9 @@ keeps priority for stems. Neither setting changes the ACE-Step generation endpoi
 
 ## Running it with compose
 
-The base file runs Basic. Add the released GPU tier file to start inference and captions:
-
-```bash
-docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
-curl -s localhost:8092/health
-```
+The base file runs Basic. For GPU inference and captions, use the released GPU and CUDA files.
+[Compose setup files](./compose-files.md#select-the-files) covers downloads and keeping the selection
+in `.env`. The GPU file alone uses CPU images for diagnosis and does not pass GPU readiness.
 
 For NVIDIA, install the
 [NVIDIA container toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)

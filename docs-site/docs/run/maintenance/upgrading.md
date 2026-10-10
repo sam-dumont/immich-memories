@@ -3,6 +3,8 @@ title: Upgrading
 sidebar_label: Upgrading
 ---
 
+import InstallationFiles from '@site/src/components/InstallationFiles';
+
 # Upgrading
 
 Read the [release notes](https://github.com/sam-dumont/immich-memories/releases),
@@ -42,11 +44,10 @@ return HTTP 413. The soundtrack upload route keeps its separate 64 MiB file limi
 
 ## Temporary working files
 
-Runtime temporary files use configured cache/output storage. Mount `cache.directory` for the
-app and the configured cache or output directory for each worker, and leave room for temporary
-media alongside retained files. The app establishes Python and subprocess temporary-directory
-defaults at startup; an unusable scratch directory stops startup instead of choosing another
-filesystem. A custom `TMPDIR` is replaced by that configured storage while the app runs.
+Keep cache and output directories on mounted storage with free space. Some working files,
+including sampled video frames, use the system temporary directory, usually `/tmp`. They need
+space there even when the cache volume has room. To move Python temporary files, set `TMPDIR`
+to an existing writable directory on the intended mount before starting the app or worker.
 
 See [temporary working files](./storage-backups.md#temporary-working-files) for the locations
 and interrupted-run recovery.
@@ -98,20 +99,31 @@ Config and films survive a recreate.
 
 ## uv / pip
 
+Back up before changing the installed package:
+
 ```bash
 immich-memories store backup
-uv tool upgrade immich-memories
+```
+
+The native install pins a version. `uv tool upgrade` keeps that pin, so replace it by running the
+current package command for your platform:
+
+<InstallationFiles kind="native" />
+
+Keep any extras you added: on Apple Silicon with OIDC, change `[all-mac]` to `[all-mac,auth]` and
+retain `--with laya-mlx`. This updates the app environment and leaves its configuration and store
+in place. See [uv's version-constraint rule](https://docs.astral.sh/uv/guides/tools/#upgrading-tools).
+
+For pip, run `python -m pip install --upgrade` inside the app's virtual environment with the same
+quoted package and version specification shown above. Keep the same extras; Apple Silicon GPU/Full
+also needs `laya-mlx` in that environment.
+
+Then verify the new model pins and installation:
+
+```bash
 immich-memories models fetch
 immich-memories preflight
 ```
-
-For pip, keep the same extras:
-
-```bash
-pip install --upgrade "immich-memories[all]"
-```
-
-On Apple Silicon, use `immich-memories[all-mac]`, or `immich-memories[all-mac,auth]` for OIDC.
 
 ## Kubernetes and Terraform
 
@@ -190,8 +202,8 @@ volume. Replace the example backup name with yours (`.dump` for PostgreSQL):
 
 ```bash
 docker compose stop immich-memories
-# Set image: to the old release in Compose (and its override, if present).
-# Align inference and render worker tags with that release too.
+# Set IMMICH_MEMORIES_VERSION in .env to the old release (no v prefix).
+# For single-file/custom installs, set matching app, inference and worker image tags.
 docker compose pull
 docker compose run --rm immich-memories immich-memories store restore \
   --from /home/immich/.immich-memories/backups/store-20260930T090000Z.db --force

@@ -85,7 +85,7 @@ immich-memories titles fonts --install
 Font files are pinned and digest-checked. A render never fetches a font. Detector downloads are
 off unless allowed; the Compose inference overlay allows them, and the GPU overlay's one-shot
 `immich-memories-caption-models` container fetches the caption model's weights at `compose up`,
-before the captioner starts. `models fetch` and the web UI's **Fetch models** button run the same
+before the captioner starts. `models fetch` and the web UI's **Download models** button run the same
 download on demand. ACE-Step and local Demucs can fetch their own weights on first use.
 Those downloads contain no library data. Local ACE-Step uses app-pinned immutable Hugging Face
 snapshots and refuses incomplete downloads; [checkpoint revisions](./reference/privacy-egress.md#ace-step-checkpoint-revisions)
@@ -125,12 +125,12 @@ names/places, coordinates, addresses, URLs and absolute paths removed. Asset IDs
 hashes. It contains no pictures and sends nothing automatically.
 Read it before sharing; automatic redaction is not a substitute for checking the file.
 
-## Documents never ship
+## Personal documents {#documents-never-ship}
 
-A photographed ID card, passport, bank card, letter or form with readable personal text is
-held back on every tier, on purpose, including its OCR check against your own configured
-Immich server, never an outside service; see [picking a shot](../how-it-chooses/picking-shots.md)
-for how it's caught.
+Every tier checks for screenshots and photographed documents, including ID cards, bank cards,
+letters and forms. The OCR check uses your configured Immich server. Suspected documents are
+held back, but a pin can override the personal-document check. Review the cut before sharing: a
+document can escape detection. See [picking a shot](../how-it-chooses/picking-shots.md) for the checks.
 
 ## Everything that can leave, and when
 

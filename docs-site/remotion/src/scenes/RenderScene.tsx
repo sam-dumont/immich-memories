@@ -19,7 +19,7 @@ import { CUT_CONTENT_BUDGET } from "../fixture";
 const RENDER_Y = 1416;
 const FORM_Y = RENDER_Y + 32;
 const PANEL_SCROLL = 1306;
-const BUTTON_SCROLL = 1506;
+const BUTTON_SCROLL = 1624;
 // Once the form is gone the page is shorter, and the browser pulls the scroll back with it.
 export const JOB_SCROLL = 860;
 
@@ -33,10 +33,10 @@ const REVISION_XY = onScreen(
   MAIN_X + 120,
   FORM_Y + 70 + 4 + 34 + 17 - PANEL_SCROLL,
 );
-// The privacy checkbox wraps to two lines at this width: the checks take 96 px, not 76.
+// Six field rows, then the place explanation and privacy checkbox, followed by music.
 const RENDER_XY = onScreen(
   MAIN_X + 40,
-  FORM_Y + 5 * 82 + 96 + 16 + 132 + 16 + 20 + 16 + 31 - BUTTON_SCROLL,
+  FORM_Y + 6 * 82 + 160 + 16 + 104 + 16 + 20 + 16 + 31 - BUTTON_SCROLL,
 );
 
 const cursorSteps = [

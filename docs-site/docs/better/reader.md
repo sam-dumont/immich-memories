@@ -20,7 +20,7 @@ brew install llama.cpp
 
 On Linux, install a CPU or CUDA build from the [llama.cpp releases](https://github.com/ggml-org/llama.cpp/releases), or follow its [build instructions](https://github.com/ggml-org/llama.cpp/blob/master/docs/build.md). Put `llama-server` on `PATH`. GPU offload follows the build defaults; the owned process does not accept custom GPU-layer flags.
 
-The published Docker image does not include `llama-server`. Docker and Kubernetes installs need an external reader server. Then enable the reader in your config:
+The published Docker image does not include `llama-server`. For Docker or Kubernetes, use [an existing server](#use-an-existing-server) or a [hosted reader](#hosted) below. On a native install with `llama-server` ready, enable the local reader:
 
 ```yaml
 advanced:
@@ -79,6 +79,9 @@ advanced:
 The provider preset supplies the API URL. Provider names, native Ollama and Anthropic examples, token settings and batching live in the [LLM reference](../reference/llm-providers.md).
 
 ## Check the setup
+
+In Docker, prefix `immich-memories` commands with `docker compose exec immich-memories`
+from the app's installation folder.
 
 ```bash
 immich-memories preflight

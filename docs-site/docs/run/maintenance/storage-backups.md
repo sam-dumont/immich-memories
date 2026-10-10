@@ -171,15 +171,17 @@ limit. Finished films are separate, at `~/Videos/Memories` on Python or `/app/ou
 
 ### Temporary working files
 
-Keep `cache.directory` and the output directory on mounted storage with free space. The CLI
-and web app put temporary working files under the cache, including sampled video frames.
-Python and child processes use `cache.directory/scratch` as their default temporary directory.
-The inference service uses its configured cache; the render worker uses its configured output
-directory. The combined GPU worker uses the render worker's output directory.
+Keep `cache.directory` and the output directory on mounted storage with free space. Some
+working files, including sampled video frames, use the system temporary directory, usually
+`/tmp`. To move Python temporary files, set `TMPDIR` to an existing writable directory on the
+intended mount before starting the app or worker. Changing the cache path alone does not move them.
 
-Video and Live Photo preparation samples at most `advanced.editorial.preparation.batch_size`
-sources at a time (32 by default). Each batch saves its facts before releasing its frames.
-An interrupted run reuses finished batches when you retry the same request.
+The inference service keeps each Demucs job under its configured cache. Render jobs keep their
+working files under the worker's configured output directory, including on the combined GPU
+worker. These job directories do not redirect every library's temporary files.
+
+Video and Live Photo preparation can keep sampled frames for many source clips at once. The
+`advanced.editorial.preparation.batch_size` setting does not cap that disk usage.
 
 Scratch needs space beyond the preview and video cache budgets. Temporary files are removed
 when their work finishes; a killed process can leave files behind. Stop the app and its workers
@@ -187,12 +189,12 @@ before removing leftover scratch files. Keep the store and retained run inputs.
 
 ### Full disk during preparation
 
-The CLI exits with an error; the web job stops its progress bar and displays the storage failure.
-If the full disk also prevents saving the job status, the running server keeps that status in
-memory. After a server restart, a job whose process has disappeared is marked interrupted.
+A full disk can prevent both the work and its job-status update from being saved. The browser's
+progress may stay stale until space is available. After freeing space, reload the page; a job
+whose process has disappeared is marked interrupted.
 
-Expand the data volume, or stop work and [clear only disposable caches](#clearing). Check both
-free bytes and free inodes with `df -h` and `df -i` on the filesystem holding `cache.directory`.
+Expand the full volume, or stop work and [clear only disposable caches](#clearing). Check free
+bytes and free inodes with `df -h` and `df -i` on the cache, output and temporary filesystems.
 For Kubernetes, verify the mounted filesystem has grown as well as the PVC's requested size.
 Keep the store and retry the same request: completed facts and usable cached previews are reused.
 Deleting the whole data volume loses those facts, settings and run history.

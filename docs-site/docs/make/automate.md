@@ -12,13 +12,10 @@ Make and review a few films manually first. Set [home and people](../get-started
 <Diagram name="seq-scheduled-run" headline="Once a day it checks what's due and makes one film at most." />
 ## Docker: switch on the built-in timer
 
-Fetch the models first, or the first fire fails on a missing encoder:
+If your manual film completed, its required models are ready. Otherwise, finish
+[the first-film walkthrough](../get-started/first-film.mdx) before enabling the timer.
 
-```bash
-docker compose exec immich-memories immich-memories models fetch
-```
-
-Then, in `docker-compose.yml`, add these two lines under the app's `environment:` block:
+In `docker-compose.yml`, add these two lines under the app's `environment:` block:
 
 ```yaml
 IMMICH_MEMORIES_AUTOMATION__ENABLED: "true"
@@ -128,7 +125,7 @@ advanced:
 immich-memories auto test-notification
 ```
 
-The test sends a message to each configured target. A success message follows a finished film, including **Render** in the app and `runs render` on the CLI. Saving a cut without rendering sends no completion message; the failure message comes only from the automation runner, and only once it has picked a candidate to run for the day. A day skipped before that (cooldown, no eligible candidate) sends nothing. Thumbnails remain off unless you enable them. Use a private, authenticated ntfy topic: public ones can be read by others. [What each message carries](../reference/automation-contract.md#get-told-when-it-runs) covers the full payload.
+The test sends a message to each configured target. Successful films made by `generate`, `auto run` or the built-in timer send a completion message. **Render** in the app and `runs render` do not send one. Saving a cut without rendering also sends none. The failure message comes only from the automation runner, and only once it has picked a candidate to run for the day. A day skipped before that (cooldown, no eligible candidate) sends nothing. Thumbnails remain off unless you enable them. Use a private, authenticated ntfy topic: public ones can be read by others. [What each message carries](../reference/automation-contract.md#get-told-when-it-runs) covers the full payload.
 
 After an upload, the success message includes a direct link to the film in Immich. If the app talks to
 Immich through a container or cluster address, set `immich.public_url` to the address your browser opens:

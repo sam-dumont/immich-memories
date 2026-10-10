@@ -14,7 +14,7 @@ or directly on a native install; use `docker compose exec -T immich-memories` as
 | Phase | What you see | Complete when |
 |---|---|---|
 | Image pull | `docker compose pull` layer progress in the terminal | Pull exits successfully; `docker compose up -d` starts the app |
-| Model preparation | `models fetch` downloads or verifies pinned files | Command succeeds, then preflight passes the required checks |
+| Model preparation | **Download models** in the app, or `models fetch` in the CLI | Download finishes; GPU/Full also pass required service checks in preflight |
 | Input preparation and cut | Memory page stage, picture counts and elapsed time | The page opens the saved run (“The cut is ready.” may flash by first) |
 | Review | Shots, Pool and saved revisions on the run page | You select the revision you intend to render |
 | Render | Render progress on the run page | “The film is ready.”, player and Download film |

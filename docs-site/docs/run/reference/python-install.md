@@ -68,8 +68,6 @@ read that file unless you start a login shell, for example
 
 On Debian/Ubuntu, install FFmpeg with `sudo apt install ffmpeg` and run the same filter check.
 
-Install the package that matches this documentation build. Choose the command for your platform:
-
 Use the versioned package command from [Native installation](../uv-pip.md).
 
 The command pins `--python 3.12` on purpose. The package supports Python 3.11 and newer, but the
@@ -107,37 +105,9 @@ cannot find `immich-memories`: add it for the current shell with
 different home directory, use the installed command's absolute path; changing the home does not
 move the uv installation.
 
-Create the folder, then `~/.immich-memories/config.yaml`:
-
-```bash
-mkdir -p ~/.immich-memories
-```
-
-```yaml
-tier: basic
-immich:
-  url: http://192.168.1.10:2283
-  api_key: your-api-key
-```
-
-The file holds the key, so keep it private: `chmod 600 ~/.immich-memories/config.yaml`. The app
-warns at startup when other users can read it.
-
-Create the key in Immich's **Account Settings > API Keys** with the
-[ten read permissions](.././docker.md#the-api-key). Add the upload set only if you send films back
-to Immich. Leave **All** unchecked.
-Then:
-
-```bash
-immich-memories models fetch
-immich-memories preflight
-immich-memories ui
-```
-
-Open [http://localhost:8080](http://localhost:8080) (`immich-memories ui -p 8081` if 8080 is taken) and make [your first film](../../get-started/first-film.mdx).
-The guides on the Docker route (Quick start, first film, after install) show `docker compose exec -T immich-memories` in front of every command: leave that prefix off and run `immich-memories ...` directly.
-Films default to `~/Videos/Memories`. Set home coordinates for trips and public holidays:
-[Home and people](../../get-started/who-is-who.md).
+Continue with [Connect Immich and choose the tier](../uv-pip.md#2-connect-immich-and-choose-the-tier)
+in the native installation guide. If you already completed it, your connection, model files and
+output directory are ready; these troubleshooting notes do not require a second setup.
 
 
 ## Daily automation

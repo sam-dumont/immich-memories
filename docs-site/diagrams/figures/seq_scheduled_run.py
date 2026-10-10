@@ -17,12 +17,12 @@ with diagram(STEM, nodesep="0.3", ranksep="0.4"):
             {
                 "q": "Another run<br/>holds the lock?",
                 "icon": icon("mdi:lock-outline", "neutral"),
-                "exit": ("stops", SKIP, "409, no attempt written", "neutral"),
+                "exit": ("stops", SKIP, "HTTP: 409; no attempt written", "neutral"),
             },
             {
-                "q": "A film in the<br/>last 24 h?",
+                "q": "Cooldown<br/>still active?",
                 "icon": icon("mdi:timer-sand", "neutral"),
-                "sub": "pending uploads retried first",
+                "sub": "24 h by default;<br/>pending uploads retried first",
                 "exit": ("skipped", SKIP, "cooldown active", "neutral"),
             },
             {
@@ -43,7 +43,7 @@ with diagram(STEM, nodesep="0.3", ranksep="0.4"):
                 "exit": (
                     "failed",
                     icon("mdi:close-circle-outline", "drop"),
-                    "backoff: 24 h, 3 days, 7 days",
+                    "from the second failure:<br/>24 h, 3 days, 7 days",
                     "drop",
                 ),
             },

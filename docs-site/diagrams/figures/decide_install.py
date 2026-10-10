@@ -30,9 +30,9 @@ with diagram(STEM, nodesep="0.3", ranksep="0.4"):
                 "q": "A NAS with a<br/>container manager?",
                 "icon": icon("mdi:nas", "neutral"),
                 "exit": (
-                    "the same Compose file",
+                    "Single-file stack",
                     icon("mdi:nas", "keep"),
-                    "pasted into the NAS UI",
+                    "exported by the setup builder",
                     "keep",
                 ),
             },
@@ -42,7 +42,7 @@ with diagram(STEM, nodesep="0.3", ranksep="0.4"):
                 "exit": (
                     "docker-compose.yml",
                     icon("si:docker", "keep"),
-                    "add files for upgrades",
+                    "choose Basic, GPU or Full",
                     "keep",
                 ),
             },

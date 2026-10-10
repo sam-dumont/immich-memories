@@ -100,7 +100,9 @@ flowchart TD
   R -- no --> S[Plays as a still]
   R -- yes --> F{Clip shows the subject?}
   F -- often missing --> S
-  F -- yes --> M[Plays as motion, up to 6 s]
+  F -- yes --> P{Original clip plays correctly?}
+  P -- broken frames or timing --> S
+  P -- yes --> M[Plays as motion, up to 6 s]
 ```
 
 1. **The video half is not footage.** It leaves the video pool: it belongs to a photograph.
@@ -118,6 +120,8 @@ flowchart TD
    answer is a coin flip, and a still always works where a dead clip does not.
 5. **The subject.** Where the clip's frames were read and the subject is often out of frame (the
    phone already on its way to the pocket), the picture plays as its still.
+6. **The original.** The selected clip must decode with valid frame timing. A damaged clip uses
+   the still. A failed download or missing tool stops the run so it can be fixed and retried.
 
 A clip only ever costs a picture its motion, never its place, favourite or not. A Live Photo that
 plays is offered beside the videos, and a true video always plays whatever its residual.

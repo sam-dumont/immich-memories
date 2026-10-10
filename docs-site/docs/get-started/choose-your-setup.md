@@ -6,7 +6,8 @@ description: Choose Basic, GPU or Full and follow its installation path.
 # Choose your setup
 
 Every tier makes a complete film with titles and music. Choose the one that fits your hardware
-and the extra picture interpretation you want.
+and the extra picture interpretation you want. **Start with Basic if you are unsure.**
+You can change tiers later.
 
 | Tier | What changes in the film | Install |
 |---|---|---|
@@ -65,6 +66,6 @@ Use **Settings** for inference and caption URLs and the reader's URL, model and 
 A locked field names the [configuration source](../run/config-file.md#where-a-setting-comes-from)
 that controls it. Compatible facts and review decisions survive a tier change.
 
-After changing tiers, run `models fetch`, then `preflight` and `capabilities` in the app's
-terminal. The resolved tier and its required checks must agree with what you requested.
-Then [make a film](./first-film.mdx).
+After changing tiers, use **Download models** in Settings if it appears, then
+[check the new configuration](../reference/installation-help.md#read-preflight). The resolved
+tier and its required checks must agree with what you requested. Then [make a film](./first-film.mdx).

@@ -111,9 +111,9 @@ Log lines go to stderr. Stdout only carries what a command prints, so `runs stor
 immich-memories models fetch
 ```
 
-Run it on installation and after an upgrade. Basic fetches the encoder and WordNet; GPU/Full also
-fetch detectors and Laya. An enabled owned local reader also fetches its pinned reader/model
-projector; custom GGUF paths remain your responsibility. Matching pinned files are reused. `--force` downloads again;
+The app's **Download models** button runs this same command during installation. Run it after
+an upgrade to verify the new pins. Basic fetches the encoder and WordNet; GPU/Full also
+fetch detectors and Laya. An enabled app-owned local reader also fetches its pinned model and projector; custom GGUF paths remain your responsibility. Matching pinned files are reused. `--force` downloads again;
 `--detectors` fetches detectors even on Basic. `--no-detectors` skips them, but does not make a
 GPU/Full cut work without required models.
 

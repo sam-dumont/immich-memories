@@ -6,11 +6,14 @@ description: Install Basic, GPU or Full with Docker Compose, connect Immich and 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import InstallationFiles from '@site/src/components/InstallationFiles';
+import ThemedScreenshot, {Screenshot} from '@site/src/components/ThemedScreenshot';
 
 # Quick start
 
-Run Immich Memories beside your existing Immich server. Choose your tier below, start the app,
-then make a short film from one album.
+Run Immich Memories beside your existing Immich server, then make a short film from one album.
+**Start with Basic if you are unsure.** It makes a complete film on a CPU. Choose GPU if you have
+an NVIDIA GPU and want picture descriptions; choose Full if you also have a text reader.
+You can change tiers later.
 
 | Tier | What you get | What you need |
 |---|---|---|
@@ -23,7 +26,8 @@ All three need Docker Compose v2, an Immich v2 or v3 library and an API key. All
 app an 8 GiB limit; model services need memory too. Check the [tier requirements](../run/requirements.md)
 if you are choosing hardware.
 
-**Other platforms:** [Synology, Unraid, TrueNAS and Portainer](../run/nas.md),
+**Other platforms:** [Synology Container Manager, with screenshots](../run/platforms/synology.md),
+[Unraid, TrueNAS and Portainer](../run/nas.md),
 [native Mac or Linux](../run/uv-pip.md), [Kubernetes](../run/kubernetes.md).
 Apple Silicon uses the native install for GPU and Full. For a NAS with a separate GPU machine,
 use the [setup builder](/setup) and its GPU box option.
@@ -39,6 +43,11 @@ The files match the release shown on this docs site.
 <InstallationFiles tier="basic" />
 
 This starts one app container. No GPU or separate model server is needed.
+
+<Screenshot src="/img/screenshots/compose-basic-setup.png" alt="Terminal showing the two Basic downloads and Compose resolving one app service and its image" />
+
+The two downloads and the resulting Compose configuration. The app has not started yet.
+Tap the screenshot to read it at full size.
 
 </TabItem>
 <TabItem value="gpu" label="GPU">
@@ -74,9 +83,13 @@ Prefer filled-in files or a stack editor? Use the [setup builder](/setup).
 
 ## 2. Connect Immich {#2-connect-immich}
 
-In Immich, open **Account Settings → API Keys → New API Key**. Select the
-[ten read permissions](../run/docker.md#the-api-key); leave **All** unchecked.
-Open `.env` and fill in:
+In Immich, open **Account Settings → API Keys → New API Key**. Leave **All** unchecked and
+select these ten read permissions:
+
+`user.read`, `asset.read`, `asset.statistics`, `asset.view`, `asset.download`,
+`face.read`, `person.read`, `person.statistics`, `album.read` and `map.search`.
+
+Copy the key. Open `.env` and fill in:
 
 ```ini
 IMMICH_URL=http://192.168.1.10:2283
@@ -85,21 +98,21 @@ TZ=Etc/UTC
 ```
 
 Use an Immich address the container can reach. `localhost` means the container itself.
-Set `TZ` to your timezone. Upload permissions can wait until you want to send films back.
+Set `TZ` to your timezone. [Upload permissions](../run/docker.md#the-api-key) can wait until
+you want to send films back.
 
-Create the output folder and a key for credentials saved in Settings:
+Create the folder for finished films, give the app permission to write there and protect `.env`:
 
 ```bash
 mkdir -p output
 sudo chown 1000:1000 output
-printf 'IMMICH_MEMORIES_SECRET_KEY=%s\n' "$(openssl rand -hex 32)" >> .env
 chmod 600 .env
 ```
 
 Keep `.env` with your backups. On Synology, use the
 [folder permission recipe](../run/nas.md#the-output-folder) in place of `chown`.
 
-### If the app runs on a server or NAS
+### Open the app from another computer {#if-the-app-runs-on-a-server-or-nas}
 
 For access from another computer on your trusted LAN, also set these in `.env` **before starting**:
 
@@ -109,34 +122,58 @@ IMMICH_MEMORIES_AUTH_PASSWORD=replace-with-your-own-long-password
 UI_BIND_ADDRESS=0.0.0.0
 ```
 
-Choose your own password of at least 12 characters. This route uses HTTP on your LAN.
-For encrypted access, use an [SSH tunnel](../run/docker.md#reaching-the-ui-from-another-machine)
-or an [HTTPS reverse proxy](../run/authentication.mdx#behind-a-reverse-proxy-with-tls).
+Choose your own app password of at least 12 characters. This is the Immich Memories login,
+separate from your Immich account. This setup uses HTTP on your trusted LAN.
 On your own desktop, keep the default localhost binding.
 
-## 3. Start and download the local models {#3-start-and-download-the-local-models}
+## 3. Start the app {#3-start-and-download-the-local-models}
 
 ```bash
 docker compose up -d
-docker compose exec -T immich-memories immich-memories models fetch
+```
+
+The first start pulls the container images. GPU and Full also wait for the caption weights
+and service health checks before starting the app. Leave the command running until it finishes.
+Later starts reuse the downloaded files.
+
+## 4. Open the app and download models {#4-open-the-app}
+
+- **On this computer:** open [http://localhost:8080](http://localhost:8080).
+- **From another computer:** open `http://your-server-address:8080`, using the Docker host's LAN address,
+  and sign in with the Immich Memories username and password you set above.
+
+Open **Memory**. In the **Download models** card, review the files and press **Download models**.
+Wait for it to finish: the card disappears when the required files are ready. These are downloaded
+once and kept in the app's data volume. If they are already present, there is no card.
+
+<div style={{maxWidth: 420}}>
+  <ThemedScreenshot name="model-setup" alt="First visit to Basic: the Download models card lists the encoder and WordNet files and waits for consent" />
+</div>
+
+Basic is shown above. GPU and Full list more files.
+
+### GPU and Full: check the model services
+
+The app's download card covers its local model files. GPU and Full also run model services,
+which can still be downloading weights. Before the first film, check those services from the
+installation folder:
+
+```bash
 docker compose exec -T immich-memories immich-memories preflight
 ```
 
-The first start pulls the images; `models fetch` downloads the models required by your tier.
-Wait for both to finish. Later starts reuse those files.
+Continue when Immich, required models and output checks pass, along with GPU inference, captions
+and the Laya family-viewing check. Full also needs the reader check to pass.
+Follow the fix beside any failed check.
+[Read preflight results](../reference/installation-help.md#read-preflight) if you are unsure.
 
-Continue when the Immich connection, required models and output checks pass. GPU also needs
-working inference, captions and Laya; Full adds the reader check. Follow the fix printed beside
-any failed check. Software encoding is valid on Basic, and missing upload permissions do not
-prevent a local film. [Read preflight results](../reference/installation-help.md#read-preflight).
+### Make your first film
 
-## 4. Open the app {#4-open-the-app}
+Choose an album of 20–50 pictures, review the cut, then render.
+[Your first film](./first-film.mdx) walks through it on Basic, GPU and Full.
 
-- **On this computer:** open [http://localhost:8080](http://localhost:8080).
-- **On your server:** open `http://your-server-address:8080` and sign in with the login you set above.
-
-Make [your first film](./first-film.mdx): choose an album of 20–50 pictures, review the cut,
-then render. The same walkthrough works on Basic, GPU and Full.
+Prefer the terminal for model downloads? See
+[Download models from the CLI](../reference/installation-help.md#download-models-from-the-cli).
 
 ## If it stops {#if-it-stops}
 
