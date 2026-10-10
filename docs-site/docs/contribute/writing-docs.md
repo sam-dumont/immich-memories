@@ -78,6 +78,20 @@ the Open Graph and Twitter tags, including the candidate site paths.
 
 `make docs-voice`, `make docs-build`, `make docs-cli-check`, `make docs-config-check`.
 
+## Publish docs without an app release
+
+Merge the docs changes, then open **Actions → Deploy Docs → Run workflow** and choose **main**.
+The workflow builds that branch and automatically uses the newest published app release for
+installation commands and downloads. Release candidates count; drafts, model artifacts and
+development-only releases do not. No version input is needed.
+
+The build checks that the chosen release's setup files are uploaded before publishing. A missing
+release or incomplete upload stops the workflow and leaves the live site alone. This publishes
+only the docs; it does not build or deploy the application.
+
+Release-triggered runs keep the release's own source and version. Once a final 1.x release exists,
+candidate docs live under `/next/`, with final-release docs at the root.
+
 ## Website analytics
 
 The docs tracker is bundled in `static/js/app.js`. The Pages workflow reads two GitHub Actions
