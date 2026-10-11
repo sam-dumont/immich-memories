@@ -89,8 +89,9 @@ The build checks that the chosen release's setup files are uploaded before publi
 release or incomplete upload stops the workflow and leaves the live site alone. This publishes
 only the docs; it does not build or deploy the application.
 
-Release-triggered runs keep the release's own source and version. Once a final 1.x release exists,
-candidate docs live under `/next/`, with final-release docs at the root.
+Until the first final 1.x release, the root is built from main and labelled with the newest
+candidate, so docs merged after a candidate's tag still reach the site. Once a final 1.x release
+exists, the root is that release's own tree and candidate docs live under `/next/`.
 
 ## Website analytics
 

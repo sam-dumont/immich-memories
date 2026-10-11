@@ -8,14 +8,30 @@ import pytest
 import yaml
 from scripts.docs_release import plan_tracks
 
+MAIN = "a" * 40
 
-def _tracks(tags, dev=None):
-    return {entry["track"]: entry["ref"] for entry in plan_tracks(tags, dev)}
+
+def _tracks(tags, dev=None, main=None):
+    return {entry["track"]: entry["ref"] for entry in plan_tracks(tags, dev, main)}
 
 
 def test_before_the_first_final_the_newest_candidate_is_stable():
     tags = ["v0.103.0", "v1.0.0-rc.8", "v1.0.0-rc.9"]
     assert _tracks(tags) == {"stable": "v1.0.0-rc.9"}
+
+
+def test_before_the_first_final_the_root_is_main_named_after_the_newest_candidate():
+    """Until 1.0 the candidate's docs keep being finished on main after its tag (#2324):
+    the root builds main, so a page merged after the tag is not hidden from the site."""
+    tracks = plan_tracks(["v0.103.0", "v1.0.0-rc.8", "v1.0.0-rc.9"], None, MAIN)
+    assert tracks == [
+        {"track": "stable", "ref": MAIN, "version": "v1.0.0-rc.9", "path": "", "stable": MAIN}
+    ]
+
+
+def test_from_the_first_final_the_root_is_the_final_tag_again():
+    tags = ["v1.0.0-rc.9", "v1.0.0", "v1.1.0-rc.1"]
+    assert _tracks(tags, main=MAIN) == {"stable": "v1.0.0", "next": "v1.1.0-rc.1"}
 
 
 def test_a_candidate_newer_than_the_final_is_next():
@@ -83,7 +99,15 @@ def test_tracks_read_only_published_releases_across_pages(publish_final):
             [{"tag_name": "v1.0.0", "published_at": "2026-10-15T00:00:00Z", "draft": False}]
         )
     result = subprocess.run(
-        [sys.executable, "scripts/docs_release.py", "--tracks", "--dev-ref", "d" * 40],
+        [
+            sys.executable,
+            "scripts/docs_release.py",
+            "--tracks",
+            "--dev-ref",
+            "d" * 40,
+            "--main-ref",
+            MAIN,
+        ],
         input=json.dumps(pages),
         capture_output=True,
         text=True,
@@ -92,7 +116,7 @@ def test_tracks_read_only_published_releases_across_pages(publish_final):
     assert result.returncode == 0, result.stderr
     tracks = {entry["track"]: entry["ref"] for entry in json.loads(result.stdout)}
     assert tracks == {
-        "stable": "v1.0.0" if publish_final else "v1.0.0-rc.9",
+        "stable": "v1.0.0" if publish_final else MAIN,
         "dev": "d" * 40,
     }
 
@@ -138,6 +162,9 @@ def test_every_docs_deploy_plans_all_tracks_from_the_published_state(tmp_path, n
         'if [ "$1" = release ]; then\n'
         + (f"  printf '%s' '{nightly_body}'; exit 0\n" if nightly else "  exit 1\n")
         + "fi\n"
+        'if [ "$2" = repos/owner/project/commits/main ]; then\n'
+        f"  printf '%s' '{MAIN}'; exit 0\n"
+        "fi\n"
         'printf "%s\\n" "$*" > gh-arguments\ncat releases.json\n'
     )
     gh.chmod(0o700)

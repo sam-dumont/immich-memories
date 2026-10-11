@@ -3,13 +3,15 @@
 GitHub Pages serves one artifact, so every deploy builds all of them together:
 
 - stable, at the root: the newest final release. Before the first final 1.x
-  exists, the newest release of any kind (a candidate included) stays here.
+  exists, the root is main's current commit, labelled with the newest release:
+  until 1.0 the candidate is the release, and its docs keep being finished on
+  main after it is tagged (a tag's own tree would hide them).
 - next, at /next/: the newest release candidate, only when it is newer than stable.
 - dev, at /dev/: the commit the latest nightly was built from, when there is one.
 
 Usage:
     gh api --paginate --slurp repos/OWNER/REPO/releases \
-      | python3 scripts/docs_release.py --tracks --dev-ref SHA
+      | python3 scripts/docs_release.py --tracks --dev-ref SHA --main-ref SHA
 """
 
 from __future__ import annotations
@@ -31,15 +33,19 @@ def _is_one_point_x_final(tag: str) -> bool:
     return bool(_FINAL.fullmatch(tag)) and int(tag[1:].split(".")[0]) >= 1
 
 
-def plan_tracks(tags: list[str], dev_ref: str | None) -> list[dict[str, str]]:
+def plan_tracks(
+    tags: list[str], dev_ref: str | None, main_ref: str | None = None
+) -> list[dict[str, str]]:
     """One entry per track to build: its name, ref, version label and path under the site."""
     ordered = sort_version_tags(tags)
     if not ordered:
         raise ValueError("No published application release found.")
     finals = [tag for tag in ordered if _is_one_point_x_final(tag)]
     stable = finals[0] if finals else ordered[0]
-    entry = {"stable": stable}  # every track compares its media with the stable ref
-    tracks = [{"track": "stable", "ref": stable, "version": stable, "path": "", **entry}]
+    # Before 1.0 the root follows main, still named after the newest release.
+    stable_ref = main_ref if main_ref and not finals else stable
+    entry = {"stable": stable_ref}  # every track compares its media with the stable ref
+    tracks = [{"track": "stable", "ref": stable_ref, "version": stable, "path": "", **entry}]
     # sort_version_tags ranks a final above its own candidates, so anything listed
     # before stable is newer than it; with no 1.x final yet, stable is the newest.
     newer = ordered[: ordered.index(stable)]
@@ -68,9 +74,12 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--tracks", action="store_true", required=True)
     parser.add_argument("--dev-ref", default="")
+    parser.add_argument("--main-ref", default="")
     args = parser.parse_args()
     try:
-        tracks = plan_tracks(published_tags(json.load(sys.stdin)), args.dev_ref or None)
+        tracks = plan_tracks(
+            published_tags(json.load(sys.stdin)), args.dev_ref or None, args.main_ref or None
+        )
     except ValueError as error:
         print(error, file=sys.stderr)
         return 1
