@@ -25,7 +25,7 @@
 #
 # `doc` is relative to docs-site/docs/ (or README.md), with the heading anchor that makes the promise.
 
-gap_ceiling: 76
+gap_ceiling: 47
 
 features:
   # ── Generate: films, output and flags ────────────────────────────────────────────────────────
@@ -38,7 +38,8 @@ features:
   - id: generate.orientation-auto
     promise: "--orientation auto (the default) follows the shape of the kept clips; square gives a square canvas."
     doc: reference/cli-reference.md#generate
-    status: "gap: #2128"
+    tests:
+      - tests/integration/features/test_film_render.py::test_auto_orientation_follows_the_kept_pictures
   - id: output.run-folder-per-render
     promise: "Each render writes a new folder under output.directory; a rerun never overwrites an earlier film."
     doc: make/cli/generate.md#output
@@ -91,16 +92,21 @@ features:
     promise: "--duration budgets the finished film, titles and ending included; a period with too little material finishes shorter rather than padding."
     doc: reference/generation-contract.md#generation-and-output-contract
     covers: ["cli:generate --duration"]
-    status: "gap: #2128"
+    tests:
+      - tests/integration/features/test_film_render.py::test_duration_budgets_the_whole_film_titles_included
+      - tests/integration/features/test_film_render.py::test_a_thin_day_finishes_short_of_its_duration_with_a_bundled_track
   - id: generate.length-fits-material
     promise: "Without --duration the length comes from the material the period holds, and the run says what set it."
     doc: reference/film-types.mdx#how-long-a-film-runs
-    status: "gap: #2128"
+    tests:
+      - tests/integration/features/test_film_render.py::test_without_duration_the_material_sets_the_length_and_the_run_says_so
   - id: generate.short-form
     promise: "--short-form 30 makes a vertical film of about 30 seconds, without padding a thin period."
     doc: make/memory-types.mdx#how-long-a-film-runs
     covers: ["cli:generate --short-form"]
-    status: "gap: #2128"
+    tests:
+      - tests/integration/features/test_film_render.py::test_short_form_is_vertical_and_does_not_pad_a_thin_day
+      - tests/integration/features/test_film_render.py::test_short_form_fills_about_thirty_seconds_from_a_full_month
   - id: generate.period
     promise: "--start with --period (6m, 1y, 2w) scopes the film to that span from the start date."
     doc: reference/cli-reference.md#generate
@@ -122,12 +128,15 @@ features:
     promise: "--transition picks the transition style; the default smart mixes fades and cuts, and crossfades use whole frames."
     doc: make/titles-maps-music.md#titles-and-language
     covers: ["cli:generate --transition"]
-    status: "gap: #2128"
+    tests:
+      - tests/integration/features/test_film_render.py::test_crossfades_overlap_the_pictures_on_whole_frames_and_cuts_do_not
   - id: cut.include-exclude
     promise: "--include keeps a picture in the cut and --exclude leaves one out, whatever the editor would decide."
     doc: reference/cli-reference.md#generate
     covers: ["cli:generate --include", "cli:generate --exclude"]
-    status: "gap: #2128"
+    tests:
+      - tests/integration/features/test_memory_types.py::test_include_and_exclude_reach_the_cut
+      - tests/features/test_editor_pool.py::test_the_editor_keeps_what_the_owner_includes_and_drops_what_they_exclude
   - id: selection.trace
     promise: "--trace-selection writes a stage-by-stage report of how the clips were chosen."
     doc: reference/cli-reference.md#generate
@@ -156,7 +165,8 @@ features:
   - id: generate.connects-before-hardware
     promise: "An unreachable Immich stops generate before hardware probing, and the run history records the failed attempt."
     doc: make/cli/generate.md#generate-a-film
-    status: "gap: #2128"
+    tests:
+      - tests/integration/features/test_memory_types.py::test_an_unreachable_immich_stops_generate_before_hardware_and_is_recorded
   - id: generate.prepares-only-reachable-pictures
     promise: "generate prepares only the pictures the film can reach and banks the facts so later cuts reuse them."
     doc: reference/generation-contract.md#generation-and-output-contract
@@ -164,15 +174,21 @@ features:
   - id: generate.copies-fold
     promise: "Identical bytes, other files of the same picture and Immich stacks fold into one candidate before the editor sees the pool."
     doc: reference/generation-contract.md#what-it-reads-from-immich
-    status: "gap: #2128"
+    tests:
+      - tests/features/test_editor_pool.py::test_identical_bytes_fold_into_one_picture_before_the_editor_sees_the_pool
+      - tests/features/test_editor_pool.py::test_another_file_of_the_same_picture_folds_and_the_newest_full_size_file_plays
+      - tests/features/test_editor_pool.py::test_an_immich_stack_folds_into_its_top_picture
   - id: output.default-names
     promise: "Without --output, a trip film is named trip_<place>_<start-date> and an album film album_<slug>_<hash>, plus the run's hash and folder."
     doc: reference/film-types.mdx#trip
-    status: "gap: #2128"
+    tests:
+      - tests/integration/features/test_film_render.py::test_a_trip_film_is_named_after_its_place_and_first_day
+      - tests/integration/features/test_film_render.py::test_an_album_film_is_named_after_the_album
   - id: output.run-leaves-behind
     promise: "A run leaves its film, its run record and its plan files where the generation contract says, and nothing else in the output root."
     doc: reference/generation-contract.md#what-a-run-leaves-behind
-    status: "gap: #2128"
+    tests:
+      - tests/integration/features/test_film_render.py::test_a_run_leaves_its_film_record_and_plan_and_nothing_else
 
   # ── Memory types ─────────────────────────────────────────────────────────────────────────────
   - id: memory-type.monthly-highlights
@@ -202,27 +218,33 @@ features:
     promise: "A year in review covers one calendar year in capture order, with month dividers, aiming for ten minutes and going short on a thin year."
     doc: reference/film-types.mdx#year-in-review
     covers: ["memory-type:year_in_review"]
-    status: "gap: #2128"
+    tests:
+      - tests/integration/features/test_memory_types.py::test_a_year_in_review_plays_the_year_in_capture_order_and_goes_short_on_a_thin_year
   - id: memory-type.season
     promise: "A season film covers one season of one year, about 3 min 15 s; --hemisphere south maps summer onto December to February."
     doc: reference/film-types.mdx#monthly-season-person-multi-person
     covers: ["memory-type:season", "cli:generate --season", "cli:generate --hemisphere"]
-    status: "gap: #2128"
+    tests:
+      - tests/integration/features/test_memory_types.py::test_a_season_covers_three_months_for_about_three_minutes_and_flips_in_the_south
   - id: memory-type.person-spotlight
     promise: "A person spotlight keeps only pictures where Immich recognised that person on the picture itself."
     doc: make/memory-types.mdx#people-and-birthdays
     covers: ["memory-type:person_spotlight", "cli:generate --person"]
-    status: "gap: #2128"
+    tests:
+      - tests/integration/features/test_memory_types.py::test_a_person_spotlight_keeps_only_pictures_the_person_is_recognised_on
   - id: memory-type.multi-person
     promise: "A multi-person film defaults to AND: every named person must be recognised on the same picture; --person-match or accepts any of them."
     doc: reference/film-types.mdx#filtering-by-people
     covers: ["memory-type:multi_person", "cli:generate --person-match"]
-    status: "gap: #2128"
+    tests:
+      - tests/integration/features/test_memory_types.py::test_several_people_need_each_other_on_the_same_picture_unless_matched_with_or
   - id: people.expression
     promise: "--people-expression takes a grouped AND/OR condition on exact names, AND binding tighter, judged strictly per picture."
     doc: reference/film-types.mdx#filtering-by-people
     covers: ["cli:generate --people-expression"]
-    status: "gap: #2128"
+    tests:
+      - tests/integration/features/test_memory_types.py::test_a_grouped_condition_binds_and_tighter_than_or_on_each_picture
+      - tests/integration/features/test_memory_types.py::test_trips_refuse_a_grouped_people_condition
   - id: people.no-dates-window
     promise: "A people memory with no dates runs from the first day one of its pictures could exist, read off birth dates, to today."
     doc: reference/film-types.mdx#a-people-memory-with-no-dates
@@ -235,16 +257,21 @@ features:
     promise: "--birthday runs the year of a person's life ending on the birthday, plus earlier birthdays, and refuses without a birth date."
     doc: reference/film-types.mdx#birthday-compilations
     covers: ["cli:generate --birthday"]
-    status: "gap: #2128"
+    tests:
+      - tests/integration/features/test_memory_types.py::test_a_birthday_runs_the_year_ending_on_it_and_looks_back_at_earlier_ones
+      - tests/integration/features/test_memory_types.py::test_a_birthday_refuses_a_person_with_no_birth_date
   - id: memory-type.trip
     promise: "A trip film comes from GPS: it lists detected trips, then films the one picked by --trip-index, --near-date or --month, or every one with --all-trips."
     doc: reference/film-types.mdx#trip
     covers: ["memory-type:trip", "cli:generate --trip-index", "cli:generate --all-trips", "cli:generate --near-date"]
-    status: "gap: #2128"
+    tests:
+      - tests/integration/features/test_memory_types.py::test_trip_lists_what_the_gps_found_and_films_the_one_picked
+      - tests/integration/features/test_memory_types.py::test_all_trips_films_every_trip_found
   - id: trip.crosses-new-year
     promise: "A trip over New Year stays one trip."
     doc: make/memory-types.mdx#trip
-    status: "gap: #2128"
+    tests:
+      - tests/features/test_editor_pool.py::test_a_trip_over_new_year_is_one_trip_in_either_year
   - id: trip.named-offline
     promise: "A trip is named at the smallest place holding most of its located pictures, from the places Immich already stored, offline."
     doc: reference/film-types.mdx#trip
@@ -264,7 +291,9 @@ features:
     promise: "A special day film covers one day's run of pictures; several catalogued events on the day need --event-id."
     doc: reference/film-types.mdx#special-day
     covers: ["memory-type:special_day", "cli:generate --event-id"]
-    status: "gap: #2128"
+    tests:
+      - tests/integration/features/test_memory_types.py::test_a_special_day_films_its_events_run_and_needs_event_id_when_the_day_has_two
+      - tests/integration/features/test_memory_types.py::test_a_day_the_catalogue_never_found_is_scoped_to_itself
   - id: free-text.ask
     promise: "--ask turns a sentence into a film, printing the translation first; with --dry-run it stops after the preview, and --ask-trace keeps it as JSON."
     doc: make/free-text.md#preview-then-make-the-film
@@ -307,7 +336,10 @@ features:
     promise: "--accounts primary,partner reads each named account into one film; an unknown name fails before any request, and albums and trips refuse it."
     doc: run/multi-account.mdx#read-both-accounts-into-one-film
     covers: ["cli:generate --accounts"]
-    status: "gap: #2128"
+    tests:
+      - tests/integration/features/test_memory_types.py::test_naming_both_accounts_puts_the_partners_pictures_in_the_film
+      - tests/integration/features/test_memory_types.py::test_an_unknown_account_fails_before_any_request
+      - tests/integration/features/test_memory_types.py::test_albums_and_trips_refuse_a_second_account
   - id: who-is-who.home-and-people
     promise: "Setting home and who's who changes which people get priority and lets the editor tell a week away from a week at home."
     doc: get-started/who-is-who.md#what-changes
@@ -514,7 +546,8 @@ features:
     promise: "Date and place captions are on by default; --add-date and --add-place turn them off, and place captions show a city only when it changes."
     doc: make/titles-maps-music.md#date-and-place-captions
     covers: ["cli:generate --add-date", "cli:generate --add-place"]
-    status: "gap: #2128"
+    tests:
+      - tests/integration/features/test_film_render.py::test_captions_name_the_date_and_the_city_when_they_change_and_flags_turn_them_off
   - id: maps.fly-over
     promise: "With network.map_tiles on, a trip opens with an animated satellite map; with it off, ordinary title cards."
     doc: make/titles-maps-music.md#the-map-fly-over
@@ -527,16 +560,21 @@ features:
     promise: "--music PATH uses your own track at --music-volume, and the music drops under the clips' own sound."
     doc: make/titles-maps-music.md#music
     covers: ["cli:generate --music", "cli:generate --music-volume"]
-    status: "gap: #2128"
+    tests:
+      - tests/integration/features/test_film_render.py::test_your_own_track_plays_and_drops_under_the_clips_own_sound
+      - tests/integration/features/test_film_render.py::test_music_volume_sets_how_loud_your_track_plays
   - id: music.bundled-default
     promise: "Automatic music uses a bundled track, and a failed generator falls back to one with a warning."
     doc: make/titles-maps-music.md#music
-    status: "gap: #2128"
+    tests:
+      - tests/integration/features/test_film_render.py::test_a_thin_day_finishes_short_of_its_duration_with_a_bundled_track
+      - tests/integration/features/test_film_render.py::test_a_failed_music_generator_falls_back_to_a_bundled_track_with_a_warning
   - id: audio.original-audio-off
     promise: "--no-original-audio removes every sound recorded in videos and Live Photos; with no music too, the film is silent."
     doc: make/titles-maps-music.md#music
     covers: ["cli:generate --original-audio"]
-    status: "gap: #2128"
+    tests:
+      - tests/integration/features/test_film_render.py::test_no_original_audio_and_no_music_make_a_silent_film
   - id: music.generated
     promise: "A configured music generator (ACE-Step or MusicGen) makes an original soundtrack for the cut."
     doc: better/music.md#generate-a-soundtrack
@@ -559,24 +597,33 @@ features:
   - id: photos.ken-burns
     promise: "A selected still gets a gentle zoom and pan toward the largest recognised face, or the centre."
     doc: make/photos-and-live-photos.md#ken-burns-and-where-the-pan-lands
-    status: "gap: #2128"
+    tests:
+      - tests/integration/features/test_film_render.py::test_a_still_moves_while_it_is_on_screen
+      - tests/integration/features/test_film_render.py::test_the_pan_heads_for_the_largest_recognised_face_or_the_centre
   - id: photos.edited-version
     promise: "A photo edited in Immich's editor plays in its edited version, and selection judges that version."
     doc: make/photos-and-live-photos.md#ken-burns-and-where-the-pan-lands
-    status: "gap: #2128"
+    tests:
+      - tests/integration/features/test_film_render.py::test_a_photo_edited_in_immich_plays_as_its_edit
+      - tests/test_edited_asset_render.py::test_structure_planner_preview_of_an_edited_asset_asks_for_the_edited_render
   - id: photos.video-only
     promise: "--no-photos or photos.enabled false makes a video-only film."
     doc: make/photos-and-live-photos.md#ken-burns-and-where-the-pan-lands
-    status: "gap: #2128"
+    tests:
+      - tests/integration/features/test_memory_types.py::test_no_photos_or_photos_disabled_make_a_video_only_film
   - id: live-photos.motion
     promise: "A Live Photo with useful motion plays as motion, nearby ones stitch into one clip, and --no-live-photos keeps the stills only."
     doc: make/photos-and-live-photos.md#live-photos
     covers: ["cli:generate --include-live-photos"]
-    status: "gap: #2128"
+    tests:
+      - tests/integration/features/test_live_photos.py::test_a_live_photo_plays_as_motion_only_when_its_clip_moves
+      - tests/integration/features/test_live_photos.py::test_nearby_live_photos_stitch_into_one_clip_that_never_rewinds
+      - tests/integration/features/test_live_photos.py::test_no_live_photos_keeps_every_live_photo_a_still
   - id: hdr.end-to-end
     promise: "Gain-mapped HDR photos keep HDR in an HDR H.265 film and are tone-mapped in an SDR one."
     doc: make/photos-and-live-photos.md#hdr-end-to-end
-    status: "gap: #2128"
+    tests:
+      - tests/integration/features/test_film_render.py::test_a_gain_mapped_photo_keeps_hdr_in_an_hdr_h265_film_and_is_tone_mapped_in_sdr
   - id: privacy.privacy-mode
     promise: "--privacy-mode blurs every picture, scrambles speech and moves places in the encoded film."
     doc: run/privacy.md#privacy-mode

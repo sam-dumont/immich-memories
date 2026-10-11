@@ -119,6 +119,14 @@ class Scene:
     video: bool = False
     favorite: bool = False
     seconds: float = 4.0
+    # What a phone library holds besides a plain landscape shot (the scene's main shot only):
+    # a tall picture, a photo the owner edited in Immich's editor (the edit is the picture in
+    # black and white), a clip with its own sound recorded (a steady hum), and a photo
+    # carrying an HDR gain map, the way a recent phone saves one.
+    portrait: bool = False
+    edited: bool = False
+    voiced: bool = False
+    hdr: bool = False
 
 
 # Capture order. A scene with a story ships its main shot; every other file the
@@ -131,6 +139,7 @@ SCENES: tuple[Scene, ...] = (
         "08:15",
         story="S0004",
         people=ADULTS,
+        hdr=True,
     ),
     Scene(
         "home-evening-sky",
@@ -156,6 +165,7 @@ SCENES: tuple[Scene, ...] = (
         3,
         "07:40",
         story="S0004",
+        edited=True,
     ),
     Scene(
         "home-kitchen",
@@ -177,6 +187,7 @@ SCENES: tuple[Scene, ...] = (
         people=("Charlie",),
         video=True,
         seconds=5.0,
+        voiced=True,
     ),
     Scene(
         "home-cat-window",
@@ -575,6 +586,7 @@ SCENES: tuple[Scene, ...] = (
         "09:30",
         story="S0004",
         people=EVERYONE,
+        portrait=True,
     ),
     Scene(
         "home-sunday-park",
@@ -606,6 +618,16 @@ class Picture:
     source_id: str | None = None
     sequence: int = 1
     tags: tuple[str, ...] = field(default=())
+    portrait: bool = False
+    edited: bool = False
+    voiced: bool = False
+    hdr: bool = False
+    # A Live Photo: the id of its companion clip, and what the clip shows ("moving" content,
+    # a "steady" frame, or one take of a "burst" whose clips overlap in time).
+    live_video_id: str | None = None
+    motion: str = ""
+    # For a burst member: where its clip starts in the burst's one continuous recording.
+    burst_offset: float = 0.0
 
     @property
     def is_video(self) -> bool:
@@ -668,6 +690,10 @@ def _expand() -> tuple[Picture, ...]:
                     seconds=scene.seconds if video else 4.0,
                     source_id=stem,
                     sequence=index + 1,
+                    portrait=scene.portrait and main,
+                    edited=scene.edited and main,
+                    voiced=scene.voiced and video,
+                    hdr=scene.hdr and main and not video,
                 )
             )
     if not pictures:
@@ -684,7 +710,68 @@ def _expand() -> tuple[Picture, ...]:
 
 
 # Everything the fake Immich serves, in capture order: one month, June 2024.
-LIBRARY: tuple[Picture, ...] = _expand()
+# A Live Photo's companion clip runs this long, with the shutter in its middle (as an
+# iPhone's does).
+LIVE_CLIP_SECONDS = 3.0
+# A burst's shutters, this far apart: each clip overlaps the next by half.
+BURST_STEP_SECONDS = 1.5
+
+
+def _live(key: str, stamp: str, caption: str, motion: str, **fields) -> Picture:
+    return Picture(
+        asset_id=key,
+        filename=f"IMG_{key.upper().replace('-', '_')}.HEIC",
+        kind="still",
+        taken_at=stamp,
+        caption=caption,
+        scene=key,
+        place=HOME,
+        live_video_id=f"{key}-motion",
+        motion=motion,
+        **fields,
+    )
+
+
+def _burst(index: int) -> Picture:
+    seconds = index * BURST_STEP_SECONDS
+    return _live(
+        f"live-kick-{index + 1}",
+        f"2024-06-12T17:00:{int(seconds):02d}.{int(seconds % 1 * 1000):03d}Z",
+        f"a ball kicked across the lawn, take {index + 1}",
+        "burst",
+        source_id="home-football-lawn-01",
+        burst_offset=seconds,
+        story_key="S0004" if index == 0 else None,
+        drop_reason=None if index == 0 else "another take of the same burst",
+    )
+
+
+# Live Photos, one ordinary Wednesday: a swing in motion, a window where nothing moves, and a
+# burst of three shots of one kick whose clips overlap. Each still ships; the burst ships
+# its first take, and its other takes are what a stitch can join to it.
+LIVE_PICTURES: tuple[Picture, ...] = (
+    _live(
+        "live-swing",
+        "2024-06-12T10:00:00.000Z",
+        "a swing in mid-air at the playground",
+        "moving",
+        source_id="home-playground-01",
+        story_key="S0004",
+    ),
+    _live(
+        "live-quiet-window",
+        "2024-06-12T12:00:00.000Z",
+        "a quiet window, nothing moving",
+        "steady",
+        source_id="home-cat-window-01",
+        story_key="S0004",
+    ),
+    *(_burst(index) for index in range(3)),
+)
+
+LIBRARY: tuple[Picture, ...] = tuple(
+    sorted((*_expand(), *LIVE_PICTURES), key=lambda picture: picture.taken_at)
+)
 ALL_PICTURES: tuple[Picture, ...] = LIBRARY
 
 BY_ID: dict[str, Picture] = {picture.asset_id: picture for picture in LIBRARY}
@@ -702,6 +789,29 @@ DROPPED: dict[str, str] = {
     picture.asset_id: picture.drop_reason or "not part of any story the month tells"
     for picture in LIBRARY
     if not picture.shipped
+}
+
+# The second account's own pictures. Only the partner key reads them, so a film naming
+# both accounts holds them and a primary-only film never does; everything above stays the
+# primary's library. One shot of the woods Saturday from the other phone, shipped with it.
+PARTNER_PICTURES: tuple[Picture, ...] = (
+    Picture(
+        asset_id="partner-woods-watermelon",
+        filename="PXL_0001.jpg",
+        kind="still",
+        taken_at="2024-06-15T12:05:00.000Z",
+        caption="watermelon on a striped blanket, from the other phone",
+        scene="woods-picnic",
+        place=WOODS,
+        story_key="S0003",
+        source_id="woods-picnic-02",
+    ),
+)
+
+# What the scripted editor knows across both accounts.
+ACCOUNTS_BY_ID: dict[str, Picture] = BY_ID | {p.asset_id: p for p in PARTNER_PICTURES}
+ACCOUNTS_STORY_OF: dict[str, Story] = STORY_OF | {
+    p.asset_id: STORY_BY_KEY[p.story_key] for p in PARTNER_PICTURES if p.story_key
 }
 
 

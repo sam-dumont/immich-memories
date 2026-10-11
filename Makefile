@@ -121,6 +121,11 @@ dev-test:
 dev-test-integration:
 	uv sync --extra dev --extra editorial --locked
 
+# The feature tests check the bundled-track fallback, so they need the music extra's tracks.
+.PHONY: dev-test-features
+dev-test-features:
+	uv sync --extra dev --extra music --locked
+
 # Install with macOS-specific extras (Apple Vision, Metal GPU, etc.)
 dev-mac:
 	uv sync --extra all-mac --extra dev

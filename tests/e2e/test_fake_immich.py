@@ -21,7 +21,7 @@ from immich_memories.generate_clips import MIN_CLIP_DURATION, assets_to_clips
 from immich_memories.timeperiod import calendar_year
 from tests.e2e import fake_immich
 from tests.e2e.fake_immich import FakeImmichServer
-from tests.e2e.fake_library import CAST, LIBRARY
+from tests.e2e.fake_library import CAST, LIBRARY, PARTNER_PICTURES
 
 pytestmark = pytest.mark.e2e
 
@@ -312,7 +312,10 @@ def test_original_and_playback_downloads_are_valid_h264_sdr_media(
 
 def test_photo_originals_are_generated_jpegs(fake_immich_server, tmp_path: Path) -> None:
     """Every fake photo downloads as a real JPEG above the source-quality floor."""
-    assert set(fake_immich_server.photo_paths) == set(_PHOTO_IDS)
+    # Both accounts' photos, and the edited render of each photo edited in Immich's editor.
+    served = [p for p in (*LIBRARY, *PARTNER_PICTURES) if not p.is_video]
+    edits = [p.asset_id + fake_immich.EDITED for p in served if p.edited]
+    assert set(fake_immich_server.photo_paths) == {p.asset_id for p in served} | set(edits)
     assert all(
         path.is_relative_to(fake_immich_server.root)
         for path in fake_immich_server.photo_paths.values()
@@ -323,13 +326,17 @@ def test_photo_originals_are_generated_jpegs(fake_immich_server, tmp_path: Path)
         fake_immich_server.api_key,
         api_version="v3",
     ) as client:
-        downloaded = [
-            client.download_asset(asset_id, tmp_path / f"{asset_id}.jpg") for asset_id in _PHOTO_IDS
-        ]
+        downloaded = {
+            picture: client.download_asset(picture.asset_id, tmp_path / f"{picture.asset_id}.jpg")
+            for picture in LIBRARY
+            if not picture.is_video
+        }
 
-    for path in downloaded:
+    for picture, path in downloaded.items():
+        # A portrait photo is the same size, stood on its end.
+        width, height = (1280, 1920) if picture.portrait else (1920, 1280)
         assert _probe_image(path)["streams"] == [
-            {"codec_name": "mjpeg", "codec_type": "video", "width": 1920, "height": 1280}
+            {"codec_name": "mjpeg", "codec_type": "video", "width": width, "height": height}
         ]
 
 
@@ -355,7 +362,11 @@ def test_every_asset_thumbnail_shows_its_own_scene(fake_immich_server) -> None:
         for left, right in combinations(sorted(hashes), 2)
     }
     assert all(hashes.values())
-    assert len(set(hashes.values())) == len(hashes), "two assets share one preview"
+    # Assets made from one photograph share its preview: the Live Photo stills are drawn from
+    # library pictures (the window where nothing moves, and the three takes of one kick).
+    # Every other asset has its own.
+    sources = {(p.source, p.is_video) for p in LIBRARY}
+    assert len(set(hashes.values())) == len(sources), "two pictures share one preview"
     close = {pair: d for pair, d in distances.items() if d <= threshold}
     assert len(close) < 0.02 * len(distances), f"near-duplicate previews: {close}"
 
@@ -475,6 +486,8 @@ def test_serving_the_same_root_twice_reuses_its_media_directory(
     # WHY: replaces the ffmpeg renders. This is about the directory the service
     # lays out, and rendering the whole library twice buys the assertion nothing.
     monkeypatch.setattr(fake_immich, "_ffmpeg", lambda *_args: None)
+    # The HDR photo's gain map is added to the JPEG FFmpeg would have rendered.
+    monkeypatch.setattr(fake_immich, "_add_gain_map", lambda _photo: None)
     root = tmp_path / "served-twice"
 
     for _ in range(2):

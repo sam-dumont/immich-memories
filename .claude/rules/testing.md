@@ -61,7 +61,7 @@ never run in series.
 | Integration | `make test-integration` or a folder target | FFmpeg + Immich |
 | Store | `make test-store` | Docker (postgres:16) |
 | Launch | `make launch-check-ci`, `make launch-check-ci-postgres` | Playwright + FFmpeg (+ Docker) |
-| Feature | `make test-features`, `make feature-check` | FFmpeg + LFS fixture library |
+| Feature | `make test-features`, `make feature-check` | FFmpeg + LFS fixture library + `music` extra (`make dev-test-features`) |
 | Real Immich gate | `make test-immich-gate` | Docker + FFmpeg |
 | Built image | `make test-container` | Docker |
 | Web client | `make e2e` | Playwright |

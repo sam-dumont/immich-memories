@@ -10,6 +10,7 @@ import time
 from collections.abc import Iterator
 from dataclasses import dataclass
 from dataclasses import field as dataclass_field
+from datetime import datetime
 from email import policy
 from email.parser import BytesParser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -17,7 +18,15 @@ from pathlib import Path
 from typing import Any, Self
 from urllib.parse import parse_qs, urlsplit
 
-from tests.e2e.fake_library import ALL_PICTURES, CAST, HOME, Picture
+from tests.e2e.fake_library import (
+    ALL_PICTURES,
+    BURST_STEP_SECONDS,
+    CAST,
+    HOME,
+    LIVE_CLIP_SECONDS,
+    PARTNER_PICTURES,
+    Picture,
+)
 from tests.immich_fakes import V2, V3, request_problems
 
 _MONTH_BUCKET = "2024-06-01T00:00:00.000Z"
@@ -37,9 +46,11 @@ _VIDEO_DURATION = 4.0
 # thumbnail taken at the halfway point still shows the middle of the picture.
 _PAN_HEADROOM = 1.25
 
-_BY_ID = {picture.asset_id: picture for picture in ALL_PICTURES}
-_VIDEOS = tuple(picture for picture in ALL_PICTURES if picture.is_video)
-_PHOTOS = tuple(picture for picture in ALL_PICTURES if not picture.is_video)
+# Every picture the service holds a file for: the primary's library and the partner's own.
+_SERVED = (*ALL_PICTURES, *PARTNER_PICTURES)
+_BY_ID = {picture.asset_id: picture for picture in _SERVED}
+_VIDEOS = tuple(picture for picture in _SERVED if picture.is_video)
+_PHOTOS = tuple(picture for picture in _SERVED if not picture.is_video)
 
 
 def _person_payload(name: str) -> dict[str, Any]:
@@ -62,6 +73,7 @@ PARTNER_PEOPLE = (
     ("partner-person-03", "Robin", None),
 )
 PARTNER_USER = "Fixture Person 01"
+PARTNER_USER_ID = "fake-partner-user"
 
 
 def _partner_person_payload(person_id: str, name: str, born: str | None) -> dict[str, Any]:
@@ -75,13 +87,22 @@ def _partner_person_payload(person_id: str, name: str, born: str | None) -> dict
     }
 
 
-def _asset_payload(picture: Picture) -> dict[str, Any]:
+# The key under which a photo's edited render is served, beside its untouched original.
+EDITED = "#edited"
+
+
+def _photo_size(picture: Picture) -> tuple[int, int]:
+    width, height = _PHOTO_SIZE
+    return (height, width) if picture.portrait else (width, height)
+
+
+def _asset_payload(picture: Picture, owner: str = "fake-user") -> dict[str, Any]:
     is_video = picture.is_video
-    width, height = _VIDEO_SIZE if is_video else _PHOTO_SIZE
+    width, height = _VIDEO_SIZE if is_video else _photo_size(picture)
     return {
         "id": picture.asset_id,
         "deviceAssetId": f"fake-device-{picture.asset_id}",
-        "ownerId": "fake-user",
+        "ownerId": owner,
         "deviceId": "fake-device",
         "type": "VIDEO" if is_video else "IMAGE",
         "originalPath": f"/fake-library/{picture.filename}",
@@ -93,6 +114,7 @@ def _asset_payload(picture: Picture) -> dict[str, Any]:
         "localDateTime": picture.taken_at,
         "updatedAt": picture.taken_at,
         "isFavorite": picture.is_favorite,
+        "isEdited": picture.edited,
         "isArchived": False,
         "isTrashed": False,
         "duration": int(picture.seconds * 1000) if is_video else None,
@@ -110,14 +132,43 @@ def _asset_payload(picture: Picture) -> dict[str, Any]:
         "people": [_person_payload(name) for name in picture.people],
         "faces": [],
         "checksum": f"fake-checksum-{picture.asset_id}",
-        "livePhotoVideoId": None,
+        "livePhotoVideoId": picture.live_video_id,
         "smartInfo": {"objects": []},
     }
 
 
-TIMELINE_ASSETS = tuple(_asset_payload(picture) for picture in _VIDEOS) + tuple(
-    _asset_payload(picture) for picture in _PHOTOS
-)
+_PRIMARY_IDS = {picture.asset_id for picture in ALL_PICTURES}
+TIMELINE_ASSETS = tuple(
+    _asset_payload(picture) for picture in _VIDEOS if picture.asset_id in _PRIMARY_IDS
+) + tuple(_asset_payload(picture) for picture in _PHOTOS if picture.asset_id in _PRIMARY_IDS)
+# A Live Photo's companion clip: a video Immich links from its still and hides from the
+# timeline and from search (v3 `visibility: hidden`), readable by id.
+_LIVE = tuple(picture for picture in ALL_PICTURES if picture.live_video_id)
+
+
+def _companion_payload(still: Picture) -> dict[str, Any]:
+    # Taken at the still's own instant: the shutter sits in the middle of the clip.
+    stamp = still.taken_at
+    return _asset_payload(still) | {
+        "id": still.live_video_id,
+        "type": "VIDEO",
+        "originalFileName": still.filename.replace(".HEIC", ".MOV"),
+        "originalMimeType": "video/quicktime",
+        "fileCreatedAt": stamp,
+        "localDateTime": stamp,
+        "duration": int(LIVE_CLIP_SECONDS * 1000),
+        "width": _VIDEO_SIZE[0],
+        "height": _VIDEO_SIZE[1],
+        "livePhotoVideoId": None,
+        "visibility": "hidden",
+        "checksum": f"fake-checksum-{still.live_video_id}",
+    }
+
+
+COMPANION_ASSETS = tuple(_companion_payload(picture) for picture in _LIVE)
+
+# What the partner key reads: its own pictures, which the primary key never sees.
+PARTNER_ASSETS = tuple(_asset_payload(picture, PARTNER_USER_ID) for picture in PARTNER_PICTURES)
 
 # One album, the lake week as a family would file it: every picture taken at the lake.
 ALBUM_ID = "album-lake-week"
@@ -136,7 +187,7 @@ ALBUMS = (
 
 
 # Every place the library was photographed at, and the fixture home.
-_PLACES = {picture.place for picture in ALL_PICTURES} | {HOME}
+_PLACES = {picture.place for picture in (*ALL_PICTURES, *PARTNER_PICTURES)} | {HOME}
 # About a kilometre: how near a point has to be for Immich to name the same place.
 _PLACE_RADIUS_DEGREES = 0.01
 
@@ -155,26 +206,39 @@ def _reverse_geocode(query: dict[str, list[str]]) -> list[dict[str, Any]]:
     ][:1]
 
 
+def _instant(stamp: str | None) -> datetime | None:
+    return None if stamp is None else datetime.fromisoformat(stamp.replace("Z", "+00:00"))
+
+
+def _held(partner: bool) -> tuple[dict[str, Any], ...]:
+    """The assets one key reads: each account holds only its own."""
+    return PARTNER_ASSETS if partner else TIMELINE_ASSETS
+
+
 def _month_of(taken_at: str) -> str:
     """The MONTH bucket an asset falls in, in the form Immich returns."""
     return f"{taken_at[:7]}-01T00:00:00.000Z"
 
 
-def _assets_for_query(query: dict[str, list[str]]) -> list[dict[str, Any]]:
+def _assets_for_query(
+    query: dict[str, list[str]], held: tuple[dict[str, Any], ...] = TIMELINE_ASSETS
+) -> list[dict[str, Any]]:
     requested_type = query.get("type", [None])[0]
     requested_bucket = query.get("timeBucket", [None])[0]
     return [
         asset
-        for asset in TIMELINE_ASSETS
+        for asset in held
         if (requested_type is None or asset["type"] == requested_type)
         and (requested_bucket is None or _month_of(asset["fileCreatedAt"]) == requested_bucket)
     ]
 
 
-def _buckets_for_query(query: dict[str, list[str]]) -> list[dict[str, Any]]:
+def _buckets_for_query(
+    query: dict[str, list[str]], held: tuple[dict[str, Any], ...] = TIMELINE_ASSETS
+) -> list[dict[str, Any]]:
     """One MONTH bucket per month that holds a matching asset, newest first like Immich."""
     counts: dict[str, int] = {}
-    for asset in _assets_for_query({k: v for k, v in query.items() if k != "timeBucket"}):
+    for asset in _assets_for_query({k: v for k, v in query.items() if k != "timeBucket"}, held):
         month = _month_of(asset["fileCreatedAt"])
         counts[month] = counts.get(month, 0) + 1
     return [
@@ -183,23 +247,26 @@ def _buckets_for_query(query: dict[str, list[str]]) -> list[dict[str, Any]]:
     ]
 
 
-def _assets_for_search(payload: dict[str, Any]) -> list[dict[str, Any]]:
+def _assets_for_search(
+    payload: dict[str, Any], held: tuple[dict[str, Any], ...] = TIMELINE_ASSETS
+) -> list[dict[str, Any]]:
     """The metadata search honours the type, the taken-at window and the faces.
 
     Several ``personIds`` intersect, which is what Immich answers and what the
     wizard's "Together" and a grouped condition's AND both count on.
     """
     requested_type = payload.get("type")
-    taken_after = payload.get("takenAfter")
-    taken_before = payload.get("takenBefore")
+    # Immich compares instants, not strings: "16:32:00.000Z" is not after "16:32:00+00:00".
+    taken_after = _instant(payload.get("takenAfter"))
+    taken_before = _instant(payload.get("takenBefore"))
     wanted_people = set(payload.get("personIds") or ())
     wanted_albums = payload.get("albumIds") or ()
     return [
         asset
-        for asset in TIMELINE_ASSETS
+        for asset in held
         if (requested_type is None or asset["type"] == requested_type)
-        and (taken_after is None or asset["fileCreatedAt"] >= taken_after)
-        and (taken_before is None or asset["fileCreatedAt"] <= taken_before)
+        and (taken_after is None or _instant(asset["fileCreatedAt"]) >= taken_after)
+        and (taken_before is None or _instant(asset["fileCreatedAt"]) <= taken_before)
         and wanted_people <= {person["id"] for person in asset["people"]}
         and (not wanted_albums or (ALBUM_ID in wanted_albums and asset["id"] in ALBUM_ASSETS))
     ]
@@ -292,7 +359,7 @@ class FakeImmichServer:
         else:
             media_dir = root / "media"
             media_dir.mkdir(exist_ok=True)
-            video_paths = _generate_videos(media_dir)
+            video_paths = _generate_videos(media_dir) | _generate_live_clips(media_dir)
             photo_paths = _generate_photos(media_dir)
             thumbnail_paths = _generate_thumbnails(media_dir, video_paths | photo_paths)
         media = video_paths | photo_paths
@@ -365,6 +432,78 @@ def _ffmpeg(*args: str) -> None:
     )
 
 
+def _generate_live_clips(media_dir: Path) -> dict[str, Path]:
+    """Each Live Photo's companion clip, made from its own still.
+
+    "moving": a second copy of the picture slides across it, so something moves against a
+    still background, the kind of motion worth playing. "steady": the picture alone, where
+    nothing moves. "burst": cuts of one continuous recording of that sliding picture (its
+    sound included), each clip starting where its shutter sits in the recording, so
+    neighbouring clips share the same frames and sound where they overlap.
+    """
+    clips: dict[str, Path] = {}
+    bursts: dict[Path, Path] = {}
+    for picture in _LIVE:
+        clip = media_dir / f"{picture.live_video_id}.mp4"
+        if picture.motion == "burst":
+            if picture.source not in bursts:
+                recording = media_dir / f"burst-{picture.source.stem}.mp4"
+                takes = sum(1 for p in _LIVE if p.motion == "burst" and p.source == picture.source)
+                _live_recording(
+                    picture.source, recording, LIVE_CLIP_SECONDS + takes * BURST_STEP_SECONDS
+                )
+                bursts[picture.source] = recording
+            _ffmpeg(
+                "-ss", f"{picture.burst_offset:.3f}", "-i", str(bursts[picture.source]),
+                "-t", str(LIVE_CLIP_SECONDS), *_LIVE_ENCODE, str(clip),
+            )  # fmt: skip
+        else:
+            _live_recording(
+                picture.source, clip, LIVE_CLIP_SECONDS, moving=picture.motion == "moving"
+            )
+        clips[picture.live_video_id] = clip
+    return clips
+
+
+_LIVE_ENCODE = (
+    "-c:v", "libx264", "-preset", "ultrafast", "-pix_fmt", "yuv420p",
+    "-color_range", "tv", "-color_primaries", "bt709", "-color_trc", "bt709",
+    "-colorspace", "bt709", "-r", "30", "-c:a", "aac", "-movflags", "+faststart",
+)  # fmt: skip
+
+
+# How fast the two halves of a moving Live clip slide past each other, in pixels a second.
+_LIVE_SLIDE = 240
+
+
+def _live_recording(source: Path, path: Path, seconds: float, *, moving: bool = True) -> None:
+    """`seconds` of the picture at 1920x1080.
+
+    Moving, its top half slides left while its bottom half slides right: motion no camera
+    pan explains, which is what the editor's motion measure looks for. Steady, it holds.
+    """
+    width, height = _VIDEO_SIZE
+    wide = width + round(_LIVE_SLIDE * seconds)
+    prepared = (
+        f"[0:v]scale={wide}:{height}:force_original_aspect_ratio=increase,crop={wide}:{height},"
+        "scale=in_range=full:out_range=tv,format=yuv420p,split[a][b]"
+    )
+    graph = (
+        f"{prepared};[a]crop={width}:{height // 2}:x='t*{_LIVE_SLIDE}':y=0[top];"
+        f"[b]crop={width}:{height // 2}:x='{wide - width}-t*{_LIVE_SLIDE}':y={height // 2}[bottom];"
+        "[top][bottom]vstack[v]"
+        if moving
+        else f"[0:v]scale={width}:{height}:force_original_aspect_ratio=increase,"
+        f"crop={width}:{height},scale=in_range=full:out_range=tv,format=yuv420p[v]"
+    )
+    _ffmpeg(
+        "-loop", "1", "-framerate", "30", "-i", str(source),
+        "-f", "lavfi", "-i", f"anoisesrc=color=pink:seed=7:amplitude=0.05:duration={seconds}",
+        "-filter_complex", graph, "-map", "[v]", "-map", "1:a:0", "-t", str(seconds),
+        *_LIVE_ENCODE, str(path),
+    )  # fmt: skip
+
+
 def _generate_videos(media_dir: Path) -> dict[str, Path]:
     """Pan across each source photograph for four seconds, over a silent audio track."""
     width, height = _VIDEO_SIZE
@@ -383,8 +522,14 @@ def _generate_videos(media_dir: Path) -> dict[str, Path]:
             "lavfi",
             # WHY silent: a phone clip carries an audio stream, and the render keeps it under the
             # music; a test tone here was the soundtrack of every film cut from this library.
+            # One clip (`voiced`) keeps a quiet hum, so a film can be heard keeping or muting it.
             "-i",
-            f"anullsrc=channel_layout=stereo:sample_rate=48000:duration={picture.seconds}",
+            (
+                f"sine=frequency=220:sample_rate=48000:duration={picture.seconds},"
+                "volume=-18dB,aformat=channel_layouts=stereo"
+                if picture.voiced
+                else f"anullsrc=channel_layout=stereo:sample_rate=48000:duration={picture.seconds}"
+            ),
             "-map",
             "0:v:0",
             "-map",
@@ -428,26 +573,61 @@ def _generate_videos(media_dir: Path) -> dict[str, Path]:
 
 
 def _generate_photos(media_dir: Path) -> dict[str, Path]:
-    """Serve each source photograph at the size its asset record advertises."""
-    width, height = _PHOTO_SIZE
+    """Serve each source photograph at the size its asset record advertises.
+
+    A photo edited in Immich's editor also gets its edited render: the same picture in black
+    and white, which Immich serves when asked for `edited=true`.
+    """
     photos: dict[str, Path] = {}
     for picture in _PHOTOS:
-        photo_path = media_dir / f"{picture.asset_id}.jpg"
-        _ffmpeg(
-            "-i",
-            str(picture.source),
-            "-vf",
-            (f"scale={width}:{height}:force_original_aspect_ratio=increase,crop={width}:{height}"),
-            "-frames:v",
-            "1",
-            "-q:v",
-            "2",
-            "-update",
-            "1",
-            str(photo_path),
-        )
-        photos[picture.asset_id] = photo_path
+        _write_photo(picture, media_dir / f"{picture.asset_id}.jpg", photos, picture.asset_id)
+        if picture.hdr:
+            _add_gain_map(media_dir / f"{picture.asset_id}.jpg")
+        if picture.edited:
+            edited = media_dir / f"{picture.asset_id}.edited.jpg"
+            _write_photo(picture, edited, photos, picture.asset_id + EDITED, ",hue=s=0")
     return photos
+
+
+def _write_photo(
+    picture: Picture, photo_path: Path, photos: dict[str, Path], key: str, edit: str = ""
+) -> None:
+    width, height = _photo_size(picture)
+    _ffmpeg(
+        "-i",
+        str(picture.source),
+        "-vf",
+        (
+            f"scale={width}:{height}:force_original_aspect_ratio=increase,"
+            f"crop={width}:{height}{edit}"
+        ),
+        "-frames:v",
+        "1",
+        "-q:v",
+        "2",
+        "-update",
+        "1",
+        str(photo_path),
+    )
+    photos[key] = photo_path
+
+
+def _add_gain_map(photo: Path) -> None:
+    """Make a photo an Ultra HDR JPEG: the picture tagged `hdrgm`, then its gain map.
+
+    The gain map brightens the picture's own highlights, so the HDR rendition is the same
+    picture with more headroom, as a phone's is.
+    """
+    import io
+
+    from PIL import Image
+
+    with Image.open(photo) as image:
+        primary = io.BytesIO()
+        image.save(primary, "JPEG", quality=92, comment=b"hdrgm:Version=1.0")
+        gain = io.BytesIO()
+        image.convert("L").resize((image.width // 4, image.height // 4)).save(gain, "JPEG")
+    photo.write_bytes(primary.getvalue() + gain.getvalue())
 
 
 def _generate_thumbnails(media_dir: Path, media: dict[str, Path]) -> dict[str, Path]:
@@ -462,7 +642,7 @@ def _generate_thumbnails(media_dir: Path, media: dict[str, Path]) -> dict[str, P
     thumbnail_dir.mkdir(exist_ok=True)
     thumbnails: dict[str, Path] = {}
     for asset_id, source in media.items():
-        thumbnail_path = thumbnail_dir / f"{asset_id}.jpg"
+        thumbnail_path = thumbnail_dir / f"{asset_id.replace(EDITED, '.edited')}.jpg"
         seconds = _BY_ID[asset_id].seconds if asset_id in _BY_ID else _VIDEO_DURATION
         seek = ["-ss", str(seconds / 2)] if source.suffix == ".mp4" else []
         _ffmpeg(
@@ -546,7 +726,7 @@ def _handler_type(
                 self._send_json(
                     200,
                     {
-                        "id": "fake-user",
+                        "id": PARTNER_USER_ID if partner else "fake-user",
                         "email": "fake@example.test",
                         "name": PARTNER_USER if partner else "Fake Immich User",
                         "isAdmin": True,
@@ -585,19 +765,24 @@ def _handler_type(
                 self._send_json(200, {"assets": count})
                 return
             if path == "/api/timeline/buckets":
-                self._send_json(200, _buckets_for_query(query))
+                self._send_json(200, _buckets_for_query(query, _held(partner)))
                 return
             if path == "/api/timeline/bucket":
-                self._send_json(200, _assets_for_query(query))
+                self._send_json(200, _assets_for_query(query, _held(partner)))
                 return
             parts = path.removeprefix("/api/assets/").split("/")
             if path.startswith("/api/assets/") and len(parts) == 1:
                 # One asset by id, as Immich serves it: a revision's swap fetches its sibling so.
-                found = next((a for a in TIMELINE_ASSETS if a["id"] == parts[0]), None)
+                found = next(
+                    (a for a in (*_held(partner), *COMPANION_ASSETS) if a["id"] == parts[0]), None
+                )
                 found = found or uploaded_asset(parts[0])
                 if found is not None:
                     self._send_json(200, found)
                     return
+            if query.get("edited") == ["true"] and parts[0] + EDITED in media:
+                # Immich's editor render, asked for by name; any other asset has none to give.
+                parts = [parts[0] + EDITED, parts[1]]
             if len(parts) == 2 and parts[0] in media and parts[1] == "original":
                 content_type = "video/mp4" if media[parts[0]].suffix == ".mp4" else "image/jpeg"
                 self._send_file(media[parts[0]], content_type)
@@ -646,15 +831,17 @@ def _handler_type(
             self._unexpected()
 
         def do_POST(self) -> None:  # noqa: N802
-            if self.headers.get("x-api-key") != FakeImmichServer.api_key:
+            key = self.headers.get("x-api-key")
+            if key not in (FakeImmichServer.api_key, FakeImmichServer.partner_api_key):
                 self._send_json(401, {"message": "invalid API key"})
                 return
+            partner = key == FakeImmichServer.partner_api_key
             path = urlsplit(self.path).path
             if path == "/api/search/metadata":
                 payload = self._read_json()
                 if self._refused(path, {}, payload):
                     return
-                items = _assets_for_search(payload)
+                items = _assets_for_search(payload, _held(partner))
                 if wanted_tags := payload.get("tagIds"):
                     items = self._tagged(items, wanted_tags)
                 self._send_json(
@@ -674,9 +861,9 @@ def _handler_type(
                 payload = self._read_json()
                 if self._refused(path, {}, payload):
                     return
-                self._send_json(200, {"total": len(_assets_for_search(payload))})
+                self._send_json(200, {"total": len(_assets_for_search(payload, _held(partner)))})
                 return
-            if path == "/api/assets":
+            if path == "/api/assets" and not partner:
                 try:
                     upload = self._read_multipart()
                 except ValueError as error:

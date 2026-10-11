@@ -13,7 +13,7 @@ Start with unit tests, then run the checks for the boundaries your change touche
 | Integration | `make test-integration` | FFmpeg, an Immich server in `~/.immich-memories/config.yaml`, and at least two clips of 15 seconds or less in that library |
 | Store | `make test-store-sqlite`, `make test-store` | `tests/store/` on SQLite, then on PostgreSQL too. `make test-store` starts a throwaway `postgres:16` in Docker unless `IMMICH_MEMORIES_TEST_DATABASE_URL` names one; each test gets its own schema. `make test` runs the SQLite half |
 | Real-Immich gate | `make test-immich-gate IMMICH_GATE_VERSION=v2` (or `v3`), plus `IMMICH_GATE_DATABASE=postgresql` for the store on PostgreSQL | Docker and FFmpeg. It starts its own Immich and fixture library, and fails when Immich does not come up |
-| Feature | `make test-features`, `make feature-check` | FFmpeg and the LFS fixture library; no Immich. See below |
+| Feature | `make test-features`, `make feature-check` | FFmpeg, the LFS fixture library and the `music` extra (`make dev-test-features`); no Immich. See below |
 | E2E | `make e2e` (`make e2e-full` for the generation flow) | `make playwright-install`; no Immich, it runs against a fake server |
 | Launch check | `make launch-check-ci`, `make launch-check-ci-postgres` | The required E2E set. The PostgreSQL one gives each launch its own schema in `IMMICH_MEMORIES_E2E_DATABASE_URL`, or starts a throwaway `postgres:16` when that is unset |
 | Container | `make test-container` (`CONTAINER_E2E_DATABASE=postgresql` for PostgreSQL) | Docker. Builds the image and runs it; see below |

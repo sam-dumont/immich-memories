@@ -28,7 +28,12 @@ from pathlib import Path
 from typing import Any
 
 from immich_memories.security import write_secret_file
-from tests.e2e.fake_library import BY_ID, CARRIERS, DROPPED, LIBRARY, STORIES, STORY_OF, THESIS
+
+# Both accounts' pictures: a film that names the partner account ships the partner's too.
+from tests.e2e.fake_library import ACCOUNTS_BY_ID as BY_ID
+from tests.e2e.fake_library import ACCOUNTS_STORY_OF as STORY_OF
+from tests.e2e.fake_library import CARRIERS, DROPPED, LIBRARY, STORIES, THESIS
+from tests.e2e.fake_live_motion import companions_of, live_projection
 
 # The per-asset pass the real route runs before its named stages, and the one a
 # first cut over a big library sits inside for a long time. It is scripted here
@@ -143,14 +148,20 @@ def _seconds(stamp: str) -> float:
 
 
 def _select(
-    sources: Sequence[Any], required: Sequence[str]
+    sources: Sequence[Any], required: Sequence[str], excluded: Sequence[str] = ()
 ) -> tuple[list[Any], list[tuple[str, str]]]:
-    """Ship the story pictures and whatever the owner ticked; leave the rest out with a reason."""
+    """Ship the story pictures and whatever the owner ticked; leave the rest out with a reason.
+
+    A picture the owner excluded is left out whatever its story, as the real editor's source
+    eligibility refuses it ("owner exclusion").
+    """
     kept, dropped = [], []
     wanted = set(required)
     for source in sources:
         asset_id = _asset_of(source).id
-        if asset_id in STORY_OF or asset_id in wanted:
+        if asset_id in excluded:
+            dropped.append((asset_id, "owner exclusion"))
+        elif asset_id in STORY_OF or asset_id in wanted:
             kept.append(source)
         else:
             dropped.append(
@@ -341,11 +352,22 @@ def _candidates(sources: Sequence[Any], *, photo_seconds: float) -> tuple[Any, .
 class _FakeEditorialPipeline:
     """The pipeline surface the Memory page drives, with a scripted cut behind it."""
 
-    def __init__(self, *, app_config: Any, context: Any, stage_seconds: float) -> None:
+    def __init__(
+        self,
+        *,
+        app_config: Any,
+        context: Any,
+        stage_seconds: float,
+        client: Any = None,
+        companions: Sequence[Any] = (),
+    ) -> None:
         from immich_memories.analysis.progress import ProgressTracker
 
         self._app_config = app_config
         self._context = context
+        # Where a kept Live Photo's companion clips are read from, to measure their motion.
+        self._client = client
+        self._companions = tuple(companions)
         self._stage_seconds = stage_seconds
         self.tracker = ProgressTracker()
         # Nothing was downloaded or looked at, and the pool page says so out loud.
@@ -374,8 +396,8 @@ class _FakeEditorialPipeline:
     ) -> tuple[list[Any], Any]:
         """Keep a real attempt, announce the real stages, return the real result shape.
 
-        ``include_live_photos`` changes nothing here: no fake source carries a
-        Live Photo companion, so there is no motion for the flag to admit.
+        A kept Live Photo plays as motion when its measured clip earns it, and only while
+        ``include_live_photos`` admits motion (`fake_live_motion`).
         """
         from immich_memories.analysis.editorial_projection import EditorialStageReporter
         from immich_memories.operations.cancellation import (
@@ -422,10 +444,26 @@ class _FakeEditorialPipeline:
                     time.sleep(self._stage_seconds)
                     check_cancelled()
                 kept, dropped = _select(
-                    sources, getattr(self._context, "owner_required_asset_ids", ())
+                    sources,
+                    getattr(self._context, "owner_required_asset_ids", ()),
+                    getattr(self._context, "owner_excluded_asset_ids", ()),
                 )
-                candidates = _candidates(kept, photo_seconds=self._app_config.photos.duration)
-                result = self._result(candidates, attempt.directory, len(sources))
+                photo_seconds = self._app_config.photos.duration
+                candidates = _candidates(kept, photo_seconds=photo_seconds)
+                live = live_projection(
+                    candidates,
+                    sources,
+                    config=self._app_config,
+                    companions=self._companions,
+                    fetch=lambda video_id: self._client.get_video_playback(video_id),
+                    include_live_photos=include_live_photos,
+                    demand=lambda extra: _candidates(extra, photo_seconds=photo_seconds),
+                    content_budget=lambda carriers: self._content_budget(carriers, candidates),
+                )
+                selections = None
+                if live is not None:
+                    candidates, selections = live
+                result = self._result(candidates, attempt.directory, len(sources), selections)
                 realization = result.stats["editorial_duration_realization"]
                 write_plan_files(
                     attempt.directory,
@@ -477,12 +515,27 @@ class _FakeEditorialPipeline:
             time.sleep(pause)
             check_cancelled()
 
-    def _result(self, candidates: tuple[Any, ...], attempt_directory: Path, pool: int) -> Any:
+    def _content_budget(self, carriers: list[dict], candidates: tuple[Any, ...]) -> float | None:
+        """The render budget the run's timing policy gives these carriers, if it has one."""
+        policy = self._context.render_timing
+        if policy is None:
+            return None
+        assets = {row.clip.asset.id: row.clip.asset for row in candidates}
+        rows = [{"asset_id": c["asset_id"], "seconds": c["seconds"]} for c in carriers]
+        return float(policy.resolve(rows, assets).content_budget)
+
+    def _result(
+        self,
+        candidates: tuple[Any, ...],
+        attempt_directory: Path,
+        pool: int,
+        selections: tuple[Any, ...] | None = None,
+    ) -> Any:
         from immich_memories.analysis.editorial_planner import EditorialSelection
         from immich_memories.analysis.smart_pipeline import PipelineResult
         from immich_memories.api.models import AssetType
 
-        selections = tuple(
+        selections = selections or tuple(
             EditorialSelection(
                 asset_id=row.clip.asset.id,
                 start_time=row.start_time,
@@ -606,7 +659,11 @@ def install_fake_editorial_route(
         editorial_ports: Any = None,
     ) -> _FakeEditorialPipeline:
         return _FakeEditorialPipeline(
-            app_config=app_config, context=editorial_context, stage_seconds=stage_seconds
+            app_config=app_config,
+            context=editorial_context,
+            stage_seconds=stage_seconds,
+            client=client,
+            companions=companions_of(source_pool),
         )
 
     # WHY: the two boundaries a hermetic launch has no way to provide. The real

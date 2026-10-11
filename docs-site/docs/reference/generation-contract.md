@@ -220,6 +220,13 @@ was removed or changed for it. The shots themselves are kept with the run attemp
 `runs why` names one when you ask about it. A run with none prints
 `CHECK 0 pictures to check before sharing`, which says the run looked.
 
+On disk, a run leaves three things. Its folder in the output directory holds the film and
+`run_metadata.json`, the run's record as JSON: id, status, dates, the film's path, size and
+length, and the time each phase took. The cut and its plan stay with the run attempt under
+`~/.immich-memories/cache/editorial-runs/`, which is where `runs story`, `runs why` and
+`runs render` read them. The run history in the [store](../run/database.md) holds the same
+record. Nothing else lands in the output directory.
+
 ### Run state
 
 <Diagram name="state-run" headline="A run stays running until it ends one of four ways." />
@@ -243,6 +250,9 @@ folder, named after that file plus the run id, so a rerun never overwrites an ea
 immich-memories generate --year 2025 --output ~/Videos/summer.mp4
 # writes ~/Videos/summer_3c9e1f0a_20260105_143052_a7b3/summer_3c9e1f0a.mp4
 ```
+
+`run_metadata.json` sits beside the film in that folder: a copy of the run record `runs show`
+prints.
 
 `--keep-intermediates` leaves the work files in hidden folders of that run folder: the cut
 segments in `.intermediates`, the title cards in `.title_screens`, prepared photos in

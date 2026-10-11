@@ -156,7 +156,7 @@ COMMIT;"""
             )
         )
         print(
-            f"Seeded Immich {version['major']}.{version['minor']}.{version['patch']}: 134 selected records, 133 unique assets"
+            f"Seeded Immich {version['major']}.{version['minor']}.{version['patch']}: 139 selected records, 138 unique assets"
         )
     finally:
         for api in apis.values():
