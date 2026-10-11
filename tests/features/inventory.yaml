@@ -19,7 +19,7 @@
 #
 # `doc` is relative to docs-site/docs/ (or README.md), with the heading anchor that makes the promise.
 
-gap_ceiling: 140
+gap_ceiling: 113
 
 features:
   # ── Generate: films, output and flags ────────────────────────────────────────────────────────
@@ -631,17 +631,28 @@ features:
     promise: "auto run makes at most one film a day: the chosen or best eligible candidate, or none when nothing qualifies."
     doc: make/automate.md#automatic-films
     covers: ["cli:auto", "cli:auto run", "cli:auto run --candidate", "cli:auto run --quiet"]
-    status: "gap: #2128"
+    tests:
+      - tests/features/test_automation_runs.py::test_auto_run_makes_the_best_candidate
+      - tests/features/test_automation_runs.py::test_auto_run_makes_the_chosen_candidate
+      - tests/features/test_automation_runs.py::test_a_second_run_the_same_day_makes_nothing
+      - tests/features/test_automation_runs.py::test_nothing_worth_a_film_makes_nothing
+      - tests/integration/features/test_automation_delivery.py::test_auto_run_renders_delivers_and_announces_the_film_with_its_immich_link
   - id: automation.run-dry-run
     promise: "auto run --dry-run shows the decision without rendering and leaves the day's scheduled film in place."
     doc: make/automate.md#check-on-it
     covers: ["cli:auto run --dry-run"]
-    status: "gap: #2128"
+    tests:
+      - tests/features/test_automation_runs.py::test_a_dry_run_names_the_decision_and_makes_no_film
+      - tests/features/test_automation_runs.py::test_the_daily_timer_still_makes_the_film_after_a_dry_run
   - id: automation.run-overrides
     promise: "auto run --force ignores the cooldown, --cooldown sets it for this run, and --upload delivers the film."
     doc: reference/automation-contract.md#what-auto-run-does-exactly
     covers: ["cli:auto run --force", "cli:auto run --cooldown", "cli:auto run --upload"]
-    status: "gap: #2128"
+    tests:
+      - tests/features/test_automation_runs.py::test_force_makes_a_film_inside_the_cooldown
+      - tests/features/test_automation_runs.py::test_cooldown_sets_the_wait_for_this_run
+      - tests/features/test_automation_runs.py::test_a_cooldown_longer_than_the_gap_still_waits
+      - tests/features/test_automation_runs.py::test_upload_asks_the_child_to_deliver_the_film
   - id: automation.suggest
     promise: "auto suggest --json lists up to ten candidates with a reason each, best first, in the same order for the same library and history."
     doc: make/automate.md#how-it-picks-one-memory
@@ -651,11 +662,14 @@ features:
   - id: automation.skip-reasons
     promise: "Every enabled detector that finds nothing gives a reason, printed above the suggestion table."
     doc: make/automate.md#how-it-picks-one-memory
-    status: "gap: #2128"
+    tests:
+      - tests/features/test_automation_runs.py::test_every_detector_that_found_nothing_says_why_above_the_table
   - id: automation.hand-made-counts
     promise: "A completed hand-made film counts as already made for the same people and window, so automation does not propose it again."
     doc: make/automate.md#how-it-picks-one-memory
-    status: "gap: #2128"
+    tests:
+      - tests/features/test_automation_runs.py::test_a_hand_made_month_is_not_proposed_again
+      - tests/integration/features/test_automation_delivery.py::test_an_album_filmed_by_hand_is_not_proposed_again
   - id: automation.status-history
     promise: "auto status shows the scheduler in use and the last attempt; auto history lists recent automatic films; --json for scripts."
     doc: make/automate.md#check-on-it
@@ -664,16 +678,27 @@ features:
   - id: automation.rotation-rules
     promise: "The rotation rules (no repeat category, per-type caps, person cooldown) are hard: if every candidate is rejected the day is skipped."
     doc: reference/automation-contract.md#how-it-picks-one-memory
-    status: "gap: #2128"
+    tests:
+      - tests/features/test_automation_runs.py::test_the_previous_category_cannot_repeat_and_the_day_is_skipped
+      - tests/features/test_automation_runs.py::test_a_person_from_the_last_two_person_films_waits
+      - tests/features/test_automation_runs.py::test_a_category_twice_in_the_last_six_films_waits
   - id: automation.failure-backoff
     promise: "A candidate that failed twice in a row waits 24 hours, then 3 days, then 7 before it comes back; a success clears it."
     doc: reference/automation-contract.md#how-it-picks-one-memory
-    status: "gap: #2128"
+    tests:
+      - tests/features/test_automation_runs.py::test_one_failure_is_not_held_against_a_candidate
+      - tests/features/test_automation_runs.py::test_two_failures_wait_24_hours_then_3_days_then_7
+      - tests/features/test_automation_runs.py::test_a_success_clears_the_streak
   - id: scheduler.docker-timer
     promise: "With automation.enabled and daily_at, the web process runs auto run once a day and catches up after downtime."
     doc: make/automate.md#docker-switch-on-the-built-in-timer
     covers: ["scheduler:docker-timer"]
-    status: "gap: #2128"
+    tests:
+      - tests/features/test_automation_runs.py::test_the_timer_makes_one_film_at_daily_at_and_no_more_that_day
+      - tests/features/test_automation_runs.py::test_a_server_down_at_daily_at_catches_up_when_it_starts
+      - tests/features/test_automation_runs.py::test_a_restart_after_the_days_run_waits_for_tomorrow
+      - tests/features/test_automation_runs.py::test_without_automation_enabled_the_timer_never_fires
+      - tests/features/test_automation_runs.py::test_the_web_process_runs_the_daily_decision_when_it_starts
   - id: scheduler.auto-install
     promise: "auto install writes a launcher and scheduler files for --hour and --minute, prints Activate and Deactivate commands, and runs neither; --show prints the current install."
     doc: make/automate.md#bare-metal-auto-install
@@ -712,7 +737,10 @@ features:
     promise: "POST /api/trigger asks automation to choose and make a memory, with the same rules as the daily run."
     doc: reference/automation-contract.md#trigger-it-over-http
     covers: ["api:/api/trigger"]
-    status: "gap: #2128"
+    tests:
+      - tests/features/test_automation_runs.py::test_a_trigger_makes_the_film_auto_run_would_choose
+      - tests/features/test_automation_runs.py::test_a_trigger_inside_the_cooldown_is_skipped_like_the_daily_run
+      - tests/features/test_automation_runs.py::test_a_wrong_token_starts_nothing
   - id: automation.kubernetes-cronjob
     promise: "On Kubernetes the daily run is a CronJob in the app's namespace."
     doc: reference/automation-contract.md#kubernetes
@@ -720,7 +748,12 @@ features:
   - id: automation.upload
     promise: "automation.upload_to_immich or upload.enabled delivers automatic films; automation.album_name wins over upload.album_name for a scheduled run."
     doc: make/automate.md#docker-switch-on-the-built-in-timer
-    status: "gap: #2128"
+    tests:
+      - tests/features/test_automation_runs.py::test_upload_to_immich_delivers_automatic_films_to_the_automation_album
+      - tests/features/test_automation_runs.py::test_upload_enabled_delivers_automatic_films_to_the_automation_album
+      - tests/features/test_automation_runs.py::test_without_an_automation_album_films_go_to_the_upload_album
+      - tests/features/test_automation_runs.py::test_with_both_switches_off_films_stay_on_disk
+      - tests/integration/features/test_automation_delivery.py::test_auto_run_renders_delivers_and_announces_the_film_with_its_immich_link
   - id: automation.accounts-and-groups
     promise: "automation.accounts names exactly the accounts automation reads, and detect_groups proposes one film of last year per saved group."
     doc: reference/automation-contract.md#across-accounts-and-saved-groups
@@ -731,90 +764,135 @@ features:
     covers: ["cli:auto test-notification"]
     status: "gap: #2128"
   - id: notifications.on-completion
-    promise: "A successful generate, auto run or timer film sends a completion message; runs render and a saved cut send none."
+    promise: "A successful generate, auto run, timer or runs render film sends a completion message; saving a cut without rendering sends none."
     doc: make/automate.md#get-told-when-it-runs
-    status: "gap: #2128"
+    tests:
+      - tests/integration/features/test_automation_delivery.py::test_auto_run_renders_delivers_and_announces_the_film_with_its_immich_link
+      - tests/integration/features/test_automation_delivery.py::test_generate_announces_its_uploaded_film_with_a_link_to_the_server
+      - tests/integration/features/test_automation_delivery.py::test_a_saved_cut_sends_nothing_until_runs_render_makes_its_film
   - id: notifications.upload-link
     promise: "After an upload the success message links to the film in Immich, using immich.public_url when set."
     doc: make/automate.md#get-told-when-it-runs
-    status: "gap: #2128"
+    tests:
+      - tests/integration/features/test_automation_delivery.py::test_auto_run_renders_delivers_and_announces_the_film_with_its_immich_link
+      - tests/integration/features/test_automation_delivery.py::test_generate_announces_its_uploaded_film_with_a_link_to_the_server
 
   # ── Automation detectors ─────────────────────────────────────────────────────────────────────
   - id: detector.yearly
     promise: "The yearly detector proposes past years with content after 15 January."
     doc: reference/automation-contract.md#how-it-picks-one-memory
     covers: ["detector:YearlyDetector"]
-    status: "gap: #2128"
+    tests:
+      - tests/features/test_automation_detectors.py::test_a_past_year_with_pictures_is_proposed_from_15_january
+      - tests/features/test_automation_detectors.py::test_the_year_just_ended_waits_until_15_january
   - id: detector.birthday
     promise: "The birthday detector proposes a person whose birthday was 2 to 60 days ago, with enough pictures in the film's windows."
     doc: reference/automation-contract.md#how-it-picks-one-memory
     covers: ["detector:BirthdayDetector"]
-    status: "gap: #2128"
+    tests:
+      - tests/features/test_automation_detectors.py::test_a_birthday_2_to_60_days_ago_is_proposed
+      - tests/features/test_automation_detectors.py::test_a_birthday_outside_2_to_60_days_is_not_proposed
+      - tests/features/test_automation_detectors.py::test_a_birthday_under_50_pictures_says_why_instead
+      - tests/features/test_automation_detectors.py::test_a_birthday_on_two_days_says_why_instead
   - id: detector.monthly
     promise: "The monthly detector proposes the latest completed month, if not made yet, and never looks further back."
     doc: reference/automation-contract.md#how-it-picks-one-memory
     covers: ["detector:MonthlyDetector"]
-    status: "gap: #2128"
+    tests:
+      - tests/features/test_automation_detectors.py::test_the_latest_completed_month_is_proposed_and_no_earlier_one
+      - tests/features/test_automation_detectors.py::test_an_empty_last_month_is_not_replaced_by_an_earlier_one
+      - tests/features/test_automation_detectors.py::test_a_month_that_has_its_film_is_not_proposed_again
+      - tests/features/test_automation_detectors.py::test_the_month_in_progress_is_not_the_monthly_film
   - id: detector.activity-burst
     promise: "The activity burst detector proposes a month with more than twice the rolling 12-month average."
     doc: reference/automation-contract.md#how-it-picks-one-memory
     covers: ["detector:ActivityBurstDetector"]
-    status: "gap: #2128"
+    tests:
+      - tests/features/test_automation_detectors.py::test_a_month_over_twice_the_rolling_average_is_proposed
+      - tests/features/test_automation_detectors.py::test_a_month_at_exactly_twice_the_average_is_not_a_burst
   - id: detector.trip
     promise: "The trip detector proposes trips in the trailing year, 7 days after coming home."
     doc: reference/automation-contract.md#how-it-picks-one-memory
     covers: ["detector:TripDetector"]
-    status: "gap: #2128"
+    tests:
+      - tests/integration/features/test_automation_delivery.py::test_a_trip_is_proposed_7_days_after_coming_home
+      - tests/integration/features/test_automation_delivery.py::test_a_trip_6_days_after_coming_home_waits
+      - tests/integration/features/test_automation_delivery.py::test_a_trip_more_than_a_year_old_is_not_proposed
   - id: detector.person-spotlight
     promise: "The person spotlight detector proposes the five most-pictured people, weighed by closeness."
     doc: reference/automation-contract.md#how-it-picks-one-memory
     covers: ["detector:PersonSpotlightDetector"]
-    status: "gap: #2128"
+    tests:
+      - tests/features/test_automation_detectors.py::test_the_five_most_pictured_people_are_proposed
+      - tests/features/test_automation_detectors.py::test_the_three_most_pictured_lead_the_list
+      - tests/features/test_automation_detectors.py::test_a_close_person_outranks_an_acquaintance_with_as_many_pictures
   - id: detector.multi-person
-    promise: "The multi-person detector proposes pairs who appear together on at least 50 pictures."
+    promise: "The multi-person detector proposes pairs who appear together on at least 10 pictures in last year, the year the film reads."
     doc: reference/automation-contract.md#how-it-picks-one-memory
     covers: ["detector:MultiPersonDetector"]
-    status: "gap: #2128"
+    tests:
+      - tests/features/test_automation_detectors.py::test_a_pair_together_on_10_pictures_last_year_is_proposed
+      - tests/features/test_automation_detectors.py::test_a_pair_together_on_9_pictures_last_year_is_not_proposed
   - id: detector.on-this-day
     promise: "The on this day detector proposes today when its month has content in five or more prior years."
     doc: reference/automation-contract.md#how-it-picks-one-memory
     covers: ["detector:OnThisDayDetector"]
-    status: "gap: #2128"
+    tests:
+      - tests/features/test_automation_detectors.py::test_today_is_proposed_when_its_month_has_pictures_in_five_prior_years
+      - tests/features/test_automation_detectors.py::test_four_prior_years_are_not_enough
   - id: detector.special-day
     promise: "The special day detector proposes a catalogued day whose anniversary is within 3 days, round ones first."
     doc: reference/automation-contract.md#how-it-picks-one-memory
     covers: ["detector:SpecialDayDetector"]
-    status: "gap: #2128"
+    tests:
+      - tests/features/test_automation_detectors.py::test_the_roundest_anniversary_within_three_days_is_proposed_first
+      - tests/features/test_automation_detectors.py::test_an_anniversary_four_days_away_is_not_proposed
   - id: detector.saved-group
     promise: "The saved group detector proposes last year's film of each saved group, once."
     doc: reference/automation-contract.md#across-accounts-and-saved-groups
     covers: ["detector:GroupCandidateDetector"]
-    status: "gap: #2128"
+    tests:
+      - tests/features/test_automation_detectors.py::test_a_saved_group_is_proposed_last_years_film
+      - tests/features/test_automation_detectors.py::test_a_saved_group_film_is_proposed_once
+      - tests/features/test_automation_detectors.py::test_a_saved_group_with_no_pictures_last_year_is_skipped
   - id: detector.season
     promise: "The season detector proposes the season that just ended, 3 to 30 days after its end, and only with a home base."
     doc: reference/automation-contract.md#how-it-picks-one-memory
     covers: ["detector:SeasonDetector"]
-    status: "gap: #2128"
+    tests:
+      - tests/features/test_automation_detectors.py::test_the_season_that_ended_3_to_30_days_ago_is_proposed
+      - tests/features/test_automation_detectors.py::test_a_season_outside_3_to_30_days_is_not_proposed
+      - tests/features/test_automation_detectors.py::test_without_a_home_base_there_is_no_season_film
   - id: detector.holiday
     promise: "The holiday detector proposes a holiday of the home country or extra_holidays, from 3 days after it, across the five years around it."
     doc: reference/automation-contract.md#how-it-picks-one-memory
     covers: ["detector:HolidayDetector"]
-    status: "gap: #2128"
+    tests:
+      - tests/features/test_automation_detectors.py::test_a_home_country_holiday_is_proposed_from_3_days_after_it
+      - tests/features/test_automation_detectors.py::test_a_holiday_two_days_ago_is_not_proposed_yet
+      - tests/features/test_automation_detectors.py::test_a_day_from_extra_holidays_is_proposed_without_a_home_base
   - id: detector.album
     promise: "The album detector proposes an album never filmed, or one that grew by 30 pictures and to 1.5 times its size, and leaves out albums spanning over six months."
     doc: reference/automation-contract.md#how-it-picks-one-memory
     covers: ["detector:AlbumDetector"]
-    status: "gap: #2128"
+    tests:
+      - tests/features/test_automation_detectors.py::test_an_album_of_20_pictures_never_filmed_is_proposed
+      - tests/features/test_automation_detectors.py::test_an_album_spanning_more_than_six_months_is_left_out
   - id: detector.backfill
     promise: "The backfill detector proposes a month of this year or last with 20 pictures and no film, newest first."
     doc: reference/automation-contract.md#how-it-picks-one-memory
     covers: ["detector:BackfillDetector"]
-    status: "gap: #2128"
+    tests:
+      - tests/features/test_automation_detectors.py::test_the_newest_unfilmed_month_with_20_pictures_is_backfilled
+      - tests/features/test_automation_detectors.py::test_last_year_is_backfilled_and_the_year_before_is_not
+      - tests/features/test_automation_detectors.py::test_a_month_that_has_its_film_is_not_backfilled
   - id: detector.person-month
     promise: "The person month detector proposes the last completed month of each close person with at least 15 pictures on 4 days."
     doc: reference/automation-contract.md#how-it-picks-one-memory
     covers: ["detector:PersonMonthlyDetector"]
-    status: "gap: #2128"
+    tests:
+      - tests/features/test_automation_detectors.py::test_a_close_persons_last_month_with_15_pictures_on_4_days_is_proposed
+      - tests/features/test_automation_detectors.py::test_a_close_persons_thin_month_says_why_instead
 
   # ── Configuration ────────────────────────────────────────────────────────────────────────────
   - id: privacy.config-errors-hide-secrets
