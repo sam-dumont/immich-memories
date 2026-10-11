@@ -1,6 +1,7 @@
 """One address retains the existing inference and authenticated render contracts."""
 
 import threading
+import time
 from concurrent.futures import ThreadPoolExecutor
 
 from fastapi.testclient import TestClient
@@ -523,6 +524,13 @@ def test_caption_stream_drops_render_credentials_and_stops_before_render(tmp_pat
         )
         assert response.status_code == 202
         assert started.wait(2)
+        # The render phase is held until the job has failed, and captions wait for it: asked
+        # sooner, the worker rightly answers that the GPU is busy.
+        job_id = response.json()["job_id"]
+        for _attempt in range(200):
+            if client.get(f"/render/jobs/{job_id}", headers=AUTH).json()["state"] == "failed":
+                break
+            time.sleep(0.01)
         assert client.get("/v1/models").json()["data"][0]["id"] == "synthetic-captioner"
         assert (
             client.get("/v1/models", params={"compressed": "1"}).json()["data"][0]["id"]
@@ -533,7 +541,6 @@ def test_caption_stream_drops_render_credentials_and_stops_before_render(tmp_pat
 
 
 def test_prefixed_render_job_returns_the_validated_film_once(tmp_path):
-    import time
 
     class TinyRenderer(IdleRenderer):
         def render(self, request, directory, progress):
