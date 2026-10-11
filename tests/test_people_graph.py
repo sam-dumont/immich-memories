@@ -39,24 +39,20 @@ class FakeImmich:
     # touches. Everything else under test is arithmetic on its answers.
     """
 
-    def __init__(self, people, months, shared=None, account="Alex Example", days=None):
+    def __init__(self, people, months, shared=None, account="Alex Example"):
         self._people = people
+        # Person id -> {month: pictures}; the None key is the whole library.
         self._months = months
         self._shared = shared or {}
         self._account = account
-        self._days = days or {}
         self.pair_queries = 0
 
     def get_all_people(self, with_hidden: bool = False):
         return self._people
 
     def get_time_buckets(self, **kwargs):
-        if kwargs.get("size") == "DAY":
-            day_map = self._days.get(kwargs.get("person_id"), {})
-            return [
-                _Bucket(f"{day:%Y-%m-%d}T00:00:00.000Z", count) for day, count in day_map.items()
-            ]
-        person_id = kwargs["person_id"]
+        # Immich v2+ answers month buckets whatever `size` is asked for (#2354).
+        person_id = kwargs.get("person_id")
         return [
             _Bucket(f"{month:%Y-%m-%d}T00:00:00.000Z", count)
             for month, count in self._months.get(person_id, {}).items()
@@ -311,27 +307,22 @@ class TestGraphMetadata:
 
 
 class TestEraDayShares:
-    def test_covid_day_share_reaches_the_evidence_with_default_days_quarantined(self):
-        """Presence is a share of the library's own covid days; a Jan-1 default day is neither."""
-        library_days = {date(2020, 4, day): 5 for day in range(1, 11)}
-        library_days[date(2020, 1, 1)] = 9
+    def test_the_covid_share_counts_the_librarys_photographed_months_januaries_included(self):
+        """Immich's timeline grain is the month: a January bucket is a month, not a default
+        January-first date, so it counts on both sides of the share (#2354)."""
+        photographed = (date(2020, 4, 1), date(2020, 5, 1), date(2021, 1, 1), date(2021, 2, 1))
+        library = dict.fromkeys((*photographed, date(2019, 6, 1)), 40)
         immich = FakeImmich(
             people=[_Person("p1", "Alex Example")],
-            months={"p1": _monthly(date(2020, 1, 1), 12, 10)},
-            days={
-                None: library_days,
-                "p1": {
-                    date(2020, 4, 2): 2,
-                    date(2020, 4, 5): 1,
-                    date(2020, 4, 9): 1,
-                    date(2020, 1, 1): 3,
-                },
+            months={
+                None: library,
+                "p1": {date(2020, 4, 1): 30, date(2021, 1, 1): 30, date(2019, 6, 1): 30},
             },
         )
 
         graph = build_graph(immich, today=date(2026, 8, 25))
 
-        assert graph.people[0].evidence.era_day_shares == (("covid", 0.3),)
+        assert graph.people[0].evidence.era_day_shares == (("covid", 0.5),)
 
     def test_a_library_that_answers_no_day_buckets_reads_as_no_era_evidence(self):
         immich = FakeImmich(

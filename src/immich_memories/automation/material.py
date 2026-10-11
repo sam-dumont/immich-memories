@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 from datetime import date, datetime, time
 from typing import Any
 
+from immich_memories.analysis.source_filter import owned_by
 from immich_memories.timeperiod import DateRange
 
 Window = tuple[date, date]
@@ -34,21 +35,29 @@ def _range(window: Window) -> DateRange:
     )
 
 
-def pictures_in(clients: Iterable[Any], window: Window) -> int:
-    """Everything the library holds taken inside the window, summed over the accounts."""
+def pictures_in(clients: Iterable[Any], window: Window, *, owner_id: str | None = None) -> int:
+    """Everything the library holds taken inside the window, summed over the accounts.
+
+    With ``owner_id``, only that user's own pictures: Immich's statistics also count what a
+    partner shares, so a household summing two accounts counted a shared picture twice.
+    """
     span = _range(window)
+    scope = {"owner_id": owner_id} if owner_id else {}
     return sum(
-        c.count_assets_with_people([], taken_after=span.start, taken_before=span.end)
+        c.count_assets_with_people([], taken_after=span.start, taken_before=span.end, **scope)
         for c in clients
     )
 
 
-def days_in(clients: Iterable[Any], window: Window) -> dict[date, int]:
-    """Pictures per day inside the window, summed over the accounts."""
+def days_in(
+    clients: Iterable[Any], window: Window, *, owner_id: str | None = None
+) -> dict[date, int]:
+    """Pictures per day inside the window, summed over the accounts; ``owner_id``'s own only."""
     span = _range(window)
     counted: Counter[date] = Counter()
     for client in clients:
-        counted.update(_by_day(client.get_assets_for_date_range(span)))
+        assets = client.get_assets_for_date_range(span)
+        counted.update(_by_day(owned_by(owner_id, assets) if owner_id else assets))
     return dict(counted)
 
 

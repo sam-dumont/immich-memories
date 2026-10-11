@@ -47,7 +47,7 @@ class _Library:
     def get_videos_for_date_range(self, _window):
         return list(self.videos)
 
-    def generated_asset_ids(self):
+    def generated_asset_ids(self, within=None):
         return frozenset({"our-film"})
 
     def get_asset_thumbnail(self, _asset_id, size="preview", *, edited=False):
