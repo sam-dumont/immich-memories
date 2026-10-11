@@ -43,7 +43,8 @@ class _Runner:
             )
         ]
 
-    def start_one(self, reason):
+    def start_one(self, reason, dry_run=False):
+        self.started_dry = dry_run
         if self.busy:
             raise AutomationAlreadyRunningError("busy")
         assert reason == SUGGESTION_REASON
@@ -84,7 +85,12 @@ def test_running_a_suggestion_executes_it_like_auto_run_and_refuses_a_second(tmp
 
     assert started.status_code == 202 and started.json()["id"] == "attempt-1"
     assert runner.executed.wait(5)
-    assert runner.kwargs == {"candidate_key": "monthly_highlights:2024-06", "dry_run": True}
+    assert runner.kwargs == {
+        "candidate_key": "monthly_highlights:2024-06",
+        "dry_run": True,
+        "force": True,
+    }
+    assert runner.started_dry is True
     busy = _client(tmp_path, _Runner(busy=True)).post(
         "/api/v1/suggestions/run", json={"memory_key": "x"}
     )

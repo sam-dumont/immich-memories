@@ -1029,7 +1029,10 @@ For example, set `advanced.notifications.urls: ["ntfy://your-ntfy-host/private-t
 `advanced.notifications.enabled: true`. Replace the host and topic with your own destination.
 
 Delivery failures are stored as sanitized health state. Normal success and failure
-notifications pause during the cooldown instead of hammering a quota-limited provider.
+notifications pause during the cooldown instead of hammering a quota-limited provider. The
+pause ends up to three hours early (at most half the cooldown), so a one-day cooldown never
+swallows the next day's notice. Each URL is tried on its own: one dead destination does not
+pause the others, and a notice that reached at least one of them counts as delivered.
 `auto test-notification` always bypasses the cooldown and a successful test clears it.
 Provider URLs, credentials, and response bodies are never included in health output.
 

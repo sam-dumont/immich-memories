@@ -508,7 +508,8 @@ def resolve_holiday(holiday: str, year: int, *, country: str = "US") -> date:
 
     try:
         month_str, day_str = holiday.strip().split("-")
-        return date(year, int(month_str), int(day_str))
+        # A leap day is kept on 28 February in the other years, as a birthday is.
+        return same_day_in_year(date(2000, int(month_str), int(day_str)), year)
     except (ValueError, TypeError) as exc:
         known = ", ".join(sorted(KNOWN_HOLIDAYS))
         raise ValueError(

@@ -17,9 +17,14 @@ from immich_memories.automation.candidate_discovery import (
 )
 from immich_memories.automation.candidates import DEFAULT_SUGGESTION_LIMIT, MemoryCandidate
 from immich_memories.automation.delivery_retry import PendingDeliveryRetry, abandon_if_exhausted
+from immich_memories.automation.interrupted_attempts import as_it_stands, end_interrupted_attempts
 from immich_memories.automation.models import (
+    ALREADY_RUNNING,
+    COOLDOWN_ACTIVE,
     DECLINED_REASON,
+    DRY_RUN_MARK,
     NO_ELIGIBLE_CANDIDATES,
+    STALE_CANDIDATE_REASON,
     AutoAction,
     AutomationAttempt,
     AutoOutcome,
@@ -77,11 +82,15 @@ class AutomationLease:
         try:
             self._lease.acquire()
         except LeaseHeldError:
-            raise AutomationAlreadyRunningError("automation already running") from None
+            raise AutomationAlreadyRunningError(ALREADY_RUNNING) from None
 
     def release(self) -> None:
         """Drop the lease. Safe to call when it was never taken."""
         self._lease.release()
+
+    def held_elsewhere(self) -> bool:
+        """Whether a live process holds the lease, read without keeping it."""
+        return self._lease.held_elsewhere()
 
     def __enter__(self) -> AutomationLease:
         self.acquire()
@@ -232,7 +241,11 @@ class AutoRunner:
         *,
         refresh_suggestion: bool = False,
     ) -> AutomationStatus:
-        """Return durable automation state without candidate or scheduler side effects."""
+        """Return durable automation state without candidate or scheduler side effects.
+
+        Read-only: an attempt a dead process left `running` is reported interrupted, but
+        only a writer (`start_one`, the timer, `auto status`) ends it and notifies.
+        """
         if refresh_suggestion:
             try:
                 self.suggest(limit=1)
@@ -254,7 +267,7 @@ class AutoRunner:
             dict.fromkeys(item.rule for item in self.last_variety_decision.rejected)
         )
         return AutomationStatus(
-            last_attempt=self.state.get_last_attempt(),
+            last_attempt=as_it_stands(self.state.get_last_attempt(), self._lease().held_elsewhere),
             last_completed_auto_run=recent_runs[0] if recent_runs else None,
             cooldown=cooldown_status(
                 recent_runs[0] if recent_runs else None,
@@ -470,7 +483,7 @@ class AutoRunner:
             )
             return None, result
         if not candidates and candidate_key is not None:
-            reason = f"Candidate is no longer eligible: {candidate_key}. Run auto suggest again."
+            reason = f"{STALE_CANDIDATE_REASON}: {candidate_key}. Run auto suggest again."
             return None, self._finish(attempt, AutoOutcome.FAILED, reason, error=reason)
         if not candidates:
             logger.info("No eligible candidates found")
@@ -572,22 +585,41 @@ class AutoRunner:
         self.last_notes = discovered.notes
         return discovered.candidates
 
-    def start_one(self, *, reason: str = "daily wake") -> StartedAutoRun:
+    def _lease(self) -> AutomationLease:
+        return AutomationLease(
+            self.config.cache.database_path.parent / ".auto.lock", open_store(self.config)
+        )
+
+    def settle_interrupted_attempts(self) -> list[AutomationAttempt]:
+        """End attempts a dead process left running, unless a live one holds the lease."""
+        lease = self._lease()
+        try:
+            lease.acquire()
+        except AutomationAlreadyRunningError:
+            return []
+        try:
+            return end_interrupted_attempts(self.config, self.state)
+        finally:
+            lease.release()
+
+    def start_one(self, *, reason: str = "daily wake", dry_run: bool = False) -> StartedAutoRun:
         """Take the automation lease and open the durable attempt that owns it.
 
         The caller must execute the returned handle — that is what releases the
         lease. `reason` becomes the attempt's history entry, so a triggered run
-        is told apart from a nightly one everywhere automation is inspected.
+        is told apart from a nightly one everywhere automation is inspected; a
+        dry run says so from its start, so it never stands in for the day's run.
 
         Raises:
             AutomationAlreadyRunningError: another process holds the lease.
         """
-        lease = AutomationLease(
-            self.config.cache.database_path.parent / ".auto.lock", open_store(self.config)
-        )
+        lease = self._lease()
         lease.acquire()
         try:
-            attempt = self.state.start_attempt(reason=reason)
+            end_interrupted_attempts(self.config, self.state)
+            attempt = self.state.start_attempt(
+                reason=f"{reason}{DRY_RUN_MARK}" if dry_run else reason
+            )
         except BaseException:
             lease.release()
             raise
@@ -604,11 +636,11 @@ class AutoRunner:
     ) -> AutoRunResult:
         """Run one durable automation decision and return its exact outcome."""
         try:
-            started = self.start_one()
+            started = self.start_one(dry_run=dry_run)
         except AutomationAlreadyRunningError:
             return AutoRunResult(
                 outcome=AutoOutcome.SKIPPED,
-                reason="automation already running",
+                reason=ALREADY_RUNNING,
             )
         return started.execute(
             force=force,
@@ -680,7 +712,7 @@ class AutoRunner:
                 self.config.automation.cooldown_hours,
             )
             if not force and is_within_cooldown(self.db, effective_cooldown):
-                return self._finish(attempt, AutoOutcome.SKIPPED, "cooldown active")
+                return self._finish(attempt, AutoOutcome.SKIPPED, COOLDOWN_ACTIVE)
 
             candidate, candidate_result = self._suggest_one_for_attempt(attempt, candidate_key)
             if candidate_result is not None:

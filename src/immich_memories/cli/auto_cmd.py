@@ -312,11 +312,11 @@ def status(ctx: click.Context, as_json: bool) -> None:
 
     config: Config = ctx.obj["config"]
     provenance = provenance_module.runtime_provenance()
-    payload = (
-        AutoRunner(config, config_path=ctx.obj["config_path"])
-        .status(refresh_suggestion=True)
-        .to_dict()
-    )
+    runner = AutoRunner(config, config_path=ctx.obj["config_path"])
+    # Asking on purpose is a writer's act: an attempt a dead process left is ended here,
+    # with its one failure notice, as the next run or the timer would.
+    runner.settle_interrupted_attempts()
+    payload = runner.status(refresh_suggestion=True).to_dict()
     scheduler = get_scheduler_status()
     scheduler_state = (
         "unknown" if scheduler.active is None else "active" if scheduler.active else "inactive"
@@ -412,7 +412,12 @@ def _check_local_network(config: Config, config_path: Path | None, *, shim: Path
 @auto.command()
 @click.option("--hour", default=9, type=click.IntRange(0, 23), help="Hour to run (0-23)")
 @click.option("--minute", default=0, type=click.IntRange(0, 59), help="Minute to run (0-59)")
-@click.option("--cooldown", default=24, help="Cooldown hours between runs")
+@click.option(
+    "--cooldown",
+    type=int,
+    default=None,
+    help="Cooldown hours between runs; default: automation.cooldown_hours at each run",
+)
 @click.option("--uninstall", is_flag=True, help="Remove installed scheduler")
 @click.option("--show", is_flag=True, help="Show config without installing")
 @click.option(
@@ -425,7 +430,7 @@ def install(
     ctx: click.Context,
     hour: int,
     minute: int,
-    cooldown: int,
+    cooldown: int | None,
     uninstall: bool,
     show: bool,
     force: bool,

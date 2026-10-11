@@ -333,7 +333,12 @@ def build_memory_key(params: GenerationParams) -> str | None:
         return None
     from immich_memories.automation.candidates import make_memory_key
 
-    person_names = [params.person_name] if params.person_name else []
+    # Every person a film is about names it: a pair keyed for its first person alone would
+    # stand in for that person's own film and leave the pair's to be proposed again (#2367).
+    if len(params.memory_people) > 1:
+        person_names = list(params.memory_people)
+    else:
+        person_names = [params.person_name] if params.person_name else []
     return make_memory_key(params.memory_type, params.date_start, params.date_end, person_names)
 
 

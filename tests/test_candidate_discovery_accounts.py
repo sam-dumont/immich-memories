@@ -66,7 +66,9 @@ class _FakeRuns:
     def get_generated_memory_keys(self) -> set[str]:
         return set()
 
-    def get_last_run_of_type(self, memory_type: str, source: str | None = None):
+    def get_last_run_of_type(
+        self, memory_type: str, source: str | None = None, exclude_categories=()
+    ):
         return None
 
     def get_last_run_of_category(self, memory_category: str, source: str | None = None):

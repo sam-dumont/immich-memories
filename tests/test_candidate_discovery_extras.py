@@ -79,7 +79,7 @@ class _Runs:
     def get_generated_memory_keys(self) -> set[str]:
         return set()
 
-    def get_last_run_of_type(self, memory_type, source=None):
+    def get_last_run_of_type(self, memory_type, source=None, exclude_categories=()):
         return None
 
     def get_last_run_of_category(self, memory_category, source=None):
@@ -254,3 +254,57 @@ def test_completed_manual_month_is_not_proposed_again(
     assert result.candidates  # Unrelated memories remain available.
     # Matching history must not rewrite the original identity on disk.
     assert RunDatabase().get_run("manual-month").memory_key == completed.memory_key
+
+
+def test_a_manual_two_person_month_leaves_each_persons_own_month_proposable(monkeypatch, tmp_path):
+    """#2367: `generate --person "Kid A" --person "Other B"` films both, not Kid A's month."""
+    first = _month_ago(1)
+    last = TODAY.replace(day=1) - timedelta(days=1)
+    params = GenerationParams(
+        clips=[],
+        output_path=tmp_path / "manual.mp4",
+        config=Config(),
+        memory_type="monthly_highlights",
+        person_name="Kid A",
+        memory_people=("kid a", "other b"),
+        date_start=first,
+        date_end=last,
+    )
+    completed = RunMetadata(
+        run_id="manual-pair-month",
+        created_at=_at(TODAY),
+        status="completed",
+        source="manual",
+        memory_type=params.memory_type,
+        memory_key=build_memory_key(params),
+        date_range_start=first,
+        date_range_end=last,
+        output_path=str(params.output_path),
+    )
+    pictures = [first + timedelta(days=i) for i in range(10)] * 2
+
+    result = _discover(monkeypatch, _library(pictures), role="son", completed_run=completed)
+
+    assert completed.memory_key is not None and completed.memory_key.endswith(":kid a,other b")
+    assert CandidateCategory.PERSON_MONTHLY in {c.category for c in result.candidates}
+
+
+def test_a_manual_pair_film_records_the_key_automation_proposes_for_the_pair(tmp_path):
+    from immich_memories.automation.candidates import make_memory_key
+
+    year = TODAY.year - 1
+    params = GenerationParams(
+        clips=[],
+        output_path=tmp_path / "pair.mp4",
+        config=Config(),
+        memory_type="multi_person",
+        person_name="Kid A",
+        memory_people=("kid a", "other b"),
+        date_start=date(year, 1, 1),
+        date_end=date(year, 12, 31),
+    )
+
+    proposed = make_memory_key(
+        "multi_person", date(year, 1, 1), date(year, 12, 31), ["Other B", "Kid A"]
+    )
+    assert build_memory_key(params) == proposed

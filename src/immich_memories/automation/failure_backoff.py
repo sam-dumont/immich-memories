@@ -18,6 +18,7 @@ import re
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 
+from immich_memories.automation.candidates import memory_identity
 from immich_memories.automation.state_store import FailureStreak
 from immich_memories.memory_types.factory import list_memory_types
 
@@ -81,9 +82,17 @@ def drop_backed_off(
     operator why a memory they expected is missing.
     """
     suppressed = suppressed_keys(streaks, now)
+    survivors = []
+    for candidate in candidates:
+        identity = memory_identity(candidate.memory_key)
+        if identity not in suppressed:
+            survivors.append(candidate)
+        elif identity != candidate.memory_key:
+            # Report it under today's key, which still names its dates.
+            suppressed[candidate.memory_key] = suppressed.pop(identity)
     for key, reason in sorted(suppressed.items()):
         logger.info("Skipping %s: %s", backoff_label(key), reason)
-    return [c for c in candidates if c.memory_key not in suppressed], suppressed
+    return survivors, suppressed
 
 
 def backoff_label(memory_key: str) -> str:

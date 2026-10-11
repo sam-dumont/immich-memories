@@ -651,6 +651,16 @@ def get_config_path() -> Path:
     return _config_path or Config.get_default_path()
 
 
+def loaded_config_file() -> Path | None:
+    """The file this process loaded its config from, when there is one, for a child to load.
+
+    A server started with `--config` builds its automation runners itself; without this the
+    `generate` child they start would read the default config, maybe another Immich and store.
+    """
+    path = get_config_path()
+    return path if path.is_file() else None
+
+
 def config_state_dir(config_path: Path | None = None) -> Path:
     """Where a config's run history and scheduler logs default to: its own folder.
 

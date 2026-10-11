@@ -24,8 +24,9 @@ def test_failed_delivery_opens_cooldown_and_success_closes_it(tmp_path: Path) ->
     assert health is not None
     assert health.failure_category is NotificationFailureCategory.QUOTA
     assert health.failure_message == "Notification provider quota or rate limit reached"
-    assert state.is_cooling_down(24, now=failed_at + timedelta(hours=23)) is True
-    assert state.is_cooling_down(24, now=failed_at + timedelta(hours=24)) is False
+    assert state.is_cooling_down(24, now=failed_at + timedelta(hours=20)) is True
+    # A day's pause ends early enough for the next daily notice (#2368).
+    assert state.is_cooling_down(24, now=failed_at + timedelta(hours=21)) is False
 
     state.record_success(now=failed_at + timedelta(hours=1))
 

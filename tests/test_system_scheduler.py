@@ -137,8 +137,6 @@ class TestGenerateLaunchdPlist:
             "auto",
             "run",
             "--quiet",
-            "--cooldown",
-            "24",
         ]
 
 
@@ -207,7 +205,7 @@ class TestGenerateSystemdUnits:
         assert (
             "ExecStart=/bin/im --config "
             '"/tmp/Config dir/family $$HOME 50%% \\"best\\".yaml" auto run '
-            "--quiet --cooldown 24"
+            "--quiet"
         ) in service
 
 
@@ -248,8 +246,6 @@ class TestGenerateCrontabEntry:
             "auto",
             "run",
             "--quiet",
-            "--cooldown",
-            "24",
         ]
 
     def test_custom_config_escapes_cron_percent_before_command_dispatch(self) -> None:

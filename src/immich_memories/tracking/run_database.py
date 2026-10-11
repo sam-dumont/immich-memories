@@ -519,13 +519,25 @@ class RunDatabase:
         self,
         memory_type: str,
         source: str | None = None,
+        exclude_categories: Sequence[str] = (),
     ) -> RunMetadata | None:
-        """Get the most recent completed run of a type, optionally scoped by source."""
+        """Get the most recent completed run of a type, optionally scoped by source.
+
+        ``exclude_categories`` leaves out runs a detector filed under those categories;
+        a run with no category is always kept.
+        """
         query = sa.select(pipeline_runs).where(
             _RUNS.memory_type == memory_type, _RUNS.status == "completed"
         )
         if source is not None:
             query = query.where(_RUNS.source == source)
+        if exclude_categories:
+            query = query.where(
+                sa.or_(
+                    _RUNS.memory_category.is_(None),
+                    _RUNS.memory_category.not_in(list(exclude_categories)),
+                )
+            )
         runs = self._select_runs(query.order_by(*_COMPLETION_ORDER).limit(1), with_phases=False)
         return runs[0] if runs else None
 

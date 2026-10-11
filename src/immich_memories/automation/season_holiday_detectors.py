@@ -14,6 +14,7 @@ from immich_memories.automation.candidates import (
 )
 from immich_memories.automation.material import Window
 from immich_memories.memory_types.date_builders import build_season, holidays_of, resolve_holiday
+from immich_memories.timeperiod import same_day_in_year
 
 # A film about a stretch of time waits for the pictures to sync, and stops being news.
 _WAIT_DAYS = 3
@@ -227,7 +228,8 @@ def _occurrences(
                 found.setdefault(day, (name, name))
         for entry in extra_holidays:
             month_day, _, name = entry.partition(":")
-            day = date(year, int(month_day[:2]), int(month_day[3:5]))
+            # 29 February falls on the 28th in a year without one, as `generate --holiday` reads it.
+            day = same_day_in_year(date(2000, int(month_day[:2]), int(month_day[3:5])), year)
             found[day] = (month_day.strip(), name.strip() or month_day.strip())
     return sorted(
         (day, arg, name)

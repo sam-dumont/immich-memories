@@ -253,6 +253,12 @@ proxy, not an upgrade step. Originals are unchanged.
 - **Native people sharing** is tested on 3.3.0 final. It also accepts 3.3.0-rc.1, later
   3.3.0 release candidates and every 3.3 release. See [A second Immich account](../multi-account.mdx).
 
+## Scheduled runs
+
+A schedule set up with `auto install` before 1.0 has `--cooldown 24` written into its command, which
+overrides `automation.cooldown_hours`. Rerun `immich-memories auto install` so the scheduler uses
+`automation.cooldown_hours`, then run the activation command it prints.
+
 ## Config compatibility
 
 Unknown fields inside a known section are ignored; invalid values or unknown top-level sections

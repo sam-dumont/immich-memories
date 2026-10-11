@@ -145,7 +145,11 @@ class TestRestartCatchUp:
         config = _config(tmp_path, enabled=True, daily_at="09:00")
         # The durable attempt row is what a pre-restart fire (or `docker exec … auto run`)
         # leaves behind; started_at is "now" in UTC, i.e. today.
-        AutomationStateStore().start_attempt(reason="daily wake")
+        from immich_memories.automation.models import AutoOutcome
+
+        state = AutomationStateStore()
+        earlier = state.start_attempt(reason="daily wake")
+        state.finish_attempt(earlier.id, AutoOutcome.COMPLETED, "generation completed")
         fired: list[Config] = []
         now = datetime.now().astimezone().replace(hour=23, minute=0, second=0, microsecond=0)
         clock = _FakeClock(now)

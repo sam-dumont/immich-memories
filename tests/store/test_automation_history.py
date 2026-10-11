@@ -92,7 +92,7 @@ def test_notification_health_cools_down_after_a_failure_until_a_success(store):
 
     assert failed.last_failure_at == failed_at
     assert failed.failure_message == NotificationFailureCategory.QUOTA.message
-    assert state.is_cooling_down(24, now=failed_at + timedelta(hours=23)) is True
+    assert state.is_cooling_down(24, now=failed_at + timedelta(hours=20)) is True
     assert state.is_cooling_down(24, now=failed_at + timedelta(hours=25)) is False
 
     healed = state.record_success(now=failed_at + timedelta(hours=1))

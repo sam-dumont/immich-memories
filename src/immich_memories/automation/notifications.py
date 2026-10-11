@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -124,30 +124,57 @@ def notify_job_complete(
         else None
     )
 
+    kwargs: dict = {"title": title, "body": body}
+    if attach:
+        kwargs["attach"] = attach
     try:
-        apobj = apprise.Apprise()
-        for url in urls:
-            apobj.add(url)
-        kwargs: dict = {"title": title, "body": body}
-        if attach:
-            kwargs["attach"] = attach
-        result = bool(apobj.notify(**kwargs))
-    except Exception as exc:  # WHY: notification delivery is always best-effort
-        category = _classify_failure(exc)
-        logger.warning("Notification delivery error (%s)", category.value)
-        _record_failure(state, category)
-        return False
+        delivered, failure = _deliver_each(apprise, urls, kwargs)
     finally:
         if attach:
             _cleanup_thumbnail(attach)
 
-    if result:
+    if failure is None:
         logger.info("Notification sent: %s", title)
         _record_success(state)
+    elif delivered:
+        # One dead destination must not pause the working ones: they got this notice.
+        logger.warning(
+            "Notification sent to %d of %d destinations (%s): %s",
+            delivered,
+            len(urls),
+            failure.value,
+            title,
+        )
+        _record_success(state)
     else:
-        logger.warning("Notification delivery failed: %s", title)
-        _record_failure(state, NotificationFailureCategory.PROVIDER_REJECTED)
-    return result
+        logger.warning("Notification delivery failed (%s): %s", failure.value, title)
+        _record_failure(state, failure)
+    return delivered > 0
+
+
+def _deliver_each(
+    apprise: Any, urls: list[str], kwargs: dict
+) -> tuple[int, NotificationFailureCategory | None]:
+    """Send to each destination on its own; how many took it, and the last failure class.
+
+    Apprise answers one False for a batch when any destination fails, which would read as
+    every destination failing.
+    """
+    delivered = 0
+    failure: NotificationFailureCategory | None = None
+    for url in urls:
+        try:
+            apobj = apprise.Apprise()
+            apobj.add(url)
+            sent = bool(apobj.notify(**kwargs))
+        except Exception as exc:  # WHY: notification delivery is always best-effort
+            failure = _classify_failure(exc)
+            continue
+        if sent:
+            delivered += 1
+        else:
+            failure = NotificationFailureCategory.PROVIDER_REJECTED
+    return delivered, failure
 
 
 def _health_of(store: Store | None) -> NotificationStateStore | None:

@@ -11,9 +11,13 @@ from uuid import uuid4
 
 import sqlalchemy as sa
 
+from immich_memories.automation.candidates import memory_identity
 from immich_memories.automation.models import (
     DECLINED_REASON,
+    DRY_RUN_MARK,
+    INTERRUPTED_REASON,
     NO_ELIGIBLE_CANDIDATES,
+    STALE_CANDIDATE_REASON,
     AutomationAttempt,
     AutoOutcome,
 )
@@ -186,6 +190,30 @@ class AutomationStateStore:
             )
         return _row_to_attempt(row)
 
+    def interrupt_running_attempts(self) -> list[AutomationAttempt]:
+        """End every attempt still `running` as interrupted; the caller holds the lease.
+
+        Only the holder of the automation lease may call this: with the lease taken,
+        nothing else can be running, so a `running` row belongs to a process that died.
+        """
+        with self.store.begin() as conn:
+            ids = list(
+                conn.execute(
+                    sa.select(_ATTEMPTS.id).where(_ATTEMPTS.outcome == AutoOutcome.RUNNING.value)
+                ).scalars()
+            )
+        ended = []
+        for attempt_id in ids:
+            try:
+                ended.append(
+                    self.finish_attempt(
+                        attempt_id, AutoOutcome.FAILED, INTERRUPTED_REASON, error=INTERRUPTED_REASON
+                    )
+                )
+            except AttemptAlreadyFinishedError:
+                continue
+        return ended
+
     def get_attempt(self, attempt_id: str) -> AutomationAttempt | None:
         """Return one attempt by id, or None when nothing was ever started under it."""
         return self._first(sa.select(automation_attempts).where(_ATTEMPTS.id == attempt_id))
@@ -202,13 +230,24 @@ class AutomationStateStore:
         """Return the most recent attempt that counts as a day's automation run.
 
         The daily timer reads it to decide whether today's run already happened. One that
-        ran (running, completed or failed) counts, and so does a decision that nothing is
-        worth a film today. A dry run generated nothing, and a cooldown skip (what most
-        HTTP triggers get back) decided nothing about today, so neither cancels the timer.
+        tried to make a film (running, completed or failed) counts, and so does a decision
+        that nothing is worth a film today. A dry run, finished or still running, generated
+        nothing; a cooldown skip (what most HTTP triggers get back), a chosen candidate that
+        was no longer eligible and an attempt whose process died decided nothing about
+        today. None of them cancels the timer.
         """
-        ran = _ATTEMPTS.outcome.in_(
-            [AutoOutcome.RUNNING.value, AutoOutcome.COMPLETED.value, AutoOutcome.FAILED.value]
+        running = sa.and_(
+            _ATTEMPTS.outcome == AutoOutcome.RUNNING.value,
+            sa.not_(_ATTEMPTS.reason.endswith(DRY_RUN_MARK)),
         )
+        # A failure counts when it tried to make a film: a stale chosen candidate tried
+        # nothing, and a process that died never got to finish today's try.
+        failed = sa.and_(
+            _ATTEMPTS.outcome == AutoOutcome.FAILED.value,
+            sa.not_(_ATTEMPTS.reason.startswith(STALE_CANDIDATE_REASON)),
+            sa.not_(_ATTEMPTS.reason.startswith(INTERRUPTED_REASON)),
+        )
+        ran = sa.or_(running, _ATTEMPTS.outcome == AutoOutcome.COMPLETED.value, failed)
         decided_nothing = sa.and_(
             _ATTEMPTS.outcome == AutoOutcome.SKIPPED.value,
             sa.or_(
@@ -229,7 +268,7 @@ class AutomationStateStore:
         return _row_to_attempt(row) if row else None
 
     def consecutive_failures_by_key(self) -> dict[str, FailureStreak]:
-        """Failures per memory key since that key last completed.
+        """Failures per memory since it last completed, keyed by `memory_identity`.
 
         Read by candidate selection so a memory that cannot render stops being
         chosen every night. Only terminal failures count -- a SKIPPED attempt
@@ -258,7 +297,7 @@ class AutomationStateStore:
 
         streaks: dict[str, FailureStreak] = {}
         for row in rows:
-            key: str = row.memory_key
+            key = memory_identity(row.memory_key)
             if row.outcome == AutoOutcome.COMPLETED.value:
                 streaks.pop(key, None)
                 continue
