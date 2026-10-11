@@ -109,7 +109,7 @@ def fetch_pinned_model(
     try:
         digest = _stream_to(url, temporary, max_bytes=max_bytes)
         if digest != sha256:
-            raise ValueError(f"{url}: digest {digest[:12]} is not the pinned {sha256[:12]}")
+            raise ValueError(f"digest {digest[:12]} is not the pinned {sha256[:12]}")
         temporary.replace(destination)
     finally:
         temporary.unlink(missing_ok=True)
@@ -128,13 +128,13 @@ class _HttpsOnlyRedirect(urllib.request.HTTPRedirectHandler):
 
     def redirect_request(self, req, fp, code, msg, headers, newurl):  # noqa: D102
         if urlparse(newurl).scheme not in {"http", "https"}:
-            raise ValueError(f"{newurl}: model downloads must stay HTTP(S)")
+            raise ValueError("model downloads must stay HTTP(S)")
         return super().redirect_request(req, fp, code, msg, headers, newurl)
 
 
 def _stream_to(url: str, destination: Path, *, max_bytes: int) -> str:
     if urlparse(url).scheme not in {"http", "https"}:
-        raise ValueError(f"{url}: model downloads must be HTTP(S)")
+        raise ValueError("model downloads must be HTTP(S)")
     digest = hashlib.sha256()
     written = 0
     opener = urllib.request.build_opener(_HttpsOnlyRedirect())
@@ -150,7 +150,7 @@ def _stream_to(url: str, destination: Path, *, max_bytes: int) -> str:
         while chunk := response.read(_CHUNK_BYTES):
             written += len(chunk)
             if written > max_bytes:
-                raise ValueError(f"{url}: refused past {max_bytes} bytes")
+                raise ValueError(f"refused past {max_bytes} bytes")
             digest.update(chunk)
             handle.write(chunk)
     return digest.hexdigest()

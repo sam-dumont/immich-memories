@@ -64,4 +64,31 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_table("session_generations", schema=migration_schema())
+    schema = migration_schema()
+    bind = op.get_bind()
+    generations = sa.table(
+        "session_generations",
+        sa.column("key", sa.String()),
+        sa.column("generation", sa.Integer()),
+        schema=schema,
+    )
+    store = sa.table(
+        "store_meta",
+        sa.column("key", sa.String()),
+        sa.column("value", sa.JSON()),
+        sa.column("updated_at", sa.DateTime()),
+        schema=schema,
+    )
+    # The older code kept every count in one dict; writing it back means a downgrade does not
+    # reopen a session a sign-out had ended. A name that began with `*` carries one extra `*`
+    # here (see `_user_key` in web/session_validity.py), which the older code never added.
+    counts = {
+        key[1:] if key.startswith("**") else key: count
+        for key, count in bind.execute(sa.select(generations.c.key, generations.c.generation))
+    }
+    if counts:
+        bind.execute(
+            sa.insert(store),
+            [{"key": _LEGACY_KEY, "value": counts, "updated_at": to_db(datetime.now(UTC))}],
+        )
+    op.drop_table("session_generations", schema=schema)

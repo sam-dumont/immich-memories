@@ -33,7 +33,7 @@ def test_python_and_child_processes_use_configured_storage_and_restore_defaults(
     assert {key: os.environ.get(key) for key in previous_env} == previous_env
 
 
-@pytest.mark.parametrize("problem", ["file", "symlink", "public-directory", "group-directory"])
+@pytest.mark.parametrize("problem", ["file", "symlink"])
 def test_unusable_configured_scratch_fails_without_falling_back_or_exposing_paths(
     tmp_path, problem
 ):
@@ -44,14 +44,49 @@ def test_unusable_configured_scratch_fails_without_falling_back_or_exposing_path
     scratch = mounted / "scratch"
     if problem == "file":
         scratch.write_text("occupied")
-    elif problem == "symlink":
-        scratch.symlink_to(tmp_path, target_is_directory=True)
     else:
-        scratch.mkdir()
-        scratch.chmod(0o2770 if problem == "group-directory" else 0o755)
+        scratch.symlink_to(tmp_path, target_is_directory=True)
     previous = tempfile.gettempdir()
     with pytest.raises((OSError, RuntimeError)) as failure, runtime_scratch(mounted):
         pytest.fail("An unusable scratch directory must not fall back to system storage")
     assert "private-installation" not in str(failure.value)
     assert "scratch" in str(failure.value)
     assert tempfile.gettempdir() == previous
+
+
+@pytest.mark.parametrize("mode", [0o2770, 0o755, 0o777])
+def test_scratch_widened_by_a_remount_is_tightened_and_startup_goes_on(tmp_path, mode):
+    """A volume remount (fsGroupChangePolicy: Always) can widen scratch; it holds only throwaway
+    files, so startup narrows it again instead of refusing to start."""
+    from immich_memories.security import runtime_scratch
+
+    mounted = tmp_path / "cache"
+    mounted.mkdir()
+    scratch = mounted / "scratch"
+    scratch.mkdir()
+    kept = scratch / "frame"
+    kept.write_bytes(b"synthetic frame")
+    scratch.chmod(mode)
+
+    with runtime_scratch(mounted) as active:
+        assert active == scratch
+        assert os.stat(scratch).st_mode & 0o7777 == 0o700
+        assert kept.read_bytes() == b"synthetic frame"
+    assert os.stat(scratch).st_mode & 0o7777 == 0o700
+
+
+def test_scratch_owned_by_someone_else_is_still_refused_and_left_alone(tmp_path, monkeypatch):
+    from immich_memories.security import runtime_scratch
+
+    mounted = tmp_path / "private-installation"
+    mounted.mkdir()
+    scratch = mounted / "scratch"
+    scratch.mkdir()
+    scratch.chmod(0o2770)
+    # WHY: a second user's directory cannot be made without root; the process claiming to be
+    # another uid is the same situation as seen by the ownership check.
+    monkeypatch.setattr("immich_memories.security.os.getuid", lambda: os.stat(scratch).st_uid + 1)
+
+    with pytest.raises(RuntimeError, match="private directory"), runtime_scratch(mounted):
+        pytest.fail("a directory owned by another user must not be used")
+    assert os.stat(scratch).st_mode & 0o7777 == 0o2770

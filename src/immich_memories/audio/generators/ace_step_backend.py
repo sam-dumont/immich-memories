@@ -137,16 +137,14 @@ class ACEStepBackend(MusicGenerator):
                 return True
             logger.warning(
                 "ACE-Step library not installed. For a Mac checkout, run make install-acestep. "
-                "Falling back to API at %s",
-                self.config.api_url,
+                "Falling back to the configured API"
             )
             api_ok = await self._check_api()
             if not api_ok:
                 logger.warning(
-                    "ACE-Step unavailable: library not installed AND API at %s "
+                    "ACE-Step unavailable: library not installed AND the configured API is "
                     "unreachable. Configure a reachable URL in advanced.ace_step.api_url "
-                    "or install the library.",
-                    self.config.api_url,
+                    "or install the library."
                 )
             return api_ok
         return await self._check_api()
@@ -162,21 +160,13 @@ class ACEStepBackend(MusicGenerator):
                     data = resp.json()
                     if data.get("data", {}).get("status") == "ok":
                         return True
-                    logger.warning(
-                        "ACE-Step API at %s returned unhealthy: %s",
-                        self.config.api_url,
-                        data,
-                    )
+                    logger.warning("ACE-Step API returned an unhealthy status")
                     return False
-                logger.warning(
-                    "ACE-Step API at %s returned HTTP %d",
-                    self.config.api_url,
-                    resp.status_code,
-                )
+                logger.warning("ACE-Step API returned HTTP %d", resp.status_code)
                 return False
         except (OSError, RuntimeError, ValueError, ExceptionGroup) as exc:
             # WHY: anyio wraps connection failures in ExceptionGroup on Linux
-            logger.warning("ACE-Step API at %s unreachable: %s", self.config.api_url, exc)
+            logger.warning("ACE-Step API unreachable (%s)", type(exc).__name__)
             return False
 
     def _get_effective_mode(self) -> str:

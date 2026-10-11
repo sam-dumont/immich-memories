@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import json
+import os
+import subprocess
 import sys
 import time
 
@@ -126,3 +129,60 @@ def test_job_output_hides_every_configured_secret(tmp_path):
 
     assert secret not in output
     assert "signing in with ***" in output
+
+
+def _stale_running_record(tmp_path, pid: int, identity: str | None):
+    """A job record a restarted server finds: still `running`, naming a pid that is now someone else's."""
+    runner = JobRunner(tmp_path)
+    job = runner.start("cut", [sys.executable, "-c", "pass"])
+    _wait(runner, job.id)
+    record = tmp_path / "web-jobs" / f"{job.id}.json"
+    data = json.loads(record.read_text())
+    data.update(status="running", finished_at=None, exit_code=None, pid=pid, pid_started=identity)
+    record.write_text(json.dumps(data))
+    return job.id
+
+
+def test_a_reused_pid_does_not_keep_a_dead_job_running(tmp_path):
+    """After a reboot the recorded pid can belong to any process; that must not 409 every new job."""
+    job_id = _stale_running_record(tmp_path, os.getpid(), "started-before-the-reboot")
+    restarted = JobRunner(tmp_path)
+
+    assert restarted.get(job_id).status == "interrupted"
+    assert restarted.active() is None
+    restarted.start("cut", [sys.executable, "-c", "pass"])
+
+
+def test_cancel_never_signals_a_process_the_job_did_not_start(tmp_path):
+    bystander = subprocess.Popen(  # noqa: S603 - a sleeping child standing in for a reused pid
+        [sys.executable, "-c", "import time; time.sleep(30)"], start_new_session=True
+    )
+    try:
+        job_id = _stale_running_record(tmp_path, bystander.pid, "someone-else")
+
+        cancelled = JobRunner(tmp_path).cancel(job_id)
+
+        assert cancelled.status == "interrupted"
+        time.sleep(0.2)
+        assert bystander.poll() is None
+    finally:
+        bystander.kill()
+        bystander.wait()
+
+
+def test_cancelling_a_job_whose_pid_is_now_root_s_does_not_raise(tmp_path):
+    job_id = _stale_running_record(tmp_path, 1, "someone-else")
+
+    assert JobRunner(tmp_path).cancel(job_id).status == "interrupted"
+
+
+def test_a_live_job_from_before_a_server_restart_can_still_be_cancelled(tmp_path):
+    runner = JobRunner(tmp_path)
+    job = runner.start("render", [sys.executable, "-c", "import time; time.sleep(30)"])
+
+    restarted = JobRunner(tmp_path)
+    assert restarted.get(job.id).status == "running"
+    restarted.cancel(job.id)
+
+    assert _wait(restarted, job.id).status in {"cancelled", "interrupted"}
+    assert runner.get(job.id).status != "running"

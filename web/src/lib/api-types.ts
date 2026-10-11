@@ -1886,6 +1886,8 @@ export interface components {
             };
             /** Pid */
             pid?: number | null;
+            /** Pid Started */
+            pid_started?: string | null;
             progress: components["schemas"]["JobProgress"];
             /** Result Run Id */
             result_run_id?: string | null;

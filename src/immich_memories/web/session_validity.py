@@ -36,21 +36,30 @@ logger = logging.getLogger(__name__)
 _EVERYONE = "*"
 
 
+def _user_key(username: str) -> str:
+    """The row for one user, never the row for everyone.
+
+    A username starting with `*` gets one more `*`, so none maps to the single `*` that means
+    everyone. Other names are stored as they are, which keeps every row written so far valid.
+    """
+    return f"*{username}" if username.startswith("*") else username
+
+
 def session_generation(config: Config, username: str) -> int:
     """The generation a cookie for `username` has to carry to be current."""
     with open_store(config).connect() as connection:
         result = connection.execute(
             sa.select(session_generations.c.key, session_generations.c.generation).where(
-                session_generations.c.key.in_([_EVERYONE, username])
+                session_generations.c.key.in_([_EVERYONE, _user_key(username)])
             )
         )
         counts = {str(row["key"]): int(row["generation"]) for row in result.mappings()}
-    return counts.get(_EVERYONE, 0) + counts.get(username, 0)
+    return counts.get(_EVERYONE, 0) + counts.get(_user_key(username), 0)
 
 
 def end_sessions(config: Config, username: str | None) -> None:
     """Refuse every cookie issued so far to `username`, or to everyone when it is None."""
-    key = _EVERYONE if username is None else username
+    key = _EVERYONE if username is None else _user_key(username)
     with open_store(config).begin() as connection:
         dialect = postgresql if connection.dialect.name == "postgresql" else sqlite
         statement = dialect.insert(session_generations)

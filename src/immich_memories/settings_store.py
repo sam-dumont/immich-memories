@@ -69,13 +69,34 @@ def is_secret_key(key: str) -> bool:
 
 
 _BOOTSTRAP_SECTIONS = frozenset({"database", "auth", "server"})
+# Keys that choose a program the server runs, a file it overwrites, or the host that receives
+# the Immich credentials. Whoever reaches the settings page must not pick them, so, like the
+# bootstrap sections, only env or config.yaml set them and a stored row is ignored.
+_FILE_ONLY_KEYS = frozenset(
+    {
+        "render.worker_base_url",
+        "render.worker_token",
+        "llm.local_server",
+        "triage.encoder",
+        "free_text.wordnet",
+        "editorial.laya_checkpoint",
+        "editorial.preparation.detector_python",
+        "editorial.preparation.detector_cache_dir",
+        "editorial.preparation.marqo_onnx",
+    }
+)
 # Every config load reads the store; one warning per ignored key is enough.
 _warned_ignored: set[str] = set()
 
 
 def is_bootstrap_key(key: str) -> bool:
     """Keys only env or config.yaml set, so they can never come from the store."""
-    return key.split(".", 1)[0] in _BOOTSTRAP_SECTIONS
+    return key.split(".", 1)[0] in _BOOTSTRAP_SECTIONS or key in _FILE_ONLY_KEYS
+
+
+def is_file_only_key(key: str) -> bool:
+    """The keys that pick what the server runs or overwrites, or where renders are sent."""
+    return key in _FILE_ONLY_KEYS
 
 
 def is_store_location_key(key: str) -> bool:

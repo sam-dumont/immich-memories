@@ -17,9 +17,11 @@ from immich_memories.people.account_ids import entry_ids, ids_by_account
 from immich_memories.people.companion import (
     add_confirmed_person,
     declined_aliases,
+    edit_registry,
     load_document,
     people_entries,
     remove_confirmed_relationship,
+    replace_confirmed,
     save_confirmed,
     save_confirmed_relationship,
 )
@@ -127,7 +129,10 @@ def load_people(store: Store) -> list[PersonView]:
     An empty registry reads as an empty roster: somebody opening the page before
     their first scan should be told to run one, not shown a stack trace.
     """
-    document = load_document(store)
+    return _roster(load_document(store))
+
+
+def _roster(document: dict[str, Any]) -> list[PersonView]:
     entries = people_entries(document)
     names = _names_by_id(entries)
     answers = _pair_answers(entries)
@@ -142,15 +147,43 @@ def save_person(store: Store, person: PersonView) -> None:
     Only decided links are written down. An edge nobody has answered yet is
     the graph's opinion, and the graph's opinions live under `inferred:`.
     """
-    save_confirmed(
-        store,
-        person.person_id,
-        {
-            "role": _cleaned(person.role),
-            "links": [_confirmed_link_block(link) for link in person.links if link.decision],
-            "notes": _cleaned(person.notes),
-        },
-    )
+    save_confirmed(store, person.person_id, _confirmed_block(person))
+
+
+def answer_person(
+    store: Store,
+    person_id: str,
+    *,
+    role: str | None,
+    notes: str | None,
+    decisions: dict[tuple[str, str], str | None],
+) -> PersonView | None:
+    """Keep one person's role, notes and link answers; None when the registry lacks them.
+
+    The person is read and written under the registry lock, so a relationship another
+    writer saved a moment ago is kept rather than overwritten by an older reading.
+    """
+
+    def change(document: dict[str, Any]) -> PersonView | None:
+        person = next((p for p in _roster(document) if p.person_id == person_id), None)
+        if person is None:
+            return None
+        person.role, person.notes = role, notes
+        for link in person.links:
+            if (link.kind, link.target_id) in decisions:
+                link.decision = decisions[(link.kind, link.target_id)]
+        replace_confirmed(document, person_id, _confirmed_block(person))
+        return next(p for p in _roster(document) if p.person_id == person_id)
+
+    return edit_registry(store, change)
+
+
+def _confirmed_block(person: PersonView) -> dict[str, Any]:
+    return {
+        "role": _cleaned(person.role),
+        "links": [_confirmed_link_block(link) for link in person.links if link.decision],
+        "notes": _cleaned(person.notes),
+    }
 
 
 def _confirmed_link_block(link: LinkView) -> dict[str, str]:

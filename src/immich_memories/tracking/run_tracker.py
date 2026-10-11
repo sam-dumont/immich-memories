@@ -141,12 +141,23 @@ class RunTracker:
             self.db.record_system_info(self.run_id, info.to_dict())
 
     def _hold_lease(self) -> None:
+        from immich_memories.db.leases import LeaseHeldError
+
         try:
             lease = self.db.run_lease(self.run_id)
             lease.acquire()
-        except Exception:  # WHY: liveness is a label for other processes, never a reason to stop
-            logger.warning("Run %s could not take its liveness lease", self.run_id)
+        except LeaseHeldError:
+            # A live owner holds this run already: this tracker must not claim it, and the
+            # sweep sees that owner's lease, so the run is never read as dead.
+            logger.warning("Run %s is already held by another process", self.run_id)
             return
+        except Exception as error:
+            # A running row with no owner is swept as dead while this process is still working,
+            # and the finished film's `complete` is then refused. Better not to start.
+            raise RuntimeError(
+                f"Run {self.run_id} could not take its liveness lease ({type(error).__name__}); "
+                "check that the cache directory is writable and the database is reachable"
+            ) from error
         self._lease = lease
 
     def release_run(self) -> None:

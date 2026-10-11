@@ -47,6 +47,13 @@ def _server():
         return create_app()
 
 
+def _local_request() -> MagicMock:
+    """A request from the machine itself, which is allowed to see health detail."""
+    request = MagicMock()
+    request.headers = {"host": "127.0.0.1:8080"}
+    return request
+
+
 @pytest.fixture(autouse=True)
 def _fresh_health_snapshot():
     """The snapshot cache is process-global, as it must be to serve probes.
@@ -100,7 +107,7 @@ class TestHealthEndpoint:
             patch("immich_memories.web.health._get_automation_status", automation),
             patch("immich_memories.web.health._get_last_successful_run", last_run),
         ):
-            response = await _readiness_handler(MagicMock())
+            response = await _readiness_handler(_local_request())
 
         assert response.status_code == 200
         assert expected_diagnostic in caplog.text
@@ -229,7 +236,7 @@ class TestHealthEndpoint:
             ),
             patch("immich_memories.web.health._get_last_successful_run", return_value=None),
         ):
-            response = await _readiness_handler(MagicMock())
+            response = await _readiness_handler(_local_request())
 
         data = json.loads(response.body)
         assert response.status_code == 200
@@ -262,7 +269,7 @@ class TestHealthEndpoint:
                 return_value=type("Usage", (), {"free": 2 * 1024**3})(),
             ),
         ):
-            response = await _readiness_handler(MagicMock())
+            response = await _readiness_handler(_local_request())
 
         data = json.loads(response.body)
         assert data["disk"]["output"]["free_gb"] == 2.0
@@ -294,7 +301,7 @@ class TestHealthEndpoint:
             ),
             patch("immich_memories.web.health._get_last_successful_run", return_value=None),
         ):
-            response = await _readiness_handler(MagicMock())
+            response = await _readiness_handler(_local_request())
 
         data = json.loads(response.body)
         assert response.status_code == 200
@@ -366,7 +373,7 @@ class TestHealthEndpoint:
             patch("immich_memories.web.health._get_automation_status", automation),
             patch("immich_memories.web.health._get_last_successful_run", last_run),
         ):
-            response = await _readiness_handler(MagicMock())
+            response = await _readiness_handler(_local_request())
 
         assert response.status_code == 200
         assert "Could not read" in caplog.text
@@ -388,7 +395,7 @@ class TestHealthEndpoint:
             patch("immich_memories.web.health._get_automation_status", return_value=None),
             patch("immich_memories.web.health._get_last_successful_run", return_value=None),
         ):
-            response = await _readiness_handler(MagicMock())
+            response = await _readiness_handler(_local_request())
 
         data = json.loads(response.body)
         assert response.status_code == 503
@@ -414,7 +421,7 @@ class TestHealthEndpoint:
             patch("immich_memories.web.health._get_automation_status", return_value=None),
             patch("immich_memories.web.health._get_last_successful_run", return_value=None),
         ):
-            response = await _readiness_handler(MagicMock())
+            response = await _readiness_handler(_local_request())
 
         assert response.status_code == 503
         assert json.loads(response.body)["immich"]["status"] == "unreachable"
@@ -436,7 +443,7 @@ class TestHealthEndpoint:
             patch("immich_memories.web.health._get_automation_status", return_value=None),
             patch("immich_memories.web.health._get_last_successful_run", return_value=None),
         ):
-            response = await _readiness_handler(MagicMock())
+            response = await _readiness_handler(_local_request())
 
         assert response.status_code == 503
         assert json.loads(response.body)["immich"]["status"] == "unsupported_version"
@@ -477,7 +484,7 @@ class TestHealthEndpoint:
                 return_value="2026-08-11T06:15:00+00:00",
             ),
         ):
-            response = await _readiness_handler(MagicMock())
+            response = await _readiness_handler(_local_request())
 
         data = json.loads(response.body)
         assert response.status_code == 200
@@ -518,7 +525,7 @@ class TestHealthEndpoint:
             patch("immich_memories.web.health._get_automation_status", return_value=None),
             patch("immich_memories.web.health._get_last_successful_run", return_value=None),
         ):
-            response = await _health_handler(MagicMock())
+            response = await _health_handler(_local_request())
 
         data = json.loads(response.body)
         assert response.status_code == 200
@@ -542,7 +549,7 @@ class TestHealthEndpoint:
             patch("immich_memories.web.health._get_automation_status", return_value=None),
             patch("immich_memories.web.health._get_last_successful_run", return_value=None),
         ):
-            response = await _health_handler(MagicMock())
+            response = await _health_handler(_local_request())
 
         assert response.status_code == 200
         assert json.loads(response.body)["status"] == "ok"
@@ -552,7 +559,7 @@ class TestHealthEndpoint:
         """Health handler should return valid JSON with expected keys."""
         from immich_memories.web.health import _health_handler
 
-        mock_request = MagicMock()
+        mock_request = _local_request()
 
         # WHY: detailed health reads both disk configuration and SQLite status.
         with (
@@ -644,7 +651,7 @@ class TestHealthEndpoint:
             patch("immich_memories.web.health._get_automation_status", return_value=None),
             patch("immich_memories.web.health._get_last_successful_run", return_value=None),
         ):
-            response = await _readiness_handler(MagicMock())
+            response = await _readiness_handler(_local_request())
 
         assert response.status_code == 503
         assert json.loads(response.body)["immich"]["status"] == "unreachable"
@@ -747,6 +754,52 @@ class TestHealthDisclosure:
         assert response.json()["last_successful_run"] == "run-123"
 
 
+class TestHealthProbeHost:
+    """A probe that names a host the server does not answer to gets the status, nothing else."""
+
+    def _get(self, host: str, config: Config):
+        from immich_memories.web.health import _ImmichDependency
+
+        client = TestClient(_server(), raise_server_exceptions=False)
+        with (
+            # WHY: config and the Immich probe are external boundaries; the test is payload shape.
+            patch("immich_memories.web.health.get_config", return_value=config),
+            patch(
+                "immich_memories.web.health._check_immich_dependency",
+                new_callable=AsyncMock,
+                return_value=_ImmichDependency(status="ready", reachable=True),
+            ),
+            patch(
+                "immich_memories.web.health._get_automation_status",
+                return_value={"last_attempt": {"memory_key": "person_spotlight:2024:Ada"}},
+            ),
+        ):
+            return client.get("/health/ready", headers={"host": host})
+
+    def test_unknown_host_with_auth_off_gets_status_only(self):
+        config = Config(immich={"url": "http://immich.test", "api_key": "health-secret"})
+        response = self._get("rebound.example.test", config)
+
+        assert response.status_code == 200
+        assert response.json() == {"status": "ready"}
+        assert "Ada" not in response.text
+
+    def test_pod_ip_host_still_gets_a_usable_status_code(self):
+        config = Config(immich={"url": "http://immich.test", "api_key": ""})
+        response = self._get("10.42.0.7:8080", config)
+
+        assert response.status_code == 503
+        assert response.json() == {"status": "degraded"}
+
+    def test_local_host_with_auth_off_keeps_its_detail(self):
+        config = Config(immich={"url": "http://immich.test", "api_key": "health-secret"})
+        response = self._get("127.0.0.1:8080", config)
+
+        assert response.json()["last_automation_attempt"] == {
+            "memory_key": "person_spotlight:2024:Ada"
+        }
+
+
 class TestHealthIsCheapUnderRepeatedProbes:
     """`/health` and `/health/ready` are unauthenticated and did real work per hit.
 
@@ -798,7 +851,7 @@ class TestHealthIsCheapUnderRepeatedProbes:
             ),
         ):
             for _ in range(5):
-                await health_module._health_handler(MagicMock())
+                await health_module._health_handler(_local_request())
 
         assert len(calls) == 1, f"{len(calls)} dependency probes for 5 requests"
 
@@ -827,9 +880,9 @@ class TestHealthIsCheapUnderRepeatedProbes:
                 "immich_memories.web.health._operational_detail", return_value=(None, None, None)
             ),
         ):
-            await health_module._health_handler(MagicMock())
+            await health_module._health_handler(_local_request())
             clock["now"] += 60.0
-            await health_module._health_handler(MagicMock())
+            await health_module._health_handler(_local_request())
 
         assert len(calls) == 2, "the snapshot never refreshed"
 
@@ -871,7 +924,7 @@ class TestHealthIsCheapUnderRepeatedProbes:
             ticker = asyncio.create_task(tick())
             await asyncio.sleep(0.01)
             before = ticks
-            await health_module._health_handler(MagicMock())
+            await health_module._health_handler(_local_request())
             # Sampled here, not after awaiting the ticker: once the handler
             # returns the ticker finishes either way, which would make this
             # pass whether or not the loop was ever blocked.

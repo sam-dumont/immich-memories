@@ -180,9 +180,22 @@ def set_owner(
     apply_owner(document, person_id, account)
 
 
+def edit_registry(store: Store, change: Callable[[dict[str, Any]], _R]) -> _R:
+    """Run `change` on the registry document, read and written back under the registry lock.
+
+    For a change that has to look at what is saved before it decides what to write.
+    """
+    return _one_writer(change)(store)
+
+
 @_one_writer
 def save_confirmed(document: dict[str, Any], person_id: str, confirmed: dict[str, Any]) -> None:
     """Replace one person's confirmed block, leaving everybody else alone."""
+    replace_confirmed(document, person_id, confirmed)
+
+
+def replace_confirmed(document: dict[str, Any], person_id: str, confirmed: dict[str, Any]) -> None:
+    """`save_confirmed` on a document already held under the registry lock."""
     entries = [entry for entry in people_entries(document) if person_id in entry_ids(entry)]
     if not entries:
         logger.warning("Nothing in the people registry to confirm for that person")
