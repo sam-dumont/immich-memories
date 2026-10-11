@@ -4,6 +4,7 @@ import {join} from 'node:path';
 import test from 'node:test';
 import {runInNewContext} from 'node:vm';
 import {analyticsHeadTags} from '../build-analytics.ts';
+import {installEvents} from '../src/analytics/events.ts';
 
 const base = `/immich-memories/${process.env.DOCS_NEXT === 'true' ? 'next/' : ''}`;
 const origin = 'https://sam-dumont.github.io';
@@ -88,7 +89,7 @@ function browser({ignore = false} = {}) {
     const target = {tagName: 'A', href: url.href, host: url.host, parentNode: null, classList: {length: 0}};
     dispatch('document', 'click', {type: 'click', target});
   };
-  return {window, location, events, dispatch, click};
+  return {window, document, location, events, dispatch, click};
 }
 
 test('client-side navigation and back record one pageview each; anchors do not', () => {
@@ -126,4 +127,119 @@ test('the tracker keeps the Plausible local opt-out', () => {
   window.history.pushState({}, '', `${base}docs/get-started/quick-start/`);
   click('https://example.org/');
   assert.deepEqual(events, []);
+});
+
+// WHY: the custom events run against the real bundled tracker, so a renamed event or prop
+// shows up here and not in the Plausible dashboard weeks later.
+function node(selectors, {parent = null, text = '', attrs = {}, children = []} = {}) {
+  const element = {
+    selectors, parent, parentNode: null, textContent: text, tagName: 'DIV', classList: {length: 0},
+    getAttribute: name => attrs[name] ?? null,
+    closest(selector) {
+      for (let at = this; at; at = at.parent) if (at.selectors.includes(selector)) return at;
+      return null;
+    },
+    querySelector(selector) {
+      for (const child of children) {
+        const found = child.selectors.includes(selector) ? child : child.querySelector(selector);
+        if (found) return found;
+      }
+      return null;
+    },
+    ...attrs.currentSrc ? {currentSrc: attrs.currentSrc} : {},
+  };
+  for (const child of children) child.parent = element;
+  return element;
+}
+
+function codeBlock(command, {tier} = {}) {
+  const code = node(['pre code'], {text: command});
+  const button = node(['button[aria-label^="Copy"]'], {attrs: {'aria-label': 'Copy code to clipboard'}});
+  const block = node(['.theme-code-block'], {children: [code, button]});
+  if (!tier) return {button};
+  const tab = node(['[role="tab"]', '[role="tab"][aria-selected="true"]'], {text: tier, attrs: {'aria-selected': 'true'}});
+  const container = node(['.tabs-container'], {children: [tab]});
+  const panel = node(['[role="tabpanel"]'], {children: [block]});
+  panel.parent = container;
+  container.children = [tab, panel];
+  return {button};
+}
+
+function withEvents(options) {
+  const page = browser(options);
+  const pathname = `${base}docs/get-started/quick-start/`;
+  page.location.href = new URL(pathname, origin).href;
+  installEvents({window: page.window, document: page.document, baseUrl: base});
+  const custom = () => page.events.filter(event => !['pageview', 'engagement'].includes(event.n))
+    .map(({n, p}) => ({name: n, props: p}));
+  return {...page, custom};
+}
+
+test('copying an install command records the page, tier and command kind, never the command', () => {
+  const page = withEvents();
+  const cases = [
+    ['curl -fsSL https://example.org/a.yml -o a.yml', 'curl'], ['$ docker compose up -d', 'docker'],
+    ['# comment\nuv tool install immich-memories', 'uv'], ['kubectl apply -k .', 'kubectl'],
+    ['helm install x y', 'helm'], ['pip install x', 'pip'], ['export SECRET=hunter2', 'other'],
+  ];
+  for (const [command] of cases) page.dispatch('document', 'click', {target: codeBlock(command, {tier: 'GPU'}).button});
+  page.dispatch('document', 'click', {target: codeBlock('docker run x').button});
+  assert.deepEqual(page.custom(), [
+    ...cases.map(([, kind]) => ({name: 'Install Command Copied', props: {page: '/docs/get-started/quick-start/', tier: 'gpu', kind}})),
+    {name: 'Install Command Copied', props: {page: '/docs/get-started/quick-start/', tier: 'none', kind: 'docker'}},
+  ]);
+  assert.ok(!JSON.stringify(page.events).includes('hunter2'));
+});
+
+test('other buttons and copy buttons outside code blocks record nothing', () => {
+  const page = withEvents();
+  const stray = node(['button[aria-label^="Copy"]'], {attrs: {'aria-label': 'Copy .env'}});
+  page.dispatch('document', 'click', {target: stray});
+  assert.deepEqual(page.custom(), []);
+});
+
+test('choosing an install tier records it once, and only for the tier tabs', () => {
+  const page = withEvents();
+  const tab = (label, selected) => node(['[role="tab"]'], {text: label, attrs: {'aria-selected': String(selected)},
+    parent: node(['.tabs-container'])});
+  page.dispatch('document', 'click', {target: tab('Full', false)});
+  page.dispatch('document', 'click', {target: tab('Basic', true)});
+  page.dispatch('document', 'click', {target: tab('Debian', false)});
+  assert.deepEqual(page.custom(), [{name: 'Install Tier Selected', props: {tier: 'full'}}]);
+});
+
+test('a demo video counts once per page view, by file name; an autoplay start does not count', () => {
+  const page = withEvents();
+  const video = (src, attrs = {}) => node(['video'], {attrs: {currentSrc: src, ...attrs}});
+  const demo = video(`${origin}${base}demo/demo.mp4?x=1`);
+  page.dispatch('document', 'play', {target: demo});
+  page.dispatch('document', 'play', {target: demo});
+  const auto = video(`${origin}${base}demo/dark-demo.mp4`, {'data-autoplay': 'true'});
+  page.dispatch('document', 'play', {target: auto});
+  assert.deepEqual(page.custom(), [{name: 'Demo Played', props: {video: 'demo.mp4'}}]);
+  page.dispatch('document', 'pause', {target: auto});
+  page.dispatch('document', 'play', {target: auto});
+  assert.deepEqual(page.custom().at(-1), {name: 'Demo Played', props: {video: 'dark-demo.mp4'}});
+});
+
+test('no event fires when the tracker is absent or the visitor opted out', () => {
+  const absent = browser();
+  delete absent.window.plausible;
+  const dispatch = absent.dispatch;
+  const events = installEvents({window: absent.window, document: absent.document, baseUrl: base});
+  absent.events.length = 0;
+  dispatch('document', 'click', {target: codeBlock('docker run x').button});
+  dispatch('document', 'play', {target: node(['video'], {attrs: {currentSrc: 'https://x/y.mp4'}})});
+  events.track('404', {path: '/x'});
+  assert.deepEqual(absent.events, []);
+  const optedOut = withEvents({ignore: true});
+  optedOut.dispatch('document', 'click', {target: codeBlock('docker run x').button});
+  assert.deepEqual(optedOut.events, []);
+});
+
+test('the site wires the events: client module, 404 page and setup builder', () => {
+  const sources = ['src/analytics-events.ts', 'src/theme/NotFound/index.tsx', 'src/components/SetupBuilder/index.tsx']
+    .map(file => readFileSync(file, 'utf8')).join('\n');
+  for (const name of ['Setup Builder Downloaded', 'Setup Builder Copied', "'404'"]) assert.ok(sources.includes(name), name);
+  assert.match(readFileSync('docusaurus.config.ts', 'utf8'), /clientModules:\s*\[[^\]]*analytics-events/);
 });

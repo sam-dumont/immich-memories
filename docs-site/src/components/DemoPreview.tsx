@@ -18,7 +18,10 @@ export default function DemoPreview() {
     const preference = window.matchMedia('(prefers-reduced-motion: reduce)');
     const applyPreference = () => {
       if (preference.matches) video.current?.pause();
-      else void video.current?.play().catch(() => undefined);
+      else {
+        video.current?.setAttribute('data-autoplay', 'true');
+        void video.current?.play().catch(() => undefined);
+      }
     };
     applyPreference();
     preference.addEventListener('change', applyPreference);

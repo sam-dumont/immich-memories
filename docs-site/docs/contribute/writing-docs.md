@@ -107,3 +107,27 @@ base path, including candidate docs under `/next/`.
 `make docs-build` checks the built pages and runs the bundled tracker against a fake browser and
 collector. CI uses example values; the tests send no network requests. The tracker's source
 revision, build variant and MIT notice are recorded in its header.
+
+### Custom events
+
+`src/analytics-events.ts` is a client module. It reads clicks and video events from the page and
+calls `window.plausible(name, {props})` only when the tracker is loaded, so builds without the two
+variables send nothing. The logic lives in `src/analytics/events.ts`; the tests drive each event
+through the real bundled tracker. Props are page paths, tier names, command kinds and file names:
+never typed text or a copied command.
+
+| Event | Fired when | Props |
+|---|---|---|
+| `Install Command Copied` | a code block's copy button is clicked | `page` (path without the base URL), `tier` (`basic`, `gpu`, `full`, or `none` outside the tier tabs), `kind` (`curl`, `docker`, `uv`, `pip`, `kubectl`, `helm`, `other`) |
+| `Install Tier Selected` | a tier tab is chosen | `tier` |
+| `Demo Played` | a video plays for the first time on a page view (a demo that started by itself counts after the visitor pauses and resumes it) | `video` (file name) |
+| `Setup Builder Downloaded` | a generated file is downloaded | `tier`, `file` |
+| `Setup Builder Copied` | a generated file is copied | `tier`, `file` |
+| `404` | the not-found page renders | `path` (without the base URL) |
+
+Any new event goes in this table and in the table on the website privacy page (`src/pages/privacy.tsx`).
+
+Suggested Plausible setup, done in the Plausible UI by the maintainer. Goals: the events above,
+plus `Outbound Link: Click` filtered to the GitHub releases URL. Funnel: the landing page, then the
+`/docs/get-started/quick-start` pageview, then `Install Command Copied`. Custom properties need
+registering under the site's Goals settings before the dashboard breaks them down.
