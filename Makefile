@@ -317,11 +317,12 @@ test-integration-titles:  ## Run ONLY title screen pixel tests (~30s, FFmpeg onl
 # Every child run gets its own sealed HOME. FEATURE_ARGS narrows a run, e.g. FEATURE_ARGS="-k report".
 # The tests run on FEATURE_WORKERS xdist workers (4, a CI runner's cores; 0 runs them in this
 # process). Each worker starts its own fake Immich and homes, so workers share no state.
+# --dist loadfile keeps a file's tests on one worker, so a module-scoped render runs once.
 FEATURE_WORKERS ?= 4
 .PHONY: test-features feature-check
 test-features:  ## Feature tests on the fixture library, real CLI and FFmpeg (no Immich needed)
 	uv run pytest tests/integration/features/ -v -m integration --tb=short -p no:cacheprovider \
-		-n $(FEATURE_WORKERS) --junitxml=tests/features-junit.xml $(FEATURE_ARGS)
+		-n $(FEATURE_WORKERS) --dist loadfile --junitxml=tests/features-junit.xml $(FEATURE_ARGS)
 
 # Every CLI command and flag, offered memory type and automation detector has a row in
 # tests/features/inventory.yaml; every row has feature tests or a lane_only/gap status; gaps only fall.

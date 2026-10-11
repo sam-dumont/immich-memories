@@ -24,7 +24,7 @@ import pytest
 from tests.e2e.fake_immich import ALBUMS, FakeImmichServer
 from tests.features.automation_library import LocalHttp
 from tests.features.cli_harness import CliResult, OutboundTrap, UserHome, basic_config
-from tests.integration.features.library import QUIET_DAY, day_args
+from tests.integration.features.library import QUIET_DAY, day_args, own_immich
 
 # The child: pin discovery's day (argv[1], blank for the real one), and give the `generate`
 # child it starts the scripted editor (argv[2] == "scripted"), then run the real CLI.
@@ -161,27 +161,27 @@ def test_a_trip_more_than_a_year_old_is_not_proposed(
 @pytest.mark.feature("notifications.on-completion")
 @pytest.mark.feature("notifications.upload-link")
 def test_auto_run_renders_delivers_and_announces_the_film_with_its_immich_link(
-    tmp_path: Path, fake_immich: FakeImmichServer, outbound_trap: OutboundTrap, sink: LocalHttp
+    tmp_path: Path, delivery_immich: FakeImmichServer, outbound_trap: OutboundTrap, sink: LocalHttp
 ) -> None:
     home = _home(
         tmp_path / "home",
-        fake_immich,
+        delivery_immich,
         outbound_trap,
         automation={"upload_to_immich": True},
         notifications=_notifying(sink),
         public_url=PUBLIC_URL,
     )
     album = next(r for r in _suggested(home) if r["category"] == "album")
-    uploads_before = len(fake_immich.uploads)
 
     result = _run(home, "auto", "run", "--candidate", album["memory_key"], "--quiet", scripted=True)
 
     assert result.returncode == 0, result.explain()
     decision = json.loads(result.stdout.strip().splitlines()[-1])
     assert (decision["outcome"], decision["candidate_key"]) == ("completed", album["memory_key"])
-    delivered = fake_immich.uploads[uploads_before:]
+    # This test's own Immich: its one upload is this film, whatever ran before it.
+    delivered = delivery_immich.uploads
     assert len(delivered) == 1 and delivered[0].content_type == "video/mp4"
-    asset_id = f"uploaded-{uploads_before + 1}"
+    asset_id = "uploaded-1"
     messages = sink.posted()
     assert [m["title"] for m in messages] == ["Memory Generated: Album"]
     assert f"Watch in Immich: {PUBLIC_URL}/photos/{asset_id}" in messages[0]["message"]
@@ -197,6 +197,7 @@ class _HandMade:
     messages: list[Any]
     asset_id: str
     proposed_before: list[dict[str, Any]]
+    immich_url: str
 
 
 @pytest.fixture(scope="module")
@@ -205,40 +206,44 @@ def hand_made_album(
     fake_immich: FakeImmichServer,
     outbound_trap: OutboundTrap,
 ) -> Iterator[_HandMade]:
-    """`generate --from-album` the fixture's lake week, uploaded, with notifications on."""
+    """`generate --from-album` the fixture's lake week, uploaded, with notifications on.
+
+    It uploads to an Immich of its own, so its film is that service's first upload
+    whatever else ran on this worker.
+    """
     sink = LocalHttp()
-    home = _home(
-        tmp_path_factory.mktemp("hand-made"),
-        fake_immich,
-        outbound_trap,
-        notifications=_notifying(sink),
-    )
-    before = _suggested(home)
-    uploads_before = len(fake_immich.uploads)
-    result = home.run(
-        "generate",
-        "--from-album",
-        ALBUMS[0]["albumName"],
-        "--include-photos",
-        "--no-music",
-        "--quiet",
-        "--upload-to-immich",
-        scripted_selection=True,
-    )
-    yield _HandMade(home, result, sink.posted(), f"uploaded-{uploads_before + 1}", before)
+    with own_immich(tmp_path_factory.mktemp("hand-made-immich"), fake_immich) as immich:
+        home = _home(
+            tmp_path_factory.mktemp("hand-made"),
+            immich,
+            outbound_trap,
+            notifications=_notifying(sink),
+        )
+        before = _suggested(home)
+        result = home.run(
+            "generate",
+            "--from-album",
+            ALBUMS[0]["albumName"],
+            "--include-photos",
+            "--no-music",
+            "--quiet",
+            "--upload-to-immich",
+            scripted_selection=True,
+        )
+        yield _HandMade(home, result, sink.posted(), "uploaded-1", before, immich.base_url)
     sink.close()
 
 
 @pytest.mark.feature("notifications.on-completion")
 @pytest.mark.feature("notifications.upload-link")
 def test_generate_announces_its_uploaded_film_with_a_link_to_the_server(
-    hand_made_album: _HandMade, fake_immich: FakeImmichServer
+    hand_made_album: _HandMade,
 ) -> None:
     assert hand_made_album.result.returncode == 0, hand_made_album.result.explain()
     messages = hand_made_album.messages
     assert [m["title"] for m in messages] == ["Memory Generated: Album"]
     # No public_url: the link starts from immich.url.
-    link = f"Watch in Immich: {fake_immich.base_url}/photos/{hand_made_album.asset_id}"
+    link = f"Watch in Immich: {hand_made_album.immich_url}/photos/{hand_made_album.asset_id}"
     assert link in messages[0]["message"]
 
 

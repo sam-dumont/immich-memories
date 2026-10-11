@@ -38,9 +38,10 @@ def test_years_lists_the_years_the_library_holds(library_home: UserHome):
 
 
 @pytest.mark.feature("automation.suggest")
-def test_auto_suggest_ranks_candidates_with_reasons_in_a_stable_order(library_home: UserHome):
-    first = library_home.run("auto", "suggest", "--json")
-    second = library_home.run("auto", "suggest", "--json")
+def test_auto_suggest_ranks_candidates_with_reasons_in_a_stable_order(fresh_home: UserHome):
+    # A home with no history: what other tests filmed would leave less to propose.
+    first = fresh_home.run("auto", "suggest", "--json")
+    second = fresh_home.run("auto", "suggest", "--json")
 
     assert first.returncode == 0, first.explain()
     candidates = json.loads(first.stdout)

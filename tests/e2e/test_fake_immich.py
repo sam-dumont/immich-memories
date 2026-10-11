@@ -14,6 +14,7 @@ import pytest
 
 from immich_memories.analysis.duplicate_hashing import compute_thumbnail_hash, hamming_distance
 from immich_memories.api.compatibility import ResolvedApiVersion
+from immich_memories.api.generated_asset_tags import GENERATED_MEMORY_TAG
 from immich_memories.api.immich import ImmichAuthError, SyncImmichClient
 from immich_memories.api.models import Asset, AssetType
 from immich_memories.generate_clips import MIN_CLIP_DURATION, assets_to_clips
@@ -488,3 +489,40 @@ def test_source_discovery_can_exclude_generated_films(fake_immich_server):
         api_version="auto",
     ) as client:
         assert client.generated_asset_ids() == frozenset()
+
+
+def test_a_service_on_borrowed_media_starts_empty_and_answers_tag_searches(
+    fake_immich_server, tmp_path: Path
+):
+    """A second service on the first one's media holds none of its uploads or tags.
+
+    Its tag search answers what Immich does: only the assets under the tag. Ignoring
+    `tagIds` would make every library picture one of the app's own films.
+    """
+    server = FakeImmichServer.start(tmp_path / "own", media_of=fake_immich_server)
+    try:
+        with SyncImmichClient(server.base_url, server.api_key, api_version="auto") as client:
+            untagged = client.generated_asset_ids()
+            asset_id = client.upload_asset(server.source_video)
+        headers = {"x-api-key": server.api_key}
+        tags = httpx.put(
+            f"{server.base_url}/api/tags", json={"tags": [GENERATED_MEMORY_TAG]}, headers=headers
+        ).json()
+        httpx.put(
+            f"{server.base_url}/api/tags/{tags[0]['id']}/assets",
+            json={"ids": [asset_id]},
+            headers=headers,
+        )
+        found = httpx.post(
+            f"{server.base_url}/api/search/metadata",
+            json={"tagIds": [tags[0]["id"]], "size": 250, "page": 1},
+            headers=headers,
+        ).json()["assets"]["items"]
+    finally:
+        server.close()
+
+    assert server.photo_paths == fake_immich_server.photo_paths
+    assert untagged == frozenset()
+    assert asset_id == "uploaded-1"
+    assert [asset["id"] for asset in found] == [asset_id]
+    assert server.refused == []

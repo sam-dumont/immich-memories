@@ -21,7 +21,14 @@ import pytest
 import yaml
 
 from tests.e2e.fake_immich import FakeImmichServer
-from tests.features.cli_harness import REPO, RUN_ID, UserHome, basic_config, film_facts
+from tests.features.cli_harness import (
+    REPO,
+    RUN_ID,
+    OutboundTrap,
+    UserHome,
+    basic_config,
+    film_facts,
+)
 from tests.integration.features.library import GARDEN_DAY, QUIET_DAY, day_args
 from tests.integration.features.served_ui import free_port, serve_ui
 
@@ -218,12 +225,15 @@ def test_a_rescan_refreshes_suggestions_and_keeps_roles_relationships_and_groups
 
 @pytest.mark.feature("upload.reclaims-local-copy")
 def test_a_delivered_film_is_removed_locally_and_the_run_keeps_its_record_and_immich_link(
-    library_home: UserHome, fake_immich: FakeImmichServer, tmp_path
+    delivery_immich: FakeImmichServer, outbound_trap: OutboundTrap, tmp_path
 ):
-    uploads_before = len(fake_immich.uploads)
-    output = tmp_path / "delivered.mp4"
+    # A home and an Immich of its own: no earlier upload, tag or run on this worker can
+    # change which upload is this film's or which run the id names.
+    home = UserHome(tmp_path / "home", extra_env=tuple(outbound_trap.env().items()))
+    home.write_config(basic_config(delivery_immich.base_url, delivery_immich.api_key, home))
+    output = tmp_path / "out" / "delivered.mp4"
 
-    result = library_home.run(
+    result = home.run(
         *day_args(QUIET_DAY),
         "--upload-to-immich",
         "--output",
@@ -231,22 +241,23 @@ def test_a_delivered_film_is_removed_locally_and_the_run_keeps_its_record_and_im
         scripted_selection=True,
     )
     run_id = RUN_ID.search(result.output)
-    shown = library_home.run("runs", "show", run_id.group(0)) if run_id else None
+    shown = home.run("runs", "show", run_id.group(0)) if run_id else None
 
     assert result.returncode == 0, result.explain()
     assert run_id, result.explain()
-    assert len(fake_immich.uploads) == uploads_before + 1
+    assert len(delivery_immich.uploads) == 1
     # The film Immich got is a real film, and the local copy is gone.
     sent = tmp_path / "sent.mp4"
-    sent.write_bytes(fake_immich.uploads[-1].data)
+    sent.write_bytes(delivery_immich.uploads[0].data)
     assert film_facts(sent).duration > 0.5
-    assert list(tmp_path.rglob("delivered*.mp4")) == []
+    assert list(output.parent.rglob("delivered*.mp4")) == []
     assert shown is not None and shown.returncode == 0, shown and shown.explain()
     assert re.search(r"Immich\s*│\s*delivered", shown.stdout), shown.explain()
     assert "removed after delivery to Immich" in shown.stdout
     link = re.search(r"Immich Link\s*│\s*(\S+)", shown.stdout)
-    assert link and link.group(1).startswith(fake_immich.base_url), shown.explain()
-    assert f"uploaded-{uploads_before + 1}" in link.group(1)
+    assert link and link.group(1) == f"{delivery_immich.base_url}/photos/uploaded-1", (
+        shown.explain()
+    )
 
 
 # ── a run whose process died ─────────────────────────────────────────────────

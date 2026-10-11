@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import zipfile
 
@@ -233,16 +234,26 @@ def test_runs_delete_keep_output_keeps_the_film(library_home: UserHome, tmp_path
 
 
 @pytest.mark.feature("runs.unknown-id-fails")
-def test_an_ambiguous_run_prefix_lists_the_matches_and_exits_non_zero(
-    library_home: UserHome, garden_film: RenderedRun
-):
-    # Every run of this session starts with the same date: the year alone is ambiguous.
-    prefix = garden_film.run_id[:4]
+def test_an_ambiguous_run_prefix_lists_the_matches_and_exits_non_zero(fresh_home: UserHome):
+    # A home of its own holding exactly two runs, so what the prefix matches never depends
+    # on what other tests left in the session's history.
+    home = fresh_home
+    film = render(home, *day_args(QUIET_DAY))
+    cut = home.run(*day_args(QUIET_DAY), "--no-render", scripted_selection=True)
+    assert cut.returncode == 0, cut.explain()
+    cut_ids = re.findall(r"runs render (\d{8}_\d{6}_[0-9a-f]{4})", cut.output)
+    assert cut_ids, cut.explain()
+    # The longest prefix both ids share (their date at least): it names neither run alone.
+    prefix = os.path.commonprefix([film.run_id, cut_ids[0]])
+    assert len(prefix) >= 4, (film.run_id, cut_ids[0])
 
-    shown = library_home.run("runs", "show", prefix)
-    deleted = library_home.run("runs", "delete", prefix, "--yes")
+    shown = home.run("runs", "show", prefix)
+    deleted = home.run("runs", "delete", prefix, "--yes")
+    listed = home.run("runs", "list", "--limit", "100").stdout
 
     assert shown.returncode == 1, shown.explain()
     assert "Ambiguous run ID" in shown.output
+    assert film.run_id in shown.output and cut_ids[0] in shown.output, shown.explain()
     assert deleted.returncode == 1, deleted.explain()
-    assert garden_film.film.is_file()
+    assert film.film.is_file()
+    assert film.run_id in listed and cut_ids[0] in listed
