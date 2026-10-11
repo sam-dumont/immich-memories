@@ -63,7 +63,7 @@ current release, so check it against the
 [releases page](https://github.com/sam-dumont/immich-memories/releases) before you
 apply, and bump it when you upgrade. The entry rewrites the `fetch-models` init container too, so
 both move together. `kubectl apply -f base/job.yaml` skips kustomize entirely and runs the
-`:latest` the file names.
+image version the file names.
 
 ## How the pod is wired
 

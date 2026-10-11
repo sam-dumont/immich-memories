@@ -1,5 +1,9 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {spawnSync} from 'node:child_process';
+import {mkdtempSync, writeFileSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
 import test from 'node:test';
 import {API_KEY_PLACEHOLDER, buildSetup, looksInternal, nativeInstallCommand} from './recipes.ts';
 import {toYaml} from './yaml.ts';
@@ -337,3 +341,60 @@ for (const tier of ['gpu', 'full']) {
     assert.doesNotMatch(commands, /postgres|gpu-worker/);
   });
 }
+
+
+// What the person gets: the files must load in Docker Compose, which refuses duplicate keys.
+const compose = spawnSync('docker', ['compose', 'version'], {encoding: 'utf8'});
+const composeConfig = (files) => {
+  const dir = mkdtempSync(join(tmpdir(), 'builder-'));
+  for (const [name, content] of Object.entries(files)) writeFileSync(join(dir, name), content + '\n');
+  return spawnSync('docker', ['compose', '-f', join(dir, 'docker-compose.yml'), '--project-directory', dir, 'config'],
+    {encoding: 'utf8', env: {...process.env, DOCKER_HOST: 'unix:///nonexistent'}});
+};
+const login = {lanAccess: true, authUsername: 'admin', authPassword: 'a-long-enough-password'};
+const fileNamed = (result, name) => result.files.find(file => file.name === name).content;
+
+for (const inline of [true, false]) {
+  test(`LAN access and a login load in docker compose config (inline: ${inline})`, {skip: compose.status !== 0}, () => {
+    const result = buildSetup({...setup, ...login, inline}, sources, '1.2.3');
+    assert.equal(result.error, null);
+    const files = {'docker-compose.yml': fileNamed(result, 'docker-compose.yml')};
+    if (!inline) files['.env'] = fileNamed(result, '.env');
+    const config = composeConfig(files);
+    assert.equal(config.status, 0, config.stderr);
+    assert.match(config.stdout, /host_ip: 0\.0\.0\.0/);
+    assert.match(config.stdout, /IMMICH_MEMORIES_AUTH_USERNAME: admin/);
+    assert.match(config.stdout, /IMMICH_MEMORIES_AUTH_PASSWORD: a-long-enough-password/);
+  });
+}
+
+test('the stack page steps (edit the existing lines) keep the single file loadable', {skip: compose.status !== 0}, () => {
+  const result = buildSetup(setup, sources, '1.2.3');
+  const edited = fileNamed(result, 'docker-compose.yml')
+    .replace(/IMMICH_MEMORIES_AUTH_USERNAME: .*/, 'IMMICH_MEMORIES_AUTH_USERNAME: admin')
+    .replace(/IMMICH_MEMORIES_AUTH_PASSWORD: .*/, 'IMMICH_MEMORIES_AUTH_PASSWORD: replace-with-your-own-long-password')
+    .replace('127.0.0.1:8080:8080', '0.0.0.0:8080:8080');
+  const config = composeConfig({'docker-compose.yml': edited});
+  assert.equal(config.status, 0, config.stderr);
+  assert.equal((edited.match(/IMMICH_MEMORIES_AUTH_USERNAME/g) || []).length, 1);
+});
+
+test('without a login the generated file has no LAN port and no credentials', () => {
+  const result = buildSetup(setup, sources, '1.2.3');
+  const text = fileNamed(result, 'docker-compose.yml');
+  assert.match(text, /127\.0\.0\.1:8080:8080/);
+  assert.match(text, /IMMICH_MEMORIES_AUTH_PASSWORD: ""/);
+});
+
+test('LAN access without a login, a short password or a lone password is refused', () => {
+  assert.match(buildSetup({...setup, lanAccess: true}, sources, '1.2.3').error, /needs an app login/);
+  assert.match(buildSetup({...setup, authUsername: 'admin', authPassword: 'short'}, sources, '1.2.3').error, /at least 12/);
+  assert.match(buildSetup({...setup, authPassword: 'a-long-enough-password'}, sources, '1.2.3').error, /username/);
+});
+
+test('a password with a dollar sign stays literal in the single file', {skip: compose.status !== 0}, () => {
+  const result = buildSetup({...setup, ...login, authPassword: 'pa$$word-is-long-enough'}, sources, '1.2.3');
+  const config = composeConfig({'docker-compose.yml': fileNamed(result, 'docker-compose.yml')});
+  assert.equal(config.status, 0, config.stderr);
+  assert.match(config.stdout, /AUTH_PASSWORD: pa\$\$\$\$word-is-long-enough|AUTH_PASSWORD: pa\$\$word-is-long-enough/);
+});

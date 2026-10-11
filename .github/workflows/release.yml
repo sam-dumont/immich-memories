@@ -895,6 +895,7 @@ jobs:
           path: |
             ${{ runner.temp }}/immich-memories-compose-${{ needs.analyze.outputs.next_version }}/*.yml
             ${{ runner.temp }}/immich-memories-compose-${{ needs.analyze.outputs.next_version }}/example.env
+            ${{ runner.temp }}/immich-memories-compose-${{ needs.analyze.outputs.next_version }}/*.xml
             ${{ runner.temp }}/immich-memories-compose-${{ needs.analyze.outputs.next_version }}/*.tar.gz
             ${{ runner.temp }}/immich-memories-compose-${{ needs.analyze.outputs.next_version }}/*.json
             ${{ runner.temp }}/immich-memories-compose-${{ needs.analyze.outputs.next_version }}/SHA256SUMS

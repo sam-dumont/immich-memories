@@ -106,7 +106,7 @@ Partner accounts need the read set only.
 
 | Optional read permission | Used for |
 |---|---|
-| `tag.read` | Finding generated films directly through the tag index, with fewer requests on large libraries |
+| `tag.read` | Finding generated films through the tag index. Add it: it keeps large libraries fast |
 | `stack.read` | Keeping one picture from each stack instead of selecting its members separately |
 
 | Optional upload permission | Used for |
@@ -131,8 +131,9 @@ Album-update permissions are not needed. The app reads the key's own permission 
 `GET /api-keys/me`, which needs API-key authentication but no extra permission.
 
 Tagged films are excluded from source footage across every page of results. Add `tag.read`
-to use the tag index on each account. Without it, the app checks video tags through `asset.read`;
-large libraries take more requests but need no extra permission. Uploading and tagging a film
+to each account's key: it makes that check use the tag index, which keeps large libraries fast.
+Without it, the app checks video tags one by one through `asset.read`. It still works, but a
+large library takes many more requests. Uploading and tagging a film
 uses `tag.create` and `tag.asset`, independently of this optional read permission.
 
 Run `immich-memories preflight` or `immich-memories config test` after creating the key.

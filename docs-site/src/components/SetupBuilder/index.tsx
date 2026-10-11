@@ -65,7 +65,7 @@ export default function SetupBuilder({initialPlatform = 'linux', initialInline =
       </label>}
       {hostPort && <label>UI host port
         <input type="number" min="1" max="65535" step="1" value={setup.uiPort} onChange={event => update({uiPort: Number(event.target.value)})} />
-        <small>Choose a free port if another app already uses 8080. The UI stays localhost-only.</small>
+        <small>Choose a free port if another app already uses 8080. The UI stays on localhost unless you open it to your LAN below.</small>
       </label>}
       {setup.platform === 'kubernetes' && <label>Namespace
         <input value={setup.namespace} onChange={event => update({namespace: event.target.value})} />
@@ -113,6 +113,20 @@ export default function SetupBuilder({initialPlatform = 'linux', initialInline =
         <small>The builder does not ask for a reader API key: the files hold <code>replace-with-your-reader-api-key</code> when a reader URL is set. Replace it, or empty it for a reader without auth.</small>
       </>}
     </div>
+    {compose && <div className={styles.fields}>
+      <label className={styles.check}>
+        <input type="checkbox" checked={Boolean(setup.lanAccess)} onChange={event => update({lanAccess: event.target.checked})} />
+        Open the UI to other machines on my LAN
+        <small>Publishes the port on every interface instead of localhost only. It needs the login below. Leave it off to use an SSH tunnel.</small>
+      </label>
+      <label>App login: username
+        <input autoComplete="off" value={setup.authUsername ?? ''} onChange={event => update({authUsername: event.target.value})} placeholder="admin" />
+      </label>
+      <label>App login: password
+        <input type="password" autoComplete="new-password" value={setup.authPassword ?? ''} onChange={event => update({authPassword: event.target.value})} />
+        <small>At least 12 characters. It goes into the generated files in your browser and nowhere else.</small>
+      </label>
+    </div>}
     {compose && <label className={styles.check}>
       <input type="checkbox" checked={Boolean(setup.inline)} onChange={event => update({inline: event.target.checked})} />
       Single file for a stack editor
@@ -160,7 +174,7 @@ export default function SetupBuilder({initialPlatform = 'linux', initialInline =
         <summary>Private UI access with an SSH tunnel</summary>
         <CodeBlock language="bash" title="Private UI access">{result.accessCommands}</CodeBlock>
       </details>}
-      {compose && <p>On a server or NAS, configure <Link to={setup.inline ? "/docs/run/docker#stack-editor-lan-access" : "/docs/get-started/quick-start#2-connect-immich"}>app login for LAN access</Link> before starting, or use the private SSH tunnel above.</p>}
+      {compose && !setup.lanAccess && <p>On a server or NAS, configure <Link to={setup.inline ? "/docs/run/docker#stack-editor-lan-access" : "/docs/get-started/quick-start#2-connect-immich"}>app login for LAN access</Link> before starting, or use the private SSH tunnel above.</p>}
       {compose && !setup.inline && <p>The commands below use <code>immich-memories/output</code> for finished films. On Linux, run <code>mkdir -p immich-memories/output &amp;&amp; sudo chown 1000:1000 immich-memories/output</code> before those commands. On Synology, give that folder write access for UID/GID 1000 using the <Link to="/docs/run/nas#the-output-folder">folder permissions recipe</Link>.</p>}
       {showCommands && <CodeBlock language="bash" title={result.workerCommands ? "On the app host" : "Install and check"}>{result.commands}</CodeBlock>}
     </div>}

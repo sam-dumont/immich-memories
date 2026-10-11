@@ -31,3 +31,11 @@ export function deploymentCommands(version: string): string {
     'tar -xzf "$BUNDLE" -C vendor/immich-memories',
   ].join('\n');
 }
+
+export function unraidTemplateCommands(version: string): string {
+  if (!/^v?\d+\.\d+\.\d+(?:-(?:rc|dev)\.\d+)?$/.test(version)) return '';
+  return [
+    'mkdir -p /boot/config/plugins/dockerMan/templates-user',
+    `curl --fail --location "${assetBase(version)}/immich-memories.xml" -o /boot/config/plugins/dockerMan/templates-user/my-immich-memories.xml`,
+  ].join('\n');
+}

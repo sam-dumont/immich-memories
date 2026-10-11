@@ -1,5 +1,5 @@
 namespace = "immich-memories"
-image_tag = "latest" # pin to a release: check the releases page first
+image_tag = "1.0.0-rc.9" # pin to a release: check the releases page first
 
 immich_url     = "https://photos.example.com"
 immich_api_key = "your-immich-api-key"

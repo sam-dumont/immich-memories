@@ -25,7 +25,7 @@ variable "environment" {
 variable "image_tag" {
   description = "Container image tag (no `v` prefix)"
   type        = string
-  default     = "latest"
+  default     = "1.0.0-rc.9"
 }
 
 variable "timezone" {

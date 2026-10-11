@@ -19,6 +19,10 @@ export interface Setup {
   secretKey?: string;
   automation?: boolean;
   triggerToken?: string;
+  // Docker Compose only: publish the UI on the LAN, and the app login that must come with it.
+  lanAccess?: boolean;
+  authUsername?: string;
+  authPassword?: string;
 }
 export interface Recipe {name: string; language: string; content: string; data?: unknown}
 
@@ -82,6 +86,14 @@ export function validateSetup(setup: Setup): string | null {
   }
   if (setup.platform === 'kubernetes' && !/^[a-z0-9]([-a-z0-9]{0,61}[a-z0-9])?$/.test(setup.namespace ?? 'immich-memories')) {
     return 'Namespace must be a lowercase DNS label: letters, digits and dashes, up to 63 characters.';
+  }
+  if (['linux', 'synology'].includes(setup.platform)) {
+    const user = setup.authUsername ?? '';
+    const password = setup.authPassword ?? '';
+    if (/[\r\n\0]/.test(user + password)) return 'Use one line for each setting.';
+    if (setup.lanAccess && !user) return 'LAN access needs an app login: enter a username and a password.';
+    if (user && password.length < 12) return 'Choose a password of at least 12 characters.';
+    if (password && !user) return 'Enter a username for the password.';
   }
   if (setup.version === 'development') return 'Choose a published release version for these setup files.';
   if (!releaseVersion(setup.version) && setup.version !== 'latest') return 'Use a release version such as 1.0.0 or 1.0.0-rc.1.';
@@ -154,9 +166,9 @@ function inlineValues(value: unknown, values: Record<string, string>): unknown {
 }
 
 // The release asset pins its image tag; the generated file must too, or a file saved
-// under the wrong .env name silently pulls whatever `latest` is.
+// under the wrong .env name silently pulls the version the repository file names.
 const pinVersion = (text: string, version: string): string =>
-  text.split('${IMMICH_MEMORIES_VERSION:-latest}').join(`\${IMMICH_MEMORIES_VERSION:-${version}}`);
+  text.replace(/\$\{IMMICH_MEMORIES_VERSION:-[^}]*\}/g, `\${IMMICH_MEMORIES_VERSION:-${version}}`);
 
 function macRecipe(setup: Setup): Result {
   const full = setup.tier === 'full';
@@ -311,6 +323,11 @@ export function buildSetup(setup: Setup, sources: Sources, buildVersion: string)
     `IMMICH_MEMORIES_VERSION=${releaseVersion(setup.version) || 'latest'}`,
     `TIER=${setup.tier}`,
     `IMMICH_URL=${dotenv(setup.immichUrl)}`, `IMMICH_API_KEY=${API_KEY_PLACEHOLDER}`,
+    ...(setup.lanAccess ? ['UI_BIND_ADDRESS=0.0.0.0'] : []),
+    ...(setup.authUsername ? [
+      `IMMICH_MEMORIES_AUTH_USERNAME=${dotenv(setup.authUsername)}`,
+      `IMMICH_MEMORIES_AUTH_PASSWORD=${dotenv(setup.authPassword ?? '')}`,
+    ] : []),
     ...(setup.gpuBox ? [`GPU_BOX=${dotenv(setup.gpuBox)}`] : []),
     ...(setup.tier === 'full' ? [
       'READER_ENABLED=true', `READER_URL=${dotenv(setup.readerUrl)}`,
@@ -331,6 +348,9 @@ export function buildSetup(setup: Setup, sources: Sources, buildVersion: string)
       READER_ENABLED: setup.tier === 'full' ? 'true' : 'false', READER_URL: setup.readerUrl,
       READER_MODEL: setup.readerModel, READER_API_KEY: readerKey(setup),
       IMMICH_MEMORIES_SECRET_KEY: setup.secretKey!,
+      UI_BIND_ADDRESS: setup.lanAccess ? '0.0.0.0' : '',
+      IMMICH_MEMORIES_AUTH_USERNAME: setup.authUsername ?? '',
+      IMMICH_MEMORIES_AUTH_PASSWORD: setup.authPassword ?? '',
     }) as Mapping;
   }
   const workerFiles: Recipe[] = [];

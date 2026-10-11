@@ -27,6 +27,8 @@ behaviour working with a warning that names its replacement, document it in
 a contract carries `!` or a `BREAKING CHANGE:` footer so the release workflow bumps the major;
 `feat` and `fix` commits are non-breaking by definition.
 
+A security fix may break a contract within a major line; `upgrading.md` documents it.
+
 ## Milestones and issues
 
 Every open issue belongs to one milestone, and the maintainer decides what goes into each release.

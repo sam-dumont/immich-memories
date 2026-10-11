@@ -52,10 +52,11 @@ For a NAS container manager, [use its platform guide](https://sam-dumont.github.
    mkdir -p immich-memories && cd immich-memories
    VERSION=1.0.0-rc.9
    curl -fLO "https://github.com/sam-dumont/immich-memories/releases/download/v${VERSION}/docker-compose.yml"
-   curl -fL "https://github.com/sam-dumont/immich-memories/releases/download/v${VERSION}/example.env" -o .env
+   curl -fLO "https://github.com/sam-dumont/immich-memories/releases/download/v${VERSION}/example.env"
+   cp example.env .env
    ```
 
-   The downloaded `.env` pins the app image to the same release. Keep `TIER=basic`.
+   `example.env` pins the app image to the same release. Keep `TIER=basic`.
 
 2. **Edit `.env`** with your Immich address, API key and timezone:
 

@@ -25,4 +25,4 @@ resources:
 # page before you apply, and bump it when you upgrade.
 images:
   - name: ghcr.io/sam-dumont/immich-memories
-    newTag: "0.103.0"
+    newTag: "1.0.0-rc.9"

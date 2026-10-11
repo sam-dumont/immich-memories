@@ -11,19 +11,35 @@ Read the [release notes](https://github.com/sam-dumont/immich-memories/releases)
 back up the store, then upgrade. Keep the backup for rollback: a newer release can migrate the
 store to a revision older code will refuse.
 
-## Server addresses
+## Security changes in 1.0
 
-With authentication enabled, setting `auth.public_url` restricts requests to its hostname,
-localhost and entries in `server.allowed_hosts`. If you also open the app by a LAN IP or
-another hostname, add those addresses to `advanced.server.allowed_hosts` before upgrading.
-Otherwise those requests receive HTTP 421.
+Five behaviours changed for security, without a deprecation period. Each one has a fix.
 
-An `immich.url` containing a username or password fails startup. Remove the credentials
-from the URL and use `immich.api_key`. This also applies to each account's URL under
-`immich.accounts`. If a reverse proxy requires URL credentials, give the app a private route
-to Immich that accepts its API key.
+- **Credentials in `immich.url` stop startup.** Remove the username and password from the URL
+  and use `immich.api_key`. This also applies to each account's URL under `immich.accounts`. If a
+  reverse proxy requires URL credentials, give the app a private route to Immich that accepts
+  its API key.
+- **`auth.public_url` restricts accepted hosts.** With authentication enabled, requests are
+  accepted only for its hostname, localhost and the entries in `server.allowed_hosts`. Any
+  other host gets HTTP 421. If you also open the app by a LAN IP or another hostname, add those
+  addresses to `advanced.server.allowed_hosts` before upgrading.
+- **`/health` hides details without a session.** With authentication enabled, `/health` and
+  `/health/ready` keep their status codes and JSON fields, but return `null` for
+  `configuration`, `immich` and `immich_reachable` unless the request has a valid session. Use
+  the HTTP status for probes; sign in to read the detailed diagnosis.
+- **Some settings are config-file or environment only.** `render.worker_base_url`,
+  `render.worker_token`, `llm.local_server`, `triage.encoder`, `free_text.wordnet`,
+  `editorial.laya_checkpoint`, `editorial.preparation.detector_python`,
+  `editorial.preparation.detector_cache_dir` and `editorial.preparation.marqo_onnx` can no longer
+  be saved from Settings or the web API. Values you saved there earlier are ignored at load, with
+  a warning that names the keys. Move each one to `config.yaml` (under
+  `advanced:` where the [reference](../../reference/config-reference.md) puts it) or to its
+  `IMMICH_MEMORIES_<SECTION>__<FIELD>` environment variable.
+- **Request bodies are capped at 4 MiB.** Every HTTP request, including reads and sign-in pages,
+  accepts a body up to 4 MiB and larger ones return HTTP 413. The soundtrack upload route keeps
+  its separate 64 MiB file limit.
 
-## HTTP monitoring and request limits
+## HTTP monitoring
 
 For custom Kubernetes or Terraform deployments, set liveness to `/health/live` and readiness
 to `/health/ready` before applying the new image. Both accept the pod IP in the probe's `Host`
@@ -34,13 +50,31 @@ A probe still using `/health` can receive HTTP 421 when `auth.public_url` or
 Kubernetes restart it. Change the probe paths in the manifests or Terraform that own the
 deployment. `/health` is a compatibility endpoint, not a readiness check.
 
-With authentication enabled, `/health` and `/health/ready` keep their status codes and JSON
-fields, but return `null` for operational details without a valid session. This includes
-`configuration`, `immich` and `immich_reachable`. Use the HTTP status for readiness probes;
-sign in to read the detailed diagnosis.
+## New automatic films
 
-Every HTTP request accepts a body up to 4 MiB, including reads and sign-in pages. Larger requests
-return HTTP 413. The soundtrack upload route keeps its separate 64 MiB file limit.
+The daily timer (`auto`) now looks for five more kinds of film. They are on by default, so an
+install with the timer starts getting them. Each has a key under `advanced.automation` that
+turns it off:
+
+| Film | Key |
+|---|---|
+| The season that just ended | `detect_seasons` |
+| A holiday across the years | `detect_holidays` |
+| A new or grown Immich album | `detect_albums` |
+| Last month's film of each person close to you | `detect_person_monthly` |
+| Months of this year and last that never got a film | `backfill_months` |
+
+```yaml
+advanced:
+  automation:
+    detect_seasons: false
+    detect_holidays: false
+    detect_albums: false
+    detect_person_monthly: false
+    backfill_months: false
+```
+
+See [automation](../../make/automate.md) for what each one proposes.
 
 ## Temporary working files
 

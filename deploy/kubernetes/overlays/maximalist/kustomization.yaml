@@ -43,4 +43,4 @@ patches:
 # transformer that ran before the patch existed).
 images:
   - name: ghcr.io/sam-dumont/immich-memories
-    newTag: "0.103.0"
+    newTag: "1.0.0-rc.9"

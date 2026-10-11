@@ -120,7 +120,7 @@ def test_kustomization_pins_a_published_image_tag() -> None:
     images = kustomization["images"]
     image = next(entry for entry in images if entry["name"] == "ghcr.io/sam-dumont/immich-memories")
 
-    assert re.fullmatch(r"\d+\.\d+\.\d+", str(image["newTag"])), image
+    assert re.fullmatch(r"\d+\.\d+\.\d+(?:-rc\.\d+)?", str(image["newTag"])), image
     assert "commonLabels" not in kustomization
 
 
@@ -140,7 +140,7 @@ def test_the_two_inference_overlays_name_the_same_release() -> None:
         )
         tags[overlay] = str(entry["newTag"])
 
-    assert re.fullmatch(r"\d+\.\d+\.\d+", tags["inference"]), tags
+    assert re.fullmatch(r"\d+\.\d+\.\d+(?:-rc\.\d+)?", tags["inference"]), tags
     assert tags["inference-cuda"] == f"{tags['inference']}-cuda", tags
     assert tags["inference"] == _kustomization()["images"][0]["newTag"]
 
@@ -189,6 +189,14 @@ def test_only_the_kustomization_pin_names_a_concrete_version() -> None:
     for name, text in _deploy_texts().items():
         if name.endswith("kustomization.yaml"):
             text = re.sub(r"(?m)^\s*newTag:.*$", "", text)
+        # The manifests name the same release as the pin (`make pin-release` moves them together).
+        text = re.sub(
+            r"(?m)^(\s*image: ghcr\.io/sam-dumont/immich-memories(?:/inference)?:)\S+$", r"\1", text
+        )
+        # Terraform's image_tag default and its table are pinned by the same command.
+        text = re.sub(r'(?m)^(\s*default\s*=\s*)"\d[^"]*"', r"\1", text)
+        text = re.sub(r'^(image_tag\s*=\s*)"\d[^"]*"', r"\1", text, flags=re.M)
+        text = re.sub(r'`"\d[^"]*"`', "", text)
         # A dotted quad is an address, not a release: the captioner binds 0.0.0.0.
         text = re.sub(r"\b\d{1,3}(?:\.\d{1,3}){3}\b", "", text)
         # A digest-pinned third-party image (the trigger pods' curl) is pinned by
@@ -520,7 +528,9 @@ def test_kustomize_renders_with_a_secret_created_from_the_example(
     assert "Ingress" not in kinds
     deployment = next(doc for doc in rendered if doc["kind"] == "Deployment")
     container = deployment["spec"]["template"]["spec"]["containers"][0]
-    assert re.fullmatch(r"ghcr\.io/sam-dumont/immich-memories:\d+\.\d+\.\d+", container["image"])
+    assert re.fullmatch(
+        r"ghcr\.io/sam-dumont/immich-memories:\d+\.\d+\.\d+(?:-rc\.\d+)?", container["image"]
+    )
     has_gpu = "nvidia.com/gpu" in container["resources"]["limits"]
     assert has_gpu == (target == "overlays/gpu")
 
@@ -799,7 +809,7 @@ def test_the_render_sidecar_overlay_pins_both_containers_to_the_same_release(
 
     assert images["immich-memories"] == images["render-worker"]
     assert re.fullmatch(
-        r"ghcr\.io/sam-dumont/immich-memories:\d+\.\d+\.\d+",
+        r"ghcr\.io/sam-dumont/immich-memories:\d+\.\d+\.\d+(?:-rc\.\d+)?",
         images["render-worker"],
     )
 
@@ -1024,7 +1034,7 @@ def test_the_maximalist_overlay_pins_or_digests_every_third_party_image(tmp_path
             image = container["image"]
             if image.startswith(own_repo):
                 # A release tag; the inference service's CUDA build is published as `X.Y.Z-cuda`.
-                assert re.search(r":\d+\.\d+\.\d+(-cuda)?$", image), image
+                assert re.search(r":\d+\.\d+\.\d+(-rc\.\d+)?(-cuda)?$", image), image
             else:
                 # Third-party images use a tested build tag or a digest.
                 assert image != "latest", image

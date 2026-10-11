@@ -48,7 +48,7 @@ def test_preflight_passes_configured_api_version_to_client() -> None:
         api_key=_TEST_KEY,
         api_version=ApiVersionPolicy.V2,
     )
-    client.get_api_version.assert_called_once_with()
+    client.get_api_version.assert_called_once_with(retry=False)
     assert result.details == f"Server: {_TEST_URL}; API: v2"
 
 

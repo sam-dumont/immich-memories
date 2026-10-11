@@ -379,7 +379,7 @@ immich-memories models fetch [OPTIONS]
 | Flag | Type | Default | Description |
 | --- | --- | --- | --- |
 | `--force` | boolean | false | Re-download even when the file is already right |
-| `--detectors`, `--no-detectors` | boolean | - | Fetch detector models (default: gpu/full only); --detectors also fetches on nas |
+| `--detectors`, `--no-detectors` | boolean | - | Fetch detector models (default: gpu/full only); --detectors also fetches on basic |
 | `--laya` | boolean | false | Fetch the Laya audience checkpoint even on the basic tier (gpu and full fetch it anyway) |
 
 ## `music`
@@ -681,6 +681,7 @@ immich-memories pictures undo [OPTIONS] ASSET_ID
 
 Run preflight checks to validate all provider connections.
 
+```text
 Checks:
 - Immich server connection and API key, and each extra account
 - LLM availability (Ollama or OpenAI-compatible)
@@ -690,6 +691,7 @@ Checks:
 - Configured paths that are not on this host
 - Notification delivery health
 - Hardware acceleration
+```
 
 ```bash
 immich-memories preflight [OPTIONS]
@@ -1169,7 +1171,7 @@ immich-memories ui [OPTIONS]
 | Flag | Type | Default | Description |
 | --- | --- | --- | --- |
 | `--port`, `-p` | integer | - | Port to run the UI on (default: config or 8080) |
-| `--host`, `-h` | text | - | Host to bind to (default: config or 127.0.0.1) |
+| `--host`, `-h` | text | - | Host to bind to (default: config or 127.0.0.1). -h is --host here; use --help for help |
 | `--reload`, `--no-reload` | boolean | false | Enable hot reload (for development only) |
 
 ## `years`

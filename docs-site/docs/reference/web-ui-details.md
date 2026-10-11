@@ -73,7 +73,8 @@ The strongest source wins: environment, then `config.yaml`, then the database, t
 `config.yaml` sets is greyed out: saving under it would change nothing, so change it where the label
 says, or move it out of the file with `immich-memories config move-to-db KEY`. The **auth** and
 **server** sections are always greyed out: they are set in the environment or `config.yaml` and
-change on restart. Changing a server URL that receives a credential needs that credential typed in
+change on restart. So are the render worker address and token, the local reader program
+(`llm.local_server`) and the model-file and detector paths. Changing a server URL that receives a credential needs that credential typed in
 the same save; otherwise the page says "The server URL changed: enter the credential for the new
 server." A value containing `${` is refused. Everything else is
 editable, and each section's **Save** writes only the keys you changed, to the database. The page never
@@ -81,7 +82,7 @@ writes `config.yaml` or the environment. Lists and mappings are edited as JSON. 
 re-reads the file (its path is shown as **Config file**) after a hand edit.
 
 Any key named `api_key`, `api_keys`, `caption_api_key`, `client_secret`, `password`, `secret`, `token`,
-`trigger_token`, `worker_token` or `urls` is a secret: it shows as `***`, masked on the server, and an empty field
+`trigger_token` or `urls` is a secret: it shows as `***`, masked on the server, and an empty field
 keeps the stored value. Secrets are encrypted in the database with `IMMICH_MEMORIES_SECRET_KEY`;
 without it the page greys them out and says "Secrets cannot be saved here until
 IMMICH_MEMORIES_SECRET_KEY is set". That is fine if your keys already come from `.env` or

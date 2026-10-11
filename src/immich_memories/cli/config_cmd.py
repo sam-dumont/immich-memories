@@ -256,6 +256,7 @@ def register_config_commands(main: click.Group) -> None:
     def preflight(ctx: click.Context, verbose: bool) -> None:
         """Run preflight checks to validate all provider connections.
 
+        \b
         Checks:
         - Immich server connection and API key, and each extra account
         - LLM availability (Ollama or OpenAI-compatible)
@@ -281,8 +282,8 @@ def register_config_commands(main: click.Group) -> None:
         table.add_column("Status")
         # Fold, never cut: a long path in a message must stay checkable by eye (#2246).
         table.add_column("Message", overflow="fold")
-        if verbose:
-            table.add_column("Details", style="dim")
+        # A fix beside a failed check is what the table is for; only OK rows stay compact.
+        table.add_column("Details", style="dim", overflow="fold")
 
         status_styles = {
             CheckStatus.OK: "[green]OK[/green]",
@@ -297,8 +298,8 @@ def register_config_commands(main: click.Group) -> None:
                 status_styles.get(check.status, str(check.status)),
                 check.message,
             ]
-            if verbose:
-                row.append(check.details or "")
+            shown = verbose or check.status in (CheckStatus.WARNING, CheckStatus.ERROR)
+            row.append((check.details or "") if shown else "")
             table.add_row(*row)
 
         console.print(table)

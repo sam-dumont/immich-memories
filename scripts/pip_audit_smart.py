@@ -28,7 +28,9 @@ EXIT_VULNERABLE = 1
 EXIT_INCONCLUSIVE = 2
 
 CLEAN_MARKER = "No known vulnerabilities found"
-VULN_PATTERN = re.compile(r"^(\S+)[ \t]+(\S+)[ \t]+((?:CVE|GHSA|PYSEC)-\S+)[ \t]*(.*?)$", re.MULTILINE)
+VULN_PATTERN = re.compile(
+    r"^(\S+)[ \t]+(\S+)[ \t]+((?:CVE|GHSA|PYSEC)-\S+)[ \t]*(.*?)$", re.MULTILINE
+)
 # SECURITY.md records the reachability review. A new version/advisory needs a new review;
 # an available fix always fails, even for this previously accepted advisory.
 REVIEWED = {

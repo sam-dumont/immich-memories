@@ -39,11 +39,24 @@ def _printed_output_row(
         patch("immich_memories.config_loader.get_config_path", return_value=config_path),
     ):
         result = CliRunner().invoke(
-            main, ["-c", str(config_path), "preflight"], env={"COLUMNS": "300"}
+            main, ["-c", str(config_path), "preflight"], env={"COLUMNS": "1000"}
         )
     # Rich folds a long temp path across lines; compare the table with its borders and blanks gone.
-    flat = "".join(ch for ch in result.output if ch not in "│ \n")
-    return flat.split("Outputdirectory")[1:]
+    return _message_cells(result.output, "Output directory")
+
+
+def _message_cells(output: str, provider: str) -> list[str]:
+    """Each row's Message cell, wrapped lines joined and blanks gone (Details sits beside it)."""
+    rows: list[str] = []
+    for line in output.splitlines():
+        cells = line.split("│")
+        if len(cells) < 5:
+            continue
+        if cells[1].strip() == provider:
+            rows.append("")
+        if rows:
+            rows[-1] += "".join(ch for ch in cells[3] if not ch.isspace())
+    return rows
 
 
 def test_the_table_row_shows_the_path_and_the_env_var_that_set_it(tmp_path, monkeypatch):

@@ -38,7 +38,7 @@ class AnalysisConfig(BaseModel):
     max_album_assets: int = Field(
         default=10000,
         ge=1,
-        description="Per media type, the most assets read from an album (#270). "
+        description="Per media type, the most assets read from an album. "
         "Smart albums reach tens of thousands; Immich returns newest first, so a "
         "larger album is truncated to its most recent assets.",
     )

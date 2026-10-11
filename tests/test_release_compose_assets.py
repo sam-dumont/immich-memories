@@ -19,6 +19,7 @@ def test_release_compose_assets_pin_the_candidate_and_exclude_private_files(tmp_
         "docker-compose.cuda.yml",
         "docker-compose.gpu-worker.yml",
         "docker-compose.postgres.yml",
+        "immich-memories.xml",
     }
     assert "IMMICH_MEMORIES_VERSION=1.2.3-rc.4" in (tmp_path / "example.env").read_text()
     for name in (
@@ -36,3 +37,9 @@ def test_release_compose_assets_pin_the_candidate_and_exclude_private_files(tmp_
 def test_compose_release_assets_require_a_release_identity(tmp_path, version):
     with pytest.raises(ValueError, match="release version"):
         package_compose_assets(ROOT, version, tmp_path)
+
+
+def test_the_unraid_template_is_a_release_asset_stamped_with_the_release(tmp_path):
+    package_compose_assets(ROOT, "7.8.9", tmp_path)
+
+    assert "immich-memories:7.8.9</Repository>" in (tmp_path / "immich-memories.xml").read_text()
