@@ -175,19 +175,38 @@ def render_single_photo(
         return None
 
 
-def photo_filter_chain(
-    *, gain_map_hdr: bool, has_zscale: bool, peak_nits: int, primaries: str
-) -> tuple[str, str]:
-    """The pipe format and zscale chain for one photo clip.
+# sRGB and BT.709 SDR share their range and near enough their curve: only the
+# matrix changes, and the tags say so to every later decoder.
+_SDR_CHAIN = (
+    "scale=out_color_matrix=bt709:out_range=tv,format=yuv420p"
+    ",setparams=range=tv:color_primaries=bt709:color_trc=bt709:colorspace=bt709"
+)
 
-    A gain-mapped source arrives as 16-bit linear at its own peak; everything
-    else arrives 8-bit sRGB at 203 nits. Both leave as PQ.
+
+def photo_filter_chain(
+    *,
+    gain_map_hdr: bool,
+    has_zscale: bool,
+    peak_nits: int,
+    primaries: str,
+    hdr_film: bool = True,
+) -> tuple[str, str]:
+    """The pipe format and filter chain for one photo clip.
+
+    A gain-mapped source arrives as 16-bit linear at its own peak and leaves as
+    PQ. An 8-bit sRGB source leaves as PQ at 203 nits for an HDR clip, and as
+    BT.709 SDR otherwise.
     """
+    if not gain_map_hdr and not hdr_film:
+        # WHY (#2344): a source that was never HDR must not pass through PQ and
+        # back. The tone map on the way down dimmed white 235 to 184 and lifted
+        # the blacks.
+        return "rgb24", _SDR_CHAIN
     if not has_zscale:
         # WHY: without zscale neither transfer conversion is possible. Render
         # plain SDR rather than tagging untransformed pixels as HDR.
         logger.warning("zscale not available — rendering photo as SDR")
-        return "rgb24", "format=yuv420p"
+        return "rgb24", _SDR_CHAIN
     if gain_map_hdr:
         return "rgb48le", (
             f"zscale=t=smpte2084:tin=linear"
@@ -263,9 +282,13 @@ def _stream_render_to_mp4(
     )
     encoder_args = encoder_args_for_plan(plan, frame_size=(target_w, target_h))
     pix_fmt, vf = photo_filter_chain(
-        gain_map_hdr=gain_map_hdr, has_zscale=has_zscale, peak_nits=peak_nits, primaries=primaries
+        gain_map_hdr=gain_map_hdr,
+        has_zscale=has_zscale,
+        peak_nits=peak_nits,
+        primaries=primaries,
+        hdr_film=plan.hdr,
     )
-    if has_zscale:
+    if has_zscale and (gain_map_hdr or plan.hdr):
         vf += get_hdr_conversion_filter(
             "pq", plan.target_transfer.value if plan.hdr else "sdr", required=True
         )

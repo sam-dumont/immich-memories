@@ -6,6 +6,7 @@ import contextlib
 import hashlib
 import logging
 import subprocess
+import uuid
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
@@ -46,6 +47,24 @@ def _get_hw_caps() -> HWAccelCapabilities:
     if _hw_caps is None:
         _hw_caps = detect_hardware_acceleration()
     return _hw_caps
+
+
+def _publish_whole(output_path: Path, write: Callable[[Path], None]) -> None:
+    """Have `write` produce the clip under a private name, then rename it into place.
+
+    WHY (#2348): a clip of the same name in the shared scratch is reused as
+    finished. A killed or timed-out FFmpeg left one with no moov atom there, and
+    the next run's film failed reading it. A rename is atomic, so the name only
+    ever holds a whole clip.
+    """
+    partial = output_path.with_name(
+        f"{output_path.stem}.{uuid.uuid4().hex[:8]}.partial{output_path.suffix}"
+    )
+    try:
+        write(partial)
+        partial.replace(output_path)
+    finally:
+        partial.unlink(missing_ok=True)
 
 
 @dataclass
@@ -136,9 +155,14 @@ class ClipExtractor:
             return output_path
 
         if reencode:
-            self._extract_with_reencode(extraction_segment, output_path, progress_callback)
+            _publish_whole(
+                output_path,
+                lambda path: self._extract_with_reencode(
+                    extraction_segment, path, progress_callback
+                ),
+            )
         else:
-            self._extract_copy(extraction_segment, output_path)
+            _publish_whole(output_path, lambda path: self._extract_copy(extraction_segment, path))
 
         segment.output_path = output_path
         return output_path
@@ -464,9 +488,9 @@ def extract_clip(
         return output_path
 
     if reencode:
-        extractor._extract_with_reencode(segment, output_path, None)
+        _publish_whole(output_path, lambda path: extractor._extract_with_reencode(segment, path))
     else:
-        extractor._extract_copy(segment, output_path)
+        _publish_whole(output_path, lambda path: extractor._extract_copy(segment, path))
 
     return output_path
 

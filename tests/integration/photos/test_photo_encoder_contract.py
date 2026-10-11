@@ -150,34 +150,26 @@ def _frame_stats(path, conversion="null"):
 
 def test_sdr_photo_keeps_brightness_and_saturation_without_hevc(tmp_path, test_photo_landscape):
     from immich_memories.processing.hardware import HWAccelCapabilities
-    from immich_memories.processing.hdr_utilities import get_hdr_conversion_filter
 
-    if not check_zscale_available():
-        pytest.skip("comparison with the former PQ intermediate requires zscale")
-    clips = []
-    for label, plan in [
-        ("pq", photo_encoding_plan(transfer=HdrTransfer.PQ, capabilities=HWAccelCapabilities())),
-        ("sdr", photo_encoding_plan(transfer=HdrTransfer.NONE, capabilities=HWAccelCapabilities())),
-    ]:
-        work = tmp_path / label
-        work.mkdir()
-        clip = render_single_photo(
-            make_asset("same-source"),
-            PhotoConfig(duration=1),
-            192,
-            128,
-            work,
-            None,
-            fps=10,
-            source_path=test_photo_landscape,
-            encoding_plan=plan,
-        )
-        assert clip is not None
-        clips.append(clip.path)
-    before = _frame_stats(
-        clips[0], get_hdr_conversion_filter("pq", "sdr", required=True).lstrip(",")
+    plan = photo_encoding_plan(transfer=HdrTransfer.NONE, capabilities=HWAccelCapabilities())
+    clip = render_single_photo(
+        make_asset("same-source"),
+        PhotoConfig(duration=1),
+        192,
+        108,
+        tmp_path,
+        None,
+        fps=10,
+        source_path=test_photo_landscape,
+        encoding_plan=plan,
     )
-    after = _frame_stats(clips[1])
+    assert clip is not None
+    # WHY (#2344): the source itself, scaled to the clip, is the reference; the
+    # former reference was the PQ intermediate tone-mapped back, which dims it.
+    source = _frame_stats(
+        test_photo_landscape, "scale=192:108:out_color_matrix=bt709:out_range=tv,format=yuv420p"
+    )
+    rendered = _frame_stats(clip.path)
 
-    assert set(before) == {"lavfi.signalstats.YAVG", "lavfi.signalstats.SATAVG"}
-    assert after == pytest.approx(before, rel=0.01)
+    assert set(rendered) == {"lavfi.signalstats.YAVG", "lavfi.signalstats.SATAVG"}
+    assert rendered == pytest.approx(source, rel=0.03)

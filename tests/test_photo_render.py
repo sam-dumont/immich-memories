@@ -93,7 +93,9 @@ def test_a_plain_photo_uses_sdr_h264_even_with_zscale(tmp_path):
     command = _command(tmp_path, _sdr_photo(tmp_path), zscale=True)
 
     assert command[command.index("-pix_fmt") + 1] == "rgb24"
-    assert "zscale=t=smpte2084:tin=iec61966-2-1" in command[command.index("-vf") + 1]
+    # WHY (#2344): an SDR source never visits PQ, so nothing tone-maps it back down.
+    assert "smpte2084" not in command[command.index("-vf") + 1]
+    assert "tonemap" not in command[command.index("-vf") + 1]
     assert command[command.index("-color_trc") + 1] == "bt709"
     assert command[command.index("-c:v") + 1] == "libx264"
 
@@ -162,7 +164,6 @@ def test_without_zscale_every_photo_is_plain_sdr_h264(tmp_path, source):
     command = _command(tmp_path, source(tmp_path), zscale=False)
 
     assert command[command.index("-pix_fmt") + 1] == "rgb24"
-    assert command[command.index("-vf") + 1] == "format=yuv420p"
     assert command[command.index("-c:v") + 1] == "libx264"
     assert not any("zscale" in part or "bt2020" in part for part in command[:-1])
 

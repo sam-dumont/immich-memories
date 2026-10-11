@@ -225,6 +225,12 @@ class FrameDecoder:
         if defer_fps:
             parts.append(f"fps={self._fps},settb=1/{self._fps}")
 
+        parts.extend(self._closing_filters())
+        return ",".join(parts)
+
+    def _closing_filters(self) -> list[str]:
+        """Captions, square pixels and the frame count, on the final frame grid."""
+        parts: list[str] = []
         # Drawn last so the text is never scaled, padded or blurred with the
         # source, and lands in target-frame coordinates.
         if self._caption:
@@ -242,7 +248,13 @@ class FrameDecoder:
         # Square pixels
         parts.append("setsar=1")
 
-        return ",".join(parts)
+        if self._frame_limit is not None:
+            # WHY (#2347): a clip lasts as long as its container, which counts the
+            # audio. A video stream that ends first emitted fewer frames than its
+            # WAV holds, and every later clip's sound ran ahead of its picture.
+            # Holding the last picture gives exactly the frames the WAV is cut to.
+            parts.append("tpad=stop_mode=clone:stop=-1")
+        return parts
 
     def __iter__(self) -> Iterator[np.ndarray]:
         """Yield independent, read-only frames that callers may retain."""
@@ -285,6 +297,12 @@ class FrameDecoder:
         filter_threads = str(available_cpus())
         cmd = [
             "ffmpeg",
+            # WHY (#2345): a software retry decodes into the WAV the failed
+            # attempt left behind. Without -y FFmpeg refused to overwrite it and
+            # exited before its first frame; without -nostdin it could instead
+            # wait on an overwrite prompt nobody sees.
+            "-y",
+            "-nostdin",
             "-filter_threads",
             filter_threads,
             "-filter_complex_threads",
@@ -311,6 +329,7 @@ class FrameDecoder:
         logger.debug(f"FrameDecoder cmd: {' '.join(cmd)}")
         proc = subprocess.Popen(  # noqa: S603, S607
             cmd,
+            stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE,
             stderr=subprocess.DEVNULL,
             bufsize=self._frame_size,
