@@ -39,6 +39,7 @@ def test_compose_release_assets_require_a_release_identity(tmp_path, version):
         package_compose_assets(ROOT, version, tmp_path)
 
 
+@pytest.mark.feature("deploy.pinned-image")
 def test_the_unraid_template_is_a_release_asset_stamped_with_the_release(tmp_path):
     package_compose_assets(ROOT, "7.8.9", tmp_path)
 

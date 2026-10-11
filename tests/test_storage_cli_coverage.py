@@ -537,7 +537,8 @@ class TestRunsShowCommand:
         # Create the database tables
         RunDatabase()
         result = _invoke(["runs", "show", "nonexistent"], config=config)
-        assert result.exit_code == 0  # click doesn't exit 1 for print_error
+        # A script checking the exit code must not take a missing run for success.
+        assert result.exit_code == 1
         assert "not found" in result.output.lower() or "No" in result.output
 
     def test_runs_show_with_data(self, tmp_path):

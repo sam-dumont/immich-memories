@@ -328,7 +328,7 @@ def _active_months(source: PeopleSource, person_id: str | None) -> dict[date, in
     relationship from a burst, and one call instead of paging every asset.
     """
     months: dict[date, int] = {}
-    for bucket in source.get_time_buckets(size="MONTH", person_id=person_id):
+    for bucket in source.get_time_buckets(person_id=person_id):
         month = _as_month(bucket.time_bucket)
         if month is not None and month >= EXIF_NOISE_FLOOR:
             months[month] = months.get(month, 0) + bucket.count

@@ -143,6 +143,7 @@ def _stale_running_record(tmp_path, pid: int, identity: str | None):
     return job.id
 
 
+@pytest.mark.feature("web.server-small-fixes")
 def test_a_reused_pid_does_not_keep_a_dead_job_running(tmp_path):
     """After a reboot the recorded pid can belong to any process; that must not 409 every new job."""
     job_id = _stale_running_record(tmp_path, os.getpid(), "started-before-the-reboot")
@@ -176,6 +177,7 @@ def test_cancelling_a_job_whose_pid_is_now_root_s_does_not_raise(tmp_path):
     assert JobRunner(tmp_path).cancel(job_id).status == "interrupted"
 
 
+@pytest.mark.feature("web.server-small-fixes")
 def test_a_live_job_from_before_a_server_restart_can_still_be_cancelled(tmp_path):
     runner = JobRunner(tmp_path)
     job = runner.start("render", [sys.executable, "-c", "import time; time.sleep(30)"])

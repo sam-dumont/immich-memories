@@ -6,12 +6,16 @@ the pinned artifacts before selection; no caption or prose model is used.
 
 from __future__ import annotations
 
+import pytest
+
 from tests.integration.immich_fixtures import requires_immich
 from tests.integration.immich_gate.gate_cli import run_cli
 
 pytestmark = [requires_immich]
 
 
+@pytest.mark.feature("memory-type.monthly-highlights")
+@pytest.mark.feature("selection.trace")
 def test_rules_tier_selection_over_the_fixture_month_picks_a_cut(tmp_path):
     trace = tmp_path / "selection-trace.txt"
     result = run_cli(
@@ -38,6 +42,7 @@ def test_rules_tier_selection_over_the_fixture_month_picks_a_cut(tmp_path):
     assert trace.stat().st_size > 0
 
 
+@pytest.mark.feature("memory-type.on-this-day")
 def test_on_this_day_looks_back_to_the_same_day_a_year_earlier(tmp_path):
     result = run_cli(
         "generate",
@@ -61,6 +66,7 @@ def test_on_this_day_looks_back_to_the_same_day_a_year_earlier(tmp_path):
     assert "Selection complete; no video was created" in output, output[-4000:]
 
 
+@pytest.mark.feature("memory-type.holiday")
 def test_the_christmas_holiday_finds_its_two_years(tmp_path):
     result = run_cli(
         "generate",
@@ -85,6 +91,7 @@ def test_the_christmas_holiday_finds_its_two_years(tmp_path):
     assert "Selection complete; no video was created" in output, output[-4000:]
 
 
+@pytest.mark.feature("trip.none-found-exits-nonzero")
 def test_a_year_with_no_trips_exits_one():
     result = run_cli("generate", "--memory-type", "trip", "--year", "2010", "--no-render")
 

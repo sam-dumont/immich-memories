@@ -12,10 +12,15 @@ from immich_memories.api import search_service
 from immich_memories.api.models import Asset
 from immich_memories.api.search_service import SearchService
 from immich_memories.timeperiod import DateRange
+from tests.immich_fakes import request_problems
 
 START = datetime(2030, 4, 1, tzinfo=UTC)
 END = datetime(2030, 4, 30, 23, 59, 59, tzinfo=UTC)
 WINDOW = DateRange(START, END)
+
+SUBJECT = "6a1f0c3e-58d2-4b7a-9e41-0c2d7f8b3a15"
+COMPANION = "b93d27e4-1f6a-4c08-8d5e-7a4c1e9f2b60"
+OTHER = "d27c5e81-9b34-4f0a-86e2-1c7a3d9b5f04"
 
 
 def _record(index, kind, count):
@@ -33,8 +38,8 @@ def _record(index, kind, count):
         "isFavorite": index % 7 == 0,
         "checksum": f"checksum-{index}",
         "livePhotoVideoId": f"motion-{index}" if kind == "IMAGE" and index % 2 else None,
-        "people": [{"id": "subject", "name": "Subject"}]
-        + ([{"id": "companion", "name": "Companion"}] if index % 2 else []),
+        "people": [{"id": SUBJECT, "name": "Subject"}]
+        + ([{"id": COMPANION, "name": "Companion"}] if index % 2 else []),
         "exifInfo": {"description": f"metadata-{index}", "latitude": 50.1, "longitude": 4.2},
     }
 
@@ -60,8 +65,9 @@ class MetadataTransport:
 
     async def __call__(self, method, path, *, json):
         assert (method, path) == ("POST", "/search/metadata")
+        # The body as Immich's MetadataSearchDto would validate it.
+        assert request_problems(method, path, {}, json) == []
         assert json["withExif"] is True and json["withPeople"] is True
-        assert 1 <= json["size"] <= 1000
         self.requests.append(json.copy())
         rows = self.matching(json)
         start = (json["page"] - 1) * json["size"]
@@ -79,9 +85,9 @@ async def _fetch(service, route, window, progress):
     if route == "videos":
         return await service.get_videos_for_date_range(window, progress)
     if route == "person-videos":
-        return await service.get_videos_for_person_and_date_range("subject", window, progress)
+        return await service.get_videos_for_person_and_date_range(SUBJECT, window, progress)
     if route == "person-photos":
-        return await service.get_photos_for_date_range(window, progress, person_id="subject")
+        return await service.get_photos_for_date_range(window, progress, person_id=SUBJECT)
     return await service.get_photos_for_date_range(window, progress)
 
 
@@ -98,7 +104,7 @@ async def test_old_and_large_pages_preserve_every_ordered_record_and_filter(rout
         dict(noise, id="other-type", type="IMAGE" if kind == "VIDEO" else "VIDEO"),
     ]
     if route.startswith("person-"):
-        records.append(dict(noise, id="other-person", people=[{"id": "other", "name": "Other"}]))
+        records.append(dict(noise, id="other-person", people=[{"id": OTHER, "name": "Other"}]))
     # Equal instants with a non-UTC offset must produce the original exact UTC filters.
     offset = timezone(timedelta(hours=2))
     window = DateRange(START.astimezone(offset), END.astimezone(offset))
@@ -128,7 +134,7 @@ async def test_old_and_large_pages_preserve_every_ordered_record_and_filter(rout
         "takenBefore": END.isoformat(),
     }
     if route.startswith("person-"):
-        expected_filters["personIds"] = ["subject"]
+        expected_filters["personIds"] = [SUBJECT]
     for requests, size in ((old.requests, 100), (current.requests, 1000)):
         assert all(row["size"] == size for row in requests)
         assert all(
@@ -163,14 +169,14 @@ async def test_all_person_intersection_survives_page_boundaries_and_retains_full
     old, current = MetadataTransport(records), MetadataTransport(records)
     with patch.object(search_service, "_DATE_RANGE_PAGE_SIZE", 100):
         before = await SearchService(old).get_photos_for_date_range(
-            WINDOW, person_ids=["subject", "companion"]
+            WINDOW, person_ids=[SUBJECT, COMPANION]
         )
     after = await SearchService(current).get_photos_for_date_range(
-        WINDOW, person_ids=["subject", "companion"]
+        WINDOW, person_ids=[SUBJECT, COMPANION]
     )
     assert [a.model_dump() for a in after] == [a.model_dump() for a in before]
     assert len(after) == 1051
-    assert all({p.id for p in asset.people} == {"subject", "companion"} for asset in after)
+    assert all({p.id for p in asset.people} == {SUBJECT, COMPANION} for asset in after)
     # The unfiltered context remains broader than the co-presence selection.
     context = await SearchService(MetadataTransport(records)).get_photos_for_date_range(WINDOW)
     assert len(context) == 2103

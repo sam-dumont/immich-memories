@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from datetime import date, timedelta
 
+import pytest
+
 from immich_memories.analysis.annotation_lines import AssetAnnotationLine
 from tests.editorial_film_fixtures import Day, film_source
 
@@ -59,6 +61,7 @@ def _dinners(tmp_path, people_head: str):
     return source
 
 
+@pytest.mark.feature("selection.basic-recognised-face")
 def test_a_basic_person_film_keeps_pictures_whose_only_people_evidence_is_the_face(tmp_path):
     # The people head missed the small face at the table.
     plan = _basic_plan(_dinners(tmp_path, "none"))
@@ -66,6 +69,7 @@ def test_a_basic_person_film_keeps_pictures_whose_only_people_evidence_is_the_fa
     assert plan["carriers"]
 
 
+@pytest.mark.feature("selection.basic-recognised-face")
 def test_an_undetermined_people_head_does_not_hide_the_recognised_face(tmp_path):
     plan = _basic_plan(_dinners(tmp_path, "undetermined"))
 

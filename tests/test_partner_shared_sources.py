@@ -141,6 +141,7 @@ def _mixed_august(library: SharedLibrary) -> None:
     ]
 
 
+@pytest.mark.feature("sources.partner-shared-excluded")
 def test_prepare_counts_only_the_accounts_own_pictures(tmp_path, library):
     from immich_memories.analysis.prepare_scope import eligible_source
 
@@ -154,6 +155,7 @@ def test_prepare_counts_only_the_accounts_own_pictures(tmp_path, library):
     assert sorted(asset.id for asset in assets) == ["own-1", "own-2"]
 
 
+@pytest.mark.feature("sources.partner-shared-excluded")
 def test_ask_preparation_counts_only_the_accounts_own_pictures(tmp_path, library):
     from immich_memories.db import open_store
     from immich_memories.free_text.linking import WhenLink
@@ -169,6 +171,7 @@ def test_ask_preparation_counts_only_the_accounts_own_pictures(tmp_path, library
     assert sorted(asset.id for asset in readiness.missing) == ["own-1", "own-2"]
 
 
+@pytest.mark.feature("sources.partner-shared-excluded")
 def test_household_automation_counts_each_picture_once_for_its_owner(tmp_path, library):
     """The season and holiday counts sum both accounts; a picture both see counts once."""
     from immich_memories.automation.discovery_extras import (
@@ -213,6 +216,7 @@ def _partners_trip(library: SharedLibrary) -> None:
     library.pictures.append(_picture("own-home", "primary", datetime(2025, 7, 11, tzinfo=UTC)))
 
 
+@pytest.mark.feature("sources.partner-shared-excluded")
 def test_trip_discovery_finds_no_trip_in_the_partners_gps(tmp_path, library):
     from immich_memories.analysis.trip_discovery import discover_year_trips
 
@@ -224,6 +228,7 @@ def test_trip_discovery_finds_no_trip_in_the_partners_gps(tmp_path, library):
     assert trips == []
 
 
+@pytest.mark.feature("sources.partner-shared-excluded")
 def test_automatic_trip_input_holds_only_the_accounts_own_pictures(tmp_path, library):
     from immich_memories.automation.trip_input_cache import load_or_fetch_trip_assets
 
@@ -243,6 +248,7 @@ def test_automatic_trip_input_holds_only_the_accounts_own_pictures(tmp_path, lib
     assert [asset.id for asset in assets] == ["own-home"]
 
 
+@pytest.mark.feature("sources.partner-shared-excluded")
 def test_the_special_days_scan_reads_only_the_accounts_own_pictures(tmp_path, library):
     from immich_memories.cli import special_days_cmd
 

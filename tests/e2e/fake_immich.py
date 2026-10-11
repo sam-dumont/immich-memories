@@ -15,6 +15,7 @@ from typing import Any, Self
 from urllib.parse import parse_qs, urlsplit
 
 from tests.e2e.fake_library import ALL_PICTURES, CAST, Picture
+from tests.immich_fakes import V3, request_problems
 
 _MONTH_BUCKET = "2024-06-01T00:00:00.000Z"
 
@@ -206,8 +207,11 @@ class FakeImmichServer:
         source_video: Path,
         photo_paths: dict[str, Path],
         uploads: list[RecordedUpload],
+        refused: list[str],
     ) -> None:
         self.root = root
+        # Requests answered 400 because the real Immich would refuse them (tests.immich_fakes).
+        self.refused = refused
         self.source_video = source_video
         self.photo_paths = photo_paths
         self.uploads = uploads
@@ -244,9 +248,10 @@ class FakeImmichServer:
         media = video_paths | photo_paths
         thumbnail_paths = _generate_thumbnails(media_dir, media)
         uploads: list[RecordedUpload] = []
+        refused: list[str] = []
         httpd = ThreadingHTTPServer(
             (host, port),
-            _handler_type(media, thumbnail_paths, uploads, upload_commit_delay),
+            _handler_type(media, thumbnail_paths, uploads, upload_commit_delay, refused),
         )
         thread = threading.Thread(target=httpd.serve_forever, daemon=True)
         thread.start()
@@ -257,6 +262,7 @@ class FakeImmichServer:
             video_paths[_VIDEOS[0].asset_id],
             photo_paths,
             uploads,
+            refused,
         )
 
     @property
@@ -404,6 +410,7 @@ def _handler_type(
     thumbnails: dict[str, Path],
     uploads: list[RecordedUpload],
     upload_commit_delay: float,
+    refused: list[str],
 ) -> type[BaseHTTPRequestHandler]:
     upload_lock = threading.Lock()
 
@@ -419,6 +426,8 @@ def _handler_type(
             request_url = urlsplit(self.path)
             path = request_url.path
             query = parse_qs(request_url.query)
+            if self._refused(path, query, None):
+                return
             if path == "/api/server/version":
                 self._send_json(200, {"major": 3, "minor": 1, "patch": 0})
                 return
@@ -527,6 +536,8 @@ def _handler_type(
             path = urlsplit(self.path).path
             if path == "/api/search/metadata":
                 payload = self._read_json()
+                if self._refused(path, {}, payload):
+                    return
                 items = _assets_for_search(payload)
                 self._send_json(
                     200,
@@ -542,13 +553,19 @@ def _handler_type(
                 return
             if path == "/api/search/statistics":
                 # Same filters as the metadata search, answered as Immich does: a count only.
-                self._send_json(200, {"total": len(_assets_for_search(self._read_json()))})
+                payload = self._read_json()
+                if self._refused(path, {}, payload):
+                    return
+                self._send_json(200, {"total": len(_assets_for_search(payload))})
                 return
             if path == "/api/assets":
                 try:
                     upload = self._read_multipart()
                 except ValueError as error:
                     self._send_json(400, {"message": str(error)})
+                    return
+                form = {**upload.fields, "assetData": upload.filename}
+                if self._refused(path, {}, None, form=form):
                     return
                 with upload_lock:
                     uploads.append(upload)
@@ -570,6 +587,26 @@ def _handler_type(
 
         def do_DELETE(self) -> None:  # noqa: N802
             self._unexpected()
+
+        def _refused(
+            self,
+            path: str,
+            query: dict[str, list[str]],
+            body: Any,
+            form: dict[str, str] | None = None,
+        ) -> bool:
+            """Answer 400 to what the real Immich would refuse, and remember it.
+
+            The fixture's ids are readable names, so only the id format goes unchecked.
+            """
+            flat = {name: values[-1] for name, values in query.items()}
+            # The server says it is v3, so v3's contract is the one it holds requests to.
+            problems = request_problems(self.command, path, flat, body, uuid_ids=False, releases=V3)
+            if not problems:
+                return False
+            refused.extend(f"{self.command} {path}: {problem}" for problem in problems)
+            self._send_json(400, {"message": problems, "error": "Bad Request", "statusCode": 400})
+            return True
 
         def _read_json(self) -> dict[str, Any]:
             content_length = int(self.headers.get("Content-Length", "0"))

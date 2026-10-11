@@ -5,6 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from immich_memories.config_loader import Config
 from tests.test_cli_smoke import _invoke
 
@@ -37,10 +39,12 @@ def _asked_length(start: str, end: str) -> float:
     return run.call_args.kwargs["preset_duration"]
 
 
+@pytest.mark.feature("planning.long-range-length")
 def test_a_five_year_range_asks_for_the_ten_minute_cap():
     assert _asked_length("2020-01-01", "2024-12-31") == 600.0
 
 
+@pytest.mark.feature("planning.long-range-length")
 def test_a_longer_range_never_asks_for_less_film():
     ends = ("2024-01-31", "2024-06-30", "2024-12-31", "2025-12-31", "2026-12-31", "2028-12-31")
     lengths = [_asked_length("2024-01-01", end) for end in ends]

@@ -118,6 +118,7 @@ def test_the_album_is_optional(tmp_path, body):
     assert fake.uploads[0][0] == path
 
 
+@pytest.mark.feature("web.server-small-fixes")
 def test_an_immich_failure_never_puts_the_server_address_in_the_answer(tmp_path):
     import httpx
 

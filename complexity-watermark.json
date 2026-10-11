@@ -9,7 +9,7 @@
     "register_music_commands": [17]
   },
   "src/immich_memories/cli/runs.py": {
-    "register_runs_commands": [36]
+    "register_runs_commands": [26]
   },
   "src/immich_memories/cli/titles.py": {
     "_print_title_test_params": [18],

@@ -30,6 +30,7 @@ def _video_streams(path: Path) -> list[dict]:
     return [s for s in json.loads(probe.stdout)["streams"] if s["codec_type"] == "video"]
 
 
+@pytest.mark.feature("generate.keep-intermediates")
 def test_keep_intermediates_leaves_the_cut_segments_in_the_run_folder(
     tmp_path_factory: pytest.TempPathFactory, fake_immich_server
 ) -> None:

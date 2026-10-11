@@ -189,6 +189,7 @@ def test_the_run_context_reads_the_accounts_the_run_named(params, accounts):
     assert context.accounts == accounts
 
 
+@pytest.mark.feature("api.retries-dropped-connection")
 def test_a_connection_dropped_once_mid_run_is_retried_and_the_run_completes(
     tmp_path, immich, monkeypatch
 ):

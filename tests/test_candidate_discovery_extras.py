@@ -260,6 +260,7 @@ def test_completed_manual_month_is_not_proposed_again(
     assert RunDatabase().get_run("manual-month").memory_key == completed.memory_key
 
 
+@pytest.mark.feature("automation.hand-made-key-all-people")
 def test_a_manual_two_person_month_leaves_each_persons_own_month_proposable(monkeypatch, tmp_path):
     """#2367: `generate --person "Kid A" --person "Other B"` films both, not Kid A's month."""
     first = _month_ago(1)
@@ -293,6 +294,7 @@ def test_a_manual_two_person_month_leaves_each_persons_own_month_proposable(monk
     assert CandidateCategory.PERSON_MONTHLY in {c.category for c in result.candidates}
 
 
+@pytest.mark.feature("automation.hand-made-key-all-people")
 def test_a_manual_pair_film_records_the_key_automation_proposes_for_the_pair(tmp_path):
     from immich_memories.automation.candidates import make_memory_key
 

@@ -148,6 +148,7 @@ def _frame_stats(path, conversion="null"):
     }
 
 
+@pytest.mark.feature("photos.full-brightness")
 def test_sdr_photo_keeps_brightness_and_saturation_without_hevc(tmp_path, test_photo_landscape):
     from immich_memories.processing.hardware import HWAccelCapabilities
 

@@ -23,7 +23,7 @@ one rejected. To catch that class of bug:
 - When a fix changes user-visible behaviour, test the real output: the cut, the rendered file, the
   printed message.
 - Build fakes of the Immich client with `create_autospec` from the real client, so they reject what
-  it rejects.
+  it rejects (`tests/immich_fakes.py`: `fake_immich_client()`, and `ImmichWire` for httpx fakes).
 - A feature the docs advertise gets a feature test on the fixture library (epic #2128 tracks the
   build-out).
 
@@ -51,6 +51,7 @@ integration targets. A test that writes under `Path.home()` asserts it is sealed
 | Integration | `make test-integration` or a folder target | FFmpeg + Immich |
 | Store | `make test-store` | Docker (postgres:16) |
 | Launch | `make launch-check-ci`, `make launch-check-ci-postgres` | Playwright + FFmpeg (+ Docker) |
+| Feature | `make test-features`, `make feature-check` | FFmpeg + LFS fixture library |
 | Real Immich gate | `make test-immich-gate` | Docker + FFmpeg |
 | Built image | `make test-container` | Docker |
 | Web client | `make e2e` | Playwright |

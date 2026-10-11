@@ -67,6 +67,7 @@ def child(tmp_path: Path):
 
 
 class TestOnlyAnAttemptThatTriedToMakeAFilmIsTheDaysRun:
+    @pytest.mark.feature("automation.dry-run-keeps-day")
     def test_a_dry_run_in_progress_at_the_daily_time_leaves_the_film_to_the_timer(
         self, tmp_path: Path, child: FakeGenerateChild
     ) -> None:
@@ -85,6 +86,7 @@ class TestOnlyAnAttemptThatTriedToMakeAFilmIsTheDaysRun:
         assert outcomes == [AutoOutcome.DRY_RUN, AutoOutcome.COMPLETED]
         assert len(child.commands) == 1
 
+    @pytest.mark.feature("automation.dry-run-keeps-day")
     def test_a_stale_suggestion_click_leaves_the_film_to_the_timer(
         self, tmp_path: Path, child: FakeGenerateChild
     ) -> None:
@@ -103,6 +105,7 @@ class TestOnlyAnAttemptThatTriedToMakeAFilmIsTheDaysRun:
 
 
 class TestTheTimersOwnCooldownSkip:
+    @pytest.mark.feature("automation.scheduler-small-fixes")
     def test_the_day_is_made_once_the_cooldown_ends(self, tmp_path: Path) -> None:
         """Down at 09:00 yesterday, caught up at 14:00: today's film comes at 13:30."""
         config = load_config_file(tmp_path, enabled=True, daily_at="09:00")
@@ -154,6 +157,7 @@ _NOTIFY = (
 
 
 class TestAnAttemptADeadProcessLeft:
+    @pytest.mark.feature("automation.dead-attempts-end")
     def test_the_next_start_ends_it_interrupted_notifies_once_and_makes_the_day(
         self, tmp_path: Path, apprise: type[FakeApprise]
     ) -> None:
@@ -183,6 +187,7 @@ class TestAnAttemptADeadProcessLeft:
         ]
         assert fired == [config]
 
+    @pytest.mark.feature("automation.dead-attempts-end")
     def test_a_health_probe_reports_it_interrupted_but_writes_and_sends_nothing(
         self, tmp_path: Path, apprise: type[FakeApprise], monkeypatch: pytest.MonkeyPatch
     ) -> None:
@@ -216,6 +221,7 @@ class TestAnAttemptADeadProcessLeft:
             "ntfy://second/topic",
         ]
 
+    @pytest.mark.feature("automation.dead-attempts-end")
     def test_auto_status_on_the_command_line_ends_it(
         self, tmp_path: Path, apprise: type[FakeApprise]
     ) -> None:
@@ -236,6 +242,7 @@ class TestAnAttemptADeadProcessLeft:
         assert stored is not None and stored.outcome is AutoOutcome.FAILED
         assert len(apprise.delivered) == 2
 
+    @pytest.mark.feature("automation.dead-attempts-end")
     def test_a_live_attempt_is_left_running(self, tmp_path: Path, apprise) -> None:
         config = load_config_file(tmp_path)
         live = AutoRunner(config).start_one(reason="http trigger")

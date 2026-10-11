@@ -12,6 +12,8 @@ from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 from unittest.mock import create_autospec
 
+import pytest
+
 from immich_memories.api.models import Asset, AssetType, ExifInfo, MetadataSearchResult, Person
 from immich_memories.api.sync_client import SyncImmichClient
 from immich_memories.timeperiod import DateRange
@@ -36,6 +38,7 @@ def _file(key: str, taken: datetime, *, name: str, modified: datetime | None = N
     )
 
 
+@pytest.mark.feature("selection.person-copy-reported")
 def test_a_person_film_keeps_a_recognised_picture_through_its_edited_file(tmp_path):
     days = [
         _file(
@@ -70,6 +73,7 @@ def test_a_person_film_keeps_a_recognised_picture_through_its_edited_file(tmp_pa
     assert "edited" in chosen
 
 
+@pytest.mark.feature("selection.person-copy-reported")
 def test_a_stack_member_a_person_film_asked_for_is_played_by_the_stack_top():
     """The probe from #2358: the demand for a member names the stack's primary."""
     from immich_memories.analysis.editorial_source_route import metadata_demand

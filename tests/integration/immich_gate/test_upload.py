@@ -8,6 +8,8 @@ import uuid
 from datetime import UTC, datetime
 from pathlib import Path
 
+import pytest
+
 from tests.integration.immich_fixtures import requires_immich
 
 pytestmark = [requires_immich]
@@ -57,6 +59,7 @@ def _read_by_immich(gate_client, asset_id: str) -> bool:
     return False
 
 
+@pytest.mark.feature("upload.film-into-album")
 def test_a_rerendered_film_is_filed_in_its_album_and_replaces_the_earlier_one(
     gate_client, tmp_path
 ):

@@ -77,6 +77,7 @@ def scoped_key_client(gate_config, gate_version):
                 admin.delete(f"/api-keys/{key}").raise_for_status()
 
 
+@pytest.mark.feature("api-key.documented-minimum-reads")
 def test_documented_minimum_reads_the_library(scoped_key_client, gate_client, tmp_path):
     client = scoped_key_client(READ_PERMISSIONS)
     assert client.validate_connection()
@@ -104,6 +105,7 @@ def test_documented_minimum_reads_the_library(scoped_key_client, gate_client, tm
     assert client.generated_asset_ids() == gate_client.generated_asset_ids()
 
 
+@pytest.mark.feature("api-key.delivery-permissions")
 def test_documented_delivery_permissions_file_and_tag_a_film(
     scoped_key_client, gate_client, tmp_path
 ):
@@ -135,6 +137,7 @@ def test_documented_delivery_permissions_file_and_tag_a_film(
                 admin.delete(f"/albums/{answer['album_id']}").raise_for_status()
 
 
+@pytest.mark.feature("api-key.missing-read-refuses-cut")
 def test_missing_read_permission_refuses_a_cut(scoped_key_client, tmp_path):
     client = scoped_key_client([p for p in READ_PERMISSIONS if p != "asset.download"])
     trace = tmp_path / "must-not-select.txt"
@@ -158,6 +161,7 @@ def test_missing_read_permission_refuses_a_cut(scoped_key_client, tmp_path):
     assert not trace.exists(), "The cut started before checking required read permissions"
 
 
+@pytest.mark.feature("api-key.read-only-keeps-film")
 def test_read_only_key_keeps_a_finished_film_when_upload_is_requested(
     scoped_key_client, gate_store, gate_config, tmp_path, monkeypatch
 ):

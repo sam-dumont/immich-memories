@@ -5,6 +5,7 @@ from __future__ import annotations
 import socket
 import time
 
+import pytest
 from click.testing import CliRunner
 
 from immich_memories.cli import main
@@ -28,6 +29,7 @@ def _preflight_unreachable(tmp_path, *extra: str):
     return result, time.monotonic() - started
 
 
+@pytest.mark.feature("preflight.wrong-address-fast")
 def test_unreachable_immich_fails_in_seconds_without_retry_lines(tmp_path):
     result, seconds = _preflight_unreachable(tmp_path)
 
@@ -36,6 +38,7 @@ def test_unreachable_immich_fails_in_seconds_without_retry_lines(tmp_path):
     assert result.output.count("Connection failed") == 1
 
 
+@pytest.mark.feature("preflight.shows-fixes")
 def test_error_rows_show_cause_and_fix_without_verbose(tmp_path):
     result, _ = _preflight_unreachable(tmp_path)
 
@@ -43,6 +46,7 @@ def test_error_rows_show_cause_and_fix_without_verbose(tmp_path):
     assert "has not answered yet" in result.output
 
 
+@pytest.mark.feature("preflight.shows-fixes")
 def test_ok_rows_stay_compact_without_verbose(tmp_path):
     from unittest.mock import patch
 

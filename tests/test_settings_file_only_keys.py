@@ -38,6 +38,8 @@ def config_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Pat
     set_config(None)
 
 
+@pytest.mark.feature("security.settings-program-paths")
+@pytest.mark.feature("security.worker-url-keys")
 @pytest.mark.parametrize(("key", "value"), FILE_ONLY)
 def test_the_settings_api_refuses_a_key_that_picks_what_the_server_runs(config_path, key, value):
     from immich_memories.web.server import create_app
@@ -52,6 +54,7 @@ def test_the_settings_api_refuses_a_key_that_picks_what_the_server_runs(config_p
     assert value not in response.json()["detail"]
 
 
+@pytest.mark.feature("security.settings-program-paths")
 @pytest.mark.parametrize(("key", "value"), FILE_ONLY)
 def test_a_refused_key_leaves_the_config_alone(config_path, key, value):
     with pytest.raises(SettingRefused, match="config.yaml"):
@@ -63,6 +66,7 @@ def test_a_refused_key_leaves_the_config_alone(config_path, key, value):
     assert current != value
 
 
+@pytest.mark.feature("security.settings-program-paths")
 def test_the_store_itself_will_not_hold_such_a_key(config_path):
     from immich_memories.settings_store import settings_store
 

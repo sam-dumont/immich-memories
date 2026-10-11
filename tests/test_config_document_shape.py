@@ -18,8 +18,10 @@ def test_non_mapping_yaml_has_a_clean_error_without_echoing_its_value(tmp_path, 
     assert result.exit_code != 0
     # WHY: the fallback used to echo str(error), which can quote the source context --
     # exactly where a secret in config.yaml sits. The message names the fix, never the text.
-    assert "YAML syntax error" in result.output
-    assert "mapping" not in result.output
+    # Valid YAML of the wrong shape is not a syntax error (#2380): the message says what
+    # the file must hold.
+    assert "must be a mapping of setting names to values" in result.output
+    assert "YAML syntax error" not in result.output
     assert "private-value" not in result.output
 
 

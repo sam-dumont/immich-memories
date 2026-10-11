@@ -21,6 +21,7 @@ def _other_installation(tmp_path: Path, *, own_cache: bool = False) -> Path:
     return config
 
 
+@pytest.mark.feature("docs.first-run-wording")
 @pytest.mark.parametrize("command", [["runs", "list"], ["runs", "stats"], ["runs", "storage"]])
 def test_reading_runs_creates_no_scratch_in_the_home(tmp_path, monkeypatch, command):
     monkeypatch.setenv("HOME", str(tmp_path / "home"))

@@ -49,6 +49,7 @@ def _film_rate(clips: list[AssemblyClip], output: Path) -> Fraction:
     return Fraction(video["avg_frame_rate"])
 
 
+@pytest.mark.feature("render.media-small-fixes")
 @pytest.mark.parametrize("rate", [24, 25])
 def test_a_film_of_24_or_25_fps_videos_and_a_photo_keeps_their_rate(tmp_path, rate):
     clips = [AssemblyClip(path=_clip(tmp_path, f"video{i}", rate), duration=0.5) for i in range(2)]
@@ -58,6 +59,7 @@ def test_a_film_of_24_or_25_fps_videos_and_a_photo_keeps_their_rate(tmp_path, ra
     assert _film_rate(clips, tmp_path / "film.mp4") == rate
 
 
+@pytest.mark.feature("render.media-small-fixes")
 def test_a_60_fps_video_late_in_a_long_film_sets_its_rate(tmp_path):
     clips = [AssemblyClip(path=_clip(tmp_path, "video30", 30, 0.2), duration=0.2)] * 21
     clips.append(AssemblyClip(path=_clip(tmp_path, "video60", 60, 0.2), duration=0.2))

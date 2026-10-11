@@ -11,6 +11,8 @@ from __future__ import annotations
 import json
 from datetime import UTC, date, datetime, timedelta
 
+import pytest
+
 from immich_memories.api.models import Asset, AssetType, ExifInfo
 from immich_memories.timeperiod import DateRange, calendar_year
 
@@ -118,6 +120,7 @@ def cut(
     return {clip.asset.id for clip in result.selected_clips}, plan
 
 
+@pytest.mark.feature("selection.local-time-dates")
 def test_a_year_film_holds_new_years_eve_on_its_own_clock(tmp_path):
     year = [
         picture(f"day-{n:02}", datetime(2024, 1 + n % 12, 10, 12) + timedelta(days=n))
@@ -146,6 +149,7 @@ def _story_day_of(asset_id: str, plan) -> str:
     )
 
 
+@pytest.mark.feature("on-this-day.new-year")
 def test_on_this_day_new_year_gives_each_occurrence_its_own_voice(tmp_path):
     """#2357 and #2355: 1 January's windows run 31 Dec to 2 Jan, across a year boundary."""
     from immich_memories.memory_types.date_builders import build_on_this_day
@@ -171,6 +175,7 @@ def test_on_this_day_new_year_gives_each_occurrence_its_own_voice(tmp_path):
     assert sorted(plan["intent_report"]["coverage"].values()) == [2, 2, 2]
 
 
+@pytest.mark.feature("selection.local-time-dates")
 def test_a_month_film_starts_and_ends_on_the_pictures_own_days(tmp_path):
     from immich_memories.memory_types.date_builders import build_month
 
@@ -194,6 +199,7 @@ def test_a_month_film_starts_and_ends_on_the_pictures_own_days(tmp_path):
     assert _story_day_of("eve-party", plan) == "2024-12-31"
 
 
+@pytest.mark.feature("selection.local-time-dates")
 def test_a_birthday_film_holds_the_evening_party_of_the_day(tmp_path):
     from immich_memories.memory_types.date_builders import build_birthday_windows
 
@@ -239,6 +245,7 @@ class InstantFilteringImmich:
         return httpx.Response(200, json={"assets": {"items": items, "total": len(items)}})
 
 
+@pytest.mark.feature("selection.local-time-dates")
 def test_a_year_fetch_reads_past_utc_and_keeps_the_pictures_own_year(monkeypatch):
     import httpx
 
@@ -286,6 +293,7 @@ def _trips_of(year: int, pictures: list[Asset]):
     return discover_year_trips(client, config, year)
 
 
+@pytest.mark.feature("selection.local-time-dates")
 def test_a_trip_runs_from_its_first_to_its_last_day_on_the_pictures_own_clock():
     # Landed at 07:00 on 10 March ten hours ahead (9 March in UTC); a last dinner at 20:30
     # on 14 March eight hours behind (15 March in UTC).
@@ -300,6 +308,7 @@ def test_a_trip_runs_from_its_first_to_its_last_day_on_the_pictures_own_clock():
     assert (found.start_date, found.end_date) == (date(2024, 3, 10), date(2024, 3, 14))
 
 
+@pytest.mark.feature("selection.local-time-dates")
 def test_a_trip_ending_on_new_years_eve_belongs_to_the_old_year_only():
     trip = [
         picture("first", datetime(2024, 12, 28, 10), BEHIND_8, where=WEST),
@@ -311,6 +320,7 @@ def test_a_trip_ending_on_new_years_eve_belongs_to_the_old_year_only():
     assert _trips_of(2025, trip) == []
 
 
+@pytest.mark.feature("selection.local-time-dates")
 def test_one_evening_behind_utc_is_one_photographed_day():
     """The run record says how many days a film holds; an evening is one, not two in UTC."""
     from immich_memories.planning.auto_duration import (
@@ -340,6 +350,7 @@ def test_one_evening_behind_utc_is_one_photographed_day():
     assert decision.photographed_days == 1
 
 
+@pytest.mark.feature("selection.local-time-dates")
 def test_a_film_runs_in_the_order_its_pictures_clocks_show(tmp_path):
     """Order is the pictures' own clocks, the order Immich's timeline shows, and it holds
     however the offsets change inside the film."""

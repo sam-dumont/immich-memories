@@ -160,8 +160,8 @@ def test_monthly_timeline_contains_every_synthetic_moment(fake_immich_server) ->
         fake_immich_server.api_key,
         api_version="v3",
     ) as client:
-        buckets = client.get_time_buckets(size="MONTH")
-    assets = _bucket_assets(fake_immich_server, size="MONTH")
+        buckets = client.get_time_buckets()
+    assets = _bucket_assets(fake_immich_server)
 
     # One month holds the whole library.
     assert [(bucket.time_bucket, bucket.count) for bucket in buckets] == [
@@ -171,22 +171,18 @@ def test_monthly_timeline_contains_every_synthetic_moment(fake_immich_server) ->
     assert [asset.id for asset in assets if asset.type is AssetType.IMAGE] == _PHOTO_IDS
 
 
-def test_monthly_timeline_honors_requested_asset_type_and_count(fake_immich_server) -> None:
-    """Typed timeline requests expose matching counts and matching assets only."""
-    with SyncImmichClient(
-        fake_immich_server.base_url,
-        fake_immich_server.api_key,
-        api_version="v3",
-    ) as client:
-        video_buckets = client.get_time_buckets(size="MONTH", asset_type=AssetType.VIDEO)
-        photo_buckets = client.get_time_buckets(size="MONTH", asset_type=AssetType.IMAGE)
-    videos = _bucket_assets(fake_immich_server, size="MONTH", type="VIDEO")
-    photos = _bucket_assets(fake_immich_server, size="MONTH", type="IMAGE")
+def test_the_timeline_refuses_a_media_type_it_does_not_define(fake_immich_server) -> None:
+    """Immich's timeline has no `type`: real Immich drops it silently, the fake refuses it."""
+    response = httpx.get(
+        f"{fake_immich_server.base_url}/api/timeline/buckets",
+        params={"type": "VIDEO"},
+        headers={"x-api-key": fake_immich_server.api_key},
+    )
+    refused = list(fake_immich_server.refused)
+    fake_immich_server.refused.clear()
 
-    assert [bucket.count for bucket in video_buckets] == [len(_VIDEO_IDS)]
-    assert [bucket.count for bucket in photo_buckets] == [len(_PHOTO_IDS)]
-    assert [asset.id for asset in videos] == _VIDEO_IDS
-    assert [asset.id for asset in photos] == _PHOTO_IDS
+    assert response.status_code == 400
+    assert refused == ["GET /api/timeline/buckets: type is not a parameter Immich defines"]
 
 
 def test_metadata_search_filters_the_video_and_photo_inventories(fake_immich_server) -> None:

@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
 from click.testing import CliRunner
 
 from immich_memories.cli import main
@@ -25,6 +26,7 @@ def _show(tmp_path: Path, *flags: str) -> str:
     return result.output
 
 
+@pytest.mark.feature("automation.install-cooldown-hours")
 def test_the_installed_command_leaves_the_cooldown_to_the_config(tmp_path: Path) -> None:
     shown = _show(tmp_path)
 
@@ -32,6 +34,7 @@ def test_the_installed_command_leaves_the_cooldown_to_the_config(tmp_path: Path)
     assert "--cooldown" not in shown
 
 
+@pytest.mark.feature("automation.install-cooldown-hours")
 def test_an_explicit_cooldown_is_still_written(tmp_path: Path) -> None:
     shown = _show(tmp_path, "--cooldown", "12")
 
@@ -39,6 +42,7 @@ def test_an_explicit_cooldown_is_still_written(tmp_path: Path) -> None:
     assert "12" in shown
 
 
+@pytest.mark.feature("automation.install-cooldown-hours")
 def test_the_scheduled_command_honours_the_configured_cooldown(tmp_path: Path) -> None:
     import json
     from datetime import UTC, datetime, timedelta

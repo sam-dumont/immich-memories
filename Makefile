@@ -312,6 +312,19 @@ test-integration-titles:  ## Run ONLY title screen pixel tests (~30s, FFmpeg onl
 		--cov=src/immich_memories --cov-branch --cov-report=xml:tests/titles-coverage.xml --cov-fail-under=0 \
 		--junitxml=tests/titles-junit.xml
 
+# Feature tests: each advertised feature checked on the CC0 fixture library through the real
+# CLI, rendered with real FFmpeg, against the hermetic fake Immich (tests/integration/features/).
+# Every child run gets its own sealed HOME. FEATURE_ARGS narrows a run, e.g. FEATURE_ARGS="-k report".
+.PHONY: test-features feature-check
+test-features:  ## Feature tests on the fixture library, real CLI and FFmpeg (~4 min, no Immich needed)
+	uv run pytest tests/integration/features/ -v -m integration --tb=short -p no:cacheprovider \
+		--junitxml=tests/features-junit.xml $(FEATURE_ARGS)
+
+# Every CLI command and flag, offered memory type and automation detector has a row in
+# tests/features/inventory.yaml; every row has feature tests or a lane_only/gap status; gaps only fall.
+feature-check:  ## Fail when an advertised feature has no feature test and no stated reason
+	uv run python scripts/check_feature_inventory.py
+
 test-integration-processing:  ## Run ONLY processing probing/runner/filter tests (~15s, FFmpeg only)
 	uv run pytest tests/integration/processing/ -v -s -m integration --log-cli-level=INFO --tb=short \
 		--cov=src/immich_memories --cov-branch --cov-report=xml:tests/processing-coverage.xml --cov-fail-under=0 \
@@ -444,6 +457,7 @@ test-integration:  ## Run ALL integration tests per-suite (requires FFmpeg/Immic
 	$(MAKE) test-integration-assembly
 	$(MAKE) test-integration-audio-mixing
 	$(MAKE) test-integration-processing
+	$(MAKE) test-features
 	$(MAKE) test-integration-titles
 	$(MAKE) test-integration-photos
 	$(MAKE) test-integration-pipeline
@@ -852,7 +866,7 @@ launch-check-ci-postgres: ensure-dev
 	@echo "Hermetic launch check (PostgreSQL) passed!"
 
 # Full CI-equivalent pipeline (locally)
-ci: ensure-dev research-data-check lint format-check typecheck file-length complexity cognitive-complexity dead-code security-lint semgrep refurb dep-check arch-check duplication critique docs-cli-check docs-config-check docs-brand docs-commands docs-voice notices-check compose-check web-check test
+ci: ensure-dev research-data-check lint format-check typecheck file-length complexity cognitive-complexity dead-code security-lint semgrep refurb dep-check arch-check duplication critique docs-cli-check docs-config-check feature-check docs-brand docs-commands docs-voice notices-check compose-check web-check test
 	@echo "Full CI pipeline passed!"
 
 # Self-critique for AI code smells
