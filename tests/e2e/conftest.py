@@ -240,20 +240,35 @@ def launch_app_url(
     yield from _serve_launch(launch_workspace, unused_tcp_port_factory(), models_fetched=True)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
+def roster_restored(launch_workspace: LaunchWorkspace) -> Generator[None]:
+    """Put the session store's people back as they were before the test.
+
+    People tests replace the roster with their own; the launch server is shared, and a brief
+    opened later in the session would offer those people instead of the library's.
+    """
+    from immich_memories.people.transfer import export_yaml, import_document, parse_yaml
+
+    before = parse_yaml(export_yaml(launch_workspace.store()))
+    yield
+    import_document(launch_workspace.store(), before, replace=True)
+
+
+@pytest.fixture
 def automation_workspace(
     tmp_path_factory: pytest.TempPathFactory,
     fake_immich_server: FakeImmichServer,
-) -> LaunchWorkspace:
+) -> Generator[LaunchWorkspace]:
     """A host where nobody has filmed anything yet, so automation has the fixture month to offer.
 
     The launch workspace fills up with the session's own June films, and a memory that has a
-    film is, rightly, never suggested again.
+    film is, rightly, never suggested again. One per test for the same reason: a test that
+    films the month it was offered takes that offer away from every test after it.
     """
-    return _launch_workspace(tmp_path_factory.mktemp("automation"), fake_immich_server)
+    yield from _owned_workspace(tmp_path_factory.mktemp("automation"), fake_immich_server)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def automation_app_url(
     automation_workspace: LaunchWorkspace,
     unused_tcp_port_factory,

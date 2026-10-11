@@ -13,6 +13,7 @@ from immich_memories.automation.notifications import (
     notify_job_complete,
     send_test_notification,
 )
+from tests.module_stubs import swapped_modules
 
 
 class TestNotifyJobComplete:
@@ -47,7 +48,7 @@ class TestNotifyJobComplete:
         mock_apprise.Apprise.return_value = mock_instance
 
         # WHY: would send real notifications to external services
-        with patch.dict("sys.modules", {"apprise": mock_apprise}):
+        with swapped_modules({"apprise": mock_apprise}):
             result = notify_job_complete(
                 memory_type="monthly_highlights",
                 status="completed",
@@ -68,7 +69,7 @@ class TestNotifyJobComplete:
         mock_apprise.Apprise.return_value = mock_instance
 
         # WHY: would send real notifications to external services
-        with patch.dict("sys.modules", {"apprise": mock_apprise}):
+        with swapped_modules({"apprise": mock_apprise}):
             result = notify_job_complete(
                 memory_type="year_in_review",
                 status="failed",
@@ -88,7 +89,7 @@ class TestNotifyJobComplete:
         mock_apprise.Apprise.return_value = mock_instance
 
         # WHY: would send real notifications to external services
-        with patch.dict("sys.modules", {"apprise": mock_apprise}):
+        with swapped_modules({"apprise": mock_apprise}):
             result = notify_job_complete(
                 memory_type="monthly",
                 status="completed",
@@ -104,7 +105,7 @@ class TestNotifyJobComplete:
         mock_apprise.Apprise.return_value = mock_instance
 
         # WHY: would send real notifications to external services
-        with patch.dict("sys.modules", {"apprise": mock_apprise}):
+        with swapped_modules({"apprise": mock_apprise}):
             result = notify_job_complete(
                 memory_type="monthly",
                 status="completed",
@@ -122,7 +123,7 @@ class TestNotifyJobComplete:
         urls = ["slack://token", "discord://webhook", "mailto://user:pass@gmail.com"]
 
         # WHY: would send real notifications to external services
-        with patch.dict("sys.modules", {"apprise": mock_apprise}):
+        with swapped_modules({"apprise": mock_apprise}):
             notify_job_complete(
                 memory_type="monthly",
                 status="completed",
@@ -262,7 +263,7 @@ class TestThumbnailExtraction:
 
         # WHY: mock thumbnail extraction to return a fake path
         with (
-            patch.dict("sys.modules", {"apprise": mock_apprise}),
+            swapped_modules({"apprise": mock_apprise}),
             patch(
                 "immich_memories.automation.notifications._extract_thumbnail",
                 return_value="/tmp/fake_thumb.jpg",

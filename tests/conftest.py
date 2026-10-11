@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import ipaddress
+import logging
 import os
 import shutil
 import socket
 import subprocess
+import sys
 import tempfile
 import threading
 import uuid
@@ -473,6 +475,37 @@ def fresh_ffmpeg_capabilities() -> Iterator[None]:
     yield
     hdr_utilities._zscale_cache = None
     hdr_utilities._sdr_pq_fast_gamma_qualified.cache_clear()
+
+
+@pytest.fixture(autouse=True)
+def root_logging_restored() -> Iterator[None]:
+    """Take away the root log handlers a test's command left behind.
+
+    An in-process CLI run points the root logger at the stream it was given, a CliRunner's
+    buffer that is closed once the run ends. A later test's first log line, before its own
+    command set logging up again, then printed "--- Logging error ---" into that test's
+    output and broke its JSON. pytest's own capture handlers come and go with each phase.
+    """
+    root = logging.getLogger()
+    handlers, level = list(root.handlers), root.level
+    yield
+    for handler in list(root.handlers):
+        if handler not in handlers and type(handler).__module__ != "_pytest.logging":
+            root.removeHandler(handler)
+    root.setLevel(level)
+
+
+@pytest.fixture(autouse=True)
+def fresh_health_snapshot() -> None:
+    """Start each test with the readiness snapshot a new server process has: none.
+
+    /health/ready caches its answer for ten seconds in a module global. A test that read it
+    left its own app's answer behind, and the next test on that worker, within those ten
+    seconds, was served it: a scheduler reported off that its own app had just run.
+    """
+    health = sys.modules.get("immich_memories.web.health")
+    if health is not None:
+        health._health_snapshot_cache = None
 
 
 @pytest.fixture(autouse=True)

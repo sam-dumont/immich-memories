@@ -19,6 +19,22 @@ Start with unit tests, then run the checks for the boundaries your change touche
 | Container | `make test-container` (`CONTAINER_E2E_DATABASE=postgresql` for PostgreSQL) | Docker. Builds the image and runs it; see below |
 
 `make test-fast` excludes slow, integration, e2e and container tests; the full suite is `make test`.
+
+The unit suite runs on pytest-xdist workers: `make test`, `make test-cov-xml`, `make diff-cover`
+and the pre-commit hook all pass `-n $(TEST_WORKERS)`. On CI (`CI=true`) that is `auto`, one worker
+per core. On your machine it defaults to half the cores, because two or three worktrees' hooks can
+run the suite at the same time. Set it per run: `make test TEST_WORKERS=4`, or `TEST_WORKERS=0` to
+run in one process under a debugger. Coverage is combined across workers, so the numbers match a
+serial run. The FFmpeg-only integration folders (`assembly`, `processing`, `titles`, `photos`,
+`audio-mixing`, `audio`) and `make test-store` spread the same way; integration folders keep
+a whole file on one worker (`--dist loadfile`), since a module's fixtures render media its tests
+share. `INTEGRATION_WORKERS` overrides their count.
+
+Every worker builds its own sealed home, store and fake services, and tests run in whatever order
+the scheduler picks. So a test owns the state it asserts on: no counting uploads, runs or log lines
+that an earlier test may have left, no module global left changed, no `patch.dict(sys.modules, ...)`
+(it drops every module first imported inside it; use `monkeypatch.setitem`). A test that only passes
+after another one is a bug in that test, never a reason to run it in series.
 Integration suites skip rather than fail when their services aren't there, unless `REQUIRE_IMMICH=1` (the gate below sets it). The Makefile lists the per-suite targets. Three suites are outside `make test-integration`: `cli`, which
 re-runs the pipeline `pipeline` already covers and is the slowest in the tree; `audio`, which wants
 the demucs and ACE-Step packages; and `automation`, which has no dedicated make target. For that

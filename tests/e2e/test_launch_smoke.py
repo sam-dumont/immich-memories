@@ -234,9 +234,10 @@ def test_launch_flow_renders_real_video(
     assert probe.size_bytes > 0
 
     database = RunDatabase(launch_workspace.store())
-    rendered = films(database)[0]
-    assert Path(rendered.output_path or "") == output_path
-    assert rendered.source == "manual"
+    # The session's store holds other tests' runs too, some dated later than this one.
+    rendered = [run for run in films(database) if Path(run.output_path or "") == output_path]
+    assert len(rendered) == 1, [run.run_id for run in films(database)]
+    assert rendered[0].source == "manual"
     assert database.list_runs(status="running") == []
     _verify_cli_timing(launch_workspace, database)
 
@@ -246,6 +247,7 @@ def _verify_cli_timing(workspace, database: RunDatabase) -> None:
     from tests.e2e.cli_bootstrap import CLI_BOOTSTRAP
 
     root = Path(__file__).resolve().parents[2]
+    before = {run.run_id for run in database.list_runs(limit=10_000)}
     result = subprocess.run(
         [
             str(root / ".venv/bin/python"),
@@ -279,7 +281,14 @@ def _verify_cli_timing(workspace, database: RunDatabase) -> None:
     assert "Prepare pictures: running" in transcript
     assert "Check playback: pending" in transcript
     assert "Render film: running" in transcript
-    terminal = database.list_runs(status="completed", order_by_completion=True)[0]
+    # This command's own run: the newest one may be another test's.
+    added = [
+        run
+        for run in database.list_runs(limit=10_000, status="completed", order_by_completion=True)
+        if run.run_id not in before
+    ]
+    assert len(added) == 1, [run.run_id for run in added]
+    terminal = added[0]
     assert terminal.output_path and Path(terminal.output_path).is_file()
     assert any(event["elapsed_seconds"] > 0 for event in terminal.phase_events)
     assert terminal.phase_events[-1]["phase"] == "complete"
@@ -306,7 +315,9 @@ def test_reload_during_a_render_rejoins_it_and_plays_the_film(
     outputs = set(launch_workspace.output_dir.rglob("*.mp4")) - before
     assert len(outputs) == 1
     database = RunDatabase(launch_workspace.store())
-    assert Path(films(database)[0].output_path or "") == outputs.pop()
+    # A completed run records this film; other tests' runs may be dated later.
+    film = outputs.pop()
+    assert [run for run in films(database) if Path(run.output_path or "") == film]
 
 
 def test_a_typed_url_never_receives_the_stored_key(page: Page, launch_app_url: str) -> None:

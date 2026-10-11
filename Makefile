@@ -139,15 +139,35 @@ preflight:
 
 # ===============================================================# Testing
 # ===============================================================
+# The unit suite runs on TEST_WORKERS xdist workers, each with its own sealed home and store.
+# CI (CI=true) uses every core. A laptop defaults to half its cores, since several worktrees'
+# pre-commit hooks may run the suite at once on one machine. TEST_WORKERS=0 runs it in this
+# process, e.g. under a debugger. No test may lean on one that ran before it, or on its worker.
+ifndef TEST_WORKERS
+ifeq ($(CI),true)
+TEST_WORKERS := auto
+else
+TEST_WORKERS := $(shell python3 -c "import os; print(max(1, (os.cpu_count() or 2) // 2))")
+endif
+endif
+PYTEST_WORKERS = -n $(TEST_WORKERS)
+# The FFmpeg-only integration folders spread the same way, a whole file per worker: a module's
+# fixtures render media its tests share, and the perf modules write their results as they end.
+# The suites that read a configured Immich (pipeline, cli, live photos) stay in one process:
+# they run against the developer's own library and store, which parallel runs would share.
+# So does auth: 13 tests in 8 s, where each worker's own OIDC server costs more than it saves.
+INTEGRATION_WORKERS ?= $(TEST_WORKERS)
+INTEGRATION_PARALLEL = -n $(INTEGRATION_WORKERS) --dist loadfile
+
 test:
-	uv run pytest -v
+	uv run pytest $(PYTEST_WORKERS) -v
 
 # The store suite (tests/store/) on each backend it supports. `make test` runs it on SQLite
 # already; these run it alone, and `test-store` adds PostgreSQL. With
 # IMMICH_MEMORIES_TEST_DATABASE_URL unset it starts a throwaway postgres:16 on a free port
 # (data on tmpfs) and removes it however the run ends. Each test uses its own schema.
 STORE_TEST_POSTGRES_IMAGE := docker.io/library/postgres:16@sha256:1a6ab3f5345eb6dbe04a1349529caabdb0ab09293a09590fad07b2246bfa4b54
-STORE_TEST_PYTEST = uv run pytest tests/store/ -v -rs -p no:cacheprovider
+STORE_TEST_PYTEST = uv run pytest tests/store/ $(PYTEST_WORKERS) -v -rs -p no:cacheprovider
 
 .PHONY: test-store test-store-sqlite test-store-pg-client
 test-store-sqlite:  ## Run the store suite on SQLite only (fast, no Docker)
@@ -273,12 +293,12 @@ capability-matrix:  ## Render one video per capability against your library (loc
 	uv run python scripts/capability_matrix.py --album "$(ALBUM)" $(if $(ONLY),--only $(ONLY),)
 
 test-integration-photos:  ## Run ONLY photo animation tests (~20s, FFmpeg only)
-	uv run pytest tests/integration/photos/ -v -s -m integration --log-cli-level=INFO --tb=short \
+	uv run pytest tests/integration/photos/ $(INTEGRATION_PARALLEL) -v -s -m integration --log-cli-level=INFO --tb=short \
 		--cov=src/immich_memories --cov-branch --cov-report=xml:tests/photos-coverage.xml --cov-fail-under=0 \
 		--junitxml=tests/photos-junit.xml
 
 test-integration-assembly:  ## Run ONLY FFmpeg assembly tests (~10s, no Immich needed)
-	uv run pytest tests/integration/assembly/ -v -s -m integration --log-cli-level=INFO --tb=short \
+	uv run pytest tests/integration/assembly/ $(INTEGRATION_PARALLEL) -v -s -m integration --log-cli-level=INFO --tb=short \
 		--cov=src/immich_memories --cov-branch --cov-report=xml:tests/assembly-coverage.xml --cov-fail-under=0 \
 		--junitxml=tests/assembly-junit.xml
 
@@ -298,17 +318,17 @@ test-integration-auth:  ## Run ONLY auth integration tests (~10s, no external de
 		--junitxml=tests/auth-junit.xml
 
 test-integration-audio-mixing:  ## Run ONLY FFmpeg audio mixing tests (~5s, no ML models needed)
-	uv run pytest tests/integration/audio_mixing/ -v -s -m integration --log-cli-level=INFO --tb=short \
+	uv run pytest tests/integration/audio_mixing/ $(INTEGRATION_PARALLEL) -v -s -m integration --log-cli-level=INFO --tb=short \
 		--cov=src/immich_memories --cov-branch --cov-report=xml:tests/audio-mixing-coverage.xml --cov-fail-under=0 \
 		--junitxml=tests/audio-mixing-junit.xml
 
 test-integration-audio:  ## Run ONLY audio ML tests (~2min, needs demucs/acestep packages)
-	uv run pytest tests/integration/audio/ -v -s -m integration --log-cli-level=INFO --tb=short \
+	uv run pytest tests/integration/audio/ $(INTEGRATION_PARALLEL) -v -s -m integration --log-cli-level=INFO --tb=short \
 		--cov=src/immich_memories --cov-branch --cov-report=xml:tests/audio-coverage.xml --cov-fail-under=0 \
 		--junitxml=tests/audio-junit.xml
 
 test-integration-titles:  ## Run ONLY title screen pixel tests (~30s, FFmpeg only)
-	uv run pytest tests/integration/titles/ -v -s -m integration --log-cli-level=INFO --tb=short \
+	uv run pytest tests/integration/titles/ $(INTEGRATION_PARALLEL) -v -s -m integration --log-cli-level=INFO --tb=short \
 		--cov=src/immich_memories --cov-branch --cov-report=xml:tests/titles-coverage.xml --cov-fail-under=0 \
 		--junitxml=tests/titles-junit.xml
 
@@ -330,7 +350,7 @@ feature-check:  ## Fail when an advertised feature has no feature test and no st
 	uv run python scripts/check_feature_inventory.py
 
 test-integration-processing:  ## Run ONLY processing probing/runner/filter tests (~15s, FFmpeg only)
-	uv run pytest tests/integration/processing/ -v -s -m integration --log-cli-level=INFO --tb=short \
+	uv run pytest tests/integration/processing/ $(INTEGRATION_PARALLEL) -v -s -m integration --log-cli-level=INFO --tb=short \
 		--cov=src/immich_memories --cov-branch --cov-report=xml:tests/processing-coverage.xml --cov-fail-under=0 \
 		--junitxml=tests/processing-junit.xml
 
@@ -498,13 +518,15 @@ test-integration:  ## Run ALL integration tests per-suite (requires FFmpeg/Immic
 playwright-install:  ## Install Playwright browsers for E2E tests
 	uv run playwright install chromium
 
-# E2E_ARGS narrows a run, e.g. E2E_ARGS="-k test_web_features".
+# E2E_ARGS narrows a run, e.g. E2E_ARGS="-k test_web_features". The files run on E2E_WORKERS
+# xdist workers, a whole file per worker; each worker starts its own fake Immich and servers.
+E2E_WORKERS ?= $(TEST_WORKERS)
 e2e: web-client-present  ## Run required fake-service contracts and real hermetic browser render
 	uv run pytest tests/e2e/test_fake_immich.py tests/e2e/test_launch_smoke.py \
 		tests/e2e/test_memory_page.py tests/e2e/test_picture_decisions.py tests/e2e/test_sharing_levels.py \
 		tests/e2e/test_web_client.py tests/e2e/test_job_errors.py tests/e2e/test_keep_intermediates.py \
 		tests/e2e/test_people_page.py tests/e2e/test_people_owner_and_links.py tests/e2e/test_people_accounts_and_groups.py tests/e2e/test_phone_width.py tests/e2e/test_automation_pages.py tests/e2e/test_ui_languages.py tests/e2e/test_web_features.py -v \
-		-m "e2e and not visual" --log-cli-level=INFO --tb=short \
+		-m "e2e and not visual" --log-cli-level=INFO --tb=short -n $(E2E_WORKERS) --dist loadfile \
 		--junitxml=tests/e2e-junit.xml $(E2E_ARGS)
 
 # `not demo` because the demo clip renders a second video into the same session
@@ -522,14 +544,14 @@ screenshots: web-client-present  ## Capture UI screenshots in light + dark mode 
 		--junitxml=tests/e2e-junit.xml
 
 test-cov:
-	uv run pytest $(COVERAGE_FLAGS) --cov-report=html --cov-report=term-missing
+	uv run pytest $(PYTEST_WORKERS) $(COVERAGE_FLAGS) --cov-report=html --cov-report=term-missing
 	@echo "Coverage report: htmlcov/index.html"
 
 test-cov-xml:  ## Run tests with XML coverage + JUnit results (for CI upload)
-	uv run pytest $(COVERAGE_FLAGS) --cov-report=xml --junitxml=junit.xml -o junit_family=legacy -v
+	uv run pytest $(PYTEST_WORKERS) $(COVERAGE_FLAGS) --cov-report=xml --junitxml=junit.xml -o junit_family=legacy -v
 
 test-fast:
-	uv run pytest -v -m "not slow and not integration and not e2e and not container"
+	uv run pytest $(PYTEST_WORKERS) -v -m "not slow and not integration and not e2e and not container"
 
 test-watch:
 	uv run pytest-watch -- -v
@@ -707,7 +729,7 @@ arch-check:
 
 # Diff coverage (for PRs: new code must be ≥95% covered)
 diff-cover:
-	uv run pytest $(COVERAGE_FLAGS) --cov-report=xml -q
+	uv run pytest $(PYTEST_WORKERS) $(COVERAGE_FLAGS) --cov-report=xml -q
 	uvx diff-cover coverage.xml --compare-branch=origin/main --fail-under=80
 
 # Dependency vulnerability audit
@@ -748,7 +770,7 @@ npm-audit-reviewed-docs:  ## Time-limited docs advisory review; strict client au
 
 diff-cover-local:  ## Check diff-cover locally before pushing (runs tests + merges integration coverage)
 	@echo "Running unit tests with coverage..."
-	@uv run pytest $(COVERAGE_FLAGS) --cov-report=xml -q
+	@uv run pytest $(PYTEST_WORKERS) $(COVERAGE_FLAGS) --cov-report=xml -q
 	@echo "Checking diff coverage against main..."
 	@COVERAGE_FILES="coverage.xml"; \
 	for f in tests/*-coverage.xml; do \

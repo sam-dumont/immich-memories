@@ -9,6 +9,7 @@ Results saved to tests/benchmark-titles.json in customSmallerIsBetter format.
 from __future__ import annotations
 
 import logging
+from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
@@ -111,10 +112,16 @@ class TestEndingScreenPerf:
         _module_results.append(result)
 
 
-def test_save_title_benchmarks() -> None:
-    """Save collected title benchmark results."""
+@pytest.fixture(scope="module", autouse=True)
+def _save_title_benchmarks() -> Iterator[None]:
+    """Save collected title benchmark results.
+
+    Written as the module ends rather than by a test that has to run last: in a random
+    order or on parallel workers that test ran first, or alone, and saved nothing.
+    """
+    yield
     if not _module_results:
-        pytest.skip("No title perf results collected")
+        return
 
     logger.info("=" * 60)
     logger.info("TITLE PERFORMANCE SUMMARY")

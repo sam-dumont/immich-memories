@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import logging
 import subprocess
+from collections.abc import Iterator
 from datetime import date
 from pathlib import Path
 
@@ -291,10 +292,16 @@ class TestPerStepTiming:
         _step_results.append(result)
 
 
-def test_save_step_results(tmp_path):
-    """Save collected per-step results to JSON after all scenarios complete."""
+@pytest.fixture(scope="module", autouse=True)
+def _save_step_results() -> Iterator[None]:
+    """Save collected per-step results to JSON after all scenarios complete.
+
+    Written as the module ends rather than by a test that has to run last: in a random
+    order or on parallel workers that test ran first, or alone, and saved nothing.
+    """
+    yield
     if not _step_results:
-        pytest.skip("No step results collected")
+        return
 
     logger.info("=" * 60)
     logger.info("PER-STEP PERFORMANCE SUMMARY")

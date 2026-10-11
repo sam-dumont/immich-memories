@@ -48,7 +48,17 @@ def test_fast_does_not_run_external_or_slow_tiers(tmp_path):
     runner.write_text(f'#!/bin/sh\nshift 2\nexec {shlex.quote(sys.executable)} -m pytest "$@"\n')
     runner.chmod(0o755)
     result = subprocess.run(
-        ["make", "--no-print-directory", "-f", str(ROOT / "Makefile"), "test-fast"],
+        # In one process: the run reports what -m deselected, which xdist workers don't. On
+        # the command line, since a `make test TEST_WORKERS=...` around this one passes its
+        # own value down through MAKEFLAGS, and that outranks the environment.
+        [
+            "make",
+            "--no-print-directory",
+            "-f",
+            str(ROOT / "Makefile"),
+            "test-fast",
+            "TEST_WORKERS=0",
+        ],
         cwd=tmp_path,
         env={
             **os.environ,

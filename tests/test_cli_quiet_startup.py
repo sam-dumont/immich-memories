@@ -20,11 +20,17 @@ from immich_memories.db import close_stores
 def isolated(tmp_path: Path, monkeypatch) -> Iterator[None]:
     monkeypatch.setenv("IMMICH_MEMORIES_DATABASE_URL", f"sqlite:///{tmp_path / 'store.db'}")
     monkeypatch.setenv("IMMICH_MEMORIES_TIER", "auto")
+    # Each command runs in a fresh process, where the request loggers start unset. An earlier
+    # in-process command without -v leaves them at WARNING, so start from a fresh process's state.
+    request_loggers = [logging.getLogger(name) for name in ("httpx", "httpcore")]
+    levels = [request_logger.level for request_logger in request_loggers]
+    for request_logger in request_loggers:
+        request_logger.setLevel(logging.NOTSET)
     yield
     set_config(None)
     close_stores()
-    logging.getLogger("httpx").setLevel(logging.NOTSET)
-    logging.getLogger("httpcore").setLevel(logging.NOTSET)
+    for request_logger, level in zip(request_loggers, levels, strict=True):
+        request_logger.setLevel(level)
 
 
 @pytest.fixture

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 import os
-import sys
 from contextlib import suppress
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
@@ -21,6 +20,7 @@ from immich_memories.audio.generators.ace_step_backend import (
 from immich_memories.audio.generators.ace_step_checkpoints import CHECKPOINT_SET
 from immich_memories.audio.generators.base import GenerationRequest
 from tests.ace_step_downloads import snapshot_module
+from tests.module_stubs import swapped_modules
 
 
 @pytest.fixture(autouse=True)
@@ -317,7 +317,7 @@ class TestACEStepBackendV15Library:
         )
 
         with (
-            patch.dict(sys.modules, modules),
+            swapped_modules(modules),
             patch.dict(os.environ, {"ACESTEP_CHECKPOINTS_DIR": str(checkpoint_root)}),
             patch("platform.system", return_value="Darwin"),
         ):
@@ -360,7 +360,7 @@ class TestACEStepBackendV15Library:
 
         # WHY: replaces the ACE-Step package, the host OS, and the host-memory probe
         with (
-            patch.dict(sys.modules, modules),
+            swapped_modules(modules),
             patch.dict(os.environ, {"ACESTEP_CHECKPOINTS_DIR": str(tmp_path / "checkpoints")}),
             patch("platform.system", return_value="Darwin"),
             patch(
@@ -385,7 +385,7 @@ class TestACEStepBackendV15Library:
 
         # WHY: replaces the ACE-Step package, the host OS, and the host-memory probe
         with (
-            patch.dict(sys.modules, modules),
+            swapped_modules(modules),
             patch.dict(os.environ, {"ACESTEP_CHECKPOINTS_DIR": str(tmp_path / "checkpoints")}),
             patch("platform.system", return_value="Darwin"),
             patch(
@@ -462,7 +462,7 @@ class TestACEStepBackendV15Library:
         env = {"ACESTEP_CHECKPOINTS_DIR": str(tmp_path / "checkpoints")}
 
         with (
-            patch.dict(sys.modules, modules),
+            swapped_modules(modules),
             patch.dict(os.environ, env, clear=False),
             patch("platform.system", return_value="Darwin"),
             patch(
@@ -505,7 +505,7 @@ class TestACEStepBackendV15Library:
         )
 
         with (
-            patch.dict(sys.modules, modules),
+            swapped_modules(modules),
             patch.dict(os.environ, {"ACESTEP_CHECKPOINTS_DIR": str(tmp_path / "ckpt")}),
             patch("platform.system", return_value="Darwin"),
         ):
@@ -548,7 +548,7 @@ class TestACEStepBackendV15Library:
         modules["torch"] = fake_torch
 
         with (
-            patch.dict(sys.modules, modules),
+            swapped_modules(modules),
             patch.dict(os.environ, {"ACESTEP_CHECKPOINTS_DIR": str(tmp_path / "ckpt")}),
             patch("platform.system", return_value="Darwin"),
         ):
@@ -585,7 +585,7 @@ class TestACEStepBackendV15Library:
         backend = ACEStepBackend(ACEStepConfig(mode="lib", model_variant="turbo", use_lm=False))
 
         with (
-            patch.dict(sys.modules, modules),
+            swapped_modules(modules),
             patch.dict(os.environ, {"ACESTEP_CHECKPOINTS_DIR": str(tmp_path / "ckpt")}),
             patch("platform.system", return_value="Darwin"),
         ):
@@ -601,7 +601,7 @@ class TestACEStepBackendV15Library:
 
         # WHY: replaces MLX, absent off Apple Silicon, and the process environment.
         with (
-            patch.dict(sys.modules, self._fake_mlx_modules({})),
+            swapped_modules(self._fake_mlx_modules({})),
             patch.dict(os.environ, {"ACESTEP_MLX_VAE_CHUNK": "not-a-number"}),
         ):
             assert _bound_mlx_memory() is None
@@ -611,7 +611,7 @@ class TestACEStepBackendV15Library:
 
         # WHY: replaces MLX, absent off Apple Silicon, and the process environment.
         with (
-            patch.dict(sys.modules, self._fake_mlx_modules({})),
+            swapped_modules(self._fake_mlx_modules({})),
             patch.dict(os.environ, {"ACESTEP_MLX_VAE_CHUNK": "512"}),
         ):
             assert _bound_mlx_memory() == 512
@@ -650,7 +650,7 @@ class TestACEStepBackendV15Library:
         )
 
         with (
-            patch.dict(sys.modules, modules),
+            swapped_modules(modules),
             patch.dict(os.environ, {"ACESTEP_CHECKPOINTS_DIR": str(checkpoint_root)}),
             patch("platform.system", return_value="Darwin"),
         ):

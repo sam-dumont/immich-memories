@@ -10,6 +10,7 @@ to tests/perf-results.json for regression tracking.
 from __future__ import annotations
 
 import logging
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
@@ -173,10 +174,16 @@ class TestHeavyScenario:
         _module_results.append(result)
 
 
-def test_save_results(tmp_path):
-    """Save collected results to JSON after all scenarios complete."""
+@pytest.fixture(scope="module", autouse=True)
+def _save_results() -> Iterator[None]:
+    """Save collected results to JSON after all scenarios complete.
+
+    Written as the module ends rather than by a test that has to run last: in a random
+    order or on parallel workers that test ran first, or alone, and saved nothing.
+    """
+    yield
     if not _module_results:
-        pytest.skip("No perf results collected")
+        return
 
     # Log human-readable summary
     logger.info("=" * 60)

@@ -16,6 +16,7 @@ from immich_memories.tracking.system_info import (
     _get_ram_gb,
     _get_vram_mb,
 )
+from tests.module_stubs import swapped_modules
 
 
 def _reinitialized(**_kwargs) -> None:
@@ -200,7 +201,7 @@ class TestGetOpencvVersion:
     def test_returns_version_when_available(self):
         """Returns cv2.__version__ when importable."""
         mock_cv2 = MagicMock(__version__="4.9.0")
-        with patch.dict("sys.modules", {"cv2": mock_cv2}):
+        with swapped_modules({"cv2": mock_cv2}):
             # Need to reimport to pick up the mock
             from importlib import reload
 
@@ -213,7 +214,7 @@ class TestGetOpencvVersion:
 
     def test_returns_none_when_not_installed(self):
         """Returns None when cv2 is not importable."""
-        with patch.dict("sys.modules", {"cv2": None}):
+        with swapped_modules({"cv2": None}):
             assert _get_opencv_version() is None
 
 

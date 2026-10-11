@@ -73,12 +73,12 @@ class TestDemucsLocalSeparation:
 
     @pytest.mark.asyncio
     async def test_release_frees_model_memory(self, test_audio_5s: Path, tmp_path: Path):
-        """After release(), model is unloaded."""
+        """Separation unloads the model once it is done, and release() stays safe after."""
         from immich_memories.audio.generators.demucs_local import DemucsLocalBackend
 
         backend = DemucsLocalBackend(model_name="htdemucs")
         await backend.separate_stems(test_audio_5s, tmp_path)
-        assert backend._model is not None
+        assert backend._model is None
 
         backend.release()
         assert backend._model is None

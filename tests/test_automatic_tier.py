@@ -7,6 +7,7 @@ from types import SimpleNamespace
 import httpx
 import pytest
 
+from immich_memories import config_tiers
 from immich_memories.config_compute import local_inference_acceleration
 from immich_memories.config_loader import Config
 
@@ -244,8 +245,11 @@ def test_metal_bindings_without_a_device_leave_the_machine_on_nas(monkeypatch, l
     assert Config().tier == "basic"
 
 
-def test_the_automatic_choice_is_logged_as_this_machine_s_answer(caplog):
+def test_the_automatic_choice_is_logged_as_this_machine_s_answer(caplog, monkeypatch):
     """An init container with no GPU resolves `auto` to basic; the line must not read as the install's tier."""
+    # WHY: the line is said once per process; a fresh process has said nothing yet, and an
+    # earlier test in this one may have said the same answer already.
+    monkeypatch.setattr(config_tiers, "_last_resolution", [None])
     with caplog.at_level("INFO", logger="immich_memories.config_tiers"):
         config = Config()
 
