@@ -177,3 +177,52 @@ def test_keeping_a_flagged_pair_apart_through_the_roster_route_clears_the_flag(t
         ).status_code
         == 404
     )
+
+
+def test_an_answer_does_not_undo_a_relationship_saved_while_it_was_being_made(tmp_path):
+    """The PUT used to read the person, then write their whole confirmed block: a relationship
+    saved in between was lost. It now reads and writes under the registry lock."""
+    import threading
+    import time
+
+    from immich_memories.db import open_store
+    from immich_memories.people.companion import save_confirmed_relationship
+    from immich_memories.people.registry_store import lock_registry, read_document, write_document
+
+    config = config_in(tmp_path)
+    client = api_client(config)
+    ana = client.post("/api/v1/roster", json={"name": "Ana"}).json()["person_id"]
+    luc = client.post("/api/v1/roster", json={"name": "Luc"}).json()["person_id"]
+    store = open_store(config)
+    holding, release = threading.Event(), threading.Event()
+
+    def another_writer_in_flight():
+        # WHY: stands in for a second browser tab or `people` CLI command whose transaction
+        # is open when the PUT arrives; the PUT may only act once it commits.
+        with store.begin() as connection:
+            lock_registry(connection)
+            holding.set()
+            release.wait(timeout=10)
+            document = read_document(connection)
+            save_confirmed_relationship.__wrapped__(document, ana, "partner-of", luc)
+            write_document(connection, document)
+
+    writer = threading.Thread(target=another_writer_in_flight)
+    writer.start()
+    assert holding.wait(timeout=10)
+    answered: list = []
+    put = threading.Thread(
+        target=lambda: answered.append(
+            client.put(f"/api/v1/roster/{ana}", json={"role": "partner", "notes": "Loves hikes"})
+        )
+    )
+    put.start()
+    time.sleep(0.5)
+    release.set()
+    writer.join(timeout=10)
+    put.join(timeout=10)
+
+    assert answered[0].status_code == 200
+    person = {p["name"]: p for p in client.get("/api/v1/roster").json()["people"]}["Ana"]
+    assert person["notes"] == "Loves hikes"
+    assert any(link["target_id"] == luc and link["decision"] for link in person["links"])

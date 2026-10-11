@@ -29,6 +29,7 @@ from immich_memories.settings_store import (
     SECRET_KEY_ENV,
     SecretKeyError,
     is_bootstrap_key,
+    is_file_only_key,
     is_secret_key,
     is_store_location_key,
     references_env,
@@ -90,6 +91,11 @@ ENV_REFERENCE_REFUSED = (
 def _bootstrap_refusal(key: str) -> str | None:
     if is_store_location_key(key):
         return f"{key} is read before the database opens; set it in the environment or config.yaml"
+    if is_file_only_key(key):
+        return (
+            f"{key} chooses what the server runs, writes or sends your Immich keys to, so it is "
+            "set only in config.yaml or the environment, and takes effect on restart"
+        )
     if is_bootstrap_key(key):
         return (
             f"{key} decides who can reach the app, so it is set only in the environment "
@@ -118,14 +124,11 @@ MOVED_WITHOUT_CREDENTIAL = "The server URL changed: enter the credential for the
 # own server and read it off the wire (#1212).
 _CREDENTIAL_PAIRS = {
     "immich.url": "immich.api_key",
-    "render.worker_base_url": "render.worker_token",
     "llm.base_url": "llm.api_key",
     "editorial.preparation.caption_base_url": "editorial.preparation.caption_api_key",
     "musicgen.base_url": "musicgen.api_key",
     "ace_step.api_url": "ace_step.api_key",
 }
-# The Immich keys travel with every render, so a new worker always takes a token typed for it.
-_ALWAYS_PAIRED = frozenset({"render.worker_base_url"})
 
 
 def same_server(a: str, b: str) -> bool:
@@ -150,7 +153,7 @@ def _check_credential_pairs(config: Config, changes: Mapping[str, Any]) -> None:
     for url_key, secret_key in _CREDENTIAL_PAIRS.items():
         if not _moved_url(config, changes, url_key) or secret_key in changes:
             continue
-        if url_key in _ALWAYS_PAIRED or _current(config, secret_key):
+        if _current(config, secret_key):
             raise SettingRefused(f"{url_key}: {MOVED_WITHOUT_CREDENTIAL}")
     if "immich.accounts" in changes:
         _check_accounts(config, changes["immich.accounts"])

@@ -116,3 +116,18 @@ def test_the_album_is_optional(tmp_path, body):
 
     assert client.post(f"/api/v1/runs/{RUN}/upload", json=body).status_code == 200
     assert fake.uploads[0][0] == path
+
+
+def test_an_immich_failure_never_puts_the_server_address_in_the_answer(tmp_path):
+    import httpx
+
+    class Refusing(FakeImmich):
+        def upload_memory(self, video_path, album_name=None, *, captured_at=None):
+            raise httpx.ConnectError("cannot reach http://immich.internal.example:2283/api")
+
+    _, client, _, _ = _setup(tmp_path, immich=Refusing())
+
+    response = client.post(f"/api/v1/runs/{RUN}/upload", json={})
+
+    assert response.status_code == 502
+    assert "immich.internal.example" not in response.text

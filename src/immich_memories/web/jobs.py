@@ -28,6 +28,7 @@ from immich_memories.security import (
     write_secret_file,
 )
 from immich_memories.storage_errors import storage_failure_message
+from immich_memories.web.process_identity import process_started
 from immich_memories.web.schemas import Job, JobKind, JobStatus
 
 
@@ -39,7 +40,11 @@ class JobBusy(RuntimeError):
         self.job = job
 
 
-def _alive(pid: int | None) -> bool:
+def _alive(pid: int | None, started: str | None = None) -> bool:
+    """Whether the job's own process is still there: the pid exists and began when it did.
+
+    A record with no start time (written before it was kept) is judged by the pid alone.
+    """
     if pid is None:
         return False
     try:
@@ -47,8 +52,8 @@ def _alive(pid: int | None) -> bool:
     except ProcessLookupError:
         return False
     except PermissionError:
-        return True
-    return True
+        pass
+    return started is None or process_started(pid) == started
 
 
 class JobRunner:
@@ -116,7 +121,11 @@ class JobRunner:
             if not path.is_file():
                 return None
             job = Job.model_validate(json.loads(path.read_text()))
-            if job.status == "running" and job_id not in self._processes and not _alive(job.pid):
+            if (
+                job.status == "running"
+                and job_id not in self._processes
+                and not _alive(job.pid, job.pid_started)
+            ):
                 job = self._keep(
                     job.model_copy(update={"status": "interrupted", "finished_at": time.time()})
                 )
@@ -170,6 +179,7 @@ class JobRunner:
                 argv=argv,
                 started_at=time.time(),
                 pid=process.pid,
+                pid_started=process_started(process.pid),
                 meta=meta or {},
             )
             self._processes[job_id] = process
@@ -244,8 +254,10 @@ class JobRunner:
             if job is None or job.status != "running":
                 return job
             job = self._keep(job.model_copy(update={"cancel_requested": True}))
+            # get() only reports a job running while its pid still names the process it started,
+            # so a reused pid (someone else's group) is never signalled.
             if job.pid is not None:
-                with suppress(ProcessLookupError):
+                with suppress(ProcessLookupError, PermissionError):
                     os.killpg(job.pid, signal.SIGTERM)
             return job
 

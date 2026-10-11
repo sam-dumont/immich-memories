@@ -72,6 +72,18 @@ def test_one_users_sign_out_does_not_touch_another(store):
     assert session_generation(config, "user-absent") == 0
 
 
+def test_a_user_named_star_does_not_sign_everyone_out(store):
+    config = Config()
+
+    end_sessions(config, "*")
+
+    assert session_generation(config, "user-one") == 0
+    assert session_generation(config, "*") == 1
+    end_sessions(config, None)
+    assert session_generation(config, "user-one") == 1
+    assert session_generation(config, "*") == 2
+
+
 def test_a_generation_never_goes_back(store):
     config = Config()
 
@@ -128,3 +140,20 @@ def test_concurrent_logouts_refuse_both_copied_cookies(store, monkeypatch):
             client.get("/api/v1/connection", headers={"cookie": f"session={cookie}"}).status_code
             == 401
         )
+
+
+def test_downgrading_writes_the_revocations_back(store):
+    config = Config()
+    end_sessions(config, None)
+    end_sessions(config, "user-one")
+    end_sessions(config, "user-one")
+
+    downgrade(store, "0012_annotation_assets_is_edited")
+
+    with store.connect() as connection:
+        legacy = connection.execute(
+            sa.select(store_meta.c.value).where(store_meta.c.key == _LEGACY_KEY)
+        ).scalar()
+    assert legacy == {"*": 1, "user-one": 2}
+    upgrade(store)
+    assert _counts(store) == {"*": 1, "user-one": 2}

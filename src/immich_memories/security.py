@@ -82,6 +82,26 @@ def _assert_private(path: Path) -> None:
         raise RuntimeError(f"{path} is not a private directory (group/other access)")
 
 
+def _tighten_own_directory(path: Path) -> None:
+    """Narrow a real directory this user owns to 0700; touch nothing else.
+
+    A volume remount can widen runtime scratch (Kubernetes `fsGroupChangePolicy: Always`
+    makes it 2770), and scratch holds only throwaway files, so the app takes the access
+    back itself. Tightening never widens anything. The directory is opened without following
+    a symlink and checked on the descriptor, so a swapped-in link or another user's
+    directory is left alone for `_assert_private` to refuse.
+    """
+    try:
+        fd = os.open(path, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+    except OSError:
+        return
+    try:
+        if os.fstat(fd).st_uid == os.getuid():
+            os.fchmod(fd, 0o700)
+    finally:
+        os.close(fd)
+
+
 def private_temp_dir(name: str) -> Path:
     """A scratch directory under the runtime temp dir that only this user can enter.
 
@@ -114,6 +134,7 @@ def runtime_scratch(directory: Path) -> Iterator[Path]:
     scratch = directory.expanduser().absolute() / "scratch"
     try:
         create_private_directory(scratch)
+        _tighten_own_directory(scratch)
         _assert_private(scratch)
         # Verify writes now: tempfile's own directory search would silently fall back.
         with tempfile.TemporaryFile(dir=scratch):

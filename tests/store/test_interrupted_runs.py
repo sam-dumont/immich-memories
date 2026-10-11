@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from unittest.mock import patch
+
+import pytest
 
 from immich_memories.db.leases import Lease
 from immich_memories.tracking.models import RunMetadata
@@ -65,3 +68,18 @@ def test_a_run_its_tracker_ended_is_no_longer_held(store):
     assert interrupt_orphaned_runs(store) == []
     failed = db.get_run(tracker.run_id)
     assert failed is not None and failed.status == "failed"
+
+
+def test_a_run_that_cannot_take_its_lease_does_not_start_to_be_swept_as_dead(store):
+    """No owner label means the sweep would end a live run and refuse its later `complete`."""
+    tracker = RunTracker(store=store, capture_system=False)
+
+    # WHY: a failing lock directory or advisory-lock connection is a storage boundary.
+    with (
+        patch.object(Lease, "acquire", side_effect=OSError("no space left")),
+        pytest.raises(RuntimeError, match="liveness lease"),
+    ):
+        tracker.start_run()
+
+    assert interrupt_orphaned_runs(store) == []
+    assert RunDatabase(store).running_run_ids() == []

@@ -24,6 +24,7 @@ from immich_memories.config import get_config
 from immich_memories.db import open_store
 from immich_memories.security import configured_secret_values, sanitize_error_message
 from immich_memories.web.auth import is_auth_enabled
+from immich_memories.web.request_checks import host_allowed, host_name
 from immich_memories.web.session_validity import session_current
 
 if TYPE_CHECKING:
@@ -162,6 +163,10 @@ def _for(request: Request, snapshot: dict[str, Any]) -> dict[str, Any]:
         config = get_config()
     except Exception:
         return snapshot | dict.fromkeys(_DETAIL_FIELDS)
+    # The probe paths skip the Host check so a kubelet can name the pod IP; a host the server
+    # would otherwise refuse (a rebound page, any auth mode) therefore gets the status alone.
+    if not host_allowed(host_name(request.headers.get("host", "")), config):
+        return {"status": snapshot["status"]}
     if _health_detail_allowed(config, request):
         return snapshot.copy()
     return snapshot | dict.fromkeys(_DETAIL_FIELDS)

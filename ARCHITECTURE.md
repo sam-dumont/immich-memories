@@ -902,6 +902,7 @@ src/immich_memories/
 │   ├── i18n.py                 # GET /api/v1/i18n: the browser's ui.po as JSON, and the languages offered
 │   ├── brief.py                # CutBrief: generate's flags 1:1 → argv, and the command shown to copy
 │   ├── jobs.py                 # JobRunner: the CLI as a child process; records/logs under cache/web-jobs
+│   ├── process_identity.py     # A pid plus its start time, so a reused pid is not mistaken for a job's child
 │   ├── job_routes.py           # POST /cuts (generate --no-render), /runs/{id}/renders (runs render),
 │   │                           #   /runs/{id}/music-preview, /music uploads, /roster/scan,
 │   │                           #   /jobs/{id}[/events|/cancel|/output] (SSE progress), /runs/{id}/film

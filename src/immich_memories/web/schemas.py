@@ -218,6 +218,8 @@ class Job(BaseModel):
     finished_at: float | None = None
     exit_code: int | None = None
     pid: int | None = None
+    # When that pid's process began: a pid alone can be reused by another process.
+    pid_started: str | None = None
     cancel_requested: bool = False
     meta: dict[str, str | int | None] = {}
     result_run_id: str | None = None

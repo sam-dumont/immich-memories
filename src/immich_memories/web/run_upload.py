@@ -122,4 +122,7 @@ def upload_run_film(
     except UploadRefused as refusal:
         raise HTTPException(refusal.status, str(refusal)) from refusal
     except (ImmichAPIError, httpx.HTTPError) as error:
-        raise HTTPException(502, f"Immich could not take the upload: {error}") from error
+        # The error text can carry the Immich address; the type says enough.
+        raise HTTPException(
+            502, f"Immich could not take the upload ({type(error).__name__})"
+        ) from error

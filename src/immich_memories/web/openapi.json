@@ -1647,6 +1647,17 @@
             ],
             "title": "Pid"
           },
+          "pid_started": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pid Started"
+          },
           "progress": {
             "$ref": "#/components/schemas/JobProgress"
           },

@@ -131,6 +131,8 @@ def test_a_populated_store_rolls_back_revision_by_revision_and_up_again(store, t
         # where a plain revision target would take both branches down in one step.
         join = script.is_merge_point
         downgrade(store, script.down_revision[0] if join else f"{revision}@-1")
+        if revision == "0013_session_generations":
+            _take_back_revocations(store)
         surviving = _tables(store) & set(before)
         with store.connect() as connection:
             kept = {name: _kept(connection, store, name) for name in surviving}
@@ -154,6 +156,20 @@ def test_a_populated_store_rolls_back_revision_by_revision_and_up_again(store, t
 
 def _table(name: str) -> sa.Table:
     return next(table for table in metadata.sorted_tables if table.name == name)
+
+
+def _take_back_revocations(store) -> None:
+    """Undoing 0013 writes its revocations back as the older dict, one extra `store_meta` row.
+
+    That row is the downgrade's point (a sign-out stays in force); the contract here is about
+    the rest, so check it is there and clear it before comparing every other row.
+    """
+    meta = _table("store_meta")
+    with store.begin() as connection:
+        removed = connection.execute(
+            sa.delete(meta).where(meta.c.key == "auth.session_generations")
+        ).rowcount
+    assert removed == 1
 
 
 def _kept(connection, store, name: str) -> tuple[int, str | None]:

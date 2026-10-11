@@ -130,7 +130,7 @@ def _model_inventory(base_url: str, *, timeout: float, api_key: str) -> list[dic
             raise
         # The endpoint is there and answering; it wants a credential. Another URL is not the fix.
         raise PermissionError(
-            f"caption endpoint {base_url} answered HTTP {exc.code}; {CAPTION_KEY_HINT}"
+            f"caption endpoint answered HTTP {exc.code}; {CAPTION_KEY_HINT}"
         ) from exc
     rows = payload.get("data") if isinstance(payload, dict) else None
     if not isinstance(rows, list):

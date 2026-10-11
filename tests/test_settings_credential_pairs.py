@@ -27,7 +27,6 @@ PAIRS = [
     ),
     ("musicgen.base_url", "musicgen.api_key", "https://musicgen.example.test"),
     ("ace_step.api_url", "ace_step.api_key", "https://acestep.example.test"),
-    ("render.worker_base_url", "render.worker_token", "https://worker.example.test"),
 ]
 
 
@@ -68,18 +67,13 @@ def test_a_new_url_with_a_new_credential_is_saved(config_path, url_key, secret_k
     assert _value(url_key) == NEW_URL
 
 
-@pytest.mark.parametrize(("url_key", "secret_key", "first_url"), PAIRS[:-1])
+@pytest.mark.parametrize(("url_key", "secret_key", "first_url"), PAIRS)
 def test_a_new_url_is_saved_alone_when_no_credential_is_set(
     config_path, url_key, secret_key, first_url
 ):
     save_settings({url_key: NEW_URL})
 
     assert _value(url_key) == NEW_URL
-
-
-def test_the_render_worker_url_always_needs_its_token(config_path):
-    with pytest.raises(SettingRefused, match="enter the credential for the new server"):
-        save_settings({"render.worker_base_url": NEW_URL})
 
 
 def test_an_extra_account_url_needs_its_key_retyped(config_path):

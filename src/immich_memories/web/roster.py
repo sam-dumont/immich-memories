@@ -18,13 +18,13 @@ from immich_memories.people.editor import (
     PersonView,
     add_person,
     add_relationship,
+    answer_person,
     bind_person_alias,
     curation_flags,
     decline_person_alias,
     keep_apart,
     load_people,
     remove_relationship,
-    save_person,
     unbind_person_alias,
 )
 from immich_memories.people.groups import add_group, list_groups, remove_group
@@ -161,16 +161,15 @@ def answer(
     config: Annotated[Config, Depends(current_config)],
 ) -> RosterPerson:
     """Keep this person's role, notes and answers to the graph's guesses."""
-    person = next((p for p in load_people(store) if p.person_id == person_id), None)
-    if person is None:
+    saved = answer_person(
+        store,
+        person_id,
+        role=answers.role,
+        notes=answers.notes,
+        decisions={(a.kind, a.target_id): a.decision for a in answers.links},
+    )
+    if saved is None:
         raise HTTPException(404, "Nobody with that id is in the people registry.")
-    decided = {(a.kind, a.target_id): a.decision for a in answers.links}
-    person.role, person.notes = answers.role, answers.notes
-    for link in person.links:
-        if (link.kind, link.target_id) in decided:
-            link.decision = decided[(link.kind, link.target_id)]
-    save_person(store, person)
-    saved = next(p for p in load_people(store) if p.person_id == person_id)
     return _shown(saved, config)
 
 
