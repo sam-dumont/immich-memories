@@ -3,6 +3,8 @@ name: Image Maintenance
 on:
   schedule:
     - cron: '23 4 * * 1'
+    # Daily: drop nightly image versions whose dated tags passed 14 days.
+    - cron: '47 5 * * *'
   workflow_dispatch:
   pull_request:
     paths:
@@ -19,7 +21,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: image-maintenance-${{ github.ref }}
+  # The daily prune must not cancel a weekly inventory still running.
+  group: image-maintenance-${{ github.ref }}-${{ github.event.schedule }}
   cancel-in-progress: true
 
 env:
@@ -27,7 +30,7 @@ env:
 
 jobs:
   inventory:
-    if: github.repository_id == '1174219883'
+    if: github.repository_id == '1174219883' && github.event.schedule != '47 5 * * *'
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 120
     strategy:
@@ -57,3 +60,32 @@ jobs:
           path: image-audit/
           if-no-files-found: warn
           retention-days: 30
+
+  # Only `nightly-YYYYMMDD` versions go: never `nightly` itself, a release
+  # version, `latest`, a commit build, or an untagged platform child.
+  prune-nightly:
+    name: Prune expired nightly images
+    if: github.repository_id == '1174219883' && github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Delete nightly versions older than 14 days
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          set -euo pipefail
+          for package in immich-memories immich-memories%2Finference; do
+            versions="/users/$OWNER/packages/container/$package/versions"
+            gh api --paginate --slurp "$versions?per_page=100" \
+              | python3 scripts/prune_nightly_images.py \
+              | while read -r id; do
+                  echo "Deleting $package version $id"
+                  gh api --method DELETE "$versions/$id" </dev/null
+                done
+          done

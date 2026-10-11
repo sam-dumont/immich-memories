@@ -1,11 +1,11 @@
 import {useEffect, useRef, useState} from 'react';
-import useBaseUrl from '@docusaurus/useBaseUrl';
+import useMediaUrl from './useMediaUrl';
 
 export default function CliDemo() {
   const video = useRef<HTMLVideoElement>(null);
   const [reduced, setReduced] = useState(false);
-  const src = useBaseUrl('/demo/cli-demo.mp4');
-  const poster = useBaseUrl('/demo/cli-demo-poster.jpg');
+  const src = useMediaUrl('/demo/cli-demo.mp4');
+  const poster = useMediaUrl('/demo/cli-demo-poster.jpg');
 
   useEffect(() => {
     const query = window.matchMedia('(prefers-reduced-motion: reduce)');

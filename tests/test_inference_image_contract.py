@@ -321,9 +321,16 @@ def test_inference_digest_artifacts_round_trip_to_separate_manifests(tmp_path, m
     import subprocess
 
     workflow = yaml.safe_load((REPO_ROOT / ".github/workflows/release.yml").read_text())
-    export = next(
-        s for s in workflow["jobs"]["inference-build"]["steps"] if s.get("name") == "Export digest"
+    build = next(
+        s
+        for s in workflow["jobs"]["inference-build"]["steps"]
+        if s.get("uses") == "./.github/actions/push-image-digest"
     )
+    assert build["with"]["artifact"].startswith("inference-digests-${{ matrix.device }}-")
+    action = yaml.safe_load(
+        (REPO_ROOT / ".github/actions/push-image-digest/action.yml").read_text()
+    )
+    export = next(s for s in action["runs"]["steps"] if s.get("name") == "Export digest")
     digests = tmp_path / "digests"
     expected = {"cpu": [], "cuda": []}
     image = "ghcr.io/example/inference"

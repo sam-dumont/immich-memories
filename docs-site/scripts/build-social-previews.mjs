@@ -2,8 +2,9 @@ import assert from 'node:assert/strict';
 import {mkdir, readdir, readFile, writeFile} from 'node:fs/promises';
 import {dirname, join} from 'node:path';
 import {readPageMetadata, renderSocialCard} from './social-preview.mjs';
+import {docsTrack, trackPath} from './docs-track.mjs';
 
-const base = `https://sam-dumont.github.io/immich-memories/${process.env.DOCS_NEXT === 'true' ? 'next/' : ''}`;
+const base = `https://sam-dumont.github.io/immich-memories/${trackPath(docsTrack())}`;
 const pages = [];
 for (const file of await readdir('build', {recursive: true})) {
   if (!file.endsWith('.html')) continue;

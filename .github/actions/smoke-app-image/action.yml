@@ -1,0 +1,46 @@
+name: Smoke-test the app image
+description: >-
+  Render one CPU-only film inside the exact amd64 app image just pushed by digest,
+  against the hermetic fake Immich. Both early launch blockers were image-only
+  problems the unit suite and native E2E could not see. The calling job checks
+  out the repository and grants packages read.
+
+inputs:
+  registry-token:
+    description: Token that can pull from GHCR (the job's GITHUB_TOKEN)
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Download digests
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      with:
+        path: /tmp/digests
+        pattern: digests-amd64
+        merge-multiple: true
+
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ inputs.registry-token }}
+
+    - name: Install ffprobe
+      uses: ./.github/actions/install-ffmpeg
+
+    - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+
+    - name: Install Python
+      shell: bash
+      run: uv python install "3.12"
+
+    - name: Run one CPU-only generation inside the image
+      shell: bash
+      run: |
+        digest="sha256:$(ls /tmp/digests | head -1)"
+        image="ghcr.io/sam-dumont/immich-memories@${digest}"
+        docker pull "$image"
+        uv run --no-project --with pillow --with numpy \
+          python scripts/docker_smoke.py --image "$image" --timeout 1200

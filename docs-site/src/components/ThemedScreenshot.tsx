@@ -1,5 +1,5 @@
 import ThemedImage from '@theme/ThemedImage';
-import useBaseUrl from '@docusaurus/useBaseUrl';
+import useMediaUrl from './useMediaUrl';
 import {useColorMode} from '@docusaurus/theme-common';
 
 interface Props {
@@ -10,8 +10,8 @@ interface Props {
 export default function ThemedScreenshot({name, alt}: Props) {
   const {colorMode} = useColorMode();
   const sources = {
-    light: useBaseUrl(`/img/screenshots/${name}.png`),
-    dark: useBaseUrl(`/img/screenshots/dark-${name}.png`),
+    light: useMediaUrl(`/img/screenshots/${name}.png`),
+    dark: useMediaUrl(`/img/screenshots/dark-${name}.png`),
   };
   return (
     <figure className="docs-screenshot">
@@ -23,7 +23,7 @@ export default function ThemedScreenshot({name, alt}: Props) {
 }
 
 export function Screenshot({src, alt}: {src: string; alt: string}) {
-  const url = useBaseUrl(src);
+  const url = useMediaUrl(src);
   return (
     <figure className="docs-screenshot">
       <a href={url} aria-label={`Open full-size screenshot: ${alt}`} target="_blank" rel="noopener noreferrer">

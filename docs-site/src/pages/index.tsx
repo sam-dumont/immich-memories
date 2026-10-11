@@ -1,6 +1,6 @@
 import type {ReactNode} from 'react';
 import Link from '@docusaurus/Link';
-import useBaseUrl from '@docusaurus/useBaseUrl';
+import useMediaUrl from '../components/useMediaUrl';
 import Layout from '@theme/Layout';
 import Heading from '@theme/Heading';
 import CodeBlock from '@theme/CodeBlock';
@@ -17,7 +17,7 @@ const journeys = [
 ];
 
 export default function Home(): ReactNode {
-  const trip = useBaseUrl('/demo/trip-preview.mp4');
+  const trip = useMediaUrl('/demo/trip-preview.mp4');
   return (
     <Layout title="Self-hosted video memories for Immich" description={productDescription}>
       <header className={styles.hero}>

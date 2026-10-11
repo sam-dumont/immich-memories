@@ -1,6 +1,6 @@
 import {useEffect, useState} from 'react';
 import ThemedImage from '@theme/ThemedImage';
-import useBaseUrl from '@docusaurus/useBaseUrl';
+import useMediaUrl from './useMediaUrl';
 import {useColorMode} from '@docusaurus/theme-common';
 
 interface Props {
@@ -15,8 +15,8 @@ export default function Diagram({name, headline}: Props) {
   const {colorMode} = useColorMode();
   const [open, setOpen] = useState(false);
   const sources = {
-    light: useBaseUrl(`/diagrams/${name}.svg`),
-    dark: useBaseUrl(`/diagrams/${name}-dark.svg`),
+    light: useMediaUrl(`/diagrams/${name}.svg`),
+    dark: useMediaUrl(`/diagrams/${name}-dark.svg`),
   };
 
   useEffect(() => {

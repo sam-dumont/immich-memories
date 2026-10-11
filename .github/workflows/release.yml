@@ -10,14 +10,13 @@ on:
         default: false
         type: boolean
       channel:
-        description: 'stable = final; rc = release candidate; dev = pre-tag onboarding rehearsal (no PyPI)'
+        description: 'stable = final; rc = release candidate (a nightly on demand is the pre-tag rehearsal)'
         required: false
         default: stable
         type: choice
         options:
           - stable
           - rc
-          - dev
       force_version:
         description: 'Force version bump type (optional; starts a new series, ignored while one is open)'
         required: false
@@ -340,7 +339,7 @@ jobs:
         uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v2
         with:
           tag_name: v${{ needs.analyze.outputs.next_version }}
-          name: ${{ inputs.channel == 'dev' && 'Pre-tag rehearsal' || 'Release' }} v${{ needs.analyze.outputs.next_version }}
+          name: Release v${{ needs.analyze.outputs.next_version }}
           body_path: release_notes.md
           files: |
             dist/*.whl
@@ -365,7 +364,7 @@ jobs:
   pypi-publish:
     name: Publish to PyPI
     needs: [analyze, release, pypi-publish-music]
-    if: github.repository_id == '1174219883' && (!inputs.dry_run && inputs.channel != 'dev' && needs.analyze.outputs.should_release == 'true')
+    if: github.repository_id == '1174219883' && (!inputs.dry_run && needs.analyze.outputs.should_release == 'true')
     runs-on: ubuntu-24.04
     environment:
       name: pypi
@@ -397,7 +396,7 @@ jobs:
   pypi-publish-music:
     name: Publish bundled music to PyPI
     needs: [analyze, release]
-    if: github.repository_id == '1174219883' && (!inputs.dry_run && inputs.channel != 'dev' && needs.analyze.outputs.should_release == 'true')
+    if: github.repository_id == '1174219883' && (!inputs.dry_run && needs.analyze.outputs.should_release == 'true')
     runs-on: ubuntu-24.04
     environment:
       name: pypi
@@ -426,19 +425,18 @@ jobs:
           skip-existing: true
 
   # Deploy docs after release (GITHUB_TOKEN events don't trigger other workflows,
-  # so we call the docs workflow directly instead of relying on release:published)
+  # so we call the docs workflow directly instead of relying on release:published).
+  # It rebuilds every track (stable, next, dev) from the published state; this
+  # release lands at the root or under /next as scripts/docs_release.py decides.
   deploy-docs:
     name: Deploy Docs
     needs: [analyze, release, deployment-bundle, pypi-publish]
-    # Candidates publish at the root before 1.0, then at /next.
     if: >-
       github.repository_id == '1174219883' &&
       !cancelled() && !inputs.dry_run && needs.analyze.outputs.should_release == 'true' &&
       needs.deployment-bundle.result == 'success' &&
-      (inputs.channel == 'dev' || needs.pypi-publish.result == 'success')
+      needs.pypi-publish.result == 'success'
     uses: ./.github/workflows/docs.yml
-    with:
-      version: v${{ needs.analyze.outputs.next_version }}
     permissions:
       contents: read
       pages: write
@@ -481,56 +479,19 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
-
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+      - name: Build, push by digest and attest
+        uses: ./.github/actions/push-image-digest
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push by digest
-        id: build
-        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
-        with:
-          context: .
+          image: ghcr.io/sam-dumont/immich-memories
           file: ./docker/Dockerfile
-          push: true
-          platforms: ${{ matrix.platform }}
+          platform: ${{ matrix.platform }}
           build-args: |
             APP_VERSION=${{ needs.analyze.outputs.next_version }}
             INSTALL_EXTRAS=all
             VCS_REF=${{ github.sha }}
             SOURCE_URL=https://github.com/${{ github.repository }}
-          # No gha layer cache: it never hit (0 CACHED steps, #1272) and each
-          # export pushed the main branch's useful caches out of the 10 GB limit.
-          outputs: type=image,name=ghcr.io/sam-dumont/immich-memories,push-by-digest=true,name-canonical=true
-
-      # Attaches the attestation to the image in GHCR as an OCI referrer, so
-      # `gh attestation verify oci://...` and `cosign` can find it without
-      # knowing this repo. Each platform attests its own digest.
-      - name: Attest image provenance
-        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4
-        with:
-          subject-name: ghcr.io/sam-dumont/immich-memories
-          subject-digest: ${{ steps.build.outputs.digest }}
-          push-to-registry: true
-
-      - name: Export digest
-        run: |
-          mkdir -p /tmp/digests
-          digest="${{ steps.build.outputs.digest }}"
-          touch "/tmp/digests/${digest#sha256:}"
-
-      - name: Upload digest
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: digests-${{ matrix.slug }}
-          path: /tmp/digests/*
-          if-no-files-found: error
-          retention-days: 1
+          artifact: digests-${{ matrix.slug }}
+          registry-token: ${{ secrets.GITHUB_TOKEN }}
 
   # WHY this gate (#346): both 2026-08-18 launch blockers (OpenCV 5 resolving
   # into the image, NVENC selected on GPU-less hosts) were image-only problems
@@ -580,49 +541,18 @@ jobs:
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
-
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+      - name: Build, push by digest and attest
+        uses: ./.github/actions/push-image-digest
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push by digest
-        id: build
-        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
-        with:
-          context: .
+          image: ghcr.io/sam-dumont/immich-memories/inference
           file: ./docker/Dockerfile.inference
-          push: true
-          platforms: ${{ matrix.platform }}
+          platform: ${{ matrix.platform }}
           build-args: |
             DEVICE=${{ matrix.device }}
             APP_VERSION=${{ needs.analyze.outputs.next_version }}
             VCS_REF=${{ github.sha }}
-          # No gha layer cache: it never hit (0 CACHED steps, #1272).
-          outputs: type=image,name=ghcr.io/sam-dumont/immich-memories/inference,push-by-digest=true,name-canonical=true
-
-      - name: Attest inference image provenance
-        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4
-        with:
-          subject-name: ghcr.io/sam-dumont/immich-memories/inference
-          subject-digest: ${{ steps.build.outputs.digest }}
-          push-to-registry: true
-
-      - name: Export digest
-        run: |
-          mkdir -p /tmp/digests
-          digest="${{ steps.build.outputs.digest }}"
-          touch "/tmp/digests/${digest#sha256:}"
-
-      - name: Upload digest
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: inference-digests-${{ matrix.device }}-${{ strategy.job-index }}
-          path: /tmp/digests/*
+          artifact: inference-digests-${{ matrix.device }}-${{ strategy.job-index }}
+          registry-token: ${{ secrets.GITHUB_TOKEN }}
 
   inference-manifest:
     name: Create Inference Manifest
@@ -735,33 +665,10 @@ jobs:
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Download digests
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          path: /tmp/digests
-          pattern: digests-amd64
-          merge-multiple: true
-
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Install ffprobe
-        uses: ./.github/actions/install-ffmpeg
-
-      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
-      - run: uv python install "3.12"
-
       - name: Run one CPU-only generation inside the image
-        run: |
-          digest="sha256:$(ls /tmp/digests | head -1)"
-          image="ghcr.io/sam-dumont/immich-memories@${digest}"
-          docker pull "$image"
-          uv run --no-project --with pillow --with numpy \
-            python scripts/docker_smoke.py --image "$image" --timeout 1200
+        uses: ./.github/actions/smoke-app-image
+        with:
+          registry-token: ${{ secrets.GITHUB_TOKEN }}
 
   # Merge per-platform images into a multi-arch manifest
   docker-manifest:
@@ -863,29 +770,7 @@ jobs:
       - name: Package deployment files
         env:
           VERSION: ${{ needs.analyze.outputs.next_version }}
-        run: |
-          bundle="$RUNNER_TEMP/immich-memories-deploy-${VERSION}.tar.gz"
-          python3 scripts/package_deployment.py "$VERSION" "$bundle"
-          compose_assets="$RUNNER_TEMP/immich-memories-compose-${VERSION}"
-          python3 scripts/package_compose.py "$VERSION" "$compose_assets"
-          cp "$bundle" "$compose_assets/"
-          cp "$RUNNER_TEMP"/dist-release/*.whl "$compose_assets/"
-          for variant in app inference inference-cuda; do
-            image="ghcr.io/sam-dumont/immich-memories"
-            suffix=""
-            if [[ "$variant" != app ]]; then image="$image/inference"; fi
-            if [[ "$variant" == inference-cuda ]]; then suffix="-cuda"; fi
-            docker buildx imagetools inspect "$image:$VERSION$suffix" \
-              --format '{{json .Manifest}}' > "$compose_assets/$variant-image.json"
-          done
-          jq -n --arg version "$VERSION" --arg source "$GITHUB_SHA" \
-            --slurpfile app "$compose_assets/app-image.json" \
-            --slurpfile inference "$compose_assets/inference-image.json" \
-            --slurpfile cuda "$compose_assets/inference-cuda-image.json" \
-            '{version: $version, source_commit: $source, images: {app: $app[0], inference: $inference[0], cuda: $cuda[0]}}' \
-            > "$compose_assets/installation.json"
-          (cd "$compose_assets" && for asset in *; do sha256sum "$asset"; done) > "$RUNNER_TEMP/SHA256SUMS"
-          mv "$RUNNER_TEMP/SHA256SUMS" "$compose_assets/SHA256SUMS"
+        run: bash scripts/package_release_assets.sh
       # The wheel is in the release already (from dist-release); only the new
       # setup and evidence assets travel.
       - name: Upload deployment files

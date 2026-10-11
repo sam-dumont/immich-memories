@@ -12,7 +12,7 @@ import argparse
 import re
 from pathlib import Path
 
-RELEASE_VERSION = re.compile(r"\d+\.\d+\.\d+(?:-(?:rc|dev)\.\d+)?")
+RELEASE_VERSION = re.compile(r"\d+\.\d+\.\d+(?:-rc\.\d+)?")
 
 # Each pattern has a `pre` group, the pinned value, and an optional `post` group that is kept
 # (a `-cuda` suffix, a closing quote or brace).

@@ -67,6 +67,18 @@ Runs on every push to `main` and automatically releases if there are releasable 
 - `production` - For minor/patch releases
 - `production-major` - For major releases (add approval requirement)
 
+### `nightly.yml` - Nightly Build
+
+Runs daily and on demand (`force` builds an unchanged `main`). It builds only when `main` has commits since the last nightly, read from the `Commit:` line of the rolling `nightly` prerelease (`scripts/nightly.py`). It publishes `:nightly` and `:nightly-YYYYMMDD` images, the wheel and Compose files on the `nightly` prerelease, and the docs at `/dev/`. It never publishes to PyPI, never moves `latest` or a `v*` tag, and never marks its release as "Latest". It shares the image build and smoke steps with `release.yml` through `.github/actions/push-image-digest` and `.github/actions/smoke-app-image`, and the setup-file packaging through `scripts/package_release_assets.sh`.
+
+### `docs.yml` - Deploy Docs
+
+Called by the release and the nightly, or run by hand. Every deploy rebuilds all docs tracks, each from its own ref (`scripts/docs_release.py`): stable at the root, the newest newer release candidate at `/next/`, the latest nightly's commit at `/dev/`.
+
+### `image-maintenance.yml` - Image Maintenance
+
+Weekly: inventories and audits the packages in the built images. Daily: deletes image versions whose only tags are `nightly-YYYYMMDD` dates older than 14 days (`scripts/prune_nightly_images.py`).
+
 ### `pr-automation.yml` - PR Automation
 
 Runs on pull request events.

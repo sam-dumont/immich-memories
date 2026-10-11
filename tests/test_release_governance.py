@@ -456,7 +456,7 @@ def test_published_installation_inputs_have_matching_checksums_and_image_identit
     # The package job's wheel arrives as a workflow artifact, not from a release.
     wheels = tmp_path / "dist-release"
     wheels.mkdir()
-    (wheels / "immich_memories-0.0.0.dev12345-py3-none-any.whl").write_bytes(b"fixture wheel")
+    (wheels / "immich_memories-1.0.1.dev20261011-py3-none-any.whl").write_bytes(b"fixture wheel")
     manifest = {
         "digest": "sha256:" + "a" * 64,
         "manifests": [{"platform": {"os": "linux", "architecture": "amd64"}}],
@@ -477,7 +477,7 @@ def test_published_installation_inputs_have_matching_checksums_and_image_identit
             **os.environ,
             "PATH": f"{binaries}:{os.environ['PATH']}",
             "RUNNER_TEMP": str(tmp_path),
-            "VERSION": "0.0.0-dev.12345",
+            "VERSION": "nightly-20261011",
             "GITHUB_SHA": "b" * 40,
         },
         check=True,
@@ -485,37 +485,56 @@ def test_published_installation_inputs_have_matching_checksums_and_image_identit
         text=True,
     )
     assert (tmp_path / "inspected-images").read_text().splitlines() == [
-        "ghcr.io/sam-dumont/immich-memories:0.0.0-dev.12345",
-        "ghcr.io/sam-dumont/immich-memories/inference:0.0.0-dev.12345",
-        "ghcr.io/sam-dumont/immich-memories/inference:0.0.0-dev.12345-cuda",
+        "ghcr.io/sam-dumont/immich-memories:nightly-20261011",
+        "ghcr.io/sam-dumont/immich-memories/inference:nightly-20261011",
+        "ghcr.io/sam-dumont/immich-memories/inference:nightly-20261011-cuda",
     ]
-    assets = tmp_path / "immich-memories-compose-0.0.0-dev.12345"
+    assets = tmp_path / "immich-memories-compose-nightly-20261011"
     identity = json.loads((assets / "installation.json").read_text())
-    assert identity["version"] == "0.0.0-dev.12345"
+    assert identity["version"] == "nightly-20261011"
     assert identity["source_commit"] == "b" * 40
     assert set(identity["images"]) == {"app", "inference", "cuda"}
     assert identity["images"]["app"] == manifest
     checksums = dict(
         line.split(maxsplit=1)[::-1] for line in (assets / "SHA256SUMS").read_text().splitlines()
     )
-    bundle = "immich-memories-deploy-0.0.0-dev.12345.tar.gz"
+    bundle = "immich-memories-deploy-nightly-20261011.tar.gz"
     assert {
         bundle,
         "example.env",
         "docker-compose.yml",
         "installation.json",
-        "immich_memories-0.0.0.dev12345-py3-none-any.whl",
+        "immich_memories-1.0.1.dev20261011-py3-none-any.whl",
     } <= checksums.keys()
     for name, digest in checksums.items():
         assert digest == hashlib.sha256((assets / name).read_bytes()).hexdigest()
 
 
-def test_versioned_native_docs_wait_for_pypi_except_rehearsals():
+def test_versioned_native_docs_wait_for_pypi():
     jobs = release_workflow()["jobs"]
     docs = jobs["deploy-docs"]
     assert "pypi-publish" in docs["needs"]
     assert "needs.pypi-publish.result == 'success'" in docs["if"]
-    assert "inputs.channel == 'dev'" in docs["if"]
     assert "!cancelled()" in docs["if"]
-    for job in ("pypi-publish", "pypi-publish-music"):
-        assert "inputs.channel != 'dev'" in jobs[job]["if"]
+
+
+def test_the_release_has_no_pre_tag_rehearsal_channel():
+    """A nightly started on demand is the rehearsal; no run publishes v0.0.0-dev.N."""
+    workflow = release_workflow()
+    options = workflow["on"]["workflow_dispatch"]["inputs"]["channel"]["options"]
+    assert options == ["stable", "rc"]
+    assert "channel == 'dev'" not in json.dumps(workflow)
+    assert "channel != 'dev'" not in json.dumps(workflow)
+
+
+def test_release_and_nightly_share_the_image_build_and_smoke_steps():
+    jobs = release_workflow()["jobs"]
+    for job in ("docker-build", "inference-build"):
+        assert "./.github/actions/push-image-digest" in json.dumps(jobs[job]["steps"]), job
+    assert "./.github/actions/smoke-app-image" in json.dumps(jobs["docker-smoke"]["steps"])
+    bundle = next(
+        step
+        for step in jobs["deployment-bundle"]["steps"]
+        if step.get("name") == "Package deployment files"
+    )
+    assert bundle["run"] == "bash scripts/package_release_assets.sh"
