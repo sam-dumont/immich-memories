@@ -42,6 +42,7 @@ def _card(page: Page, name: str):
     return page.get_by_role("listitem").filter(has=page.locator("p.font-semibold", has_text=name))
 
 
+@pytest.mark.feature("web.people")
 def test_the_owner_is_a_guess_until_somebody_picks_and_a_scan_keeps_the_pick(
     page: Page, launch_app_url: str, launch_workspace
 ) -> None:
@@ -71,6 +72,7 @@ def test_the_owner_is_a_guess_until_somebody_picks_and_a_scan_keeps_the_pick(
     assert load_document(store)["owner"] is None
 
 
+@pytest.mark.feature("web.people")
 def test_a_detected_link_is_one_row_and_naming_it_leaves_one_row_on_each_side(
     page: Page, launch_app_url: str, launch_workspace
 ) -> None:

@@ -345,6 +345,9 @@ for (const tier of ['gpu', 'full']) {
 
 // What the person gets: the files must load in Docker Compose, which refuses duplicate keys.
 const compose = spawnSync('docker', ['compose', 'version'], {encoding: 'utf8'});
+// Linux CI runners always have Docker Compose, so a missing one there fails these. Elsewhere (a
+// developer machine, the macOS CI cell, which has no Docker) a machine without it skips them.
+const noCompose = compose.status !== 0 && !(process.env.CI && process.platform === 'linux');
 const composeConfig = (files) => {
   const dir = mkdtempSync(join(tmpdir(), 'builder-'));
   for (const [name, content] of Object.entries(files)) writeFileSync(join(dir, name), content + '\n');
@@ -355,7 +358,8 @@ const login = {lanAccess: true, authUsername: 'admin', authPassword: 'a-long-eno
 const fileNamed = (result, name) => result.files.find(file => file.name === name).content;
 
 for (const inline of [true, false]) {
-  test(`LAN access and a login load in docker compose config (inline: ${inline})`, {skip: compose.status !== 0}, () => {
+  // feature: docs.nas-login-compose
+  test(`LAN access and a login load in docker compose config (inline: ${inline})`, {skip: noCompose}, () => {
     const result = buildSetup({...setup, ...login, inline}, sources, '1.2.3');
     assert.equal(result.error, null);
     const files = {'docker-compose.yml': fileNamed(result, 'docker-compose.yml')};
@@ -368,7 +372,8 @@ for (const inline of [true, false]) {
   });
 }
 
-test('the stack page steps (edit the existing lines) keep the single file loadable', {skip: compose.status !== 0}, () => {
+// feature: docs.nas-login-compose
+test('the stack page steps (edit the existing lines) keep the single file loadable', {skip: noCompose}, () => {
   const result = buildSetup(setup, sources, '1.2.3');
   const edited = fileNamed(result, 'docker-compose.yml')
     .replace(/IMMICH_MEMORIES_AUTH_USERNAME: .*/, 'IMMICH_MEMORIES_AUTH_USERNAME: admin')
@@ -392,7 +397,7 @@ test('LAN access without a login, a short password or a lone password is refused
   assert.match(buildSetup({...setup, authPassword: 'a-long-enough-password'}, sources, '1.2.3').error, /username/);
 });
 
-test('a password with a dollar sign stays literal in the single file', {skip: compose.status !== 0}, () => {
+test('a password with a dollar sign stays literal in the single file', {skip: noCompose}, () => {
   const result = buildSetup({...setup, ...login, authPassword: 'pa$$word-is-long-enough'}, sources, '1.2.3');
   const config = composeConfig({'docker-compose.yml': fileNamed(result, 'docker-compose.yml')});
   assert.equal(config.status, 0, config.stderr);

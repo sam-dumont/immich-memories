@@ -13,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 from check_feature_inventory import (  # noqa: E402
     Row,
     cli_surfaces,
+    collect_node_tests,
     detector_surfaces,
     doc_errors,
     duplicate_ids,
@@ -21,7 +22,9 @@ from check_feature_inventory import (  # noqa: E402
     link_errors,
     load_inventory,
     memory_type_surfaces,
+    node_test_features,
     uncovered,
+    unrun_test_errors,
 )
 
 
@@ -175,6 +178,101 @@ def test_listed_tests_must_collect_and_carry_their_rows_marker():
         "b: test t.py::test_b lacks @pytest.mark.feature('b')",
         "t.py::test_orphan: marked feature('nowhere'), which no row has",
         "a: marked test t.py::test_stray is not listed in its row",
+    ]
+
+
+_NODE_SOURCE = textwrap.dedent(
+    """
+    import test from 'node:test';
+
+    // feature: docs.login
+    test('a login loads', () => {});
+
+    // What the person gets: the files load.
+    // feature: docs.login
+    // feature: docs.lan
+    for (const inline of [true, false]) {
+      // feature: docs.inline
+      test(`loads (inline: ${inline})`, {skip: false}, () => {});
+    }
+
+    // feature: docs.stale
+    const helper = 1;
+    test("an \\"escaped\\" title", () => {});
+    it('a bare it', () => {});
+    """
+)
+
+
+def test_node_tests_are_read_by_title_with_the_feature_comments_above_them():
+    assert node_test_features(_NODE_SOURCE) == {
+        "a login loads": ["docs.login"],
+        "loads (inline: ${inline})": ["docs.inline"],
+        'an \\"escaped\\" title': [],
+        "a bare it": [],
+    }
+
+
+def test_node_tests_collect_from_the_rows_and_the_node_test_folders(tmp_path):
+    builder = tmp_path / "docs-site" / "src" / "builder"
+    builder.mkdir(parents=True)
+    (builder / "recipes.test.mjs").write_text(_NODE_SOURCE)
+    (tmp_path / "docs-site" / "src" / "node_modules").mkdir()
+    (tmp_path / "docs-site" / "src" / "node_modules" / "dep.test.mjs").write_text(_NODE_SOURCE)
+    row = Row(id="docs.login", promise="p", doc="d", tests=("docs-site/gone.test.mjs::x",))
+
+    collected = collect_node_tests([row], root=tmp_path)
+
+    assert collected["docs-site/src/builder/recipes.test.mjs::a login loads"] == ["docs.login"]
+    assert not any("node_modules" in node or "gone" in node for node in collected)
+
+
+def test_a_node_test_without_its_feature_comment_is_named_as_such():
+    rows = [Row(id="docs.login", promise="p", doc="d", tests=("site/x.test.mjs::a title",))]
+
+    assert link_errors(rows, {"site/x.test.mjs::a title": []}) == [
+        "docs.login: test site/x.test.mjs::a title lacks a '// feature: docs.login' comment "
+        "above its test()"
+    ]
+
+
+def test_a_browser_or_node_test_must_sit_in_a_file_a_ci_target_runs():
+    makefile = textwrap.dedent(
+        """\
+        e2e: web-client-present  ## browser suite
+        \tuv run pytest tests/e2e/test_web_client.py \\
+        \t\ttests/e2e/test_people_page.py -v
+
+        e2e-full:
+        \tuv run pytest tests/e2e/ -v
+
+        docs-setup-check:
+        \tcd docs-site && node --experimental-strip-types --test src/builder/recipes.test.mjs
+        """
+    )
+    rows = [
+        Row(
+            id="web.ok",
+            promise="p",
+            doc="d",
+            tests=(
+                "tests/e2e/test_people_page.py::test_a",
+                "docs-site/src/builder/recipes.test.mjs::a login loads",
+                "tests/integration/features/test_x.py::test_b",
+            ),
+        ),
+        Row(
+            id="web.unrun",
+            promise="p",
+            doc="d",
+            tests=("tests/e2e/test_auth_flow.py::test_c", "docs-site/src/other.test.mjs::t"),
+        ),
+    ]
+
+    assert unrun_test_errors(rows, makefile) == [
+        "web.unrun: tests/e2e/test_auth_flow.py is not in `make e2e`, so "
+        "tests/e2e/test_auth_flow.py::test_c never runs",
+        "web.unrun: no Makefile `node --test` line runs docs-site/src/other.test.mjs",
     ]
 
 

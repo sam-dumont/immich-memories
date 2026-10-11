@@ -156,6 +156,7 @@ def _twin(index: int, name: str, other: int) -> dict:
     return entry
 
 
+@pytest.mark.feature("web.people")
 def test_each_curation_flag_names_both_people_and_can_be_kept_apart(
     page: Page, launch_app_url: str, launch_workspace
 ) -> None:
