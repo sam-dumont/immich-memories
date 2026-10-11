@@ -105,14 +105,18 @@ rebuilds all of it, each part from its own ref:
 
 | Path | Track | Built from |
 |---|---|---|
-| `/` | stable | the newest final release; before the first 1.x final, the newest release candidate |
+| `/` | stable | the newest final release; before the first 1.x final, main's current commit, labelled with the newest release candidate |
 | `/next/` | next | the newest release candidate, only when it is newer than stable |
 | `/dev/` | dev | the commit of the latest nightly |
 
 `scripts/docs_release.py` picks the refs from the published GitHub releases and the nightly
 marker. A release deploy rebuilds the current dev tree from the nightly's commit; a nightly
-deploy rebuilds stable and next from their tags unchanged. `/next/` and `/dev/` are kept out of
+deploy rebuilds stable and next from their refs. `/next/` and `/dev/` are kept out of
 search and carry a banner linking back to the stable docs.
+
+Before 1.0 the candidate is the release, and its docs keep being finished on main after the tag
+(install paths, first-run fixes, the privacy page). Built from the tag's tree, the root would
+hide every one of those until the next candidate, so it follows main until the first 1.x final.
 
 The three trees share large media. A static file over 256 KB whose bytes match the stable ref's
 copy is linked from the root tree, and the `/next/` or `/dev/` copy is dropped at assembly; a

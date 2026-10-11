@@ -1,7 +1,7 @@
 name: Deploy Docs
 
 # Pages serves one artifact, so every deploy builds every track from its own ref
-# (scripts/docs_release.py decides which): stable at the root, the newest newer
+# (scripts/docs_release.py decides which): stable at the root (main until 1.0), the newest newer
 # release candidate at /next/, the latest nightly's commit at /dev/.
 on:
   release:
@@ -48,8 +48,10 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           dev_ref=$(python3 scripts/nightly.py last-commit)
+          # Until 1.0 the root is built from main; a release event checks out its tag, so ask.
+          main_ref=$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)
           tracks=$(gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/releases?per_page=100" \
-            | python3 scripts/docs_release.py --tracks --dev-ref "$dev_ref")
+            | python3 scripts/docs_release.py --tracks --dev-ref "$dev_ref" --main-ref "$main_ref")
           echo "tracks=$tracks" >> "$GITHUB_OUTPUT"
           echo "Docs tracks: $tracks"
 
