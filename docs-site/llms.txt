@@ -1,0 +1,68 @@
+# Immich Memories
+
+> A self-hosted companion for Immich that turns a photo and video library into memory films. Pick a month, a year, a trip or a person, review the cut, then render an MP4 with titles and music.
+
+It runs next to an existing Immich server and reads the library through an Immich API key. It never changes your originals, and with upload off (the default) it writes nothing to the library. It ships as Docker Compose files, a Kubernetes setup, and a Python package for Mac and Linux.
+
+There are three tiers, and each one makes a complete film:
+
+- Basic: CPU only, no model server. Dates, favourites, people and places guide the edit. A plain NAS can do the whole job.
+- GPU: adds picture descriptions, document and sensitive-content checks, and a family-viewing pre-screen.
+- Full: GPU, plus a text reader that refines the draft and writes titles.
+
+Start with Basic when unsure. Every link below has the same pages in the left sidebar.
+
+## Install
+
+- [Quick start](/docs/get-started/quick-start): Docker Compose install for Basic, GPU or Full, connect Immich, open the app
+- [Choose your setup](/docs/get-started/choose-your-setup): what each tier changes and what hardware it needs
+- [Setup builder](/setup): generates the Compose or Kubernetes files for a tier, in the browser
+- [Requirements and tiers](/docs/run/requirements): CPU, memory, disk and GPU per tier
+- [On a NAS](/docs/run/nas): Synology, Unraid, TrueNAS and Portainer
+- [Kubernetes](/docs/run/kubernetes): all three tiers in an existing cluster
+- [Native Mac or Linux](/docs/run/uv-pip): packaged releases with uv or pip, Apple Silicon included
+- [Installation help](/docs/reference/installation-help): what to check when an install fails
+
+## Make a film
+
+- [Your first film](/docs/get-started/first-film): choose an album, review the cut, render
+- [After install](/docs/get-started/after-install): home, people, film language, backups, schedules
+- [Choose a film](/docs/make/memory-types): month, year, person, trip or occasion
+- [Use the web UI](/docs/make/web-ui): the browser app
+- [Generate a film](/docs/make/cli/generate): CLI recipes
+- [Automatic films](/docs/make/automate): one film a day, chosen by the app
+- [Improve a film](/docs/make/improve-a-film): fix the cut, the people, the length
+
+## Configure and operate
+
+- [Configuration](/docs/run/config-file): the config file
+- [Environment variables](/docs/run/environment-variables): every variable the app reads
+- [Privacy](/docs/run/privacy): everything that can leave your network, and how to turn it off
+- [Hardware encoding](/docs/run/hardware): NVENC, VAAPI, Quick Sync and VideoToolbox
+- [Upgrading](/docs/run/maintenance/upgrading): upgrade steps and deprecations
+
+## Reference
+
+- [CLI reference](/docs/reference/cli-reference): every command and flag, generated from the code
+- [Config reference](/docs/reference/config-reference): every config key and its default
+- [Automation decisions and trigger API](/docs/reference/automation-contract): the HTTP trigger and what it decides
+- [Text reader and provider contracts](/docs/reference/llm-providers): how the Full tier talks to a model server
+- [Troubleshooting](/docs/reference/troubleshooting): known symptoms and fixes
+- [FAQ](/docs/reference/faq)
+
+## Build from source
+
+- [AGENTS.md](https://github.com/sam-dumont/immich-memories/blob/main/AGENTS.md): read this first if you are a coding agent. Rules for changes, tests, commits and safety
+- [ARCHITECTURE.md](https://github.com/sam-dumont/immich-memories/blob/main/ARCHITECTURE.md): map of the codebase and its entry points
+- [Development setup](/docs/contribute/development-setup): Python 3.11 to 3.13, FFmpeg, uv, Make and Node 22, then `make dev` in every clone
+- [Architecture](/docs/contribute/architecture): how the pipeline, store, web app and services fit together
+- [Testing](/docs/contribute/testing): unit, integration and end-to-end tests, and how to run them
+- [CI and quality gates](/docs/contribute/ci): every gate a change has to pass; `make ci` runs them all
+- [Writing the docs](/docs/contribute/writing-docs): what goes on which page
+- [Makefile](https://github.com/sam-dumont/immich-memories/blob/main/Makefile): `make help` lists every target
+
+## Optional
+
+- [How it chooses](/docs/how-it-chooses/overview): how a cut is picked, without code
+- [Choose an upgrade](/docs/better/overview): optional add-ons per tier
+- [Releasing](/docs/contribute/releasing): versioning and the release process

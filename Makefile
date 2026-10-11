@@ -1145,6 +1145,11 @@ docs-social-check:  ## Check social image routes and rendered cards
 docs-build: docs-social-check
 	cd docs-site && NO_UPDATE_NOTIFIER=1 npm run build
 	$(MAKE) --no-print-directory docs-analytics-check
+	$(MAKE) --no-print-directory docs-llms-check
+
+.PHONY: docs-llms-check
+docs-llms-check:  ## Check llms.txt links resolve, and the built copy points into its track
+	cd docs-site && node --test scripts/llms-txt.test.mjs
 
 .PHONY: docs-analytics-check
 docs-analytics-check:  ## Check the built docs tracker without submitting real events

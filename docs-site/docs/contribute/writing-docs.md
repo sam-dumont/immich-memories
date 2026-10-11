@@ -74,6 +74,14 @@ the TrueType file.
 `make docs-social-check` checks the renderer. `make docs-build` checks the generated images and
 the Open Graph and Twitter tags, including the candidate site paths.
 
+## llms.txt
+
+`docs-site/llms.txt` is the map a coding agent or chat model reads first: what the app is, where
+to install, how to make a film, the reference pages and how to build from source. Write its links
+site-relative (`/docs/run/nas`). The build turns them into full links for the track it builds, and
+fails when a link points to a page that does not exist. Add a page there when it becomes a place
+to start; leave detail pages to the sidebar.
+
 ## Gates
 
 `make docs-voice`, `make docs-build`, `make docs-cli-check`, `make docs-config-check`.
