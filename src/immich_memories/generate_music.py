@@ -286,9 +286,14 @@ def _master(track: Path, run_output_dir: Path) -> Path:
 def transition_overlap_seconds(transition: str, transition_duration: float) -> float:
     """How much a transition shortens the interval between two visible cuts.
 
-    Only a crossfade overlaps: "smart" resolves to a fade at every boundary the
-    assembler builds (``assembly_engine.get_transition_types``), so it costs the
-    same as "crossfade". A hard cut leaves the clips end to end.
+    Only a fade overlaps; a hard cut leaves the clips end to end. "smart" is
+    counted as a full fade, though it fades at only about 70% of boundaries and
+    cuts at the rest (``assembly_engine._pick_transition``), so its overlap is
+    the upper bound rather than what every boundary costs.
+
+    The value is subtracted from the median photo duration in
+    ``photo_cadence_seconds`` to find how often a photo cut lands, which the
+    music selection matches its tempo to.
     """
     return 0.0 if transition in ("cut", "none") else transition_duration
 

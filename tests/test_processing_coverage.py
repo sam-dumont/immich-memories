@@ -469,6 +469,12 @@ class TestExtractWithReencode:
             mock_progress.assert_called_once()
 
 
+def _ffmpeg_writing_its_output(cmd, **_kwargs):
+    """Like FFmpeg, write the file the command names; the cut is renamed into place after."""
+    Path(cmd[-1]).write_bytes(b"")
+    return MagicMock(returncode=0, stderr="")
+
+
 class TestExtractClipFunction:
     """Top-level extract_clip convenience function."""
 
@@ -483,7 +489,7 @@ class TestExtractClipFunction:
             patch("immich_memories.processing.clips.subprocess.run") as mock_run,
             patch("immich_memories.processing.clips.validate_video_path", return_value=src),
         ):
-            mock_run.return_value = MagicMock(returncode=0, stderr="")
+            mock_run.side_effect = _ffmpeg_writing_its_output
             result = extract_clip(src, 1.0, 3.0, output, reencode=False, config=config)
 
         assert result == output
@@ -509,7 +515,7 @@ class TestExtractClipFunction:
             patch("immich_memories.processing.clips.validate_video_path", return_value=src),
             patch("immich_memories.processing.clips.get_video_duration", return_value=10.0),
         ):
-            mock_run.return_value = MagicMock(returncode=0, stderr="")
+            mock_run.side_effect = _ffmpeg_writing_its_output
             result = extract_clip(
                 src,
                 1.0,
@@ -675,9 +681,9 @@ class TestDetectMaxFramerate:
 
     def test_24fps_round(self, tmp_path):
         clip = AssemblyClip(path=tmp_path / "a.mp4", duration=5.0)
-        # detect_max_framerate starts at max_fps=30.0 floor; 23.976 < 30 so stays at 30
+        # WHY (#2348): a film library stays at its own rate rather than judder up to 30.
         with patch.object(self.prober, "detect_framerate", return_value=23.976):
-            assert self.prober.detect_max_framerate([clip]) == 30
+            assert self.prober.detect_max_framerate([clip]) == 24
 
 
 class TestEstimateDuration:

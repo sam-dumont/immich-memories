@@ -164,6 +164,18 @@ def _escape(text: str) -> str:
     return stripped
 
 
+def _filter_path(path: object) -> str:
+    """A file path as a filter option value inside a filter graph.
+
+    WHY (#2348): FFmpeg unescapes the graph first, then the filter's options, so
+    one level of quoting is spent before the option parser sees the value. A ':'
+    (a Windows drive) or an apostrophe (a home folder) then broke every caption.
+    Escape once for the options, then once more for the graph.
+    """
+    option = "".join("\\" + c if c in "\\':" else c for c in str(path))
+    return "".join("\\" + c if c in "\\'[],;" else c for c in option)
+
+
 def _overlay(label: str, text: str, style: CaptionStyle, x: int, y: int, window: str) -> str:
     """An `overlay` of the caption's image, as a piece of the decoder's filter chain.
 
@@ -178,7 +190,7 @@ def _overlay(label: str, text: str, style: CaptionStyle, x: int, y: int, window:
     """
     path, dx, dy = render_caption(text, style)
     return (
-        f"null[{label}_frame];movie='{path}',scale=out_range=tv,setparams=range=tv[{label}_text];"
+        f"null[{label}_frame];movie={_filter_path(path)},scale=out_range=tv,setparams=range=tv[{label}_text];"
         f"[{label}_frame][{label}_text]overlay=x={x + dx}:y={y + dy}{window}"
     )
 
@@ -215,7 +227,7 @@ def caption_filters(
         window = f":enable='gte(n,{start})*lt(n,{end})'"
     drawn = common + window
     if font_path:
-        drawn = f":fontfile='{font_path}'" + drawn
+        drawn = f":fontfile={_filter_path(font_path)}" + drawn
     style = None
     if font_path:
         style = CaptionStyle(

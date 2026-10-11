@@ -15,6 +15,13 @@ from immich_memories.processing.clips import (
 
 # WHY: ClipExtractor requires a Config for hardware/encoder settings during re-encode.
 # Tests don't exercise real encoding, so a mock is sufficient.
+
+
+def _writes_output(_segment, path, *_args):
+    """Like FFmpeg, write the file it was handed; the cut is renamed into place after."""
+    path.write_bytes(b"")
+
+
 _MOCK_CONFIG = MagicMock()
 
 
@@ -116,6 +123,7 @@ class TestClipExtractorExtract:
         source = tmp_path / "source.mp4"
         source.write_bytes(b"\x00" * 100)
 
+        mock_copy.side_effect = _writes_output
         seg = ClipSegment(source_path=source, start_time=0, end_time=5, asset_id="test")
         extractor.extract(seg)
         mock_copy.assert_called_once()
@@ -128,6 +136,7 @@ class TestClipExtractorExtract:
         source = tmp_path / "source.mp4"
         source.write_bytes(b"\x00" * 100)
 
+        mock_reencode.side_effect = _writes_output
         seg = ClipSegment(source_path=source, start_time=0, end_time=5, asset_id="test")
         extractor.extract(seg, reencode=True)
         mock_reencode.assert_called_once()
@@ -148,6 +157,7 @@ class TestCopyRefusingContainer:
         source.write_bytes(b"\x00" * 100)
         extractor = ClipExtractor(output_dir=tmp_path, config=_MOCK_CONFIG)
 
+        mock_reencode.side_effect = _writes_output
         seg = ClipSegment(source_path=source, start_time=1.0, end_time=4.0, asset_id="test")
         extractor.extract(seg)
 
@@ -165,6 +175,7 @@ class TestCopyRefusingContainer:
         source = tmp_path / "camera.MOV"
         source.write_bytes(b"\x00" * 100)
         extractor = ClipExtractor(output_dir=tmp_path, config=_MOCK_CONFIG)
+        mock_copy.side_effect = _writes_output
 
         extractor.extract(ClipSegment(source, 1.0, 4.0, "test"))
 

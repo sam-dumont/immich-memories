@@ -282,6 +282,7 @@ def assemble_streaming(
             plan.encoder,
             fallback_plan.codec.value,
         )
+        _clear_clip_audio(audio_work_dir)
         return assemble_streaming(
             clips,
             transitions,
@@ -368,6 +369,13 @@ def assemble_streaming(
             else:
                 audio_paths.append(Path())
     return audio_paths
+
+
+def _clear_clip_audio(audio_work_dir: Path | None) -> None:
+    """Remove a failed attempt's clip WAVs, which may be cut short, before a retry (#2345)."""
+    if audio_work_dir is not None:
+        for stale in audio_work_dir.glob("clip_*_audio.wav"):
+            stale.unlink(missing_ok=True)
 
 
 def _encode_clip_sequence(

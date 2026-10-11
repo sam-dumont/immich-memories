@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Literal, TypeVar, cast
 
 from immich_memories.filename_builder import normalize_output_path
-from immich_memories.generate_clips import cleanup_temp_clips, extract_clips
+from immich_memories.generate_clips import cleanup_temp_clips, extract_clips, keep_temp_clips
 from immich_memories.generate_privacy import (
     anonymize_clips_for_privacy,
     anonymize_name,
@@ -397,7 +397,21 @@ def render_local(
             encode_seconds=encode_seconds,
         )
     finally:
-        try:
+        _release_cut_segments(params, assembly_clips, run_output_dir)
+
+
+def _release_cut_segments(
+    params: GenerationParams, assembly_clips: list, run_output_dir: Path
+) -> None:
+    """Delete the cut segments, or keep them beside the film for --keep-intermediates.
+
+    WHY (#2346): this runs before the run closes, so deleting the segments here
+    unconditionally left --keep-intermediates nothing to keep.
+    """
+    try:
+        if params.debug_preserve_intermediates:
+            keep_temp_clips(assembly_clips, run_output_dir / ".intermediates")
+        else:
             cleanup_temp_clips(assembly_clips)
-        except OSError:
-            logger.debug("Temp clip cleanup failed", exc_info=True)
+    except OSError:
+        logger.debug("Temp clip cleanup failed", exc_info=True)

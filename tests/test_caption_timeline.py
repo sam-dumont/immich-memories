@@ -345,7 +345,7 @@ class TestCaptionFilters:
     def test_the_title_font_is_used_when_available(self):
         filters = self._filters(font_path="/fonts/outfit.ttf")
 
-        assert all("fontfile='/fonts/outfit.ttf'" in f for f in filters)
+        assert all("fontfile=/fonts/outfit.ttf:" in f for f in filters)
 
     def test_a_dark_outline_keeps_text_legible_over_bright_content(self):
         """Measured on the proof sheet: a shadow alone vanishes on white."""
@@ -399,7 +399,7 @@ class TestCaptionsOutsideTheCaptionFont:
 
         (place,) = self._filters(ClipCaption(place="Ηράκλειο, Ελλάδα"))
 
-        assert place.startswith("null[place_frame];movie='")
+        assert place.startswith("null[place_frame];movie=/")
         assert "overlay=x=" in place
 
     def test_a_hebrew_date_becomes_an_overlay_but_a_latin_one_does_not(self):

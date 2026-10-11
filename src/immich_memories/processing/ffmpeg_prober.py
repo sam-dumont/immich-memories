@@ -170,25 +170,32 @@ class FFmpegProber:
         return None
 
     def detect_max_framerate(self, clips: list[AssemblyClip]) -> int:
-        """Max frame rate across content clips, rounded to nearest common value (24/30/50/60).
+        """Max frame rate across the video clips, snapped to 24, 25, 30, 50 or 60.
 
-        Title screens are excluded — they're generated at the detected FPS,
-        not the other way around.
+        Title screens and photos are excluded: both are rendered at whatever
+        rate the film picks, not the other way around. A film with no video
+        plays at 30.
         """
-        max_fps = 30.0
-        content_clips = [c for c in clips if not getattr(c, "is_title_screen", False)]
-        for clip in content_clips[:20]:
-            fps = self.detect_framerate(clip.path)
-            if fps and fps > max_fps:
-                max_fps = fps
-
-        # Round to nearest common frame rate
+        rates = [
+            fps
+            for clip in clips
+            if not getattr(clip, "is_title_screen", False) and not getattr(clip, "is_photo", False)
+            if (fps := self.detect_framerate(clip.path))
+        ]
+        if not rates:
+            return 30
+        # WHY (#2348): the search used to start at 30 and probe only the first 20
+        # clips, so 24 and 25 fps libraries were stretched to 30 with judder and a
+        # 60 fps clip late in the film played at half its rate.
+        max_fps = max(rates)
         if max_fps >= 55:
             return 60
-        elif max_fps >= 45:
+        if max_fps >= 45:
             return 50
-        elif max_fps >= 25:
+        if max_fps >= 27.5:
             return 30
+        if max_fps >= 24.5:
+            return 25
         return 24
 
     def estimate_duration(self, clips: list[AssemblyClip]) -> float:

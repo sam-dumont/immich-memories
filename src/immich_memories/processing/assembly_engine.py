@@ -325,7 +325,12 @@ class AssemblyEngine:
         clip_durations: list[float],
         fade: float,
     ) -> list[str]:
-        """Validate and downgrade fade transitions where clips are too short."""
+        """The transitions, with fades downgraded to cuts where clips are too short.
+
+        Works on a copy: the list may be the settings' own predecided one, and a
+        downgrade written into it took the fades from every later film (#2348).
+        """
+        transitions = transitions.copy()
         min_dur = fade * 2
         for i in range(len(transitions)):
             if transitions[i] == "fade":
