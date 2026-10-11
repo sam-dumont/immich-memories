@@ -128,6 +128,9 @@ docker compose exec immich-memories immich-memories models fetch
 docker compose exec immich-memories immich-memories preflight
 ```
 
+Images tagged `nightly` or `nightly-YYYYMMDD` are daily builds of `main` for testing what is
+coming. They are not for production: pin a release version.
+
 Config and films survive a recreate.
 `models fetch` checks the new release's pins and downloads only changed files.
 

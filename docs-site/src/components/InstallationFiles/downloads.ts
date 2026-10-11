@@ -1,7 +1,7 @@
 import {assetBase, type Tier} from '../SetupBuilder/recipes.ts';
 
 export function installationCommands(version: string, tier: Tier = 'basic'): string {
-  const released = /^v?\d+\.\d+\.\d+(?:-(?:rc|dev)\.\d+)?$/.test(version);
+  const released = /^v?\d+\.\d+\.\d+(?:-rc\.\d+)?$/.test(version);
   if (!released) return '';
   const tag = version.replace(/^v/, '');
   const files = ['docker-compose.yml', 'example.env',
@@ -16,7 +16,7 @@ export function installationCommands(version: string, tier: Tier = 'basic'): str
 
 
 export function deploymentCommands(version: string): string {
-  if (!/^v?\d+\.\d+\.\d+(?:-(?:rc|dev)\.\d+)?$/.test(version)) return '';
+  if (!/^v?\d+\.\d+\.\d+(?:-rc\.\d+)?$/.test(version)) return '';
   const tag = version.replace(/^v/, '');
   return [
     'set -eu',
@@ -33,7 +33,7 @@ export function deploymentCommands(version: string): string {
 }
 
 export function unraidTemplateCommands(version: string): string {
-  if (!/^v?\d+\.\d+\.\d+(?:-(?:rc|dev)\.\d+)?$/.test(version)) return '';
+  if (!/^v?\d+\.\d+\.\d+(?:-rc\.\d+)?$/.test(version)) return '';
   return [
     'mkdir -p /boot/config/plugins/dockerMan/templates-user',
     `curl --fail --location "${assetBase(version)}/immich-memories.xml" -o /boot/config/plugins/dockerMan/templates-user/my-immich-memories.xml`,

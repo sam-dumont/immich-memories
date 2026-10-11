@@ -77,9 +77,8 @@ quietly fall back to PIL without SDF effects: preflight shows "Title rendering: 
 If you already installed that way, reinstall with `--force --python 3.12`. With pip, create the
 virtual environment from Python 3.11, 3.12 or 3.13.
 
-Pre-tag rehearsals install a published wheel directly from their GitHub release; they are not
-uploaded to PyPI. RC/final commands pin the matching PyPI version. No source checkout or local
-wheel build is part of either route. A preview without published assets cannot supply this install.
+RC and final commands pin the matching PyPI version. No source checkout or local wheel build is
+part of the install. A preview without published assets cannot supply this install.
 For pip, use the same pinned package specification inside the app's virtual environment.
 
 A bare install lacks the ONNX runtime needed for picture classifiers and for the speech detector

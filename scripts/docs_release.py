@@ -1,43 +1,82 @@
-"""Choose the public documentation destination for a release."""
+"""Choose which ref each public docs track is built from.
+
+GitHub Pages serves one artifact, so every deploy builds all of them together:
+
+- stable, at the root: the newest final release. Before the first final 1.x
+  exists, the newest release of any kind (a candidate included) stays here.
+- next, at /next/: the newest release candidate, only when it is newer than stable.
+- dev, at /dev/: the commit the latest nightly was built from, when there is one.
+
+Usage:
+    gh api --paginate --slurp repos/OWNER/REPO/releases \
+      | python3 scripts/docs_release.py --tracks --dev-ref SHA
+"""
 
 from __future__ import annotations
 
+import argparse
 import json
 import re
 import sys
 
+try:  # run as a script, `scripts/` is on the path; imported by tests, it is a package
+    from release_analyze import sort_version_tags
+except ModuleNotFoundError:
+    from scripts.release_analyze import sort_version_tags
 
-def final_for_candidate(version: str, tags: list[str]) -> str | None:
-    """Return the final site to preserve, or publish this release at the root."""
-    if not re.fullmatch(r"v?\d+\.\d+\.\d+-(?:rc|dev)\.\d+", version):
-        return None
-    finals = [tag for tag in tags if re.fullmatch(r"v?\d+\.\d+\.\d+", tag)]
-    finals = [tag for tag in finals if int(tag.removeprefix("v").split(".")[0]) >= 1]
-    if not finals:
-        return None
-    return max(finals, key=lambda tag: tuple(map(int, tag.removeprefix("v").split("."))))
+_FINAL = re.compile(r"v\d+\.\d+\.\d+")
 
 
-def latest_published_release(pages: list[list[dict]]) -> str:
-    """Choose the newest published app release, including release candidates."""
-    releases = [
-        release
+def _is_one_point_x_final(tag: str) -> bool:
+    return bool(_FINAL.fullmatch(tag)) and int(tag[1:].split(".")[0]) >= 1
+
+
+def plan_tracks(tags: list[str], dev_ref: str | None) -> list[dict[str, str]]:
+    """One entry per track to build: its name, ref, version label and path under the site."""
+    ordered = sort_version_tags(tags)
+    if not ordered:
+        raise ValueError("No published application release found.")
+    finals = [tag for tag in ordered if _is_one_point_x_final(tag)]
+    stable = finals[0] if finals else ordered[0]
+    entry = {"stable": stable}  # every track compares its media with the stable ref
+    tracks = [{"track": "stable", "ref": stable, "version": stable, "path": "", **entry}]
+    # sort_version_tags ranks a final above its own candidates, so anything listed
+    # before stable is newer than it; with no 1.x final yet, stable is the newest.
+    newer = ordered[: ordered.index(stable)]
+    candidate = next((tag for tag in newer if "-rc." in tag), None)
+    if candidate:
+        tracks.append(
+            {"track": "next", "ref": candidate, "version": candidate, "path": "next", **entry}
+        )
+    if dev_ref:
+        # Built from a commit, not a tag: the docs name it from `git describe`.
+        tracks.append({"track": "dev", "ref": dev_ref, "version": "", "path": "dev", **entry})
+    return tracks
+
+
+def published_tags(pages: list[list[dict]]) -> list[str]:
+    """Tags of every published (not draft) release across the API's pages."""
+    return [
+        release["tag_name"]
         for page in pages
         for release in page
-        if not release["draft"]
-        and release.get("published_at")
-        and re.fullmatch(r"v?\d+\.\d+\.\d+(?:-rc\.\d+)?", release["tag_name"])
+        if not release["draft"] and release.get("published_at")
     ]
-    if not releases:
-        raise ValueError("No published application release found.")
-    return max(releases, key=lambda release: release["published_at"])["tag_name"]
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--tracks", action="store_true", required=True)
+    parser.add_argument("--dev-ref", default="")
+    args = parser.parse_args()
+    try:
+        tracks = plan_tracks(published_tags(json.load(sys.stdin)), args.dev_ref or None)
+    except ValueError as error:
+        print(error, file=sys.stderr)
+        return 1
+    print(json.dumps(tracks, separators=(",", ":")))
+    return 0
 
 
 if __name__ == "__main__":
-    if sys.argv[1] == "--latest-published":
-        try:
-            print(latest_published_release(json.load(sys.stdin)))
-        except ValueError as error:
-            sys.exit(str(error))
-    else:
-        print(final_for_candidate(sys.argv[1], sys.stdin.read().splitlines()) or "")
+    sys.exit(main())

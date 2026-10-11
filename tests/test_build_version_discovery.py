@@ -56,7 +56,7 @@ def test_docs_main_build_names_the_release_and_commit_even_after_a_model_tag(tag
     assert result.stdout.strip() == f"v1.2.3-1-g{git('rev-parse', '--short=12', 'HEAD')}"
 
 
-@pytest.mark.parametrize("version", ["v1.2.3", "v1.3.0-rc.2", "v0.0.0-dev.12345"])
+@pytest.mark.parametrize("version", ["v1.2.3", "v1.3.0-rc.2"])
 def test_docs_explicit_release_version_is_not_replaced_by_the_checkout(tagged_repo, version):
     result = docs_version(tagged_repo[0], version)
     assert result.returncode == 0, result.stderr
@@ -64,7 +64,7 @@ def test_docs_explicit_release_version_is_not_replaced_by_the_checkout(tagged_re
 
 
 def test_docs_do_not_accept_model_tags_or_html_as_a_release_version(tagged_repo):
-    for version in ("models-v99", "<img src=x onerror=alert(1)>"):
+    for version in ("models-v99", "<img src=x onerror=alert(1)>", "v0.0.0-dev.12345"):
         assert docs_version(tagged_repo[0], version).returncode != 0
 
 
@@ -107,3 +107,11 @@ def test_python_version_discovery_after_a_rehearsal_skips_the_rehearsal_tag(tagg
         shlex.split(options["scm"]["git"]["describe_command"]), cwd=root, text=True
     ).strip()
     assert description.startswith("v1.2.3-2-g")
+
+
+def test_docs_built_after_an_old_rehearsal_tag_name_the_release_before_it(tagged_repo):
+    root, git = tagged_repo
+    git("tag", "v0.0.0-dev.12345")
+    result = docs_version(root)
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip().startswith("v1.2.3-1-g")

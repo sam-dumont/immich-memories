@@ -1,0 +1,445 @@
+name: Nightly
+
+# A daily build of `main` for people who test it: app and inference images tagged
+# `nightly` and `nightly-YYYYMMDD`, the wheel and Compose files on one rolling
+# `nightly` prerelease, and the docs for `main` at /dev/. It never publishes a
+# package index release, never moves a version tag or the final-release image
+# tags, and never marks its release as the latest. Started by hand with `force`,
+# it is also the pre-tag rehearsal of a release.
+#
+# Same order as release.yml: images go out by digest only, and nothing public
+# (image tags, the prerelease, the docs) happens until every build and the image
+# smoke test passed.
+on:
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+    inputs:
+      force:
+        description: 'Build even when main has no commits since the last nightly'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nightly-publication
+  cancel-in-progress: false
+
+env:
+  PYTHON_VERSION: "3.13"
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  decide:
+    name: Anything new on main?
+    runs-on: ubuntu-24.04
+    if: github.repository_id == '1174219883' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+    outputs:
+      build: ${{ steps.plan.outputs.build }}
+      inference: ${{ steps.plan.outputs.inference }}
+      version: ${{ steps.plan.outputs.version }}
+      tag: ${{ steps.plan.outputs.tag }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+
+      # Compares main with the commit named by the published `nightly` release.
+      - name: Compare main with the last nightly
+        id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          FORCE: ${{ inputs.force }}
+        run: python3 scripts/nightly.py plan
+
+  package:
+    name: Build the wheel
+    needs: [decide]
+    if: github.repository_id == '1174219883' && needs.decide.outputs.build == 'true'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    steps:
+      - name: Audit publication egress
+        uses: step-security/harden-runner@351661ca32ac09a36dc5ee2d536e3128f2a3c8ed # v2
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+
+      - name: Set up Python
+        run: uv python install ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: uv sync --extra dev
+
+      # The wheel carries the built web client, which is not committed.
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Build the web client
+        run: |
+          make web-client
+          uv run python scripts/check_web_brand.py --require-bundle
+
+      - name: Build package
+        env:
+          SETUPTOOLS_SCM_PRETEND_VERSION: ${{ needs.decide.outputs.version }}
+        run: uv build
+
+      - name: Show built version
+        run: unzip -p dist/*.whl '*/METADATA' | grep '^Version:'
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4
+        with:
+          subject-path: |
+            dist/*.whl
+            dist/*.tar.gz
+
+      - name: Upload the wheel
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: dist-nightly
+          path: dist/
+          if-no-files-found: error
+          retention-days: 1
+
+  app-build:
+    name: Build app image (${{ matrix.platform }})
+    needs: [decide]
+    if: github.repository_id == '1174219883' && needs.decide.outputs.build == 'true'
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            platform: linux/amd64
+            slug: amd64
+          - runner: ubuntu-24.04-arm
+            platform: linux/arm64
+            slug: arm64
+    steps:
+      - name: Audit publication egress
+        uses: step-security/harden-runner@351661ca32ac09a36dc5ee2d536e3128f2a3c8ed # v2
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Build, push by digest and attest
+        uses: ./.github/actions/push-image-digest
+        with:
+          image: ghcr.io/sam-dumont/immich-memories
+          file: ./docker/Dockerfile
+          platform: ${{ matrix.platform }}
+          build-args: |
+            APP_VERSION=${{ needs.decide.outputs.version }}
+            INSTALL_EXTRAS=all
+            VCS_REF=${{ github.sha }}
+            SOURCE_URL=https://github.com/${{ github.repository }}
+          artifact: digests-${{ matrix.slug }}
+          registry-token: ${{ secrets.GITHUB_TOKEN }}
+
+  app-smoke:
+    name: Smoke Test Docker Image
+    needs: [decide, app-build]
+    if: github.repository_id == '1174219883' && needs.decide.outputs.build == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@351661ca32ac09a36dc5ee2d536e3128f2a3c8ed # v2
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Run one CPU-only generation inside the image
+        uses: ./.github/actions/smoke-app-image
+        with:
+          registry-token: ${{ secrets.GITHUB_TOKEN }}
+
+  # Only when what the inference image is built from changed since the last
+  # nightly; otherwise the previous nightly's inference images stay.
+  inference-build:
+    name: Build Inference Image (${{ matrix.device }}, ${{ matrix.platform }})
+    needs: [decide]
+    if: github.repository_id == '1174219883' && needs.decide.outputs.inference == 'true'
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            platform: linux/amd64
+            device: cpu
+          - runner: ubuntu-24.04-arm
+            platform: linux/arm64
+            device: cpu
+          - runner: ubuntu-24.04
+            platform: linux/amd64
+            device: cuda
+    steps:
+      - name: Audit publication egress
+        uses: step-security/harden-runner@351661ca32ac09a36dc5ee2d536e3128f2a3c8ed # v2
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Build, push by digest and attest
+        uses: ./.github/actions/push-image-digest
+        with:
+          image: ghcr.io/sam-dumont/immich-memories/inference
+          file: ./docker/Dockerfile.inference
+          platform: ${{ matrix.platform }}
+          build-args: |
+            DEVICE=${{ matrix.device }}
+            APP_VERSION=${{ needs.decide.outputs.version }}
+            VCS_REF=${{ github.sha }}
+          artifact: inference-digests-${{ matrix.device }}-${{ strategy.job-index }}
+          registry-token: ${{ secrets.GITHUB_TOKEN }}
+
+  # Phase 2. The first public change: the nightly tags move only once the wheel
+  # built, the app image passed its smoke test and every inference build that was
+  # due succeeded.
+  manifests:
+    name: Tag the nightly images
+    needs: [decide, package, app-smoke, inference-build]
+    if: >-
+      github.repository_id == '1174219883' &&
+      !cancelled() && needs.decide.outputs.build == 'true' &&
+      needs.package.result == 'success' &&
+      needs.app-smoke.result == 'success' &&
+      (needs.inference-build.result == 'success' ||
+       (needs.inference-build.result == 'skipped' && needs.decide.outputs.inference != 'true'))
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    steps:
+      - name: Audit publication egress
+        uses: step-security/harden-runner@351661ca32ac09a36dc5ee2d536e3128f2a3c8ed # v2
+        with:
+          egress-policy: audit
+
+      - name: Download digests
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          path: /tmp/digests
+          pattern: '*digests-*'
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Tag the nightly images
+        env:
+          APP: ghcr.io/sam-dumont/immich-memories
+          INFERENCE: ghcr.io/sam-dumont/immich-memories/inference
+          TAG: ${{ needs.decide.outputs.tag }}
+          REBUILT: ${{ needs.decide.outputs.inference }}
+        run: |
+          set -euo pipefail
+          digests() {
+            find /tmp/digests -path "/tmp/digests/$1/*" -type f -exec basename {} \; \
+              | sed "s|^|$2@sha256:|"
+          }
+          mapfile -t app < <(digests 'digests-*' "$APP")
+          docker buildx imagetools create --metadata-file "$RUNNER_TEMP/app-manifest.json" \
+            -t "$APP:nightly" -t "$APP:$TAG" "${app[@]}"
+          if [ "$REBUILT" = "true" ]; then
+            mapfile -t cpu < <(digests 'inference-digests-cpu-*' "$INFERENCE")
+            mapfile -t cuda < <(digests 'inference-digests-cuda-*' "$INFERENCE")
+            docker buildx imagetools create --metadata-file "$RUNNER_TEMP/cpu-manifest.json" \
+              -t "$INFERENCE:nightly" -t "$INFERENCE:$TAG" "${cpu[@]}"
+            docker buildx imagetools create --metadata-file "$RUNNER_TEMP/cuda-manifest.json" \
+              -t "$INFERENCE:nightly-cuda" -t "$INFERENCE:$TAG-cuda" "${cuda[@]}"
+          else
+            # Unchanged inference inputs: the previous nightly's images also get
+            # today's tag, so the Compose files pin one tag for every service.
+            docker buildx imagetools create -t "$INFERENCE:$TAG" "$INFERENCE:nightly"
+            docker buildx imagetools create -t "$INFERENCE:$TAG-cuda" "$INFERENCE:nightly-cuda"
+          fi
+
+      - name: Read app manifest digest
+        id: app-manifest
+        run: |
+          digest="$(jq -er '.["containerimage.descriptor"].digest | select(test("^sha256:[0-9a-f]{64}$"))' "$RUNNER_TEMP/app-manifest.json")"
+          printf 'digest=%s\n' "$digest" >> "$GITHUB_OUTPUT"
+
+      - name: Attest app manifest provenance
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4
+        with:
+          subject-name: ghcr.io/sam-dumont/immich-memories
+          subject-digest: ${{ steps.app-manifest.outputs.digest }}
+          push-to-registry: true
+
+      - name: Read inference manifest digests
+        id: inference-manifests
+        if: needs.decide.outputs.inference == 'true'
+        run: |
+          for device in cpu cuda; do
+            digest="$(jq -er '.["containerimage.descriptor"].digest | select(test("^sha256:[0-9a-f]{64}$"))' "$RUNNER_TEMP/$device-manifest.json")"
+            printf '%s=%s\n' "$device" "$digest" >> "$GITHUB_OUTPUT"
+          done
+
+      - name: Attest cpu manifest provenance
+        if: needs.decide.outputs.inference == 'true'
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4
+        with:
+          subject-name: ghcr.io/sam-dumont/immich-memories/inference
+          subject-digest: ${{ steps.inference-manifests.outputs.cpu }}
+          push-to-registry: true
+
+      - name: Attest cuda manifest provenance
+        if: needs.decide.outputs.inference == 'true'
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4
+        with:
+          subject-name: ghcr.io/sam-dumont/immich-memories/inference
+          subject-digest: ${{ steps.inference-manifests.outputs.cuda }}
+          push-to-registry: true
+
+  bundle:
+    name: Package matching deployment files
+    needs: [decide, manifests]
+    if: github.repository_id == '1174219883' && needs.decide.outputs.build == 'true'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@351661ca32ac09a36dc5ee2d536e3128f2a3c8ed # v2
+        with:
+          egress-policy: audit
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - name: Download the built wheel
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: dist-nightly
+          path: ${{ runner.temp }}/dist-release
+      # The same packaging as a release, pinned to today's nightly image tag.
+      - name: Package deployment files
+        env:
+          VERSION: ${{ needs.decide.outputs.tag }}
+        run: bash scripts/package_release_assets.sh
+      - name: Upload deployment files
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: nightly-assets
+          path: |
+            ${{ runner.temp }}/immich-memories-compose-${{ needs.decide.outputs.tag }}/*.yml
+            ${{ runner.temp }}/immich-memories-compose-${{ needs.decide.outputs.tag }}/example.env
+            ${{ runner.temp }}/immich-memories-compose-${{ needs.decide.outputs.tag }}/*.xml
+            ${{ runner.temp }}/immich-memories-compose-${{ needs.decide.outputs.tag }}/*.tar.gz
+            ${{ runner.temp }}/immich-memories-compose-${{ needs.decide.outputs.tag }}/*.json
+            ${{ runner.temp }}/immich-memories-compose-${{ needs.decide.outputs.tag }}/*.whl
+            ${{ runner.temp }}/immich-memories-compose-${{ needs.decide.outputs.tag }}/SHA256SUMS
+          if-no-files-found: error
+          retention-days: 1
+
+  # Replaces the rolling `nightly` prerelease. Its body names the commit, and
+  # is written last: that line is what the next run compares main against.
+  publish:
+    name: Publish the nightly prerelease
+    needs: [decide, package, manifests, bundle]
+    if: github.repository_id == '1174219883' && needs.decide.outputs.build == 'true'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Audit publication egress
+        uses: step-security/harden-runner@351661ca32ac09a36dc5ee2d536e3128f2a3c8ed # v2
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Download the nightly files
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: nightly-assets
+          path: ${{ runner.temp }}/nightly-assets
+
+      # The only tag a nightly moves; version tags are the release workflow's.
+      - name: Move the nightly tag to this commit
+        run: |
+          git tag -f nightly "$GITHUB_SHA"
+          git push --force origin refs/tags/nightly
+
+      - name: Replace the nightly prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.decide.outputs.version }}
+          TAG: ${{ needs.decide.outputs.tag }}
+        run: |
+          set -euo pipefail
+          python3 scripts/nightly.py notes "$VERSION" "$GITHUB_SHA" "$TAG" > "$RUNNER_TEMP/notes.md"
+          # Deleting first drops last night's files; the tag stays where it was just moved.
+          gh release delete nightly --yes || true
+          gh release create nightly "$RUNNER_TEMP"/nightly-assets/* \
+            --verify-tag --prerelease --latest=false \
+            --title "Nightly $VERSION" --notes-file "$RUNNER_TEMP/notes.md"
+
+  deploy-docs:
+    name: Deploy Docs
+    needs: [decide, publish]
+    if: github.repository_id == '1174219883' && needs.decide.outputs.build == 'true'
+    uses: ./.github/workflows/docs.yml
+    permissions:
+      contents: read
+      pages: write
+      id-token: write

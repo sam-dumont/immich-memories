@@ -310,9 +310,18 @@ def test_release_images_receive_one_explicit_build_identity() -> None:
     workflow = yaml.safe_load((REPO_ROOT / ".github" / "workflows" / "release.yml").read_text())
     steps = workflow["jobs"]["docker-build"]["steps"]
     build_step = next(
-        step for step in steps if str(step.get("uses", "")).startswith("docker/build-push-action@")
+        step for step in steps if step.get("uses") == "./.github/actions/push-image-digest"
     )
     build_args = str(build_step["with"].get("build-args", ""))
+    action = yaml.safe_load(
+        (REPO_ROOT / ".github" / "actions" / "push-image-digest" / "action.yml").read_text()
+    )
+    pushed = next(
+        step
+        for step in action["runs"]["steps"]
+        if str(step.get("uses", "")).startswith("docker/build-push-action@")
+    )
+    assert pushed["with"]["build-args"] == "${{ inputs.build-args }}"
 
     assert "APP_VERSION=${{ needs.analyze.outputs.next_version }}" in build_args
     assert "INSTALL_EXTRAS=all" in build_args

@@ -1,3 +1,4 @@
+import {readFileSync} from 'node:fs';
 import {themes as prismThemes} from 'prism-react-renderer';
 import type {Config} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
@@ -5,20 +6,33 @@ import {redirects} from './redirects';
 import {productTagline} from './src/product';
 import {resolveDocsVersion} from './build-version';
 import {analyticsHeadTags} from './build-analytics';
+import {docsTrack, trackPath} from './scripts/docs-track.mjs';
 
 const docsVersion = resolveDocsVersion();
 
-const nextDocs = process.env.DOCS_NEXT === 'true';
-const baseUrl = nextDocs ? '/immich-memories/next/' : '/immich-memories/';
+const track = docsTrack();
+const stableBaseUrl = '/immich-memories/';
+const baseUrl = `${stableBaseUrl}${trackPath(track)}`;
+// Static media with the same bytes as the stable ref's, listed by
+// scripts/docs_shared_media.py; useMediaUrl links those from the stable tree.
+const sharedMedia: string[] = track !== 'stable' && process.env.DOCS_SHARED_MEDIA_FILE
+  ? JSON.parse(readFileSync(process.env.DOCS_SHARED_MEDIA_FILE, 'utf8'))
+  : [];
+
+// The release candidate and development tracks say which docs they are, and link back.
+const trackBanner = {
+  next: `Docs ${docsVersion}. <a href="/immich-memories/">Read the current final release docs</a>.`,
+  dev: `Development docs, built from <code>main</code> (${docsVersion}). Features here may not be released yet. <a href="/immich-memories/">Read the stable docs</a>.`,
+}[track];
 
 const config: Config = {
   title: 'Immich Memories',
   tagline: productTagline,
-  customFields: {version: docsVersion},
+  customFields: {version: docsVersion, sharedMedia, stableBaseUrl},
   favicon: 'img/favicon.png',
   trailingSlash: true,
-  // Only the canonical root docs belong in search; /next duplicates the release.
-  noIndex: nextDocs,
+  // Only the canonical root docs belong in search; /next and /dev duplicate them.
+  noIndex: track !== 'stable',
 
   future: {
     // Keep the opted-in 3.9 behavior; future releases can add new v4 defaults.
@@ -83,9 +97,9 @@ const config: Config = {
         ? [{name: 'google-site-verification', content: process.env.GOOGLE_SITE_VERIFICATION}]
         : []),
     ],
-    ...(nextDocs ? {announcementBar: {
-      id: 'release-candidate',
-      content: `Docs ${docsVersion}. <a href="/immich-memories/">Read the current final release docs</a>.`,
+    ...(trackBanner ? {announcementBar: {
+      id: track === 'next' ? 'release-candidate' : 'development',
+      content: trackBanner,
       isCloseable: false,
     }} : {}),
     mermaid: {

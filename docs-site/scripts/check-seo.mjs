@@ -4,9 +4,12 @@ import {join} from 'node:path';
 import {createHash} from 'node:crypto';
 import sharp from 'sharp';
 import {readPageMetadata} from './social-preview.mjs';
+import {docsTrack, trackPath} from './docs-track.mjs';
 
-const next = process.env.DOCS_NEXT === 'true';
-const base = `https://sam-dumont.github.io/immich-memories/${next ? 'next/' : ''}`;
+const track = docsTrack();
+// Candidate and development docs duplicate the stable pages: kept out of search.
+const hidden = track !== 'stable';
+const base = `https://sam-dumont.github.io/immich-memories/${trackPath(track)}`;
 const build = 'build';
 
 function attributes(tag) {
@@ -23,7 +26,7 @@ function checkPage(url) {
   const description = tags.find(tag => tag.name === 'description')?.content;
   assert.ok(description?.trim(), `${url}: missing search description`);
   const noindex = tags.some(tag => tag.name === 'robots' && /noindex/i.test(tag.content));
-  assert.equal(noindex, next, `${url}: wrong indexing policy`);
+  assert.equal(noindex, hidden, `${url}: wrong indexing policy`);
   const version = tags.find(tag => tag.name === 'application-version')?.content;
   assert.ok(version, `${url}: missing build version`);
   if (process.env.DOCS_VERSION) assert.equal(version, process.env.DOCS_VERSION, `${url}: wrong build version`);
@@ -37,17 +40,17 @@ if (process.env.GOOGLE_SITE_VERIFICATION) {
   assert.ok(home.some(tag => tag.name === 'google-site-verification' && tag.content === process.env.GOOGLE_SITE_VERIFICATION), 'Missing Search Console verification');
 }
 
-if (next) {
-  assert.ok(!existsSync(join(build, 'sitemap.xml')), 'Candidate docs must not advertise a duplicate sitemap');
+if (hidden) {
+  assert.ok(!existsSync(join(build, 'sitemap.xml')), `${track} docs must not advertise a duplicate sitemap`);
   checkPage(`${base}docs/get-started/quick-start/`);
-  console.log('Candidate docs: noindex, canonical URLs, and verification checked.');
+  console.log(`${track} docs: noindex, canonical URLs, and verification checked.`);
 } else {
   const sitemap = readFileSync(join(build, 'sitemap.xml'), 'utf8');
   const urls = [...sitemap.matchAll(/<loc>(.*?)<\/loc>/g)].map(([, url]) => url);
   assert.ok(urls.includes(base), 'Homepage missing from sitemap');
   assert.ok(urls.includes(`${base}docs/get-started/quick-start/`), 'Quick start missing from sitemap');
   for (const url of urls) {
-    assert.ok(url.startsWith(base) && !url.startsWith(`${base}next/`), `Wrong sitemap address: ${url}`);
+    assert.ok(url.startsWith(base) && !/^(next|dev)\//.test(url.slice(base.length)), `Wrong sitemap address: ${url}`);
     checkPage(url);
   }
   console.log(`Search checks passed for ${urls.length} sitemap pages.`);

@@ -1,0 +1,78 @@
+name: Push an image by digest
+description: >-
+  Build one platform of an image, push it to GHCR by digest only (no tag), attest
+  its provenance and hand the digest to the manifest job as an artifact. Tags move
+  later, in the release's or the nightly's manifest job, once every build and smoke
+  test has passed. The calling job checks out the repository and grants
+  packages, id-token and attestations write.
+
+inputs:
+  image:
+    description: Image name, e.g. ghcr.io/sam-dumont/immich-memories
+    required: true
+  file:
+    description: Dockerfile to build
+    required: true
+  platform:
+    description: One platform, e.g. linux/amd64
+    required: true
+  build-args:
+    description: Build arguments, one per line
+    required: true
+  artifact:
+    description: Name of the artifact that carries the digest
+    required: true
+  registry-token:
+    description: Token that can push to GHCR (the job's GITHUB_TOKEN)
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ inputs.registry-token }}
+
+    - name: Build and push by digest
+      id: build
+      uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
+      with:
+        context: .
+        file: ${{ inputs.file }}
+        push: true
+        platforms: ${{ inputs.platform }}
+        build-args: ${{ inputs.build-args }}
+        # No gha layer cache: it never hit (0 CACHED steps, #1272) and each
+        # export pushed the main branch's useful caches out of the 10 GB limit.
+        outputs: type=image,name=${{ inputs.image }},push-by-digest=true,name-canonical=true
+
+    # Attaches the attestation to the image in GHCR as an OCI referrer, so
+    # `gh attestation verify oci://...` and `cosign` can find it without
+    # knowing this repo. Each platform attests its own digest.
+    - name: Attest image provenance
+      uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4
+      with:
+        subject-name: ${{ inputs.image }}
+        subject-digest: ${{ steps.build.outputs.digest }}
+        push-to-registry: true
+
+    - name: Export digest
+      shell: bash
+      run: |
+        mkdir -p /tmp/digests
+        digest="${{ steps.build.outputs.digest }}"
+        touch "/tmp/digests/${digest#sha256:}"
+
+    - name: Upload digest
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      with:
+        name: ${{ inputs.artifact }}
+        path: /tmp/digests/*
+        if-no-files-found: error
+        retention-days: 1

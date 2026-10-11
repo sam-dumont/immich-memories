@@ -8,7 +8,7 @@ import {installationCommands, deploymentCommands, unraidTemplateCommands} from '
 export default function InstallationFiles({kind = 'compose', tier = 'basic'}: {kind?: 'compose' | 'bundle' | 'native' | 'unraid'; tier?: Tier}): ReactNode {
   const {siteConfig} = useDocusaurusContext();
   const version = String(siteConfig.customFields?.version || 'development');
-  const released = /^v?\d+\.\d+\.\d+(?:-(?:rc|dev)\.\d+)?$/.test(version);
+  const released = /^v?\d+\.\d+\.\d+(?:-rc\.\d+)?$/.test(version);
   if (!released) return <aside className="alert alert--warning">
     <p><strong>Prebuilt installation for this preview is not published.</strong> This page
       describes development code. Its matching images, native package and setup downloads

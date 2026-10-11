@@ -1,16 +1,13 @@
 name: Deploy Docs
 
+# Pages serves one artifact, so every deploy builds every track from its own ref
+# (scripts/docs_release.py decides which): stable at the root, the newest newer
+# release candidate at /next/, the latest nightly's commit at /dev/.
 on:
-  # Deploy only on releases (not every push to main)
   release:
     types: [published]
-  # Called from release pipeline (GITHUB_TOKEN events don't trigger other workflows)
+  # Called from the release and nightly workflows (GITHUB_TOKEN events don't trigger others)
   workflow_call:
-    inputs:
-      version:
-        description: 'Version tag to inject into docs (e.g. v1.2.3)'
-        required: false
-        type: string
   # Allow manual deploys
   workflow_dispatch:
 
@@ -28,22 +25,66 @@ permissions:
   contents: read
 
 jobs:
-  build:
-    name: Build Docs
+  plan:
+    name: Choose the docs tracks
     runs-on: ubuntu-24.04
     # Model artifact releases (models-v*) are not app releases, and Pages refuses their tags.
     if: >-
       github.repository_id == '1174219883'
       && !(github.event_name == 'release' && startsWith(github.event.release.tag_name, 'models-'))
-    # Building only reads the tree; the Pages artifact upload runs on the
-    # Actions runtime token, not GITHUB_TOKEN.
     permissions:
       contents: read
+    outputs:
+      tracks: ${{ steps.tracks.outputs.tracks }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
+
+      - name: Choose what each track is built from
+        id: tracks
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          dev_ref=$(python3 scripts/nightly.py last-commit)
+          tracks=$(gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/releases?per_page=100" \
+            | python3 scripts/docs_release.py --tracks --dev-ref "$dev_ref")
+          echo "tracks=$tracks" >> "$GITHUB_OUTPUT"
+          echo "Docs tracks: $tracks"
+
+      # Versioned docs link to their release's setup files; refuse to publish
+      # links while those uploads are pending or missing. Dev docs link none.
+      - name: Verify matching setup release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TRACKS: ${{ steps.tracks.outputs.tracks }}
+        run: |
+          set -euo pipefail
+          while read -r version; do
+            gh release view "$version" --json tagName,assets </dev/null \
+              | python3 scripts/check_docs_release_assets.py "$version"
+          done < <(jq -r '.[] | select(.version != "") | .version' <<<"$TRACKS")
+
+  build:
+    name: Build ${{ matrix.track }} docs
+    needs: [plan]
+    if: github.repository_id == '1174219883'
+    runs-on: ubuntu-24.04
+    # Building only reads the tree.
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: true
+      matrix:
+        include: ${{ fromJSON(needs.plan.outputs.tracks) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Tags too: dev docs name their build with `git describe`.
           fetch-depth: 0
-          ref: ${{ inputs.version || github.event.release.tag_name || github.ref }}
+          ref: ${{ matrix.ref }}
+          persist-credentials: false
       - name: Create LFS cache key
         run: git lfs ls-files -l | cut -d' ' -f1 | sort > .lfs-assets-id
       - name: Cache LFS objects
@@ -64,30 +105,12 @@ jobs:
       - name: Install dependencies
         run: cd docs-site && npm ci
 
-      - name: Inject version from release tag
+      - name: Stamp the release version
+        if: matrix.version != ''
         env:
-          INPUT_VERSION: ${{ inputs.version }}
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
-          EVENT_NAME: ${{ github.event_name }}
-          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ matrix.version }}
         run: |
-          # Manual runs keep the selected docs branch and pin downloads to a published app.
-          if [[ -n "$INPUT_VERSION" ]]; then
-            VERSION="$INPUT_VERSION"
-          elif [[ "$EVENT_NAME" == "release" ]]; then
-            VERSION="$RELEASE_TAG"
-          elif [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
-            VERSION=$(gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/releases?per_page=100" \
-              | python3 scripts/docs_release.py --latest-published)
-          else
-            VERSION=$(node --experimental-strip-types --input-type=module -e "import {resolveDocsVersion} from './docs-site/build-version.ts'; console.log(resolveDocsVersion());")
-          fi
           echo "DOCS_VERSION=${VERSION}" >> "$GITHUB_ENV"
-          echo "Building docs for version: ${VERSION}"
-
-          # Set version in docusaurus config via env var
-          # (customFields.version is available in React components)
-          # Set version in package.json safely via env var
           cd docs-site
           export DOCS_VERSION_CLEAN="${VERSION#v}"
           node -e "
@@ -97,49 +120,74 @@ jobs:
             fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
           "
 
-      - name: Verify matching setup release assets
+      # Large static media whose bytes match the stable ref's are linked from the
+      # stable tree, and the assembly drops this track's copy.
+      - name: List media shared with stable
+        if: matrix.track != 'stable'
         env:
-          GH_TOKEN: ${{ github.token }}
+          STABLE: ${{ matrix.stable }}
         run: |
-          # Development previews already disable setup exports. Release docs must
-          # not publish links while deployment uploads are pending or missing.
-          if [[ "$DOCS_VERSION" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+(-(rc|dev)\.[0-9]+)?$ ]]; then
-            gh release view "v${DOCS_VERSION#v}" --json tagName,assets \
-              | python3 scripts/check_docs_release_assets.py "$DOCS_VERSION"
-          fi
+          python3 scripts/docs_shared_media.py select --stable-ref "$STABLE" > "$RUNNER_TEMP/shared-media.json" \
+            || echo '[]' > "$RUNNER_TEMP/shared-media.json"
+          echo "DOCS_SHARED_MEDIA_FILE=$RUNNER_TEMP/shared-media.json" >> "$GITHUB_ENV"
+          cat "$RUNNER_TEMP/shared-media.json"
 
-      - name: Choose documentation destination
-        run: |
-          FINAL_TAG=$(git tag --list | python3 scripts/docs_release.py "$DOCS_VERSION")
-          echo "FINAL_TAG=$FINAL_TAG" >> "$GITHUB_ENV"
-          if [[ -n "$FINAL_TAG" ]]; then
-            echo "DOCS_NEXT=true" >> "$GITHUB_ENV"
-          fi
-
+      # DOCS_NEXT is what release tags built before DOCS_TRACK existed read.
       - name: Build site
-        run: make docs-build
-
-      - name: Preserve final documentation beside the candidate
-        if: env.DOCS_NEXT == 'true'
+        env:
+          DOCS_TRACK: ${{ matrix.track }}
+          DOCS_NEXT: ${{ matrix.track == 'next' }}
         run: |
-          mv docs-site/build "$RUNNER_TEMP/candidate-docs"
-          git worktree add --detach "$RUNNER_TEMP/final-docs" "$FINAL_TAG"
-          git -C "$RUNNER_TEMP/final-docs" lfs pull
-          cd "$RUNNER_TEMP/final-docs/docs-site"
-          npm ci
-          DOCS_VERSION="$FINAL_TAG" DOCS_NEXT=false npm run build
-          cp -a build "$GITHUB_WORKSPACE/docs-site/build"
-          mv "$RUNNER_TEMP/candidate-docs" "$GITHUB_WORKSPACE/docs-site/build/next"
+          make docs-build
+          # A ref older than shared media ignores the list: it then links its own copies.
+          if [[ -n "${DOCS_SHARED_MEDIA_FILE:-}" ]] && grep -q 'DOCS_SHARED_MEDIA_FILE' docs-site/docusaurus.config.ts; then
+            cp "$DOCS_SHARED_MEDIA_FILE" docs-site/build/shared-media.json
+          fi
+
+      - name: Upload the ${{ matrix.track }} tree
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: docs-${{ matrix.track }}
+          path: docs-site/build
+          if-no-files-found: error
+          retention-days: 1
+
+  assemble:
+    name: Assemble the site
+    needs: [plan, build]
+    if: github.repository_id == '1174219883'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Download every track
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: docs-*
+          path: ${{ runner.temp }}/tracks
+
+      - name: Place each track at its path
+        env:
+          TRACKS: ${{ needs.plan.outputs.tracks }}
+        # Drops the copies a track shares with stable and prints each track's size.
+        # Pages refuses sites over 1 GB; fail here, with headroom, instead.
+        run: |
+          python3 scripts/docs_shared_media.py assemble --tracks "$TRACKS" \
+            --trees "$RUNNER_TEMP/tracks" --site "$RUNNER_TEMP/site" --max-mb 900
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
-          path: docs-site/build
+          path: ${{ runner.temp }}/site
 
   deploy:
     name: Deploy to GitHub Pages
     if: github.repository_id == '1174219883'
-    needs: build
+    needs: [assemble]
     runs-on: ubuntu-24.04
     # The deploy-pages contract: pages to publish, id-token to prove which
     # workflow is publishing.

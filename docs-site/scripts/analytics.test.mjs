@@ -5,8 +5,9 @@ import test from 'node:test';
 import {runInNewContext} from 'node:vm';
 import {analyticsHeadTags} from '../build-analytics.ts';
 import {installEvents} from '../src/analytics/events.ts';
+import {docsTrack, trackPath} from './docs-track.mjs';
 
-const base = `/immich-memories/${process.env.DOCS_NEXT === 'true' ? 'next/' : ''}`;
+const base = `/immich-memories/${trackPath(docsTrack())}`;
 const origin = 'https://sam-dumont.github.io';
 const siteId = 'docs.example.com';
 const collector = 'https://metrics.example.com/api/event';
@@ -28,7 +29,7 @@ test('unconfigured builds have no analytics; partial configuration is rejected',
 });
 
 test('build variables select the collector and identifier for either documentation base', () => {
-  for (const path of ['/immich-memories/', '/immich-memories/next/']) {
+  for (const path of ['/immich-memories/', '/immich-memories/next/', '/immich-memories/dev/']) {
     const tags = analyticsHeadTags(path, fixture);
     assert.equal(tags.length, 1);
     assert.equal(tags[0].attributes.src, `${path}js/app.js`);

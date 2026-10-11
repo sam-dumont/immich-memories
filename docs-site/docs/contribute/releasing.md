@@ -36,25 +36,38 @@ Select **inference_only** instead for the standalone inference images. Choose on
 mode per run. These modes publish commit tags; they create no GitHub or PyPI release, do not
 move `latest`, and do not deploy the docs site.
 
-### Pre-tag onboarding rehearsal
+### Nightly builds
 
-Use **Channel: dev** on `main` to publish a complete pre-tag rehearsal without opening the RC
-series. It produces `v0.0.0-dev.RUN_ID`: matching app/inference image tags, a native wheel,
-Compose files, a deployment bundle, `installation.json` and `SHA256SUMS`. It uses the same CI,
-image smoke, approval and provenance steps as releases. It does not publish to PyPI or move
-`latest`; native setup exports install the wheel from the exact GitHub release URL.
+**Actions → Nightly** builds `main` every day at 03:17 UTC, but only when `main` has commits since
+the last nightly. The marker is the `Commit:` line in the body of the rolling `nightly` GitHub
+prerelease, written last; a run that failed half-way leaves the old one, so the next run tries
+again. A day with nothing new ends green with "Nothing new on main" in the run summary.
 
-The docs build and setup builder use that exact rehearsal version. Publication waits for the
-matching images/bundle before deploying docs. `installation.json` records the source SHA and
-published image manifests/digests, including architectures. The checksum list covers the wheel,
-deployment files and identity record. Model-only tags are not application versions.
-A rehearsal rerun is refused before building: dispatch a new run to avoid replacing published
-candidate identities. Dispatching this workflow is a separate publication action from merging
-its implementation.
+To start one by hand, run the workflow on `main`. Tick **force** to build an unchanged `main`.
+A forced nightly is the pre-tag rehearsal: it builds and smoke-tests everything a release does
+without opening the RC series.
 
-Run the prebuilt first-install checks
-against these public inputs. Record anonymous pulls, exact host/service/Immich versions, cold
-versus warm state and the bounded playable film. Publishing artifacts alone is not acceptance.
+A nightly publishes, in the release workflow's order (images by digest first; nothing public
+until the wheel built and the app image passed its smoke film):
+
+| | Nightly |
+|---|---|
+| Version | a dev version after the last release, `1.0.1.devYYYYMMDD` after `1.0.0`, `1.0.0rc9.devYYYYMMDD` after `1.0.0-rc.8`, shown by `immich-memories --version` |
+| App image | `:nightly` and `:nightly-YYYYMMDD`, amd64 and arm64 |
+| Inference images | `:nightly`, `:nightly-YYYYMMDD` and their `-cuda` twins, rebuilt only when something the inference image copies in changed; otherwise the previous nightly's images get the new date tag |
+| GitHub release | one prerelease named `nightly` on the `nightly` tag, replaced each run, never "Latest". Wheel, Compose files pinned to `nightly-YYYYMMDD`, deployment bundle, `installation.json`, `SHA256SUMS` |
+| PyPI, `latest`, `v*` tags | never touched |
+| Docs site | `/dev/` |
+
+**Image Maintenance** deletes image versions whose only tags are `nightly-YYYYMMDD` dates older
+than 14 days. It never touches `nightly`, version tags, `latest` or commit builds.
+
+The nightly runs without the `production` environment approval, since nobody is awake to give
+it. Everything else matches a release: provenance on the wheel and every image, and the
+same packaging script for the setup files.
+
+Run the prebuilt first-install checks against a forced nightly's public inputs. Record anonymous
+pulls, exact host/service/Immich versions, cold versus warm state and the bounded playable film. Publishing artifacts alone is not acceptance.
 After RC tagging, verify the actual RC identities/links and rerun affected lanes if runtime
 artifacts differ. Check Pages, release downloads and GHCR separately after a repository rename;
 a GitHub redirect does not prove a Pages redirect. GHCR keeps the documented package name.
@@ -81,9 +94,31 @@ what it moves:
 | App image | `:1.0.0-rc.1` only | `:1.0.0` and `:latest` |
 | Inference images | `:1.0.0-rc.1`, `:1.0.0-rc.1-cuda` | also `:latest`, `:latest-cuda` |
 | PyPI | `1.0.0rc1`, installed only with `pip install --pre` | default install |
-| Docs site | root before the first 1.x final; `/next` afterward, preserving the final site | root |
+| Docs site | root before the first 1.x final; `/next/` afterward | root |
 
 Testers pin the exact candidate tag. Candidates do not move `latest`; a final release does.
+
+### Docs tracks
+
+Pages serves one site, so every deploy (a release, a nightly or a manual **Deploy Docs** run)
+rebuilds all of it, each part from its own ref:
+
+| Path | Track | Built from |
+|---|---|---|
+| `/` | stable | the newest final release; before the first 1.x final, the newest release candidate |
+| `/next/` | next | the newest release candidate, only when it is newer than stable |
+| `/dev/` | dev | the commit of the latest nightly |
+
+`scripts/docs_release.py` picks the refs from the published GitHub releases and the nightly
+marker. A release deploy rebuilds the current dev tree from the nightly's commit; a nightly
+deploy rebuilds stable and next from their tags unchanged. `/next/` and `/dev/` are kept out of
+search and carry a banner linking back to the stable docs.
+
+The three trees share large media. A static file over 256 KB whose bytes match the stable ref's
+copy is linked from the root tree, and the `/next/` or `/dev/` copy is dropped at assembly; a
+file that differs keeps its own copy. Media components resolve paths with `useMediaUrl`, not
+`useBaseUrl`, so they pick the shared copy. The deploy prints each tree's size and fails when the
+whole site passes 900 MB, under the 1 GB Pages limit.
 
 The files people copy from `main` (the Unraid template, the Compose files, `example.env`, the
 README download recipe) name the last published release, never `latest`. After each release, run
@@ -154,7 +189,7 @@ publisher after adding the new one. [PyPI publisher setup](https://docs.pypi.org
 
 The free docs address is `https://sam-dumont.github.io/immich-memories/`.
 Docusaurus renders HTML, canonical links and `sitemap.xml`; each production build
-checks the sitemap pages. Candidate docs under `/next/` are marked `noindex`.
+checks the sitemap pages. Docs under `/next/` and `/dev/` are marked `noindex`.
 
 To verify indexing in [Google Search Console](https://search.google.com/search-console):
 

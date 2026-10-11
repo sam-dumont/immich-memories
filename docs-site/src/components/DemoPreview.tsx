@@ -1,10 +1,10 @@
 import {useEffect, useRef, type ReactNode} from 'react';
 import {useColorMode} from '@docusaurus/theme-common';
-import useBaseUrl from '@docusaurus/useBaseUrl';
+import useMediaUrl from './useMediaUrl';
 
 export function DemoLink({children}: {children: ReactNode}) {
   const {colorMode} = useColorMode();
-  const href = useBaseUrl(`/demo/${colorMode === 'dark' ? 'dark-demo' : 'demo'}.mp4`);
+  const href = useMediaUrl(`/demo/${colorMode === 'dark' ? 'dark-demo' : 'demo'}.mp4`);
   return <a href={href}>{children}</a>;
 }
 
@@ -12,8 +12,8 @@ export default function DemoPreview() {
   const video = useRef<HTMLVideoElement>(null);
   const {colorMode} = useColorMode();
   const name = colorMode === 'dark' ? 'dark-demo' : 'demo';
-  const src = useBaseUrl(`/demo/${name}.mp4`);
-  const poster = useBaseUrl(`/demo/${name}-poster.jpg`);
+  const src = useMediaUrl(`/demo/${name}.mp4`);
+  const poster = useMediaUrl(`/demo/${name}-poster.jpg`);
   useEffect(() => {
     const preference = window.matchMedia('(prefers-reduced-motion: reduce)');
     const applyPreference = () => {
