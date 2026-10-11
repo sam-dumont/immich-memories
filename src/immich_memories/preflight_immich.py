@@ -46,7 +46,7 @@ def check_immich(config: Config) -> CheckResult:
             api_key=config.immich.api_key,
             api_version=config.immich.api_version,
         ) as client:
-            resolved_version = client.get_api_version()
+            resolved_version = client.get_api_version(retry=False)
             capabilities = client.get_key_capabilities()
             capabilities.require_read()
             user = client.get_current_user()

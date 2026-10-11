@@ -274,7 +274,7 @@ def test_compose_pulls_the_inference_image_the_release_actually_publishes() -> N
 
     assert image == published, f"{reference} is not published; the release pushes {published}"
     # The default and the documented GPU override must both be tags a release moves.
-    assert tag == "${IMMICH_MEMORIES_VERSION:-latest}"
+    assert re.fullmatch(r"\$\{IMMICH_MEMORIES_VERSION:-\d+\.\d+\.\d+(-rc\.\d+)?\}", tag)
     release_tags = set(re.findall(r"-t \$IMAGE:([^\s\"]+)", step["run"]))
     assert {"latest", "latest-cuda"} <= release_tags
 

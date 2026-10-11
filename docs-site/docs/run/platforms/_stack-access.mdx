@@ -1,5 +1,10 @@
-Give Immich Memories its own app login before publishing its port on your trusted LAN. Under the
-app service's existing `environment:` block, set:
+Give Immich Memories its own app login before publishing its port on your trusted LAN. The
+setup builder on this page does both for you: tick the LAN box and enter a username and a
+password of at least 12 characters, and the generated file carries them.
+
+To do it by hand, edit the lines the file already has. Do not add a second copy: Compose refuses a
+file that defines the same key twice. Under the app service's `environment:` block, change the
+two empty values:
 
 ```yaml
 IMMICH_MEMORIES_AUTH_USERNAME: admin

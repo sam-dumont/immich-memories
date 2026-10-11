@@ -59,7 +59,8 @@ def test_unraid_image_matches_resolved_compose_default():
     command = [executable] if Path(executable).name == "docker-compose" else [executable, "compose"]
     result = subprocess.run(
         [*command, "-f", str(ROOT / "docker-compose.yml"), "config", "--format=json"],
-        env={**os.environ, "IMMICH_MEMORIES_VERSION": "latest"},
+        # The default applies only when the variable is unset.
+        env={k: v for k, v in os.environ.items() if k != "IMMICH_MEMORIES_VERSION"},
         capture_output=True,
         text=True,
         check=True,

@@ -52,7 +52,7 @@ docker compose up -d
 | `IMMICH_MEMORIES_SECRET_KEY` | Encrypt credentials saved in Settings; shipped `.env` support |
 | `IMMICH_MEMORIES_UPLOAD__ENABLED`, `IMMICH_MEMORIES_UPLOAD__ALBUM_NAME` | Upload CLI/daily films; add to `environment:` |
 | `IMMICH_MEMORIES_TIER` | `auto` by default; `basic`, `gpu` or `full` override |
-| `IMMICH_MEMORIES_DATABASE_URL` | Optional PostgreSQL store; commented in Compose |
+| `IMMICH_MEMORIES_DATABASE_URL` | Optional PostgreSQL store; set only in the PostgreSQL and maximalist Compose files |
 
 For service setup, use the [reader](../better/reader.md), [caption](../better/captions.md),
 [inference](../better/inference.md), [render](../better/gpu-render.md) or [music](../better/music.md)

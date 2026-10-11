@@ -2,6 +2,7 @@
 
 import json
 import os
+import re
 import subprocess
 from pathlib import Path
 
@@ -76,4 +77,8 @@ def test_shipped_kubernetes_pins_exist_in_the_migration():
     for path in (root / "deploy/kubernetes").rglob("kustomization.yaml"):
         for image in yaml.safe_load(path.read_text()).get("images", []):
             if image["name"].startswith("ghcr.io/sam-dumont/immich-memories"):
+                # From 1.0 on the release workflow publishes straight into this namespace;
+                # the migration only has to carry the pre-1.0 images a pin may still name.
+                if re.match(r"[1-9]\d*\.", str(image["newTag"])):
+                    continue
                 assert (image["name"], image["newTag"]) in copied, path

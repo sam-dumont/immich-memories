@@ -45,4 +45,8 @@ export const redirects: {from: string; to: string}[] = [
   {from: '/docs/run/compatibility', to: '/docs/run/tested-deployments'},
   {from: '/docs/better/gpu-example', to: '/docs/better/tier-example'},
   {from: '/docs/get-started/what-a-gpu-or-a-model-adds', to: '/docs/get-started/choose-your-setup'},
+  {from: '/docs/configuration/config-file', to: '/docs/run/config-file'},
+  {from: '/docs/installation/uv', to: '/docs/run/uv-pip'},
+  {from: '/docs/music/overview', to: '/docs/make/titles-maps-music'},
+  {from: '/docs/create/pipeline/audio-and-music', to: '/docs/make/titles-maps-music'},
 ];

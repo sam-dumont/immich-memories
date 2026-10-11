@@ -85,6 +85,11 @@ what it moves:
 
 Testers pin the exact candidate tag. Candidates do not move `latest`; a final release does.
 
+The files people copy from `main` (the Unraid template, the Compose files, `example.env`, the
+README download recipe) name the last published release, never `latest`. After each release, run
+`make pin-release VERSION=X.Y.Z` and commit the result; a test fails if any of them says `latest`
+or the pins disagree. The release assets are stamped with their own version regardless.
+
 CI uses `make secret-scan` for both PRs and release runs: all commits since the latest version
 tag, or all history for the first release. It also catches secrets removed by a later commit in
 that range. Install Gitleaks 8.24.3 to run the same scan locally; pre-commit uses that version too.

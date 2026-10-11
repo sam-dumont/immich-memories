@@ -26,7 +26,7 @@ def register_models_commands(cli_group: click.Group) -> None:
     @click.option(
         "--detectors/--no-detectors",
         default=None,
-        help="Fetch detector models (default: gpu/full only); --detectors also fetches on nas",
+        help="Fetch detector models (default: gpu/full only); --detectors also fetches on basic",
     )
     @click.option(
         "--laya",

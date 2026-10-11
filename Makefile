@@ -1253,7 +1253,11 @@ docs-commands:  ## Statically check documented CLI commands and Make targets
 	uv run python scripts/check_docs_commands.py
 
 include $(dir $(lastword $(MAKEFILE_LIST)))scripts/image-maintenance.mk
-.PHONY: docs-setup docs-setup-check docs-serve
+.PHONY: docs-setup docs-setup-check docs-serve pin-release
+pin-release:  ## Pin the Unraid template, Compose files, example.env and README to VERSION=X.Y.Z
+	@test -n "$(VERSION)" || { echo "usage: make pin-release VERSION=X.Y.Z"; exit 1; }
+	uv run python scripts/release_pin.py "$(VERSION)"
+
 docs-setup:  ## Refresh the builder from the shipped Compose templates
 	uv run --no-project --with pyyaml==6.0.3 python scripts/sync_setup_templates.py
 

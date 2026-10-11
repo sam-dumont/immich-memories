@@ -39,7 +39,14 @@ ignored at load with a warning, and `preflight` lists their keys.
 A save that changes a URL a credential is sent to (`immich.url`, an `immich.accounts` entry,
 `llm.base_url`, `editorial.preparation.caption_base_url`, `musicgen.base_url`, `ace_step.api_url`)
 is refused unless it carries that credential too, when one is set from any source.
-`render.worker_base_url` always needs `render.worker_token` in the same save.
+
+Settings that name a program, a model file or a render worker are set only in the environment or
+the file as well, because a signed-in user could otherwise point the app at code or a server of
+their choosing: `render.worker_base_url`, `render.worker_token`, `llm.local_server`,
+`triage.encoder`, `free_text.wordnet`, `editorial.laya_checkpoint`,
+`editorial.preparation.detector_python`, `editorial.preparation.detector_cache_dir` and
+`editorial.preparation.marqo_onnx`. Rows an older version saved for them are ignored at load with
+a warning; move them to `config.yaml` or the environment.
 
 `immich-memories config show` prints the same report: every key, its value, its source, and the
 exact variable or file key that sets it. Secrets print as `***`. Give prefixes to narrow it:
@@ -67,7 +74,7 @@ the database opens; `auth.*` and `server.*` never move either.
 ### Secrets in the database
 
 Keys named `api_key`, `caption_api_key`, `password`, `client_secret`, `trigger_token`,
-`worker_token`, `token`, `secret`, `api_keys` or `urls` (notification URLs carry credentials) are
+`token`, `secret`, `api_keys` or `urls` (notification URLs carry credentials) are
 secrets. In the database they are encrypted with Fernet, under a key derived (HKDF-SHA256) from
 `IMMICH_MEMORIES_SECRET_KEY`. Any string of at least 32 characters works; generate one with
 

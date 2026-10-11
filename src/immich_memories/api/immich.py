@@ -380,9 +380,9 @@ class ImmichClient:
             "rerun the same command to continue"
         )
 
-    async def get_server_info(self) -> ServerInfo:
+    async def get_server_info(self, *, retry: bool = True) -> ServerInfo:
         """Get server version information."""
-        data = await self._request("GET", "/server/version")
+        data = await self._request("GET", "/server/version", retry=retry)
         try:
             return ServerInfo.model_validate(data)
         except ValidationError as e:
@@ -391,13 +391,16 @@ class ImmichClient:
                 "expected numeric major, minor, and patch fields"
             ) from e
 
-    async def get_api_version(self) -> ResolvedApiVersion:
-        """Resolve the Immich API major version used by this client."""
+    async def get_api_version(self, *, retry: bool = True) -> ResolvedApiVersion:
+        """Resolve the Immich API major version used by this client.
+
+        ``retry=False`` makes the first contact fail at once (preflight uses it).
+        """
         if self._resolved_api_version is not None:
             return self._resolved_api_version
         async with self._api_version_lock:
             if self._resolved_api_version is None:
-                server_info = await self.get_server_info()
+                server_info = await self.get_server_info(retry=retry)
                 self._resolved_api_version = resolve_api_version(
                     self._api_version_policy, server_info.major
                 )

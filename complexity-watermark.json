@@ -1,6 +1,6 @@
 {
   "src/immich_memories/cli/config_cmd.py": {
-    "register_config_commands": [29]
+    "register_config_commands": [25]
   },
   "src/immich_memories/cli/generate.py": {
     "register_generate_commands": [115]

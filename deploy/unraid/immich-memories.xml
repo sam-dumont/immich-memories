@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <Container version="2">
   <Name>immich-memories</Name>
-  <Repository>ghcr.io/sam-dumont/immich-memories:latest</Repository>
+  <Repository>ghcr.io/sam-dumont/immich-memories:1.0.0-rc.9</Repository>
   <Registry>https://github.com/sam-dumont/immich-memories/pkgs/container/immich-memories</Registry>
   <Network>bridge</Network>
   <Shell>sh</Shell>

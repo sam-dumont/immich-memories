@@ -260,13 +260,28 @@ def _print_run_spans(store, run) -> None:
             console.print(line, markup=False)
 
 
+# Commands that only read history: they put nothing on the cache volume, so they leave it alone.
+_READ_ONLY_RUNS_COMMANDS = frozenset({"list", "show", "stats", "storage"})
+
+
+def _keep_scratch_unless_reading(ctx: click.Context) -> None:
+    config = ctx.obj.get("config")
+    # No config is loaded while help is shown.
+    if config is None or ctx.invoked_subcommand in _READ_ONLY_RUNS_COMMANDS:
+        return
+    from immich_memories.security import runtime_scratch
+
+    ctx.with_resource(runtime_scratch(config.cache.cache_path))
+
+
 def register_runs_commands(main: click.Group) -> None:
     """Register the runs command group on the main CLI group."""
 
     @main.group()
-    def runs() -> None:
+    @click.pass_context
+    def runs(ctx: click.Context) -> None:
         """Browse and manage pipeline run history."""
-        pass
+        _keep_scratch_unless_reading(ctx)
 
     main.add_command(runs)
 

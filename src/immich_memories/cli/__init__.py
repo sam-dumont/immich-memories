@@ -169,7 +169,9 @@ def main(
     _load_cli_config(ctx, config, preset)
 
     # Config inspection must stay read-only, including when its default cache is absent.
-    if ctx.invoked_subcommand and ctx.invoked_subcommand != "config":
+    # `runs` decides for itself: reading history needs no scratch, and with another
+    # installation's -c config it would create one in this home.
+    if ctx.invoked_subcommand and ctx.invoked_subcommand not in ("config", "runs"):
         from immich_memories.security import runtime_scratch
 
         ctx.with_resource(runtime_scratch(ctx.obj["config"].cache.cache_path))
@@ -195,7 +197,12 @@ def main(
 @click.option(
     "--port", "-p", default=None, type=int, help="Port to run the UI on (default: config or 8080)"
 )
-@click.option("--host", "-h", default=None, help="Host to bind to (default: config or 127.0.0.1)")
+@click.option(
+    "--host",
+    "-h",
+    default=None,
+    help="Host to bind to (default: config or 127.0.0.1). -h is --host here; use --help for help",
+)
 @click.option(
     "--reload/--no-reload", default=False, help="Enable hot reload (for development only)"
 )

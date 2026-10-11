@@ -109,9 +109,9 @@ class SyncImmichClient:
     def get_server_info(self) -> ServerInfo:
         return self._run(self._async_client.get_server_info())
 
-    def get_api_version(self) -> ResolvedApiVersion:
+    def get_api_version(self, *, retry: bool = True) -> ResolvedApiVersion:
         """Return the API major version selected by the asynchronous client."""
-        return self._run(self._async_client.get_api_version())
+        return self._run(self._async_client.get_api_version(retry=retry))
 
     def get_current_user(self) -> UserInfo:
         return self._run(self._async_client.get_current_user())
