@@ -18,8 +18,8 @@ def _asked_length(start: str, end: str) -> float:
     client.__enter__.return_value = client
     client.__exit__.return_value = False
     client.get_photos_for_date_range.return_value = []
+    # WHY: SyncImmichClient is the Immich HTTP client this CLI path would otherwise call.
     with (
-        # WHY: SyncImmichClient is the Immich HTTP client this CLI path would otherwise call.
         patch("immich_memories.api.immich.SyncImmichClient", return_value=client),
         # WHY: fetch_media wraps the Immich video-listing call this test must not make.
         patch(

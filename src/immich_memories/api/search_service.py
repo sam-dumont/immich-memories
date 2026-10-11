@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import AsyncIterator, Awaitable, Callable, Sequence
+from collections.abc import Awaitable, Callable, Sequence
 from datetime import UTC, date, datetime, time, timedelta
 from typing import TYPE_CHECKING, Any
 
@@ -174,79 +174,6 @@ class SearchService:
             if not result.next_page:
                 return len(owned)
             page = int(result.next_page)
-
-    async def get_videos_for_person_and_year(
-        self,
-        person_id: str,
-        year: int,
-        progress_callback: Callable[[int, int], None] | None = None,
-    ) -> list[Asset]:
-        """Get all videos for a specific person in a given year."""
-        taken_after = datetime(year, 1, 1, 0, 0, 0)
-        taken_before = datetime(year, 12, 31, 23, 59, 59)
-
-        all_assets: list[Asset] = []
-        page = 1
-        total_pages = None
-
-        while True:
-            result = await self.search_metadata(
-                person_ids=[person_id],
-                asset_type=AssetType.VIDEO,
-                taken_after=taken_after,
-                taken_before=taken_before,
-                page=page,
-                size=100,
-            )
-
-            assets = result.all_assets
-            all_assets.extend(assets)
-
-            if progress_callback:
-                progress_callback(len(all_assets), total_pages)
-
-            if not result.next_page:
-                break
-
-            page += 1
-
-        all_assets.sort(key=lambda a: a.file_created_at)
-        return all_assets
-
-    async def get_all_videos_for_year(
-        self,
-        year: int,
-        progress_callback: Callable[[int, int], None] | None = None,
-    ) -> list[Asset]:
-        """Get all videos for a given year."""
-        taken_after = datetime(year, 1, 1, 0, 0, 0)
-        taken_before = datetime(year, 12, 31, 23, 59, 59)
-
-        all_assets: list[Asset] = []
-        page = 1
-
-        while True:
-            result = await self.search_metadata(
-                asset_type=AssetType.VIDEO,
-                taken_after=taken_after,
-                taken_before=taken_before,
-                page=page,
-                size=100,
-            )
-
-            assets = result.all_assets
-            all_assets.extend(assets)
-
-            if progress_callback:
-                progress_callback(len(all_assets), None)
-
-            if not result.next_page:
-                break
-
-            page += 1
-
-        all_assets.sort(key=lambda a: a.file_created_at)
-        return all_assets
 
     async def get_assets_for_album(
         self,
@@ -473,34 +400,6 @@ class SearchService:
         all_assets.sort(key=lambda a: a.file_created_at)
         return all_assets
 
-    async def iter_videos_for_date_range(
-        self,
-        date_range: DateRange,
-        person_id: str | None = None,
-        batch_size: int = 20,
-    ) -> AsyncIterator[Asset]:
-        """Iterate over videos within a date range."""
-        page = 1
-        person_ids = [person_id] if person_id else None
-
-        while True:
-            result = await self.search_metadata(
-                person_ids=person_ids,
-                asset_type=AssetType.VIDEO,
-                taken_after=date_range.start,
-                taken_before=date_range.end,
-                page=page,
-                size=batch_size,
-            )
-
-            for asset in result.all_assets:
-                yield asset
-
-            if not result.next_page:
-                break
-
-            page += 1
-
     async def get_time_buckets(
         self,
         size: str = "MONTH",
@@ -517,36 +416,13 @@ class SearchService:
         data = await self._request("GET", "/timeline/buckets", params=params)
         return [TimeBucket(**b) for b in data]
 
-    async def get_bucket_assets(
-        self,
-        bucket: str,
-        size: str = "MONTH",
-        asset_type: AssetType | None = None,
-        person_id: str | None = None,
-    ) -> list[Asset]:
-        """Get assets for a specific time bucket."""
-        params: dict = {
-            "size": size,
-            "timeBucket": bucket,
-        }
-        if asset_type:
-            params["type"] = asset_type.value
-        if person_id:
-            params["personId"] = person_id
+    async def get_available_years(self, person_id: str | None = None) -> list[int]:
+        """The years the library holds any picture or video in, newest first.
 
-        data = await self._request("GET", "/timeline/bucket", params=params)
-        return [Asset(**a) for a in data]
-
-    async def get_available_years(
-        self,
-        person_id: str | None = None,
-    ) -> list[int]:
-        """Get list of years that have video content."""
-        buckets = await self.get_time_buckets(
-            size="MONTH",
-            asset_type=AssetType.VIDEO,
-            person_id=person_id,
-        )
+        One timeline call. It asks for no media type: the timeline answers every asset
+        whatever type is asked of it (#2354).
+        """
+        buckets = await self.get_time_buckets(size="MONTH", person_id=person_id)
 
         years = set()
         for bucket in buckets:
@@ -555,34 +431,4 @@ class SearchService:
                 years.add(dt.year)
             except (ValueError, AttributeError):
                 continue
-
         return sorted(years, reverse=True)
-
-    async def iter_person_videos(
-        self,
-        person_id: str,
-        year: int,
-        batch_size: int = 20,
-    ) -> AsyncIterator[Asset]:
-        """Iterate over videos for a person and year."""
-        taken_after = datetime(year, 1, 1, 0, 0, 0)
-        taken_before = datetime(year, 12, 31, 23, 59, 59)
-        page = 1
-
-        while True:
-            result = await self.search_metadata(
-                person_ids=[person_id],
-                asset_type=AssetType.VIDEO,
-                taken_after=taken_after,
-                taken_before=taken_before,
-                page=page,
-                size=batch_size,
-            )
-
-            for asset in result.all_assets:
-                yield asset
-
-            if not result.next_page:
-                break
-
-            page += 1

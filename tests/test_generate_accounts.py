@@ -9,6 +9,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from unittest.mock import patch
 
+import httpx
 import pytest
 import yaml
 from click.testing import CliRunner
@@ -186,3 +187,33 @@ def test_the_run_context_reads_the_accounts_the_run_named(params, accounts):
     )
 
     assert context.accounts == accounts
+
+
+def test_a_connection_dropped_once_mid_run_is_retried_and_the_run_completes(
+    tmp_path, immich, monkeypatch
+):
+    """An Immich or proxy restart drops a pooled keep-alive connection; the run rides it out
+    (#2350). httpx calls that a `RemoteProtocolError`, not a network error."""
+    from unittest.mock import AsyncMock
+
+    serve = immich.handler
+    dropped: list[str] = []
+
+    def drops_once(request):
+        if request.url.path.endswith("/search/metadata") and not dropped:
+            dropped.append(request.url.path)
+            raise httpx.RemoteProtocolError(
+                "Server disconnected without sending a response.", request=request
+            )
+        return serve(request)
+
+    # WHY: the fake server's own transport; it answers through `drops_once` from here on.
+    monkeypatch.setattr(immich, "handler", drops_once)
+    # WHY: wall-clock backoff is external; the real retry loop still runs.
+    monkeypatch.setattr("immich_memories.api.immich.asyncio.sleep", AsyncMock())
+
+    result, pipeline = _generate(tmp_path)
+
+    assert dropped, "the fake never dropped a connection"
+    assert result.exit_code == 0, (result.output, result.exception)
+    assert [photo.id for photo in pipeline.call_args.kwargs["photo_assets"]] == ["p-park"]

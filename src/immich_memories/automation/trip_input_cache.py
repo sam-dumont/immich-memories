@@ -13,6 +13,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from immich_memories.analysis.source_filter import owned_by
 from immich_memories.api.models import Asset, TimeBucket
 from immich_memories.security import credential_fingerprint
 from immich_memories.timeperiod import DateRange
@@ -145,8 +146,32 @@ def load_or_fetch_trip_assets(
     buckets: list[TimeBucket],
     requested_range: DateRange,
     now: datetime | None = None,
+    owner_id: str | None = None,
 ) -> list[Asset]:
-    """Reuse unchanged trip inputs, otherwise perform and persist one full fetch."""
+    """Reuse unchanged trip inputs, otherwise perform and persist one full fetch.
+
+    With ``owner_id``, only that user's own pictures: a partner's GPS is their trip (#2352).
+    """
+    assets = _cached_or_fetched(
+        client,
+        cache_root=cache_root,
+        server_url=server_url,
+        buckets=buckets,
+        requested_range=requested_range,
+        now=now,
+    )
+    return list(owned_by(owner_id, assets)) if owner_id else assets
+
+
+def _cached_or_fetched(
+    client: SyncImmichClient,
+    *,
+    cache_root: Path,
+    server_url: str,
+    buckets: list[TimeBucket],
+    requested_range: DateRange,
+    now: datetime | None,
+) -> list[Asset]:
     fingerprint = source_fingerprint(server_url, client.api_key, buckets)
     cache = TripInputCache(cache_root)
     snapshot = cache.load(fingerprint, requested_range, now=now)

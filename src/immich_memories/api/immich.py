@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from collections.abc import AsyncIterator, Awaitable, Callable, Sequence
+from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -259,6 +259,14 @@ class ImmichClient:
         content_type = response.headers.get("content-type", "")
         if "application/json" in content_type:
             return response.json()
+        if "text/html" in content_type:
+            # No Immich endpoint answers with a web page; a sign-in proxy in front of it
+            # does, with a 200, once its session lapses mid-run (#2354).
+            raise ImmichAPIError(
+                "Immich answered with a web page, not JSON; a sign-in proxy in front of it "
+                "may have to let this app's API key through",
+                status_code=response.status_code,
+            )
         return response.content
 
     @staticmethod
@@ -303,7 +311,8 @@ class ImmichClient:
         ``before_retry`` runs after each backoff, before the request is sent
         again; anything it returns other than None is taken as the answer and
         nothing is re-sent. A write that may already have landed uses it to look
-        before repeating itself.
+        before repeating itself; it is skipped when the connection itself failed,
+        since then nothing reached Immich.
         """
         url = f"/api{endpoint}"
         logger.debug(f"Request: {method} {url}")
@@ -315,14 +324,18 @@ class ImmichClient:
         delays = _request_retry_delays(method, endpoint, retry=retry)
         attempts = len(delays) + 1
         for attempt in range(attempts):
+            unsent = False
             try:
                 response = await self.client.request(method, url, **self._first_contact(kwargs))
                 self._has_answered = True
                 result = self._check_response(response)
                 self._unreachable_requests = 0
                 return result
-            except (httpx.TimeoutException, httpx.NetworkError) as e:
+            # A restarting Immich or proxy closes a pooled keep-alive connection without an
+            # answer; httpx names that a protocol error, but it is as transient (#2350).
+            except (httpx.TimeoutException, httpx.NetworkError, httpx.RemoteProtocolError) as e:
                 last_exception = self._request_error(e)
+                unsent = isinstance(e, (httpx.ConnectError, httpx.ConnectTimeout))
             except ImmichAPIError as e:
                 if not self._is_retryable(e):
                     raise
@@ -338,7 +351,11 @@ class ImmichClient:
                     f"retrying ({attempt + 2}/{attempts}) in {backoff:.1f}s"
                 )
                 await asyncio.sleep(backoff)
-                if before_retry is not None and (settled := await before_retry()) is not None:
+                if (
+                    before_retry is not None
+                    and not unsent
+                    and (settled := await before_retry()) is not None
+                ):
                     return settled
 
         self._note_unreachable(last_exception)
@@ -466,9 +483,11 @@ class ImmichClient:
         except ImmichAPIError:
             raise
 
-    async def generated_asset_ids(self) -> frozenset[str]:
+    async def generated_asset_ids(
+        self, within: Sequence[DateRange] | None = None
+    ) -> frozenset[str]:
         """The assets this library still holds under this app's provenance tag."""
-        return await self.albums.generated_asset_ids()
+        return await self.albums.generated_asset_ids(within)
 
     # ---- Delegate to SearchService ----
 
@@ -493,21 +512,6 @@ class ImmichClient:
             size=size,
             ocr=ocr,
         )
-
-    async def get_videos_for_person_and_year(
-        self,
-        person_id: str,
-        year: int,
-        progress_callback: Callable[[int, int], None] | None = None,
-    ) -> list[Asset]:
-        return await self.search.get_videos_for_person_and_year(person_id, year, progress_callback)
-
-    async def get_all_videos_for_year(
-        self,
-        year: int,
-        progress_callback: Callable[[int, int], None] | None = None,
-    ) -> list[Asset]:
-        return await self.search.get_all_videos_for_year(year, progress_callback)
 
     async def get_videos_for_date_range(
         self,
@@ -582,31 +586,11 @@ class ImmichClient:
     async def list_album_assets(self, album_id: str) -> list[dict]:
         return await self.albums.list_album_assets(album_id)
 
-    async def iter_videos_for_date_range(
-        self,
-        date_range: DateRange,
-        person_id: str | None = None,
-        batch_size: int = 20,
-    ) -> AsyncIterator[Asset]:
-        async for asset in self.search.iter_videos_for_date_range(
-            date_range, person_id, batch_size
-        ):
-            yield asset
-
     async def get_time_buckets(self, **kwargs) -> list[TimeBucket]:
         return await self.search.get_time_buckets(**kwargs)
 
-    async def get_bucket_assets(self, bucket: str, **kwargs) -> list[Asset]:
-        return await self.search.get_bucket_assets(bucket, **kwargs)
-
     async def get_available_years(self, person_id: str | None = None) -> list[int]:
         return await self.search.get_available_years(person_id)
-
-    async def iter_person_videos(
-        self, person_id: str, year: int, batch_size: int = 20
-    ) -> AsyncIterator[Asset]:
-        async for asset in self.search.iter_person_videos(person_id, year, batch_size):
-            yield asset
 
     # ---- Delegate to AllAssetsService ----
 

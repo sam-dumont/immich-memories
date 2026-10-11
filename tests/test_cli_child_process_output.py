@@ -113,5 +113,5 @@ def test_a_successful_cli_run_prints_no_error_from_a_helper_child(
     output = completed.stdout + completed.stderr
     assert completed.returncode == 0, output
     # The command ran once: a child that re-runs it is a second, unasked-for run.
-    assert output.count("Years with video content") == 1, output
+    assert output.count("Years with pictures or videos") == 1, output
     assert [line for line in output.splitlines() if line.startswith("Error:")] == []

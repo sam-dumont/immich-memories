@@ -16,7 +16,7 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from typing import Any, Protocol
 
-from immich_memories.people.gather import era_day_shares, suspicious_date
+from immich_memories.people.gather import era_day_shares
 from immich_memories.people.signatures import (
     EXIF_NOISE_FLOOR,
     Link,
@@ -120,7 +120,7 @@ def build_graph(
         source,
         min_assets=min_assets,
         include_person_ids=include_person_ids,
-        library_days=_photographed_days(source),
+        library_months=_photographed_months(source),
     )
     if confirmed_owner is None:
         owner = identify_owner(source, evidence, owner_name=owner_name)
@@ -281,7 +281,7 @@ def _roster(
     *,
     min_assets: int,
     include_person_ids: Collection[str] = (),
-    library_days: AbstractSet[date] = frozenset(),
+    library_months: AbstractSet[date] = frozenset(),
 ) -> list[PersonEvidence]:
     """Every named person the library holds more than a handful of pictures of.
 
@@ -304,38 +304,23 @@ def _roster(
                 count=count,
                 active_months=tuple(sorted(months)),
                 birth_date=_as_date(person.birth_date),
-                era_day_shares=era_day_shares(_photographed_days(source, person.id), library_days),
+                era_day_shares=era_day_shares(set(months), library_months),
             )
         )
     return roster
 
 
-def _photographed_days(source: PeopleSource, person_id: str | None = None) -> set[date]:
-    """Distinct day-grain buckets, with default-looking days quarantined.
+def _photographed_months(source: PeopleSource) -> set[date]:
+    """The months the library photographed anything in, as era shares weigh them.
 
-    One timeline call at DAY size — the same endpoint the month curve uses.
-    A January-first bucket is dropped on both sides of every share: a default
-    date never minted a photographed day (annotation-layer gather doctrine).
+    Immich's timeline answers month buckets whatever size is asked of it (#2354), so the
+    month is the finest grain one call gives. A month bucket is dated to its first day,
+    which is no picture's date, so no default-date quarantine applies to it.
     """
-    days: set[date] = set()
-    for bucket in source.get_time_buckets(size="DAY", person_id=person_id):
-        day = _as_day(bucket.time_bucket)
-        if day is not None and day >= EXIF_NOISE_FLOOR and suspicious_date(day) is None:
-            days.add(day)
-    return days
+    return set(_active_months(source, None))
 
 
-def _as_day(raw: object) -> date | None:
-    if not isinstance(raw, str):
-        return None
-    try:
-        return datetime.fromisoformat(raw.replace("Z", "+00:00")).date()
-    except ValueError:
-        logger.warning("Ignoring an unreadable timeline bucket: %r", raw)
-        return None
-
-
-def _active_months(source: PeopleSource, person_id: str) -> dict[date, int]:
+def _active_months(source: PeopleSource, person_id: str | None) -> dict[date, int]:
     """The months this person appears in, and how much of each.
 
     The timeline endpoint answers in months whatever size is asked of it, so

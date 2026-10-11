@@ -54,10 +54,10 @@ class _Library:
         "p2": [(date(2018 + (5 + m) // 12, (5 + m) % 12 + 1, 1), 20) for m in range(90)],
         "p3": [(date(2021, 5, 1), 80), (date(2023, 5, 1), 80)],
     }
-    days = {
-        None: {date(2020, 4, day): 5 for day in range(1, 11)},
-        "p1": {date(2020, 4, 2): 2, date(2020, 4, 5): 1, date(2020, 4, 9): 1},
-    }
+    # The whole library's months: nine in 2020 and the one in 2021 Rowan was photographed in.
+    library_months = [(date(2020, month, 1), 50) for month in range(4, 13)] + [
+        (date(2021, 5, 1), 50)
+    ]
 
     def __init__(self, *_args, **_kwargs) -> None:
         pass
@@ -72,15 +72,10 @@ class _Library:
         return self.people
 
     def get_time_buckets(self, **kwargs: object) -> list[_Bucket]:
-        if kwargs.get("size") == "DAY":
-            return [
-                _Bucket(f"{day:%Y-%m-%d}T00:00:00.000Z", count)
-                for day, count in self.days.get(kwargs.get("person_id"), {}).items()
-            ]
-        return [
-            _Bucket(f"{month:%Y-%m-%d}T00:00:00.000Z", count)
-            for month, count in self.months[str(kwargs["person_id"])]
-        ]
+        # Immich v2+ answers month buckets whatever `size` is asked for.
+        person_id = kwargs.get("person_id")
+        months = self.library_months if person_id is None else self.months[str(person_id)]
+        return [_Bucket(f"{month:%Y-%m-%d}T00:00:00.000Z", count) for month, count in months]
 
     def count_assets_with_people(self, person_ids: list[str]) -> int:
         return 0
@@ -276,7 +271,8 @@ class TestShow:
 
         output = _run(["people", "show"])
 
-        assert "covid 30%" in output
+        # Rowan is in one of the library's ten photographed covid months.
+        assert "covid 10%" in output
 
     def test_one_tier_can_be_asked_for_on_its_own(self):
         _run(["people", "scan"])

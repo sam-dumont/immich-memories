@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Callable, Iterable, Sequence
 from itertools import chain
 from typing import TYPE_CHECKING, Protocol
 
@@ -65,13 +65,21 @@ def library_source_scope(
         generated_asset_ids=tuple(
             sorted(
                 generated_source_ids(
-                    # A client that cannot answer leaves the receipts answering alone.
-                    tagged=getattr(client, "generated_asset_ids", frozenset),
+                    tagged=_generated_in(client, date_ranges),
                     store=open_store(config),
                 )
             )
         ),
     )
+
+
+def _generated_in(client: object, date_ranges: Sequence[DateRange]) -> Callable[[], Iterable[str]]:
+    """The client's tagged films within these windows; a client that cannot answer leaves
+    the receipts answering alone."""
+    read = getattr(client, "generated_asset_ids", None)
+    if read is None:
+        return frozenset
+    return lambda: read(within=tuple(date_ranges) or None)
 
 
 def _exact_windows(scope: SourceScope, kind: str) -> tuple[DateRange, ...]:

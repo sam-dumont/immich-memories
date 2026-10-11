@@ -37,8 +37,8 @@ def _failing_api(error: Exception | None = None, status: int | None = None) -> A
 def test_ace_step_logs_never_name_the_configured_address(caplog, mode, error, status):
     backend = ACEStepBackend(ACEStepConfig(mode=mode, api_url=PRIVATE))
 
+    # WHY: no real ACE-Step library or network in a unit test.
     with (
-        # WHY: no real ACE-Step library or network in a unit test.
         patch(
             "immich_memories.audio.generators.ace_step_backend.is_ace_step_importable",
             return_value=False,

@@ -1,20 +1,6 @@
-"""Stage-1 gather math: quarantine and era day-shares (person annotation layer)."""
+"""Stage-1 gather math: era shares (person annotation layer)."""
 
-from datetime import UTC, date, datetime
-
-from immich_memories.people.gather import suspicious_date
-
-
-def test_default_looking_timestamps_are_quarantined_with_their_reason() -> None:
-    """Jan-1 and midnight-adjacent stamps never feed a lifecycle fact unconfirmed."""
-    assert suspicious_date(datetime(2004, 1, 1, 14, 30, tzinfo=UTC)) == "january-first default"
-    assert suspicious_date(datetime(2011, 6, 12, 0, 0, 31, tzinfo=UTC)) == "midnight-adjacent"
-    assert suspicious_date(datetime(2011, 6, 12, 9, 15, 2, tzinfo=UTC)) is None
-
-
-def test_a_date_only_stamp_is_not_midnight_suspicious() -> None:
-    """A plain date carries no clock to be suspicious about."""
-    assert suspicious_date(date(2011, 6, 12)) is None
+from datetime import date
 
 
 def test_era_day_shares_lists_only_eras_the_library_can_speak_for() -> None:

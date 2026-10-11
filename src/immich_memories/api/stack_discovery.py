@@ -21,18 +21,31 @@ def discover_stack_map(opened: Mapping[str, OpenAccount]) -> dict[str, str]:
     """Every opened account's stacks, folded into one member id -> primary id map."""
     stack_of: dict[str, str] = {}
     for name, account in opened.items():
-        try:
-            stacks = account.client.get_stacks()
-        except ImmichAPIError as error:
-            logger.warning(
-                "Could not read stacks for account %r (%s); stack folding is skipped for it. "
-                "Add stack.read to the key, or ignore this on a pre-3.3 server.",
-                name,
-                error,
-            )
-            continue
-        for stack in stacks:
-            for member in stack.assets:
-                if member.id != stack.primary_asset_id:
-                    stack_of[member.id] = stack.primary_asset_id
+        stack_of.update(account_stack_map(account.client, name))
     return stack_of
+
+
+def account_stack_map(client: object, name: str) -> dict[str, str]:
+    """One account's stacks as member id -> primary id; empty when it cannot read them.
+
+    A client with no stack read at all (a test double of an older client) folds nothing.
+    """
+    read = getattr(client, "get_stacks", None)
+    if not callable(read):
+        return {}
+    try:
+        stacks = read()
+    except ImmichAPIError as error:
+        logger.warning(
+            "Could not read stacks for account %r (%s); stack folding is skipped for it. "
+            "Add stack.read to the key, or ignore this on a pre-3.3 server.",
+            name,
+            error,
+        )
+        return {}
+    return {
+        member.id: stack.primary_asset_id
+        for stack in stacks
+        for member in stack.assets
+        if member.id != stack.primary_asset_id
+    }

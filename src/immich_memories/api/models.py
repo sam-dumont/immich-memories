@@ -355,9 +355,19 @@ class SearchAssetsResult(BaseModel):
     total: int = 0
     count: int = 0
     items: list[Asset] = Field(default_factory=list)
-    next_page: str | None = Field(default=None, alias="nextPage")
+    # Immich sends the page number as a string, but takes it back only as an integer: a
+    # pager that echoed the string got a 400 (#2338). Typed as a number here, no pager can.
+    next_page: int | None = Field(default=None, alias="nextPage")
 
     model_config = ConfigDict(populate_by_name=True)
+
+    @field_validator("next_page", mode="before")
+    @classmethod
+    def page_number(cls, value: Any) -> Any:
+        """Immich's string page number as an int; an empty one means there is no next page."""
+        if isinstance(value, str):
+            return int(value) if value.strip() else None
+        return value
 
     @field_validator("items", mode="before")
     @classmethod
@@ -395,8 +405,8 @@ class MetadataSearchResult(BaseModel):
         return self.assets.items
 
     @property
-    def next_page(self) -> str | None:
-        """Get the next page token."""
+    def next_page(self) -> int | None:
+        """The next page's number, or None on the last page."""
         return self.assets.next_page
 
     @property

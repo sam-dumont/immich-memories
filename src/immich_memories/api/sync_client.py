@@ -205,25 +205,8 @@ class SyncImmichClient:
             )
         )
 
-    def generated_asset_ids(self) -> frozenset[str]:
-        return self._run(self._async_client.generated_asset_ids())
-
-    def get_videos_for_person_and_year(
-        self,
-        person_id: str,
-        year: int,
-        progress_callback: Callable[[int, int], None] | None = None,
-    ) -> list[Asset]:
-        return self._run(
-            self._async_client.get_videos_for_person_and_year(person_id, year, progress_callback)
-        )
-
-    def get_all_videos_for_year(
-        self,
-        year: int,
-        progress_callback: Callable[[int, int], None] | None = None,
-    ) -> list[Asset]:
-        return self._run(self._async_client.get_all_videos_for_year(year, progress_callback))
+    def generated_asset_ids(self, within: Sequence[DateRange] | None = None) -> frozenset[str]:
+        return self._run(self._async_client.generated_asset_ids(within))
 
     def count_assets_with_people(
         self,
@@ -241,9 +224,6 @@ class SyncImmichClient:
 
     def get_time_buckets(self, **kwargs) -> list[TimeBucket]:
         return self._run(self._async_client.get_time_buckets(**kwargs))
-
-    def get_bucket_assets(self, bucket: str, **kwargs) -> list[Asset]:
-        return self._run(self._async_client.get_bucket_assets(bucket, **kwargs))
 
     def get_available_years(self, person_id: str | None = None) -> list[int]:
         return self._run(self._async_client.get_available_years(person_id))

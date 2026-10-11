@@ -526,10 +526,10 @@ class CandidateDiscovery:
             # Trips stay primary-account only: --accounts refuses trip memories
             # (cli/run_people.py::refuse_household_scope), so discovery never scopes one.
             if auto_cfg.detect_trips and name == PRIMARY_ACCOUNT and gps_assets is None:
-                gps_assets = self._trip_assets(client, buckets, today)
+                gps_assets = self._trip_assets(client, buckets, today, account.user.id)
         return _AccountReads(per_account, gps_assets)
 
-    def _trip_assets(self, client: Any, buckets: list, today: date) -> list | None:
+    def _trip_assets(self, client: Any, buckets: list, today: date, owner_id: str) -> list | None:
         """Trips are measured against a homebase; without one there is nothing to measure."""
         trips_cfg = self._config.trips
         if trips_cfg.homebase_latitude == trips_cfg.homebase_longitude == 0.0:
@@ -541,6 +541,7 @@ class CandidateDiscovery:
             buckets=buckets,
             requested_range=_trailing_year_range(today),
             now=datetime.now(tz=UTC),
+            owner_id=owner_id,
         )
 
 
