@@ -59,6 +59,15 @@ def test_assembly_drops_a_shared_copy_and_keeps_everything_else(tmp_path):
     assert set(sizes) == {"stable", "dev"}
 
 
+def test_a_lone_track_downloaded_without_its_folder_is_assembled(tmp_path):
+    # download-artifact extracts a single matching artifact straight into its path.
+    trees = _tree(tmp_path / "tracks", {"demo/a.mp4": b"A"}, html="stable")
+    site = tmp_path / "site"
+    assert set(assemble(_tracks("stable"), trees, site, max_bytes=10 * MB)) == {"stable"}
+    assert (site / "index.html").read_text() == "stable"
+    assert (site / "demo/a.mp4").read_bytes() == b"A"
+
+
 def test_a_listed_file_whose_bytes_differ_from_stable_fails_the_deploy(tmp_path):
     trees = tmp_path / "tracks"
     _tree(trees / "docs-stable", {"demo/a.mp4": b"stable"})
