@@ -83,3 +83,92 @@ def test_geocoder_and_tile_failures_log_no_coordinates(monkeypatch, caplog):
     assert "service declined" in caplog.text
     assert "50.85" not in caplog.text
     assert "4.35" not in caplog.text
+
+
+# ── an id, a name or an address glued to a file name (#2397) ─────────────────
+
+_UUID = "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        f"{_UUID}_photo.mp4",
+        f"clip_{_UUID}_0.0_4.0.mp4",
+        f"cache/{_UUID}.jpg",
+        f"'{_UUID}'",
+        f'"{_UUID}"',
+        f"asset-{_UUID}",
+        _UUID,
+        f"{_UUID.upper()}_photo.mp4",
+    ],
+)
+def test_an_immich_id_is_hashed_whatever_surrounds_it(line):
+    privacy = ReportPrivacy()
+
+    cleaned = privacy.text(line)
+
+    assert _UUID not in cleaned.lower()
+    assert privacy.hash_id(_UUID) in cleaned
+
+
+@pytest.mark.parametrize(
+    "template",
+    ["{}_photo.mp4", "clip_{}.mp4", "runs/{}/story", "'{}'", "{}.", "x {}", "{}", "({})"],
+)
+def test_a_private_id_is_hashed_whatever_surrounds_it(template):
+    privacy = ReportPrivacy(ids=["garden-cake-01"])
+
+    cleaned = privacy.text(template.format("garden-cake-01"))
+
+    assert cleaned == template.format(privacy.hash_id("garden-cake-01"))
+
+
+def test_adjacent_and_overlapping_ids_each_hash_whole():
+    privacy = ReportPrivacy(ids=["garden-cake", "garden-cake-01", "20261011_125635_c92a"])
+
+    cleaned = privacy.text("garden-cake-01_garden-cake run_20261011_125635_c92a")
+
+    assert cleaned == (
+        f"{privacy.hash_id('garden-cake-01')}_{privacy.hash_id('garden-cake')} "
+        f"run_{privacy.hash_id('20261011_125635_c92a')}"
+    )
+
+
+def test_an_id_is_not_hashed_inside_a_longer_id_or_word():
+    privacy = ReportPrivacy(ids=["garden-cake"])
+
+    assert privacy.text("garden-cakes garden-cake-02 xgarden-cake") == (
+        "garden-cakes garden-cake-02 xgarden-cake"
+    )
+
+
+def test_a_name_glued_to_an_underscore_is_redacted_but_a_longer_word_is_not():
+    privacy = ReportPrivacy(terms=["Kit"])
+
+    assert privacy.text("Kit_photo.mp4 spotlight_kit Kitchen toolkit") == (
+        "[private]_photo.mp4 spotlight_[private] Kitchen toolkit"
+    )
+
+
+@pytest.mark.parametrize(
+    ("line", "leak"),
+    [
+        ("tile_50.85,4.35.png", "50.85"),
+        ("map_lat=50.8417 map_lon=4.3624", "50.8417"),
+        ("peer_10.0.0.7 refused", "10.0.0.7"),
+        ("upstream_nas.lan:2283 down", "nas.lan"),
+        ("fetch_https://immich.lan/api failed", "immich.lan"),
+        ("cache_/volume1/photos/x.jpg", "/volume1"),
+        ("stopped at 50.85,4.35.", "4.35"),
+        ("refused by 10.0.0.7.", "10.0.0.7"),
+    ],
+)
+def test_addresses_and_coordinates_glued_to_an_underscore_never_survive(line, leak):
+    assert leak not in ReportPrivacy().text(line)
+
+
+def test_ordinary_words_and_numbers_stay_readable_next_to_underscores():
+    line = "clip_extraction 0.734 s, render_assembly 4/4, v1.2_beta, flat=3"
+
+    assert ReportPrivacy(ids=["c92a"], terms=["Robin"]).text(line) == line

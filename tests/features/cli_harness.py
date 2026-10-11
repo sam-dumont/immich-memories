@@ -102,7 +102,10 @@ class UserHome:
         env.update(
             HOME=str(self.root),
             USERPROFILE=str(self.root),
-            COLUMNS="250",
+            # WHY: a table wraps a cell wider than the terminal, splitting a phrase over
+            # two lines. A film's path is a temp path, as long as the machine makes it (an
+            # xdist worker adds a folder), so no row may depend on fitting 250 columns.
+            COLUMNS="1000",
             NO_COLOR="1",
             PYTHONPATH=os.pathsep.join(filter(None, [str(REPO), env.get("PYTHONPATH")])),
         )

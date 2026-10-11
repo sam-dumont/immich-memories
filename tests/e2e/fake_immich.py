@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import subprocess
 import threading
 import time
+from collections.abc import Iterator
 from dataclasses import dataclass
+from dataclasses import field as dataclass_field
 from email import policy
 from email.parser import BytesParser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -14,8 +17,8 @@ from pathlib import Path
 from typing import Any, Self
 from urllib.parse import parse_qs, urlsplit
 
-from tests.e2e.fake_library import ALL_PICTURES, CAST, Picture
-from tests.immich_fakes import V3, request_problems
+from tests.e2e.fake_library import ALL_PICTURES, CAST, HOME, Picture
+from tests.immich_fakes import V2, V3, request_problems
 
 _MONTH_BUCKET = "2024-06-01T00:00:00.000Z"
 
@@ -132,6 +135,26 @@ ALBUMS = (
 )
 
 
+# Every place the library was photographed at, and the fixture home.
+_PLACES = {picture.place for picture in ALL_PICTURES} | {HOME}
+# About a kilometre: how near a point has to be for Immich to name the same place.
+_PLACE_RADIUS_DEGREES = 0.01
+
+
+def _reverse_geocode(query: dict[str, list[str]]) -> list[dict[str, Any]]:
+    """Immich's answer: the place at those coordinates, or an empty list where it knows none."""
+    try:
+        lat, lon = float(query["lat"][-1]), float(query["lon"][-1])
+    except (KeyError, ValueError):
+        return []
+    return [
+        {"city": place.city, "state": None, "country": place.country}
+        for place in _PLACES
+        if abs(place.latitude - lat) <= _PLACE_RADIUS_DEGREES
+        and abs(place.longitude - lon) <= _PLACE_RADIUS_DEGREES
+    ][:1]
+
+
 def _month_of(taken_at: str) -> str:
     """The MONTH bucket an asset falls in, in the form Immich returns."""
     return f"{taken_at[:7]}-01T00:00:00.000Z"
@@ -192,6 +215,16 @@ class RecordedUpload:
     data: bytes
 
 
+@dataclass(slots=True)
+class Wire:
+    """What the service answers as, and every request it was sent, in order."""
+
+    # The Immich major the service reports and holds requests to.
+    major: int = 3
+    # ("GET", "/api/assets/x/original"), ... in arrival order; query strings dropped.
+    requests: list[tuple[str, str]] = dataclass_field(default_factory=list)
+
+
 class FakeImmichServer:
     """Own a fixture-scoped HTTP server implementing the tested Immich surface."""
 
@@ -208,8 +241,12 @@ class FakeImmichServer:
         photo_paths: dict[str, Path],
         uploads: list[RecordedUpload],
         refused: list[str],
+        wire: Wire | None = None,
+        media: dict[str, Path] | None = None,
     ) -> None:
         self.root = root
+        self.wire = wire or Wire()
+        self._media = media if media is not None else {}
         # Requests answered 400 because the real Immich would refuse them (tests.immich_fakes).
         self.refused = refused
         self.source_video = source_video
@@ -261,9 +298,10 @@ class FakeImmichServer:
         media = video_paths | photo_paths
         uploads: list[RecordedUpload] = []
         refused: list[str] = []
+        wire = Wire()
         httpd = ThreadingHTTPServer(
             (host, port),
-            _handler_type(media, thumbnail_paths, uploads, upload_commit_delay, refused),
+            _handler_type(media, thumbnail_paths, uploads, upload_commit_delay, refused, wire),
         )
         thread = threading.Thread(target=httpd.serve_forever, daemon=True)
         thread.start()
@@ -275,10 +313,35 @@ class FakeImmichServer:
             photo_paths,
             uploads,
             refused,
+            wire,
+            media,
         )
         server._video_paths = video_paths
         server._thumbnail_paths = thumbnail_paths
         return server
+
+    @contextlib.contextmanager
+    def answering_as(self, major: int) -> Iterator[None]:
+        """Report Immich `major` (2 or 3) and hold requests to that release's contract."""
+        before, self.wire.major = self.wire.major, major
+        try:
+            yield
+        finally:
+            self.wire.major = before
+
+    def original(self, asset_id: str) -> Path:
+        """The file served as this asset's original."""
+        return self._media[asset_id]
+
+    @contextlib.contextmanager
+    def serving(self, originals: dict[str, Path]) -> Iterator[None]:
+        """Serve these files as the originals of these asset ids until the block ends."""
+        before = {asset_id: self._media[asset_id] for asset_id in originals}
+        self._media.update(originals)
+        try:
+            yield
+        finally:
+            self._media.update(before)
 
     @property
     def listening_host(self) -> str:
@@ -426,8 +489,10 @@ def _handler_type(
     uploads: list[RecordedUpload],
     upload_commit_delay: float,
     refused: list[str],
+    wire: Wire | None = None,
 ) -> type[BaseHTTPRequestHandler]:
     upload_lock = threading.Lock()
+    wire = wire or Wire()
     # Tags created on this service, by value, and the assets each one holds.
     tags: dict[str, dict[str, Any]] = {}
     tagged: dict[str, set[str]] = {}
@@ -454,6 +519,12 @@ def _handler_type(
     class Handler(BaseHTTPRequestHandler):
         protocol_version = "HTTP/1.1"
 
+        def parse_request(self) -> bool:
+            parsed = super().parse_request()
+            if parsed:
+                wire.requests.append((self.command, urlsplit(self.path).path))
+            return parsed
+
         def do_GET(self) -> None:  # noqa: N802
             key = self.headers.get("x-api-key")
             if key not in (FakeImmichServer.api_key, FakeImmichServer.partner_api_key):
@@ -466,7 +537,7 @@ def _handler_type(
             if self._refused(path, query, None):
                 return
             if path == "/api/server/version":
-                self._send_json(200, {"major": 3, "minor": 1, "patch": 0})
+                self._send_json(200, {"major": wire.major, "minor": 1, "patch": 0})
                 return
             if path == "/api/api-keys/me":
                 self._send_json(200, {"permissions": ["all"]})
@@ -481,6 +552,9 @@ def _handler_type(
                         "isAdmin": True,
                     },
                 )
+                return
+            if path == "/api/map/reverse-geocode":
+                self._send_json(200, _reverse_geocode(query))
                 return
             if path == "/api/tags":
                 self._send_json(200, list(tags.values()))
@@ -564,6 +638,10 @@ def _handler_type(
                 and parts[1:] == ["video", "playback"]
             ):
                 self._send_file(media[parts[0]], "video/mp4")
+                return
+            if path.startswith("/api/assets/") and parts[0] not in _BY_ID:
+                # What Immich answers for an id this key cannot read, whether or not it exists.
+                self._send_json(400, {"message": "Not found or no asset.read access"})
                 return
             self._unexpected()
 
@@ -680,8 +758,11 @@ def _handler_type(
             The fixture's ids are readable names, so only the id format goes unchecked.
             """
             flat = {name: values[-1] for name, values in query.items()}
-            # The server says it is v3, so v3's contract is the one it holds requests to.
-            problems = request_problems(self.command, path, flat, body, uuid_ids=False, releases=V3)
+            # The contract of the major the server reports is the one it holds requests to.
+            releases = V2 if wire.major == 2 else V3
+            problems = request_problems(
+                self.command, path, flat, body, uuid_ids=False, releases=releases
+            )
             if not problems:
                 return False
             refused.extend(f"{self.command} {path}: {problem}" for problem in problems)
