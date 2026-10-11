@@ -166,12 +166,14 @@ def test_owner_reads_preserve_duplicates_favourites_and_scope_with_timeline_off(
                 *source.get_photos_for_date_range(window),
                 *source.get_videos_for_date_range(window),
             ]
-            assert len(assets) == 134
+            # The fixture library's June pictures, the partner's and the shared duplicate (139 since
+            # five Live Photos joined the library on 12 June; their motion clips are hidden).
+            assert len(assets) == 139
             assert state["outside_asset"] not in {asset.id for asset in assets}
             duplicate = next(asset for asset in assets if asset.id == state["duplicate"])
             assert duplicate.is_favorite
             folded = fold_exact_copies(assets, primary_owner_id=primary)
-            assert len(folded.pool) == 133
+            assert len(folded.pool) == 138
             assert next(
                 asset for asset in folded.pool if asset.checksum == duplicate.checksum
             ).is_favorite

@@ -164,8 +164,12 @@ def prepare_editorial_fixture(root: Path) -> Path:
     package.mkdir(parents=True)
     (package.parent / "__init__.py").touch()
     (package / "__init__.py").touch()
-    # Preserve the fixture's package imports, including its shared library.
-    for fixture in (FIXTURE, FIXTURE.with_name("fake_library.py")):
+    # Preserve the fixture's package imports: its shared library and its Live Photo motion.
+    for fixture in (
+        FIXTURE,
+        FIXTURE.with_name("fake_library.py"),
+        FIXTURE.with_name("fake_live_motion.py"),
+    ):
         shutil.copy(fixture, package / fixture.name)
     # WHY the pictures and not just the module: since #876 `fake_library` globs
     # this directory to decide which pictures exist, so the module alone builds

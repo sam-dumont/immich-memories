@@ -216,6 +216,7 @@ class _FakeStructurePlannerClient:
         return b"preview-bytes"
 
 
+@pytest.mark.feature("photos.edited-version")
 def test_structure_planner_preview_of_an_edited_asset_asks_for_the_edited_render():
     """Selection (faces, documents, look-alike hashes, crops) must judge the same
     picture the film renders (#2114)."""

@@ -687,7 +687,9 @@ jobs:
       # their subject.
       - name: Run feature tests (fixture library)
         if: matrix.database == 'sqlite' && !cancelled()
-        run: make test-features
+        run: |
+          make dev-test-features
+          make test-features
       - name: Upload launch diagnostics
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
