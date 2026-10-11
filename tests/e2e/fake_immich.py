@@ -413,6 +413,28 @@ def _handler_type(
     refused: list[str],
 ) -> type[BaseHTTPRequestHandler]:
     upload_lock = threading.Lock()
+    # Tags created on this service, by value, and the assets each one holds.
+    tags: dict[str, dict[str, Any]] = {}
+    tagged: dict[str, set[str]] = {}
+
+    def uploaded_asset(asset_id: str) -> dict[str, Any] | None:
+        """An uploaded film as Immich serves it once read: its name, dates and tags."""
+        index = asset_id.removeprefix("uploaded-")
+        with upload_lock:
+            if not index.isdigit() or not 0 < int(index) <= len(uploads):
+                return None
+            upload = uploads[int(index) - 1]
+        created = upload.fields.get("fileCreatedAt", "")
+        return {
+            "id": asset_id,
+            "type": "VIDEO",
+            "originalFileName": upload.filename,
+            "fileCreatedAt": created,
+            "fileModifiedAt": upload.fields.get("fileModifiedAt", created),
+            # Immich's metadata job has read the file: what a fresh upload waits for.
+            "exifInfo": {"modifyDate": upload.fields.get("fileModifiedAt", created)},
+            "tags": [tag for tag in tags.values() if asset_id in tagged[tag["id"]]],
+        }
 
     class Handler(BaseHTTPRequestHandler):
         protocol_version = "HTTP/1.1"
@@ -446,7 +468,7 @@ def _handler_type(
                 )
                 return
             if path == "/api/tags":
-                self._send_json(200, [])
+                self._send_json(200, list(tags.values()))
                 return
             if path == "/api/albums":
                 holding = query.get("assetId", [None])[0]
@@ -483,6 +505,7 @@ def _handler_type(
             if path.startswith("/api/assets/") and len(parts) == 1:
                 # One asset by id, as Immich serves it: a revision's swap fetches its sibling so.
                 found = next((a for a in TIMELINE_ASSETS if a["id"] == parts[0]), None)
+                found = found or uploaded_asset(parts[0])
                 if found is not None:
                     self._send_json(200, found)
                     return
@@ -580,6 +603,34 @@ def _handler_type(
             self._unexpected()
 
         def do_PUT(self) -> None:  # noqa: N802
+            if self.headers.get("x-api-key") != FakeImmichServer.api_key:
+                self._send_json(401, {"message": "invalid API key"})
+                return
+            path = urlsplit(self.path).path
+            payload = self._read_json()
+            if self._refused(path, {}, payload):
+                return
+            if path == "/api/tags":
+                # Upsert by value, answered with the tags as Immich returns them.
+                for value in payload.get("tags") or ():
+                    if value not in tags:
+                        tag_id = f"tag-{len(tags) + 1}"
+                        tags[value] = {
+                            "id": tag_id,
+                            "name": value.rsplit("/", 1)[-1],
+                            "value": value,
+                            "createdAt": "2024-01-01T00:00:00.000Z",
+                            "updatedAt": "2024-01-01T00:00:00.000Z",
+                        }
+                        tagged[tag_id] = set()
+                self._send_json(200, [tags[value] for value in payload.get("tags") or ()])
+                return
+            tag_id = path.removeprefix("/api/tags/").removesuffix("/assets")
+            if path.endswith("/assets") and tag_id in tagged:
+                ids = list(payload.get("ids") or ())
+                tagged[tag_id].update(ids)
+                self._send_json(200, [{"id": asset_id, "success": True} for asset_id in ids])
+                return
             self._unexpected()
 
         def do_PATCH(self) -> None:  # noqa: N802

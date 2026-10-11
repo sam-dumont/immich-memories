@@ -315,10 +315,13 @@ test-integration-titles:  ## Run ONLY title screen pixel tests (~30s, FFmpeg onl
 # Feature tests: each advertised feature checked on the CC0 fixture library through the real
 # CLI, rendered with real FFmpeg, against the hermetic fake Immich (tests/integration/features/).
 # Every child run gets its own sealed HOME. FEATURE_ARGS narrows a run, e.g. FEATURE_ARGS="-k report".
+# The tests run on FEATURE_WORKERS xdist workers (4, a CI runner's cores; 0 runs them in this
+# process). Each worker starts its own fake Immich and homes, so workers share no state.
+FEATURE_WORKERS ?= 4
 .PHONY: test-features feature-check
-test-features:  ## Feature tests on the fixture library, real CLI and FFmpeg (~4 min, no Immich needed)
+test-features:  ## Feature tests on the fixture library, real CLI and FFmpeg (no Immich needed)
 	uv run pytest tests/integration/features/ -v -m integration --tb=short -p no:cacheprovider \
-		--junitxml=tests/features-junit.xml $(FEATURE_ARGS)
+		-n $(FEATURE_WORKERS) --junitxml=tests/features-junit.xml $(FEATURE_ARGS)
 
 # Every CLI command and flag, offered memory type and automation detector has a row in
 # tests/features/inventory.yaml; every row has feature tests or a lane_only/gap status; gaps only fall.
@@ -494,13 +497,14 @@ test-integration:  ## Run ALL integration tests per-suite (requires FFmpeg/Immic
 playwright-install:  ## Install Playwright browsers for E2E tests
 	uv run playwright install chromium
 
+# E2E_ARGS narrows a run, e.g. E2E_ARGS="-k test_web_features".
 e2e: web-client-present  ## Run required fake-service contracts and real hermetic browser render
 	uv run pytest tests/e2e/test_fake_immich.py tests/e2e/test_launch_smoke.py \
 		tests/e2e/test_memory_page.py tests/e2e/test_picture_decisions.py tests/e2e/test_sharing_levels.py \
 		tests/e2e/test_web_client.py tests/e2e/test_job_errors.py tests/e2e/test_keep_intermediates.py \
-		tests/e2e/test_people_page.py tests/e2e/test_people_owner_and_links.py tests/e2e/test_people_accounts_and_groups.py tests/e2e/test_phone_width.py tests/e2e/test_automation_pages.py tests/e2e/test_ui_languages.py -v \
+		tests/e2e/test_people_page.py tests/e2e/test_people_owner_and_links.py tests/e2e/test_people_accounts_and_groups.py tests/e2e/test_phone_width.py tests/e2e/test_automation_pages.py tests/e2e/test_ui_languages.py tests/e2e/test_web_features.py -v \
 		-m "e2e and not visual" --log-cli-level=INFO --tb=short \
-		--junitxml=tests/e2e-junit.xml
+		--junitxml=tests/e2e-junit.xml $(E2E_ARGS)
 
 # `not demo` because the demo clip renders a second video into the same session
 # workspace, and the launch smoke asserts on exactly what is in there.

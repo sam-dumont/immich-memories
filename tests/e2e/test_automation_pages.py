@@ -40,6 +40,7 @@ def _stand_in_2025(workspace) -> None:
     clock.write_text("2025-07-01")
 
 
+@pytest.mark.feature("web.suggestions")
 def test_suggestions_page_offers_the_discovered_candidates(page, launch_app_url, launch_workspace):
     _stand_in_2025(launch_workspace)
     page.goto(f"{launch_app_url}/suggestions")
@@ -93,6 +94,7 @@ def test_a_failed_generation_still_offers_the_run_it_started(
     expect(page.get_by_role("link", name="Download child output")).to_be_visible()
 
 
+@pytest.mark.feature("web.suggestions")
 def test_choose_generate_and_read_the_same_automatic_run(
     page, automation_app_url, automation_workspace
 ):

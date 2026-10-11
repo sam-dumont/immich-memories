@@ -42,6 +42,7 @@ def test_client_starts_and_blocks_an_untrusted_inline_script(page, launch_app_ur
     assert result == {"directive": "script-src-elem", "executed": False}
 
 
+@pytest.mark.feature("web.report-buttons")
 def test_report_is_previewed_before_copying(page, launch_app_url, launch_workspace):
     _seed(launch_workspace)
     report = "## Immich Memories run report\n\n<details><summary>Logs</summary>redacted</details>"
@@ -307,6 +308,7 @@ def test_a_cut_opens_as_a_contact_sheet_that_explains_and_plays_each_shot(
     _shoot(page, "web-review")
 
 
+@pytest.mark.feature("web.review-and-revise")
 def test_a_trim_before_the_window_moves_the_start_and_the_time_on_screen(
     page: Page, launch_app_url: str, launch_workspace
 ) -> None:
@@ -332,6 +334,7 @@ def test_a_trim_before_the_window_moves_the_start_and_the_time_on_screen(
     expect(inspector.get_by_text("2.1 s on screen")).to_be_visible()
 
 
+@pytest.mark.feature("web.review-and-revise")
 def test_edits_undo_save_as_a_revision_and_reopen_after_a_reload(
     page: Page, launch_app_url: str, launch_workspace
 ) -> None:
@@ -367,6 +370,9 @@ def test_edits_undo_save_as_a_revision_and_reopen_after_a_reload(
     expect(shots.nth(1).get_by_text("Removed")).to_be_visible()
 
 
+@pytest.mark.feature("web.make-a-film")
+@pytest.mark.feature("web.review-and-revise")
+@pytest.mark.feature("web.find-and-download")
 def test_a_memory_made_in_the_browser_is_cut_reviewed_revised_rendered_and_played(
     page: Page, launch_app_url: str
 ) -> None:
@@ -435,6 +441,7 @@ def _cut_in_the_browser(page: Page, launch_app_url: str) -> str:
     return page.url.rsplit("/", 1)[-1]
 
 
+@pytest.mark.feature("web.review-and-revise")
 def test_the_pool_s_ticks_go_into_the_film_as_a_revision_without_a_recut(
     page: Page, launch_app_url: str
 ) -> None:
@@ -583,6 +590,7 @@ def test_fade_controls_save_a_default_and_submit_a_film_override(
 
 
 @pytest.mark.parametrize("missing", [[], ["asset.upload"], ["tag.create", "tag.asset"]])
+@pytest.mark.feature("web.upload-permissions")
 def test_render_upload_option_explains_permissions_without_disabling_render(
     page, launch_app_url, launch_workspace, missing
 ):
@@ -609,6 +617,7 @@ def test_render_upload_option_explains_permissions_without_disabling_render(
     expect(panel.get_by_role("button", name="Render", exact=True)).to_be_enabled()
 
 
+@pytest.mark.feature("web.find-and-download")
 def test_incomplete_upload_highlights_an_actual_local_film_download(
     page, launch_app_url, launch_workspace, tmp_path
 ):
@@ -664,6 +673,7 @@ def test_delivered_film_still_offers_download_after_local_cleanup(
 
 
 @pytest.mark.parametrize("route", ["create", "settings"])
+@pytest.mark.feature("web.download-models")
 def test_model_acquisition_waits_for_a_click_and_keeps_download_errors_visible(
     page, launch_app_url, route
 ):

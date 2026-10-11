@@ -34,16 +34,29 @@ and the test reads the film (size, length, a pixel band), the printed text and t
 Only selection is scripted, by the launch check's fixture editor.
 
 `tests/features/inventory.yaml` lists every feature the README and this site promise. Each row
-names its feature tests, marked `@pytest.mark.feature("<row id>")`, or says why it has none:
-`lane_only: <reason>` for real hardware, an OS scheduler or a cluster, `gap: #<issue>` for
-everything else. `make feature-check` fails when a CLI command or flag, a memory type or an
-automation detector has no row, when a row's tests do not collect with its marker, or when the
-gap rows outnumber `gap_ceiling`. The ceiling only comes down: flip a gap by writing its test,
-listing it on the row and lowering the number.
+names its feature tests or says why it has none: `lane_only: <reason>` for real hardware, an OS
+scheduler or a cluster, `gap: #<issue>` for everything else. A row's `tests:` takes three forms:
+
+| Form | Example | Marked with |
+|---|---|---|
+| pytest | `tests/integration/features/test_x.py::test_y` | `@pytest.mark.feature("<row id>")` |
+| Playwright | `tests/e2e/test_web_features.py::test_y` | the same pytest marker; the file must be in `make e2e` |
+| Node | `docs-site/src/components/SetupBuilder/recipes.test.mjs::<title>` | `// feature: <row id>` on the line above `test(` |
+
+The browser suite is pytest with Playwright, so a web flow is a `tests/e2e/` node id. A Node test is
+named by its `test()` title exactly as the source writes it: a template literal keeps its `${...}`,
+and every case it generates counts as that one test. The Node file must be run by a Makefile
+`node --test` line.
+
+`make feature-check` fails when a CLI command or flag, a memory type or an automation detector has
+no row, when a row's tests do not exist or lack their marker, when a listed browser or Node test
+sits in a file no CI target runs, or when the gap rows outnumber `gap_ceiling`. The ceiling only
+comes down: flip a gap by writing its test, listing it on the row and lowering the number.
 
 Fast feature tests live in `tests/features/` and run with `make test`; the rendering ones live in
-`tests/integration/features/` and run with `make test-features` (about 4 minutes, in the launch
-check job). Fakes of the Immich client come from `tests/immich_fakes.py`: `fake_immich_client()`
+`tests/integration/features/` and run with `make test-features` in the launch check job, spread
+over four pytest-xdist workers (`FEATURE_WORKERS=0` runs them in one process). Each worker starts
+its own fake Immich and throwaway homes, so a feature test never relies on another one's run. Fakes of the Immich client come from `tests/immich_fakes.py`: `fake_immich_client()`
 is a `create_autospec` of the real client, and `ImmichWire` answers a MockTransport request with
 the 400 the real Immich would send for a string page, a non-UUID id or a missing field. It
 also refuses a parameter the release's spec does not define: Immich drops those without a word, so

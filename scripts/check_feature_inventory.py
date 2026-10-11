@@ -2,8 +2,18 @@
 """Fail when an advertised feature has no feature test and no stated reason.
 
 `tests/features/inventory.yaml` lists every feature the README and the docs site
-promise. Each row either names the feature tests that check it (tests marked
-``@pytest.mark.feature("<row id>")``) or carries a status:
+promise. Each row either names the feature tests that check it or carries a status.
+A test is one of:
+
+* a pytest node id (``tests/.../test_x.py::test_y``) marked
+  ``@pytest.mark.feature("<row id>")``. The browser suite is pytest too: a Playwright
+  test is a ``tests/e2e/`` node id, marked the same way, in a file ``make e2e`` runs;
+* a Node test (``docs-site/.../x.test.mjs::<title>``), the ``test()`` title as written in
+  the source (a template literal keeps its ``${...}``), with a ``// feature: <row id>``
+  comment on the line above the ``test(`` call, in a file a Makefile ``node --test``
+  line runs.
+
+The statuses are:
 
 * ``lane_only: <reason>``: only real hardware, an OS service or a cluster shows it;
 * ``gap: #<issue>``: not covered yet. The number of gap rows is a ratchet: it may fall,
@@ -14,7 +24,7 @@ The check fails when:
 a. a CLI command or flag (the Click tree `make docs-cli` documents), an offered memory
    type or an automation detector has no row covering it;
 b. a row's tests do not collect, or do not carry its ``feature`` marker, or a marked
-   test names no row;
+   test names no row, or a listed test sits in a file no CI target runs;
 c. a row is malformed (id, promise, doc page and anchor, one of tests or status), or
    the gap rows outnumber ``gap_ceiling``.
 
@@ -46,7 +56,13 @@ FEATURE_TEST_ROOTS = (
     "tests/features",
     "tests/integration/features",
     "tests/integration/immich_gate",
+    "tests/e2e",
 )
+# Folders whose Node tests the check reads for `// feature:` comments, for the same reason.
+NODE_TEST_ROOTS = ("docs-site/src", "docs-site/scripts")
+NODE_TEST_SUFFIXES = (".test.mjs", ".test.js", ".test.mts", ".test.ts")
+E2E_ROOT = "tests/e2e/"
+MAKEFILE = ROOT / "Makefile"
 
 ID_PATTERN = re.compile(r"^[a-z0-9]+(?:[.\-_][a-z0-9]+)*$")
 STATUS_PATTERN = re.compile(r"^(?:lane_only: \S.*|gap: #\d+)$")
@@ -111,7 +127,7 @@ def _row(raw: Any, index: int) -> tuple[Row | None, list[str]]:
     if tests is not None and not (
         isinstance(tests, list) and all(isinstance(t, str) for t in tests)
     ):
-        problems.append(f"{row_id}: tests must be a list of pytest node ids")
+        problems.append(f"{row_id}: tests must be a list of test ids")
         tests = None
     if status is not None and not (isinstance(status, str) and STATUS_PATTERN.match(status)):
         problems.append(f"{row_id}: status must be 'lane_only: <reason>' or 'gap: #<issue>'")
@@ -280,7 +296,7 @@ def link_errors(rows: Sequence[Row], collected: Mapping[str, Sequence[str]]) -> 
             if node not in collected:
                 errors.append(f"{row.id}: test {node} does not collect")
             elif row.id not in collected[node]:
-                errors.append(f"{row.id}: test {node} lacks @pytest.mark.feature({row.id!r})")
+                errors.append(f"{row.id}: test {node} lacks {_marker(node, row.id)}")
     for node, ids in sorted(collected.items()):
         for feature_id in ids:
             if feature_id not in known:
@@ -288,6 +304,91 @@ def link_errors(rows: Sequence[Row], collected: Mapping[str, Sequence[str]]) -> 
             elif feature_id not in listed.get(node, set()):
                 errors.append(f"{feature_id}: marked test {node} is not listed in its row")
     return errors
+
+
+def _marker(node: str, feature_id: str) -> str:
+    if is_node_test(node):
+        return f"a '// feature: {feature_id}' comment above its test()"
+    return f"@pytest.mark.feature({feature_id!r})"
+
+
+def is_node_test(node: str) -> bool:
+    return node.split("::", 1)[0].endswith(NODE_TEST_SUFFIXES)
+
+
+# A `test(` or `it(` call opening with a quoted title, at the start of a line.
+_NODE_TEST_CALL = re.compile(r"^\s*(?:test|it)\(\s*(['\"`])((?:\\.|(?!\1).)*)\1")
+_FEATURE_COMMENT = re.compile(r"^\s*//\s*feature:\s*(\S+)\s*$")
+
+
+def node_test_features(source: str) -> dict[str, list[str]]:
+    """Each Node test title in a file, with the ids its `// feature:` comments name.
+
+    The comments sit on the lines right above the `test(` call; a blank line or code
+    between them ends the block.
+    """
+    found: dict[str, list[str]] = {}
+    pending: list[str] = []
+    for line in source.splitlines():
+        if comment := _FEATURE_COMMENT.match(line):
+            pending.append(comment.group(1))
+            continue
+        if call := _NODE_TEST_CALL.match(line):
+            ids = found.setdefault(call.group(2), [])
+            ids.extend(i for i in pending if i not in ids)
+        if not line.lstrip().startswith("//"):
+            pending = []
+    return found
+
+
+def collect_node_tests(rows: Sequence[Row], root: Path = ROOT) -> dict[str, list[str]]:
+    """Every Node test the rows name or the Node test folders hold, as `path::title`."""
+    files = {node.split("::", 1)[0] for row in rows for node in row.tests if is_node_test(node)}
+    for folder in NODE_TEST_ROOTS:
+        files.update(
+            str(path.relative_to(root))
+            for suffix in NODE_TEST_SUFFIXES
+            for path in (root / folder).rglob(f"*{suffix}")
+            if "node_modules" not in path.parts
+        )
+    collected: dict[str, list[str]] = {}
+    for name in sorted(files):
+        path = root / name
+        if path.is_file():
+            for title, ids in node_test_features(path.read_text(encoding="utf-8")).items():
+                collected[f"{name}::{title}"] = ids
+    return collected
+
+
+def unrun_test_errors(rows: Sequence[Row], makefile: str) -> list[str]:
+    """A listed browser or Node test in a file no CI target runs proves nothing.
+
+    The pytest feature folders run under `make test-features` and the unit suite;
+    `tests/e2e/` runs only the files the `e2e` target names, and Node tests only the
+    files a `node --test` recipe line names.
+    """
+    e2e_files = set(re.findall(r"tests/e2e/[\w/]+\.py", _recipe(makefile, "e2e")))
+    node_lines = [line for line in makefile.splitlines() if "--test" in line and "node" in line]
+    errors = []
+    for row in rows:
+        for node in row.tests:
+            path = node.split("::", 1)[0]
+            if path.startswith(E2E_ROOT) and path not in e2e_files:
+                errors.append(f"{row.id}: {path} is not in `make e2e`, so {node} never runs")
+            elif is_node_test(path) and not any(
+                path.endswith(word)
+                for line in node_lines
+                for word in line.split()
+                if word.endswith(NODE_TEST_SUFFIXES)
+            ):
+                errors.append(f"{row.id}: no Makefile `node --test` line runs {path}")
+    return errors
+
+
+def _recipe(makefile: str, target: str) -> str:
+    """The lines of one Makefile target's recipe."""
+    match = re.search(rf"^{re.escape(target)}:.*?\n((?:\t.*\n?)*)", makefile, re.M)
+    return match.group(1) if match else ""
 
 
 class _FeatureCollector:
@@ -308,7 +409,7 @@ def collect_feature_tests(rows: Sequence[Row]) -> tuple[dict[str, list[str]], li
     """Collect (never run) the files the rows name plus the feature test folders."""
     import pytest
 
-    files = {node.split("::", 1)[0] for row in rows for node in row.tests}
+    files = {node.split("::", 1)[0] for row in rows for node in row.tests if not is_node_test(node)}
     targets = sorted(
         {f for f in files if (ROOT / f).exists()}
         | {root for root in FEATURE_TEST_ROOTS if (ROOT / root).exists()}
@@ -346,8 +447,10 @@ def main() -> int:
     ratchet_errors, note = gap_ratchet(rows, inventory.gap_ceiling)
     errors += ratchet_errors
     collected, collect_errors = collect_feature_tests(rows)
+    collected |= collect_node_tests(rows)
     errors += collect_errors
     errors += link_errors(rows, collected)
+    errors += unrun_test_errors(rows, MAKEFILE.read_text(encoding="utf-8"))
 
     tested = sum(bool(row.tests) and not row.status for row in rows)
     lane = sum(row.status.startswith("lane_only") for row in rows)

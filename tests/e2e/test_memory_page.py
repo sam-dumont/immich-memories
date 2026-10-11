@@ -319,6 +319,7 @@ def test_the_inspector_keeps_a_refused_model_alternative_distinct_from_the_cut(
     )
 
 
+@pytest.mark.feature("web.make-a-film")
 def test_a_reload_mid_cut_joins_the_running_cut_instead_of_starting_another(
     page: Page, launch_app_url: str, launch_workspace
 ) -> None:
@@ -355,6 +356,7 @@ def test_the_cut_shows_the_pictures_it_is_working_on_while_it_works(
     expect(contact_sheet(page)).to_have_count(len(CARRIERS))
 
 
+@pytest.mark.feature("web.make-a-film")
 def test_cancel_ends_the_cut_and_offers_to_cut_again(page: Page, launch_app_url: str) -> None:
     _brief_for_june(page, launch_app_url)
     page.get_by_role("button", name="Cut", exact=True).click()

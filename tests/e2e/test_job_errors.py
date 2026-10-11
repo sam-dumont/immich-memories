@@ -185,6 +185,7 @@ def test_a_lost_login_is_visible_without_inventing_a_job_failure(page, launch_ap
     expect(panel.get_by_role("link", name="Sign in")).to_be_visible()
 
 
+@pytest.mark.feature("web.progress")
 def test_whole_film_eta_and_phase_states_survive_reload(
     page, launch_app_url, launch_workspace, tmp_path
 ):
@@ -226,6 +227,15 @@ def test_whole_film_eta_and_phase_states_survive_reload(
         expect(phases.get_by_text("Render film", exact=True)).to_be_visible()
         expect(phases.get_by_text("Check playback", exact=True)).to_be_visible()
         expect(phases.get_by_text("Skipped", exact=True)).to_have_count(2)
+        # Done, current and pending each read as such, the current one marked as the step.
+        rows = phases.get_by_role("listitem")
+        expect(rows.filter(has_text="Prepare selected clips")).to_contain_text("Completed")
+        current = rows.filter(has_text="Render film")
+        expect(current).to_contain_text("Running")
+        expect(current).to_have_attribute("aria-current", "step")
+        expect(rows.filter(has_text="Check playback")).to_contain_text("Pending")
+        for skipped in ("Music", "Upload film"):
+            expect(rows.filter(has_text=skipped)).to_contain_text("Skipped")
         expect(panel.get_by_role("progressbar")).to_have_count(0)
         assert panel.bounding_box()["width"] <= width
         page.reload()

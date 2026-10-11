@@ -683,7 +683,8 @@ jobs:
         env:
           IMMICH_MEMORIES_E2E_DATABASE_URL: postgresql://postgres:store-test@127.0.0.1:5432/postgres
       # The advertised features on the fixture library, through the real CLI and FFmpeg
-      # (tests/integration/features/, ~4 min). One cell: the store backend is not their subject.
+      # (tests/integration/features/, four xdist workers). One cell: the store backend is not
+      # their subject.
       - name: Run feature tests (fixture library)
         if: matrix.database == 'sqlite' && !cancelled()
         run: make test-features

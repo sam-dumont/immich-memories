@@ -76,6 +76,7 @@ def accounts_app_url(
     yield from _serve_launch(accounts_workspace, unused_tcp_port_factory(), models_fetched=True)
 
 
+@pytest.mark.feature("web.people")
 def test_link_a_person_by_picking_save_a_group_pick_it_on_the_brief(
     page: Page, accounts_app_url: str
 ) -> None:
