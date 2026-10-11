@@ -64,7 +64,8 @@ const config: Config = {
 
   themes: ['@docusaurus/theme-mermaid'],
 
-  plugins: [['@docusaurus/plugin-client-redirects', {redirects}]],
+  // llms.txt: a map for coding agents and chat models, with links into this track.
+  plugins: [['@docusaurus/plugin-client-redirects', {redirects}], './plugins/llms-txt.mjs'],
 
   i18n: {
     defaultLocale: 'en',
