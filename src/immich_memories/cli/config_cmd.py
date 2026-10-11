@@ -230,7 +230,7 @@ def register_config_commands(main: click.Group) -> None:
     @main.command()
     @click.pass_context
     def years(ctx: click.Context) -> None:
-        """List years with video content."""
+        """List years with pictures or videos."""
         cfg = ctx.obj["config"]
 
         if not cfg.immich.url or not cfg.immich.api_key:
@@ -246,7 +246,7 @@ def register_config_commands(main: click.Group) -> None:
         ) as client:
             years_list = client.get_available_years()
 
-            console.print("[bold]Years with video content:[/bold]")
+            console.print("[bold]Years with pictures or videos:[/bold]")
             for year in years_list:
                 console.print(f"  \u2022 {year}")
 

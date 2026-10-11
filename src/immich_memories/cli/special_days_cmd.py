@@ -319,6 +319,7 @@ def _scan_library(
     Carries the existing catalogue forward so an interrupted scan resumes
     where it stopped rather than starting the twenty years again.
     """
+    from immich_memories.analysis.source_filter import owned_by
     from immich_memories.api.sync_client import SyncImmichClient
     from immich_memories.automation.special_day_scan import YearNotRead
     from immich_memories.config import get_config
@@ -329,11 +330,13 @@ def _scan_library(
     already = _years_in(found)
 
     with SyncImmichClient(base_url=config.immich.url, api_key=config.immich.api_key) as client:
+        # A partner's shared pictures are their days, not this library's (#2352).
+        owner_id = client.get_current_user().id
         for year in range(since, until + 1):
             if year in already:
                 console.print(f"[dim]{year}: already scanned[/dim]")
                 continue
-            assets = _year_of_assets(client, year)
+            assets = list(owned_by(owner_id, _year_of_assets(client, year)))
             if not assets:
                 found.append({"scanned": year})
                 continue

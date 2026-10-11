@@ -43,14 +43,19 @@ def admit_source(
 
 @timed("discovery")
 def eligible_source(client, config: Config, windows: list[DateRange]):
-    """The corpus a cut over these windows would prepare, decided by the source pass itself."""
+    """The corpus a cut over these windows would prepare, decided by the source pass itself.
+
+    Only the account's own pictures: a cut drops what a partner shares (#2143), so preparing
+    those would spend captions and model passes on pictures no film uses (#2352).
+    """
     from immich_memories.analysis.editorial_source import (
         fetch_full_window_source,
         library_source_scope,
     )
+    from immich_memories.analysis.household_source import primary_owned_only
 
     scope = library_source_scope(client, config, windows)
-    sources = fetch_full_window_source(client, scope)
+    sources = primary_owned_only(client, fetch_full_window_source(client, scope))
     return scope, sources, admit_source(config, scope, sources)
 
 

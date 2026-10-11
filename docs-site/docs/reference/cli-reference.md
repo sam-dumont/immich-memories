@@ -1176,7 +1176,7 @@ immich-memories ui [OPTIONS]
 
 ## `years`
 
-List years with video content.
+List years with pictures or videos.
 
 ```bash
 immich-memories years [OPTIONS]

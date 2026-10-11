@@ -761,8 +761,8 @@ class TestHealthProbeHost:
         from immich_memories.web.health import _ImmichDependency
 
         client = TestClient(_server(), raise_server_exceptions=False)
+        # WHY: config and the Immich probe are external boundaries; the test is payload shape.
         with (
-            # WHY: config and the Immich probe are external boundaries; the test is payload shape.
             patch("immich_memories.web.health.get_config", return_value=config),
             patch(
                 "immich_memories.web.health._check_immich_dependency",

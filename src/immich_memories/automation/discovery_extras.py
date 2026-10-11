@@ -81,9 +81,13 @@ def read_account_extras(
     cfg = plan.auto_cfg
     # Deciding what is due is detector code: a fault there costs that detector alone.
     if cfg.detect_seasons:
-        guarded_detector("season", into.notes, partial(_read_season, client, plan, into), None)
+        guarded_detector(
+            "season", into.notes, partial(_read_season, client, user_id, plan, into), None
+        )
     if cfg.detect_holidays:
-        guarded_detector("holiday", into.notes, partial(_read_holidays, client, plan, into), None)
+        guarded_detector(
+            "holiday", into.notes, partial(_read_holidays, client, user_id, plan, into), None
+        )
     if cfg.detect_albums and primary:
         albums = _guard("the albums", partial(_albums_of, client), into.notes)
         into.albums, into.user_id = albums or [], user_id
@@ -102,20 +106,27 @@ def read_account_extras(
     )
 
 
-def _read_season(client: Any, plan: ExtraPlan, into: ExtraReads) -> None:
+def _read_season(client: Any, user_id: str | None, plan: ExtraPlan, into: ExtraReads) -> None:
     due = SeasonDetector().due(plan.today, plan.hemisphere, plan.generated_keys)
     if due is not None:
-        counted = _guard("the season's pictures", lambda: days_in([client], due.window), into.notes)
+        counted = _guard(
+            "the season's pictures",
+            lambda: days_in([client], due.window, owner_id=user_id),
+            into.notes,
+        )
         _sum_days(into.season_days.setdefault(due.window, {}), counted or {})
 
 
-def _read_holidays(client: Any, plan: ExtraPlan, into: ExtraReads) -> None:
+def _read_holidays(client: Any, user_id: str | None, plan: ExtraPlan, into: ExtraReads) -> None:
+    # Each account counts its own pictures, so one a partner shares is not counted twice.
     for due in HolidayDetector().due(
         plan.today, plan.country, plan.auto_cfg.extra_holidays, plan.generated_keys
     ):
         for window in due.windows:
             counted = _guard(
-                "a holiday's pictures", partial(pictures_in, [client], window), into.notes
+                "a holiday's pictures",
+                partial(pictures_in, [client], window, owner_id=user_id),
+                into.notes,
             )
             into.holiday_pictures[window] = into.holiday_pictures.get(window, 0) + (counted or 0)
 

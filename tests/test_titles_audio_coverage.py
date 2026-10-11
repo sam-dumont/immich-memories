@@ -1173,64 +1173,6 @@ def _make_asset(asset_id: str, created: str, is_live: bool = False) -> dict:
     }
 
 
-class TestSearchServicePagination:
-    """Test pagination logic in search methods."""
-
-    @pytest.mark.asyncio
-    async def test_get_all_videos_for_year_paginates(self):
-        from immich_memories.api.search_service import SearchService
-
-        page1 = {
-            "assets": {
-                "total": 2,
-                "count": 1,
-                "items": [_make_asset("a1", "2024-01-15T00:00:00")],
-                "nextPage": "2",
-            }
-        }
-        page2 = {
-            "assets": {
-                "total": 2,
-                "count": 1,
-                "items": [_make_asset("a2", "2024-06-15T00:00:00")],
-                "nextPage": None,
-            }
-        }
-        mock_request = AsyncMock(side_effect=[page1, page2])
-        svc = SearchService(mock_request)
-
-        collected = []
-
-        def progress(count, total):
-            collected.append(count)
-
-        result = await svc.get_all_videos_for_year(2024, progress_callback=progress)
-        assert len(result) == 2
-        assert result[0].id == "a1"
-        assert result[1].id == "a2"
-        assert 2 in collected
-
-    @pytest.mark.asyncio
-    async def test_get_videos_for_person_and_year(self):
-        from immich_memories.api.search_service import SearchService
-
-        response = {
-            "assets": {
-                "total": 1,
-                "count": 1,
-                "items": [_make_asset("a1", "2024-03-15T00:00:00")],
-                "nextPage": None,
-            }
-        }
-        mock_request = AsyncMock(return_value=response)
-        svc = SearchService(mock_request)
-        result = await svc.get_videos_for_person_and_year("p1", 2024)
-
-        assert len(result) == 1
-        payload = mock_request.call_args.kwargs["json"]
-        assert payload["personIds"] == ["p1"]
-
-
 class TestSearchServiceDateRange:
     """Test date range search methods."""
 
@@ -1387,36 +1329,6 @@ class TestSearchServiceTimeBuckets:
         years = await svc.get_available_years()
         assert years == [2024]
 
-    @pytest.mark.asyncio
-    async def test_get_bucket_assets(self):
-        from immich_memories.api.search_service import SearchService
-
-        mock_request = AsyncMock(
-            return_value=[
-                _make_asset("a1", "2024-01-15T00:00:00"),
-            ]
-        )
-        svc = SearchService(mock_request)
-        assets = await svc.get_bucket_assets("2024-01-01T00:00:00.000Z")
-        assert len(assets) == 1
-        assert assets[0].id == "a1"
-
-    @pytest.mark.asyncio
-    async def test_get_bucket_assets_with_filters(self):
-        from immich_memories.api.models import AssetType
-        from immich_memories.api.search_service import SearchService
-
-        mock_request = AsyncMock(return_value=[])
-        svc = SearchService(mock_request)
-        await svc.get_bucket_assets(
-            "2024-01-01T00:00:00.000Z",
-            asset_type=AssetType.VIDEO,
-            person_id="p1",
-        )
-        params = mock_request.call_args.kwargs["params"]
-        assert params["type"] == "VIDEO"
-        assert params["personId"] == "p1"
-
 
 class TestSearchServiceLivePhotos:
     """Test live photo search methods."""
@@ -1536,57 +1448,3 @@ class TestSearchServiceLivePhotos:
         result = await svc.get_live_photos_for_date_range(dr, person_ids=["p1", "p2"])
         assert len(result) == 1
         assert result[0].id == "lp2"
-
-
-class TestSearchServiceIterators:
-    """Test async iterator methods."""
-
-    @pytest.mark.asyncio
-    async def test_iter_videos_for_date_range(self):
-        from immich_memories.api.search_service import SearchService
-        from immich_memories.timeperiod import DateRange
-
-        page1 = {
-            "assets": {
-                "total": 2,
-                "count": 1,
-                "items": [_make_asset("a1", "2024-01-15T00:00:00")],
-                "nextPage": "2",
-            }
-        }
-        page2 = {
-            "assets": {
-                "total": 2,
-                "count": 1,
-                "items": [_make_asset("a2", "2024-06-15T00:00:00")],
-                "nextPage": None,
-            }
-        }
-        mock_request = AsyncMock(side_effect=[page1, page2])
-        svc = SearchService(mock_request)
-        dr = DateRange(start=datetime(2024, 1, 1), end=datetime(2024, 12, 31))
-
-        assets = []
-        async for asset in svc.iter_videos_for_date_range(dr, batch_size=1):
-            assets.append(asset)
-        assert len(assets) == 2
-
-    @pytest.mark.asyncio
-    async def test_iter_person_videos(self):
-        from immich_memories.api.search_service import SearchService
-
-        response = {
-            "assets": {
-                "total": 1,
-                "count": 1,
-                "items": [_make_asset("a1", "2024-03-15T00:00:00")],
-                "nextPage": None,
-            }
-        }
-        mock_request = AsyncMock(return_value=response)
-        svc = SearchService(mock_request)
-
-        assets = []
-        async for asset in svc.iter_person_videos("p1", 2024, batch_size=10):
-            assets.append(asset)
-        assert len(assets) == 1

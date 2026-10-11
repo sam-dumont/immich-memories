@@ -14,8 +14,6 @@ from immich_memories.timeperiod import DateRange
 WINDOW = DateRange(datetime(2030, 4, 1, tzinfo=UTC), datetime(2030, 4, 30, tzinfo=UTC))
 
 CASES = [
-    ("get_all_videos_for_year", {"year": 2030}),
-    ("get_videos_for_person_and_year", {"person_id": "subject", "year": 2030}),
     ("get_videos_for_date_range", {"date_range": WINDOW}),
     ("get_videos_for_person_and_date_range", {"person_id": "subject", "date_range": WINDOW}),
     ("get_videos_for_all_persons", {"person_ids": ["subject", "companion"], "date_range": WINDOW}),
@@ -33,8 +31,6 @@ CASES = [
     ("get_assets_for_any_person", {"person_ids": ["subject", "companion"], "date_range": WINDOW}),
     ("get_assets_for_album", {"album_id": "album", "asset_type": AssetType.VIDEO}),
     ("get_assets_for_album", {"album_id": "album", "asset_type": AssetType.IMAGE}),
-    ("iter_videos_for_date_range", {"date_range": WINDOW}),
-    ("iter_person_videos", {"person_id": "subject", "year": 2030}),
     ("count_assets_with_people", {"person_ids": ["subject"], "owner_id": "owner"}),
 ]
 

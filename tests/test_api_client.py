@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import traceback
+from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
@@ -19,6 +20,7 @@ from immich_memories.api.immich import (
     parse_error_response,
 )
 from immich_memories.api.models import MetadataSearchResult
+from immich_memories.timeperiod import DateRange
 
 _TEST_URL = "https://immich.example.com"
 _TEST_KEY = "test-api-key"
@@ -567,6 +569,9 @@ class TestSyncImmichClient:
             assert client.get_api_version() is ResolvedApiVersion.V2
 
 
+_A_YEAR = DateRange(datetime(2024, 1, 1), datetime(2024, 12, 31, 23, 59, 59))
+
+
 class TestSearchPagination:
     """Tests for search/pagination methods."""
 
@@ -577,10 +582,10 @@ class TestSearchPagination:
         mock_result = MetadataSearchResult(
             assets={"total": 1, "items": [], "nextPage": None},
         )
-        # WHY: mock at service level — get_all_videos_for_year delegates to search service
+        # WHY: mock at service level — get_videos_for_date_range delegates to search service
         client.search.search_metadata = AsyncMock(return_value=mock_result)
 
-        result = await client.get_all_videos_for_year(2024)
+        result = await client.get_videos_for_date_range(_A_YEAR)
         assert not result
         client.search.search_metadata.assert_called_once()
 
@@ -599,10 +604,10 @@ class TestSearchPagination:
         page2 = MetadataSearchResult(
             assets={"total": 2, "items": [a2.model_dump(by_alias=True)], "nextPage": None},
         )
-        # WHY: mock at service level — get_all_videos_for_year delegates to search service
+        # WHY: mock at service level — get_videos_for_date_range delegates to search service
         client.search.search_metadata = AsyncMock(side_effect=[page1, page2])
 
-        result = await client.get_all_videos_for_year(2024)
+        result = await client.get_videos_for_date_range(_A_YEAR)
         assert len(result) == 2
         assert client.search.search_metadata.call_count == 2
 
@@ -617,7 +622,7 @@ class TestSearchPagination:
         client.search.search_metadata = AsyncMock(return_value=mock_result)
 
         callback = MagicMock()
-        await client.get_all_videos_for_year(2024, progress_callback=callback)
+        await client.get_videos_for_date_range(_A_YEAR, progress_callback=callback)
         callback.assert_called_once_with(0, None)
 
     @pytest.mark.asyncio
@@ -630,7 +635,7 @@ class TestSearchPagination:
         # WHY: mock at service level — delegates to search service
         client.search.search_metadata = AsyncMock(return_value=mock_result)
 
-        result = await client.get_all_videos_for_year(1999)
+        result = await client.get_videos_for_date_range(_A_YEAR)
         assert not result
 
 

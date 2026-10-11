@@ -12,6 +12,7 @@ import logging
 from collections.abc import Callable, Iterable
 from typing import TYPE_CHECKING
 
+from immich_memories.api.immich import ImmichAPIError
 from immich_memories.tracking.run_database import RunDatabase
 
 if TYPE_CHECKING:
@@ -26,12 +27,13 @@ def generated_source_ids(
     """Every id either record calls one of ours.
 
     The receipts are the run history's delivered asset ids. A server that refuses the tag
-    query (an API key without tag scope, a version that predates tags) leaves the receipts
-    answering rather than failing the run.
+    query (an API key without tag scope, a version that predates tags) or fails one of the
+    per-video reads a key without `tag.read` makes leaves the receipts answering rather than
+    failing the run (#2353).
     """
     try:
         by_tag = frozenset(tagged())
-    except (OSError, ValueError, KeyError) as error:
+    except (ImmichAPIError, OSError, ValueError, KeyError) as error:
         logger.warning("Could not read the generated-film tag back from Immich: %s", error)
         by_tag = frozenset()
     return by_tag | RunDatabase(store).delivered_asset_ids()

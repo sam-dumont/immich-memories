@@ -156,16 +156,12 @@ class AccessBoundClient(SyncImmichClient):
             if account == PRIMARY_ACCOUNT:
                 return read(self)
             return read(self.open_accounts([account])[account].client)
-        except ImmichAPIError as error:
+        except (ImmichAPIError, AccountUnavailable, httpx.HTTPError, OSError) as error:
             # A 404 is Immich's answer about this one picture (a Live Photo clip often
             # has no preview), not an account that cannot read: it stays a per-picture miss.
-            if error.status_code == 404:
+            # Playback and downloads stream, so theirs arrives as httpx's own error (#2349).
+            if _status_of(error) == 404:
                 raise
-            raise AccountReadFailed(
-                f"Immich account {account!r} could not read asset {asset_id}: "
-                f"{sanitize_error_message(str(error))}"
-            ) from None
-        except (AccountUnavailable, httpx.HTTPError, OSError) as error:
             detail = sanitize_error_message(str(error))
             raise AccountReadFailed(
                 f"Immich account {account!r} could not read asset {asset_id}: {detail}"
@@ -234,6 +230,12 @@ class AccessBoundClient(SyncImmichClient):
                 edited=edited,
             ),
         )
+
+
+def _status_of(error: Exception) -> int | None:
+    if isinstance(error, httpx.HTTPStatusError):
+        return error.response.status_code
+    return getattr(error, "status_code", None) if isinstance(error, ImmichAPIError) else None
 
 
 def reads_for(immich: ImmichConfig, assets: Iterable[Asset]) -> SyncImmichClient:

@@ -21,7 +21,7 @@ import fnmatch
 import logging
 from collections.abc import Iterable
 from datetime import datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, TypeVar
 
 from immich_memories.analysis.source_quality import (
     predates_modern_mobile_sharing,
@@ -38,6 +38,17 @@ logger = logging.getLogger(__name__)
 def asset_of(source: Asset | VideoClipInfo) -> Asset:
     """The Asset inside a source, whichever representation the pool carries."""
     return source.asset if isinstance(source, VideoClipInfo) else source
+
+
+_Source = TypeVar("_Source", bound=Asset | VideoClipInfo)
+
+
+def owned_by(owner_id: str, sources: Iterable[_Source]) -> tuple[_Source, ...]:
+    """The sources this Immich user owns, not ones a partner shares with them (#2143, #2352).
+
+    An asset whose owner Immich did not report is not known to be someone else's.
+    """
+    return tuple(source for source in sources if asset_of(source).owner_id in ("", owner_id))
 
 
 def asset_id_of(source: Asset | VideoClipInfo) -> str:

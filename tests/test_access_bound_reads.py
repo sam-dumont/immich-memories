@@ -403,3 +403,36 @@ def test_companion_resolution_and_later_reads_use_the_stills_owner(tmp_path, imm
     finally:
         stage.close()
     assert immich.reads_of("partner-motion") == [("user-partner", True)] * 2
+
+
+def test_a_household_clip_immich_keeps_no_playback_for_is_dropped_and_the_run_goes_on(
+    tmp_path, immich, run
+):
+    """A 404 on one routed clip is a miss for that clip, as on a plain run (#2349).
+
+    Playback and downloads stream, so their 404 arrives as httpx's status error rather
+    than an `ImmichAPIError`; it used to become `AccountReadFailed` and end the run.
+    """
+    from immich_memories.analysis.editorial_clip_facts import ClipWindowFacts
+    from immich_memories.analysis.editorial_video_windows import place_windows
+    from tests.annotation_rows import annotation_store
+
+    immich.hold(PRIMARY_KEY, _asset("own-video", "user-primary", bytes_of="park"))
+    immich.hold(PARTNER_KEY, _asset("partner-video", "user-partner", bytes_of="lake"))
+    client, source = run
+    pool = source()
+    immich.missing.add("partner-video")
+
+    windows = ClipWindowFacts(
+        assets=pool, store=annotation_store(), read=client.get_video_playback_range, detector=None
+    )
+    [carrier] = place_windows(
+        [{"kind": "video", "asset_id": "partner-video", "seconds": 3.0, "raw_seconds": 5.0}],
+        windows,
+    )
+    results = _render_downloads(client, pool.values(), tmp_path / "out")
+
+    # The clip keeps its opening, the render leaves it out, and the other clip still plays.
+    assert "start_time" not in carrier
+    assert results["partner-video"].path is None
+    assert results["own-video"].path.read_bytes() == b"bytes-of-own-video"

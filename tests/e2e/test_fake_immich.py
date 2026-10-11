@@ -15,7 +15,7 @@ import pytest
 from immich_memories.analysis.duplicate_hashing import compute_thumbnail_hash, hamming_distance
 from immich_memories.api.compatibility import ResolvedApiVersion
 from immich_memories.api.immich import ImmichAuthError, SyncImmichClient
-from immich_memories.api.models import AssetType
+from immich_memories.api.models import Asset, AssetType
 from immich_memories.generate_clips import MIN_CLIP_DURATION, assets_to_clips
 from immich_memories.timeperiod import calendar_year
 from tests.e2e import fake_immich
@@ -29,6 +29,17 @@ _PHOTO_IDS = [p.asset_id for p in LIBRARY if not p.is_video]
 _VIDEO_SECONDS = [p.seconds for p in LIBRARY if p.is_video]
 _JUNE_START = date(2024, 6, 1)
 _JUNE_END = date(2024, 6, 30)
+
+
+def _bucket_assets(server: FakeImmichServer, **params: str) -> list[Asset]:
+    """One month bucket's assets, read straight off the fake's timeline endpoint."""
+    response = httpx.get(
+        f"{server.base_url}/api/timeline/bucket",
+        params={"timeBucket": "2024-06-01T00:00:00.000Z", **params},
+        headers={"x-api-key": server.api_key},
+    )
+    response.raise_for_status()
+    return [Asset(**row) for row in response.json()]
 
 
 def _probe_video(path: Path) -> dict:
@@ -150,7 +161,7 @@ def test_monthly_timeline_contains_every_synthetic_moment(fake_immich_server) ->
         api_version="v3",
     ) as client:
         buckets = client.get_time_buckets(size="MONTH")
-        assets = client.get_bucket_assets("2024-06-01T00:00:00.000Z", size="MONTH")
+    assets = _bucket_assets(fake_immich_server, size="MONTH")
 
     # One month holds the whole library.
     assert [(bucket.time_bucket, bucket.count) for bucket in buckets] == [
@@ -169,16 +180,8 @@ def test_monthly_timeline_honors_requested_asset_type_and_count(fake_immich_serv
     ) as client:
         video_buckets = client.get_time_buckets(size="MONTH", asset_type=AssetType.VIDEO)
         photo_buckets = client.get_time_buckets(size="MONTH", asset_type=AssetType.IMAGE)
-        videos = client.get_bucket_assets(
-            "2024-06-01T00:00:00.000Z",
-            size="MONTH",
-            asset_type=AssetType.VIDEO,
-        )
-        photos = client.get_bucket_assets(
-            "2024-06-01T00:00:00.000Z",
-            size="MONTH",
-            asset_type=AssetType.IMAGE,
-        )
+    videos = _bucket_assets(fake_immich_server, size="MONTH", type="VIDEO")
+    photos = _bucket_assets(fake_immich_server, size="MONTH", type="IMAGE")
 
     assert [bucket.count for bucket in video_buckets] == [len(_VIDEO_IDS)]
     assert [bucket.count for bucket in photo_buckets] == [len(_PHOTO_IDS)]

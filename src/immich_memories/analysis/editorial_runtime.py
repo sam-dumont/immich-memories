@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import functools
 import json
 import logging
 from collections.abc import Callable, Mapping, Sequence
@@ -672,9 +673,7 @@ def build_editorial_planner(
                 folded, directory=backend._context.artifact_dir
             ),
             preview_jpeg=lambda asset: cached_preview_bytes(thumbnail_cache, asset.id),
-            stack_of=(lambda: client.stack_map(accounts))
-            if isinstance(client, AccessBoundClient)
-            else dict,
+            stack_of=_stack_reader(client, accounts),
         ),
         episode_reader_factory=episode_reader_factory,
         backend=backend,
@@ -693,6 +692,19 @@ def build_editorial_planner(
 
     runtime._prepare_annotations = refinement or evidence
     return runtime
+
+
+def _stack_reader(client: Any, accounts: Sequence[str]) -> Callable[[], Mapping[str, str]]:
+    """Member id -> stack primary, read once per run.
+
+    A household reads every chosen account's stacks; a one-account run reads its own, so
+    a default `generate` folds stacks as well (#2351).
+    """
+    if isinstance(client, AccessBoundClient):
+        return lambda: client.stack_map(accounts)
+    from immich_memories.api.stack_discovery import account_stack_map
+
+    return functools.cache(lambda: account_stack_map(client, PRIMARY_ACCOUNT))
 
 
 def build_smart_pipeline(

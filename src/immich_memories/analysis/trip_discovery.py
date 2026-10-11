@@ -42,8 +42,11 @@ def discover_year_trips(
         assets = client.get_assets_for_person_and_date_range(person_ids[0], date_range)
     else:
         assets = client.get_assets_for_date_range(date_range)
+    from immich_memories.analysis.household_source import primary_owned_only
+
     trips = detect_trips(
-        assets,
+        # A partner's GPS is their trip, not this account's (#2352).
+        list(primary_owned_only(client, assets)),
         config.homebase_latitude,
         config.homebase_longitude,
         min_distance_km=config.min_distance_km,

@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from immich_memories.api.permissions import ApiKeyCapabilities
+    from immich_memories.timeperiod import DateRange
 
 from immich_memories.api.compatibility import ResolvedApiVersion
 from immich_memories.api.generated_asset_tags import GENERATED_MEMORY_TAG, generated_asset_ids
@@ -265,12 +266,36 @@ class AlbumService:
         return {"id": asset_id, "status": "duplicate"}
 
     async def create_album(self, name: str, description: str | None = None) -> str:
-        """Create an album in Immich. Returns the album ID."""
+        """Create an album in Immich. Returns the album ID.
+
+        A timeout or 5xx can arrive after Immich stored the album; a retry that sent the
+        request again made a second one, and every later lookup by name then refused the
+        name as ambiguous (#2354). So each retry first looks for the album by name.
+        """
         body: dict = {"albumName": name}
         if description:
             body["description"] = description
-        data = await self._request("POST", "/albums", json=body)
+        data = await self._request(
+            "POST", "/albums", json=body, before_retry=lambda: self._stored_album(name)
+        )
         return data["id"]
+
+    async def _stored_album(self, name: str) -> dict[str, str] | None:
+        try:
+            # One look, not a read's own 45 s of backoff inside the write's.
+            albums = await self._request("GET", "/albums", retry=False)
+        except Exception:  # WHY: an unanswered lookup only means the create is sent again
+            logger.debug("Album lookup failed; retrying the create", exc_info=True)
+            return None
+        found = next(
+            (
+                album
+                for album in (albums if isinstance(albums, list) else [])
+                if isinstance(album, dict) and album.get("albumName") == name
+            ),
+            None,
+        )
+        return {"id": found["id"]} if found and found.get("id") else None
 
     async def add_assets_to_album(self, album_id: str, asset_ids: list[str]) -> None:
         await self._request("PUT", f"/albums/{album_id}/assets", json={"ids": asset_ids})
@@ -450,14 +475,18 @@ class AlbumService:
             for tag in asset.get("tags") or ()
         )
 
-    async def generated_asset_ids(self) -> frozenset[str]:
-        """Every asset the library holds under this app's provenance tag."""
+    async def generated_asset_ids(
+        self, within: Sequence[DateRange] | None = None
+    ) -> frozenset[str]:
+        """The assets under this app's provenance tag; ``within`` may bound the search to
+        those windows (see `generated_asset_tags.generated_asset_ids`)."""
         if self._get_key_capabilities is None:
-            return await generated_asset_ids(self._request)
+            return await generated_asset_ids(self._request, within=within)
         capabilities = await self._get_key_capabilities()
         return await generated_asset_ids(
             self._request,
             can_read_tags=capabilities.allows("tag.read"),
+            within=within,
         )
 
     async def trash_assets(self, asset_ids: list[str]) -> None:

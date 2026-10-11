@@ -660,7 +660,6 @@ def mock_immich_client() -> MagicMock:
     """Mock SyncImmichClient with empty defaults."""
     client = MagicMock()
     client.get_videos_for_date_range.return_value = []
-    client.get_all_videos_for_year.return_value = []
     client.get_asset_thumbnail.return_value = b"\x00" * 100
     return client
 

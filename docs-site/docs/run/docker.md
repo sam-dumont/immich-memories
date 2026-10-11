@@ -132,8 +132,8 @@ Album-update permissions are not needed. The app reads the key's own permission 
 
 Tagged films are excluded from source footage across every page of results. Add `tag.read`
 to each account's key: it makes that check use the tag index, which keeps large libraries fast.
-Without it, the app checks video tags one by one through `asset.read`. It still works, but a
-large library takes many more requests. Uploading and tagging a film
+Without it, the app checks video tags one by one through `asset.read`, but only on videos taken
+within the film's dates, so a large library stays workable. Uploading and tagging a film
 uses `tag.create` and `tag.asset`, independently of this optional read permission.
 
 Run `immich-memories preflight` or `immich-memories config test` after creating the key.

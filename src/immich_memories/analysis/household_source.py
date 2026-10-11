@@ -11,6 +11,7 @@ fails fails the run, naming the account.
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
+from typing import TypeVar
 
 import httpx
 
@@ -20,7 +21,7 @@ from immich_memories.analysis.selection_source import (
     _coalesce_sources,
     _with_access_accounts,
 )
-from immich_memories.analysis.source_filter import asset_of
+from immich_memories.analysis.source_filter import asset_of, owned_by
 from immich_memories.api.access_clients import AccessBoundClient
 from immich_memories.api.accounts import AccountUnavailable
 from immich_memories.api.immich import ImmichAPIError
@@ -31,6 +32,7 @@ from immich_memories.security import sanitize_error_message
 from immich_memories.timeperiod import DateRange
 
 Source = Asset | VideoClipInfo
+_Owned = TypeVar("_Owned", bound=Source)
 WindowFetch = Callable[[FullEditorialSource, SourceScope], Sequence[Source]]
 
 
@@ -41,7 +43,7 @@ def source_accounts(client: FullEditorialSource, accounts: Sequence[str]) -> tup
     return tuple(accounts)
 
 
-def primary_owned_only(client: object, sources: Sequence[Source]) -> tuple[Source, ...]:
+def primary_owned_only(client: object, sources: Sequence[_Owned]) -> tuple[_Owned, ...]:
     """Drop anything a run that named no accounts does not itself own (#2143).
 
     Immich's own partner sharing can put a connected account's pictures on the primary's
@@ -54,9 +56,7 @@ def primary_owned_only(client: object, sources: Sequence[Source]) -> tuple[Sourc
     whoami = getattr(client, "get_current_user", None)
     if not callable(whoami):
         return tuple(sources)
-    owner_id = whoami().id
-    # An asset whose owner Immich did not report is not known to be someone else's.
-    return tuple(source for source in sources if asset_of(source).owner_id in ("", owner_id))
+    return owned_by(whoami().id, sources)
 
 
 def fetch_household_source(

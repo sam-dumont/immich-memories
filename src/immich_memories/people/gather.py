@@ -1,35 +1,15 @@
 """Stage-1 gather facts for the person annotation layer, from metadata alone.
 
 The doctrine (docs/implementation-plans/2026-08-31-person-annotation-layer.md):
-shares over the library's own photographed days, never raw counts, and a
-date-quality quarantine so a default-looking timestamp never feeds a lifecycle
-fact until the owner confirms it — the session's measured wrong story was a
-"first co-appearance" built on exactly such an artifact.
+shares over the library's own photographed time, never raw counts. The people graph
+reads that time in months, the grain Immich's timeline answers in.
 """
 
 from __future__ import annotations
 
 from collections.abc import Set as AbstractSet
 from dataclasses import dataclass
-from datetime import date, datetime
-
-# A camera or scanner that lost its clock writes midnight, and a scanner-era
-# import without a date writes January first. Both are real instants for SOME
-# pictures, which is why this quarantines rather than deletes: the stamp stays
-# out of lifecycle facts (first month, onset, co-appearance dates) until a
-# person looks.
-_MIDNIGHT_ADJACENT_SECONDS = 60
-
-
-def suspicious_date(taken_at: datetime | date) -> str | None:
-    """The quarantine reason for a default-looking timestamp, or None."""
-    if taken_at.month == 1 == taken_at.day:
-        return "january-first default"
-    if isinstance(taken_at, datetime):
-        since_midnight = taken_at.hour * 3600 + taken_at.minute * 60 + taken_at.second
-        if since_midnight < _MIDNIGHT_ADJACENT_SECONDS:
-            return "midnight-adjacent"
-    return None
+from datetime import date
 
 
 @dataclass(frozen=True)
