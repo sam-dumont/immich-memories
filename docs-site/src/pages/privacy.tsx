@@ -64,7 +64,15 @@ export default function Privacy(): ReactNode {
         <tbody>{EVENTS.map(([name, when, carries]) => <tr key={name}><td>{name}</td><td>{when}</td><td>{carries}</td></tr>)}</tbody>
       </table>
       <p>Nothing you type on this site is recorded. Nothing is shared, sold or used for advertising, and the
-        data stays on the maintainer's server.</p>
+        visit counts stay on the maintainer's server.</p>
+
+      <h2>Search terms</h2>
+      <p>The site is registered with Google Search Console, so the maintainer can see which Google searches
+        showed it and how often people clicked through. Google collects that on its own search pages, under
+        its <Link href="https://policies.google.com/privacy">privacy policy</Link>, and reports totals per
+        search term and page only. It leaves out rare searches.</p>
+      <p>This site loads no Google script and sets no cookie. The verification tag in the page header is
+        text that Google reads when it crawls the site.</p>
 
       <h2>Opt out</h2>
       <p>The button sets a flag in your browser's local storage that makes the tracker skip your visits.
