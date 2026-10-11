@@ -12,7 +12,8 @@ can also fetch weights on first use, including during a run.
 
 This documentation website counts visits with the maintainer's self-hosted Plausible. GitHub
 Pages serves the tracking script alongside the docs; visit and click events go to the
-maintainer's collector. The tracker uses no cookies. The app you install sends no analytics.
+maintainer's collector. The tracker uses no cookies. The [website privacy page](/privacy) lists
+what it records and has an opt-out button. The app you install sends no analytics.
 
 Optional features can contact other services. You choose which ones, and whether they run on
 your own hardware or outside your network.

@@ -5,6 +5,7 @@ import Link from '@docusaurus/Link';
 import {API_KEY_PLACEHOLDER, buildSetup, looksInternal, type Setup, type Sources, type Platform} from './recipes';
 import sources from './sources.json';
 import styles from './styles.module.css';
+import {track} from '@site/src/analytics/events';
 
 export default function SetupBuilder({initialPlatform = 'linux', initialInline = false, showCommands = true, showPlatform = true}: {initialPlatform?: Platform; initialInline?: boolean; showCommands?: boolean; showPlatform?: boolean} = {}): ReactNode {
   const {siteConfig} = useDocusaurusContext();
@@ -26,6 +27,7 @@ export default function SetupBuilder({initialPlatform = 'linux', initialInline =
   const copyFile = async (name: string, content: string) => {
     try {
       await navigator.clipboard.writeText(content);
+      track('Setup Builder Copied', {tier: setup.tier, file: name.split('/').pop() || name});
       setNotice(`Copied ${name}.`);
     } catch { setNotice('Copy is unavailable. Open the preview and select its text.'); }
   };
@@ -36,6 +38,7 @@ export default function SetupBuilder({initialPlatform = 'linux', initialInline =
     link.download = name.split('/').pop() || name;
     link.click();
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    track('Setup Builder Downloaded', {tier: setup.tier, file: link.download});
     setNotice(`Download started: ${name}.`);
   };
   const result = buildSetup(setup, sources as Sources, buildVersion);

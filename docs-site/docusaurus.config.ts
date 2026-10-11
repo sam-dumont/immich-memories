@@ -57,6 +57,8 @@ const config: Config = {
     locales: ['en'],
   },
 
+  clientModules: ['./src/analytics-events.ts'],
+
   presets: [
     [
       'classic',
@@ -129,6 +131,7 @@ const config: Config = {
         {label: 'Quick start', to: '/docs/get-started/quick-start'},
         {label: 'Improve a film', to: '/docs/make/improve-a-film'},
         {label: 'How this was built', to: '/docs/welcome/how-this-was-built'},
+        {label: 'Privacy', to: '/privacy'},
         {label: 'GitHub', href: 'https://github.com/sam-dumont/immich-memories'},
         {label: 'Immich', href: 'https://immich.app/'},
       ],
