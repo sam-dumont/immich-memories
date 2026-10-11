@@ -141,6 +141,7 @@ def test_runs_stats_summarises_the_history(library_home: UserHome, garden_film):
 
 
 @pytest.mark.feature("privacy.immich-only-by-default")
+@pytest.mark.feature("privacy.outside-calls-opt-in")
 def test_a_basic_film_talks_to_nothing_but_the_configured_immich(
     library_home: UserHome, garden_film, outbound_trap: OutboundTrap
 ):

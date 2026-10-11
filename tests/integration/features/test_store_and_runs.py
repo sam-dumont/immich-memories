@@ -253,7 +253,7 @@ def test_a_delivered_film_is_removed_locally_and_the_run_keeps_its_record_and_im
     assert list(output.parent.rglob("delivered*.mp4")) == []
     assert shown is not None and shown.returncode == 0, shown and shown.explain()
     assert re.search(r"Immich\s*│\s*delivered", shown.stdout), shown.explain()
-    assert "removed after delivery to Immich" in shown.stdout
+    assert "removed after delivery to Immich" in shown.stdout, shown.explain()
     link = re.search(r"Immich Link\s*│\s*(\S+)", shown.stdout)
     assert link and link.group(1) == f"{delivery_immich.base_url}/photos/uploaded-1", (
         shown.explain()

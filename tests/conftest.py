@@ -505,6 +505,19 @@ def isolated_user_paths() -> Iterator[Path]:
     ]
 
 
+@pytest.fixture(autouse=True)
+def _no_inherited_git_environment(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Keep the commit hook's GIT_DIR, GIT_INDEX_FILE and friends away from every test.
+
+    The pre-commit hook runs this suite with them set. They beat `-C` and `cwd`, so any
+    `git init` a test runs in its tmp_path re-initialises the real repository instead, and
+    with no work tree in sight git marks it bare: every checkout of the project stops
+    working. Tests that need one of these variables set it themselves.
+    """
+    for name in [name for name in os.environ if name.startswith("GIT_")]:
+        monkeypatch.delenv(name)
+
+
 @pytest.fixture()
 def git_checkout_factory() -> Callable[[Path, int], Path]:
     """Build a real checkout whose HEAD trails an already-fetched tracking branch.

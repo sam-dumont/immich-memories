@@ -250,6 +250,7 @@ def flag_nudity(captured, asset_id):
     )
 
 
+@pytest.mark.feature("sharing.levels")
 def test_a_shareable_nas_film_plays_the_clean_pictures_and_leaves_the_flagged_one(tmp_path):
     family_first = shots(nas_cut(source(tmp_path, seconds=60), "family"))
     flagged = flag_nudity(source(tmp_path, seconds=60), family_first[0])
@@ -263,6 +264,7 @@ def test_a_shareable_nas_film_plays_the_clean_pictures_and_leaves_the_flagged_on
     assert shared["shareability"]["audience"] == "shareable"
 
 
+@pytest.mark.feature("sharing.levels")
 def test_a_just_us_film_plays_the_bath_a_family_film_leaves_out(tmp_path):
     captured = source(tmp_path, seconds=60, private_opening=True)
 

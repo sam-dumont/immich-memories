@@ -25,7 +25,7 @@
 #
 # `doc` is relative to docs-site/docs/ (or README.md), with the heading anchor that makes the promise.
 
-gap_ceiling: 90
+gap_ceiling: 76
 
 features:
   # ── Generate: films, output and flags ────────────────────────────────────────────────────────
@@ -143,7 +143,10 @@ features:
     promise: "--sharing just-us, family or shareable decides which private moments the film may show, and runs show prints the level."
     doc: reference/generation-contract.md#generation-and-output-contract
     covers: ["cli:generate --sharing"]
-    status: "gap: #2128"
+    tests:
+      - tests/integration/features/test_access_and_reports.py::test_runs_show_prints_the_sharing_level_a_cut_was_made_for
+      - tests/test_sharing_levels.py::test_a_just_us_film_plays_the_bath_a_family_film_leaves_out
+      - tests/test_sharing_levels.py::test_a_shareable_nas_film_plays_the_clean_pictures_and_leaves_the_flagged_one
   - id: cli.quiet-progress
     promise: "--quiet replaces the live progress display with plain log lines for cron and logs."
     doc: reference/generation-contract.md#what-the-terminal-shows-while-it-runs
@@ -460,7 +463,9 @@ features:
   - id: report.redaction-library-details
     promise: "The report removes names, places and coordinates and turns asset ids into report-local hashes."
     doc: run/privacy.md#diagnostic-reports
-    status: "gap: #2128"
+    tests:
+      - tests/integration/features/test_access_and_reports.py::test_the_report_names_no_person_place_or_coordinates
+      - tests/integration/features/test_access_and_reports.py::test_the_report_turns_asset_ids_into_report_local_hashes
   - id: preflight.errors-exit-one
     promise: "preflight exits 1 when any check fails and names the fix."
     doc: run/maintenance/health-logs-cache.md#preflight
@@ -573,9 +578,18 @@ features:
     doc: make/photos-and-live-photos.md#hdr-end-to-end
     status: "gap: #2128"
   - id: privacy.privacy-mode
-    promise: "--privacy-mode blurs every picture, scrambles speech, substitutes names and moves places in the encoded film."
+    promise: "--privacy-mode blurs every picture, scrambles speech and moves places in the encoded film."
     doc: run/privacy.md#privacy-mode
     covers: ["cli:generate --privacy-mode"]
+    tests:
+      - tests/integration/features/test_privacy_and_immich.py::test_privacy_mode_blurs_every_picture_in_the_encoded_film
+      - tests/integration/features/test_privacy_and_immich.py::test_privacy_mode_scrambles_speech_into_a_low_murmur
+      - tests/integration/features/test_privacy_and_immich.py::test_privacy_mode_moves_the_places_the_film_names
+  # Split from privacy.privacy-mode: the fixture library's scripted editor titles films by date,
+  # so no hermetic film draws a person's name for privacy mode to substitute.
+  - id: privacy.privacy-mode-names
+    promise: "--privacy-mode substitutes the names the encoded film shows."
+    doc: run/privacy.md#privacy-mode
     status: "gap: #2128"
   - id: hardware.encoding
     promise: "On NVIDIA, Apple Silicon, Intel Quick Sync or AMD VAAPI the film encodes on the hardware encoder."
@@ -631,11 +645,13 @@ features:
     promise: "Immich v2 and v3 both work, and config test reports the API version it resolved."
     doc: run/config-file.md#immich-api-compatibility
     covers: ["cli:config test"]
-    status: "gap: #2128"
+    tests:
+      - tests/integration/features/test_privacy_and_immich.py::test_a_v2_and_a_v3_server_both_make_a_film_and_config_test_names_the_version
   - id: immich.never-modifies-originals
     promise: "The app never changes originals and, with upload off, writes nothing to the library."
     doc: run/privacy.md#what-immich-sees
-    status: "gap: #2128"
+    tests:
+      - tests/integration/features/test_privacy_and_immich.py::test_a_film_with_upload_off_only_reads_from_immich
 
   # ── Automation and schedulers ────────────────────────────────────────────────────────────────
   - id: automation.run
@@ -1026,19 +1042,24 @@ features:
   - id: privacy.outside-calls-opt-in
     promise: "Geocoding and map tiles are off by default and nothing else leaves the network until a setting turns it on."
     doc: run/config-file.md#outside-calls
-    status: "gap: #2128"
+    tests:
+      - tests/integration/features/test_privacy_and_immich.py::test_map_tiles_leave_the_network_only_once_switched_on
+      - tests/integration/features/test_library_and_store.py::test_a_basic_film_talks_to_nothing_but_the_configured_immich
   - id: privacy.config-values-never-logged
     promise: "Config values never appear in errors, logs or reports."
     doc: run/privacy.md#diagnostic-reports
-    status: "gap: #2128"
+    tests:
+      - tests/integration/features/test_access_and_reports.py::test_no_configured_secret_reaches_output_logs_files_or_reports
   - id: privacy.thumbnails-scoped
     promise: "The web UI only serves a picture one of the configured accounts can read; any other id gets a 404, even from the cache."
     doc: run/privacy.md#thumbnails-in-the-web-ui
-    status: "gap: #2128"
+    tests:
+      - tests/integration/features/test_access_and_reports.py::test_the_ui_serves_only_pictures_a_configured_account_reads_even_from_its_cache
   - id: privacy.documents-held
     promise: "Suspected screenshots and photographed documents are held out of the film unless pinned."
     doc: run/privacy.md#documents-never-ship
-    status: "gap: #2128"
+    tests:
+      - tests/features/test_selection_privacy.py::test_a_photographed_document_is_held_out_of_the_cut_unless_pinned
   - id: privacy.offline-basic
     promise: "After models fetch, a Basic install can run with outbound traffic blocked, and preflight says what it can prove."
     doc: run/offline.md#fetch-once-then-keep-traffic-local
@@ -1181,27 +1202,38 @@ features:
   - id: auth.off-by-default-localhost
     promise: "Authentication is off by default and native installs and the shipped Compose file listen on localhost only."
     doc: run/authentication.mdx#authentication
-    status: "gap: #2128"
+    tests:
+      - tests/features/test_web_server.py::test_a_default_install_needs_no_login_and_listens_on_localhost_only
+      - tests/features/test_web_server.py::test_the_shipped_compose_file_publishes_the_ui_on_localhost_only
   - id: auth.basic
     promise: "Setting both the username and password turns on the app login; an Authorization: Basic header is refused."
     doc: run/authentication.mdx#basic-auth
-    status: "gap: #2128"
+    tests:
+      - tests/features/test_web_server.py::test_the_username_and_password_turn_on_the_login_and_a_basic_header_is_refused
+      - tests/features/test_web_server.py::test_a_username_alone_leaves_the_login_off
   - id: auth.oidc
     promise: "OIDC signs in through the provider with PKCE and admits only allowed emails or domains."
     doc: run/authentication.mdx#oidc--sso
-    status: "gap: #2128"
+    tests:
+      - tests/features/test_web_server.py::test_oidc_signs_in_an_allowed_account_through_the_provider_with_pkce
+      - tests/features/test_web_server.py::test_oidc_refuses_an_account_off_the_allow_list
   - id: auth.trusted-header
     promise: "Trusted-header auth accepts the user an authenticated proxy names, and only from that proxy."
     doc: run/authentication.mdx#trusted-header-reverse-proxy
-    status: "gap: #2128"
+    tests:
+      - tests/features/test_web_server.py::test_the_user_a_trusted_proxy_names_is_signed_in_and_followed
+      - tests/features/test_web_server.py::test_the_header_from_anyone_but_the_trusted_proxy_signs_nobody_in
   - id: web.health-endpoints
     promise: "/health/live, /health/ready and /health answer probes without a session, and detail fields stay null without login."
     doc: run/maintenance/health-logs-cache.md#health-endpoints
-    status: "gap: #2128"
+    tests:
+      - tests/features/test_web_server.py::test_health_answers_a_probe_without_a_session_and_hides_the_detail
   - id: web.allowed-hosts
     promise: "The server refuses requests for hosts it was not told to accept and writes from other sites."
     doc: run/network-security.md#allowed-hosts
-    status: "gap: #2128"
+    tests:
+      - tests/features/test_web_server.py::test_the_server_answers_only_the_hosts_it_was_told_to_accept
+      - tests/features/test_web_server.py::test_a_write_from_another_site_is_refused_and_changes_nothing
 
   # ── Library, deployment and maintenance ──────────────────────────────────────────────────────
   - id: library.years

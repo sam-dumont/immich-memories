@@ -12,26 +12,41 @@ from typing import Any
 
 from immich_memories.logging_config import SecretRedactionFilter
 
+# WHY lookarounds, not \b: logs name files after ids ("<id>_photo.mp4", "clip_<id>.mp4"), and
+# "_" is a word character, so \b let an id glued to an underscore through unhashed (#2397).
 _UUID = re.compile(
-    r"\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b", re.IGNORECASE
+    r"(?<![0-9A-Za-z])[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![0-9A-Za-z])",
+    re.IGNORECASE,
 )
+# A private id ends where its alphabet does; "-" belongs to it, so "a-b" never half-matches
+# inside the longer id "a-b-01".
+_ID_EDGE_BEFORE, _ID_EDGE_AFTER = r"(?<![0-9A-Za-z-])", r"(?![0-9A-Za-z-])"
+# A name or place ends at anything but a letter or digit, "_" included: "Kit_photo" names Kit,
+# "Kitchen" does not.
+_TERM_EDGE_BEFORE, _TERM_EDGE_AFTER = r"(?<![^\W_])", r"(?![^\W_])"
+# The address, path and coordinate patterns below stop at letters and digits, never at "_":
+# a log line glues them to file names ("tile_50.85,4.35.png") as often as to spaces, and a
+# trailing dot ends a sentence or starts an extension, not another number (#2397).
 # Any scheme, so postgresql://user:pw@host/db and redis://host go with http(s).
-_URL = re.compile(r"\b[a-z][a-z0-9+.-]*://[^\s<>\"']+", re.IGNORECASE)
-_IPV4 = re.compile(r"(?<![\w.])(?:\d{1,3}\.){3}\d{1,3}(?::\d{1,5})?(?![\w.])")
+_URL = re.compile(r"(?<![0-9A-Za-z+.-])[a-z][a-z0-9+.-]*://[^\s<>\"']+", re.IGNORECASE)
+_IPV4 = re.compile(r"(?<![0-9A-Za-z.])(?:\d{1,3}\.){3}\d{1,3}(?::\d{1,5})?(?![0-9A-Za-z]|\.\d)")
 # WHY the lookahead: without "::" or all eight groups, "12:30:45" would read as an address.
 _IPV6 = re.compile(
     r"(?<![\w:])(?=[0-9a-f:]*::|(?:[0-9a-f]{1,4}:){7})(?:[0-9a-f]{0,4}:){2,7}[0-9a-f]{0,4}(?![\w:])",
     re.IGNORECASE,
 )
 _HOST_PORT = re.compile(
-    r"(?<![\w.\-/])(?=[\w.-]*[a-z])[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?:\d{2,5}(?!\w)", re.IGNORECASE
+    r"(?<![0-9A-Za-z.\-/])(?=[\w.-]*[a-z])[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?:\d{2,5}(?![0-9A-Za-z])",
+    re.IGNORECASE,
 )
 # Stack frames read "module.py:57"; they are the point of the report, not a host.
 _SOURCE_FILE = re.compile(r"\.(?:py|pyi|js|ts|svelte):", re.IGNORECASE)
-_PATH = re.compile(r"(?<![\w.:/~\\])(?:[A-Za-z]:[\\/]|~/|/(?=[\w.~-]))[^\s<>\"'(),;]*")
-_COORDINATES = re.compile(r"(?<![\w.])-?\d{1,3}\.\d+\s*,\s*-?\d{1,3}\.\d+(?![\w.])")
+_PATH = re.compile(r"(?<![0-9A-Za-z.:/~\\])(?:[A-Za-z]:[\\/]|~/|/(?=[\w.~-]))[^\s<>\"'(),;]*")
+_COORDINATES = re.compile(
+    r"(?<![0-9A-Za-z.])-?\d{1,3}\.\d+\s*,\s*-?\d{1,3}\.\d+(?![0-9A-Za-z]|\.\d)"
+)
 _NAMED_COORDINATE = re.compile(
-    r"\b(lat|lon|lng|latitude|longitude)(\s*[=:]\s*)-?\d+(?:\.\d+)?", re.IGNORECASE
+    r"(?<![0-9A-Za-z])(lat|lon|lng|latitude|longitude)(\s*[=:]\s*)-?\d+(?:\.\d+)?", re.IGNORECASE
 )
 # One letter, or no letter or digit ("/", "A"), would hit ordinary text; a two-letter name
 # ("Al", "Jo") is still a name, and whole-word matching keeps it off "Alarm".
@@ -40,6 +55,14 @@ _MIN_TERM = 2
 
 def _meaningful(term: str) -> bool:
     return len(term.strip()) >= _MIN_TERM and any(char.isalnum() for char in term)
+
+
+def _alternation(keys: list[str], before: str, after: str) -> re.Pattern[str] | None:
+    """One case-blind pattern for `keys`, longest first so a key never half-matches a longer one."""
+    if not keys:
+        return None
+    words = "|".join(re.escape(key) for key in sorted(keys, key=len, reverse=True))
+    return re.compile(rf"{before}(?:{words}){after}", re.IGNORECASE)
 
 
 def _host_port(match: re.Match[str]) -> str:
@@ -53,6 +76,7 @@ class ReportPrivacy:
         self._terms = set(filter(None, terms)) | {str(Path.home())}
         self._aliases: dict[str, str] = {}
         self._pattern: re.Pattern[str] | None = None
+        self._id_pattern: re.Pattern[str] | None = None
         self._replacements: dict[str, str] = {}
         self._compile()
 
@@ -63,14 +87,16 @@ class ReportPrivacy:
         self._compile()
 
     def _compile(self) -> None:
-        replacements = dict.fromkeys(self._terms, "[private]") | self._aliases
-        replacements.update({identity: self.hash_id(identity) for identity in self._ids})
-        replacements = {key: value for key, value in replacements.items() if _meaningful(key)}
+        terms = dict.fromkeys(self._terms, "[private]") | self._aliases
+        ids = {identity: self.hash_id(identity) for identity in self._ids}
+        replacements = {key: value for key, value in (terms | ids).items() if _meaningful(key)}
         self._replacements = {key.lower(): value for key, value in replacements.items()}
         self._originals = replacements
-        words = [re.escape(term) for term in sorted(replacements, key=len, reverse=True)]
-        self._pattern = (
-            re.compile(rf"(?<!\w)(?:{'|'.join(words)})(?!\w)", re.IGNORECASE) if words else None
+        self._pattern = _alternation(
+            [key for key in replacements if key not in ids], _TERM_EDGE_BEFORE, _TERM_EDGE_AFTER
+        )
+        self._id_pattern = _alternation(
+            [key for key in replacements if key in ids], _ID_EDGE_BEFORE, _ID_EDGE_AFTER
         )
 
     def _replace(self, match: re.Match[str]) -> str:
@@ -102,6 +128,8 @@ class ReportPrivacy:
         value = _HOST_PORT.sub(_host_port, value)
         value = _PATH.sub("[path]", value)
         value = _NAMED_COORDINATE.sub(r"\1\2[location]", _COORDINATES.sub("[location]", value))
+        if self._id_pattern is not None:
+            value = self._id_pattern.sub(self._replace, value)
         if self._pattern is not None:
             value = self._pattern.sub(self._replace, value)
         return _UUID.sub(lambda match: self.hash_id(match[0]), value)
