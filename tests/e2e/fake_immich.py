@@ -215,6 +215,9 @@ class FakeImmichServer:
         self.source_video = source_video
         self.photo_paths = photo_paths
         self.uploads = uploads
+        # What `start(media_of=...)` lends a second service; `start` fills them in.
+        self._video_paths: dict[str, Path] = {}
+        self._thumbnail_paths: dict[str, Path] = {}
         self._httpd = httpd
         self._thread = thread
         host, port = httpd.server_address[:2]
@@ -233,20 +236,29 @@ class FakeImmichServer:
         upload_commit_delay: float = 0.0,
         host: str = "127.0.0.1",
         port: int = 0,
+        media_of: FakeImmichServer | None = None,
     ) -> Self:
         """Start the service, by default on an operating-system-selected localhost port.
 
         `host` and `port` exist for the setup matrix, which has to serve this
         library to a NAS and a cluster over the LAN. Every asset URL the service
         hands out is relative, so binding elsewhere needs no other change.
+
+        `media_of` serves another running service's rendered media instead of
+        rendering it again (about 14 s of FFmpeg): a second server with the same
+        library and none of the first one's uploads, tags or refusals.
         """
         root.mkdir(parents=True, exist_ok=True)
-        media_dir = root / "media"
-        media_dir.mkdir(exist_ok=True)
-        video_paths = _generate_videos(media_dir)
-        photo_paths = _generate_photos(media_dir)
+        if media_of is not None:
+            video_paths, photo_paths = media_of._video_paths, media_of.photo_paths
+            thumbnail_paths = media_of._thumbnail_paths
+        else:
+            media_dir = root / "media"
+            media_dir.mkdir(exist_ok=True)
+            video_paths = _generate_videos(media_dir)
+            photo_paths = _generate_photos(media_dir)
+            thumbnail_paths = _generate_thumbnails(media_dir, video_paths | photo_paths)
         media = video_paths | photo_paths
-        thumbnail_paths = _generate_thumbnails(media_dir, media)
         uploads: list[RecordedUpload] = []
         refused: list[str] = []
         httpd = ThreadingHTTPServer(
@@ -255,7 +267,7 @@ class FakeImmichServer:
         )
         thread = threading.Thread(target=httpd.serve_forever, daemon=True)
         thread.start()
-        return cls(
+        server = cls(
             root,
             httpd,
             thread,
@@ -264,6 +276,9 @@ class FakeImmichServer:
             uploads,
             refused,
         )
+        server._video_paths = video_paths
+        server._thumbnail_paths = thumbnail_paths
+        return server
 
     @property
     def listening_host(self) -> str:
@@ -562,6 +577,8 @@ def _handler_type(
                 if self._refused(path, {}, payload):
                     return
                 items = _assets_for_search(payload)
+                if wanted_tags := payload.get("tagIds"):
+                    items = self._tagged(items, wanted_tags)
                 self._send_json(
                     200,
                     {
@@ -638,6 +655,18 @@ def _handler_type(
 
         def do_DELETE(self) -> None:  # noqa: N802
             self._unexpected()
+
+        def _tagged(
+            self, items: list[dict[str, Any]], wanted_tags: list[str]
+        ) -> list[dict[str, Any]]:
+            """What Immich answers for `tagIds`: only the assets carrying every tag, films
+            this service took as uploads included. Ignoring the filter would call every
+            picture in the library one of the app's own films once anything was tagged."""
+            holding = set.intersection(*(tagged.get(tag_id, set()) for tag_id in wanted_tags))
+            films = (uploaded_asset(asset_id) for asset_id in sorted(holding))
+            return [asset for asset in items if asset["id"] in holding] + [
+                film for film in films if film is not None
+            ]
 
         def _refused(
             self,

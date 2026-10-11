@@ -13,12 +13,19 @@ after selection (timing, canvas, scaling, naming, the run record, the report) is
 from __future__ import annotations
 
 from collections.abc import Generator
+from pathlib import Path
 
 import pytest
 
 from tests.e2e.fake_immich import FakeImmichServer
 from tests.features.cli_harness import OutboundTrap, UserHome, basic_config
-from tests.integration.features.library import GARDEN_DAY, RenderedRun, day_args, render
+from tests.integration.features.library import (
+    GARDEN_DAY,
+    RenderedRun,
+    day_args,
+    own_immich,
+    render,
+)
 
 
 @pytest.fixture(scope="session")
@@ -29,6 +36,15 @@ def fake_immich(tmp_path_factory: pytest.TempPathFactory) -> Generator[FakeImmic
     # A request the real Immich would refuse was answered 400 here; whatever the CLI did
     # with that answer, the session fails on it.
     assert server.refused == [], server.refused
+
+
+@pytest.fixture
+def delivery_immich(
+    tmp_path_factory: pytest.TempPathFactory, fake_immich: FakeImmichServer
+) -> Generator[FakeImmichServer]:
+    """This test's own fake Immich: the same library, and only this test's uploads and tags."""
+    with own_immich(tmp_path_factory.mktemp("delivery-immich"), fake_immich) as server:
+        yield server
 
 
 @pytest.fixture(scope="session")
@@ -52,6 +68,20 @@ def library_home(
     home = UserHome(
         tmp_path_factory.mktemp("feature-home"), extra_env=tuple(outbound_trap.env().items())
     )
+    home.write_config(basic_config(fake_immich.base_url, fake_immich.api_key, home))
+    return home
+
+
+@pytest.fixture
+def fresh_home(
+    tmp_path: Path, fake_immich: FakeImmichServer, outbound_trap: OutboundTrap
+) -> UserHome:
+    """A Basic install of this test's own, on the session's library, with no run history.
+
+    For a test whose answer depends on the history (what a prefix matches, what is left
+    to propose): `library_home` holds whatever the tests before it on this worker made.
+    """
+    home = UserHome(tmp_path / "fresh-home", extra_env=tuple(outbound_trap.env().items()))
     home.write_config(basic_config(fake_immich.base_url, fake_immich.api_key, home))
     return home
 
