@@ -5,6 +5,7 @@ from __future__ import annotations
 import json as json_mod
 import shutil
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import click
 from rich.table import Table
@@ -16,6 +17,25 @@ from immich_memories.cli.runs_upload import register_upload_command
 from immich_memories.config_models import ImmichConfig
 from immich_memories.db import Store, open_store
 from immich_memories.tracking.orphaned_runs import settle_orphaned_runs
+
+if TYPE_CHECKING:
+    from immich_memories.tracking import RunDatabase
+    from immich_memories.tracking.models import RunMetadata
+
+
+def _run_by_prefix(db: RunDatabase, run_id: str) -> RunMetadata:
+    """The one recent run whose id starts with `run_id`; otherwise say why and exit 1.
+
+    Scripts read the exit code: an unknown or ambiguous id is a failure, not a no-op.
+    """
+    matches = [r for r in db.list_runs(limit=100) if r.run_id.startswith(run_id)]
+    if len(matches) == 1:
+        return matches[0]
+    if matches:
+        print_error(f"Ambiguous run ID. Matches: {[r.run_id for r in matches]}")
+    else:
+        print_error(f"Run not found: {run_id}")
+    raise SystemExit(1)
 
 
 def _print_storage_report(report) -> None:
@@ -372,17 +392,7 @@ def register_runs_commands(main: click.Group) -> None:
         run = db.get_run(run_id)
 
         if not run:
-            # Try partial match
-            all_runs = db.list_runs(limit=100)
-            matches = [r for r in all_runs if r.run_id.startswith(run_id)]
-            if len(matches) == 1:
-                run = matches[0]
-            elif len(matches) > 1:
-                print_error(f"Ambiguous run ID. Matches: {[r.run_id for r in matches]}")
-                return
-            else:
-                print_error(f"Run not found: {run_id}")
-                return
+            run = _run_by_prefix(db, run_id)
 
         # Display run metadata
         console.print()
@@ -464,17 +474,7 @@ def register_runs_commands(main: click.Group) -> None:
         run = db.get_run(run_id)
 
         if not run:
-            # Try partial match
-            all_runs = db.list_runs(limit=100)
-            matches = [r for r in all_runs if r.run_id.startswith(run_id)]
-            if len(matches) == 1:
-                run = matches[0]
-            elif len(matches) > 1:
-                print_error(f"Ambiguous run ID. Matches: {[r.run_id for r in matches]}")
-                return
-            else:
-                print_error(f"Run not found: {run_id}")
-                return
+            run = _run_by_prefix(db, run_id)
 
         # Delete output directory if requested
         if not keep_output and run.output_path:

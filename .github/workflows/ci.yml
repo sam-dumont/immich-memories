@@ -100,6 +100,9 @@ jobs:
       - name: Config reference drift
         if: '!cancelled()'
         run: make docs-config-check
+      - name: Feature inventory drift
+        if: '!cancelled()'
+        run: make feature-check
       - name: Documentation voice
         if: '!cancelled()'
         run: make docs-voice
@@ -679,6 +682,11 @@ jobs:
         run: make launch-check-ci-postgres
         env:
           IMMICH_MEMORIES_E2E_DATABASE_URL: postgresql://postgres:store-test@127.0.0.1:5432/postgres
+      # The advertised features on the fixture library, through the real CLI and FFmpeg
+      # (tests/integration/features/, ~4 min). One cell: the store backend is not their subject.
+      - name: Run feature tests (fixture library)
+        if: matrix.database == 'sqlite' && !cancelled()
+        run: make test-features
       - name: Upload launch diagnostics
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -687,6 +695,7 @@ jobs:
           if-no-files-found: ignore
           path: |
             tests/e2e-junit.xml
+            tests/features-junit.xml
             /tmp/pytest-of-runner/**/server.log
             /tmp/pytest-of-runner/**/output-probe.json
             /tmp/pytest-of-runner/**/launch-smoke*/output/**

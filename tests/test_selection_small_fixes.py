@@ -10,6 +10,7 @@ import pytest
 from immich_memories.api.models import Asset, AssetType, ExifInfo
 
 
+@pytest.mark.feature("selection.small-fixes")
 def test_distinct_shots_keeps_an_undated_row_beside_dated_ones():
     """A naive `datetime.min` sorted among aware times raised TypeError."""
     from immich_memories.planning.distinct_shots import distinct_shots
@@ -32,6 +33,7 @@ def test_distinct_shots_keeps_an_undated_row_beside_dated_ones():
         ([3, 3, 3], 4, [2, 1, 1]),
     ],
 )
+@pytest.mark.feature("selection.small-fixes")
 def test_page_shares_never_grants_a_slot_to_a_page_with_nothing_to_offer(offered, grant, expected):
     from immich_memories.analysis.editorial_story_pick_pages import page_shares
 
@@ -53,6 +55,7 @@ def _at(key: str, day: int, lat: float, lon: float) -> Asset:
     )
 
 
+@pytest.mark.feature("selection.small-fixes")
 def test_a_trip_on_the_equator_is_centred_on_every_one_of_its_pictures():
     """`if latitude` skipped 0.0, so the latitudes and longitudes averaged different pictures."""
     from immich_memories.analysis.trip_discovery import discover_year_trips

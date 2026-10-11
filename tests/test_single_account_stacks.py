@@ -86,6 +86,7 @@ def stacked(immich):  # noqa: F811
     return immich
 
 
+@pytest.mark.feature("selection.stacks-fold")
 def test_a_one_account_cut_keeps_one_picture_of_a_stack_with_the_members_star(
     tmp_path, stacked, monkeypatch
 ):
@@ -98,6 +99,7 @@ def test_a_one_account_cut_keeps_one_picture_of_a_stack_with_the_members_star(
     assert sources["edit"].is_favorite
 
 
+@pytest.mark.feature("selection.stacks-fold")
 def test_a_key_without_stack_read_still_cuts_every_picture(tmp_path, stacked, monkeypatch):
     _serve_stacks(monkeypatch, httpx.Response(403, json={"message": "Missing stack.read"}))
 

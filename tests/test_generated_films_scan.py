@@ -113,6 +113,7 @@ def _scope(tmp_path):
         return library_source_scope(client, _config(tmp_path), [JUNE])
 
 
+@pytest.mark.feature("api.generated-film-scan")
 def test_one_failed_detail_read_falls_back_to_the_upload_receipts(tmp_path, library):
     june = datetime(2025, 6, 10, 12, tzinfo=UTC)
     library.hold("tagged-film", june, GENERATED_MEMORY_TAG)
@@ -133,6 +134,7 @@ def test_one_failed_detail_read_falls_back_to_the_upload_receipts(tmp_path, libr
     assert scope.generated_asset_ids == ("uploaded-film",)
 
 
+@pytest.mark.feature("api.generated-film-scan")
 def test_a_scope_reads_the_tags_of_its_own_windows_videos_only(tmp_path, library):
     library.hold("june-film", datetime(2025, 6, 10, 12, tzinfo=UTC), GENERATED_MEMORY_TAG)
     library.hold("june-clip", datetime(2025, 6, 11, 12, tzinfo=UTC))

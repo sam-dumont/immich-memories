@@ -9,6 +9,8 @@ from datetime import date
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
+
 from immich_memories.config_loader import Config
 from tests.auto_library_fake import fake_library, suggest_json
 
@@ -33,6 +35,7 @@ def _quiet_year_then(year: int, month: int, last: int) -> dict[str, int]:
 
 
 class TestALeapDayHoliday:
+    @pytest.mark.feature("automation.extra-holidays-leap-day")
     def test_suggest_still_lists_candidates_in_a_year_without_29_february(
         self, tmp_path: Path
     ) -> None:
@@ -45,6 +48,7 @@ class TestALeapDayHoliday:
             (row["memory_type"], row["date_range"]) for row in rows
         }
 
+    @pytest.mark.feature("automation.extra-holidays-leap-day")
     def test_the_leap_day_is_filmed_on_28_february_in_other_years(self, tmp_path: Path) -> None:
         config = _config(tmp_path, extra_holidays=["02-29: Leap day"])
         client = fake_library({"2027-02": 80, "2027-01": 60})
@@ -56,6 +60,7 @@ class TestALeapDayHoliday:
         assert [row["date_range"] for row in holidays] == ["2023-02-26 to 2027-03-02"]
         assert holidays[0]["reason"].startswith("Leap day")
 
+    @pytest.mark.feature("automation.extra-holidays-leap-day")
     def test_one_detector_that_breaks_costs_only_its_own_candidates(self, tmp_path: Path) -> None:
         from immich_memories.automation.season_holiday_detectors import HolidayDetector
 
@@ -73,6 +78,7 @@ class TestALeapDayHoliday:
 
 
 class TestABusyMonth:
+    @pytest.mark.feature("automation.busy-month-completed")
     def test_the_month_in_progress_is_not_proposed(self, tmp_path: Path) -> None:
         config = _config(tmp_path)
         client = fake_library(_quiet_year_then(2026, 10, 400))
@@ -81,6 +87,7 @@ class TestABusyMonth:
 
         assert not [row for row in rows if row["date_range"].startswith("2026-10-01")]
 
+    @pytest.mark.feature("automation.busy-month-completed")
     def test_once_the_month_is_over_its_full_film_is_proposed(self, tmp_path: Path) -> None:
         config = _config(tmp_path)
         client = fake_library(_quiet_year_then(2026, 10, 400))

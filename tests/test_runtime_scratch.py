@@ -54,6 +54,7 @@ def test_unusable_configured_scratch_fails_without_falling_back_or_exposing_path
     assert tempfile.gettempdir() == previous
 
 
+@pytest.mark.feature("storage.scratch-tightened")
 @pytest.mark.parametrize("mode", [0o2770, 0o755, 0o777])
 def test_scratch_widened_by_a_remount_is_tightened_and_startup_goes_on(tmp_path, mode):
     """A volume remount (fsGroupChangePolicy: Always) can widen scratch; it holds only throwaway
@@ -75,6 +76,7 @@ def test_scratch_widened_by_a_remount_is_tightened_and_startup_goes_on(tmp_path,
     assert os.stat(scratch).st_mode & 0o7777 == 0o700
 
 
+@pytest.mark.feature("storage.scratch-tightened")
 def test_scratch_owned_by_someone_else_is_still_refused_and_left_alone(tmp_path, monkeypatch):
     from immich_memories.security import runtime_scratch
 

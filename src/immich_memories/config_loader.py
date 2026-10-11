@@ -233,6 +233,10 @@ def _deep_merge(base: dict, override: dict) -> dict:
     return merged
 
 
+class ConfigShapeError(yaml.YAMLError):
+    """The file parsed as YAML but holds a list or a single value, not a mapping of settings."""
+
+
 def _load_yaml_data(path: Path) -> dict:
     """Load and flatten YAML config data (advanced: → top-level)."""
     if not path.exists():
@@ -242,7 +246,7 @@ def _load_yaml_data(path: Path) -> dict:
     if data is None:
         return {}
     if not isinstance(data, dict):
-        raise yaml.YAMLError("Configuration must be a mapping of setting names to values")
+        raise ConfigShapeError("Configuration must be a mapping of setting names to values")
     if "advanced" in data and isinstance(data["advanced"], dict):
         advanced = data.pop("advanced")
         for section, nested in advanced.items():

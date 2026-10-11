@@ -400,16 +400,14 @@ class SearchService:
         all_assets.sort(key=lambda a: a.file_created_at)
         return all_assets
 
-    async def get_time_buckets(
-        self,
-        size: str = "MONTH",
-        asset_type: AssetType | None = None,
-        person_id: str | None = None,
-    ) -> list[TimeBucket]:
-        """Get time buckets for timeline view."""
-        params: dict = {"size": size}
-        if asset_type:
-            params["type"] = asset_type.value
+    async def get_time_buckets(self, person_id: str | None = None) -> list[TimeBucket]:
+        """The library's month buckets, optionally one person's.
+
+        Immich's timeline has neither a bucket size nor a media type: every supported
+        release answers months of every asset and silently drops either parameter, so
+        neither is sent.
+        """
+        params: dict = {}
         if person_id:
             params["personId"] = person_id
 
@@ -422,7 +420,7 @@ class SearchService:
         One timeline call. It asks for no media type: the timeline answers every asset
         whatever type is asked of it (#2354).
         """
-        buckets = await self.get_time_buckets(size="MONTH", person_id=person_id)
+        buckets = await self.get_time_buckets(person_id=person_id)
 
         years = set()
         for bucket in buckets:

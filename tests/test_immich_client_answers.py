@@ -42,6 +42,7 @@ def _login_page(_request: httpx.Request) -> httpx.Response:
     ],
     ids=["search", "asset", "timeline"],
 )
+@pytest.mark.feature("api.client-small-fixes")
 def test_a_page_that_is_not_json_is_an_immich_error_naming_what_came_back(read):
     with _client(_login_page) as client, pytest.raises(ImmichAPIError) as raised:
         read(client)
@@ -50,6 +51,7 @@ def test_a_page_that_is_not_json_is_an_immich_error_naming_what_came_back(read):
     assert URL not in str(raised.value) and KEY not in str(raised.value)
 
 
+@pytest.mark.feature("api.client-small-fixes")
 def test_an_album_created_by_a_request_that_timed_out_is_not_created_twice(monkeypatch):
     from unittest.mock import AsyncMock
 

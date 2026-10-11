@@ -10,6 +10,8 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+import pytest
+
 from immich_memories.db import Store
 from immich_memories.db.inventory import table_digest
 from immich_memories.db.tables.annotations import face_reads, head_facts, pixel_facts
@@ -49,6 +51,7 @@ def _pending_by_producer(output: str) -> dict[str, int]:
     }
 
 
+@pytest.mark.feature("people.scan-is-stored")
 def test_a_people_scan_is_read_back_from_the_store(gate_store):
     _ok(run_cli("people", "scan", "--min-assets", "1"))
 
@@ -58,6 +61,7 @@ def test_a_people_scan_is_read_back_from_the_store(gate_store):
     assert all(name in shown for name in CAST)
 
 
+@pytest.mark.feature("pictures.owner-decision-persists")
 def test_an_owner_decision_is_read_back_from_the_store(gate_client, gate_store):
     # A picture no story carries, so the decision cannot change another test's cut.
     spare = next(p for p in LIBRARY if not p.is_video and p.asset_id not in STORY_OF)
@@ -72,6 +76,7 @@ def test_an_owner_decision_is_read_back_from_the_store(gate_client, gate_store):
     assert decisions(gate_store, [asset_id]) == {}
 
 
+@pytest.mark.feature("prepare.reuses-banked-facts")
 def test_a_second_preparation_reuses_the_banked_facts(gate_store):
     month = ("prepare", "--year", "2024", "--month", "6")
     _ok(run_cli(*month))
@@ -87,6 +92,7 @@ def test_a_second_preparation_reuses_the_banked_facts(gate_store):
     assert {producer for producer, count in pending.items() if count} <= {"previews"}, again
 
 
+@pytest.mark.feature("runs.history-records-film")
 def test_a_rendered_film_is_recorded_in_the_run_history(gate_store, tmp_path):
     film = tmp_path / "june.mp4"
     _ok(

@@ -776,6 +776,7 @@ class TestHealthProbeHost:
         ):
             return client.get("/health/ready", headers={"host": host})
 
+    @pytest.mark.feature("security.health-ready-detail")
     def test_unknown_host_with_auth_off_gets_status_only(self):
         config = Config(immich={"url": "http://immich.test", "api_key": "health-secret"})
         response = self._get("rebound.example.test", config)
@@ -784,6 +785,7 @@ class TestHealthProbeHost:
         assert response.json() == {"status": "ready"}
         assert "Ada" not in response.text
 
+    @pytest.mark.feature("security.health-ready-detail")
     def test_pod_ip_host_still_gets_a_usable_status_code(self):
         config = Config(immich={"url": "http://immich.test", "api_key": ""})
         response = self._get("10.42.0.7:8080", config)
@@ -791,6 +793,7 @@ class TestHealthProbeHost:
         assert response.status_code == 503
         assert response.json() == {"status": "degraded"}
 
+    @pytest.mark.feature("security.health-ready-detail")
     def test_local_host_with_auth_off_keeps_its_detail(self):
         config = Config(immich={"url": "http://immich.test", "api_key": "health-secret"})
         response = self._get("127.0.0.1:8080", config)

@@ -70,6 +70,7 @@ def test_a_run_its_tracker_ended_is_no_longer_held(store):
     assert failed is not None and failed.status == "failed"
 
 
+@pytest.mark.feature("web.server-small-fixes")
 def test_a_run_that_cannot_take_its_lease_does_not_start_to_be_swept_as_dead(store):
     """No owner label means the sweep would end a live run and refuse its later `complete`."""
     tracker = RunTracker(store=store, capture_system=False)

@@ -50,6 +50,7 @@ def _plays(path: Path) -> bool:
     return probe.returncode == 0 and "video" in probe.stdout
 
 
+@pytest.mark.feature("render.media-small-fixes")
 def test_the_cut_after_a_killed_one_is_whole(test_clip_720p, tmp_path, monkeypatch):
     # WHY: the shared scratch lives in the temp dir; keep this test's cuts to itself.
     monkeypatch.setattr(tempfile, "tempdir", str(tmp_path))

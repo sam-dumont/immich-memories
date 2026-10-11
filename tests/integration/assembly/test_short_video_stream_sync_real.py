@@ -76,6 +76,7 @@ def _beep_onsets(film: Path) -> list[float]:
     return onsets
 
 
+@pytest.mark.feature("audio.sync-after-short-stream")
 def test_the_last_clappers_flash_and_beep_stay_within_a_frame(tmp_path):
     settings = AssemblySettings(
         encoding_plan=standalone_assembly_encoding_plan(10),

@@ -62,6 +62,7 @@ class _HardwareEncoderFailingAfter:
         pass
 
 
+@pytest.mark.feature("render.software-retry-keeps-picture")
 def test_software_retry_keeps_the_picture_of_every_clip(tmp_path, monkeypatch, caplog):
     real_encoder = streaming_assembler.StreamingEncoder
 

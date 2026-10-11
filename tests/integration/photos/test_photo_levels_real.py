@@ -79,6 +79,7 @@ def _pq_code(nits: float) -> int:
     return round(64 + 876 * ((c1 + c2 * y) / (1 + c3 * y)) ** m2)
 
 
+@pytest.mark.feature("photos.full-brightness")
 @pytest.mark.parametrize("level", GREY_CARD)
 def test_an_sdr_film_keeps_the_photos_levels(tmp_path, level):
     clip = _photo_clip(tmp_path, level, codec="h264")
@@ -87,6 +88,7 @@ def test_an_sdr_film_keeps_the_photos_levels(tmp_path, level):
     assert abs(_centre_luma(clip.path, "yuv420p") - expected) <= 2
 
 
+@pytest.mark.feature("photos.full-brightness")
 def test_photo_white_lands_at_diffuse_white_in_an_hdr_film(tmp_path):
     from immich_memories.processing.streaming_assembler import assemble_streaming
 

@@ -405,6 +405,7 @@ def test_companion_resolution_and_later_reads_use_the_stills_owner(tmp_path, imm
     assert immich.reads_of("partner-motion") == [("user-partner", True)] * 2
 
 
+@pytest.mark.feature("api.playback-404-survives")
 def test_a_household_clip_immich_keeps_no_playback_for_is_dropped_and_the_run_goes_on(
     tmp_path, immich, run
 ):

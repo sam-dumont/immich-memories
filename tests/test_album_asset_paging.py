@@ -6,6 +6,7 @@ import httpx
 import pytest
 
 from immich_memories.api.immich import ImmichClient
+from tests.immich_fakes import ImmichWire
 
 ALBUM = "4f1c9a7e-2b3d-4c5e-8f90-1a2b3c4d5e6f"
 
@@ -15,12 +16,9 @@ def album_of(total: int):
     requests: list[dict] = []
 
     def serve(request: httpx.Request) -> httpx.Response:
-        # WHY: Immich's metadata search endpoint; a MockTransport pages it like the server
         body = json.loads(request.content)
         requests.append(body)
         assert body["albumIds"] == [ALBUM]
-        if type(body.get("page")) is not int or type(body["size"]) is not int:
-            return httpx.Response(400, json={"message": "Validation failed"})
         page, size = body["page"], body["size"]
         items = [{"id": f"asset-{i}"} for i in range((page - 1) * size, min(page * size, total))]
         more = page * size < total
@@ -41,12 +39,14 @@ def album_of(total: int):
 
 async def list_album(total: int) -> tuple[list[dict], list[dict]]:
     serve, requests = album_of(total)
+    # WHY: Immich's metadata search endpoint, paged like the server and refusing what it refuses.
+    wire = ImmichWire(serve)
     client = ImmichClient("https://immich.test", "key", api_version="v3")
-    client._client = httpx.AsyncClient(
-        base_url="https://immich.test", transport=httpx.MockTransport(serve)
-    )
+    client._client = httpx.AsyncClient(base_url="https://immich.test", transport=wire.transport)
     async with client:
-        return await client.list_album_assets(ALBUM), requests
+        assets = await client.list_album_assets(ALBUM)
+    wire.assert_clean()
+    return assets, requests
 
 
 @pytest.mark.asyncio

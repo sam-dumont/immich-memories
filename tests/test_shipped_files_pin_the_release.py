@@ -35,6 +35,7 @@ def _image_lines(name: str) -> list[str]:
     ]
 
 
+@pytest.mark.feature("deploy.pinned-image")
 @pytest.mark.parametrize("name", sorted({*IMAGE_LINES, *PINNED_FILES}))
 def test_no_shipped_file_says_latest(name):
     offenders = [
@@ -57,6 +58,7 @@ def test_every_manifest_and_kustomization_is_listed_for_pinning():
     assert shipped <= set(PINNED_FILES), shipped - set(PINNED_FILES)
 
 
+@pytest.mark.feature("deploy.pinned-image")
 def test_every_pin_names_the_same_release():
     pins = set()
     for name in PINNED_FILES:
@@ -70,6 +72,7 @@ def test_every_pin_names_the_same_release():
     assert len(pins) == 1, pins
 
 
+@pytest.mark.feature("deploy.pinned-image")
 def test_the_unraid_template_pulls_the_pinned_release():
     text = (ROOT / "deploy/unraid/immich-memories.xml").read_text(encoding="utf-8")
 

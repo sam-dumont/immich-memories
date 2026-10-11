@@ -63,6 +63,7 @@ class TestOtherMonthFilmsKeepTheirOwnCooldown:
         rows = suggest_json(config, fake_library({"2026-05": 80, "2026-04": 60}), TODAY)
         return next(r["score"] for r in rows if r["category"] == "monthly_review")
 
+    @pytest.mark.feature("automation.scheduler-small-fixes")
     @pytest.mark.parametrize("category", ["backfill", "person_monthly"])
     def test_a_missed_or_person_month_yesterday_leaves_the_monthly_score_alone(
         self, tmp_path: Path, category: str
@@ -73,6 +74,7 @@ class TestOtherMonthFilmsKeepTheirOwnCooldown:
 
         assert self._monthly_score(config) == before
 
+    @pytest.mark.feature("automation.scheduler-small-fixes")
     def test_a_busy_month_film_yesterday_still_lowers_it(self, tmp_path: Path) -> None:
         config = _config(tmp_path)
         before = self._monthly_score(config)
@@ -154,6 +156,7 @@ def _notify_config(*urls: str) -> Config:
 
 
 class TestNotifications:
+    @pytest.mark.feature("automation.scheduler-small-fixes")
     def test_one_dead_url_does_not_silence_the_working_one(self, apprise) -> None:
         from immich_memories.automation.notifications import send_configured_notification
 
@@ -163,6 +166,7 @@ class TestNotifications:
 
         assert _delivered_to(apprise).count("ntfy://working/topic") == 3
 
+    @pytest.mark.feature("automation.scheduler-small-fixes")
     def test_yesterdays_failure_does_not_swallow_todays_notice(self, apprise) -> None:
         from immich_memories.automation.notification_state import (
             NotificationFailureCategory,

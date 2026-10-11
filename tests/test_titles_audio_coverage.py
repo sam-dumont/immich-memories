@@ -1283,22 +1283,20 @@ class TestSearchServiceTimeBuckets:
             ]
         )
         svc = SearchService(mock_request)
-        buckets = await svc.get_time_buckets(size="MONTH")
+        buckets = await svc.get_time_buckets()
         assert len(buckets) == 2
         assert buckets[0].count == 5
 
     @pytest.mark.asyncio
     async def test_get_time_buckets_with_filters(self):
-        from immich_memories.api.models import AssetType
         from immich_memories.api.search_service import SearchService
 
         mock_request = AsyncMock(return_value=[])
         svc = SearchService(mock_request)
-        await svc.get_time_buckets(asset_type=AssetType.VIDEO, person_id="p1")
+        await svc.get_time_buckets(person_id="p1")
 
-        params = mock_request.call_args.kwargs["params"]
-        assert params["type"] == "VIDEO"
-        assert params["personId"] == "p1"
+        # Immich's timeline defines no size or type; it would drop either silently.
+        assert mock_request.call_args.kwargs["params"] == {"personId": "p1"}
 
     @pytest.mark.asyncio
     async def test_get_available_years(self):

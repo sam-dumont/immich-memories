@@ -54,6 +54,7 @@ def _attempt(config: Config, attempt_id: str):
     return AutomationStateStore(open_store(config)).get_attempt(attempt_id)
 
 
+@pytest.mark.feature("automation.web-honours-config")
 def test_a_trigger_runs_its_child_with_the_servers_config(alt_config, child) -> None:
     from immich_memories.web.trigger import register_trigger_routes
 
@@ -69,6 +70,7 @@ def test_a_trigger_runs_its_child_with_the_servers_config(alt_config, child) -> 
     assert attempt is not None and attempt.outcome is AutoOutcome.COMPLETED, attempt
 
 
+@pytest.mark.feature("automation.web-honours-config")
 def test_the_daily_timer_runs_its_child_with_the_servers_config(alt_config, child) -> None:
     from immich_memories.automation.in_process_scheduler import InProcessScheduler
 
@@ -82,6 +84,7 @@ def test_the_daily_timer_runs_its_child_with_the_servers_config(alt_config, chil
     assert timer.snapshot().last_outcome == AutoOutcome.COMPLETED.value
 
 
+@pytest.mark.feature("automation.web-honours-config")
 def test_running_a_suggestion_runs_its_child_with_the_servers_config(alt_config, child) -> None:
     from immich_memories.automation.candidates import make_memory_key
     from immich_memories.web import mount_web

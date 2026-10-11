@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from immich_memories.config_models_automation import AutomationConfig
 
 PAGE = (
@@ -18,6 +20,7 @@ DETECTORS = (
 )
 
 
+@pytest.mark.feature("docs.upgrading-1-0")
 def test_the_page_has_one_security_section_naming_each_change_and_its_fix():
     section = PAGE.split("## Security changes in 1.0")[1].split("\n## ")[0]
 
@@ -30,6 +33,7 @@ def test_the_page_has_one_security_section_naming_each_change_and_its_fix():
     assert PAGE.count("## Security changes in 1.0") == 1
 
 
+@pytest.mark.feature("docs.upgrading-1-0")
 def test_every_default_on_detector_is_listed_with_a_key_that_exists():
     fields = AutomationConfig.model_fields
 
@@ -38,6 +42,7 @@ def test_every_default_on_detector_is_listed_with_a_key_that_exists():
         assert f"`{key}`" in PAGE, key
 
 
+@pytest.mark.feature("docs.upgrading-1-0")
 def test_the_settings_that_moved_to_the_file_are_listed():
     section = PAGE.split("## Security changes in 1.0")[1].split("\n## ")[0]
 

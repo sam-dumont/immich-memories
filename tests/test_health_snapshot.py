@@ -16,7 +16,7 @@ def health_client(tmp_path, request, monkeypatch):
     from immich_memories.web.server import create_app
 
     # Reuse the hermetic Immich HTTP routes; health needs no generated media.
-    server = ThreadingHTTPServer(("127.0.0.1", 0), _handler_type({}, {}, [], 0.0))
+    server = ThreadingHTTPServer(("127.0.0.1", 0), _handler_type({}, {}, [], 0.0, []))
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     set_config(

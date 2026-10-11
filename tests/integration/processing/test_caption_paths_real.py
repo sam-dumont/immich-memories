@@ -51,6 +51,7 @@ def _frame(clip: Path, caption: ClipCaption | None, font: str | None) -> np.ndar
 @pytest.mark.parametrize(
     "place", ["Nice, France", "Ηράκλειο, Ελλάδα"], ids=["drawtext", "image-overlay"]
 )
+@pytest.mark.feature("render.media-small-fixes")
 def test_a_caption_draws_from_a_path_with_a_colon_and_an_apostrophe(
     grey_clip: Path, odd_dir: Path, monkeypatch, place: str
 ) -> None:

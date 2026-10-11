@@ -28,6 +28,15 @@ def format_yaml_error(error: yaml.YAMLError) -> str:
     Returns:
         Human-readable error description with line/column if available.
     """
+    from immich_memories.config_loader import ConfigShapeError
+
+    if isinstance(error, ConfigShapeError):
+        # Valid YAML of the wrong shape: calling it a syntax error sends people hunting for a
+        # typo that is not there.
+        return (
+            "Configuration error: the config file must be a mapping of setting names to values\n"
+            "  (lines like `immich:` and `url: ...`), not a list or a single value."
+        )
     if hasattr(error, "problem_mark") and error.problem_mark is not None:
         mark = error.problem_mark
         problem = getattr(error, "problem", "unknown error")
