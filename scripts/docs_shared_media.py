@@ -75,8 +75,19 @@ def _share(tree: Path, stable: Path, base: str) -> None:
             (tree / name).unlink()
 
 
+def _lone_track(trees: Path, track: str) -> Path:
+    """Wrap a flat download in the docs-<track> folder the multi-track layout uses."""
+    wrapped = trees.with_name(f"{trees.name}-wrapped")
+    wrapped.mkdir()
+    trees.rename(wrapped / f"docs-{track}")
+    return wrapped
+
+
 def assemble(tracks: list[dict], trees: Path, site: Path, max_bytes: int) -> dict[str, int]:
     """Place each track at its path, drop shared copies, and refuse an oversized site."""
+    if len(tracks) == 1 and not (trees / f"docs-{tracks[0]['track']}").is_dir():
+        # download-artifact extracts a lone matching artifact into its path, without the folder.
+        trees = _lone_track(trees, tracks[0]["track"])
     stable = trees / "docs-stable"
     sizes = {}
     for entry in tracks:
