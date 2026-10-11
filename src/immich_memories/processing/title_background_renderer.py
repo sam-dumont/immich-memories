@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import math
 import subprocess
 from collections import deque
 from collections.abc import Iterator
@@ -80,8 +81,9 @@ class TitleBackgroundRenderer:
         target_h: int,
         fps: int,
         hdr_type: str | None,
+        seconds: float = 0.5,
     ) -> Path | None:
-        """Pre-render the first clip through the SAME assembly pipeline.
+        """Pre-render the first clip's opening `seconds` through the SAME assembly pipeline.
 
         Uses FrameDecoder (the streaming assembler's decoder) with identical
         filters: rotation, scale_mode, HDR conversion, resolution. This
@@ -122,7 +124,9 @@ class TitleBackgroundRenderer:
 
         def _frames() -> Iterator[memoryview]:
             nonlocal frame_count
-            max_frames = fps * 1  # 1 second
+            # WHY ceil: the clip resumes at the first frame at or after
+            # `seconds`, so the title must end on the frame just before it.
+            max_frames = max(1, math.ceil(fps * seconds - 1e-9))
             for frame in decoder:
                 if frame_count >= max_frames:
                     break

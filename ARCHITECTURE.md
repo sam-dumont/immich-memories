@@ -803,6 +803,7 @@ src/immich_memories/
 │   ├── video_encoding.py       # Video encoding helpers
 │   ├── text_builder.py         # Text layout & positioning
 │   ├── content_background.py   # Content-aware background generation
+│   ├── motion_interpolation.py # Optical-flow in-between frames for the opening's slow-motion deblur
 │   ├── renderer_pil.py         # PIL-based renderer
 │   ├── renderer_kernels.py     # KernelTitleRenderer: background + frame pipeline
 │   ├── kernel_particles.py     # ParticleField: bokeh drift / fireworks physics

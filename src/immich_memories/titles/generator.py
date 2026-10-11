@@ -184,9 +184,14 @@ class TitleScreenGenerator:
         birthday_age: int | None = None,
         selection_type: SelectionType | None = None,
         content_clip_path: Path | None = None,
+        content_continues: bool = True,
         frame_progress: Callable[[int, int], None] | None = None,
     ) -> GeneratedScreen:
-        """Generate the opening title screen."""
+        """Generate the opening title screen.
+
+        `content_continues` says the first clip resumes after the content
+        clip's last frame (the title borrowed it) rather than replaying it.
+        """
         if selection_type is None:
             selection_type = infer_selection_type(
                 year=year,
@@ -249,6 +254,7 @@ class TitleScreenGenerator:
             animated_background=self.config.animated_background,
             fade_from_white=True,
             content_clip_path=clip_for_bg,
+            content_continues=content_continues,
             frame_progress=frame_progress,
         )
 

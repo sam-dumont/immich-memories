@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import subprocess
 import time
 from pathlib import Path
@@ -17,6 +18,28 @@ logger = logging.getLogger("test.performance")
 # ---------------------------------------------------------------------------
 
 _test_start_times: dict[str, float] = {}
+
+
+# ---------------------------------------------------------------------------
+# A machine without a GPU, on one that has one
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture(autouse=True)
+def _no_gpu_when_asked(monkeypatch: pytest.MonkeyPatch) -> None:
+    """With IMMICH_TEST_NO_GPU=1, title rendering finds no GPU backend.
+
+    WHY: Linux CI and most NAS installs have no Metal, CUDA or Vulkan, so the
+    kernel renderer is never loaded and titles take the FFmpeg path. A Mac
+    always finds Metal, so without this a run here never exercises what they
+    ship. Tests that need a particular renderer patch the same probe again.
+    """
+    if os.environ.get("IMMICH_TEST_NO_GPU") != "1":
+        return
+    monkeypatch.setattr(
+        "immich_memories.titles.kernel_backend_probe.gpu_backend",
+        lambda _operating_system: (None, ("Metal: switched off by IMMICH_TEST_NO_GPU",)),
+    )
 
 
 @pytest.hookimpl(tryfirst=True)

@@ -15,6 +15,7 @@ import numpy as np
 
 from immich_memories.processing.encoding_plan import HdrTransfer
 from immich_memories.processing.ffmpeg_runner import stop_owned_process
+from immich_memories.titles.motion_interpolation import FlowInterpolator, build_flow_interpolator
 
 if TYPE_CHECKING:
     pass
@@ -28,6 +29,10 @@ logger = logging.getLogger(__name__)
 # is the better picture. No realistic clip falls short: five frames at 30fps is
 # 0.17s, and the window itself is already floored at 0.1s.
 _MIN_SOURCE_FRAMES = 5
+
+#: Seconds over which an opening title deblurs into its first clip: the frames
+#: whose in-betweens are motion-interpolated rather than the nearest source.
+REVEAL_SECONDS = 1.0
 
 # Half a second of source at native fps; a decode still running long after that
 # is wedged rather than slow, and the static background is the better picture.
@@ -61,9 +66,9 @@ class SlowmoBackgroundReader:
     """Generates smooth slow-motion frames without changing their transfer.
 
     Pre-reads all source frames (typically 15 at 0.5s/30fps), then
-    generates interpolated intermediate frames on demand. Linear blending
-    creates motion-blur-like ghosting that merges with the GPU
-    renderer's heavy Gaussian blur — no optical flow needed.
+    generates intermediate frames on demand. An ending blends neighbours
+    (Catmull-Rom), which reads as motion only under its heavy blur; an
+    opening, whose blur lifts, motion-interpolates them (motion_interpolation).
 
     HDR content remains in its source transfer. The title encoder receives
     that transfer explicitly so content-backed title frames can be tagged and
@@ -79,17 +84,31 @@ class SlowmoBackgroundReader:
         title_duration: float = 3.5,
         source_seconds: float = 0.5,
         source_transfer: HdrTransfer = HdrTransfer.NONE,
+        reveal: bool = False,
     ):
+        """`reveal` makes this an opening's background.
+
+        The whole source is then played in slow motion that reaches the clip's
+        own speed on the last frame, the one before the clip resumes, with
+        motion-interpolated in-between frames over the deblur. When those can't
+        be had, the source plays frame for frame at its own speed instead.
+        Without `reveal` the cubic slow motion the ending uses plays.
+        """
         self._source_frames: list[np.ndarray] = []
         self._float_cache: dict[int, np.ndarray] = {}
         self._output_index = 0
         self._total_output_frames = int(title_duration * fps)
+        self._reveal = reveal
+        self._reveal_frames = round(REVEAL_SECONDS * fps)
+        self._interpolator: FlowInterpolator | None = None
 
         if not shutil.which("ffmpeg"):
             return
 
         clip_duration = _probe_duration(clip_path)
-        actual_source = min(source_seconds, clip_duration * 0.8)
+        # WHY the whole file for a reveal: its pre-render is exactly the
+        # seconds the title borrows, and the clip resumes after its last frame.
+        actual_source = clip_duration if self._reveal else min(source_seconds, clip_duration * 0.8)
         if actual_source < 0.1:
             return
 
@@ -97,10 +116,11 @@ class SlowmoBackgroundReader:
 
         # WHY: extract source frames at native fps — no slowdown in FFmpeg.
         # Interpolation happens in Python for smooth blending.
+        window = [] if self._reveal else ["-t", str(actual_source)]
         cmd = [
             "ffmpeg",
             "-ss", "0",
-            "-t", str(actual_source),
+            *window,
             "-i", str(clip_path),
             "-f", "rawvideo",
             "-pix_fmt", "rgb48le" if source_is_hdr else "rgb24",
@@ -134,6 +154,10 @@ class SlowmoBackgroundReader:
             f"Loaded {len(self._source_frames)} source frames for "
             f"{self._total_output_frames} output frames ({title_duration}s)"
         )
+        if reveal:
+            self._interpolator = build_flow_interpolator(
+                self._source_frames, warps_needed=self._reveal_frames
+            )
 
     def _decode_source_frames(
         self,
@@ -181,6 +205,8 @@ class SlowmoBackgroundReader:
             return None
         if self._output_index >= self._total_output_frames:
             return None
+        if self._interpolator is not None:
+            return self._interpolated_frame(self._interpolator)
 
         indices, t = self._blend_window()
 
@@ -206,21 +232,59 @@ class SlowmoBackgroundReader:
     def _blend_window(self) -> tuple[tuple[int, int, int, int], float]:
         """Which four source frames the next output frame blends, and by how much.
 
-        WHY: ease-in cubic maps output time to source time with acceleration.
-        Starts very slow (dreamy slow-mo), ends near real-time speed so the
-        hard cut to the clip doesn't "jump" from slow to fast.
+        An ending eases in cubically: very slow (dreamy slow-mo) speeding up
+        under the blur. An opening without interpolated in-betweens plays its
+        source frame for frame into the cut (see _source_position).
 
         Shared by the numpy path and the GPU one so the two cannot drift.
         """
         n_src = len(self._source_frames)
-        progress = self._output_index / max(1, self._total_output_frames - 1)
-        eased = progress * progress * progress  # cubic ease-in
-        src_pos = eased * (n_src - 1)
+        src_pos = self._source_position(n_src)
         idx = min(int(src_pos), n_src - 2)
         return (
             (max(0, idx - 1), idx, min(idx + 1, n_src - 1), min(idx + 2, n_src - 1)),
             src_pos - idx,
         )
+
+    def _source_position(self, n_src: int) -> float:
+        """Which source frame (fractional) the current output frame shows."""
+        last = max(1, self._total_output_frames - 1)
+        progress = self._output_index / last
+        if not self._reveal:
+            return progress * progress * progress * (n_src - 1)
+        if self._interpolator is not None:
+            # WHY this power: s = (n-1)·p^k reaches the last frame at the cut,
+            # and k = last/(n-1) makes its slope there one source frame per
+            # output frame, so the motion runs on into the clip at its own
+            # speed. Below that it is near-frozen under the full blur.
+            exponent = max(1.0, last / max(1, n_src - 1))
+            return (n_src - 1) * progress**exponent
+        # WHY frame for frame without interpolation (#2389): blending two source
+        # frames is a double exposure, not a picture halfway between them. A pan
+        # slowed to a third held for two frames and jumped on the third as the
+        # blur lifted, then sped up at the cut. Played at its own speed it moves
+        # on every frame and runs straight on into the clip; before that it
+        # holds the first frame under the blur.
+        frames_left = last - self._output_index
+        return float(max(0, (n_src - 1) - frames_left))
+
+    def _interpolated_frame(self, interpolator: FlowInterpolator) -> np.ndarray:
+        """The next opening frame: warped in-between frames once the deblur starts."""
+        position = self._source_position(len(self._source_frames))
+        deblur_from = self._total_output_frames - self._reveal_frames
+        self._output_index += 1
+        if self._output_index > deblur_from:
+            return interpolator.frame_at(position)
+        # Under the full blur the nearest frame is indistinguishable and free.
+        return self._as_float(round(position))
+
+    @property
+    def blends_on_device(self) -> bool:
+        """Whether a GPU caller may blend the sources itself via next_blend.
+
+        Not when the frames are motion-interpolated: that warp runs here.
+        """
+        return self._interpolator is None
 
     @property
     def source_frames(self) -> list[np.ndarray]:

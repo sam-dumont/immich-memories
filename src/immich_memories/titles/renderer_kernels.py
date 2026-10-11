@@ -21,6 +21,7 @@ import numpy as np
 # Direct `from .kernels import _func` would capture None at import time,
 # so we access them as `kernels._func` at call time instead.
 from . import kernels
+from .content_background import REVEAL_SECONDS
 from .kernel_blur import AnimatedBlur
 from .kernel_particles import ParticleField
 from .kernel_text import TitleTextRenderer
@@ -134,7 +135,7 @@ def _deblur_mix(progress: float, cfg: KernelTitleConfig) -> float:
     away, the first second of an ending ramps it in -- which is what makes the
     blurred buffer worth holding on to.
     """
-    transition_duration = 1.0
+    transition_duration = REVEAL_SECONDS
     if cfg.reverse_blur:
         transition_end = transition_duration / cfg.duration
         if progress > transition_end:
@@ -195,7 +196,8 @@ class KernelTitleRenderer:
         # Interpolate native SDR/HDR sources on device in a bounded window.
         # Readers without compatible sources retain the NumPy fallback.
         reader = self.config.background_reader
-        frames: list = getattr(reader, "source_frames", None) or [] if reader else []
+        on_device = reader is not None and getattr(reader, "blends_on_device", True)
+        frames: list = (getattr(reader, "source_frames", None) or []) if on_device else []
         self._sources_resident = bool(frames) and self.gpu.load_sources(frames)
         if self._sources_resident:
             logger.debug("Slow-mo sources: %d frames, at most four resident on device", len(frames))
