@@ -62,8 +62,14 @@ jobs:
         run: |
           set -euo pipefail
           while read -r version; do
+            # A release ships the setup files its own tag lists, not the ones main lists now.
+            git rev-parse -q --verify "refs/tags/$version" >/dev/null \
+              || git fetch -q --depth=1 --no-tags origin tag "$version"
+            check=$(mktemp -d)
+            git archive "$version" scripts | tar -x -C "$check"
+            cp scripts/check_docs_release_assets.py "$check/scripts/"
             gh release view "$version" --json tagName,assets </dev/null \
-              | python3 scripts/check_docs_release_assets.py "$version"
+              | python3 "$check/scripts/check_docs_release_assets.py" "$version"
           done < <(jq -r '.[] | select(.version != "") | .version' <<<"$TRACKS")
 
   build:

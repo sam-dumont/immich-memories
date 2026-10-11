@@ -46,42 +46,94 @@ def test_complete_stable_and_candidate_release_assets_are_accepted():
         assert result.returncode == 0, result.stderr
 
 
-def test_docs_workflow_checks_versioned_assets_but_leaves_dev_docs_offline(tmp_path):
+def _clean_env():
+    """The pre-commit hook exports GIT_DIR and GIT_INDEX_FILE; keep them off the scratch repo."""
+    import os
+
+    return {key: value for key, value in os.environ.items() if not key.startswith("GIT_")}
+
+
+def _gate_repo(tmp_path):
+    """A clone where v0.103.0 shipped one setup file fewer than main lists now."""
+    import shutil
+
+    repo = tmp_path / "repo"
+    shutil.copytree("scripts", repo / "scripts", ignore=shutil.ignore_patterns("__pycache__"))
+    git = ["git", "-C", str(repo), "-c", "user.name=t", "-c", "user.email=t@example.invalid"]
+    subprocess.run([*git, "init", "-q"], check=True, env=_clean_env())
+    subprocess.run([*git, "add", "-A"], check=True, env=_clean_env())
+    subprocess.run([*git, "commit", "-q", "-m", "v0.103.0"], check=True, env=_clean_env())
+    subprocess.run([*git, "tag", "v0.103.0"], check=True, env=_clean_env())
+    compose = repo / "scripts" / "package_compose.py"
+    compose.write_text(
+        compose.read_text().replace(
+            "COMPOSE_ASSETS = (", 'COMPOSE_ASSETS = (\n    "added-later.xml",', 1
+        )
+    )
+    return repo
+
+
+def _run_gate(repo, tracks, release):
     import os
 
     import yaml
 
     workflow = yaml.safe_load(Path(".github/workflows/docs.yml").read_text())
-    steps = workflow["jobs"]["plan"]["steps"]
     gate = next(
-        step for step in steps if step.get("name") == "Verify matching setup release assets"
+        step
+        for step in workflow["jobs"]["plan"]["steps"]
+        if step.get("name") == "Verify matching setup release assets"
     )
     # The gate runs in `plan`, before any track is built.
     assert workflow["jobs"]["build"]["needs"] == ["plan"]
-    (tmp_path / "scripts").symlink_to(Path("scripts").resolve(), target_is_directory=True)
-    gh = tmp_path / "gh"
-    gh.write_text(
-        '#!/bin/sh\nprintf \'%s\\n\' "$3" >> checked\nprintf \'{"tagName":"v0.103.0","assets":[]}\'\n'
-    )
+    (repo / "release.json").write_text(json.dumps(release))
+    gh = repo / "gh"
+    gh.write_text("#!/bin/sh\nprintf '%s\\n' \"$3\" >> checked\ncat release.json\n")
     gh.chmod(0o700)
-    dev = {"track": "dev", "ref": "c" * 40, "version": "", "path": "dev"}
-    stable = {"track": "stable", "ref": "v0.103.0", "version": "v0.103.0", "path": ""}
-    for tracks, expected in [([dev], 0), ([stable, dev], 1)]:
-        result = subprocess.run(
-            ["bash", "-e", "-o", "pipefail", "-c", gate["run"]],
-            cwd=tmp_path,
-            env={
-                **os.environ,
-                "PATH": f"{tmp_path}:{os.environ['PATH']}",
-                "TRACKS": json.dumps(tracks),
-            },
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        assert result.returncode == expected, result.stderr
+    return subprocess.run(
+        ["bash", "-e", "-o", "pipefail", "-c", gate["run"]],
+        cwd=repo,
+        env={**_clean_env(), "PATH": f"{repo}:{os.environ['PATH']}", "TRACKS": json.dumps(tracks)},
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+DEV = {"track": "dev", "ref": "c" * 40, "version": "", "path": "dev"}
+STABLE = {"track": "stable", "ref": "v0.103.0", "version": "v0.103.0", "path": ""}
+
+
+def test_docs_workflow_checks_versioned_assets_but_leaves_dev_docs_offline(tmp_path):
+    repo = _gate_repo(tmp_path)
+    empty = {"tagName": "v0.103.0", "assets": []}
+    assert _run_gate(repo, [DEV], empty).returncode == 0
+    assert _run_gate(repo, [STABLE, DEV], empty).returncode == 1
     # Only the versioned track was looked up; dev docs link no release assets.
-    assert (tmp_path / "checked").read_text().split() == ["v0.103.0"]
+    assert (repo / "checked").read_text().split() == ["v0.103.0"]
+
+
+def test_a_release_is_checked_against_the_setup_files_its_own_tag_ships(tmp_path):
+    from scripts.package_compose import COMPOSE_ASSETS
+
+    repo = _gate_repo(tmp_path)
+    shipped = [
+        *COMPOSE_ASSETS,
+        "immich-memories-deploy-0.103.0.tar.gz",
+        "SHA256SUMS",
+        "installation.json",
+    ]
+    release = {
+        "tagName": "v0.103.0",
+        "assets": [{"name": name, "state": "uploaded", "size": 100} for name in shipped],
+    }
+    # main now lists added-later.xml; the tag never shipped it, and its docs never link it.
+    result = _run_gate(repo, [STABLE], release)
+    assert result.returncode == 0, result.stderr
+    release["assets"] = release["assets"][1:]
+    result = _run_gate(repo, [STABLE], release)
+    assert result.returncode == 1
+    assert COMPOSE_ASSETS[0] in result.stderr
 
 
 def test_named_assets_must_have_finished_nonempty_uploads():
