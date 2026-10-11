@@ -221,12 +221,20 @@ def _remove_launcher_shim() -> bool:
     return True
 
 
-def _auto_command(binary_path: str, cooldown_hours: int, config_path: Path | None) -> list[str]:
-    """Build the exact root-option-aware command shared by scheduler backends."""
+def _auto_command(
+    binary_path: str, cooldown_hours: int | None, config_path: Path | None
+) -> list[str]:
+    """Build the exact root-option-aware command shared by scheduler backends.
+
+    Without an explicit cooldown the run reads `automation.cooldown_hours` each time, so
+    a later config change reaches the schedule without a reinstall.
+    """
     command = [binary_path]
     if config_path is not None:
         command.extend(["--config", str(config_path)])
-    command.extend(["auto", "run", "--quiet", "--cooldown", str(cooldown_hours)])
+    command.extend(["auto", "run", "--quiet"])
+    if cooldown_hours is not None:
+        command.extend(["--cooldown", str(cooldown_hours)])
     return command
 
 
@@ -243,7 +251,7 @@ def generate_launchd_plist(
     binary_path: str,
     schedule_hour: int = 9,
     schedule_minute: int = 0,
-    cooldown_hours: int = 24,
+    cooldown_hours: int | None = None,
     log_dir: Path | None = None,
     config_path: Path | None = None,
 ) -> str:
@@ -266,7 +274,7 @@ def generate_systemd_units(
     binary_path: str,
     schedule_hour: int = 9,
     schedule_minute: int = 0,
-    cooldown_hours: int = 24,
+    cooldown_hours: int | None = None,
     config_path: Path | None = None,
 ) -> tuple[str, str]:
     """Generate systemd service and timer unit file contents."""
@@ -313,7 +321,7 @@ def generate_crontab_entry(
     binary_path: str,
     schedule_hour: int = 9,
     schedule_minute: int = 0,
-    cooldown_hours: int = 24,
+    cooldown_hours: int | None = None,
     config_path: Path | None = None,
 ) -> str:
     """Generate a single crontab line for daily auto-generation."""
@@ -426,7 +434,7 @@ def get_scheduler_status() -> SchedulerStatus:
 def install_scheduler(
     schedule_hour: int = 9,
     schedule_minute: int = 0,
-    cooldown_hours: int = 24,
+    cooldown_hours: int | None = None,
     config_path: Path | None = None,
     force: bool = False,
 ) -> SchedulerInstallResult:
@@ -461,7 +469,7 @@ def _install_launchd(
     binary: str,
     hour: int,
     minute: int,
-    cooldown: int,
+    cooldown: int | None,
     *,
     config_path: Path | None,
 ) -> SchedulerInstallResult:
@@ -483,7 +491,7 @@ def _install_systemd(
     binary: str,
     hour: int,
     minute: int,
-    cooldown: int,
+    cooldown: int | None,
     *,
     config_path: Path | None,
 ) -> SchedulerInstallResult:
@@ -510,7 +518,7 @@ def _install_crontab(
     binary: str,
     hour: int,
     minute: int,
-    cooldown: int,
+    cooldown: int | None,
     *,
     config_path: Path | None,
 ) -> SchedulerInstallResult:
@@ -613,7 +621,7 @@ def uninstall_scheduler() -> bool:
 def show_scheduler_config(
     schedule_hour: int = 9,
     schedule_minute: int = 0,
-    cooldown_hours: int = 24,
+    cooldown_hours: int | None = None,
     config_path: Path | None = None,
 ) -> str | None:
     """Generate scheduler config for current platform without writing files."""

@@ -15,7 +15,7 @@ from immich_memories.automation.failure_backoff import backoff_label
 from immich_memories.automation.models import AutoOutcome
 from immich_memories.automation.runner import AutomationAlreadyRunningError, AutoRunner
 from immich_memories.automation.state_store import AutomationStateStore
-from immich_memories.config_loader import Config
+from immich_memories.config_loader import Config, loaded_config_file
 from immich_memories.db import open_store
 from immich_memories.tracking import RunDatabase
 from immich_memories.web.answer_cache import AnswerCache, Cached
@@ -68,7 +68,7 @@ class AttemptView(BaseModel):
 
 def automation(config: Annotated[Config, Depends(current_config)]) -> Any:
     """The runner the scheduler, `auto run` and the HTTP trigger share."""
-    return AutoRunner(config)
+    return AutoRunner(config, config_path=loaded_config_file())
 
 
 def _discover(runner: Any) -> Suggestions:
@@ -147,13 +147,15 @@ def run_suggestion(
 ) -> AttemptView | JSONResponse:
     """Start the candidate as `auto run` would: a lease, an attempt, the real CLI child."""
     try:
-        started = runner.start_one(reason=SUGGESTION_REASON)
+        started = runner.start_one(reason=SUGGESTION_REASON, dry_run=choice.dry_run)
     except AutomationAlreadyRunningError:
         return JSONResponse({"detail": "Automation is already running."}, status_code=409)
     # WHY a thread: a generation runs for up to two hours; the page follows the attempt.
+    # A film somebody picked is made now, as `auto run --candidate KEY --force` would make
+    # it: the cooldown paces the timer, the rotation rules still hold.
     threading.Thread(
         target=started.execute,
-        kwargs={"candidate_key": choice.memory_key, "dry_run": choice.dry_run},
+        kwargs={"candidate_key": choice.memory_key, "dry_run": choice.dry_run, "force": True},
         daemon=True,
     ).start()
     return AttemptView(

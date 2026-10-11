@@ -156,11 +156,14 @@ class ActivityBurstDetector:
 
         # WHY: only detect bursts in last 12 months — older content is for manual exploration
         cutoff_key = f"{today.year - 1}-{today.month:02d}"
+        # The month in progress is not a month yet: a film of its first days under the
+        # whole month's key would stand in for the real one when it ends.
+        current_key = f"{today.year}-{today.month:02d}"
         sorted_months = sorted(assets_by_month.keys())
         candidates: list[MemoryCandidate] = []
 
         for i, month_key in enumerate(sorted_months):
-            if month_key < cutoff_key:
+            if month_key < cutoff_key or month_key >= current_key:
                 continue
 
             window = sorted_months[max(0, i - 12) : i]

@@ -27,6 +27,15 @@ NO_ELIGIBLE_CANDIDATES = "no eligible candidates"
 # A period the child read and judged not worth a film (#2209): a skipped attempt whose
 # reason starts here, so history and the daily timer can tell it from a cooldown skip.
 DECLINED_REASON = "nothing worth a film"
+# Skips that decided nothing about today: the timer tries again once they no longer hold.
+COOLDOWN_ACTIVE = "cooldown active"
+ALREADY_RUNNING = "automation already running"
+# A dry run is marked from its start, so a check still running is never read as the day's run.
+DRY_RUN_MARK = " (dry run)"
+# A chosen candidate that was gone by the time it ran: nothing was tried for today.
+STALE_CANDIDATE_REASON = "Candidate is no longer eligible"
+# An attempt whose process died before it could finish (#2366).
+INTERRUPTED_REASON = "interrupted: the process running it stopped before it finished"
 
 
 class AutoAction(StrEnum):

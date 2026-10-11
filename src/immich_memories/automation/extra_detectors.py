@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from collections.abc import Collection
+from collections.abc import Callable, Collection
 from datetime import date
 
 from immich_memories.automation.album_detector import AlbumDetector
 from immich_memories.automation.backfill_detector import BackfillDetector
-from immich_memories.automation.candidates import Detection, MemoryCandidate
+from immich_memories.automation.candidates import Detection, MemoryCandidate, guarded_detector
 from immich_memories.automation.discovery_extras import ExtraReads
 from immich_memories.automation.person_detectors import PersonMonthlyDetector
 from immich_memories.automation.season_holiday_detectors import HolidayDetector, SeasonDetector
@@ -31,40 +31,53 @@ def run_extra_detectors(
     is not offered again as backfill.
     """
     found: list[Detection] = []
+    notes: list[str] = []
+
+    def run(kind: str, detect: Callable[[], Detection]) -> None:
+        found.append(guarded_detector(kind, notes, detect, Detection()))
+
     if auto_cfg.detect_seasons:
-        found.append(SeasonDetector().detect(today, hemisphere, generated_keys, extras.season_days))
+        run(
+            "season",
+            lambda: SeasonDetector().detect(today, hemisphere, generated_keys, extras.season_days),
+        )
     if auto_cfg.detect_holidays:
-        found.append(
-            HolidayDetector().detect(
+        run(
+            "holiday",
+            lambda: HolidayDetector().detect(
                 today,
                 extras.country,
                 auto_cfg.extra_holidays,
                 generated_keys,
                 extras.holiday_pictures,
-            )
+            ),
         )
     if auto_cfg.detect_albums:
-        found.append(
-            AlbumDetector().detect(
+        run(
+            "album",
+            lambda: AlbumDetector().detect(
                 extras.albums,
                 extras.user_id,
                 generated_keys,
                 today,
                 include_shared=auto_cfg.include_shared_albums,
-            )
+            ),
         )
     if auto_cfg.detect_person_monthly:
-        found.append(
-            PersonMonthlyDetector().detect(
+        run(
+            "person month",
+            lambda: PersonMonthlyDetector().detect(
                 people, extras.close_ids, extras.person_days, generated_keys, today
-            )
+            ),
         )
     if auto_cfg.backfill_months:
-        found.append(
-            BackfillDetector().detect(
+        run(
+            "missed month",
+            lambda: BackfillDetector().detect(
                 assets_by_month, generated_keys, today, {c.memory_key for c in proposed}
-            )
+            ),
         )
+    found.append(Detection(notes=tuple(notes)))
     return Detection(
         [c for detection in found for c in detection.candidates],
         tuple(dict.fromkeys(n for detection in found for n in detection.notes)),

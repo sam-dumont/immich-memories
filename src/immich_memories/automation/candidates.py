@@ -2,14 +2,19 @@
 
 from __future__ import annotations
 
+import logging
 import re
-from collections.abc import Collection
+from collections.abc import Callable, Collection
 from dataclasses import dataclass, field
 from datetime import date, datetime, time
 from enum import StrEnum
-from typing import Any
+from typing import Any, TypeVar
 
 from immich_memories.api.person_expression import PersonExpression
+
+logger = logging.getLogger(__name__)
+
+_Found = TypeVar("_Found")
 
 DEFAULT_SUGGESTION_LIMIT = 10
 
@@ -164,6 +169,20 @@ def bind_people_expression_key(key: str, expression: PersonExpression | None) ->
     return key if key.endswith(suffix) else key + suffix
 
 
+# album:{first}:{last}::{album id}:{pictures}: an automatic album film's key.
+_ALBUM_KEY = re.compile(r"^album:[^:]*:[^:]*::(?P<id>[^:]+):\d+$")
+
+
+def memory_identity(memory_key: str) -> str:
+    """The memory a key names, the same across the keys it takes as it changes.
+
+    An album's key carries its dates and its size, so the album that failed or was declined
+    yesterday has another key once one picture is added; it is still the same album.
+    """
+    match = _ALBUM_KEY.match(memory_key)
+    return f"album::{match['id']}" if match else memory_key
+
+
 def explain_empty(
     candidates: list[MemoryCandidate], notes: list[str] | None, reason: str
 ) -> list[MemoryCandidate]:
@@ -171,3 +190,19 @@ def explain_empty(
     if not candidates and notes is not None:
         notes.append(reason)
     return candidates
+
+
+def guarded_detector(
+    kind: str, notes: list[str], detect: Callable[[], _Found], empty: _Found
+) -> _Found:
+    """One detector's answer, or ``empty`` with a note when the detector itself breaks.
+
+    A bug in one detector (a calendar edge, an unexpected value) must cost that detector
+    its candidates, not every other detector's and the night's film with them.
+    """
+    try:
+        return detect()
+    except Exception as exc:  # WHY: any detector fault; only the type is kept, never values
+        logger.warning("The %s detector failed (%s)", kind, type(exc).__name__)
+        notes.append(f"No {kind} film: its detector failed ({type(exc).__name__})")
+        return empty

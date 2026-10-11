@@ -39,10 +39,17 @@ The UI process then runs the same `auto run` decision once a day, with the same 
 and notifications as the CLI. A container that was down at `daily_at` catches up when it starts; if the day's
 run already happened (a manual `docker compose exec immich-memories immich-memories auto run` counts) it waits
 for tomorrow. A run counts when it made a film, tried and failed, or found nothing worth one (a period the child read and judged empty ends as one `skipped` attempt, reason `nothing worth a film: …`, with no completed run behind it, so the 24 h cooldown is untouched and that candidate sits out for 7 days). A dry run doesn't
-(a **Check eligibility** or an `auto run --dry-run` leaves the scheduled film in place), and neither does a
-`cooldown active` skip, which is what most HTTP triggers get back. When the timer waits, the log says which run it
+(a **Check eligibility** or an `auto run --dry-run`, finished or still running, leaves the scheduled film in place), and neither does a
+`cooldown active` skip, which is what most HTTP triggers get back, a **Run this suggestion** whose candidate was gone by then, or an attempt whose process died. When the timer waits, the log says which run it
 counted. A manual `auto run` in progress holds the same automation lock: the timer's attempt comes back `skipped`
-("automation already running") before it records anything, so `auto history` and `auto status` never show it. A
+("automation already running") before it records anything, so `auto history` and `auto status` never show it, and
+the timer tries again at its next poll. When the timer's own run is skipped for the cooldown (it caught up at 14:00
+yesterday, say), it tries again once the cooldown ends, the same day.
+
+An attempt whose process died mid-run (a killed container, a reboot) reads `failed`, reason
+`interrupted: …`, everywhere status is shown. It is ended for good, with one failure notification, by the next
+run, by the web server's timer (it checks every 30 seconds) or by `immich-memories auto status`. A status read
+such as `/health/ready` only reports it and changes nothing. A
 manual `generate` in progress holds a different lock (the pipeline lock), so the timer's own attempt does start,
 its child `generate` then fails to get the pipeline lock, and the attempt ends `failed`, not `skipped`.
 `/health/ready` shows the timer under `in_process_scheduler`; after a restart it starts from the last attempt in the store, so `last_fired_at`, `last_outcome` and `last_reason` are not blank.
@@ -52,6 +59,8 @@ its child `generate` then fails to get the pipeline lock, and the attempt ends `
 ```bash
 immich-memories auto install --hour 9
 ```
+
+The installed job reads `automation.cooldown_hours` on every run; `--cooldown N` pins a number into the scheduler command instead. A job installed before 1.0 carries `--cooldown 24`: reinstall to let the config decide.
 
 This writes a launcher at `~/.immich-memories/bin/immich-memories-auto` and scheduler files: a launchd plist on macOS, a systemd user timer on Linux, or a crontab command to paste elsewhere. It prints **Activate:** and **Deactivate:** commands; it does not run them. Run the printed activation command to start the schedule. The launcher looks `immich-memories` up on every fire, so an upgrade in place needs no reinstall.
 

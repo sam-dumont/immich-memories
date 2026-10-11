@@ -24,6 +24,7 @@ from immich_memories.automation.runner import (
 )
 from immich_memories.automation.state_store import AutomationStateStore
 from immich_memories.config import get_config
+from immich_memories.config_loader import loaded_config_file
 from immich_memories.db import open_store
 from immich_memories.tracking.run_database import RunDatabase
 from immich_memories.web.auth import (
@@ -99,7 +100,9 @@ def _execute(started: StartedAutoRun) -> None:
 def _start(config: Config) -> StartedAutoRun | None:
     """Take the automation lease, or None when another run already holds it."""
     try:
-        started = AutoRunner(config).start_one(reason=TRIGGER_REASON)
+        started = AutoRunner(config, config_path=loaded_config_file()).start_one(
+            reason=TRIGGER_REASON
+        )
     except AutomationAlreadyRunningError:
         return None
     record_trigger(config)
@@ -129,14 +132,20 @@ def _attempt_payload(config: Config, attempt_id: str) -> dict[str, Any] | None:
         "memory_type": attempt.memory_type,
         # Already sanitized by the runner before it was persisted.
         "error": attempt.error,
-        "run": _run_payload(config, attempt.run_id),
+        "run": _run_payload(config, attempt.id, attempt.run_id),
     }
 
 
-def _run_payload(config: Config, run_id: str | None) -> dict[str, Any] | None:
-    if run_id is None:
-        return None
-    run = RunDatabase(open_store(config)).get_run(run_id)
+def _run_payload(config: Config, attempt_id: str, run_id: str | None) -> dict[str, Any] | None:
+    """The attempt's run: the one it finished with, or the one its child has open now."""
+    database = RunDatabase(open_store(config))
+    # The attempt names its run only when it ends; mid-run the child's row already says
+    # which attempt opened it, as /api/v1/automation/attempts reads it too.
+    run = (
+        database.get_run(run_id)
+        if run_id is not None
+        else database.get_run_by_automation_attempt(attempt_id)
+    )
     if run is None:
         return None
     record = run.to_dict()

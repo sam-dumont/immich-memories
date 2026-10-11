@@ -450,7 +450,7 @@ class TestAutoRunOutput:
             )
 
         assert result.exit_code == 0, result.output
-        show.assert_called_once_with(9, 0, 24, config_path=config_path.resolve())
+        show.assert_called_once_with(9, 0, None, config_path=config_path.resolve())
 
     def test_worktree_pinned_install_fails_loudly_and_points_at_force(self) -> None:
         """A scheduler pinned to scratch space is a silent stale-code bug, so refuse it."""

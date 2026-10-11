@@ -50,7 +50,7 @@ immich-memories auto install [OPTIONS]
 | --- | --- | --- | --- |
 | `--hour` | integer range | 9 | Hour to run (0-23) |
 | `--minute` | integer range | 0 | Minute to run (0-59) |
-| `--cooldown` | integer | 24 | Cooldown hours between runs |
+| `--cooldown` | integer | - | Cooldown hours between runs; default: automation.cooldown_hours at each run |
 | `--uninstall` | boolean | false | Remove installed scheduler |
 | `--show` | boolean | false | Show config without installing |
 | `--force` | boolean | false | Schedule this install even when its checkout is a worktree or behind its upstream |

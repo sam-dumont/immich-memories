@@ -84,6 +84,8 @@ class InProcessScheduler:
         self._last_outcome: str | None = None
         self._last_reason: str | None = None
         self._remembered = False
+        # Set when a skip handed today's run back: the earliest time to try it again.
+        self._not_before: datetime | None = None
 
     def snapshot(self) -> SchedulerSnapshot:
         return SchedulerSnapshot(
@@ -105,6 +107,7 @@ class InProcessScheduler:
         from immich_memories.tracking.orphaned_runs import settle_orphaned_runs
 
         await asyncio.to_thread(settle_orphaned_runs, open_store(config))
+        await asyncio.to_thread(_settle_interrupted_attempts, config)
         automation = config.automation
         if not self._remembered:
             await self._remember_last_attempt(config)
@@ -116,6 +119,9 @@ class InProcessScheduler:
 
         now = self._clock()
         slot = _slot_today(now, automation.daily_at)
+        if self._not_before is not None and self._not_before > slot:
+            # Today's run was put off by a skip that decided nothing about it.
+            slot = self._not_before
         if now >= slot and self._last_fired_date != now.date():
             # WHY: the durable attempt table is the source of truth across restarts and
             # `docker exec … auto run` — one automation decision per calendar day.
@@ -131,7 +137,8 @@ class InProcessScheduler:
 
         self._last_fired_date = now.date()
         self._last_fired_at = now
-        self._next_run = slot + timedelta(days=1)
+        self._next_run = _slot_today(now, automation.daily_at) + timedelta(days=1)
+        self._not_before = None
         await self._fire(config)
         return True
 
@@ -177,8 +184,32 @@ class InProcessScheduler:
             self._last_outcome = result.outcome.value
             self._last_reason = result.reason
             logger.info("In-process automation: %s (%s)", result.outcome.value, result.reason)
+            await self._put_off_after(result, config)
         finally:
             self._running = False
+
+    async def _put_off_after(self, result: AutoRunResult, config: Config) -> None:
+        """A skip that decided nothing about today hands the day back, to try again later.
+
+        A cooldown skip waits until the cooldown ends (a run caught up at 14:00 yesterday
+        makes today's at 13:30, not tomorrow's); a lease held by another run, a dry run say,
+        waits for the next poll.
+        """
+        from immich_memories.automation.models import ALREADY_RUNNING, COOLDOWN_ACTIVE, AutoOutcome
+
+        if result.outcome is not AutoOutcome.SKIPPED or result.reason not in (
+            COOLDOWN_ACTIVE,
+            ALREADY_RUNNING,
+        ):
+            return
+        next_poll = self._clock() + timedelta(seconds=POLL_SECONDS)
+        until = next_poll
+        if result.reason == COOLDOWN_ACTIVE:
+            ends = await asyncio.to_thread(_cooldown_until, config, self._clock())
+            until = ends or next_poll
+        self._last_fired_date = None
+        self._not_before = until.astimezone(self._clock().tzinfo)
+        self._next_run = self._not_before
 
     async def run_forever(self, sleep: Callable[[float], Awaitable[None]] = asyncio.sleep) -> None:
         """Poll forever; a failing tick is logged and retried at the next poll."""
@@ -197,6 +228,28 @@ def _last_daily_attempt(config: Config) -> AutomationAttempt | None:
     return AutomationStateStore(open_store(config)).get_last_daily_attempt()
 
 
+def _settle_interrupted_attempts(config: Config) -> None:
+    from immich_memories.automation.runner import AutoRunner
+
+    try:
+        AutoRunner(config).settle_interrupted_attempts()
+    except Exception:  # WHY: housekeeping must not stop the timer; retried every tick
+        logger.warning("Could not settle automation attempts left running", exc_info=True)
+
+
+def _cooldown_until(config: Config, now: datetime) -> datetime | None:
+    """When the cooldown the last completed auto run started ends, if it is active."""
+    from immich_memories.automation.status import cooldown_status
+    from immich_memories.db import open_store
+    from immich_memories.tracking.run_database import RunDatabase
+
+    runs = RunDatabase(open_store(config)).list_runs(
+        limit=1, status="completed", source="auto", order_by_completion=True
+    )
+    status = cooldown_status(runs[0] if runs else None, config.automation.cooldown_hours, now)
+    return status.until if status.active else None
+
+
 def _last_finished_attempt(config: Config) -> AutomationAttempt | None:
     from immich_memories.automation.state_store import AutomationStateStore
     from immich_memories.db import open_store
@@ -207,8 +260,9 @@ def _last_finished_attempt(config: Config) -> AutomationAttempt | None:
 
 def _run_auto_once(config: Config) -> AutoRunResult:
     from immich_memories.automation.runner import AutoRunner
+    from immich_memories.config_loader import loaded_config_file
 
-    return AutoRunner(config).run_one()
+    return AutoRunner(config, config_path=loaded_config_file()).run_one()
 
 
 def _current_config() -> Config:

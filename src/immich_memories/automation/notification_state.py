@@ -12,6 +12,10 @@ import sqlalchemy as sa
 from immich_memories.db import Store, from_db, open_store, to_db, upsert
 from immich_memories.db.tables import notification_health
 
+# A daily film's notice comes about a day after the last one, earlier by however much faster
+# today's run was: a one-day pause after yesterday's failure must not swallow it.
+_CADENCE_SLACK = timedelta(hours=3)
+
 
 class NotificationFailureCategory(StrEnum):
     """Stable failure classes safe to expose through status endpoints."""
@@ -50,7 +54,8 @@ class NotificationHealth:
             return None
         if self.last_success_at is not None and self.last_success_at >= self.last_failure_at:
             return None
-        return self.last_failure_at + timedelta(hours=max(0, cooldown_hours))
+        cooldown = timedelta(hours=max(0, cooldown_hours))
+        return self.last_failure_at + max(cooldown - _CADENCE_SLACK, cooldown / 2)
 
     def is_cooling_down(self, cooldown_hours: int, *, now: datetime | None = None) -> bool:
         """Return whether a newer failure still suppresses normal delivery attempts."""

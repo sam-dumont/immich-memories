@@ -16,6 +16,7 @@ from functools import partial
 from typing import Any, TypeVar
 
 from immich_memories.automation.calendar_detectors import birthday_film_windows
+from immich_memories.automation.candidates import guarded_detector
 from immich_memories.automation.material import (
     Window,
     days_in,
@@ -78,21 +79,34 @@ def read_account_extras(
 ) -> None:
     """Add one account's answers to ``into``; a failed read adds a note instead."""
     cfg = plan.auto_cfg
+    # Deciding what is due is detector code: a fault there costs that detector alone.
     if cfg.detect_seasons:
-        due = SeasonDetector().due(plan.today, plan.hemisphere, plan.generated_keys)
-        if due is not None:
-            counted = _guard(
-                "the season's pictures", lambda: days_in([client], due.window), into.notes
-            )
-            _sum_days(into.season_days.setdefault(due.window, {}), counted or {})
+        guarded_detector("season", into.notes, partial(_read_season, client, plan, into), None)
     if cfg.detect_holidays:
-        _read_holidays(client, plan, into)
+        guarded_detector("holiday", into.notes, partial(_read_holidays, client, plan, into), None)
     if cfg.detect_albums and primary:
         albums = _guard("the albums", partial(_albums_of, client), into.notes)
         into.albums, into.user_id = albums or [], user_id
     if cfg.detect_person_monthly:
-        _read_person_months(client, account, people, plan, into)
-    _read_birthday_days(client, account, people, birthday_counts, plan, into)
+        guarded_detector(
+            "person month",
+            into.notes,
+            partial(_read_person_months, client, account, people, plan, into),
+            None,
+        )
+    guarded_detector(
+        "birthday",
+        into.notes,
+        partial(_read_birthday_days, client, account, people, birthday_counts, plan, into),
+        None,
+    )
+
+
+def _read_season(client: Any, plan: ExtraPlan, into: ExtraReads) -> None:
+    due = SeasonDetector().due(plan.today, plan.hemisphere, plan.generated_keys)
+    if due is not None:
+        counted = _guard("the season's pictures", lambda: days_in([client], due.window), into.notes)
+        _sum_days(into.season_days.setdefault(due.window, {}), counted or {})
 
 
 def _read_holidays(client: Any, plan: ExtraPlan, into: ExtraReads) -> None:

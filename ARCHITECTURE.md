@@ -1142,6 +1142,7 @@ src/immich_memories/
 │   ├── models.py               # Typed values returned/persisted by automation
 │   ├── generation_request.py   # Typed boundary from candidates to the `generate` CLI
 │   ├── state_store.py          # Automation attempts in the store; failure streaks for backoff
+│   ├── interrupted_attempts.py # Attempts a dead process left running: ended interrupted, one notice
 │   ├── phase_log.py            # Logs a generation child's stored phase events while it runs
 │   ├── scheduler_in_use.py     # Which scheduler drives auto runs: built-in timer, system unit or external trigger
 │   ├── last_trigger.py         # Per-host stamp of the last POST /api/trigger, for auto status

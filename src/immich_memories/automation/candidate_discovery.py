@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import itertools
-from collections.abc import Collection
+from collections.abc import Callable, Collection, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
 from typing import Any, Protocol
@@ -16,6 +16,7 @@ from immich_memories.automation.candidates import (
     CandidateCategory,
     MemoryCandidate,
     completed_memory_key_aliases,
+    guarded_detector,
 )
 from immich_memories.automation.catalogue import entries_from, load_catalogue
 from immich_memories.automation.closeness import closeness_by_person, is_close
@@ -59,6 +60,7 @@ class MemoryHistoryReader(Protocol):
         self,
         memory_type: str,
         source: str | None = None,
+        exclude_categories: Sequence[str] = (),
     ) -> RunMetadata | None: ...
 
     def get_last_run_of_category(
@@ -137,6 +139,10 @@ def _trailing_year_range(today: date) -> DateRange:
     )
 
 
+# Categories that render as another type's film but keep a cooldown of their own.
+_OWN_COOLDOWN = (CandidateCategory.BACKFILL.value, CandidateCategory.PERSON_MONTHLY.value)
+
+
 def _build_last_runs_by_type(db: MemoryHistoryReader) -> dict[str, date]:
     """Query DB for the most recent completed run date per memory type."""
     result: dict[str, date] = {}
@@ -151,11 +157,11 @@ def _build_last_runs_by_type(db: MemoryHistoryReader) -> dict[str, date]:
         "holiday",
         "album",
     ):
-        run = db.get_last_run_of_type(mem_type, source="auto")
+        run = db.get_last_run_of_type(mem_type, source="auto", exclude_categories=_OWN_COOLDOWN)
         if run and run.created_at:
             result[mem_type] = (run.completed_at or run.created_at).date()
     # Backfill and the per-person months render as monthly_highlights: only the category
-    # keeps their cooldown apart from the monthly's.
+    # keeps their cooldown apart from the monthly's, both ways.
     for mem_type, category in (
         ("monthly_backfill", "backfill"),
         ("person_monthly", "person_monthly"),
@@ -223,121 +229,79 @@ def _run_all_detectors(
     closeness = extras.closeness if extras else None
     notes = notes if notes is not None else []
 
+    def run(kind: str, detect: Callable[[], list[MemoryCandidate]]) -> None:
+        all_candidates.extend(guarded_detector(kind, notes, detect, []))
+
+    common = (assets_by_month, people, generated_keys, config, today)
     if auto_cfg.detect_monthly:
-        all_candidates.extend(
-            MonthlyDetector().detect(
-                assets_by_month, people, generated_keys, config, today, notes=notes
-            )
-        )
+        run("month", lambda: MonthlyDetector().detect(*common, notes=notes))
     if auto_cfg.detect_yearly:
-        all_candidates.extend(
-            YearlyDetector().detect(
-                assets_by_month, people, generated_keys, config, today, notes=notes
-            )
-        )
+        run("year", lambda: YearlyDetector().detect(*common, notes=notes))
     if auto_cfg.detect_person_spotlight:
         # WHY: suppress spotlights for people whose birthday is within 7 days
         # so BirthdayDetector fires at the right time instead
         upcoming_birthday_ids = _compute_upcoming_birthday_ids(people, today)
-        all_candidates.extend(
-            PersonSpotlightDetector().detect(
-                assets_by_month,
-                people,
-                generated_keys,
-                config,
-                today,
+        run(
+            "person spotlight",
+            lambda: PersonSpotlightDetector().detect(
+                *common,
                 person_asset_counts=spotlight_counts,
                 upcoming_birthday_ids=upcoming_birthday_ids,
                 closeness=closeness,
                 notes=notes,
-            )
+            ),
         )
-        all_candidates.extend(
-            MultiPersonDetector().detect(
-                assets_by_month,
-                people,
-                generated_keys,
-                config,
-                today,
+        run(
+            "people together",
+            lambda: MultiPersonDetector().detect(
+                *common,
                 person_asset_counts=spotlight_counts,
                 shared_counts=shared_counts,
                 closeness=closeness,
                 notes=notes,
-            )
+            ),
         )
     if auto_cfg.detect_activity_burst:
-        all_candidates.extend(
-            ActivityBurstDetector().detect(
-                assets_by_month,
-                people,
-                generated_keys,
-                config,
-                today,
-                burst_threshold=auto_cfg.burst_threshold,
-                notes=notes,
-            )
+        run(
+            "busy month",
+            lambda: ActivityBurstDetector().detect(
+                *common, burst_threshold=auto_cfg.burst_threshold, notes=notes
+            ),
         )
 
-    all_candidates.extend(
-        OnThisDayDetector().detect(
-            assets_by_month, people, generated_keys, config, today, notes=notes
-        )
-    )
+    run("on this day", lambda: OnThisDayDetector().detect(*common, notes=notes))
 
     # Birthday detector — always on, high priority near birthdays
-    all_candidates.extend(
-        BirthdayDetector().detect(
-            assets_by_month,
-            people,
-            generated_keys,
-            config,
-            today,
+    run(
+        "birthday",
+        lambda: BirthdayDetector().detect(
+            *common,
             person_asset_counts=birthday_counts,
             closeness=closeness,
             busiest_count=max(spotlight_counts.values(), default=0),
             distinct_days={k: len(v) for k, v in extras.birthday_days.items()} if extras else None,
             notes=notes,
-        )
+        ),
     )
 
     if auto_cfg.detect_trips:
-        all_candidates.extend(
-            TripDetector().detect(
-                assets_by_month,
-                people,
-                generated_keys,
-                config,
-                today,
-                assets=gps_assets,
-                notes=notes,
-            )
-        )
+        run("trip", lambda: TripDetector().detect(*common, assets=gps_assets, notes=notes))
 
-    all_candidates.extend(
-        SpecialDayDetector().detect(
-            assets_by_month,
-            people,
-            generated_keys,
-            config,
-            today,
-            catalogue=catalogue,
-            notes=notes,
-        )
+    run(
+        "special day",
+        lambda: SpecialDayDetector().detect(*common, catalogue=catalogue, notes=notes),
     )
 
     if auto_cfg.detect_groups:
-        all_candidates.extend(
-            GroupCandidateDetector().detect(
-                assets_by_month,
-                people,
-                generated_keys,
-                config,
-                today,
+        run(
+            "group",
+            lambda: GroupCandidateDetector().detect(
+                *common,
                 groups=groups,
                 person_asset_counts=group_counts,
                 closeness=closeness,
                 notes=notes,
-            )
+            ),
         )
 
     if extras is not None:
