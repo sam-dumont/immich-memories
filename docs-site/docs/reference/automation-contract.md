@@ -106,7 +106,7 @@ editor's job, see [How it chooses](../how-it-chooses/overview.md).
 | Activity burst | a month with more than 2× the rolling 12-month average | 0.7 once over the threshold |
 | Trip | trips in the trailing year, 7 days after coming home | up to 0.75, by length (14 days) × pictures (200) |
 | Person spotlight | the five most-pictured people | 0.6 × their share of the top person's count (floor 0.2) × closeness |
-| Multi-person | pairs who appear together | 0.55, by estimated shared pictures up to 500, 50 minimum, × the pair's average closeness |
+| Multi-person | pairs who appear together on at least 10 pictures last year, the year the film reads | 0.55, by shared pictures up to 500, × the pair's average closeness |
 | On this day | today, when its month has content in 5+ prior years | 0.35 × prior years / 10, capped at 0.35; month counts do not prove pictures exist on this exact date |
 | Special day | a catalogued day whose anniversary is within 3 days | 0.8, ×1.0 for a decade, ×0.85 for a half-decade, ×0.6 otherwise |
 | Saved group | last year's film of each [saved group](../run/multi-account.mdx#saved-groups), once | 0.65 × the group's average closeness, counted as multi-person |
@@ -266,8 +266,8 @@ immich-memories auto test-notification
 
 `auto test-notification` sends one message to every URL and says whether it went through. It ignores the
 cooldown that follows a failed delivery (`cooldown_hours`, 24), and a test that succeeds clears it. Successful
-films from `auto run`, the Docker timer and plain `generate` send a completion message. App **Render** and
-`runs render` do not. The message carries the memory type, the
+films from `auto run`, the Docker timer, plain `generate`, app **Render** and `runs render` send a completion
+message; saving a cut without rendering sends none. The message carries the memory type, the
 outcome, the duration, the output path, a direct Immich link when the run has an uploaded asset, and, on a failure, the last lines of the redacted output (up to 300 characters, so the error itself, not the lead-up); no picture unless you set
 `attach_thumbnail: true`. The URLs hold credentials, so `config show` masks them and the database stores them encrypted.
 Every key is in the [config reference](config-reference.md#notifications).
