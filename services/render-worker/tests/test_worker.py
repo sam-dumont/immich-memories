@@ -52,7 +52,7 @@ def test_health_remains_responsive_while_the_gpu_lane_is_rendering(tmp_path):
 
     with TestClient(worker_app(tmp_path, Renderer()), headers=AUTH) as client:
         assert client.get("/health").status_code == 200
-        client.post("/jobs", json=render_request_body())
+        job_id = client.post("/jobs", json=render_request_body()).json()["job_id"]
         assert started.wait(timeout=2)
         with ThreadPoolExecutor(max_workers=1) as pool:
             health = pool.submit(client.get, "/health")
@@ -60,6 +60,9 @@ def test_health_remains_responsive_while_the_gpu_lane_is_rendering(tmp_path):
                 assert health.result(timeout=1).json()["ready"] is True
             finally:
                 release.set()
+        # The job goes on to check the film once released. Left running, it did that inside the
+        # next test on this worker, which counted its decode.
+        assert _settle(client, job_id).json()["state"] == "ready"
 
 
 def test_job_is_idempotent_validated_and_downloaded_only_once(tmp_path):
