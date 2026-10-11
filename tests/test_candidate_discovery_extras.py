@@ -35,6 +35,10 @@ class _Asset:
     file_created_at: object
     local_date_time: object = None
 
+    @property
+    def local_taken_at(self):
+        return self.local_date_time or self.file_created_at
+
 
 @dataclass
 class _Immich:

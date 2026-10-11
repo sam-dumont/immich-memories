@@ -272,13 +272,10 @@ def _per_month(whole) -> tuple[IntentPartition, ...]:
 
 def _recurring(product, spans, whole, *, brief, who):
     day = "this holiday" if product == "holiday" else "this day of the year"
-    partitions = _per_range(spans, "occurrence", required=True)
-    if product == "on_this_day":
-        partitions = tuple(
-            part
-            for part in _per_year(whole, required=True)
-            if any(start <= part.end and end >= part.start for start, end in spans)
-        )
+    # One partition per occurrence, never per calendar year: the windows of 31 December
+    # and 1 January cross New Year, and a year split there mixes two occurrences (#2357).
+    # A window asked for twice is still one occurrence.
+    partitions = _per_range(list(dict.fromkeys(spans)), "occurrence", required=True)
     every_year = product == "on_this_day"
     return EditorialIntent(
         product=product,

@@ -1,4 +1,9 @@
-"""Date membership uses the same UTC convention as source acquisition."""
+"""Date membership reads a calendar bound on the picture's own clock (#2355).
+
+A naive bound (every memory window) is a calendar time: a capture is in it when the clock
+the picture was taken by says so. An aware bound is an instant. The end holds its whole
+last second.
+"""
 
 from datetime import UTC, date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
@@ -22,17 +27,21 @@ from tests.conftest import make_asset
         (datetime(2023, 6, 1, tzinfo=UTC), True),
         (datetime(2023, 6, 30, 23, 59, 59, tzinfo=UTC), True),
         (datetime(2023, 5, 31, 23, 59, 59, 999999, tzinfo=UTC), False),
-        (datetime(2023, 6, 30, 23, 59, 59, 1, tzinfo=UTC), False),
+        # The last second is whole: 23:59:59.5 is still the 30th.
+        (datetime(2023, 6, 30, 23, 59, 59, 500000, tzinfo=UTC), True),
+        (datetime(2023, 7, 1, tzinfo=UTC), False),
+        # Read on the picture's own clock, whatever instant it is in UTC.
         (datetime(2023, 6, 1, 2, tzinfo=timezone(timedelta(hours=2))), True),
-        (datetime(2023, 6, 1, 1, 59, tzinfo=timezone(timedelta(hours=2))), False),
-        (datetime(2023, 5, 31, 20, tzinfo=timezone(timedelta(hours=-4))), True),
+        (datetime(2023, 6, 1, 1, 59, tzinfo=timezone(timedelta(hours=2))), True),
+        (datetime(2023, 5, 31, 20, tzinfo=timezone(timedelta(hours=-4))), False),
+        (datetime(2023, 6, 30, 20, 30, tzinfo=timezone(timedelta(hours=-8))), True),
         (datetime(2023, 6, 1), True),
         (datetime(2023, 5, 31, 23, 59, 59), False),
         (date(2023, 6, 1), True),
         (date(2023, 7, 1), False),
     ],
 )
-def test_month_membership_preserves_inclusive_instants(capture, expected):
+def test_month_membership_reads_the_picture_clock(capture, expected):
     window = build_month(6, 2023)
     original = tuple(window)
 
@@ -51,8 +60,8 @@ def test_aware_bounds_preserve_offsets_and_assume_naive_capture_is_utc():
 
     assert window.contains(datetime(2023, 6, 1))
     assert window.contains(date(2023, 6, 1))
-    assert window.contains(datetime(2023, 6, 1, 1, tzinfo=UTC))
-    assert not window.contains(datetime(2023, 6, 1, 1, 0, 0, 1))
+    assert window.contains(datetime(2023, 6, 1, 1, 0, 0, 1, tzinfo=UTC))
+    assert not window.contains(datetime(2023, 6, 1, 1, 0, 1))
     assert window.start.hour == 2 and window.start.tzinfo is offset
 
 

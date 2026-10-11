@@ -20,6 +20,7 @@ from immich_memories.analysis.editorial_story_planner import funding_order
 from immich_memories.analysis.editorial_story_slots import allocate_slots
 from immich_memories.config_models_editorial import EditorialPeopleConfig
 from tests.e2e.fake_library import LIBRARY
+from tests.picture_fake import PictureFake
 
 
 def _story(key, *, day, weight="minor", moments=1, favourites=0, **extra):
@@ -70,7 +71,7 @@ def _read(days, *, gps=True, printed=None, starred=(), family=()):
                     asset_id = f"a{len(assets):05}"
                     taken = START + timedelta(days=day - 1, hours=hour, minutes=burst * 20 + n % 9)
                     city = "home-town" if where in (HOME, None) else f"town-{where[0]}"
-                    assets[asset_id] = SimpleNamespace(
+                    assets[asset_id] = PictureFake(
                         id=asset_id,
                         file_created_at=taken,
                         is_favorite=day in starred and n < 3,

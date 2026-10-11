@@ -81,7 +81,7 @@ def read_pool(
         items=[
             PoolItem(
                 asset_id=asset.id,
-                taken=asset.file_created_at.isoformat(),
+                taken=asset.local_taken_at.isoformat(),
                 kind=_kind(asset),
                 favourite=asset.is_favorite,
                 in_cut=asset.id in in_cut,

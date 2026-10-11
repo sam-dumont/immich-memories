@@ -117,7 +117,7 @@ class PlaceNames:
         if self._geocoder is None:
             return
         positioned = [
-            (exif, asset_of(source).file_created_at.date().isoformat())
+            (exif, asset_of(source).local_taken_at.date().isoformat())
             for source in sources
             if (exif := asset_of(source).exif_info) is not None
             and exif.latitude is not None

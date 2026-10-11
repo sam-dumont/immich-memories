@@ -277,6 +277,11 @@ def _refused_pictures_kept(cut: FinishedCut) -> list[Violation]:
 
 
 def _out_of_order(cut: FinishedCut) -> list[Violation]:
+    # A film runs on its pictures' own clocks, the order Immich's timeline shows (#2355):
+    # a border crossed an hour back is read as written, not as the instant behind it.
+    def clock(taken: str) -> datetime:
+        return datetime.fromisoformat(taken).replace(tzinfo=None)
+
     return [
         Violation(
             "chronological",
@@ -285,7 +290,7 @@ def _out_of_order(cut: FinishedCut) -> list[Violation]:
             cut.origin(after["asset_id"]),
         )
         for before, after in zip(cut.carriers, cut.carriers[1:], strict=False)
-        if datetime.fromisoformat(after["taken"]) < datetime.fromisoformat(before["taken"])
+        if clock(after["taken"]) < clock(before["taken"])
     ]
 
 

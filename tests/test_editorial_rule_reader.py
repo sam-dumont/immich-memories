@@ -12,6 +12,7 @@ from immich_memories.analysis.editorial_pool import EditorialSourcePool
 from immich_memories.analysis.editorial_rule_reader import RuleStructureReader
 from immich_memories.analysis.editorial_story_slots import allocate_slots
 from immich_memories.config_models_editorial import EditorialConfig, EditorialPeopleConfig
+from tests.picture_fake import PictureFake
 
 
 def test_reader_resolution_preserves_explicit_choice_and_uses_rules_without_model():
@@ -333,7 +334,7 @@ def _week_source(
         taken = datetime.combine(base + timedelta(weeks=week), datetime.min.time()) + timedelta(
             hours=9
         )
-        assets[asset_id] = SimpleNamespace(
+        assets[asset_id] = PictureFake(
             id=asset_id,
             file_created_at=taken,
             is_favorite=False,
@@ -430,7 +431,7 @@ def test_a_sharp_frame_is_picked_over_a_soft_one_in_the_same_week():
     # A second, blurrier picture joins the lone clean one in the same week's moment.
     soft_id = "soft0"
     soft_taken = datetime(2024, 1, 1, 13)
-    reader.source.assets[soft_id] = SimpleNamespace(
+    reader.source.assets[soft_id] = PictureFake(
         id=soft_id,
         file_created_at=soft_taken,
         is_favorite=False,

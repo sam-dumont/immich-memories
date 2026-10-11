@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import AsyncIterator, Awaitable, Callable, Sequence
-from datetime import UTC, date, datetime, time
+from datetime import UTC, date, datetime, time, timedelta
 from typing import TYPE_CHECKING, Any
 
 from immich_memories.api.models import (
@@ -12,6 +12,7 @@ from immich_memories.api.models import (
     MetadataSearchResult,
     TimeBucket,
 )
+from immich_memories.timeperiod import within
 
 if TYPE_CHECKING:
     from immich_memories.timeperiod import DateRange
@@ -22,6 +23,22 @@ RequestFn = Callable[..., Any]
 _ALBUM_PAGE_SIZE = 1000
 # Complete date-range reads use the same supported metadata page size.
 _DATE_RANGE_PAGE_SIZE = 1000
+
+
+# Immich filters takenAfter/takenBefore on the UTC instant, but a date or a naive bound is a
+# calendar time on the picture's own clock, the one Immich's timeline files it under (#2355).
+# Every zone is within 14 h of UTC, so a calendar window is asked for 14 h wider each side and
+# the pictures whose own clock falls outside it are dropped.
+_FURTHEST_ZONE = timedelta(hours=14)
+
+
+def _calendar_bound(value: date | datetime | None, *, end: bool) -> datetime | None:
+    """The wall-clock time a date or naive bound names; None for an aware instant."""
+    if value is None or (isinstance(value, datetime) and value.tzinfo is not None):
+        return None
+    if isinstance(value, datetime):
+        return value
+    return datetime.combine(value, time.max if end else time.min)
 
 
 def _api_datetime(value: date | datetime, *, inclusive_end: bool = False) -> str:
@@ -87,17 +104,29 @@ class SearchService:
             payload["albumIds"] = album_ids
         if asset_type:
             payload["type"] = asset_type.value
+        after_clock = _calendar_bound(taken_after, end=False)
+        before_clock = _calendar_bound(taken_before, end=True)
         if taken_after:
-            payload["takenAfter"] = _api_datetime(taken_after)
+            padded = None if after_clock is None else after_clock - _FURTHEST_ZONE
+            payload["takenAfter"] = _api_datetime(padded or taken_after)
         if taken_before:
-            payload["takenBefore"] = _api_datetime(taken_before, inclusive_end=True)
+            padded = None if before_clock is None else before_clock + _FURTHEST_ZONE
+            payload["takenBefore"] = _api_datetime(padded or taken_before, inclusive_end=True)
         if updated_after:
             payload["updatedAfter"] = _api_datetime(updated_after)
         if ocr:
             payload["ocr"] = ocr
 
         data = await self._request("POST", "/search/metadata", json=payload)
-        return MetadataSearchResult(**data)
+        result = MetadataSearchResult(**data)
+        if after_clock is not None or before_clock is not None:
+            # The page keeps Immich's paging; only the margin's pictures leave it.
+            result.assets.items = [
+                asset
+                for asset in result.assets.items
+                if within(asset.local_taken_at, after_clock, before_clock)
+            ]
+        return result
 
     async def count_assets_with_people(
         self,

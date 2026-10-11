@@ -181,10 +181,14 @@ class PreparedEditorialSource:
     # Producers bind their facts to captured DTOs, before copy grouping promotes a star.
     # The candidate still carries that promotion for selection and rendering.
     preparation_sources: Mapping[str, Asset] = field(default_factory=dict)
+    # A same-picture file (an edit and its original) or a stack member -> the file kept for it.
+    folded_ids: Mapping[str, str] = field(default_factory=dict)
 
     def kept_ids(self, asset_ids: Sequence[str]) -> tuple[str, ...]:
-        """Each id as the copy kept for its picture: a household run asks for every copy."""
-        return FoldedPool((), self.copy_groups).kept_ids(asset_ids)
+        """Each id as the file kept for its picture: a household run asks for every copy, and a
+        person film's strict read may name the original whose edit or stack top plays (#2358)."""
+        exact = FoldedPool((), self.copy_groups).kept_ids(asset_ids)
+        return tuple(dict.fromkeys(self.folded_ids.get(asset_id, asset_id) for asset_id in exact))
 
     @property
     def candidate_ids(self) -> tuple[str, ...]:
@@ -328,6 +332,9 @@ def prepare_editorial_source(
         owner_required_asset_ids=_required_in_pool(request, grouped.candidates, trace),
         copy_groups=folded.groups,
         preparation_sources=_candidate_assets(grouped.candidates, preparation_sources),
+        folded_ids={
+            member: keeper.id for member, keeper in _carrying_files(copies, stacked).items()
+        },
     )
     _validate_prepared_source(prepared)
     return prepared
@@ -397,6 +404,9 @@ def _candidate_from(
         )
     return EditorialCandidate(
         asset_id=asset.id,
+        # The instant, as ever: it is rendered into every annotation line, the identity each
+        # banked episode reading is keyed on. Days and partitions read the picture's own clock
+        # from the asset (`Asset.local_taken_at`, #2355).
         taken_at=asset.file_created_at,
         media_kind=("live_photo" if asset.is_live_photo else "video" if is_video else "photo"),
         live_photo_stitch_member_ids=live_photo_stitch_member_ids,
@@ -445,6 +455,12 @@ def _preview_hash(
     return hash_of
 
 
+def _carrying_files(copies: Mapping[str, Asset], stacked: Mapping[str, Asset]) -> dict[str, Asset]:
+    """Each folded file -> the file that plays its picture: a stack member goes to its
+    primary, then the primary's picture to whichever file the copy fold kept."""
+    return {**copies, **{member: copies.get(top.id, top) for member, top in stacked.items()}}
+
+
 def _fold_copies_and_stacks(
     request: EditorialSelectionRequest,
     sources: Sequence[Asset | VideoClipInfo],
@@ -470,9 +486,8 @@ def _fold_copies_and_stacks(
     )
     stacked = fold_stacks((asset_of(source) for source in sources), dependencies.stack_of())
     # A pin, an exclusion and a person tagged on any file of a picture or a stack belong to the
-    # file that carries it: a stack member goes to its primary, then the primary's picture to
-    # whichever file the copy fold kept.
-    carried = {**copies, **{member: copies.get(top.id, top) for member, top in stacked.items()}}
+    # file that carries it.
+    carried = _carrying_files(copies, stacked)
     request = replace(
         request,
         owner_excluded_asset_ids=kept_ids(carried, request.owner_excluded_asset_ids),

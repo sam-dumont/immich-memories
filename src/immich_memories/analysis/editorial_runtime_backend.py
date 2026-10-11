@@ -466,7 +466,7 @@ class ProductionPostCardBackend:
             catalogue_banked_episodes(
                 identities,
                 store=source.store,
-                capture_dates={key: asset.file_created_at for key, asset in source.assets.items()},
+                capture_dates={key: asset.local_taken_at for key, asset in source.assets.items()},
                 config=self._config,
                 requester=self._ports.catalogue_requester_factory(self._config),
                 unread_facts=facts,
@@ -506,7 +506,7 @@ def _unread_facts(source: StructurePlanningInput, read: set[str]) -> list[Librar
     facts = []
     for episode_id, card in sorted(cards.items()):
         dates = [
-            source.assets[asset].file_created_at
+            source.assets[asset].local_taken_at
             for asset in card.representative_asset_ids
             if asset in source.assets
         ]

@@ -17,6 +17,7 @@ from immich_memories.analysis.editorial_story_slots import allocate_slots
 from immich_memories.config_models_editorial import EditorialPeopleConfig
 from tests.e2e.fake_library import HOME as FIXTURE_HOME
 from tests.e2e.fake_library import LIBRARY
+from tests.picture_fake import PictureFake
 
 
 def _story(key, *, day, weight="major", moments=1, favourites=0, depth_to=None):
@@ -100,7 +101,7 @@ def _read(month, *, gps=True, family_days=()):
             for n in range(pictures // 2):
                 asset_id = f"d{day:02}-g{group}-{n:03}"
                 taken = START + timedelta(days=day - 1, hours=19 + group, minutes=n)
-                assets[asset_id] = SimpleNamespace(
+                assets[asset_id] = PictureFake(
                     id=asset_id,
                     file_created_at=taken,
                     is_favorite=group == 0 and n < favourites,
@@ -229,7 +230,7 @@ def test_the_public_fixture_month_folds_nothing():
     assets, moments, audience, gps_of = {}, {}, {}, {}
     for picture in LIBRARY:
         taken = datetime.fromisoformat(picture.taken_at.replace("Z", "+00:00")).replace(tzinfo=None)
-        assets[picture.asset_id] = SimpleNamespace(
+        assets[picture.asset_id] = PictureFake(
             id=picture.asset_id,
             file_created_at=taken,
             is_favorite=picture.is_favorite,

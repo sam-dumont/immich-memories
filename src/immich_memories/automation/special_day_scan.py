@@ -25,6 +25,7 @@ from immich_memories.analysis.special_day import (
     active_hours,
     ask_if_special,
     candidate_days,
+    capture_clock,
     days_covered_by_trips,
     event_window,
     pictures_inside,
@@ -274,7 +275,7 @@ def scan_year(
         return []
 
     trips = trips_config or TripsConfig()
-    year = assets[0].file_created_at.year
+    year = capture_clock(assets[0]).year
     # Dates only: the trip's name is never read here, and asking for one
     # is a live request per trip for every year of the scan.
     away = (
@@ -486,7 +487,7 @@ class _Judge:
         """
         if self.year_words is None or not self.captions:
             return verdict
-        day = items[0].file_created_at.date()
+        day = capture_clock(items[0]).date()
         if self.year_words.names_its_own(day, f"{verdict.title} {verdict.what}"):
             return verdict
         moment = self.year_words.moment(items, self.captions)
@@ -525,7 +526,7 @@ def _said_by_day(assets: list, captions: Mapping[str, str]) -> dict[date, list[s
     said: dict[date, list[str]] = collections.defaultdict(list)
     for asset in assets:
         if text := captions.get(asset.id):
-            said[asset.file_created_at.date()].append(text)
+            said[capture_clock(asset).date()].append(text)
     return said.copy()
 
 
@@ -540,7 +541,7 @@ def _by_day(forwarded: list, candidates: Mapping[date, list]) -> dict[date, list
     runs = {day: run_extent(items) for day, items in candidates.items()}
     on: dict[date, list] = collections.defaultdict(list)
     for asset in forwarded:
-        day = asset.file_created_at.date()
+        day = capture_clock(asset).date()
         if day in runs and (
             second[asset.file_created_at.replace(microsecond=0)] < _ONE_SAVE
             or _during(asset, runs[day])
@@ -609,7 +610,7 @@ def _asked_at_its_place(items: list, ask: Callable[[list], SpecialDay]) -> Speci
     start, end = window
     logger.info(
         "%s read as ordinary; asking about its %s-%s stretch at one place",
-        items[0].file_created_at.date(),
+        capture_clock(items[0]).date(),
         f"{start:%H:%M}",
         f"{end:%H:%M}",
     )

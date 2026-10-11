@@ -64,4 +64,4 @@ def person_days_in(clients: Iterable[tuple[Any, str]], window: Window) -> dict[d
 def _by_day(assets: Iterable[Any]) -> Counter[date]:
     # The wall-clock day the picture was taken, not the UTC one: a New Year's party is on
     # the night of the 31st wherever the phone was.
-    return Counter((a.local_date_time or a.file_created_at).date() for a in assets)
+    return Counter(a.local_taken_at.date() for a in assets)

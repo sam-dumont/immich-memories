@@ -106,13 +106,13 @@ class RuleStructureReader:
 
     def _day_threshold(self) -> float:
         """A day at least this dense is an occasion by its capture count alone."""
-        days = Counter(a.file_created_at.date() for a in self.source.assets.values())
+        days = Counter(a.local_taken_at.date() for a in self.source.assets.values())
         masses = list(days.values())
         return max(4 * median(masses), float(np.percentile(masses, 75)))
 
     def worthiness(self, wall, near_home):
         assets = self.source.assets
-        days = Counter(a.file_created_at.date() for a in assets.values())
+        days = Counter(a.local_taken_at.date() for a in assets.values())
         threshold = self._day_threshold()
         cities = Counter(self._city(a) for a in assets.values() if self._city(a))
         usual = {city for city, _ in cities.most_common(12)}
@@ -134,7 +134,7 @@ class RuleStructureReader:
         families: dict[str, set[str]] = {}
         for family in wall.fam_ids:
             for asset_id in wall.event_assets[family]:
-                day = self.source.assets[asset_id].file_created_at.date()
+                day = self.source.assets[asset_id].local_taken_at.date()
                 part = self.source.intent.partition_for(day)
                 if part is not None and part.required:
                     families.setdefault(part.key, set()).add(family)
@@ -143,7 +143,7 @@ class RuleStructureReader:
     def _vote(self, members, *, days, threshold, usual, away, required):
         if self.source.intent.product == "album":
             return 0, "Owner chose this album as the memory's source"
-        if any(days[a.file_created_at.date()] >= threshold for a in members):
+        if any(days[a.local_taken_at.date()] >= threshold for a in members):
             return 0, "Capture count at least four times the median photographed day"
         city = self._dominant_city(members)
         if away or city and city not in usual:
@@ -190,7 +190,7 @@ class RuleStructureReader:
         return (
             f"{activity} at {city}"
             if activity and city
-            else city or activity or f"{members[0].file_created_at:%Y-%m-%d}"
+            else city or activity or f"{members[0].local_taken_at:%Y-%m-%d}"
         )
 
     def _day_chunks(self):
@@ -201,7 +201,7 @@ class RuleStructureReader:
             if not ids:
                 continue
             members = sorted((self.source.assets[a] for a in ids), key=lambda a: a.file_created_at)
-            groups.append((members[0].file_created_at.isoformat(), moment, members))
+            groups.append((members[0].local_taken_at.isoformat(), moment, members))
         groups.sort(key=itemgetter(0, 1))
         chunks: list[list] = []
         for row in groups:
@@ -353,7 +353,7 @@ class RuleStructureReader:
             for story in stories
         }
         day_of = {
-            asset: self.source.assets[asset].file_created_at.date()
+            asset: self.source.assets[asset].local_taken_at.date()
             for members in members_of.values()
             for asset in members
         }
@@ -576,7 +576,7 @@ class RuleStructureReader:
             ids = [a for m in episode.moments for a in self.source.moment_asset_ids.get(m, ())]
             members = [self.source.assets[a] for a in ids]
             points = [p for a in ids if (p := self.source.gps.get(a)) is not None]
-            part = partition_for(members[0].file_created_at.date()) if members else None
+            part = partition_for(members[0].local_taken_at.date()) if members else None
             kinds[episode.key] = EpisodeKind(
                 pictures=len(members),
                 activity=self._activity(members),

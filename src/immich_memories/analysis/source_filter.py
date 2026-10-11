@@ -27,6 +27,7 @@ from immich_memories.analysis.source_quality import (
     predates_modern_mobile_sharing,
 )
 from immich_memories.api.models import Asset, VideoClipInfo
+from immich_memories.timeperiod import within
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -55,10 +56,11 @@ def is_editorial_source_asset(
 
     if getattr(asset, "type", None) not in (AssetType.IMAGE, AssetType.VIDEO):
         return False
-    taken_at = getattr(asset, "file_created_at", None)
+    # The picture's own clock decides a calendar bound, as Immich's timeline does (#2355).
+    taken_at = getattr(asset, "local_taken_at", None) or getattr(asset, "file_created_at", None)
     if taken_at is None:
         return False
-    return (start_at is None or taken_at >= start_at) and (end_at is None or taken_at <= end_at)
+    return within(taken_at, start_at, end_at)
 
 
 def live_photo_component_ids(sources: Iterable[Any]) -> frozenset[str]:

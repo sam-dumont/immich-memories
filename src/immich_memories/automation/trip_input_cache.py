@@ -93,7 +93,7 @@ class TripInputCache:
 
         start = requested_range.start.date()
         end = requested_range.end.date()
-        matching = [asset for asset in assets if start <= asset.file_created_at.date() <= end]
+        matching = [asset for asset in assets if start <= asset.local_taken_at.date() <= end]
         return TripInputSnapshot(fetched_at=fetched_at, assets=matching)
 
     def store(
@@ -173,4 +173,4 @@ def load_or_fetch_trip_assets(
     cache.store(fingerprint, source_range, assets, now=now)
     start = requested_range.start.date()
     end = requested_range.end.date()
-    return [asset for asset in assets if start <= asset.file_created_at.date() <= end]
+    return [asset for asset in assets if start <= asset.local_taken_at.date() <= end]

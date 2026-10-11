@@ -7,6 +7,7 @@ from types import SimpleNamespace
 
 from immich_memories.analysis.editorial_rule_reader import RuleStructureReader
 from immich_memories.config_models_editorial import EditorialPeopleConfig
+from tests.picture_fake import PictureFake
 
 HOME = (48.0, 11.0)
 KM = 1 / 111.0
@@ -20,7 +21,7 @@ def _read_trip(days: dict[int, tuple[float, float]]) -> list[list[int]]:
         for n in range(8):
             asset_id = f"d{day:02}-{n:03}"
             taken = datetime(2022, 4, day, 9) + timedelta(minutes=n)
-            assets[asset_id] = SimpleNamespace(
+            assets[asset_id] = PictureFake(
                 id=asset_id,
                 file_created_at=taken,
                 is_favorite=day < 10,

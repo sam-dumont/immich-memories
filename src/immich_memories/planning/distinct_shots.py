@@ -13,7 +13,7 @@ one shot, not many.
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 # The five-minute capture-group spacing the story planner's own pass 1 already uses
@@ -26,6 +26,8 @@ MOMENT_SPACING_SECONDS = 300.0
 # as long as the pictures are not a heap sharing one timestamp.
 PICTURES_PER_BEAT = 5
 MIN_BEAT_GAP_SECONDS = 30.0
+
+_EPOCH = datetime(1970, 1, 1, tzinfo=UTC)
 
 
 def _when(row: Mapping[str, Any]) -> datetime | None:
@@ -107,6 +109,14 @@ def distinct_shots(shots: Sequence[Mapping[str, Any]]) -> list[Mapping[str, Any]
     walk has kept so far. The filter is stateful (each decision reads every earlier one),
     so this is not a plain comprehension's independent per-item test."""
     kept: list[Mapping[str, Any]] = []
-    for shot in sorted(shots, key=lambda s: _when(s) or datetime.min):
+    for shot in sorted(shots, key=_undated_first):
         kept.extend([shot] if is_new_shot(shot, kept) else [])
     return kept
+
+
+def _undated_first(row: Mapping[str, Any]) -> tuple[bool, datetime]:
+    # A sort key never mixes a naive time with aware ones: that comparison raises (#2360).
+    when = _when(row)
+    if when is None:
+        return False, _EPOCH
+    return True, when if when.tzinfo is not None else when.replace(tzinfo=UTC)

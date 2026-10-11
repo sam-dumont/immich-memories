@@ -102,7 +102,7 @@ def _report_per_window(
 
     from immich_memories.memory_types.eras import count_by_era
 
-    counts = count_by_era([a.file_created_at for a in assets], date_ranges)
+    counts = count_by_era([a.local_taken_at for a in assets], date_ranges)
     labels = [_window_label(r) for r in date_ranges]
     anchor = _anchor_name(assets, person_ids)
 

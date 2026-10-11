@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import operator
 from contextlib import suppress
-from datetime import datetime
+from datetime import UTC, datetime, timedelta, timezone
 from enum import StrEnum
 from typing import Any, Literal
 
@@ -17,6 +17,10 @@ logger = logging.getLogger(__name__)
 # hostile or broken server's `../../` in one is refused at the parse, the same pattern
 # the web routes gate ids with (`web/media.py`).
 ID_PATTERN = r"^[A-Za-z0-9_-]{1,64}$"
+
+# Real zones sit between UTC-12 and UTC+14; a local clock a whole day from the instant is
+# broken metadata, not a zone, and `timezone` refuses it anyway.
+_NO_ZONE_IS_THIS_FAR = timedelta(hours=24)
 
 
 def _parse_duration_seconds(value: Any) -> float | None:
@@ -259,14 +263,37 @@ class Asset(BaseModel):
         return value
 
     @property
+    def local_taken_at(self) -> datetime:
+        """The capture instant, told on the clock the picture was taken by.
+
+        Immich sends ``localDateTime`` as the digits the phone showed, labelled UTC; its
+        difference from ``fileCreatedAt`` is the zone the picture was taken in. The result
+        is the same instant (order and gaps stay exact) whose ``date()``, ``year`` and
+        ``hour`` are the ones Immich's timeline files the picture under: a 20:30 New Year's
+        Eve party eight hours behind UTC is on 31 December, not on the UTC 1 January (#2355).
+
+        Without a local clock, or with one a day or more away from the instant (no zone is),
+        the UTC instant stands.
+        """
+        taken = self.file_created_at
+        local = self.local_date_time
+        if local is None:
+            return taken
+        instant = taken if taken.tzinfo is not None else taken.replace(tzinfo=UTC)
+        offset = local.replace(tzinfo=UTC) - instant
+        if abs(offset) >= _NO_ZONE_IS_THIS_FAR:
+            return taken
+        return instant.astimezone(timezone(offset))
+
+    @property
     def year(self) -> int:
-        """Get the year this asset was created."""
-        return self.file_created_at.year
+        """The year on the picture's own clock."""
+        return self.local_taken_at.year
 
     @property
     def month(self) -> int:
-        """Get the month this asset was created."""
-        return self.file_created_at.month
+        """The month on the picture's own clock."""
+        return self.local_taken_at.month
 
 
 class SearchResult(BaseModel):

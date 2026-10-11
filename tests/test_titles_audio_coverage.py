@@ -1088,8 +1088,9 @@ class TestSearchServiceMetadata:
             "withPeople": True,
             "personIds": ["p1"],
             "type": "VIDEO",
-            "takenAfter": "2024-01-01T00:00:00+00:00",
-            "takenBefore": "2024-12-31T00:00:00+00:00",
+            # A naive bound is a calendar time on the picture's clock: asked 14 h wider (#2355).
+            "takenAfter": "2023-12-31T10:00:00+00:00",
+            "takenBefore": "2024-12-31T14:00:00+00:00",
         }
         assert datetime.fromisoformat(payload["takenAfter"]).tzinfo is UTC
         assert datetime.fromisoformat(payload["takenBefore"]).tzinfo is UTC
@@ -1155,8 +1156,8 @@ class TestSearchServiceMetadata:
             "withPeople": True,
             "personIds": ["person-1"],
             "type": "VIDEO",
-            "takenAfter": "2025-01-01T00:00:00+00:00",
-            "takenBefore": "2025-01-31T23:59:59.999999+00:00",
+            "takenAfter": "2024-12-31T10:00:00+00:00",
+            "takenBefore": "2025-02-01T13:59:59.999999+00:00",
         }
 
 

@@ -29,8 +29,11 @@ def test_otd_admission_renders_original_occurrences_without_final_year_limit():
     )
     assert intent.admission_prompt_block(windows) == legacy.prompt_block()
     assert "selection limit:" not in intent.admission_prompt_block(windows)
-    assert [p.key for p in intent.partitions] == ["year-2030", "year-2032"]
-    assert intent.identity() != legacy.identity()
+    # The film's own partitions are the occurrences too, a repeated window counted once.
+    assert [p.key for p in intent.partitions] == [
+        "occurrence-1-2030-05-02",
+        "occurrence-2-2032-05-02",
+    ]
 
 
 def test_real_planner_budget_only_changes_leave_occurrence_tiers_equal_without_ballots(tmp_path):

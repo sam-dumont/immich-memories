@@ -276,7 +276,7 @@ def _extracted_segment(extraction: _Extraction, clip, video_path: Path, progress
     return AssemblyClip(
         path=segment_path,
         duration=duration,
-        date=clip.asset.file_created_at.strftime("%Y-%m-%d"),
+        date=clip.asset.local_taken_at.strftime("%Y-%m-%d"),
         asset_id=clip.asset.id,
         rotation_override=params.clip_rotations.get(clip.asset.id),
         llm_emotion=clip.llm_emotion,

@@ -57,14 +57,41 @@ class DateRange(NamedTuple):
         )
 
     def contains(self, dt: datetime | date) -> bool:
-        """Compare inclusive instants, assuming naive values and dates are UTC."""
+        """Whether a moment falls in the range, the whole of its last second included.
+
+        A naive bound is a calendar time, read on the moment's own clock: given a picture's
+        ``local_taken_at``, 20:30 on 31 December eight hours behind UTC is in that year, though it
+        is 1 January in UTC (#2355). An aware bound is an instant. A date is its midnight.
+        An end of 23:59:59 holds 23:59:59.5: the bound is the next second, exclusive.
+        """
         if isinstance(dt, date) and not isinstance(dt, datetime):
-            dt = datetime.combine(dt, datetime.min.time())
+            dt = datetime.combine(dt, time.min)
+        return within(dt, self.start, self.end)
 
-        def as_utc(value: datetime) -> datetime:
-            return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
 
-        return as_utc(self.start) <= as_utc(dt) <= as_utc(self.end)
+def within(moment: datetime, start: datetime | None, end: datetime | None) -> bool:
+    """Whether `moment` falls between two bounds, either of which may be open.
+
+    The bounds follow `DateRange.contains`: naive ones are read on the moment's own clock,
+    aware ones are instants, and the end holds the whole of its last second.
+    """
+    if start is not None and _on_clock_of(start, moment) < _on_clock_of(start, start):
+        return False
+    if end is None:
+        return True
+    after = end.replace(microsecond=0) + timedelta(seconds=1)
+    return _on_clock_of(end, moment) < _on_clock_of(end, after)
+
+
+def _on_clock_of(bound: datetime, moment: datetime) -> datetime:
+    """`moment` in the terms `bound` is written in: wall-clock digits, or a UTC instant.
+
+    Aware values go through UTC because Python compares two datetimes sharing a zone by
+    their digits, which reads the repeated autumn hour as one hour.
+    """
+    if bound.tzinfo is None:
+        return moment.replace(tzinfo=None)
+    return moment.replace(tzinfo=UTC) if moment.tzinfo is None else moment.astimezone(UTC)
 
 
 @dataclass

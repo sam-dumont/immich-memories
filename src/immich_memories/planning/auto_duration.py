@@ -109,7 +109,8 @@ def special_day_editorial_duration_seconds(hours: float) -> float:
 
 
 def _asset_day(asset: Asset) -> date:
-    return asset.file_created_at.date()
+    # The day the picture's own clock showed, as Immich's timeline files it (#2355).
+    return asset.local_taken_at.date()
 
 
 @dataclass(frozen=True, slots=True)

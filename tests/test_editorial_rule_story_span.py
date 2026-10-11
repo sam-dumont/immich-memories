@@ -13,6 +13,7 @@ from immich_memories.analysis.editorial_story_shortlist import (
 )
 from immich_memories.analysis.editorial_story_weighing import consecutive_runs
 from immich_memories.api.models import ExifInfo
+from tests.picture_fake import PictureFake
 
 HOME = (50.8468, 4.3525)
 AWAY = (41.9028, 12.4964)
@@ -23,7 +24,7 @@ def _reader(days, *, place, home=HOME):
     assets, moments, gps = {}, {}, {}
     for offset in range(days):
         asset_id = f"a{offset:03}"
-        assets[asset_id] = SimpleNamespace(
+        assets[asset_id] = PictureFake(
             id=asset_id,
             file_created_at=datetime(2024, 6, 3) + timedelta(days=offset, hours=9),
             is_favorite=False,

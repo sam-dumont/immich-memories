@@ -13,6 +13,7 @@ from types import SimpleNamespace
 from immich_memories.analysis.editorial_rule_reader import RuleStructureReader
 from immich_memories.config_models_editorial import EditorialPeopleConfig
 from tests.editorial_subject_family import film_of, her_parents, subject_people
+from tests.picture_fake import PictureFake
 
 FAMILY = "with Person A (partner; inner circle); Person B (son; 3 months old)"
 STRANGERS = "with Person C (unconfirmed)"
@@ -43,7 +44,7 @@ def _read_month(*, family_line=FAMILY, film=None):
         for n in range(pictures):
             asset_id = f"d{day:02}-{n:03}"
             taken = datetime(2030, 2, day, 9) + timedelta(minutes=n)
-            assets[asset_id] = SimpleNamespace(
+            assets[asset_id] = PictureFake(
                 id=asset_id,
                 file_created_at=taken,
                 is_favorite=False,

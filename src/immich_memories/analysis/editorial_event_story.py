@@ -181,7 +181,7 @@ def episode_shapes(
     for episode in episodes:
         members = members_of(episode)
         points = [p for a in members if (p := gps_of(a)) is not None]
-        taken = [a.file_created_at for a in members]
+        taken = [a.local_taken_at for a in members]
         shapes[episode.key] = EpisodeShape(
             day=min(taken).date().isoformat() if taken else "",
             pictures=len(members),

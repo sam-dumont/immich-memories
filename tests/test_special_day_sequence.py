@@ -15,6 +15,7 @@ import pytest
 
 from immich_memories.analysis.special_day import SpecialDay
 from immich_memories.automation.special_day_scan import scan_year
+from tests.picture_fake import PictureFake
 
 # Synthetic coordinates: a home, and a camp about 67 km south of it.
 HOME_AT = (50.8, 4.4)
@@ -23,7 +24,7 @@ CAMP_AT = (50.2, 4.4)
 
 def _picture(when: datetime, n: int, *, city: str | None, video: float | None = None, at=None):
     lat, lon = at or (None, None)
-    return SimpleNamespace(
+    return PictureFake(
         id=f"p-{when:%m%d%H%M}-{n}",
         file_created_at=when,
         exif_info=SimpleNamespace(

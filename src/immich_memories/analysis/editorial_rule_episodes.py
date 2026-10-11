@@ -92,7 +92,7 @@ class RuleEpisodeReader:
                     city for c in group.candidates if (city := shown_city(c.source.exif_info))
                 )
             )
-            account = f"{len(group.candidates)} captures on {group.candidates[0].taken_at:%Y-%m-%d}"
+            account = f"{len(group.candidates)} captures on {group.candidates[0].source.local_taken_at:%Y-%m-%d}"
             if cities:
                 account += ": " + ", ".join(cities[:3])
             reading = BankedEpisodeReading(

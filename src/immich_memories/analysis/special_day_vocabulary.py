@@ -19,6 +19,8 @@ from collections.abc import Iterable, Mapping
 from datetime import date, datetime, timedelta
 from typing import Any
 
+from immich_memories.analysis.special_day import capture_clock
+
 _WORD = re.compile(r"[a-z]{4,}")
 # A word has to be written about this many of the day's pictures to be the day's, not a detail.
 _REPEATED = 10
@@ -201,7 +203,7 @@ class YearWords:
         if not pictures:
             return None
         ordered = sorted(pictures, key=lambda picture: picture.file_created_at)
-        local = self.local_words(ordered[0].file_created_at.date())
+        local = self.local_words(capture_clock(ordered[0]).date())
         telling = [
             picture for picture in ordered if local & set(_spelled(captions.get(picture.id, "")))
         ]

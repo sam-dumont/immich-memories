@@ -1410,6 +1410,16 @@ volume preserves private scratch permissions; Terraform sets the same policy.
 
 ## Conventions
 
+- **Capture time**: order and gaps read the instant (`fileCreatedAt`); every day, month and year
+  reads the picture's own clock, `Asset.local_taken_at` (Immich's `localDateTime`, the clock its
+  timeline shows). A naive `DateRange` bound is a calendar time on that clock and holds its whole
+  last second; an aware bound is an instant. `SearchService.search_metadata` asks Immich for a
+  calendar window 14 h wider each side and keeps what the picture's clock puts inside. Unit and
+  carrier `taken` strings carry that clock; annotation lines and the moment wall keep the instant,
+  the identity banked episode readings are keyed on. Three readers keep the stored UTC instant on
+  purpose and are approximate near midnight: `--ask` day matching, the people graph's eras and
+  arrival months, and the automation statistics counts (month-level eras and threshold counts do
+  not move, and `--ask` is experimental).
 - **Max file length**: 800 lines soft / 1000 hard (enforced in CI via `make file-length`)
 - **Max complexity**: Xenon grade C (<=20 cyclomatic complexity, `make complexity`)
 - **Cognitive complexity**: complexipy ≤15 per function (`make cognitive-complexity`)

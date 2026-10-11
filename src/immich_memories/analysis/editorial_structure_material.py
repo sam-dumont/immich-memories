@@ -124,13 +124,30 @@ class Wall:
     moment_of_asset: dict[str, str]
 
 
+def _moments_on_their_clock(tables, source: StructurePlanningInput) -> dict[str, dict]:
+    """The wall's moment rows, each `taken` told on its first picture's own clock.
+
+    The wall's text keeps the instant its banked readings were asked with; the day a moment
+    falls on is the one its pictures showed, like every unit's (#2355).
+    """
+    fields = tables["moments"][0]
+    moments = {r[0]: dict(zip(fields, r, strict=True)) for r in tables["moments"][1]}
+    for alias, row in moments.items():
+        members = [
+            source.assets[a] for a in source.moment_asset_ids.get(alias, ()) if a in source.assets
+        ]
+        if members:
+            first = min(members, key=lambda asset: (asset.file_created_at, asset.id))
+            row["taken"] = first.local_taken_at.isoformat()
+    return moments
+
+
 def read_wall(source: StructurePlanningInput) -> Wall:
     wall_bytes = source.wall_bytes
     aliases, _ = wall_rows._read_wall_index(wall_bytes)
     tables = wall_rows._table_rows(wall_bytes.decode("utf-8").splitlines())
     episode_meaning = {r[0]: r[1] for r in tables["episodes"][1]}
-    m_fields = tables["moments"][0]
-    moments = {r[0]: dict(zip(m_fields, r, strict=True)) for r in tables["moments"][1]}
+    moments = _moments_on_their_clock(tables, source)
     moment_places: dict[str, list] = {}
     for m, p in tables["moment_places"][1]:
         moment_places.setdefault(m, []).append(p)
@@ -334,7 +351,7 @@ class UnitBuilder:
             base = {
                 "favourite": asset.is_favorite,
                 "moment": self._moment_of_asset.get(a),
-                "taken": asset.file_created_at.isoformat(),
+                "taken": asset.local_taken_at.isoformat(),
             }
             # A rendering belongs to a photograph. A video-typed id here falls through to
             # the ordinary video branch, so borrowed rendering state can never make a

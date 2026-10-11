@@ -134,7 +134,7 @@ def capture_structure_input(
             pool_subject=case.pool_subject,
             excluded=case.excluded,
             material={
-                assets[asset_id].file_created_at.date()
+                assets[asset_id].local_taken_at.date()
                 for card in workprint.cards
                 for asset_id in card.selectable_asset_ids
                 if asset_id in assets

@@ -161,7 +161,7 @@ def render_single_photo(
         return AssemblyClip(
             path=output_path,
             duration=config.duration,
-            date=asset.file_created_at.isoformat() if asset.file_created_at else None,
+            date=asset.local_taken_at.isoformat() if asset.file_created_at else None,
             asset_id=asset.id,
             is_photo=True,
             gain_map_hdr=prepared.has_gain_map,
