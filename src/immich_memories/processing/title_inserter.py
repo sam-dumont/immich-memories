@@ -281,6 +281,8 @@ class TitleInserter:
 
         content_clip = None
         if use_content_bg:
+            # WHY exactly the borrowed half-second: the title plays the whole
+            # pre-render and the clip resumes on the frame after its last.
             content_clip = self.background_renderer.render_first_clip(
                 clips,
                 title_output_dir,
@@ -288,6 +290,7 @@ class TitleInserter:
                 target_h,
                 detected_fps,
                 hdr_type,
+                seconds=_BORROW_SECONDS,
             )
 
         def _title_frame_progress(frame: int, total: int) -> None:
@@ -302,6 +305,7 @@ class TitleInserter:
             person_name=title_settings.person_name,
             birthday_age=title_settings.birthday_age,
             content_clip_path=content_clip,
+            content_continues=title_borrow(clips[0].duration) > 0,
             frame_progress=_title_frame_progress,
         )
         logger.info(f"Generated title screen: {title_screen.path}")

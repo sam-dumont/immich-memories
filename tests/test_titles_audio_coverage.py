@@ -578,7 +578,9 @@ class TestRenderingServiceInit:
             )
             from immich_memories.processing.encoding_plan import HdrTransfer
 
-            mock_extract.assert_called_once_with(fake_clip, 100, 100, HdrTransfer.NONE)
+            mock_extract.assert_called_once_with(
+                fake_clip, 100, 100, HdrTransfer.NONE, last_frame=False
+            )
             mock_create.assert_called_once()
             # background_image should be the extracted frame
             assert mock_create.call_args.kwargs["background_image"] is not None
@@ -627,7 +629,7 @@ class TestRenderingServiceInit:
                 content_clip_path=clip,
             )
 
-        extract.assert_called_once_with(clip, 100, 100, HdrTransfer.HLG)
+        extract.assert_called_once_with(clip, 100, 100, HdrTransfer.HLG, last_frame=False)
 
 
 class TestExtractBlurredFrame:

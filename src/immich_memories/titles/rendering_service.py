@@ -154,10 +154,13 @@ class RenderingService:
         is_ending: bool = False,
         fade_to_white: bool = False,
         frame_progress: Callable[[int, int], None] | None = None,
+        content_continues: bool = False,
     ) -> Path:
         """Create title video using GPU or PIL renderer.
 
         The immutable encoding plan is read from the title config.
+        `content_continues` says the film goes on from the frame after the
+        content clip's last, so a still background is taken from that end.
         """
         encoding_plan = self.config.encoding_plan
         if self._use_gpu and (kernels := self._kernels) is not None:
@@ -188,6 +191,7 @@ class RenderingService:
                 width,
                 height,
                 encoding_plan.target_transfer,
+                last_frame=content_continues,
             )
 
         return create_title_video(
@@ -245,6 +249,7 @@ class RenderingService:
                 fps,
                 duration,
                 source_transfer=encoding_plan.target_transfer,
+                reveal=not is_ending,
             )
             if not slowmo_reader.is_active:
                 slowmo_reader = None
@@ -311,8 +316,15 @@ class RenderingService:
         width: int,
         height: int,
         source_transfer: HdrTransfer = HdrTransfer.NONE,
+        *,
+        last_frame: bool = False,
     ) -> np.ndarray | None:
-        """Extract a mid-clip frame in the SDR title working space.
+        """Extract a frame of the pre-render in the SDR title working space.
+
+        The first frame by default, which is where an ending's source starts.
+        `last_frame` takes the final one instead: an opening's source is the
+        clip's borrowed first second, and the clip resumes right after its last
+        frame, so a still of frame zero made the cut skip that second forward.
 
         Falls back to None if extraction fails (caller uses gradient instead).
         """
@@ -331,29 +343,36 @@ class RenderingService:
                 filters.append(conversion)
             filters.extend([f"scale={width}:{height}", "gblur=sigma=30"])
 
-            # Extract mid-frame as raw RGB
+            # WHY a short tail rather than one frame for the last: FFmpeg only
+            # knows a frame was the last once the stream ends, so decode the
+            # final fraction of a second and keep the frame that came out last.
+            which = ["-sseof", "-0.25"] if last_frame else []
+            count = [] if last_frame else ["-frames:v", "1"]
             result = subprocess.run(
                 [
                     "ffmpeg",
+                    *which,
                     "-i",
                     str(clip_path),
                     "-vf",
                     ",".join(filters),
-                    "-vframes",
-                    "1",
+                    *count,
                     "-f",
                     "rawvideo",
                     "-pix_fmt",
                     "rgb24",
                     "pipe:1",
-                ],
+                ],  # fmt: skip
                 capture_output=True,
                 timeout=15,
             )
-            if result.returncode != 0:
+            frame_size = height * width * 3
+            if result.returncode != 0 or len(result.stdout) < frame_size:
                 return None
 
-            frame = np.frombuffer(result.stdout, dtype=np.uint8).reshape(height, width, 3)
+            frame = np.frombuffer(result.stdout[-frame_size:], dtype=np.uint8).reshape(
+                height, width, 3
+            )
             # Darken to 40% so white text pops (same as the GPU path)
             return frame.astype(np.float32) / 255.0 * 0.4
         except (OSError, subprocess.SubprocessError, ValueError) as e:

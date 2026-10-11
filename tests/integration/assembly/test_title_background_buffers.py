@@ -18,7 +18,7 @@ from tests.integration.conftest import requires_ffmpeg
 pytestmark = [pytest.mark.integration, requires_ffmpeg]
 
 
-def test_first_clip_background_keeps_pixels_and_one_second_duration(tmp_path):
+def test_first_clip_background_keeps_pixels_and_the_borrowed_half_second(tmp_path):
     source = tmp_path / "white.mkv"
     subprocess.run(
         [
@@ -44,6 +44,7 @@ def test_first_clip_background_keeps_pixels_and_one_second_duration(tmp_path):
 
     assert output is not None
     frames = list(FrameDecoder(output, 64, 64, 4))
-    assert len(frames) == 4
+    # The title borrows half a second of the clip; at 4 fps that is two frames.
+    assert len(frames) == 2
     pixels = np.stack(frames)
     assert np.all(pixels > 230)
