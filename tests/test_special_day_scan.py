@@ -30,10 +30,11 @@ from immich_memories.cli.special_days_cmd import (
 )
 from immich_memories.config_models_analysis import AnalysisConfig
 from immich_memories.config_models_automation import TripsConfig
+from tests.picture_fake import PictureFake
 
 
 def _asset(hour: int, minute: int = 0, day: int = 13) -> SimpleNamespace:
-    return SimpleNamespace(
+    return PictureFake(
         id=f"a-{day:02d}-{hour:02d}-{minute:02d}",
         file_created_at=datetime(2021, 4, day, hour, minute, tzinfo=UTC),
         exif_info=SimpleNamespace(city="Someplace", country="Belgium"),
@@ -53,7 +54,7 @@ _AWAY = (50.6, 4.0)
 def _christmas_day(where: tuple[float, float]) -> list[SimpleNamespace]:
     """A full day of pictures on a fixed holiday, all taken in one place."""
     return [
-        SimpleNamespace(
+        PictureFake(
             id=f"a-1225-{hour:02d}-{minute:02d}",
             file_created_at=datetime(2021, 12, 25, hour, minute, tzinfo=UTC),
             exif_info=SimpleNamespace(
@@ -422,7 +423,7 @@ class _Library:
 
 
 def _on(year: int, month: int, day: int, index: int = 0) -> SimpleNamespace:
-    return SimpleNamespace(
+    return PictureFake(
         id=f"a-{year}{month:02d}{day:02d}-{index:02d}",
         file_created_at=datetime(year, month, day, 12, index % 60, tzinfo=UTC),
         exif_info=SimpleNamespace(city="Someplace", country="Belgium"),

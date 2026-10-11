@@ -159,6 +159,7 @@ class TestSuggestReturnsCandidates:
             MagicMock(
                 id="new-year-photo",
                 file_created_at=datetime(2026, 1, 1, tzinfo=UTC),
+                local_taken_at=datetime(2026, 1, 1, tzinfo=UTC),
             )
         ]
         trip = DetectedTrip(

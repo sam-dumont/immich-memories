@@ -75,20 +75,26 @@ def _filter_away_assets(
 
 
 def _group_by_temporal_gaps(away: list[Asset], max_gap_days: int) -> list[list[Asset]]:
-    return temporal_groups(away, lambda asset: asset.file_created_at.date(), max_gap_days)
+    # A trip's days are the ones its pictures' own clocks showed (#2355).
+    return temporal_groups(away, lambda asset: asset.local_taken_at.date(), max_gap_days)
 
 
 def _build_trip_from_group(
     group: list[Asset], *, name_locations: bool = True, geocoder: Geocoder | None = None
 ) -> DetectedTrip:
-    lats = [a.exif_info.latitude for a in group if a.exif_info and a.exif_info.latitude]
-    lons = [a.exif_info.longitude for a in group if a.exif_info and a.exif_info.longitude]
-    c_lat = sum(lats) / len(lats) if lats else 0.0
-    c_lon = sum(lons) / len(lons) if lons else 0.0
+    # Pairs, never two lists: the equator and the prime meridian are real coordinates, and
+    # a falsy 0.0 dropped from one list only skewed the centre (#2360).
+    points = [
+        (a.exif_info.latitude, a.exif_info.longitude)
+        for a in group
+        if a.exif_info and a.exif_info.latitude is not None and a.exif_info.longitude is not None
+    ]
+    c_lat = sum(p[0] for p in points) / len(points) if points else 0.0
+    c_lon = sum(p[1] for p in points) / len(points) if points else 0.0
     place = _derive_location_name(group, c_lat, c_lon, geocoder) if name_locations else None
     return DetectedTrip(
-        start_date=group[0].file_created_at.date(),
-        end_date=group[-1].file_created_at.date(),
+        start_date=group[0].local_taken_at.date(),
+        end_date=group[-1].local_taken_at.date(),
         location_name=place.name if place else "",
         location_kind=place.scale if place else "",
         asset_count=len(group),
@@ -128,7 +134,7 @@ def detect_trips(
 
     trips: list[DetectedTrip] = []
     for group in groups:
-        span_days = (group[-1].file_created_at.date() - group[0].file_created_at.date()).days
+        span_days = (group[-1].local_taken_at.date() - group[0].local_taken_at.date()).days
         if span_days >= min_duration_days:
             trips.append(
                 _build_trip_from_group(group, name_locations=name_locations, geocoder=geocoder)

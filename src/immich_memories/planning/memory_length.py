@@ -13,6 +13,9 @@ from calendar import monthrange
 from immich_memories.planning.auto_duration import trip_editorial_duration_seconds
 from immich_memories.timeperiod import DateRange
 
+# The span the curve below was fitted on; it reaches the 600 s cap at its end.
+_CURVE_MONTHS = 12.0
+
 
 def duration_from_date_range(date_range: DateRange) -> float:
     """Scale duration by date range: 1 month = 60s, 1 year = 600s.
@@ -20,8 +23,11 @@ def duration_from_date_range(date_range: DateRange) -> float:
     Quadratic curve fitted through (1mo, 60s), (6mo, 360s), (12mo, 600s).
     Linear ~60s/month for the first half, then decelerates toward 600s. A full
     season lands near 195s. Also the fallback for a span no type claims.
+
+    A year or more asks for the cap: the parabola peaks past it and falls again,
+    so a five-year range once asked for its 30-second floor (#2356).
     """
-    months = max(1, (date_range.end - date_range.start).days + 1) / 30.0
+    months = min(max(1, (date_range.end - date_range.start).days + 1) / 30.0, _CURVE_MONTHS)
     duration = (-20 * months**2 + 800 * months - 120) / 11
     return float(max(30, min(600, duration)))
 
@@ -40,11 +46,11 @@ def _recap_duration_from_date_range(date_range: DateRange) -> float:
 
 
 # WHY these by name: duration_from_date_range's curve was fitted on 1-12
-# months and is wrong at both ends. Past ~40 months it turns negative, so five
-# Christmases clamped to the same 30s floor as an empty weekend (#511); at a
-# one-day span it evaluates negative too, so a special day would render as 30
-# seconds however much happened on it. Their presets already state the length
-# they want, so the resolver reads that instead.
+# months and says nothing about a span of scattered days. Five Christmases span
+# four years and would ask for the full cap; a one-day span evaluates negative,
+# so a special day would render as 30 seconds however much happened on it
+# (#511). Their presets already state the length they want, so the resolver
+# reads that instead.
 _PRESET_DURATION_TYPES = ("holiday", "special_day")
 
 

@@ -112,6 +112,12 @@ Answer with STRICT JSON only, no prose:
 {{lines}}"""
 
 
+def capture_clock(asset: Any) -> datetime:
+    """When a picture was taken, told on its own clock: the day and the hour Immich's
+    timeline shows (#2355). A stand-in with no local clock reads its UTC instant."""
+    return getattr(asset, "local_taken_at", None) or asset.file_created_at
+
+
 def candidate_days(
     assets: Iterable,
     *,
@@ -140,7 +146,7 @@ def candidate_days(
     for day, items in _runs_of_activity(assets).items():
         if day in away_days:
             continue
-        if ours := [a for a in items if a.file_created_at.date() not in away_days]:
+        if ours := [a for a in items if capture_clock(a).date() not in away_days]:
             kept[day] = ours
     return kept
 
@@ -152,7 +158,7 @@ def active_hours(items: Iterable) -> int:
     number in this module's docstring were measured this way, and counting
     elapsed hours instead would quietly move the bar on the long runs.
     """
-    return len({a.file_created_at.hour for a in items})
+    return len({capture_clock(a).hour for a in items})
 
 
 def run_extent(items: Iterable) -> tuple[datetime, datetime] | None:
@@ -163,7 +169,8 @@ def run_extent(items: Iterable) -> tuple[datetime, datetime] | None:
     afternoon two dates later. Anything that scopes itself to the date the
     run began stops at midnight, part-way through what happened.
     """
-    times = [a.file_created_at for a in items]
+    # On the pictures' own clock, so the dates a stored run reaches are the ones they showed.
+    times = [capture_clock(a) for a in items]
     return (min(times), max(times)) if times else None
 
 
@@ -199,11 +206,11 @@ def _runs_of_activity(assets: Iterable) -> dict[date, list]:
             and (asset.file_created_at - current[-1].file_created_at).total_seconds()
             > _NIGHT_GAP_HOURS * 3600
         ):
-            runs.setdefault(current[0].file_created_at.date(), []).extend(current)
+            runs.setdefault(capture_clock(current[0]).date(), []).extend(current)
             current = []
         current.append(asset)
     if current:
-        runs.setdefault(current[0].file_created_at.date(), []).extend(current)
+        runs.setdefault(capture_clock(current[0]).date(), []).extend(current)
     return runs
 
 
@@ -228,7 +235,7 @@ def sample_across_day(assets: list, count: int = 8) -> list:
     """
     by_hour: dict[int, list] = collections.defaultdict(list)
     for asset in sorted(assets, key=lambda a: a.file_created_at):
-        by_hour[asset.file_created_at.hour].append(asset)
+        by_hour[capture_clock(asset).hour].append(asset)
 
     def take(hour: int) -> None:
         bucket = by_hour[hour]
@@ -378,7 +385,8 @@ def _window_the_model_gave(answer: dict, assets: list) -> tuple[datetime, dateti
     written = answer.get("window")
     if not isinstance(written, list) or len(written) != 2:
         return None
-    times = [a.file_created_at for a in assets]
+    # On the pictures' own clock: the model read its HH:MM off lines written in it.
+    times = [capture_clock(a) for a in assets]
     first, last = min(times), max(times)
     start, end = _at_clock(written[0], first, last), _at_clock(written[1], first, last)
     if start is None or end is None or end - start < _MIN_WINDOW:
@@ -417,7 +425,7 @@ def _facts_on(asset: Any, described: str | None) -> list[str]:
 
 def _line_for(asset: Any, described: str | None) -> str:
     """One asset's line: when it was taken, where, who was in it, what it shows."""
-    return "  " + "  ".join([asset.file_created_at.strftime("%H:%M"), *_facts_on(asset, described)])
+    return "  " + "  ".join([capture_clock(asset).strftime("%H:%M"), *_facts_on(asset, described)])
 
 
 # What share of the lines actually sent have to say something beyond their clock
@@ -475,7 +483,7 @@ def _describe(assets: list, captions: Mapping[str, str] | None = None) -> str:
     """
     # The date itself, once, at the top. Given only clock times the model
     # filled the gap: a February day came back subtitled "July 2, 2024".
-    lines = [assets[0].file_created_at.strftime("  date: %A %d %B %Y")] if assets else []
+    lines = [capture_clock(assets[0]).strftime("  date: %A %d %B %Y")] if assets else []
     lines.extend(_line_for(asset, _described_by(asset, captions)) for asset in assets)
     return "\n".join(lines)
 
@@ -768,7 +776,7 @@ def _ask_from_captions(  # noqa: PLR0913 - the day, its text, and where the answ
     sampled = sample_across_day(described)
     lines = (
         "\n".join(
-            f"{asset.file_created_at.isoformat()} {_line_for(asset, captions[asset.id])}"
+            f"{capture_clock(asset).isoformat()} {_line_for(asset, captions[asset.id])}"
             for asset in sampled
         )
         + sent

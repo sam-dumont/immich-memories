@@ -14,10 +14,11 @@ from immich_memories.analysis.editorial_story_slots import PartitionedSlots
 from immich_memories.analysis.editorial_story_standing import StandingGate
 from immich_memories.analysis.editorial_structure_material import UnitBuilder
 from immich_memories.config_loader import Config
+from tests.picture_fake import PictureFake
 
 
 def _asset(asset_id, *, minute, favourite=False):
-    return SimpleNamespace(
+    return PictureFake(
         id=asset_id,
         is_favorite=favourite,
         people=[],

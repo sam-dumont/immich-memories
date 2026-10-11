@@ -100,6 +100,8 @@ def test_audience_rejections_and_occasion_fallback_cannot_reopen_full_partitions
     plan = run(captured, judge, laya=caption_laya())
     assert len(plan["carriers"]) == 3
     assert {row["asset_id"] for row in plan["carriers"]}.isdisjoint(private)
-    assert plan["intent_report"]["coverage"] == {f"year-{year}": 1 for year in (2030, 2031, 2032)}
+    assert plan["intent_report"]["coverage"] == {
+        f"occurrence-{n}-{year}-05-02": 1 for n, year in enumerate((2030, 2031, 2032), 1)
+    }
     assert plan["intent_report"]["violations"] == []
     assert plan["shareability"]["substituted"]

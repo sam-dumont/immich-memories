@@ -79,15 +79,15 @@ def test_moments_outside_every_era_are_not_counted_anywhere() -> None:
 @pytest.mark.parametrize(
     ("timestamp", "expected"),
     [
-        ("2025-09-08T01:59:59+02:00", None),
-        ("2025-09-08T02:00:00+02:00", 0),
-        ("2025-09-10T23:59:59+00:00", 0),
-        ("2025-09-11T01:59:59+02:00", 0),
-        ("2025-09-11T02:00:00+02:00", None),
+        ("2025-09-07T23:59:59+02:00", None),
+        ("2025-09-08T00:00:00+02:00", 0),
+        ("2025-09-10T23:59:59.5+00:00", 0),
+        ("2025-09-10T20:30:00-08:00", 0),
+        ("2025-09-11T01:59:59+02:00", None),
         ("2024-09-09T12:00:00", 1),
     ],
 )
-def test_on_this_day_era_uses_inclusive_instants_across_offsets(timestamp, expected):
+def test_on_this_day_era_reads_each_picture_on_its_own_clock(timestamp, expected):
     from immich_memories.memory_types.date_builders import build_on_this_day
 
     windows = build_on_this_day(date(2026, 9, 9), years_back=20)

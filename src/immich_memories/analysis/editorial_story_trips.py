@@ -117,7 +117,7 @@ def detect_film_trips(assets: Iterable[Asset], trips_config, *, journey: bool) -
 
 
 def _day(asset: Asset) -> str:
-    return asset.file_created_at.isoformat()[:10]
+    return asset.local_taken_at.isoformat()[:10]
 
 
 def _split_legs(assets: Iterable[Asset]) -> dict[str, int]:

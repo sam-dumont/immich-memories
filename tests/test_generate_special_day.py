@@ -201,9 +201,10 @@ class TestTheWindowIsTheScope:
 
         windows = windows_asked_for("--memory-type", "special_day", "--day", DAY_ISO)
 
+        # The calendar day on the pictures' own clock: asked 14 h wider, kept by that clock.
         payload = _immich_payload_for(windows[0])
-        assert payload["takenAfter"] == "2016-06-12T00:00:00+00:00"
-        assert payload["takenBefore"] == "2016-06-12T23:59:59+00:00"
+        assert payload["takenAfter"] == "2016-06-11T10:00:00+00:00"
+        assert payload["takenBefore"] == "2016-06-13T13:59:59+00:00"
 
 
 class TestTheRunIsTheOuterScope:
@@ -285,7 +286,8 @@ class TestTheRunIsTheOuterScope:
             windows_asked_for("--memory-type", "special_day", "--day", DAY_ISO)[0]
         )
 
-        assert payload["takenBefore"] == "2016-06-12T23:59:59+00:00"
+        # Its own calendar date, on the pictures' clock: asked 14 h wider, kept by that clock.
+        assert payload["takenBefore"] == "2016-06-13T13:59:59+00:00"
 
     def test_the_run_record_says_which_scope_was_used(self, catalogue_at) -> None:
         catalogue_at(

@@ -524,7 +524,7 @@ def _facts_of(item: object) -> str:
 def _described(item: object) -> str:
     clip = getattr(item, "clip", item)
     asset = getattr(clip, "asset", clip)
-    when = getattr(asset, "file_created_at", None)
+    when = getattr(asset, "local_taken_at", None) or getattr(asset, "file_created_at", None)
     bits = [
         str(getattr(asset, "original_file_name", "") or _asset_id(item)[:8]),
         when.isoformat(timespec="minutes") if when else "undated",

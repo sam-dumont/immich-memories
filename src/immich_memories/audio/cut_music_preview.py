@@ -33,7 +33,7 @@ def _timeline(config: Config, attempt_dir: Path) -> VideoTimeline:
     rows = []
     for clip in inputs.clips:
         start, end = inputs.segments.get(clip.asset.id, (0.0, clip.duration_seconds or 5.0))
-        created = clip.asset.file_created_at
+        created = clip.asset.local_taken_at
         rows.append((end - start, "calm", created.month if created else None))
     titles = config.title_screens
     return VideoTimeline.from_clips(

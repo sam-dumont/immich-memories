@@ -15,6 +15,7 @@ from immich_memories.analysis.editorial_structure_material import (
     rules_still_seconds,
 )
 from immich_memories.config_loader import Config
+from tests.picture_fake import PictureFake
 
 
 def test_a_picture_of_somebody_is_held_longer_than_an_empty_scene():
@@ -74,7 +75,7 @@ def test_a_one_shot_film_is_lengthened_once():
 
 
 def _video_asset(asset_id, *, duration):
-    return SimpleNamespace(
+    return PictureFake(
         id=asset_id,
         is_favorite=False,
         people=[],
@@ -110,7 +111,7 @@ def test_a_video_duration_that_rounds_up_never_publishes_past_its_own_length():
 
 
 def _asset(asset_id, *, favourite=False, people=()):
-    return SimpleNamespace(
+    return PictureFake(
         id=asset_id,
         is_favorite=favourite,
         people=list(people),

@@ -16,10 +16,11 @@ from immich_memories.analysis.editorial_story_shortlist import (
     DepictedChoice,
     _capture_group_moments,
 )
+from tests.picture_fake import PictureFake
 
 
 def _asset(asset_id, *, minute=0, favourite=False, video=False, people=(), faces=()):
-    return SimpleNamespace(
+    return PictureFake(
         id=asset_id,
         is_favorite=favourite,
         is_video=video,

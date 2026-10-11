@@ -229,7 +229,10 @@ def _banked_readings(
         requester=requester,
         albums=albums,
     ).read(project_episode_groups(prepared, prepared.candidate_ids))
-    dates = {candidate.asset_id: candidate.taken_at for candidate in prepared.candidates}
+    # The month an episode is filed under is its pictures' own (#2355).
+    dates = {
+        candidate.asset_id: candidate.source.local_taken_at for candidate in prepared.candidates
+    }
     episodes = [
         LibraryEpisode(
             reading=evidence.reading,

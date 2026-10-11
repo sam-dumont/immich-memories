@@ -27,6 +27,7 @@ from immich_memories.analysis.source_quality import forwarded_source_refusal
 from immich_memories.analysis.stacks import stack_reason
 from immich_memories.analysis.trip_detection import haversine_km
 from immich_memories.api.models import Asset, VideoClipInfo
+from immich_memories.timeperiod import within
 
 if TYPE_CHECKING:
     from immich_memories.analysis.editorial_contracts import (
@@ -172,7 +173,7 @@ def _boundary_exclusion_reason(
     if scope.place is not None and not _at_place(asset, scope.place):
         return "outside place scope"
     if scope.date_ranges and not any(
-        window.contains(asset.file_created_at) for window in scope.date_ranges
+        window.contains(asset.local_taken_at) for window in scope.date_ranges
     ):
         return "outside date scope"
     if not is_editorial_source_asset(asset, start_at=scope.start_at, end_at=scope.end_at):
@@ -206,9 +207,7 @@ def _scope_exclusion_reason(asset: Asset, scope: SourceScope) -> str:
 
     if asset.type not in (AssetType.IMAGE, AssetType.VIDEO):
         return "unsupported media"
-    if scope.start_at is not None and asset.file_created_at < scope.start_at:
-        return "outside date scope"
-    if scope.end_at is not None and asset.file_created_at > scope.end_at:
+    if not within(asset.local_taken_at, scope.start_at, scope.end_at):
         return "outside date scope"
     return "missing capture time"
 

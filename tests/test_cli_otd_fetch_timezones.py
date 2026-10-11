@@ -1,30 +1,27 @@
 """A fetched OTD asset must survive the ordinary per-window CLI report."""
 
 from datetime import date, datetime
-from types import SimpleNamespace
 
 from immich_memories.cli._asset_fetch import fetch_videos
 from immich_memories.cli._helpers import set_active_display
 from immich_memories.memory_types.date_builders import build_on_this_day
+from tests.picture_fake import PictureFake
 
 
 def test_twenty_year_fetch_reports_mixed_timezone_assets_without_changing_windows():
     windows = build_on_this_day(date(2026, 9, 9), years_back=20)
     queried = []
     assets = [
-        SimpleNamespace(
-            id="recent", file_created_at=datetime.fromisoformat("2025-09-09T12:00:00Z")
-        ),
-        SimpleNamespace(id="older", file_created_at=datetime(2024, 9, 9, 12)),
-        SimpleNamespace(
-            id="edge", file_created_at=datetime.fromisoformat("2023-09-11T01:59:59+02:00")
-        ),
+        PictureFake(id="recent", file_created_at=datetime.fromisoformat("2025-09-09T12:00:00Z")),
+        PictureFake(id="older", file_created_at=datetime(2024, 9, 9, 12)),
+        # 20:30 on the 10th, eight hours behind UTC: already the 11th in UTC: the 10th it shows (#2355).
+        PictureFake(id="edge", file_created_at=datetime.fromisoformat("2023-09-10T20:30:00-08:00")),
     ]
 
     class Library:
         def get_videos_for_date_range(self, window):
             queried.append(window)
-            return [asset for asset in assets if window.contains(asset.file_created_at)]
+            return [asset for asset in assets if window.contains(asset.local_taken_at)]
 
     class Display:
         def __init__(self):

@@ -74,7 +74,7 @@ def picture_facts(
         people_in_frame="people=" in line and "people=none" not in line,
         place=place,
         of=of,
-        taken=asset.file_created_at.isoformat(),
+        taken=asset.local_taken_at.isoformat(),
         banked_lead=banked_lead,
     )
 
@@ -184,7 +184,7 @@ def quality_facts(
         sharpness_ratio=ratio,
         brightness=brightness,
         distance_from_midweek=distance_from_midweek,
-        taken=asset.file_created_at.isoformat(),
+        taken=asset.local_taken_at.isoformat(),
     )
 
 

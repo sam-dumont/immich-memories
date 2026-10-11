@@ -52,7 +52,7 @@ def _item_date(item: Any) -> date | None:
     value = getattr(item, "date", None)
     asset = _asset_for(item)
     if value is None and asset is not None:
-        value = getattr(asset, "file_created_at", None)
+        value = getattr(asset, "local_taken_at", None) or getattr(asset, "file_created_at", None)
     if isinstance(value, datetime):
         return value.date()
     if isinstance(value, date):

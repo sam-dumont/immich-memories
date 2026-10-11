@@ -16,13 +16,14 @@ import pytest
 from immich_memories.cli._asset_fetch import fetch_videos
 from immich_memories.cli._helpers import quiet_output
 from immich_memories.timeperiod import DateRange
+from tests.picture_fake import PictureFake
 
 NOW = DateRange(start=datetime(2026, 1, 1), end=datetime(2026, 12, 31, 23, 59, 59))
 THEN = DateRange(start=datetime(2016, 1, 1), end=datetime(2016, 12, 31, 23, 59, 59))
 
 
 def _asset(asset_id: str, when: datetime) -> SimpleNamespace:
-    return SimpleNamespace(id=asset_id, file_created_at=when)
+    return PictureFake(id=asset_id, file_created_at=when)
 
 
 class _Immich:
@@ -106,7 +107,7 @@ def _person(person_id: str, name: str) -> SimpleNamespace:
 
 
 def _asset_with(asset_id: str, when: datetime, people: list) -> SimpleNamespace:
-    return SimpleNamespace(id=asset_id, file_created_at=when, people=people)
+    return PictureFake(id=asset_id, file_created_at=when, people=people)
 
 
 ALEX = _person("p-alex", "Alex")

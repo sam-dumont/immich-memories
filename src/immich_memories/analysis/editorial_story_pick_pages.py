@@ -63,15 +63,20 @@ def page_shares(
 ) -> list[int]:
     """Split the grant between pages by how many choices each one offers.
 
-    Whole slots go by proportion, the remainder to the earliest pages in order. A page that
-    holds a favourite keeps one slot whenever a fuller page can spare it.
+    Whole slots go by proportion, the remainder to the earliest pages with a choice left. A
+    page that holds a favourite keeps one slot whenever a fuller page can spare it.
     """
     total = sum(offered)
     if grant <= 0 or total <= 0:
         return [0] * len(offered)
     grant = min(grant, total)
     shares = [grant * count // total for count in offered]
-    for index in range(grant - sum(shares)):
-        shares[index] += 1
+    spare = grant - sum(shares)
+    # Only a page whose proportional share fell short of a whole slot has a choice left, and
+    # there is always one per spare slot; a page offering nothing never takes one.
+    for index, count in enumerate(offered):
+        if spare and shares[index] < count:
+            shares[index] += 1
+            spare -= 1
     _lend_a_slot(shares, favourite_pages)
     return shares

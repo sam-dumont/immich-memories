@@ -23,10 +23,11 @@ from immich_memories.analysis.editorial_story_shortlist import _capture_group_mo
 from immich_memories.analysis.editorial_structure_audience import AudienceBank
 from immich_memories.db import open_store
 from tests.annotation_rows import add_rows, annotation_store
+from tests.picture_fake import PictureFake
 
 
 def _asset(asset_id, *, minute=0, favourite=False, people=()):
-    return SimpleNamespace(
+    return PictureFake(
         id=asset_id,
         is_favorite=favourite,
         is_video=False,

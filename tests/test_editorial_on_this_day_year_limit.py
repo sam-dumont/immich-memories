@@ -209,9 +209,12 @@ class AnnualJudge(EditorialJudge):
         return super().answer(stage, prompt)
 
 
-def test_calendar_year_groups_repeated_windows_and_gives_each_year_a_voice():
+def test_repeated_windows_are_one_occurrence_and_each_occurrence_gets_a_voice():
     policy = build_editorial_intent("on_this_day", ranges((2030, 2030, 2032)), brief="This day")
-    assert [p.key for p in policy.partitions] == ["year-2030", "year-2032"]
+    assert [p.key for p in policy.partitions] == [
+        "occurrence-1-2030-05-02",
+        "occurrence-2-2032-05-02",
+    ]
     assert policy.max_carriers_per_partition is None
     assert policy.voice_per_partition
     assert "selection limit:" not in policy.prompt_block()
@@ -225,7 +228,7 @@ def test_model_chooses_event_and_picture_before_acquisition_and_warm_is_exact(tm
     plan = run(source, judge)
     assert [c["asset_id"] for c in plan["carriers"]] == [f"y{y}-e1-p2" for y in (2030, 2031, 2032)]
     assert plan["intent_report"]["coverage"] == dict.fromkeys(
-        (f"year-{y}" for y in (2030, 2031, 2032)), 1
+        (f"occurrence-{n}-{y}-05-02" for n, y in enumerate((2030, 2031, 2032), 1)), 1
     )
     assert sum(row["granted"] for row in plan["story"]["episodes"]) == 3
     assert not any(c["stage"].startswith("moment-inventory") for c in judge.calls)
@@ -245,7 +248,7 @@ def test_single_eligible_year_is_still_capped_and_insufficiency_is_reported(tmp_
 
     plan = run(make_source(tmp_path, years=(2030,), per_year_limit=1), AnnualStoryJudge())
     assert len(plan["carriers"]) == 1
-    assert plan["intent_report"]["coverage"] == {"year-2030": 1}
+    assert plan["intent_report"]["coverage"] == {"occurrence-1-2030-05-02": 1}
     assert plan["intent_report"]["status"] == "insufficient_material"
 
 
@@ -260,7 +263,7 @@ def test_validator_catches_excess_across_families_and_reports_missing_year():
         return validate_intent(
             intent,
             carriers=two_in_one_year,
-            evidence_partitions={"year-2030", "year-2031"},
+            evidence_partitions={"occurrence-1-2030-05-02", "occurrence-2-2031-05-02"},
             requested_seconds=90,
         )
 
