@@ -42,11 +42,21 @@ integration tests; the default addopts do. Run pytest with the default addopts o
 target. An `-m` that selects integration keeps the real home, which is right only for the
 integration targets. A test that writes under `Path.home()` asserts it is sealed before writing.
 
+## Parallel runs
+
+The unit suite, the FFmpeg-only integration folders and the store suite run on pytest-xdist workers
+(`TEST_WORKERS`: `auto` on CI, half the cores locally; `0` runs in one process). Each worker has its
+own sealed home, store and fake services, and the order is whatever the scheduler picks. A test owns
+the state it asserts on: don't count uploads, runs or log lines another test may have left, restore
+module globals and logger levels you change, and swap imports with `monkeypatch.setitem(sys.modules,
+...)`, not `patch.dict(sys.modules, ...)`. A test that passes only after another one gets fixed,
+never run in series.
+
 ## Tiers
 
 | Tier | Command | Needs |
 |---|---|---|
-| Unit | `make test` | FFmpeg for media fixtures |
+| Unit | `make test` (`TEST_WORKERS=N`) | FFmpeg for media fixtures |
 | Extras (torch family) | `make test-extras` | torch, demucs, face |
 | Integration | `make test-integration` or a folder target | FFmpeg + Immich |
 | Store | `make test-store` | Docker (postgres:16) |

@@ -12,6 +12,7 @@ from playwright.sync_api import Page, expect
 
 from immich_memories.operations.run_index import record_run_attempt
 from immich_memories.operations.storyboard import PLAN_FILE, PROJECTION_FILE
+from immich_memories.store import owner_decisions
 from immich_memories.tracking import RunDatabase
 from immich_memories.tracking.models import RunMetadata
 from tests.e2e.fake_library import CARRIERS, LIBRARY
@@ -209,6 +210,23 @@ def _shoot(page: Page, name: str) -> None:
         page.screenshot(path=str(Path(target) / f"{name}.png"), full_page=True)
 
 
+def _listed_run(page: Page, run_id: str):
+    """One run's card on the runs page, scrolling until it loads.
+
+    The session's store is shared: other tests' runs come first, newest first, and the list
+    loads 24 at a time as it scrolls. How many came before this one depends on the order.
+    """
+    card = page.get_by_role("listitem").filter(has=page.locator(f"a[href$='/{run_id}']"))
+    cards = page.get_by_role("listitem").filter(has=page.locator("a[href^='/app/runs/']"))
+    expect(cards.first).to_be_visible(timeout=30_000)
+    for _ in range(20):
+        if card.count():
+            break
+        cards.last.scroll_into_view_if_needed()
+        page.wait_for_timeout(500)
+    return card
+
+
 def test_runs_open_as_cards_with_their_cut_and_filter_by_status(
     page: Page, launch_app_url: str, launch_workspace
 ) -> None:
@@ -217,17 +235,18 @@ def test_runs_open_as_cards_with_their_cut_and_filter_by_status(
 
     expect(page.get_by_role("heading", name="Runs", level=1)).to_be_visible()
     # The workspace is shared by the session, so other tests' runs are here too: find the seeded one.
-    cut = page.get_by_role("listitem").filter(has=page.locator("a[href$='/20240630_web_cut']"))
+    cut = _listed_run(page, "20240630_web_cut")
     pictures = cut.locator("img")
     expect(pictures).to_have_count(4)
     for index in range(4):
         expect(pictures.nth(index)).to_have_js_property("complete", True)
         assert pictures.nth(index).evaluate("image => image.naturalWidth") > 0
-    failed = page.get_by_role("listitem").filter(has=page.locator("a[href$='/20240701_web_fail']"))
+    failed = _listed_run(page, "20240701_web_fail")
     expect(failed).to_be_visible()
     _shoot(page, "web-runs")
 
     page.get_by_role("radio", name="Failed").click()
+    failed = _listed_run(page, "20240701_web_fail")
     expect(failed).to_be_visible()
     expect(cut).to_have_count(0)
     expect(page.get_by_role("listitem").filter(has_text="Completed")).to_have_count(0)
@@ -273,7 +292,9 @@ def test_a_cut_opens_as_a_contact_sheet_that_explains_and_plays_each_shot(
 ) -> None:
     _seed(launch_workspace)
     page.goto(f"{launch_app_url}/app/runs")
-    page.get_by_role("link").filter(has_text="20240630_web_cut").click()
+    _listed_run(page, "20240630_web_cut").get_by_role("link").filter(
+        has_text="20240630_web_cut"
+    ).click()
 
     sheet = page.get_by_role("list", name="Cut contact sheet")
     shots = sheet.get_by_role("button")
@@ -315,7 +336,9 @@ def test_a_trim_before_the_window_moves_the_start_and_the_time_on_screen(
     """#2157: a seek before the window snapped back, and the header kept the old time."""
     _seed(launch_workspace)
     page.goto(f"{launch_app_url}/app/runs")
-    page.get_by_role("link").filter(has_text="20240630_web_cut").click()
+    _listed_run(page, "20240630_web_cut").get_by_role("link").filter(
+        has_text="20240630_web_cut"
+    ).click()
     inspector = page.get_by_role("article", name="Picture review")
     page.get_by_role("radio", name="Videos").click()
     page.get_by_role("list", name="Cut contact sheet").get_by_role("button").first.click()
@@ -340,7 +363,9 @@ def test_edits_undo_save_as_a_revision_and_reopen_after_a_reload(
 ) -> None:
     _seed(launch_workspace)
     page.goto(f"{launch_app_url}/app/runs")
-    page.get_by_role("link").filter(has_text="20240630_web_cut").click()
+    _listed_run(page, "20240630_web_cut").get_by_role("link").filter(
+        has_text="20240630_web_cut"
+    ).click()
     shots = page.get_by_role("list", name="Cut contact sheet").get_by_role("button")
     inspector = page.get_by_role("article", name="Picture review")
     expect(shots).to_have_count(5)
@@ -441,9 +466,23 @@ def _cut_in_the_browser(page: Page, launch_app_url: str) -> str:
     return page.url.rsplit("/", 1)[-1]
 
 
+@pytest.fixture
+def owner_decisions_restored(launch_workspace):
+    """Forget the Never use marks a test leaves: they last, and the session's store is shared.
+
+    A left-over mark on a held picture hid its hold from the picture-decisions test whenever
+    that test ran later in the same session.
+    """
+    store = launch_workspace.store()
+    before = set(owner_decisions.decisions(store))
+    yield
+    for asset_id in set(owner_decisions.decisions(store)) - before:
+        owner_decisions.forget(store, asset_id)
+
+
 @pytest.mark.feature("web.review-and-revise")
 def test_the_pool_s_ticks_go_into_the_film_as_a_revision_without_a_recut(
-    page: Page, launch_app_url: str
+    page: Page, launch_app_url: str, owner_decisions_restored
 ) -> None:
     run = _cut_in_the_browser(page, launch_app_url)
     page.get_by_role("link", name="Pool", exact=True).click()

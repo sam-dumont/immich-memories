@@ -362,6 +362,8 @@ def test_every_asset_thumbnail_shows_its_own_scene(fake_immich_server) -> None:
 
 def test_real_auto_client_uploads_and_fake_records_v3_multipart(fake_immich_server) -> None:
     """A real v3 upload is accepted and retained for launch-smoke assertions."""
+    # The session's service may hold uploads from tests that ran before this one.
+    before = len(fake_immich_server.uploads)
     with SyncImmichClient(
         fake_immich_server.base_url,
         fake_immich_server.api_key,
@@ -369,9 +371,9 @@ def test_real_auto_client_uploads_and_fake_records_v3_multipart(fake_immich_serv
     ) as client:
         asset_id = client.upload_asset(fake_immich_server.source_video)
 
-    assert asset_id == "uploaded-1"
-    assert len(fake_immich_server.uploads) == 1
-    upload = fake_immich_server.uploads[0]
+    assert asset_id == f"uploaded-{before + 1}"
+    assert len(fake_immich_server.uploads) == before + 1
+    upload = fake_immich_server.uploads[before]
     assert set(upload.fields) == {"filename", "fileCreatedAt", "fileModifiedAt"}
     source_name = fake_immich_server.source_video.name
     assert upload.fields["filename"] == source_name

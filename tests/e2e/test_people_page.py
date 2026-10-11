@@ -14,7 +14,8 @@ from immich_memories.db import Store
 from immich_memories.people.companion import load_document
 from immich_memories.people.transfer import import_document
 
-pytestmark = pytest.mark.e2e
+# Each test puts back the people it replaced: the launch store is the whole session's.
+pytestmark = [pytest.mark.e2e, pytest.mark.usefixtures("roster_restored")]
 
 _ROSTER = 34
 _PAGE = 30

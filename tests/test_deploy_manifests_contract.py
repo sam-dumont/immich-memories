@@ -8,6 +8,8 @@ stale config keys survive.
 
 from __future__ import annotations
 
+import json
+import os
 import re
 import shutil
 import subprocess
@@ -1138,6 +1140,28 @@ def test_terraform_maximalist_example_sets_public_url_and_trusted_proxies() -> N
     assert "secure_cookies       = true" in example_main
 
 
+def _terraform_env(tmp_path: Path) -> dict[str, str]:
+    """Terraform without a shared plugin cache: a cache is not safe for two inits at once.
+
+    Concurrent test runs (xdist workers, or another checkout's suite) that share
+    TF_PLUGIN_CACHE_DIR failed validation with a provider "not matching the lock file". A
+    cache the developer already has is read as a filesystem mirror instead, which no init
+    writes to; without one, providers come from the registry as usual.
+    """
+    env = dict(os.environ)
+    cache = env.pop("TF_PLUGIN_CACHE_DIR", None)
+    if cache and Path(cache).is_dir():
+        config = tmp_path / "terraformrc"
+        config.write_text(
+            "provider_installation {\n"
+            f"  filesystem_mirror {{\n    path = {json.dumps(cache)}\n  }}\n"
+            "  direct {}\n"
+            "}\n"
+        )
+        env["TF_CLI_CONFIG_FILE"] = str(config)
+    return env
+
+
 @pytest.mark.skipif(shutil.which("terraform") is None, reason="terraform not installed")
 def test_terraform_module_and_maximalist_example_are_valid_hcl(tmp_path: Path) -> None:
     """terraform validate against the real provider schema, no live cluster
@@ -1145,6 +1169,7 @@ def test_terraform_module_and_maximalist_example_are_valid_hcl(tmp_path: Path) -
     repo (a stray lock file has broken a test here before)."""
     workdir = tmp_path / "terraform"
     shutil.copytree(TF_DIR, workdir)
+    env = _terraform_env(tmp_path)
     for target in (workdir, workdir / "examples" / "maximalist"):
         init = subprocess.run(
             ["terraform", "init", "-backend=false", "-input=false"],
@@ -1152,6 +1177,7 @@ def test_terraform_module_and_maximalist_example_are_valid_hcl(tmp_path: Path) -
             check=False,
             capture_output=True,
             text=True,
+            env=env,
         )
         assert init.returncode == 0, init.stdout + init.stderr
         result = subprocess.run(
@@ -1160,6 +1186,7 @@ def test_terraform_module_and_maximalist_example_are_valid_hcl(tmp_path: Path) -
             check=False,
             capture_output=True,
             text=True,
+            env=env,
         )
         assert result.returncode == 0, result.stdout + result.stderr
 

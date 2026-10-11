@@ -212,8 +212,12 @@ def test_a_failed_job_keeps_its_artifact_and_its_number_among_the_others(tmp_pat
     (tmp_path / "out").mkdir()
     judge = StructureTextJudge(config, tmp_path / "out", judgments=annotation_store())
     judge.ask("opening", "a readable question", json_object=True)
+    # A failure cancels the jobs the pool has not started, and its threads start lazily: on
+    # a loaded machine "last" was still queued when "unreadable" failed, and never ran.
+    all_started = threading.Barrier(3, timeout=10)
 
     def read(child, item):
+        all_started.wait()
         return child.ask(f"page-{item}", f"question {item}", json_object=True)
 
     with pytest.raises(ValueError):

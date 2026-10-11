@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import logging
 import time
+from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
@@ -321,10 +322,16 @@ class TestKernelGradient:
 # ---------------------------------------------------------------------------
 
 
-def test_save_title_drilldown(tmp_path):
-    """Save title drilldown results + derived overhead analysis."""
+@pytest.fixture(scope="module", autouse=True)
+def _save_title_drilldown() -> Iterator[None]:
+    """Save title drilldown results + derived overhead analysis.
+
+    Written as the module ends rather than by a test that has to run last: in a random
+    order or on parallel workers that test ran first, or alone, and saved nothing.
+    """
+    yield
     if not _title_results:
-        pytest.skip("No title drilldown results collected")
+        return
 
     logger.info("=" * 70)
     logger.info("TITLE RENDERING DRILL-DOWN")

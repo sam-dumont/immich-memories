@@ -23,9 +23,13 @@ pytestmark = pytest.mark.e2e
 _PERSON_ID = "fake-person-01"
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def accounts_workspace(tmp_path_factory, fake_immich_server: FakeImmichServer) -> LaunchWorkspace:
-    """A launch workspace with a second Immich account, `partner`, next to the primary one."""
+    """A launch workspace with a second Immich account, `partner`, next to the primary one.
+
+    One per test: a link or a declined suggestion is kept, and would change what the next
+    test is offered.
+    """
     workspace = _launch_workspace(tmp_path_factory.mktemp("accounts"), fake_immich_server)
     config = yaml.safe_load(workspace.config_path.read_text())
     config["immich"]["accounts"] = {
@@ -69,7 +73,7 @@ def accounts_workspace(tmp_path_factory, fake_immich_server: FakeImmichServer) -
     return workspace
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def accounts_app_url(
     accounts_workspace: LaunchWorkspace, unused_tcp_port_factory
 ) -> Generator[str, None, None]:
@@ -130,15 +134,23 @@ def test_a_person_declined_is_not_offered_again_and_a_link_can_be_undone(
     card = page.get_by_role("listitem").filter(
         has=page.locator("p.font-semibold", has_text="Fixture Person 01")
     )
-    # Earlier in this module the person was linked; take it back first.
-    expect(card.get_by_test_id("account-link")).to_be_visible(timeout=30_000)
-    unlink = card.get_by_role("button", name="Unlink")
-    if unlink.count():
-        unlink.click()
-        expect(unlink).to_have_count(0, timeout=15_000)
-
+    expect(card).to_be_visible(timeout=30_000)
+    # Link the person, then take the link back.
     card.get_by_text("Link a person from partner").click()
     suggestion = card.get_by_test_id("link-suggestion")
+    suggestion.get_by_role("button", name="Link", exact=True).click()
+    expect(
+        card.get_by_test_id("account-link").get_by_text("Fixture Person 01", exact=True)
+    ).to_be_visible(timeout=15_000)
+    unlink = card.get_by_role("button", name="Unlink")
+    unlink.click()
+    expect(unlink).to_have_count(0, timeout=15_000)
+
+    page.reload(wait_until="domcontentloaded")
+    card = page.get_by_role("listitem").filter(
+        has=page.locator("p.font-semibold", has_text="Fixture Person 01")
+    )
+    card.get_by_text("Link a person from partner").click()
     expect(suggestion).to_be_visible(timeout=15_000)
     suggestion.get_by_role("button", name="Not the same person").click()
     expect(suggestion).to_have_count(0, timeout=15_000)

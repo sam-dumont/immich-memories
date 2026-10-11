@@ -14,7 +14,6 @@ from __future__ import annotations
 
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import patch
 
 import numpy as np
 import pytest
@@ -25,6 +24,7 @@ from immich_memories.speech.fireredvad import (
     regions_from_probs,
 )
 from immich_memories.speech.models import SpeechRegion
+from tests.module_stubs import swapped_modules
 
 FIXTURE = Path(__file__).parent / "fixtures" / "speech" / "synthetic_speech_16k.npy"
 SINGING_FIXTURE = Path(__file__).parent / "fixtures" / "speech" / "singing_excerpt_16k.npy"
@@ -146,7 +146,8 @@ class TestFireRedSpeechDetectorMocked:
         # WHY: forces `import onnxruntime` to raise ImportError so _load()'s
         # except branch is exercised even when onnxruntime happens to be
         # installed.
-        with patch.dict("sys.modules", {"onnxruntime": None}):
+        # WHY: stand-ins for the imports alone; see tests/module_stubs.py.
+        with swapped_modules({"onnxruntime": None}):
             assert detector.available is False
 
     def test_load_success_caches_session_and_reports_available(self):
@@ -160,7 +161,8 @@ class TestFireRedSpeechDetectorMocked:
             InferenceSession=lambda *_a, **_kw: "fake-session",
         )
 
-        with patch.dict("sys.modules", {"kaldi_native_fbank": fake_knf, "onnxruntime": fake_ort}):
+        # WHY: stand-ins for the imports alone; see tests/module_stubs.py.
+        with swapped_modules({"kaldi_native_fbank": fake_knf, "onnxruntime": fake_ort}):
             assert detector.available is True
 
         assert detector._session == "fake-session"
@@ -193,7 +195,8 @@ class TestFireRedSpeechDetectorMocked:
             OnlineFbank=lambda _opts: fake_fbank,
         )
 
-        with patch.dict("sys.modules", {"kaldi_native_fbank": fake_knf}):
+        # WHY: stand-ins for the imports alone; see tests/module_stubs.py.
+        with swapped_modules({"kaldi_native_fbank": fake_knf}):
             regions = detector.detect(np.zeros(16000, dtype=np.float32), 16000)
 
         assert len(regions) == 1
@@ -229,7 +232,8 @@ class TestFireRedSpeechDetectorMocked:
             OnlineFbank=lambda _opts: fake_fbank,
         )
 
-        with patch.dict("sys.modules", {"kaldi_native_fbank": fake_knf}):
+        # WHY: stand-ins for the imports alone; see tests/module_stubs.py.
+        with swapped_modules({"kaldi_native_fbank": fake_knf}):
             regions, fraction = detector.detect_with_music(np.zeros(16000, dtype=np.float32), 16000)
 
         assert len(regions) == 1
@@ -262,7 +266,8 @@ class TestFireRedSpeechDetectorMocked:
             OnlineFbank=lambda _opts: fake_fbank,
         )
 
-        with patch.dict("sys.modules", {"kaldi_native_fbank": fake_knf}):
+        # WHY: stand-ins for the imports alone; see tests/module_stubs.py.
+        with swapped_modules({"kaldi_native_fbank": fake_knf}):
             regions, fraction = detector.detect_with_music(np.zeros(160, dtype=np.float32), 16000)
 
         assert regions == []

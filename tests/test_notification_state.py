@@ -12,6 +12,7 @@ from immich_memories.automation.notification_state import (
 )
 from immich_memories.automation.notifications import notify_job_complete
 from immich_memories.db import open_store
+from tests.module_stubs import swapped_modules
 
 
 def test_failed_delivery_opens_cooldown_and_success_closes_it(tmp_path: Path) -> None:
@@ -44,7 +45,7 @@ def test_failure_state_never_persists_provider_exception_text(tmp_path: Path) ->
         f"429 quota response from {credential_url}"
     )
 
-    with patch.dict("sys.modules", {"apprise": apprise}):
+    with swapped_modules({"apprise": apprise}):
         result = notify_job_complete(
             memory_type="trip",
             status="completed",
@@ -67,7 +68,7 @@ def test_cooldown_suppresses_normal_delivery_but_test_bypasses(tmp_path: Path) -
     apprise = MagicMock()
     apprise.Apprise.return_value.notify.return_value = True
 
-    with patch.dict("sys.modules", {"apprise": apprise}):
+    with swapped_modules({"apprise": apprise}):
         suppressed = notify_job_complete(
             memory_type="monthly",
             status="completed",
@@ -95,7 +96,7 @@ def test_thumbnail_attachment_is_opt_in(tmp_path: Path) -> None:
     video.write_bytes(b"video")
 
     with (
-        patch.dict("sys.modules", {"apprise": apprise}),
+        swapped_modules({"apprise": apprise}),
         patch(
             "immich_memories.automation.notifications._extract_thumbnail",
             return_value=str(tmp_path / "thumb.jpg"),

@@ -10,6 +10,7 @@ GPU comparison.
 from __future__ import annotations
 
 import logging
+from collections.abc import Iterator
 from datetime import date
 from pathlib import Path
 from subprocess import run as sp_run
@@ -243,10 +244,16 @@ class TestFullPipelineBenchmark:
         _pipeline_results.append(result)
 
 
-def test_save_pipeline_results(tmp_path):
-    """Save collected pipeline results to JSON after all scenarios complete."""
+@pytest.fixture(scope="module", autouse=True)
+def _save_pipeline_results() -> Iterator[None]:
+    """Save collected pipeline results to JSON after all scenarios complete.
+
+    Written as the module ends rather than by a test that has to run last: in a random
+    order or on parallel workers that test ran first, or alone, and saved nothing.
+    """
+    yield
     if not _pipeline_results:
-        pytest.skip("No pipeline results collected")
+        return
 
     logger.info("=" * 60)
     logger.info("PIPELINE PERFORMANCE SUMMARY (Immich)")

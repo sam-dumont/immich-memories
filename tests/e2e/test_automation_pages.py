@@ -31,18 +31,28 @@ def _evidence(page: Page, name: str) -> None:
     set_theme(page, "light")
 
 
-def _stand_in_2025(workspace) -> None:
-    """Spotlights read the year before the clock; the fixture's pictures are from 2024."""
+@pytest.fixture
+def stand_in_2025(launch_workspace):
+    """Spotlights read the year before the clock; the fixture's pictures are from 2024.
+
+    The launch server is shared by the session, so the clock goes back afterwards: a test
+    after this one reads the fixture's own date, whichever order they run in.
+    """
     from tests.e2e.fake_automation import CLOCK_FILE
 
-    clock = workspace.root / "state" / CLOCK_FILE
+    clock = launch_workspace.root / "state" / CLOCK_FILE
     clock.parent.mkdir(parents=True, exist_ok=True)
+    before = clock.read_text() if clock.is_file() else None
     clock.write_text("2025-07-01")
+    yield
+    if before is None:
+        clock.unlink(missing_ok=True)
+    else:
+        clock.write_text(before)
 
 
 @pytest.mark.feature("web.suggestions")
-def test_suggestions_page_offers_the_discovered_candidates(page, launch_app_url, launch_workspace):
-    _stand_in_2025(launch_workspace)
+def test_suggestions_page_offers_the_discovered_candidates(page, launch_app_url, stand_in_2025):
     page.goto(f"{launch_app_url}/suggestions")
     page.wait_for_url("**/app/suggestions")
     expect(page.get_by_role("heading", name="Suggestions", level=1)).to_be_visible()
@@ -154,8 +164,9 @@ def test_choose_generate_and_read_the_same_automatic_run(
     target.write_text(transcript.replace(str(automation_workspace.root), "<fixture-workspace>"))
 
 
-def test_variety_rejections_and_all_sidebar_destinations(page, launch_app_url, launch_workspace):
-    _stand_in_2025(launch_workspace)
+def test_variety_rejections_and_all_sidebar_destinations(
+    page, launch_app_url, launch_workspace, stand_in_2025
+):
     from datetime import datetime, timedelta
 
     from immich_memories.tracking import RunDatabase

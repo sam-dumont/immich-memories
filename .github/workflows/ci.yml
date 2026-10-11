@@ -307,6 +307,8 @@ jobs:
 
       - run: make dev-test
 
+      # On pytest-xdist workers, one per core: TEST_WORKERS is `auto` when CI=true.
+      # pytest-cov combines the workers' data, so coverage.xml matches a serial run.
       - name: Run tests with coverage
         run: make test-cov-xml
 
