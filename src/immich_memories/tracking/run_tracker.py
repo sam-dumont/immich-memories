@@ -17,6 +17,7 @@ from immich_memories.operations.phases import PhaseEvent
 from immich_memories.tracking.models import PhaseStats, RunMetadata
 from immich_memories.tracking.run_database import RunDatabase
 from immich_memories.tracking.run_id import generate_run_id
+from immich_memories.tracking.run_lifecycle_errors import DuplicateRunError
 from immich_memories.tracking.system_info import capture_system_info
 
 if TYPE_CHECKING:
@@ -27,6 +28,9 @@ if TYPE_CHECKING:
     from immich_memories.timeperiod import DateRange
 
 logger = logging.getLogger(__name__)
+
+# Redraws of a generated run id before a collision is reported; one is already rare.
+_ID_ATTEMPTS = 5
 
 
 class RunTracker:
@@ -47,6 +51,8 @@ class RunTracker:
             capture_system: Whether to capture system info on start.
         """
         self.run_id = run_id or generate_run_id()
+        # A generated id may be redrawn on a collision; one the caller chose never is.
+        self._id_generated = run_id is None
         self.db = RunDatabase(store)
         self._capture_system = capture_system
 
@@ -112,9 +118,7 @@ class RunTracker:
             target_duration_seconds=target_duration_seconds,
         )
 
-        # The lease comes first: a sweep that sees the row must also see its owner.
-        self._hold_lease()
-        self.db.save_run(run)
+        self._save_new_run(run)
         self._run = run
         if self._capture_system:
             self.record_system_info()
@@ -139,6 +143,24 @@ class RunTracker:
         if info is not None:
             run.system_info = info
             self.db.record_system_info(self.run_id, info.to_dict())
+
+    def _save_new_run(self, run: RunMetadata) -> None:
+        """Record the run under its lease, redrawing a generated id that is already taken.
+
+        A run id is its starting second plus 16 random bits, so two runs that start in the
+        same second (the UI, the daily timer, a trigger) collide once in 65,536 starts.
+        """
+        for attempt in range(_ID_ATTEMPTS):
+            # The lease comes first: a sweep that sees the row must also see its owner.
+            self._hold_lease()
+            try:
+                self.db.save_run(run)
+                return
+            except DuplicateRunError:
+                if not self._id_generated or attempt == _ID_ATTEMPTS - 1:
+                    raise
+                self.release_run()
+                self.run_id = run.run_id = generate_run_id()
 
     def _hold_lease(self) -> None:
         from immich_memories.db.leases import LeaseHeldError
