@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import threading
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
 
@@ -57,10 +58,6 @@ _RUN_FIELDS = (
     "immich_asset_id",
 )
 
-# asyncio keeps only a weak reference to a bare task, so a fire-and-forget
-# generation can be collected mid-run. These are the strong ones.
-_running: set[asyncio.Task[Any]] = set()
-
 
 def trigger_enabled(config: Config) -> bool:
     """Whether anything at all authenticates a caller of the trigger API.
@@ -83,12 +80,11 @@ def _authorized(request: Request, config: Config) -> bool:
 def _submit_to_background(started: StartedAutoRun) -> None:
     """Run the accepted decision off the request path.
 
-    A generation blocks for up to two hours, so it goes to a worker thread the
-    same way the in-process daily timer sends its own.
+    A generation blocks for up to two hours, so it goes to a worker thread. The thread starts
+    here, before the answer: a task left for a later turn of the event loop was cancelled
+    unstarted when that loop shut down, and the attempt kept its lease while never running.
     """
-    task = asyncio.create_task(asyncio.to_thread(_execute, started))
-    _running.add(task)
-    task.add_done_callback(_running.discard)
+    threading.Thread(target=_execute, args=(started,), name="automation-trigger").start()
 
 
 def _execute(started: StartedAutoRun) -> None:
