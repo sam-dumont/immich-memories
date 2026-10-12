@@ -47,7 +47,8 @@ def test_manifest_attestation_uses_only_a_complete_pushed_digest(tmp_path, job, 
 
 
 def test_a_merge_to_main_does_not_publish_a_release():
-    assert set(release_workflow()["on"]) == {"workflow_dispatch"}
+    # A dispatch, or the nightly calling it (channel `nightly`); never a push.
+    assert set(release_workflow()["on"]) == {"workflow_dispatch", "workflow_call"}
 
 
 def test_release_publication_waits_for_the_image_smoke_test():

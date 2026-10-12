@@ -55,12 +55,11 @@ jobs:
     if: github.repository_id == '1174219883'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+      - name: Set up uv and Python
+        uses: ./.github/actions/setup-uv-python
         with:
-          enable-cache: true
-          prune-cache: false
-      - run: uv python install ${{ env.PYTHON_VERSION }}
-      - run: make dev-ci
+          python-version: ${{ env.PYTHON_VERSION }}
+          install: dev-ci
 
   # ── Tier 1: Quality gates ─────────────────────────────────────────────────
   # One job, not thirteen. Each gate takes 10-35s but held its own runner slot,
@@ -81,12 +80,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0  # commitlint needs the base branch
-      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+      - name: Set up uv and Python
+        uses: ./.github/actions/setup-uv-python
         with:
-          enable-cache: true
-          prune-cache: false
-      - run: uv python install ${{ env.PYTHON_VERSION }}
-      - run: make dev-ci
+          python-version: ${{ env.PYTHON_VERSION }}
+          install: dev-ci
 
       - name: Ruff check
         if: '!cancelled()'
@@ -173,12 +171,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+      - name: Set up uv and Python
+        uses: ./.github/actions/setup-uv-python
         with:
-          enable-cache: true
-          prune-cache: false
-      - run: uv python install ${{ env.PYTHON_VERSION }}
-      - run: make dev-ci
+          python-version: ${{ env.PYTHON_VERSION }}
+          install: dev-ci
 
       - name: Bandit (Python SAST)
         run: make bandit-ci
@@ -285,22 +282,13 @@ jobs:
 
       # WHY: LFS bandwidth is metered — caching avoids re-downloading 13MB of
       # fixtures on every CI run (~9 LFS checkouts/push was burning 1GB/month).
-      - name: Create LFS cache key
-        run: git lfs ls-files -l | cut -d' ' -f1 | sort > .lfs-assets-id
-      - name: Cache LFS objects
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: .git/lfs
-          key: lfs-${{ hashFiles('.lfs-assets-id') }}
-          restore-keys: lfs-
       - name: Pull LFS files
-        run: git lfs pull
+        uses: ./.github/actions/pull-lfs
 
-      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+      - name: Set up uv and Python
+        uses: ./.github/actions/setup-uv-python
         with:
-          enable-cache: true
-          prune-cache: false
-      - run: uv python install ${{ matrix.python-version }}
+          python-version: ${{ matrix.python-version }}
 
       - name: Install FFmpeg
         uses: ./.github/actions/install-ffmpeg
@@ -402,22 +390,13 @@ jobs:
             extras: "dev,mac"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Create LFS cache key
-        run: git lfs ls-files -l | cut -d' ' -f1 | sort > .lfs-assets-id
-      - name: Cache LFS objects
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: .git/lfs
-          key: lfs-${{ hashFiles('.lfs-assets-id') }}
-          restore-keys: lfs-
       - name: Pull LFS files
-        run: git lfs pull
-      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+        uses: ./.github/actions/pull-lfs
+      - name: Set up uv and Python
+        uses: ./.github/actions/setup-uv-python
         with:
-          enable-cache: true
-          prune-cache: false
+          python-version: "3.13"
           cache-suffix: extras
-      - run: uv python install "3.13"
 
       - name: Install FFmpeg
         uses: ./.github/actions/install-ffmpeg
@@ -455,12 +434,11 @@ jobs:
           --health-retries 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+      - name: Set up uv and Python
+        uses: ./.github/actions/setup-uv-python
         with:
-          enable-cache: true
-          prune-cache: false
-      - run: uv python install ${{ env.PYTHON_VERSION }}
-      - run: make dev-ci
+          python-version: ${{ env.PYTHON_VERSION }}
+          install: dev-ci
       # The backup drill runs pg_dump/pg_restore against the postgres:16 service above: install
       # exactly that major from PGDG instead of trusting whatever the runner image ships.
       - name: PostgreSQL 16 client
@@ -562,12 +540,11 @@ jobs:
         database: [sqlite, postgresql]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+      - name: Set up uv and Python
+        uses: ./.github/actions/setup-uv-python
         with:
-          enable-cache: true
-          prune-cache: false
-      - run: uv python install ${{ env.PYTHON_VERSION }}
-      - run: make dev-ci
+          python-version: ${{ env.PYTHON_VERSION }}
+          install: dev-ci
       - name: Build the image
         run: make test-container-image
       - name: Container E2E (${{ matrix.database }})
@@ -591,16 +568,8 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Create LFS cache key
-        run: git lfs ls-files -l | cut -d' ' -f1 | sort > .lfs-assets-id
-      - name: Cache LFS objects
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: .git/lfs
-          key: lfs-${{ hashFiles('.lfs-assets-id') }}
-          restore-keys: lfs-
       - name: Pull LFS files
-        run: git lfs pull
+        uses: ./.github/actions/pull-lfs
       - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
         with:
           node-version: '22'
@@ -646,21 +615,12 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - name: Create LFS cache key
-        run: git lfs ls-files -l | cut -d' ' -f1 | sort > .lfs-assets-id
-      - name: Cache LFS objects
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: .git/lfs
-          key: lfs-${{ hashFiles('.lfs-assets-id') }}
-          restore-keys: lfs-
       - name: Pull LFS files
-        run: git lfs pull
-      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+        uses: ./.github/actions/pull-lfs
+      - name: Set up uv and Python
+        uses: ./.github/actions/setup-uv-python
         with:
-          enable-cache: true
-          prune-cache: false
-      - run: uv python install ${{ env.PYTHON_VERSION }}
+          python-version: ${{ env.PYTHON_VERSION }}
       - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
         with:
           node-version: '22'

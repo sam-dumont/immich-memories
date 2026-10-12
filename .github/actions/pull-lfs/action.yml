@@ -1,0 +1,23 @@
+name: Pull the LFS files
+description: >-
+  Fetch the repository's LFS fixtures through the shared `lfs-` cache. LFS bandwidth
+  is metered, and every job that pulls shares this one cache key, so a warm cache
+  serves them all. The calling job checks the repository out first.
+
+runs:
+  using: composite
+  steps:
+    - name: Create LFS cache key
+      shell: bash
+      run: git lfs ls-files -l | cut -d' ' -f1 | sort > .lfs-assets-id
+
+    - name: Cache LFS objects
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: .git/lfs
+        key: lfs-${{ hashFiles('.lfs-assets-id') }}
+        restore-keys: lfs-
+
+    - name: Pull LFS files
+      shell: bash
+      run: git lfs pull

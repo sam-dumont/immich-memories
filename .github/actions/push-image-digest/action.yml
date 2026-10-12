@@ -2,7 +2,7 @@ name: Push an image by digest
 description: >-
   Build one platform of an image, push it to GHCR by digest only (no tag), attest
   its provenance and hand the digest to the manifest job as an artifact. Tags move
-  later, in the release's or the nightly's manifest job, once every build and smoke
+  later, in the release workflow's manifest jobs (the nightly runs them too), once every build and smoke
   test has passed. The calling job checks out the repository and grants
   packages, id-token and attestations write.
 
