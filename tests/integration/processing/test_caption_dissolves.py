@@ -30,7 +30,7 @@ def _frames(path):
 def test_dissolve_has_no_caption_collision(tmp_path):
     library = Path(__file__).parents[2] / "e2e/fixtures/library"
     clips = []
-    for index, name in enumerate(("lake-sunset.jpg", "woods-path.jpg")):
+    for index, name in enumerate(("north-0721-0339.jpg", "north-0729-0898.jpg")):
         source = tmp_path / f"source-{index}.mp4"
         subprocess.run(
             [
@@ -62,8 +62,8 @@ def test_dissolve_has_no_caption_collision(tmp_path):
             AssemblyClip(
                 source,
                 2.0,
-                date=f"2024-06-{21 + index}",
-                location_name=("Annecy", "Forest")[index],
+                date=f"2025-07-{21 + index}",
+                location_name=("Reine", "Geiranger")[index],
             )
         )
     rendered = {}

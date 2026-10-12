@@ -278,18 +278,21 @@ Quadrants (https://github.com/Genesis-Embodied-AI/quadrants)
 Test and demo fixtures
 ----------------------
 
-Fixture library, tests/e2e/fixtures/library/ (136 photographs)
-  License: CC0 1.0 (public domain dedication), no attribution required
-  Source: six from StockSnap.io via the Openverse index, the rest from
-    Wikimedia Commons filtered to CC0; per-file provenance and SHA-256 in
-    tests/e2e/fixtures/library/CREDITS.md, pinned by tests/test_fixture_library.py
+Fixture library, tests/e2e/fixtures/library/ (1,061 photographs and 7 clips)
+  License: per file, CC0 1.0 or CC BY 2.0, 3.0 or 4.0; CC BY files credit
+    their author as the licence asks
+  Source: Wikimedia Commons, checked on each file's own licence metadata;
+    the road-trip set is Lukas Beck's (CC BY 4.0). Per-file author, source,
+    licence and SHA-256 in tests/e2e/fixtures/library/CREDITS.md, pinned by
+    tests/test_fixture_library.py
 
 Face fixture, tests/fixtures/faces/picnic-friends.jpg ("Friends Picnic")
   License: CC0 1.0 (public domain dedication), no attribution required
   Copyright: Helena Lopes
   Source: https://stocksnap.io/photo/friends-picnic-3IVBNKC2JH, via the
     Openverse index; provenance in tests/fixtures/faces/CREDITS.md
-  Note: kept out of the library above, which shows no recognisable face
+  The six faceless-*.jpg textures next to it are CC0 1.0 stock photographs,
+    credited in the same CREDITS.md
 
 HDR samples, tests/fixtures/hdr_samples/ (see LICENSES.md there)
   Awesome-Gain-Maps (UltraHDR JPEG gain map test images)

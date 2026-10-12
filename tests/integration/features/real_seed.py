@@ -28,7 +28,7 @@ import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 
 from PIL import Image
@@ -111,17 +111,42 @@ def _stamp_photo(source: Path, target: Path, moment: datetime) -> None:
 def _stamp_video(source: Path, target: Path, moment: datetime) -> None:
     """The clip with its capture time, zone and camera as a phone writes them, streams copied."""
     make, model = gate_media.CAMERA
-    stamp = moment.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]
+    # The instant in UTC, and the phone's own wall clock with its offset, as an iPhone writes.
+    stamp = moment.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]
+    local = moment.strftime("%Y-%m-%dT%H:%M:%S") + moment.strftime("%z")
     subprocess.run(  # noqa: S603 -- fixed ffmpeg argv, our own media
         ["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-i", str(source),
          "-map", "0", "-c", "copy",
          "-metadata", f"creation_time={stamp}Z",
-         "-metadata", f"com.apple.quicktime.creationdate={stamp}+0000",
+         "-metadata", f"com.apple.quicktime.creationdate={local}",
          "-metadata", f"com.apple.quicktime.make={make}",
          "-metadata", f"com.apple.quicktime.model={model}",
          "-movflags", "use_metadata_tags+faststart", "-f", "mp4", str(target)],
         capture_output=True, text=True, check=True,
     )  # fmt: skip
+
+
+def _box(item: Upload, slot: int, width: int, height: int) -> dict[str, int]:
+    """Where the face sits: the box the fixture pinned to that person, else one per slot."""
+    pinned = [face for face in item.picture.faces if not item.partner]
+    if slot < len(pinned):
+        face = pinned[slot]
+        return {
+            "imageWidth": width,
+            "imageHeight": height,
+            "x": round(face.x * width),
+            "y": round(face.y * height),
+            "width": round(face.w * width),
+            "height": round(face.h * height),
+        }
+    return {
+        "imageWidth": width,
+        "imageHeight": height,
+        "x": width // 20 + slot * width // 4,
+        "y": height // 6,
+        "width": width // 6,
+        "height": height // 4,
+    }
 
 
 def build_uploads(root: Path) -> list[Upload]:
@@ -226,12 +251,7 @@ class _Library:
                     json={
                         "assetId": asset_id,
                         "personId": person,
-                        "imageWidth": width,
-                        "imageHeight": height,
-                        "x": width // 20 + slot * width // 4,
-                        "y": height // 6,
-                        "width": width // 6,
-                        "height": height // 4,
+                        **_box(item, slot, width, height),
                     },
                 )
                 if person not in featured:

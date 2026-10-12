@@ -225,8 +225,8 @@ def test_a_big_family_day_of_the_same_kind_keeps_all_of_its_depth():
 
 
 def test_the_public_fixture_month_folds_nothing():
-    """The CC0 demo month (a garden birthday, a week at a lake, a day in the woods, ordinary
-    days at home), each scene labelled by its own kind: no kind repeats densely enough to fold."""
+    """The demo month (a birthday at home, a Sunday in the forest, twenty days on the road,
+    ordinary days), each moment labelled by its own set: no kind repeats densely enough to fold."""
     assets, moments, audience, gps_of = {}, {}, {}, {}
     for picture in LIBRARY:
         taken = datetime.fromisoformat(picture.taken_at.replace("Z", "+00:00")).replace(tzinfo=None)
@@ -235,13 +235,16 @@ def test_the_public_fixture_month_folds_nothing():
             file_created_at=taken,
             is_favorite=picture.is_favorite,
             is_video=picture.is_video,
-            exif_info=SimpleNamespace(city=picture.place.city, place_name=None),
+            exif_info=SimpleNamespace(
+                city=picture.place.city if picture.place else None, place_name=None
+            ),
             people=[],
         )
         audience[picture.asset_id] = SimpleNamespace(
             heads=[("activity", picture.scene.split("-")[0])]
         )
-        gps_of[picture.asset_id] = (picture.place.latitude, picture.place.longitude)
+        if picture.place is not None:
+            gps_of[picture.asset_id] = (picture.place.latitude, picture.place.longitude)
         moments.setdefault(f"M-{picture.scene}", []).append(picture.asset_id)
     source = SimpleNamespace(
         assets=assets,

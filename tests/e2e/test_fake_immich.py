@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import json
 import subprocess
+from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime
 from itertools import combinations
 from pathlib import Path
+from typing import Any
 
 import httpx
 import pytest
@@ -21,7 +23,7 @@ from immich_memories.generate_clips import MIN_CLIP_DURATION, assets_to_clips
 from immich_memories.timeperiod import calendar_year
 from tests.e2e import fake_immich
 from tests.e2e.fake_immich import FakeImmichServer
-from tests.e2e.fake_library import CAST, LIBRARY, PARTNER_PICTURES
+from tests.e2e.fake_library import BY_ID, CAST, LIBRARY, LIBRARY_DIR, MONTH, PARTNER_PICTURES, YEAR
 
 pytestmark = pytest.mark.e2e
 
@@ -36,15 +38,16 @@ def _on_timeline(assets: list[Asset]) -> list[Asset]:
     return [asset for asset in assets if asset.visibility == "timeline"]
 
 
-_JUNE_START = date(2024, 6, 1)
-_JUNE_END = date(2024, 6, 30)
+_MONTH_START = date(YEAR, MONTH, 1)
+_MONTH_END = date(YEAR, MONTH, 31)
+_BUCKET = f"{YEAR}-{MONTH:02d}-01"
 
 
 def _bucket_assets(server: FakeImmichServer, **params: str) -> list[Asset]:
     """One month bucket's assets, read straight off the fake's timeline endpoint."""
     response = httpx.get(
         f"{server.base_url}/api/timeline/bucket",
-        params={"timeBucket": "2024-06-01", **params},
+        params={"timeBucket": _BUCKET, **params},
         headers={"x-api-key": server.api_key},
     )
     response.raise_for_status()
@@ -98,8 +101,8 @@ def _upload_to_fake(server: FakeImmichServer, index: int) -> str:
             headers={"x-api-key": server.api_key},
             data={
                 "filename": f"memory-{index}.mp4",
-                "fileCreatedAt": "2024-06-01T12:00:00.000Z",
-                "fileModifiedAt": "2024-06-01T12:00:00.000Z",
+                "fileCreatedAt": f"{_MONTH_START}T12:00:00.000Z",
+                "fileModifiedAt": f"{_MONTH_START}T12:00:00.000Z",
             },
             files={"assetData": (f"memory-{index}.mp4", source, "video/mp4")},
         )
@@ -149,7 +152,7 @@ def test_step1_connection_chain_returns_user_people_and_available_years(
     assert [(person.id, person.name, person.is_hidden) for person in people] == [
         (f"person-{name.lower()}", name, False) for name in CAST
     ]
-    assert years == [2024]
+    assert years == [YEAR]
 
 
 def test_wrong_api_key_is_rejected(fake_immich_server) -> None:
@@ -174,7 +177,7 @@ def test_monthly_timeline_contains_every_synthetic_moment(fake_immich_server) ->
 
     # One month holds the whole library, named by its first day as Immich names it.
     assert [(bucket.time_bucket, bucket.count) for bucket in buckets] == [
-        ("2024-06-01", len(LIBRARY)),
+        (_BUCKET, len(LIBRARY)),
     ]
     assert [asset.id for asset in assets if asset.type is AssetType.VIDEO] == _VIDEO_IDS
     assert [asset.id for asset in assets if asset.type is AssetType.IMAGE] == _PHOTO_IDS
@@ -194,6 +197,17 @@ def test_the_timeline_refuses_a_media_type_it_does_not_define(fake_immich_server
     assert refused == ["GET /api/timeline/buckets: type is not a parameter Immich defines"]
 
 
+def _every_page(client: SyncImmichClient, **filters: Any) -> list[Asset]:
+    """Every page of a search, oldest first: Immich answers a page at a time, newest first."""
+    found, page = [], 1
+    while True:
+        result = client.search_metadata(page=page, size=1000, **filters)
+        found += result.all_assets
+        if not result.next_page:
+            return sorted(found, key=lambda asset: (asset.file_created_at, asset.id))
+        page += 1
+
+
 def test_metadata_search_filters_the_video_and_photo_inventories(fake_immich_server) -> None:
     """The real search client receives exactly the requested media type."""
     with SyncImmichClient(
@@ -201,13 +215,10 @@ def test_metadata_search_filters_the_video_and_photo_inventories(fake_immich_ser
         fake_immich_server.api_key,
         api_version="v3",
     ) as client:
-        videos = client.search_metadata(
-            asset_type=AssetType.VIDEO, taken_after=_JUNE_START, taken_before=_JUNE_END
-        ).all_assets
-        photos = client.search_metadata(
-            asset_type=AssetType.IMAGE, taken_after=_JUNE_START, taken_before=_JUNE_END
-        ).all_assets
-        everything = client.search_metadata().all_assets
+        month = {"taken_after": _MONTH_START, "taken_before": _MONTH_END}
+        videos = _every_page(client, asset_type=AssetType.VIDEO, **month)
+        photos = _every_page(client, asset_type=AssetType.IMAGE, **month)
+        everything = _every_page(client)
 
     # v3 returns the hidden Live clips unasked; the app leaves them out itself (source_filter).
     assert len(_on_timeline(everything)) == len(LIBRARY)
@@ -263,8 +274,8 @@ def test_search_uses_v3_millisecond_duration_on_the_wire(fake_immich_server) -> 
         headers={"x-api-key": fake_immich_server.api_key},
         json={
             "type": "VIDEO",
-            "takenAfter": "2024-06-01T00:00:00.000Z",
-            "takenBefore": "2024-06-30T23:59:59.999Z",
+            "takenAfter": f"{_MONTH_START}T00:00:00.000Z",
+            "takenBefore": f"{_MONTH_END}T23:59:59.999Z",
         },
     )
 
@@ -285,7 +296,7 @@ def test_the_generate_clip_conversion_keeps_every_fake_video(fake_immich_server)
         fake_immich_server.api_key,
         api_version="v3",
     ) as client:
-        assets = client.get_videos_for_date_range(calendar_year(2024))
+        assets = client.get_videos_for_date_range(calendar_year(YEAR))
 
     clips = assets_to_clips(_on_timeline(assets), min_duration=0.0)
 
@@ -297,8 +308,9 @@ def test_original_and_playback_downloads_are_valid_h264_sdr_media(
     fake_immich_server,
     tmp_path: Path,
 ) -> None:
-    """Both real download paths yield the generated, probeable source video."""
-    assert fake_immich_server.source_video.is_relative_to(fake_immich_server.root)
+    """Both real download paths yield the library's own phone clip, probeable as recorded."""
+    assert fake_immich_server.source_video.is_relative_to(LIBRARY_DIR)
+    clip = BY_ID[_VIDEO_IDS[0]]
 
     original_path = tmp_path / "original.mp4"
     playback_path = tmp_path / "playback.mp4"
@@ -316,8 +328,8 @@ def test_original_and_playback_downloads_are_valid_h264_sdr_media(
         assert streams["video"] == {
             "codec_name": "h264",
             "codec_type": "video",
-            "width": 1920,
-            "height": 1080,
+            "width": clip.width,
+            "height": clip.height,
             "pix_fmt": "yuv420p",
             "color_transfer": "bt709",
         }
@@ -325,14 +337,20 @@ def test_original_and_playback_downloads_are_valid_h264_sdr_media(
         assert float(probe["format"]["duration"]) == pytest.approx(_VIDEO_SECONDS[0], abs=0.1)
 
 
-def test_photo_originals_are_generated_jpegs(fake_immich_server, tmp_path: Path) -> None:
-    """Every fake photo downloads as a real JPEG above the source-quality floor."""
+def test_photo_originals_are_the_library_jpegs_at_their_own_size(
+    fake_immich_server, tmp_path: Path
+) -> None:
+    """Every fake photo downloads as the library's JPEG, at the size its asset advertises.
+
+    The library file itself, except where the service renders a variant: the HDR photo with
+    its gain map, and the edited render of a photo edited in Immich's editor.
+    """
     # Both accounts' photos, and the edited render of each photo edited in Immich's editor.
     served = [p for p in (*LIBRARY, *PARTNER_PICTURES) if not p.is_video]
     edits = [p.asset_id + fake_immich.EDITED for p in served if p.edited]
     assert set(fake_immich_server.photo_paths) == {p.asset_id for p in served} | set(edits)
     assert all(
-        path.is_relative_to(fake_immich_server.root)
+        path.is_relative_to(fake_immich_server.root) or path.is_relative_to(LIBRARY_DIR)
         for path in fake_immich_server.photo_paths.values()
     )
 
@@ -348,8 +366,7 @@ def test_photo_originals_are_generated_jpegs(fake_immich_server, tmp_path: Path)
         }
 
     for picture, path in downloaded.items():
-        # A portrait photo is the same size, stood on its end.
-        width, height = (1280, 1920) if picture.portrait else (1920, 1280)
+        width, height = picture.width, picture.height
         assert _probe_image(path)["streams"] == [
             {"codec_name": "mjpeg", "codec_type": "video", "width": width, "height": height}
         ]
@@ -377,13 +394,16 @@ def test_every_asset_thumbnail_shows_its_own_scene(fake_immich_server) -> None:
         for left, right in combinations(sorted(hashes), 2)
     }
     assert all(hashes.values())
-    # Assets made from one photograph share its preview: the Live Photo stills are drawn from
-    # library pictures (the window where nothing moves, and the three takes of one kick).
-    # Every other asset has its own.
-    sources = {(p.source, p.is_video) for p in LIBRARY}
-    assert len(set(hashes.values())) == len(sources), "two pictures share one preview"
-    close = {pair: d for pair, d in distances.items() if d <= threshold}
-    assert len(close) < 0.02 * len(distances), f"near-duplicate previews: {close}"
+    # A real library hashes some previews alike: an hour of ferry wake is sea and sky, and
+    # the Live Photo stills are drawn from library pictures. One preview served for every
+    # asset (#525) puts them all on one hash and every pair at zero; a real library does not.
+    shared = Counter(hashes.values()).most_common(1)[0][1]
+    assert shared < 0.10 * len(hashes), f"{shared} assets share one preview"
+    assert len(set(hashes.values())) >= 0.80 * len(hashes), "previews collapse onto a few hashes"
+    # Real photographs share a shape (sky above, ground below): about 7% of this library's
+    # pairs sit within the threshold.
+    close = sum(1 for d in distances.values() if d <= threshold)
+    assert close < 0.25 * len(distances), f"{close} of {len(distances)} preview pairs look alike"
 
 
 def test_real_auto_client_uploads_and_fake_records_v3_multipart(fake_immich_server) -> None:
@@ -432,8 +452,8 @@ def test_v3_upload_rejects_each_v2_device_field(fake_immich_server, v2_field: st
             headers={"x-api-key": fake_immich_server.api_key},
             data={
                 "filename": "memory.mp4",
-                "fileCreatedAt": "2024-06-01T12:00:00.000Z",
-                "fileModifiedAt": "2024-06-01T12:00:00.000Z",
+                "fileCreatedAt": f"{_MONTH_START}T12:00:00.000Z",
+                "fileModifiedAt": f"{_MONTH_START}T12:00:00.000Z",
                 v2_field: "removed-in-v3",
             },
             files={"assetData": ("memory.mp4", source, "video/mp4")},

@@ -27,7 +27,7 @@ from immich_memories.timeperiod import DateRange
 from tests.integration.immich_fixtures import has_immich, immich_unavailable
 from tests.integration.immich_gate.gate_cli import gate_store_url
 
-FIXTURE_MONTH = DateRange(start=datetime(2024, 6, 1), end=datetime(2024, 6, 30, 23, 59, 59))
+FIXTURE_MONTH = DateRange(start=datetime(2025, 7, 1), end=datetime(2025, 7, 31, 23, 59, 59))
 BULK_YEAR = DateRange(start=datetime(2019, 1, 1), end=datetime(2019, 12, 31, 23, 59, 59))
 
 

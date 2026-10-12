@@ -30,7 +30,7 @@ from tests.features.cli_harness import (
     film_facts,
 )
 from tests.integration.features.immich_server import LibraryServer
-from tests.integration.features.library import GARDEN_DAY, QUIET_DAY, day_args
+from tests.integration.features.library import DEPARTURE_DAY, QUIET_DAY, day_args
 from tests.integration.features.served_ui import free_port, serve_ui
 
 # A SQLite store the published 1.0.0rc5 wheel wrote (schema 0012): two people the scan linked,
@@ -290,7 +290,7 @@ main()
 
 def _start_slow_cut(home: UserHome) -> subprocess.Popen:
     return subprocess.Popen(  # noqa: S603 -- our own CLI, fixed argv
-        [sys.executable, "-c", _SLOW_SELECTION, *day_args(GARDEN_DAY), "--no-render"],
+        [sys.executable, "-c", _SLOW_SELECTION, *day_args(DEPARTURE_DAY), "--no-render"],
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
         env=home.env(),

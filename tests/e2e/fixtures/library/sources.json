@@ -1,0 +1,6760 @@
+{
+ "sets": {
+  "north": {
+   "label": "Lukas Beck's July 2025 road trip, served at the minute each shot was taken",
+   "shift_days": 0,
+   "offset": "+02:00"
+  },
+  "home-0701-laeken": {
+   "label": "home-0701-laeken",
+   "shift_days": 21,
+   "offset": "+02:00"
+  },
+  "home-0701-ganshoren": {
+   "label": "home-0701-ganshoren",
+   "shift_days": 392,
+   "offset": "+02:00"
+  },
+  "home-0702-stuffie": {
+   "label": "home-0702-stuffie",
+   "shift_days": 3810,
+   "offset": "+02:00"
+  },
+  "home-0702-tram": {
+   "label": "home-0702-tram",
+   "shift_days": 3670,
+   "offset": "+02:00"
+  },
+  "home-0702-beanbag": {
+   "label": "home-0702-beanbag",
+   "shift_days": 3592,
+   "offset": "+02:00"
+  },
+  "home-0703-cooking": {
+   "label": "home-0703-cooking",
+   "shift_days": 6095,
+   "offset": "+02:00"
+  },
+  "home-0703-duden": {
+   "label": "home-0703-duden",
+   "shift_days": 1835,
+   "offset": "+02:00"
+  },
+  "home-0704-fountain": {
+   "label": "home-0704-fountain",
+   "shift_days": 6168,
+   "offset": "+02:00"
+  },
+  "home-0704-tervuren-evening": {
+   "label": "home-0704-tervuren-evening",
+   "shift_days": 1420,
+   "offset": "+02:00"
+  },
+  "birthday-cake": {
+   "label": "birthday-cake",
+   "shift_days": 4098,
+   "offset": "+02:00",
+   "home_gps": {
+    "latitude": 50.8417,
+    "longitude": 4.3624,
+    "city": "Brussels",
+    "country": "Belgium"
+   }
+  },
+  "birthday-heroes": {
+   "label": "birthday-heroes",
+   "shift_days": 4203,
+   "offset": "+02:00"
+  },
+  "forest-romaine": {
+   "label": "forest-romaine",
+   "shift_days": 2224,
+   "offset": "+02:00"
+  },
+  "forest-grandad": {
+   "label": "forest-grandad",
+   "shift_days": 4071,
+   "offset": "+02:00"
+  },
+  "forest-picnic": {
+   "label": "forest-picnic",
+   "shift_days": 804,
+   "offset": "+02:00"
+  },
+  "forest-tervuren": {
+   "label": "forest-tervuren",
+   "shift_days": 6532,
+   "offset": "+02:00"
+  },
+  "home-0707-boudewijn": {
+   "label": "home-0707-boudewijn",
+   "shift_days": 8,
+   "offset": "+02:00"
+  },
+  "home-0708-icecream": {
+   "label": "home-0708-icecream",
+   "shift_days": 3294,
+   "offset": "+02:00"
+  },
+  "home-0708-stlambert": {
+   "label": "home-0708-stlambert",
+   "shift_days": 1116,
+   "offset": "+02:00"
+  },
+  "home-0709-atomium": {
+   "label": "home-0709-atomium",
+   "shift_days": -48,
+   "offset": "+02:00"
+  },
+  "home-0709-bikes": {
+   "label": "home-0709-bikes",
+   "shift_days": 5122,
+   "offset": "+02:00"
+  },
+  "home-0710-botanique": {
+   "label": "home-0710-botanique",
+   "shift_days": 4376,
+   "offset": "+02:00"
+  },
+  "home-0710-sofa": {
+   "label": "home-0710-sofa",
+   "shift_days": 3188,
+   "offset": "+02:00"
+  },
+  "home-0711-mill": {
+   "label": "home-0711-mill",
+   "shift_days": 0,
+   "offset": "+02:00"
+  },
+  "home-0711-sunrise": {
+   "label": "home-0711-sunrise",
+   "shift_days": 1469,
+   "offset": "+02:00"
+  },
+  "trip-copenhagen-bikes": {
+   "label": "trip-copenhagen-bikes",
+   "shift_days": 3976,
+   "offset": "+02:00"
+  },
+  "trip-copenhagen-dad": {
+   "label": "trip-copenhagen-dad",
+   "shift_days": 3179,
+   "offset": "+02:00"
+  },
+  "trip-beach": {
+   "label": "trip-beach",
+   "shift_days": 4068,
+   "offset": "+02:00"
+  }
+ },
+ "pictures": [
+  {
+   "stem": "home-0701-laeken-park",
+   "commons": "File:Park Laeken.jpg",
+   "set": "home-0701-laeken",
+   "tier": "film",
+   "caption": "the park at Laeken on the way home"
+  },
+  {
+   "stem": "home-0701-ganshoren",
+   "commons": "File:Moeras van Ganshoren.jpg",
+   "set": "home-0701-ganshoren",
+   "tier": "pool",
+   "caption": "a morning street in Ganshoren"
+  },
+  {
+   "stem": "home-0702-kit-stuffie",
+   "commons": "File:Happy girl with Stuffie stuffed animal dog toy in a bedroom with a bed and lavender comforter and white drawers (16349270236).jpg",
+   "set": "home-0702-stuffie",
+   "tier": "film",
+   "caption": "Kit and the stuffed dog in the bedroom",
+   "people": [
+    "Kit"
+   ],
+   "no_gps": true
+  },
+  {
+   "stem": "home-0702-tram-1",
+   "commons": "File:Brussels tram at Schaerbeek (22708042725).jpg",
+   "set": "home-0702-tram",
+   "tier": "pool",
+   "caption": "the tram at Schaerbeek"
+  },
+  {
+   "stem": "home-0702-tram-2",
+   "commons": "File:Brussels tram at Schaerbeek (22719232191).jpg",
+   "set": "home-0702-tram",
+   "tier": "pool",
+   "caption": "the tram pulling away"
+  },
+  {
+   "stem": "home-0702-kit-beanbag",
+   "commons": "File:Boy with book on bean bag chair (20681977834).jpg",
+   "set": "home-0702-beanbag",
+   "tier": "film",
+   "caption": "Kit reading on the bean bag",
+   "people": [
+    "Kit"
+   ],
+   "no_gps": true
+  },
+  {
+   "stem": "home-0703-baking",
+   "commons": "File:HomeschooledChildrenCooking.jpg",
+   "set": "home-0703-cooking",
+   "tier": "film",
+   "caption": "baking bread in the kitchen",
+   "people": [
+    "Kit"
+   ],
+   "no_gps": true
+  },
+  {
+   "stem": "home-0703-duden-00",
+   "commons": "File:Conciergerie Duden.jpg",
+   "set": "home-0703-duden",
+   "tier": "pool",
+   "caption": "the old orangery in Duden park",
+   "time": "2025-07-03T19:05:00"
+  },
+  {
+   "stem": "home-0703-duden-01",
+   "commons": "File:Cross duden 2.jpg",
+   "set": "home-0703-duden",
+   "tier": "pool",
+   "caption": "the Duden park gate",
+   "time": "2025-07-03T19:08:00"
+  },
+  {
+   "stem": "home-0703-duden-02",
+   "commons": "File:Duden castle 2.jpg",
+   "set": "home-0703-duden",
+   "tier": "pool",
+   "caption": "the castle at the edge of the park",
+   "time": "2025-07-03T19:12:00"
+  },
+  {
+   "stem": "home-0703-duden-03",
+   "commons": "File:Duden entrance.jpg",
+   "set": "home-0703-duden",
+   "tier": "pool",
+   "caption": "the park entrance",
+   "time": "2025-07-03T19:14:00"
+  },
+  {
+   "stem": "home-0703-duden-04",
+   "commons": "File:Duden steps.jpg",
+   "set": "home-0703-duden",
+   "tier": "pool",
+   "caption": "the steps up through the park",
+   "time": "2025-07-03T19:21:00"
+  },
+  {
+   "stem": "home-0703-duden-05",
+   "commons": "File:Jupiterlaan.jpg",
+   "set": "home-0703-duden",
+   "tier": "pool",
+   "caption": "the avenue below the park",
+   "time": "2025-07-03T19:30:00"
+  },
+  {
+   "stem": "home-0703-duden-06",
+   "commons": "File:Lainésquare.jpg",
+   "set": "home-0703-duden",
+   "tier": "pool",
+   "caption": "lavender in the square",
+   "time": "2025-07-03T19:36:00"
+  },
+  {
+   "stem": "home-0703-duden-07",
+   "commons": "File:Park of Vorst from Dudenpark.jpg",
+   "set": "home-0703-duden",
+   "tier": "film",
+   "caption": "Forest seen from Duden park, the evening sun on the lawn",
+   "time": "2025-07-03T19:44:00"
+  },
+  {
+   "stem": "home-0703-duden-08",
+   "commons": "File:Park of vorst 2020.jpg",
+   "set": "home-0703-duden",
+   "tier": "film",
+   "caption": "the lawn in Forest park",
+   "time": "2025-07-03T19:47:00"
+  },
+  {
+   "stem": "home-0703-duden-09",
+   "commons": "File:Petanque in Dudenpark.jpg",
+   "set": "home-0703-duden",
+   "tier": "pool",
+   "caption": "the clearing in Duden park",
+   "time": "2025-07-03T19:55:00"
+  },
+  {
+   "stem": "home-0703-duden-10",
+   "commons": "File:View of Lainé square.jpg",
+   "set": "home-0703-duden",
+   "tier": "pool",
+   "caption": "the square at dusk",
+   "time": "2025-07-03T20:10:00"
+  },
+  {
+   "stem": "home-0704-fountain",
+   "commons": "File:Summer fountain children body composition.jpg",
+   "set": "home-0704-fountain",
+   "tier": "film",
+   "caption": "running through the fountain",
+   "people": [
+    "Kit"
+   ],
+   "no_gps": true
+  },
+  {
+   "stem": "home-0704-tervuren-station",
+   "commons": "File:Goederenloods station Tervuren (DSC 5489).jpg",
+   "set": "home-0704-tervuren-evening",
+   "tier": "pool",
+   "caption": "the old tram depot in Tervuren"
+  },
+  {
+   "stem": "home-0704-jazz",
+   "commons": "File:Bandundu Water Jazz Band (DSC 5500).jpg",
+   "set": "home-0704-tervuren-evening",
+   "tier": "pool",
+   "caption": "a jazz band by the water"
+  },
+  {
+   "stem": "birthday-kitchen",
+   "commons": "File:Birthday Cake in Kitchen (15072353171).jpg",
+   "set": "birthday-cake",
+   "tier": "pool",
+   "caption": "the cake waiting in the kitchen"
+  },
+  {
+   "stem": "birthday-cake",
+   "commons": "File:Memorable Child's Birthday Cake (14888675499).jpg",
+   "set": "birthday-cake",
+   "tier": "film",
+   "caption": "the birthday cake",
+   "no_gps": true
+  },
+  {
+   "stem": "birthday-decorating",
+   "commons": "File:Memorable Child's Birthday Cake Decorating (14888734070).jpg",
+   "set": "birthday-cake",
+   "tier": "film",
+   "caption": "putting the sweets on the cake",
+   "no_gps": true
+  },
+  {
+   "stem": "birthday-cupcakes-1",
+   "commons": "File:Memorable Child's Birthday Cupcakes (15075013982).jpg",
+   "set": "birthday-cake",
+   "tier": "film",
+   "caption": "cupcakes with a candle",
+   "no_gps": true
+  },
+  {
+   "stem": "birthday-cupcakes-2",
+   "commons": "File:Memorable Child's Birthday Cupcakes (15075367775).jpg",
+   "set": "birthday-cake",
+   "tier": "pool",
+   "caption": "the cupcakes on the stand",
+   "no_gps": true
+  },
+  {
+   "stem": "birthday-stairs",
+   "commons": "File:Girl walking down red carpet on stairs (15150081472).jpg",
+   "set": "birthday-cake",
+   "tier": "film",
+   "caption": "Kit coming down the stairs in the party dress",
+   "people": [
+    "Kit"
+   ]
+  },
+  {
+   "stem": "birthday-sofa-film",
+   "commons": "File:Family watching a movie on the couch (14963809100).jpg",
+   "set": "birthday-cake",
+   "tier": "film",
+   "caption": "everyone on the sofa for a film",
+   "people": [
+    "Robin",
+    "Charlie",
+    "Kit"
+   ]
+  },
+  {
+   "stem": "birthday-dancing",
+   "commons": "File:Daughter dancing with her dad (15150484395).jpg",
+   "set": "birthday-cake",
+   "tier": "film",
+   "caption": "dancing in the living room"
+  },
+  {
+   "stem": "birthday-superheroes",
+   "commons": "File:Babies in superhero costumes playing by a chair (16373224843).jpg",
+   "set": "birthday-heroes",
+   "tier": "film",
+   "caption": "superheroes in the living room",
+   "people": [
+    "Kit"
+   ],
+   "time": "2025-07-05T16:10:00",
+   "no_gps": true
+  },
+  {
+   "stem": "forest-0706-sonian-1",
+   "commons": "File:Bosvoorde-grafheuvels Zoniënwoud (1).jpg",
+   "set": "forest-romaine",
+   "tier": "film",
+   "caption": "the old burial mounds in the Sonian forest",
+   "time": "2025-07-06T10:05:00"
+  },
+  {
+   "stem": "forest-0706-sonian-2",
+   "commons": "File:Bosvoorde-grafheuvels Zoniënwoud (3).jpg",
+   "set": "forest-romaine",
+   "tier": "film",
+   "caption": "the path through the Sonian forest",
+   "time": "2025-07-06T10:12:00"
+  },
+  {
+   "stem": "forest-0706-sonian-3",
+   "commons": "File:Bosvoorde-grafheuvels Zoniënwoud (5).jpg",
+   "set": "forest-romaine",
+   "tier": "pool",
+   "caption": "the mounds under the beeches",
+   "time": "2025-07-06T10:15:00"
+  },
+  {
+   "stem": "forest-0706-spring",
+   "commons": "File:Overijse-Kellebron (1).jpg",
+   "set": "forest-romaine",
+   "tier": "pool",
+   "caption": "the spring at the forest edge",
+   "time": "2025-07-06T11:40:00"
+  },
+  {
+   "stem": "forest-0706-pat-00",
+   "commons": "File:Grandfather and Grandson SJ (14147777729).jpg",
+   "set": "forest-grandad",
+   "tier": "film",
+   "caption": "Pat and Kit far down the forest path",
+   "no_gps": true
+  },
+  {
+   "stem": "forest-0706-pat-01",
+   "commons": "File:FLSP Grandfather and grandson SJ (14354660123).jpg",
+   "set": "forest-grandad",
+   "tier": "film",
+   "caption": "Kit smelling the honeysuckle",
+   "no_gps": true
+  },
+  {
+   "stem": "forest-0706-pat-02",
+   "commons": "File:Grandfather and Grandson SJ (14147794949).jpg",
+   "set": "forest-grandad",
+   "tier": "film",
+   "caption": "Kit by the bushes",
+   "people": [
+    "Kit"
+   ],
+   "no_gps": true
+  },
+  {
+   "stem": "forest-0706-pat-03",
+   "commons": "File:Grandfather and Grandson SJ (14147825960).jpg",
+   "set": "forest-grandad",
+   "tier": "film",
+   "caption": "Pat in the bushes with Kit",
+   "people": [
+    "Pat"
+   ],
+   "no_gps": true
+  },
+  {
+   "stem": "forest-0706-pat-04",
+   "commons": "File:FLSP Grandson and Grandfather SJ (14147940887).jpg",
+   "set": "forest-grandad",
+   "tier": "film",
+   "caption": "Pat pointing at a tree",
+   "no_gps": true
+  },
+  {
+   "stem": "forest-0706-pat-05",
+   "commons": "File:Grandfather and Grandson SJ (14333701564).jpg",
+   "set": "forest-grandad",
+   "tier": "pool",
+   "caption": "the two of them far down the path",
+   "no_gps": true
+  },
+  {
+   "stem": "forest-0706-pat-06",
+   "commons": "File:FLSP Grandson and Grandfather SJ (14147785058).jpg",
+   "set": "forest-grandad",
+   "tier": "pool",
+   "caption": "holding hands",
+   "no_gps": true
+  },
+  {
+   "stem": "forest-0706-pat-07",
+   "commons": "File:FLSP Grandson and Grandfather SJ (14147941377).jpg",
+   "set": "forest-grandad",
+   "tier": "pool",
+   "caption": "Pat and the tree again",
+   "no_gps": true
+  },
+  {
+   "stem": "forest-0706-picnic",
+   "commons": "File:Family Picnic (52842627487).jpg",
+   "set": "forest-picnic",
+   "tier": "film",
+   "caption": "the picnic blanket in the meadow",
+   "people": [
+    "Robin",
+    "Kit"
+   ],
+   "no_gps": true
+  },
+  {
+   "stem": "forest-0706-tervuren-00",
+   "commons": "File:Taxodium distichum - Tervueren1.JPG",
+   "set": "forest-tervuren",
+   "tier": "pool",
+   "caption": "the big cypress at Tervuren",
+   "time": "2025-07-06T15:10:00"
+  },
+  {
+   "stem": "forest-0706-tervuren-01",
+   "commons": "File:Taxodium distichum - Tervueren 3.JPG",
+   "set": "forest-tervuren",
+   "tier": "pool",
+   "caption": "under the swamp cypresses",
+   "time": "2025-07-06T15:14:00"
+  },
+  {
+   "stem": "forest-0706-tervuren-02",
+   "commons": "File:Tervueren Etg1c JPG.jpg",
+   "set": "forest-tervuren",
+   "tier": "pool",
+   "caption": "the lake in Tervuren park",
+   "time": "2025-07-06T15:25:00"
+  },
+  {
+   "stem": "forest-0706-tervuren-03",
+   "commons": "File:Tervueren Mu1b JPG.jpg",
+   "set": "forest-tervuren",
+   "tier": "film",
+   "caption": "fishing below the Africa Museum",
+   "time": "2025-07-06T15:40:00"
+  },
+  {
+   "stem": "forest-0706-tervuren-04",
+   "commons": "File:Tervueren Mu1a.jpg",
+   "set": "forest-tervuren",
+   "tier": "pool",
+   "caption": "the museum across the water"
+  },
+  {
+   "stem": "forest-0706-tervuren-05",
+   "commons": "File:Catalpa bignonioides JPG5Ab.jpg",
+   "set": "forest-tervuren",
+   "tier": "pool",
+   "caption": "the catalpa by the lake"
+  },
+  {
+   "stem": "home-0707-park-1",
+   "commons": "File:Koning Bouwdewijn park 1.jpg",
+   "set": "home-0707-boudewijn",
+   "tier": "pool",
+   "caption": "the path through Boudewijn park"
+  },
+  {
+   "stem": "home-0707-park-2",
+   "commons": "File:Koning Bouwdewijn park 2.jpg",
+   "set": "home-0707-boudewijn",
+   "tier": "pool",
+   "caption": "Boudewijn park lawn"
+  },
+  {
+   "stem": "home-0707-park-3",
+   "commons": "File:Koning Bouwdewijn park 3.jpg",
+   "set": "home-0707-boudewijn",
+   "tier": "pool",
+   "caption": "the green pond"
+  },
+  {
+   "stem": "home-0707-park-4",
+   "commons": "File:Koning Bouwdewijn park 4.jpg",
+   "set": "home-0707-boudewijn",
+   "tier": "pool",
+   "caption": "the pond under the trees"
+  },
+  {
+   "stem": "home-0708-ice-cream-bike",
+   "commons": "File:Macedonia- Every child likes ice-cream (27918931622).jpg",
+   "set": "home-0708-icecream",
+   "tier": "film",
+   "caption": "ice cream on the bike",
+   "people": [
+    "Kit"
+   ],
+   "no_gps": true
+  },
+  {
+   "stem": "home-0708-saint-lambert",
+   "commons": "File:Brussels Église Saint-Lambert (52243158161).jpg",
+   "set": "home-0708-stlambert",
+   "tier": "pool",
+   "caption": "the square at Saint-Lambert"
+  },
+  {
+   "stem": "home-0709-atomium-00",
+   "commons": "File:Blick vom Atomium 01.jpg",
+   "set": "home-0709-atomium",
+   "tier": "film",
+   "caption": "looking down from the top of the Atomium"
+  },
+  {
+   "stem": "home-0709-atomium-01",
+   "commons": "File:Blick vom Atomium 02.jpg",
+   "set": "home-0709-atomium",
+   "tier": "pool",
+   "caption": "the stadium from the Atomium"
+  },
+  {
+   "stem": "home-0709-atomium-02",
+   "commons": "File:Blick vom Atomium 04.jpg",
+   "set": "home-0709-atomium",
+   "tier": "pool",
+   "caption": "Brussels from the top sphere"
+  },
+  {
+   "stem": "home-0709-atomium-03",
+   "commons": "File:Blick vom Atomium 05.jpg",
+   "set": "home-0709-atomium",
+   "tier": "pool",
+   "caption": "the avenue towards the city"
+  },
+  {
+   "stem": "home-0709-atomium-04",
+   "commons": "File:Blick vom Atomium 07.jpg",
+   "set": "home-0709-atomium",
+   "tier": "pool",
+   "caption": "the city and the park"
+  },
+  {
+   "stem": "home-0709-atomium-05",
+   "commons": "File:Blick vom Atomium 09.jpg",
+   "set": "home-0709-atomium",
+   "tier": "pool",
+   "caption": "Laeken from above"
+  },
+  {
+   "stem": "home-0709-atomium-06",
+   "commons": "File:Blick vom Atomium 10.jpg",
+   "set": "home-0709-atomium",
+   "tier": "film",
+   "caption": "one sphere from another"
+  },
+  {
+   "stem": "home-0709-atomium-07",
+   "commons": "File:Blick vom Atomium 12.jpg",
+   "set": "home-0709-atomium",
+   "tier": "pool",
+   "caption": "the towers to the north"
+  },
+  {
+   "stem": "home-0709-cycle-path",
+   "commons": "File:Children Riding Bicycles On Northwestern Cycleway.jpg",
+   "set": "home-0709-bikes",
+   "tier": "pool",
+   "caption": "children cycling on the cycle path",
+   "time": "2025-07-09T10:30:00",
+   "no_gps": true
+  },
+  {
+   "stem": "home-0710-botanique-0",
+   "commons": "File:Brussels, Belgium (9338418130).jpg",
+   "set": "home-0710-botanique",
+   "tier": "pool",
+   "caption": "the Botanique glasshouse"
+  },
+  {
+   "stem": "home-0710-botanique-1",
+   "commons": "File:Brussels, Belgium (9338414472).jpg",
+   "set": "home-0710-botanique",
+   "tier": "film",
+   "caption": "the Botanique dome"
+  },
+  {
+   "stem": "home-0710-botanique-2",
+   "commons": "File:Brussels, Belgium (9338411258).jpg",
+   "set": "home-0710-botanique",
+   "tier": "pool",
+   "caption": "the fountain in the Botanique garden"
+  },
+  {
+   "stem": "home-0710-botanique-3",
+   "commons": "File:Brussels, Belgium (9338406716).jpg",
+   "set": "home-0710-botanique",
+   "tier": "pool",
+   "caption": "the café terrace by the Botanique"
+  },
+  {
+   "stem": "home-0710-sofa",
+   "commons": "File:Two babies and woman sitting on sofa while holding baby and watching on tablet.jpg",
+   "set": "home-0710-sofa",
+   "tier": "film",
+   "caption": "Robin and Kit on the sofa",
+   "people": [
+    "Kit",
+    "Robin"
+   ],
+   "time": "2025-07-10T17:20:00",
+   "no_gps": true
+  },
+  {
+   "stem": "home-0711-flour-mill",
+   "commons": "File:Ceres flour mill, Brussels, 2025.jpg",
+   "set": "home-0711-mill",
+   "tier": "pool",
+   "caption": "the flour mill on the canal"
+  },
+  {
+   "stem": "home-0711-sunrise",
+   "commons": "File:Castel Slot wsl sunrise.jpg",
+   "set": "home-0711-sunrise",
+   "tier": "pool",
+   "caption": "sunrise over the street"
+  },
+  {
+   "stem": "trip-0712-cargo-bike",
+   "commons": "File:Christiania Bikes (83662895).jpeg",
+   "set": "trip-copenhagen-bikes",
+   "tier": "pool",
+   "caption": "a cargo bike by the water in Copenhagen"
+  },
+  {
+   "stem": "trip-0712-bike-harbour",
+   "commons": "File:Danish dad with two daughters and bike (30049718194).jpg",
+   "set": "trip-copenhagen-dad",
+   "tier": "film",
+   "caption": "Charlie on the bike with the kids by the harbour",
+   "people": [
+    "Charlie"
+   ]
+  },
+  {
+   "stem": "trip-0722-beach-gull",
+   "commons": "File:Goleta Camping Trip (14348545974).jpg",
+   "set": "trip-beach",
+   "tier": "film",
+   "caption": "Kit and the gull on the beach",
+   "no_gps": true
+  },
+  {
+   "stem": "trip-0723-beach-bucket",
+   "commons": "File:Goleta Camping Trip (14369582093).jpg",
+   "set": "trip-beach",
+   "tier": "pool",
+   "caption": "the yellow bucket",
+   "no_gps": true
+  },
+  {
+   "stem": "trip-0723-beach-stones",
+   "commons": "File:Goleta Camping Trip (14347821202).jpg",
+   "set": "trip-beach",
+   "tier": "film",
+   "caption": "Robin and Kit lining up stones",
+   "no_gps": true
+  },
+  {
+   "stem": "north-0712-0000",
+   "commons": "File:Gedesby Kirche lub 2025-07-12.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0712-0002",
+   "commons": "File:Idestrup Kirche lub 2025-07-12.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0712-0003",
+   "commons": "File:Damsholte Kirche lub 2025-07-12.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0712-0004",
+   "commons": "File:Møns Klint lub 2025-07-12 img01 GeoCenter.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0712-0005",
+   "commons": "File:Møns Klint lub 2025-07-12 img02 Maglevandstrappen.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0712-0006",
+   "commons": "File:Møns Klint lub 2025-07-12 img06.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0712-0007",
+   "commons": "File:Møns Klint lub 2025-07-12 img03 Maglevandstrappen.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0712-0008",
+   "commons": "File:Møns Klint lub 2025-07-12 img07.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0712-0009",
+   "commons": "File:Møns Klint lub 2025-07-12 img04 Maglevandstrappen.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0712-0010",
+   "commons": "File:Møns Klint lub 2025-07-12 img08.jpg",
+   "set": "north",
+   "tier": "film"
+  },
+  {
+   "stem": "north-0712-0011",
+   "commons": "File:Møns Klint lub 2025-07-12 img09.jpg",
+   "set": "north",
+   "tier": "film"
+  },
+  {
+   "stem": "north-0712-0012",
+   "commons": "File:Møns Klint lub 2025-07-12 img10.jpg",
+   "set": "north",
+   "tier": "film",
+   "caption": "the chalk cliffs at Møns Klint"
+  },
+  {
+   "stem": "north-0712-0013",
+   "commons": "File:Møns Klint lub 2025-07-12 img11.jpg",
+   "set": "north",
+   "tier": "film"
+  },
+  {
+   "stem": "north-0712-0014",
+   "commons": "File:Møns Klint lub 2025-07-12 img12.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0712-0015",
+   "commons": "File:Møns Klint lub 2025-07-12 img05 Maglevandstrappen.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0713-0016",
+   "commons": "File:Jönköping Holavedsleden lub 2025-07-13 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0713-0017",
+   "commons": "File:Jönköping Holavedsleden lub 2025-07-13 img03.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0713-0018",
+   "commons": "File:Jönköping Holavedsleden lub 2025-07-13 img04.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0713-0019",
+   "commons": "File:Jönköping Holavedsleden lub 2025-07-13 img08.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0713-0020",
+   "commons": "File:Jönköping Holavedsleden lub 2025-07-13 img05.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0713-0021",
+   "commons": "File:Jönköping Holavedsleden lub 2025-07-13 img06.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0713-0022",
+   "commons": "File:Jönköping Kramboberget lub 2025-07-13 img01 Tegnértornet.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0713-0023",
+   "commons": "File:Jönköping Holavedsleden lub 2025-07-13 img07.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0713-0024",
+   "commons": "File:Jönköping Holavedsleden lub 2025-07-13 img01 Kramboberget.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0713-0025",
+   "commons": "File:Jönköping Kramboberget lub 2025-07-13 img10 Tegnértornet.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0713-0026",
+   "commons": "File:Jönköping Kramboberget lub 2025-07-13 img11 Tegnértornet.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0713-0027",
+   "commons": "File:Jönköping Kramboberget lub 2025-07-13 img02 Tegnértornet.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0713-0028",
+   "commons": "File:Jönköping Kramboberget lub 2025-07-13 img03 Tegnértornet.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0713-0029",
+   "commons": "File:Jönköping Kramboberget lub 2025-07-13 img04 Tegnértornet.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0713-0030",
+   "commons": "File:Jönköping Kramboberget lub 2025-07-13 img05 Tegnértornet.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0713-0031",
+   "commons": "File:Jönköping Kramboberget lub 2025-07-13 img06 Tegnértornet.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0713-0032",
+   "commons": "File:Jönköping Kramboberget lub 2025-07-13 img07 Tegnértornet.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0713-0033",
+   "commons": "File:Jönköping Kramboberget lub 2025-07-13 img08 Tegnértornet.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0713-0034",
+   "commons": "File:Jönköping Kramboberget lub 2025-07-13 img09 Tegnértornet.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0713-0035",
+   "commons": "File:Jönköping Röttleån lub 2025-07-13 Wassermühle.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0713-0037",
+   "commons": "File:Uppsala Schloss Vik lub 2025-07-13 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0713-0038",
+   "commons": "File:Uppsala Mälaren lub 2025-07-13 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0713-0039",
+   "commons": "File:Uppsala Mälaren lub 2025-07-13 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0713-0040",
+   "commons": "File:Uppsala Schloss Vik lub 2025-07-13 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0713-0041",
+   "commons": "File:Uppsala Schloss Vik lub 2025-07-13 img03 Eingang.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0713-0042",
+   "commons": "File:Uppsala Schloss Vik lub 2025-07-13 img04 Eingang.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0714-0043",
+   "commons": "File:Uppsala Schloss Vik lub 2025-07-14 img01 Interieur.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0714-0044",
+   "commons": "File:Uppsala Schloss Vik lub 2025-07-14 img02 Interieur.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0714-0045",
+   "commons": "File:Uppsala Schloss Vik lub 2025-07-14 img03 Interieur.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0714-0046",
+   "commons": "File:Uppsala Schloss Vik lub 2025-07-14 img04 Interieur.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0714-0047",
+   "commons": "File:Älvkarleby Dragon Gate lub 2025-07-14 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0714-0048",
+   "commons": "File:Älvkarleby Dragon Gate lub 2025-07-14 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0714-0049",
+   "commons": "File:Älvkarleby Dragon Gate lub 2025-07-14 img03.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0714-0050",
+   "commons": "File:Älvkarleby Dragon Gate lub 2025-07-14 img04.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0714-0051",
+   "commons": "File:Älvkarleby Dragon Gate lub 2025-07-14 img05.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0714-0052",
+   "commons": "File:Naturschutzgebiet Billudden lub 2025-07-14 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0714-0053",
+   "commons": "File:Naturschutzgebiet Billudden lub 2025-07-14 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0714-0054",
+   "commons": "File:Naturschutzgebiet Billudden lub 2025-07-14 img03.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0714-0055",
+   "commons": "File:Naturschutzgebiet Billudden lub 2025-07-14 img04.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0714-0056",
+   "commons": "File:Naturschutzgebiet Billudden lub 2025-07-14 img05.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0714-0057",
+   "commons": "File:Naturschutzgebiet Billudden lub 2025-07-14 img06.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0714-0058",
+   "commons": "File:Naturschutzgebiet Billudden lub 2025-07-14 img07.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0714-0059",
+   "commons": "File:Naturschutzgebiet Billudden lub 2025-07-14 img08.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0714-0060",
+   "commons": "File:Naturschutzgebiet Billudden lub 2025-07-14 img09.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0714-0061",
+   "commons": "File:Naturschutzgebiet Billudden lub 2025-07-14 img10.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0714-0062",
+   "commons": "File:Naturschutzgebiet Billudden lub 2025-07-14 img11.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0714-0063",
+   "commons": "File:Naturschutzgebiet Billudden lub 2025-07-14 img12.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0714-0064",
+   "commons": "File:Naturschutzgebiet Billudden lub 2025-07-14 img13.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0714-0065",
+   "commons": "File:Naturschutzgebiet Billudden lub 2025-07-14 img14.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0714-0066",
+   "commons": "File:Naturschutzgebiet Billudden lub 2025-07-14 img15.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0714-0067",
+   "commons": "File:Naturschutzgebiet Billudden lub 2025-07-14 img16.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0714-0068",
+   "commons": "File:Naturschutzgebiet Billudden lub 2025-07-14 img17.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0714-0069",
+   "commons": "File:Naturschutzgebiet Billudden lub 2025-07-14 img18.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0714-0070",
+   "commons": "File:Naturschutzgebiet Billudden lub 2025-07-14 img19.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0714-0071",
+   "commons": "File:Naturschutzgebiet Billudden lub 2025-07-14 img20.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0714-0072",
+   "commons": "File:Naturschutzgebiet Billudden lub 2025-07-14 img21.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0714-0073",
+   "commons": "File:Naturschutzgebiet Billudden lub 2025-07-14 img22.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0714-0074",
+   "commons": "File:Naturschutzgebiet Billudden lub 2025-07-14 img23.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0714-0075",
+   "commons": "File:Naturschutzgebiet Billudden lub 2025-07-14 img24.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0714-0076",
+   "commons": "File:Naturschutzgebiet Billudden lub 2025-07-14 img25.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0714-0077",
+   "commons": "File:Naturschutzgebiet Billudden lub 2025-07-14 img26.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0714-0078",
+   "commons": "File:Naturschutzgebiet Billudden lub 2025-07-14 img27.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0714-0079",
+   "commons": "File:Naturschutzgebiet Billudden lub 2025-07-14 img28.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0714-0080",
+   "commons": "File:Naturschutzgebiet Billudden lub 2025-07-14 img29.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0714-0081",
+   "commons": "File:Naturschutzgebiet Billudden lub 2025-07-14 img30.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0714-0082",
+   "commons": "File:Naturschutzgebiet Billudden lub 2025-07-14 img31.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0714-0083",
+   "commons": "File:Naturschutzgebiet Billudden lub 2025-07-14 img32.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0714-0084",
+   "commons": "File:Ångermanland Högakustenbron lub 2025-07-14 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0714-0085",
+   "commons": "File:Ångermanland Högakustenbron lub 2025-07-14 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0714-0086",
+   "commons": "File:Ångermanland Högakustenbron lub 2025-07-14 img03.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0714-0087",
+   "commons": "File:Ångermanland Högakustenbron lub 2025-07-14 img04.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0714-0088",
+   "commons": "File:Ångermanland Högakustenbron lub 2025-07-14 img05.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0714-0089",
+   "commons": "File:Ångermanland Högakustenbron lub 2025-07-14 img06.jpg",
+   "set": "north",
+   "tier": "film"
+  },
+  {
+   "stem": "north-0714-0090",
+   "commons": "File:Ångermanland Högakustenbron lub 2025-07-14 img07.jpg",
+   "set": "north",
+   "tier": "film",
+   "caption": "the High Coast bridge in the evening sun"
+  },
+  {
+   "stem": "north-0714-0091",
+   "commons": "File:Ångermanland Ångermanälven lub 2025-07-14.jpg",
+   "set": "north",
+   "tier": "film"
+  },
+  {
+   "stem": "north-0714-0092",
+   "commons": "File:Ångermanland Högakustenbron lub 2025-07-14 img08.jpg",
+   "set": "north",
+   "tier": "film"
+  },
+  {
+   "stem": "north-0715-0093",
+   "commons": "File:Naturschutzgebiet Bjuröklubb lub 2025-07-15 img10.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0715-0094",
+   "commons": "File:Naturschutzgebiet Bjuröklubb lub 2025-07-15 img11.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0715-0095",
+   "commons": "File:Naturschutzgebiet Bjuröklubb lub 2025-07-15 img12.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0715-0096",
+   "commons": "File:Naturschutzgebiet Bjuröklubb lub 2025-07-15 img13.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0715-0097",
+   "commons": "File:Naturschutzgebiet Bjuröklubb lub 2025-07-15 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0715-0098",
+   "commons": "File:Naturschutzgebiet Bjuröklubb lub 2025-07-15 img14.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0715-0099",
+   "commons": "File:Naturschutzgebiet Bjuröklubb lub 2025-07-15 img15.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0715-0100",
+   "commons": "File:Naturschutzgebiet Bjuröklubb lub 2025-07-15 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0715-0101",
+   "commons": "File:Naturschutzgebiet Bjuröklubb lub 2025-07-15 img16.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0715-0102",
+   "commons": "File:Naturschutzgebiet Bjuröklubb lub 2025-07-15 img03.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0715-0103",
+   "commons": "File:Naturschutzgebiet Bjuröklubb lub 2025-07-15 img04.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0715-0104",
+   "commons": "File:Naturschutzgebiet Bjuröklubb lub 2025-07-15 img05.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0715-0105",
+   "commons": "File:Naturschutzgebiet Bjuröklubb lub 2025-07-15 img06.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0715-0106",
+   "commons": "File:Naturschutzgebiet Bjuröklubb lub 2025-07-15 img07.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0715-0107",
+   "commons": "File:Naturschutzgebiet Bjuröklubb lub 2025-07-15 img17.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0715-0108",
+   "commons": "File:Naturschutzgebiet Bjuröklubb lub 2025-07-15 img08.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0715-0109",
+   "commons": "File:Naturschutzgebiet Bjuröklubb lub 2025-07-15 img18.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0715-0110",
+   "commons": "File:Naturschutzgebiet Bjuröklubb lub 2025-07-15 img09.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0715-0111",
+   "commons": "File:Naturschutzgebiet Bjuröklubb lub 2025-07-15 img29.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0715-0112",
+   "commons": "File:Naturschutzgebiet Bjuröklubb lub 2025-07-15 img30.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0715-0113",
+   "commons": "File:Naturschutzgebiet Bjuröklubb lub 2025-07-15 img19 Leuchtturm.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0715-0114",
+   "commons": "File:Naturschutzgebiet Bjuröklubb lub 2025-07-15 img25.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0715-0115",
+   "commons": "File:Naturschutzgebiet Bjuröklubb lub 2025-07-15 img20 Leuchtturm.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0715-0116",
+   "commons": "File:Naturschutzgebiet Bjuröklubb lub 2025-07-15 img21 Leuchtturm.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0715-0117",
+   "commons": "File:Naturschutzgebiet Bjuröklubb lub 2025-07-15 img22 Leuchtturm.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0715-0118",
+   "commons": "File:Naturschutzgebiet Bjuröklubb lub 2025-07-15 img23 Leuchtturm.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0715-0119",
+   "commons": "File:Naturschutzgebiet Bjuröklubb lub 2025-07-15 img26.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0715-0120",
+   "commons": "File:Naturschutzgebiet Bjuröklubb lub 2025-07-15 img27.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0715-0121",
+   "commons": "File:Naturschutzgebiet Bjuröklubb lub 2025-07-15 img28.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0715-0122",
+   "commons": "File:Naturschutzgebiet Bjuröklubb lub 2025-07-15 img31.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0715-0123",
+   "commons": "File:Naturschutzgebiet Bjuröklubb lub 2025-07-15 img24 Leuchtturm.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0715-0124",
+   "commons": "File:Överkalix Jokkfall lub 2025-07-15 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0715-0126",
+   "commons": "File:Överkalix Jokkfall lub 2025-07-15 img06.jpg",
+   "set": "north",
+   "tier": "film",
+   "caption": "Jokkfall in full spate"
+  },
+  {
+   "stem": "north-0715-0127",
+   "commons": "File:Överkalix Jokkfall lub 2025-07-15 img02.jpg",
+   "set": "north",
+   "tier": "film"
+  },
+  {
+   "stem": "north-0715-0128",
+   "commons": "File:Överkalix Jokkfall lub 2025-07-15 img03.jpg",
+   "set": "north",
+   "tier": "film"
+  },
+  {
+   "stem": "north-0715-0129",
+   "commons": "File:Överkalix Jokkfall lub 2025-07-15 img04.jpg",
+   "set": "north",
+   "tier": "film"
+  },
+  {
+   "stem": "north-0715-0130",
+   "commons": "File:Överkalix Jokkfall lub 2025-07-15 img07.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0715-0131",
+   "commons": "File:Överkalix Jokkfall lub 2025-07-15 img05.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0715-0133",
+   "commons": "File:Kolari Grenze Schweden Finnland lub 2025-07-15 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0715-0134",
+   "commons": "File:Kolari Grenze Schweden Finnland lub 2025-07-15 img03 Muonionjoki.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0715-0135",
+   "commons": "File:Kolari Grenze Schweden Finnland lub 2025-07-15 img04 Muonionjoki.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0715-0136",
+   "commons": "File:Muonio Utkujärvi lub 2025-07-15 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0715-0137",
+   "commons": "File:Muonio Utkujärvi lub 2025-07-15 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0715-0138",
+   "commons": "File:Muonio Utkujärvi lub 2025-07-15 img03.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0715-0139",
+   "commons": "File:Muonio Utkujärvi lub 2025-07-15 img04.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0715-0140",
+   "commons": "File:Muonio Utkujärvi lub 2025-07-15 img05.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0716-0141",
+   "commons": "File:Enontekiö Muonionjoki lub 2025-07-16.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0716-0142",
+   "commons": "File:Finnmark E45 lub 2025-07-16.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0716-0143",
+   "commons": "File:Alta Sami Siida lub 2025-07-16 Stežan.jpg",
+   "set": "north",
+   "tier": "film",
+   "caption": "lunch in Finland"
+  },
+  {
+   "stem": "north-0716-0144",
+   "commons": "File:Hammerfest Repparfjordelva lub 2025-07-16 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0716-0145",
+   "commons": "File:Hammerfest Repparfjordelva lub 2025-07-16 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0716-0146",
+   "commons": "File:Hammerfest Repparfjordelva lub 2025-07-16 img03.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0716-0147",
+   "commons": "File:Repvåg lub 2025-07-16 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0716-0148",
+   "commons": "File:Repvåg lub 2025-07-16 img02 Kirche.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0716-0149",
+   "commons": "File:Repvåg lub 2025-07-16 img03 Kirche.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0716-0150",
+   "commons": "File:Repvåg lub 2025-07-16 img04.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0716-0151",
+   "commons": "File:Repvåg lub 2025-07-16 img05 Hafen.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0716-0152",
+   "commons": "File:Repvåg lub 2025-07-16 img06 Hotel.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0716-0153",
+   "commons": "File:Repvåg lub 2025-07-16 img07.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0716-0154",
+   "commons": "File:Repvåg lub 2025-07-16 img08.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0716-0155",
+   "commons": "File:Repvåg lub 2025-07-16 img09.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0716-0156",
+   "commons": "File:Repvåg lub 2025-07-16 img10.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0716-0157",
+   "commons": "File:Repvåg lub 2025-07-16 img11.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0716-0158",
+   "commons": "File:Repvåg lub 2025-07-16 img12.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0716-0159",
+   "commons": "File:Repvåg lub 2025-07-16 img13.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0716-0160",
+   "commons": "File:Repvåg lub 2025-07-16 img14.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0716-0161",
+   "commons": "File:Repvåg lub 2025-07-16 img15.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0716-0162",
+   "commons": "File:Repvåg lub 2025-07-16 img16.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0716-0163",
+   "commons": "File:Repvåg lub 2025-07-16 img17.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0716-0164",
+   "commons": "File:Repvåg lub 2025-07-16 img18.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0716-0165",
+   "commons": "File:Repvåg lub 2025-07-16 img19.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0716-0166",
+   "commons": "File:Repvåg lub 2025-07-16 img20.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0716-0167",
+   "commons": "File:Repvåg lub 2025-07-16 img21.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0716-0168",
+   "commons": "File:Repvåg lub 2025-07-16 img22.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0716-0169",
+   "commons": "File:Repvåg lub 2025-07-16 img23.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0716-0170",
+   "commons": "File:Repvåg lub 2025-07-16 img24.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0716-0171",
+   "commons": "File:Repvåg lub 2025-07-16 img25.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0716-0172",
+   "commons": "File:Repvåg lub 2025-07-16 img26.jpg",
+   "set": "north",
+   "tier": "film"
+  },
+  {
+   "stem": "north-0716-0173",
+   "commons": "File:Repvåg lub 2025-07-16 img27.jpg",
+   "set": "north",
+   "tier": "film"
+  },
+  {
+   "stem": "north-0716-0174",
+   "commons": "File:Repvåg lub 2025-07-16 img28.jpg",
+   "set": "north",
+   "tier": "film",
+   "caption": "reindeer grazing above the fishing village"
+  },
+  {
+   "stem": "north-0716-0175",
+   "commons": "File:Repvåg lub 2025-07-16 img29.jpg",
+   "set": "north",
+   "tier": "film"
+  },
+  {
+   "stem": "north-0716-0176",
+   "commons": "File:Repvåg lub 2025-07-16 img30.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0716-0177",
+   "commons": "File:Repvåg lub 2025-07-16 img31.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0716-0178",
+   "commons": "File:Repvåg lub 2025-07-16 img32.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0716-0179",
+   "commons": "File:Repvåg lub 2025-07-16 img33.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0716-0180",
+   "commons": "File:Repvåg lub 2025-07-16 img34.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0716-0181",
+   "commons": "File:Repvåg lub 2025-07-16 img35.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0716-0182",
+   "commons": "File:Repvåg lub 2025-07-16 img36.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0716-0183",
+   "commons": "File:Magerøya Skipsfjorden lub 2025-07-16.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0716-0184",
+   "commons": "File:Magerøya Nordkap lub 2025-07-16 img01 Oscarsäule.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0716-0185",
+   "commons": "File:Magerøya Nordkap lub 2025-07-16 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0716-0186",
+   "commons": "File:Magerøya Nordkap lub 2025-07-16 img03 Aussicht.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0716-0187",
+   "commons": "File:Magerøya Nordkap lub 2025-07-16 img04.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0716-0188",
+   "commons": "File:Magerøya Nordkap lub 2025-07-16 img05 Nordkaphalle.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0716-0189",
+   "commons": "File:Magerøya Nordkap lub 2025-07-16 img06 E1.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0716-0190",
+   "commons": "File:Magerøya Nordkap lub 2025-07-16 img07 Nordkaphalle.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0716-0191",
+   "commons": "File:Magerøya Nordkap lub 2025-07-16 img08 Aussicht.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0716-0192",
+   "commons": "File:Magerøya Nordkap lub 2025-07-16 img09 Aussicht.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0716-0193",
+   "commons": "File:Magerøya Nordkap lub 2025-07-16 img10.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0716-0194",
+   "commons": "File:Magerøya Nordkap lub 2025-07-16 img12 Hornvika.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0716-0195",
+   "commons": "File:Magerøya Nordkap lub 2025-07-16 img13 Hornvika.jpg",
+   "set": "north",
+   "tier": "film"
+  },
+  {
+   "stem": "north-0716-0196",
+   "commons": "File:Magerøya Nordkap lub 2025-07-16 img14 Hornvika.jpg",
+   "set": "north",
+   "tier": "film",
+   "caption": "the cove below Nordkapp at half past eleven at night"
+  },
+  {
+   "stem": "north-0716-0197",
+   "commons": "File:Magerøya Nordkap lub 2025-07-16 img15 Hornvika.jpg",
+   "set": "north",
+   "tier": "film"
+  },
+  {
+   "stem": "north-0716-0198",
+   "commons": "File:Magerøya Nordkap lub 2025-07-16 img16 Hornvika.jpg",
+   "set": "north",
+   "tier": "film"
+  },
+  {
+   "stem": "north-0716-0199",
+   "commons": "File:Magerøya Nordkap lub 2025-07-16 img17 Hornvika.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0716-0200",
+   "commons": "File:Magerøya Nordkap lub 2025-07-16 img18 Hornvika.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0716-0201",
+   "commons": "File:Magerøya Nordkap lub 2025-07-16 img19 Hornvika.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0716-0202",
+   "commons": "File:Magerøya Nordkap lub 2025-07-16 img20 Hornvika.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0716-0203",
+   "commons": "File:Magerøya Nordkap lub 2025-07-16 img21 Hornvika.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0716-0204",
+   "commons": "File:Magerøya Nordkap lub 2025-07-16 img22 Hornvika.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0716-0205",
+   "commons": "File:Magerøya Nordkap lub 2025-07-16 img23 Hornvika.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0716-0206",
+   "commons": "File:Magerøya Nordkap lub 2025-07-16 img24 Hornvika.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0716-0207",
+   "commons": "File:Magerøya Nordkap lub 2025-07-16 img25 Hornvika.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0717-0208",
+   "commons": "File:Magerøya Nordkap lub 2025-07-17 img01 Hornvika.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0717-0209",
+   "commons": "File:Magerøya Nordkap lub 2025-07-17 img02 E69.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0717-0210",
+   "commons": "File:Finnmark Europastraße 69 lub 2025-07-17 Kåfjord.jpg",
+   "set": "north",
+   "tier": "film",
+   "caption": "the empty road at two in the morning, the sun still up"
+  },
+  {
+   "stem": "north-0717-0211",
+   "commons": "File:Finnmark Fisketindelva lub 2025-07-17 Mündung.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0717-0212",
+   "commons": "File:Finnmark Nordkaptunnel lub 2025-07-17 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0717-0213",
+   "commons": "File:Finnmark Nordkaptunnel lub 2025-07-17 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0717-0214",
+   "commons": "File:Magerøya Sarnes lub 2025-07-17 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0717-0215",
+   "commons": "File:Magerøya Sarnes lub 2025-07-17 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0717-0216",
+   "commons": "File:Magerøya Sarnes lub 2025-07-17 img03 Lille Altsula.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0717-0217",
+   "commons": "File:Magerøya Honningsvågtunnel lub 2025-07-17 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0717-0218",
+   "commons": "File:Magerøya lub 2025-07-17 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0717-0219",
+   "commons": "File:Magerøya Honningsvågtunnel lub 2025-07-17 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0717-0220",
+   "commons": "File:Magerøya lub 2025-07-17 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0717-0221",
+   "commons": "File:Honningsvåg Flughafen lub 2025-07-17 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0717-0222",
+   "commons": "File:Honningsvåg Flughafen lub 2025-07-17 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0717-0223",
+   "commons": "File:Magerøya Kamøyvær lub 2025-07-17 img01 Hafen.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0717-0224",
+   "commons": "File:Magerøya Kamøyvær lub 2025-07-17 img05 Sjøveien.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0717-0225",
+   "commons": "File:Magerøya Kamøyvær lub 2025-07-17 img02 Hafen.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0717-0226",
+   "commons": "File:Magerøya Kamøyvær lub 2025-07-17 img03 Hafen.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0717-0227",
+   "commons": "File:Magerøya Kamøyvær lub 2025-07-17 img04 Hafen.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0717-0228",
+   "commons": "File:Magerøya Kamøyvær lub 2025-07-17 img05 Store Kamøya.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0717-0229",
+   "commons": "File:Magerøya Kamøyvær lub 2025-07-17 img06 Duksfjorden.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0717-0230",
+   "commons": "File:Magerøya Kamøyvær lub 2025-07-17 img07 Lille Kamøya.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0717-0231",
+   "commons": "File:Magerøya Skarsvåg lub 2025-07-17 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0717-0232",
+   "commons": "File:Magerøya Skarsvåg lub 2025-07-17 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0717-0233",
+   "commons": "File:Magerøya Skarsvåg lub 2025-07-17 img04 Kirche.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0717-0234",
+   "commons": "File:Magerøya Skarsvåg lub 2025-07-17 img03.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0717-0235",
+   "commons": "File:Magerøya Skarsvåg lub 2025-07-17 img05 Hafen.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0717-0236",
+   "commons": "File:Magerøya Skarsvåg lub 2025-07-17 img06 Hafen.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0717-0237",
+   "commons": "File:Magerøya Store Nordøya lub 2025-07-17.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0717-0238",
+   "commons": "File:Naturschutzgebiet Gjesværstappan lub 2025-07-17 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0717-0239",
+   "commons": "File:Naturschutzgebiet Gjesværstappan lub 2025-07-17 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0717-0240",
+   "commons": "File:Naturschutzgebiet Gjesværstappan lub 2025-07-17 img03.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0717-0241",
+   "commons": "File:Naturschutzgebiet Gjesværstappan lub 2025-07-17 img04.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0717-0242",
+   "commons": "File:Magerøya Gjesvær lub 2025-07-17 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0717-0243",
+   "commons": "File:Magerøya Gjesvær lub 2025-07-17 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0717-0244",
+   "commons": "File:Magerøya Gjesvær lub 2025-07-17 img03.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0717-0245",
+   "commons": "File:Magerøya Nordvågen lub 2025-07-17 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0717-0246",
+   "commons": "File:Magerøya Nordvågen lub 2025-07-17 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0717-0247",
+   "commons": "File:Norwegen Schraubverschluss lub 2025-07-17.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0718-0248",
+   "commons": "File:Porsanger Europastraße 69 lub 2025-07-18 Rentiere.jpg",
+   "set": "north",
+   "tier": "film",
+   "caption": "reindeer on the road, through the windscreen"
+  },
+  {
+   "stem": "north-0718-0249",
+   "commons": "File:Alta Stokkedalsveien lub 2025-07-18 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0718-0250",
+   "commons": "File:Alta Leirbotnvannet lub 2025-07-18.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0718-0251",
+   "commons": "File:Alta Stokkedalsveien lub 2025-07-18 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0718-0252",
+   "commons": "File:Kvænangen Saltnes lub 2025-07-18.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0718-0253",
+   "commons": "File:Kvænangen Skalsatinden lub 2025-07-18 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0718-0254",
+   "commons": "File:Kvænangen Øksfjordjøkelen lub 2025-07-18 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0718-0255",
+   "commons": "File:Kvænangen Øksfjordjøkelen lub 2025-07-18 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0718-0256",
+   "commons": "File:Kvænangen Fjelltindnasen lub 2025-07-18 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0718-0257",
+   "commons": "File:Kvænangen Øksfjordjøkelen lub 2025-07-18 img03.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0718-0258",
+   "commons": "File:Kvænangen Skalsatinden lub 2025-07-18 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0718-0259",
+   "commons": "File:Kvænangen Øksfjordjøkelen lub 2025-07-18 img04.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0718-0260",
+   "commons": "File:Kvænangen Fjelltindnasen lub 2025-07-18 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0718-0261",
+   "commons": "File:Kvænangen Øksfjordjøkelen lub 2025-07-18 img05.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0718-0262",
+   "commons": "File:Kvænangen Øksfjordjøkelen lub 2025-07-18 img07.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0718-0263",
+   "commons": "File:Kvænangen Øksfjordjøkelen lub 2025-07-18 img06.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0718-0264",
+   "commons": "File:Kvænangen Innervikselva lub 2025-07-18 img01 Mündung.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0718-0265",
+   "commons": "File:Kvænangen Innervikselva lub 2025-07-18 img04.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0718-0266",
+   "commons": "File:Kvænangen Innervikselva lub 2025-07-18 img03.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0718-0267",
+   "commons": "File:Kvænangen Øksfjordjøkelen lub 2025-07-18 img08.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0718-0268",
+   "commons": "File:Kvænangen Øksfjordjøkelen lub 2025-07-18 img09.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0718-0269",
+   "commons": "File:Kvænangen Fjelltindnasen lub 2025-07-18 img03.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0718-0270",
+   "commons": "File:Kvænangen Innervikselva lub 2025-07-18 img02 Mündung.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0718-0271",
+   "commons": "File:Holmen Sportplatz lub 2025-07-18.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0718-0272",
+   "commons": "File:Kåfjord Okseelva lub 2025-07-18 img02 Wasserfall.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0718-0273",
+   "commons": "File:Kåfjord Okseelva lub 2025-07-18 img03 Wasserfall.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0718-0274",
+   "commons": "File:Kåfjord Okseelva lub 2025-07-18 img04 Wasserfall.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0718-0275",
+   "commons": "File:Kåfjord Oksfjellet lub 2025-07-18.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0718-0276",
+   "commons": "File:Kåfjord Okseelva lub 2025-07-18 img05 Wasserfall.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0718-0277",
+   "commons": "File:Kåfjord Okseelva lub 2025-07-18 img06 Wasserfall.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0718-0278",
+   "commons": "File:Kåfjord Okseelva lub 2025-07-18 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0718-0279",
+   "commons": "File:Kåfjord Okseelva lub 2025-07-18 img07 Wasserfall.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0718-0280",
+   "commons": "File:Kåfjord Okseelva lub 2025-07-18 img08 Wasserfall.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0718-0281",
+   "commons": "File:Kåfjord Okseelva lub 2025-07-18 img09 Wasserfall.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0718-0282",
+   "commons": "File:Birtavarre lub 2025-07-18 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0718-0283",
+   "commons": "File:Kåfjord Okseelva lub 2025-07-18 img10 Wasserfall.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0718-0284",
+   "commons": "File:Kåfjord Okseelva lub 2025-07-18 img11 Wasserfall.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0718-0285",
+   "commons": "File:Birtavarre lub 2025-07-18 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0718-0286",
+   "commons": "File:Holmen Bauernhof lub 2025-07-18 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0718-0287",
+   "commons": "File:Holmen Bauernhof lub 2025-07-18 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0718-0288",
+   "commons": "File:Storfjord Rovijokkfossen lub 2025-07-18 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0718-0289",
+   "commons": "File:Storfjord Rovijokkfossen lub 2025-07-18 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0718-0290",
+   "commons": "File:Storfjord Skibotndalen lub 2025-07-18 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0718-0291",
+   "commons": "File:Storfjord Rovijokkfossen lub 2025-07-18 img03.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0718-0292",
+   "commons": "File:Storfjord Rovijokkfossen lub 2025-07-18 img04.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0718-0293",
+   "commons": "File:Storfjord Rovijokkfossen lub 2025-07-18 img05.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0718-0294",
+   "commons": "File:Storfjord Skibotndalen lub 2025-07-18 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0719-0295",
+   "commons": "File:Tromsø Hafen lub 2025-07-19.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0719-0296",
+   "commons": "File:Balsfjord Malangen lub 2025-07-19.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0719-0297",
+   "commons": "File:Hinnøya Kvæfjord lub 2025-07-19.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0720-0298",
+   "commons": "File:Vågan Festvågtinden lub 2025-07-20 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0720-0299",
+   "commons": "File:Vågan Henningsværstraumen lub 2025-07-20 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0720-0300",
+   "commons": "File:Vågan Engøya lub 2025-07-20 img01 Henningsværveien.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0720-0301",
+   "commons": "File:Vågan Henningsværstraumen lub 2025-07-20 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0720-0302",
+   "commons": "File:Vågan Festvågtinden lub 2025-07-20 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0720-0303",
+   "commons": "File:Vågan Engøysundbrua lub 2025-07-20 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0720-0304",
+   "commons": "File:Vågan Engøysundbrua lub 2025-07-20 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0720-0305",
+   "commons": "File:Vågan Engøysundbrua lub 2025-07-20 img03 Aussicht.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0720-0306",
+   "commons": "File:Vågan Festvågtinden lub 2025-07-20 img13 Aufstieg.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0720-0307",
+   "commons": "File:Vågan Festvågtinden lub 2025-07-20 img14 Aufstieg.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0720-0308",
+   "commons": "File:Vågan Festvågtinden lub 2025-07-20 img15 Aufstieg.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0720-0309",
+   "commons": "File:Vågan Festvågtinden lub 2025-07-20 img16 Aufstieg.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0720-0310",
+   "commons": "File:Vågan Festvågtinden lub 2025-07-20 img17 Aufstieg.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0720-0311",
+   "commons": "File:Vågan Festvågtinden lub 2025-07-20 img18 Aufstieg.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0720-0312",
+   "commons": "File:Vågan Heiavatnet lub 2025-07-20 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0720-0313",
+   "commons": "File:Vågan Heiavatnet lub 2025-07-20 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0720-0314",
+   "commons": "File:Vågan Festvågtinden lub 2025-07-20 img19 Aufstieg.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0720-0315",
+   "commons": "File:Vågan Heiavatnet lub 2025-07-20 img03.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0720-0316",
+   "commons": "File:Vågan Heiavatnet lub 2025-07-20 img04.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0720-0317",
+   "commons": "File:Vågan Festvågtinden lub 2025-07-20 img20 Aufstieg.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0720-0318",
+   "commons": "File:Vågan Heiavatnet lub 2025-07-20 img05.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0720-0319",
+   "commons": "File:Vågan Festvågtinden lub 2025-07-20 img21 Aufstieg.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0720-0320",
+   "commons": "File:Vågan Festvågtinden lub 2025-07-20 img22 Aufstieg.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0720-0321",
+   "commons": "File:Vågan Festvågtinden lub 2025-07-20 img03 Aussicht.jpg",
+   "set": "north",
+   "tier": "film"
+  },
+  {
+   "stem": "north-0720-0322",
+   "commons": "File:Vågan Festvågtinden lub 2025-07-20 img04 Aussicht.jpg",
+   "set": "north",
+   "tier": "film"
+  },
+  {
+   "stem": "north-0720-0323",
+   "commons": "File:Vågan Festvågtinden lub 2025-07-20 img05 Aussicht.jpg",
+   "set": "north",
+   "tier": "film",
+   "caption": "Henningsvær from the top of Festvågtinden"
+  },
+  {
+   "stem": "north-0720-0324",
+   "commons": "File:Vågan Festvågtinden lub 2025-07-20 img06 Aussicht.jpg",
+   "set": "north",
+   "tier": "film"
+  },
+  {
+   "stem": "north-0720-0325",
+   "commons": "File:Vågan Festvågtinden lub 2025-07-20 img10 Aussicht.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0720-0326",
+   "commons": "File:Vågan Festvågtinden lub 2025-07-20 img11 Aussicht.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0720-0327",
+   "commons": "File:Vågan Festvågtinden lub 2025-07-20 img07 Aussicht.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0720-0328",
+   "commons": "File:Vågan Festvågtinden lub 2025-07-20 img08 Aussicht.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0720-0329",
+   "commons": "File:Vågan Festvågtinden lub 2025-07-20 img09 Aussicht.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0720-0330",
+   "commons": "File:Vågan Festvågtinden lub 2025-07-20 img12 Aussicht.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0720-0331",
+   "commons": "File:Vågan Festvågtinden lub 2025-07-20 img23 Aufstieg.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0720-0332",
+   "commons": "File:Vågan Festvågtinden lub 2025-07-20 img24 Aufstieg.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0720-0333",
+   "commons": "File:Ballstad Hafen lub 2025-07-20 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0720-0334",
+   "commons": "File:Ballstad Hafen lub 2025-07-20 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0721-0335",
+   "commons": "File:Norwegen Schimmel im Geschirrspüler lub 2025-07-21.jpg",
+   "set": "north",
+   "tier": "film",
+   "caption": "the dishwasher in the cabin"
+  },
+  {
+   "stem": "north-0721-0336",
+   "commons": "File:Leknes Adventkirken i Lofoten lub 2025-07-21.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0721-0337",
+   "commons": "File:Reine Hafen lub 2025-07-21 img01.jpg",
+   "set": "north",
+   "tier": "film"
+  },
+  {
+   "stem": "north-0721-0338",
+   "commons": "File:Reine Hafen lub 2025-07-21 img02.jpg",
+   "set": "north",
+   "tier": "film"
+  },
+  {
+   "stem": "north-0721-0339",
+   "commons": "File:Moskenes Olstinden lub 2025-07-21 img01.jpg",
+   "set": "north",
+   "tier": "film",
+   "caption": "Reine across the harbour"
+  },
+  {
+   "stem": "north-0721-0340",
+   "commons": "File:Reine Gravdalsbukta lub 2025-07-21 img01.jpg",
+   "set": "north",
+   "tier": "film"
+  },
+  {
+   "stem": "north-0721-0341",
+   "commons": "File:Reine Gravdalsbukta lub 2025-07-21 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0721-0342",
+   "commons": "File:Moskenes Olstinden lub 2025-07-21 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0721-0343",
+   "commons": "File:Reine Gravdalsbukta lub 2025-07-21 img03.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0721-0344",
+   "commons": "File:Reine Gravdalsbukta lub 2025-07-21 img04.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0721-0345",
+   "commons": "File:Moskenes Ramsviktunnelen lub 2025-07-21 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0721-0346",
+   "commons": "File:Moskenes Ramsviktunnelen lub 2025-07-21 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0721-0347",
+   "commons": "File:Moskenes Ramsviktunnelen lub 2025-07-21 img05.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0721-0348",
+   "commons": "File:Reine Ramsvika lub 2025-07-21.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0721-0349",
+   "commons": "File:Moskenes Europastraße 10 lub 2025-07-21.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0721-0350",
+   "commons": "File:Moskenes Ramsviktunnelen lub 2025-07-21 img03.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0721-0351",
+   "commons": "File:Moskenes Ramsviktunnelen lub 2025-07-21 img04.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0721-0352",
+   "commons": "File:Moskenes Reinebringen lub 2025-07-21 img19 Aufstieg.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0721-0353",
+   "commons": "File:Moskenes Reinebringen lub 2025-07-21 img11 Aufstieg.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0721-0354",
+   "commons": "File:Moskenes Reinebringen lub 2025-07-21 img12 Aufstieg.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0721-0355",
+   "commons": "File:Moskenes Reinebringen lub 2025-07-21 img13 Aufstieg.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0721-0356",
+   "commons": "File:Moskenes Reinebringen lub 2025-07-21 img14 Aufstieg.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0721-0357",
+   "commons": "File:Moskenes Reinebringen lub 2025-07-21 img15 Aufstieg.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0721-0358",
+   "commons": "File:Moskenes Reinebringen lub 2025-07-21 img16 Aufstieg.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0721-0359",
+   "commons": "File:Moskenes Reinebringen lub 2025-07-21 img17 Aufstieg.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0721-0360",
+   "commons": "File:Moskenes Reinebringen lub 2025-07-21 img02 Aussicht.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0721-0361",
+   "commons": "File:Moskenes Reinebringen lub 2025-07-21 img03 Aussicht.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0721-0362",
+   "commons": "File:Moskenes Reinebringen lub 2025-07-21 img04 Aussicht.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0721-0363",
+   "commons": "File:Moskenes Reinebringen lub 2025-07-21 img05 Aussicht.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0721-0364",
+   "commons": "File:Moskenes Reinebringen lub 2025-07-21 img06 Aussicht.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0721-0365",
+   "commons": "File:Moskenes Reinebringen lub 2025-07-21 img07 Aussicht.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0721-0366",
+   "commons": "File:Moskenes Reinebringen lub 2025-07-21 img08 Aussicht.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0721-0367",
+   "commons": "File:Moskenes Reinebringen lub 2025-07-21 img01 Aussicht.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0721-0368",
+   "commons": "File:Moskenes Reinebringen lub 2025-07-21 img18 Aufstieg.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0721-0369",
+   "commons": "File:Moskenes Reinebringen lub 2025-07-21 img09 Aussicht.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0721-0372",
+   "commons": "File:Moskenes Reinebringen lub 2025-07-21 img10 Aussicht.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0721-0373",
+   "commons": "File:Moskenes Reinebringen lub 2025-07-21 img20 Aufstieg.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0721-0374",
+   "commons": "File:Reine Stickervandalismus lub 2025-07-21.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0721-0375",
+   "commons": "File:Reine Kirche lub 2025-07-21 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0721-0376",
+   "commons": "File:Reine Kirche lub 2025-07-21 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0721-0377",
+   "commons": "File:Reine Reinevågen lub 2025-07-21.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0721-0378",
+   "commons": "File:Moskenes Andøya lub 2025-07-21 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0721-0379",
+   "commons": "File:Moskenes Olenilsøya lub 2025-07-21 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0721-0380",
+   "commons": "File:Moskenes Andøya lub 2025-07-21 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0721-0381",
+   "commons": "File:Moskenes Storvalen bru lub 2025-07-21 Aussicht.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0721-0382",
+   "commons": "File:Moskenes Olenilsøya lub 2025-07-21 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0721-0383",
+   "commons": "File:Moskenes Olenilsøya lub 2025-07-21 img03 Bedford.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0721-0384",
+   "commons": "File:Moskenes Breisundet bru lub 2025-07-21 Aussicht.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0721-0385",
+   "commons": "File:Moskenes Vestfjord lub 2025-07-21.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0721-0386",
+   "commons": "File:Flakstad Neslandsheia lub 2025-07-21.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0721-0387",
+   "commons": "File:Flakstad Islendingen lub 2025-07-21 img01 Soløya.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0721-0388",
+   "commons": "File:Flakstad Islendingen lub 2025-07-21 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0721-0389",
+   "commons": "File:Flakstad Mølnarodden lub 2025-07-21 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0721-0390",
+   "commons": "File:Flakstad Mølnarodden lub 2025-07-21 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0721-0391",
+   "commons": "File:Flakstad Kåkernbrua lub 2025-07-21 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0721-0392",
+   "commons": "File:Flakstad Kåkernbrua lub 2025-07-21 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0721-0393",
+   "commons": "File:Flakstad Nubben lub 2025-07-21 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0721-0394",
+   "commons": "File:Flakstad Nubben lub 2025-07-21 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0721-0395",
+   "commons": "File:Flakstad Flakstadtinden lub 2025-07-21.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0721-0396",
+   "commons": "File:Flakstad Stjerntinden lub 2025-07-21.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0721-0397",
+   "commons": "File:Flakstad Napp lub 2025-07-21 img01 Hafen.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0721-0398",
+   "commons": "File:Flakstad Napp lub 2025-07-21 img02 Hafen.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0722-0399",
+   "commons": "File:Å Café lub 2025-07-22 Rissa tridactyla.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0722-0400",
+   "commons": "File:Å Lofoten Stockfisch Museum lub 2025-07-22.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0722-0401",
+   "commons": "File:Å Vestfjord lub 2025-07-22.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0722-0402",
+   "commons": "File:Å Tindstinden lub 2025-07-22.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0722-0403",
+   "commons": "File:Moskenes Ågvatnet lub 2025-07-22 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0722-0404",
+   "commons": "File:Moskenes Ågvatnet lub 2025-07-22 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0722-0405",
+   "commons": "File:Moskenes Tjønntjønna lub 2025-07-22 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0722-0406",
+   "commons": "File:Moskenes Tjønntjønna lub 2025-07-22 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0722-0407",
+   "commons": "File:Moskenes Ågvatnet lub 2025-07-22 img03.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0722-0408",
+   "commons": "File:Moskenes Ågvatnet lub 2025-07-22 img04.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0722-0409",
+   "commons": "File:Moskenes Ågvatnet lub 2025-07-22 img05.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0722-0410",
+   "commons": "File:Moskenes Ågvatnet lub 2025-07-22 img06.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0722-0411",
+   "commons": "File:Nationalpark Lofotodden lub 2025-07-22 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0722-0412",
+   "commons": "File:Nationalpark Lofotodden lub 2025-07-22 img03.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0722-0413",
+   "commons": "File:Nationalpark Lofotodden lub 2025-07-22 img01 Ågvatnet.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0722-0414",
+   "commons": "File:Moskenes Ågvatnet lub 2025-07-22 img07 Lofoten Long Crossing.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0722-0415",
+   "commons": "File:Nationalpark Lofotodden lub 2025-07-22 img04 Andstabben.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0723-0416",
+   "commons": "File:Gravdal Buksnes kirke lub 2025-07-23 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0723-0419",
+   "commons": "File:Vikten lub 2025-07-23 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0723-0420",
+   "commons": "File:Vikten lub 2025-07-23 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0723-0421",
+   "commons": "File:Nusfjord lub 2025-07-23.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0723-0422",
+   "commons": "File:Moskenes Hafen lub 2025-07-23 img01 Fähre Bodo-Moskenes.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0723-0423",
+   "commons": "File:Moskenes Hafen lub 2025-07-23 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0723-0424",
+   "commons": "File:Moskenes Hafen lub 2025-07-23 img03.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0723-0425",
+   "commons": "File:Moskenes Hafen lub 2025-07-23 img04.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0723-0426",
+   "commons": "File:Fähre Moskenes-Værøy lub 2025-07-23 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0723-0427",
+   "commons": "File:Fähre Moskenes-Værøy lub 2025-07-23 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0723-0428",
+   "commons": "File:Fähre Moskenes-Værøy lub 2025-07-23 img03.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0723-0429",
+   "commons": "File:Fähre Moskenes-Værøy lub 2025-07-23 img04.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0723-0430",
+   "commons": "File:Fähre Moskenes-Værøy lub 2025-07-23 img05.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0723-0431",
+   "commons": "File:Fähre Moskenes-Værøy lub 2025-07-23 img06.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0723-0432",
+   "commons": "File:Fähre Moskenes-Værøy lub 2025-07-23 img07.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0723-0433",
+   "commons": "File:Fähre Moskenes-Værøy lub 2025-07-23 img08.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0723-0434",
+   "commons": "File:Fähre Moskenes-Værøy lub 2025-07-23 img09.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0723-0435",
+   "commons": "File:Fähre Moskenes-Værøy lub 2025-07-23 img10.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0723-0436",
+   "commons": "File:Fähre Moskenes-Værøy lub 2025-07-23 img11.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0723-0437",
+   "commons": "File:Fähre Moskenes-Værøy lub 2025-07-23 img12.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0723-0438",
+   "commons": "File:Fähre Moskenes-Værøy lub 2025-07-23 img13.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0723-0439",
+   "commons": "File:Fähre Moskenes-Værøy lub 2025-07-23 img14.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0723-0440",
+   "commons": "File:Fähre Moskenes-Værøy lub 2025-07-23 img15.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0723-0441",
+   "commons": "File:Fähre Moskenes-Værøy lub 2025-07-23 img16.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0723-0442",
+   "commons": "File:Fähre Moskenes-Værøy lub 2025-07-23 img17.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0723-0443",
+   "commons": "File:Fähre Moskenes-Værøy lub 2025-07-23 img18.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0723-0444",
+   "commons": "File:Værøy Flughafen lub 2025-07-23.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0723-0446",
+   "commons": "File:Værøy Moskenstraumen lub 2025-07-23 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0723-0447",
+   "commons": "File:Værøy Hornet lub 2025-07-23 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0723-0448",
+   "commons": "File:Værøy lub 2025-07-23 img01.jpg",
+   "set": "north",
+   "tier": "film"
+  },
+  {
+   "stem": "north-0723-0449",
+   "commons": "File:Værøy Hornet lub 2025-07-23 img02.jpg",
+   "set": "north",
+   "tier": "film"
+  },
+  {
+   "stem": "north-0723-0450",
+   "commons": "File:Værøy lub 2025-07-23 img02.jpg",
+   "set": "north",
+   "tier": "film",
+   "caption": "the white beach on Værøy"
+  },
+  {
+   "stem": "north-0723-0451",
+   "commons": "File:Værøy Wanderweg nach Måstad lub 2025-07-23 img02.jpg",
+   "set": "north",
+   "tier": "film"
+  },
+  {
+   "stem": "north-0723-0452",
+   "commons": "File:Værøy lub 2025-07-23 img03.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0723-0453",
+   "commons": "File:Værøy Wanderweg nach Måstad lub 2025-07-23 img03.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0723-0454",
+   "commons": "File:Værøy Wanderweg nach Måstad lub 2025-07-23 img04.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0723-0455",
+   "commons": "File:Værøy lub 2025-07-23 img04.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0723-0456",
+   "commons": "File:Værøy lub 2025-07-23 img05.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0723-0457",
+   "commons": "File:Værøy lub 2025-07-23 img06.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0723-0458",
+   "commons": "File:Værøy lub 2025-07-23 img07.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0723-0459",
+   "commons": "File:Værøy Wanderweg nach Måstad lub 2025-07-23 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0723-0460",
+   "commons": "File:Værøy Wanderweg nach Måstad lub 2025-07-23 img05.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0723-0461",
+   "commons": "File:Værøy lub 2025-07-23 img08.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0723-0462",
+   "commons": "File:Værøy lub 2025-07-23 img09.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0723-0463",
+   "commons": "File:Værøy lub 2025-07-23 img10.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0723-0464",
+   "commons": "File:Værøy lub 2025-07-23 img11.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0723-0465",
+   "commons": "File:Værøy Wanderweg nach Måstad lub 2025-07-23 img06.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0723-0466",
+   "commons": "File:Værøy Wanderweg nach Måstad lub 2025-07-23 img07.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0723-0467",
+   "commons": "File:Værøy Håen lub 2025-07-23 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0723-0468",
+   "commons": "File:Værøy Håen lub 2025-07-23 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0723-0469",
+   "commons": "File:Værøy Wanderweg nach Måstad lub 2025-07-23 img08.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0723-0470",
+   "commons": "File:Værøy Wanderweg nach Måstad lub 2025-07-23 img09.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0723-0471",
+   "commons": "File:Værøy Måstad lub 2025-07-23 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0723-0472",
+   "commons": "File:Værøy Håen lub 2025-07-23 img03.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0723-0473",
+   "commons": "File:Værøy Måstad lub 2025-07-23 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0723-0474",
+   "commons": "File:Værøy Måstad lub 2025-07-23 img03.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0723-0475",
+   "commons": "File:Værøy Måstad lub 2025-07-23 img04.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0723-0476",
+   "commons": "File:Værøy Måstadvika lub 2025-07-23 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0477",
+   "commons": "File:Værøy Sørland lub 2025-07-24 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0478",
+   "commons": "File:Værøy Svinkammen lub 2025-07-24.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0479",
+   "commons": "File:Værøy Yttertinden lub 2025-07-24 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0480",
+   "commons": "File:Værøy Gullaksla lub 2025-07-24.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0481",
+   "commons": "File:Værøy Nordlandsnupen lub 2025-07-24.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0482",
+   "commons": "File:Værøy Gjerdheia lub 2025-07-24 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0483",
+   "commons": "File:Værøy Sørland lub 2025-07-24 img04 Fähranleger.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0484",
+   "commons": "File:Værøy Sørland lub 2025-07-24 img05 Fähranleger.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0485",
+   "commons": "File:Værøy Sørland lub 2025-07-24 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0486",
+   "commons": "File:Værøy Yttertinden lub 2025-07-24 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0487",
+   "commons": "File:Værøy Sørland lub 2025-07-24 img03 Brødrene Berg.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0488",
+   "commons": "File:Værøy Håen lub 2025-07-24.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0489",
+   "commons": "File:Værøy Gjerdheia lub 2025-07-24 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0490",
+   "commons": "File:Værøy Sørland lub 2025-07-24 img06 Fähranleger.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0491",
+   "commons": "File:Værøy Sørland lub 2025-07-24 img07 Fähranleger.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0492",
+   "commons": "File:Værøy Sørland lub 2025-07-24 img08 Fähranleger.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0493",
+   "commons": "File:Værøy Sørland lub 2025-07-24 img09 Hafen.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0494",
+   "commons": "File:Værøy Sørland lub 2025-07-24 img10 Leuchtturm.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0495",
+   "commons": "File:Værøy lub 2025-07-24 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0496",
+   "commons": "File:Værøy lub 2025-07-24 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0497",
+   "commons": "File:Værøy lub 2025-07-24 img03.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0498",
+   "commons": "File:Værøy lub 2025-07-24 img04.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0499",
+   "commons": "File:Værøy lub 2025-07-24 img05.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0500",
+   "commons": "File:Værøy lub 2025-07-24 img06.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0501",
+   "commons": "File:Værøy lub 2025-07-24 img07.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0502",
+   "commons": "File:Værøy lub 2025-07-24 img08 Måhornet.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0503",
+   "commons": "File:Værøy lub 2025-07-24 img09.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0504",
+   "commons": "File:Værøy lub 2025-07-24 img10.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0505",
+   "commons": "File:Værøy lub 2025-07-24 img11.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0506",
+   "commons": "File:Værøy lub 2025-07-24 img12.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0507",
+   "commons": "File:Værøy lub 2025-07-24 img13.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0508",
+   "commons": "File:Værøy lub 2025-07-24 img14.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0509",
+   "commons": "File:Fähre Værøy-Røst-Bodø lub 2025-07-24 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0510",
+   "commons": "File:Fähre Værøy-Røst-Bodø lub 2025-07-24 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0511",
+   "commons": "File:Røst lub 2025-07-24 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0512",
+   "commons": "File:Røst lub 2025-07-24 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0513",
+   "commons": "File:Røst lub 2025-07-24 img03.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0514",
+   "commons": "File:Røst lub 2025-07-24 img04.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0515",
+   "commons": "File:Fähre Værøy-Røst-Bodø lub 2025-07-24 img03.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0516",
+   "commons": "File:Bodø Hafen lub 2025-07-24 img02 NRP Bartolomeu Dias.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0517",
+   "commons": "File:Bodø Nordlandsmuseet lub 2025-07-24.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0518",
+   "commons": "File:Bodø Prinsens gate lub 2025-07-24 Polizei.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0519",
+   "commons": "File:Bodø Domkirke lub 2025-07-24 img01 Eingang.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0520",
+   "commons": "File:Bodø Domkirke lub 2025-07-24 img02 Turm.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0521",
+   "commons": "File:Bodø Professor Schyttes gate lub 2025-07-24.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0522",
+   "commons": "File:Bodø Rathaus lub 2025-07-24 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0523",
+   "commons": "File:Bodø Rathaus lub 2025-07-24 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0524",
+   "commons": "File:Bodø Rathaus lub 2025-07-24 img03.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0525",
+   "commons": "File:Bodø Rathaus lub 2025-07-24 img04 Eingang.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0526",
+   "commons": "File:Bodø Radisson Blu lub 2025-07-24.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0527",
+   "commons": "File:Bodø Hafen lub 2025-07-24 img26.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0528",
+   "commons": "File:Bodø Hafen lub 2025-07-24 img03.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0529",
+   "commons": "File:Bodø Hafen lub 2025-07-24 img04.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0530",
+   "commons": "File:Bodø Hafen lub 2025-07-24 img05.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0531",
+   "commons": "File:Bodø Hafen lub 2025-07-24 img06.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0532",
+   "commons": "File:Bodø Hafen lub 2025-07-24 img07.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0533",
+   "commons": "File:Bodø Hafen lub 2025-07-24 img08.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0534",
+   "commons": "File:Bodø Hafen lub 2025-07-24 img09.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0535",
+   "commons": "File:Bodø Scandic Havet lub 2025-07-24 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0536",
+   "commons": "File:Bodø Hafen lub 2025-07-24 img10.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0537",
+   "commons": "File:Bodø Hafen lub 2025-07-24 img11.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0538",
+   "commons": "File:Bodø Hafen lub 2025-07-24 img12.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0539",
+   "commons": "File:Bodø Hafen lub 2025-07-24 img13.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0540",
+   "commons": "File:Bodø Hafen lub 2025-07-24 img27.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0541",
+   "commons": "File:Bodø Hafen lub 2025-07-24 img14.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0542",
+   "commons": "File:Bodø Hafen lub 2025-07-24 img15.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0543",
+   "commons": "File:Bodø Hafen lub 2025-07-24 img16.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0544",
+   "commons": "File:Bodø Hafen lub 2025-07-24 img17.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0545",
+   "commons": "File:Bodø Hafen lub 2025-07-24 img18.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0546",
+   "commons": "File:Bodø Hafen lub 2025-07-24 img19.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0547",
+   "commons": "File:Bodø Hafen lub 2025-07-24 img20.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0548",
+   "commons": "File:Bodø Nyholmen skandse lub 2025-07-24.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0549",
+   "commons": "File:Bodø Hafen lub 2025-07-24 img21.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0550",
+   "commons": "File:Bodø Hafen lub 2025-07-24 img22.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0551",
+   "commons": "File:Bodø Hafen lub 2025-07-24 img23.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0552",
+   "commons": "File:Bodø Hafen lub 2025-07-24 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0553",
+   "commons": "File:Bodø Hafen lub 2025-07-24 img24.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0554",
+   "commons": "File:Bodø Hafen lub 2025-07-24 img25.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0724-0555",
+   "commons": "File:Bodø Scandic Havet lub 2025-07-24 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0725-0556",
+   "commons": "File:Rana Arctic Circle Centre lub 2025-07-25 img01.jpg",
+   "set": "north",
+   "tier": "film",
+   "caption": "the Arctic Circle centre"
+  },
+  {
+   "stem": "north-0725-0557",
+   "commons": "File:Rana Arctic Circle Centre lub 2025-07-25 img02.jpg",
+   "set": "north",
+   "tier": "film"
+  },
+  {
+   "stem": "north-0725-0558",
+   "commons": "File:Rana Arctic Circle Centre lub 2025-07-25 img03.jpg",
+   "set": "north",
+   "tier": "film"
+  },
+  {
+   "stem": "north-0725-0559",
+   "commons": "File:Grane Europastraße 6 lub 2025-07-25 Nordlandsporten.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0725-0560",
+   "commons": "File:Steinkjer Nedre Mølleveg lub 2025-07-25 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0725-0561",
+   "commons": "File:Steinkjer Steinkjerelva lub 2025-07-25 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0725-0562",
+   "commons": "File:Steinkjer Steinkjerelva lub 2025-07-25 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0725-0563",
+   "commons": "File:Steinkjer Nedre Mølleveg lub 2025-07-25 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0564",
+   "commons": "File:Skaun Nissan Leaf lub 2025-07-26 Platten.jpg",
+   "set": "north",
+   "tier": "film",
+   "caption": "the flat tyre"
+  },
+  {
+   "stem": "north-0726-0565",
+   "commons": "File:Norwegen Halsafjord lub 2025-07-26 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0566",
+   "commons": "File:Norwegen Halsafjord lub 2025-07-26 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0567",
+   "commons": "File:Heim Knocken lub 2025-07-26.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0568",
+   "commons": "File:Aure Tustna lub 2025-07-26 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0569",
+   "commons": "File:Aure Tustna lub 2025-07-26 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0570",
+   "commons": "File:Norwegen Halsafjord lub 2025-07-26 img03.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0571",
+   "commons": "File:Nordlandet lub 2025-07-26 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0572",
+   "commons": "File:Nordlandet lub 2025-07-26 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0573",
+   "commons": "File:Nordlandet lub 2025-07-26 img03.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0574",
+   "commons": "File:Nordlandet lub 2025-07-26 img04.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0575",
+   "commons": "File:Nordlandet lub 2025-07-26 img05.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0576",
+   "commons": "File:Nordlandet lub 2025-07-26 img06.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0577",
+   "commons": "File:Nordlandet lub 2025-07-26 img07.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0578",
+   "commons": "File:Nordlandet lub 2025-07-26 img08.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0579",
+   "commons": "File:Nordlandet lub 2025-07-26 img09.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0580",
+   "commons": "File:Nordlandet lub 2025-07-26 img10.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0581",
+   "commons": "File:Nordlandet lub 2025-07-26 img11.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0582",
+   "commons": "File:Nordlandet lub 2025-07-26 img12.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0583",
+   "commons": "File:Nordlandet lub 2025-07-26 img13.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0584",
+   "commons": "File:Nordlandet lub 2025-07-26 img14.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0585",
+   "commons": "File:Nordlandet lub 2025-07-26 img15.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0586",
+   "commons": "File:Nordlandet lub 2025-07-26 img16.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0587",
+   "commons": "File:Nordlandet lub 2025-07-26 img17.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0588",
+   "commons": "File:Nordlandet lub 2025-07-26 img18.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0589",
+   "commons": "File:Nordlandet lub 2025-07-26 img19.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0590",
+   "commons": "File:Nordlandet lub 2025-07-26 img20.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0591",
+   "commons": "File:Nordlandet lub 2025-07-26 img21.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0592",
+   "commons": "File:Nordlandet lub 2025-07-26 img22.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0593",
+   "commons": "File:Nordlandet lub 2025-07-26 img23.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0594",
+   "commons": "File:Nordlandet lub 2025-07-26 img24.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0595",
+   "commons": "File:Nordlandet lub 2025-07-26 img25.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0596",
+   "commons": "File:Nordlandet lub 2025-07-26 img26.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0597",
+   "commons": "File:Nordlandet lub 2025-07-26 img27.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0598",
+   "commons": "File:Nordlandet lub 2025-07-26 img28.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0599",
+   "commons": "File:Nordlandet lub 2025-07-26 img29.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0600",
+   "commons": "File:Nordlandet lub 2025-07-26 img30.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0601",
+   "commons": "File:Nordlandet lub 2025-07-26 img31.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0602",
+   "commons": "File:Nordlandet lub 2025-07-26 img32.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0603",
+   "commons": "File:Nordlandet lub 2025-07-26 img33.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0604",
+   "commons": "File:Nordlandet lub 2025-07-26 img34.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0605",
+   "commons": "File:Averøy Atlanterhavsvegen lub 2025-07-26 img22 Litllauvøybrua.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0606",
+   "commons": "File:Averøy Atlanterhavsvegen lub 2025-07-26 img01 Litllauvøybrua.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0607",
+   "commons": "File:Averøy Atlanterhavsvegen lub 2025-07-26 img23 Litllauvøybrua.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0608",
+   "commons": "File:Averøy Atlanterhavsvegen lub 2025-07-26 img24 Litllauvøybrua.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0609",
+   "commons": "File:Averøy Atlanterhavsvegen lub 2025-07-26 img25 Litllauvøybrua.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0610",
+   "commons": "File:Averøy Atlanterhavsvegen lub 2025-07-26 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0611",
+   "commons": "File:Averøy Atlanterhavsvegen lub 2025-07-26 img03 Geitøya.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0612",
+   "commons": "File:Averøy Atlanterhavsvegen lub 2025-07-26 img04 Eldhusøya.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0613",
+   "commons": "File:Averøy Atlanterhavsvegen lub 2025-07-26 img05 Eldhusøya.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0614",
+   "commons": "File:Averøy Atlanterhavsvegen lub 2025-07-26 img06 Geitøya.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0615",
+   "commons": "File:Averøy Atlanterhavsvegen lub 2025-07-26 img07 Geitøybrua.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0616",
+   "commons": "File:Averøy Atlanterhavsvegen lub 2025-07-26 img08 Geitøya.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0617",
+   "commons": "File:Averøy Atlanterhavsvegen lub 2025-07-26 img09 Geitøya.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0618",
+   "commons": "File:Averøy Atlanterhavsvegen lub 2025-07-26 img10 Geitøya.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0619",
+   "commons": "File:Averøy Atlanterhavsvegen lub 2025-07-26 img26 Geitøya.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0620",
+   "commons": "File:Averøy Atlanterhavsvegen lub 2025-07-26 img27 Geitøya.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0621",
+   "commons": "File:Averøy Atlanterhavsvegen lub 2025-07-26 img28 Geitøya.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0622",
+   "commons": "File:Averøy Atlanterhavsvegen lub 2025-07-26 img29 Geitøya.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0623",
+   "commons": "File:Averøy Atlanterhavsvegen lub 2025-07-26 img11 Lauvøyfjord.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0624",
+   "commons": "File:Averøy Atlanterhavsvegen lub 2025-07-26 img12.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0625",
+   "commons": "File:Averøy Atlanterhavsvegen lub 2025-07-26 img13 Eldhusøya.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0626",
+   "commons": "File:Averøy Atlanterhavsvegen lub 2025-07-26 img14 Lyngholmen.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0627",
+   "commons": "File:Averøy Atlanterhavsvegen lub 2025-07-26 img30 Lyngholmen.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0628",
+   "commons": "File:Averøy Atlanterhavsvegen lub 2025-07-26 img15 Lyngholmen.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0629",
+   "commons": "File:Averøy Atlanterhavsvegen lub 2025-07-26 img16 Lyngholmen.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0630",
+   "commons": "File:Averøy Atlanterhavsvegen lub 2025-07-26 img31 Lyngholmen.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0631",
+   "commons": "File:Averøy Atlanterhavsvegen lub 2025-07-26 img17 Lyngholmen.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0632",
+   "commons": "File:Averøy Atlanterhavsvegen lub 2025-07-26 img32 Lyngholmen.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0633",
+   "commons": "File:Averøy Atlanterhavsvegen lub 2025-07-26 img33 Lyngholmen.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0634",
+   "commons": "File:Averøy Atlanterhavsvegen lub 2025-07-26 img34 Lyngholmen.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0635",
+   "commons": "File:Averøy Atlanterhavsvegen lub 2025-07-26 img18 Storseisundbrua.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0636",
+   "commons": "File:Averøy Atlanterhavsvegen lub 2025-07-26 img19 Storseisundbrua.jpg",
+   "set": "north",
+   "tier": "film"
+  },
+  {
+   "stem": "north-0726-0642",
+   "commons": "File:Averøy Atlanterhavsvegen lub 2025-07-26 img20 Storseisundbrua.jpg",
+   "set": "north",
+   "tier": "film"
+  },
+  {
+   "stem": "north-0726-0643",
+   "commons": "File:Averøy Atlanterhavsvegen lub 2025-07-26 img21 Storseisundbrua.jpg",
+   "set": "north",
+   "tier": "film"
+  },
+  {
+   "stem": "north-0726-0644",
+   "commons": "File:Averøy Atlanterhavsvegen lub 2025-07-26 img40 Storseisundbrua.jpg",
+   "set": "north",
+   "tier": "film",
+   "caption": "the road onto the Storseisund bridge on the Atlantic Road"
+  },
+  {
+   "stem": "north-0726-0645",
+   "commons": "File:Averøy Atlanterhavsvegen lub 2025-07-26 img41.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0646",
+   "commons": "File:Hustadvika lub 2025-07-26 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0647",
+   "commons": "File:Hustadvika lub 2025-07-26 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0648",
+   "commons": "File:Hustadvika lub 2025-07-26 img03.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0649",
+   "commons": "File:Hustadvika lub 2025-07-26 img04.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0650",
+   "commons": "File:Hustadvika lub 2025-07-26 img05.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0651",
+   "commons": "File:Hustadvika lub 2025-07-26 img06.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0652",
+   "commons": "File:Hustadvika lub 2025-07-26 img07.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0653",
+   "commons": "File:Hustadvika lub 2025-07-26 img08.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0654",
+   "commons": "File:Hustadvika lub 2025-07-26 img09.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0655",
+   "commons": "File:Hustadvika lub 2025-07-26 img10.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0656",
+   "commons": "File:Hustadvika lub 2025-07-26 img11.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0657",
+   "commons": "File:Hustadvika lub 2025-07-26 img12.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0658",
+   "commons": "File:Hustadvika lub 2025-07-26 img13.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0659",
+   "commons": "File:Hustadvika lub 2025-07-26 img14.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0660",
+   "commons": "File:Hustadvika lub 2025-07-26 img15.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0661",
+   "commons": "File:Hustadvika lub 2025-07-26 img16.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0726-0662",
+   "commons": "File:Hustadvika Atlanterhavsvegen lub 2025-07-26.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0663",
+   "commons": "File:Hustadvika Allitindane lub 2025-07-27.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0664",
+   "commons": "File:Hustadvika Talstadhesten lub 2025-07-27.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0665",
+   "commons": "File:Hustadvika Sylteelva lub 2025-07-27.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0666",
+   "commons": "File:Hustadvika Sti til Trollkirken lub 2025-07-27 img03.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0667",
+   "commons": "File:Hustadvika Sti til Trollkirken lub 2025-07-27 img04.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0668",
+   "commons": "File:Hustadvika Sti til Trollkirken lub 2025-07-27 img05.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0669",
+   "commons": "File:Hustadvika Sti til Trollkirken lub 2025-07-27 img06.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0670",
+   "commons": "File:Hustadvika Sti til Trollkirken lub 2025-07-27 img07.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0671",
+   "commons": "File:Hustadvika Sti til Trollkirken lub 2025-07-27 img08.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0672",
+   "commons": "File:Hustadvika Sti til Trollkirken lub 2025-07-27 img09.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0673",
+   "commons": "File:Hustadvika Sti til Trollkirken lub 2025-07-27 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0674",
+   "commons": "File:Naturschutzgebiet Fræneidet lub 2025-07-27.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0675",
+   "commons": "File:Hustadvika Sti til Trollkirken lub 2025-07-27 img10.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0676",
+   "commons": "File:Hustadvika Sti til Trollkirken lub 2025-07-27 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0677",
+   "commons": "File:Hustadvika Sti til Trollkirken lub 2025-07-27 img11.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0678",
+   "commons": "File:Hustadvika Kvannfjellet lub 2025-07-27.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0679",
+   "commons": "File:Hustadvika Trollkyrkja lub 2025-07-27 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0680",
+   "commons": "File:Hustadvika Trollkyrkja lub 2025-07-27 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0681",
+   "commons": "File:Hustadvika Trollkyrkja lub 2025-07-27 img03.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0682",
+   "commons": "File:Hustadvika Trollkyrkja lub 2025-07-27 img04.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0683",
+   "commons": "File:Hustadvika Trollkyrkja lub 2025-07-27 img05.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0684",
+   "commons": "File:Hustadvika Trollkyrkja lub 2025-07-27 img06.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0685",
+   "commons": "File:Hustadvika Trollkyrkja lub 2025-07-27 img07.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0686",
+   "commons": "File:Hustadvika Trollkyrkja lub 2025-07-27 img08.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0687",
+   "commons": "File:Hustadvika Trollkyrkja lub 2025-07-27 img09.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0688",
+   "commons": "File:Hollingen Hafen lub 2025-07-27 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0689",
+   "commons": "File:Hollingen Hafen lub 2025-07-27 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0690",
+   "commons": "File:Hollingen Fährhafen Hollingsholmen lub 2025-07-27.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0691",
+   "commons": "File:Aukra Fähre Hollingsholmen - Aukra lub 2025-07-27 img08 Hollingen.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0692",
+   "commons": "File:Aukra Fähre Hollingsholmen - Aukra lub 2025-07-27 img01 Julsundet.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0693",
+   "commons": "File:Aukra Fähre Hollingsholmen - Aukra lub 2025-07-27 img02 Otrøya.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0694",
+   "commons": "File:Aukra Fähre Hollingsholmen - Aukra lub 2025-07-27 img03.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0695",
+   "commons": "File:Aukra Fähre Hollingsholmen - Aukra lub 2025-07-27 img04 Eidskrem.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0696",
+   "commons": "File:Aukra Fähre Hollingsholmen - Aukra lub 2025-07-27 img05 Julsundet.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0697",
+   "commons": "File:Aukra Fähre Hollingsholmen - Aukra lub 2025-07-27 img06 Jendemsfjellet.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0698",
+   "commons": "File:Aukra Fähre Hollingsholmen - Aukra lub 2025-07-27 img07.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0699",
+   "commons": "File:Aukra Fähre Småge - Finnøya lub 2025-07-27 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0700",
+   "commons": "File:Aukra Fähre Småge - Finnøya lub 2025-07-27 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0701",
+   "commons": "File:Aukra Fähre Småge - Finnøya lub 2025-07-27 img03.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0702",
+   "commons": "File:Aukra Fähre Småge - Finnøya lub 2025-07-27 img04.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0703",
+   "commons": "File:Aukra Fähre Småge - Finnøya lub 2025-07-27 img05.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0704",
+   "commons": "File:Aukra Fähre Småge - Finnøya lub 2025-07-27 img06.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0705",
+   "commons": "File:Aukra Fähre Småge - Finnøya lub 2025-07-27 img07.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0706",
+   "commons": "File:Aukra Fähre Småge - Finnøya lub 2025-07-27 img08.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0707",
+   "commons": "File:Aukra Fähre Småge - Finnøya lub 2025-07-27 img09.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0708",
+   "commons": "File:Aukra Fähre Småge - Finnøya lub 2025-07-27 img10.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0709",
+   "commons": "File:Aukra Fähre Småge - Finnøya lub 2025-07-27 img11.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0710",
+   "commons": "File:Aukra Fähre Småge - Finnøya lub 2025-07-27 img12.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0711",
+   "commons": "File:Aukra Fähre Småge - Finnøya lub 2025-07-27 img13.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0712",
+   "commons": "File:Aukra Fähre Småge - Finnøya lub 2025-07-27 img14.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0713",
+   "commons": "File:Aukra Fähre Småge - Finnøya lub 2025-07-27 img15.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0714",
+   "commons": "File:Aukra Fähre Småge - Finnøya lub 2025-07-27 img16.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0715",
+   "commons": "File:Aukra Fähre Småge - Finnøya lub 2025-07-27 img18 Orta.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0716",
+   "commons": "File:Aukra Fähre Småge - Finnøya lub 2025-07-27 img17.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0717",
+   "commons": "File:Aukra Fähre Småge - Finnøya lub 2025-07-27 img19 Orta.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0718",
+   "commons": "File:Aukra Fähre Småge - Finnøya lub 2025-07-27 img20 Orta.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0719",
+   "commons": "File:Aukra Fähre Småge - Finnøya lub 2025-07-27 img21 Orta.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0720",
+   "commons": "File:Aukra Fähre Småge - Finnøya lub 2025-07-27 img22 Orta.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0721",
+   "commons": "File:Aukra Fähre Småge - Finnøya lub 2025-07-27 img23 Orta.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0722",
+   "commons": "File:Aukra Fähre Småge - Finnøya lub 2025-07-27 img24 Orta.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0723",
+   "commons": "File:Aukra Fähre Småge - Finnøya lub 2025-07-27 img25 Orta.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0724",
+   "commons": "File:Aukra Fähre Småge - Finnøya lub 2025-07-27 img26 Orta.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0725",
+   "commons": "File:Aukra Fähre Småge - Finnøya lub 2025-07-27 img27 Orta.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0726",
+   "commons": "File:Aukra Fähre Småge - Finnøya lub 2025-07-27 img28 Orta.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0727",
+   "commons": "File:Aukra Fähre Småge - Finnøya lub 2025-07-27 img29 Orta.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0728",
+   "commons": "File:Aukra Fähre Småge - Finnøya lub 2025-07-27 img30 Orta.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0729",
+   "commons": "File:Aukra Fähre Småge - Finnøya lub 2025-07-27 img31 Orta.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0730",
+   "commons": "File:Aukra Fähre Småge - Finnøya lub 2025-07-27 img35.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0731",
+   "commons": "File:Ålesund Fähre Småge - Finnøya lub 2025-07-27 img01 Sandøya.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0732",
+   "commons": "File:Ålesund Fähre Småge - Finnøya lub 2025-07-27 img02 Sandøya.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0733",
+   "commons": "File:Ålesund Fähre Småge - Finnøya lub 2025-07-27 img03 Sandøya.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0734",
+   "commons": "File:Aukra Fähre Småge - Finnøya lub 2025-07-27 img32 Orta.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0735",
+   "commons": "File:Aukra Fähre Småge - Finnøya lub 2025-07-27 img33 Orta.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0736",
+   "commons": "File:Aukra Fähre Småge - Finnøya lub 2025-07-27 img34 Orta.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0737",
+   "commons": "File:Ålesund Fähre Småge - Finnøya lub 2025-07-27 img04 Seterøya.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0738",
+   "commons": "File:Ålesund Fähre Småge - Finnøya lub 2025-07-27 img05.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0739",
+   "commons": "File:Harøya Kirche lub 2025-07-27 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0740",
+   "commons": "File:Harøya Windpark Sandøy lub 2025-07-27.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0727-0742",
+   "commons": "File:Harøya Kirche lub 2025-07-27 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0744",
+   "commons": "File:Ålesund Aksla Parkering lub 2025-07-28 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0745",
+   "commons": "File:Ålesund Aksla Parkering lub 2025-07-28 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0746",
+   "commons": "File:Ålesund Parkgata lub 2025-07-28 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0747",
+   "commons": "File:Ålesund Parkgata lub 2025-07-28 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0748",
+   "commons": "File:Ålesund Aksla lub 2025-07-28 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0749",
+   "commons": "File:Ålesund Parkgata lub 2025-07-28 img03.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0750",
+   "commons": "File:Ålesund Rådstugata lub 2025-07-28.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0751",
+   "commons": "File:Ålesund Storgata lub 2025-07-28 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0752",
+   "commons": "File:Ålesund Storgata lub 2025-07-28 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0753",
+   "commons": "File:Ålesund Kipervikgata lub 2025-07-28.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0754",
+   "commons": "File:Ålesund Kreuzfahrthafen lub 2025-07-28 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0755",
+   "commons": "File:Ålesund Aspevågen lub 2025-07-28 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0756",
+   "commons": "File:Ålesund Kreuzfahrthafen lub 2025-07-28 img07.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0757",
+   "commons": "File:Ålesund Kreuzfahrthafen lub 2025-07-28 img03.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0758",
+   "commons": "File:Ålesund Kreuzfahrthafen lub 2025-07-28 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0759",
+   "commons": "File:Ålesund Kreuzfahrthafen lub 2025-07-28 img04.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0760",
+   "commons": "File:Ålesund Aspevågen lub 2025-07-28 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0761",
+   "commons": "File:Ålesund Aksla lub 2025-07-28 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0762",
+   "commons": "File:Ålesund Kreuzfahrthafen lub 2025-07-28 img05.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0763",
+   "commons": "File:Ålesund Hellebrua lub 2025-07-28 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0764",
+   "commons": "File:Ålesund Ålesundet lub 2025-07-28 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0765",
+   "commons": "File:Ålesund Kreuzfahrthafen lub 2025-07-28 img06.jpg .jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0766",
+   "commons": "File:Ålesund Ålesundet lub 2025-07-28 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0767",
+   "commons": "File:Ålesund Ålesundet lub 2025-07-28 img03.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0768",
+   "commons": "File:Ålesund Heilsarmee lub 2025-07-28.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0769",
+   "commons": "File:Ålesund Hellegata lub 2025-07-28.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0770",
+   "commons": "File:Ålesund Kirkegata lub 2025-07-28 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0771",
+   "commons": "File:Ålesund Kirkegata lub 2025-07-28 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0772",
+   "commons": "File:Ålesund Latinskolegata lub 2025-07-28.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0773",
+   "commons": "File:Ålesund Kirkegata lub 2025-07-28 img03.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0774",
+   "commons": "File:Ålesund Prestegata lub 2025-07-28.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0777",
+   "commons": "File:Ålesund Øvre Strandgate lub 2025-07-28.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0778",
+   "commons": "File:Ålesund Statsråd Daaes gate lub 2025-07-28.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0779",
+   "commons": "File:Ålesund Industriehafen lub 2025-07-28 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0780",
+   "commons": "File:Ålesund Industriehafen lub 2025-07-28 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0781",
+   "commons": "File:Ålesund Aspevågen lub 2025-07-28 img03.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0782",
+   "commons": "File:Ålesund Giskegata lub 2025-07-28.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0783",
+   "commons": "File:Ålesund Storhaugen lub 2025-07-28 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0784",
+   "commons": "File:Ålesund Storhaugen lub 2025-07-28 img05 Aussicht.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0785",
+   "commons": "File:Ålesund Storhaugen lub 2025-07-28 img06 Aussicht.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0786",
+   "commons": "File:Ålesund Storhaugen lub 2025-07-28 img07 Aussicht.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0787",
+   "commons": "File:Ålesund Storhaugen lub 2025-07-28 img08 Aussicht.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0788",
+   "commons": "File:Ålesund Storhaugen lub 2025-07-28 img09 Aussicht.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0789",
+   "commons": "File:Ålesund Storhaugen lub 2025-07-28 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0790",
+   "commons": "File:Ålesund Storhaugen lub 2025-07-28 img03.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0791",
+   "commons": "File:Ålesund Storhaugen lub 2025-07-28 img10 Aussicht.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0792",
+   "commons": "File:Ålesund Storhaugen lub 2025-07-28 img11 Aussicht.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0793",
+   "commons": "File:Ålesund Storhaugen lub 2025-07-28 img12 Aussicht.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0794",
+   "commons": "File:Ålesund Storhaugen lub 2025-07-28 img13 Aussicht.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0795",
+   "commons": "File:Ålesund Storhaugen lub 2025-07-28 img14 Aussicht.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0796",
+   "commons": "File:Ålesund Storhaugen lub 2025-07-28 img04.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0797",
+   "commons": "File:Ålesund Markvegen lub 2025-07-28.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0798",
+   "commons": "File:Ålesund Aspøy skole lub 2025-07-28 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0799",
+   "commons": "File:Ålesund Aspøy skole lub 2025-07-28 img02 Eingang.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0800",
+   "commons": "File:Ålesund Brunholmgata lub 2025-07-28.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0801",
+   "commons": "File:Ålesund Molovegen lub 2025-07-28 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0802",
+   "commons": "File:Ålesund Molovegen lub 2025-07-28 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0803",
+   "commons": "File:Ålesund Molovegen lub 2025-07-28 img03 Fischereimuseum.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0804",
+   "commons": "File:Ålesund Leuchtturm lub 2025-07-28 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0805",
+   "commons": "File:Ålesund Hafen lub 2025-07-28 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0806",
+   "commons": "File:Ålesund Leuchtturm lub 2025-07-28 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0807",
+   "commons": "File:Ålesund Leuchtturm lub 2025-07-28 img03.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0808",
+   "commons": "File:Ålesund Leuchtturm lub 2025-07-28 img04.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0809",
+   "commons": "File:Ålesund Hafen lub 2025-07-28 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0810",
+   "commons": "File:Ålesund Hafen lub 2025-07-28 img03.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0811",
+   "commons": "File:Ålesund Leuchtturm lub 2025-07-28 img05.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0812",
+   "commons": "File:Ålesund Leuchtturm lub 2025-07-28 img06.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0813",
+   "commons": "File:Ålesund Hafen lub 2025-07-28 img04.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0814",
+   "commons": "File:Ålesund Hafen lub 2025-07-28 img05.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0815",
+   "commons": "File:Ålesund Leuchtturm lub 2025-07-28 img07.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0816",
+   "commons": "File:Ålesund Hafen lub 2025-07-28 img06.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0817",
+   "commons": "File:Ålesund Aksel Holms Plass lub 2025-07-28.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0818",
+   "commons": "File:Ålesund Hafen lub 2025-07-28 img07.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0819",
+   "commons": "File:Ålesund Apotekergata lub 2025-07-28.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0820",
+   "commons": "File:Ålesund Hellebrua lub 2025-07-28 img02 Aussicht.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0821",
+   "commons": "File:Ålesund Hafen lub 2025-07-28 img08.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0822",
+   "commons": "File:Ålesund Hafen lub 2025-07-28 img09.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0823",
+   "commons": "File:Ålesund Lihauggata lub 2025-07-28 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0824",
+   "commons": "File:Ålesund Lihauggata lub 2025-07-28 img02.jpg",
+   "set": "north",
+   "tier": "film"
+  },
+  {
+   "stem": "north-0728-0825",
+   "commons": "File:Ålesund Lihauggata lub 2025-07-28 img03.jpg",
+   "set": "north",
+   "tier": "film",
+   "caption": "a cat asleep on a doormat in Ålesund"
+  },
+  {
+   "stem": "north-0728-0826",
+   "commons": "File:Ålesund Lihauggata lub 2025-07-28 img04.jpg",
+   "set": "north",
+   "tier": "film"
+  },
+  {
+   "stem": "north-0728-0827",
+   "commons": "File:Ålesund Storgata lub 2025-07-28 img03.jpg",
+   "set": "north",
+   "tier": "film"
+  },
+  {
+   "stem": "north-0728-0828",
+   "commons": "File:Ålesund Storgata lub 2025-07-28 img04.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0829",
+   "commons": "File:Ålesund Lihauggata lub 2025-07-28 img05.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0830",
+   "commons": "File:Ålesund Stadtpark lub 2025-07-28 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0831",
+   "commons": "File:Ålesund Stadtpark lub 2025-07-28 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0832",
+   "commons": "File:Ålesund Stadtpark lub 2025-07-28 img03.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0833",
+   "commons": "File:Ålesund Aksla lub 2025-07-28 img03.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0834",
+   "commons": "File:Ålesund Aksla lub 2025-07-28 img04 Kanone.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0835",
+   "commons": "File:Ålesund Aksla lub 2025-07-28 img05 Kanone.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0836",
+   "commons": "File:Ålesund Aksla lub 2025-07-28 img06 Kanone.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0837",
+   "commons": "File:Ålesund Aksla lub 2025-07-28 img17 Aussicht.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0838",
+   "commons": "File:Ålesund Aksla lub 2025-07-28 img07.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0839",
+   "commons": "File:Ålesund Aksla lub 2025-07-28 img18 Aussicht.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0840",
+   "commons": "File:Ålesund Aksla lub 2025-07-28 img19 Aussicht.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0841",
+   "commons": "File:Ålesund Aksla lub 2025-07-28 img20 Aussicht.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0842",
+   "commons": "File:Ålesund Aksla lub 2025-07-28 img21 Aussicht.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0843",
+   "commons": "File:Ålesund Aksla lub 2025-07-28 img22 Aussicht.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0844",
+   "commons": "File:Ålesund Aksla lub 2025-07-28 img23 Aussicht.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0845",
+   "commons": "File:Ålesund Aksla lub 2025-07-28 img24 Aussicht.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0846",
+   "commons": "File:Ålesund Aksla lub 2025-07-28 img08.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0847",
+   "commons": "File:Ålesund Aksla lub 2025-07-28 img25 Aussicht.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0848",
+   "commons": "File:Ålesund Aksla lub 2025-07-28 img26 Aussicht.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0849",
+   "commons": "File:Ålesund Aksla lub 2025-07-28 img27 Aussicht.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0850",
+   "commons": "File:Ålesund Aksla lub 2025-07-28 img28 Aussicht.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0851",
+   "commons": "File:Ålesund Aksla lub 2025-07-28 img29 Aussicht.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0852",
+   "commons": "File:Ålesund Aksla lub 2025-07-28 img09.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0853",
+   "commons": "File:Ålesund Aksla lub 2025-07-28 img30 Aussicht.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0854",
+   "commons": "File:Ålesund Aksla lub 2025-07-28 img31 Aussicht.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0855",
+   "commons": "File:Ålesund Aksla lub 2025-07-28 img32 Aussicht.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0856",
+   "commons": "File:Ålesund Aksla lub 2025-07-28 img33 Aussicht.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0857",
+   "commons": "File:Ålesund Aksla lub 2025-07-28 img34 Aussicht.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0858",
+   "commons": "File:Ålesund Aksla lub 2025-07-28 img35 Aussicht.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0859",
+   "commons": "File:Ålesund Aksla lub 2025-07-28 img36 Aussicht.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0860",
+   "commons": "File:Ålesund Aksla lub 2025-07-28 img10 Fjelltunvegen.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0861",
+   "commons": "File:Ålesund Aksla lub 2025-07-28 img11.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0862",
+   "commons": "File:Ålesund Aksla lub 2025-07-28 img12.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0863",
+   "commons": "File:Ålesund Aksla lub 2025-07-28 img13.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0864",
+   "commons": "File:Ålesund Aksla lub 2025-07-28 img14.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0865",
+   "commons": "File:Ålesund Aksla lub 2025-07-28 img15.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0866",
+   "commons": "File:Ålesund Aksla lub 2025-07-28 img37 Aussicht.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0867",
+   "commons": "File:Ålesund Aksla lub 2025-07-28 img38 Aussicht.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0868",
+   "commons": "File:Ålesund Aksla lub 2025-07-28 img16.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0869",
+   "commons": "File:Ålesund Vannspringdalen lub 2025-07-28.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0870",
+   "commons": "File:Ålesund Nedre Bergvegen lub 2025-07-28.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0871",
+   "commons": "File:Ålesund Waldehuset lub 2025-07-28.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0728-0872",
+   "commons": "File:Ålesund Grensegata lub 2025-07-28.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0873",
+   "commons": "File:Stordal Kirche lub 2025-07-29 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0874",
+   "commons": "File:Stordal Kreisstraße 650 lub 2025-07-29 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0875",
+   "commons": "File:Fjord Storhornet lub 2025-07-29.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0877",
+   "commons": "File:Stordal Kirche lub 2025-07-29 img03 Eingang.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0878",
+   "commons": "File:Stordal Kirche lub 2025-07-29 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0879",
+   "commons": "File:Stordal Kreisstraße 650 lub 2025-07-29 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0880",
+   "commons": "File:Fähre Linge - Eidsdal lub 2025-07-29 img13.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0881",
+   "commons": "File:Fähre Linge - Eidsdal lub 2025-07-29 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0882",
+   "commons": "File:Fähre Linge - Eidsdal lub 2025-07-29 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0883",
+   "commons": "File:Fähre Linge - Eidsdal lub 2025-07-29 img03.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0884",
+   "commons": "File:Fähre Linge - Eidsdal lub 2025-07-29 img04.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0885",
+   "commons": "File:Fähre Linge - Eidsdal lub 2025-07-29 img05.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0886",
+   "commons": "File:Fähre Linge - Eidsdal lub 2025-07-29 img06.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0887",
+   "commons": "File:Fähre Linge - Eidsdal lub 2025-07-29 img07.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0888",
+   "commons": "File:Fähre Linge - Eidsdal lub 2025-07-29 img08.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0889",
+   "commons": "File:Fähre Linge - Eidsdal lub 2025-07-29 img09.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0890",
+   "commons": "File:Fähre Linge - Eidsdal lub 2025-07-29 img10.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0891",
+   "commons": "File:Fähre Linge - Eidsdal lub 2025-07-29 img11.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0892",
+   "commons": "File:Fähre Linge - Eidsdal lub 2025-07-29 img12.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0893",
+   "commons": "File:Stranda Geirangerfjord lub 2025-07-29 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0894",
+   "commons": "File:Stranda Geirangerfjord lub 2025-07-29 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0895",
+   "commons": "File:Stranda Geirangerfjord lub 2025-07-29 img03.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0896",
+   "commons": "File:Stranda Geirangerfjord lub 2025-07-29 img04.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0897",
+   "commons": "File:Stranda Geirangerfjord lub 2025-07-29 img05.jpg",
+   "set": "north",
+   "tier": "film"
+  },
+  {
+   "stem": "north-0729-0898",
+   "commons": "File:Stranda Geirangerfjord lub 2025-07-29 img06.jpg",
+   "set": "north",
+   "tier": "film",
+   "caption": "Geirangerfjord from the viewpoint"
+  },
+  {
+   "stem": "north-0729-0899",
+   "commons": "File:Stranda Geirangerfjord lub 2025-07-29 img07.jpg",
+   "set": "north",
+   "tier": "film"
+  },
+  {
+   "stem": "north-0729-0900",
+   "commons": "File:Stranda Geirangerfjord lub 2025-07-29 img08.jpg",
+   "set": "north",
+   "tier": "film"
+  },
+  {
+   "stem": "north-0729-0901",
+   "commons": "File:Stranda Keipen lub 2025-07-29.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0902",
+   "commons": "File:Stranda Geirangelva lub 2025-07-29 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0903",
+   "commons": "File:Stranda Geirangelva lub 2025-07-29 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0904",
+   "commons": "File:Stranda Geirangelva lub 2025-07-29 img03.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0905",
+   "commons": "File:Stranda Geirangelva lub 2025-07-29 img04.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0906",
+   "commons": "File:Stranda Geirangerfjord lub 2025-07-29 img09.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0907",
+   "commons": "File:Stranda Djupvatnet lub 2025-07-29 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0908",
+   "commons": "File:Stranda Nibbevegen lub 2025-07-29 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0909",
+   "commons": "File:Stranda Djupvatnet lub 2025-07-29 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0910",
+   "commons": "File:Stranda Dalsnibba lub 2025-07-29 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0911",
+   "commons": "File:Stranda Dalsnibba lub 2025-07-29 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0912",
+   "commons": "File:Stranda Dalsnibba lub 2025-07-29 img03.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0913",
+   "commons": "File:Stranda Dalsnibba lub 2025-07-29 img04.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0914",
+   "commons": "File:Stranda Dalsnibba lub 2025-07-29 img05.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0915",
+   "commons": "File:Stranda Dalsnibba lub 2025-07-29 img06.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0916",
+   "commons": "File:Stranda Dalsnibba lub 2025-07-29 img07.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0917",
+   "commons": "File:Stranda Dalsnibba lub 2025-07-29 img08.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0918",
+   "commons": "File:Stranda Dalsnibba lub 2025-07-29 img09.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0919",
+   "commons": "File:Stranda Dalsnibba lub 2025-07-29 img10.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0920",
+   "commons": "File:Stranda Nibbevegen lub 2025-07-29 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0921",
+   "commons": "File:Stranda Nibbevegen lub 2025-07-29 img03.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0922",
+   "commons": "File:Stranda Djupvatnet lub 2025-07-29 img03.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0923",
+   "commons": "File:Stranda Djupvatnet lub 2025-07-29 img04.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0924",
+   "commons": "File:Olden Hafen lub 2025-07-29 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0925",
+   "commons": "File:Olden lub 2025-07-29.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0926",
+   "commons": "File:Olden Hafen lub 2025-07-29 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0927",
+   "commons": "File:Utvik lub 2025-07-29.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0928",
+   "commons": "File:Utvik Nordfjord lub 2025-07-29 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0929",
+   "commons": "File:Utvik Hafen lub 2025-07-29.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0930",
+   "commons": "File:Utvik Nordfjord lub 2025-07-29 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0931",
+   "commons": "File:Utvik Nordfjord lub 2025-07-29 img03.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0932",
+   "commons": "File:Stryn Bergsetnakken lub 2025-07-29.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0933",
+   "commons": "File:Sogndal Bøyabreen lub 2025-07-29 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0934",
+   "commons": "File:Sogndal Bøyabreen lub 2025-07-29 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0935",
+   "commons": "File:Sogndal Bøyabreen lub 2025-07-29 img03.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0936",
+   "commons": "File:Sogndal Bøyabreen lub 2025-07-29 img04.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0937",
+   "commons": "File:Sogndal Bøyabreen lub 2025-07-29 img05.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0938",
+   "commons": "File:Sogndal Bøyabreen lub 2025-07-29 img06.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0939",
+   "commons": "File:Fähre Fodnes - Mannheller lub 2025-07-29 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0940",
+   "commons": "File:Fähre Fodnes - Mannheller lub 2025-07-29 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0941",
+   "commons": "File:Fähre Fodnes - Mannheller lub 2025-07-29 img03.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0942",
+   "commons": "File:Fähre Fodnes - Mannheller lub 2025-07-29 img04.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0943",
+   "commons": "File:Fähre Fodnes - Mannheller lub 2025-07-29 img05.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0944",
+   "commons": "File:Fähre Fodnes - Mannheller lub 2025-07-29 img06.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0945",
+   "commons": "File:Fähre Fodnes - Mannheller lub 2025-07-29 img07.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0946",
+   "commons": "File:Fähre Fodnes - Mannheller lub 2025-07-29 img08.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0947",
+   "commons": "File:Fähre Fodnes - Mannheller lub 2025-07-29 img09.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0948",
+   "commons": "File:Fähre Fodnes - Mannheller lub 2025-07-29 img10.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0729-0949",
+   "commons": "File:Fähre Fodnes - Mannheller lub 2025-07-29 img11.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0730-0950",
+   "commons": "File:Lærdal Lærdalsfjord lub 2025-07-30.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0730-0951",
+   "commons": "File:Lærdal Lærdalstunnel lub 2025-07-30 img01.jpg",
+   "set": "north",
+   "tier": "film"
+  },
+  {
+   "stem": "north-0730-0952",
+   "commons": "File:Lærdal Lærdalstunnel lub 2025-07-30 img02.jpg",
+   "set": "north",
+   "tier": "film",
+   "caption": "the blue light inside the Lærdal tunnel"
+  },
+  {
+   "stem": "north-0730-0953",
+   "commons": "File:Lærdal Lærdalstunnel lub 2025-07-30 img03.jpg",
+   "set": "north",
+   "tier": "film"
+  },
+  {
+   "stem": "north-0730-0954",
+   "commons": "File:Nissedal Nisser lub 2025-07-30 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0730-0955",
+   "commons": "File:Nissedal Nisser lub 2025-07-30 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0730-0956",
+   "commons": "File:Nissedal Nisser lub 2025-07-30 img03.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0730-0957",
+   "commons": "File:Nissedal Nisser lub 2025-07-30 img04.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0730-0958",
+   "commons": "File:Harstveit Schafsweide lub 2025-07-30.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0731-0959",
+   "commons": "File:Kristiansand Fähre Kristiansand - Hirtshals lub 2025-07-31 img01.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0731-0960",
+   "commons": "File:Kristiansand Fähre Kristiansand - Hirtshals lub 2025-07-31 img02.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0731-0961",
+   "commons": "File:Kristiansand Fähre Kristiansand - Hirtshals lub 2025-07-31 img03.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0731-0962",
+   "commons": "File:Kristiansand Fähre Kristiansand - Hirtshals lub 2025-07-31 img04.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0731-0963",
+   "commons": "File:Kristiansand Fähre Kristiansand - Hirtshals lub 2025-07-31 img05.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0731-0964",
+   "commons": "File:Kristiansand Fähre Kristiansand - Hirtshals lub 2025-07-31 img06.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0731-0965",
+   "commons": "File:Kristiansand Fähre Kristiansand - Hirtshals lub 2025-07-31 img07.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0731-0966",
+   "commons": "File:Kristiansand Fähre Kristiansand - Hirtshals lub 2025-07-31 img08.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0731-0967",
+   "commons": "File:Kristiansand Fähre Kristiansand - Hirtshals lub 2025-07-31 img09.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0731-0968",
+   "commons": "File:Kristiansand Fähre Kristiansand - Hirtshals lub 2025-07-31 img10.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0731-0969",
+   "commons": "File:Kristiansand Fähre Kristiansand - Hirtshals lub 2025-07-31 img11.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0731-0970",
+   "commons": "File:Kristiansand Fähre Kristiansand - Hirtshals lub 2025-07-31 img12.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0731-0971",
+   "commons": "File:Kristiansand Fähre Kristiansand - Hirtshals lub 2025-07-31 img13.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0731-0972",
+   "commons": "File:Kristiansand Fähre Kristiansand - Hirtshals lub 2025-07-31 img14.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0731-0973",
+   "commons": "File:Kristiansand Fähre Kristiansand - Hirtshals lub 2025-07-31 img15.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0731-0974",
+   "commons": "File:Kristiansand Fähre Kristiansand - Hirtshals lub 2025-07-31 img16.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0731-0975",
+   "commons": "File:Kristiansand Fähre Kristiansand - Hirtshals lub 2025-07-31 img17.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0731-0976",
+   "commons": "File:Kristiansand Fähre Kristiansand - Hirtshals lub 2025-07-31 img18.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0731-0977",
+   "commons": "File:Kristiansand Fähre Kristiansand - Hirtshals lub 2025-07-31 img19.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0731-0978",
+   "commons": "File:Kristiansand Fähre Kristiansand - Hirtshals lub 2025-07-31 img20.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0731-0979",
+   "commons": "File:Kristiansand Fähre Kristiansand - Hirtshals lub 2025-07-31 img21.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0731-0980",
+   "commons": "File:Kristiansand Fähre Kristiansand - Hirtshals lub 2025-07-31 img22.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0731-0981",
+   "commons": "File:Kristiansand Fähre Kristiansand - Hirtshals lub 2025-07-31 img23.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0731-0982",
+   "commons": "File:Kristiansand Fähre Kristiansand - Hirtshals lub 2025-07-31 img24.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0731-0983",
+   "commons": "File:Kristiansand Fähre Kristiansand - Hirtshals lub 2025-07-31 img25.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0731-0984",
+   "commons": "File:Kristiansand Fähre Kristiansand - Hirtshals lub 2025-07-31 img26.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0731-0985",
+   "commons": "File:Kristiansand Fähre Kristiansand - Hirtshals lub 2025-07-31 img27.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0731-0986",
+   "commons": "File:Kristiansand Fähre Kristiansand - Hirtshals lub 2025-07-31 img28.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0731-0987",
+   "commons": "File:Kristiansand Fähre Kristiansand - Hirtshals lub 2025-07-31 img29.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0731-0988",
+   "commons": "File:Kristiansand Fähre Kristiansand - Hirtshals lub 2025-07-31 img30.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0731-0989",
+   "commons": "File:Kristiansand Fähre Kristiansand - Hirtshals lub 2025-07-31 img31.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0731-0990",
+   "commons": "File:Kristiansand Fähre Kristiansand - Hirtshals lub 2025-07-31 img32.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0731-0991",
+   "commons": "File:Kristiansand Fähre Kristiansand - Hirtshals lub 2025-07-31 img33.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0731-0992",
+   "commons": "File:Kristiansand Fähre Kristiansand - Hirtshals lub 2025-07-31 img34.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0731-0993",
+   "commons": "File:Kristiansand Fähre Kristiansand - Hirtshals lub 2025-07-31 img35.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0731-0994",
+   "commons": "File:Kristiansand Fähre Kristiansand - Hirtshals lub 2025-07-31 img36.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0731-0995",
+   "commons": "File:Kristiansand Fähre Kristiansand - Hirtshals lub 2025-07-31 img37.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0731-0996",
+   "commons": "File:Kristiansand Fähre Kristiansand - Hirtshals lub 2025-07-31 img38.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0731-0997",
+   "commons": "File:Kristiansand Fähre Kristiansand - Hirtshals lub 2025-07-31 img39.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0731-0998",
+   "commons": "File:Kristiansand Fähre Kristiansand - Hirtshals lub 2025-07-31 img40.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0731-0999",
+   "commons": "File:Kristiansand Fähre Kristiansand - Hirtshals lub 2025-07-31 img41.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0731-1000",
+   "commons": "File:Kristiansand Fähre Kristiansand - Hirtshals lub 2025-07-31 img42.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0731-1001",
+   "commons": "File:Skagerrak Fjord FSTR lub 2025-07-31.jpg",
+   "set": "north",
+   "tier": "pool"
+  },
+  {
+   "stem": "north-0731-1002",
+   "commons": "File:Skagerrak Stavangerfjord lub 2025-07-31.jpg",
+   "set": "north",
+   "tier": "pool"
+  }
+ ],
+ "clips": [
+  {
+   "stem": "north-clip-0712-0",
+   "commons": "File:Møns Klint lub 2025-07-12 mov03.webm",
+   "set": "north",
+   "time": "2025-07-12T12:09:00",
+   "start": 3,
+   "seconds": 5.0,
+   "caption": "the waves at the foot of Møns Klint"
+  },
+  {
+   "stem": "north-clip-0714-1",
+   "commons": "File:Naturschutzgebiet Billudden lub 2025-07-14 mov01.webm",
+   "set": "north",
+   "time": "2025-07-14T11:40:00",
+   "start": 2,
+   "seconds": 5.0,
+   "caption": "the pebble beach at Billudden"
+  },
+  {
+   "stem": "north-clip-0715-2",
+   "commons": "File:Överkalix Jokkfall lub 2025-07-15 mov01.webm",
+   "set": "north",
+   "time": "2025-07-15T17:26:00",
+   "start": 2,
+   "seconds": 5.0,
+   "caption": "Jokkfall in full spate"
+  },
+  {
+   "stem": "north-clip-0718-3",
+   "commons": "File:Kåfjord Okseelva lub 2025-07-18 Wasserfall.webm",
+   "set": "north",
+   "time": "2025-07-18T19:40:00",
+   "start": 1,
+   "seconds": 5.0,
+   "caption": "the waterfall at Kåfjord"
+  },
+  {
+   "stem": "north-clip-0723-4",
+   "commons": "File:Moskenes Hafen lub 2025-07-23 Fähre Bodo-Moskenes.webm",
+   "set": "north",
+   "time": "2025-07-23T09:10:00",
+   "start": 10,
+   "seconds": 5.0,
+   "caption": "the ferry from Bodø pulling into Moskenes"
+  },
+  {
+   "stem": "north-clip-0727-5",
+   "commons": "File:Hustadvika Trollkyrkja lub 2025-07-27 mov01.webm",
+   "set": "north",
+   "time": "2025-07-27T12:30:00",
+   "start": 4,
+   "seconds": 5.0,
+   "caption": "the climb to Trollkirken"
+  },
+  {
+   "stem": "north-clip-0730-6",
+   "commons": "File:Harstveit Schafsweide lub 2025-07-30.webm",
+   "set": "north",
+   "time": "2025-07-30T18:30:00",
+   "start": 6,
+   "seconds": 5.0,
+   "caption": "sheep in the field at Harstveit"
+  }
+ ]
+}

@@ -21,7 +21,7 @@ from playwright.sync_api import Page, expect
 from immich_memories.tracking import RunDatabase
 from immich_memories.tracking.models import DeliveryStatus, RunMetadata
 from tests.e2e.fake_immich import FakeImmichServer
-from tests.e2e.fake_library import CARRIERS, THESIS
+from tests.e2e.fake_library import CARRIERS, MONTH, THESIS, YEAR
 from tests.e2e.test_web_client import _seed
 
 pytestmark = pytest.mark.e2e
@@ -37,11 +37,11 @@ def _no_page_errors(page: Page):
     assert errors == []
 
 
-def _brief_for_june(page: Page, launch_app_url: str) -> None:
+def _brief_for_the_month(page: Page, launch_app_url: str) -> None:
     page.goto(f"{launch_app_url}/app/create", wait_until="domcontentloaded", timeout=30_000)
     page.get_by_text("Monthly Highlights", exact=True).click()
-    page.get_by_label("Year", exact=True).fill("2024")
-    page.get_by_label("Month", exact=True).select_option("6")
+    page.get_by_label("Year", exact=True).fill(str(YEAR))
+    page.get_by_label("Month", exact=True).select_option(str(MONTH))
 
 
 def _attempts(launch_workspace) -> set[Path]:
@@ -53,7 +53,7 @@ def test_a_cut_started_on_memory_survives_its_tab_closing(
     page: Page, launch_app_url: str, launch_workspace
 ) -> None:
     before = _attempts(launch_workspace)
-    _brief_for_june(page, launch_app_url)
+    _brief_for_the_month(page, launch_app_url)
     page.get_by_role("button", name="Cut", exact=True).click()
     expect(page.get_by_role("region", name="Progress")).to_be_visible(timeout=30_000)
     context = page.context
@@ -74,7 +74,7 @@ def test_copy_as_cli_command_copies_the_command_the_server_runs(
     page: Page, launch_app_url: str
 ) -> None:
     page.context.grant_permissions(["clipboard-read", "clipboard-write"])
-    _brief_for_june(page, launch_app_url)
+    _brief_for_the_month(page, launch_app_url)
     page.get_by_role("button", name="Cut", exact=True).click()
     panel = page.get_by_role("region", name="Progress")
     expect(panel).to_be_visible(timeout=30_000)
@@ -92,7 +92,7 @@ def test_copy_as_cli_command_copies_the_command_the_server_runs(
     remaining = iter(job["argv"][1:])
     assert all(word in remaining for word in shlex.split(copied)[1:]), (copied, job["argv"])
     assert copied.startswith(
-        "immich-memories generate --memory-type=monthly_highlights --year=2024 --month=6"
+        f"immich-memories generate --memory-type=monthly_highlights --year={YEAR} --month={MONTH}"
     )
 
 

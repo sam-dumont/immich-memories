@@ -15,7 +15,7 @@ from tests.features.cli_harness import CliResult, UserHome, basic_config
 from tests.features.served_app import ServedApp, served_app
 from tests.integration.features.immich_server import LibraryServer
 from tests.integration.features.library import (
-    GARDEN_DAY,
+    DEPARTURE_DAY,
     QUIET_DAY,
     RenderedRun,
     day_args,
@@ -46,7 +46,7 @@ def test_the_ui_serves_only_pictures_a_configured_account_reads_even_from_its_ca
     two_account_app: tuple[UserHome, ServedApp, LibraryServer],
 ):
     home, app, immich = two_account_app
-    readable = immich.id_of(shipped_on(GARDEN_DAY)[0].asset_id)
+    readable = immich.id_of(shipped_on(DEPARTURE_DAY)[0].asset_id)
     foreign = "zz-not-in-any-account"
 
     with app.client() as browser:
@@ -183,16 +183,17 @@ def _coordinates_in(text: str, coordinates: set[float]) -> list[str]:
 
 @pytest.mark.feature("report.redaction-library-details")
 def test_the_report_names_no_person_place_or_coordinates(
-    library_home: UserHome, garden_film: RenderedRun, tmp_path
+    library_home: UserHome, departure_film: RenderedRun, tmp_path
 ):
-    pictures = shipped_on(GARDEN_DAY)
+    pictures = shipped_on(DEPARTURE_DAY)
     people = sorted({name for picture in pictures for name in picture.people})
-    places = sorted({p.place.city for p in pictures} | {p.place.country for p in pictures})
-    coordinates = {p.place.latitude for p in pictures} | {p.place.longitude for p in pictures}
+    placed = [p.place for p in pictures if p.place is not None]
+    places = sorted({place.city for place in placed} | {place.country for place in placed})
+    coordinates = {place.latitude for place in placed} | {place.longitude for place in placed}
     assert people and places, "the filmed pictures carry people and a place"
     assert set(people) <= set(CAST)
 
-    texts = _report_texts(library_home, garden_film, tmp_path / "details.zip")
+    texts = _report_texts(library_home, departure_film, tmp_path / "details.zip")
 
     for name, text in texts.items():
         found = [word for word in people + places if re.search(rf"\b{re.escape(word)}\b", text)]
@@ -202,13 +203,15 @@ def test_the_report_names_no_person_place_or_coordinates(
 
 @pytest.mark.feature("report.redaction-library-details")
 def test_the_report_turns_asset_ids_into_report_local_hashes(
-    library_home: UserHome, garden_film: RenderedRun, immich: LibraryServer, tmp_path
+    library_home: UserHome, departure_film: RenderedRun, immich: LibraryServer, tmp_path
 ):
-    ids = immich.ids_of([p.asset_id for p in shipped_on(GARDEN_DAY)] + left_out_on(GARDEN_DAY))
+    ids = immich.ids_of(
+        [p.asset_id for p in shipped_on(DEPARTURE_DAY)] + left_out_on(DEPARTURE_DAY)
+    )
     # The run's own logs name its pictures: what the report has to hash.
-    assert any(asset_id in garden_film.result.output for asset_id in ids)
+    assert any(asset_id in departure_film.result.output for asset_id in ids)
 
-    texts = _report_texts(library_home, garden_film, tmp_path / "ids.zip")
+    texts = _report_texts(library_home, departure_film, tmp_path / "ids.zip")
 
     assert re.search(r"\bid-[0-9a-f]{16}\b", texts["markdown"])
     for name, text in texts.items():

@@ -13,22 +13,23 @@ from playwright.sync_api import Page, expect
 
 from immich_memories.tracking.models import RunMetadata
 from immich_memories.tracking.run_database import RunDatabase
+from tests.e2e.fake_library import MONTH, YEAR
 
 
 def contact_sheet(page: Page):
     return page.get_by_role("list", name="Cut contact sheet").get_by_role("button")
 
 
-def cut_june(page: Page, launch_app_url: str, *, minutes: float | None = 2) -> str:
-    """Make the fixture's June monthly cut in the browser; return the run it lands on.
+def cut_month(page: Page, launch_app_url: str, *, minutes: float | None = 2) -> str:
+    """Make the fixture month's monthly cut in the browser; return the run it lands on.
 
-    WHY two minutes by default: the fixture editor keeps all eighteen carriers (79 s) whatever
-    the length asked, and a cut over its budget cannot be rendered as cut.
+    WHY two minutes by default: the fixture editor keeps every carrier whatever the length
+    asked, and a cut over its budget cannot be rendered as cut.
     """
     page.goto(f"{launch_app_url}/app/create", wait_until="domcontentloaded", timeout=30_000)
     page.get_by_text("Monthly Highlights", exact=True).click()
-    page.get_by_label("Year", exact=True).fill("2024")
-    page.get_by_label("Month", exact=True).select_option("6")
+    page.get_by_label("Year", exact=True).fill(str(YEAR))
+    page.get_by_label("Month", exact=True).select_option(str(MONTH))
     if minutes is not None:
         page.get_by_text("Length and pictures").click()
         page.get_by_label("Length in minutes", exact=False).fill(str(minutes))

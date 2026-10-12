@@ -1,27 +1,44 @@
-"""The synthetic household library behind the screenshots and the demo.
+"""The household library behind the screenshots, the demo and the e2e tests.
 
-One month, June 2024, told by public-domain stock photographs that live next
-door in ``fixtures/library`` (see its CREDITS.md): ordinary days at home in
-Brussels, a birthday in the garden, a Saturday in the woods, a week camped by a
-lake in the Alps, and the return. This file assigns dates, places, people and
-story roles to the pictures. ``fixtures/library/captions.json`` describes what
-each photo shows: the story view puts them side by side, and a reader who does
-not believe the pair does not believe the product.
+One month, July 2025, told by real photographs and clips from Wikimedia
+Commons (``fixtures/library``, built by ``scripts/build_fixture_library.py``
+from ``sources.json``; every file is credited in its CREDITS.md). Ten ordinary
+days at home in Brussels with a birthday in the middle, then twenty days on the
+road north: Denmark, Sweden, the midnight sun at Nordkapp, Lofoten, Værøy, the
+Atlantic Road and Geiranger, back by the Kristiansand ferry.
 
-Nothing here is anyone's real library. The home is a public landmark, the
-people are a made-up cast, and the pictures are CC0 stock chosen so that no
-recognisable face appears in any of them (tests/test_scaling_utilities.py
-leans on that).
+Every picture is served with the place and time its file records. The trip is
+one photographer's own holiday, at the minute each shot was taken; the home days
+are other photographers' summer days in Brussels, moved by whole days into the
+month so the hour of each shot stays true. A picture whose file holds no GPS is
+served with none: the location is never made up.
+
+The people are a made-up household. The pictures of them are strangers'
+photographs; the build pins each face to a cast member, so Immich's people
+groups hold the household even though no two faces are the same person.
+
+This module holds the script on top of the files: which pictures carry which
+story, and why every other picture is left out. Moments are pictures of one
+set taken without a long gap, so a carrier's alternatives and the bursts around
+it come from the photographer's own shots, not from a list.
 """
 
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
+from dataclasses import dataclass, field, replace
+from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
+from zoneinfo import ZoneInfo
 
 LIBRARY_DIR = Path(__file__).parent / "fixtures" / "library"
+MANIFEST = LIBRARY_DIR / "library.json"
+
+# A new moment starts when a set goes this long without a picture.
+_MOMENT_GAP_SECONDS = 20 * 60
+# Two frames this close in one moment are a burst, not two pictures.
+_BURST_SECONDS = 15
 
 
 @dataclass(frozen=True, slots=True)
@@ -30,23 +47,34 @@ class Place:
     longitude: float
     city: str
     country: str
-    # The time zone at these coordinates. Immich derives it from a picture's GPS and dates the
-    # picture's local time (`localDateTime`) in it, whatever offset the file was saved with.
+    # The time zone Immich finds from the GPS, which sets the picture's local clock.
     zone: str = "UTC"
 
 
 # The fixture home is a public landmark, never a real address (owner's rule).
 HOME = Place(50.8417, 4.3624, "Brussels", "Belgium", "Europe/Brussels")
-WOODS = Place(50.7806, 4.4200, "Tervuren", "Belgium", "Europe/Brussels")
-ROAD = Place(47.3220, 5.0415, "Dijon", "France", "Europe/Paris")
-LAKE = Place(45.8992, 6.1294, "Annecy", "France", "Europe/Paris")
-TALLOIRES = Place(45.8410, 6.2120, "Talloires", "France", "Europe/Paris")
-SEMNOZ = Place(45.7920, 6.1010, "Semnoz", "France", "Europe/Paris")
-MENTHON = Place(45.8600, 6.2000, "Menthon-Saint-Bernard", "France", "Europe/Paris")
+# Each country the month passes through, and the zone its pictures' clocks read in.
+_ZONES = {
+    "Belgium": "Europe/Brussels",
+    "Denmark": "Europe/Copenhagen",
+    "Sweden": "Europe/Stockholm",
+    "Finland": "Europe/Helsinki",
+    "Norway": "Europe/Oslo",
+    "Germany": "Europe/Berlin",
+}
+# The set the road trip comes from: one photographer's July 2025 holiday.
+TRIP_SET = "north"
+# The road north as trip detection reads it from GPS: the ferry home on the 31st
+# carries none, so the detected trip ends the day before the last trip picture.
+TRIP_DAYS = ("2025-07-12", "2025-07-30")
+# The month the library holds, for consumers that ask for it by year and month.
+YEAR = 2025
+MONTH = 7
+MONTH_NAME = "July"
 
 # A made-up household. The names are the ones the fake Immich's people endpoint
 # returns; the people page fixture keeps its own roster.
-CAST: tuple[str, ...] = ("Robin", "Charlie", "Kit")
+CAST: tuple[str, ...] = ("Robin", "Charlie", "Kit", "Pat")
 ADULTS = ("Robin", "Charlie")
 EVERYONE = CAST
 
@@ -65,546 +93,121 @@ class Story:
 STORIES: tuple[Story, ...] = (
     Story(
         key="S0001",
-        title="A birthday in the garden",
+        title="Kit's birthday",
         weight="dominant",
         role="central",
-        purpose="The one afternoon the whole month was arranged around",
+        purpose="The one afternoon the first half of the month was arranged around",
     ),
     Story(
         key="S0002",
-        title="A week by the lake",
+        title="The road north",
         weight="major",
         role="central",
-        purpose="Seven days away, the only time the month leaves the city",
+        purpose="Twenty days in the car, to Nordkapp and back down the coast",
     ),
     Story(
         key="S0003",
-        title="The Saturday in the woods",
+        title="A Sunday in the forest",
         weight="minor",
         role="supporting",
-        purpose="One day out between the party and the holiday",
+        purpose="One day out between the party and the drive",
     ),
     Story(
         key="S0004",
         title="Ordinary days",
         weight="glimpse",
         role="texture",
-        purpose="What the rest of the month looked like at home",
+        purpose="What the days at home looked like",
     ),
 )
 
 STORY_BY_KEY: dict[str, Story] = {story.key: story for story in STORIES}
 
 THESIS = (
-    "A month that turns around one birthday afternoon in the garden, spends a "
-    "Saturday in the woods, and leaves the city for a week camped above a lake "
-    "before pancakes on the first morning back."
+    "A month that turns around Kit's birthday at home, then drives north for "
+    "twenty days: the midnight sun at Nordkapp, Lofoten, and the Atlantic Road "
+    "on the way back down."
 )
 
 
 @dataclass(frozen=True, slots=True)
-class Scene:
-    """One moment the household photographed, and how the editor read it.
+class Carrier:
+    """A picture the scripted editor puts in the cut, and the story it carries."""
 
-    ``key`` is the file prefix under ``fixtures/library``: ``<key>.jpg`` for the
-    six originals, ``<key>-01.jpg`` … for the fetched sets. The first file of a
-    scene is its main shot; the later files play the alternative shots a phone library
-    holds, and the editor leaves them out with a reason of their own.
-    """
-
-    key: str
-    day: int
-    time: str
-    place: Place = HOME
-    story: str | None = None
-    drop: str | None = None
-    people: tuple[str, ...] = ()
-    video: bool = False
+    stem: str
+    story: str
     favorite: bool = False
-    seconds: float = 4.0
-    # What a phone library holds besides a plain landscape shot (the scene's main shot only):
-    # a tall picture, a photo the owner edited in Immich's editor (the edit turns the picture
-    # upside down), a clip with its own sound recorded (a steady hum), and a photo
-    # carrying an HDR gain map, the way a recent phone saves one.
-    portrait: bool = False
-    edited: bool = False
-    voiced: bool = False
-    hdr: bool = False
 
 
-# Capture order. A scene with a story ships its main shot; every other file the
-# scene holds is an alternative the scripted editor drops.
-SCENES: tuple[Scene, ...] = (
-    # Week one: home.
-    Scene(
-        "home-breakfast",
-        1,
-        "08:15",
-        story="S0004",
-        people=ADULTS,
-        hdr=True,
-    ),
-    Scene(
-        "home-evening-sky",
-        1,
-        "21:30",
-        drop="a sky, and nothing of the family under it",
-    ),
-    Scene(
-        "home-park-pond",
-        2,
-        "10:00",
-        drop="the pond, with nobody of ours at it",
-    ),
-    Scene(
-        "home-football-lawn",
-        2,
-        "16:00",
-        drop="the ball on the grass, the game already over",
-        people=("Kit",),
-    ),
-    Scene(
-        "home-rain-window",
-        3,
-        "07:40",
-        story="S0004",
-        edited=True,
-    ),
-    Scene(
-        "home-kitchen",
-        3,
-        "18:00",
-        drop="kitchen details, with no occasion to show",
-    ),
-    Scene(
-        "home-desk-laptop",
-        4,
-        "12:30",
-        drop="a desk: work, not the household",
-    ),
-    Scene(
-        "home-dog-walk",
-        4,
-        "17:45",
-        story="S0004",
-        people=("Charlie",),
-        video=True,
-        seconds=5.0,
-        voiced=True,
-    ),
-    Scene(
-        "home-cat-window",
-        5,
-        "08:00",
-        drop="the cat asleep, the same as every morning",
-    ),
-    Scene(
-        "home-playground",
-        5,
-        "16:20",
-        drop="the swing, empty by the time the phone came out",
-        people=("Kit",),
-        video=True,
-    ),
-    Scene("home-laundry", 6, "11:00", drop="washing on the line, a chore"),
-    Scene(
-        "home-sofa-reading",
-        6,
-        "19:00",
-        drop="reading material, with no occasion to show",
-    ),
-    Scene(
-        "home-market-veg",
-        7,
-        "09:00",
-        drop="a market stall, could be anyone's Saturday",
-    ),
-    Scene(
-        "home-street-tram",
-        7,
-        "14:00",
-        drop="a street crossing, with no occasion to show",
-    ),
-    # The birthday, Saturday the 8th.
-    Scene(
-        "home-garden-roses",
-        8,
-        "10:30",
-        drop="the roses, three frames of the same bush",
-    ),
-    Scene(
-        "birthday-balloons",
-        8,
-        "11:00",
-        story="S0001",
-        people=("Robin",),
-    ),
-    Scene(
-        "garden-table",
-        8,
-        "12:15",
-        story="S0001",
-        people=EVERYONE,
-        video=True,
-        favorite=True,
-    ),
-    Scene(
-        "birthday-lemonade",
-        8,
-        "13:00",
-        drop="a drink, with the birthday already covered",
-    ),
-    Scene(
-        "birthday-cupcakes",
-        8,
-        "15:30",
-        drop="cupcakes: the birthday cake is already in the cut",
-    ),
-    Scene(
-        "garden-cake",
-        8,
-        "16:30",
-        story="S0001",
-        people=("Kit",),
-        favorite=True,
-    ),
-    Scene(
-        "birthday-candles",
-        8,
-        "16:32",
-        story="S0001",
-        people=("Kit", "Robin"),
-        video=True,
-        seconds=5.0,
-    ),
-    Scene(
-        "birthday-gifts",
-        8,
-        "17:00",
-        drop="the presents before they were opened",
-    ),
-    Scene(
-        "birthday-confetti",
-        8,
-        "17:30",
-        drop="party decorations, with the birthday already covered",
-    ),
-    Scene("birthday-pinata", 8, "18:00", drop="a piñata, with the birthday already covered"),
-    Scene(
-        "home-coffee-cup",
-        9,
-        "09:15",
-        drop="one cup of coffee, the morning after",
-    ),
-    # Ordinary days between the party and the woods.
-    Scene(
-        "home-bread-baking",
-        10,
-        "18:30",
-        drop="a loaf on the rack, a Monday",
-    ),
-    Scene(
-        "home-tomatoes-garden",
-        11,
-        "19:00",
-        drop="tomatoes, with no occasion to show",
-    ),
-    Scene(
-        "home-bath-toys",
-        12,
-        "19:30",
-        drop="the bath toys, no one in the bath",
-        people=("Kit",),
-    ),
-    Scene(
-        "home-balcony-flowers",
-        13,
-        "08:30",
-        drop="the balcony pots, watered",
-    ),
-    Scene(
-        "home-shoes-door",
-        13,
-        "17:00",
-        drop="trainers, with no occasion to show",
-    ),
-    # The Saturday in the woods, the 15th.
-    Scene(
-        "woods-tall-trees",
-        15,
-        "10:40",
-        place=WOODS,
-        drop="woodland scenery, with the walk already covered",
-    ),
-    Scene(
-        "woods-hamper",
-        15,
-        "11:05",
-        place=WOODS,
-        story="S0003",
-        people=EVERYONE,
-        favorite=True,
-    ),
-    Scene(
-        "woods-picnic",
-        15,
-        "11:30",
-        place=WOODS,
-        drop="the picnic is already covered",
-    ),
-    Scene(
-        "woods-stream",
-        15,
-        "12:45",
-        place=WOODS,
-        story="S0003",
-        people=("Kit",),
-    ),
-    Scene(
-        "woods-moss",
-        15,
-        "13:30",
-        place=WOODS,
-        drop="moss on a log, a close-up of the ground",
-    ),
-    Scene(
-        "woods-fern",
-        15,
-        "14:15",
-        place=WOODS,
-        drop="ferns, another close-up of the ground",
-    ),
-    Scene(
-        "woods-path",
-        15,
-        "15:40",
-        place=WOODS,
-        story="S0003",
-        people=ADULTS,
-        video=True,
-        seconds=6.0,
-    ),
-    Scene(
-        "woods-path-light",
-        15,
-        "15:50",
-        place=WOODS,
-        drop="the same path ten minutes later",
-    ),
-    # More ordinary days.
-    Scene(
-        "home-bike-park",
-        16,
-        "10:30",
-        drop="a parked bicycle, with nobody riding it",
-        people=("Robin", "Kit"),
-        video=True,
-    ),
-    Scene(
-        "home-drawing",
-        18,
-        "17:00",
-        drop="coloured pencils, with no finished drawing",
-        people=("Kit",),
-    ),
-    Scene(
-        "home-evening-lamp",
-        19,
-        "21:00",
-        drop="the living room at night, nothing happening",
-    ),
-    # The week by the lake, the 21st to the 28th.
-    Scene(
-        "home-suitcase",
-        21,
-        "08:30",
-        story="S0002",
-        people=("Charlie",),
-    ),
-    Scene(
-        "trip-motorway",
-        21,
-        "11:45",
-        place=ROAD,
-        drop="a road, with no stop or occasion to show",
-    ),
-    Scene(
-        "trip-map-car",
-        21,
-        "12:30",
-        place=ROAD,
-        drop="a parked car, with nobody in frame",
-    ),
-    Scene(
-        "trip-lake-arrival",
-        21,
-        "17:20",
-        place=LAKE,
-        story="S0002",
-        people=EVERYONE,
-        video=True,
-        seconds=5.0,
-    ),
-    Scene(
-        "lake-tents",
-        21,
-        "18:45",
-        place=LAKE,
-        story="S0002",
-        people=ADULTS,
-        video=True,
-        seconds=5.0,
-    ),
-    Scene(
-        "trip-campfire",
-        21,
-        "21:00",
-        place=LAKE,
-        drop="the fire, too dark to see who was round it",
-        video=True,
-    ),
-    Scene(
-        "trip-morning-mist",
-        22,
-        "07:30",
-        place=LAKE,
-        story="S0002",
-    ),
-    Scene(
-        "trip-lake-jetty",
-        22,
-        "10:00",
-        place=LAKE,
-        drop="the lakeshore is already covered",
-    ),
-    Scene(
-        "trip-swim",
-        22,
-        "11:30",
-        place=LAKE,
-        story="S0002",
-        people=("Kit", "Charlie"),
-        video=True,
-        seconds=5.0,
-    ),
-    Scene(
-        "trip-ice-cream",
-        22,
-        "14:00",
-        place=LAKE,
-        drop="ice cream, with the lake day already covered",
-        people=("Kit",),
-    ),
-    Scene(
-        "lake-sunset",
-        22,
-        "21:10",
-        place=LAKE,
-        story="S0002",
-        favorite=True,
-    ),
-    Scene(
-        "trip-cows-meadow",
-        23,
-        "11:30",
-        place=SEMNOZ,
-        drop="cows on the way up, the top says it better",
-        people=EVERYONE,
-    ),
-    Scene(
-        "trip-summit-view",
-        23,
-        "12:30",
-        place=SEMNOZ,
-        story="S0002",
-        people=EVERYONE,
-    ),
-    Scene(
-        "trip-town-canal",
-        24,
-        "10:00",
-        place=LAKE,
-        drop="a building facade, with no occasion to show",
-    ),
-    Scene(
-        "trip-cheese-market",
-        24,
-        "11:00",
-        place=LAKE,
-        drop="the cheese stall, could be anyone's market",
-    ),
-    Scene(
-        "trip-rain-day",
-        25,
-        "09:30",
-        place=LAKE,
-        drop="the lakeshore on an overcast day",
-    ),
-    Scene(
-        "trip-tent-morning",
-        25,
-        "14:00",
-        place=LAKE,
-        drop="the campsite is already covered",
-    ),
-    Scene(
-        "trip-cable-car",
-        26,
-        "10:00",
-        place=SEMNOZ,
-        drop="the cable car, mostly window",
-        people=("Kit", "Robin"),
-        video=True,
-    ),
-    Scene(
-        "trip-waterfall",
-        26,
-        "13:00",
-        place=SEMNOZ,
-        drop="the waterfall, no one in front of it",
-        video=True,
-        seconds=5.0,
-    ),
-    Scene(
-        "trip-kayak",
-        27,
-        "10:30",
-        place=LAKE,
-        drop="kayaks, with the swim already in the cut",
-        people=("Robin", "Kit"),
-        video=True,
-        seconds=5.0,
-    ),
-    Scene(
-        "trip-lake-dusk",
-        27,
-        "21:00",
-        place=LAKE,
-        drop="the lake at dusk, the sunset from the first night is in",
-    ),
-    # The return.
-    Scene(
-        "home-pancakes",
-        29,
-        "09:30",
-        story="S0004",
-        people=EVERYONE,
-        portrait=True,
-    ),
-    Scene(
-        "home-sunday-park",
-        30,
-        "16:00",
-        drop="a bench in the park, the month already over",
-    ),
+# The cut, in capture order. Everything else in the library is left out with a
+# reason (``_drop_reason``), most of it as a near-copy or another view of a
+# moment the cut already has.
+SCRIPT: tuple[Carrier, ...] = (
+    Carrier("home-0702-kit-stuffie", "S0004"),
+    Carrier("home-0703-duden-07", "S0004"),
+    Carrier("birthday-cake", "S0001", favorite=True),
+    Carrier("birthday-cupcakes-1", "S0001"),
+    Carrier("birthday-superheroes", "S0001"),
+    Carrier("birthday-sofa-film", "S0001"),
+    Carrier("forest-0706-sonian-2", "S0003"),
+    Carrier("forest-0706-picnic", "S0003"),
+    Carrier("forest-0706-pat-03", "S0003", favorite=True),
+    Carrier("home-0708-ice-cream-bike", "S0004"),
+    Carrier("home-0710-sofa", "S0004"),
+    Carrier("north-clip-0712-0", "S0002"),
+    Carrier("north-0712-0012", "S0002"),
+    Carrier("trip-0712-bike-harbour", "S0002"),
+    Carrier("north-clip-0715-2", "S0002"),
+    Carrier("north-0716-0196", "S0002", favorite=True),
+    Carrier("north-0717-0210", "S0002"),
+    Carrier("north-0718-0248", "S0002"),
+    Carrier("north-0720-0323", "S0002"),
+    Carrier("north-0721-0339", "S0002", favorite=True),
+    Carrier("north-clip-0723-4", "S0002"),
+    Carrier("north-0723-0450", "S0002"),
+    Carrier("trip-0723-beach-stones", "S0002"),
+    Carrier("north-0725-0556", "S0002"),
+    Carrier("north-0726-0644", "S0002"),
+    Carrier("north-0728-0825", "S0002"),
+    Carrier("north-0729-0898", "S0002"),
 )
 
-SCENE_BY_KEY: dict[str, Scene] = {scene.key: scene for scene in SCENES}
+# Reasons a reader would give that the moment structure cannot: what the
+# picture is, not where it sits. Keyed by file stem.
+DROP_NOTES: dict[str, str] = {
+    "north-0716-0143": "lunch on a plate, could be any café",
+    "north-0721-0335": "the cabin dishwasher",
+    "north-0726-0564": "the flat tyre: a story told at dinner, not in a film",
+    "north-0712-0004": "strangers on the steps, nobody of ours",
+}
+
+
+# The picture the owner edited in Immich's editor, and the one a recent phone saved with an
+# HDR gain map: both ordinary days at home, both in the cut.
+EDITED_PICTURE = "home-0702-kit-stuffie"
+HDR_PICTURE = "home-0710-sofa"
+
+
+@dataclass(frozen=True, slots=True)
+class Face:
+    """One face box, in fractions of the picture, pinned to a cast member."""
+
+    person: str
+    x: float
+    y: float
+    w: float
+    h: float
 
 
 @dataclass(frozen=True, slots=True)
 class Picture:
-    """One synthetic capture: the file it comes from, and the line written about it."""
+    """One capture as the fake Immich serves it, and the line written about it.
+
+    ``taken_at`` is the instant (``fileCreatedAt``, UTC); ``zone`` is where the clock
+    stood, from the GPS or, for a picture without one, from its file's offset, so
+    ``local_at`` and ``day`` read the wall clock Immich gives as ``localDateTime``.
+    ``place`` is None when the file holds no GPS.
+    """
 
     asset_id: str
     filename: str
@@ -612,9 +215,15 @@ class Picture:
     taken_at: str
     caption: str
     scene: str
-    place: Place
+    place: Place | None
+    zone: str = "Europe/Brussels"
+    width: int = 0
+    height: int = 0
+    source_file: str = ""
+    set_key: str = ""
     is_favorite: bool = False
     people: tuple[str, ...] = ()
+    faces: tuple[Face, ...] = ()
     story_key: str | None = None
     drop_reason: str | None = None
     seconds: float = 4.0
@@ -622,6 +231,8 @@ class Picture:
     sequence: int = 1
     tags: tuple[str, ...] = field(default=())
     portrait: bool = False
+    # A photo the owner edited in Immich's editor (served turned, as Immich renders it), a
+    # clip with its own recorded sound, and a photo carrying an HDR gain map.
     edited: bool = False
     voiced: bool = False
     hdr: bool = False
@@ -631,7 +242,7 @@ class Picture:
     motion: str = ""
     # For a burst member: where its clip starts in the burst's one continuous recording.
     burst_offset: float = 0.0
-    # Served at this exact pixel size instead of the library's photo size (a screenshot's).
+    # Served at this exact pixel size instead of the file's own (a screenshot's).
     size: tuple[int, int] | None = None
     # The text Immich's OCR job reads on it, one printed line per line.
     ocr: str = ""
@@ -642,97 +253,219 @@ class Picture:
 
     @property
     def source(self) -> Path:
-        return LIBRARY_DIR / f"{self.source_id or self.asset_id}.jpg"
+        return LIBRARY_DIR / (self.source_file or f"{self.source_id or self.asset_id}.jpg")
 
     @property
     def shipped(self) -> bool:
         return self.story_key is not None
 
+    @property
+    def local_at(self) -> str:
+        """The wall clock where it was taken, as Immich writes ``localDateTime``."""
+        local = _instant(self.taken_at).astimezone(ZoneInfo(self.zone)).replace(tzinfo=None)
+        return local.isoformat(timespec="milliseconds") + "Z"
 
-def _scene_files(scene: Scene) -> list[str]:
-    """The files a scene owns, main shot first; an original has one, a fetched set up to three."""
-    single = LIBRARY_DIR / f"{scene.key}.jpg"
-    if single.exists():
-        return [scene.key]
-    return sorted(path.stem for path in LIBRARY_DIR.glob(f"{scene.key}-[0-9][0-9].jpg"))
-
-
-def _stamp(scene: Scene, minutes_later: int) -> str:
-    hour, minute = (int(part) for part in scene.time.split(":"))
-    taken = datetime(2024, 6, scene.day, hour, minute, tzinfo=UTC) + timedelta(
-        minutes=minutes_later
-    )
-    return taken.strftime("%Y-%m-%dT%H:%M:%S.000Z")
+    @property
+    def day(self) -> str:
+        return self.local_at[:10]
 
 
-def _expand() -> tuple[Picture, ...]:
-    pictures: list[Picture] = []
-    captions_path = LIBRARY_DIR / "captions.json"
-    captions = json.loads(captions_path.read_text()) if captions_path.exists() else {}
-    counter = 2400
-    for scene in SCENES:
-        stems = _scene_files(scene)
-        for index, stem in enumerate(stems):
-            counter += 1
-            main = index == 0
-            video = scene.video and main
-            if main:
-                story, drop = scene.story, scene.drop
-            else:
-                story = None
-                drop = "another view of a subject already represented in the pool"
-            pictures.append(
-                Picture(
-                    asset_id=stem,
-                    filename=f"IMG_{counter}.{'mp4' if video else 'jpg'}",
-                    kind="video" if video else "still",
-                    taken_at=_stamp(scene, 2 * index),
-                    caption=captions[stem],
-                    scene=scene.key,
-                    place=scene.place,
-                    is_favorite=scene.favorite and main,
-                    people=scene.people if main else (),
-                    story_key=story,
-                    drop_reason=drop,
-                    seconds=scene.seconds if video else 4.0,
-                    source_id=stem,
-                    sequence=index + 1,
-                    portrait=scene.portrait and main,
-                    edited=scene.edited and main,
-                    voiced=scene.voiced and video,
-                    hdr=scene.hdr and main and not video,
-                )
-            )
-    if not pictures:
-        # WHY loudly: this module IS its directory -- the scenes above are only
-        # scene definitions until a glob of LIBRARY_DIR says which files exist. A consumer
-        # that stages the module without the pictures (the release smoke mounted
-        # fake_library.py alone, #881) used to read an empty month and drop every
-        # candidate, which surfaces far downstream as "selected no clips".
+def _records() -> list[dict[str, Any]]:
+    if not MANIFEST.exists() or not any(LIBRARY_DIR.glob("*.jpg")):
+        # WHY loudly: this module IS its directory. A consumer that stages the
+        # module without the pictures (the release smoke mounted fake_library.py
+        # alone, #881) used to read an empty month and drop every candidate,
+        # which surfaces far downstream as "selected no clips".
         raise RuntimeError(
             f"no pictures under {LIBRARY_DIR}: the library is its files, so this "
             "module cannot be used apart from the directory next to it"
         )
-    return tuple(pictures)
+    records = json.loads(MANIFEST.read_text())
+    return sorted(records, key=lambda record: (record["taken_utc"], record["stem"]))
 
 
-# Everything the fake Immich serves, in capture order: one month, June 2024.
+def _instant(stamp: str) -> datetime:
+    return datetime.fromisoformat(stamp.replace("Z", "+00:00"))
+
+
+def _moments(records: list[dict[str, Any]]) -> dict[str, str]:
+    """Each stem's moment: its set's run of pictures with no gap over twenty minutes."""
+    moment_of: dict[str, str] = {}
+    last_seen: dict[str, tuple[datetime, str]] = {}
+    for record in records:
+        taken = _instant(record["taken_utc"])
+        previous = last_seen.get(record["set"])
+        if previous is None or (taken - previous[0]).total_seconds() > _MOMENT_GAP_SECONDS:
+            key = f"{record['set']}-{record['stem']}"
+        else:
+            key = previous[1]
+        moment_of[record["stem"]] = key
+        last_seen[record["set"]] = (taken, key)
+    return moment_of
+
+
+def _place(record: dict[str, Any]) -> Place | None:
+    place = record["place"]
+    if place is None:
+        return None
+    zone = _ZONES.get(place["country"], "UTC")
+    return Place(place["latitude"], place["longitude"], place["city"], place["country"], zone)
+
+
+def _zone(record: dict[str, Any], place: Place | None) -> str:
+    """The GPS's zone, else the file's own offset read where the set was taken."""
+    if place is not None:
+        return place.zone
+    if record["utc_offset"] == "+03:00":
+        return "Europe/Helsinki"
+    return "Europe/Oslo" if record["set"] == TRIP_SET else "Europe/Brussels"
+
+
+def _expand() -> tuple[Picture, ...]:
+    records = _records()
+    moment_of = _moments(records)
+    script = {carrier.stem: carrier for carrier in SCRIPT}
+    missing = set(script) - {record["stem"] for record in records}
+    if missing:
+        raise RuntimeError(f"the script names pictures the library lacks: {sorted(missing)}")
+    sequence_in: dict[str, int] = {}
+    pictures: list[Picture] = []
+    for counter, record in enumerate(records, start=2401):
+        stem = record["stem"]
+        scene = moment_of[stem]
+        sequence_in[scene] = sequence_in.get(scene, 0) + 1
+        carrier = script.get(stem)
+        video = record["kind"] == "clip"
+        place = _place(record)
+        pictures.append(
+            Picture(
+                asset_id=stem,
+                filename=f"IMG_{counter}.{'mp4' if video else 'jpg'}",
+                kind="video" if video else "still",
+                taken_at=record["taken_utc"],
+                caption=record["caption"],
+                scene=scene,
+                place=place,
+                zone=_zone(record, place),
+                width=record["width"],
+                height=record["height"],
+                source_file=record["file"],
+                set_key=record["set"],
+                is_favorite=bool(carrier and carrier.favorite),
+                people=tuple(record["people"]),
+                faces=tuple(Face(**face) for face in record["faces"]),
+                story_key=carrier.story if carrier else None,
+                seconds=float(record["seconds"]) if video else 4.0,
+                sequence=sequence_in[scene],
+                portrait=record["height"] > record["width"],
+                edited=stem == EDITED_PICTURE,
+                hdr=stem == HDR_PICTURE,
+                # Every clip in the library is a phone's own recording, with its sound.
+                voiced=video,
+            )
+        )
+    return _with_reasons(pictures)
+
+
+def _with_reasons(pictures: list[Picture]) -> tuple[Picture, ...]:
+    """Give every picture outside the cut the reason the editor left it out."""
+    carried_moments = {p.scene for p in pictures if p.shipped}
+    carried_days = {p.day for p in pictures if p.shipped}
+    moment_sizes: dict[str, int] = {}
+    for picture in pictures:
+        moment_sizes[picture.scene] = moment_sizes.get(picture.scene, 0) + 1
+    previous: Picture | None = None
+    out: list[Picture] = []
+    for picture in pictures:
+        reason = None
+        if not picture.shipped:
+            context = _Context(previous, carried_moments, carried_days, moment_sizes[picture.scene])
+            reason = _drop_reason(picture, context)
+        out.append(replace(picture, drop_reason=reason))
+        if not picture.is_video:
+            previous = picture
+    return tuple(out)
+
+
+@dataclass(frozen=True, slots=True)
+class _Context:
+    previous: Picture | None
+    carried_moments: set[str]
+    carried_days: set[str]
+    moment_size: int
+
+
+def _drop_reason(picture: Picture, context: _Context) -> str:
+    if picture.asset_id in DROP_NOTES:
+        return DROP_NOTES[picture.asset_id]
+    previous = context.previous
+    if (
+        previous is not None
+        and previous.scene == picture.scene
+        and (_instant(picture.taken_at) - _instant(previous.taken_at)).total_seconds()
+        <= _BURST_SECONDS
+    ):
+        return "a near-copy of the frame before it"
+    if picture.scene in context.carried_moments:
+        return "another view of a moment already in the cut"
+    if "ferry" in picture.caption.lower():
+        return "a ferry crossing: sea and sky, the same for an hour"
+    where = picture.place.city if picture.place and picture.place.city else None
+    if context.moment_size >= 6:
+        return f"one of {context.moment_size} shots taken there within minutes" + (
+            f", in {where}" if where else ""
+        )
+    if picture.set_key == TRIP_SET and picture.day in context.carried_days:
+        return f"{where}: a day the cut already covers" if where else "a day the cut covers"
+    if picture.set_key == TRIP_SET:
+        return f"{where}: scenery with nobody of ours in it" if where else "scenery, nobody of ours"
+    return "an ordinary moment with no occasion to show"
+
+
+_EXPANDED: tuple[Picture, ...] = _expand()
+_BY_STEM: dict[str, Picture] = {picture.asset_id: picture for picture in _EXPANDED}
+
+
+def _like(stem: str, **fields: Any) -> Picture:
+    """A picture made from a library file: its size, place and zone, with these fields."""
+    base = _BY_STEM[stem]
+    plain: dict[str, Any] = {
+        "source_id": stem,
+        "story_key": None,
+        "drop_reason": None,
+        "people": (),
+        "faces": (),
+        "is_favorite": False,
+        "edited": False,
+        "hdr": False,
+    }
+    return replace(base, **(plain | fields))
+
+
+def _utc(local: str, zone: str = "Europe/Brussels") -> str:
+    moment = datetime.fromisoformat(local).replace(tzinfo=ZoneInfo(zone)).astimezone(UTC)
+    return moment.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
+
+
 # A Live Photo's companion clip runs this long, with the shutter in its middle (as an
 # iPhone's does).
 LIVE_CLIP_SECONDS = 3.0
 # A burst's shutters, this far apart: each clip overlaps the next by half.
 BURST_STEP_SECONDS = 1.5
+# The ordinary Wednesday at home that holds the Live Photos.
+LIVE_DAY = "2025-07-09"
 
 
-def _live(key: str, stamp: str, caption: str, motion: str, **fields) -> Picture:
-    return Picture(
+def _live(key: str, local: str, caption: str, motion: str, stem: str, **fields: Any) -> Picture:
+    """A Live Photo made from a library file: its place (or none) is the file's own."""
+    return _like(
+        stem,
         asset_id=key,
         filename=f"IMG_{key.upper().replace('-', '_')}.HEIC",
         kind="still",
-        taken_at=stamp,
+        taken_at=_utc(local),
         caption=caption,
         scene=key,
-        place=HOME,
         live_video_id=f"{key}-motion",
         motion=motion,
         **fields,
@@ -742,42 +475,44 @@ def _live(key: str, stamp: str, caption: str, motion: str, **fields) -> Picture:
 def _burst(index: int) -> Picture:
     seconds = index * BURST_STEP_SECONDS
     return _live(
-        f"live-kick-{index + 1}",
-        f"2024-06-12T17:00:{int(seconds):02d}.{int(seconds % 1 * 1000):03d}Z",
-        f"a ball kicked across the lawn, take {index + 1}",
+        f"live-ride-{index + 1}",
+        f"{LIVE_DAY}T19:00:{int(seconds):02d}.{int(seconds % 1 * 1000):03d}",
+        f"children cycling down the path, take {index + 1}",
         "burst",
-        source_id="home-football-lawn-01",
+        "home-0709-cycle-path",
         burst_offset=seconds,
         story_key="S0004" if index == 0 else None,
         drop_reason=None if index == 0 else "another take of the same burst",
     )
 
 
-# Live Photos, one ordinary Wednesday: a swing in motion, a window where nothing moves, and a
-# burst of three shots of one kick whose clips overlap. Each still ships; the burst ships
-# its first take, and its other takes are what a stitch can join to it.
+# Live Photos, one ordinary Wednesday: children running through a fountain in motion, a
+# sunrise where nothing moves, and a burst of three shots of one ride whose clips overlap.
+# Each still ships; the burst ships its first take, and its other takes are what a stitch
+# can join to it.
 LIVE_PICTURES: tuple[Picture, ...] = (
     _live(
-        "live-swing",
-        "2024-06-12T10:00:00.000Z",
-        "a swing in mid-air at the playground",
+        "live-fountain",
+        f"{LIVE_DAY}T12:00:00",
+        "children running through the fountain",
         "moving",
-        source_id="home-playground-01",
+        "home-0704-fountain",
         story_key="S0004",
     ),
     _live(
-        "live-quiet-window",
-        "2024-06-12T12:00:00.000Z",
-        "a quiet window, nothing moving",
+        "live-quiet-sunrise",
+        f"{LIVE_DAY}T06:00:00",
+        "sunrise over the street, nothing moving",
         "steady",
-        source_id="home-cat-window-01",
+        "home-0711-sunrise",
         story_key="S0004",
     ),
     *(_burst(index) for index in range(3)),
 )
 
+# Everything the fake Immich serves, in capture order: one month, July 2025.
 LIBRARY: tuple[Picture, ...] = tuple(
-    sorted((*_expand(), *LIVE_PICTURES), key=lambda picture: picture.taken_at)
+    sorted((*_EXPANDED, *LIVE_PICTURES), key=lambda picture: (picture.taken_at, picture.asset_id))
 )
 ALL_PICTURES: tuple[Picture, ...] = LIBRARY
 
@@ -798,20 +533,20 @@ DROPPED: dict[str, str] = {
     if not picture.shipped
 }
 
+# The trip as the household would file it: every picture of the road north.
+TRIP: tuple[Picture, ...] = tuple(p for p in LIBRARY if p.set_key == TRIP_SET)
+
 # The second account's own pictures. Only the partner key reads them, so a film naming
 # both accounts holds them and a primary-only film never does; everything above stays the
-# primary's library. One shot of the woods Saturday from the other phone, shipped with it.
+# primary's library. One shot of the forest Sunday from the other phone, shipped with it.
 PARTNER_PICTURES: tuple[Picture, ...] = (
-    Picture(
-        asset_id="partner-woods-watermelon",
+    _like(
+        "forest-0706-tervuren-04",
+        asset_id="partner-forest-museum",
         filename="PXL_0001.jpg",
-        kind="still",
-        taken_at="2024-06-15T12:05:00.000Z",
-        caption="watermelon on a striped blanket, from the other phone",
-        scene="woods-picnic",
-        place=WOODS,
+        caption="the museum across the water, from the other phone",
+        scene="partner-forest-museum",
         story_key="S0003",
-        source_id="woods-picnic-02",
     ),
 )
 
@@ -837,36 +572,43 @@ def pool_line() -> str:
     return f"{len(LIBRARY)} in the pool ({videos} videos, {len(LIBRARY) - videos} photos)"
 
 
-def _drawn(scene: Scene, caption: str, **fields) -> Picture:
+def _drawn(key: str, local: str, caption: str, drop: str, place: Place, **fields: Any) -> Picture:
     """A picture the fake Immich draws instead of serving a photograph (no one is in it)."""
     return Picture(
-        asset_id=scene.key,
-        filename=f"IMG_{scene.key.upper().replace('-', '_')}.jpg",
+        asset_id=key,
+        filename=f"IMG_{key.upper().replace('-', '_')}.jpg",
         kind="still",
-        taken_at=_stamp(scene, 0),
+        taken_at=_utc(local, place.zone),
         caption=caption,
-        scene=scene.key,
-        place=scene.place,
-        is_favorite=scene.favorite,
-        drop_reason=scene.drop,
+        scene=key,
+        place=place,
+        zone=place.zone,
+        is_favorite=True,
+        drop_reason=drop,
         **fields,
     )
 
 
 # What a phone library also holds and a film must not show, starred so nothing but that rule
 # can keep them out: a screenshot (a still at a phone's exact screen size) on the birthday, and
-# a campsite registration form photographed at the lake, whose printed field labels Immich's OCR
+# a campsite registration form photographed on Værøy, whose printed field labels Immich's OCR
 # reads. Outside LIBRARY: only a fake Immich started with `held=HELD_PICTURES` serves them, so
 # every other test's library stays as it is.
 HELD_PICTURES: tuple[Picture, ...] = (
     _drawn(
-        Scene("held-screenshot", 8, "14:15", favorite=True, drop="a screenshot"),
+        "held-screenshot",
+        "2025-07-05T14:15:00",
         "a screenshot of a chat on a phone",
+        "a screenshot",
+        HOME,
         size=(1179, 2556),
     ),
     _drawn(
-        Scene("held-form", 24, "15:00", place=LAKE, favorite=True, drop="a personal document"),
+        "held-form",
+        "2025-07-23T15:00:00",
         "a campsite registration form on a table",
+        "a personal document",
+        _BY_STEM["north-0723-0450"].place or HOME,
         ocr="CAMPSITE REGISTRATION\nName\nDate of birth\nNationality\nSignature",
     ),
 )

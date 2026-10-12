@@ -27,7 +27,7 @@ import { CUT_CONTENT_BUDGET, SHOTS } from "../fixture";
  */
 
 const SWAPPED = 1;
-const REMOVED = 4;
+const REMOVED = 3;
 const ALTERNATIVE = alternativesOf(SHOTS[SWAPPED])[0].picture;
 
 const PICK_SWAP = 22;

@@ -1,6 +1,6 @@
 """`generate --keep-intermediates` keeps the cut segments in the run folder (#2346).
 
-The terminal cut of the fixture June, with the flag on. Each segment the film was cut
+The terminal cut of the fixture month, with the flag on. Each segment the film was cut
 from must be in the run folder's `.intermediates`, and still play.
 """
 
@@ -14,6 +14,7 @@ import pytest
 
 from tests.e2e.cli_bootstrap import CLI_BOOTSTRAP
 from tests.e2e.conftest import _build_launch_environment, _owned_workspace
+from tests.e2e.fake_library import MONTH, YEAR
 
 pytestmark = pytest.mark.e2e
 
@@ -48,9 +49,9 @@ def test_keep_intermediates_leaves_the_cut_segments_in_the_run_folder(
                 "--memory-type",
                 "monthly_highlights",
                 "--year",
-                "2024",
+                str(YEAR),
                 "--month",
-                "6",
+                str(MONTH),
                 "--no-music",
                 "--quiet",
                 "--keep-intermediates",
@@ -67,7 +68,7 @@ def test_keep_intermediates_leaves_the_cut_segments_in_the_run_folder(
         films = list(workspace.output_dir.glob("*/*.mp4"))
         assert len(films) == 1, films
         segments = sorted((films[0].parent / ".intermediates").glob("*.mp4"))
-        # The June cut holds several of the library's videos; each was cut to a segment.
+        # The month's cut holds several of the library's videos; each was cut to a segment.
         assert len(segments) >= 2, segments
         assert all(_video_streams(segment) for segment in segments)
     finally:

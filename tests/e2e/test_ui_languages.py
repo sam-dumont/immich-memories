@@ -3,6 +3,8 @@
 import pytest
 from playwright.sync_api import Browser, expect
 
+from tests.e2e.fake_library import MONTH, YEAR
+
 pytestmark = pytest.mark.e2e
 
 
@@ -30,13 +32,13 @@ def test_browser_language_and_saved_choice_are_session_local(browser: Browser, l
         expect(other.locator("html")).to_have_attribute("lang", "en")
 
 
-def _june_command(page, launch_app_url: str, labels: dict[str, str]) -> str:
+def _month_command(page, launch_app_url: str, labels: dict[str, str]) -> str:
     page.goto(launch_app_url + "/app/create")
     page.get_by_text(labels["type"], exact=True).click()
-    page.get_by_label(labels["year"], exact=True).fill("2024")
-    page.get_by_label(labels["month"], exact=True).select_option("6")
+    page.get_by_label(labels["year"], exact=True).fill(str(YEAR))
+    page.get_by_label(labels["month"], exact=True).select_option(str(MONTH))
     command = page.get_by_label(labels["command"])
-    expect(command).to_contain_text("--month=6")
+    expect(command).to_contain_text(f"--month={MONTH}")
     return command.inner_text()
 
 
@@ -49,12 +51,12 @@ def test_french_choices_make_a_cut_without_changing_the_film_language(
         browser.new_context(locale="en-US") as english,
     ):
         page = french.new_page()
-        french_command = _june_command(
+        french_command = _month_command(
             page,
             launch_app_url,
             {"type": "Moments du mois", "year": "Année", "month": "Mois", "command": "Commande"},
         )
-        english_command = _june_command(
+        english_command = _month_command(
             english.new_page(),
             launch_app_url,
             {"type": "Monthly Highlights", "year": "Year", "month": "Month", "command": "Command"},

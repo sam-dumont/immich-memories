@@ -27,21 +27,29 @@ from tests.integration.features.film_probe import (
 )
 from tests.integration.features.immich_server import LibraryServer
 from tests.integration.features.library import (
-    GARDEN_DAY,
+    DEPARTURE_DAY,
     QUIET_DAY,
     RenderedRun,
     day_args,
     render,
 )
 
-# A day of one clip with its own sound recorded (the fixture's `voiced` clip) and no stills.
-HUM_DAY = "2024-06-04"
+
+def _the_day_only(kind) -> str:
+    """The first day whose cut is one picture of this kind, and nothing else."""
+    days = sorted({p.day for p in CARRIERS})
+    return next(day for day in days if [kind(p) for p in CARRIERS if p.day == day] == [True])
+
+
+# A day of one clip with its own sound recorded (a phone's recording) and no stills.
+HUM_DAY = _the_day_only(lambda p: p.is_video and p.voiced)
+# The clip's sound is a real recording (water, wind): measured in the band a hum would sit in.
 HUM_HZ = 220
 # A day whose one shipped picture is tall (the fixture's `portrait` still).
-TALL_DAY = "2024-06-29"
+TALL_DAY = _the_day_only(lambda p: p.portrait)
 TRACK_HZ = 660
 # A day of one still saved with an HDR gain map (the fixture's `hdr` photo).
-HDR_DAY = "2024-06-01"
+HDR_DAY = _the_day_only(lambda p: p.hdr)
 # The PQ code of diffuse white (203 nits) in a 10-bit film: HDR highlights sit above it.
 _PQ_DIFFUSE_WHITE = 572
 # Legal white of 8-bit limited-range video.
@@ -132,9 +140,9 @@ def test_short_form_fills_about_thirty_seconds_from_a_full_month(library_home: U
         library_home,
         "generate",
         "--start",
-        "2024-06-01",
+        "2025-07-01",
         "--end",
-        "2024-06-30",
+        "2025-07-31",
         "--include-photos",
         "--no-music",
         "--quiet",
@@ -202,15 +210,15 @@ def test_a_photo_edited_in_immich_plays_as_its_edit(library_home: UserHome, shor
 
 
 @pytest.mark.feature("photos.ken-burns")
-def test_a_still_moves_while_it_is_on_screen(library_home: UserHome, garden_film: RenderedRun):
-    """No face recognised on the garden stills: the gentle zoom and pan head for the centre."""
-    stills = [s for s in story_of(library_home, garden_film.run_id) if s.kind == "photo"]
+def test_a_still_moves_while_it_is_on_screen(library_home: UserHome, departure_film: RenderedRun):
+    """A departure-day still zooms and pans while it is on screen."""
+    stills = [s for s in story_of(library_home, departure_film.run_id) if s.kind == "photo"]
 
     assert stills
     for shot in stills:
-        early = grey_frame(garden_film.film, shot.at + 0.6, band="iw*0.6:ih*0.6:iw*0.2:ih*0.2")
+        early = grey_frame(departure_film.film, shot.at + 0.6, band="iw*0.6:ih*0.6:iw*0.2:ih*0.2")
         late = grey_frame(
-            garden_film.film, shot.at + shot.seconds - 0.6, band="iw*0.6:ih*0.6:iw*0.2:ih*0.2"
+            departure_film.film, shot.at + shot.seconds - 0.6, band="iw*0.6:ih*0.6:iw*0.2:ih*0.2"
         )
         assert luma_difference(early, late) > 2, shot
 
@@ -219,7 +227,7 @@ def test_a_still_moves_while_it_is_on_screen(library_home: UserHome, garden_film
 def test_a_gain_mapped_photo_keeps_hdr_in_an_hdr_h265_film_and_is_tone_mapped_in_sdr(
     library_home: UserHome, immich: LibraryServer, tmp_path
 ):
-    still = next(p for p in CARRIERS if p.taken_at.startswith(HDR_DAY))
+    still = next(p for p in CARRIERS if p.day == HDR_DAY)
     home = UserHome(tmp_path / "hdr-home")
     config = basic_config(immich.base_url, immich.api_key, home)
     config["output"].update(codec="h265", hdr_mode="auto")
@@ -259,7 +267,7 @@ def test_a_gain_mapped_photo_keeps_hdr_in_an_hdr_h265_film_and_is_tone_mapped_in
 
 @pytest.mark.feature("generate.duration")
 def test_duration_budgets_the_whole_film_titles_included(library_home: UserHome, tmp_path):
-    budgeted = _render_into(library_home, tmp_path, *day_args(GARDEN_DAY), "--duration", "14")
+    budgeted = _render_into(library_home, tmp_path, *day_args(DEPARTURE_DAY), "--duration", "14")
 
     assert film_facts(budgeted.film).duration <= 14 + 0.5
     assert "set by --duration" in budgeted.result.output
@@ -295,32 +303,32 @@ def test_a_thin_day_finishes_short_of_its_duration_with_a_bundled_track(
 
 @pytest.mark.feature("generate.length-fits-material")
 def test_without_duration_the_material_sets_the_length_and_the_run_says_so(
-    library_home: UserHome, garden_film: RenderedRun
+    library_home: UserHome, departure_film: RenderedRun
 ):
     month = cut(
         library_home,
         "generate",
         "--start",
-        "2024-06-01",
+        "2025-07-01",
         "--end",
-        "2024-06-30",
+        "2025-07-31",
         "--include-photos",
         "--no-music",
         "--quiet",
     )
 
     day = re.search(
-        r"Duration (\d+)s, set by the material: 1 photographed days", garden_film.result.output
+        r"Duration (\d+)s, set by the material: 1 photographed days", departure_film.result.output
     )
     whole = re.search(
         r"Duration (\d+)s, set by the material: (\d+) photographed days", month.output
     )
-    assert day and whole, (garden_film.result.output[-2000:], month.output[-2000:])
+    assert day and whole, (departure_film.result.output[-2000:], month.output[-2000:])
     # A month of days asks for more film than one afternoon does.
     assert int(whole.group(1)) > int(day.group(1))
-    assert int(whole.group(2)) == len({p.taken_at[:10] for p in ALL_PICTURES})
+    assert int(whole.group(2)) == len({p.day for p in ALL_PICTURES})
     # And the finished film is no longer than the length the material set.
-    assert film_facts(garden_film.film).duration <= int(day.group(1)) + 0.5
+    assert film_facts(departure_film.film).duration <= int(day.group(1)) + 0.5
 
 
 # ── music and the clips' own sound ───────────────────────────────────────────
@@ -414,26 +422,33 @@ def test_a_failed_music_generator_falls_back_to_a_bundled_track_with_a_warning(
 
 @pytest.mark.feature("generate.orientation-auto")
 def test_auto_orientation_follows_the_kept_pictures(
-    library_home: UserHome, garden_film: RenderedRun, tmp_path
+    library_home: UserHome, departure_film: RenderedRun, tmp_path
 ):
     tall = _render_into(library_home, tmp_path, *_day(TALL_DAY, "--no-music"))
-    square = cut(library_home, *_day(GARDEN_DAY, "--no-music", "--orientation", "square"))
+    square = cut(library_home, *_day(DEPARTURE_DAY, "--no-music", "--orientation", "square"))
 
     # Landscape clips make a landscape film, a tall picture a tall one.
-    assert (film_facts(garden_film.film).width, film_facts(garden_film.film).height) == (1280, 720)
+    assert (film_facts(departure_film.film).width, film_facts(departure_film.film).height) == (
+        1280,
+        720,
+    )
     assert (film_facts(tall.film).width, film_facts(tall.film).height) == (720, 1280)
     assert re.search(r"Canvas: (\d+)x\1 \(square\)", square.output), square.output
 
 
 @pytest.fixture(scope="module")
-def garden_cut_and_crossfade(library_home: UserHome, tmp_path_factory):
+def departure_cut_and_crossfade(library_home: UserHome, tmp_path_factory):
     cuts = _render_into(
-        library_home, tmp_path_factory.mktemp("cuts"), *day_args(GARDEN_DAY), "--transition", "cut"
+        library_home,
+        tmp_path_factory.mktemp("cuts"),
+        *day_args(DEPARTURE_DAY),
+        "--transition",
+        "cut",
     )
     fades = _render_into(
         library_home,
         tmp_path_factory.mktemp("fades"),
-        *day_args(GARDEN_DAY),
+        *day_args(DEPARTURE_DAY),
         "--transition",
         "crossfade",
     )
@@ -442,26 +457,31 @@ def garden_cut_and_crossfade(library_home: UserHome, tmp_path_factory):
 
 @pytest.mark.feature("render.transitions")
 def test_crossfades_overlap_the_pictures_on_whole_frames_and_cuts_do_not(
-    garden_cut_and_crossfade, garden_film: RenderedRun
+    departure_cut_and_crossfade, departure_film: RenderedRun
 ):
-    cuts, fades = (film_facts(r.film) for r in garden_cut_and_crossfade)
-    smart = film_facts(garden_film.film)
+    cuts, fades = (film_facts(r.film) for r in departure_cut_and_crossfade)
+    smart = film_facts(departure_film.film)
 
     # Every crossfade overlaps two pictures, so the faded film is the shorter one.
     assert fades.duration < cuts.duration - 0.5
     # Smart mixes fades and cuts: it never fades more than crossfade, nor less than cut.
     assert fades.duration - 0.1 <= smart.duration <= cuts.duration + 0.1
-    # Whole frames: every film's frame count is its length on the 30 fps clock.
+    # Whole frames: every film's frame count is its length on its own clock (the day's clips
+    # were recorded at 25 fps, and the film keeps their rate).
     for facts in (cuts, fades, smart):
-        assert facts.frames == round(facts.duration * 30), facts
+        assert facts.frames == round(facts.duration * facts.fps), facts
 
 
 @pytest.mark.feature("captions.date-place")
 def test_captions_name_the_date_and_the_city_when_they_change_and_flags_turn_them_off(
     library_home: UserHome, immich: LibraryServer, tmp_path
 ):
-    """The garden Saturday in Brussels, a Wednesday at home, then the woods at Tervuren."""
-    days = ("--start", GARDEN_DAY, "--end", "2024-06-15")
+    """Duden park in Forest, the birthday in Brussels, then the Sonian forest at Watermael-Boitsfort.
+
+    The birthday and the forest Sunday both hold pictures without GPS: they caption no place
+    and do not reset the run, so the place after them is captioned only if it changed.
+    """
+    days = ("--start", "2025-07-03", "--end", "2025-07-06")
     captioned = _render_into(
         library_home, tmp_path / "on", "generate", *days, "--include-photos", "--no-music"
     )
@@ -487,21 +507,24 @@ def test_captions_name_the_date_and_the_city_when_they_change_and_flags_turn_the
     places = [reach(s, place_band) for s in shots]
     dates = [reach(s, date_band) for s in shots]
     new_day = [i == 0 or s.day != shots[i - 1].day for i, s in enumerate(shots)]
-    cities = [picture_of(s).place.city for s in shots]
-    new_city = [i == 0 or city != cities[i - 1] for i, city in enumerate(cities)]
-    assert cities.count("Tervuren") >= 2 and new_city.count(True) == 2, cities
-    assert new_day.count(True) > new_city.count(True), new_day
+    cities = [p.place.city if (p := picture_of(s)).place else None for s in shots]
+    # A place is captioned where it differs from the last place known; no GPS shows none.
+    new_city, last = [], None
+    for city in cities:
+        new_city.append(city is not None and city != last)
+        last = city or last
+    assert new_city.count(True) >= 3 and None in cities, cities
     seen = [(s.at, s.day, s.seconds, city) for s, city in zip(shots, cities, strict=True)]
     # A date where the day changes and a place where the city changes, none in between.
     assert [p > 0 for p in places] == new_city, (places, seen)
     assert [d > 0 for d in dates] == new_day, (dates, seen)
-    # Brussels and Tervuren are both in the home country, which stays out of the caption:
-    # "BRUSSELS" alone reaches about a quarter of the way across the band, "BRUSSELS, BELGIUM"
-    # past half of it. A real Immich names the fixture's places after the nearest GeoNames
-    # town (Ixelles, Watermael-Boitsfort), whose names alone run longer: the widths are the
-    # fake's names.
+    # Every place here is in the home country, which stays out of the caption: "BRUSSELS"
+    # alone reaches about a quarter of the way across the band, "BRUSSELS, BELGIUM" past
+    # half of it. A real Immich names places after its own GeoNames towns: the widths are
+    # the fake's names.
     if not immich.real:
-        assert all(p < 0.4 for p in places), places
+        brussels = [p for p, city in zip(places, cities, strict=True) if city == "Brussels"]
+        assert brussels and all(p < 0.4 for p in brussels if p > 0), places
     assert film_facts(bare.film).duration == pytest.approx(film_facts(captioned.film).duration)
 
 
@@ -515,7 +538,7 @@ def test_a_trip_film_is_named_after_its_place_and_first_day(library_home: UserHo
         "--memory-type",
         "trip",
         "--year",
-        "2024",
+        "2025",
         "--trip-index",
         "1",
         "--include-photos",
@@ -527,7 +550,9 @@ def test_a_trip_film_is_named_after_its_place_and_first_day(library_home: UserHo
 
     assert run.returncode == 0, run.explain()
     [film] = films_under(tmp_path)
-    assert re.fullmatch(r"trip_annecy_france_2024-06-21_[0-9a-f]{8}\.mp4", film.name), film
+    assert re.fullmatch(
+        r"trip_denmark_sweden_finland_norway_2025-07-12_[0-9a-f]{8}\.mp4", film.name
+    ), film
     assert re.fullmatch(rf"{film.stem}_\d{{8}}_\d{{6}}_[0-9a-f]{{4}}", film.parent.name)
 
 
@@ -536,7 +561,7 @@ def test_an_album_film_is_named_after_the_album(library_home: UserHome):
     planned = library_home.run(
         "generate",
         "--from-album",
-        "The lake week",
+        "The road north",
         "--include-photos",
         "--no-music",
         "--dry-run",
@@ -545,7 +570,7 @@ def test_an_album_film_is_named_after_the_album(library_home: UserHome):
 
     assert planned.returncode == 0, planned.explain()
     assert re.search(
-        r"album_the_lake_week_<recipe>_<run id>/album_the_lake_week_<recipe>\.mp4", planned.stdout
+        r"album_the_road_north_<recipe>_<run id>/album_the_road_north_<recipe>\.mp4", planned.stdout
     ), planned.stdout
 
 

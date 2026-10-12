@@ -32,8 +32,8 @@ def _evidence(page: Page, name: str) -> None:
 
 
 @pytest.fixture
-def stand_in_2025(launch_workspace):
-    """Spotlights read the year before the clock; the fixture's pictures are from 2024.
+def stand_in_the_next_year(launch_workspace):
+    """Spotlights read the year before the clock; the fixture's pictures are from 2025.
 
     The launch server is shared by the session, so the clock goes back afterwards: a test
     after this one reads the fixture's own date, whichever order they run in.
@@ -43,7 +43,7 @@ def stand_in_2025(launch_workspace):
     clock = launch_workspace.root / "state" / CLOCK_FILE
     clock.parent.mkdir(parents=True, exist_ok=True)
     before = clock.read_text() if clock.is_file() else None
-    clock.write_text("2025-07-01")
+    clock.write_text("2026-08-01")
     yield
     if before is None:
         clock.unlink(missing_ok=True)
@@ -52,7 +52,9 @@ def stand_in_2025(launch_workspace):
 
 
 @pytest.mark.feature("web.suggestions")
-def test_suggestions_page_offers_the_discovered_candidates(page, launch_app_url, stand_in_2025):
+def test_suggestions_page_offers_the_discovered_candidates(
+    page, launch_app_url, stand_in_the_next_year
+):
     page.goto(f"{launch_app_url}/suggestions")
     page.wait_for_url("**/app/suggestions")
     expect(page.get_by_role("heading", name="Suggestions", level=1)).to_be_visible()
@@ -113,14 +115,16 @@ def test_choose_generate_and_read_the_same_automatic_run(
     from immich_memories.automation.state_store import AutomationStateStore
     from immich_memories.tracking import RunDatabase
     from immich_memories.web.suggestions import SUGGESTION_REASON
-    from tests.e2e.fake_library import CARRIERS, THESIS
+    from tests.e2e.fake_library import CARRIERS, MONTH, THESIS, YEAR
 
     page.goto(f"{automation_app_url}/app/suggestions")
     card = _card(page, "Monthly Highlights")
     expect(card).to_be_visible(timeout=60_000)
     card.get_by_text("Candidate key", exact=True).click()
     expect(
-        card.get_by_text("monthly_highlights:2024-06-01:2024-06-30:", exact=False)
+        card.get_by_text(
+            f"monthly_highlights:{YEAR}-{MONTH:02d}-01:{YEAR}-{MONTH:02d}-31:", exact=False
+        )
     ).to_be_visible()
     card.get_by_role("button", name="Check eligibility").click()
     expect(page.get_by_text("Eligible. No video was generated.", exact=True)).to_be_visible(
@@ -150,8 +154,8 @@ def test_choose_generate_and_read_the_same_automatic_run(
     assert rows[0].run_id in page.url
     _evidence(page, "run-details")
     page.get_by_role("link", name="Back to runs").click()
-    assert rows[0].date_range_start == date(2024, 6, 1)
-    assert rows[0].date_range_end == date(2024, 6, 30)
+    assert rows[0].date_range_start == date(YEAR, MONTH, 1)
+    assert rows[0].date_range_end == date(YEAR, MONTH, 31)
     # Dated runs display their month span; the run ID is only the undated fallback.
     expect(page.locator(f'a[href="/app/runs/{rows[0].run_id}"]')).to_be_visible()
     _evidence(page, "runs")
@@ -165,7 +169,7 @@ def test_choose_generate_and_read_the_same_automatic_run(
 
 
 def test_variety_rejections_and_all_sidebar_destinations(
-    page, launch_app_url, launch_workspace, stand_in_2025
+    page, launch_app_url, launch_workspace, stand_in_the_next_year
 ):
     from datetime import datetime, timedelta
 

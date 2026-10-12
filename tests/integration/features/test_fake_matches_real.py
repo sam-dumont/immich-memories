@@ -28,21 +28,22 @@ from tests.e2e.fake_immich import (
     TIMELINE_ASSETS,
     FakeImmichServer,
 )
-from tests.e2e.fake_library import ALL_PICTURES, CAST, HOME, PARTNER_PICTURES
+from tests.e2e.fake_library import ALL_PICTURES, CAST, HOME, PARTNER_PICTURES, TRIP
 from tests.integration.features.immich_server import LibraryServer
-from tests.integration.features.library import GARDEN_DAY
+from tests.integration.features.library import DEPARTURE_DAY
 
 pytestmark = [pytest.mark.integration, pytest.mark.real_immich_only]
 
 _PAGE = {"page": 1, "size": 1000, "withExif": True, "withPeople": True}
 
-# The fixture names its places by hand (Brussels, Tervuren, Semnoz); a real Immich names each
-# after the nearest GeoNames town (Ixelles, Watermael-Boitsfort, Gruffy). The real-Commons
-# fixture library (#2423) brings places named the way Immich names them; until then the place
-# names are compared on their own and expected to differ.
+# The fixture names its places through OpenStreetMap (Brussels, Watermael-Boitsfort, Nordkapp);
+# a real Immich names each after the nearest GeoNames town of 500 people or more, which can
+# be a neighbour or none at all (at the North Cape it names no town and no country). Until the
+# fixture names its places from the same GeoNames list, places (town and country) are compared
+# on their own and expected to differ.
 _PLACE_NAMES_DIFFER = pytest.mark.xfail(
     strict=True,
-    reason="the fixture's hand-picked place names are not Immich's GeoNames names (#2423)",
+    reason="the fixture names places through OpenStreetMap, not Immich's GeoNames towns",
 )
 # The fake answers a person's timeline with the whole library's months; a real Immich counts
 # that person's pictures only. Making the fake honest leaves the web "Rescan now" with nobody
@@ -128,7 +129,6 @@ def _facts(asset: dict[str, Any], pair: _Pair, *, real: bool) -> dict[str, Any]:
         "duration": _seconds(asset.get("duration")),
         "make": exif.get("make"),
         "model": exif.get("model"),
-        "country": exif.get("country"),
         "people": sorted(person["name"] for person in asset.get("people") or ()),
         "livePhotoVideoId": pair.fixture_of.get(live, live) if real else live,
     }
@@ -165,8 +165,9 @@ def test_every_asset_is_named_after_the_same_place(pair: _Pair) -> None:
     assert found == [], "\n".join(found)
 
 
-def city(asset: dict[str, Any]) -> str | None:
-    return (asset.get("exifInfo") or {}).get("city")
+def city(asset: dict[str, Any]) -> tuple[str | None, str | None]:
+    exif = asset.get("exifInfo") or {}
+    return exif.get("city"), exif.get("country")
 
 
 def _each_asset(
@@ -187,19 +188,19 @@ def _each_asset(
 def _searches(pair: _Pair) -> list[tuple[str, dict[str, Any], dict[str, Any]]]:
     """(label, the fake's payload, the real one's): the shapes the app sends."""
     month = (min(p.taken_at for p in ALL_PICTURES), max(p.taken_at for p in ALL_PICTURES))
-    day_end = f"{GARDEN_DAY}T23:59:59.999Z"
-    candles = next(p for p in ALL_PICTURES if p.scene == "birthday-candles" and p.shipped)
+    day_end = f"{DEPARTURE_DAY}T23:59:59.999Z"
+    candles = next(p for p in ALL_PICTURES if p.set_key == "birthday-cake" and p.shipped)
     cases: list[tuple[str, dict[str, Any]]] = [
         ("everything", {}),
         ("photos", {"type": "IMAGE"}),
         ("videos", {"type": "VIDEO"}),
         ("the month", {"takenAfter": month[0], "takenBefore": month[1]}),
-        ("one day, Z", {"takenAfter": f"{GARDEN_DAY}T00:00:00.000Z", "takenBefore": day_end}),
+        ("one day, Z", {"takenAfter": f"{DEPARTURE_DAY}T00:00:00.000Z", "takenBefore": day_end}),
         # The same instant spelled with an offset: Immich compares instants, not text.
-        ("one day, +00:00", {"takenAfter": f"{GARDEN_DAY}T00:00:00+00:00"}),
+        ("one day, +00:00", {"takenAfter": f"{DEPARTURE_DAY}T00:00:00+00:00"}),
         ("from an exact capture", {"takenAfter": candles.taken_at}),
-        ("up to an exact capture", {"takenBefore": candles.taken_at.replace(".000Z", "+00:00")}),
-        ("the lake album", {"albumIds": [ALBUM_ID]}),
+        ("up to an exact capture", {"takenBefore": candles.taken_at.replace("Z", "+00:00")}),
+        ("the trip album", {"albumIds": [ALBUM_ID]}),
         ("on the timeline", {"visibility": "timeline"}),
         ("hidden", {"visibility": "hidden"}),
     ]
@@ -362,10 +363,7 @@ def test_albums_read_the_same(pair: _Pair) -> None:
 
     assert shelf(fake) == shelf(real)
     assert [a["albumName"] for a in fake] == [ALBUMS[0]["albumName"]]
-    inside = next(
-        iter(sorted(a["id"] for a in TIMELINE_ASSETS if a["exifInfo"]["city"] == "Annecy"))
-    )
-    outside = next(a["id"] for a in TIMELINE_ASSETS if a["exifInfo"]["city"] != "Annecy")
+    inside, outside = TRIP[0].asset_id, next(p.asset_id for p in ALL_PICTURES if p not in TRIP)
     for fixture_id in (inside, outside):
         fake, real = pair.ask(
             "GET",

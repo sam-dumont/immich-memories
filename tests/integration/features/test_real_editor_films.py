@@ -17,6 +17,7 @@ Every expectation is derived from the fixture library's own pictures (`fake_libr
 from __future__ import annotations
 
 import re
+from datetime import datetime
 from pathlib import Path
 
 import pytest
@@ -59,6 +60,9 @@ def home(tmp_path: Path, held_immich: FakeImmichServer, outbound_trap: OutboundT
 
 # ── the rules, read on a finished cut ────────────────────────────────────────
 
+# Two stills of one scene this close in time are one picture taken twice.
+_NEAR_IDENTICAL_SECONDS = 120
+
 
 def _scene(picture: Picture) -> list[Picture]:
     """A picture and the near-identical frames the library holds beside it (minutes apart)."""
@@ -71,7 +75,7 @@ def assert_capture_order(film: EditedFilm) -> None:
         p.asset_id for p in kept
     ]
     assert [s.at for s in film.shots] == sorted(s.at for s in film.shots)
-    assert [s.day for s in film.shots] == [p.taken_at[:10] for p in kept]
+    assert [s.day for s in film.shots] == [p.day for p in kept]
 
 
 def assert_favourites_win_their_moment(film: EditedFilm) -> None:
@@ -97,12 +101,27 @@ def assert_favourites_win_their_moment(film: EditedFilm) -> None:
         )
 
 
+def _seconds_apart(left: Picture, right: Picture) -> float:
+    def instant(picture: Picture) -> datetime:
+        return datetime.fromisoformat(picture.taken_at.replace("Z", "+00:00"))
+
+    return abs((instant(left) - instant(right)).total_seconds())
+
+
 def assert_one_frame_per_moment(film: EditedFilm) -> None:
-    """Near-identical stills (the same scene, two minutes apart) compete for one place."""
-    kept = film.kept()
-    for picture in kept:
-        stills = [p for p in kept if p.scene == picture.scene and not p.is_video]
-        assert len(stills) <= 1, [p.asset_id for p in stills]
+    """Near-identical stills (the same scene, minutes apart) compete for one place.
+
+    A scene is one photographer's run of shots without a long gap, so two of its stills half
+    an hour apart are two pictures; two taken within a couple of minutes are the same one.
+    """
+    stills = [p for p in film.kept() if not p.is_video]
+    for index, picture in enumerate(stills):
+        twins = [
+            p
+            for p in stills[index + 1 :]
+            if p.scene == picture.scene and _seconds_apart(p, picture) <= _NEAR_IDENTICAL_SECONDS
+        ]
+        assert not twins, [picture.asset_id, *(p.asset_id for p in twins)]
 
 
 def assert_held_out(home, film: EditedFilm) -> list[Picture]:
@@ -185,10 +204,13 @@ def test_a_year_through_the_real_editor_keeps_its_rules_and_its_minute(home):
 
 
 def _away(picture: Picture) -> bool:
-    """Taken more than a day's drive from home: over a degree of latitude or longitude away."""
-    return (
-        abs(picture.place.latitude - HOME.latitude) > 1
-        or abs(picture.place.longitude - HOME.longitude) > 1
+    """Taken more than a day's drive from home: over a degree of latitude or longitude away.
+
+    Only a picture whose file holds GPS can say where it was taken.
+    """
+    place = picture.place
+    return place is not None and (
+        abs(place.latitude - HOME.latitude) > 1 or abs(place.longitude - HOME.longitude) > 1
     )
 
 
@@ -202,7 +224,7 @@ def test_a_trip_through_the_real_editor_films_the_time_away_by_its_rules(home):
         "--year",
         YEAR,
         "--near-date",
-        min(p.taken_at for p in away)[:10],
+        min(p.day for p in away),
         *_RENDER,
     )
 
@@ -210,15 +232,16 @@ def test_a_trip_through_the_real_editor_films_the_time_away_by_its_rules(home):
     assert window, trip.result.explain()
     first, last = window.groups()
     # The trip is the stretch of days the library spent away.
-    assert (first, last) == (min(p.taken_at for p in away)[:10], max(p.taken_at for p in away)[:10])
+    assert (first, last) == (min(p.day for p in away), max(p.day for p in away))
     kept = trip.kept()
-    assert all(first <= p.taken_at[:10] <= last and _away(p) for p in kept), [
+    # Its photos were taken away; its clips (a phone writes no GPS into them) are the trip's days.
+    assert all(first <= p.day <= last and (p.is_video or _away(p)) for p in kept), [
         p.asset_id for p in kept
     ]
     assert_the_editing_rules(home, trip)
     # The form photographed at the campsite is in the trip's pool, starred, and stays out.
     assert [p.asset_id for p in assert_held_out(home, trip)] == [
-        p.asset_id for p in HELD_PICTURES if first <= p.taken_at[:10] <= last and _away(p)
+        p.asset_id for p in HELD_PICTURES if first <= p.day <= last and _away(p)
     ]
     target = re.search(r"Duration (\d+)s", trip.output)
     assert target, trip.result.explain()

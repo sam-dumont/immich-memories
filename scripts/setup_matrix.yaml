@@ -118,11 +118,11 @@ baseline_config:
   analysis.optimal_clip_duration: 5.0
 
 libraries:
-  # The public run. tests/e2e/fake_library.py is a stock month (June 2024) that
-  # tells a story; `--serve-fixture` puts it on the LAN so the NAS and the
+  # The public run. tests/e2e/fake_library.py is a month of real Commons pictures
+  # (July 2025) that tells a story; `--serve-fixture` puts it on the LAN so the NAS and the
   # cluster can reach it. Nothing here needs anonymising.
   demo:
-    month: "2024-06"
+    month: "2025-07"
     anonymize_required: false
     # Planning envelopes, not measured stage counts. Include room for extra
     # structure reads; revise these when the fixture or selection stages change.

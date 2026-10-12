@@ -4,7 +4,7 @@ The demo's "and here is the video it made" scene used to play a real family
 video with every face blurred. That is a privacy problem, and blurred it was
 also a poor advertisement -- half the demo was unreadable mush. This renders
 the same scene out of the fixture library instead: the real product, driven
-through the real browser flow, over the CC0 fixture library (one household's June).
+through the real browser flow, over the fixture library (one household's July).
 
 Run it with `make demo-output` after the fixture library or the renderer
 changes, then re-render the demo with `make demo-ui`. It is kept out of every
@@ -26,9 +26,10 @@ from playwright.sync_api import Page, expect
 
 from tests.e2e.cli_bootstrap import CLI_BOOTSTRAP
 from tests.e2e.conftest import _REPO_ROOT, _build_launch_environment
+from tests.e2e.fake_library import YEAR
 from tests.e2e.web_flow import (
     contact_sheet,
-    cut_june,
+    cut_month,
     render,
     the_film,
 )
@@ -48,8 +49,9 @@ def demo_public_dir() -> Path:
 
 
 def _render_at_1080p(page: Page, launch_app_url: str) -> None:
-    cut_june(page, launch_app_url)
-    # Match EditScene: replace the window photo, remove the garden table, save revision 1.
+    cut_month(page, launch_app_url)
+    # Match EditScene: swap the evening in Duden park for another shot of that walk,
+    # remove the cupcakes (the cake already tells the birthday), save revision 1.
     shots = contact_sheet(page)
     inspector = page.get_by_role("article", name="Picture review")
     shots.nth(1).click()
@@ -57,12 +59,12 @@ def _render_at_1080p(page: Page, launch_app_url: str) -> None:
         "button"
     ).first.click()
     inspector.get_by_role("button", name="Use this picture instead").click()
-    shots.nth(4).click()
+    shots.nth(3).click()
     inspector.get_by_role("button", name="Remove from this cut").click()
     page.get_by_role("button", name="Save revision").click()
     expect(page.get_by_role("status")).to_have_text("Saved as revision 1.")
     expect(contact_sheet(page).nth(1).get_by_text("Swapped", exact=True)).to_be_visible()
-    expect(contact_sheet(page).nth(4).get_by_text("Removed", exact=True)).to_be_visible()
+    expect(contact_sheet(page).nth(3).get_by_text("Removed", exact=True)).to_be_visible()
     expect(page.get_by_role("region", name="Render").get_by_label("What to render")).to_have_value(
         "1"
     )
@@ -127,9 +129,8 @@ def test_cut_the_demo_output_clip(
 
 
 # The trip film the trip docs page plays. It is cut by the real CLI, not the
-# browser: the Memory page detects trips from videos only, and the fixture's
-# lake week photographs four of its seven days, so the page finds nothing to
-# offer. `immich-memories generate --memory-type trip` reads every asset type.
+# browser, so the film is the one `immich-memories generate --memory-type trip`
+# makes, which reads every asset type.
 _TRIP_CLIP = "trip-preview.mp4"
 _TRIP_POSTER = "trip-map-flyover.jpg"
 # Inside the fly-over's hold: for this trip the camera lands on the named stops
@@ -138,7 +139,7 @@ _TRIP_POSTER = "trip-map-flyover.jpg"
 _FLYOVER_SECONDS = 5.5
 _TRIP_MAX_BYTES = 8 * 1024 * 1024
 # The finished film carries a soundtrack, as a real one does: a bundled track, pinned so a
-# re-cut sounds the same. Calm, for a week by a lake.
+# re-cut sounds the same. Calm, for twenty days of fjords.
 _TRIP_TRACK = (
     _REPO_ROOT
     / "packages/immich-memories-music/immich_memories_music/tracks/calm/calm_acoustic_s411.opus"
@@ -278,7 +279,7 @@ def _trip_environment(home: Path) -> dict[str, str]:
 
 
 def _run_trip_cli(workspace, output_dir: Path) -> Path:
-    """Cut the fixture's lake week through the real CLI, and return what it wrote."""
+    """Cut the fixture's road north through the real CLI, and return what it wrote."""
     state_dir = workspace.root / "state"
     state_dir.mkdir(exist_ok=True)
     completed = subprocess.run(  # noqa: S603
@@ -292,7 +293,7 @@ def _run_trip_cli(workspace, output_dir: Path) -> Path:
             "--memory-type",
             "trip",
             "--year",
-            "2024",
+            str(YEAR),
             "--trip-index",
             "1",
             "--music",
@@ -319,7 +320,7 @@ def _run_trip_cli(workspace, output_dir: Path) -> Path:
 def test_cut_the_trip_memory_and_its_map(
     launch_workspace, tmp_path: Path, demo_static_dir: Path, demo_image_dir: Path
 ) -> None:
-    """The fixture's week by the lake, cut as a trip, opening on its map fly-over.
+    """The fixture's road north, cut as a trip, opening on its map fly-over.
 
     Needs the network: the fly-over's satellite tiles come from ArcGIS World
     Imagery and the trip's name from Nominatim, and neither has an offline
@@ -337,8 +338,7 @@ def test_cut_the_trip_memory_and_its_map(
     _frame_at(clip, _FLYOVER_SECONDS, poster)
 
     duration = _duration_of(clip)
-    # 43.8 s since the lake week gained its Semnoz location card; the byte cap below is what
-    # the docs site pays for, this only catches a cut that went wrong.
+    # The byte cap below is what the docs site pays for; this only catches a cut that went wrong.
     assert 10.0 < duration < 50.0, f"the trip film runs {duration:.1f}s"
     assert clip.stat().st_size <= _TRIP_MAX_BYTES, f"{clip.name} is {clip.stat().st_size} bytes"
     # The music runs under the whole film, the map and the closing card included; only its

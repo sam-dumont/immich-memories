@@ -5,7 +5,7 @@ fixture library from the session's Immich over HTTP. `auto run` starts a real
 `generate` child, which renders with FFmpeg, uploads to a fake Immich of its own and sends its
 completion message to a loopback Apprise JSON target. Two things are pinned in the
 children, as the other feature renders pin selection: the day discovery runs on (the
-fixture library is June 2024) and the scripted editor in the `generate` child.
+fixture library is July 2025) and the scripted editor in the `generate` child.
 """
 
 from __future__ import annotations
@@ -47,7 +47,7 @@ if today:
         def today(cls):
             return date.fromisoformat(today)
 
-    # WHY: the wall clock; the fixture library's trip ends on a fixed day in 2024.
+    # WHY: the wall clock; the fixture library's trip ends on a fixed day in 2025.
     patch("immich_memories.automation.candidate_discovery.date", _Today).start()
 if scripted:
     editor = (
@@ -122,8 +122,9 @@ def _suggested(home: UserHome, today: str = "") -> list[dict[str, Any]]:
 
 # ── the trip detector ────────────────────────────────────────────────────
 
-# The fixture household drives to the Alps on 21 June 2024 and comes home on 27 June.
-LAKE_TRIP = "2024-06-21 to 2024-06-27"
+# The fixture household leaves for the north on 12 July 2025; the last GPS of the trip is
+# on the 30th (the ferry home on the 31st carries none).
+ROAD_NORTH = "2025-07-12 to 2025-07-30"
 
 
 @pytest.mark.feature("detector.trip")
@@ -132,10 +133,10 @@ def test_a_trip_is_proposed_7_days_after_coming_home(
 ) -> None:
     home = _home(tmp_path / "home", immich, outbound_trap)
 
-    trips = [r for r in _suggested(home, today="2024-07-04") if r["category"] == "trip"]
+    trips = [r for r in _suggested(home, today="2025-08-06") if r["category"] == "trip"]
 
-    assert [r["date_range"] for r in trips] == [LAKE_TRIP]
-    assert trips[0]["reason"].startswith("7-day trip to ")
+    assert [r["date_range"] for r in trips] == [ROAD_NORTH]
+    assert trips[0]["reason"].startswith("19-day trip to ")
 
 
 @pytest.mark.feature("detector.trip")
@@ -144,7 +145,7 @@ def test_a_trip_6_days_after_coming_home_waits(
 ) -> None:
     home = _home(tmp_path / "home", immich, outbound_trap)
 
-    rows = _suggested(home, today="2024-07-03")
+    rows = _suggested(home, today="2025-08-05")
 
     assert [r for r in rows if r["category"] == "trip"] == []
 
@@ -155,7 +156,7 @@ def test_a_trip_more_than_a_year_old_is_not_proposed(
 ) -> None:
     home = _home(tmp_path / "home", immich, outbound_trap)
 
-    rows = _suggested(home, today="2025-07-04")
+    rows = _suggested(home, today="2026-08-08")
 
     assert [r for r in rows if r["category"] == "trip"] == []
 
@@ -214,7 +215,7 @@ def hand_made_album(
     fake_immich: FakeImmichServer,
     outbound_trap: OutboundTrap,
 ) -> Iterator[_HandMade]:
-    """`generate --from-album` the fixture's lake week, uploaded, with notifications on.
+    """`generate --from-album` the fixture's road north, uploaded, with notifications on.
 
     It uploads to an Immich of its own, so its film is that service's first upload
     whatever else ran on this worker.
@@ -260,11 +261,11 @@ def test_generate_announces_its_uploaded_film_with_a_link_to_the_server(
 @_UPLOADS_TO_ITS_OWN_FAKE
 def test_an_album_filmed_by_hand_is_not_proposed_again(hand_made_album: _HandMade) -> None:
     assert hand_made_album.result.returncode == 0, hand_made_album.result.explain()
-    lake_week = ALBUMS[0]["startDate"][:10] + " to " + ALBUMS[0]["endDate"][:10]
+    road_north = ALBUMS[0]["startDate"][:10] + " to " + ALBUMS[0]["endDate"][:10]
 
     after = _suggested(hand_made_album.home)
 
-    assert lake_week in [
+    assert road_north in [
         r["date_range"] for r in hand_made_album.proposed_before if r["category"] == "album"
     ]
     assert [r for r in after if r["category"] == "album"] == []

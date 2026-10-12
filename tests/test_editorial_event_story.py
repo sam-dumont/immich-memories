@@ -274,12 +274,12 @@ def test_a_birth_sized_day_stays_whole_and_keeps_its_depth():
 
 
 def test_the_public_fixture_month_has_no_event():
-    """The CC0 demo month, each scene labelled by its own kind: nothing inside an ordinary day
+    """The demo month, each moment labelled by its own set: nothing inside an ordinary day
     is dense enough, in bursts enough, to stand apart."""
     scenes: dict[tuple, int] = {}
     for picture in LIBRARY:
         taken = datetime.fromisoformat(picture.taken_at.replace("Z", "+00:00"))
-        where = (picture.place.latitude, picture.place.longitude)
+        where = (picture.place.latitude, picture.place.longitude) if picture.place else None
         shape = (taken.day, taken.hour, picture.scene.split("-")[0], where)
         scenes[shape] = scenes.get(shape, 0) + 1
     days: dict[int, list] = {}

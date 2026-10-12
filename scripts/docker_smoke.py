@@ -228,12 +228,12 @@ def generate_argv(
         "--memory-type",
         "monthly_highlights",
         "--year",
-        "2024",
+        "2025",
         "--month",
-        "6",
+        "7",
         "--duration",
-        # WHY 60 and not the 20 the six-picture fixture used: the scripted cut is
-        # 18 carriers, and a budget under MIN_CLIP_DURATION each makes the final
+        # WHY 60 and not the 20 the six-picture fixture used: the scripted cut keeps
+        # every carrier, and a budget under MIN_CLIP_DURATION each makes the final
         # content budget sample seven of them out of a selection production has
         # already certified, which assembly refuses outright (#881). 60 is also
         # what `monthly_highlights` asks for when nobody overrides it.

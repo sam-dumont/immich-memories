@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import contextlib
 import json
+import re
 import subprocess
 import threading
 import time
@@ -17,7 +18,6 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any, Self
 from urllib.parse import parse_qs, urlsplit
-from zoneinfo import ZoneInfo
 
 from tests.e2e.fake_library import (
     ALL_PICTURES,
@@ -26,11 +26,10 @@ from tests.e2e.fake_library import (
     HOME,
     LIVE_CLIP_SECONDS,
     PARTNER_PICTURES,
+    TRIP,
     Picture,
 )
 from tests.immich_fakes import V2, V3, request_problems
-
-_MONTH_BUCKET = "2024-06-01T00:00:00.000Z"
 
 # WHY these three facts together (#525): selection drops a clip whose short
 # side is under 1080 unless EXIF names a camera, drops a still that names no
@@ -62,7 +61,7 @@ def _person_payload(name: str) -> dict[str, Any]:
         "birthDate": None,
         "thumbnailPath": f"/fake/people/{name.lower()}.jpg",
         "isHidden": False,
-        "updatedAt": "2024-06-01T12:00:00.000Z",
+        "updatedAt": "2025-07-01T12:00:00.000Z",
     }
 
 
@@ -84,7 +83,7 @@ def _partner_person_payload(person_id: str, name: str, born: str | None) -> dict
         "birthDate": born,
         "thumbnailPath": f"/fake/people/{person_id}.jpg",
         "isHidden": False,
-        "updatedAt": "2024-06-01T12:00:00.000Z",
+        "updatedAt": "2025-07-01T12:00:00.000Z",
     }
 
 
@@ -98,26 +97,42 @@ _EDIT_FILTER = ",hflip,vflip"
 
 
 def _photo_size(picture: Picture) -> tuple[int, int]:
+    """A drawn picture's advertised size, else the library file's own pixels."""
     if picture.size is not None:
         return picture.size
+    if picture.width and picture.height:
+        return picture.width, picture.height
     width, height = _PHOTO_SIZE
     return (height, width) if picture.portrait else (width, height)
+
+
+def _video_size(picture: Picture) -> tuple[int, int]:
+    """A library clip's own pixels (phones record portrait as well as landscape)."""
+    if picture.width and picture.height:
+        return picture.width, picture.height
+    return _VIDEO_SIZE
 
 
 def _local_stamp(picture: Picture) -> str:
     """The picture's `localDateTime` as Immich serves it: the wall clock where it was taken.
 
-    Immich finds the time zone from the GPS (`Place.zone`) and writes that local time with a
-    `Z`, whatever offset the file carries; a picture with no place keeps its UTC clock.
+    Immich finds the time zone from the GPS, or from the file's own offset where there is no
+    GPS, and writes that local time with a `Z` (`Picture.zone`, `Picture.local_at`).
     """
-    zone = ZoneInfo(picture.place.zone if picture.place is not None else "UTC")
-    local = datetime.fromisoformat(picture.taken_at.replace("Z", "+00:00")).astimezone(zone)
-    return local.replace(tzinfo=None).isoformat(timespec="milliseconds") + "Z"
+    return picture.local_at
+
+
+def _file_size(picture: Picture) -> int:
+    try:
+        return picture.source.stat().st_size
+    except OSError:  # a drawn picture has no library file
+        return 20_000
 
 
 def _asset_payload(picture: Picture, owner: str = "fake-user") -> dict[str, Any]:
     is_video = picture.is_video
-    width, height = _VIDEO_SIZE if is_video else _photo_size(picture)
+    width, height = _video_size(picture) if is_video else _photo_size(picture)
+    place = picture.place
     return {
         "id": picture.asset_id,
         "deviceAssetId": f"fake-device-{picture.asset_id}",
@@ -142,11 +157,12 @@ def _asset_payload(picture: Picture, owner: str = "fake-user") -> dict[str, Any]
         "exifInfo": {
             **_CAMERA_EXIF,
             "dateTimeOriginal": picture.taken_at,
-            "fileSizeInByte": 400_000 if is_video else 20_000,
-            "latitude": picture.place.latitude,
-            "longitude": picture.place.longitude,
-            "city": picture.place.city,
-            "country": picture.place.country,
+            "fileSizeInByte": _file_size(picture),
+            # A file without GPS has no place in Immich either.
+            "latitude": place.latitude if place else None,
+            "longitude": place.longitude if place else None,
+            "city": place.city if place else None,
+            "country": place.country if place else None,
         },
         "people": [_person_payload(name) for name in picture.people],
         "faces": [],
@@ -166,16 +182,49 @@ TIMELINE_ASSETS = tuple(
 _LIVE = tuple(picture for picture in ALL_PICTURES if picture.live_video_id)
 
 
+def _whole_seconds(stamp: str) -> str:
+    return re.sub(r"\.\d+", ".000", stamp)
+
+
+# Immich's metadata search answers a page at a time: 250 unless asked for more, never
+# over 1000, newest first unless asked otherwise.
+_SEARCH_PAGE_SIZE, _SEARCH_PAGE_MAX = 250, 1000
+
+
+def _search_page(
+    items: list[dict[str, Any]], payload: dict[str, Any], major: int
+) -> dict[str, Any]:
+    size = min(int(payload.get("size") or _SEARCH_PAGE_SIZE), _SEARCH_PAGE_MAX)
+    page = max(int(payload.get("page") or 1), 1)
+    ordered = sorted(
+        items,
+        key=lambda item: _instant_of(item["fileCreatedAt"]),
+        reverse=payload.get("order", "desc") != "asc",
+    )
+    shown = ordered[(page - 1) * size : page * size]
+    return {
+        "total": len(shown),
+        "count": len(shown),
+        "items": [_as_served(item, major) for item in shown],
+        "nextPage": str(page + 1) if page * size < len(ordered) else None,
+    }
+
+
+def _instant_of(stamp: str) -> datetime:
+    return datetime.fromisoformat(stamp.replace("Z", "+00:00"))
+
+
 def _companion_payload(still: Picture) -> dict[str, Any]:
-    # Taken at the still's own instant: the shutter sits in the middle of the clip.
-    stamp = still.taken_at
+    # Taken at the still's own instant: the shutter sits in the middle of the clip. A video's
+    # container holds whole seconds, so a burst take's half second is not in it.
+    stamp = _whole_seconds(still.taken_at)
     return _asset_payload(still) | {
         "id": still.live_video_id,
         "type": "VIDEO",
         "originalFileName": still.filename.replace(".HEIC", ".MOV"),
         "originalMimeType": "video/quicktime",
         "fileCreatedAt": stamp,
-        "localDateTime": _local_stamp(still),
+        "localDateTime": _whole_seconds(_local_stamp(still)),
         "duration": int(LIVE_CLIP_SECONDS * 1000),
         "width": _VIDEO_SIZE[0],
         "height": _VIDEO_SIZE[1],
@@ -195,17 +244,15 @@ PARTNER_ASSETS = tuple(
     for picture in PARTNER_PICTURES
 )
 
-# One album, the lake week as a family would file it: every picture taken at the lake.
-ALBUM_ID = "album-lake-week"
-ALBUM_ASSETS = frozenset(
-    asset["id"] for asset in TIMELINE_ASSETS if asset["exifInfo"]["city"] == "Annecy"
-)
+# One album, the trip as a family would file it: every picture of the road north.
+ALBUM_ID = "album-road-north"
+ALBUM_ASSETS = frozenset(picture.asset_id for picture in TRIP)
 # Immich dates an album by the local days of the first and the last picture it holds.
 _ALBUM_DAYS = sorted(a["localDateTime"][:10] for a in TIMELINE_ASSETS if a["id"] in ALBUM_ASSETS)
 ALBUMS = (
     {
         "id": ALBUM_ID,
-        "albumName": "The lake week",
+        "albumName": "The road north",
         "assetCount": len(ALBUM_ASSETS),
         "startDate": f"{_ALBUM_DAYS[0]}T00:00:00.000Z",
         "endDate": f"{_ALBUM_DAYS[-1]}T00:00:00.000Z",
@@ -214,7 +261,9 @@ ALBUMS = (
 
 
 # Every place the library was photographed at, and the fixture home.
-_PLACES = {picture.place for picture in (*ALL_PICTURES, *PARTNER_PICTURES)} | {HOME}
+_PLACES = {
+    picture.place for picture in (*ALL_PICTURES, *PARTNER_PICTURES) if picture.place is not None
+} | {HOME}
 # About a kilometre: how near a point has to be for Immich to name the same place.
 _PLACE_RADIUS_DEGREES = 0.01
 
@@ -319,11 +368,27 @@ def _assets_for_search(
 
 
 def _faces_payload(picture: Picture) -> list[dict[str, Any]]:
-    """Where Immich found each recognised person on a picture: one box apiece, side by side.
+    """Where Immich found each recognised person on a picture, measured on its own pixels.
 
-    Measured on the preview Immich ran detection over, which it names beside each box.
+    The library pins each detected face to a cast member (`Picture.faces`); a picture
+    named without boxes (none in the library) gets one side by side per person.
     """
-    width, height = _VIDEO_SIZE if picture.is_video else _photo_size(picture)
+    width, height = _video_size(picture) if picture.is_video else _photo_size(picture)
+    if picture.faces:
+        return [
+            {
+                "id": f"face-{picture.asset_id}-{index}",
+                "person": _person_payload(face.person),
+                "imageWidth": width,
+                "imageHeight": height,
+                "boundingBoxX1": round(face.x * width),
+                "boundingBoxY1": round(face.y * height),
+                "boundingBoxX2": round((face.x + face.w) * width),
+                "boundingBoxY2": round((face.y + face.h) * height),
+                "sourceType": "machine-learning",
+            }
+            for index, face in enumerate(picture.faces)
+        ]
     slot = width // max(1, len(picture.people))
     side = min(slot, height) // 3
     return [
@@ -421,6 +486,7 @@ class FakeImmichServer:
         # What `start(media_of=...)` lends a second service; `start` fills them in.
         self._video_paths: dict[str, Path] = {}
         self._thumbnail_paths: dict[str, Path] = {}
+        self._faces: dict[str, Path] = {}
         self._httpd = httpd
         self._thread = thread
         host, port = httpd.server_address[:2]
@@ -458,12 +524,13 @@ class FakeImmichServer:
         root.mkdir(parents=True, exist_ok=True)
         if media_of is not None:
             video_paths, photo_paths = media_of._video_paths, media_of.photo_paths
-            thumbnail_paths = media_of._thumbnail_paths
+            thumbnail_paths, faces = media_of._thumbnail_paths, media_of._faces
         else:
             media_dir = root / "media"
             media_dir.mkdir(exist_ok=True)
             video_paths, photo_paths = generate_media(media_dir)
             thumbnail_paths = _generate_thumbnails(media_dir, video_paths | photo_paths)
+            faces = _face_crops(media_dir)
         if held:
             held_dir = root / "held-media"
             held_dir.mkdir(exist_ok=True)
@@ -477,7 +544,7 @@ class FakeImmichServer:
         httpd = ThreadingHTTPServer(
             (host, port),
             _handler_type(
-                media, thumbnail_paths, uploads, upload_commit_delay, refused, wire, held
+                media, thumbnail_paths, uploads, upload_commit_delay, refused, wire, held, faces
             ),
         )
         thread = threading.Thread(target=httpd.serve_forever, daemon=True)
@@ -495,6 +562,7 @@ class FakeImmichServer:
         )
         server._video_paths = video_paths
         server._thumbnail_paths = thumbnail_paths
+        server._faces = faces
         return server
 
     @contextlib.contextmanager
@@ -626,11 +694,18 @@ def _live_recording(source: Path, path: Path, seconds: float, *, moving: bool = 
 
 
 def _generate_videos(media_dir: Path) -> dict[str, Path]:
-    """Pan across each source photograph for four seconds, over a silent audio track."""
+    """Each clip as its phone recorded it; a video made from a still pans across it.
+
+    The library's clips are real recordings, served as they are. A video whose source is a
+    photograph (none in the library today) is a four-second pan over a silent track.
+    """
     width, height = _VIDEO_SIZE
     stage_w, stage_h = round(width * _PAN_HEADROOM), round(height * _PAN_HEADROOM)
     videos: dict[str, Path] = {}
     for picture in _VIDEOS:
+        if picture.source.suffix == ".mp4":
+            videos[picture.asset_id] = picture.source
+            continue
         video_path = media_dir / f"{picture.asset_id}.mp4"
         _ffmpeg(
             "-loop",
@@ -695,16 +770,19 @@ def _generate_videos(media_dir: Path) -> dict[str, Path]:
 
 
 def _generate_photos(media_dir: Path) -> dict[str, Path]:
-    """Serve each source photograph at the size its asset record advertises.
+    """Serve each photograph as the library holds it, at the size its asset record advertises.
 
     A photo edited in Immich's editor also gets its edited render: the same picture turned
     upside down (`IMMICH_EDIT`), which Immich serves when asked for `edited=true`.
     """
     photos: dict[str, Path] = {}
     for picture in _PHOTOS:
-        _write_photo(picture, media_dir / f"{picture.asset_id}.jpg", photos, picture.asset_id)
         if picture.hdr:
+            _write_photo(picture, media_dir / f"{picture.asset_id}.jpg", photos, picture.asset_id)
             _add_gain_map(media_dir / f"{picture.asset_id}.jpg")
+        else:
+            # The library file at its own size is what Immich would serve as the original.
+            photos[picture.asset_id] = picture.source
         if picture.edited:
             edited = media_dir / f"{picture.asset_id}.edited.jpg"
             _write_photo(picture, edited, photos, picture.asset_id + EDITED, _EDIT_FILTER)
@@ -787,6 +865,33 @@ def _add_gain_map(photo: Path) -> None:
     photo.write_bytes(primary.getvalue() + gain.getvalue())
 
 
+def _face_crops(media_dir: Path) -> dict[str, Path]:
+    """Each household member's thumbnail: a square around the largest face pinned to them."""
+    from PIL import Image
+
+    crops: dict[str, Path] = {}
+    for name in CAST:
+        pinned = [
+            (face.w * face.h, picture, face)
+            for picture in _PHOTOS
+            for face in picture.faces
+            if face.person == name
+        ]
+        if not pinned:
+            continue
+        _, picture, face = max(pinned, key=lambda item: item[0])
+        target = media_dir / "people" / f"{name.lower()}.jpg"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        with Image.open(picture.source) as image:
+            width, height = image.size
+            side = 1.8 * max(face.w * width, face.h * height)
+            cx, cy = (face.x + face.w / 2) * width, (face.y + face.h / 2) * height
+            box = (cx - side / 2, cy - side / 2, cx + side / 2, cy + side / 2)
+            image.convert("RGB").crop(tuple(round(v) for v in box)).resize((256, 256)).save(target)
+        crops[name] = target
+    return crops
+
+
 def _generate_thumbnails(media_dir: Path, media: dict[str, Path]) -> dict[str, Path]:
     """Render each asset its own preview, the way Immich serves one per asset.
 
@@ -799,6 +904,10 @@ def _generate_thumbnails(media_dir: Path, media: dict[str, Path]) -> dict[str, P
     thumbnail_dir.mkdir(exist_ok=True)
     thumbnails: dict[str, Path] = {}
     for asset_id, source in media.items():
+        if source.suffix != ".mp4":
+            # No library picture is wider than Immich's 1440 px preview: it is its own.
+            thumbnails[asset_id] = source
+            continue
         thumbnail_path = thumbnail_dir / f"{asset_id.replace(EDITED, '.edited')}.jpg"
         seconds = _BY_ID[asset_id].seconds if asset_id in _BY_ID else _VIDEO_DURATION
         seek = ["-ss", str(seconds / 2)] if source.suffix == ".mp4" else []
@@ -828,8 +937,10 @@ def _handler_type(
     refused: list[str],
     wire: Wire | None = None,
     held: tuple[Picture, ...] = (),
+    faces: dict[str, Path] | None = None,
 ) -> type[BaseHTTPRequestHandler]:
     upload_lock = threading.Lock()
+    faces = faces or {}
     # The primary account's pictures on this service: the library and any held ones.
     held_assets = tuple(_asset_payload(picture) for picture in held)
     by_id = _BY_ID | {picture.asset_id: picture for picture in held}
@@ -1007,9 +1118,10 @@ def _handler_type(
                 and person[1] == "thumbnail"
                 and not path.startswith("/api/assets/")
             ):
-                # Every person gets the same CC0 face stand-in: the People page
-                # only needs a picture that decodes, not a likeness.
-                self._send_file(next(iter(thumbnails.values())), "image/jpeg")
+                # A household member's face, cropped from a picture pinned to them; anyone
+                # else (the partner account's people) gets the first picture's preview.
+                name = person[0].removeprefix("person-").title()
+                self._send_file(faces.get(name) or next(iter(thumbnails.values())), "image/jpeg")
                 return
             if (
                 len(parts) == 3
@@ -1039,17 +1151,7 @@ def _handler_type(
                 items = _assets_for_search(payload, searched(partner, payload), by_id)
                 if wanted_tags := payload.get("tagIds"):
                     items = self._tagged(items, wanted_tags)
-                self._send_json(
-                    200,
-                    {
-                        "assets": {
-                            "total": len(items),
-                            "count": len(items),
-                            "items": [_as_served(item, wire.major) for item in items],
-                            "nextPage": None,
-                        }
-                    },
-                )
+                self._send_json(200, {"assets": _search_page(items, payload, wire.major)})
                 return
             if path == "/api/search/statistics":
                 # Same filters as the metadata search, answered as Immich does: a count only.

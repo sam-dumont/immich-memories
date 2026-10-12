@@ -11,10 +11,11 @@ from tests.e2e.fake_immich import FakeImmichServer
 from tests.e2e.fake_library import ALL_PICTURES, CARRIERS, DROPPED
 from tests.features.cli_harness import RUN_ID, CliResult, UserHome, films_under
 
-# The fixture's birthday afternoon: two stills and two clips that ship, others left out.
-GARDEN_DAY = "2024-06-08"
+# The first day away: the clip at Møns Klint and two stills ship (the cliffs, and Charlie
+# on the bike in Copenhagen, a person and a place), everything else that day is left out.
+DEPARTURE_DAY = "2025-07-12"
 # A day with a single still that ships: the cheapest film the library makes.
-QUIET_DAY = "2024-06-03"
+QUIET_DAY = "2025-07-02"
 
 
 def day_args(day: str) -> tuple[str, ...]:
@@ -23,16 +24,12 @@ def day_args(day: str) -> tuple[str, ...]:
 
 def shipped_on(day: str) -> list:
     """The pictures the scripted editor keeps from one day, in capture order."""
-    return sorted(
-        (p for p in CARRIERS if p.taken_at.startswith(day)), key=lambda p: (p.taken_at, p.asset_id)
-    )
+    return sorted((p for p in CARRIERS if p.day == day), key=lambda p: (p.taken_at, p.asset_id))
 
 
 def left_out_on(day: str) -> list[str]:
     """The ids the scripted editor leaves out of one day."""
-    return sorted(
-        p.asset_id for p in ALL_PICTURES if p.asset_id in DROPPED and p.taken_at.startswith(day)
-    )
+    return sorted(p.asset_id for p in ALL_PICTURES if p.asset_id in DROPPED and p.day == day)
 
 
 @dataclass(frozen=True, slots=True)

@@ -12,7 +12,7 @@ def test_the_echo_set_falls_on_the_busiest_day_a_year_earlier():
 
     assert len(echo) == media.ECHO_COUNT
     assert {(f.taken_at.year, f.taken_at.month, f.taken_at.day) for f in echo} == {
-        (media.ECHO_YEAR, 6, 15)
+        (media.ECHO_YEAR, media.ECHO_DAY[1], media.ECHO_DAY[2])
     }
 
 

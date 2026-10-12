@@ -14,7 +14,7 @@ from pathlib import Path
 import pytest
 from playwright.sync_api import BrowserContext, Page, Playwright, expect
 
-from tests.e2e.fake_library import THESIS
+from tests.e2e.fake_library import MONTH, THESIS, YEAR
 from tests.e2e.redaction import redact_page
 from tests.e2e.web_flow import contact_sheet, render, the_film
 
@@ -50,9 +50,9 @@ def test_record_memory_walkthrough(
     page.goto(f"{launch_app_url}/app/create", wait_until="domcontentloaded", timeout=30_000)
     page.wait_for_timeout(1200)
     page.get_by_text("Monthly Highlights", exact=True).click()
-    page.get_by_label("Year", exact=True).fill("2024")
+    page.get_by_label("Year", exact=True).fill(str(YEAR))
     page.wait_for_timeout(600)
-    page.get_by_label("Month", exact=True).select_option("6")
+    page.get_by_label("Month", exact=True).select_option(str(MONTH))
     page.get_by_text("Length and pictures").click()
     page.get_by_label("Length in minutes", exact=False).fill("2")
     page.wait_for_timeout(1500)
