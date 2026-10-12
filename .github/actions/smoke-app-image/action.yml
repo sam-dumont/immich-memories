@@ -42,5 +42,6 @@ runs:
         digest="sha256:$(ls /tmp/digests | head -1)"
         image="ghcr.io/sam-dumont/immich-memories@${digest}"
         docker pull "$image"
-        uv run --no-project --with pillow --with numpy \
+        # The fake Immich it serves checks requests with httpx (tests/immich_fakes.py).
+        uv run --no-project --with pillow --with numpy --with httpx \
           python scripts/docker_smoke.py --image "$image" --timeout 1200

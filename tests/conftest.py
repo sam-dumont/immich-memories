@@ -453,9 +453,12 @@ def isolated_store(monkeypatch) -> Iterator[None]:
     from immich_memories.db import close_stores
 
     assert _TEST_ROOT is not None
-    database = _TEST_ROOT / "stores" / f"{uuid.uuid4().hex}.db"
-    database.parent.mkdir(exist_ok=True)
-    monkeypatch.setenv("IMMICH_MEMORIES_DATABASE_URL", f"sqlite:///{database}")
+    home = _TEST_ROOT / "stores" / uuid.uuid4().hex
+    home.mkdir(parents=True)
+    monkeypatch.setenv("IMMICH_MEMORIES_DATABASE_URL", f"sqlite:///{home / 'store.db'}")
+    # The automation lease's lock file sits beside the cache database. Shared by every test on
+    # a worker, a trigger still running after its test held it, and each later test was refused.
+    monkeypatch.setenv("IMMICH_MEMORIES_CACHE__DATABASE", str(home / "cache.db"))
     yield
     close_stores()
 

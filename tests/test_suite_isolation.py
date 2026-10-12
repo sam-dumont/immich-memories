@@ -104,3 +104,16 @@ def test_the_scrub_drops_product_settings_and_keeps_the_suites_own():
         "IMMICH_URL",
         "OPENAI_API_KEY",
     ]
+
+
+def test_each_test_has_its_own_automation_lock():
+    """The automation lease's lock file sits beside the cache database: one per test.
+
+    Shared by every test on a worker, a trigger still running after its test held the lease,
+    and every later automation test on that worker was refused.
+    """
+    from immich_memories.config_loader import Config
+
+    folder = Config().cache.database_path.parent
+
+    assert os.environ["IMMICH_MEMORIES_DATABASE_URL"] == f"sqlite:///{folder / 'store.db'}"

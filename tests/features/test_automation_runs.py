@@ -554,7 +554,20 @@ def _settled(client: Any, status_url: str) -> dict[str, Any]:
         if payload["state"] != "running":
             return payload
         asyncio.run(asyncio.sleep(0.02))
-    raise AssertionError(f"the triggered attempt never finished: {payload}")
+    raise AssertionError(f"the triggered attempt never finished: {payload}\n{_thread_stacks()}")
+
+
+def _thread_stacks() -> str:
+    """Where every thread of this process is: the run's own thread says why it never ended."""
+    import sys
+    import threading
+    import traceback
+
+    names = {thread.ident: thread.name for thread in threading.enumerate()}
+    return "\n".join(
+        f"--- {names.get(ident, ident)}\n{''.join(traceback.format_stack(frame))}"
+        for ident, frame in sys._current_frames().items()
+    )
 
 
 @pytest.fixture
