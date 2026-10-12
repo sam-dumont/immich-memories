@@ -91,3 +91,18 @@ def test_a_picture_the_plan_passed_over_says_which_rule_did():
         "third": "it repeats a picture already in the cut",
         "unknown": "kept by every pass, not used in the plan",
     }
+
+
+def test_a_picture_held_as_a_document_or_screen_names_that_hold():
+    plan = _plan(
+        carrier_source_exclusions={
+            "policy": "screen-document-carrier-v1",
+            "sources": {"form": "personal-document", "chat": "screen-head"},
+        },
+        left_out={"chat": "the film's content seconds were spent before its turn"},
+    )
+
+    assert final_cut_notes(plan, ["form", "chat"]) == {
+        "form": "held out of every film: it reads as a personal document",
+        "chat": "held out of every film: it reads as a screenshot",
+    }

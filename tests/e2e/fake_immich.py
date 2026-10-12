@@ -92,6 +92,8 @@ EDITED = "#edited"
 
 
 def _photo_size(picture: Picture) -> tuple[int, int]:
+    if picture.size is not None:
+        return picture.size
     width, height = _PHOTO_SIZE
     return (height, width) if picture.portrait else (width, height)
 
@@ -248,7 +250,9 @@ def _buckets_for_query(
 
 
 def _assets_for_search(
-    payload: dict[str, Any], held: tuple[dict[str, Any], ...] = TIMELINE_ASSETS
+    payload: dict[str, Any],
+    held: tuple[dict[str, Any], ...] = TIMELINE_ASSETS,
+    by_id: dict[str, Picture] | None = None,
 ) -> list[dict[str, Any]]:
     """The metadata search honours the type, the taken-at window and the faces.
 
@@ -269,7 +273,61 @@ def _assets_for_search(
         and (taken_before is None or _instant(asset["fileCreatedAt"]) <= taken_before)
         and wanted_people <= {person["id"] for person in asset["people"]}
         and (not wanted_albums or (ALBUM_ID in wanted_albums and asset["id"] in ALBUM_ASSETS))
+        and _reads((by_id or _BY_ID).get(asset["id"]), payload.get("ocr"))
     ]
+
+
+def _faces_payload(picture: Picture) -> list[dict[str, Any]]:
+    """Where Immich found each recognised person on a picture: one box apiece, side by side.
+
+    Measured on the preview Immich ran detection over, which it names beside each box.
+    """
+    width, height = _VIDEO_SIZE if picture.is_video else _photo_size(picture)
+    slot = width // max(1, len(picture.people))
+    side = min(slot, height) // 3
+    return [
+        {
+            "id": f"face-{picture.asset_id}-{index}",
+            "person": _person_payload(name),
+            "imageWidth": width,
+            "imageHeight": height,
+            "boundingBoxX1": index * slot + (slot - side) // 2,
+            "boundingBoxY1": height // 4,
+            "boundingBoxX2": index * slot + (slot + side) // 2,
+            "boundingBoxY2": height // 4 + side,
+            "sourceType": "machine-learning",
+        }
+        for index, name in enumerate(picture.people)
+    ]
+
+
+def _ocr_payload(picture: Picture) -> list[dict[str, Any]]:
+    """Immich's OCR answer for a picture: one text box per printed line, top to bottom."""
+    return [
+        {
+            "id": f"ocr-{picture.asset_id}-{line}",
+            "assetId": picture.asset_id,
+            "x1": 0.1,
+            "y1": 0.1 + 0.05 * line,
+            "x2": 0.9,
+            "y2": 0.1 + 0.05 * line,
+            "x3": 0.9,
+            "y3": 0.14 + 0.05 * line,
+            "x4": 0.1,
+            "y4": 0.14 + 0.05 * line,
+            "boxScore": 0.9,
+            "textScore": 0.9,
+            "text": text,
+        }
+        for line, text in enumerate(picture.ocr.splitlines())
+    ]
+
+
+def _reads(picture: Picture | None, words: str | None) -> bool:
+    """Immich's `ocr` search: the asset's recognised text holds the words, case aside."""
+    if not words:
+        return True
+    return picture is not None and words.casefold() in picture.ocr.casefold()
 
 
 @dataclass(frozen=True, slots=True)
@@ -341,6 +399,7 @@ class FakeImmichServer:
         host: str = "127.0.0.1",
         port: int = 0,
         media_of: FakeImmichServer | None = None,
+        held: tuple[Picture, ...] = (),
     ) -> Self:
         """Start the service, by default on an operating-system-selected localhost port.
 
@@ -351,6 +410,9 @@ class FakeImmichServer:
         `media_of` serves another running service's rendered media instead of
         rendering it again (about 14 s of FFmpeg): a second server with the same
         library and none of the first one's uploads, tags or refusals.
+
+        `held` adds pictures the shared library leaves out (`fake_library.HELD_PICTURES`):
+        this service alone serves them, drawn into its own media folder.
         """
         root.mkdir(parents=True, exist_ok=True)
         if media_of is not None:
@@ -362,13 +424,21 @@ class FakeImmichServer:
             video_paths = _generate_videos(media_dir) | _generate_live_clips(media_dir)
             photo_paths = _generate_photos(media_dir)
             thumbnail_paths = _generate_thumbnails(media_dir, video_paths | photo_paths)
+        if held:
+            held_dir = root / "held-media"
+            held_dir.mkdir(exist_ok=True)
+            drawn = _draw_held(held_dir, held)
+            photo_paths = photo_paths | drawn
+            thumbnail_paths = thumbnail_paths | _generate_thumbnails(held_dir, drawn)
         media = video_paths | photo_paths
         uploads: list[RecordedUpload] = []
         refused: list[str] = []
         wire = Wire()
         httpd = ThreadingHTTPServer(
             (host, port),
-            _handler_type(media, thumbnail_paths, uploads, upload_commit_delay, refused, wire),
+            _handler_type(
+                media, thumbnail_paths, uploads, upload_commit_delay, refused, wire, held
+            ),
         )
         thread = threading.Thread(target=httpd.serve_forever, daemon=True)
         thread.start()
@@ -589,6 +659,41 @@ def _generate_photos(media_dir: Path) -> dict[str, Path]:
     return photos
 
 
+def _draw_held(media_dir: Path, held: tuple[Picture, ...]) -> dict[str, Path]:
+    """Draw each held picture at the size its record advertises; nobody is in any of them.
+
+    One with recognised text is a printed form photographed on a table: grey lines on a
+    white page. Any other is a phone screenshot: message bubbles on a light screen.
+    """
+    drawn: dict[str, Path] = {}
+    for picture in held:
+        width, height = _photo_size(picture)
+        if picture.ocr:
+            page_w, page_h = width * 2 // 5, height * 4 // 5
+            left, top = (width - page_w) // 2, (height - page_h) // 2
+            lines = ",".join(
+                f"drawbox=x={left + page_w // 10}:y={top + page_h // 8 + row * page_h // 12}:"
+                f"w={page_w * (5 + row % 3) // 10}:h={page_h // 40}:color=0x707070:t=fill"
+                for row in range(9)
+            )
+            scene = (
+                f"color=c=0x6B4A2E:s={width}x{height},"
+                f"drawbox=x={left}:y={top}:w={page_w}:h={page_h}:color=white:t=fill,{lines}"
+            )
+        else:
+            bubbles = ",".join(
+                f"drawbox=x={width // 20 if row % 2 else width // 3}:"
+                f"y={height // 10 + row * height // 9}:w={width * 3 // 5}:h={height // 14}:"
+                f"color={'0xE5E5EA' if row % 2 else '0x0A84FF'}:t=fill"
+                for row in range(8)
+            )
+            scene = f"color=c=0xF2F2F7:s={width}x{height},{bubbles}"
+        path = media_dir / f"{picture.asset_id}.jpg"
+        _ffmpeg("-f", "lavfi", "-i", scene, "-frames:v", "1", "-q:v", "2", str(path))
+        drawn[picture.asset_id] = path
+    return drawn
+
+
 def _write_photo(
     picture: Picture, photo_path: Path, photos: dict[str, Path], key: str, edit: str = ""
 ) -> None:
@@ -670,8 +775,16 @@ def _handler_type(
     upload_commit_delay: float,
     refused: list[str],
     wire: Wire | None = None,
+    held: tuple[Picture, ...] = (),
 ) -> type[BaseHTTPRequestHandler]:
     upload_lock = threading.Lock()
+    # The primary account's pictures on this service: the library and any held ones.
+    held_assets = tuple(_asset_payload(picture) for picture in held)
+    by_id = _BY_ID | {picture.asset_id: picture for picture in held}
+
+    def assets_of(partner: bool) -> tuple[dict[str, Any], ...]:
+        return _held(partner) if partner else _held(partner) + held_assets
+
     wire = wire or Wire()
     # Tags created on this service, by value, and the assets each one holds.
     tags: dict[str, dict[str, Any]] = {}
@@ -764,22 +877,39 @@ def _handler_type(
                 )
                 self._send_json(200, {"assets": count})
                 return
+            if path == "/api/stacks":
+                # The fixture library stacks nothing.
+                self._send_json(200, [])
+                return
+            if path == "/api/faces":
+                # Where each recognised person sits; the asset record names them without boxes.
+                found = by_id.get(query.get("id", [""])[-1])
+                self._send_json(200, _faces_payload(found) if found else [])
+                return
             if path == "/api/timeline/buckets":
-                self._send_json(200, _buckets_for_query(query, _held(partner)))
+                self._send_json(200, _buckets_for_query(query, assets_of(partner)))
                 return
             if path == "/api/timeline/bucket":
-                self._send_json(200, _assets_for_query(query, _held(partner)))
+                self._send_json(200, _assets_for_query(query, assets_of(partner)))
                 return
             parts = path.removeprefix("/api/assets/").split("/")
             if path.startswith("/api/assets/") and len(parts) == 1:
                 # One asset by id, as Immich serves it: a revision's swap fetches its sibling so.
                 found = next(
-                    (a for a in (*_held(partner), *COMPANION_ASSETS) if a["id"] == parts[0]), None
+                    (a for a in (*assets_of(partner), *COMPANION_ASSETS) if a["id"] == parts[0]),
+                    None,
                 )
                 found = found or uploaded_asset(parts[0])
                 if found is not None:
                     self._send_json(200, found)
                     return
+            if len(parts) == 2 and parts[1] == "ocr" and parts[0] in by_id:
+                # Immich answers 404 for an asset its OCR job read no text on.
+                if by_id[parts[0]].ocr:
+                    self._send_json(200, _ocr_payload(by_id[parts[0]]))
+                else:
+                    self._send_json(404, {"message": "Asset OCR not found"})
+                return
             if query.get("edited") == ["true"] and parts[0] + EDITED in media:
                 # Immich's editor render, asked for by name; any other asset has none to give.
                 parts = [parts[0] + EDITED, parts[1]]
@@ -824,7 +954,7 @@ def _handler_type(
             ):
                 self._send_file(media[parts[0]], "video/mp4")
                 return
-            if path.startswith("/api/assets/") and parts[0] not in _BY_ID:
+            if path.startswith("/api/assets/") and parts[0] not in by_id:
                 # What Immich answers for an id this key cannot read, whether or not it exists.
                 self._send_json(400, {"message": "Not found or no asset.read access"})
                 return
@@ -841,7 +971,7 @@ def _handler_type(
                 payload = self._read_json()
                 if self._refused(path, {}, payload):
                     return
-                items = _assets_for_search(payload, _held(partner))
+                items = _assets_for_search(payload, assets_of(partner), by_id)
                 if wanted_tags := payload.get("tagIds"):
                     items = self._tagged(items, wanted_tags)
                 self._send_json(
@@ -861,7 +991,9 @@ def _handler_type(
                 payload = self._read_json()
                 if self._refused(path, {}, payload):
                     return
-                self._send_json(200, {"total": len(_assets_for_search(payload, _held(partner)))})
+                self._send_json(
+                    200, {"total": len(_assets_for_search(payload, assets_of(partner), by_id))}
+                )
                 return
             if path == "/api/assets" and not partner:
                 try:

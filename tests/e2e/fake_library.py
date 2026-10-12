@@ -628,6 +628,10 @@ class Picture:
     motion: str = ""
     # For a burst member: where its clip starts in the burst's one continuous recording.
     burst_offset: float = 0.0
+    # Served at this exact pixel size instead of the library's photo size (a screenshot's).
+    size: tuple[int, int] | None = None
+    # The text Immich's OCR job reads on it, one printed line per line.
+    ocr: str = ""
 
     @property
     def is_video(self) -> bool:
@@ -828,3 +832,38 @@ def summary_line() -> str:
 def pool_line() -> str:
     videos = sum(1 for picture in LIBRARY if picture.is_video)
     return f"{len(LIBRARY)} in the pool ({videos} videos, {len(LIBRARY) - videos} photos)"
+
+
+def _drawn(scene: Scene, caption: str, **fields) -> Picture:
+    """A picture the fake Immich draws instead of serving a photograph (no one is in it)."""
+    return Picture(
+        asset_id=scene.key,
+        filename=f"IMG_{scene.key.upper().replace('-', '_')}.jpg",
+        kind="still",
+        taken_at=_stamp(scene, 0),
+        caption=caption,
+        scene=scene.key,
+        place=scene.place,
+        is_favorite=scene.favorite,
+        drop_reason=scene.drop,
+        **fields,
+    )
+
+
+# What a phone library also holds and a film must not show, starred so nothing but that rule
+# can keep them out: a screenshot (a still at a phone's exact screen size) on the birthday, and
+# a campsite registration form photographed at the lake, whose printed field labels Immich's OCR
+# reads. Outside LIBRARY: only a fake Immich started with `held=HELD_PICTURES` serves them, so
+# every other test's library stays as it is.
+HELD_PICTURES: tuple[Picture, ...] = (
+    _drawn(
+        Scene("held-screenshot", 8, "14:15", favorite=True, drop="a screenshot"),
+        "a screenshot of a chat on a phone",
+        size=(1179, 2556),
+    ),
+    _drawn(
+        Scene("held-form", 24, "15:00", place=LAKE, favorite=True, drop="a personal document"),
+        "a campsite registration form on a table",
+        ocr="CAMPSITE REGISTRATION\nName\nDate of birth\nNationality\nSignature",
+    ),
+)
