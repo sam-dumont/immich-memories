@@ -46,11 +46,11 @@ cached, but each tier used a fresh, separate store. GPU had no motion evidence f
 Both films use the bundled `calm_acoustic_1.opus` soundtrack, which is
 <StaticFile href="/demo/tier-music-license.txt">MIT licensed</StaticFile>.
 
-<Video src="/demo/tier-nas.mp4" poster="/demo/tier-nas-contact.png" controls playsInline width="100%" />
+<Video title="The Basic film of the fixture month" src="/demo/tier-nas.mp4" poster="/demo/tier-nas-contact.png" controls playsInline width="100%" />
 
 ![Four actual frames from the Basic film: a playground swing, misty forest, market stall and mountain scenery.](/demo/tier-nas-contact.png)
 
-<Video src="/demo/tier-full.mp4" poster="/demo/tier-full-contact.png" controls playsInline width="100%" />
+<Video title="The Full film of the fixture month" src="/demo/tier-full.mp4" poster="/demo/tier-full-contact.png" controls playsInline width="100%" />
 
 ![Four actual frames from the Full film: a playground swing, birthday cake, forest fern and mountain scenery.](/demo/tier-full-contact.png)
 

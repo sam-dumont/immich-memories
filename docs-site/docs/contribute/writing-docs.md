@@ -80,7 +80,20 @@ the Open Graph and Twitter tags, including the candidate site paths.
 to install, how to make a film, the reference pages and how to build from source. Write its links
 site-relative (`/docs/run/nas`). The build turns them into full links for the track it builds, and
 fails when a link points to a page that does not exist. Add a page there when it becomes a place
-to start; leave detail pages to the sidebar.
+to start; leave detail pages to the sidebar. The build adds a line naming the track, version
+and source commit under the summary, and every page links the index from its footer and its
+`<head>`.
+
+## Markdown pages
+
+Every docs page also ships as Markdown at its address plus `.md` (`/docs/run/nas/` becomes
+`/docs/run/nas.md`), built from the same source. A model reading it should get what a reader sees:
+tabs come out as labelled sections, admonitions as quotes, diagrams as text drawings with a list of
+their arrows, and screenshots and videos as their alt text, title and full link. A new component
+needs a text version in `plugins/page-markdown.mjs`; until it has one, its Markdown says the part
+is interactive and links the HTML page. Give every `<Video>` a `title`: it is the video's
+alt text on both versions. `make docs-build` checks that no component name or JSX reaches the
+Markdown.
 
 ## Gates
 
