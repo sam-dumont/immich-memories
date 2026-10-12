@@ -128,22 +128,37 @@ def test_launch_check_consumes_the_preinstalled_ci_environment(target: str) -> N
     assert "Using preinstalled launch-check dependencies" in commands
 
 
+def _job_steps(job: dict) -> list[dict]:
+    """A CI job's steps, with the shared launch-suite setup's own steps in its place."""
+    steps: list[dict] = []
+    for step in job["steps"]:
+        if step.get("uses") == "./.github/actions/setup-launch-suite":
+            action = REPO_ROOT / ".github" / "actions" / "setup-launch-suite" / "action.yml"
+            steps.extend(yaml.safe_load(action.read_text())["runs"]["steps"])
+        else:
+            steps.append(step)
+    return steps
+
+
 def test_ci_runs_the_hermetic_launch_check_with_runtime_dependencies() -> None:
     """Pull requests must run the browser/FFmpeg launch gate without credentials."""
     workflow = yaml.safe_load((REPO_ROOT / ".github" / "workflows" / "ci.yml").read_text())
     launch_job = workflow["jobs"]["launch-check"]
-    steps = launch_job["steps"]
+    steps = _job_steps(launch_job)
     commands = "\n".join(str(step.get("run", "")) for step in steps)
+    setup = next(s for s in launch_job["steps"] if "setup-launch-suite" in str(s.get("uses")))
 
-    # 40, not 30: the PostgreSQL leg runs the same suite against a real server.
-    assert launch_job["timeout-minutes"] == 40
+    # Each leg runs about half the files (E2E_SHARD), well inside 30 minutes.
+    assert launch_job["timeout-minutes"] == 30
     assert '["sqlite","postgresql"]' in launch_job["strategy"]["matrix"]["database"]
     assert any(step.get("uses") == "./.github/actions/install-ffmpeg" for step in steps)
     assert "playwright install --with-deps chromium" in commands
+    assert setup["with"]["browser"] == "true"
     # Exact target: "make launch-check" is a substring of "make launch-check-ci",
     # so a loose check would pass whichever one CI pointed at.
-    assert re.search(r"^\s*make launch-check-ci\s*$", commands, re.M)
-    assert re.search(r"^\s*make launch-check-ci-postgres\s*$", commands, re.M)
+    shard = r"E2E_SHARD=\$\{\{ matrix\.shard \}\}/\d+"
+    assert re.search(rf"^\s*make launch-check-ci {shard}\s*$", commands, re.M)
+    assert re.search(rf"^\s*make launch-check-ci-postgres {shard}\s*$", commands, re.M)
     assert all("IMMICH_API_KEY" not in str(step) for step in steps)
 
     lfs_pull_index = next(
@@ -168,6 +183,42 @@ def test_ci_runs_the_hermetic_launch_check_with_runtime_dependencies() -> None:
     for expected in ("tests/e2e-junit.xml", "server.log", "output-probe.json"):
         assert expected in artifact_paths
     assert "launch-smoke*/output/**" in artifact_paths
+
+
+def test_ci_runs_the_feature_suite_in_shards_with_the_music_extra() -> None:
+    """Each feature job installs the bundled tracks and runs its slice of the files."""
+    workflow = yaml.safe_load((REPO_ROOT / ".github" / "workflows" / "ci.yml").read_text())
+    job = workflow["jobs"]["features"]
+    commands = "\n".join(str(step.get("run", "")) for step in _job_steps(job))
+    setup = next(s for s in job["steps"] if s.get("uses") == "./.github/actions/setup-launch-suite")
+
+    assert setup["with"]["install"] == "dev-test-features"
+    assert re.search(
+        r"^\s*make test-features FEATURE_SHARD=\$\{\{ matrix\.shard \}\}/\d+\s*$", commands, re.M
+    )
+
+
+@pytest.mark.parametrize(
+    ("workflow", "job", "key"),
+    [
+        ("ci.yml", "launch-check", "shard"),
+        ("ci.yml", "features", "shard"),
+        ("ci.yml", "test", "shard"),  # only the coverage cell's shards upload
+        ("ci.yml", "integration-coverage", "suite"),
+        ("immich-gate.yml", "features", "shard"),
+    ],
+)
+def test_each_shard_uploads_its_artifacts_under_its_own_name(workflow: str, job: str, key: str):
+    """Two legs uploading one artifact name collide, and the second upload fails."""
+    jobs = yaml.safe_load((REPO_ROOT / ".github" / "workflows" / workflow).read_text())["jobs"]
+    uploads = [
+        step
+        for step in jobs[job]["steps"]
+        if str(step.get("uses", "")).startswith("actions/upload-artifact@")
+    ]
+
+    assert uploads
+    assert all(f"${{{{ matrix.{key} }}}}" in step["with"]["name"] for step in uploads)
 
 
 def test_duplication_gate_pins_a_supported_jscpd_cli() -> None:
@@ -243,11 +294,10 @@ def test_ci_launch_gate_does_not_rerun_what_has_its_own_job() -> None:
     """
     workflow = yaml.safe_load((REPO_ROOT / ".github" / "workflows" / "ci.yml").read_text())
     target = next(
-        command
+        match.group(1)
         for step in workflow["jobs"]["launch-check"]["steps"]
-        for command in [str(step.get("run", ""))]
-        if "launch-check" in command
-    ).split()[-1]
+        if (match := re.search(r"make (launch-check\S*)", str(step.get("run", ""))))
+    )
 
     prerequisites = _make_target_prerequisites(target)
 

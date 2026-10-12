@@ -39,7 +39,7 @@ features:
     promise: "--orientation auto (the default) follows the shape of the kept clips; square gives a square canvas."
     doc: reference/cli-reference.md#generate
     tests:
-      - tests/integration/features/test_film_render.py::test_auto_orientation_follows_the_kept_pictures
+      - tests/integration/features/test_film_canvas.py::test_auto_orientation_follows_the_kept_pictures
   - id: output.run-folder-per-render
     promise: "Each render writes a new folder under output.directory; a rerun never overwrites an earlier film."
     doc: make/cli/generate.md#output
@@ -94,7 +94,7 @@ features:
     covers: ["cli:generate --duration"]
     tests:
       - tests/integration/features/test_film_render.py::test_duration_budgets_the_whole_film_titles_included
-      - tests/integration/features/test_film_render.py::test_a_thin_day_finishes_short_of_its_duration_with_a_bundled_track
+      - tests/integration/features/test_film_sound.py::test_a_thin_day_finishes_short_of_its_duration_with_a_bundled_track
       - tests/integration/features/test_real_editor_films.py::test_a_year_through_the_real_editor_keeps_its_rules_and_its_minute
   - id: generate.length-fits-material
     promise: "Without --duration the length comes from the material the period holds, and the run says what set it."
@@ -130,7 +130,7 @@ features:
     doc: make/titles-maps-music.md#titles-and-language
     covers: ["cli:generate --transition"]
     tests:
-      - tests/integration/features/test_film_render.py::test_crossfades_overlap_the_pictures_on_whole_frames_and_cuts_do_not
+      - tests/integration/features/test_film_canvas.py::test_crossfades_overlap_the_pictures_on_whole_frames_and_cuts_do_not
   - id: cut.include-exclude
     promise: "--include keeps a picture in the cut and --exclude leaves one out, whatever the editor would decide."
     doc: reference/cli-reference.md#generate
@@ -551,7 +551,7 @@ features:
     doc: make/titles-maps-music.md#date-and-place-captions
     covers: ["cli:generate --add-date", "cli:generate --add-place"]
     tests:
-      - tests/integration/features/test_film_render.py::test_captions_name_the_date_and_the_city_when_they_change_and_flags_turn_them_off
+      - tests/integration/features/test_film_canvas.py::test_captions_name_the_date_and_the_city_when_they_change_and_flags_turn_them_off
   - id: maps.fly-over
     promise: "With network.map_tiles on, a trip opens with an animated satellite map; with it off, ordinary title cards."
     doc: make/titles-maps-music.md#the-map-fly-over
@@ -565,20 +565,20 @@ features:
     doc: make/titles-maps-music.md#music
     covers: ["cli:generate --music", "cli:generate --music-volume"]
     tests:
-      - tests/integration/features/test_film_render.py::test_your_own_track_plays_and_drops_under_the_clips_own_sound
-      - tests/integration/features/test_film_render.py::test_music_volume_sets_how_loud_your_track_plays
+      - tests/integration/features/test_film_sound.py::test_your_own_track_plays_and_drops_under_the_clips_own_sound
+      - tests/integration/features/test_film_sound.py::test_music_volume_sets_how_loud_your_track_plays
   - id: music.bundled-default
     promise: "Automatic music uses a bundled track, and a failed generator falls back to one with a warning."
     doc: make/titles-maps-music.md#music
     tests:
-      - tests/integration/features/test_film_render.py::test_a_thin_day_finishes_short_of_its_duration_with_a_bundled_track
-      - tests/integration/features/test_film_render.py::test_a_failed_music_generator_falls_back_to_a_bundled_track_with_a_warning
+      - tests/integration/features/test_film_sound.py::test_a_thin_day_finishes_short_of_its_duration_with_a_bundled_track
+      - tests/integration/features/test_film_sound.py::test_a_failed_music_generator_falls_back_to_a_bundled_track_with_a_warning
   - id: audio.original-audio-off
     promise: "--no-original-audio removes every sound recorded in videos and Live Photos; with no music too, the film is silent."
     doc: make/titles-maps-music.md#music
     covers: ["cli:generate --original-audio"]
     tests:
-      - tests/integration/features/test_film_render.py::test_no_original_audio_and_no_music_make_a_silent_film
+      - tests/integration/features/test_film_sound.py::test_no_original_audio_and_no_music_make_a_silent_film
   - id: music.generated
     promise: "A configured music generator (ACE-Step or MusicGen) makes an original soundtrack for the cut."
     doc: better/music.md#generate-a-soundtrack
@@ -627,7 +627,7 @@ features:
     promise: "Gain-mapped HDR photos keep HDR in an HDR H.265 film and are tone-mapped in an SDR one."
     doc: make/photos-and-live-photos.md#hdr-end-to-end
     tests:
-      - tests/integration/features/test_film_render.py::test_a_gain_mapped_photo_keeps_hdr_in_an_hdr_h265_film_and_is_tone_mapped_in_sdr
+      - tests/integration/features/test_film_hdr.py::test_a_gain_mapped_photo_keeps_hdr_in_an_hdr_h265_film_and_is_tone_mapped_in_sdr
   - id: privacy.privacy-mode
     promise: "--privacy-mode blurs every picture, scrambles speech and moves places in the encoded film."
     doc: run/privacy.md#privacy-mode

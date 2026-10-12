@@ -10,13 +10,18 @@ Only an area proven untouched is skipped. A path no rule knows, a build or
 dependency file, an empty diff, or any event other than a pull request (a push
 to main, the release and the nightly calling CI) runs everything.
 
+It also answers the unit job's matrix (the Python/OS cells, each in shards) and, for a
+pull request, the FFmpeg integration suites its diff coverage needs.
+
 Usage:
     python3 scripts/ci_scope.py --event pull_request --base origin/main
+    python3 scripts/ci_scope.py --event pull_request --integration-suites
 """
 
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import subprocess  # nosec B404 - runs git with fixed arguments
 import sys
@@ -76,6 +81,9 @@ LAUNCH = (
     "tests/integration/conftest.py",
     "tests/integration/features/*",
     "tests/immich_fakes.py",
+    # How CI splits the e2e and feature suites into shards (`make e2e`, `make test-features`).
+    "scripts/shard_tests.py",
+    "tests/shard_durations.json",
 )
 IMMICH = (
     *LAUNCH,
@@ -144,6 +152,54 @@ SUITES_READING_DOCS = {
 }
 EVERYTHING = Scope(**{item.name: item.name != "docs_only" for item in fields(Scope)})
 
+# The unit suite's Python/OS cells. This repo is public, so hosted runners are free but
+# capped, and macOS at 5 concurrent jobs: three macOS cells per pull request meant ~30
+# jobs queueing for 5 slots once a handful of PRs were open, and GitHub reclaimed runs
+# mid-job. A pull request keeps every Ubuntu Python and one macOS; main and the release
+# run the full grid. A change with no Python in it (the web client, the image) runs one
+# cell: the grid exists to catch code that behaves differently there.
+ONE_CELL = (("ubuntu-24.04", "3.12"),)
+PULL_REQUEST_CELLS = (
+    ("ubuntu-24.04", "3.11"),
+    ("ubuntu-24.04", "3.12"),
+    ("ubuntu-24.04", "3.13"),
+    ("macos-latest", "3.13"),
+)
+ALL_CELLS = (
+    *PULL_REQUEST_CELLS[:3],
+    ("macos-latest", "3.11"),
+    ("macos-latest", "3.12"),
+    PULL_REQUEST_CELLS[3],
+)
+# The cell whose shards record coverage for the combined floor, diff-cover and Codecov.
+COVERAGE_CELL = ("ubuntu-24.04", "3.12")
+# Each cell runs the suite in this many jobs (`make test-cov-xml TEST_SHARD=i/N`), but see
+# unit_shards: macOS outside a pull request.
+UNIT_SHARDS = 2
+
+
+def unit_shards(os_name: str, event: str) -> int:
+    """How many jobs a cell's suite runs in: macOS cells stay whole outside a pull request.
+
+    Main and the release run three macOS cells; in shards that would be six jobs against
+    the 5-job macOS cap, so there each runs whole (~14 min) in one slot of its own.
+    """
+    return 1 if os_name.startswith("macos") and event != "pull_request" else UNIT_SHARDS
+
+
+# The FFmpeg-only integration suites (`make test-integration-<suite>`) that reach a changed
+# source path. A pull request runs them before diff-cover, so code only FFmpeg reaches
+# reads as covered; their coverage XMLs are gitignored and never come from a contributor.
+INTEGRATION_SUITES = (
+    ("src/immich_memories/titles/", ("titles",)),
+    ("src/immich_memories/processing/", ("processing", "assembly")),
+    ("src/immich_memories/photos/", ("photos",)),
+    ("src/immich_memories/audio/", ("audio-mixing",)),
+    ("src/immich_memories/generate", ("assembly",)),
+    ("src/immich_memories/processing/remote_render", ("render-worker",)),
+    ("services/render-worker/", ("render-worker",)),
+)
+
 
 def _matches(path: str, patterns: tuple[str, ...]) -> bool:
     return any(fnmatch(path, pattern) for pattern in patterns)
@@ -206,6 +262,60 @@ def scope(paths: list[str], *, event: str, repo: Path = REPO) -> Scope:
     )
 
 
+def unit_matrix(scope: Scope, event: str) -> dict[str, list[dict[str, object]]]:
+    """The unit job's matrix: every cell the scope runs, each in its shards."""
+    if not scope.python:
+        cells = ONE_CELL
+    elif event == "pull_request":
+        cells = PULL_REQUEST_CELLS
+    else:
+        cells = ALL_CELLS
+    return {
+        "include": [
+            {
+                "os": os_name,
+                "python-version": python,
+                "shard": shard,
+                "shards": unit_shards(os_name, event),
+                "coverage": (os_name, python) == COVERAGE_CELL,
+            }
+            for os_name, python in cells
+            for shard in range(1, unit_shards(os_name, event) + 1)
+        ]
+    }
+
+
+def integration_suites(paths: list[str]) -> list[str]:
+    """The integration suites whose FFmpeg paths these changed Python files are on."""
+    changed = [
+        path
+        for path in paths
+        if path.endswith(".py")
+        and path.startswith(("src/immich_memories/", "services/render-worker/"))
+    ]
+    return sorted(
+        {
+            suite
+            for prefix, suites in INTEGRATION_SUITES
+            for path in changed
+            if path.startswith(prefix)
+            for suite in suites
+        }
+    )
+
+
+def outputs(paths: list[str], *, event: str, repo: Path = REPO) -> dict[str, str]:
+    """Every output of the `changes` job: the scope, the unit matrix and the integration suites."""
+    found = scope(paths, event=event, repo=repo)
+    # Only a pull request has a diff to cover; main and the release check the floor alone.
+    suites = integration_suites(paths) if event == "pull_request" and found.unit else []
+    return {
+        **found.as_outputs(),
+        "unit_matrix": json.dumps(unit_matrix(found, event), separators=(",", ":")),
+        "integration_suites": json.dumps(suites, separators=(",", ":")),
+    }
+
+
 def _changed_paths(base: str) -> list[str]:
     diff = subprocess.run(  # nosec B603 B607 - fixed git invocation
         ["git", "diff", "--name-only", f"{base}...HEAD"],
@@ -220,11 +330,18 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--event", required=True)
     parser.add_argument("--base", default="origin/main")
+    parser.add_argument(
+        "--integration-suites",
+        action="store_true",
+        help="print the integration suites the diff against --base reaches, and nothing else",
+    )
     args = parser.parse_args()
 
+    if args.integration_suites:
+        print(" ".join(integration_suites(_changed_paths(args.base))))
+        return 0
     paths = _changed_paths(args.base) if args.event == "pull_request" else []
-    outputs = scope(paths, event=args.event).as_outputs()
-    lines = [f"{name}={value}" for name, value in outputs.items()]
+    lines = [f"{name}={value}" for name, value in outputs(paths, event=args.event).items()]
     print("\n".join(lines))
     if github_output := os.environ.get("GITHUB_OUTPUT"):
         with open(github_output, "a", encoding="utf-8") as sink:

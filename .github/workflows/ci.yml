@@ -54,6 +54,8 @@ jobs:
       launch: ${{ steps.scope.outputs.launch }}
       render_worker: ${{ steps.scope.outputs.render_worker }}
       extras: ${{ steps.scope.outputs.extras }}
+      unit_matrix: ${{ steps.scope.outputs.unit_matrix }}
+      integration_suites: ${{ steps.scope.outputs.integration_suites }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -254,38 +256,24 @@ jobs:
           path: bandit-report.json
 
   # ── Tier 2: Tests (after all quality gates pass) ──────────────────────────
+  # The unit suite on every Python/OS cell the scope runs, each cell in shards:
+  # `make test-cov-xml TEST_SHARD=i/N` runs about 1/N of the test files, balanced on
+  # the seconds each took (scripts/shard_tests.py, tests/shard_durations.json). The
+  # cells, the shard count and the coverage cell come from `make ci-scope`
+  # (scripts/ci_scope.py): see there why a pull request runs one macOS cell.
   test:
-    name: Test (Python ${{ matrix.python-version }}, ${{ matrix.os }})
+    name: Test (Python ${{ matrix.python-version }}, ${{ matrix.os }}, ${{ matrix.shard }}/${{ matrix.shards }})
     if: github.repository_id == '1174219883' && needs.changes.outputs.unit == 'true'
     needs: [changes, quality, security]
     # uv follows .python-version (3.12) unless told otherwise, so without this every cell
     # ran 3.12 and 3.11, the Python the app image ships, was never tested.
     env:
       UV_PYTHON: ${{ matrix.python-version }}
-    permissions:
-      contents: read
-      pull-requests: write
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
     strategy:
       fail-fast: false
-      # A docs-only change skips this job: the Docs Contract Tests job runs the
-      # tests that read the changed pages. A change with no Python in it (the web
-      # client, the image, a workflow-free config file) runs the suite on one
-      # cell: the Python/OS grid exists to catch code that behaves differently
-      # there, and those files cannot. 3.12 on ubuntu is the cell that uploads coverage.
-      #
-      # WHY the event-dependent matrix: this repo is public, so hosted runners
-      # are free but capped, and macOS is capped at 5 concurrent jobs. Three
-      # macOS cells per pull request meant ~30 jobs queueing for 5 slots once a
-      # handful of PRs were open; runs sat for hours and GitHub reclaimed them
-      # mid-job ("runner has received a shutdown signal", then Error 137).
-      # Ubuntu keeps every Python; macOS keeps one per PR and the full grid on
-      # main, where runs are serialised anyway.
-      matrix: ${{ fromJSON(needs.changes.outputs.python != 'true'
-        && '{"include":[{"os":"ubuntu-24.04","python-version":"3.12"}]}'
-        || github.event_name == 'pull_request'
-        && '{"include":[{"os":"ubuntu-24.04","python-version":"3.11"},{"os":"ubuntu-24.04","python-version":"3.12"},{"os":"ubuntu-24.04","python-version":"3.13"},{"os":"macos-latest","python-version":"3.13"}]}'
-        || '{"include":[{"os":"ubuntu-24.04","python-version":"3.11"},{"os":"ubuntu-24.04","python-version":"3.12"},{"os":"ubuntu-24.04","python-version":"3.13"},{"os":"macos-latest","python-version":"3.11"},{"os":"macos-latest","python-version":"3.12"},{"os":"macos-latest","python-version":"3.13"}]}') }}
+      matrix: ${{ fromJSON(needs.changes.outputs.unit_matrix) }}
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@351661ca32ac09a36dc5ee2d536e3128f2a3c8ed # v2
@@ -294,7 +282,7 @@ jobs:
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 0  # Full history for diff-cover
+          fetch-depth: 0  # hatch-vcs versions the install from the tags
 
       # WHY: LFS bandwidth is metered — caching avoids re-downloading 13MB of
       # fixtures on every CI run (~9 LFS checkouts/push was burning 1GB/month).
@@ -312,21 +300,121 @@ jobs:
       - run: make dev-test
 
       # On pytest-xdist workers, one per core: TEST_WORKERS is `auto` when CI=true.
-      # pytest-cov combines the workers' data, so coverage.xml matches a serial run.
+      # pytest-cov combines the workers' data into .coverage; the coverage job
+      # combines the shards' and checks the floor on the whole suite.
       - name: Run tests with coverage
-        run: make test-cov-xml
+        run: make test-cov-xml TEST_SHARD=${{ matrix.shard }}/${{ matrix.shards }}
 
-      # WHY: diff-cover merges tests/*-coverage.xml, but those are gitignored and
-      # so can never arrive from a contributor's machine. Code only reachable
-      # through FFmpeg would therefore always read as uncovered. This job already
-      # installs FFmpeg, so the suites covering the changed paths run here -- and
-      # only those: an unrelated PR runs none of them.
-      - name: Integration coverage for changed paths
-        if: matrix.python-version == '3.12' && matrix.os == 'ubuntu-24.04' && github.event_name == 'pull_request'
-        run: make dev-test-integration integration-coverage-for-diff
+      - name: Keep this shard's coverage data
+        if: matrix.coverage
+        run: mkdir -p coverage-data && cp .coverage "coverage-data/.coverage.unit-${{ matrix.shard }}"
+
+      - name: Upload this shard's coverage data
+        if: matrix.coverage
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: coverage-data-unit-${{ matrix.shard }}
+          path: coverage-data/
+          include-hidden-files: true
+          retention-days: 1
+          if-no-files-found: error
+
+      - name: Upload test results to Codecov
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v5
+        if: ${{ !cancelled() && matrix.coverage }}
+        with:
+          files: junit.xml
+          token: ${{ secrets.CODECOV_TOKEN }}
+          report_type: test_results
+          fail_ci_if_error: false
+
+  # WHY: diff-cover merges tests/*-coverage.xml, but those are gitignored and so can
+  # never arrive from a contributor's machine; code only reachable through FFmpeg would
+  # always read as uncovered. A pull request runs the FFmpeg integration suites its
+  # changed source reaches (scripts/ci_scope.py picks them), one job per suite, beside
+  # the unit shards. An unrelated pull request runs none; main and the release run the
+  # integration suites on the GPU runner (integration.yml).
+  integration-coverage:
+    name: Integration Coverage (${{ matrix.suite }})
+    if: >-
+      github.repository_id == '1174219883'
+      && needs.changes.outputs.integration_suites != '[]'
+    needs: [changes, quality, security]
+    env:
+      UV_PYTHON: "3.12"  # the coverage cell's Python
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: ${{ fromJSON(needs.changes.outputs.integration_suites) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Pull LFS files
+        uses: ./.github/actions/pull-lfs
+      - name: Set up uv and Python
+        uses: ./.github/actions/setup-uv-python
+        with:
+          python-version: "3.12"
+      - name: Install FFmpeg
+        uses: ./.github/actions/install-ffmpeg
+      - name: Integration suite (${{ matrix.suite }})
+        run: make dev-test-integration test-integration-${{ matrix.suite }}
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: coverage-integration-${{ matrix.suite }}
+          path: tests/*-coverage.xml
+          retention-days: 1
+          if-no-files-found: error
+
+  # The unit shards' coverage as one (`make coverage-combine`): the 65% floor on the
+  # whole suite, and coverage.xml for Codecov. On a pull request, the ≥80% gate on the
+  # changed lines, with the integration suites' XMLs merged in. It runs once every
+  # shard passed; a failed shard fails CI Success by itself.
+  coverage:
+    name: Coverage
+    if: >-
+      github.repository_id == '1174219883' && !cancelled()
+      && needs.changes.outputs.unit == 'true'
+      && needs.test.result == 'success'
+      && contains(fromJSON('["success","skipped"]'), needs.integration-coverage.result)
+    needs: [changes, test, integration-coverage]
+    env:
+      UV_PYTHON: "3.12"  # the coverage cell's Python
+    permissions:
+      contents: read
+      pull-requests: write
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0  # Full history for diff-cover
+      - name: Set up uv and Python
+        uses: ./.github/actions/setup-uv-python
+        with:
+          python-version: "3.12"
+      - run: make dev-test
+
+      - name: Download the unit shards' coverage data
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: coverage-data-unit-*
+          path: coverage-data
+          merge-multiple: true
+      - name: Download the integration suites' coverage
+        if: needs.integration-coverage.result == 'success'
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: coverage-integration-*
+          path: tests
+          merge-multiple: true
+
+      - name: Combined coverage (the floor on the whole suite)
+        run: make coverage-combine
 
       - name: Diff coverage (≥80% on changed lines)
-        if: matrix.python-version == '3.12' && matrix.os == 'ubuntu-24.04' && github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -368,24 +456,11 @@ jobs:
 
       - name: Upload unit test coverage to Codecov
         uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v5
-        if: matrix.python-version == '3.12' && matrix.os == 'ubuntu-24.04'
         with:
           files: coverage.xml
           flags: unittests
           disable_search: true
           token: ${{ secrets.CODECOV_TOKEN }}
-          fail_ci_if_error: false
-
-      # Integration coverage is uploaded by the GPU runner (integration.yml)
-      # which runs real FFmpeg with hardware encoding on a self-hosted runner.
-
-      - name: Upload test results to Codecov
-        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v5
-        if: ${{ !cancelled() && matrix.python-version == '3.12' && matrix.os == 'ubuntu-24.04' }}
-        with:
-          files: junit.xml
-          token: ${{ secrets.CODECOV_TOKEN }}
-          report_type: test_results
           fail_ci_if_error: false
 
   test-extras:
@@ -627,15 +702,16 @@ jobs:
           BASE: origin/${{ github.base_ref }}
         run: make test-scoped HOOK_SCOPE_BASE="$BASE"
 
-  # The same launch check with the app's store on each backend; the PostgreSQL
-  # leg runs when the store changes. One job, not a smoke/pages split: the page
-  # tests reuse what the render leaves in the session, and alone they took as
-  # long as the whole suite. `ci-success` fails when either leg fails.
+  # The launch check's e2e suite with the app's store on each backend; the PostgreSQL
+  # legs run when the store changes. Each backend runs in two shards: `make e2e` with
+  # E2E_SHARD=i/2 runs about half the files, balanced on the seconds each took
+  # (scripts/shard_tests.py, tests/shard_durations.json). Whole files, because the page
+  # tests reuse what their worker's session rendered. `ci-success` fails when any leg fails.
   launch-check:
-    name: Hermetic Launch Check (${{ matrix.database }})
+    name: Hermetic Launch Check (${{ matrix.database }}, ${{ matrix.shard }}/2)
     needs: [changes, setup]
     runs-on: ubuntu-24.04
-    timeout-minutes: 40
+    timeout-minutes: 30
     # Every event the scope allows: a pull request that touches what it runs, a
     # push to main, the release and the nightly.
     if: github.repository_id == '1174219883' && needs.changes.outputs.launch == 'true'
@@ -643,8 +719,9 @@ jobs:
       fail-fast: false
       matrix:
         database: ${{ fromJSON(needs.changes.outputs.store == 'true' && '["sqlite","postgresql"]' || '["sqlite"]') }}
-    # Started on both legs (services cannot follow the matrix); only the
-    # postgresql leg is given its URL. Pinned like the test-store job's.
+        shard: [1, 2]
+    # Started on every leg (services cannot follow the matrix); only the
+    # postgresql legs are given its URL. Pinned like the test-store job's.
     services:
       postgres:
         image: docker.io/library/postgres:16@sha256:1a6ab3f5345eb6dbe04a1349529caabdb0ab09293a09590fad07b2246bfa4b54
@@ -660,56 +737,66 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 0
-      - name: Pull LFS files
-        uses: ./.github/actions/pull-lfs
-      - name: Set up uv and Python
-        uses: ./.github/actions/setup-uv-python
+          fetch-depth: 0  # hatch-vcs versions the install from the tags
+      - name: Set up the suite
+        uses: ./.github/actions/setup-launch-suite
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
-        with:
-          node-version: '22'
-          cache: npm
-          cache-dependency-path: |
-            docs-site/package-lock.json
-            web/package-lock.json
-      - name: Install FFmpeg
-        uses: ./.github/actions/install-ffmpeg
-      - name: Install project and browser dependencies
-        run: |
-          make dev-test
-          make web-client
-          uv run playwright install --with-deps chromium
-          cd docs-site && npm ci
+          install: dev-test
+          browser: 'true'
       - name: Run launch readiness gate (SQLite)
         if: matrix.database == 'sqlite'
-        run: make launch-check-ci
+        run: make launch-check-ci E2E_SHARD=${{ matrix.shard }}/2
       - name: Run launch readiness gate (PostgreSQL)
         if: matrix.database == 'postgresql'
-        run: make launch-check-ci-postgres
+        run: make launch-check-ci-postgres E2E_SHARD=${{ matrix.shard }}/2
         env:
           IMMICH_MEMORIES_E2E_DATABASE_URL: postgresql://postgres:store-test@127.0.0.1:5432/postgres
-      # The advertised features on the fixture library, through the real CLI and FFmpeg
-      # (tests/integration/features/, four xdist workers). One cell: the store backend is not
-      # their subject.
-      - name: Run feature tests (fixture library)
-        if: matrix.database == 'sqlite' && !cancelled()
-        run: |
-          make dev-test-features
-          make test-features
       - name: Upload launch diagnostics
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: launch-check-diagnostics-${{ matrix.database }}
+          name: launch-check-diagnostics-${{ matrix.database }}-${{ matrix.shard }}
           if-no-files-found: ignore
           path: |
             tests/e2e-junit.xml
-            tests/features-junit.xml
             /tmp/pytest-of-runner/**/server.log
             /tmp/pytest-of-runner/**/output-probe.json
             /tmp/pytest-of-runner/**/launch-smoke*/output/**
+
+  # The advertised features on the fixture library, through the real CLI and FFmpeg
+  # (tests/integration/features/, four xdist workers per job), in three shards picked the
+  # same way as the e2e ones. One store backend: the store is not their subject.
+  features:
+    name: Feature Tests (${{ matrix.shard }}/3)
+    needs: [changes, setup]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    if: github.repository_id == '1174219883' && needs.changes.outputs.launch == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0  # hatch-vcs versions the install from the tags
+      - name: Set up the suite
+        uses: ./.github/actions/setup-launch-suite
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          install: dev-test-features
+      - name: Run feature tests (fixture library)
+        run: make test-features FEATURE_SHARD=${{ matrix.shard }}/3
+      - name: Upload feature diagnostics
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: feature-diagnostics-${{ matrix.shard }}
+          if-no-files-found: ignore
+          path: |
+            tests/features-junit.xml
+            /tmp/pytest-of-runner/**/server.log
 
   # The render worker's own lint, types, suite and package. It imports titles and
   # processing from the app, so the scope runs it for those too.
@@ -741,7 +828,7 @@ jobs:
   # ends cancelled, and a superseded run's verdict no longer counts anyway.
   ci-success:
     name: CI Success
-    needs: [changes, setup, quality, security, test, test-extras, test-store, build, docker, container-e2e, docs, docs-tests, launch-check, render-worker]
+    needs: [changes, setup, quality, security, test, integration-coverage, coverage, test-extras, test-store, build, docker, container-e2e, docs, docs-tests, launch-check, features, render-worker]
     runs-on: ubuntu-24.04
     if: always() && github.repository_id == '1174219883'
     steps:

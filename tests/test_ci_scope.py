@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import re
 import subprocess
 import sys
@@ -109,6 +110,12 @@ def test_a_web_route_change_runs_the_browser_suites(ci_scope):
 
     assert {"launch", "immich", "unit", "python"} <= running
     assert "render_worker" not in running
+
+
+@pytest.mark.parametrize("path", ["scripts/shard_tests.py", "tests/shard_durations.json"])
+def test_the_shard_split_runs_the_suites_it_splits(ci_scope, path):
+    # A wrong split could drop files from every shard; only running the shards shows it.
+    assert {"launch", "immich"} <= _running(ci_scope, [path])
 
 
 @pytest.mark.parametrize(
@@ -254,7 +261,11 @@ def test_the_script_writes_github_outputs_for_a_push(tmp_path):
     )
 
     written = dict(line.split("=", 1) for line in sink.read_text().splitlines())
+    matrix = json.loads(written.pop("unit_matrix"))
+    assert written.pop("integration_suites") == "[]"  # main checks the floor, not a diff
     assert written == EVERYTHING
+    # Every Python/OS cell: Ubuntu in two shards each, macOS whole (its 5-job cap).
+    assert len(matrix["include"]) == 3 * 2 + 3
     assert result.stdout.splitlines() == sink.read_text().splitlines()
 
 
@@ -278,6 +289,8 @@ CI_JOBS = {
     "docs": "docs_site",
     "docs-tests": "docs_only",
     "launch-check": "launch",
+    "features": "launch",
+    "coverage": "unit",
     "render-worker": "render_worker",
 }
 
@@ -324,10 +337,28 @@ def test_each_heavy_ci_job_reads_its_own_scope(job, output):
     assert "event_name" not in condition  # main and the release run it: the scope says when
 
 
+def test_the_integration_coverage_runs_the_suites_the_scope_names():
+    job = yaml_load(WORKFLOWS / "ci.yml")["jobs"]["integration-coverage"]
+    condition = " ".join(str(job["if"]).split())
+    commands = " ".join(str(step.get("run", "")) for step in job["steps"])
+
+    assert "needs.changes.outputs.integration_suites != '[]'" in condition
+    assert job["strategy"]["matrix"]["suite"] == (
+        "${{ fromJSON(needs.changes.outputs.integration_suites) }}"
+    )
+    assert "make dev-test-integration test-integration-${{ matrix.suite }}" in commands
+
+
 def test_ci_success_waits_for_every_job():
     jobs = yaml_load(WORKFLOWS / "ci.yml")["jobs"]
 
     assert set(jobs["ci-success"]["needs"]) == set(jobs) - {"ci-success"}
+
+
+def test_the_immich_gate_rollup_waits_for_every_job():
+    jobs = yaml_load(WORKFLOWS / "immich-gate.yml")["jobs"]
+
+    assert set(jobs["gate"]["needs"]) == set(jobs) - {"gate"}
 
 
 @pytest.mark.parametrize("job", ["immich", "features"])
@@ -365,3 +396,94 @@ def test_the_immich_gate_rollup_passes_only_what_ran_or_was_out_of_scope(
     scope, immich, features, in_scope, passes
 ):
     assert (_immich_gate(scope, immich, features, in_scope) == 0) is passes
+
+
+# ── The unit matrix and the integration suites ──────────────────────────────
+
+
+def _cells(matrix: dict) -> dict[tuple[str, str], list[dict]]:
+    cells: dict[tuple[str, str], list[dict]] = {}
+    for leg in matrix["include"]:
+        cells.setdefault((leg["os"], leg["python-version"]), []).append(leg)
+    return cells
+
+
+@pytest.mark.parametrize(
+    ("paths", "event", "cells"),
+    [
+        # A Python change on a pull request: every Ubuntu Python, one macOS.
+        (["src/immich_memories/cli/__init__.py"], "pull_request", 4),
+        # No Python in it (the web client alone): one cell.
+        (["web/src/lib/RenderPanel.svelte"], "pull_request", 1),
+        # Main and the release: the full grid, whatever changed.
+        (["docs-site/docs/intro.md"], "push", 6),
+    ],
+)
+def test_every_unit_cell_runs_each_of_its_shards_once(ci_scope, paths, event, cells):
+    matrix = ci_scope.unit_matrix(ci_scope.scope(paths, event=event), event)
+
+    assert len(_cells(matrix)) == cells
+    for legs in _cells(matrix).values():
+        [total] = {leg["shards"] for leg in legs}
+        assert sorted(leg["shard"] for leg in legs) == list(range(1, total + 1))
+
+
+@pytest.mark.parametrize(
+    ("event", "macos", "ubuntu"),
+    [("pull_request", 2, 2), ("push", 1, 2), ("workflow_call", 1, 2), ("schedule", 1, 2)],
+)
+def test_macos_cells_run_whole_outside_a_pull_request(ci_scope, event, macos, ubuntu):
+    # Main and the release run three macOS cells; sharded, six jobs against a cap of five.
+    python = ci_scope.scope(["src/immich_memories/cli/__init__.py"], event=event)
+    shards = {
+        cell: legs[0]["shards"]
+        for cell, legs in _cells(ci_scope.unit_matrix(python, event)).items()
+    }
+
+    assert {n for (os_name, _), n in shards.items() if os_name.startswith("macos")} == {macos}
+    assert {n for (os_name, _), n in shards.items() if os_name.startswith("ubuntu")} == {ubuntu}
+
+
+@pytest.mark.parametrize("event", ["pull_request", "push"])
+def test_one_cell_records_the_coverage_in_all_its_shards(ci_scope, event):
+    found = ci_scope.scope(["src/immich_memories/cli/__init__.py"], event=event)
+    legs = [leg for leg in ci_scope.unit_matrix(found, event)["include"] if leg["coverage"]]
+
+    assert {(leg["os"], leg["python-version"]) for leg in legs} == {ci_scope.COVERAGE_CELL}
+    assert sorted(leg["shard"] for leg in legs) == list(range(1, ci_scope.UNIT_SHARDS + 1))
+
+
+@pytest.mark.parametrize(
+    ("paths", "suites"),
+    [
+        (["src/immich_memories/titles/renderer.py"], ["titles"]),
+        (["src/immich_memories/processing/clips.py"], ["assembly", "processing"]),
+        (
+            ["src/immich_memories/processing/remote_render.py"],
+            ["assembly", "processing", "render-worker"],
+        ),
+        (["src/immich_memories/photos/animator.py"], ["photos"]),
+        (["src/immich_memories/audio/mixer.py"], ["audio-mixing"]),
+        (["src/immich_memories/generate.py"], ["assembly"]),
+        (["services/render-worker/immich_memories_render_worker/worker.py"], ["render-worker"]),
+        (["src/immich_memories/cli/__init__.py", "README.md", "tests/test_x.py"], []),
+        (["src/immich_memories/titles/fonts/readme.txt"], []),  # not Python
+    ],
+)
+def test_a_change_runs_the_integration_suites_that_reach_it(ci_scope, paths, suites):
+    assert ci_scope.integration_suites(paths) == suites
+
+
+def test_every_integration_suite_has_a_target_that_writes_its_coverage(ci_scope):
+    makefile = (ROOT / "Makefile").read_text()
+    suites = {suite for _, names in ci_scope.INTEGRATION_SUITES for suite in names}
+
+    for suite in suites:
+        assert re.search(rf"^test-integration-{suite}:", makefile, re.M), suite
+
+
+def test_only_a_pull_request_runs_the_integration_coverage(ci_scope):
+    titles = ["src/immich_memories/titles/renderer.py"]
+
+    assert ci_scope.outputs(titles, event="pull_request")["integration_suites"] == '["titles"]'
+    assert ci_scope.outputs(titles, event="push")["integration_suites"] == "[]"

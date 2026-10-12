@@ -350,12 +350,25 @@ test-integration-titles:  ## Run ONLY title screen pixel tests (~30s, FFmpeg onl
 # The tests run on FEATURE_WORKERS xdist workers (4, a CI runner's cores; 0 runs them in this
 # process). Each worker starts its own fake Immich and homes, so workers share no state.
 # --dist loadfile keeps a file's tests on one worker, so a module-scoped render runs once.
+# FEATURE_SHARD=i/N runs the i-th of N slices of the files (scripts/shard_tests.py), as CI's
+# feature jobs do; unset runs them all.
 FEATURE_WORKERS ?= 4
 FEATURE_JUNIT ?= tests/features-junit.xml
+FEATURE_SHARD ?=
 .PHONY: test-features feature-check
 test-features:  ## Feature tests on the fixture library, real CLI and FFmpeg (no Immich needed)
-	uv run pytest tests/integration/features/ -v -m integration --tb=short -p no:cacheprovider \
+	files=$$(python3 scripts/shard_tests.py pick features "$(FEATURE_SHARD)" tests/integration/features/test_*.py) && \
+	uv run pytest $$files -v -m integration --tb=short -p no:cacheprovider \
 		-n $(FEATURE_WORKERS) --dist loadfile --junitxml=$(FEATURE_JUNIT) $(FEATURE_ARGS)
+
+# The seconds each unit, e2e and feature file took (tests/shard_durations.json), which CI's
+# shards balance on. Refresh from the JUnit reports of a full `make test-cov-xml` (junit.xml),
+# `make e2e` and `make test-features`; a missing report leaves its suite as it was.
+.PHONY: shard-durations
+shard-durations:  ## Record each unit, e2e and feature file's time from their JUnit reports
+	python3 scripts/shard_tests.py record unit $(wildcard junit.xml)
+	python3 scripts/shard_tests.py record e2e $(wildcard tests/e2e-junit.xml)
+	python3 scripts/shard_tests.py record features $(wildcard tests/features-junit.xml)
 
 # Every CLI command and flag, offered memory type and automation detector has a row in
 # tests/features/inventory.yaml; every row has feature tests or a lane_only/gap status; gaps only fall.
@@ -564,12 +577,16 @@ playwright-install:  ## Install Playwright browsers for E2E tests
 
 # E2E_ARGS narrows a run, e.g. E2E_ARGS="-k test_web_features". The files run on E2E_WORKERS
 # xdist workers, a whole file per worker; each worker starts its own fake Immich and servers.
+# E2E_SHARD=i/N runs the i-th of N slices of the files (scripts/shard_tests.py), as CI's
+# launch-check jobs do; unset runs them all.
 E2E_WORKERS ?= $(TEST_WORKERS)
+E2E_SHARD ?=
 e2e: web-client-present  ## Run required fake-service contracts and real hermetic browser render
-	uv run pytest tests/e2e/test_fake_immich.py tests/e2e/test_launch_smoke.py \
+	files=$$(python3 scripts/shard_tests.py pick e2e "$(E2E_SHARD)" tests/e2e/test_fake_immich.py tests/e2e/test_launch_smoke.py \
 		tests/e2e/test_memory_page.py tests/e2e/test_picture_decisions.py tests/e2e/test_sharing_levels.py \
 		tests/e2e/test_web_client.py tests/e2e/test_job_errors.py tests/e2e/test_keep_intermediates.py \
-		tests/e2e/test_people_page.py tests/e2e/test_people_owner_and_links.py tests/e2e/test_people_accounts_and_groups.py tests/e2e/test_phone_width.py tests/e2e/test_automation_pages.py tests/e2e/test_ui_languages.py tests/e2e/test_web_features.py -v \
+		tests/e2e/test_people_page.py tests/e2e/test_people_owner_and_links.py tests/e2e/test_people_accounts_and_groups.py tests/e2e/test_phone_width.py tests/e2e/test_automation_pages.py tests/e2e/test_ui_languages.py tests/e2e/test_web_features.py) && \
+	uv run pytest $$files -v \
 		-m "e2e and not visual" --log-cli-level=INFO --tb=short -n $(E2E_WORKERS) --dist loadfile \
 		--junitxml=tests/e2e-junit.xml $(E2E_ARGS)
 
@@ -591,8 +608,23 @@ test-cov:
 	uv run pytest $(PYTEST_WORKERS) $(COVERAGE_FLAGS) --cov-report=html --cov-report=term-missing
 	@echo "Coverage report: htmlcov/index.html"
 
+# TEST_SHARD=i/N runs the i-th of N slices of the test files (scripts/shard_tests.py), as CI's
+# unit jobs do. A slice covers only part of the code, so it leaves the coverage floor to
+# `make coverage-combine`, which checks it on every slice's data together.
+TEST_SHARD ?=
 test-cov-xml:  ## Run tests with XML coverage + JUnit results (for CI upload)
-	uv run pytest $(PYTEST_WORKERS) $(COVERAGE_FLAGS) --cov-report=xml --junitxml=junit.xml -o junit_family=legacy -v
+	files=$$(python3 scripts/shard_tests.py pick unit "$(TEST_SHARD)" $$(find tests -type f -name 'test_*.py')) && \
+	uv run pytest $$files $(PYTEST_WORKERS) $(COVERAGE_FLAGS) --cov-report=xml --junitxml=junit.xml -o junit_family=legacy -v \
+		$(if $(TEST_SHARD),--cov-fail-under=0)
+
+# The unit shards' coverage data (.coverage.* files in COVERAGE_DATA) as one: the floor
+# (fail_under) checked on the whole suite, and coverage.xml for diff-cover and Codecov.
+COVERAGE_DATA ?= coverage-data
+.PHONY: coverage-combine
+coverage-combine:  ## Combine the unit shards' coverage data, check the floor, write coverage.xml
+	uv run coverage combine --keep $(COVERAGE_DATA)
+	uv run coverage xml -o coverage.xml
+	uv run coverage report --format=total
 
 test-fast:
 	uv run pytest $(PYTEST_WORKERS) -v -m "not slow and not integration and not e2e and not container"
@@ -883,17 +915,11 @@ test-scoped:  ## Run only the unit tests the branch's changes can affect (HOOK_S
 test-integration-render-worker:
 	$(MAKE) -C services/render-worker coverage
 
-integration-coverage-for-diff:  ## Run only the local integration suites the diff touches (used by CI before diff-cover)
-	@CHANGED=$$(git diff --name-only origin/main...HEAD -- ':(glob)src/immich_memories/**/*.py' ':(glob)services/render-worker/**/*.py' 2>/dev/null); \
-	SUITES=""; \
-	case "$$CHANGED" in *src/immich_memories/titles/*) SUITES="$$SUITES titles";; esac; \
-	case "$$CHANGED" in *src/immich_memories/processing/*) SUITES="$$SUITES processing assembly";; esac; \
-	case "$$CHANGED" in *src/immich_memories/photos/*) SUITES="$$SUITES photos";; esac; \
-	case "$$CHANGED" in *src/immich_memories/audio/*) SUITES="$$SUITES audio-mixing";; esac; \
-	case "$$CHANGED" in *src/immich_memories/generate*) SUITES="$$SUITES assembly";; esac; \
-	case "$$CHANGED" in *src/immich_memories/processing/remote_render*|*services/render-worker/*) SUITES="$$SUITES render-worker";; esac; \
-	SUITES=$$(echo $$SUITES | tr ' ' '\n' | sort -u | tr '\n' ' '); \
-	if [ -z "$$(echo $$SUITES | tr -d ' ')" ]; then \
+# Beside this Makefile, so the target also runs with `make -f` from another checkout.
+CI_SCOPE_SCRIPT := $(dir $(lastword $(MAKEFILE_LIST)))scripts/ci_scope.py
+integration-coverage-for-diff:  ## Run only the local integration suites the diff touches (CI runs each as its own job)
+	@SUITES=$$(python3 $(CI_SCOPE_SCRIPT) --event pull_request --base $(CI_SCOPE_BASE) --integration-suites) || exit 1; \
+	if [ -z "$$SUITES" ]; then \
 		echo "No FFmpeg-reachable source changed -- skipping integration coverage."; \
 	else \
 		echo "Changed source touches: $$SUITES"; \

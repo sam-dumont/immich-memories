@@ -32,13 +32,17 @@ Runs on pull requests, on every push to `main`, and when the release (a nightly 
 
 A pull request runs only the jobs its changes can break: the `changes` job runs `make ci-scope` (`scripts/ci_scope.py`), which answers one output per heavy job, and every other job reads its output in its `if:`. Build and dependency files, workflows and unknown paths run everything. A push to `main` and a release are never scoped: every job runs, in a concurrency group of its own so no merge cancels another's run. The table of what runs when is in `docs-site/docs/contribute/ci.md`. The render worker's suite is a job here too (it used to be `render-worker.yml`).
 
+The long suites run as matrix jobs over one make target each, a shard per leg: the unit suite (`test`, every Python/OS cell in two shards, `make test-cov-xml TEST_SHARD=i/2`, except the macOS cells on `main` and in a release, which run whole; `make ci-scope` answers the matrix as `unit_matrix`), the hermetic launch check (`launch-check`, two e2e shards per store backend, `make launch-check-ci E2E_SHARD=i/2`) and the feature tests (`features`, three shards, `make test-features FEATURE_SHARD=i/3`). `scripts/shard_tests.py` picks each shard's files from `tests/shard_durations.json`. The launch-check and feature jobs set up through `.github/actions/setup-launch-suite`, which restores the built web client from a cache keyed on `web/`; only the e2e one asks it for Chromium.
+
+On a pull request, `integration-coverage` runs one job per FFmpeg integration suite the diff reaches (`integration_suites` from `make ci-scope`). `coverage` waits for every unit shard and those suites: `make coverage-combine` merges the 3.12 Ubuntu shards' coverage data and checks the 65% floor on the whole suite, then diff-cover checks 80% of the changed lines with the integration XMLs merged in.
+
 `CI Success` rolls every job up and is the check branch protection requires; a job the scope skipped counts as passing there, a failed, timed-out or cancelled one does not.
 
 Run the full CI pipeline locally with `make ci`, and `make ci-scope` to see what your branch would run.
 
 ### `immich-gate.yml` - Real-Immich Gate
 
-Runs on pull requests, on every push to `main`, and when the release calls it. The gate on Immich v2, 3.2 and v3 and the feature tests on a real Immich run when the scope's `immich` output says the app, the fakes, the seeding or these suites changed; on `main` and in a release, always. `Immich Gate` is the required rollup: it passes a skipped gate only when the scope said nothing it reads changed.
+Runs on pull requests, on every push to `main`, and when the release calls it. The gate on Immich v2, 3.2 and v3 and the feature tests on a real Immich (two shards per major, `FEATURE_SHARD=i/2`, each seeding its own Immich) run when the scope's `immich` output says the app, the fakes, the seeding or these suites changed; on `main` and in a release, always. `Immich Gate` is the required rollup: it passes a skipped gate only when the scope said nothing it reads changed.
 
 ### `release.yml` - Release
 
