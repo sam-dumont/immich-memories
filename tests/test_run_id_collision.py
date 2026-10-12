@@ -48,3 +48,44 @@ def test_a_run_id_the_caller_chose_is_never_replaced():
 
     with pytest.raises(DuplicateRunError):
         RunTracker(chosen, store=store, capture_system=False).start_run(source="manual")
+
+
+def test_a_saved_render_whose_generated_id_is_taken_starts_under_a_fresh_one(tmp_path, monkeypatch):
+    """`runs render` (the web client's export) records its own run: it must redraw too."""
+    from immich_memories.generate import GenerationError, GenerationParams, generate_memory
+    from tests.conftest import make_clip
+
+    config = Config()
+    config.title_screens.enabled = False
+    store = open_store(config)
+    taken = generate_run_id()
+    running = RunTracker(taken, store=store, capture_system=False)
+    running.start_run(source="auto")
+    folders: list[str] = []
+
+    def stop_at_extraction(*_args, **_kwargs):
+        folders.extend(path.name for path in tmp_path.glob("film_*"))
+        raise RuntimeError("synthetic extraction failure")
+
+    # WHY: media extraction is the FFmpeg/Immich boundary; the run lifecycle stays real.
+    monkeypatch.setattr("immich_memories.generate_render.extract_clips", stop_at_extraction)
+    monkeypatch.setattr("immich_memories.tracking.run_tracker.capture_system_info", lambda: None)
+    # WHY: the 16-bit suffix collides once in 65,536 same-second starts; force the collision.
+    drawn = _ids(taken)
+    monkeypatch.setattr("immich_memories.tracking.run_tracker.generate_run_id", drawn)
+    params = GenerationParams(
+        clips=[make_clip("render", duration=5)],
+        config=config,
+        output_path=tmp_path / "film.mp4",
+        no_music=True,
+    )
+
+    with pytest.raises(GenerationError, match="synthetic extraction failure"):
+        generate_memory(params)
+
+    render = next(run for run in running.db.list_runs(limit=10) if run.run_id != taken)
+    assert render.status == "failed"
+    assert folders == [f"film_{render.run_id}"]
+    still = running.db.get_run(taken)
+    assert still is not None and still.status == "running"
+    running.complete_run()

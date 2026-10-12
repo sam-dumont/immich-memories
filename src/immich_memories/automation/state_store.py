@@ -190,6 +190,14 @@ class AutomationStateStore:
             )
         return _row_to_attempt(row)
 
+    def has_running_attempt(self) -> bool:
+        """Whether any attempt reads `running`: live, or left so by a process that died."""
+        with self.store.connect() as conn:
+            found = conn.execute(
+                sa.select(_ATTEMPTS.id).where(_ATTEMPTS.outcome == AutoOutcome.RUNNING.value)
+            ).first()
+        return found is not None
+
     def interrupt_running_attempts(self) -> list[AutomationAttempt]:
         """End every attempt still `running` as interrupted; the caller holds the lease.
 

@@ -983,7 +983,9 @@ def _prepare_generation(
             raise upload_result
         return upload_result or {"asset_id": "asset-success"}
 
-    monkeypatch.setattr("immich_memories.tracking.generate_run_id", lambda: "delivery-run")
+    monkeypatch.setattr(
+        "immich_memories.tracking.run_tracker.generate_run_id", lambda: "delivery-run"
+    )
     monkeypatch.setattr(
         "immich_memories.cache.video_cache.VideoDownloadCache",
         lambda **_kwargs: MagicMock(),
