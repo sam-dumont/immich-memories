@@ -358,3 +358,31 @@ def test_a_period_read_that_fails_once_is_asked_again(tmp_path):
     account, _records = polish["thin"].read_period({"S1": tuple(captured.assets)})
 
     assert account and account == library_period_account(bank, "2020-05")
+
+
+def test_a_film_of_separate_windows_is_told_from_its_windows_not_the_years_between(tmp_path):
+    """A holiday film of three Augusts was described in autumn and winter scenes: named over
+    its whole span, a year inside it was read back from that whole year's account."""
+    from immich_memories.store.library_catalogue import CatalogueStore, LibraryAccount
+
+    bank = annotation_store()
+    CatalogueStore(bank).remember(
+        [LibraryAccount("year-2020", "year", "2020", "Autumn forests and winter snow.", ("m",))]
+    )
+    captured = whole_month(source(tmp_path, seconds=60, pictures=3), bank)
+    before = DateRange(
+        datetime(2019, 5, 1, tzinfo=UTC).date(), datetime(2019, 5, 2, tzinfo=UTC).date()
+    )
+    after = DateRange(
+        datetime(2021, 5, 1, tzinfo=UTC).date(), datetime(2021, 5, 2, tzinfo=UTC).date()
+    )
+    captured = replace(captured, case=replace(captured.case, ranges=(after, MAY, before)))
+    model_reader(captured.config)
+    reader = Reader()
+
+    polish = backend_for(captured, reader, BankedDemand(bank, IDENTITY))._thin_polish(captured)
+    account, _records = polish["thin"].read_period({"S1": tuple(captured.assets)})
+
+    assert account
+    assert "winter" not in account
+    assert not any("winter" in prompt for prompt in reader.prompts)

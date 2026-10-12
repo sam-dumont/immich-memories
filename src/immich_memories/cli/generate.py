@@ -12,9 +12,10 @@ import click
 from immich_memories.analysis.editorial_shareability_tiers import sharing_refusal
 from immich_memories.analysis.live_photo_pipeline import drop_live_photo_components
 from immich_memories.api.person_scope import window_condition
-from immich_memories.cli._asset_fetch import fetch_media
+from immich_memories.cli._asset_fetch import fetch_media, holiday_pool
 from immich_memories.cli._date_resolution import (
     BIRTHDAY_FLAG_FORMAT,
+    holiday_params_for,
     infer_memory_type,
     resolve_date_range,
 )
@@ -388,6 +389,7 @@ def register_generate_commands(main: click.Group) -> None:
             month=month,
         )
 
+        holiday_params = holiday_params_for(memory_type, holiday, config)
         date_range, date_ranges = _resolve_generation_scope(
             from_album=from_album,
             year=year,
@@ -402,7 +404,7 @@ def register_generate_commands(main: click.Group) -> None:
             years_back=years_back,
             on_this_day_target=exact_on_this_day,
             holiday=holiday,
-            preset_params=special_day or _holiday_country(memory_type, config),
+            preset_params=special_day or holiday_params,
             people_window=derived_window,
         )
         window_record = announce_people_window(derived_window, date_range)
@@ -717,6 +719,9 @@ def register_generate_commands(main: click.Group) -> None:
                     # A Live Photo's video half is part of a photograph, not
                     # footage: it must not compete as a video against its own still.
                     assets = drop_live_photo_components(assets, fetched_photos)
+                    assets, fetched_photos = holiday_pool(
+                        memory_type, assets, fetched_photos, date_ranges
+                    )
 
                     if not assets and not fetched_photos:
                         stop_for_empty_period(date_range)
@@ -767,6 +772,7 @@ def register_generate_commands(main: click.Group) -> None:
                         person_names=person_names,
                         memory_preset_params={
                             **(special_day or {}),
+                            **holiday_params,
                             "hemisphere": hemisphere,
                             "birthday": bool(birthday),
                             "person_names": person_names,
@@ -824,12 +830,3 @@ def register_generate_commands(main: click.Group) -> None:
             sys.exit(1)
         finally:
             quiet_scope.close()
-
-
-def _holiday_country(memory_type: str | None, config) -> dict:
-    """A holiday memory's dates are the home country's; no other type needs to ask Immich."""
-    if memory_type != "holiday":
-        return {}
-    from immich_memories.home_country import home_country
-
-    return {"country": home_country(config)}

@@ -943,7 +943,7 @@ features:
       - tests/features/test_automation_detectors.py::test_a_season_outside_3_to_30_days_is_not_proposed
       - tests/features/test_automation_detectors.py::test_without_a_home_base_there_is_no_season_film
   - id: detector.holiday
-    promise: "The holiday detector proposes a holiday of the home country or extra_holidays, from 3 days after it, across the five years around it."
+    promise: "The holiday detector proposes a celebrated, home-country or extra_holidays holiday, from 3 days after it, when the day stands out in 3 years, across every year."
     doc: reference/automation-contract.md#how-it-picks-one-memory
     covers: ["detector:HolidayDetector"]
     tests:

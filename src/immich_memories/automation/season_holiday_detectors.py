@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import re
 from collections.abc import Collection, Mapping
 from dataclasses import dataclass
 from datetime import date, timedelta
+from statistics import median
 
 from immich_memories.automation.candidates import (
     CandidateCategory,
@@ -13,7 +15,13 @@ from immich_memories.automation.candidates import (
     make_manual_memory_key,
 )
 from immich_memories.automation.material import Window
-from immich_memories.memory_types.date_builders import build_season, holidays_of, resolve_holiday
+from immich_memories.memory_types.date_builders import (
+    HOLIDAY_REACH_YEARS,
+    build_season,
+    holiday_name,
+    holidays_of,
+    resolve_holiday,
+)
 from immich_memories.timeperiod import same_day_in_year
 
 # A film about a stretch of time waits for the pictures to sync, and stops being news.
@@ -112,12 +120,23 @@ class SeasonDetector:
 
 @dataclass(frozen=True)
 class HolidayDue:
-    """One occurrence of a holiday, with the five yearly windows its film would read."""
+    """One occurrence of a holiday, with the holiday's day in every year its film would read."""
 
     argument: str
     name: str
     year: int
-    windows: tuple[Window, ...]
+    # The holiday in each year, most recent first: this year's occurrence, then every
+    # earlier one back to `HOLIDAY_REACH_YEARS`, as `generate --holiday` reads them.
+    days: tuple[date, ...]
+    window_days: int = 2
+
+    def window_of(self, day: date) -> Window:
+        span = timedelta(days=self.window_days)
+        return (day - span, day + span)
+
+    @property
+    def windows(self) -> tuple[Window, ...]:
+        return tuple(self.window_of(day) for day in self.days)
 
     @property
     def start(self) -> date:
@@ -128,14 +147,45 @@ class HolidayDue:
         return self.windows[0][1]
 
 
+# The holidays a household is taken to keep before it says anything: the ones nearly every
+# library photographs. The home country's calendar and `extra_holidays` come on top. Being on
+# a list never makes a film on its own: the pictures must show the day was kept.
+CELEBRATED_HOLIDAYS = ("christmas", "new_year", "easter")
+
+
+def marked_year(day: date, counted: Mapping[date, int], window_days: int = 2) -> bool:
+    """Whether one year's pictures show the holiday was kept: the day stands out.
+
+    The day needs `HolidayDetector.MIN_DAY_PICTURES` pictures, and at least
+    `HolidayDetector.STANDS_OUT` times the median of the days around it (two either side).
+    The median, not the mean: one busy neighbour (an outing the day before) must not hide a
+    day that stands out against the rest of its week.
+    """
+    on_the_day = counted.get(day, 0)
+    if on_the_day < HolidayDetector.MIN_DAY_PICTURES:
+        return False
+    around = [
+        counted.get(day + timedelta(days=offset), 0)
+        for offset in range(-window_days, window_days + 1)
+        if offset
+    ]
+    return on_the_day >= HolidayDetector.STANDS_OUT * median(around)
+
+
 class HolidayDetector:
-    """Proposes a holiday film across the years that have pictures around it."""
+    """Proposes a holiday the household keeps, across every year the library holds.
+
+    A holiday qualifies when the pictures show it was kept: in at least `MIN_MARKED_YEARS`
+    years the day itself holds `MIN_DAY_PICTURES` pictures and `STANDS_OUT` times the median
+    of the four days around it. The date alone never qualifies.
+    """
 
     BASE_SCORE = 0.6
-    YEARS_BACK = 5
+    REACH_YEARS = HOLIDAY_REACH_YEARS
     WINDOW_DAYS = 2
-    MIN_YEARS = 2
-    MIN_PICTURES = 20
+    MIN_DAY_PICTURES = 10
+    STANDS_OUT = 2
+    MIN_MARKED_YEARS = 3
     _WAIT_DAYS = _WAIT_DAYS
     _LAST_DAYS = 365
 
@@ -148,28 +198,28 @@ class HolidayDetector:
     ) -> list[HolidayDue]:
         """Every holiday of the last year whose film is open and not yet made."""
         due: list[HolidayDue] = []
+        filmed = _filmed_holiday_ends(generated_keys)
         for centre, argument, name in _occurrences(today, country, extra_holidays):
             try:
-                windows = self._windows(argument, centre.year, country)
+                days = self._days(argument, centre.year, country)
             except ValueError:
                 # `generate --holiday` would refuse this one too: some year it is not kept.
                 continue
-            if windows[0][0] + timedelta(days=self.WINDOW_DAYS) != centre:
+            if days[0] != centre:
                 # The name does not resolve back to this day (two holidays on one date).
                 continue
-            found = HolidayDue(argument, name, centre.year, windows)
-            key = make_manual_memory_key("holiday", found.start, found.end)
-            if key not in generated_keys:
+            found = HolidayDue(argument, name, centre.year, days, self.WINDOW_DAYS)
+            # Once per holiday-year, however many years the film was made over: a film made
+            # by hand with --years-back, or before every year was read, still counts.
+            if found.end not in filmed:
                 due.append(found)
         return due
 
-    def _windows(self, argument: str, year: int, country: str | None) -> tuple[Window, ...]:
-        windows = []
-        for back in range(self.YEARS_BACK):
-            centre = resolve_holiday(argument, year - back, country=country or "US")
-            span = timedelta(days=self.WINDOW_DAYS)
-            windows.append((centre - span, centre + span))
-        return tuple(windows)
+    def _days(self, argument: str, year: int, country: str | None) -> tuple[date, ...]:
+        return tuple(
+            resolve_holiday(argument, year - back, country=country or "US")
+            for back in range(self.REACH_YEARS)
+        )
 
     def detect(
         self,
@@ -177,17 +227,19 @@ class HolidayDetector:
         country: str | None,
         extra_holidays: Collection[str],
         generated_keys: Collection[str],
-        pictures: Mapping[Window, int],
+        days: Mapping[Window, Mapping[date, int]],
     ) -> Detection:
-        """``pictures`` holds the count for every window `due` names."""
+        """``days`` holds the pictures per day of every window `due` names that was read."""
         candidates = []
         due_holidays = self.due(today, country, extra_holidays, generated_keys)
         for due in due_holidays:
-            counts = [pictures.get(window, 0) for window in due.windows]
-            total, years = sum(counts), sum(1 for n in counts if n > 0)
-            if years < self.MIN_YEARS or total < self.MIN_PICTURES:
+            counted = [(day, days.get(due.window_of(day), {})) for day in due.days]
+            marked = sorted(day.year for day, per_day in counted if marked_year(day, per_day))
+            if len(marked) < self.MIN_MARKED_YEARS:
                 continue
-            score = self.BASE_SCORE * (0.5 + 0.5 * min(years, self.YEARS_BACK) / self.YEARS_BACK)
+            on_the_day = sum(per_day.get(day, 0) for day, per_day in counted)
+            years = sum(1 for day, per_day in counted if per_day.get(day, 0) > 0)
+            score = self.BASE_SCORE * (0.5 + 0.5 * min(len(marked), 5) / 5)
             candidates.append(
                 MemoryCandidate(
                     memory_type="holiday",
@@ -197,24 +249,49 @@ class HolidayDetector:
                     person_names=[],
                     memory_key=make_manual_memory_key("holiday", due.start, due.end),
                     score=round(score, 3),
-                    reason=f"{due.name}: {total} pictures across {years} years",
-                    asset_count=total,
+                    reason=(
+                        f"{due.name}: the day stands out in {len(marked)} years "
+                        f"({_years_text(marked)}), {on_the_day} pictures on it across {years} years"
+                    ),
+                    asset_count=on_the_day,
                     extra_params={
                         "holiday": due.argument,
                         "year": due.year,
                         "years_with_material": years,
+                        "marked_years": marked,
                     },
                 )
             )
         if candidates:
             return Detection(candidates)
-        if not country and not extra_holidays:
-            reason = "no home country or extra holidays are set"
-        elif not due_holidays:
-            reason = "no unfilmed holiday is due"
-        else:
-            reason = f"no unfilmed holiday has {self.MIN_PICTURES} pictures across {self.MIN_YEARS} years"
+        reason = (
+            "no unfilmed holiday is due"
+            if not due_holidays
+            else (
+                f"no unfilmed holiday stands out in {self.MIN_MARKED_YEARS} years: the day "
+                f"needs {self.MIN_DAY_PICTURES} pictures and {self.STANDS_OUT} times the days "
+                "around it"
+            )
+        )
         return Detection(notes=(f"No holiday film: {reason}",))
+
+
+def _years_text(years: list[int]) -> str:
+    return ", ".join(str(year) for year in years)
+
+
+_HOLIDAY_KEY = re.compile(
+    r"^holiday:\d{4}-\d{2}-\d{2}(?:T00:00:00)?:(\d{4}-\d{2}-\d{2})(?:T23:59:59)?:"
+)
+
+
+def _filmed_holiday_ends(generated_keys: Collection[str]) -> set[date]:
+    """The last day of every holiday film made: the occurrence it was about."""
+    ends = set()
+    for key in generated_keys:
+        if (found := _HOLIDAY_KEY.match(key)) is not None:
+            ends.add(date.fromisoformat(found[1]))
+    return ends
 
 
 def _occurrences(
@@ -223,6 +300,8 @@ def _occurrences(
     """(day, the argument `generate --holiday` takes, the name) for each holiday in the last year."""
     found: dict[date, tuple[str, str]] = {}
     for year in (today.year - 1, today.year):
+        for key in CELEBRATED_HOLIDAYS:
+            found[resolve_holiday(key, year, country=country or "US")] = (key, holiday_name(key))
         if country:
             for day, name in holidays_of(year, country).items():
                 found.setdefault(day, (name, name))

@@ -346,13 +346,13 @@ def test_a_season_names_its_hemisphere_because_generate_does_not_read_it_from_co
     assert (window.start.date(), window.end.date()) == (date(2025, 6, 1), date(2025, 8, 31))
 
 
-def test_a_holiday_reads_the_same_five_years_its_candidate_counted() -> None:
-    argv = _argv_of(CandidateCategory.HOLIDAY, start=date(2022, 6, 19), end=date(2026, 6, 23))
+def test_a_holiday_reads_the_same_years_its_candidate_counted() -> None:
+    argv = _argv_of(CandidateCategory.HOLIDAY, start=date(1997, 6, 19), end=date(2026, 6, 23))
 
     window, windows = memory_scope(parse_generate_argv(argv))
 
-    assert (window.start.date(), window.end.date()) == (date(2022, 6, 19), date(2026, 6, 23))
-    assert len(windows) == 5
+    assert (window.start.date(), window.end.date()) == (date(1997, 6, 19), date(2026, 6, 23))
+    assert len(windows) == 30
 
 
 def test_an_album_is_read_by_id_and_takes_no_accounts() -> None:

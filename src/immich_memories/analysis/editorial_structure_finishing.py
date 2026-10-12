@@ -41,7 +41,7 @@ from immich_memories.analysis.editorial_unvouched_filler import (
     filler_evidence,
     owner_vouches_for,
 )
-from immich_memories.analysis.editorial_video_windows import grow_holds
+from immich_memories.analysis.editorial_video_windows import grow_holds, within_era_shares
 from immich_memories.operations.cut_progress import StageUpdate, announce_stage
 
 
@@ -122,7 +122,8 @@ def resolve_motion_and_timing(
     if ports.resolve_windows is not None:
         run.carriers = ports.resolve_windows(_grown_holds(run.carriers, source))
     if ports.resolve_speech is not None:
-        run.carriers = ports.resolve_speech(run.carriers)
+        chosen = {c["asset_id"]: float(c["seconds"]) for c in run.carriers}
+        run.carriers = _spoken_within_shares(ports.resolve_speech(run.carriers), chosen, source)
     timing = source.render_timing
     if timing is None:
         return
@@ -150,6 +151,19 @@ def resolve_motion_and_timing(
         raise ValueError("Editorial minimum content cannot fit the production title budget")
 
 
+def _spoken_within_shares(
+    carriers: list[dict], chosen: Mapping[str, float], source: StructurePlanningInput
+) -> list[dict]:
+    """A film about the dates keeps each occurrence's spoken clips within its share of time."""
+    if not source.intent.occurrence_is_subject or source.render_timing is None:
+        return carriers
+    era_of = voiced_era_of(source.intent)
+    if era_of is None:
+        return carriers
+    budget = source.render_timing.resolve(carriers, source.assets).content_budget
+    return within_era_shares(carriers, chosen, budget, era_of)
+
+
 def _grown_holds(carriers: list[dict], source: StructurePlanningInput) -> list[dict]:
     """The cut with its videos' holds grown into the content budget the film has left (#2090).
 
@@ -160,7 +174,11 @@ def _grown_holds(carriers: list[dict], source: StructurePlanningInput) -> list[d
         return carriers
     budget = source.render_timing.resolve(carriers, source.assets).content_budget
     spare = budget - sum(c["seconds"] for c in carriers)
-    return grow_holds(carriers, spare) if spare >= MIN_CARRIER_SECONDS else carriers
+    if spare < MIN_CARRIER_SECONDS:
+        return carriers
+    # A film about the dates grows each occurrence's videos within its even share of the time.
+    era_of = voiced_era_of(source.intent) if source.intent.occurrence_is_subject else None
+    return grow_holds(carriers, spare, era_of=era_of)
 
 
 def admit_retained_originals(

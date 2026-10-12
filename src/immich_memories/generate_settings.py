@@ -260,7 +260,11 @@ def build_title_settings(
     from immich_memories.titles.film_title import birthday_title, holiday_title
 
     if occasion := holiday_title(
-        params.memory_preset_params, params.memory_type, params.date_end, resolved_locale
+        params.memory_preset_params,
+        params.memory_type,
+        params.date_end,
+        resolved_locale,
+        _years_shown(params, assembly_clips),
     ):
         settings.title_override, settings.subtitle_override = occasion
         settings.title_source = TitleSource.OCCASION
@@ -287,6 +291,16 @@ def build_title_settings(
             settings.trip_title_text = params.title
 
     return apply_map_tile_policy(settings)
+
+
+def _years_shown(params: GenerationParams, assembly_clips: list[AssemblyClip]) -> set[int]:
+    """The years a holiday film's content shows: its clips' own dates, else its pictures'."""
+    if params.memory_type != "holiday":
+        return set()
+    dated = {
+        int(clip.date[:4]) for clip in assembly_clips if clip.date and not clip.is_title_screen
+    }
+    return dated or {clip.asset.local_taken_at.year for clip in params.clips}
 
 
 def _trip_stops(

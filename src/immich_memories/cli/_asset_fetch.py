@@ -311,3 +311,25 @@ def _first_of_each(assets: list) -> list:
             seen.add(asset.id)
             unique.append(asset)
     return unique
+
+
+def holiday_pool(
+    memory_type: str | None, videos: list, photos: list, date_ranges: list[DateRange]
+) -> tuple[list, list]:
+    """A holiday film's pool: each year's day itself, its days around only when it is thin.
+
+    Every other memory keeps what its windows hold. See `memory_types.holiday_pool`.
+    """
+    if memory_type != "holiday":
+        return videos, photos
+    from immich_memories.analysis.source_filter import asset_of
+    from immich_memories.memory_types.holiday_pool import keep_the_day
+
+    kept_videos, kept_photos = keep_the_day(
+        [videos, photos], date_ranges, taken=lambda source: asset_of(source).local_taken_at
+    )
+    print_info(
+        f"The holiday itself leads: {len(kept_videos) + len(kept_photos)} of "
+        f"{len(videos) + len(photos)} pictures kept"
+    )
+    return kept_videos, kept_photos

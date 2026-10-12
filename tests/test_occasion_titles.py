@@ -27,8 +27,9 @@ def test_holiday_opening_names_the_occasion(tmp_path):
     )
     settings = build_title_settings(params, params.config, [])
     assert settings is not None
+    # No cut yet, so no years: the name stands alone, and no subtitle repeats the span.
     assert settings.title_override == "Christmas"
-    assert settings.subtitle_override == "Through the Years"
+    assert settings.subtitle_override is None
 
     params.title, params.subtitle = "Our Christmases", "2020–2024"
     settings = build_title_settings(params, params.config, [])

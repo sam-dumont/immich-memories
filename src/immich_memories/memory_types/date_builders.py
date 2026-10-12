@@ -173,8 +173,7 @@ def build_on_this_day(
 # failure, a handful of empty single days is what a library looks like.
 BIRTHDAY_HISTORY_FROM = 1
 
-# How many earlier birthdays to look for, matching what On This Day and Holiday
-# ask for. The builder's own thirty-year ceiling is still reachable with
+# How many earlier birthdays to look for. The builder's own thirty-year ceiling is still reachable with
 # --years-back, but as a default it turns every birthday memory into a
 # decades-wide fetch and names the file after a span it barely uses.
 BIRTHDAY_HISTORY_YEARS = 5
@@ -463,6 +462,58 @@ def _public_holidays(year: int, country: str) -> dict[date, str]:
     return dict(kept.items())
 
 
+def public_holiday_name(
+    holiday: str, year: int, country: str, locale: str, *, spoken_only: bool = False
+) -> str | None:
+    """The calendar's own name for one of ``country``'s public holidays, in ``locale``'s language.
+
+    None when ``holiday`` is not one of the country's public holidays. A calendar that does not
+    speak the language names it in English, or in its own language when it has no English;
+    with ``spoken_only``, it names nothing instead.
+    """
+    import holidays as calendars
+
+    code = country.strip().upper()
+    day = _public_named(_key(holiday), year, code)
+    if day is None:
+        return None
+    try:
+        calendar_of = calendars.country_holidays(code, years=year)
+    except NotImplementedError:
+        return None
+    language = _calendar_language(locale, calendar_of.supported_languages)
+    if spoken_only and (language or "").split("_")[0] != locale.replace("-", "_").split("_")[0]:
+        return None
+    if language is not None:
+        calendar_of = calendars.country_holidays(code, years=year, language=language)
+    names = str(calendar_of.get(day) or "").split("; ")
+    english = _public_holidays(year, code).get(day, "").split("; ")
+    # Two holidays on one date: the name in the same place as the one asked for.
+    index = next(
+        (
+            i
+            for i, name in enumerate(english)
+            if _key(holiday) in (_key(name), _key(name).removesuffix("_day"))
+        ),
+        0,
+    )
+    return names[index] if index < len(names) and names[index] else None
+
+
+def _calendar_language(locale: str, supported: tuple[str, ...]) -> str | None:
+    """The calendar language closest to a film locale: exact, then the same language, then English."""
+    wanted = locale.replace("-", "_")
+    for choice in (
+        wanted,
+        *(code for code in supported if code.split("_")[0] == wanted.split("_")[0]),
+        "en_US",
+        "en_GB",
+    ):
+        if choice in supported:
+            return choice
+    return None
+
+
 def _key(name: str) -> str:
     return re.sub(r"[^a-z0-9]+", "_", name.strip().lower()).strip("_")
 
@@ -483,6 +534,12 @@ def _kept_in(key: str, year: int, country: str) -> date:
     return rule(year)
 
 
+def known_holiday_key(holiday: str) -> str:
+    """The key a holiday is known by ("christmas"), however it was written ("Christmas")."""
+    key = holiday.strip().lower().replace("-", "_").replace(" ", "_")
+    return next((known for known, name in _NAMES.items() if _key(name) == _key(holiday)), key)
+
+
 def resolve_holiday(holiday: str, year: int, *, country: str = "US") -> date:
     """The date a holiday falls on in a given year, as ``country`` keeps it.
 
@@ -491,9 +548,8 @@ def resolve_holiday(holiday: str, year: int, *, country: str = "US") -> date:
     computed, so they stay correct in years nobody has thought about yet. Mother's Day and
     Father's Day move by country; a holiday the country does not keep raises ``ValueError``.
     """
-    key = holiday.strip().lower().replace("-", "_").replace(" ", "_")
     # A known holiday named the way `holidays_of` writes it ("Valentine's Day") is that holiday.
-    key = next((known for known, name in _NAMES.items() if _key(name) == _key(holiday)), key)
+    key = known_holiday_key(holiday)
     if key in _FIXED_HOLIDAYS:
         month, day = _FIXED_HOLIDAYS[key]
         return date(year, month, day)
@@ -518,10 +574,15 @@ def resolve_holiday(holiday: str, year: int, *, country: str = "US") -> date:
         ) from exc
 
 
+# How far back a holiday film reads when nobody says: every year a library can hold, the same
+# reach On This Day has. A year with no picture costs one empty read and adds nothing to the film.
+HOLIDAY_REACH_YEARS = 30
+
+
 def build_holiday(
     holiday: str,
     year: int,
-    years_back: int = 5,
+    years_back: int | None = None,
     window_days: int = 2,
     today: date | None = None,
     country: str = "US",
@@ -529,8 +590,8 @@ def build_holiday(
     """One window per year around a holiday, most recent first, as ``country`` keeps it.
 
     A holiday is the date a library is most likely to have every single year, so
-    it is worth spanning years the way On This Day does rather than covering one
-    occasion.
+    it spans every year the library can hold (``HOLIDAY_REACH_YEARS``) unless
+    ``years_back`` names fewer, the way On This Day does.
 
     ``today`` only affects the starting year, and only when it makes the first
     window impossible: asking for Christmas in August would otherwise include a
@@ -538,14 +599,15 @@ def build_holiday(
     window no photo can fall in. An explicit ``year`` from the caller is a
     choice and is left alone.
     """
-    if years_back <= 0:
+    reach = HOLIDAY_REACH_YEARS if years_back is None else years_back
+    if reach <= 0:
         return []
 
     if today is not None and resolve_holiday(holiday, year, country=country) > today:
         year -= 1
 
     ranges: list[DateRange] = []
-    for offset in range(years_back):
+    for offset in range(reach):
         centre = resolve_holiday(holiday, year - offset, country=country)
         start = centre - timedelta(days=window_days)
         end = centre + timedelta(days=window_days)

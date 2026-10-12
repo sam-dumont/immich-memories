@@ -245,3 +245,58 @@ def test_a_region_longer_than_any_exchange_is_no_sentence_for_the_end_of_a_cut()
     assert safe_end(crowd, 6.0, expand=True) == 6.0
     assert safe_end(crowd, 6.0) == 6.0
     assert safe_end(talk, 6.0, expand=True) == 9.0
+
+
+def test_one_years_long_videos_grow_only_to_that_years_share_of_a_film_about_the_dates():
+    """A holiday film short of time grew one year's two videos to 10 s each, about 30 s of a
+    60 s film, while the other years had stills only. Each year grows within an even share."""
+    from immich_memories.analysis.editorial_video_windows import grow_holds
+
+    still = {"kind": "photo", "seconds": 4.0}
+    video = {"kind": "video", "seconds": 6.0, "raw_seconds": 30.0}
+    carriers = [
+        still | {"taken": "2022-08-15T12:00:00"},
+        still | {"taken": "2023-08-15T12:00:00"},
+        video | {"taken": "2024-08-15T12:00:00"},
+        video | {"taken": "2024-08-15T15:00:00"},
+    ]
+
+    grown = grow_holds(carriers, 16.0, era_of=lambda taken: taken[:4])
+
+    per_year: dict[str, float] = {}
+    for carrier in grown:
+        per_year[carrier["taken"][:4]] = (
+            per_year.get(carrier["taken"][:4], 0.0) + carrier["seconds"]
+        )
+    # 36 s of content over three years: 2024 may hold 12 s of it, not the 28 s it could grow to.
+    assert per_year["2024"] == pytest.approx(12.0)
+    assert grow_holds(carriers, 16.0)[2]["seconds"] == pytest.approx(12.0)
+
+
+def test_a_sentence_finished_on_one_years_video_gives_back_what_passes_that_years_share():
+    """Speech grew a holiday's 6 s video to 11.5 s and the fit dropped another year's shot."""
+    from immich_memories.analysis.editorial_video_windows import within_era_shares
+
+    carriers = [
+        {"asset_id": "a", "kind": "photo", "seconds": 3.5, "taken": "2022-08-15T12:00:00"},
+        {"asset_id": "b", "kind": "photo", "seconds": 3.5, "taken": "2023-08-15T12:00:00"},
+        {"asset_id": "c", "kind": "photo", "seconds": 3.5, "taken": "2024-08-15T12:00:00"},
+        {
+            "asset_id": "v",
+            "kind": "video",
+            "seconds": 11.5,
+            "start_time": 2.0,
+            "end_time": 13.5,
+            "speech_regions": [[7.5, 13.5]],
+            "taken": "2024-08-15T15:00:00",
+        },
+    ]
+
+    fitted = within_era_shares(carriers, {"v": 6.0}, 30.0, lambda taken: taken[:4])
+
+    video = fitted[-1]
+    # 2024 may hold 10 s of 30, so 6.5 s of clip: it ends before the sentence that 6.5 s
+    # would cut, and never shorter than the 6 s the editor chose.
+    assert video["seconds"] == pytest.approx(6.0)
+    assert video["end_time"] == pytest.approx(8.0)
+    assert [c["seconds"] for c in fitted[:3]] == [3.5, 3.5, 3.5]

@@ -223,7 +223,7 @@ class GenerationRequest:
                     str(self.start.year),
                 ]
             case CandidateCategory.HOLIDAY:
-                # No --years-back: the default span is the five years the key was built from.
+                # No --years-back: the default span is every year, the span the key was built from.
                 return [
                     "--holiday",
                     self._required(self.holiday, "holiday"),

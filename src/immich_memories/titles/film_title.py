@@ -16,7 +16,7 @@ import logging
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Collection
 
     from immich_memories.config_loader import Config
     from immich_memories.timeperiod import DateRange
@@ -26,7 +26,7 @@ from immich_memories.titles.title_source import TitleSource, override_source
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["holiday_title", "resolve_film_title", "template_title"]
+__all__ = ["holiday_title", "resolve_film_title", "template_title", "years_written"]
 
 
 def _descriptions(clips: list[Any]) -> list[str]:
@@ -214,8 +214,12 @@ def _model_suggested_title(
 
 
 def _asks_the_model(*, enabled: bool | None, memory_type: str | None, configured: bool) -> bool:
-    """Whether this run should put the question to the reader at all."""
-    if enabled is False:
+    """Whether this run should put the question to the reader at all.
+
+    Never for a holiday: its title is the holiday's own name and the years in the cut, and a
+    model asked for one wrote a season label over years the film did not show.
+    """
+    if enabled is False or memory_type == "holiday":
         return False
     if not configured:
         if enabled:
@@ -304,20 +308,45 @@ def resolve_film_title(
 
 
 def holiday_title(
-    preset_params: dict, memory_type: str | None, end: Any, locale: str
-) -> tuple[str, str] | None:
-    """A holiday film's own occasion title and subtitle, or None when it is not one.
+    preset_params: dict,
+    memory_type: str | None,
+    end: Any,
+    locale: str,
+    years: Collection[int] = (),
+) -> tuple[str, None] | None:
+    """A holiday film's title: the holiday's own name and the years the cut shows, or None.
 
-    No fallback occasion: a holiday that arrives without its parameter keeps the
+    "Assomption · 2015, 2017–2026": the name in the film's language, then every year with
+    footage, a run of years as a range. Never a season label, and never a year with no
+    footage, so the years come from the cut (`years`); before there is a cut, the name stands
+    alone. No fallback occasion: a holiday that arrives without its parameter keeps the
     template's own title rather than claiming to be somebody's Christmas.
     """
     holiday = preset_params.get("holiday")
     if memory_type != "holiday" or not end or not holiday:
         return None
     from immich_memories.memory_types.factory import holiday_label
-    from immich_memories.titles.text_builder import title_pattern
 
-    return holiday_label(holiday, end.year, locale), title_pattern("on_this_day_subtitle", locale)
+    name = holiday_label(
+        holiday,
+        end.year,
+        locale,
+        country=preset_params.get("country") or "US",
+        own_name=preset_params.get("holiday_name"),
+    )
+    return (f"{name} · {years_written(years)}" if years else name), None
+
+
+def years_written(years: Collection[int]) -> str:
+    """Years as a title writes them: runs as ranges, gaps as commas ("2015, 2017–2026")."""
+    ordered = sorted(set(years))
+    runs: list[list[int]] = []
+    for year in ordered:
+        if runs and year == runs[-1][-1] + 1:
+            runs[-1].append(year)
+        else:
+            runs.append([year])
+    return ", ".join(str(run[0]) if len(run) == 1 else f"{run[0]}\u2013{run[-1]}" for run in runs)
 
 
 def birthday_title(
@@ -345,11 +374,13 @@ def template_title(
     date_range: DateRange,
     person_name: str | None,
     preset_params: dict | None = None,
+    years: Collection[int] = (),
 ) -> tuple[str, str | None]:
     """The title and subtitle the render's template layers write when nothing names the film.
 
     The same inputs the title screen reads, so a plan that stops before rendering can say
-    what the film opens on instead of "from the template" (#2153).
+    what the film opens on instead of "from the template" (#2153). ``years`` are the years
+    the cut shows, which a holiday's title names.
     """
     from immich_memories.filename_builder import build_title_person_name
     from immich_memories.generate_privacy import generate_trip_title_text
@@ -357,7 +388,7 @@ def template_title(
 
     params = preset_params or {}
     locale = resolve_film_locale(config.title_screens.locale)
-    if occasion := holiday_title(params, memory_type, date_range.end, locale):
+    if occasion := holiday_title(params, memory_type, date_range.end, locale, years):
         return occasion
     if memory_type == "trip" and (trip := generate_trip_title_text(params, locale)):
         return trip, None
