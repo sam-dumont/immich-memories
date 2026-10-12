@@ -470,19 +470,18 @@ def isolated_store(monkeypatch) -> Iterator[None]:
 
 @pytest.fixture(autouse=True)
 def fresh_ffmpeg_capabilities() -> Iterator[None]:
-    """Forget which filters FFmpeg has, before and after every test.
+    """Forget which filters and version FFmpeg has, before and after every test.
 
-    check_zscale_available caches its answer for the process. A test that stubs
-    `ffmpeg -filters` as having zscale left that answer behind, and a later test
-    rendering with the real FFmpeg then used a filter the runner's build lacked.
+    Each answer is cached for the process. A test that stubs `ffmpeg -filters` as
+    having zscale left that answer behind, and a later test rendering with the real
+    FFmpeg then used a filter the runner's build lacked; a stubbed banner left a
+    version of 0, and a later audio mix used an option FFmpeg 9 removed (#2456).
     """
-    from immich_memories.processing import hdr_utilities
+    from tests.ffmpeg_capabilities import forget_ffmpeg_capabilities
 
-    hdr_utilities._zscale_cache = None
-    hdr_utilities._sdr_pq_fast_gamma_qualified.cache_clear()
+    forget_ffmpeg_capabilities()
     yield
-    hdr_utilities._zscale_cache = None
-    hdr_utilities._sdr_pq_fast_gamma_qualified.cache_clear()
+    forget_ffmpeg_capabilities()
 
 
 @pytest.fixture(autouse=True)
