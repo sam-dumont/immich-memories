@@ -89,3 +89,20 @@ def test_a_store_that_cannot_hold_answers_costs_only_calls() -> None:
 
     assert cache.answer_for("other") is None
     assert cache.completion_failure_for("k") is None
+
+
+def test_an_answer_waiting_for_its_batch_is_known_once_the_batch_lands() -> None:
+    """The bank's first look at the store must not miss what this process has yet to write.
+
+    This is how the thread-pool test above lost a worker's first answer on a loaded runner:
+    the answer was pending while another thread's read loaded the list of stored questions,
+    then a batch wrote it, and the list did not have it until its next refresh.
+    """
+    from immich_memories.cache.judgment_cache import JudgmentCache
+
+    cache = JudgmentCache(annotation_store())
+    cache.remember("first", "a")
+    assert cache.answer_for("other") is None
+    cache.flush()
+
+    assert cache.answer_for("first") == "a"

@@ -15,6 +15,11 @@ answers many questions at once, and a transaction per answer is a round trip per
 on PostgreSQL, so answers are written in batches (`FLUSH_ROWS`, or `FLUSH_SECONDS` after
 the first one waits) and a crash costs at most one batch. The bank also knows which
 questions it holds, so a question it never answered costs no read at all.
+
+A write the store refuses keeps its batch pending for the next flush: a SQLite file busy
+past its timeout clears, and dropping the batch would pay for every answer in it again.
+After `MAX_WRITE_ATTEMPTS` refusals in a row the batch is dropped with a warning, so a
+store that cannot be written costs calls and never memory or the run.
 """
 
 from __future__ import annotations
@@ -24,6 +29,7 @@ import hashlib
 import json
 import logging
 import os
+import sqlite3
 import threading
 import time
 from datetime import timedelta
@@ -53,6 +59,12 @@ FLUSH_ROWS = 64
 FLUSH_SECONDS = 2.0
 # How stale this process's list of banked questions may get before it asks for newer ones.
 KNOWN_REFRESH_SECONDS = 5.0
+# Refused writes in a row before a batch is dropped. A refused batch stays pending and the
+# timer, the next answer past FLUSH_ROWS or an explicit flush tries again, so a store that
+# cannot be written holds at most FLUSH_ROWS + MAX_WRITE_ATTEMPTS answers in memory.
+MAX_WRITE_ATTEMPTS = 3
+# Between the attempts of one explicit flush, outside the lock so asking goes on meanwhile.
+RETRY_PAUSE_SECONDS = 0.5
 
 
 def judgment_key(
@@ -89,6 +101,7 @@ class _Bank:
         self._known: set[str] | None = None
         self._watermark: datetime | None = None
         self._checked = 0.0
+        self._refusals = 0
 
     def answer_for(self, key: str) -> str | None:
         with self._lock:
@@ -104,15 +117,13 @@ class _Bank:
 
     def remember(self, key: str, answer: str) -> None:
         with self._lock:
-            self._pending[key] = {"key": key, "answer": answer, "answered_at": now_db()}
+            self._pending[key] = {"key": key, "answer": answer}
             if self._known is not None:
                 self._known.add(key)
             if len(self._pending) >= FLUSH_ROWS:
-                self.flush()
-            elif self._timer is None:
-                self._timer = threading.Timer(FLUSH_SECONDS, self.flush)
-                self._timer.daemon = True
-                self._timer.start()
+                self._write_pending()
+            else:
+                self._schedule()
 
     def forget(self, key: str) -> None:
         with self._lock:
@@ -123,18 +134,55 @@ class _Bank:
             connection.execute(sa.delete(judgments).where(judgments.c.key == key))
 
     def flush(self) -> None:
+        """Write every pending answer, retrying a refused write until it lands or is dropped."""
+        while not self._write_pending():
+            time.sleep(RETRY_PAUSE_SECONDS)
+
+    def _schedule(self) -> None:
+        if self._timer is None:
+            self._timer = threading.Timer(FLUSH_SECONDS, self._write_pending)
+            self._timer.daemon = True
+            self._timer.start()
+
+    def _write_pending(self) -> bool:
+        """One attempt at the pending batch; False while a refused batch waits for another."""
         # Readers and later writes must not pass the pending-to-committed handoff.
         with self._lock:
-            rows, self._pending = list(self._pending.values()), {}
+            rows, self._pending = self._pending, {}
             if self._timer is not None:
                 self._timer.cancel()
                 self._timer = None
             if not rows:
-                return
+                return True
+            # Stamped as written, not as answered: other processes read only rows newer than
+            # their watermark, and a batch that waited for its timer or a retry is older.
+            stamp = now_db()
+            batch = [row | {"answered_at": stamp} for row in rows.values()]
             try:
-                bank_rows(self._store, judgments, rows, keys=("key",))
+                bank_rows(self._store, judgments, batch, keys=("key",))
             except SQLAlchemyError as exc:
-                logger.debug("Judgment cache unwritable (%s): %d answers not kept", exc, len(rows))
+                return self._refused(rows, exc)
+            self._refusals = 0
+            return True
+
+    def _refused(self, rows: dict[str, dict[str, object]], exc: SQLAlchemyError) -> bool:
+        self._refusals += 1
+        if self._refusals < MAX_WRITE_ATTEMPTS:
+            # An answer remembered since the batch was taken is newer and wins.
+            self._pending = rows | self._pending
+            self._schedule()
+            return False
+        logger.warning(
+            "Judgment cache could not write %d answers after %d attempts (%s): "
+            "they will be asked again",
+            len(rows),
+            self._refusals,
+            _reason(exc),
+        )
+        self._refusals = 0
+        if self._known is not None:
+            self._known.difference_update(rows.keys() - self._pending.keys())
+        return True
 
     def _known_keys(self) -> set[str]:
         """The questions the store holds, read once and then only what is newer."""
@@ -148,11 +196,22 @@ class _Bank:
             rows: list[Any] = list(connection.execute(query))
         known = set() if self._known is None else self._known
         known.update(str(row[0]) for row in rows)
+        # Answers still waiting for their batch are not in the store yet, and `remember` only
+        # adds to a list that already exists.
+        known.update(self._pending)
         stamps = [row[1] for row in rows if row[1] is not None]
         if stamps:
             self._watermark = max([*stamps, *([self._watermark] if self._watermark else [])])
         self._known, self._checked = known, time.monotonic()
         return known
+
+
+def _reason(exc: SQLAlchemyError) -> str:
+    """The driver's complaint without the statement, its parameters or the store's address."""
+    orig = getattr(exc, "orig", None)
+    if isinstance(orig, sqlite3.Error):
+        return f"{type(orig).__name__}: {orig}"
+    return type(orig or exc).__name__
 
 
 _banks: dict[tuple[str, str | None], _Bank] = {}

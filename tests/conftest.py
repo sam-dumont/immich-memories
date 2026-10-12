@@ -460,6 +460,11 @@ def isolated_store(monkeypatch) -> Iterator[None]:
     # a worker, a trigger still running after its test held it, and each later test was refused.
     monkeypatch.setenv("IMMICH_MEMORIES_CACHE__DATABASE", str(home / "cache.db"))
     yield
+    # Answers still waiting for their batch go to this test's store while it exists; left for
+    # the interpreter's exit, each bank retries a deleted file and warns.
+    from immich_memories.cache.judgment_cache import flush_judgments
+
+    flush_judgments()
     close_stores()
 
 
