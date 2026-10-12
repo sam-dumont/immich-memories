@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from unittest.mock import MagicMock
+from unittest.mock import ANY, MagicMock
 
 import pytest
 
@@ -533,6 +533,7 @@ def test_no_render_directive_preserves_legacy_video_extraction(
         start_time=1.25,
         end_time=3.75,
         config=params.config,
+        scratch_dir=ANY,
     )
     assert len(result) == 1
     assert result[0].asset_id == clip.asset.id

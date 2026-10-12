@@ -3,13 +3,19 @@
 from __future__ import annotations
 
 import inspect
+import shutil
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, TypeVar, cast
 
 from immich_memories.filename_builder import normalize_output_path
-from immich_memories.generate_clips import cleanup_temp_clips, extract_clips, keep_temp_clips
+from immich_memories.generate_clips import (
+    cleanup_temp_clips,
+    extract_clips,
+    keep_temp_clips,
+    new_run_scratch,
+)
 from immich_memories.generate_privacy import (
     anonymize_clips_for_privacy,
     anonymize_name,
@@ -146,10 +152,11 @@ def _extract_clips_with_optional_prefetch(
     *,
     probe_cache: ProbeCache,
     prepared_sources: PreparedSourceBank | None = None,
+    scratch_dir: Path | None = None,
 ) -> list:
     """Keep the legacy extraction call shape when prefetch is unavailable."""
     coordinator = _build_download_coordinator(params, cache_batch, output_dir)
-    reuse = {"prepared_sources": prepared_sources}
+    reuse = {"prepared_sources": prepared_sources, "scratch_dir": scratch_dir}
     if coordinator is None:
         return _call_with_optional_probe_cache(
             extract_clips,
@@ -236,7 +243,11 @@ def _with_clip_preparation_events(
 
 
 def _extracted_sources(
-    params: GenerationParams, run_output_dir: Path, *, probe_cache: ProbeCache
+    params: GenerationParams,
+    run_output_dir: Path,
+    *,
+    probe_cache: ProbeCache,
+    scratch_dir: Path | None = None,
 ) -> list:
     """Own the persistent video-cache lifecycle across exactly one extraction."""
     from immich_memories.cache.video_cache import VideoDownloadCache
@@ -245,7 +256,7 @@ def _extracted_sources(
         # Disabled cache means no interaction with the configured persistent
         # video cache. Extraction uses disposable run-local downloads.
         return _extract_clips_with_optional_prefetch(
-            params, None, run_output_dir, probe_cache=probe_cache
+            params, None, run_output_dir, probe_cache=probe_cache, scratch_dir=scratch_dir
         )
     video_cache = VideoDownloadCache(
         cache_dir=params.config.cache.video_cache_path,
@@ -263,6 +274,7 @@ def _extracted_sources(
                 run_output_dir,
                 probe_cache=probe_cache,
                 prepared_sources=bank,
+                scratch_dir=scratch_dir,
             )
     finally:
         _close_prepared_source_bank(bank, len(params.clips))
@@ -325,6 +337,7 @@ def render_local(
     from immich_memories.generate import GenerationError, PreparedGeneration
 
     probe_cache = ProbeCache()
+    run_scratch = new_run_scratch()
     assembly_clips: list = []
     try:
         with span("render.clip_extraction", items=len(params.clips)) as extraction:
@@ -343,6 +356,7 @@ def render_local(
                 _with_clip_preparation_events(params, operational),
                 run_output_dir,
                 probe_cache=probe_cache,
+                scratch_dir=run_scratch,
             )
             run_tracker.complete_phase(items_processed=len(assembly_clips))
             _emit_download_phase(
@@ -360,6 +374,7 @@ def render_local(
         # Pre-assembly validation: skip clips with missing/empty files
         assembly_clips, skipped = validate_clips(assembly_clips)
         validate_certified_content(params, assembly_clips)
+        _refuse_vanished_clips(skipped)
 
         if not assembly_clips:
             raise GenerationError("No clips could be processed")
@@ -449,11 +464,27 @@ def render_local(
             encode_seconds=encode_seconds,
         )
     finally:
-        _release_cut_segments(params, assembly_clips, run_output_dir)
+        _release_cut_segments(params, assembly_clips, run_output_dir, run_scratch)
+
+
+def _refuse_vanished_clips(skipped: list) -> None:
+    """A prepared shot whose file is gone stops the film instead of shortening it.
+
+    Preparation already let every source it could not render leave the film by name.
+    A file that existed when it was prepared and is missing or empty now was removed
+    by something else, and the film would come out short without saying why (#2452).
+    """
+    from immich_memories.generate import GenerationError
+
+    if skipped:
+        named = ", ".join(clip.asset_id or clip.path.name for clip in skipped)
+        raise GenerationError(
+            f"A prepared clip disappeared before assembly ({named}); render the film again"
+        )
 
 
 def _release_cut_segments(
-    params: GenerationParams, assembly_clips: list, run_output_dir: Path
+    params: GenerationParams, assembly_clips: list, run_output_dir: Path, run_scratch: Path
 ) -> None:
     """Delete the cut segments, or keep them beside the film for --keep-intermediates.
 
@@ -467,3 +498,5 @@ def _release_cut_segments(
             cleanup_temp_clips(assembly_clips)
     except OSError:
         logger.debug("Temp clip cleanup failed", exc_info=True)
+    # Whatever else the run cut and never used goes with it; no other run reads here.
+    shutil.rmtree(run_scratch, ignore_errors=True)

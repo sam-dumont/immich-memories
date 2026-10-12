@@ -260,7 +260,10 @@ segments in `.intermediates`, the title cards in `.title_screens`, prepared phot
 
 A rerun of the same selection reuses the segments and photo clips an earlier run prepared, from
 `<cache.directory>/prepared-sources`. Each reused file lands where the run's own preparation would
-have put it, so `--keep-intermediates` keeps it the same way. See
+have put it, so `--keep-intermediates` keeps it the same way. Each run cuts its segments into a
+scratch folder of its own, so two films rendering the same pictures at once never share a file. If a
+prepared clip still goes missing before assembly, the run stops and names it instead of making a
+shorter film; render it again. See
 [video analysis](./config-reference.md#video-analysis) for when a source is prepared again.
 
 Without `--output` the file lands in the same kind of folder in `output.directory` (`~/Videos/Memories/`),

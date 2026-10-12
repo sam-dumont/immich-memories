@@ -99,7 +99,7 @@ class TestGenerateMemoryValidation:
             "_extract_clips_with_optional_prefetch",
             lambda *_args, **_kw: [_make_clip(tmp_path / "missing.mp4", asset_id=clip.asset.id)],
         )
-        with pytest.raises(GenerationError, match="No clips could be processed"):
+        with pytest.raises(GenerationError, match="disappeared before assembly"):
             generate_memory(params, run_tracker=tracker)
         assert not params.output_path.exists()
         assert tracker.db.get_run(tracker.run_id).status == "failed"

@@ -491,10 +491,16 @@ GPU pipeline, and composes 3 services (all take Protocol-typed config/buffers):
 the `OperationalPhase` lifecycle end to end (there is no `GenerationPipeline` class) with
 these helper modules:
 - `generate_downloads.py`: parallel asset downloads
-- `generate_clips.py`: clip extraction, probing, cleanup
-- `generate_prepared_sources.py`: the strict recipe key (source identity, window, tier, output,
-  hardware, canvas, app and recipe version) under which `generate_clips.py` reuses a source an
-  earlier run prepared, before any download (#2032). A preparation that took a fallback
+- `generate_clips.py`: clip extraction, probing, cleanup. Each run cuts into its own scratch
+  directory (`new_run_scratch()`, under `private_temp_dir("clips")`), removed with the run, so
+  concurrent runs never share or delete each other's segments; a prepared clip that vanishes
+  before assembly fails the run by name (`generate_render._refuse_vanished_clips`)
+- `generate_prepared_sources.py`: the key under which `generate_clips.py` reuses a source an
+  earlier run prepared, before any download (#2032). It is built from what preparation reads:
+  the route (`generate_downloads.preparation_route`, which preparation dispatches on), the whole
+  clip and directive, the window and still hold (`generate_clips.segment_window`,
+  `photo_hold_seconds`), the rendition (`photo_pipeline.photo_rendition`), the canvas, every
+  config section but the credential and storage ones, the machine's encoders and the versions. A preparation that took a fallback
   (companion instead of a burst merge, missing components, timestamp trims, software after a
   failed hardware encode, SDR for an unreadable gain map) says so through
   `processing/preparation_fallbacks.py` where it decides, and is never banked

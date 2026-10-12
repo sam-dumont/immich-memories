@@ -6,16 +6,18 @@ import logging
 import subprocess
 from collections.abc import Mapping
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 import httpx
 
 from immich_memories.api.asset_service import large_original_size
 from immich_memories.api.immich import ImmichAPIError
+from immich_memories.api.models import AssetType
 from immich_memories.processing.preparation_fallbacks import note_fallback
 from immich_memories.security import sanitize_error_message
 
 if TYPE_CHECKING:
+    from immich_memories.analysis.editorial_planner import EditorialSelection
     from immich_memories.api.immich import SyncImmichClient
     from immich_memories.api.models import Asset, VideoClipInfo
     from immich_memories.cache.video_cache import CacheBatch
@@ -23,6 +25,33 @@ if TYPE_CHECKING:
     from immich_memories.processing.download_coordinator import DownloadResult
 
 logger = logging.getLogger(__name__)
+
+SourceRoute = Literal["photo", "still", "motion", "segment"]
+
+
+def merges_live_burst(clip: VideoClipInfo) -> bool:
+    """Whether the clip's video is a stitch of its Live components rather than one file."""
+    if clip.editorial_live_manifest is not None:
+        return True
+    if clip.local_path and Path(clip.local_path).exists():
+        return False
+    return bool(clip.live_burst_video_ids and clip.live_burst_trim_points)
+
+
+def preparation_route(clip: VideoClipInfo, directive: EditorialSelection | None) -> SourceRoute:
+    """How one selected source is prepared, decided once.
+
+    "photo" animates the still, "still" animates one frame of the video, "motion"
+    cuts a stitch of the Live components, "segment" cuts one video. Source
+    preparation dispatches on this and the prepared-source key carries it, so a
+    banked preparation is only ever reused for the route that made it (#2452).
+    """
+    still = directive is not None and directive.render_mode == "still"
+    if clip.asset.type == AssetType.IMAGE and (not clip.live_burst_video_ids or still):
+        return "photo"
+    if still:
+        return "still"
+    return "motion" if merges_live_burst(clip) else "segment"
 
 
 def download_clip(
@@ -61,7 +90,7 @@ def download_clip(
     if client is None:
         return None
 
-    if clip.live_burst_video_ids and clip.live_burst_trim_points:
+    if merges_live_burst(clip):
         return _download_and_merge_burst(
             client,
             video_cache,

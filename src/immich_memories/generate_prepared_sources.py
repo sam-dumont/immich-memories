@@ -1,28 +1,36 @@
-"""Reuse a source an earlier run already prepared to the same recipe (#2032).
+"""Reuse a source an earlier run already prepared to the same recipe (#2032, #2452).
 
-The key is strict on purpose. Reusing a clip prepared from other bytes, another
-window or another encoding would put the wrong picture in a film, which is worse
-than preparing it again. So the key carries:
+Reusing a clip prepared from other bytes, another window, another route or another
+encoding puts the wrong picture in a film, which is worse than preparing it again.
+So the key is built from the inputs preparation actually reads, not from a list of
+fields someone judged relevant:
 
-- the source's content identity in Immich: id, checksum, modification and update
-  times, the edited flag, the Live companion, plus the size and mtime of a local
-  file the run reads instead of downloading;
-- everything this run's preparation reads: the clip as the editor timed it, its
-  render directive, its window, the tier, the `output` and `hardware` sections,
-  and what this machine's FFmpeg and encoders can do;
-- for pictures rendered onto the canvas (photos, video stills, Live merges): the
-  canvas, `photos`, the output format, the scale mode, the people the film is about
-  (the move heads for them) and the asset metadata the render bakes in (faces for
-  the pan, the place and date it carries);
-- `RECIPE_VERSION` and the app version, so a code change never reuses an older
-  rendering. Bump `RECIPE_VERSION` when preparation changes between releases.
+- the route, decided by `generate_downloads.preparation_route`, the same function
+  source preparation dispatches on: photo, video still, Live stitch or video cut;
+- the whole clip as selection handed it over, asset included (its checksum and
+  times, the edited flag, the Live companion and burst ids, faces, place, date),
+  and the size and mtime of a local file the run reads instead of downloading;
+- the whole render directive, and the timing preparation resolves from it: the cut
+  window (`generate_clips.segment_window`) and the time a still stays on screen
+  (`generate_clips.photo_hold_seconds`, else `photos.duration`);
+- which of Immich's files a still is rendered from (`photo_pipeline.photo_rendition`);
+- the canvas, the output format and the scale mode this run resolved;
+- the people the film is about, since a still's move heads for them;
+- the configuration, every section but those preparation never reads, which
+  hold credentials, addresses and storage paths (`_UNREAD_SECTIONS`);
+- what this machine's FFmpeg and encoders can do, which picks the encoder and
+  the HDR tone-map route;
+- `RECIPE_VERSION`, the Live render versions and the app version, so a code change
+  never reuses an older rendering. Bump `RECIPE_VERSION` when preparation changes
+  between releases.
+
+Privacy mode is not in it: it blurs and relabels at assembly, after preparation.
 
 A preparation that noted a fallback (`processing/preparation_fallbacks.py`) is
 never banked: the fallback serves this film, and the next run tries again.
 
-A segment's run-level labels (rotation override, mood, music flag, place) are not
-in the key: they are rebuilt from the current run on reuse, by the same code that
-labels a fresh segment.
+A reused segment is labelled (rotation, mood, music flag, place) by the same code
+that labels a fresh one.
 """
 
 from __future__ import annotations
@@ -35,10 +43,10 @@ import uuid
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any
 
 from immich_memories import __version__
-from immich_memories.api.models import AssetType
+from immich_memories.generate_downloads import SourceRoute, preparation_route
 from immich_memories.processing.assembly_config import AssemblyClip
 from immich_memories.processing.preparation_fallbacks import watching_fallbacks
 from immich_memories.security import private_temp_dir
@@ -52,34 +60,31 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-RECIPE_VERSION = "prepared-source-v2"
+RECIPE_VERSION = "prepared-source-v3"
 
-Kind = Literal["photo", "still", "segment", "motion"]
-
-# What makes the bytes in Immich: a change to any of these is another source.
-_CONTENT_FIELDS = frozenset(
-    {
-        "id",
-        "type",
-        "checksum",
-        "original_file_name",
-        "original_mime_type",
-        "file_modified_at",
-        "updated_at",
-        "is_edited",
-        "live_photo_video_id",
-        "duration_seconds",
-        "width",
-        "height",
-    }
-)
-# What a rendered picture bakes in beyond its bytes: the pan follows the faces, and
-# the clip carries the date and place it was taken.
-_PICTURE_FIELDS = frozenset({"exif_info", "people", "faces", "file_created_at", "local_date_time"})
-# The model's reading of a clip labels it; it never reaches the prepared bytes.
-_LABEL_FIELDS = frozenset(
-    {"asset", "llm_description", "llm_category", "llm_emotion", "llm_quality"}
-)
+# Config sections source preparation never reads. They are left out because several
+# carry credentials, addresses or storage paths, not because they were judged
+# harmless field by field; every other section is in the key whole.
+_UNREAD_SECTIONS: dict[str, Any] = {
+    "server": True,
+    "immich": True,
+    "render": True,
+    "cache": True,
+    "database": True,
+    "llm": True,
+    "musicgen": True,
+    "ace_step": True,
+    "auth": True,
+    "notifications": True,
+    "upload": True,
+    "automation": True,
+    "inference": True,
+    "triage": True,
+    "free_text": True,
+    "network": True,
+    # Where the film is written, not what any source looks like.
+    "output": {"directory", "min_free_space_gb"},
+}
 
 
 @dataclass(frozen=True)
@@ -90,20 +95,8 @@ class PreparationRequest:
     clip: VideoClipInfo
     directive: EditorialSelection | None
     output_dir: Path
-
-
-def preparation_kind(clip: VideoClipInfo, directive: EditorialSelection | None) -> Kind:
-    """Which preparation route the source takes, mirroring `generate_clips._rendered_clip`."""
-    still = directive is not None and directive.render_mode == "still"
-    if clip.asset.type == AssetType.IMAGE and (not clip.live_burst_video_ids or still):
-        return "photo"
-    if still:
-        return "still"
-    if clip.editorial_live_manifest is not None or (
-        clip.live_burst_video_ids and clip.live_burst_trim_points
-    ):
-        return "motion"
-    return "segment"
+    # This run's own scratch directory, where its cut segments live until assembly.
+    scratch: Path | None = None
 
 
 def _local_source(local_path: str | None) -> dict[str, Any] | None:
@@ -133,65 +126,56 @@ def _machine(config: Config) -> dict[str, Any]:
     return {"zscale": check_zscale_available(), "encoders": encoders}
 
 
-def _directive(directive: EditorialSelection | None) -> dict[str, Any] | None:
-    if directive is None:
-        return None
+def _timing(request: PreparationRequest) -> dict[str, Any]:
+    """The window and the hold preparation resolves, by the functions it resolves them with."""
+    from immich_memories.generate_clips import photo_hold_seconds, segment_window
+
+    params, clip, directive = request.params, request.clip, request.directive
+    hold = photo_hold_seconds(params, clip, directive)
     return {
-        "start_time": directive.start_time,
-        "end_time": directive.end_time,
-        "render_mode": directive.render_mode,
-        "render_frame_seconds": directive.render_frame_seconds,
+        "window": list(segment_window(params, clip)),
+        "photo_seconds": params.config.photos.duration if hold is None else hold,
     }
 
 
-def _canvas_recipe(params: GenerationParams) -> dict[str, Any]:
+def _rendering(request: PreparationRequest) -> dict[str, Any]:
+    from immich_memories.photos.photo_pipeline import photo_rendition
+    from immich_memories.processing.editorial_live_render import (
+        FRAME_QUANTIZATION,
+        RENDER_VERSION,
+    )
     from immich_memories.processing.output_canvas import resolve_generation_canvas
 
-    config = params.config
+    params = request.params
     return {
+        "rendition": photo_rendition(request.clip.asset),
         "canvas": dataclasses.asdict(resolve_generation_canvas(params)),
-        "photos": config.photos.model_dump(mode="json"),
         "output_format": params.output_format,
-        "scale_mode": params.scale_mode or config.defaults.scale_mode,
+        "output_crf": params.output_crf,
+        "scale_mode": params.scale_mode or params.config.defaults.scale_mode,
+        "live": {"render": RENDER_VERSION, "frames": FRAME_QUANTIZATION},
     }
 
 
 def preparation_identity(request: PreparationRequest) -> dict[str, Any]:
-    """Everything that decides the prepared bytes, as plain JSON values."""
-    params, clip, directive = request.params, request.clip, request.directive
-    config = params.config
-    kind = preparation_kind(clip, directive)
-    identity: dict[str, Any] = {
+    """Everything source preparation reads, as plain JSON values."""
+    from immich_memories.generate_photos import memory_subjects
+
+    clip, directive, config = request.clip, request.directive, request.params.config
+    return {
         "recipe": RECIPE_VERSION,
         "app": __version__,
-        "kind": kind,
-        "source": clip.asset.model_dump(mode="json", include=set(_CONTENT_FIELDS)),
+        "route": preparation_route(clip, directive),
+        "clip": clip.model_dump(mode="json"),
         "local_source": _local_source(clip.local_path),
-        "clip": clip.model_dump(mode="json", exclude=set(_LABEL_FIELDS)),
-        "directive": _directive(directive),
-        "window": params.clip_segments.get(clip.asset.id),
-        "encoding": {
-            "tier": config.tier,
-            "output": config.output.model_dump(mode="json"),
-            "hardware": config.hardware.model_dump(mode="json"),
-            "machine": _machine(config),
-        },
-    }
-    if kind != "segment":
-        from immich_memories.generate_photos import memory_subjects
-
-        identity["picture"] = clip.asset.model_dump(mode="json", include=set(_PICTURE_FIELDS))
-        identity["render"] = _canvas_recipe(params)
+        "directive": None if directive is None else dataclasses.asdict(directive),
+        "timing": _timing(request),
+        "rendering": _rendering(request),
+        "config": config.model_dump(mode="json", exclude=_UNREAD_SECTIONS),
+        "machine": _machine(config),
         # A still's move heads for the people the film is about (#2440).
-        identity["subjects"] = sorted(memory_subjects(params))
-    if kind == "motion":
-        from immich_memories.processing.editorial_live_render import (
-            FRAME_QUANTIZATION,
-            RENDER_VERSION,
-        )
-
-        identity["live"] = {"render": RENDER_VERSION, "frames": FRAME_QUANTIZATION}
-    return identity
+        "subjects": sorted(memory_subjects(request.params)),
+    }
 
 
 def preparation_key(request: PreparationRequest) -> str:
@@ -202,28 +186,28 @@ def preparation_key(request: PreparationRequest) -> str:
     return hashlib.sha256(encoded.encode()).hexdigest()
 
 
-def _scratch() -> Path:
-    return private_temp_dir("clips")
+def _scratch(request: PreparationRequest) -> Path:
+    return request.scratch if request.scratch is not None else private_temp_dir("clips")
 
 
-def _place(path: Path, output_dir: Path) -> dict[str, str] | None:
+def _place(path: Path, request: PreparationRequest) -> dict[str, str] | None:
     """Where the run keeps this file, so a reused copy lands where a fresh one would."""
-    if path.is_relative_to(output_dir):
-        return {"root": "output", "relative": path.relative_to(output_dir).as_posix()}
-    if path.is_relative_to(_scratch()):
+    if path.is_relative_to(request.output_dir):
+        return {"root": "output", "relative": path.relative_to(request.output_dir).as_posix()}
+    if path.is_relative_to(_scratch(request)):
         return {"root": "scratch"}
     return None
 
 
-def _destination(output_dir: Path, facts: Mapping[str, Any]) -> Path:
+def _destination(request: PreparationRequest, facts: Mapping[str, Any]) -> Path:
     place = facts["place"]
+    output_dir = request.output_dir
     if place["root"] == "output":
         target = output_dir / place["relative"]
         if not target.resolve().is_relative_to(output_dir.resolve()):
             raise ValueError("a banked prepared source would escape its run folder")
         return target
-    # A unique name: the shared scratch directory outlives this run and serves others.
-    return _scratch() / f"prepared_{uuid.uuid4().hex[:16]}{facts['suffix']}"
+    return _scratch(request) / f"prepared_{uuid.uuid4().hex[:16]}{facts['suffix']}"
 
 
 # Not stored with a banked picture: the path is the bank's own, and the faces a
@@ -231,10 +215,12 @@ def _destination(output_dir: Path, facts: Mapping[str, Any]) -> Path:
 _UNBANKED_ASSEMBLY_FIELDS = frozenset({"path", "known_faces"})
 
 
-def _facts(kind: Kind, fresh: AssemblyClip, output_dir: Path) -> dict[str, Any] | None:
+def _facts(
+    kind: SourceRoute, fresh: AssemblyClip, request: PreparationRequest
+) -> dict[str, Any] | None:
     if not fresh.path.is_file():
         return None
-    place = _place(fresh.path, output_dir)
+    place = _place(fresh.path, request)
     if place is None:
         return None
     facts: dict[str, Any] = {"kind": kind, "place": place, "suffix": fresh.path.suffix.lower()}
@@ -250,7 +236,7 @@ def _facts(kind: Kind, fresh: AssemblyClip, output_dir: Path) -> dict[str, Any] 
 
 
 def _rebuilt(
-    kind: Kind, taken: BankedSource, dress: Callable[[Path, float], AssemblyClip]
+    kind: SourceRoute, taken: BankedSource, dress: Callable[[Path, float], AssemblyClip]
 ) -> AssemblyClip | None:
     facts = taken.facts
     try:
@@ -278,11 +264,16 @@ def reuse_or_prepare(
     """
     if not request.clip.asset.checksum:
         return prepare()
-    kind = preparation_kind(request.clip, request.directive)
-    key = preparation_key(request)
+    kind = preparation_route(request.clip, request.directive)
+    try:
+        key = preparation_key(request)
+    except (TypeError, ValueError, AttributeError) as exc:
+        # A source whose inputs cannot be written down is prepared, never reused.
+        logger.debug("No prepared-source key for this source: %s", exc)
+        return prepare()
     taken = bank.take(
         key,
-        destination=lambda facts: _destination(request.output_dir, facts),
+        destination=lambda facts: _destination(request, facts),
         accept=lambda facts: facts.get("kind") == kind,
     )
     if taken is not None:
@@ -297,7 +288,7 @@ def reuse_or_prepare(
             "Not keeping %s for later runs: %s", request.clip.asset.id, "; ".join(fallbacks)
         )
     elif fresh is not None:
-        facts = _facts(kind, fresh, request.output_dir)
+        facts = _facts(kind, fresh, request)
         if facts is not None:
             bank.keep(key, fresh.path, facts)
     return fresh
