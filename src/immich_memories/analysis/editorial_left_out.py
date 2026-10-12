@@ -17,6 +17,21 @@ NOT_IN_PLAN = "kept by every pass, not used in the plan"
 _LEVEL_WORDS = {"just_us": "just-us", "family": "family", "shareable": "shareable"}
 
 
+_HELD_AS = {
+    "screen-head": "it reads as a screenshot",
+    "personal-document": "it reads as a personal document",
+}
+
+
+def _held_notes(plan: Mapping[str, Any]) -> dict[str, str]:
+    """A document or a screen is evidence only, never a shot, whatever else the plan said."""
+    held = (plan.get("carrier_source_exclusions") or {}).get("sources") or {}
+    return {
+        str(asset_id): f"held out of every film: {_HELD_AS.get(rule, rule)}"
+        for asset_id, rule in held.items()
+    }
+
+
 def final_cut_notes(plan: Mapping[str, Any], lost_ids: Iterable[str]) -> dict[str, str]:
     """A reason for every picture in `lost_ids`, read from the finished plan."""
     share = plan.get("shareability") or {}
@@ -27,6 +42,7 @@ def final_cut_notes(plan: Mapping[str, Any], lost_ids: Iterable[str]) -> dict[st
         if isinstance(record, Mapping) and not allowed(str(record.get("verdict")), audience):
             why = record.get("why") or record.get("finding") or record.get("verdict")
             reasons[str(asset_id)] = f"the family-viewing check held it from a {level} film: {why}"
+    reasons.update(_held_notes(plan))
     for row in plan.get("cut_carriers") or ():
         if row.get("reason"):
             reasons[str(row["asset_id"])] = str(row["reason"])

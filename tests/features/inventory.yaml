@@ -95,6 +95,7 @@ features:
     tests:
       - tests/integration/features/test_film_render.py::test_duration_budgets_the_whole_film_titles_included
       - tests/integration/features/test_film_render.py::test_a_thin_day_finishes_short_of_its_duration_with_a_bundled_track
+      - tests/integration/features/test_real_editor_films.py::test_a_year_through_the_real_editor_keeps_its_rules_and_its_minute
   - id: generate.length-fits-material
     promise: "Without --duration the length comes from the material the period holds, and the run says what set it."
     doc: reference/film-types.mdx#how-long-a-film-runs
@@ -220,6 +221,7 @@ features:
     covers: ["memory-type:year_in_review"]
     tests:
       - tests/integration/features/test_memory_types.py::test_a_year_in_review_plays_the_year_in_capture_order_and_goes_short_on_a_thin_year
+      - tests/integration/features/test_real_editor_films.py::test_a_year_through_the_real_editor_keeps_its_rules_and_its_minute
   - id: memory-type.season
     promise: "A season film covers one season of one year, about 3 min 15 s; --hemisphere south maps summer onto December to February."
     doc: reference/film-types.mdx#monthly-season-person-multi-person
@@ -232,6 +234,7 @@ features:
     covers: ["memory-type:person_spotlight", "cli:generate --person"]
     tests:
       - tests/integration/features/test_memory_types.py::test_a_person_spotlight_keeps_only_pictures_the_person_is_recognised_on
+      - tests/integration/features/test_real_editor_films.py::test_a_person_film_through_the_real_editor_shows_them_on_every_picture
   - id: memory-type.multi-person
     promise: "A multi-person film defaults to AND: every named person must be recognised on the same picture; --person-match or accepts any of them."
     doc: reference/film-types.mdx#filtering-by-people
@@ -267,6 +270,7 @@ features:
     tests:
       - tests/integration/features/test_memory_types.py::test_trip_lists_what_the_gps_found_and_films_the_one_picked
       - tests/integration/features/test_memory_types.py::test_all_trips_films_every_trip_found
+      - tests/integration/features/test_real_editor_films.py::test_a_trip_through_the_real_editor_films_the_time_away_by_its_rules
   - id: trip.crosses-new-year
     promise: "A trip over New Year stays one trip."
     doc: make/memory-types.mdx#trip
@@ -1107,6 +1111,8 @@ features:
     doc: run/privacy.md#documents-never-ship
     tests:
       - tests/features/test_selection_privacy.py::test_a_photographed_document_is_held_out_of_the_cut_unless_pinned
+      - tests/integration/features/test_real_editor_films.py::test_a_year_through_the_real_editor_keeps_its_rules_and_its_minute
+      - tests/integration/features/test_real_editor_films.py::test_a_trip_through_the_real_editor_films_the_time_away_by_its_rules
   - id: privacy.offline-basic
     promise: "After models fetch, a Basic install can run with outbound traffic blocked, and preflight says what it can prove."
     doc: run/offline.md#fetch-once-then-keep-traffic-local
@@ -1402,6 +1408,13 @@ features:
     tests:
       - tests/test_immich_client_answers.py::test_a_page_that_is_not_json_is_an_immich_error_naming_what_came_back
       - tests/test_immich_client_answers.py::test_an_album_created_by_a_request_that_timed_out_is_not_created_twice
+  - id: selection.real-editor-rules
+    promise: "With no model, the editor plays a favourite for its moment over the near-identical frames beside it, in capture order, and drops no favourite while a shot nothing vouches for plays."
+    doc: how-it-chooses/picking-shots.md#picking-a-shot
+    tests:
+      - tests/integration/features/test_real_editor_films.py::test_a_year_through_the_real_editor_keeps_its_rules_and_its_minute
+      - tests/integration/features/test_real_editor_films.py::test_a_trip_through_the_real_editor_films_the_time_away_by_its_rules
+      - tests/integration/features/test_real_editor_films.py::test_a_person_film_through_the_real_editor_shows_them_on_every_picture
   - id: selection.local-time-dates
     promise: "A picture's day, month and year come from its local capture time, not UTC."
     doc: reference/film-types.mdx#film-types-and-length-rules
