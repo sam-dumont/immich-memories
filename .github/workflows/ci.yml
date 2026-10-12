@@ -5,13 +5,21 @@ on:
   # branch below it, and a main-only filter meant those never ran CI at all —
   # they showed green because nothing had run.
   pull_request:
-  workflow_call:  # Called by the manually dispatched release workflow.
+  # Every merge, unscoped: two PRs that were each green can break main together,
+  # and main is what the release and the nightly build.
+  push:
+    branches: [main]
+  workflow_call:  # Called by the release and the nightly, which run everything.
 
 permissions:
   contents: read
 
+# A pull request's new push cancels its older run. Anything else gets a group of
+# its own run, so every merge to main and every release finishes its full run.
+# Not `github.workflow`: in a called workflow that is the caller's name, which
+# immich-gate.yml, called by the same release, would share.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
   cancel-in-progress: true
 
 env:
@@ -23,9 +31,10 @@ env:
 # Tests and Docker only run after quality gates pass.
 #
 # Each job runs only when the pull request touches what it can break
-# (scripts/ci_scope.py, `make ci-scope`). A job skipped by its `if:` reports as
-# passing; `CI Success` is the check branch protection requires, so the set of
-# jobs can change without a required check going missing.
+# (scripts/ci_scope.py, `make ci-scope`). A push to main and the release run
+# every job. A job skipped by its `if:` reports as passing; `CI Success` is the
+# check branch protection requires, so the set of jobs can change without a
+# required check going missing.
 # =============================================================================
 
 jobs:
@@ -39,6 +48,12 @@ jobs:
       docs_site: ${{ steps.scope.outputs.docs_site }}
       store: ${{ steps.scope.outputs.store }}
       container: ${{ steps.scope.outputs.container }}
+      python: ${{ steps.scope.outputs.python }}
+      unit: ${{ steps.scope.outputs.unit }}
+      package: ${{ steps.scope.outputs.package }}
+      launch: ${{ steps.scope.outputs.launch }}
+      render_worker: ${{ steps.scope.outputs.render_worker }}
+      extras: ${{ steps.scope.outputs.extras }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -241,7 +256,7 @@ jobs:
   # ── Tier 2: Tests (after all quality gates pass) ──────────────────────────
   test:
     name: Test (Python ${{ matrix.python-version }}, ${{ matrix.os }})
-    if: github.repository_id == '1174219883'
+    if: github.repository_id == '1174219883' && needs.changes.outputs.unit == 'true'
     needs: [changes, quality, security]
     # uv follows .python-version (3.12) unless told otherwise, so without this every cell
     # ran 3.12 and 3.11, the Python the app image ships, was never tested.
@@ -253,10 +268,11 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
-      # A docs-only change still runs the suite, since ~20 contract tests read
-      # docs, manifests and workflows, but on one cell: the Python/OS grid exists
-      # to catch code that behaves differently there, and a docs page cannot.
-      # 3.12 on ubuntu is the cell that uploads coverage.
+      # A docs-only change skips this job: the Docs Contract Tests job runs the
+      # tests that read the changed pages. A change with no Python in it (the web
+      # client, the image, a workflow-free config file) runs the suite on one
+      # cell: the Python/OS grid exists to catch code that behaves differently
+      # there, and those files cannot. 3.12 on ubuntu is the cell that uploads coverage.
       #
       # WHY the event-dependent matrix: this repo is public, so hosted runners
       # are free but capped, and macOS is capped at 5 concurrent jobs. Three
@@ -265,7 +281,7 @@ jobs:
       # mid-job ("runner has received a shutdown signal", then Error 137).
       # Ubuntu keeps every Python; macOS keeps one per PR and the full grid on
       # main, where runs are serialised anyway.
-      matrix: ${{ fromJSON(needs.changes.outputs.docs_only == 'true'
+      matrix: ${{ fromJSON(needs.changes.outputs.python != 'true'
         && '{"include":[{"os":"ubuntu-24.04","python-version":"3.12"}]}'
         || github.event_name == 'pull_request'
         && '{"include":[{"os":"ubuntu-24.04","python-version":"3.11"},{"os":"ubuntu-24.04","python-version":"3.12"},{"os":"ubuntu-24.04","python-version":"3.13"},{"os":"macos-latest","python-version":"3.13"}]}'
@@ -374,7 +390,7 @@ jobs:
 
   test-extras:
     name: Test Extras (${{ matrix.os }})
-    if: github.repository_id == '1174219883' && needs.changes.outputs.docs_only != 'true'
+    if: github.repository_id == '1174219883' && needs.changes.outputs.extras == 'true'
     needs: [changes, quality, security]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
@@ -463,7 +479,13 @@ jobs:
   # ── Tier 3: Build + Docker (most expensive, after tests) ─────────────────
   build:
     name: Build Package
-    if: github.repository_id == '1174219883' && needs.changes.outputs.docs_only != 'true'
+    # A README-only change builds the wheel (it carries the README) with no test run:
+    # a test job the scope skipped is fine, one skipped by a failure upstream is not.
+    if: >-
+      github.repository_id == '1174219883' && !cancelled()
+      && needs.changes.outputs.package == 'true'
+      && (needs.test.result == 'success'
+          || (needs.test.result == 'skipped' && needs.changes.outputs.unit != 'true'))
     needs: [changes, test]
     runs-on: ubuntu-24.04
     steps:
@@ -490,7 +512,7 @@ jobs:
     name: Docker (${{ matrix.platform }})
     needs: [changes, test]
     runs-on: ${{ matrix.runner }}
-    if: github.repository_id == '1174219883' && github.event_name == 'pull_request' && needs.changes.outputs.container == 'true'
+    if: github.repository_id == '1174219883' && needs.changes.outputs.container == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -532,7 +554,6 @@ jobs:
     timeout-minutes: 45
     if: >-
       github.repository_id == '1174219883'
-      && github.event_name == 'pull_request'
       && (needs.changes.outputs.container == 'true' || needs.changes.outputs.store == 'true')
     strategy:
       fail-fast: false
@@ -579,6 +600,33 @@ jobs:
       - run: cd docs-site && npm ci
       - run: make docs-check
 
+  # A docs-only pull request skips the test matrix. The tests that read the changed
+  # pages still run: scripts/hook_scope.py picks them, as it does for the pre-commit
+  # hook (by path or file name, plus the tests that walk the repository).
+  docs-tests:
+    name: Docs Contract Tests
+    if: github.repository_id == '1174219883' && needs.changes.outputs.docs_only == 'true'
+    needs: [changes, setup]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0  # the selection reads the diff against the base branch
+      - name: Pull LFS files
+        uses: ./.github/actions/pull-lfs
+      - name: Set up uv and Python
+        uses: ./.github/actions/setup-uv-python
+        with:
+          python-version: "3.12"
+      - name: Install FFmpeg
+        uses: ./.github/actions/install-ffmpeg
+      - run: make dev-test
+      - name: Tests that read the changed pages
+        env:
+          BASE: origin/${{ github.base_ref }}
+        run: make test-scoped HOOK_SCOPE_BASE="$BASE"
+
   # The same launch check with the app's store on each backend; the PostgreSQL
   # leg runs when the store changes. One job, not a smoke/pages split: the page
   # tests reuse what the render leaves in the session, and alone they took as
@@ -588,11 +636,9 @@ jobs:
     needs: [changes, setup]
     runs-on: ubuntu-24.04
     timeout-minutes: 40
-    # Pull requests, and the release (it calls this workflow from a manual dispatch).
-    if: >-
-      github.repository_id == '1174219883'
-      && (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch')
-      && needs.changes.outputs.docs_only != 'true'
+    # Every event the scope allows: a pull request that touches what it runs, a
+    # push to main, the release and the nightly.
+    if: github.repository_id == '1174219883' && needs.changes.outputs.launch == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -665,6 +711,29 @@ jobs:
             /tmp/pytest-of-runner/**/output-probe.json
             /tmp/pytest-of-runner/**/launch-smoke*/output/**
 
+  # The render worker's own lint, types, suite and package. It imports titles and
+  # processing from the app, so the scope runs it for those too.
+  render-worker:
+    name: Render Worker
+    if: github.repository_id == '1174219883' && needs.changes.outputs.render_worker == 'true'
+    needs: [changes]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      PYTHONPATH: services/render-worker
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+      - run: uv python install 3.13
+      - run: make dev-ci
+      - uses: ./.github/actions/install-ffmpeg
+      - run: >-
+          make lint format-check typecheck security-lint
+          SERVICE_TREES=services/render-worker
+          SERVICE_PACKAGES=services/render-worker/immich_memories_render_worker
+      - run: make -C services/render-worker coverage
+      - run: make -C services/render-worker package
+
   # ── Summary gate ──────────────────────────────────────────────────────────
   # The one check branch protection requires. A job the change scope skipped
   # reports "skipped"; one skipped because a job it needs failed is caught by
@@ -672,7 +741,7 @@ jobs:
   # ends cancelled, and a superseded run's verdict no longer counts anyway.
   ci-success:
     name: CI Success
-    needs: [changes, setup, quality, security, test, test-extras, test-store, build, docker, container-e2e, docs, launch-check]
+    needs: [changes, setup, quality, security, test, test-extras, test-store, build, docker, container-e2e, docs, docs-tests, launch-check, render-worker]
     runs-on: ubuntu-24.04
     if: always() && github.repository_id == '1174219883'
     steps:

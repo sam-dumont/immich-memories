@@ -7,8 +7,9 @@ name: Nightly
 #
 # This file only decides whether tonight has anything to build. The build is
 # release.yml with channel `nightly`: the same jobs, in the same order, as a stable
-# or rc release. Where a nightly differs (no CI rerun, no approval, nightly tags, no
-# PyPI, no version tag, the rolling prerelease), it is an `if:` in release.yml.
+# or rc release, CI and the Immich gate in full included. Where a nightly differs (no
+# approval, nightly tags, no PyPI, no version tag, the rolling prerelease), it is an
+# `if:` in release.yml.
 on:
   schedule:
     - cron: '17 3 * * *'

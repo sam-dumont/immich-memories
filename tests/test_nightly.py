@@ -246,32 +246,37 @@ def test_the_release_can_be_called_with_every_dispatch_input_and_the_nightly_one
     assert triggers["workflow_dispatch"]["inputs"]["channel"]["options"] == ["stable", "rc"]
 
 
-def test_a_nightly_skips_only_ci_and_the_package_index():
-    """Every other release job runs for a nightly too: that is the one process."""
+def test_a_nightly_skips_only_the_package_index():
+    """Every other release job runs for a nightly too, CI and the Immich gate included."""
     jobs = release_workflow()["jobs"]
     skipped = {
         name
         for name, job in jobs.items()
         if f"github.repository_id == '1174219883' && {NOT_NIGHTLY} &&" in job.get("if", "")
     }
-    assert skipped == {"ci", "pypi-publish", "pypi-publish-music"}
-    # Main already passed CI; the jobs after it accept its skip only on a nightly.
+    assert skipped == {"pypi-publish", "pypi-publish-music"}
+    # Main and the release run every gate: nothing after CI accepts its skip.
     for name in ("package", "release", "docker-build", "inference-build", "inference-manifest"):
         condition = " ".join(jobs[name]["if"].split())
         assert (
-            "(needs.ci.result == 'success' || "
-            "(inputs.channel == 'nightly' && needs.ci.result == 'skipped'))" in condition
+            "(needs.ci.result == 'success' && needs.immich-gate.result == 'success')" in condition
         ), name
+        assert "needs.ci.result == 'skipped'" not in condition, name
+    for gate in ("ci", "immich-gate"):
+        assert NOT_NIGHTLY not in jobs[gate]["if"], gate
+    assert jobs["ci"]["uses"] == "./.github/workflows/ci.yml"
+    assert jobs["immich-gate"]["uses"] == "./.github/workflows/immich-gate.yml"
     docs = " ".join(jobs["deploy-docs"]["if"].split())
     assert "needs.release.result == 'success'" in docs
     assert "(inputs.channel == 'nightly' && needs.pypi-publish.result == 'skipped')" in docs
 
 
 def test_every_nightly_job_after_ci_states_its_own_status_check():
-    """A nightly skips `ci`, and GitHub's implicit `success()` reads every ancestor.
+    """GitHub's implicit `success()` reads every ancestor, skipped ones included.
 
-    A job after `ci` whose condition names no status function was skipped with it, and so
-    was everything after that: a nightly reported success and published nothing.
+    When a nightly skipped `ci`, a job after it whose condition named no status function
+    was skipped with it, and so was everything after that: a nightly reported success and
+    published nothing. An app-only or inference-only release still skips jobs upstream.
     """
     jobs = release_workflow()["jobs"]
 
@@ -446,7 +451,7 @@ def test_the_nightly_grants_only_what_the_release_jobs_ask_for():
     assert workflow["jobs"]["decide"]["permissions"] == {"contents": "read"}
     # A called workflow cannot exceed its caller, so the call grants their union.
     asked = {}
-    for name in ("release.yml", "ci.yml", "docs.yml"):
+    for name in ("release.yml", "ci.yml", "immich-gate.yml", "docs.yml"):
         for job in _workflow(name)["jobs"].values():
             for scope, level in (job.get("permissions") or {}).items():
                 if level == "write" or asked.get(scope) != "write":

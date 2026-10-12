@@ -12,7 +12,19 @@ passes it, a refactor once it's green, then the next slice. Tests check behaviou
 interfaces so they survive internal refactors. `.agents/skills/tdd/SKILL.md` has the full method.
 
 While iterating, run the tests you're touching (`uv run pytest tests/<files>`). The pre-commit hook
-runs the whole suite once, when you commit.
+runs the gates whose inputs you staged and the unit tests the commit can affect
+(`scripts/hook_scope.py`, `make hook-tests`): it picks them from a map of what each test file ran on
+the last green full run, imports each changed source module and collects the whole suite so an
+import break anywhere still fails, then checks diff coverage. It runs the whole suite when it can't vouch for the selection: no map yet,
+shared test infrastructure (`tests/conftest.py`, `tests/immich_fakes.py`, `tests/e2e/fake_*.py`),
+`pyproject.toml`, `uv.lock`, `Makefile` or the hook config, or what the package loads on start.
+`HOOK_FULL=1 git commit` or `make ci` runs everything on purpose. A push to `main`, the release and
+the nightly always run every suite in CI; only pull requests and the hook are scoped
+(`docs-site/docs/contribute/ci.md`).
+
+A test the map can't see needs a name the selector reads: a test that reads a file names its path
+or file name, a test that walks the repository starts from `REPO`/`ROOT`/`__file__`, and a test
+that starts the app in a child process uses `sys.executable`.
 
 ## Test what users get
 

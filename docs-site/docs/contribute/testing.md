@@ -20,6 +20,9 @@ Start with unit tests, then run the checks for the boundaries your change touche
 | Container | `make test-container` (`CONTAINER_E2E_DATABASE=postgresql` for PostgreSQL) | Docker. Builds the image and runs it; see below |
 
 `make test-fast` excludes slow, integration, e2e and container tests; the full suite is `make test`.
+The pre-commit hook runs only the unit tests a commit can affect, picked from a map of what each
+test file ran (`make hook-tests`); [CI and quality gates](ci.md#the-pre-commit-hook) says how it
+picks them and when it runs everything.
 
 The unit suite runs on pytest-xdist workers: `make test`, `make test-cov-xml`, `make diff-cover`
 and the pre-commit hook all pass `-n $(TEST_WORKERS)`. On CI (`CI=true`) that is `auto`, one worker

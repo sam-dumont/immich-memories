@@ -62,8 +62,10 @@ being tagged, with evidence per feature. Green unit tests are a different check.
 2. Branch from `origin/main` in a worktree outside `/tmp`, with a `feat/`, `fix/`, `docs/`,
    `refactor/` or `build/` prefix. `main` only changes through PRs.
 3. Work test-first (see `.claude/rules/testing.md`), running targeted tests while you iterate.
-4. Make one commit per PR. Stage everything, then commit once: the pre-commit hook runs the full
-   suite and every gate (about 20 minutes), so it is the final check. If it fails, fix and amend.
+4. Make one commit per PR. Stage everything, then commit once: the pre-commit hook runs the gates
+   and the tests the staged change can affect (a few minutes; `HOOK_FULL=1` or `make ci` runs
+   everything), so it is the final local check. If it fails, fix and amend. PR CI is scoped the
+   same way; every push to `main` and every release runs every gate and every suite.
 5. Group related fixes from one area into one PR, each closed with `Fixes #N`. The `#` matters:
    without it GitHub won't close the issue. Fewer PRs means fewer competing for merge slots and
    fewer conflicts. Keep unrelated concerns, such as a refactor next to a fix, in separate PRs.
