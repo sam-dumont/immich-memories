@@ -28,6 +28,14 @@ pytestmark = pytest.mark.e2e
 _VIDEO_IDS = [p.asset_id for p in LIBRARY if p.is_video]
 _PHOTO_IDS = [p.asset_id for p in LIBRARY if not p.is_video]
 _VIDEO_SECONDS = [p.seconds for p in LIBRARY if p.is_video]
+# Each Live Photo's clip: hidden from the timeline, and returned by v3's default metadata search.
+_LIVE_CLIP_IDS = {p.live_video_id for p in LIBRARY if p.live_video_id}
+
+
+def _on_timeline(assets: list[Asset]) -> list[Asset]:
+    return [asset for asset in assets if asset.visibility == "timeline"]
+
+
 _JUNE_START = date(2024, 6, 1)
 _JUNE_END = date(2024, 6, 30)
 
@@ -36,7 +44,7 @@ def _bucket_assets(server: FakeImmichServer, **params: str) -> list[Asset]:
     """One month bucket's assets, read straight off the fake's timeline endpoint."""
     response = httpx.get(
         f"{server.base_url}/api/timeline/bucket",
-        params={"timeBucket": "2024-06-01T00:00:00.000Z", **params},
+        params={"timeBucket": "2024-06-01", **params},
         headers={"x-api-key": server.api_key},
     )
     response.raise_for_status()
@@ -164,9 +172,9 @@ def test_monthly_timeline_contains_every_synthetic_moment(fake_immich_server) ->
         buckets = client.get_time_buckets()
     assets = _bucket_assets(fake_immich_server)
 
-    # One month holds the whole library.
+    # One month holds the whole library, named by its first day as Immich names it.
     assert [(bucket.time_bucket, bucket.count) for bucket in buckets] == [
-        ("2024-06-01T00:00:00.000Z", len(LIBRARY)),
+        ("2024-06-01", len(LIBRARY)),
     ]
     assert [asset.id for asset in assets if asset.type is AssetType.VIDEO] == _VIDEO_IDS
     assert [asset.id for asset in assets if asset.type is AssetType.IMAGE] == _PHOTO_IDS
@@ -201,7 +209,10 @@ def test_metadata_search_filters_the_video_and_photo_inventories(fake_immich_ser
         ).all_assets
         everything = client.search_metadata().all_assets
 
-    assert len(everything) == len(LIBRARY)
+    # v3 returns the hidden Live clips unasked; the app leaves them out itself (source_filter).
+    assert len(_on_timeline(everything)) == len(LIBRARY)
+    assert {asset.id for asset in everything if asset.visibility == "hidden"} == _LIVE_CLIP_IDS
+    videos = _on_timeline(videos)
     assert [asset.id for asset in videos] == _VIDEO_IDS
     assert [asset.duration_seconds for asset in videos] == _VIDEO_SECONDS
     assert [asset.id for asset in photos] == _PHOTO_IDS
@@ -258,7 +269,11 @@ def test_search_uses_v3_millisecond_duration_on_the_wire(fake_immich_server) -> 
     )
 
     response.raise_for_status()
-    durations = [asset["duration"] for asset in response.json()["assets"]["items"]]
+    durations = [
+        asset["duration"]
+        for asset in response.json()["assets"]["items"]
+        if asset.get("visibility") != "hidden"
+    ]
     assert durations == [int(seconds * 1000) for seconds in _VIDEO_SECONDS]
     assert all(type(duration) is int for duration in durations)
 
@@ -272,7 +287,7 @@ def test_the_generate_clip_conversion_keeps_every_fake_video(fake_immich_server)
     ) as client:
         assets = client.get_videos_for_date_range(calendar_year(2024))
 
-    clips = assets_to_clips(assets, min_duration=0.0)
+    clips = assets_to_clips(_on_timeline(assets), min_duration=0.0)
 
     assert [clip.asset.id for clip in clips] == _VIDEO_IDS
     assert all(clip.duration_seconds >= MIN_CLIP_DURATION for clip in clips)

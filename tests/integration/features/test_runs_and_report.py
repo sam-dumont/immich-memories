@@ -9,8 +9,8 @@ import zipfile
 
 import pytest
 
-from tests.e2e.fake_immich import FakeImmichServer
 from tests.features.cli_harness import UserHome, film_facts, films_under
+from tests.integration.features.immich_server import LibraryServer
 from tests.integration.features.library import (
     GARDEN_DAY,
     QUIET_DAY,
@@ -54,9 +54,11 @@ def test_runs_story_reads_the_shots_in_playback_order(library_home: UserHome, ga
 
 
 @pytest.mark.feature("runs.why")
-def test_runs_why_says_where_a_picture_was_kept_or_left_out(library_home: UserHome, garden_film):
-    kept = shipped_on(GARDEN_DAY)[0].asset_id
-    dropped = left_out_on(GARDEN_DAY)[0]
+def test_runs_why_says_where_a_picture_was_kept_or_left_out(
+    library_home: UserHome, garden_film, immich: LibraryServer
+):
+    kept = immich.id_of(shipped_on(GARDEN_DAY)[0].asset_id)
+    dropped = immich.id_of(left_out_on(GARDEN_DAY)[0])
 
     kept_answer = library_home.run("runs", "why", kept, "--run", garden_film.run_id)
     dropped_answer = library_home.run("runs", "why", dropped, "--run", garden_film.run_id)
@@ -178,7 +180,7 @@ def test_report_bundle_zips_the_report_and_the_redacted_logs(
 
 @pytest.mark.feature("report.redaction")
 def test_report_removes_the_key_the_server_address_and_absolute_paths(
-    library_home: UserHome, garden_film: RenderedRun, fake_immich: FakeImmichServer, tmp_path
+    library_home: UserHome, garden_film: RenderedRun, immich: LibraryServer, tmp_path
 ):
     bundle = tmp_path / "redaction.zip"
     markdown = library_home.run("report", garden_film.run_id).stdout
@@ -189,9 +191,9 @@ def test_report_removes_the_key_the_server_address_and_absolute_paths(
             archive.read(name).decode("utf-8", "replace") for name in archive.namelist()
         )
 
-    host = fake_immich.base_url.removeprefix("http://")
+    host = immich.base_url.removeprefix("http://")
     for text in (markdown, data, members):
-        assert fake_immich.api_key not in text
+        assert immich.api_key not in text
         assert host not in text
         assert str(library_home.root) not in text
         assert str(library_home.root.resolve()) not in text

@@ -15,7 +15,6 @@ from pathlib import Path
 
 import pytest
 
-from tests.e2e.fake_immich import FakeImmichServer
 from tests.e2e.fake_library import (
     ALL_PICTURES,
     CARRIERS,
@@ -24,6 +23,7 @@ from tests.e2e.fake_library import (
 )
 from tests.features.cli_harness import UserHome, basic_config
 from tests.integration.features.cuts import cut
+from tests.integration.features.immich_server import LibraryServer
 
 GARDEN = "2024-06-08"
 _PICTURES = ("--include-photos", "--no-music", "--quiet")
@@ -365,13 +365,15 @@ def _event(day: str, start: str, end: str, members: list[str], title: str) -> di
 
 @pytest.mark.feature("memory-type.special-day")
 def test_a_special_day_films_its_events_run_and_needs_event_id_when_the_day_has_two(
-    library_home: UserHome, tmp_path: Path
+    library_home: UserHome, immich: LibraryServer, tmp_path: Path
 ):
     garden = [p for p in CARRIERS if p.taken_at.startswith("2024-06-08")]
     lunch, cake = garden[:2], garden[2:]
     catalogue = [
-        _event("2024-06-08", "11:00", "12:15", [p.asset_id for p in lunch], "Garden lunch"),
-        _event("2024-06-08", "16:30", "16:32", [p.asset_id for p in cake], "The cake"),
+        _event(
+            "2024-06-08", "11:00", "12:15", immich.ids_of(p.asset_id for p in lunch), "Garden lunch"
+        ),
+        _event("2024-06-08", "16:30", "16:32", immich.ids_of(p.asset_id for p in cake), "The cake"),
     ]
     (tmp_path / "days.json").write_text(json.dumps(catalogue))
     day = ("generate", "--memory-type", "special_day", "--day", "2024-06-08", *_PICTURES)
@@ -413,14 +415,14 @@ def test_a_day_the_catalogue_never_found_is_scoped_to_itself(library_home: UserH
 
 
 @pytest.fixture(scope="module")
-def household_home(tmp_path_factory: pytest.TempPathFactory, fake_immich: FakeImmichServer):
+def household_home(tmp_path_factory: pytest.TempPathFactory, immich: LibraryServer):
     """A Basic install with a second Immich account, `partner`, on the same server."""
     home = UserHome(tmp_path_factory.mktemp("household-home"))
-    config = basic_config(fake_immich.base_url, fake_immich.api_key, home)
+    config = basic_config(immich.base_url, immich.api_key, home)
     config["immich"]["accounts"] = {
         "partner": {
-            "url": fake_immich.base_url,
-            "api_key": fake_immich.partner_api_key,
+            "url": immich.base_url,
+            "api_key": immich.partner_api_key,
             "api_version": "auto",
         }
     }
@@ -495,7 +497,7 @@ def test_albums_and_trips_refuse_a_second_account(household_home: UserHome):
 
 
 @pytest.mark.feature("cut.include-exclude")
-def test_include_and_exclude_reach_the_cut(library_home: UserHome):
+def test_include_and_exclude_reach_the_cut(library_home: UserHome, immich: LibraryServer):
     """The scripted editor honours what the run hands it; tests/features/test_editor_pool.py
     holds the real editor to the same two lists."""
     garden = cut(
@@ -507,9 +509,9 @@ def test_include_and_exclude_reach_the_cut(library_home: UserHome):
         GARDEN,
         *_PICTURES,
         "--include",
-        "birthday-gifts-01",
+        immich.id_of("birthday-gifts-01"),
         "--exclude",
-        "garden-cake",
+        immich.id_of("garden-cake"),
     )
 
     kept = _ids(garden.pictures())
@@ -518,7 +520,7 @@ def test_include_and_exclude_reach_the_cut(library_home: UserHome):
     assert kept == {p.asset_id for p in CARRIERS if p.taken_at.startswith(GARDEN)} - {
         "garden-cake"
     } | {"birthday-gifts-01"}
-    why = library_home.run("runs", "why", "garden-cake", "--run", garden.run_id)
+    why = library_home.run("runs", "why", immich.id_of("garden-cake"), "--run", garden.run_id)
     assert "left out" in why.stdout, why.explain()
 
 

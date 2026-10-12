@@ -12,19 +12,19 @@ from pathlib import Path
 
 import pytest
 
-from tests.e2e.fake_immich import FakeImmichServer
 from tests.e2e.fake_library import ALL_PICTURES, CARRIERS, Picture
 from tests.features.cli_harness import UserHome, basic_config, film_facts, films_under
 from tests.integration.features.cuts import cut, picture_of, story_of
 from tests.integration.features.film_probe import (
-    chroma,
     differing_columns,
     grey_frame,
     loudness,
     luma_difference,
     luma_levels,
     video_stream,
+    warm_side,
 )
+from tests.integration.features.immich_server import LibraryServer
 from tests.integration.features.library import (
     GARDEN_DAY,
     QUIET_DAY,
@@ -181,13 +181,21 @@ def test_a_run_leaves_its_film_record_and_plan_and_nothing_else(
 
 @pytest.mark.feature("photos.edited-version")
 def test_a_photo_edited_in_immich_plays_as_its_edit(library_home: UserHome, short_quiet_film):
-    """The quiet day's still was edited to black and white in Immich; its original is in colour."""
+    """The quiet day's still was turned upside down in Immich's editor; its original was not.
+
+    The tall film shows the wide picture across its middle, where the warm side of the picture
+    (a yellow sign) has to sit on the side the edit put it.
+    """
     run, _ = short_quiet_film
     still = next(p for p in CARRIERS if p.taken_at.startswith(QUIET_DAY))
     shot = _shot_of(library_home, run, still)
 
     assert still.edited
-    assert chroma(run.film, shot.at + shot.seconds / 2) < 2
+    original = warm_side(still.source)
+    shown = warm_side(run.film, shot.middle, band="iw:ih*0.3:0:ih*0.35")
+    assert abs(original) > 10, original
+    assert shown * original < 0, (shown, original)
+    assert abs(shown) > 10, shown
 
 
 @pytest.mark.feature("photos.ken-burns")
@@ -206,11 +214,11 @@ def test_a_still_moves_while_it_is_on_screen(library_home: UserHome, garden_film
 
 @pytest.mark.feature("hdr.end-to-end")
 def test_a_gain_mapped_photo_keeps_hdr_in_an_hdr_h265_film_and_is_tone_mapped_in_sdr(
-    library_home: UserHome, fake_immich: FakeImmichServer, tmp_path
+    library_home: UserHome, immich: LibraryServer, tmp_path
 ):
     still = next(p for p in CARRIERS if p.taken_at.startswith(HDR_DAY))
     home = UserHome(tmp_path / "hdr-home")
-    config = basic_config(fake_immich.base_url, fake_immich.api_key, home)
+    config = basic_config(immich.base_url, immich.api_key, home)
     config["output"].update(codec="h265", hdr_mode="auto")
     home.write_config(config)
 
@@ -226,7 +234,7 @@ def test_a_gain_mapped_photo_keeps_hdr_in_an_hdr_h265_film_and_is_tone_mapped_in
         "smpte2084",
     )
     middle = story_of(home, hdr.run_id)[0]
-    _, peak = luma_levels(hdr.film, middle.at + middle.seconds / 2)
+    _, peak = luma_levels(hdr.film, middle.middle)
     assert peak > _PQ_DIFFUSE_WHITE + 40, peak
     # The same settings with a plain photo stay SDR: the gain map is what made the film HDR.
     assert video_stream(plain.film)["color_transfer"] == "bt709"
@@ -234,7 +242,7 @@ def test_a_gain_mapped_photo_keeps_hdr_in_an_hdr_h265_film_and_is_tone_mapped_in
     sdr_stream = video_stream(sdr.film)
     assert (sdr_stream["codec_name"], sdr_stream["color_transfer"]) == ("h264", "bt709")
     shot = story_of(library_home, sdr.run_id)[0]
-    mean, peak = luma_levels(sdr.film, shot.at + shot.seconds / 2)
+    mean, peak = luma_levels(sdr.film, shot.middle)
     picture_mean, _ = luma_levels(still.source, 0, convert="format=yuv420p")
     assert mean > 0.9 * picture_mean, (mean, picture_mean)
     assert peak <= 235
@@ -379,10 +387,10 @@ def test_no_original_audio_and_no_music_make_a_silent_film(
 @pytest.mark.feature("music.bundled-default")
 @pytest.mark.usefixtures("bundled_tracks")
 def test_a_failed_music_generator_falls_back_to_a_bundled_track_with_a_warning(
-    fake_immich: FakeImmichServer, tmp_path
+    immich: LibraryServer, tmp_path
 ):
     home = UserHome(tmp_path / "home")
-    config = basic_config(fake_immich.base_url, fake_immich.api_key, home)
+    config = basic_config(immich.base_url, immich.api_key, home)
     # Nothing answers on this port, so every generation attempt fails.
     config["advanced"]["musicgen"] = {"enabled": True, "base_url": "http://127.0.0.1:9"}
     home.write_config(config)
@@ -444,7 +452,7 @@ def test_crossfades_overlap_the_pictures_on_whole_frames_and_cuts_do_not(
 
 @pytest.mark.feature("captions.date-place")
 def test_captions_name_the_date_and_the_city_when_they_change_and_flags_turn_them_off(
-    library_home: UserHome, tmp_path
+    library_home: UserHome, immich: LibraryServer, tmp_path
 ):
     """The garden Saturday in Brussels, a Wednesday at home, then the woods at Tervuren."""
     days = ("--start", GARDEN_DAY, "--end", "2024-06-15")
@@ -465,7 +473,7 @@ def test_captions_name_the_date_and_the_city_when_they_change_and_flags_turn_the
     place_band, date_band = "iw/2:ih*0.15:0:0", "iw/2:ih*0.15:iw/2:ih*0.85"
 
     def reach(shot, band: str) -> float:
-        at = shot.at + shot.seconds / 2
+        at = shot.middle
         return differing_columns(
             grey_frame(captioned.film, at, band=band), grey_frame(bare.film, at, band=band)
         )
@@ -477,13 +485,17 @@ def test_captions_name_the_date_and_the_city_when_they_change_and_flags_turn_the
     new_city = [i == 0 or city != cities[i - 1] for i, city in enumerate(cities)]
     assert cities.count("Tervuren") >= 2 and new_city.count(True) == 2, cities
     assert new_day.count(True) > new_city.count(True), new_day
+    seen = [(s.at, s.day, s.seconds, city) for s, city in zip(shots, cities, strict=True)]
     # A date where the day changes and a place where the city changes, none in between.
-    assert [p > 0 for p in places] == new_city, places
-    assert [d > 0 for d in dates] == new_day, dates
+    assert [p > 0 for p in places] == new_city, (places, seen)
+    assert [d > 0 for d in dates] == new_day, (dates, seen)
     # Brussels and Tervuren are both in the home country, which stays out of the caption:
     # "BRUSSELS" alone reaches about a quarter of the way across the band, "BRUSSELS, BELGIUM"
-    # past half of it.
-    assert all(p < 0.4 for p in places), places
+    # past half of it. A real Immich names the fixture's places after the nearest GeoNames
+    # town (Ixelles, Watermael-Boitsfort), whose names alone run longer: the widths are the
+    # fake's names.
+    if not immich.real:
+        assert all(p < 0.4 for p in places), places
     assert film_facts(bare.film).duration == pytest.approx(film_facts(captioned.film).duration)
 
 

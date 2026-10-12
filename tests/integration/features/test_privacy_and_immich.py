@@ -17,6 +17,7 @@ import pytest
 
 from tests.e2e.fake_immich import FakeImmichServer
 from tests.features.cli_harness import OutboundTrap, UserHome, basic_config, film_facts
+from tests.integration.features.immich_server import LibraryServer
 from tests.integration.features.library import (
     GARDEN_DAY,
     QUIET_DAY,
@@ -31,6 +32,11 @@ _VOICE_LOW_HZ, _VOICE_HIGH_HZ = 150, 1500
 _SHOT = re.compile(r"^\s+(\d+):(\d\d)\s+\d{4}-\d\d-\d\d\s+(?:photo|video)\s+([\d.]+) s", re.M)
 # Search reads are POSTs; nothing else the app sends Immich with upload off may write.
 _READ_ONLY_POSTS = frozenset({"/api/search/metadata", "/api/search/statistics"})
+# The privacy film gives the garden clips a voice by serving voiced copies as their originals,
+# and reads what the app sent from the fake's request log: neither exists on a real server.
+_PRIVATE_FILM_IS_FAKE_ONLY = pytest.mark.fake_immich_only(
+    "serves voiced copies as the garden clips' originals and reads the fake's request log"
+)
 
 
 def _with_a_voice(clip: Path, seconds: float, into: Path) -> Path:
@@ -167,6 +173,7 @@ def _drawn_places(run: RenderedRun) -> list[str]:
 
 
 @pytest.mark.feature("privacy.privacy-mode")
+@_PRIVATE_FILM_IS_FAKE_ONLY
 def test_privacy_mode_blurs_every_picture_in_the_encoded_film(private_film: PrivateFilm):
     middles = _shot_middles(private_film.home, private_film.plain.run_id)
     assert _shot_middles(private_film.home, private_film.run.run_id) == middles
@@ -182,6 +189,7 @@ def test_privacy_mode_blurs_every_picture_in_the_encoded_film(private_film: Priv
 
 
 @pytest.mark.feature("privacy.privacy-mode")
+@_PRIVATE_FILM_IS_FAKE_ONLY
 def test_privacy_mode_moves_the_places_the_film_names(private_film: PrivateFilm):
     pictures = shipped_on(GARDEN_DAY)
     real = {p.place.city.upper() for p in pictures} | {p.place.country.upper() for p in pictures}
@@ -194,6 +202,7 @@ def test_privacy_mode_moves_the_places_the_film_names(private_film: PrivateFilm)
 
 
 @pytest.mark.feature("privacy.privacy-mode")
+@_PRIVATE_FILM_IS_FAKE_ONLY
 def test_privacy_mode_scrambles_speech_into_a_low_murmur(private_film: PrivateFilm):
     voice_band = "highpass=f=800,highpass=f=800,"
     murmur_band = "lowpass=f=300,"
@@ -210,6 +219,7 @@ def test_privacy_mode_scrambles_speech_into_a_low_murmur(private_film: PrivateFi
 
 
 @pytest.mark.feature("immich.never-modifies-originals")
+@_PRIVATE_FILM_IS_FAKE_ONLY
 def test_a_film_with_upload_off_only_reads_from_immich(private_film: PrivateFilm):
     sent = private_film.requests
     writes = [
@@ -226,6 +236,9 @@ def test_a_film_with_upload_off_only_reads_from_immich(private_film: PrivateFilm
 
 
 @pytest.mark.feature("immich.v2-and-v3")
+@pytest.mark.fake_immich_only(
+    "switches one server between majors; the real pass runs the whole suite on a v2 and a v3"
+)
 def test_a_v2_and_a_v3_server_both_make_a_film_and_config_test_names_the_version(
     library_home: UserHome, fake_immich: FakeImmichServer, tmp_path
 ):
@@ -254,13 +267,13 @@ def test_a_v2_and_a_v3_server_both_make_a_film_and_config_test_names_the_version
 
 @pytest.mark.feature("privacy.outside-calls-opt-in")
 def test_map_tiles_leave_the_network_only_once_switched_on(
-    library_home: UserHome, fake_immich: FakeImmichServer, tmp_path
+    library_home: UserHome, immich: LibraryServer, tmp_path
 ):
     default_preflight = library_home.run("preflight", scripted_selection=True)
     trap = OutboundTrap()
     try:
         home = UserHome(tmp_path / "home", extra_env=tuple(trap.env().items()))
-        config = basic_config(fake_immich.base_url, fake_immich.api_key, home)
+        config = basic_config(immich.base_url, immich.api_key, home)
         config["network"] = {"geocoding": True, "map_tiles": True}
         home.write_config(config)
         opted_in_preflight = home.run("preflight", scripted_selection=True)

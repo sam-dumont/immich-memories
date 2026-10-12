@@ -28,6 +28,20 @@ class Shot:
     seconds: float
     why: str
 
+    # `runs story` prints the start in whole seconds, cut down: the shot starts somewhere in
+    # [at, at + 1). A frame read at `at` plus a fixed margin can land in the shot before or in
+    # the transition into this one, depending on a fraction of a second the film never prints.
+
+    @property
+    def started(self) -> float:
+        """The first instant certainly inside the shot."""
+        return self.at + 1.0
+
+    @property
+    def middle(self) -> float:
+        """The middle of the shot, give or take half a second."""
+        return self.at + 0.5 + self.seconds / 2
+
 
 @dataclass(frozen=True, slots=True)
 class Cut:

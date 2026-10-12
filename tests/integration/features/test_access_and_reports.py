@@ -10,10 +10,10 @@ from pathlib import Path
 
 import pytest
 
-from tests.e2e.fake_immich import FakeImmichServer
 from tests.e2e.fake_library import CAST
 from tests.features.cli_harness import CliResult, UserHome, basic_config
 from tests.features.served_app import ServedApp, served_app
+from tests.integration.features.immich_server import LibraryServer
 from tests.integration.features.library import (
     GARDEN_DAY,
     QUIET_DAY,
@@ -28,25 +28,25 @@ from tests.integration.features.library import (
 
 @pytest.fixture(scope="module")
 def two_account_app(
-    tmp_path_factory: pytest.TempPathFactory, fake_immich: FakeImmichServer
-) -> Iterator[tuple[UserHome, ServedApp]]:
+    tmp_path_factory: pytest.TempPathFactory, immich: LibraryServer
+) -> Iterator[tuple[UserHome, ServedApp, LibraryServer]]:
     """The served app over the fixture library, with a second account configured."""
     home = UserHome(tmp_path_factory.mktemp("two-accounts"))
-    config = basic_config(fake_immich.base_url, fake_immich.api_key, home)
+    config = basic_config(immich.base_url, immich.api_key, home)
     config["immich"]["accounts"] = {
-        "partner": {"url": fake_immich.base_url, "api_key": fake_immich.partner_api_key}
+        "partner": {"url": immich.base_url, "api_key": immich.partner_api_key}
     }
     home.write_config(config)
     with served_app(home) as app:
-        yield home, app
+        yield home, app, immich
 
 
 @pytest.mark.feature("privacy.thumbnails-scoped")
 def test_the_ui_serves_only_pictures_a_configured_account_reads_even_from_its_cache(
-    two_account_app: tuple[UserHome, ServedApp],
+    two_account_app: tuple[UserHome, ServedApp, LibraryServer],
 ):
-    home, app = two_account_app
-    readable = shipped_on(GARDEN_DAY)[0].asset_id
+    home, app, immich = two_account_app
+    readable = immich.id_of(shipped_on(GARDEN_DAY)[0].asset_id)
     foreign = "zz-not-in-any-account"
 
     with app.client() as browser:
@@ -87,11 +87,9 @@ def _leaks(text: str, values: dict[str, str]) -> list[str]:
 
 
 @pytest.mark.feature("privacy.config-values-never-logged")
-def test_no_configured_secret_reaches_output_logs_files_or_reports(
-    tmp_path, fake_immich: FakeImmichServer
-):
+def test_no_configured_secret_reaches_output_logs_files_or_reports(tmp_path, immich: LibraryServer):
     home = UserHome(tmp_path / "home")
-    config = basic_config(fake_immich.base_url, fake_immich.api_key, home)
+    config = basic_config(immich.base_url, immich.api_key, home)
     config["advanced"] |= {
         "auth": {
             "enabled": True,
@@ -107,7 +105,7 @@ def test_no_configured_secret_reaches_output_logs_files_or_reports(
         },
     }
     home.write_config(config)
-    secrets = SENTINELS | {"immich_key": fake_immich.api_key}
+    secrets = SENTINELS | {"immich_key": immich.api_key}
     bundle = tmp_path / "report.zip"
 
     cut = home.run(*day_args(QUIET_DAY), "--no-render", scripted_selection=True)
@@ -204,9 +202,9 @@ def test_the_report_names_no_person_place_or_coordinates(
 
 @pytest.mark.feature("report.redaction-library-details")
 def test_the_report_turns_asset_ids_into_report_local_hashes(
-    library_home: UserHome, garden_film: RenderedRun, tmp_path
+    library_home: UserHome, garden_film: RenderedRun, immich: LibraryServer, tmp_path
 ):
-    ids = [picture.asset_id for picture in shipped_on(GARDEN_DAY)] + left_out_on(GARDEN_DAY)
+    ids = immich.ids_of([p.asset_id for p in shipped_on(GARDEN_DAY)] + left_out_on(GARDEN_DAY))
     # The run's own logs name its pictures: what the report has to hash.
     assert any(asset_id in garden_film.result.output for asset_id in ids)
 

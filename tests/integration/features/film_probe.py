@@ -44,35 +44,6 @@ def loudness(
     return level(mean), level(peak)
 
 
-def chroma(path: Path, at_seconds: float) -> float:
-    """Mean colourfulness of the frame at `at_seconds`: max minus min channel, 0 for grey."""
-    frame = subprocess.run(  # noqa: S603 -- fixed ffmpeg argv
-        [
-            "ffmpeg",
-            "-v",
-            "error",
-            "-ss",
-            f"{at_seconds:.3f}",
-            "-i",
-            str(path),
-            "-frames:v",
-            "1",
-            "-vf",
-            "scale=64:36",
-            "-pix_fmt",
-            "rgb24",
-            "-f",
-            "rawvideo",
-            "-",
-        ],
-        capture_output=True,
-        check=True,
-    ).stdout
-    assert frame, f"no frame at {at_seconds}s in {path.name}"
-    pixels = [frame[i : i + 3] for i in range(0, len(frame), 3)]
-    return sum(max(p) - min(p) for p in pixels) / len(pixels)
-
-
 def grey_frame(path: Path, at_seconds: float, *, band: str = "iw:ih:0:0") -> bytes:
     """The frame at `at_seconds`, cropped to `band` (an FFmpeg crop), small and in grey."""
     frame = subprocess.run(  # noqa: S603 -- fixed ffmpeg argv
@@ -160,3 +131,23 @@ def luma_levels(path: Path, at_seconds: float, *, convert: str = "") -> tuple[fl
     ).stdout
     found = dict(line.split("=", 1) for line in stats.splitlines() if "=" in line)
     return float(found["lavfi.signalstats.YAVG"]), int(found["lavfi.signalstats.YMAX"])
+
+
+def warm_side(path: Path, at_seconds: float | None = None, *, band: str = "iw:ih:0:0") -> float:
+    """How much warmer (red over blue) the left half of a frame is than its right half.
+
+    Positive when the warm side is on the left. A picture turned upside down or mirrored
+    flips the sign: the fixture's rain window has a yellow sign on one side.
+    `band` is an FFmpeg crop of the frame first; `at_seconds` None reads a still image.
+    """
+    seek = [] if at_seconds is None else ["-ss", f"{at_seconds:.3f}"]
+    frame = subprocess.run(  # noqa: S603 -- fixed ffmpeg argv
+        ["ffmpeg", "-v", "error", *seek, "-i", str(path), "-frames:v", "1",
+         "-vf", f"crop={band},scale=64:16", "-pix_fmt", "rgb24", "-f", "rawvideo", "-"],
+        capture_output=True, check=True,
+    ).stdout  # fmt: skip
+    assert frame, f"no frame in {path.name}"
+    warmth = [frame[i] - frame[i + 2] for i in range(0, len(frame), 3)]
+    left = [w for index, w in enumerate(warmth) if index % 64 < 32]
+    right = [w for index, w in enumerate(warmth) if index % 64 >= 32]
+    return (sum(left) - sum(right)) / len(left)

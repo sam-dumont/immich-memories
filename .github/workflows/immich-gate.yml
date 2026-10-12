@@ -169,29 +169,131 @@ jobs:
             tests/immich-gate-*-junit.xml
             tests/native-sharing-*-junit.xml
 
+  # The whole feature suite (tests/integration/features/) a second time, against a real
+  # Immich seeded with the files the fake Immich serves, on the oldest and newest supported
+  # majors. Tests only the fake can drive skip with their reason; test_fake_matches_real.py
+  # compares the two servers' answers. About as long as the fake pass plus the seed.
+  features:
+    name: Feature tests on real Immich (${{ matrix.immich }})
+    needs: [changes]
+    if: github.repository_id == '1174219883' && needs.changes.outputs.docs_only != 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        immich: [v2, v3]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # Same image store and cache as the gate job above: one tarball per major.
+      - name: Use the containerd image store
+        run: |
+          if docker info -f '{{json .DriverStatus}}' | grep -q io.containerd.snapshotter; then
+            echo "already on the containerd image store"
+          else
+            conf=/etc/docker/daemon.json
+            { sudo cat "$conf" 2>/dev/null || echo '{}'; } \
+              | jq '.features["containerd-snapshotter"] = true' | sudo tee "$conf.new" >/dev/null
+            sudo mv "$conf.new" "$conf"
+            sudo systemctl restart docker
+          fi
+          docker info -f 'docker {{.ServerVersion}}, storage {{.Driver}}'
+
+      - name: Pinned image refs
+        id: refs
+        run: |
+          make -s immich-gate-images IMMICH_GATE_VERSION=${{ matrix.immich }} | tee "$RUNNER_TEMP/refs.txt"
+          echo "hash=$(sha256sum "$RUNNER_TEMP/refs.txt" | cut -c1-16)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore cached images
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .immich-gate/images
+          key: immich-gate-images-${{ matrix.immich }}-${{ steps.refs.outputs.hash }}-${{ hashFiles('.github/workflows/immich-gate.yml', 'scripts/immich_gate_images.sh') }}
+
+      - name: Load or pull pinned Immich images (background)
+        run: |
+          ( start=$(date +%s)
+            make immich-gate-fetch IMMICH_GATE_VERSION=${{ matrix.immich }} > "$RUNNER_TEMP/pull.log" 2>&1
+            echo $? > "$RUNNER_TEMP/pull.status"
+            echo "images ready after $(( $(date +%s) - start ))s" >> "$RUNNER_TEMP/pull.log" ) &
+
+      # The feature tests read LFS media (the bundled tracks) like the launch check's run.
+      - name: Create LFS cache key
+        run: git lfs ls-files -l | cut -d' ' -f1 | sort > .lfs-assets-id
+      - name: Cache LFS objects
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .git/lfs
+          key: lfs-${{ hashFiles('.lfs-assets-id') }}
+          restore-keys: lfs-
+      - name: Pull LFS files
+        run: git lfs pull
+
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+        with:
+          enable-cache: true
+          prune-cache: false
+      - run: uv python install ${{ env.PYTHON_VERSION }}
+      - name: Install FFmpeg
+        uses: ./.github/actions/install-ffmpeg
+      - run: make dev-test-features
+      # `immich-memories ui` serves the built web client; the target builds it when missing.
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Wait for the images
+        timeout-minutes: 11
+        run: |
+          until [ -f "$RUNNER_TEMP/pull.status" ]; do sleep 2; done
+          cat "$RUNNER_TEMP/pull.log"
+          exit "$(cat "$RUNNER_TEMP/pull.status")"
+
+      - name: Feature tests on real Immich (${{ matrix.immich }})
+        run: make test-features-real-immich IMMICH_GATE_VERSION=${{ matrix.immich }}
+
+      - name: Upload Immich logs and results
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: features-real-immich-${{ matrix.immich }}
+          if-no-files-found: ignore
+          path: |
+            .immich-gate/*.log
+            tests/features-real-immich-*-junit.xml
+
   # The one check branch protection requires. A matrix job reports one check
   # per leg; this folds them into a name that survives adding a version or a backend.
   gate:
     name: Immich Gate
-    needs: [changes, immich]
+    needs: [changes, immich, features]
     if: always() && github.repository_id == '1174219883'
     runs-on: ubuntu-24.04
     steps:
-      - name: Every Immich version passed on every store backend
+      - name: Every Immich version passed on every store backend, feature tests included
         env:
           SCOPE: ${{ needs.changes.result }}
           IMMICH: ${{ needs.immich.result }}
+          FEATURES: ${{ needs.features.result }}
           DOCS_ONLY: ${{ needs.changes.outputs.docs_only }}
         run: |
           if [[ "$SCOPE" != "success" ]]; then
             echo "Change scope did not succeed: $SCOPE"
             exit 1
           fi
-          if [[ "$IMMICH" == "skipped" && "$DOCS_ONLY" == "true" ]]; then
+          if [[ "$IMMICH" == "skipped" && "$FEATURES" == "skipped" && "$DOCS_ONLY" == "true" ]]; then
             echo "Docs-only change: no real-Immich run needed"
             exit 0
           fi
           if [[ "$IMMICH" != "success" ]]; then
             echo "Real-Immich gate did not pass: $IMMICH"
+            exit 1
+          fi
+          if [[ "$FEATURES" != "success" ]]; then
+            echo "Feature tests on real Immich did not pass: $FEATURES"
             exit 1
           fi

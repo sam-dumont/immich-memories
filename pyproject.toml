@@ -686,6 +686,8 @@ markers = [
     "real_mounts: reads this machine's own mount table instead of the suite's local one",
     "container: runs the built image through docker compose (run with: make test-container)",
     "feature(id): checks an advertised feature, by its row id in tests/features/inventory.yaml (make feature-check)",
+    "fake_immich_only(reason): a feature test only the fake Immich can drive; the real-Immich pass skips it with the reason",
+    "real_immich_only: a feature test that needs a real Immich (make test-features-real-immich); the fake pass skips it",
 ]
 # `-p no:quadrants`: the quadrants distribution registers a pytest11 plugin, so
 # merely having it installed pulls its C++ runtime into every pytest session,

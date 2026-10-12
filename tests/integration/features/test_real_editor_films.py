@@ -33,6 +33,12 @@ from tests.integration.features.real_editor import (
     run,
 )
 
+# The held pictures (a starred screenshot and form) sit only on a fake Immich of the test's own:
+# seeding them into the shared real library would put them in every other test's pool.
+pytestmark = pytest.mark.fake_immich_only(
+    "films a fake Immich of its own that adds the held pictures to the library"
+)
+
 YEAR = LIBRARY[0].taken_at[:4]
 _RENDER = ("--include-photos", "--no-music", "--quiet")
 # What ffprobe reads past the planned length: the last frame's own duration and AAC priming.
