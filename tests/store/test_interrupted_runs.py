@@ -84,3 +84,32 @@ def test_a_run_that_cannot_take_its_lease_does_not_start_to_be_swept_as_dead(sto
 
     assert interrupt_orphaned_runs(store) == []
     assert RunDatabase(store).running_run_ids() == []
+
+
+def test_a_run_whose_id_another_start_has_just_leased_is_not_written_unowned(store):
+    """Two same-second starts drew one id; the other took its lease first and gave it up.
+
+    The other start held the id's lease between taking it and finding the row taken. A start
+    that wrote the row without the lease left a live run with no owner: the next sweep ended
+    it while it worked, and its `complete` then rewrote the interrupted row.
+    """
+    from immich_memories.tracking.run_id import generate_run_id
+
+    drawn = generate_run_id()
+    ids = [drawn]
+    other_start = RunDatabase(store).run_lease(drawn)
+    other_start.acquire()
+    # WHY: the 16-bit suffix collides once in 65,536 same-second starts; force the collision.
+    with patch(
+        "immich_memories.tracking.run_tracker.generate_run_id",
+        lambda: ids.pop(0) if ids else generate_run_id(),
+    ):
+        live = RunTracker(store=store, capture_system=False)
+        live.start_run(source="manual")
+    other_start.release()
+
+    assert interrupt_orphaned_runs(store) == []
+    assert live.run_id != drawn
+    saved = RunDatabase(store).get_run(live.run_id)
+    assert saved is not None and saved.status == "running"
+    live.complete_run()

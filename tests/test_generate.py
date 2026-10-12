@@ -500,13 +500,12 @@ def test_generation_validation_failure_preserves_old_final_and_stops_downstream_
         )
 
     monkeypatch.setattr(output_contract.subprocess, "run", run_probe)
-    tracker = MagicMock()
+    tracker = MagicMock(run_id="fixed-run")
     tracker.db.get_run.return_value.status = "running"
     music_phase = MagicMock()
     upload = MagicMock()
     with (
         pytest.raises(GenerationError, match="expected h264, got hevc"),
-        patch("immich_memories.tracking.generate_run_id", return_value="fixed-run"),
         patch("immich_memories.tracking.RunTracker", return_value=tracker),
         patch("immich_memories.cache.video_cache.VideoDownloadCache", return_value=MagicMock()),
         patch.object(generate_render_module, "extract_clips", return_value=[assembly_clip]),

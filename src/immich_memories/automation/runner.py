@@ -591,7 +591,13 @@ class AutoRunner:
         )
 
     def settle_interrupted_attempts(self) -> list[AutomationAttempt]:
-        """End attempts a dead process left running, unless a live one holds the lease."""
+        """End attempts a dead process left running, unless a live one holds the lease.
+
+        With nothing reading `running` it leaves the lease alone: the timer settles every 30
+        seconds, and a trigger or `auto run` landing while it held the lease was refused.
+        """
+        if not self.state.has_running_attempt():
+            return []
         lease = self._lease()
         try:
             lease.acquire()

@@ -646,12 +646,7 @@ class TestGenerateMemoryRun:
             # WHY: RunTracker writes to SQLite database
             "tracker": patch(
                 "immich_memories.tracking.RunTracker",
-                return_value=MagicMock(),
-            ),
-            # WHY: generate_run_id generates unique IDs from OS random
-            "run_id": patch(
-                "immich_memories.tracking.generate_run_id",
-                return_value="20250715_120000_abcd",
+                return_value=MagicMock(run_id="20250715_120000_abcd"),
             ),
             # WHY: set_current_run_id sets thread-local state
             "set_run_id": patch("immich_memories.logging_config.set_current_run_id"),

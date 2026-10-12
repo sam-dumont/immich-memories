@@ -147,19 +147,22 @@ class RunTracker:
     def _save_new_run(self, run: RunMetadata) -> None:
         """Record the run under its lease, redrawing a generated id that is already taken.
 
+        Taken means a row has it, or another start holds its lease on the way to writing one.
+
         A run id is its starting second plus 16 random bits, so two runs that start in the
         same second (the UI, the daily timer, a trigger) collide once in 65,536 starts.
         """
         for attempt in range(_ID_ATTEMPTS):
-            # The lease comes first: a sweep that sees the row must also see its owner.
-            self._hold_lease()
             try:
+                # The lease comes first: a sweep that sees the row must also see its owner.
+                self._hold_lease()
                 self.db.save_run(run)
                 return
             except DuplicateRunError:
+                # A refused tracker keeps no lease: it would shield nothing and block the id.
+                self.release_run()
                 if not self._id_generated or attempt == _ID_ATTEMPTS - 1:
                     raise
-                self.release_run()
                 self.run_id = run.run_id = generate_run_id()
 
     def _hold_lease(self) -> None:
@@ -169,10 +172,10 @@ class RunTracker:
             lease = self.db.run_lease(self.run_id)
             lease.acquire()
         except LeaseHeldError:
-            # A live owner holds this run already: this tracker must not claim it, and the
-            # sweep sees that owner's lease, so the run is never read as dead.
-            logger.warning("Run %s is already held by another process", self.run_id)
-            return
+            # Another start drew this id in the same second and holds it. Writing the row
+            # anyway would leave it ownerless once that start gives the id up: the next sweep
+            # would end this live run. The id is taken, like a row that already exists.
+            raise DuplicateRunError(f"Run {self.run_id} is held by another process") from None
         except Exception as error:
             # A running row with no owner is swept as dead while this process is still working,
             # and the finished film's `complete` is then refused. Better not to start.

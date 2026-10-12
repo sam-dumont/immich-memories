@@ -44,6 +44,7 @@ if TYPE_CHECKING:
     from immich_memories.processing.encoding_plan import EncodingPlan
     from immich_memories.processing.timeline_budget import TimelinePlan
     from immich_memories.tracking import RunTracker
+    from immich_memories.tracking.models import RunMetadata
 
 from immich_memories.generate_progress import (  # noqa: E402
     _OperationalProgress,
@@ -453,6 +454,56 @@ def _clear_run_intermediates(
         run_output_dir.rmdir()
 
 
+def _record_run(
+    params: GenerationParams,
+    run_tracker: RunTracker,
+    observed_run: RunMetadata | None,
+    estimated_duration_seconds: int,
+) -> None:
+    """Start the run's record, or describe the one its command already opened."""
+    date_range = _requested_date_range(params)
+    if observed_run is None:
+        run_tracker.start_run(
+            person_name=params.person_name,
+            date_range=date_range,
+            target_duration_seconds=estimated_duration_seconds,
+            memory_type=params.memory_type,
+            memory_key=build_memory_key(params),
+            memory_category=params.memory_category,
+            memory_people=params.memory_people,
+            source=params.source,
+            automation_attempt_id=params.automation_attempt_id,
+        )
+        return
+    run_tracker.db.describe_run(
+        replace(
+            observed_run,
+            person_name=params.person_name,
+            date_range_start=(
+                date_range.start.date() if date_range else observed_run.date_range_start
+            ),
+            date_range_end=(date_range.end.date() if date_range else observed_run.date_range_end),
+            target_duration_seconds=estimated_duration_seconds,
+            memory_type=params.memory_type,
+            memory_key=build_memory_key(params),
+            memory_category=params.memory_category,
+            memory_people=params.memory_people,
+            source=params.source,
+            automation_attempt_id=params.automation_attempt_id,
+        )
+    )
+
+
+def _follow_redrawn_id(run_id: str, run_output_dir: Path, slug: str) -> tuple[str, Path]:
+    """Name the run folder after the id `start_run` redrew on a same-second collision."""
+    from immich_memories.logging_config import set_current_run_id
+
+    set_current_run_id(run_id)
+    renamed = run_output_dir.with_name(f"{slug}_{run_id}")
+    run_output_dir.rename(renamed)
+    return run_id, renamed
+
+
 def _requested_date_range(params: GenerationParams) -> DateRange | None:
     """Persist resolved scope before rendering so failed runs can render their saved cut."""
     if params.date_start is None or params.date_end is None:
@@ -474,7 +525,7 @@ def _generate_memory_inner(
 
     prepare_certified_timeline(params)
     from immich_memories.security import sanitize_filename
-    from immich_memories.tracking import RunTracker, generate_run_id
+    from immich_memories.tracking import RunTracker
     from immich_memories.tracking.run_observations import current_tracker
 
     observed = current_tracker()
@@ -482,15 +533,15 @@ def _generate_memory_inner(
     observed_run = (
         observed.current_run if observed is not None and run_tracker is observed else None
     )
-    run_id = run_tracker.run_id if run_tracker is not None else generate_run_id()
+    if run_tracker is None:
+        # Its id is drawn here, so a same-second start that holds it gets a new one, not a failure.
+        run_tracker = RunTracker(store=open_store(params.config))
+    run_id = run_tracker.run_id
 
     # Tag all log lines with run_id for correlation
     from immich_memories.logging_config import set_current_run_id
 
     set_current_run_id(run_id)
-
-    if run_tracker is None:
-        run_tracker = RunTracker(run_id, store=open_store(params.config))
 
     # Create output directory structure
     dir_slug = params.output_path.stem
@@ -507,39 +558,10 @@ def _generate_memory_inner(
     )
     requested_output_path = run_output_dir / sanitize_filename(params.output_path.name)
 
-    date_range = _requested_date_range(params)
-    if observed_run is None:
-        run_tracker.start_run(
-            person_name=params.person_name,
-            date_range=date_range,
-            target_duration_seconds=estimated_duration_seconds,
-            memory_type=params.memory_type,
-            memory_key=build_memory_key(params),
-            memory_category=params.memory_category,
-            memory_people=params.memory_people,
-            source=params.source,
-            automation_attempt_id=params.automation_attempt_id,
-        )
-    else:
-        run_tracker.db.describe_run(
-            replace(
-                observed_run,
-                person_name=params.person_name,
-                date_range_start=(
-                    date_range.start.date() if date_range else observed_run.date_range_start
-                ),
-                date_range_end=(
-                    date_range.end.date() if date_range else observed_run.date_range_end
-                ),
-                target_duration_seconds=estimated_duration_seconds,
-                memory_type=params.memory_type,
-                memory_key=build_memory_key(params),
-                memory_category=params.memory_category,
-                memory_people=params.memory_people,
-                source=params.source,
-                automation_attempt_id=params.automation_attempt_id,
-            )
-        )
+    _record_run(params, run_tracker, observed_run, estimated_duration_seconds)
+    if run_tracker.run_id != run_id:
+        run_id, run_output_dir = _follow_redrawn_id(run_tracker.run_id, run_output_dir, dir_slug)
+        requested_output_path = run_output_dir / requested_output_path.name
     operational = _OperationalProgress(params, run_tracker)
     operational.emit_unperformed_prerequisites(OperationalPhase.DISCOVERY)
 
