@@ -473,8 +473,8 @@ def test_without_a_home_base_there_is_no_season_film(tmp_path: Path) -> None:
 
 
 def _national_days() -> Library:
-    """Ten pictures on each of the last two Belgian National Days (21 July)."""
-    return Library().on(date(2025, 7, 21), 10).on(date(2024, 7, 20), 10)
+    """Ten pictures on each of the last three Belgian National Days (21 July), none around."""
+    return Library().on(date(2025, 7, 21), 10).on(date(2024, 7, 21), 10).on(date(2023, 7, 21), 10)
 
 
 @pytest.mark.feature("detector.holiday")
@@ -486,9 +486,12 @@ def test_a_home_country_holiday_is_proposed_from_3_days_after_it(
     rows = suggestions(config, _national_days(), date(2026, 7, 24))
 
     holidays = of_category(rows, "holiday")
-    # The five years around it: the 2026 one and the four before, two days either side.
-    assert _ranges(holidays) == ["2022-07-19 to 2026-07-23"]
-    assert holidays[0]["reason"] == "National Day: 20 pictures across 2 years"
+    # Every year a library can hold: the 2026 one and the 29 before, two days either side.
+    assert _ranges(holidays) == ["1997-07-19 to 2026-07-23"]
+    assert holidays[0]["reason"] == (
+        "National Day: the day stands out in 3 years (2023, 2024, 2025), "
+        "30 pictures on it across 3 years"
+    )
 
 
 @pytest.mark.feature("detector.holiday")
@@ -505,13 +508,18 @@ def test_a_holiday_two_days_ago_is_not_proposed_yet(
 @pytest.mark.feature("detector.holiday")
 def test_a_day_from_extra_holidays_is_proposed_without_a_home_base(tmp_path: Path) -> None:
     config = write_config(tmp_path, automation={"extra_holidays": ["12-06: Saint Nicholas"]})
-    library = Library().on(date(2025, 12, 6), 12).on(date(2023, 12, 5), 12)
+    library = (
+        Library().on(date(2025, 12, 6), 12).on(date(2024, 12, 6), 12).on(date(2023, 12, 6), 12)
+    )
 
     rows = suggestions(config, library, date(2026, 12, 9))
 
     holidays = of_category(rows, "holiday")
-    assert _ranges(holidays) == ["2022-12-04 to 2026-12-08"]
-    assert holidays[0]["reason"] == "Saint Nicholas: 24 pictures across 2 years"
+    assert _ranges(holidays) == ["1997-12-04 to 2026-12-08"]
+    assert holidays[0]["reason"] == (
+        "Saint Nicholas: the day stands out in 3 years (2023, 2024, 2025), "
+        "36 pictures on it across 3 years"
+    )
 
 
 # ── album ────────────────────────────────────────────────────────────────

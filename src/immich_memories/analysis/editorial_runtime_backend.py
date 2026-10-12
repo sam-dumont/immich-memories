@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import calendar
 import json
 import logging
 from collections.abc import Callable, Mapping, Sequence
 from contextlib import ExitStack
 from dataclasses import replace
+from datetime import date
 from hashlib import sha256
 from itertools import chain
 from operator import itemgetter
@@ -42,7 +44,7 @@ from immich_memories.analysis.editorial_structure_source import capture_structur
 from immich_memories.analysis.editorial_thin_layer import (
     PeriodUnread,
     ThinPolish,
-    catalogued_period,
+    film_periods,
 )
 from immich_memories.analysis.editorial_thin_short import ShortReads
 from immich_memories.analysis.editorial_thumbnail_hashes import CachedThumbnailHasher
@@ -367,16 +369,10 @@ class ProductionPostCardBackend:
         """
         if not self._config.editorial.thin_model_layer or source.store is None:
             return {}
-        period = catalogued_period(source.case.ranges)
+        periods = film_periods(source.case.ranges)
         config = self._config
         if config.editorial.resolve_reader(config.llm.model) == "rules":
             return {}
-        if not period:
-            first = min(window.start for window in source.case.ranges)
-            last = max(window.end for window in source.case.ranges)
-            # This names the account only. Acquisition and demanded episodes still keep
-            # the exact windows and their gaps; it must never become a fetch interval.
-            period = f"{first:%Y-%m-%d}..{last:%Y-%m-%d}"
         from immich_memories.analysis.editorial_laya_reader import laya_reader_for
         from immich_memories.analysis.editorial_rule_reader import RuleStructureReader
 
@@ -394,7 +390,7 @@ class ProductionPostCardBackend:
             "thin": ThinPolish(
                 store=source.bank_store,
                 bank_scope=source.case.key,
-                read_period=lambda asset_ids_of: self._read_period(source, period, asset_ids_of),
+                read_period=lambda asset_ids_of: self._read_period(source, periods, asset_ids_of),
                 short=self._short_reads(source, rules.standing),
             ),
         }
@@ -432,7 +428,10 @@ class ProductionPostCardBackend:
             return {}
 
     def _read_period(
-        self, source: StructurePlanningInput, period: str, asset_ids_of: Mapping[str, Sequence[str]]
+        self,
+        source: StructurePlanningInput,
+        periods: tuple[str, ...],
+        asset_ids_of: Mapping[str, Sequence[str]],
     ) -> tuple[str, Mapping[str, str]]:
         """The account of this period and its records, read from the episodes of the draft's shots.
 
@@ -440,17 +439,51 @@ class ProductionPostCardBackend:
         second failure is still not a failed film: `PeriodUnread` tells the polish why it did
         not run, and the rules draft ships with the passes a no-model film gets.
         """
+        named = periods[0] if len(periods) == 1 else f"{periods[0]} to {periods[-1]}"
         try:
-            return self._demanded_period(source, period, asset_ids_of)
+            return self._demanded_periods(source, periods, asset_ids_of)
         except (OSError, ValueError, RuntimeError) as exc:
-            logger.warning("Could not read an account of %s (%s); asking once more", period, exc)
+            logger.warning("Could not read an account of %s (%s); asking once more", named, exc)
         try:
-            return self._demanded_period(source, period, asset_ids_of)
+            return self._demanded_periods(source, periods, asset_ids_of)
         except (OSError, ValueError, RuntimeError) as exc:
-            raise PeriodUnread(f"could not read an account of {period}: {exc}") from exc
+            raise PeriodUnread(f"could not read an account of {named}: {exc}") from exc
+
+    def _demanded_periods(
+        self,
+        source: StructurePlanningInput,
+        periods: tuple[str, ...],
+        asset_ids_of: Mapping[str, Sequence[str]],
+    ) -> tuple[str, Mapping[str, str]]:
+        """One period's account, or a film of several windows told window by window.
+
+        Each window is told from its own shots' episodes only, so nothing outside the film's
+        windows (the rest of a year it touches) reaches its account.
+        """
+        if len(periods) == 1:
+            return self._demanded_period(source, periods[0], asset_ids_of, None)
+        accounts: list[str] = []
+        records: dict[str, str] = {}
+        for period in periods:
+            bounds = _period_bounds(period)
+            inside = {
+                key: [a for a in ids if _taken_within(source, a, bounds)]
+                for key, ids in asset_ids_of.items()
+            }
+            if not any(inside.values()):
+                continue
+            account, found = self._demanded_period(source, period, inside, bounds)
+            if account:
+                accounts.append(f"{period}:\n{account}")
+            records.update(found)
+        return "\n\n".join(accounts), records
 
     def _demanded_period(
-        self, source: StructurePlanningInput, period: str, asset_ids_of: Mapping[str, Sequence[str]]
+        self,
+        source: StructurePlanningInput,
+        period: str,
+        asset_ids_of: Mapping[str, Sequence[str]],
+        bounds: tuple[date, date] | None,
     ) -> tuple[str, Mapping[str, str]]:
         from immich_memories.analysis.catalogue_runtime import (
             banked_notable_records,
@@ -461,7 +494,7 @@ class ProductionPostCardBackend:
         readings = self._demand_readings(asset_ids_of)
         identities = [reading.identity for reading in readings.values()]
         account = library_period_account(source.store, period)
-        facts = _unread_facts(source, set(readings))
+        facts = _unread_facts(source, set(readings), bounds)
         if not account and (identities or facts):
             catalogue_banked_episodes(
                 identities,
@@ -496,11 +529,31 @@ class ProductionPostCardBackend:
         return plan
 
 
-def _unread_facts(source: StructurePlanningInput, read: set[str]) -> list[LibraryAccount]:
+def _period_bounds(period: str) -> tuple[date, date]:
+    """The first and last day a library node names: a window, a month or a year."""
+    if ".." in period:
+        first, _, last = period.partition("..")
+        return date.fromisoformat(first), date.fromisoformat(last)
+    year = int(period[:4])
+    if len(period) == 4:
+        return date(year, 1, 1), date(year, 12, 31)
+    month = int(period[5:7])
+    return date(year, month, 1), date(year, month, calendar.monthrange(year, month)[1])
+
+
+def _taken_within(source: StructurePlanningInput, asset_id: str, bounds: tuple[date, date]) -> bool:
+    asset = source.assets.get(asset_id)
+    return asset is not None and bounds[0] <= asset.local_taken_at.date() <= bounds[1]
+
+
+def _unread_facts(
+    source: StructurePlanningInput, read: set[str], bounds: tuple[date, date] | None = None
+) -> list[LibraryAccount]:
     """What the draft's own cards say about each episode this cut did not read.
 
     The no-model reader wrote them to build the draft, so passing them on costs nothing, and
-    the account then speaks for the whole period rather than for the shots alone.
+    the account then speaks for the whole period rather than for the shots alone. With
+    ``bounds``, only the episodes of that window.
     """
     cards = {card.episode_id: card for card in source.episode_readings.values()}
     facts = []
@@ -511,6 +564,8 @@ def _unread_facts(source: StructurePlanningInput, read: set[str]) -> list[Librar
             if asset in source.assets
         ]
         if episode_id in read or not dates or not card.what_happened.strip():
+            continue
+        if bounds is not None and not bounds[0] <= min(dates).date() <= bounds[1]:
             continue
         material = f"{episode_id}\n{card.evidence_key}\n{card.what_happened}"
         facts.append(

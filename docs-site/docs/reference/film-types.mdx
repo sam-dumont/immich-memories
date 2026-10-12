@@ -168,14 +168,21 @@ immich-memories generate --memory-type on_this_day --day 2026-08-31 --years-back
 
 ## Holiday
 
-A recurrence, not a period: one window per year, the holiday ±2 days, so five Christmases ask Immich
-for five windows and never for the years between.
+A recurrence, not a period: one window per year, the holiday ±2 days, in every year back to 30
+years, so twenty Christmases ask Immich for twenty windows and never for the months between.
 
 ```bash
-immich-memories generate --memory-type holiday --holiday christmas --years-back 5
+immich-memories generate --memory-type holiday --holiday christmas
 ```
 
-`--holiday` is required, `--years-back` defaults to 5. These names are recognised; availability
+The film is about the day itself. Each year keeps the pictures of the holiday, plus the night that
+started on it (until 4:00 the next morning). The two days either side only join when the day holds
+fewer than 5 pictures, and a year with nothing on the day adds nothing. Every year that has a shot
+gets one before any year gets a second, and no year takes more than an even share of the film: a
+starred afternoon or two long videos from one year can't fill it.
+
+`--holiday` is required. `--years-back` narrows the film to the last few years; without it, every
+year is read. These names are recognised; availability
 depends on the country where the table says so:
 
 | Name | Falls on |
@@ -193,8 +200,10 @@ depends on the country where the table says so:
 
 `--holiday` also takes any public holiday of your country by name (see below), and anything else is
 read as `MM-DD`, for a household's own occasion (`--holiday 09-14`, the day you moved in). Without `--year`, the starting year steps back when this year's occasion has not happened
-yet. The title is the occasion's name, subtitled "Through the Years" in the film's language, on both
-the CLI and the web UI.
+yet. The title is the holiday's name in the film's language, then the years the cut shows:
+"Assomption · 2004–2026", or "Noël · 2015, 2017–2026" when years are missing. A public holiday
+takes the name its country's calendar gives it in that language, and a day from `extra_holidays`
+takes the name you wrote there. No text model writes a holiday's title.
 
 The holidays follow the country your home base is in (`trips.homebase_latitude` and
 `trips.homebase_longitude`); Immich's own geodata says which country that is, so nothing leaves your

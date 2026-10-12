@@ -88,3 +88,36 @@ def test_an_explicit_year_is_still_honoured() -> None:
     ranges = build_holiday("christmas", 2026, years_back=1, window_days=1)
 
     assert [r.start.year for r in ranges] == [2026]
+
+
+def test_a_holiday_reads_every_year_a_library_can_hold_by_default() -> None:
+    """A twenty-year library read five holidays of twenty: the film missed most of its years."""
+    ranges = build_holiday("08-15", 2026)
+
+    years = [r.start.year for r in ranges]
+    assert years[0] == 2026
+    assert years[-1] <= 2004
+    assert years == sorted(years, reverse=True)
+
+
+def test_generate_holiday_by_hand_reads_the_same_years_as_the_default() -> None:
+    from immich_memories.cli._date_resolution import resolve_date_range
+
+    ranges = resolve_date_range(
+        year=2026,
+        start=None,
+        end=None,
+        period=None,
+        birthday=None,
+        memory_type="holiday",
+        holiday="08-15",
+    )
+
+    assert isinstance(ranges, list)
+    assert [r.start.date() for r in ranges] == [
+        r.start.date() for r in build_holiday("08-15", 2026)
+    ]
+
+
+def test_years_back_still_narrows_a_holiday_on_request() -> None:
+    assert len(build_holiday("christmas", 2025, years_back=3)) == 3

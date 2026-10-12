@@ -94,7 +94,8 @@ class AutomationConfig(BaseModel):
         default=True, description="Propose the season that just ended (needs the home base)"
     )
     detect_holidays: bool = Field(
-        default=True, description="Propose a holiday film across the years with pictures around it"
+        default=True,
+        description="Propose a holiday film when your pictures show the day stands out, across every year",
     )
     detect_albums: bool = Field(
         default=True, description="Propose a film for a new Immich album, or one that has grown"

@@ -162,6 +162,7 @@ def _finish_without_rendering(
         date_range=date_range,
         person_name=cut_run.get("person_name"),
         preset_params=preset_params,
+        years={clip.asset.local_taken_at.year for clip in selected_clips},
     )
     preview = GenerationPreview(
         memory_type=memory_type or "custom",

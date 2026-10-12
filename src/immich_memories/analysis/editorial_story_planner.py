@@ -570,6 +570,7 @@ def select_story_first(
         limit=partition_limit,
         voiced=voice_per_partition,
         every_era_speaks=pool_is_subject or occurrence_is_subject,
+        even_eras=occurrence_is_subject,
     )
     units = _MomentUnits(event_units, family_of_moment, dict(family_tier or {}))
     place_of_moment = {

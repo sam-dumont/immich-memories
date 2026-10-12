@@ -58,7 +58,7 @@ class ExtraReads:
     albums: list[dict[str, Any]] = field(default_factory=list)
     user_id: str | None = None
     season_days: dict[Window, dict[date, int]] = field(default_factory=dict)
-    holiday_pictures: dict[Window, int] = field(default_factory=dict)
+    holiday_days: dict[Window, dict[date, int]] = field(default_factory=dict)
     person_days: dict[str, dict[date, int]] = field(default_factory=dict)
     birthday_days: dict[str, set[date]] = field(default_factory=dict)
     closeness: dict[str, float] = field(default_factory=dict)
@@ -76,8 +76,13 @@ def read_account_extras(
     plan: ExtraPlan,
     primary: bool,
     into: ExtraReads,
+    months: Mapping[str, int] | None = None,
 ) -> None:
-    """Add one account's answers to ``into``; a failed read adds a note instead."""
+    """Add one account's answers to ``into``; a failed read adds a note instead.
+
+    ``months`` is the account's pictures per month from the timeline, when the caller has it:
+    a holiday is not read in a year whose month holds nothing.
+    """
     cfg = plan.auto_cfg
     # Deciding what is due is detector code: a fault there costs that detector alone.
     if cfg.detect_seasons:
@@ -86,7 +91,10 @@ def read_account_extras(
         )
     if cfg.detect_holidays:
         guarded_detector(
-            "holiday", into.notes, partial(_read_holidays, client, user_id, plan, into), None
+            "holiday",
+            into.notes,
+            partial(_read_holidays, client, user_id, plan, into, months),
+            None,
         )
     if cfg.detect_albums and primary:
         albums = _guard("the albums", partial(_albums_of, client), into.notes)
@@ -117,18 +125,46 @@ def _read_season(client: Any, user_id: str | None, plan: ExtraPlan, into: ExtraR
         _sum_days(into.season_days.setdefault(due.window, {}), counted or {})
 
 
-def _read_holidays(client: Any, user_id: str | None, plan: ExtraPlan, into: ExtraReads) -> None:
+def _read_holidays(
+    client: Any,
+    user_id: str | None,
+    plan: ExtraPlan,
+    into: ExtraReads,
+    months: Mapping[str, int] | None = None,
+) -> None:
+    """Pictures per day around each due holiday, in every year the library could hold it.
+
+    A year whose month holds nothing (`months`, the timeline's own buckets) costs no read, and
+    a year with nothing on the day itself costs one count: only a day that holds pictures has
+    the days around it read, since only that day can stand out.
+    """
     # Each account counts its own pictures, so one a partner shares is not counted twice.
     for due in HolidayDetector().due(
         plan.today, plan.country, plan.auto_cfg.extra_holidays, plan.generated_keys
     ):
-        for window in due.windows:
-            counted = _guard(
+        for day in due.days:
+            window = due.window_of(day)
+            if months is not None and not _month_holds_pictures(months, window):
+                continue
+            on_the_day = _guard(
                 "a holiday's pictures",
-                partial(pictures_in, [client], window, owner_id=user_id),
+                partial(pictures_in, [client], (day, day), owner_id=user_id),
                 into.notes,
             )
-            into.holiday_pictures[window] = into.holiday_pictures.get(window, 0) + (counted or 0)
+            if not on_the_day:
+                continue
+            counted = _guard(
+                "a holiday's pictures",
+                partial(days_in, [client], window, owner_id=user_id),
+                into.notes,
+            )
+            _sum_days(into.holiday_days.setdefault(window, {}), counted or {day: on_the_day})
+
+
+def _month_holds_pictures(months: Mapping[str, int], window: Window) -> bool:
+    first, last = window
+    keys = {f"{first.year}-{first.month:02d}", f"{last.year}-{last.month:02d}"}
+    return any(months.get(key, 0) for key in keys)
 
 
 def _read_person_months(

@@ -101,14 +101,45 @@ class DepthFill:
         distinct shots, one at a time, round-robin across every story in funding order
         (#2083): draining one story's moments before its neighbours ever had a turn is how a
         person film kept filling the same handful of moments past the point of new material."""
-        progressed = True
-        while progressed and not self._depth_budget_met():
-            progressed = False
-            for index, s in enumerate(self._host.stories, 1):
-                if self._depth_budget_met():
-                    break
-                if self._deepen_once(index, s):
-                    progressed = True
+        while not self._depth_budget_met() and self._one_round():
+            pass
+
+    def _one_round(self) -> bool:
+        """One frame per story in funding order; whether any story took one.
+
+        A film about the dates deepens one occurrence at a time: a round gives each era one
+        frame, so a year of many stories does not take a turn per story.
+        """
+        progressed = False
+        deepened: set[str] = set()
+        for index, s in enumerate(self._host.stories, 1):
+            if self._depth_budget_met():
+                break
+            era = self._era_of_story(s)
+            if era is not None and (era in deepened or self._era_full(era)):
+                continue
+            if self._deepen_once(index, s):
+                progressed = True
+                deepened.update([era] if era is not None else [])
+        return progressed
+
+    def _era_full(self, era: str) -> bool:
+        """Whether an era already holds its even share of the film: the film goes short
+        rather than handing one occurrence the turns the others had no picture for."""
+        host = self._host
+        voice_of = host.parts.voice_of
+        assert voice_of is not None
+        held = sum(voice_of(c["taken"]) == era for c in host.carriers)
+        return held >= host.parts.era_share(host.slots, host.carriers)
+
+    def _era_of_story(self, s) -> str | None:
+        """The era a story's frames lie in, on a film whose eras each take their turn."""
+        host = self._host
+        voice_of = host.parts.voice_of
+        if not host.parts.even_eras or voice_of is None:
+            return None
+        eras = {voice_of(c["taken"]) for c in host.carriers if c["story_episode"] == s["key"]}
+        return eras.pop() if len(eras) == 1 else None
 
     def _offerable(self, s) -> list[DepictedChoice]:
         """This story's moments, holding only the pictures that could carry a frame.

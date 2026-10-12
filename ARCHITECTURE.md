@@ -556,6 +556,7 @@ src/immich_memories/
 │   ├── registry.py             # MemoryType enum
 │   ├── presets.py              # PersonFilter, MemoryPreset
 │   ├── date_builders.py        # build_season(), build_month(), build_on_this_day()
+│   ├── holiday_pool.py         # A holiday film keeps each year's day; its window fills in only when thin
 │   └── factory.py              # Registry + preset factories; Album is handled by cli/_album_generation.py
 │
 ├── analysis/                   # Selection: the story-first editorial route (words: see Editorial glossary)

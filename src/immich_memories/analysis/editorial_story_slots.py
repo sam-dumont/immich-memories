@@ -39,6 +39,8 @@ class _Grants:
         capacity: Mapping[str, int],
         already: Mapping[str, int],
         reserve_slot: Callable[[Mapping[str, Any]], bool] | None,
+        era_of: Mapping[str, str] | None = None,
+        era_share: int | None = None,
     ) -> None:
         self.stories = stories
         self.already = already
@@ -46,6 +48,8 @@ class _Grants:
         self.granted = {s["key"]: 0 for s in stories}
         self.remaining = slots
         self._reserve = reserve_slot
+        self._era_of = era_of or {}
+        self._era_share = era_share
         self._members: dict[str, list[str]] = {}
         present = {s["key"] for s in stories}
         for s in stories:
@@ -68,10 +72,19 @@ class _Grants:
         return [s for s in self.stories if s["weight"] == weight]
 
     def room(self, s) -> int:
-        return max(
+        own = max(
             0,
             self.capacity.get(s["key"], 0) - self.granted[s["key"]] - self.already.get(s["key"], 0),
         )
+        era = self._era_of.get(s["key"])
+        if self._era_share is None or era is None:
+            return own
+        held = sum(
+            self.granted[k["key"]] + self.already.get(k["key"], 0)
+            for k in self.stories
+            if self._era_of.get(k["key"]) == era
+        )
+        return min(own, max(0, self._era_share - held))
 
     def grant(self, s) -> None:
         self.granted[s["key"]] += 1
@@ -177,6 +190,7 @@ def allocate_slots(
     reserve_slot: Callable[[Mapping[str, Any]], bool] | None = None,
     era_of: Mapping[str, str] | None = None,
     pool_is_subject: bool = False,
+    era_share: int | None = None,
 ) -> dict[str, int]:
     """Slots per story from its weight, capped by the moments it holds. Stories come in weight
     order. With `era_of` (a story's era, for the stories that lie inside one), every era first
@@ -185,9 +199,13 @@ def allocate_slots(
     moment at a time while they have moments; a glimpse stays one picture and "none" is never
     funded, except as its era's voice in a pool chosen for the film's subject
     (`pool_is_subject`). Stories of one recurring kind name their depth holder in `depth_to`:
-    every member keeps one picture, and only the holder deepens, counting the whole kind."""
+    every member keeps one picture, and only the holder deepens, counting the whole kind.
+    With `era_share`, no era holds more than that many pictures however its stories weigh: a
+    film about the dates gives each one its turn, not its busiest one the film."""
     counted = dict(already or {})
-    plan = _Grants(stories, slots, capacity, counted, reserve_slot)
+    plan = _Grants(
+        stories, slots, capacity, counted, reserve_slot, era_of=era_of, era_share=era_share
+    )
     caps = weight_caps(slots + sum(counted.values()))
     if era_of:
         plan.take_one_per_era(era_of, pool_is_subject=pool_is_subject)
@@ -253,17 +271,25 @@ class PartitionedSlots:
         limit: int | None = None,
         voiced: bool = False,
         every_era_speaks: bool = False,
+        even_eras: bool = False,
     ) -> None:
         self._unit_by_asset = unit_by_asset
         self._partition_of = partition_of
         self.limit = limit
         self._voiced = voiced
         self._every_era_speaks = every_era_speaks
+        self._even_eras = even_eras
 
     @property
     def every_era_speaks(self) -> bool:
         """Every partition speaks, whatever its stories weigh: the film is about the dates."""
         return self._voiced and self._every_era_speaks
+
+    @property
+    def even_eras(self) -> bool:
+        """Every partition takes its turn, one picture at a time: the film is about the dates,
+        so no one occurrence's busy afternoon takes the film (on this day, a holiday)."""
+        return self._voiced and self._even_eras
 
     @property
     def voice_of(self) -> Callable[[str], str | None] | None:
@@ -335,6 +361,34 @@ class PartitionedSlots:
         )
         return sorted(rows, key=operator.itemgetter("partition"))
 
+    def _era_share(
+        self,
+        eras: Mapping[str, str] | None,
+        budget: int,
+        already: Mapping[str, int] | None,
+        carriers: Sequence[Mapping[str, Any]] = (),
+    ) -> int | None:
+        """The pictures one era may hold when every era takes its turn, or None."""
+        if not self.even_eras or not eras:
+            return None
+        return self.era_share(budget + sum((already or {}).values()), carriers, eras.values())
+
+    def era_share(
+        self,
+        slots: int,
+        carriers: Sequence[Mapping[str, Any]],
+        more_eras: Collection[str] = (),
+    ) -> int:
+        """An even split of `slots` over every era the cut shows or could show, rounded up.
+
+        The eras already in the cut count too: a later pass offers only the stories with
+        moments left, and splitting the film over those alone handed one year the film again.
+        """
+        voice_of = self._partition_of
+        held = {voice_of(str(c["taken"])) for c in carriers} if voice_of else set()
+        eras = {era for era in (*held, *more_eras) if era is not None}
+        return max(1, math.ceil(slots / max(1, len(eras))))
+
     def of_asset(self, asset: str) -> str | None:
         if self.limit is None or self._partition_of is None:
             return None
@@ -379,13 +433,15 @@ class PartitionedSlots:
             for key, value in choices.items()
         }
         if self.limit is None:
+            eras = self.eras(capacity_choices, silent)
             counts = allocate_slots(
                 stories,
                 budget,
                 {k: len(v) for k, v in capacity_choices.items()},
                 already=already,
-                era_of=self.eras(capacity_choices, silent),
+                era_of=eras,
                 pool_is_subject=self._every_era_speaks,
+                era_share=self._era_share(eras, budget, already, carriers),
             )
             return counts, {key: {None: count} for key, count in counts.items()}
         used: dict[str | None, int] = {}

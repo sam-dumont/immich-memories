@@ -521,6 +521,7 @@ class CandidateDiscovery:
                 plan,
                 name == PRIMARY_ACCOUNT,
                 extras,
+                read.months,
             )
             per_account[name] = read
             # Trips stay primary-account only: --accounts refuses trip memories

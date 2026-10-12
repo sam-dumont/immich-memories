@@ -49,7 +49,7 @@ def run_extra_detectors(
                 extras.country,
                 auto_cfg.extra_holidays,
                 generated_keys,
-                extras.holiday_pictures,
+                extras.holiday_days,
             ),
         )
     if auto_cfg.detect_albums:

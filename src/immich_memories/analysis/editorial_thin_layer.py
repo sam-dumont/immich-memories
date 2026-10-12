@@ -90,6 +90,19 @@ def catalogued_period(ranges: Sequence[Any]) -> str:
     return f"{_day(first)}..{_day(last)}"
 
 
+def film_periods(ranges: Sequence[Any]) -> tuple[str, ...]:
+    """The library nodes a film's account is told from: its own, or one per window.
+
+    A film over several windows (a holiday across the years) is told from its windows alone.
+    Named over its whole span, a whole year inside it was read back from that year's banked
+    account, and a film of mid-August was described in autumn and winter scenes.
+    """
+    if len(ranges) == 1:
+        return (catalogued_period(ranges),)
+    ordered = sorted(ranges, key=lambda window: window.start)
+    return tuple(dict.fromkeys(catalogued_period([window]) for window in ordered))
+
+
 def _why_unpolished(catalogue: ThinCatalogue | None, unread: str) -> str:
     if unread:
         return unread

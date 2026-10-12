@@ -203,7 +203,7 @@ def test_household_automation_counts_each_picture_once_for_its_owner(tmp_path, l
             )
 
     assert reads.notes == []
-    assert reads.holiday_pictures[(date(2025, 8, 13), date(2025, 8, 17))] == 3
+    assert reads.holiday_days[(date(2025, 8, 13), date(2025, 8, 17))] == {date(2025, 8, 15): 3}
     assert reads.season_days[(date(2025, 6, 1), date(2025, 8, 31))] == {date(2025, 8, 15): 3}
 
 

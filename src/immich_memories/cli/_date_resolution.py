@@ -313,7 +313,7 @@ def _holiday_ranges(
     from immich_memories.memory_types.registry import MemoryType
 
     preset = create_preset(
-        MemoryType.HOLIDAY, holiday=holiday, year=year, years_back=years_back or 5, country=country
+        MemoryType.HOLIDAY, holiday=holiday, year=year, years_back=years_back, country=country
     )
     return preset.date_ranges
 
@@ -388,3 +388,18 @@ def _multi_year_ranges(
         return _holiday_ranges(holiday, year, years_back, country)
 
     return None
+
+
+def holiday_params_for(memory_type: str | None, holiday: str | None, config) -> dict:
+    """What a holiday film is about: the holiday, the home country that dates and names it,
+    and the household's own name for a day of its own (`automation.extra_holidays`)."""
+    if memory_type != "holiday":
+        return {}
+    from immich_memories.home_country import home_country
+
+    params = {"country": home_country(config), "holiday": holiday}
+    for entry in config.automation.extra_holidays:
+        month_day, _, name = entry.partition(":")
+        if holiday and month_day.strip() == holiday.strip():
+            params["holiday_name"] = name.strip()
+    return params

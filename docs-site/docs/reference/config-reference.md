@@ -957,7 +957,7 @@ advanced:
     detect_groups: true             # propose last year's film for each saved people group
                                     # (people group add) whose people have pictures
     detect_seasons: true            # the season that just ended (needs the home base for its hemisphere)
-    detect_holidays: true           # a holiday film across the years with pictures around it
+    detect_holidays: true           # a holiday film when the day stands out in your pictures
     detect_albums: true             # a new Immich album, or one that has grown
     detect_person_monthly: true     # last month's film of each person close to you
     backfill_months: true           # months of this year and last that never got a film, on quiet nights

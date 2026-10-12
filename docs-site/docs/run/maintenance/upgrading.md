@@ -76,6 +76,14 @@ advanced:
 
 See [automation](../../make/automate.md) for what each one proposes.
 
+## Holiday films read every year
+
+A holiday film used to read the five years before it. It now reads every year your library has
+around the day, so `generate --holiday` without `--years-back` covers your whole library. Pass
+`--years-back 5` to keep the old span. The film is titled with the holiday's name and the years it
+shows, and the timer only proposes a holiday when the day stands out in your pictures in at least
+three years.
+
 ## Temporary working files
 
 Keep cache and output directories on mounted storage with free space. At startup the app and

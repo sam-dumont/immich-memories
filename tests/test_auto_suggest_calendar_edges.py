@@ -51,13 +51,14 @@ class TestALeapDayHoliday:
     @pytest.mark.feature("automation.extra-holidays-leap-day")
     def test_the_leap_day_is_filmed_on_28_february_in_other_years(self, tmp_path: Path) -> None:
         config = _config(tmp_path, extra_holidays=["02-29: Leap day"])
-        client = fake_library({"2027-02": 80, "2027-01": 60})
+        # Three Februaries without a 29th, each with ten pictures on the 28th and none around.
+        client = fake_library({"2025-02": 80, "2026-02": 80, "2027-02": 80, "2027-01": 60})
         client.count_assets_with_people.return_value = 10
 
         rows = suggest_json(config, client, date(2027, 3, 5))
 
         holidays = [row for row in rows if row["memory_type"] == "holiday"]
-        assert [row["date_range"] for row in holidays] == ["2023-02-26 to 2027-03-02"]
+        assert [row["date_range"] for row in holidays] == ["1998-02-26 to 2027-03-02"]
         assert holidays[0]["reason"].startswith("Leap day")
 
     @pytest.mark.feature("automation.extra-holidays-leap-day")

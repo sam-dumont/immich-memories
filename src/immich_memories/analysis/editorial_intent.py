@@ -276,7 +276,9 @@ def _recurring(product, spans, whole, *, brief, who):
     # and 1 January cross New Year, and a year split there mixes two occurrences (#2357).
     # A window asked for twice is still one occurrence.
     partitions = _per_range(list(dict.fromkeys(spans)), "occurrence", required=True)
-    every_year = product == "on_this_day"
+    # The dates are the subject of both: every occurrence that holds a standing picture gets
+    # its voice, however ordinary it reads beside the busiest years (#2134). A holiday whose
+    # starred afternoon took half the film and left five of its years out was the same fault.
     return EditorialIntent(
         product=product,
         scope=f"{day} across {len(spans)} occurrences, {whole[0].year}..{whole[1].year}",
@@ -294,8 +296,8 @@ def _recurring(product, spans, whole, *, brief, who):
         ),
         allowed_texture="the festive or ritual setting of the day itself",
         abstention_policy="fewer than two occurrences hold usable material: insufficient_material rather than a single-year film",
-        voice_per_partition=every_year,
-        occurrence_is_subject=every_year,
+        voice_per_partition=True,
+        occurrence_is_subject=True,
     )
 
 

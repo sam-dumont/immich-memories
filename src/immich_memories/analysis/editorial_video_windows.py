@@ -11,7 +11,7 @@ facts are measured elsewhere (`editorial_clip_facts`); this module only chooses.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from operator import itemgetter
 from typing import Protocol
 
@@ -19,7 +19,7 @@ from immich_memories.analysis.editorial_structure_budget import (
     LONGEST_EXCHANGE_SECONDS,
     MIN_CARRIER_SECONDS,
 )
-from immich_memories.speech.cuts import set_duration
+from immich_memories.speech.cuts import safe_end, set_duration
 
 # The step a window start moves in; half the activity bin, coarser than a frame.
 STEP_SECONDS = 0.25
@@ -146,7 +146,12 @@ class Facts(Protocol):
     def obstructed(self) -> Sequence[float]: ...
 
 
-def grow_holds(carriers: list[dict], spare_seconds: float) -> list[dict]:
+def grow_holds(
+    carriers: list[dict],
+    spare_seconds: float,
+    *,
+    era_of: Callable[[str], str | None] | None = None,
+) -> list[dict]:
     """A short film's kept videos hold longer, towards the content it still has unspent (#2090).
 
     The film's videos were all cut at the motion cap before anyone looked at what the film had
@@ -154,31 +159,84 @@ def grow_holds(carriers: list[dict], spare_seconds: float) -> list[dict]:
     play (its own source is longer, no owner edit fixed its interval) takes an equal share, up
     to ``LONGEST_EXCHANGE_SECONDS``. This runs before the window is placed, so a window
     against the end of its source grows backwards from the last frame.
+
+    ``era_of`` (a capture time's era) bounds a film about the dates: no era grows past an
+    even share of the content, so one year's long videos never take the time the other years
+    had no video to fill.
     """
+    grown = [c.copy() for c in carriers]
+    era_room = _era_room(grown, spare_seconds, era_of)
+
+    def room(i: int) -> float:
+        own = min(float(grown[i]["raw_seconds"]), LONGEST_EXCHANGE_SECONDS) - grown[i]["seconds"]
+        if era_of is None:
+            return own
+        return min(own, era_room.get(era_of(str(grown[i]["taken"])), 0.0))
+
     growable = [
         i
-        for i, c in enumerate(carriers)
-        if c["kind"] == "video"
-        and "start_time" not in c
-        and min(float(c.get("raw_seconds") or 0.0), LONGEST_EXCHANGE_SECONDS) > c["seconds"]
+        for i, c in enumerate(grown)
+        if c["kind"] == "video" and "start_time" not in c and room(i) > 1e-6
     ]
-    grown = [c.copy() for c in carriers]
     while spare_seconds > 1e-6 and growable:
         share = spare_seconds / len(growable)
         for i in growable:
-            room = (
-                min(float(grown[i]["raw_seconds"]), LONGEST_EXCHANGE_SECONDS) - grown[i]["seconds"]
-            )
-            step = min(share, room)
+            step = min(share, room(i))
             grown[i]["seconds"] = grown[i]["seconds"] + step
             spare_seconds -= step
-        growable = [
-            i
-            for i in growable
-            if min(float(grown[i]["raw_seconds"]), LONGEST_EXCHANGE_SECONDS) - grown[i]["seconds"]
-            > 1e-6
-        ]
+            if era_of is not None:
+                era = era_of(str(grown[i]["taken"]))
+                era_room[era] = era_room.get(era, 0.0) - step
+        growable = [i for i in growable if room(i) > 1e-6]
     return grown
+
+
+def _era_room(
+    carriers: list[dict], spare_seconds: float, era_of: Callable[[str], str | None] | None
+) -> dict[str | None, float]:
+    """The seconds each era may still grow by: an even share of the content, less what it holds."""
+    if era_of is None:
+        return {}
+    held: dict[str | None, float] = {}
+    for c in carriers:
+        era = era_of(str(c["taken"]))
+        held[era] = held.get(era, 0.0) + float(c["seconds"])
+    share = (sum(held.values()) + spare_seconds) / max(1, len(held))
+    return {era: max(0.0, share - seconds) for era, seconds in held.items()}
+
+
+def within_era_shares(
+    carriers: list[dict],
+    before: Mapping[str, float],
+    content_seconds: float,
+    era_of: Callable[[str], str | None],
+) -> list[dict]:
+    """Hand back what speech added past an era's even share of a film about the dates.
+
+    Finishing a sentence grew one year's video of a holiday film to 11.5 s, and the fit then
+    dropped another year's shot to make room. A clip that speech lengthened (`before` holds
+    its hold from before) gives the excess back, ending before the sentence it would cut, and
+    never below the hold the editor chose.
+    """
+    held: dict[str | None, float] = {}
+    for c in carriers:
+        era = era_of(str(c["taken"]))
+        held[era] = held.get(era, 0.0) + float(c["seconds"])
+    share = content_seconds / max(1, len(held))
+    fitted = []
+    for original in carriers:
+        carrier = original.copy()
+        era = era_of(str(carrier["taken"]))
+        chosen = before.get(carrier["asset_id"], carrier["seconds"])
+        excess = held[era] - share
+        if excess > 1e-6 and carrier["seconds"] > chosen:
+            target = max(chosen, carrier["seconds"] - excess)
+            start = carrier.get("start_time", 0.0)
+            seconds = max(chosen, safe_end(carrier, target) - start)
+            held[era] -= carrier["seconds"] - seconds
+            set_duration(carrier, seconds)
+        fitted.append(carrier)
+    return fitted
 
 
 def place_windows(

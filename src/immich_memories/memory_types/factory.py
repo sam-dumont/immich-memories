@@ -323,18 +323,47 @@ def _trip(
     )
 
 
-def holiday_label(holiday: str, year: int, locale: str = "en", *, country: str = "US") -> str:
-    """A printable name, falling back to the date for a household's own occasion."""
-    from immich_memories.i18n import film_text, month_name_forms
+def holiday_label(
+    holiday: str,
+    year: int,
+    locale: str = "en",
+    *,
+    country: str = "US",
+    own_name: str | None = None,
+) -> str:
+    """The holiday's own name in ``locale``: the film catalogue's, then the country's calendar
+    in that language, then the catalogue's name for a holiday on the same date ("Christmas Day"
+    is Christmas), then the calendar in English, then the household's ``own_name`` for a day
+    of its own, and only then the date."""
+    from immich_memories.i18n import month_name_forms
+    from immich_memories.memory_types.date_builders import known_holiday_key, public_holiday_name
 
-    key = holiday.strip().lower().replace("-", "_").replace(" ", "_")
-    label = film_text(f"holiday.{key}", locale)
-    if label != f"holiday.{key}":
+    key = known_holiday_key(holiday)
+    if (label := _catalogue_holiday(key, locale)) is not None:
         return label
+    if spoken := public_holiday_name(holiday, year, country, locale, spoken_only=True):
+        return spoken
     resolved = resolve_holiday(holiday, year, country=country)
+    for known in KNOWN_HOLIDAYS:
+        try:
+            if resolve_holiday(known, year, country=country) == resolved:
+                return _catalogue_holiday(known, locale) or known
+        except ValueError:
+            continue
+    if (public := public_holiday_name(holiday, year, country, locale)) is not None:
+        return public
+    if own_name:
+        return own_name
     # A household's own MM-DD occasion has no catalogue entry to translate, so the
     # fallback is built from CLDR's month forms rather than strftime's English names.
     return f"{resolved.day} {month_name_forms(resolved.month, locale)['month_of']}"
+
+
+def _catalogue_holiday(key: str, locale: str) -> str | None:
+    from immich_memories.i18n import film_text
+
+    label = film_text(f"holiday.{key}", locale)
+    return None if label == f"holiday.{key}" else label
 
 
 def holiday_choices(locale: str = "en") -> dict[str, str]:
@@ -354,7 +383,7 @@ def holiday_choices(locale: str = "en") -> dict[str, str]:
 def _holiday(
     holiday: str = "christmas",
     year: int | None = None,
-    years_back: int = 5,
+    years_back: int | None = None,
     window_days: int = 2,
     person_names: list[str] | None = None,
     person_match: str = "and",
@@ -374,7 +403,7 @@ def _holiday(
     return MemoryPreset(
         memory_type=MemoryType.HOLIDAY,
         name=f"{label} Through the Years",
-        description=f"{label} across {years_back} years",
+        description=f"{label} across the years",
         date_ranges=build_holiday(
             holiday, year, years_back, window_days, today=today, country=country
         ),
