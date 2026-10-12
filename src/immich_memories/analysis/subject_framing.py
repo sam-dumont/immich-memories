@@ -137,16 +137,21 @@ def face_boxes_of(faces: Sequence[Any]) -> tuple[FaceBox, ...]:
     over, and states those dimensions beside it. Normalizing by the box's own
     reference is the only way two boxes on one picture are comparable at all.
     """
-    boxes = (_normalized(face) for face in faces)
+    boxes = (face_box(face) for face in faces)
     return tuple(box for box in boxes if box is not None)
 
 
-def _normalized(face: Any) -> FaceBox | None:
+def face_box(face: Any, person: Any = None) -> FaceBox | None:
+    """One Immich face, normalized by the rendition it was found on; None without one.
+
+    ``person`` is who the face belongs to when Immich nests the face under its
+    person rather than naming the person on the face.
+    """
     width = getattr(face, "image_width", 0) or 0
     height = getattr(face, "image_height", 0) or 0
     if width <= 0 or height <= 0:
         return None
-    person = getattr(face, "person", None)
+    person = person or getattr(face, "person", None)
     named = bool(person and person.name.strip())
     return FaceBox(
         x1=max(0.0, min(1.0, face.bounding_box_x1 / width)),

@@ -283,6 +283,9 @@ def _extracted_segment(extraction: _Extraction, clip, video_path: Path, progress
 
 def _segment_clip(extraction: _Extraction, clip, segment_path: Path, duration: float):
     """Label a prepared segment with this run's view of it: date, place, rotation, mood."""
+    from immich_memories.analysis.framing_target import picture_faces
+    from immich_memories.generate_photos import memory_subjects
+
     params = extraction.params
     exif = clip.asset.exif_info
     directive = extraction.directives.get(clip.asset.id)
@@ -297,6 +300,7 @@ def _segment_clip(extraction: _Extraction, clip, segment_path: Path, duration: f
         longitude=exif.longitude if exif else None,
         location_name=clip_location_name(exif),
         has_music=bool(directive.has_music) if directive is not None else False,
+        known_faces=picture_faces(clip.asset, memory_subjects(params)),
     )
 
 

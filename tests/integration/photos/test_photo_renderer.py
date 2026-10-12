@@ -125,12 +125,11 @@ class TestRenderKenBurns:
         src = _make_test_image(800, 1200)  # Portrait
         frames = list(render_ken_burns_streaming(src, 1920, 1080, KenBurnsParams(duration=2.0)))
 
-        # Check first frame: center column should differ from edge column
+        # The edge is filled from the photograph (not black bars), but only the
+        # sharp centre carries the bright landmark at full strength.
         f = frames[0]
-        center_col = f[:, 960, :].mean()
-        edge_col = f[:, 50, :].mean()
-        # Center has the sharp photo, edge has blurred bg — they should differ
-        assert abs(center_col - edge_col) > 0.01
+        assert f[:, 50, :].mean() > 0.05
+        assert f[:, 960, :].max() > 0.8 > f[:, 50, :].max()
 
     def test_zoom_changes_visible_area(self, tmp_path):
         """Zoom in means first and last frames show different crops."""

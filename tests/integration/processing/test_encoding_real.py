@@ -29,7 +29,7 @@ def _make_encoder(*, default_resolution: tuple[int, int] = (1920, 1080)):
     return ClipEncoder(
         settings=settings,
         prober=prober,
-        face_center_fn=lambda _path: None,
+        detect_faces=lambda _path: (),
         default_resolution=default_resolution,
     )
 
@@ -107,7 +107,7 @@ class TestResolveEncodeResolution:
         encoder = ClipEncoder(
             settings=settings,
             prober=prober,
-            face_center_fn=lambda _path: None,
+            detect_faces=lambda _path: (),
             default_resolution=(1920, 1080),
         )
         # settings.target_resolution takes priority over default_resolution

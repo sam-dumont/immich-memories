@@ -9,14 +9,17 @@ from functools import lru_cache
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from immich_memories.analysis.subject_framing import FaceBox
+
 if TYPE_CHECKING:  # cv2 is imported lazily at every call site below
     import cv2
 
 __all__ = [
     "_get_aspect_ratio_filter",
     "_get_smart_crop_filter",
-    "_detect_face_center_in_video",
     "aggregate_mood_from_clips",
+    "detect_faces_in_video",
+    "smart_crop_window",
 ]
 
 logger = logging.getLogger(__name__)
@@ -123,6 +126,20 @@ def _get_aspect_ratio_filter(
     )
 
 
+def _smart_crop_size(src_w: int, src_h: int, target_w: int, target_h: int) -> tuple[int, int]:
+    """The largest crop of the source with the target's aspect ratio."""
+    target_ar = target_w / target_h
+    if src_w / src_h > target_ar:
+        return int(src_h * target_ar), src_h
+    return src_w, int(src_w / target_ar)
+
+
+def smart_crop_window(src_w: int, src_h: int, target_w: int, target_h: int) -> tuple[float, float]:
+    """The share of the source's width and height the smart-zoom crop keeps."""
+    crop_w, crop_h = _smart_crop_size(src_w, src_h, target_w, target_h)
+    return crop_w / src_w, crop_h / src_h
+
+
 def _get_smart_crop_filter(
     src_w: int,
     src_h: int,
@@ -149,18 +166,7 @@ def _get_smart_crop_filter(
     Returns:
         FFmpeg filter string for crop and scale (e.g., "crop=1080:1920:100:50,scale=1080:1920")
     """
-    target_ar = target_w / target_h
-    src_ar = src_w / src_h
-
-    # Calculate crop dimensions to match target aspect ratio
-    if src_ar > target_ar:
-        # Source is wider - crop width
-        crop_h = src_h
-        crop_w = int(src_h * target_ar)
-    else:
-        # Source is taller - crop height
-        crop_w = src_w
-        crop_h = int(src_w / target_ar)
+    crop_w, crop_h = _smart_crop_size(src_w, src_h, target_w, target_h)
 
     # Convert normalized face position to pixels
     face_x = int(face_center_x * src_w)
@@ -240,20 +246,29 @@ def _extract_frame(video_path: Path, sample_time: float) -> Path | None:
     return frame_path if frame_path.exists() else None
 
 
-def _detect_faces_vision(detector: object, frame_path: Path) -> list[tuple[float, float]]:
-    """Detect faces using Apple Vision and return normalized (x, y) centers."""
+def _anonymous_face(x1: float, y1: float, x2: float, y2: float) -> FaceBox:
+    """A detected face nobody is matched to, clamped to its frame."""
+    return FaceBox(
+        x1=min(1.0, max(0.0, x1)),
+        y1=min(1.0, max(0.0, y1)),
+        x2=min(1.0, max(0.0, x2)),
+        y2=min(1.0, max(0.0, y2)),
+        named=False,
+    )
+
+
+def _detect_faces_vision(detector: object, frame_path: Path) -> list[FaceBox]:
+    """Detect faces using Apple Vision and return their normalized boxes."""
     import cv2
 
     img = cv2.imread(str(frame_path))
     if img is None:
         return []
-    faces = detector.detect_faces(img)
-    positions = []
-    for face in faces:
-        center_x = face.bounds.x + face.bounds.width / 2
-        center_y = 1.0 - (face.bounds.y + face.bounds.height / 2)  # Flip Y
-        positions.append((center_x, center_y))
-    return positions
+    # Vision's boxes have their origin at the bottom left; ours at the top left.
+    return [
+        _anonymous_face(face.x, 1.0 - face.y - face.height, face.x + face.width, 1.0 - face.y)
+        for face in detector.detect_faces(img)
+    ]
 
 
 @lru_cache(maxsize=1)
@@ -275,8 +290,8 @@ def _yunet_detector() -> cv2.FaceDetectorYN:
     )
 
 
-def _detect_faces_opencv(frame_path: Path) -> list[tuple[float, float]]:
-    """Detect faces with OpenCV's YuNet and return normalized (x, y) centers."""
+def _detect_faces_opencv(frame_path: Path) -> list[FaceBox]:
+    """Detect faces with OpenCV's YuNet and return their normalized boxes."""
     import cv2
 
     img = cv2.imread(str(frame_path))
@@ -288,33 +303,26 @@ def _detect_faces_opencv(frame_path: Path) -> list[tuple[float, float]]:
     _, faces = detector.detect(img)
     if faces is None:
         return []
-    return [((x + fw / 2) / w, (y + fh / 2) / h) for x, y, fw, fh in faces[:, :4]]
+    # YuNet answers float32; plain floats keep numpy types out of the framing maths.
+    boxes = faces[:, :4].astype(float).tolist()
+    return [_anonymous_face(x / w, y / h, (x + fw) / w, (y + fh) / h) for x, y, fw, fh in boxes]
 
 
-def _detect_face_center_in_video(video_path: Path) -> tuple[float, float] | None:
-    """Detect average face center position in a video.
+def detect_faces_in_video(video_path: Path) -> tuple[FaceBox, ...]:
+    """Every face a detector finds in three frames across the video, normalized 0-1.
 
-    Samples multiple frames throughout the video and detects faces in each.
-    Returns the average face position if faces are found, otherwise None.
-
-    Uses Apple Vision Framework on macOS (GPU-accelerated) with OpenCV fallback.
-
-    Args:
-        video_path: Path to video file
-
-    Returns:
-        Tuple of (center_x, center_y) in normalized 0-1 coordinates, or None if no faces found.
-        Coordinates are: X from left (0) to right (1), Y from top (0) to bottom (1).
+    Nobody is matched to these faces: a detector finds faces, not people. Uses
+    Apple Vision on macOS (GPU-accelerated) with OpenCV's YuNet as the fallback.
     """
     try:
         detector = _init_face_detector()
     except ImportError:
         logger.debug("No face detection available (Apple Vision or OpenCV)")
-        return None
+        return ()
 
     duration = _get_video_duration(video_path)
     sample_times = [duration * p for p in (0.2, 0.5, 0.8)]
-    all_face_positions: list[tuple[float, float]] = []
+    found: list[FaceBox] = []
 
     for sample_time in sample_times:
         try:
@@ -323,25 +331,17 @@ def _detect_face_center_in_video(video_path: Path) -> tuple[float, float] | None
                 continue
 
             if detector is not None:
-                all_face_positions.extend(_detect_faces_vision(detector, frame_path))
+                found.extend(_detect_faces_vision(detector, frame_path))
             else:
-                all_face_positions.extend(_detect_faces_opencv(frame_path))
+                found.extend(_detect_faces_opencv(frame_path))
 
             frame_path.unlink(missing_ok=True)
         except (OSError, subprocess.SubprocessError, RuntimeError, ValueError) as e:
             logger.debug(f"Face detection failed for frame at {sample_time}s: {e}")
             continue
 
-    if not all_face_positions:
-        return None
-
-    avg_x = sum(p[0] for p in all_face_positions) / len(all_face_positions)
-    avg_y = sum(p[1] for p in all_face_positions) / len(all_face_positions)
-
-    logger.debug(
-        f"Detected {len(all_face_positions)} faces, average center: ({avg_x:.2f}, {avg_y:.2f})"
-    )
-    return (avg_x, avg_y)
+    logger.debug(f"Detected {len(found)} faces in {video_path.name}")
+    return tuple(found)
 
 
 def aggregate_mood_from_clips(clips: list) -> str | None:

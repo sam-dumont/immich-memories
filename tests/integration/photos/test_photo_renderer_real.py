@@ -1,6 +1,6 @@
 """Integration tests for photo animation renderer.
 
-Tests render_ken_burns_streaming, render_split, and face_aware_pan with real
+Tests render_ken_burns_streaming and render_split with real
 numpy image data. No mocks.
 
 Run: make test-integration-photos
@@ -8,15 +8,12 @@ Run: make test-integration-photos
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-
 import cv2
 import numpy as np
 import pytest
 
 from immich_memories.photos.renderer import (
     KenBurnsParams,
-    face_aware_pan,
     render_ken_burns_streaming,
     render_split,
 )
@@ -138,99 +135,3 @@ class TestSplit:
         frames = render_split(small_photos[:2], VP_W, VP_H, fps=30, duration=1.0)
         assert frames[0].mean() > 0.05
         assert frames[0].std() > 0.01
-
-
-# ---- face_aware_pan ----
-
-
-class TestFaceAwarePan:
-    def test_no_faces_returns_center(self):
-        """With no faces, pan target should be center (0.5, 0.5)."""
-        result = face_aware_pan([], 1920, 1080)
-        assert result == (0.5, 0.5)
-
-    def test_empty_person_list_returns_center(self):
-        """Persons with no faces should fall back to center."""
-
-        @dataclass
-        class MockPerson:
-            faces: list = None
-
-            def __post_init__(self):
-                self.faces = self.faces or []
-
-        persons = [MockPerson(), MockPerson()]
-        result = face_aware_pan(persons, 1920, 1080)
-        assert result == (0.5, 0.5)
-
-    def test_single_face_returns_normalized_position(self):
-        """A face at known position should return its normalized center."""
-
-        @dataclass
-        class MockFace:
-            area: float = 1000.0
-            image_width: int = 1920
-            image_height: int = 1080
-            center: tuple[float, float] = (960.0, 540.0)
-
-        @dataclass
-        class MockPerson:
-            faces: list = None
-
-            def __post_init__(self):
-                self.faces = self.faces or []
-
-        face = MockFace(center=(960.0, 540.0))
-        person = MockPerson(faces=[face])
-        x, y = face_aware_pan([person], 1920, 1080)
-
-        assert 0.49 <= x <= 0.51, f"Expected ~0.5, got {x}"
-        assert 0.49 <= y <= 0.51, f"Expected ~0.5, got {y}"
-
-    def test_off_center_face_shifts_pan(self):
-        """A face in the upper-left should shift pan target toward (0, 0)."""
-
-        @dataclass
-        class MockFace:
-            area: float = 500.0
-            image_width: int = 1920
-            image_height: int = 1080
-            center: tuple[float, float] = (200.0, 150.0)
-
-        @dataclass
-        class MockPerson:
-            faces: list = None
-
-            def __post_init__(self):
-                self.faces = self.faces or []
-
-        face = MockFace()
-        person = MockPerson(faces=[face])
-        x, y = face_aware_pan([person], 1920, 1080)
-
-        assert x < 0.2, f"Face at left should give x < 0.2, got {x}"
-        assert y < 0.2, f"Face at top should give y < 0.2, got {y}"
-
-    def test_result_always_in_unit_range(self):
-        """Pan coordinates should always be clamped to [0, 1]."""
-
-        @dataclass
-        class MockFace:
-            area: float = 100.0
-            image_width: int = 1920
-            image_height: int = 1080
-            center: tuple[float, float] = (2000.0, 1200.0)
-
-        @dataclass
-        class MockPerson:
-            faces: list = None
-
-            def __post_init__(self):
-                self.faces = self.faces or []
-
-        face = MockFace()
-        person = MockPerson(faces=[face])
-        x, y = face_aware_pan([person], 1920, 1080)
-
-        assert 0.0 <= x <= 1.0
-        assert 0.0 <= y <= 1.0

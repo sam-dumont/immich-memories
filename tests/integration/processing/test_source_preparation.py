@@ -39,6 +39,11 @@ def test_mixed_sources_prepare_in_workers_and_keep_editorial_order(tmp_path, no_
             assert get_ident() == self.owner
             shutil.copyfile(image, destination)
 
+        def get_asset_faces(self, asset_id):
+            # The still reads its face boxes on the worker that renders it.
+            assert get_ident() == self.owner
+            return []
+
         def close(self):
             assert get_ident() == self.owner
             closed.append(self.owner)

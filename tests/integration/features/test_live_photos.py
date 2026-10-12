@@ -21,9 +21,17 @@ from tests.integration.features.library import RenderedRun, render
 
 LIVE_DAY = "2024-06-12"
 _STEP = 0.25
-# Frame-to-frame change (0-255, a quarter second apart) a slow Ken Burns move stays under,
-# and footage that moves clears.
-_STILL_CHANGE, _MOTION_CHANGE = 8.0, 12.0
+# Frame-to-frame change (0-255, a quarter second apart) that footage which moves clears.
+_MOTION_CHANGE = 12.0
+# The change left once each frame is aligned onto the one before (see _unexplained_change).
+# A still's Ken Burns move is a zoom and a pan, which the alignment takes out; footage that
+# moves is not. Measured on the fixture's Live day across six move seeds (#2440):
+#   stills, Ken Burns: 1.29-3.63 (live-kick-1 1.29-1.48, live-swing 2.97-3.28,
+#                      live-quiet-window 2.94-3.63); raw change on the same shots 2.3-7.9,
+#                      and 8.09 on a real-Immich run, past the old raw bound of 8.0
+#   Live motion:       live-kick-1 9.76, live-swing 19.05
+# The bound sits in the middle of that gap.
+_STILL_UNEXPLAINED = 6.7
 
 
 def _render(home: UserHome, directory: Path, *extra: str) -> RenderedRun:
@@ -55,6 +63,38 @@ def _inside(shot: Shot) -> list[float]:
     return [first + _STEP * k for k in range(int((last - first) / _STEP) + 1)]
 
 
+def _unexplained_change(film: Path, shot: Shot) -> float:
+    """Mean frame-to-frame change a zoom-and-pan of the picture cannot account for.
+
+    A still's Ken Burns move scales and shifts the whole frame between samples; Live
+    Photo footage moves inside the frame. Each later frame is aligned onto the one
+    before it by the best affine warp (OpenCV's ECC), and only what is left differs.
+    """
+    import cv2
+    import numpy as np
+
+    frames = [
+        np.frombuffer(grey_frame(film, at), np.uint8).reshape(90, 160).astype(np.float32)
+        for at in _inside(shot)
+    ]
+    criteria = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 200, 1e-5)
+    residuals = []
+    for before, after in zip(frames, frames[1:], strict=False):
+        warp = np.eye(2, 3, dtype=np.float32)
+        try:
+            _, warp = cv2.findTransformECC(
+                before, after, warp, cv2.MOTION_AFFINE, criteria, None, 5
+            )
+        except cv2.error:
+            pass  # No convergence: compare unaligned, which only overstates the change.
+        aligned = cv2.warpAffine(
+            after, warp, (160, 90), flags=cv2.INTER_LINEAR + cv2.WARP_INVERSE_MAP
+        )
+        # The border a warp pulls in from outside the frame is not the picture's own change.
+        residuals.append(float(np.abs(aligned - before)[8:-8, 8:-8].mean()))
+    return sum(residuals) / len(residuals)
+
+
 def _change(film: Path, shot: Shot) -> float:
     """Mean frame-to-frame change across a shot."""
     frames = [grey_frame(film, at) for at in _inside(shot)]
@@ -73,7 +113,7 @@ def test_a_live_photo_plays_as_motion_only_when_its_clip_moves(
     assert set(shots) == {p.asset_id for p in LIVE_PICTURES if p.shipped}
     assert {shot.kind for shot in shots.values()} == {"photo"}
     assert _change(live_film.film, shots["live-swing"]) > _MOTION_CHANGE
-    assert _change(live_film.film, shots["live-quiet-window"]) < _STILL_CHANGE
+    assert _unexplained_change(live_film.film, shots["live-quiet-window"]) < _STILL_UNEXPLAINED
 
 
 @pytest.mark.feature("live-photos.motion")
@@ -112,4 +152,4 @@ def test_no_live_photos_keeps_every_live_photo_a_still(
 
     assert set(shots) == {p.asset_id for p in LIVE_PICTURES if p.shipped}
     for asset_id, shot in shots.items():
-        assert _change(stills_film.film, shot) < _STILL_CHANGE, asset_id
+        assert _unexplained_change(stills_film.film, shot) < _STILL_UNEXPLAINED, asset_id

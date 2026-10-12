@@ -443,3 +443,25 @@ def test_privacy_trip_validation_uses_the_same_relocated_home_as_the_renderer(tm
     probe.duration_seconds += 1
     with pytest.raises(GenerationError, match="film duration"):
         _validate_result(params, body, {}, content, probe, plan)
+
+
+def test_every_person_of_a_people_film_reaches_the_worker(tmp_path):
+    params = manual_params(tmp_path)
+    params.person_name = "Kid"
+    params.memory_people = ("kid", "dad")
+
+    received, body = round_trip(params, tmp_path)
+
+    assert body["memory"]["memory_people"] == ["kid", "dad"]
+    assert received.person_name == "Kid"
+    assert received.memory_people == ("kid", "dad")
+
+
+def test_a_request_without_memory_people_frames_person_name_alone(tmp_path):
+    """An envelope from an app that predates the field still validates, as before."""
+    from immich_memories_render_worker.models import MemorySettings
+
+    memory = MemorySettings.model_validate({"target_duration_seconds": 30, "person_name": "Kid"})
+
+    assert memory.memory_people == ()
+    assert memory.person_name == "Kid"

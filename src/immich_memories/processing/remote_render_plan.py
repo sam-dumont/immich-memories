@@ -60,6 +60,8 @@ def build_render_request(params: GenerationParams) -> dict:
             "date_start": _calendar_date(params.date_start),
             "date_end": _calendar_date(params.date_end),
             "person_name": params.person_name,
+            # Every person a film of several people is about; the worker frames them all.
+            "memory_people": list(params.memory_people),
             "preset_params": _preset_request(params.memory_preset_params),
         },
         "titles": titles | {"title": params.title or "", "subtitle": params.subtitle or ""},

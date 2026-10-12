@@ -8,6 +8,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from immich_memories.analysis.subject_framing import FaceBox
 from immich_memories.processing.assembly_config import (
     MAX_FACE_CACHE_SIZE,
     AssemblyClip,
@@ -19,9 +20,7 @@ from immich_memories.processing.assembly_engine import AssemblyEngine
 from immich_memories.processing.audio_mixer_service import AudioMixerService
 from immich_memories.processing.clip_encoder import ClipEncoder
 from immich_memories.processing.ffmpeg_prober import FFmpegProber
-from immich_memories.processing.scaling_utilities import (
-    _detect_face_center_in_video,
-)
+from immich_memories.processing.scaling_utilities import detect_faces_in_video
 from immich_memories.processing.title_inserter import TitleInserter
 
 if TYPE_CHECKING:
@@ -61,8 +60,8 @@ class VideoAssembler:
             encoding_plan=standalone_assembly_encoding_plan(output_crf)
         )
 
-        # Face detection cache: path -> (center_x, center_y) or None
-        self._face_cache: OrderedDict[Path, tuple[float, float] | None] = OrderedDict()
+        # Face detection cache: path -> the faces a detector found in it
+        self._face_cache: OrderedDict[Path, tuple[FaceBox, ...]] = OrderedDict()
 
         # Apply caller-provided defaults where settings left them unset
         if self.settings.transition_duration is None:
@@ -75,7 +74,7 @@ class VideoAssembler:
         self.encoder = ClipEncoder(
             self.settings,
             self.prober,
-            self._get_face_center,
+            self._detected_faces,
             default_resolution=self.settings.default_resolution,
         )
         self.engine = AssemblyEngine(
@@ -86,7 +85,7 @@ class VideoAssembler:
         self.audio_mixer = AudioMixerService(self.settings)
         self.title_inserter = TitleInserter(self.settings, self.prober)
 
-    def _get_face_center(self, video_path: Path) -> tuple[float, float] | None:
+    def _detected_faces(self, video_path: Path) -> tuple[FaceBox, ...]:
         if video_path in self._face_cache:
             self._face_cache.move_to_end(video_path)
             return self._face_cache[video_path]
@@ -94,7 +93,7 @@ class VideoAssembler:
         while len(self._face_cache) >= MAX_FACE_CACHE_SIZE:
             self._face_cache.popitem(last=False)
 
-        result = _detect_face_center_in_video(video_path)
+        result = detect_faces_in_video(video_path)
         self._face_cache[video_path] = result
         return result
 

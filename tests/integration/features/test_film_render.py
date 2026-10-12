@@ -21,6 +21,7 @@ from tests.integration.features.film_probe import (
     loudness,
     luma_difference,
     luma_levels,
+    luma_percentile,
     video_stream,
     warm_side,
 )
@@ -43,6 +44,8 @@ TRACK_HZ = 660
 HDR_DAY = "2024-06-01"
 # The PQ code of diffuse white (203 nits) in a 10-bit film: HDR highlights sit above it.
 _PQ_DIFFUSE_WHITE = 572
+# Legal white of 8-bit limited-range video.
+_LEGAL_WHITE = 235
 _TITLE = 3.0
 # What the run attempt keeps: its status, the plan, the render it was certified for, the
 # titles it was cut with, and the run it belongs to.
@@ -242,10 +245,13 @@ def test_a_gain_mapped_photo_keeps_hdr_in_an_hdr_h265_film_and_is_tone_mapped_in
     sdr_stream = video_stream(sdr.film)
     assert (sdr_stream["codec_name"], sdr_stream["color_transfer"]) == ("h264", "bt709")
     shot = story_of(library_home, sdr.run_id)[0]
-    mean, peak = luma_levels(sdr.film, shot.middle)
+    mean, _ = luma_levels(sdr.film, shot.middle)
     picture_mean, _ = luma_levels(still.source, 0, convert="format=yuv420p")
     assert mean > 0.9 * picture_mean, (mean, picture_mean)
-    assert peak <= 235
+    # Tone-mapped into legal range: H.264 rings a few codes past 235 at hard edges, so the
+    # brightest pixel is no measure (236 and 241 on real-Immich runs); the picture's own
+    # highlights are. 99.5 % of the frame stays at or under legal white.
+    assert luma_percentile(sdr.film, shot.middle, 99.5) <= _LEGAL_WHITE
 
 
 # ── length ───────────────────────────────────────────────────────────────────
@@ -543,38 +549,55 @@ def test_an_album_film_is_named_after_the_album(library_home: UserHome):
     ), planned.stdout
 
 
-def _pan_end_luma(tmp_path: Path, name: str, faces: list[tuple[int, int, int]]) -> float:
-    """Render a still dark on the left and light on the right; the luma its pan ends on.
+def _still_clip(
+    tmp_path: Path,
+    name: str,
+    faces: list[tuple[int, int, int]],
+    *,
+    subjects: tuple[int, ...] = (),
+) -> tuple[bytes, bytes]:
+    """Render a marked still with these recognised faces; its first and last frames, in grey.
 
-    `faces` are (left, top, size) boxes Immich recognised, on a 1920x1080 thumbnail.
+    `faces` are (left, top, size) boxes Immich recognised, on a 1920x1080 thumbnail,
+    each a different named person and drawn white on the still; the four corners
+    are black. `subjects` are the indices of the people the film is about.
     """
-    from PIL import Image
+    from PIL import Image, ImageDraw
 
     from immich_memories.api.models import AssetFace, AssetType, Person
     from immich_memories.config_models_render import PhotoConfig
     from immich_memories.photos.photo_pipeline import render_single_photo
     from tests.conftest import make_asset
 
-    source = tmp_path / "halves.jpg"
-    if not source.exists():
-        halves = Image.new("L", (1920, 1080), 40)
-        halves.paste(210, (960, 0, 1920, 1080))
-        halves.convert("RGB").save(source, quality=95)
-    boxes = [
-        AssetFace(
-            id=f"face-{n}",
-            boundingBoxX1=x,
-            boundingBoxY1=y,
-            boundingBoxX2=x + size,
-            boundingBoxY2=y + size,
-            imageWidth=1920,
-            imageHeight=1080,
+    marked = Image.new("L", (1920, 1080), 90)
+    draw = ImageDraw.Draw(marked)
+    for x, y in ((0, 0), (1800, 0), (0, 960), (1800, 960)):
+        draw.rectangle((x, y, x + 119, y + 119), fill=0)
+    for x, y, size in faces:
+        draw.rectangle((x, y, x + size, y + size), fill=255)
+    source = tmp_path / f"{name}.png"
+    marked.convert("RGB").save(source)
+    people = [
+        Person(
+            id=f"person-{n}",
+            name=f"Person {n}",
+            faces=[
+                AssetFace(
+                    id=f"face-{n}",
+                    boundingBoxX1=x,
+                    boundingBoxY1=y,
+                    boundingBoxX2=x + size,
+                    boundingBoxY2=y + size,
+                    imageWidth=1920,
+                    imageHeight=1080,
+                )
+            ],
         )
         for n, (x, y, size) in enumerate(faces)
     ]
-    # One asset id for every render: the pan's start and zoom are seeded from it.
+    # One asset id for every render: the move is seeded from it.
     asset = make_asset("ken-burns-still").model_copy(
-        update={"type": AssetType.IMAGE, "people": [Person(id="someone", faces=boxes)]}
+        update={"type": AssetType.IMAGE, "people": people}
     )
     (tmp_path / name).mkdir()
     clip = render_single_photo(
@@ -586,17 +609,42 @@ def _pan_end_luma(tmp_path: Path, name: str, faces: list[tuple[int, int, int]]) 
         None,
         fps=10,
         source_path=source,
+        subjects=tuple(f"Person {n}" for n in subjects),
     )
     assert clip is not None
-    return luma_levels(clip.path, 1.9)[0]
+    return grey_frame(clip.path, 0.0), grey_frame(clip.path, 1.9)
+
+
+def _corners_shown(frame: bytes) -> int:
+    """How many of the still's four black corners a 160x90 grey frame shows."""
+    corners = ((2, 2), (157, 2), (2, 87), (157, 87))
+    return sum(1 for x, y in corners if frame[y * 160 + x] < 40)
+
+
+def _white(frame: bytes) -> list[int]:
+    return [n for n, value in enumerate(frame) if value > 200]
 
 
 @pytest.mark.feature("photos.ken-burns")
-def test_the_pan_heads_for_the_largest_recognised_face_or_the_centre(tmp_path):
-    centre = _pan_end_luma(tmp_path, "no-face", [])
-    # A small face on the dark left, the largest on the light right: the pan ends on the right.
-    toward_light = _pan_end_luma(tmp_path, "largest-right", [(200, 500, 80), (1500, 400, 300)])
-    # The same two faces with their sizes swapped: now it ends on the dark left.
-    toward_dark = _pan_end_luma(tmp_path, "largest-left", [(200, 500, 300), (1500, 400, 80)])
+def test_a_still_moves_between_the_whole_picture_and_what_the_film_is_about(tmp_path):
+    # A person film: the whole picture first, then a push-in on the small face on
+    # the left, away from the bigger one on the right.
+    first, last = _still_clip(tmp_path, "person", [(200, 500, 80), (1500, 300, 260)], subjects=(0,))
+    assert _corners_shown(first) == 4
+    assert _corners_shown(last) < 4
+    left_white = [n for n in _white(last) if n % 160 < 80]
+    assert len(left_white) > 1.4 * len([n for n in _white(first) if n % 160 < 80])
 
-    assert toward_light > centre + 5 > toward_dark + 10, (toward_dark, centre, toward_light)
+    # A group film: the closest frame keeps every face and is a real zoom.
+    group = [(500, 400, 90), (800, 380, 100), (1100, 420, 90)]
+    first, last = _still_clip(tmp_path, "group", group, subjects=(0, 1, 2))
+    assert _corners_shown(first) == 4
+    assert _corners_shown(last) == 0
+    columns = sorted({n % 160 for n in _white(last)})
+    # Three white faces still on screen: three runs of columns.
+    runs = 1 + sum(1 for a, b in zip(columns, columns[1:], strict=False) if b > a + 1)
+    assert runs == 3, columns
+
+    # A film about nobody, a picture with no face: the whole picture at one end only.
+    first, last = _still_clip(tmp_path, "no-face", [])
+    assert sorted((_corners_shown(first), _corners_shown(last))) == [0, 4]

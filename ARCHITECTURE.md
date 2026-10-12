@@ -550,7 +550,8 @@ src/immich_memories/
 │
 ├── photos/                     # Photo-to-video animation (converts stills to .mp4 clips)
 │   ├── __init__.py             # Public API re-exports
-│   ├── renderer.py             # Frame-by-frame renderer: Ken Burns, face_aware_pan, render_split (parked)
+│   ├── renderer.py             # Frame-by-frame renderer: Ken Burns (frame shows 1/zoom of the picture), render_split (parked)
+│   ├── ken_burns_moves.py      # Which move a still gets: whole picture <-> closest frame (person, group, pan, other)
 │   ├── animator.py             # Photo source prep: HEIC decode, downscale cap, HDR detection
 │   ├── photo_pipeline.py       # Render one photograph as a Ken Burns clip, streamed to FFmpeg
 │   ├── encoding.py             # Verified photo encoder; NAS H.264/SDR on hardware without HEVC
@@ -574,6 +575,8 @@ src/immich_memories/
 │   ├── editorial_film_reach.py # What a film prepares: its demanded pictures, their Live families and capture runs
 │   ├── person_presence.py      # Who a person film may select: strictly the pictures whose own recognised faces satisfy the condition
 │   ├── person_resolution.py    # A name or UUID -> faces: the store's aliases per read account, else the roster
+│   ├── framing_target.py       # Where a zoomed view sits: on the film's subjects' faces (else the largest),
+│   │                           # keeping every other face that fits; photo Ken Burns and smart-zoom crop
 │   ├── editorial_orchestration.py  # TextEditorialPlanner: episodes -> cards -> edit
 │   ├── editorial_rule_episodes.py  # Factual episode cards / omitted thesis; no semantic-bank writes
 │   ├── editorial_rule_reader.py    # Rules for worthiness, grouping and standing; shared allocation
