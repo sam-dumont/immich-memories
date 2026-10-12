@@ -57,6 +57,22 @@ def render(home: UserHome, *args: str, into: Path | None = None) -> RenderedRun:
     return RenderedRun(result, added[0])
 
 
+def the_day_only(kind) -> str:
+    """The first day whose cut is one picture of this kind, and nothing else."""
+    days = sorted({p.day for p in CARRIERS})
+    return next(day for day in days if [kind(p) for p in CARRIERS if p.day == day] == [True])
+
+
+def one_day(day: str, *extra: str) -> tuple[str, ...]:
+    """`generate` over one day with its photos, music left to `extra`."""
+    return ("generate", "--start", day, "--end", day, "--include-photos", "--quiet", *extra)
+
+
+def render_into(home: UserHome, directory: Path, *args: str) -> RenderedRun:
+    """Run `generate` with `--output` in `directory` and return the film it wrote there."""
+    return render(home, *args, "--output", str(directory / "film.mp4"), into=directory)
+
+
 @contextmanager
 def own_immich(root: Path, library: FakeImmichServer) -> Iterator[FakeImmichServer]:
     """A fake Immich serving the session's library with no upload, tag or album change yet.

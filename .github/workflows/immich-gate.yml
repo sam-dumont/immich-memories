@@ -177,17 +177,20 @@ jobs:
   # The whole feature suite (tests/integration/features/) a second time, against a real
   # Immich seeded with the files the fake Immich serves, on the oldest and newest supported
   # majors. Tests only the fake can drive skip with their reason; test_fake_matches_real.py
-  # compares the two servers' answers. About as long as the fake pass plus the seed.
+  # compares the two servers' answers. About as long as the fake pass plus the seed, so
+  # each major runs in two shards (FEATURE_SHARD=i/2, the files split as in ci.yml's
+  # feature jobs); each shard starts and seeds its own Immich, about two minutes.
   features:
-    name: Feature tests on real Immich (${{ matrix.immich }})
+    name: Feature tests on real Immich (${{ matrix.immich }}, ${{ matrix.shard }}/2)
     needs: [changes]
     if: github.repository_id == '1174219883' && needs.changes.outputs.immich == 'true'
     runs-on: ubuntu-24.04
-    timeout-minutes: 40
+    timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
         immich: [v2, v3]
+        shard: [1, 2]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -224,32 +227,13 @@ jobs:
             echo $? > "$RUNNER_TEMP/pull.status"
             echo "images ready after $(( $(date +%s) - start ))s" >> "$RUNNER_TEMP/pull.log" ) &
 
-      # The feature tests read LFS media (the bundled tracks) like the launch check's run.
-      - name: Create LFS cache key
-        run: git lfs ls-files -l | cut -d' ' -f1 | sort > .lfs-assets-id
-      - name: Cache LFS objects
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      # The same setup as ci.yml's feature jobs: LFS media (the bundled tracks), Python
+      # with the music extra, FFmpeg and the built web client `immich-memories ui` serves.
+      - name: Set up the suite
+        uses: ./.github/actions/setup-launch-suite
         with:
-          path: .git/lfs
-          key: lfs-${{ hashFiles('.lfs-assets-id') }}
-          restore-keys: lfs-
-      - name: Pull LFS files
-        run: git lfs pull
-
-      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
-        with:
-          enable-cache: true
-          prune-cache: false
-      - run: uv python install ${{ env.PYTHON_VERSION }}
-      - name: Install FFmpeg
-        uses: ./.github/actions/install-ffmpeg
-      - run: make dev-test-features
-      # `immich-memories ui` serves the built web client; the target builds it when missing.
-      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
-        with:
-          node-version: '22'
-          cache: npm
-          cache-dependency-path: web/package-lock.json
+          python-version: ${{ env.PYTHON_VERSION }}
+          install: dev-test-features
 
       - name: Wait for the images
         timeout-minutes: 11
@@ -259,13 +243,13 @@ jobs:
           exit "$(cat "$RUNNER_TEMP/pull.status")"
 
       - name: Feature tests on real Immich (${{ matrix.immich }})
-        run: make test-features-real-immich IMMICH_GATE_VERSION=${{ matrix.immich }}
+        run: make test-features-real-immich IMMICH_GATE_VERSION=${{ matrix.immich }} FEATURE_SHARD=${{ matrix.shard }}/2
 
       - name: Upload Immich logs and results
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: features-real-immich-${{ matrix.immich }}
+          name: features-real-immich-${{ matrix.immich }}-${{ matrix.shard }}
           if-no-files-found: ignore
           path: |
             .immich-gate/*.log

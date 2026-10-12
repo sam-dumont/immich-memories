@@ -1,0 +1,61 @@
+name: Set up a launch-check suite
+description: >-
+  What the hermetic launch check's e2e shards and the feature shards (on the fake and
+  on a real Immich) all need: the LFS fixtures, Python with the project installed by a
+  make target, FFmpeg and the built web client, cached per change to web/; with
+  `browser`, Playwright's Chromium too. The calling job checks the repository out first.
+
+inputs:
+  python-version:
+    description: The Python uv installs (the workflow's PYTHON_VERSION)
+    required: true
+  install:
+    description: The make target that installs the project (`dev-test`, `dev-test-features`)
+    required: true
+  browser:
+    description: "'true' installs Playwright's Chromium and its system libraries"
+    required: false
+    default: 'false'
+
+runs:
+  using: composite
+  steps:
+    - name: Pull LFS files
+      uses: ./.github/actions/pull-lfs
+
+    - name: Set up uv and Python
+      uses: ./.github/actions/setup-uv-python
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    # The built client depends on web/ alone (svelte.config.js writes it into the
+    # package), so one build per change to web/ serves every job and every run after.
+    - name: Restore the built web client
+      id: web-client
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: src/immich_memories/web/client
+        key: web-client-${{ hashFiles('web/**', '!web/node_modules/**') }}
+
+    - if: steps.web-client.outputs.cache-hit != 'true'
+      uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+      with:
+        node-version: '22'
+        cache: npm
+        cache-dependency-path: web/package-lock.json
+
+    - name: Install FFmpeg
+      uses: ./.github/actions/install-ffmpeg
+
+    - name: Install the project and build the web client when no build was cached
+      shell: bash
+      env:
+        TARGET: ${{ inputs.install }}
+      run: |
+        make "$TARGET"
+        make web-client-present
+
+    - name: Install Chromium
+      if: inputs.browser == 'true'
+      shell: bash
+      run: uv run playwright install --with-deps chromium

@@ -16,16 +16,36 @@ a push to `main`, a release and the nightly run every job.
   `if: !cancelled()` so the first failure doesn't hide the rest. Commitlint runs on pull requests
   only. A second job runs the security scans in parallel. Both run on every pull request.
 - **Tier 2: tests**, after both tier 1 jobs pass. The unit suite (Ubuntu on 3.11/3.12/3.13; macOS on
-  3.13 for a pull request, all three on `main` and in a release), plus `make test-extras`. Neither
-  extras job pulls torch, so what runs there is the subset that survives without it; the rest is a
-  local target.
+  3.13 for a pull request, all three on `main` and in a release), each cell in two shards
+  (`make test-cov-xml TEST_SHARD=1/2`), plus `make test-extras`. On `main` and in a release the
+  macOS cells run whole, one job each, since six macOS shards would queue behind the 5-job macOS cap. Neither extras job pulls torch, so
+  what runs there is the subset that survives without it; the rest is a local target. A pull request
+  also runs, beside them, one job per FFmpeg integration suite its changed source reaches
+  (`make test-integration-<suite>`).
+- **Coverage**, once every unit shard passed. The 3.12 Ubuntu shards upload their coverage data;
+  `make coverage-combine` merges it, checks the 65% floor on the whole suite and writes
+  `coverage.xml`. On a pull request, diff-cover then checks 80% of the changed lines against it
+  plus the integration suites' XMLs, and posts the report on the pull request.
 - **Tier 3: build**, after tests. Package build, the Docker images and the container e2e job.
 
-The docs build starts immediately. The hermetic launch check starts off the cache setup alone:
-Playwright e2e against a fake Immich (`make launch-check-ci` on SQLite, and
-`make launch-check-ci-postgres` too when the store changed), then the feature tests on the fixture
-library. The render worker's own suite runs as a CI job too. `immich-gate.yml` runs the real-Immich
-gate (v2, 3.2 and v3) and the feature tests against a real Immich, scoped the same way.
+The docs build starts immediately. The hermetic launch check and the feature tests start off the
+cache setup alone, in parallel shards. The launch check is Playwright e2e against a fake Immich in
+two shards per store backend (`make launch-check-ci E2E_SHARD=1/2` on SQLite, and
+`make launch-check-ci-postgres` too when the store changed). The feature tests on the fixture
+library run in three (`make test-features FEATURE_SHARD=1/3`). The render worker's own suite runs
+as a CI job too. `immich-gate.yml` runs the real-Immich gate (v2, 3.2 and v3) and the feature tests
+against a real Immich, two shards per major, each seeding its own Immich; scoped the same way.
+
+Shards cost runner slots. A pull request that changes Python runs about 35 jobs across `ci.yml`
+and `immich-gate.yml`, and the account runs 20 at once (5 of them macOS), so with a few pull
+requests open some jobs wait for a runner, and the wall time grows with the queue.
+
+`scripts/shard_tests.py` deals whole test files to the shards, longest first, by the seconds each
+took in that suite (`tests/shard_durations.json`; refresh it with `make shard-durations` after a
+full local run), and `tests/test_shard_tests.py` checks that every CI shard set runs every file of
+its suite exactly once. With `TEST_SHARD`, `E2E_SHARD` or `FEATURE_SHARD` unset, the targets run
+every file. The jobs that serve the web client restore it from a cache keyed on `web/`, so it is
+built once per change to the client.
 
 What a pull request runs:
 
