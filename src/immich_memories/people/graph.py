@@ -36,8 +36,25 @@ logger = logging.getLogger(__name__)
 
 # Below this a person is a face Immich happened to cluster, not somebody the
 # library has an opinion about — and every pair costs a query, so the roster
-# bound is what keeps the pairwise pass to seconds rather than minutes.
+# bound is what keeps the pairwise pass to seconds rather than minutes. This is
+# the floor on a large library, and the most the floor ever asks for.
 DEFAULT_MIN_ASSETS = 25
+
+# A small library can't meet 25: a library whose busiest person is on 18
+# pictures would have nobody in it. So the floor is a tenth of the most-pictured
+# named person, which reaches 25 once somebody is on 250 pictures (any library
+# with a year of a child in it) and leaves those libraries exactly as before.
+# A tenth keeps the grandparent on 6 pictures next to a child on 60, and drops
+# the face caught in the background twice. Under 5 pictures the floor stops
+# falling: two pictures of a stranger say nothing about anybody's life.
+FLOOR_SHARE_OF_BUSIEST = 10
+ABSOLUTE_MIN_ASSETS = 5
+
+
+def library_floor(busiest_count: int) -> int:
+    """The pictures a person needs, given the most any named person has: 5 to 25."""
+    share = -(-busiest_count // FLOOR_SHARE_OF_BUSIEST)  # ceiling: at least a tenth
+    return min(DEFAULT_MIN_ASSETS, max(ABSOLUTE_MIN_ASSETS, share))
 
 
 class PeopleSource(Protocol):
@@ -98,12 +115,14 @@ class PeopleGraph:
     owner: Owner | None = None
     built_at: datetime | None = None
     cooccurrences: tuple[Cooccurrence, ...] = ()
+    # The pictures a person needed to make the roster on this scan.
+    min_assets: int = DEFAULT_MIN_ASSETS
 
 
 def build_graph(
     source: PeopleSource,
     *,
-    min_assets: int = DEFAULT_MIN_ASSETS,
+    min_assets: int | None = None,
     owner_name: str | None = None,
     confirmed_owner: ConfirmedOwner | None = None,
     today: date | None = None,
@@ -113,10 +132,12 @@ def build_graph(
 
     One timeline call per named person gives their count and their months
     together; the pairwise pass then costs one small query per pair, which is
-    why the roster is bounded to people the library actually holds. A confirmed owner is an
-    answer, so it replaces the guess outright; the guess is only for libraries nobody answered.
+    why the roster is bounded to people the library actually holds. `min_assets` None scales
+    that bound with the library (`library_floor`); a number sets it by hand. A confirmed owner
+    is an answer, so it replaces the guess outright; the guess is only for libraries nobody
+    answered.
     """
-    evidence = _roster(
+    evidence, floor = _roster(
         source,
         min_assets=min_assets,
         include_person_ids=include_person_ids,
@@ -135,6 +156,7 @@ def build_graph(
         owner=owner,
         built_at=datetime.now(),
         cooccurrences=tuple(_cooccurrences(evidence, shared)),
+        min_assets=floor,
     )
 
 
@@ -279,21 +301,25 @@ def _cooccurrences(
 def _roster(
     source: PeopleSource,
     *,
-    min_assets: int,
+    min_assets: int | None,
     include_person_ids: Collection[str] = (),
     library_months: AbstractSet[date] = frozenset(),
-) -> list[PersonEvidence]:
-    """Every named person the library holds more than a handful of pictures of.
+) -> tuple[list[PersonEvidence], int]:
+    """Every named person the library holds more than a handful of pictures of, and the floor.
 
     Unnamed people are left out on purpose: the graph cannot say anything
     useful about a face nobody has claimed, and naming them is work that
-    belongs in Immich.
+    belongs in Immich. They don't set the floor either, for the same reason.
     """
+    counted = [
+        (person, _active_months(source, person.id))
+        for person in source.get_all_people()
+        if person.name.strip()
+    ]
+    if min_assets is None:
+        min_assets = library_floor(max((sum(m.values()) for _, m in counted), default=0))
     roster: list[PersonEvidence] = []
-    for person in source.get_all_people():
-        if not person.name.strip():
-            continue
-        months = _active_months(source, person.id)
+    for person, months in counted:
         count = sum(months.values())
         if count < min_assets and person.id not in include_person_ids:
             continue
@@ -307,7 +333,7 @@ def _roster(
                 era_day_shares=era_day_shares(set(months), library_months),
             )
         )
-    return roster
+    return roster, min_assets
 
 
 def _photographed_months(source: PeopleSource) -> set[date]:

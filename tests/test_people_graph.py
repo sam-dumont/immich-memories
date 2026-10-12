@@ -141,6 +141,92 @@ class TestRoster:
         assert graph.people[0].evidence.first_month == date(2019, 1, 1)
 
 
+def _cast(counts: dict[str, int]) -> FakeImmich:
+    """One named person per entry, each on that many pictures spread over a year."""
+    people = [_Person(f"p{index}", name) for index, name in enumerate(counts)]
+    months = {}
+    for person in people:
+        total = counts[person.name]
+        months[person.id] = {
+            date(2024, 1 + month, 1): total // 12 + (1 if month < total % 12 else 0)
+            for month in range(12)
+            if total // 12 + (1 if month < total % 12 else 0)
+        }
+    return FakeImmich(people=people, months=months)
+
+
+def _kept(graph) -> list[str]:
+    return sorted(node.evidence.name for node in graph.people)
+
+
+class TestLibraryFloor:
+    """The floor scales with the library: a tenth of its most-pictured person, 5 to 25."""
+
+    def test_a_small_library_keeps_its_cast_of_a_dozen_pictures_each(self):
+        immich = _cast({"Alex Example": 18, "Sam Sample": 14, "Rowan Example": 12})
+
+        graph = build_graph(immich, today=date(2026, 8, 25))
+
+        assert _kept(graph) == ["Alex Example", "Rowan Example", "Sam Sample"]
+        assert graph.min_assets == 5
+
+    def test_a_stranger_on_two_pictures_is_not_a_person_even_in_a_tiny_library(self):
+        immich = _cast({"Alex Example": 18, "Sasha Example": 4, "Robin Example": 2})
+
+        graph = build_graph(immich, today=date(2026, 8, 25))
+
+        assert _kept(graph) == ["Alex Example"]
+
+    def test_five_pictures_is_the_least_that_makes_a_person(self):
+        immich = _cast({"Alex Example": 18, "Sasha Example": 5})
+
+        graph = build_graph(immich, today=date(2026, 8, 25))
+
+        assert _kept(graph) == ["Alex Example", "Sasha Example"]
+
+    def test_a_medium_library_drops_whoever_has_under_a_tenth_of_its_busiest_person(self):
+        immich = _cast({"Alex Example": 120, "Sam Sample": 12, "Rowan Example": 11})
+
+        graph = build_graph(immich, today=date(2026, 8, 25))
+
+        assert graph.min_assets == 12
+        assert _kept(graph) == ["Alex Example", "Sam Sample"]
+
+    def test_a_large_library_keeps_the_floor_of_25(self):
+        immich = _cast({"Alex Example": 4000, "Sam Sample": 25, "Rowan Example": 24})
+
+        graph = build_graph(immich, today=date(2026, 8, 25))
+
+        assert graph.min_assets == 25
+        assert _kept(graph) == ["Alex Example", "Sam Sample"]
+
+    def test_the_floor_never_rises_above_25_however_big_the_library(self):
+        immich = _cast({"Alex Example": 900, "Sam Sample": 30})
+
+        graph = build_graph(immich, today=date(2026, 8, 25))
+
+        assert graph.min_assets == 25
+        assert _kept(graph) == ["Alex Example", "Sam Sample"]
+
+    def test_an_explicit_floor_overrides_the_library_s_own(self):
+        immich = _cast({"Alex Example": 18, "Sam Sample": 14, "Rowan Example": 12})
+
+        graph = build_graph(immich, min_assets=13, today=date(2026, 8, 25))
+
+        assert graph.min_assets == 13
+        assert _kept(graph) == ["Alex Example", "Sam Sample"]
+
+    def test_unnamed_faces_do_not_set_the_floor(self):
+        immich = _cast({"Alex Example": 18, "Sam Sample": 14})
+        immich._people.append(_Person("stranger", ""))
+        immich._months["stranger"] = {date(2024, 1, 1): 900}
+
+        graph = build_graph(immich, today=date(2026, 8, 25))
+
+        assert graph.min_assets == 5
+        assert _kept(graph) == ["Alex Example", "Sam Sample"]
+
+
 class TestOwner:
     def test_the_immich_account_name_picks_the_owner_out_of_the_roster(self):
         immich = FakeImmich(people=[], months={}, account="Alex Example")

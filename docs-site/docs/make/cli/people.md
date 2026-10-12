@@ -18,6 +18,22 @@ immich-memories people show
 
 The scan reads counts and dates, not pictures. It updates its suggestions without overwriting your confirmed roles and relationships. A rescan keeps your saved groups too.
 
+A named person needs enough pictures to count. The floor is a tenth of the most-pictured named person's count, never under 5 and never over 25:
+
+| Most-pictured person | Floor |
+|---|---|
+| 18 pictures | 5 |
+| 120 pictures | 12 |
+| 250 pictures or more | 25 |
+
+So a small library keeps its handful of regulars, and a face caught twice in the background stays out. Once anybody is on 250 pictures the floor is 25, which is where most libraries land. The scan prints the floor it used. The browser's rescan under **Settings > People** uses the same rule. Set it by hand with `--min-assets`:
+
+```bash
+immich-memories people scan --min-assets 10
+```
+
+A person you confirmed stays in the registry whatever their count.
+
 ## Say whose library it is
 
 The scan guesses the owner: the name you passed with `--owner`, else the Immich account's own name, else whoever has the longest span of pictures. Say it once and no scan changes it:
