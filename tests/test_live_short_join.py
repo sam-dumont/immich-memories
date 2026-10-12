@@ -1,4 +1,8 @@
-"""A burst too tight to stitch past the join minimum plays its kept picture's own clip (#1547)."""
+"""A burst too tight to stitch past the motion floor holds its kept picture's still (#2453).
+
+It used to play the kept picture's own clip whatever its length (#1547); a clip under the
+floor is half a sentence, so neither the short stitch nor the short own clip plays.
+"""
 
 from __future__ import annotations
 
@@ -15,10 +19,10 @@ from tests.test_editorial_duration_planner_integration import source
 from tests.test_editorial_source_route import demand
 from tests.test_live_clock_offsets_on_demand import live_carriers, ports
 
-# Three shutters inside half a second, each companion 2.2 s long: they overlap so much that
-# their stitch is barely longer than one of them, and under the 3.5 s join minimum.
+# Three shutters inside half a second, each companion 2.0 s long: they overlap so much that
+# their stitch is barely longer than one of them (2.4 s), and both are under the 2.5 s floor.
 SHUTTER_OFFSETS = (0.0, 0.2, 0.4)
-COMPANION_SECONDS = 2.2
+COMPANION_SECONDS = 2.0
 
 
 def shutter_offsets(video_ids):
@@ -64,22 +68,23 @@ def test_the_fixture_is_a_join_the_minimum_refuses(tmp_path):
 
     (burst,) = {id(r): r for r in renderings.values()}.values()
     assert len(burst.video_ids) == 3
+    assert burst.duration_seconds < 2.5
     assert not burst.may_play
 
 
-def test_a_tight_moving_burst_plays_the_starred_pictures_own_clip(tmp_path):
+def test_a_tight_moving_burst_holds_the_starred_picture_as_its_still(tmp_path):
     captured = tight_bursts(tmp_path, 2, residual=7.0)
     plan = plan_structure(captured, ports(shutter_offsets)).plan
 
     carriers = live_carriers(plan)
     assert carriers, "the film keeps a burst"
     for carrier in carriers:
-        starred = captured.assets[carrier["asset_id"]]
-        assert starred.is_favorite
-        assert carrier["kind"] == "live-motion"
-        assert carrier["video_ids"] == [starred.live_photo_video_id]
+        assert captured.assets[carrier["asset_id"]].is_favorite
+        assert carrier["kind"] == "live-still"
+        assert carrier["motion_candidate"] is False
+        assert "live_note" in carrier
 
-    # The renderer re-derives the kept picture's clip and ships exactly that one.
+    # The renderer ships the starred picture as a photograph.
     _, candidates = demand(list(captured.assets.values()))
     projected = project_source_rendering(
         plan["carriers"],
@@ -89,9 +94,9 @@ def test_a_tight_moving_burst_plays_the_starred_pictures_own_clip(tmp_path):
         companion_assets=captured.companion_assets,
         clock_offsets=shutter_offsets,
     )
-    shipped = {row.clip.asset.id: row.clip for row in projected.candidates}
+    modes = {row.asset_id: row.render_mode for row in projected.plan.selections}
     for carrier in carriers:
-        assert shipped[carrier["asset_id"]].live_burst_video_ids == carrier["video_ids"]
+        assert modes[carrier["asset_id"]] == "still"
 
 
 def test_a_tight_burst_that_barely_moves_stays_a_photograph(tmp_path):

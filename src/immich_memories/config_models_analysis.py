@@ -11,6 +11,8 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field
 
+from immich_memories.processing.live_material import MIN_LIVE_MOTION_SECONDS
+
 
 class SpeechConfig(BaseModel):
     """Local voice activity detection before editorial intervals are fixed."""
@@ -89,16 +91,15 @@ class AnalysisConfig(BaseModel):
         le=60.0,
         description="Max gap between Live Photos to group into a burst cluster",
     )
-    # A lone Live Photo stitches to exactly the raw 3.0s with nothing merged,
-    # and the smallest genuine merge of two reaches 4.0s, so the boundary sits
-    # between them. Measured, not chosen.
+    # The motion floor for every Live clip, stitched or single (#2453). It was 3.5 s and
+    # applied to joins only; see `MIN_LIVE_MOTION_SECONDS`.
     live_photo_min_clip_seconds: float = Field(
-        default=3.5,
+        default=MIN_LIVE_MOTION_SECONDS,
         ge=0.0,
         le=30.0,
         description=(
-            "Below this a burst's stitch is not worth its cuts: the kept picture's own clip "
-            "stands in for it, and plays only if it moves"
+            "The shortest clip a Live Photo plays as motion, a stitch of nearby Live Photos "
+            "or its own; anything shorter plays as its still"
         ),
     )
 

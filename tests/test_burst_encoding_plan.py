@@ -116,7 +116,7 @@ def test_the_download_path_carries_the_setting_into_the_merge() -> None:
     from immich_memories.generate_downloads import _try_merge_burst
 
     clips = [Path("a.mov"), Path("b.mov")]
-    trims = [(0.0, 1.0), (0.0, 1.0)]
+    trims = [(0.0, 1.5), (0.0, 1.5)]  # 3.0 s: over the 2.5 s motion floor
 
     # WHY: _try_merge_burst validates, builds, and runs FFmpeg; a.mov and b.mov are names only.
     with (

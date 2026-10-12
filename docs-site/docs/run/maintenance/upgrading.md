@@ -84,6 +84,15 @@ around the day, so `generate --holiday` without `--years-back` covers your whole
 shows, and the timer only proposes a holiday when the day stands out in your pictures in at least
 three years.
 
+## Live Photo motion has one floor
+
+`advanced.analysis.live_photo_min_clip_seconds` now applies to every Live Photo clip, a stitch
+of nearby Live Photos or one Live Photo's own clip, and its default drops from 3.5 to 2.5
+seconds. A clip shorter than that plays as its still: a 1.2-second clip used to slip through as
+a burst's fallback and read as half a sentence. A lone Live Photo whose clip lasts 2.5 seconds
+and moves still plays. If you set the key yourself, the same value now also gates lone clips;
+remove it to take the new default.
+
 ## Temporary working files
 
 Keep cache and output directories on mounted storage with free space. At startup the app and

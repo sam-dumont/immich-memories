@@ -205,7 +205,7 @@ advanced:
     # Live Photos (iPhone 3s video clips)
     include_live_photos: true      # Include Live Photo clips (ON by default)
     live_photo_merge_window_seconds: 10.0  # Max gap to group as burst (1-60s)
-    live_photo_min_clip_seconds: 3.5       # Below this a burst plays its kept picture's own clip (0-30s)
+    live_photo_min_clip_seconds: 2.5       # Shortest clip, stitched or single, that plays as motion (0-30s)
 ```
 
 The filename globs exclude matching source media before preparation. Replacing the list replaces

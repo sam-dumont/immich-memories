@@ -10,6 +10,13 @@ from typing import Any
 
 VERSION = "live-render-material-v1"
 
+# The shortest clip a Live Photo plays as motion, stitched from nearby Live Photos or its own:
+# a Live Photo has to carry a moment. A ~1.2 s clip is half a sentence; a 2.87 s single clip
+# reads well. Below it the picture plays as its still, and only a clip at least this long that
+# really moves (the motion discriminant) plays (#2453). It is the default of the
+# `live_photo_min_clip_seconds` config key, which can raise or lower it.
+MIN_LIVE_MOTION_SECONDS = 2.5
+
 
 @dataclass(frozen=True)
 class LiveSourceEntry:

@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 from pathlib import Path
 from time import monotonic
 from typing import TYPE_CHECKING, Any, Literal
@@ -93,18 +93,63 @@ def _fetcher(client: SyncImmichClient | None) -> Callable[[str], VideoClipInfo |
 
 
 def _live_motion(config: Config, client: SyncImmichClient | None) -> LiveMotion:
-    """Stitch an added Live Photo's motion the way the cut's own Live shots were stitched."""
+    """Stitch an added Live Photo with its neighbours the way a cut stitches its Live shots.
+
+    It plays as motion only when the stitch, or failing that its own clip, lasts the motion
+    floor and moves (`added_live_motion`, #2453); otherwise it holds its still.
+    """
 
     def stitch(asset: Asset) -> MotionRendering | None:
         if client is None or not asset.live_photo_video_id:
             return None
-        from immich_memories.analysis.motion_rendering import motion_renderings
+        from immich_memories.analysis.added_live_motion import added_live_motion
+        from immich_memories.analysis.live_clock_offsets import BankedClockOffsets
 
-        companion = client.get_asset(asset.live_photo_video_id)
-        found = motion_renderings([asset], config, companion_assets={companion.id: companion})
-        return found.get(asset.id)
+        def offsets(companions):
+            return BankedClockOffsets(
+                store=None, companions=companions, fetch=client.get_video_playback
+            )
+
+        return added_live_motion(
+            asset,
+            config,
+            nearby=lambda picture: _nearby_photos(client, config, picture),
+            companion=lambda video_id: _companion(client, video_id),
+            clock_offsets=offsets,
+            residual=lambda video_id: _residual(client, video_id),
+        )
 
     return stitch
+
+
+def _nearby_photos(client: SyncImmichClient, config: Config, asset: Asset) -> list[Asset]:
+    """The photos shot around an added picture, wide enough for a burst it belongs to."""
+    reach = timedelta(seconds=3 * config.analysis.live_photo_merge_window_seconds)
+    taken = asset.file_created_at
+    return client.get_photos_for_date_range(DateRange(taken - reach, taken + reach))
+
+
+def _companion(client: SyncImmichClient, video_id: str) -> Asset | None:
+    from immich_memories.api.immich import ImmichAPIError
+
+    try:
+        return client.get_asset(video_id)
+    except ImmichAPIError:
+        return None  # a neighbour whose video is gone leaves the stitch, not the render
+
+
+def _residual(client: SyncImmichClient, video_id: str) -> float | None:
+    """How much one Live video moves, measured on its playback; None when unreadable."""
+    import httpx
+
+    from immich_memories.analysis.editorial_motion_facts import measure_motion
+    from immich_memories.api.immich import ImmichAPIError
+
+    try:
+        value = measure_motion(client.get_video_playback(video_id)).get("residual")
+    except (ImmichAPIError, httpx.HTTPError, OSError, ValueError):
+        return None
+    return None if value is None else float(value)
 
 
 def _date_range(run: RunMetadata) -> DateRange:

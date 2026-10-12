@@ -13,6 +13,7 @@ import httpx
 from immich_memories.api.asset_service import large_original_size
 from immich_memories.api.immich import ImmichAPIError
 from immich_memories.api.models import AssetType
+from immich_memories.processing.live_material import MIN_LIVE_MOTION_SECONDS
 from immich_memories.processing.preparation_fallbacks import note_fallback
 from immich_memories.security import sanitize_error_message
 
@@ -28,30 +29,62 @@ logger = logging.getLogger(__name__)
 
 SourceRoute = Literal["photo", "still", "motion", "segment"]
 
+_HELD_AS_STILL = "Live clip held as its still: shorter than the motion floor"
 
-def merges_live_burst(clip: VideoClipInfo) -> bool:
-    """Whether the clip's video is a stitch of its Live components rather than one file."""
+
+def live_motion_floor(config: Config | None) -> float:
+    """The shortest Live clip that plays as motion for this run (#2453)."""
+    if config is None:
+        return MIN_LIVE_MOTION_SECONDS
+    return float(config.analysis.live_photo_min_clip_seconds)
+
+
+def _stitched_seconds(trim_points) -> float:
+    return float(sum(end - start for start, end in trim_points))
+
+
+def _has_local_file(clip: VideoClipInfo) -> bool:
+    return bool(clip.local_path and Path(clip.local_path).exists())
+
+
+def merges_live_burst(clip: VideoClipInfo, config: Config | None = None) -> bool:
+    """Whether the clip plays a stitch of its Live components rather than one file or its still.
+
+    A certified editorial manifest is the cut's own decision and plays as certified. An
+    uncertified burst plays only when its stitched clip lasts the run's motion floor
+    (`live_photo_min_clip_seconds`); anything shorter is the picture's still (#2453).
+    """
     if clip.editorial_live_manifest is not None:
         return True
-    if clip.local_path and Path(clip.local_path).exists():
+    if _has_local_file(clip) or not (clip.live_burst_video_ids and clip.live_burst_trim_points):
         return False
-    return bool(clip.live_burst_video_ids and clip.live_burst_trim_points)
+    return _stitched_seconds(clip.live_burst_trim_points) >= live_motion_floor(config)
 
 
-def preparation_route(clip: VideoClipInfo, directive: EditorialSelection | None) -> SourceRoute:
+def preparation_route(
+    clip: VideoClipInfo, directive: EditorialSelection | None, config: Config | None = None
+) -> SourceRoute:
     """How one selected source is prepared, decided once.
 
     "photo" animates the still, "still" animates one frame of the video, "motion"
     cuts a stitch of the Live components, "segment" cuts one video. Source
     preparation dispatches on this and the prepared-source key carries it, so a
     banked preparation is only ever reused for the route that made it (#2452).
+
+    The question is what the candidate CARRIES, not what kind of asset it is: a Live Photo
+    the cut holds as a still, or whose clip is under the motion floor (#2453), is a
+    photograph, and asking whether it has a video component at all sent every one of them
+    off to download a video for a still.
     """
     still = directive is not None and directive.render_mode == "still"
-    if clip.asset.type == AssetType.IMAGE and (not clip.live_burst_video_ids or still):
+    image = clip.asset.type == AssetType.IMAGE
+    if image and (not clip.live_burst_video_ids or still):
         return "photo"
     if still:
         return "still"
-    return "motion" if merges_live_burst(clip) else "segment"
+    if merges_live_burst(clip, config):
+        return "motion"
+    return "photo" if image and not _has_local_file(clip) else "segment"
 
 
 def download_clip(
@@ -90,7 +123,10 @@ def download_clip(
     if client is None:
         return None
 
-    if merges_live_burst(clip):
+    if clip.live_burst_video_ids and clip.live_burst_trim_points:
+        if not merges_live_burst(clip, config):
+            note_fallback(_HELD_AS_STILL)
+            return None
         return _download_and_merge_burst(
             client,
             video_cache,
@@ -101,9 +137,7 @@ def download_clip(
             config=config,
         )
 
-    if video_cache is None:
-        return _download_temporary_asset(client, clip.asset, output_dir)
-    return video_cache.download_or_get(client, clip.asset)
+    return _download_fallback(client, video_cache, clip.asset, output_dir)
 
 
 def _download_and_merge_burst(
@@ -116,7 +150,12 @@ def _download_and_merge_burst(
     hardware_enabled: bool = True,
     config: Config | None = None,
 ) -> Path | None:
-    """Download live photo burst videos and merge into one file."""
+    """Download live photo burst videos and merge them into one file.
+
+    None when the components that survive the downloads stitch to less than the motion
+    floor, or the merge fails: the picture then plays as its still, never as a clip too short
+    to carry a moment, and never as its unstitched companion video (#2453).
+    """
     burst_ids = clip.live_burst_video_ids or []
     trim_points = clip.live_burst_trim_points or []
 
@@ -148,22 +187,14 @@ def _download_and_merge_burst(
     if merged_path.exists() and merged_path.stat().st_size > 1000:
         return merged_path
 
-    if prefetched_burst_results is None:
-        temporary_root = output_dir / ".temporary_downloads"
-        cache_dir = video_cache.cache_dir if video_cache is not None else temporary_root
-        clip_paths = _download_burst_clips(client, cache_dir, burst_ids, batch=video_cache)
-        if len(clip_paths) != len(trim_points):
-            clip_paths, trim_points = _align_burst_subset(clip_paths, burst_ids, trim_points)
-    else:
-        clip_paths, trim_points = _prefetched_burst_subset(
-            prefetched_burst_results, burst_ids, trim_points
-        )
-    if 0 < len(clip_paths) < len(burst_ids):
+    clip_paths, trim_points = _burst_components(
+        client, video_cache, output_dir, burst_ids, trim_points, prefetched_burst_results
+    )
+    if _stitched_seconds(trim_points) < live_motion_floor(config):
+        note_fallback(f"{_HELD_AS_STILL}, after its downloads")
+        return None
+    if len(clip_paths) < len(burst_ids):
         note_fallback("burst merged without the components that failed to download")
-
-    if not clip_paths:
-        note_fallback("burst replaced by its companion video: no component downloaded")
-        return _download_fallback(client, video_cache, clip.asset, output_dir)
 
     merged = _try_merge_burst(
         clip_paths,
@@ -173,10 +204,28 @@ def _download_and_merge_burst(
         hardware_enabled=hardware_enabled,
         config=config,
     )
-    if merged is not None:
-        return merged
-    note_fallback("burst replaced by its companion video: the merge failed")
-    return _download_fallback(client, video_cache, clip.asset, output_dir)
+    if merged is None:
+        note_fallback("Live burst held as its still: the merge failed")
+    return merged
+
+
+def _burst_components(
+    client: SyncImmichClient,
+    video_cache: CacheBatch | None,
+    output_dir: Path,
+    burst_ids: list[str],
+    trim_points: list,
+    prefetched: Mapping[str, DownloadResult] | None,
+) -> tuple[list[Path], list]:
+    """The components that arrived, each with its own trim."""
+    if prefetched is not None:
+        return _prefetched_burst_subset(prefetched, burst_ids, trim_points)
+    temporary_root = output_dir / ".temporary_downloads"
+    cache_dir = video_cache.cache_dir if video_cache is not None else temporary_root
+    clip_paths = _download_burst_clips(client, cache_dir, burst_ids, batch=video_cache)
+    if len(clip_paths) != len(trim_points):
+        return _align_burst_subset(clip_paths, burst_ids, trim_points)
+    return clip_paths, trim_points
 
 
 def _certified_burst_sources(
@@ -342,6 +391,21 @@ def _align_burst_subset(
     return aligned_paths, aligned_trims
 
 
+def _readable_components(
+    clip_paths: list[Path], trim_points: list, floor: float
+) -> tuple[list[Path], list] | None:
+    """The components ffprobe can read, or None when they stitch to less than `floor`."""
+    from immich_memories.processing.live_photo_merger import filter_valid_clips
+
+    valid_paths, valid_trims = filter_valid_clips(clip_paths, trim_points)
+    if not valid_paths or _stitched_seconds(valid_trims) < floor:
+        note_fallback(f"{_HELD_AS_STILL}, after ffprobe")
+        return None
+    if len(valid_paths) < len(clip_paths):
+        note_fallback("burst merged without the components ffprobe could not read")
+    return valid_paths, valid_trims
+
+
 def _try_merge_burst(
     clip_paths: list[Path],
     trim_points: list,
@@ -363,20 +427,17 @@ def _try_merge_burst(
     from immich_memories.processing.live_photo_merger import (
         align_clips_spectrogram,
         build_merge_command,
-        filter_valid_clips,
         probe_clip_has_audio,
     )
 
-    # Pre-validate: filter out clips with no valid video stream
-    valid_paths, valid_trims = (
+    mergeable = (
         (clip_paths, trim_points)
         if strict_material
-        else filter_valid_clips(clip_paths, trim_points)
+        else _readable_components(clip_paths, trim_points, live_motion_floor(config))
     )
-    if not valid_paths:
+    if mergeable is None or not mergeable[0]:
         return None
-    if len(valid_paths) < len(clip_paths):
-        note_fallback("burst merged without the components ffprobe could not read")
+    valid_paths, valid_trims = mergeable
 
     # Spectrogram alignment for sample-accurate audio + frame-accurate video
     audio_trims = None

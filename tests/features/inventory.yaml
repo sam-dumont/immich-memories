@@ -616,7 +616,7 @@ features:
     tests:
       - tests/integration/features/test_memory_types.py::test_no_photos_or_photos_disabled_make_a_video_only_film
   - id: live-photos.motion
-    promise: "A Live Photo with useful motion plays as motion, nearby ones stitch into one clip, and --no-live-photos keeps the stills only."
+    promise: "A Live Photo plays as motion when its clip, a stitch of nearby Live Photos or its own, lasts at least 2.5 s and moves; shorter clips play as stills, and --no-live-photos keeps the stills only."
     doc: make/photos-and-live-photos.md#live-photos
     covers: ["cli:generate --include-live-photos"]
     tests:

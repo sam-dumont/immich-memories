@@ -341,13 +341,11 @@ def _rendering(*, videos: tuple[str, ...], seconds: float, minimum: float = 3.5)
     )
 
 
-def test_a_lone_live_photo_is_put_to_the_motion_discriminant_not_to_the_stitch_minimum() -> None:
-    """Every lone Live Photo is under the stitch minimum by construction, so that rule alone
-    decided the whole kind (#1066). Its own motion decides it now."""
-    lone = _rendering(videos=("video-0",), seconds=2.9)
-
-    assert not lone.beats_a_still
-    assert lone.may_play
+def test_a_lone_live_photo_is_held_to_the_same_floor_as_a_stitch() -> None:
+    """The floor applies to every clip, stitched or single (#2453): a lone 2.9 s clip may
+    play and is then put to the motion discriminant; a lone 1.2 s clip is half a sentence."""
+    assert _rendering(videos=("video-0",), seconds=2.9, minimum=2.5).may_play
+    assert not _rendering(videos=("video-0",), seconds=1.2, minimum=2.5).may_play
 
 
 def test_a_join_too_short_to_be_worth_its_cuts_is_still_a_photograph() -> None:

@@ -109,6 +109,8 @@ def why_text(
                 columns,
             )
         )
+        if shot.note:
+            lines.append(_wrapped(shot.note, columns))
     elif story.shipped:
         lines.append("  in the cut")
     elif not story.dropped_at and not story.survived:

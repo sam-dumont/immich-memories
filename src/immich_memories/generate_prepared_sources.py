@@ -165,7 +165,7 @@ def preparation_identity(request: PreparationRequest) -> dict[str, Any]:
     return {
         "recipe": RECIPE_VERSION,
         "app": __version__,
-        "route": preparation_route(clip, directive),
+        "route": preparation_route(clip, directive, config),
         "clip": clip.model_dump(mode="json"),
         "local_source": _local_source(clip.local_path),
         "directive": None if directive is None else dataclasses.asdict(directive),
@@ -264,7 +264,7 @@ def reuse_or_prepare(
     """
     if not request.clip.asset.checksum:
         return prepare()
-    kind = preparation_route(request.clip, request.directive)
+    kind = preparation_route(request.clip, request.directive, request.params.config)
     try:
         key = preparation_key(request)
     except (TypeError, ValueError, AttributeError) as exc:

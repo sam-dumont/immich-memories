@@ -121,7 +121,8 @@ def _live() -> _Source:
     clip.asset.checksum = "sha1-live-1"
     clip.asset.live_photo_video_id = "companion-1"
     clip.live_burst_video_ids = ["burst-1", "burst-2"]
-    clip.live_burst_trim_points = [(0.0, 1.0), (0.0, 1.0)]
+    # 3.0 s stitched: over the 2.5 s motion floor a Live clip needs to play (#2453).
+    clip.live_burst_trim_points = [(0.0, 1.5), (0.0, 1.5)]
     directive = EditorialSelection("live-1", 0.0, 1.8, render_mode="motion")
     return _Source(clip, directive, segment=(0.0, 1.8))
 
@@ -181,7 +182,7 @@ def _no_live_photos(source: _Source) -> None:
 
 
 def _later_take(source: _Source) -> None:
-    source.clip.live_burst_trim_points = [(0.0, 1.0), (0.5, 1.5)]
+    source.clip.live_burst_trim_points = [(0.0, 1.5), (0.5, 2.0)]
 
 
 def _other_window(source: _Source) -> None:

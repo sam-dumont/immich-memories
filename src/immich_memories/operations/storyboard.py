@@ -83,6 +83,8 @@ class Shot:
     new_day: bool
     chapter: str
     reason: str
+    # What became of a Live Photo planned as motion that plays as its still, and why.
+    note: str = ""
 
     @property
     def timecode(self) -> str:
@@ -244,6 +246,7 @@ def storyboard_from_plan(
                 new_day=day != previous_day,
                 chapter=month if month != previous_month else "",
                 reason=carrier_reason(row.get("why"), title),
+                note=str(row.get("live_note") or ""),
             )
         )
         start += held
@@ -306,4 +309,6 @@ def storyboard_lines(board: Storyboard, *, limit: int | None = None) -> list[str
         story = short_story_title(shot.story_title)
         head = f"  {shot.timecode:>5}  {shot.day}  {kind:5}  {shot.seconds:>4g} s  {story}"
         lines.append(f"{head}: {shot.reason}" if shot.reason else head)
+        if shot.note:
+            lines.append(f"{'':9}{shot.note}")
     return lines

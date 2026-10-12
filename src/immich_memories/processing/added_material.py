@@ -1,7 +1,7 @@
 """A picture the owner adds to a saved cut, made ready to play the way the cut's own shots are.
 
 Nothing here judges the picture: the owner chose it. A video plays from its start, a Live Photo
-plays its stitched motion (or holds its still when the motion cannot be stitched), a photo holds.
+plays its motion when that clip may play (otherwise it holds its still), a photo holds.
 """
 
 from __future__ import annotations
@@ -53,7 +53,8 @@ def prepared_addition(
         end = min(seconds, clip.duration_seconds) if clip.duration_seconds else seconds
         return clip, EditorialSelection(asset.id, 0.0, end, render_mode="motion")
     rendering = live_motion(asset) if motion and live_motion else None
-    stitched = _live(clip, rendering, seconds) if rendering is not None else None
+    # An added Live Photo follows the cut's own rule: motion only from a clip that may play.
+    stitched = _live(clip, rendering, seconds) if rendering and rendering.may_play else None
     if stitched is not None:
         return stitched
     still = clip.model_copy(update={"duration_seconds": seconds})

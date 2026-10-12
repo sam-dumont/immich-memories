@@ -27,7 +27,9 @@ To make a video-only film, untick **Include photos** under **Length and pictures
 
 ## Live Photos
 
-A Live Photo enters the cut as one photograph. If its video shows useful motion, it plays as motion; if not, the still stays. Nearby Live Photos can be stitched into a longer clip. The app verifies selected motion companions before sealing the cut: a malformed video keeps the photograph as a still, while unavailable sources or tools stop the check.
+A Live Photo enters the cut as one photograph. Nearby Live Photos are stitched into one clip, and that clip plays as motion when it lasts at least 2.5 seconds and really moves. A lone Live Photo plays its own clip by the same rule. Anything shorter plays as its still, with the same zoom and pan as any photo: a 1.2-second clip is half a sentence, while a 2.9-second one carries a moment.
+
+The app verifies selected motion companions before sealing the cut: a malformed video keeps the photograph as a still, while unavailable sources or tools stop the check. When a burst cannot be stitched, the kept picture's own clip gets the same 2.5-second test, and the still otherwise. `runs story` and `runs why` say when a Live Photo was held as its still, and why. A Live Photo you add during review is stitched with its neighbours and decided the same way.
 
 Album films use the same Live Photo handling as date, people and event films. Add the
 photographs to your album; the app reads their linked videos automatically. Those videos support
@@ -46,9 +48,11 @@ These examples are the author's own footage, published with permission.
 
 ```mermaid
 flowchart TD
-  A[Selected Live Photo] --> B{Useful motion and<br/>playable original?}
-  B -- Yes --> C[Play the clip or stitched burst]
-  B -- No --> D[Animate the still]
+  A[Selected Live Photo] --> N{Stitched or own clip<br/>at least 2.5 s?}
+  N -- No --> D[Animate the still]
+  N -- Yes --> B{Useful motion and<br/>playable originals?}
+  B -- Yes --> C[Play the clip]
+  B -- No --> D
 ```
 
 Untick **Include Live Photos**, pass `--no-live-photos`, or set `advanced.analysis.include_live_photos: false` to use the stills only. A person-filtered film does not add untagged pictures just to extend a burst.
