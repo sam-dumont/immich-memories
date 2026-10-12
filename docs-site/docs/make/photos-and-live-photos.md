@@ -30,11 +30,11 @@ leaves a still and a warning; a failed connection stops the run.
 
 Three overlapping Live Photos can become this continuous 4.5-second shot:
 
-<Video poster="/img/live-photo-preview.jpg" src="/demos/live-photos/italian_hilltop/merged.mp4" width={480} controls />
+<Video title="Three overlapping Live Photos of a hilltop, merged into one shot" poster="/img/live-photo-preview.jpg" src="/demos/live-photos/italian_hilltop/merged.mp4" width={480} controls />
 
 Six Live Photos at a bike race become 8.1 seconds:
 
-<Video src="/demos/live-photos/bike_race/merged.mp4" width={480} controls />
+<Video title="Six Live Photos at a bike race, merged into one shot" src="/demos/live-photos/bike_race/merged.mp4" width={480} controls />
 
 These examples are the author's own footage, published with permission.
 

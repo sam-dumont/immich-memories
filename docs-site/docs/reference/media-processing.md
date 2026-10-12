@@ -71,18 +71,18 @@ and a rapid burst of them is several seconds of continuous footage nobody meant 
 Three photos of an Italian hilltop, fired off in a row, each about 3 seconds and overlapping:
 
 <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap'}}>
-  <Video poster="/img/live-photo-preview.jpg" src="/demos/live-photos/italian_hilltop/source_1.mp4" width={240} controls muted />
-  <Video src="/demos/live-photos/italian_hilltop/source_2.mp4" width={240} controls muted />
-  <Video src="/demos/live-photos/italian_hilltop/source_3.mp4" width={240} controls muted />
+  <Video title="Hilltop Live Photo 1 of 3" poster="/img/live-photo-preview.jpg" src="/demos/live-photos/italian_hilltop/source_1.mp4" width={240} controls muted />
+  <Video title="Hilltop Live Photo 2 of 3" src="/demos/live-photos/italian_hilltop/source_2.mp4" width={240} controls muted />
+  <Video title="Hilltop Live Photo 3 of 3" src="/demos/live-photos/italian_hilltop/source_3.mp4" width={240} controls muted />
 </div>
 
 Merged, 4.5 seconds of continuous footage:
 
-<Video src="/demos/live-photos/italian_hilltop/merged.mp4" width={240} controls />
+<Video title="The three hilltop Live Photos, merged" src="/demos/live-photos/italian_hilltop/merged.mp4" width={240} controls />
 
 A bike race, 6 Live Photos merged into 8.1 seconds:
 
-<Video src="/demos/live-photos/bike_race/merged.mp4" width={480} controls />
+<Video title="Six Live Photos at a bike race, merged into one shot" src="/demos/live-photos/bike_race/merged.mp4" width={480} controls />
 
 These clips are the project author's own footage, published with permission.
 

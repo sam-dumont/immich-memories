@@ -147,6 +147,8 @@ const config: Config = {
         {label: 'Improve a film', to: '/docs/make/improve-a-film'},
         {label: 'How this was built', to: '/docs/welcome/how-this-was-built'},
         {label: 'Privacy', to: '/privacy'},
+        // This track's llms.txt, written at build time; pathname:// adds the base URL without routing.
+        {label: 'AI documentation index', to: 'pathname:///llms.txt'},
         {label: 'GitHub', href: 'https://github.com/sam-dumont/immich-memories'},
         {label: 'Immich', href: 'https://immich.app/'},
       ],

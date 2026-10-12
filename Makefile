@@ -1258,8 +1258,8 @@ docs-build: docs-social-check
 	$(MAKE) --no-print-directory docs-llms-check
 
 .PHONY: docs-llms-check
-docs-llms-check:  ## Check llms.txt links resolve, and the built copy points into its track
-	cd docs-site && node --test scripts/llms-txt.test.mjs
+docs-llms-check:  ## Check llms.txt and the Markdown pages: links resolve, each track points into itself
+	cd docs-site && node --experimental-strip-types --no-warnings --test scripts/llms-txt.test.mjs scripts/markdown-pages.test.mjs
 
 .PHONY: docs-analytics-check
 docs-analytics-check:  ## Check the built docs tracker without submitting real events

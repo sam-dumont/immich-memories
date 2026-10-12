@@ -10,7 +10,15 @@ There are three tiers, and each one makes a complete film:
 - GPU: adds picture descriptions, document and sensitive-content checks, and a family-viewing pre-screen.
 - Full: GPU, plus a text reader that refines the draft and writes titles.
 
-Start with Basic when unsure. Every link below has the same pages in the left sidebar.
+Start with Basic when unsure. Every docs page also exists as Markdown: add `.md` to its address, without the trailing slash. The docs links below go to the Markdown; drop the `.md` for the HTML page.
+
+## Understand the project
+
+- [How it chooses](/docs/how-it-chooses/overview): how a library turns into a cut, in plain words: stories, moments, favourites and length
+- [Architecture](/docs/contribute/architecture): what runs where, the pipeline, the store, the web app and the services
+- [Can I run this?](/docs/run/tested-deployments): every install route with the release and hardware it was last tested on
+- [Measure your setup](/docs/better/measured): measured times, memory and cost per stage, each on named hardware
+- [One month, three tiers](/docs/better/tier-example): Basic, GPU and Full films of the same month, side by side
 
 ## Install
 
@@ -55,7 +63,6 @@ Start with Basic when unsure. Every link below has the same pages in the left si
 - [AGENTS.md](https://github.com/sam-dumont/immich-memories/blob/main/AGENTS.md): read this first if you are a coding agent. Rules for changes, tests, commits and safety
 - [ARCHITECTURE.md](https://github.com/sam-dumont/immich-memories/blob/main/ARCHITECTURE.md): map of the codebase and its entry points
 - [Development setup](/docs/contribute/development-setup): Python 3.11 to 3.13, FFmpeg, uv, Make and Node 22, then `make dev` in every clone
-- [Architecture](/docs/contribute/architecture): how the pipeline, store, web app and services fit together
 - [Testing](/docs/contribute/testing): unit, integration and end-to-end tests, and how to run them
 - [CI and quality gates](/docs/contribute/ci): every gate a change has to pass; `make ci` runs them all
 - [Writing the docs](/docs/contribute/writing-docs): what goes on which page
@@ -63,6 +70,5 @@ Start with Basic when unsure. Every link below has the same pages in the left si
 
 ## Optional
 
-- [How it chooses](/docs/how-it-chooses/overview): how a cut is picked, without code
 - [Choose an upgrade](/docs/better/overview): optional add-ons per tier
 - [Releasing](/docs/contribute/releasing): versioning and the release process
