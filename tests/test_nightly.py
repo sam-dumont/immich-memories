@@ -267,6 +267,31 @@ def test_a_nightly_skips_only_ci_and_the_package_index():
     assert "(inputs.channel == 'nightly' && needs.pypi-publish.result == 'skipped')" in docs
 
 
+def test_every_nightly_job_after_ci_states_its_own_status_check():
+    """A nightly skips `ci`, and GitHub's implicit `success()` reads every ancestor.
+
+    A job after `ci` whose condition names no status function was skipped with it, and so
+    was everything after that: a nightly reported success and published nothing.
+    """
+    jobs = release_workflow()["jobs"]
+
+    def ancestors(name: str) -> set[str]:
+        found: set[str] = set()
+        for parent in jobs[name].get("needs") or []:
+            found |= {parent} | ancestors(parent)
+        return found
+
+    implicit = {
+        name
+        for name, job in jobs.items()
+        if "ci" in ancestors(name)
+        and f"{NOT_NIGHTLY} &&" not in job.get("if", "")
+        and not any(check in job.get("if", "") for check in ("!cancelled()", "always()"))
+    }
+
+    assert implicit == set()
+
+
 def test_a_nightly_has_no_approval_environment():
     environment = release_workflow()["jobs"]["docker-build"]["environment"]["name"]
     # `a && b || ''`: for a nightly the name is empty, which means no environment.
