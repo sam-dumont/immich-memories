@@ -40,9 +40,9 @@ Run the full CI pipeline locally with `make ci`, and `make ci-scope` to see what
 
 Runs on every push to `main`: the unit suite (`make test`) and `make typecheck`, on Python 3.12 and ubuntu-24.04. It exists because `ci.yml` only runs on pull requests, so two PRs that were each green can break `main` together. It is not a required check; a failure shows as a red mark on the commit.
 
-### `release.yml` - Automatic Release
+### `release.yml` - Release
 
-Runs on every push to `main` and automatically releases if there are releasable commits.
+Runs when dispatched (`stable` or `rc`) and when `nightly.yml` calls it (`nightly`).
 
 **How it works:**
 1. Analyzes commits AND merged branch names since last release
@@ -69,7 +69,7 @@ Runs on every push to `main` and automatically releases if there are releasable 
 
 ### `nightly.yml` - Nightly Build
 
-Runs daily and on demand (`force` builds an unchanged `main`). It builds only when `main` has commits since the last nightly, read from the `Commit:` line of the rolling `nightly` prerelease (`scripts/nightly.py`). It publishes `:nightly` and `:nightly-YYYYMMDD` images, the wheel and Compose files on the `nightly` prerelease, and the docs at `/dev/`. It never publishes to PyPI, never moves `latest` or a `v*` tag, and never marks its release as "Latest". It shares the image build and smoke steps with `release.yml` through `.github/actions/push-image-digest` and `.github/actions/smoke-app-image`, and the setup-file packaging through `scripts/package_release_assets.sh`.
+Runs daily and on demand (`force` builds an unchanged `main`). It builds only when `main` has commits since the last nightly, read from the `Commit:` line of the rolling `nightly` prerelease (`scripts/nightly.py`). That check is all `nightly.yml` holds: the build is `release.yml` called with channel `nightly`, the same jobs in the same order as a stable or rc release. Where a nightly differs, it is an `if:` in `release.yml`: it skips the CI rerun (main already passed it) and the approval environment, rebuilds the inference images only when their inputs changed, tags `:nightly` and `:nightly-YYYYMMDD` instead of a version, moves the `nightly` tag instead of a `v*` tag, replaces the rolling `nightly` prerelease (wheel, sdist, provenance and Compose files, never "Latest") instead of creating a versioned release, and skips PyPI. The docs deploy lands it at `/dev/`. A **Release** dispatch offers only `stable` and `rc`; a nightly runs through **Nightly**, so it always passes the check.
 
 ### `docs.yml` - Deploy Docs
 

@@ -47,15 +47,17 @@ To start one by hand, run the workflow on `main`. Tick **force** to build an unc
 A forced nightly is the pre-tag rehearsal: it builds and smoke-tests everything a release does
 without opening the RC series.
 
-A nightly publishes, in the release workflow's order (images by digest first; nothing public
-until the wheel built and the app image passed its smoke film):
+The nightly workflow only makes that check. The build is the **Release** workflow itself, called
+with channel `nightly`: the same jobs in the same order (images by digest first; nothing public
+until the wheel built and the app image passed its smoke film). It skips the CI rerun, since
+`main` already passed CI, and publishes:
 
 | | Nightly |
 |---|---|
 | Version | a dev version after the last release, `1.0.1.devYYYYMMDD` after `1.0.0`, `1.0.0rc9.devYYYYMMDD` after `1.0.0-rc.8`, shown by `immich-memories --version` |
 | App image | `:nightly` and `:nightly-YYYYMMDD`, amd64 and arm64 |
 | Inference images | `:nightly`, `:nightly-YYYYMMDD` and their `-cuda` twins, rebuilt only when something the inference image copies in changed; otherwise the previous nightly's images get the new date tag |
-| GitHub release | one prerelease named `nightly` on the `nightly` tag, replaced each run, never "Latest". Wheel, Compose files pinned to `nightly-YYYYMMDD`, deployment bundle, `installation.json`, `SHA256SUMS` |
+| GitHub release | one prerelease named `nightly` on the `nightly` tag, replaced each run, never "Latest". Wheel, sdist, provenance, Compose files pinned to `nightly-YYYYMMDD`, deployment bundle, `installation.json`, `SHA256SUMS` |
 | PyPI, `latest`, `v*` tags | never touched |
 | Docs site | `/dev/` |
 
@@ -63,8 +65,8 @@ until the wheel built and the app image passed its smoke film):
 than 14 days. It never touches `nightly`, version tags, `latest` or commit builds.
 
 The nightly runs without the `production` environment approval, since nobody is awake to give
-it. Everything else matches a release: provenance on the wheel and every image, and the
-same packaging script for the setup files.
+it. Everything else is the release's own jobs: provenance on the wheel and every image, and
+the same packaging for the setup files. **Release** dispatches offer only `stable` and `rc`.
 
 Run the prebuilt first-install checks against a forced nightly's public inputs. Record anonymous
 pulls, exact host/service/Immich versions, cold versus warm state and the bounded playable film. Publishing artifacts alone is not acceptance.

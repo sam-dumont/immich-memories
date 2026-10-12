@@ -32,9 +32,15 @@ runs:
 
     - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
 
-    - name: Install Python
+    # The same setup as the workflows' other jobs: the smoke serves the repository's fake
+    # Immich, which imports the project and its dev dependencies.
+    - name: Set up Python
       shell: bash
-      run: uv python install "3.12"
+      run: uv python install "$PYTHON_VERSION"
+
+    - name: Install dependencies
+      shell: bash
+      run: make dev-test
 
     - name: Run one CPU-only generation inside the image
       shell: bash
@@ -42,6 +48,4 @@ runs:
         digest="sha256:$(ls /tmp/digests | head -1)"
         image="ghcr.io/sam-dumont/immich-memories@${digest}"
         docker pull "$image"
-        # The fake Immich it serves checks requests with httpx (tests/immich_fakes.py).
-        uv run --no-project --with pillow --with numpy --with httpx \
-          python scripts/docker_smoke.py --image "$image" --timeout 1200
+        make docker-smoke SMOKE_IMAGE="$image"

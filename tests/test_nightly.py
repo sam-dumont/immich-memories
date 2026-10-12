@@ -1,4 +1,8 @@
-"""The nightly build: when it builds, what it calls itself, and what it never touches."""
+"""The nightly build: when it builds, what it calls itself, and what it never touches.
+
+The nightly is the release process run on channel `nightly`: nightly.yml decides and
+calls release.yml. These tests hold both halves of that, and every nightly-only rule.
+"""
 
 import json
 import os
@@ -22,11 +26,25 @@ HEAD = "a" * 40
 PREVIOUS = "b" * 40
 
 
-def nightly_workflow():
-    workflow = yaml.safe_load((ROOT / ".github/workflows/nightly.yml").read_text())
+def _workflow(name):
+    workflow = yaml.safe_load((ROOT / ".github/workflows" / name).read_text())
     # PyYAML reads the GitHub Actions `on` key as a YAML 1.1 boolean.
     workflow["on"] = workflow.pop(True)
     return workflow
+
+
+def nightly_workflow():
+    return _workflow("nightly.yml")
+
+
+def release_workflow():
+    return _workflow("release.yml")
+
+
+def _step(job, name):
+    return next(
+        step for step in release_workflow()["jobs"][job]["steps"] if step.get("name") == name
+    )
 
 
 # --- anything new since the last nightly? ------------------------------------------
@@ -137,20 +155,6 @@ def test_a_nightly_version_sorts_after_the_last_release_and_is_never_one(tags, e
     assert parsed.local is None
 
 
-def test_every_nightly_artifact_is_stamped_with_the_nightly_version():
-    """`immich-memories --version` prints the packaged version, so the build must set it."""
-    jobs = nightly_workflow()["jobs"]
-    version = "${{ needs.decide.outputs.version }}"
-    build = next(step for step in jobs["package"]["steps"] if step.get("run") == "uv build")
-    assert build["env"]["SETUPTOOLS_SCM_PRETEND_VERSION"] == version
-    for job in ("app-build", "inference-build"):
-        image = next(
-            step for step in jobs[job]["steps"] if "push-image-digest" in step.get("uses", "")
-        )
-        assert f"APP_VERSION={version}" in image["with"]["build-args"], job
-        assert "VCS_REF=${{ github.sha }}" in image["with"]["build-args"], job
-
-
 def test_plan_command_writes_github_outputs(tmp_path):
     # WHY: a throwaway repo stands in for the checkout; gh is faked as the release catalogue.
     env = {key: value for key, value in os.environ.items() if not key.startswith("GIT_")}
@@ -201,11 +205,10 @@ def test_plan_command_writes_github_outputs(tmp_path):
     }
 
 
-# --- what a nightly never touches ---------------------------------------------------
+# --- one process: the nightly is the release workflow on channel `nightly` ----------
 
-
-def _all_text(node) -> str:
-    return json.dumps(node)
+NIGHTLY = "inputs.channel == 'nightly'"
+NOT_NIGHTLY = "inputs.channel != 'nightly'"
 
 
 def test_nightly_runs_daily_and_on_demand():
@@ -214,22 +217,195 @@ def test_nightly_runs_daily_and_on_demand():
     assert triggers["workflow_dispatch"]["inputs"]["force"]["type"] == "boolean"
 
 
-def test_nightly_never_touches_pypi_latest_or_version_tags():
-    workflow = nightly_workflow()
-    text = _all_text(workflow)
-    assert "pypi" not in text.lower()
-    assert "make_latest" not in text
-    assert ":latest" not in text
-    assert "$IMAGE:latest" not in text
-    for job in workflow["jobs"].values():
-        for step in job.get("steps", []):
-            run = step.get("run", "")
-            # The only tag a nightly moves is `nightly`; never a v* tag.
-            assert "git tag -a v" not in run
-            assert "refs/tags/v" not in run
-            if "gh release create" in run:
-                assert "--prerelease" in run
-                assert "--latest=false" in run
+def test_the_nightly_decides_then_calls_the_release_process():
+    jobs = nightly_workflow()["jobs"]
+    assert set(jobs) == {"decide", "release"}
+    call = jobs["release"]
+    assert call["uses"] == "./.github/workflows/release.yml"
+    assert call["needs"] == ["decide"]
+    assert "needs.decide.outputs.build == 'true'" in call["if"]
+    assert "github.repository_id == '1174219883'" in call["if"]
+    assert call["with"] == {
+        "channel": "nightly",
+        "nightly_version": "${{ needs.decide.outputs.version }}",
+        "nightly_tag": "${{ needs.decide.outputs.tag }}",
+        "rebuild_inference": "${{ needs.decide.outputs.inference == 'true' }}",
+    }
+    # Nothing is built here: no job besides the decision has steps of its own.
+    assert "steps" not in call
+
+
+def test_the_release_can_be_called_with_every_dispatch_input_and_the_nightly_ones():
+    triggers = release_workflow()["on"]
+    dispatch = set(triggers["workflow_dispatch"]["inputs"])
+    call = triggers["workflow_call"]["inputs"]
+    assert dispatch <= set(call)
+    assert {"nightly_version", "nightly_tag", "rebuild_inference"} <= set(call)
+    assert call["channel"]["default"] == "stable"
+    # A dispatch offers stable and rc; only nightly.yml, after its check, runs a nightly.
+    assert triggers["workflow_dispatch"]["inputs"]["channel"]["options"] == ["stable", "rc"]
+
+
+def test_a_nightly_skips_only_ci_and_the_package_index():
+    """Every other release job runs for a nightly too: that is the one process."""
+    jobs = release_workflow()["jobs"]
+    skipped = {
+        name
+        for name, job in jobs.items()
+        if f"github.repository_id == '1174219883' && {NOT_NIGHTLY} &&" in job.get("if", "")
+    }
+    assert skipped == {"ci", "pypi-publish", "pypi-publish-music"}
+    # Main already passed CI; the jobs after it accept its skip only on a nightly.
+    for name in ("package", "release", "docker-build", "inference-build", "inference-manifest"):
+        condition = " ".join(jobs[name]["if"].split())
+        assert (
+            "(needs.ci.result == 'success' || "
+            "(inputs.channel == 'nightly' && needs.ci.result == 'skipped'))" in condition
+        ), name
+    docs = " ".join(jobs["deploy-docs"]["if"].split())
+    assert "needs.release.result == 'success'" in docs
+    assert "(inputs.channel == 'nightly' && needs.pypi-publish.result == 'skipped')" in docs
+
+
+def test_a_nightly_has_no_approval_environment():
+    environment = release_workflow()["jobs"]["docker-build"]["environment"]["name"]
+    # `a && b || ''`: for a nightly the name is empty, which means no environment.
+    assert environment.startswith("${{ inputs.channel != 'nightly' && (")
+    assert environment.endswith("|| '' }}")
+    assert "production-major" in environment
+
+
+def test_inference_images_rebuild_only_when_the_nightly_says_so():
+    jobs = release_workflow()["jobs"]
+    assert (
+        "(inputs.channel != 'nightly' || inputs.rebuild_inference)" in jobs["inference-build"]["if"]
+    )
+    for name in ("inference-manifest", "docker-manifest"):
+        condition = " ".join(jobs[name]["if"].split())
+        assert (
+            "(inputs.channel == 'nightly' && !inputs.rebuild_inference && "
+            "needs.inference-build.result == 'skipped')" in condition
+        ), name
+
+
+def _name_the_nightly(tmp_path, **overrides):
+    output = tmp_path / "outputs"
+    env = {
+        **os.environ,
+        "GITHUB_OUTPUT": str(output),
+        "NIGHTLY_VERSION": "1.0.0rc9.dev20261011",
+        "NIGHTLY_TAG": "nightly-20261011",
+        "DRY_RUN": "false",
+        "APP_ONLY": "false",
+        "INFERENCE_ONLY": "false",
+        **overrides,
+    }
+    step = _step("analyze", "Name the nightly")
+    assert step["if"] == NIGHTLY
+    result = subprocess.run(
+        ["bash", "-e", "-c", step["run"]], env=env, capture_output=True, text=True, check=False
+    )
+    lines = output.read_text().splitlines() if output.exists() else []
+    return result.returncode, lines
+
+
+def test_a_nightly_is_named_by_its_decision_not_by_a_version_series(tmp_path):
+    returncode, lines = _name_the_nightly(tmp_path)
+    assert returncode == 0
+    assert lines == [
+        "should_release=true",
+        "next_version=1.0.0rc9.dev20261011",
+        "release_type=nightly",
+        "prerelease=true",
+        "previous_tag=",
+        "image_tag=nightly-20261011",
+    ]
+    analyze = release_workflow()["jobs"]["analyze"]
+    series = next(step for step in analyze["steps"] if step.get("id") == "analyze")
+    assert series["if"] == NOT_NIGHTLY
+    assert analyze["outputs"]["image_tag"] == (
+        "${{ steps.nightly.outputs.image_tag || steps.analyze.outputs.next_version }}"
+    )
+
+
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {"DRY_RUN": "true"},
+        {"APP_ONLY": "true"},
+        {"INFERENCE_ONLY": "true"},
+        {"NIGHTLY_VERSION": "1.0.0"},
+        {"NIGHTLY_VERSION": ""},
+        {"NIGHTLY_TAG": "latest"},
+        {"NIGHTLY_TAG": "v1.0.0"},
+    ],
+)
+def test_a_nightly_refuses_release_modes_and_foreign_names(tmp_path, overrides):
+    returncode, lines = _name_the_nightly(tmp_path, **overrides)
+    assert returncode != 0
+    assert lines == []
+
+
+def test_every_nightly_artifact_is_stamped_with_the_nightly_version():
+    """`immich-memories --version` prints the packaged version, so the build must set it."""
+    jobs = release_workflow()["jobs"]
+    version = "${{ needs.analyze.outputs.next_version }}"
+    build = next(step for step in jobs["package"]["steps"] if step.get("run") == "uv build")
+    assert build["env"]["SETUPTOOLS_SCM_PRETEND_VERSION"] == version
+    for job in ("docker-build", "inference-build"):
+        image = next(
+            step for step in jobs[job]["steps"] if "push-image-digest" in step.get("uses", "")
+        )
+        assert f"APP_VERSION={version}" in image["with"]["build-args"], job
+        assert "VCS_REF=${{ github.sha }}" in image["with"]["build-args"], job
+    # The setup files pin the dated image tag, which for a release is its version.
+    bundle = _step("deployment-bundle", "Package deployment files")
+    assert bundle["env"]["VERSION"] == "${{ needs.analyze.outputs.image_tag }}"
+
+
+def test_the_nightly_notes_carry_the_marker(tmp_path):
+    step = _step("package", "Write the nightly notes")
+    assert step["if"] == NIGHTLY
+    assert _step("package", "Generate changelog")["if"] == NOT_NIGHTLY
+    script = step["run"].replace("scripts/nightly.py", str(ROOT / "scripts/nightly.py"))
+    subprocess.run(
+        ["bash", "-e", "-c", script],
+        cwd=tmp_path,
+        env={
+            **os.environ,
+            "NEXT_VERSION": "1.0.1.dev20261011",
+            "IMAGE_TAG": "nightly-20261011",
+            "GITHUB_SHA": HEAD,
+        },
+        check=True,
+    )
+    notes = (tmp_path / "release_notes.md").read_text()
+    assert last_nightly_commit(notes) == HEAD
+    assert "nightly-20261011" in notes
+
+
+def test_a_nightly_moves_only_the_nightly_tag_and_its_rolling_prerelease():
+    release = release_workflow()["jobs"]["release"]
+    by_name = {step.get("name"): step for step in release["steps"]}
+    # The version tag and the versioned GitHub Release are the stable and rc channels'.
+    assert by_name["Push release tag"]["if"] == NOT_NIGHTLY
+    assert by_name["Create GitHub Release"]["if"] == NOT_NIGHTLY
+    tag = by_name["Move the nightly tag to this commit"]
+    assert tag["if"] == NIGHTLY
+    assert "refs/tags/nightly" in tag["run"]
+    assert "refs/tags/v" not in tag["run"]
+    assert "git tag -a" not in tag["run"]
+    publish = by_name["Replace the nightly prerelease"]
+    assert publish["if"] == NIGHTLY
+    assert "gh release create nightly" in publish["run"]
+    assert "--prerelease" in publish["run"]
+    assert "--latest=false" in publish["run"]
+    assert "--notes-file release_notes.md" in publish["run"]
+    # The same files a release attaches: wheel, sdist, provenance, setup files.
+    for files in ("dist/*.whl", "attestations/*.intoto.jsonl", "deployment-assets/*"):
+        assert files in publish["run"]
+    nightly_only = [step for step in release["steps"] if step.get("if") == NIGHTLY]
+    assert "pypi" not in json.dumps(nightly_only).lower()
 
 
 def test_nightly_composite_actions_never_move_latest():
@@ -239,105 +415,92 @@ def test_nightly_composite_actions_never_move_latest():
         assert "pypi" not in text.lower()
 
 
-def test_nothing_public_happens_until_every_build_and_smoke_passed():
-    jobs = nightly_workflow()["jobs"]
-    dependencies = {name: set(job.get("needs", [])) for name, job in jobs.items()}
-
-    def ancestors(name):
-        return dependencies[name] | {
-            ancestor for parent in dependencies[name] for ancestor in ancestors(parent)
-        }
-
-    fallible = {"package", "app-build", "app-smoke", "inference-build"}
-    for public in ("manifests", "publish", "deploy-docs"):
-        assert fallible <= ancestors(public), public
-    assert {"manifests", "bundle"} <= ancestors("publish")
-    assert "publish" in ancestors("deploy-docs")
-    # The images go out by digest only; the tags move in `manifests`.
-    for job in ("app-build", "inference-build"):
-        assert "push-image-digest" in _all_text(jobs[job]["steps"])
-    manifest_text = _all_text(jobs["manifests"])
-    assert "!cancelled()" in jobs["manifests"]["if"]
-    assert "needs.app-smoke.result == 'success'" in jobs["manifests"]["if"]
-    assert "needs.package.result == 'success'" in jobs["manifests"]["if"]
-    assert "nightly" in manifest_text
-
-
-def test_every_nightly_job_waits_for_the_decision():
-    jobs = nightly_workflow()["jobs"]
-    for name, job in jobs.items():
-        if name == "decide":
-            continue
-        assert "github.repository_id == '1174219883'" in job["if"], name
-    for name in ("package", "app-build"):
-        assert "needs.decide.outputs.build == 'true'" in jobs[name]["if"], name
-    assert "needs.decide.outputs.inference == 'true'" in jobs["inference-build"]["if"]
-
-
-def test_nightly_jobs_ask_for_only_what_they_use():
+def test_the_nightly_grants_only_what_the_release_jobs_ask_for():
     workflow = nightly_workflow()
     assert workflow["permissions"] == {"contents": "read"}
-    writers = {name: job.get("permissions", {}) for name, job in workflow["jobs"].items()}
-    assert writers["publish"]["contents"] == "write"
-    for name, permissions in writers.items():
-        if name != "publish":
-            assert permissions.get("contents", "read") == "read", name
-    for name in ("decide", "package", "bundle", "publish"):
-        assert "packages" not in writers[name], name
+    assert workflow["jobs"]["decide"]["permissions"] == {"contents": "read"}
+    # A called workflow cannot exceed its caller, so the call grants their union.
+    asked = {}
+    for name in ("release.yml", "ci.yml", "docs.yml"):
+        for job in _workflow(name)["jobs"].values():
+            for scope, level in (job.get("permissions") or {}).items():
+                if level == "write" or asked.get(scope) != "write":
+                    asked[scope] = level
+    granted = workflow["jobs"]["release"]["permissions"]
+    assert {scope for scope, level in asked.items() if level == "write"} == {
+        scope for scope, level in granted.items() if level == "write"
+    }
 
 
-def _bash_major() -> int:
-    result = subprocess.run(
-        ["bash", "-c", "echo ${BASH_VERSINFO[0]}"], capture_output=True, text=True, check=False
-    )
-    return int(result.stdout.strip() or 0)
-
-
-# The step runs on Ubuntu runners (bash 5); macOS ships bash 3.2, which has no `mapfile`.
-@pytest.mark.skipif(_bash_major() < 4, reason="the manifests step needs bash 4 or newer")
-@pytest.mark.parametrize("rebuilt", ["true", "false"])
-def test_manifests_tag_nightly_and_the_day_and_never_latest(tmp_path, rebuilt):
+def _run_manifest_step(tmp_path, job, env):
     step = next(
         step
-        for step in nightly_workflow()["jobs"]["manifests"]["steps"]
-        if step.get("name") == "Tag the nightly images"
+        for step in release_workflow()["jobs"][job]["steps"]
+        if "imagetools create" in step.get("run", "")
     )
-    digests = tmp_path / "digests"
-    for folder, digest in [
-        ("digests-amd64", "1"),
-        ("inference-digests-cpu-0", "2"),
-        ("inference-digests-cuda-2", "3"),
-    ]:
-        (digests / folder).mkdir(parents=True)
-        (digests / folder / (digest * 64)).touch()
     # WHY: records the tags each imagetools call would push instead of writing to GHCR.
     docker = tmp_path / "docker"
     docker.write_text('#!/bin/sh\nprintf "%s\\n" "$*" >> "$DOCKER_CALLS"\n')
     docker.chmod(0o755)
     calls = tmp_path / "calls"
+    digests = tmp_path / "digests"
     script = step["run"].replace("/tmp/digests", str(digests))
     subprocess.run(
         ["bash", "-e", "-c", script],
+        cwd=digests,
         env={
             **os.environ,
             "PATH": f"{tmp_path}:{os.environ['PATH']}",
             "DOCKER_CALLS": str(calls),
             "RUNNER_TEMP": str(tmp_path),
-            "APP": "ghcr.io/example/app",
-            "INFERENCE": "ghcr.io/example/app/inference",
+            "GITHUB_SHA": HEAD,
+            "VERSION": "1.0.1.dev20261011",
+            "PRERELEASE": "true",
+            "CHANNEL": "nightly",
             "TAG": "nightly-20261011",
-            "REBUILT": rebuilt,
+            **env,
         },
         check=True,
     )
-    lines = calls.read_text().splitlines()
-    assert len(lines) == 3  # app, inference cpu, inference cuda
+    return calls.read_text().splitlines()
+
+
+def test_the_app_manifest_tags_nightly_and_the_day_and_never_latest(tmp_path):
+    (tmp_path / "digests").mkdir()
+    (tmp_path / "digests" / ("1" * 64)).touch()
+    lines = _run_manifest_step(
+        tmp_path, "docker-manifest", {"IMAGE": "ghcr.io/example/app", "APP_ONLY": "false"}
+    )
+    assert len(lines) == 1
+    assert "-t ghcr.io/example/app:nightly-20261011 " in lines[0]
+    assert "-t ghcr.io/example/app:nightly " in lines[0]
+    assert ":latest" not in lines[0]
+    assert "1.0.1.dev20261011" not in lines[0]
+
+
+@pytest.mark.parametrize("rebuilt", ["true", "false"])
+def test_the_inference_manifests_tag_nightly_and_the_day_and_never_latest(tmp_path, rebuilt):
+    digests = tmp_path / "digests"
+    for folder, digest in [("inference-digests-cpu-0", "2"), ("inference-digests-cuda-2", "3")]:
+        (digests / folder).mkdir(parents=True)
+        (digests / folder / (digest * 64)).touch()
+    image = "ghcr.io/example/app/inference"
+    lines = _run_manifest_step(
+        tmp_path,
+        "inference-manifest",
+        {"IMAGE": image, "INFERENCE_ONLY": "false", "REBUILT": rebuilt},
+    )
     text = "\n".join(lines)
-    assert "ghcr.io/example/app:nightly-20261011" in text
-    assert "-t ghcr.io/example/app:nightly " in text
-    assert "ghcr.io/example/app/inference:nightly-20261011-cuda" in text
+    assert len(lines) == 2  # cpu, cuda
+    assert f"{image}:nightly-20261011 " in text
+    assert f"{image}:nightly-20261011-cuda" in text
     assert ":latest" not in text
-    if rebuilt == "false":
+    if rebuilt == "true":
+        assert f"-t {image}:nightly " in text
+        assert f"-t {image}:nightly-cuda " in text
+    else:
         # The previous nightly's inference images get today's date, unchanged.
-        assert "ghcr.io/example/app/inference:nightly-cuda" in text
-        assert "-t ghcr.io/example/app/inference:nightly " not in text
+        assert lines == [
+            f"buildx imagetools create -t {image}:nightly-20261011 {image}:nightly",
+            f"buildx imagetools create -t {image}:nightly-20261011-cuda {image}:nightly-cuda",
+        ]

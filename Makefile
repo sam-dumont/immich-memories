@@ -204,6 +204,13 @@ CONTAINER_E2E_IMAGE ?= immich-memories:container-e2e
 CONTAINER_E2E_DATABASE ?= sqlite
 CONTAINER_E2E_BUILD ?= 1
 
+# One CPU-only film rendered inside a built app image, against the hermetic fake Immich.
+# The release and the nightly run it on the exact digest they are about to tag.
+.PHONY: docker-smoke
+docker-smoke:  ## Render one film inside an app image (SMOKE_IMAGE=ghcr.io/...@sha256:...)
+	@[ -n "$(SMOKE_IMAGE)" ] || { echo "SMOKE_IMAGE must name the image to smoke-test"; exit 2; }
+	uv run python scripts/docker_smoke.py --image "$(SMOKE_IMAGE)" --timeout 1200
+
 .PHONY: test-container test-container-image
 test-container-image:  ## Build the image the container suite runs (editorial extra only)
 	docker build -f docker/Dockerfile -t $(CONTAINER_E2E_IMAGE) \

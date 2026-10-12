@@ -147,8 +147,12 @@ def test_ci_runs_the_hermetic_launch_check_with_runtime_dependencies() -> None:
     assert all("IMMICH_API_KEY" not in str(step) for step in steps)
 
     lfs_pull_index = next(
-        index for index, step in enumerate(steps) if "git lfs pull" in str(step.get("run", ""))
+        index
+        for index, step in enumerate(steps)
+        if step.get("uses") == "./.github/actions/pull-lfs"
     )
+    lfs_action = (REPO_ROOT / ".github" / "actions" / "pull-lfs" / "action.yml").read_text()
+    assert "git lfs pull" in lfs_action
     launch_index = next(
         index
         for index, step in enumerate(steps)
