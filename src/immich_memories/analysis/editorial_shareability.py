@@ -22,7 +22,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
-from collections.abc import Callable, Iterable, Mapping, Sequence
+from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
@@ -45,7 +45,7 @@ from immich_memories.analysis.editorial_shareability_audience import (
 )
 from immich_memories.analysis.editorial_story_shortlist import capture_space_available
 from immich_memories.analysis.editorial_text_failures import TextCompletionFailure
-from immich_memories.db.tables import asset_flags, face_boxes, head_facts
+from immich_memories.db.tables import annotation_assets, asset_flags, face_boxes, head_facts
 from immich_memories.store.asset_annotations import corroborated_people
 from immich_memories.store.batches import id_in, in_chunks
 
@@ -139,13 +139,20 @@ def _flag_order(row: tuple) -> tuple:
 
 
 def load_detector_heads(
-    store: Store, asset_ids: Iterable[str], head_versions: Mapping[str, str]
+    store: Store,
+    asset_ids: Iterable[str],
+    head_versions: Mapping[str, str],
+    *,
+    named_now: Collection[str] = frozenset(),
 ) -> dict[str, dict[str, str]]:
     """The audience heads banked for these sources, at the versions this run reads.
 
     An attached clip has no annotation line -- nothing describes it, nothing selects it --
     so its detector rows are read from the bank directly. A source with no row is absent,
     which is what every clip looked like before anything read one.
+
+    `named_now` is the pictures Immich names somebody on at this read, the same set the
+    annotation read takes: a face recognised after `prepare` has no stored box (#2079).
     """
     ids = list(dict.fromkeys(asset_ids))
     wanted = {head: version for head, version in head_versions.items() if head in _AUDIENCE_HEADS}
@@ -164,18 +171,60 @@ def load_detector_heads(
                 if wanted.get(str(head)) == str(version) and _clean(label):
                     out.setdefault(str(asset_id), {})[str(head)] = _clean(label)
         if wanted.get("people") == PUBLIC_HEAD_VERSIONS["people"]:
-            _corroborate_people(connection, ids, out)
+            _corroborate_people(connection, ids, out, frozenset(named_now))
     return out
 
 
-def _corroborate_people(connection, ids: Sequence[str], heads: dict[str, dict[str, str]]) -> None:
+def named_now_of(assets: Iterable[Any]) -> frozenset[str]:
+    """The pictures Immich names somebody on at this read, as `load_detector_heads` takes them."""
+    return frozenset(
+        str(asset.id)
+        for asset in assets
+        if any((getattr(p, "name", None) or "").strip() for p in asset.people or ())
+    )
+
+
+def _corroborate_people(
+    connection, ids: Sequence[str], heads: dict[str, dict[str, str]], named_now: frozenset[str]
+) -> None:
     """The same corrected people head the annotation read gives a picture (#2069, #2079).
 
-    A clip has no caption, so only a face box backs its label, and only where the ids read
-    together hold face data at all.
+    A clip has no caption, so only a face backs its label, and only where the ids read
+    together hold face data at all. Immich reads faces on a Live Photo's still, never on its
+    motion clip, so a clip takes its still's face as its own: read alone, as a film run reads
+    the clips, it would otherwise never see face data, and read beside its still, it would be
+    lowered under the face the still carries.
     """
+    still_of = _stills_of(connection, ids)
+    scope = [*ids, *still_of.values()]
+    faced = _boxed(connection, scope) | (named_now & set(scope))
+    for asset_id, row in heads.items():
+        if "people" in row:
+            row["people"] = corroborated_people(
+                row["people"],
+                has_face=bool({asset_id, still_of.get(asset_id)} & faced),
+                description=None,
+                library_has_faces=bool(faced),
+            )
+
+
+def _stills_of(connection, clip_ids: Sequence[str]) -> dict[str, str]:
+    """The still each of these motion clips belongs to, as the store banked the Live Photo."""
+    a = annotation_assets
+    out: dict[str, str] = {}
+    for chunk in in_chunks(connection, clip_ids):
+        rows = connection.execute(
+            sa.select(a.c.live_photo_video_id, a.c.asset_id).where(
+                id_in(connection, a.c.live_photo_video_id, chunk)
+            )
+        )
+        out.update({str(clip): str(still) for clip, still in rows})
+    return out
+
+
+def _boxed(connection, ids: Sequence[str]) -> set[str]:
     boxed: set[str] = set()
-    for chunk in in_chunks(connection, ids):
+    for chunk in in_chunks(connection, list(dict.fromkeys(ids))):
         boxed.update(
             str(asset_id)
             for asset_id in connection.execute(
@@ -184,14 +233,7 @@ def _corroborate_people(connection, ids: Sequence[str], heads: dict[str, dict[st
                 .distinct()
             ).scalars()
         )
-    for asset_id, row in heads.items():
-        if "people" in row:
-            row["people"] = corroborated_people(
-                row["people"],
-                has_face=asset_id in boxed,
-                description=None,
-                library_has_faces=bool(boxed),
-            )
+    return boxed
 
 
 def never_auto_ids(flags: Mapping[str, Sequence[FlagRow]]) -> frozenset[str]:
