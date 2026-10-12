@@ -13,7 +13,11 @@ from immich_memories.analysis.editorial_runtime_evidence import (
     EditorialInputsRequired,
     EvidencePreparation,
 )
-from immich_memories.analysis.editorial_shareability import load_detector_heads, load_flags
+from immich_memories.analysis.editorial_shareability import (
+    load_detector_heads,
+    load_flags,
+    named_now_of,
+)
 from immich_memories.analysis.editorial_structure_contract import StructurePlanningInput
 from immich_memories.config_tiers import nas_draft_config
 
@@ -67,7 +71,12 @@ class FilmPreparation:
             shareability_flags=dict(source.shareability_flags)
             | load_flags(store, ids | companions),
             companion_detectors=dict(source.companion_detectors)
-            | load_detector_heads(store, companions, source.config.editorial.active_head_versions),
+            | load_detector_heads(
+                store,
+                companions,
+                source.config.editorial.active_head_versions,
+                named_now=named_now_of(assets),
+            ),
             clip_frames=dict(source.clip_frames) | load_clip_frames(store, companions),
             motion_residuals=dict(source.motion_residuals) | read_motion_residuals(store, assets),
         )
