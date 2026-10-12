@@ -13,7 +13,7 @@ import { Badge, Button, Check, CommandLine, Field, Heading } from "../components
  * command the server reads the brief as, and Cut. Below the form sits the
  * closed, experimental "Describe the film in your own words"
  * (web/src/lib/AskPanel.svelte). The fixture library is one household's
- * June 2024, so the brief asks for that month.
+ * July 2025, so the brief asks for that month.
  */
 
 // The page's own order (FIELDS in create/+page.svelte), in the reader's words (labels.ts).
@@ -33,7 +33,7 @@ const TYPES = [
 // The month select lists names, in the interface language.
 const MONTHS = ["", "January", "February", "March", "April", "May", "June", "July", "August"];
 // The fixture library's cast (tests/e2e/fake_library.py), nobody's family.
-const PEOPLE = ["Robin", "Charlie", "Kit"];
+const PEOPLE = ["Robin", "Charlie", "Kit", "Pat"];
 
 const PICK_TYPE = 48;
 const CLICK_YEAR = 88;
@@ -88,8 +88,8 @@ const briefAt = (frame: number) => {
       extrapolateRight: "clamp",
     }),
   );
-  const year = frame < CLICK_YEAR ? "2026" : "2024".slice(0, yearTyped);
-  const month = frame < TYPE_MONTH ? 8 : 6;
+  const year = frame < CLICK_YEAR ? "2026" : "2025".slice(0, yearTyped);
+  const month = frame < TYPE_MONTH ? 8 : 7;
   return { monthly, year, month };
 };
 

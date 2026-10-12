@@ -24,7 +24,7 @@ export const TitleScene: React.FC = () => {
           </div>
         </div>
         <div style={{ display: "grid", gap: 18 }}>
-          {["trip-lake-arrival-01.jpg", "garden-cake.jpg", "woods-stream-01.jpg"].map((picture) => (
+          {["north-0721-0339.jpg", "birthday-cake.jpg", "north-0716-0196.jpg"].map((picture) => (
             <Img key={picture} src={staticFile(`library/${picture}`)} style={{
               width: "100%", height: 242, objectFit: "cover", borderRadius: 10,
             }} />

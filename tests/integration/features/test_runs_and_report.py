@@ -12,7 +12,7 @@ import pytest
 from tests.features.cli_harness import UserHome, film_facts, films_under
 from tests.integration.features.immich_server import LibraryServer
 from tests.integration.features.library import (
-    GARDEN_DAY,
+    DEPARTURE_DAY,
     QUIET_DAY,
     RenderedRun,
     day_args,
@@ -25,43 +25,43 @@ _STORY_LINE = re.compile(r"^\s+(\d+:\d\d)\s+(\d{4}-\d\d-\d\d)\s+(photo|video)\s"
 
 
 @pytest.mark.feature("runs.list-and-show")
-def test_runs_list_and_show_find_the_finished_film(library_home: UserHome, garden_film):
+def test_runs_list_and_show_find_the_finished_film(library_home: UserHome, departure_film):
     listed = library_home.run("runs", "list", "--limit", "50")
     failed = library_home.run("runs", "list", "--status", "failed")
     # A partial id works while it is unambiguous.
-    shown = library_home.run("runs", "show", garden_film.run_id[:-1])
+    shown = library_home.run("runs", "show", departure_film.run_id[:-1])
 
     assert listed.returncode == 0, listed.explain()
-    assert garden_film.run_id in listed.stdout
+    assert departure_film.run_id in listed.stdout
     assert "completed" in listed.stdout
-    assert garden_film.run_id not in failed.stdout
+    assert departure_film.run_id not in failed.stdout
     assert shown.returncode == 0, shown.explain()
-    assert garden_film.run_id in shown.stdout
-    assert garden_film.film.name in shown.stdout.replace("\n", "")
+    assert departure_film.run_id in shown.stdout
+    assert departure_film.film.name in shown.stdout.replace("\n", "")
 
 
 @pytest.mark.feature("runs.story")
-def test_runs_story_reads_the_shots_in_playback_order(library_home: UserHome, garden_film):
-    result = library_home.run("runs", "story", garden_film.run_id)
+def test_runs_story_reads_the_shots_in_playback_order(library_home: UserHome, departure_film):
+    result = library_home.run("runs", "story", departure_film.run_id)
 
     assert result.returncode == 0, result.explain()
     shots = _STORY_LINE.findall(result.stdout)
-    shipped = shipped_on(GARDEN_DAY)
+    shipped = shipped_on(DEPARTURE_DAY)
     assert [kind for _, _, kind in shots] == ["video" if p.is_video else "photo" for p in shipped]
-    assert {day for _, day, _ in shots} == {GARDEN_DAY}
+    assert {day for _, day, _ in shots} == {DEPARTURE_DAY}
     timecodes = [int(m) * 60 + int(s) for m, s in (t.split(":") for t, _, _ in shots)]
     assert timecodes == sorted(timecodes) and len(set(timecodes)) == len(timecodes)
 
 
 @pytest.mark.feature("runs.why")
 def test_runs_why_says_where_a_picture_was_kept_or_left_out(
-    library_home: UserHome, garden_film, immich: LibraryServer
+    library_home: UserHome, departure_film, immich: LibraryServer
 ):
-    kept = immich.id_of(shipped_on(GARDEN_DAY)[0].asset_id)
-    dropped = immich.id_of(left_out_on(GARDEN_DAY)[0])
+    kept = immich.id_of(shipped_on(DEPARTURE_DAY)[0].asset_id)
+    dropped = immich.id_of(left_out_on(DEPARTURE_DAY)[0])
 
-    kept_answer = library_home.run("runs", "why", kept, "--run", garden_film.run_id)
-    dropped_answer = library_home.run("runs", "why", dropped, "--run", garden_film.run_id)
+    kept_answer = library_home.run("runs", "why", kept, "--run", departure_film.run_id)
+    dropped_answer = library_home.run("runs", "why", dropped, "--run", departure_film.run_id)
 
     assert kept_answer.returncode == 0, kept_answer.explain()
     assert "in the cut at" in kept_answer.stdout
@@ -71,13 +71,13 @@ def test_runs_why_says_where_a_picture_was_kept_or_left_out(
 
 
 @pytest.mark.feature("runs.storage")
-def test_runs_storage_json_reports_the_output_directories(library_home: UserHome, garden_film):
+def test_runs_storage_json_reports_the_output_directories(library_home: UserHome, departure_film):
     result = library_home.run("runs", "storage", "--json")
 
     assert result.returncode == 0, result.explain()
     report = json.loads(result.stdout)
     paths = [entry["path"] for entry in report["directories"]]
-    assert str(garden_film.film.parent) in paths, paths
+    assert str(departure_film.film.parent) in paths, paths
 
 
 # ── a cut kept without rendering, then rendered ──────────────────────────────
@@ -87,7 +87,7 @@ def test_runs_storage_json_reports_the_output_directories(library_home: UserHome
 def saved_cut(library_home: UserHome) -> tuple[str, list]:
     """`generate --no-render`: the run id it kept and the films on disk afterwards."""
     before = films_under(library_home.videos)
-    result = library_home.run(*day_args(GARDEN_DAY), "--no-render", scripted_selection=True)
+    result = library_home.run(*day_args(DEPARTURE_DAY), "--no-render", scripted_selection=True)
     assert result.returncode == 0, result.explain()
     assert "no video was created" in result.output, result.explain()
     run_ids = re.findall(r"runs render (\d{8}_\d{6}_[0-9a-f]{4})", result.output)
@@ -103,7 +103,7 @@ def test_no_render_saves_a_real_cut_and_writes_no_film(library_home: UserHome, s
 
     assert new_films == []
     assert story.returncode == 0, story.explain()
-    assert len(_STORY_LINE.findall(story.stdout)) == len(shipped_on(GARDEN_DAY))
+    assert len(_STORY_LINE.findall(story.stdout)) == len(shipped_on(DEPARTURE_DAY))
 
 
 @pytest.mark.feature("runs.render-saved-cut")
@@ -125,7 +125,7 @@ def test_dry_run_previews_the_inputs_without_a_cut_or_a_film(library_home: UserH
     before_runs = library_home.run("runs", "list", "--limit", "100").stdout
     before_films = films_under(library_home.videos)
 
-    result = library_home.run(*day_args(GARDEN_DAY), "--dry-run", scripted_selection=True)
+    result = library_home.run(*day_args(DEPARTURE_DAY), "--dry-run", scripted_selection=True)
 
     assert result.returncode == 0, result.explain()
     assert "selection was not run" in result.output
@@ -141,8 +141,8 @@ def test_dry_run_previews_the_inputs_without_a_cut_or_a_film(library_home: UserH
 
 
 @pytest.mark.feature("report.sections")
-def test_report_shows_the_phase_table_warnings_and_redacted_logs(library_home, garden_film):
-    result = library_home.run("report", garden_film.run_id)
+def test_report_shows_the_phase_table_warnings_and_redacted_logs(library_home, departure_film):
+    result = library_home.run("report", departure_film.run_id)
 
     assert result.returncode == 0, result.explain()
     assert "| Phase | Seconds |" in result.stdout
@@ -153,8 +153,8 @@ def test_report_shows_the_phase_table_warnings_and_redacted_logs(library_home, g
 
 
 @pytest.mark.feature("report.json")
-def test_report_json_gives_the_report_as_data(library_home: UserHome, garden_film):
-    result = library_home.run("report", garden_film.run_id, "--json")
+def test_report_json_gives_the_report_as_data(library_home: UserHome, departure_film):
+    result = library_home.run("report", departure_film.run_id, "--json")
 
     assert result.returncode == 0, result.explain()
     report = json.loads(result.stdout)
@@ -165,11 +165,11 @@ def test_report_json_gives_the_report_as_data(library_home: UserHome, garden_fil
 
 @pytest.mark.feature("report.bundle")
 def test_report_bundle_zips_the_report_and_the_redacted_logs(
-    library_home: UserHome, garden_film, tmp_path
+    library_home: UserHome, departure_film, tmp_path
 ):
     bundle = tmp_path / "report.zip"
 
-    result = library_home.run("report", garden_film.run_id, "--bundle", str(bundle))
+    result = library_home.run("report", departure_film.run_id, "--bundle", str(bundle))
 
     assert result.returncode == 0, result.explain()
     with zipfile.ZipFile(bundle) as archive:
@@ -180,12 +180,12 @@ def test_report_bundle_zips_the_report_and_the_redacted_logs(
 
 @pytest.mark.feature("report.redaction")
 def test_report_removes_the_key_the_server_address_and_absolute_paths(
-    library_home: UserHome, garden_film: RenderedRun, immich: LibraryServer, tmp_path
+    library_home: UserHome, departure_film: RenderedRun, immich: LibraryServer, tmp_path
 ):
     bundle = tmp_path / "redaction.zip"
-    markdown = library_home.run("report", garden_film.run_id).stdout
-    data = library_home.run("report", garden_film.run_id, "--json").stdout
-    library_home.run("report", garden_film.run_id, "--bundle", str(bundle))
+    markdown = library_home.run("report", departure_film.run_id).stdout
+    data = library_home.run("report", departure_film.run_id, "--json").stdout
+    library_home.run("report", departure_film.run_id, "--bundle", str(bundle))
     with zipfile.ZipFile(bundle) as archive:
         members = "\n".join(
             archive.read(name).decode("utf-8", "replace") for name in archive.namelist()

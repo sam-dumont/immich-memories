@@ -26,9 +26,11 @@ from tests.e2e.fake_immich import TIMELINE_ASSETS  # noqa: E402
 from tests.e2e.fake_library import (  # noqa: E402
     CARRIERS,
     LIBRARY,
+    MONTH,
     STORIES,
     STORY_OF,
     THESIS,
+    YEAR,
     pool_line,
     summary_line,
 )
@@ -78,8 +80,8 @@ def _board(pictures):
         config=Config(),
         target_seconds=120,
         memory_type="monthly_highlights",
-        date_start=date(2024, 6, 1),
-        date_end=date(2024, 6, 30),
+        date_start=date(YEAR, MONTH, 1),
+        date_end=date(YEAR, MONTH, 31),
     )
     timeline = policy.resolve(carriers, assets)
     return storyboard_from_plan(
@@ -173,7 +175,7 @@ def _shots(pictures, board) -> list[dict]:
     shots = []
     previous_month = None
     for picture, timed in zip(pictures, board.shots, strict=True):
-        month = picture.taken_at[:7]
+        month = picture.day[:7]
         shot = {
             "picture": f"library/{picture.source.name}",
             "day": picture.taken_at[:10],
@@ -184,7 +186,7 @@ def _shots(pictures, board) -> list[dict]:
             "reason": picture.caption,
         }
         if month != previous_month:
-            shot["chapter"] = f"{MONTHS[int(month[5:7]) - 1]} {month[:4]}".replace("Jun ", "June ")
+            shot["chapter"] = f"{MONTHS[int(month[5:7]) - 1]} {month[:4]}".replace("Jul ", "July ")
             previous_month = month
         shots.append(shot)
     return shots

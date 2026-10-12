@@ -13,6 +13,7 @@ import json
 import os
 import re
 import socket
+import statistics
 import subprocess
 import sys
 import threading
@@ -173,8 +174,14 @@ class FilmFacts:
     width: int
     height: int
     frames: int
+    fps: float
     has_audio: bool
     codec: str
+
+
+def _rate(value: str) -> float:
+    numerator, _, denominator = value.partition("/")
+    return float(numerator) / float(denominator or 1) if float(denominator or 1) else 0.0
 
 
 def film_facts(path: Path) -> FilmFacts:
@@ -185,7 +192,7 @@ def film_facts(path: Path) -> FilmFacts:
             "-v",
             "error",
             "-show_entries",
-            "format=duration:stream=codec_type,codec_name,width,height,nb_frames",
+            "format=duration:stream=codec_type,codec_name,width,height,nb_frames,avg_frame_rate",
             "-of",
             "json",
             str(path),
@@ -201,13 +208,18 @@ def film_facts(path: Path) -> FilmFacts:
         width=int(video["width"]),
         height=int(video["height"]),
         frames=int(video.get("nb_frames") or 0),
+        fps=_rate(video.get("avg_frame_rate", "0/1")),
         has_audio=any(s["codec_type"] == "audio" for s in data["streams"]),
         codec=str(video["codec_name"]),
     )
 
 
 def band_luma(path: Path, at_seconds: float, *, top_fraction: float = 0.12) -> float:
-    """Mean luma (0-255, full range) of the top band of the frame shown at `at_seconds`."""
+    """Median luma (0-255, full range) of the top band of the frame shown at `at_seconds`.
+
+    The median, not the mean: a film away from home captions its place in that band,
+    and a line of text must not read as picture where the band is a black bar.
+    """
     frame = subprocess.run(  # noqa: S603 -- fixed ffmpeg argv
         [
             "ffmpeg",
@@ -230,7 +242,7 @@ def band_luma(path: Path, at_seconds: float, *, top_fraction: float = 0.12) -> f
     ).stdout
     if not frame:
         raise AssertionError(f"no frame at {at_seconds}s in {path.name}")
-    return sum(frame) / len(frame)
+    return float(statistics.median(frame))
 
 
 def films_under(directory: Path) -> list[Path]:

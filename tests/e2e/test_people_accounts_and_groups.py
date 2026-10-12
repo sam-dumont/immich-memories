@@ -17,6 +17,7 @@ from playwright.sync_api import Page, expect
 from immich_memories.people.transfer import import_document
 from tests.e2e.conftest import LaunchWorkspace, _launch_workspace, _serve_launch
 from tests.e2e.fake_immich import FakeImmichServer
+from tests.e2e.fake_library import MONTH, YEAR
 
 pytestmark = pytest.mark.e2e
 
@@ -56,7 +57,7 @@ def accounts_workspace(tmp_path_factory, fake_immich_server: FakeImmichServer) -
                             "count": 40,
                             "active_months": 6,
                             "first_month": "2024-01",
-                            "last_month": "2024-06",
+                            "last_month": f"{YEAR}-{MONTH:02d}",
                             "span_years": 0.5,
                             "onset": "2024-01",
                             "concentration": 8.3,

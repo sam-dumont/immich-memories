@@ -15,8 +15,8 @@ from immich_memories.operations.storyboard import PLAN_FILE, PROJECTION_FILE
 from immich_memories.store import owner_decisions
 from immich_memories.tracking import RunDatabase
 from immich_memories.tracking.models import RunMetadata
-from tests.e2e.fake_library import CARRIERS, LIBRARY
-from tests.e2e.web_flow import contact_sheet, cut_june, render, the_film
+from tests.e2e.fake_library import CARRIERS, LIBRARY, MONTH, YEAR
+from tests.e2e.web_flow import contact_sheet, cut_month, render, the_film
 
 pytestmark = pytest.mark.e2e
 
@@ -404,15 +404,15 @@ def test_a_memory_made_in_the_browser_is_cut_reviewed_revised_rendered_and_playe
     """The whole loop through the real CLI: generate --no-render, a revision, runs render."""
     page.goto(f"{launch_app_url}/app/create")
     page.get_by_text("Monthly Highlights", exact=True).click()
-    page.get_by_label("Year", exact=True).fill("2024")
-    page.get_by_label("Month", exact=True).select_option("6")
+    page.get_by_label("Year", exact=True).fill(str(YEAR))
+    page.get_by_label("Month", exact=True).select_option(str(MONTH))
     # WHY two minutes: the fixture editor keeps all eighteen carriers (79 s) whatever the
     # length; a real cut fits its budget, so the brief asks for one this cut fits.
     page.get_by_text("Length and pictures").click()
     page.get_by_label("Length in minutes", exact=False).fill("2")
     command = page.get_by_label("Command")
     expect(command).to_have_text(
-        "immich-memories generate --memory-type=monthly_highlights --year=2024 --month=6 "
+        f"immich-memories generate --memory-type=monthly_highlights --year={YEAR} --month={MONTH} "
         "--duration=120 --include-photos --include-live-photos --no-render"
     )
     page.get_by_role("button", name="Cut", exact=True).click()
@@ -459,8 +459,8 @@ def test_a_memory_made_in_the_browser_is_cut_reviewed_revised_rendered_and_playe
 def _cut_in_the_browser(page: Page, launch_app_url: str) -> str:
     page.goto(f"{launch_app_url}/app/create")
     page.get_by_text("Monthly Highlights", exact=True).click()
-    page.get_by_label("Year", exact=True).fill("2024")
-    page.get_by_label("Month", exact=True).select_option("6")
+    page.get_by_label("Year", exact=True).fill(str(YEAR))
+    page.get_by_label("Month", exact=True).select_option(str(MONTH))
     page.get_by_role("button", name="Cut", exact=True).click()
     page.wait_for_url("**/app/runs/**", timeout=240_000)
     return page.url.rsplit("/", 1)[-1]
@@ -614,7 +614,7 @@ def test_fade_controls_save_a_default_and_submit_a_film_override(
         route.fulfill(status=422, json={"detail": "Test captured the render request"})
 
     page.route("**/api/v1/runs/*/renders", record_render)
-    cut_june(page, launch_app_url)
+    cut_month(page, launch_app_url)
     panel = page.get_by_role("region", name="Render")
     choice = panel.get_by_label("Opening and closing fade")
     expect(choice).to_have_value("")

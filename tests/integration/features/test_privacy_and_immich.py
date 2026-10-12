@@ -1,8 +1,8 @@
 """Privacy mode in the encoded film, what the app sends Immich, and what leaves the network.
 
-The privacy film is the fixture garden day rendered with --privacy-mode, each clip carrying
+The privacy film is the fixture departure day rendered with --privacy-mode, each clip carrying
 a voice-band stand-in on its soundtrack (the library's own clips are silent). Its frames
-are compared with the session's plain garden film, the same cut at the same seconds.
+are compared with the session's plain departure film, the same cut at the same seconds.
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ from tests.e2e.fake_immich import FakeImmichServer
 from tests.features.cli_harness import OutboundTrap, UserHome, basic_config, film_facts
 from tests.integration.features.immich_server import LibraryServer
 from tests.integration.features.library import (
-    GARDEN_DAY,
+    DEPARTURE_DAY,
     QUIET_DAY,
     RenderedRun,
     day_args,
@@ -32,10 +32,10 @@ _VOICE_LOW_HZ, _VOICE_HIGH_HZ = 150, 1500
 _SHOT = re.compile(r"^\s+(\d+):(\d\d)\s+\d{4}-\d\d-\d\d\s+(?:photo|video)\s+([\d.]+) s", re.M)
 # Search reads are POSTs; nothing else the app sends Immich with upload off may write.
 _READ_ONLY_POSTS = frozenset({"/api/search/metadata", "/api/search/statistics"})
-# The privacy film gives the garden clips a voice by serving voiced copies as their originals,
+# The privacy film gives the departure clips a voice by serving voiced copies as their originals,
 # and reads what the app sent from the fake's request log: neither exists on a real server.
 _PRIVATE_FILM_IS_FAKE_ONLY = pytest.mark.fake_immich_only(
-    "serves voiced copies as the garden clips' originals and reads the fake's request log"
+    "serves voiced copies as the departure clips' originals and reads the fake's request log"
 )
 
 
@@ -140,7 +140,7 @@ def private_film(
     fake_immich: FakeImmichServer,
     outbound_trap: OutboundTrap,
 ) -> PrivateFilm:
-    """The garden day plain and with --privacy-mode, its clips carrying a voice.
+    """The departure day plain and with --privacy-mode, its clips carrying a voice.
 
     Both log at DEBUG, which prints each shot's FFmpeg decode command: the caption text
     the render drew onto the frames.
@@ -152,10 +152,10 @@ def private_film(
             picture.seconds,
             root / f"{picture.asset_id}.mp4",
         )
-        for picture in shipped_on(GARDEN_DAY)
+        for picture in shipped_on(DEPARTURE_DAY)
         if picture.is_video
     }
-    assert voiced, "the garden day ships a clip"
+    assert voiced, "the departure day ships a clip"
     # Its own home: the library home's cache already holds the silent clips.
     home = UserHome(root / "home", extra_env=tuple(outbound_trap.env().items()))
     home.write_config(basic_config(fake_immich.base_url, fake_immich.api_key, home))
@@ -163,9 +163,9 @@ def private_film(
         # The private film first: a second render in one home reuses the sources the first
         # prepared, so only the first reads its originals from Immich.
         start = len(fake_immich.wire.requests)
-        run = render(home, "--verbose", *day_args(GARDEN_DAY), "--privacy-mode")
+        run = render(home, "--verbose", *day_args(DEPARTURE_DAY), "--privacy-mode")
         requests = fake_immich.wire.requests[start:]
-        plain = render(home, "--verbose", *day_args(GARDEN_DAY))
+        plain = render(home, "--verbose", *day_args(DEPARTURE_DAY))
     return PrivateFilm(home, plain, run, tuple(voiced.values()), requests)
 
 
@@ -193,8 +193,9 @@ def test_privacy_mode_blurs_every_picture_in_the_encoded_film(private_film: Priv
 @pytest.mark.feature("privacy.privacy-mode")
 @_PRIVATE_FILM_IS_FAKE_ONLY
 def test_privacy_mode_moves_the_places_the_film_names(private_film: PrivateFilm):
-    pictures = shipped_on(GARDEN_DAY)
-    real = {p.place.city.upper() for p in pictures} | {p.place.country.upper() for p in pictures}
+    pictures = shipped_on(DEPARTURE_DAY)
+    placed = [p.place for p in pictures if p.place is not None]
+    real = {place.city.upper() for place in placed} | {place.country.upper() for place in placed}
 
     plain, private = _drawn_places(private_film.plain), _drawn_places(private_film.run)
 
@@ -285,7 +286,7 @@ def test_map_tiles_leave_the_network_only_once_switched_on(
             "--memory-type",
             "trip",
             "--year",
-            "2024",
+            "2025",
             "--trip-index",
             "1",
             "--include-photos",

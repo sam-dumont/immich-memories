@@ -1981,7 +1981,7 @@ def test_a_reader_cell_probes_its_reader_before_it_spends_anything(
 
     assert hosted.steps[0].name == "probe-readers"
     assert "--cell mac-hosted-melious-gemma-4-31b" in str(hosted.steps[0])
-    assert "--library demo --month 2024-06" in str(hosted.steps[0])
+    assert "--library demo --month 2025-07" in str(hosted.steps[0])
 
 
 def test_a_cell_that_calls_no_model_has_nothing_to_probe(manifest: dict, tmp_path: Path) -> None:

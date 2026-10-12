@@ -127,8 +127,8 @@ def _launch_workspace(root: Path, fake_immich_server: FakeImmichServer) -> Launc
                 "database": {"url": store_url, "schema": store_schema},
                 "upload": {"enabled": False},
                 "photos": {"enabled": True},
-                # The fixture home is a public landmark; the week by the lake
-                # sits about 590 km from it, so trip detection has a trip to find.
+                # The fixture home is a public landmark; the road north runs
+                # thousands of km from it, so trip detection has a trip to find.
                 "trips": {"homebase_latitude": 50.8417, "homebase_longitude": 4.3624},
                 "advanced": {
                     "hardware": {
@@ -261,7 +261,7 @@ def automation_workspace(
 ) -> Generator[LaunchWorkspace]:
     """A host where nobody has filmed anything yet, so automation has the fixture month to offer.
 
-    The launch workspace fills up with the session's own June films, and a memory that has a
+    The launch workspace fills up with the session's own monthly films, and a memory that has a
     film is, rightly, never suggested again. One per test for the same reason: a test that
     films the month it was offered takes that offer away from every test after it.
     """

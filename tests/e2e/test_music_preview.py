@@ -24,7 +24,7 @@ from tests.e2e.conftest import (
 )
 from tests.e2e.fake_library import THESIS
 from tests.e2e.fake_music import MODEL_REQUEST, MUSIC_REQUEST
-from tests.e2e.web_flow import cut_june, evidence
+from tests.e2e.web_flow import cut_month, evidence
 
 pytestmark = pytest.mark.e2e
 
@@ -93,7 +93,7 @@ def music_launch(
 
 def test_preview_uses_text_mood_and_plays_the_track(page: Page, music_launch) -> None:
     url, records = music_launch
-    cut_june(page, url)
+    cut_month(page, url)
     panel = page.get_by_role("region", name="Render")
 
     panel.get_by_role("button", name="Preview a track").click()

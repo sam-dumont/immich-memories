@@ -4,7 +4,7 @@
 Nothing here is simulated: `immich-memories generate`, `runs story` and
 `runs why` run in this process, the same way the e2e tests run them, against
 the fake Immich server and the scripted editorial route from `tests/e2e`. The
-pictures are the CC0 fixture library; the memory is the fixture's June.
+pictures are the CC0 fixture library; the memory is the fixture's July.
 
 VHS records the terminal (`make demo-cli`); the Remotion `CliScene` plays it.
 Under VHS (`DEMO_CLI_TIMING` set) the screen is cleared once the fakes are up, each
@@ -124,7 +124,7 @@ def main() -> None:
         # name, not the final file: the run adds the recipe hash that makes an
         # identical rerun replace itself, and writes inside its own run
         # directory. So the recording ends on
-        # ~/Videos/june-2024_<recipe>_<run>/june-2024_<recipe>.mp4, which is what
+        # ~/Videos/july-2025_<recipe>_<run>/july-2025_<recipe>.mp4, which is what
         # the last line below prints -- it reads the file the run actually wrote
         # rather than repeating what was asked for.
         out = _HOME / "Videos"
@@ -173,7 +173,7 @@ def main() -> None:
         _prompt(
             "generate",
             "immich-memories generate --memory-type monthly_highlights",
-            "--year 2024 --month 6 --no-music --output ~/Videos/june-2024.mp4",
+            "--year 2025 --month 7 --no-music --output ~/Videos/july-2025.mp4",
             fresh=True,
         )
         _run(
@@ -182,12 +182,12 @@ def main() -> None:
                 "--memory-type",
                 "monthly_highlights",
                 "--year",
-                "2024",
+                "2025",
                 "--month",
-                "6",
+                "7",
                 "--no-music",
                 "--output",
-                str(out / "june-2024.mp4"),
+                str(out / "july-2025.mp4"),
             ]
         )
 

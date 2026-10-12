@@ -78,7 +78,7 @@ def test_an_owner_decision_is_read_back_from_the_store(gate_client, gate_store):
 
 @pytest.mark.feature("prepare.reuses-banked-facts")
 def test_a_second_preparation_reuses_the_banked_facts(gate_store):
-    month = ("prepare", "--year", "2024", "--month", "6")
+    month = ("prepare", "--year", "2025", "--month", "7")
     _ok(run_cli(*month))
     banked = _fact_digests(gate_store)
 
@@ -101,9 +101,9 @@ def test_a_rendered_film_is_recorded_in_the_run_history(gate_store, tmp_path):
             "--memory-type",
             "monthly_highlights",
             "--year",
-            "2024",
+            "2025",
             "--month",
-            "6",
+            "7",
             "--include-photos",
             "--no-music",
             "--duration",

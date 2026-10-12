@@ -1,11 +1,11 @@
-"""The files the gate uploads into a real Immich: the CC0 fixture month and a paging album.
+"""The files the gate uploads into a real Immich: the fixture month and a paging album.
 
-Two sets, both public and synthetic, never anyone's library:
+Two sets, both public, never anyone's library:
 
-* The June 2024 household of ``tests/e2e/fake_library.py``: every still becomes a
-  1920x1280 JPEG carrying a camera and its capture time in EXIF (selection drops
-  a still that names no camera), every video scene a 1080p pan across its
-  photograph with a tone under it, stamped with the same time.
+* The July 2025 household of ``tests/e2e/fake_library.py``: every still is the
+  library's own file carrying a camera and its capture time and offset in EXIF
+  (selection drops a still that names no camera), every clip the library's own
+  clip stamped with the same instant. Places are set through the API after upload.
 * Two dated sets for the memory types that need a second year on the same days: the
   busiest June day again a year earlier (``ECHO_DAY``, for on this day) and a set on
   25 December in two years (``CHRISTMAS_YEARS``, for the named holiday). Their stills are
@@ -13,7 +13,7 @@ Two sets, both public and synthetic, never anyone's library:
 * ``BULK_COUNT`` tiny, distinct JPEGs in March 2019 for the album that has to
   page: Immich answers a metadata search at most 1000 items at a time.
 
-Building takes about fifteen seconds of FFmpeg, so the result is kept under ``root`` with a
+Building takes under a minute, so the result is kept under ``root`` with a
 fingerprint of its inputs and reused until those change (CI caches the folder).
 """
 
@@ -24,13 +24,12 @@ import subprocess
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from PIL import Image, ImageOps
 
 from tests.e2e.fake_library import ALL_PICTURES, Picture
 
-VIDEO_SIZE = (1920, 1080)
-PHOTO_SIZE = (1920, 1280)
 CAMERA = ("FakeCam", "Hermetic One")
 
 # One more than a full page of Immich's metadata search, plus a margin, so the
@@ -39,11 +38,11 @@ BULK_COUNT = 1010
 BULK_START = datetime(2019, 3, 1, 9, 0, tzinfo=UTC)
 BULK_ALBUM = "Gate paging album"
 
-# The busiest day of the fixture month, repeated a year earlier.
-ECHO_DAY = (2024, 6, 15)
-ECHO_YEAR = 2023
+# The busiest day of the fixture month (a wet afternoon in Ålesund), a year earlier.
+ECHO_DAY = (2025, 7, 28)
+ECHO_YEAR = 2024
 ECHO_COUNT = 5
-CHRISTMAS_YEARS = (2023, 2024)
+CHRISTMAS_YEARS = (2024, 2025)
 CHRISTMAS_COUNT = 4
 
 _EXIF_MAKE = 0x010F
@@ -51,7 +50,6 @@ _EXIF_MODEL = 0x0110
 _EXIF_IFD = 0x8769
 _DATETIME_ORIGINAL = 0x9003
 _OFFSET_TIME_ORIGINAL = 0x9011
-_PAN_HEADROOM = 1.25
 
 
 @dataclass(frozen=True, slots=True)
@@ -64,7 +62,9 @@ class GateFile:
 
 
 def taken_at(picture: Picture) -> datetime:
-    return datetime.fromisoformat(picture.taken_at.replace("Z", "+00:00"))
+    """The instant the picture was taken, in the zone where it was taken."""
+    instant = datetime.fromisoformat(picture.taken_at.replace("Z", "+00:00"))
+    return instant.astimezone(ZoneInfo(picture.zone))
 
 
 def _fingerprint() -> str:
@@ -81,7 +81,7 @@ def _exif(moment: datetime, *, camera: bool) -> Image.Exif:
         exif[_EXIF_MAKE], exif[_EXIF_MODEL] = CAMERA
     details = exif.get_ifd(_EXIF_IFD)
     details[_DATETIME_ORIGINAL] = moment.strftime("%Y:%m:%d %H:%M:%S")
-    details[_OFFSET_TIME_ORIGINAL] = "+00:00"
+    details[_OFFSET_TIME_ORIGINAL] = moment.strftime("%:z") if moment.tzinfo else "+00:00"
     return exif
 
 
@@ -96,68 +96,22 @@ def _write_photo(
         width, height = image.size
         left = 0 if variant % 2 else width // 4
         image = ImageOps.mirror(image.crop((left, height // 8, left + width * 3 // 4, height)))
-    fitted = ImageOps.fit(image, PHOTO_SIZE)
-    fitted.save(target, "JPEG", quality=85, exif=_exif(moment or taken_at(picture), camera=True))
+    image.save(target, "JPEG", quality=85, exif=_exif(moment or taken_at(picture), camera=True))
 
 
-def _write_video(picture: Picture, target: Path, tone: int) -> None:
-    width, height = VIDEO_SIZE
-    stage_w, stage_h = round(width * _PAN_HEADROOM), round(height * _PAN_HEADROOM)
-    seconds = str(picture.seconds)
+def _write_video(picture: Picture, target: Path) -> None:
+    """The library's clip as it is, stamped with the instant it was taken."""
     subprocess.run(  # noqa: S603 -- fixed argv, fixture paths only
         [
-            "ffmpeg",
-            "-hide_banner",
-            "-loglevel",
-            "error",
-            "-y",
-            "-loop",
-            "1",
-            "-framerate",
-            "30",
-            "-i",
-            str(picture.source),
-            "-f",
-            "lavfi",
-            "-i",
-            f"sine=frequency={tone}:sample_rate=48000:duration={seconds}",
-            "-map",
-            "0:v:0",
-            "-map",
-            "1:a:0",
-            "-t",
-            seconds,
-            "-vf",
-            (
-                f"scale={stage_w}:{stage_h}:force_original_aspect_ratio=increase,"
-                f"crop={width}:{height}:x='(in_w-out_w)*t/{seconds}',"
-                "scale=in_range=full:out_range=tv,format=yuv420p"
-            ),
-            "-c:v",
-            "libx264",
-            "-preset",
-            "ultrafast",
-            "-color_range",
-            "tv",
-            "-color_primaries",
-            "bt709",
-            "-color_trc",
-            "bt709",
-            "-colorspace",
-            "bt709",
-            "-c:a",
-            "aac",
-            "-shortest",
-            "-metadata",
-            f"creation_time={picture.taken_at}",
-            "-movflags",
-            "+faststart",
-            str(target),
+            "ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
+            "-i", str(picture.source), "-c", "copy",
+            "-metadata", f"creation_time={picture.taken_at}",
+            "-movflags", "+faststart", str(target),
         ],
         check=True,
         capture_output=True,
         text=True,
-    )
+    )  # fmt: skip
 
 
 def _write_bulk(index: int, target: Path) -> None:
@@ -238,13 +192,11 @@ def build(root: Path) -> None:
     (root / "bulk").mkdir(parents=True, exist_ok=True)
     (root / "dated").mkdir(parents=True, exist_ok=True)
     _write_dated(root)
-    videos = 0
     for gate_file in library_files(root):
         picture = gate_file.picture
         assert picture is not None
         if picture.is_video:
-            _write_video(picture, gate_file.path, tone=440 + videos * 110)
-            videos += 1
+            _write_video(picture, gate_file.path)
         else:
             _write_photo(picture, gate_file.path)
     for index, gate_file in enumerate(bulk_files(root)):

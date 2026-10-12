@@ -18,14 +18,15 @@ import pytest
 from tests.e2e.fake_library import (
     ALL_PICTURES,
     CARRIERS,
-    HOME,
     PARTNER_PICTURES,
+    TRIP_DAYS,
 )
 from tests.features.cli_harness import UserHome, basic_config
 from tests.integration.features.cuts import cut
 from tests.integration.features.immich_server import LibraryServer
 
-GARDEN = "2024-06-08"
+# Kit's birthday at home: a cake in the morning, a party in the afternoon.
+BIRTHDAY = "2025-07-05"
 _PICTURES = ("--include-photos", "--no-music", "--quiet")
 
 
@@ -57,12 +58,12 @@ def test_a_year_in_review_plays_the_year_in_capture_order_and_goes_short_on_a_th
     library_home: UserHome,
 ):
     year = cut(
-        library_home, "generate", "--memory-type", "year_in_review", "--year", "2024", *_PICTURES
+        library_home, "generate", "--memory-type", "year_in_review", "--year", "2025", *_PICTURES
     )
 
     pictures = year.pictures()
     assert "Memory: year_in_review" in year.output
-    assert "Date range: Year 2024" in year.output
+    assert "Date range: Year 2025" in year.output
     # The whole year's stories, in the order they were taken.
     assert _ids(pictures) == _ids(CARRIERS)
     assert [p.taken_at for p in pictures] == sorted(p.taken_at for p in pictures)
@@ -89,7 +90,7 @@ def _dry(home: UserHome, *args: str) -> str:
 def test_a_season_covers_three_months_for_about_three_minutes_and_flips_in_the_south(
     library_home: UserHome,
 ):
-    summer = _dry(library_home, "--memory-type", "season", "--season", "summer", "--year", "2024")
+    summer = _dry(library_home, "--memory-type", "season", "--season", "summer", "--year", "2025")
     southern_winter = _dry(
         library_home,
         "--memory-type",
@@ -97,7 +98,7 @@ def test_a_season_covers_three_months_for_about_three_minutes_and_flips_in_the_s
         "--season",
         "winter",
         "--year",
-        "2024",
+        "2025",
         "--hemisphere",
         "south",
     )
@@ -108,16 +109,16 @@ def test_a_season_covers_three_months_for_about_three_minutes_and_flips_in_the_s
         "--season",
         "summer",
         "--year",
-        "2024",
+        "2025",
         "--hemisphere",
         "south",
     )
 
-    assert "Date range: Jun 01, 2024 - Aug 31, 2024" in summer
+    assert "Date range: Jun 01, 2025 - Aug 31, 2025" in summer
     assert "Target duration: 195.0s" in summer
     # June to August is winter down south, and summer moves to December to February.
-    assert "Date range: Jun 01, 2024 - Aug 31, 2024" in southern_winter
-    assert re.search(r"Dec 01, 2024 - Feb 28, 2025", southern_summer), southern_summer
+    assert "Date range: Jun 01, 2025 - Aug 31, 2025" in southern_winter
+    assert re.search(r"Dec 01, 2025 - Feb 28, 2026", southern_summer), southern_summer
 
 
 # ── people ───────────────────────────────────────────────────────────────────
@@ -135,7 +136,7 @@ def test_a_person_spotlight_keeps_only_pictures_the_person_is_recognised_on(
         "--person",
         "Charlie",
         "--year",
-        "2024",
+        "2025",
         *_PICTURES,
     )
     carriers, videos, photos = _holding(lambda people: "Charlie" in people)
@@ -158,7 +159,7 @@ def test_several_people_need_each_other_on_the_same_picture_unless_matched_with_
         "multi_person",
         *people,
         "--year",
-        "2024",
+        "2025",
         *_PICTURES,
     )
     either = cut(
@@ -170,7 +171,7 @@ def test_several_people_need_each_other_on_the_same_picture_unless_matched_with_
         "--person-match",
         "or",
         "--year",
-        "2024",
+        "2025",
         *_PICTURES,
     )
 
@@ -180,7 +181,7 @@ def test_several_people_need_each_other_on_the_same_picture_unless_matched_with_
     assert _ids(together.pictures()) == both[0]
     assert _candidates(either.output) == any_of[1:]
     assert _ids(either.pictures()) == any_of[0]
-    # Kit alone at the lake, Charlie alone with the dog: in the OR film only.
+    # Kit alone in the fountain, Charlie alone on the bike in Copenhagen: in the OR film only.
     assert both[0] < any_of[0]
 
 
@@ -192,7 +193,7 @@ def test_a_grouped_condition_binds_and_tighter_than_or_on_each_picture(library_h
         "--memory-type",
         "multi_person",
         "--year",
-        "2024",
+        "2025",
         "--people-expression",
         '"Charlie" AND ("Kit" OR "Robin")',
         *_PICTURES,
@@ -202,7 +203,7 @@ def test_a_grouped_condition_binds_and_tighter_than_or_on_each_picture(library_h
         "--memory-type",
         "multi_person",
         "--year",
-        "2024",
+        "2025",
         "--people-expression",
         '"Kit" OR "Robin" AND "Charlie"',
         *_PICTURES,
@@ -227,7 +228,7 @@ def test_trips_refuse_a_grouped_people_condition(library_home: UserHome):
         "--memory-type",
         "trip",
         "--year",
-        "2024",
+        "2025",
         "--people-expression",
         '"Kit"',
         "--no-render",
@@ -242,27 +243,25 @@ def test_trips_refuse_a_grouped_people_condition(library_home: UserHome):
 def test_a_birthday_runs_the_year_ending_on_it_and_looks_back_at_earlier_ones(
     library_home: UserHome,
 ):
-    # The garden party, 8 June: the person's year runs from 9 June 2023 to the party.
+    # The party at home, 5 July: the person's year runs from 6 July 2024 to the party.
     birthday = cut(
         library_home,
         "generate",
         "--person",
         "Kit",
         "--year",
-        "2024",
+        "2025",
         "--birthday",
-        "06-08",
+        "07-05",
         *_PICTURES,
     )
 
     kept = birthday.pictures()
     assert kept and all("Kit" in p.people for p in kept)
-    assert _ids(kept) == {
-        p.asset_id for p in CARRIERS if "Kit" in p.people and p.taken_at[:10] <= "2024-06-08"
-    }
-    # Five earlier birthdays are looked at; the library starts in 2024, so none holds anything.
+    assert _ids(kept) == {p.asset_id for p in CARRIERS if "Kit" in p.people and p.day <= BIRTHDAY}
+    # Five earlier birthdays are looked at; the library starts in 2025, so none holds anything.
     assert "history: 0 of 5 earlier windows hold material" in birthday.output
-    assert "Title: 2024" in birthday.output
+    assert "Title: 2025" in birthday.output
 
 
 @pytest.mark.feature("memory-type.birthday")
@@ -272,7 +271,7 @@ def test_a_birthday_refuses_a_person_with_no_birth_date(library_home: UserHome):
         "--person",
         "Kit",
         "--year",
-        "2024",
+        "2025",
         "--birthday",
         *_PICTURES,
         "--no-render",
@@ -286,13 +285,14 @@ def test_a_birthday_refuses_a_person_with_no_birth_date(library_home: UserHome):
 
 # ── trips ────────────────────────────────────────────────────────────────────
 
-_TRIP_LINE = "Generating trip: Annecy, France (2024-06-21 to 2024-06-27"
+_TRIP_PLACE = "Denmark → Sweden → Finland → Norway"
+_TRIP_LINE = f"Generating trip: {_TRIP_PLACE} ({TRIP_DAYS[0]} to {TRIP_DAYS[1]}"
 
 
 @pytest.mark.feature("memory-type.trip")
 def test_trip_lists_what_the_gps_found_and_films_the_one_picked(library_home: UserHome):
     listed = library_home.run(
-        "generate", "--memory-type", "trip", "--year", "2024", *_PICTURES, scripted_selection=True
+        "generate", "--memory-type", "trip", "--year", "2025", *_PICTURES, scripted_selection=True
     )
     by_index = cut(
         library_home,
@@ -300,24 +300,27 @@ def test_trip_lists_what_the_gps_found_and_films_the_one_picked(library_home: Us
         "--memory-type",
         "trip",
         "--year",
-        "2024",
+        "2025",
         "--trip-index",
         "1",
         *_PICTURES,
     )
     near = _dry(
-        library_home, "--memory-type", "trip", "--year", "2024", "--near-date", "2024-06-25"
+        library_home, "--memory-type", "trip", "--year", "2025", "--near-date", "2025-07-20"
     )
-    by_month = _dry(library_home, "--memory-type", "trip", "--year", "2024", "--month", "6")
+    by_month = _dry(library_home, "--memory-type", "trip", "--year", "2025", "--month", "7")
 
     assert listed.returncode == 0, listed.explain()
-    assert re.search(r"│ 1 │ Annecy, France\s*│ 2024-06-21 to 2024-06-27 │\s*7 │", listed.stdout)
+    assert re.search(
+        rf"│ 1 │ {_TRIP_PLACE}\s*│ {TRIP_DAYS[0]} to {TRIP_DAYS[1]} │\s*19 │", listed.stdout
+    ), listed.stdout
     assert "runs render" not in listed.output
-    # The trip's dates, and only pictures taken away: the suitcase packed at home stays out.
+    # The trip's dates, and only what can say it was away: every clip, and the photos whose
+    # GPS puts them on the road (a photo without GPS cannot).
     expected = {
         p.asset_id
         for p in CARRIERS
-        if "2024-06-21" <= p.taken_at[:10] <= "2024-06-27" and p.place != HOME
+        if TRIP_DAYS[0] <= p.day <= TRIP_DAYS[1] and (p.is_video or p.place is not None)
     }
     assert _ids(by_index.pictures()) == expected
     assert "Memory: trip" in by_index.output
@@ -332,7 +335,7 @@ def test_all_trips_films_every_trip_found(library_home: UserHome):
         "--memory-type",
         "trip",
         "--year",
-        "2024",
+        "2025",
         "--all-trips",
         *_PICTURES,
         "--no-render",
@@ -367,16 +370,14 @@ def _event(day: str, start: str, end: str, members: list[str], title: str) -> di
 def test_a_special_day_films_its_events_run_and_needs_event_id_when_the_day_has_two(
     library_home: UserHome, immich: LibraryServer, tmp_path: Path
 ):
-    garden = [p for p in CARRIERS if p.taken_at.startswith("2024-06-08")]
-    lunch, cake = garden[:2], garden[2:]
+    birthday = [p for p in CARRIERS if p.day == BIRTHDAY]
+    morning, party = birthday[:2], birthday[2:]
     catalogue = [
-        _event(
-            "2024-06-08", "11:00", "12:15", immich.ids_of(p.asset_id for p in lunch), "Garden lunch"
-        ),
-        _event("2024-06-08", "16:30", "16:32", immich.ids_of(p.asset_id for p in cake), "The cake"),
+        _event(BIRTHDAY, "05:00", "06:30", immich.ids_of(p.asset_id for p in morning), "The cake"),
+        _event(BIRTHDAY, "14:00", "17:30", immich.ids_of(p.asset_id for p in party), "The party"),
     ]
     (tmp_path / "days.json").write_text(json.dumps(catalogue))
-    day = ("generate", "--memory-type", "special_day", "--day", "2024-06-08", *_PICTURES)
+    day = ("generate", "--memory-type", "special_day", "--day", BIRTHDAY, *_PICTURES)
 
     imported = library_home.run("days-import", "--from", str(tmp_path / "days.json"))
     try:
@@ -389,8 +390,8 @@ def test_a_special_day_films_its_events_run_and_needs_event_id_when_the_day_has_
     assert imported.returncode == 0, imported.explain()
     assert ambiguous.returncode != 0
     assert "--event-id" in ambiguous.output, ambiguous.explain()
-    assert _ids(chosen.pictures()) == _ids(cake)
-    assert "Title: The cake" in chosen.output
+    assert _ids(chosen.pictures()) == _ids(party)
+    assert "Title: The party" in chosen.output
 
 
 @pytest.mark.feature("memory-type.special-day")
@@ -401,14 +402,12 @@ def test_a_day_the_catalogue_never_found_is_scoped_to_itself(library_home: UserH
         "--memory-type",
         "special_day",
         "--day",
-        "2024-06-08",
+        BIRTHDAY,
         *_PICTURES,
     )
 
-    assert "Date range: Jun 08, 2024 - Jun 08, 2024" in day.output
-    assert _ids(day.pictures()) == {
-        p.asset_id for p in CARRIERS if p.taken_at.startswith("2024-06-08")
-    }
+    assert "Date range: Jul 05, 2025 - Jul 05, 2025" in day.output
+    assert _ids(day.pictures()) == {p.asset_id for p in CARRIERS if p.day == BIRTHDAY}
 
 
 # ── accounts ─────────────────────────────────────────────────────────────────
@@ -430,19 +429,19 @@ def household_home(tmp_path_factory: pytest.TempPathFactory, immich: LibraryServ
     return home
 
 
-_WOODS_DAY = ("generate", "--start", "2024-06-15", "--end", "2024-06-15", *_PICTURES)
+_FOREST_DAY = ("generate", "--start", "2025-07-06", "--end", "2025-07-06", *_PICTURES)
 _BOTH = (*ALL_PICTURES, *PARTNER_PICTURES)
 
 
 @pytest.mark.feature("accounts.read-both")
 def test_naming_both_accounts_puts_the_partners_pictures_in_the_film(household_home: UserHome):
-    both = cut(household_home, *_WOODS_DAY, "--accounts", "primary,partner")
-    primary = cut(household_home, *_WOODS_DAY)
+    both = cut(household_home, *_FOREST_DAY, "--accounts", "primary,partner")
+    primary = cut(household_home, *_FOREST_DAY)
 
     partner = _ids(PARTNER_PICTURES)
-    woods = {p.asset_id for p in CARRIERS if p.taken_at.startswith("2024-06-15")}
-    assert _ids(both.pictures(_BOTH)) == woods | partner
-    assert _ids(primary.pictures(_BOTH)) == woods
+    forest = {p.asset_id for p in CARRIERS if p.day == "2025-07-06"}
+    assert _ids(both.pictures(_BOTH)) == forest | partner
+    assert _ids(primary.pictures(_BOTH)) == forest
     # One film, in capture order across both phones.
     taken = [p.taken_at for p in both.pictures(_BOTH)]
     assert taken == sorted(taken)
@@ -456,7 +455,7 @@ def test_an_unknown_account_fails_before_any_request(tmp_path: Path):
     config["immich"]["accounts"] = {"partner": {"url": "http://127.0.0.1:9", "api_key": "k"}}
     home.write_config(config)
 
-    result = home.run(*_WOODS_DAY, "--accounts", "primary,nobody", "--no-render")
+    result = home.run(*_FOREST_DAY, "--accounts", "primary,nobody", "--no-render")
 
     assert result.returncode == 2
     assert "Immich account 'nobody' is not configured (configured: primary, partner)" in (
@@ -470,7 +469,7 @@ def test_albums_and_trips_refuse_a_second_account(household_home: UserHome):
     album = household_home.run(
         "generate",
         "--from-album",
-        "The lake week",
+        "The road north",
         "--accounts",
         "primary,partner",
         "--no-render",
@@ -481,7 +480,7 @@ def test_albums_and_trips_refuse_a_second_account(household_home: UserHome):
         "--memory-type",
         "trip",
         "--year",
-        "2024",
+        "2025",
         "--accounts",
         "primary,partner",
         "--no-render",
@@ -500,33 +499,33 @@ def test_albums_and_trips_refuse_a_second_account(household_home: UserHome):
 def test_include_and_exclude_reach_the_cut(library_home: UserHome, immich: LibraryServer):
     """The scripted editor honours what the run hands it; tests/features/test_editor_pool.py
     holds the real editor to the same two lists."""
-    garden = cut(
+    birthday = cut(
         library_home,
         "generate",
         "--start",
-        GARDEN,
+        BIRTHDAY,
         "--end",
-        GARDEN,
+        BIRTHDAY,
         *_PICTURES,
         "--include",
-        immich.id_of("birthday-gifts-01"),
+        immich.id_of("birthday-cupcakes-2"),
         "--exclude",
-        immich.id_of("garden-cake"),
+        immich.id_of("birthday-cake"),
     )
 
-    kept = _ids(garden.pictures())
-    assert "birthday-gifts-01" in kept
-    assert "garden-cake" not in kept
-    assert kept == {p.asset_id for p in CARRIERS if p.taken_at.startswith(GARDEN)} - {
-        "garden-cake"
-    } | {"birthday-gifts-01"}
-    why = library_home.run("runs", "why", immich.id_of("garden-cake"), "--run", garden.run_id)
+    kept = _ids(birthday.pictures())
+    assert "birthday-cupcakes-2" in kept
+    assert "birthday-cake" not in kept
+    assert kept == {p.asset_id for p in CARRIERS if p.day == BIRTHDAY} - {"birthday-cake"} | {
+        "birthday-cupcakes-2"
+    }
+    why = library_home.run("runs", "why", immich.id_of("birthday-cake"), "--run", birthday.run_id)
     assert "left out" in why.stdout, why.explain()
 
 
 @pytest.mark.feature("photos.video-only")
 def test_no_photos_or_photos_disabled_make_a_video_only_film(library_home: UserHome):
-    month = ("generate", "--start", "2024-06-01", "--end", "2024-06-30", "--no-music", "--quiet")
+    month = ("generate", "--start", "2025-07-01", "--end", "2025-07-31", "--no-music", "--quiet")
     flag = cut(library_home, *month, "--no-photos")
     config = cut(library_home, *month, env={"IMMICH_MEMORIES_PHOTOS__ENABLED": "false"})
 
@@ -538,13 +537,13 @@ def test_no_photos_or_photos_disabled_make_a_video_only_film(library_home: UserH
 
 @pytest.mark.feature("generate.connects-before-hardware")
 def test_an_unreachable_immich_stops_generate_before_hardware_and_is_recorded(
-    tmp_path: Path, library_home: UserHome, garden_film
+    tmp_path: Path, library_home: UserHome, departure_film
 ):
     home = UserHome(tmp_path / "home")
     # Nothing listens here.
     home.write_config(basic_config("http://127.0.0.1:9", "unused-key", home))
 
-    failed = home.run(*_WOODS_DAY, "--no-render", scripted_selection=True)
+    failed = home.run(*_FOREST_DAY, "--no-render", scripted_selection=True)
     history = home.run("runs", "list", "--status", "failed")
 
     assert failed.returncode == 1
@@ -557,4 +556,4 @@ def test_an_unreachable_immich_stops_generate_before_hardware_and_is_recorded(
     assert "failed" in shown.stdout
     assert "System Info" not in shown.stdout
     # A run that reached Immich records the machine it ran on.
-    assert "System Info" in library_home.run("runs", "show", garden_film.run_id).stdout
+    assert "System Info" in library_home.run("runs", "show", departure_film.run_id).stdout

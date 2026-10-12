@@ -25,9 +25,9 @@ from playwright.sync_api import Page, expect
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
 from tests.e2e.conftest import _launch_workspace, _serve_launch, set_theme
-from tests.e2e.fake_library import CARRIERS, LIBRARY, THESIS
+from tests.e2e.fake_library import CARRIERS, LIBRARY, MONTH, THESIS, TRIP, YEAR
 from tests.e2e.redaction import redact_page
-from tests.e2e.web_flow import contact_sheet, cut_june, render, the_film
+from tests.e2e.web_flow import contact_sheet, cut_month, render, the_film
 
 pytestmark = [pytest.mark.e2e, pytest.mark.visual]
 
@@ -44,9 +44,10 @@ def browser_type_launch_args(browser_type_launch_args: dict) -> dict:
     return {**browser_type_launch_args, "args": args}
 
 
-# The stock library's swim picture, as a nudity detector that misread it would bank it: the
-# false positive the owner clears by hand. Seeded by the recipe, never placed by hand.
-_HELD = "trip-swim-02"
+# Children in swimsuits running through a fountain, as a nudity detector that misread it
+# would bank it: the false positive the owner clears by hand. Seeded by the recipe, never
+# placed by hand; early in the month, so its tile is on the pool's first page.
+_HELD = "home-0704-fountain"
 
 
 def _name(base: str, theme: str) -> str:
@@ -164,10 +165,10 @@ def _open(page: Page, url: str, theme: str) -> None:
     set_theme(page, theme)
 
 
-def _brief_for_june(page: Page) -> None:
+def _brief_for_the_month(page: Page) -> None:
     page.get_by_text("Monthly Highlights", exact=True).click()
-    page.get_by_label("Year", exact=True).fill("2024")
-    page.get_by_label("Month", exact=True).select_option("6")
+    page.get_by_label("Year", exact=True).fill(str(YEAR))
+    page.get_by_label("Month", exact=True).select_option(str(MONTH))
 
 
 @pytest.mark.parametrize("theme", _THEMES)
@@ -177,7 +178,7 @@ def test_capture_memory_walkthrough(
     """The brief, the cut, the review, an edit, the render: every frame the docs embed."""
     d = screenshot_dir
     _open(page, f"{launch_app_url}/app/create", theme)
-    _brief_for_june(page)
+    _brief_for_the_month(page)
     # The brief as a first visit sees it: the type, the month, the command and Cut, no panel open.
     _blur(page)
     _save(page, d, _name("memory-brief", theme))
@@ -326,9 +327,9 @@ def test_capture_trip_brief(
 ) -> None:
     _open(page, f"{launch_app_url}/app/create", theme)
     page.get_by_text("Trip", exact=True).click()
-    page.get_by_label("Year", exact=True).fill("2024")
+    page.get_by_label("Year", exact=True).fill(str(YEAR))
     trips = page.get_by_role("list", name="Trips").get_by_role("listitem")
-    trips.filter(has_text="2024-06-21").click(timeout=60_000)
+    trips.filter(has_text=TRIP[0].day).click(timeout=60_000)
     _save(page, screenshot_dir, _name("memory-trip-brief", theme))
 
 
@@ -347,7 +348,7 @@ def test_capture_the_pool_and_picture_decisions(
     d = screenshot_dir
     try:
         _open(page, f"{launch_app_url}/app/create", theme)
-        cut_june(page, launch_app_url, minutes=1.5)
+        cut_month(page, launch_app_url, minutes=1.5)
         page.get_by_role("link", name="Pool", exact=True).click()
         tiles = page.get_by_role("list", name="Pool").get_by_role("listitem")
         expect(tiles.first).to_be_visible(timeout=30_000)

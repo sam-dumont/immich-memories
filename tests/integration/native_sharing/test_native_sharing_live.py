@@ -10,6 +10,7 @@ from typing import Any
 from uuid import uuid4
 
 import pytest
+from tests.e2e.fake_library import ALL_PICTURES, MONTH, YEAR
 
 from immich_memories.analysis.household_source import HouseholdWindows
 from immich_memories.api.access_clients import AccessBoundClient
@@ -20,6 +21,11 @@ from immich_memories.config_models import ImmichConfig
 from immich_memories.db import Store, StoreLocation, close_stores, open_store
 from immich_memories.people.transfer import import_document
 from immich_memories.timeperiod import DateRange
+
+# The fixture library's month, as Immich's UTC timeline sees it.
+_MONTH = DateRange(
+    datetime(YEAR, MONTH, 1, tzinfo=UTC), datetime(YEAR, MONTH, 31, 23, 59, 59, tzinfo=UTC)
+)
 
 
 @dataclass
@@ -93,9 +99,7 @@ def _verify_person_filter(household, tmp_path):
         accounts=("primary", "partner"),
         store=store,
     )
-    window = DateRange(
-        datetime(2024, 6, 1, tzinfo=UTC), datetime(2024, 6, 30, 23, 59, 59, tzinfo=UTC)
-    )
+    window = _MONTH
     videos, photos = people_in_window(
         HouseholdWindows(client, ("primary", "partner")),
         window,
@@ -124,9 +128,7 @@ def test_partner_only_run_uses_the_existing_primary_binding(household, tmp_path)
         accounts=("partner",),
         store=store,
     )
-    window = DateRange(
-        datetime(2024, 6, 1, tzinfo=UTC), datetime(2024, 6, 30, 23, 59, 59, tzinfo=UTC)
-    )
+    window = _MONTH
     videos, photos = people_in_window(
         HouseholdWindows(client, ("partner",)),
         window,
@@ -154,9 +156,7 @@ def test_owner_reads_preserve_duplicates_favourites_and_scope_with_timeline_off(
     added = primary not in outgoing
     if added:
         b.call("POST", "/partners", json={"sharedWithId": primary})
-    window = DateRange(
-        datetime(2024, 6, 1, tzinfo=UTC), datetime(2024, 6, 30, 23, 59, 59, tzinfo=UTC)
-    )
+    window = _MONTH
     try:
         pools = []
         for enabled in (True, False):
@@ -166,14 +166,14 @@ def test_owner_reads_preserve_duplicates_favourites_and_scope_with_timeline_off(
                 *source.get_photos_for_date_range(window),
                 *source.get_videos_for_date_range(window),
             ]
-            # The fixture library's June pictures, the partner's and the shared duplicate (139 since
-            # five Live Photos joined the library on 12 June; their motion clips are hidden).
-            assert len(assets) == 139
+            # The fixture library's month, split between the two accounts, plus the shared
+            # duplicate; a Live Photo's motion clip is hidden, so it counts once.
+            assert len(assets) == len(ALL_PICTURES) + 1
             assert state["outside_asset"] not in {asset.id for asset in assets}
             duplicate = next(asset for asset in assets if asset.id == state["duplicate"])
             assert duplicate.is_favorite
             folded = fold_exact_copies(assets, primary_owner_id=primary)
-            assert len(folded.pool) == 138
+            assert len(folded.pool) == len(ALL_PICTURES)
             assert next(
                 asset for asset in folded.pool if asset.checksum == duplicate.checksum
             ).is_favorite
@@ -399,7 +399,7 @@ def test_native_automation_uses_owned_counts(household):
     config.automation.detect_trips = False
     config.automation.detect_holidays = False
     discovery = CandidateDiscovery(config, RunDatabase(store), AutomationStateStore(store))
-    snapshot = discovery._library_snapshot(config.automation, date(2025, 1, 20), store)
+    snapshot = discovery._library_snapshot(config.automation, date(YEAR + 1, 1, 20), store)
     assert snapshot.spotlight_counts == {"manual:shared": 1}
     assert [person.id for person in snapshot.people] == ["manual:shared"]
 
@@ -412,7 +412,7 @@ def test_mobile_edit_stack_plays_the_edit_instead_of_the_original(household):
 
     state, _, client = household
     api = Seeder(state["url"], state["keys"]["primary"])
-    window = DateRange(datetime(2024, 6, 1), datetime(2024, 6, 30, 23, 59, 59))
+    window = DateRange(_MONTH.start.replace(tzinfo=None), _MONTH.end.replace(tzinfo=None))
     original, edit = [
         asset.id
         for asset in client.get_photos_for_date_range(window)

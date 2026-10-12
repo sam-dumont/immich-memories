@@ -1337,6 +1337,10 @@ demo-ui-still:  ## Render one demo frame for visual review
 demo-ui-dev: demo-ui-install  ## Start Remotion Studio for live demo preview
 	cd docs-site/remotion && npm run dev
 
+.PHONY: fixture-library
+fixture-library:  ## Rebuild the demo library from Wikimedia Commons (tests/e2e/fixtures/library/sources.json; needs network)
+	uv run python scripts/build_fixture_library.py
+
 demo-fixture:  ## Export the hermetic fixture library into the Remotion demo (docs-site/remotion/src/fixture.ts)
 	uv run python scripts/export-demo-fixture.py
 

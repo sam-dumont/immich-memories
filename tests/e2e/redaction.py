@@ -30,9 +30,9 @@ _EXAMPLE_DOMAINS = (
 _INPUT_REDACTIONS = [
     ('input[aria-label="Immich Server URL"]', "https://photos.example.com"),
     ('input[aria-label="API Key"]', "your-api-key-here"),
-    ('input[aria-label="Output filename"]', "everyone_june_2024_memories.mp4"),
+    ('input[aria-label="Output filename"]', "everyone_july_2025_memories.mp4"),
     ('input[aria-label="Title"]', "Summer Adventures"),
-    ('input[aria-label="Subtitle"]', "June 2025"),
+    ('input[aria-label="Subtitle"]', "July 2025"),
 ]
 
 # Regex patterns (as JS source) → replacement strings for visible text nodes
@@ -46,14 +46,14 @@ _TEXT_REDACTIONS = [
     (r"http:\/\/\d+\.\d+\.\d+\.\d+:\d+", "https://photos.example.com"),
     (
         r"\/Users\/\w+\/Videos\/Memories\/.*",
-        "/home/user/Videos/Memories/everyone_june_2024_memories.mp4",
+        "/home/user/Videos/Memories/everyone_july_2025_memories.mp4",
     ),
     (r"\/Users\/\w+\/\.immich-memories\/.*", "/home/user/.immich-memories/config.yaml"),
     (
         r"Will be saved to: .*",
-        "Will be saved to: /home/user/Videos/Memories/everyone_june_2024_memories.mp4",
+        "Will be saved to: /home/user/Videos/Memories/everyone_july_2025_memories.mp4",
     ),
-    (r"Saved to: .*", "Saved to: /home/user/Videos/Memories/everyone_june_2024_memories.mp4"),
+    (r"Saved to: .*", "Saved to: /home/user/Videos/Memories/everyone_july_2025_memories.mp4"),
     (r"Config file: .*", "Config file: /home/user/.immich-memories/config.yaml"),
     (r"Using \w+'s birthday: .+", "Using Fake Person's birthday: June 15, 1995"),
     (r"\d+\.\d{4,},\s*-?\d+\.\d{4,}", "48.8566, 2.3522"),

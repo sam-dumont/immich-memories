@@ -9,7 +9,7 @@ from __future__ import annotations
 import pytest
 
 from immich_memories.api.models import AssetType
-from tests.e2e.fake_library import CAST, LAKE, LIBRARY, STORIES, carriers_of
+from tests.e2e.fake_library import CAST, LIBRARY, STORIES, YEAR, carriers_of
 from tests.integration.immich_fixtures import requires_immich
 from tests.integration.immich_gate.conftest import BULK_YEAR, FIXTURE_MONTH
 from tests.integration.immich_gate.media import BULK_ALBUM, BULK_COUNT, CAMERA
@@ -38,15 +38,20 @@ def test_the_fixture_month_reads_every_video_and_still(gate_client):
     assert sorted(asset.original_file_name for asset in stills) == _STILLS
 
 
-def test_a_still_carries_its_camera_and_a_video_its_place(gate_client):
-    arrival = next(p for p in LIBRARY if p.scene == "trip-lake-arrival" and p.is_video)
+def test_a_still_carries_its_camera_and_its_own_place_and_a_clip_without_one_none(gate_client):
+    placed = next(p for p in LIBRARY if not p.is_video and p.place is not None and p.shipped)
+    clip = next(p for p in LIBRARY if p.is_video)
+    assert clip.place is None, "the fixture's clips hold no GPS of their own"
     videos = {a.original_file_name: a for a in gate_client.get_videos_for_date_range(FIXTURE_MONTH)}
     stills = gate_client.get_photos_for_date_range(FIXTURE_MONTH)
+    by_name = {a.original_file_name: a for a in stills}
 
-    video = gate_client.get_asset(videos[arrival.filename].id)
-    assert video.exif_info is not None
-    assert video.exif_info.latitude == pytest.approx(LAKE.latitude, abs=1e-3)
-    assert video.exif_info.longitude == pytest.approx(LAKE.longitude, abs=1e-3)
+    still = gate_client.get_asset(by_name[placed.filename].id)
+    assert still.exif_info is not None
+    assert still.exif_info.latitude == pytest.approx(placed.place.latitude, abs=1e-3)
+    assert still.exif_info.longitude == pytest.approx(placed.place.longitude, abs=1e-3)
+    video = gate_client.get_asset(videos[clip.filename].id)
+    assert video.exif_info is None or video.exif_info.latitude is None
     assert {(s.exif_info.make, s.exif_info.model) for s in stills if s.exif_info} == {CAMERA}
 
 
@@ -84,4 +89,4 @@ def test_story_albums_resolve_by_name_with_their_pictures(gate_client):
         assert album.asset_count == len(carriers), story.title
         assert listed[story.title].id == album.id
         assert album.start is not None
-        assert album.start.year == 2024
+        assert album.start.year == YEAR

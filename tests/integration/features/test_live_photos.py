@@ -1,7 +1,7 @@
 """Live Photos in the film: motion where the clip earns it, a still where it does not, a stitch.
 
-The fixture's Wednesday holds three Live Photos: a swing whose clip moves, a window whose clip
-holds still, and a burst of three takes of one kick whose clips overlap. The scripted editor
+The fixture's Wednesday holds three Live Photos: children in a fountain whose clip moves, a
+sunrise whose clip holds still, and a burst of three takes of one ride whose clips overlap. The scripted editor
 keeps the pictures; whether each plays as motion, and how a burst joins, is decided and projected
 by production code (`tests/e2e/fake_live_motion.py` says which). A clip plays only when it lasts
 the 2.5 s motion floor and moves (#2453): the swing's 3 s clip does, the window's does not move.
@@ -13,24 +13,22 @@ from pathlib import Path
 
 import pytest
 
-from tests.e2e.fake_library import LIVE_CLIP_SECONDS, LIVE_PICTURES
+from tests.e2e.fake_library import LIVE_CLIP_SECONDS, LIVE_DAY, LIVE_PICTURES
 from tests.features.cli_harness import UserHome
 from tests.integration.features.cuts import Shot, picture_of, story_of
 from tests.integration.features.film_probe import grey_frame, luma_difference
 from tests.integration.features.immich_server import LibraryServer
 from tests.integration.features.library import RenderedRun, render
 
-LIVE_DAY = "2024-06-12"
 _STEP = 0.25
 # Frame-to-frame change (0-255, a quarter second apart) that footage which moves clears.
 _MOTION_CHANGE = 12.0
 # The change left once each frame is aligned onto the one before (see _unexplained_change).
 # A still's Ken Burns move is a zoom and a pan, which the alignment takes out; footage that
-# moves is not. Measured on the fixture's Live day across six move seeds (#2440):
-#   stills, Ken Burns: 1.29-3.63 (live-kick-1 1.29-1.48, live-swing 2.97-3.28,
-#                      live-quiet-window 2.94-3.63); raw change on the same shots 2.3-7.9,
-#                      and 8.09 on a real-Immich run, past the old raw bound of 8.0
-#   Live motion:       live-kick-1 9.76, live-swing 19.05
+# moves is not. Measured on the fixture's Live day (#2440), unexplained change per shot:
+#   still, Ken Burns: live-quiet-sunrise 1.63 (raw change 2.22); on the earlier fixture
+#                     1.29-3.63 across six move seeds, raw up to 8.09 on a real Immich
+#   Live motion:      live-ride-1 9.64, live-fountain 20.01
 # The bound sits in the middle of that gap.
 _STILL_UNEXPLAINED = 6.7
 
@@ -113,8 +111,8 @@ def test_a_live_photo_plays_as_motion_only_when_its_clip_moves(
     # other takes are inside its stitch rather than beside it.
     assert set(shots) == {p.asset_id for p in LIVE_PICTURES if p.shipped}
     assert {shot.kind for shot in shots.values()} == {"photo"}
-    assert _change(live_film.film, shots["live-swing"]) > _MOTION_CHANGE
-    assert _unexplained_change(live_film.film, shots["live-quiet-window"]) < _STILL_UNEXPLAINED
+    assert _change(live_film.film, shots["live-fountain"]) > _MOTION_CHANGE
+    assert _unexplained_change(live_film.film, shots["live-quiet-sunrise"]) < _STILL_UNEXPLAINED
 
 
 @pytest.mark.feature("live-photos.motion")
@@ -122,7 +120,7 @@ def test_nearby_live_photos_stitch_into_one_clip_that_never_rewinds(
     library_home: UserHome, live_film: RenderedRun, immich: LibraryServer
 ):
     """The burst's clips are cuts of one recording; the stitch must play it forward, once."""
-    kick = _shots(library_home, live_film)["live-kick-1"]
+    kick = _shots(library_home, live_film)["live-ride-1"]
     burst = next(p for p in LIVE_PICTURES if p.motion == "burst")
     recording = immich.media / f"burst-{burst.source.stem}.mp4"
     reference = [grey_frame(recording, k / 10) for k in range(0, 60)]

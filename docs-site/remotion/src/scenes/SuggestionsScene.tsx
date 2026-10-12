@@ -24,17 +24,17 @@ const CANDIDATES = [
   {
     reason: `${POOL_TOTAL} assets, most recent month`,
     people: "",
-    meta: `Monthly Highlights · 2024-06-01 – 2024-06-30 · Pictures: ${POOL_TOTAL}`,
+    meta: `Monthly Highlights · 2025-07-01 – 2025-07-31 · Pictures: ${POOL_TOTAL}`,
   },
   {
-    reason: "New album 'The lake week', 33 pictures, never filmed",
+    reason: "New album 'The road north', 992 pictures, never filmed",
     people: "",
-    meta: "Album · 2024-06-21 – 2024-06-27 · Pictures: 33",
+    meta: "Album · 2025-07-12 – 2025-07-31 · Pictures: 992",
   },
   {
-    reason: "Kit in June 2024, 18 pictures over 13 days",
+    reason: "Kit in July 2025, 9 pictures over 7 days",
     people: "Kit",
-    meta: "Person month · 2024-06-01 – 2024-06-30 · Pictures: 18",
+    meta: "Person month · 2025-07-01 – 2025-07-31 · Pictures: 9",
   },
 ];
 

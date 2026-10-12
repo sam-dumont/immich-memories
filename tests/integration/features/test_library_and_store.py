@@ -10,7 +10,7 @@ import pytest
 from tests.e2e.fake_immich import ALBUMS
 from tests.features.cli_harness import OutboundTrap, UserHome, film_facts
 from tests.integration.features.library import (
-    GARDEN_DAY,
+    DEPARTURE_DAY,
     QUIET_DAY,
     RenderedRun,
     day_args,
@@ -34,7 +34,7 @@ def test_years_lists_the_years_the_library_holds(library_home: UserHome):
     result = library_home.run("years")
 
     assert result.returncode == 0, result.explain()
-    assert re.findall(r"\b(20\d\d)\b", result.stdout) == ["2024"]
+    assert re.findall(r"\b(20\d\d)\b", result.stdout) == ["2025"]
 
 
 @pytest.mark.feature("automation.suggest")
@@ -55,11 +55,11 @@ def test_auto_suggest_ranks_candidates_with_reasons_in_a_stable_order(fresh_home
 @pytest.mark.feature("generate.period")
 def test_period_scopes_the_film_from_the_start_date(library_home: UserHome):
     result = library_home.run(
-        "generate", "--start", GARDEN_DAY, "--period", "1w", "--dry-run", scripted_selection=True
+        "generate", "--start", DEPARTURE_DAY, "--period", "1w", "--dry-run", scripted_selection=True
     )
 
     assert result.returncode == 0, result.explain()
-    assert "Date range: Jun 08, 2024 - Jun 14, 2024" in result.output, result.explain()
+    assert "Date range: Jul 12, 2025 - Jul 18, 2025" in result.output, result.explain()
 
 
 @pytest.mark.feature("memory-type.album")
@@ -121,8 +121,8 @@ def test_format_h265_encodes_the_film_in_hevc(library_home: UserHome, tmp_path):
 
 
 @pytest.mark.feature("cli.quiet-progress")
-def test_quiet_prints_plain_lines_and_no_live_display(garden_film: RenderedRun):
-    result = garden_film.result
+def test_quiet_prints_plain_lines_and_no_live_display(departure_film: RenderedRun):
+    result = departure_film.result
 
     assert "\r" not in result.output
     assert "\x1b[" not in result.output
@@ -130,7 +130,7 @@ def test_quiet_prints_plain_lines_and_no_live_display(garden_film: RenderedRun):
 
 
 @pytest.mark.feature("runs.stats")
-def test_runs_stats_summarises_the_history(library_home: UserHome, garden_film):
+def test_runs_stats_summarises_the_history(library_home: UserHome, departure_film):
     result = library_home.run("runs", "stats")
 
     assert result.returncode == 0, result.explain()
@@ -143,10 +143,10 @@ def test_runs_stats_summarises_the_history(library_home: UserHome, garden_film):
 @pytest.mark.feature("privacy.immich-only-by-default")
 @pytest.mark.feature("privacy.outside-calls-opt-in")
 def test_a_basic_film_talks_to_nothing_but_the_configured_immich(
-    library_home: UserHome, garden_film, outbound_trap: OutboundTrap
+    library_home: UserHome, departure_film, outbound_trap: OutboundTrap
 ):
     # The session's film, plus the commands a first run tries, all went through the trap.
-    for command in (("preflight",), ("capabilities", "--json"), ("report", garden_film.run_id)):
+    for command in (("preflight",), ("capabilities", "--json"), ("report", departure_film.run_id)):
         # The scripted route stands in for `models fetch`, which a Basic install has run.
         result = library_home.run(*command, scripted_selection=True)
         assert result.returncode == 0, result.explain()
@@ -155,7 +155,7 @@ def test_a_basic_film_talks_to_nothing_but_the_configured_immich(
 
 
 @pytest.mark.feature("store.status")
-def test_store_status_names_the_backend_revision_and_row_counts(library_home, garden_film):
+def test_store_status_names_the_backend_revision_and_row_counts(library_home, departure_film):
     result = library_home.run("store", "status")
 
     assert result.returncode == 0, result.explain()

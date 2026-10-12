@@ -11,8 +11,17 @@ import pytest
 from playwright.sync_api import Page, expect
 
 from tests.e2e.fake_editorial import PREVIEW_STAGE
-from tests.e2e.fake_library import CARRIERS, HOME, LIBRARY, STORIES, THESIS
-from tests.e2e.web_flow import contact_sheet, cut_june, evidence
+from tests.e2e.fake_library import (
+    CARRIERS,
+    HOME,
+    LIBRARY,
+    MONTH,
+    STORIES,
+    THESIS,
+    TRIP_DAYS,
+    YEAR,
+)
+from tests.e2e.web_flow import contact_sheet, cut_month, evidence
 
 pytestmark = pytest.mark.e2e
 
@@ -55,11 +64,11 @@ def _request_of_the_cut_after(launch_workspace, before: set[Path]) -> dict:
     return json.loads((newest / "status.private.json").read_text())["request"]
 
 
-def _brief_for_june(page: Page, launch_app_url: str) -> None:
+def _brief_for_the_month(page: Page, launch_app_url: str) -> None:
     page.goto(f"{launch_app_url}/app/create", wait_until="domcontentloaded", timeout=30_000)
     page.get_by_text("Monthly Highlights", exact=True).click()
-    page.get_by_label("Year", exact=True).fill("2024")
-    page.get_by_label("Month", exact=True).select_option("6")
+    page.get_by_label("Year", exact=True).fill(str(YEAR))
+    page.get_by_label("Month", exact=True).select_option(str(MONTH))
 
 
 def _brief_for_trips(page: Page, launch_app_url: str, year: int) -> None:
@@ -87,28 +96,35 @@ def test_the_brief_offers_every_memory_type_generate_takes(page: Page, launch_ap
     assert sorted(offered) == sorted([*choices, "custom"])
 
 
-def test_the_trip_picker_finds_the_lake_week_and_cuts_it(
+def test_the_trip_picker_finds_the_road_north_and_cuts_it(
     page: Page, launch_app_url: str, launch_workspace
 ) -> None:
     # Another test may have left a swapped library's trips in the server's cache.
     shutil.rmtree(launch_workspace.cache_dir / "web-answers", ignore_errors=True)
-    _brief_for_trips(page, launch_app_url, 2024)
+    _brief_for_trips(page, launch_app_url, YEAR)
     cut = page.get_by_role("button", name="Cut", exact=True)
     # Without a trip, generate only lists the year's trips: the form will not send that.
     expect(cut).to_be_disabled()
     trips = page.get_by_role("list", name="Trips").get_by_role("listitem")
-    lake = trips.filter(has_text=re.compile(r"2024-06-21 – 2024-06-27.*7 days"))
-    expect(lake).to_have_count(1, timeout=60_000)
-    number = trips.all_inner_texts().index(lake.inner_text()) + 1
-    lake.click()
+    north = trips.filter(has_text=re.compile(rf"{TRIP_DAYS[0]} – {TRIP_DAYS[1]}.*19 days"))
+    expect(north).to_have_count(1, timeout=60_000)
+    number = trips.all_inner_texts().index(north.inner_text()) + 1
+    north.click()
     expect(page.get_by_label("Command")).to_contain_text(f"--trip-index={number}")
 
     cut.click()
 
     page.wait_for_url("**/app/runs/**", timeout=240_000)
-    # The lake week's story, less the suitcase packed at home: a trip is cut from what was
-    # taken away, as `generate --memory-type trip` cuts it.
-    away = [p for p in CARRIERS if p.story_key == "S0002" and p.place != HOME]
+    # The road north's story, as `generate --memory-type trip` cuts it: every video between
+    # leaving and coming back, and the photos whose GPS puts them away from home (a picture
+    # with no GPS, like the stones on the beach, cannot say it was on the trip).
+    away = [
+        p
+        for p in CARRIERS
+        if p.story_key == "S0002"
+        and TRIP_DAYS[0] <= p.day <= TRIP_DAYS[1]
+        and (p.is_video or p.place is not None)
+    ]
     expect(contact_sheet(page)).to_have_count(len(away))
 
 
@@ -127,12 +143,18 @@ def test_the_trip_picker_keeps_new_year_trips_whole_and_drops_buffer_only_trips(
         "2025-01-05",
         "2025-01-07",
     )
-    template = next(a for a in fake_immich.TIMELINE_ASSETS if a["exifInfo"]["city"] == "Annecy")
-    home_video = next(
-        a
-        for a in fake_immich.TIMELINE_ASSETS
-        if a["type"] == "VIDEO" and a["exifInfo"]["city"] == "Brussels"
-    )
+    template = next(a for a in fake_immich.TIMELINE_ASSETS if a["exifInfo"]["country"] == "Norway")
+    video = next(a for a in fake_immich.TIMELINE_ASSETS if a["type"] == "VIDEO")
+    home_video = {
+        **video,
+        "exifInfo": {
+            **video["exifInfo"],
+            "latitude": HOME.latitude,
+            "longitude": HOME.longitude,
+            "city": HOME.city,
+            "country": HOME.country,
+        },
+    }
     assets = tuple(
         {
             **template,
@@ -160,7 +182,7 @@ def test_the_trip_picker_offers_a_year_with_only_photos(
 ) -> None:
     from tests.e2e import fake_immich
 
-    template = next(a for a in fake_immich.TIMELINE_ASSETS if a["exifInfo"]["city"] == "Annecy")
+    template = next(a for a in fake_immich.TIMELINE_ASSETS if a["exifInfo"]["country"] == "Norway")
     photos = tuple(
         {
             **template,
@@ -186,7 +208,7 @@ def test_the_trip_picker_offers_a_year_with_only_photos(
 def test_a_first_cut_before_models_fetch_says_to_run_it_and_the_message_stays(
     page: Page, first_launch_app_url: str, first_launch_workspace
 ) -> None:
-    _brief_for_june(page, first_launch_app_url)
+    _brief_for_the_month(page, first_launch_app_url)
     log_before_cut = first_launch_workspace.log_path.stat().st_size
 
     page.get_by_role("button", name="Cut", exact=True).click()
@@ -211,7 +233,7 @@ def test_the_cut_opens_as_a_contact_sheet_in_the_order_the_film_plays(
     page: Page, launch_app_url: str, launch_workspace
 ) -> None:
     before = _attempts(launch_workspace)
-    cut_june(page, launch_app_url, minutes=None)
+    cut_month(page, launch_app_url, minutes=None)
 
     expect(page.get_by_text(THESIS)).to_be_visible()
     shots = contact_sheet(page)
@@ -235,7 +257,7 @@ def test_the_cut_opens_as_a_contact_sheet_in_the_order_the_film_plays(
 def test_the_stories_view_weighs_the_stories_in_reader_words(
     page: Page, launch_app_url: str
 ) -> None:
-    cut_june(page, launch_app_url, minutes=None)
+    cut_month(page, launch_app_url, minutes=None)
 
     page.get_by_role("radio", name="Stories").click()
 
@@ -258,7 +280,7 @@ def test_the_inspector_keeps_a_refused_model_alternative_distinct_from_the_cut(
     page: Page, launch_app_url: str, launch_workspace
 ) -> None:
     before = _attempts(launch_workspace)
-    cut_june(page, launch_app_url, minutes=None)
+    cut_month(page, launch_app_url, minutes=None)
     attempt = max(_attempts(launch_workspace) - before, key=lambda path: path.stat().st_mtime)
     original = next(picture for picture in CARRIERS if picture.is_favorite)
     alternative, replaced = [picture for picture in LIBRARY if picture not in CARRIERS][:2]
@@ -324,7 +346,7 @@ def test_a_reload_mid_cut_joins_the_running_cut_instead_of_starting_another(
     page: Page, launch_app_url: str, launch_workspace
 ) -> None:
     before = _attempts(launch_workspace)
-    _brief_for_june(page, launch_app_url)
+    _brief_for_the_month(page, launch_app_url)
     page.get_by_role("button", name="Cut", exact=True).click()
     expect(_progress(page).get_by_role("progressbar")).to_be_visible(timeout=30_000)
 
@@ -340,7 +362,7 @@ def test_the_cut_shows_the_pictures_it_is_working_on_while_it_works(
     page: Page, launch_app_url: str
 ) -> None:
     """The wait has to look alive: the user's own library goes past, and a bar moves."""
-    _brief_for_june(page, launch_app_url)
+    _brief_for_the_month(page, launch_app_url)
     page.get_by_role("button", name="Cut", exact=True).click()
 
     strip = _progress(page).get_by_role("list", name="Pictures just read").locator("img")
@@ -358,7 +380,7 @@ def test_the_cut_shows_the_pictures_it_is_working_on_while_it_works(
 
 @pytest.mark.feature("web.make-a-film")
 def test_cancel_ends_the_cut_and_offers_to_cut_again(page: Page, launch_app_url: str) -> None:
-    _brief_for_june(page, launch_app_url)
+    _brief_for_the_month(page, launch_app_url)
     page.get_by_role("button", name="Cut", exact=True).click()
     expect(_progress(page)).to_be_visible(timeout=30_000)
 
@@ -372,7 +394,7 @@ def test_the_pool_loads_its_pictures_through_the_thumbnail_route(
     page: Page, launch_app_url: str
 ) -> None:
     """No base64 data URI in the DOM: every thumbnail is an <img> the browser fetches and caches."""
-    cut_june(page, launch_app_url, minutes=None)
+    cut_month(page, launch_app_url, minutes=None)
     page.get_by_role("link", name="Pool", exact=True).click()
     tiles = page.get_by_role("list", name="Pool").get_by_role("listitem")
     expect(tiles.first).to_be_visible(timeout=30_000)
@@ -395,7 +417,7 @@ def test_the_people_condition_reaches_the_cut(
     page: Page, launch_app_url: str, launch_workspace
 ) -> None:
     """Quoted names are the override, folded away, and they still narrow a cut (#887)."""
-    _brief_for_june(page, launch_app_url)
+    _brief_for_the_month(page, launch_app_url)
     condition = page.get_by_label("People condition")
     expect(condition).to_be_hidden()
 
@@ -416,7 +438,7 @@ def test_two_names_ask_together_or_any_of_them(
     page: Page, launch_app_url: str, launch_workspace
 ) -> None:
     """Two names and one word for what they mean is the whole plain path (#887)."""
-    _brief_for_june(page, launch_app_url)
+    _brief_for_the_month(page, launch_app_url)
     match = page.get_by_label("Pictures with")
     expect(match).to_be_hidden()
 
@@ -443,7 +465,7 @@ def test_an_album_is_cut_from_its_own_pictures_only(page: Page, launch_app_url: 
     page.goto(f"{launch_app_url}/app/create", wait_until="domcontentloaded", timeout=30_000)
     page.get_by_text("Album", exact=True).click()
     album = page.get_by_role("combobox", name="Album")
-    expect(album.locator("option", has_text="The lake week")).to_have_count(1, timeout=30_000)
+    expect(album.locator("option", has_text="The road north")).to_have_count(1, timeout=30_000)
     album.select_option(ALBUM_ID)
     # The id, not the name: two albums may share one, and --from-album takes either.
     expect(page.get_by_label("Command")).to_contain_text(f"--from-album={ALBUM_ID}")
@@ -463,7 +485,7 @@ def test_the_inspector_distinguishes_caption_reading_from_model_polish(
     page: Page, launch_app_url: str, launch_workspace
 ) -> None:
     before = _attempts(launch_workspace)
-    cut_june(page, launch_app_url, minutes=None)
+    cut_month(page, launch_app_url, minutes=None)
     attempt = max(_attempts(launch_workspace) - before, key=lambda path: path.stat().st_mtime)
     asset = CARRIERS[0].asset_id
     # WHY: inference is the fixture boundary; the API and browser read real saved records.

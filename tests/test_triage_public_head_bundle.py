@@ -15,7 +15,7 @@ from immich_memories.triage.engine import TriageEngine
 from immich_memories.triage.heads import HeadBundle, HeadFact
 
 BUNDLE = EditorialPreparationConfig().head_bundle_path
-PICTURE = Path(__file__).parent / "e2e" / "fixtures" / "library" / "birthday-balloons-01.jpg"
+PICTURE = Path(__file__).parent / "e2e" / "fixtures" / "library" / "north-0712-0012.jpg"
 KEPT = ("activity", "children", "location", "people", "venue")
 
 

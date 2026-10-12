@@ -11,6 +11,7 @@ from playwright.sync_api import Page, expect
 
 from tests.e2e.cli_bootstrap import CLI_BOOTSTRAP
 from tests.e2e.conftest import _build_launch_environment
+from tests.e2e.fake_library import MONTH, YEAR
 from tests.e2e.web_flow import contact_sheet
 
 pytestmark = pytest.mark.e2e
@@ -58,8 +59,8 @@ def test_the_brief_asks_who_will_watch_and_the_cut_is_made_for_them(
 ) -> None:
     page.goto(f"{launch_app_url}/app/create", wait_until="domcontentloaded", timeout=30_000)
     page.get_by_text("Monthly Highlights", exact=True).click()
-    page.get_by_label("Year", exact=True).fill("2024")
-    page.get_by_label("Month", exact=True).select_option("6")
+    page.get_by_label("Year", exact=True).fill(str(YEAR))
+    page.get_by_label("Month", exact=True).select_option(str(MONTH))
     page.get_by_text("Length and pictures").click()
     who = page.get_by_label("Who may see it")
     command = page.get_by_label("Command")
@@ -80,7 +81,7 @@ def test_the_brief_asks_who_will_watch_and_the_cut_is_made_for_them(
     assert _request(web_attempt)["audience"] == "just_us"
 
     before = _attempts(launch_workspace)
-    month = ["--memory-type", "monthly_highlights", "--year", "2024", "--month", "6"]
+    month = ["--memory-type", "monthly_highlights", "--year", str(YEAR), "--month", str(MONTH)]
     quiet = ["--no-render", "--no-music", "--quiet"]
     transcript = [_cli(launch_workspace, "generate", *month, "--sharing", "shareable", *quiet)]
     cli_attempt = _attempt_after(launch_workspace, before)

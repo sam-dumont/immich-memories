@@ -16,7 +16,7 @@ from immich_memories.store import owner_decisions
 from tests.e2e.cli_bootstrap import CLI_BOOTSTRAP
 from tests.e2e.conftest import _build_launch_environment
 from tests.e2e.fake_library import CARRIERS, LIBRARY
-from tests.e2e.web_flow import cut_june
+from tests.e2e.web_flow import cut_month
 
 pytestmark = pytest.mark.e2e
 
@@ -85,7 +85,7 @@ def test_never_use_and_clear_a_hold_from_the_pool(
     held = next(picture for picture in LIBRARY if picture not in CARRIERS).asset_id
     flag_by_the_detector(store, held)
     try:
-        cut_june(page, launch_app_url)
+        cut_month(page, launch_app_url)
         page.get_by_role("link", name="Pool", exact=True).click()
 
         card = _tile(page, held)

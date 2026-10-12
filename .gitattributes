@@ -12,3 +12,7 @@ tests/fixtures/hdr_samples/*.mov filter=lfs diff=lfs merge=lfs -text
 tests/fixtures/hdr_samples/*.hevc filter=lfs diff=lfs merge=lfs -text
 tests/fixtures/hdr_samples/*.jpg filter=lfs diff=lfs merge=lfs -text
 docs-site/static/demo/demo.mp4 filter=lfs diff=lfs merge=lfs -text
+
+# The demo library's clips stay in plain git: the container and real-Immich jobs read the
+# library without pulling LFS (tests/e2e/fixtures/library/CREDITS.md).
+tests/e2e/fixtures/library/clips/*.mp4 -filter -diff -merge binary

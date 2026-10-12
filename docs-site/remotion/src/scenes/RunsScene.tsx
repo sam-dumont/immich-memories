@@ -21,7 +21,7 @@ import { SHOTS } from "../fixture";
  * came from; the older runs are the fixture library's other stories.
  */
 
-const JUNE = "Jun 1, 2024 to Jun 30, 2024";
+const JULY = "Jul 1, 2025 to Jul 31, 2025";
 const firstFour = (pictures: string[]) => pictures.slice(0, 4);
 
 const RUNS: {
@@ -33,52 +33,52 @@ const RUNS: {
 }[] = [
   {
     type: "Monthly Highlights",
-    span: JUNE,
+    span: JULY,
     status: "Completed",
     when: "now · Manual",
     pictures: firstFour([
       SHOTS[0].picture,
-      "library/home-rain-window-02.jpg",
+      "library/home-0703-duden-00.jpg",
       SHOTS[2].picture,
       SHOTS[3].picture,
     ]),
   },
   {
     type: "Monthly Highlights",
-    span: JUNE,
+    span: JULY,
     status: "Completed",
     when: "4 minutes ago · Manual",
     pictures: firstFour(SHOTS.map((shot) => shot.picture)),
   },
   {
     type: "Trip",
-    span: "Jun 21, 2024 to Jun 23, 2024",
+    span: "Jul 12, 2025 to Jul 30, 2025",
     status: "Completed",
     when: "yesterday · Automatic",
     pictures: firstFour(
-      SHOTS.filter((shot) => shot.story === "A week by the lake")
+      SHOTS.filter((shot) => shot.story === "The road north")
         .map((shot) => shot.picture)
         .slice(1),
     ),
   },
   {
     type: "Custom date range",
-    span: "Jun 15, 2024 to Jun 15, 2024",
+    span: "Jul 23, 2025 to Jul 23, 2025",
     status: "Completed",
     when: "3 days ago · Manual",
     pictures: firstFour(
-      SHOTS.filter((shot) => shot.day === "2024-06-15").map(
+      SHOTS.filter((shot) => shot.day === "2025-07-23").map(
         (shot) => shot.picture,
       ),
     ),
   },
   {
     type: "Special day",
-    span: "Jun 8, 2024 to Jun 8, 2024",
+    span: "Jul 5, 2025 to Jul 5, 2025",
     status: "Completed",
     when: "5 days ago · Automatic",
     pictures: firstFour(
-      SHOTS.filter((shot) => shot.day === "2024-06-08").map(
+      SHOTS.filter((shot) => shot.day === "2025-07-05").map(
         (shot) => shot.picture,
       ),
     ),

@@ -11,9 +11,9 @@ fails, it never skips.
 What it leaves behind, all of it public or synthetic:
 
 * an admin, and an API key with every permission
-* the June 2024 fixture month (133 pictures, 13 of them videos) with places, favourites
-  and three people tagged by hand (no machine learning runs)
-* the busiest June day again in 2023, and 25 December in 2023 and 2024, so on this day and a
+* the July 2025 fixture month (over a thousand pictures and clips) with places, favourites
+  and three people tagged by hand at the face boxes the fixture pins (no machine learning runs)
+* the busiest July day again in 2024, and 25 December in 2024 and 2025, so on this day and a
   named holiday have a second year to look back on
 * one album per shipped story, and ``BULK_ALBUM`` holding the paging set
 * ``<home>/.immich-memories/config.yaml``: rules reader, metadata-only
@@ -155,6 +155,9 @@ class Seeder:
         for asset_id, gate_file in zip(asset_ids, files, strict=True):
             assert gate_file.picture is not None
             where = gate_file.picture.place
+            if where is None:
+                # The file holds no GPS, so Immich holds no place: never made up.
+                continue
             self.call(
                 "PUT",
                 f"/assets/{asset_id}",
@@ -162,25 +165,26 @@ class Seeder:
             )
 
     def tag_people(self, asset_ids: list[str], files: list[media.GateFile]) -> None:
-        """Create the cast and draw one face box per person per picture, by hand."""
+        """Create the cast and draw each face box the fixture pins, by hand."""
         people = {name: self.call("POST", "/people", json={"name": name})["id"] for name in CAST}
         featured: set[str] = set()
         for asset_id, gate_file in zip(asset_ids, files, strict=True):
-            assert gate_file.picture is not None
-            width, height = media.VIDEO_SIZE if gate_file.picture.is_video else media.PHOTO_SIZE
-            for slot, name in enumerate(gate_file.picture.people):
+            picture = gate_file.picture
+            assert picture is not None
+            for face in picture.faces:
+                name = face.person
                 self.call(
                     "POST",
                     "/faces",
                     json={
                         "assetId": asset_id,
                         "personId": people[name],
-                        "imageWidth": width,
-                        "imageHeight": height,
-                        "x": 100 + slot * 500,
-                        "y": 200,
-                        "width": 300,
-                        "height": 300,
+                        "imageWidth": picture.width,
+                        "imageHeight": picture.height,
+                        "x": round(face.x * picture.width),
+                        "y": round(face.y * picture.height),
+                        "width": round(face.w * picture.width),
+                        "height": round(face.h * picture.height),
                     },
                 )
                 if name not in featured:

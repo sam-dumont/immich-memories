@@ -1,4 +1,4 @@
-"""Seed an isolated 3.2/3.3 sharing gate with the existing CC0 fixture month."""
+"""Seed an isolated 3.2/3.3 sharing gate with the fixture library's month."""
 
 from __future__ import annotations
 
@@ -156,7 +156,8 @@ COMMIT;"""
             )
         )
         print(
-            f"Seeded Immich {version['major']}.{version['minor']}.{version['patch']}: 139 selected records, 138 unique assets"
+            f"Seeded Immich {version['major']}.{version['minor']}.{version['patch']}: "
+            f"{len(files) + 1} selected records, {len(files)} unique assets"
         )
     finally:
         for api in apis.values():

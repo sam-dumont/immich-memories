@@ -26,7 +26,8 @@ from immich_memories.processing.output_contract import (
 )
 from immich_memories.tracking.run_database import RunDatabase
 from tests.e2e.conftest import _build_launch_environment
-from tests.e2e.web_flow import cut_june, films, render, wait_for_the_film
+from tests.e2e.fake_library import MONTH, YEAR
+from tests.e2e.web_flow import cut_month, films, render, wait_for_the_film
 
 pytestmark = pytest.mark.e2e
 
@@ -194,7 +195,7 @@ def test_launch_flow_renders_real_video(
     assert launch_config["advanced"]["ace_step"]["enabled"] is False
 
     before = set(launch_workspace.output_dir.rglob("*.mp4"))
-    cut_june(page, launch_app_url)
+    cut_month(page, launch_app_url)
     page.evaluate("""() => {
         window.exportPhases = [];
         new MutationObserver(() => {
@@ -243,7 +244,7 @@ def test_launch_flow_renders_real_video(
 
 
 def _verify_cli_timing(workspace, database: RunDatabase) -> None:
-    """Run the same June cut through the terminal and retain its durable timing evidence."""
+    """Run the same monthly cut through the terminal and retain its durable timing evidence."""
     from tests.e2e.cli_bootstrap import CLI_BOOTSTRAP
 
     root = Path(__file__).resolve().parents[2]
@@ -259,9 +260,9 @@ def _verify_cli_timing(workspace, database: RunDatabase) -> None:
             "--memory-type",
             "monthly_highlights",
             "--year",
-            "2024",
+            str(YEAR),
             "--month",
-            "6",
+            str(MONTH),
             "--no-music",
             "--quiet",
         ],
@@ -301,7 +302,7 @@ def test_reload_during_a_render_rejoins_it_and_plays_the_film(
 ) -> None:
     """A reload mid-render must come back to the running job, then the film (#322)."""
     before = set(launch_workspace.output_dir.rglob("*.mp4"))
-    cut_june(page, launch_app_url)
+    cut_month(page, launch_app_url)
     render(page, resolution="720p")
     panel = page.get_by_role("region", name="Render")
     expect(panel.get_by_role("region", name="Progress")).to_be_visible(timeout=30_000)

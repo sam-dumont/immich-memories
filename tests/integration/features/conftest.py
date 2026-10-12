@@ -5,7 +5,7 @@ holds a Basic install pointed at it. By default it is the fake Immich the launch
 `make test-features-real-immich` runs the same tests against a real Immich seeded with the
 same files (`immich_server.py`, `real_seed.py`). Tests take `immich` for either; a test that
 needs the fake itself takes `fake_immich` and carries `fake_immich_only` with its reason.
-Films are rendered once and shared: `garden_film` is the default render of one fixture
+Films are rendered once and shared: `departure_film` is the default render of one fixture
 day, and every test that only reads a finished run reads that one.
 
 Selection is the hermetic launch check's scripted editor (`tests/e2e/fake_editorial.py`):
@@ -24,7 +24,7 @@ from tests.e2e.fake_immich import FakeImmichServer
 from tests.features.cli_harness import OutboundTrap, UserHome, basic_config
 from tests.integration.features.immich_server import LibraryServer, real_immich_state
 from tests.integration.features.library import (
-    GARDEN_DAY,
+    DEPARTURE_DAY,
     RenderedRun,
     day_args,
     own_immich,
@@ -121,8 +121,11 @@ def fresh_home(tmp_path: Path, immich: LibraryServer, outbound_trap: OutboundTra
 
 
 @pytest.fixture(scope="session")
-def garden_film(library_home: UserHome) -> RenderedRun:
+def departure_film(library_home: UserHome) -> RenderedRun:
     """One fixture day rendered with every default, named with --output."""
     return render(
-        library_home, *day_args(GARDEN_DAY), "--output", str(library_home.videos / "garden.mp4")
+        library_home,
+        *day_args(DEPARTURE_DAY),
+        "--output",
+        str(library_home.videos / "departure.mp4"),
     )
