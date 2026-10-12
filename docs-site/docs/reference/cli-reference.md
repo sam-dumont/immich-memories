@@ -595,7 +595,7 @@ immich-memories people scan [OPTIONS]
 
 | Flag | Type | Default | Description |
 | --- | --- | --- | --- |
-| `--min-assets` | integer | 25 | Pictures a named person needs before the graph has an opinion |
+| `--min-assets` | integer | - | Pictures a named person needs before the graph has an opinion [default: a tenth of the most-pictured person's, between 5 and 25] |
 | `--owner` | text | - | The name of the person whose library this is, if the account does not say |
 
 ### `people show`

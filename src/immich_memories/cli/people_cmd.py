@@ -25,7 +25,7 @@ from immich_memories.people.evidence_graph import (
     default_evidence_graph_path,
     save_evidence_graph,
 )
-from immich_memories.people.graph import DEFAULT_MIN_ASSETS, PeopleGraph
+from immich_memories.people.graph import PeopleGraph
 from immich_memories.people.groups import add_group, list_groups, remove_group
 from immich_memories.people.owner import OWNERS, confirmed_owner
 from immich_memories.people.signatures import LinkKind
@@ -98,8 +98,11 @@ def _register_scan(people: click.Group) -> None:
     @click.option(
         "--min-assets",
         type=int,
-        default=DEFAULT_MIN_ASSETS,
-        help="Pictures a named person needs before the graph has an opinion",
+        default=None,
+        help=(
+            "Pictures a named person needs before the graph has an opinion"
+            " [default: a tenth of the most-pictured person's, between 5 and 25]"
+        ),
     )
     @click.option(
         "--owner",
@@ -107,7 +110,7 @@ def _register_scan(people: click.Group) -> None:
         default=None,
         help="The name of the person whose library this is, if the account does not say",
     )
-    def scan(min_assets: int, owner: str | None) -> None:
+    def scan(min_assets: int | None, owner: str | None) -> None:
         """Build or refresh the people registry from Immich.
 
         Reads every named person's count and month curve, then asks about each
@@ -418,6 +421,7 @@ def _report(graph: PeopleGraph) -> None:
             {"name": graph.owner.name, "identified": graph.owner.identified},
         )
 
+    console.print(f"  Floor: {graph.min_assets} pictures per person")
     counted = _tier_counts(node.tier.value for node in graph.people)
     for name in _TIER_ORDER:
         console.print(f"  [bold]{name:<10}[/bold] {counted.get(name, 0):>4}")

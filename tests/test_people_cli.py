@@ -158,6 +158,29 @@ class TestScan:
         assert taylor["inferred"]["evidence"]["count"] == 8
         assert taylor["confirmed"]["role"] == "uncle"
 
+    def test_a_small_library_s_cast_survives_a_scan_with_no_floor_given(self):
+        # The web's "Rescan now" runs exactly this: `people scan`, no flags.
+        class SmallLibrary(_Library):
+            people = [*_Library.people[:2], _Person("p5", "Robin Example")]
+            months = {
+                "p1": [(date(2024, m + 1, 1), 1 + (m < 6)) for m in range(12)],
+                "p2": [(date(2024, m + 1, 1), 1) for m in range(12)],
+                "p5": [(date(2024, 3, 1), 2)],
+            }
+
+        output = _run(["people", "scan"], SmallLibrary)
+
+        kept = {entry["name"] for entry in people_entries(load_document())}
+        assert kept == {"Alex Example", "Sam Sample"}
+        assert "5 pictures" in output
+
+    def test_min_assets_still_sets_the_floor_by_hand(self):
+        output = _run(["people", "scan", "--min-assets", "2000"])
+
+        kept = {entry["name"] for entry in people_entries(load_document())}
+        assert kept == {"Alex Example"}
+        assert "2000 pictures" in output
+
     def test_it_reports_the_tiers_without_reading_out_the_roster(self):
         output = _run(["people", "scan"])
 

@@ -50,6 +50,8 @@ person. Choose the owner yourself, or name people in Immich and rescan.
 
 The scan reads metadata, not pictures. Your confirmations survive a rescan. Its guesses alone never make someone close family.
 
+A named person the scan leaves out has fewer pictures than its floor: a tenth of your most-pictured person's count, between 5 and 25. [How the floor works](../make/cli/people.md#scan-and-inspect).
+
 ## What changes
 
 Close family gets a place in the film when the period holds enough pictures of them. Their presence can make a busy day a bigger story, and an ordinary week worth keeping. A person film also uses the relationships you confirmed.
