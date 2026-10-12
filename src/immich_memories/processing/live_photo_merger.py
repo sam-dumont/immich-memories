@@ -36,6 +36,7 @@ from immich_memories.processing.hardware import HWAccelCapabilities
 from immich_memories.processing.hardware_detection import detect_hardware_acceleration
 from immich_memories.processing.hardware_encode import apply_hardware_encode
 from immich_memories.processing.live_geometry import burst_geometry_filter
+from immich_memories.processing.preparation_fallbacks import note_fallback
 
 # Default Live Photo clip duration (1.5s before + 1.5s after shutter)
 DEFAULT_CLIP_DURATION = 3.0
@@ -396,6 +397,7 @@ def burst_fps(clip_paths: list[Path]) -> float:
             rates.append(probes.render_frame_rate(path)["fps"])
         except (ProbeError, OSError, ValueError) as exc:
             logging.getLogger(__name__).debug("Legacy burst cadence unavailable: %s", exc)
+            note_fallback("burst cadence chosen without a source ffprobe could not read")
     return max(rates) if rates else _FALLBACK_BURST_FPS
 
 

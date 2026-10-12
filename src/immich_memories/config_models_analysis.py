@@ -35,6 +35,14 @@ class AnalysisConfig(BaseModel):
         "'auto' prepares one source per 2 GB this process may use (the container's "
         "memory limit, else the machine's RAM), at least 1 and at most 2",
     )
+    prepared_source_cache_max_size_gb: float = Field(
+        default=10.0,
+        ge=0,
+        le=500,
+        description="Disk kept for sources earlier runs prepared (cut segments, photo "
+        "clips, Live Photo merges), so rendering the same selection again prepares "
+        "nothing it already holds. Least recently used go first; 0 keeps none",
+    )
     max_album_assets: int = Field(
         default=10000,
         ge=1,

@@ -197,6 +197,7 @@ advanced:
     # Downloads
     download_workers: 3            # Parallel download clients for video and thumbnail prefetching (1-8)
     source_prepare_workers: auto   # Sources prepared at once (1-4); auto: reserve 1 GiB, then 3 GiB per worker; 1-2, capped by available CPUs
+    prepared_source_cache_max_size_gb: 10.0  # Disk for prepared sources a later render reuses (0-500 GB; 0 keeps none)
 
     # Duration sizing
     optimal_clip_duration: 5.0     # Expected seconds per clip when a trip or album sizes its own duration (2-15s)
@@ -214,6 +215,18 @@ camera metadata. These filters apply before selection, so a model cannot bring e
 
 Any Live Photo cluster of two or more within the merge window is treated as a burst; the count is
 not configurable. Where a clip is cut, and how long it runs, is the editor's decision per carrier.
+
+A render keeps each source it prepares (the cut video segment, the animated photo, the merged
+Live Photo) under `<cache.directory>/prepared-sources`. Rendering the same selection again, or
+re-running after a crash, reuses them instead of downloading and preparing them again. A source is
+reused only when nothing that shaped it has changed: the original in Immich, the cut window, the
+tier, the `output`, `hardware` and `photos` settings, the canvas, and the app version. Anything
+else prepares it again. A source the run had to settle for less on (a Live Photo that played its
+single video because the burst would not merge, a burst missing a part that failed to download, a
+software encode after the hardware encoder failed) is never kept, so the next render tries again.
+`prepared_source_cache_max_size_gb` caps the folder; the least recently
+used sources go first, and `0` turns the reuse off. It also stays off with
+`cache.video_cache_enabled: false`.
 
 `max_album_assets` applies per media type, so the default reads up to 10,000 videos and 10,000
 photos from one album. Immich returns newest first, so a bigger album is truncated to its most

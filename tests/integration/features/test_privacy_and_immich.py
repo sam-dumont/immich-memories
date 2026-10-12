@@ -160,10 +160,12 @@ def private_film(
     home = UserHome(root / "home", extra_env=tuple(outbound_trap.env().items()))
     home.write_config(basic_config(fake_immich.base_url, fake_immich.api_key, home))
     with fake_immich.serving(voiced):
-        plain = render(home, "--verbose", *day_args(GARDEN_DAY))
+        # The private film first: a second render in one home reuses the sources the first
+        # prepared, so only the first reads its originals from Immich.
         start = len(fake_immich.wire.requests)
         run = render(home, "--verbose", *day_args(GARDEN_DAY), "--privacy-mode")
         requests = fake_immich.wire.requests[start:]
+        plain = render(home, "--verbose", *day_args(GARDEN_DAY))
     return PrivateFilm(home, plain, run, tuple(voiced.values()), requests)
 
 

@@ -258,6 +258,11 @@ prints.
 segments in `.intermediates`, the title cards in `.title_screens`, prepared photos in
 `.source_preparation`.
 
+A rerun of the same selection reuses the segments and photo clips an earlier run prepared, from
+`<cache.directory>/prepared-sources`. Each reused file lands where the run's own preparation would
+have put it, so `--keep-intermediates` keeps it the same way. See
+[video analysis](./config-reference.md#video-analysis) for when a source is prepared again.
+
 Without `--output` the file lands in the same kind of folder in `output.directory` (`~/Videos/Memories/`),
 named `{people}_{memory-type}_{dates}_{hash}.mp4`, with `all` when no one is named. Confirmed Immich delivery removes the local film and its work directory. Local-only runs retain their output; `runs delete` removes a run and its output.
 

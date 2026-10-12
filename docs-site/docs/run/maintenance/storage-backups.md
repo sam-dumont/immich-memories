@@ -145,7 +145,9 @@ first, then use [store copy](../database.md).
 
 ## Caches
 
-Preview and video caches default to 10 GB each. Local-only films and failed deliveries remain on
+Preview and video caches default to 10 GB each, and so do prepared sources: the cut segments
+and photo clips a later render of the same selection reuses
+(`advanced.analysis.prepared_source_cache_max_size_gb`). Local-only films and failed deliveries remain on
 disk. After a confirmed upload to Immich, the local film and run directory are removed.
 Use `runs storage` to inspect retained runs; use `runs delete` only for runs you want to remove.
 
@@ -204,13 +206,16 @@ Deleting the whole data volume loses those facts, settings and run history.
 
 ### Clearing
 
-While the app is idle, use **Settings > Caches > Clear**. From a Python shell, these two
+While the app is idle, use **Settings > Caches > Clear**. From a Python shell, these three
 folders alone are safe to delete:
 
 ```bash
 rm -rf ~/.immich-memories/cache/video-cache
 rm -rf ~/.immich-memories/cache/thumbnails
+rm -rf ~/.immich-memories/cache/prepared-sources
 ```
+
+Settings > Caches does not list prepared sources yet; delete that folder while the app is idle.
 
 In Docker, clear through Settings rather than deleting a similarly named host directory.
 Do not delete `store.db` or the whole data volume. Attempt directories also contain review/render
