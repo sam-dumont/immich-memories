@@ -1,7 +1,7 @@
 """Versioned, path-free job contract. The Immich key (the app's own) is an ephemeral input."""
 
 from datetime import date, datetime
-from typing import Literal
+from typing import Annotated, Literal
 from uuid import UUID
 
 from pydantic import (
@@ -119,6 +119,10 @@ class MemorySettings(Contract):
     date_start: date | None = None
     date_end: date | None = None
     person_name: str | None = Field(default=None, max_length=300)
+    # Absent from an app that predates it: the film is about `person_name` alone.
+    memory_people: tuple[Annotated[str, Field(max_length=300)], ...] = Field(
+        default=(), max_length=100
+    )
     preset_params: dict = Field(default_factory=dict)
 
     @field_validator("preset_params")

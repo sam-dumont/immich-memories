@@ -95,6 +95,10 @@ class _Immich:
             self.downloads.append(asset_id)
         shutil.copyfile(self.served[asset_id], destination)
 
+    def get_asset_faces(self, _asset_id):
+        # No face recognised: each still moves toward its centre.
+        return []
+
     def close(self):
         pass
 

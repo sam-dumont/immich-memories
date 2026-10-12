@@ -35,13 +35,13 @@ def _make_engine(settings=None):
     from immich_memories.processing.clip_encoder import ClipEncoder
     from immich_memories.processing.ffmpeg_prober import FFmpegProber
 
-    def _no_face(_path: Path) -> tuple[float, float] | None:
-        return None
+    def _no_face(_path: Path) -> tuple:
+        return ()
 
     if settings is None:
         settings = _make_settings()
     prober = FFmpegProber(settings)
-    encoder = ClipEncoder(settings=settings, prober=prober, face_center_fn=_no_face)
+    encoder = ClipEncoder(settings=settings, prober=prober, detect_faces=_no_face)
     return AssemblyEngine(
         settings=settings,
         prober=prober,

@@ -1,6 +1,6 @@
 """Real FFmpeg integration tests for scaling utilities.
 
-Tests _get_video_duration, _detect_face_center_in_video, and
+Tests _get_video_duration, detect_faces_in_video, and
 aggregate_mood_from_clips against actual FFmpeg on synthetic clips.
 """
 
@@ -34,24 +34,18 @@ class TestGetVideoDuration:
 
 
 # ---------------------------------------------------------------------------
-# _detect_face_center_in_video
+# detect_faces_in_video
 # ---------------------------------------------------------------------------
 
 
-class TestDetectFaceCenterInVideo:
+class TestDetectFacesInVideo:
     def test_no_faces_in_test_pattern(self, test_clip_720p: Path):
-        """Test pattern has no real faces -- expect None or a valid center tuple."""
-        from immich_memories.processing.scaling_utilities import (
-            _detect_face_center_in_video,
-        )
+        """Test pattern has no real faces -- expect none, or boxes inside the frame."""
+        from immich_memories.processing.scaling_utilities import detect_faces_in_video
 
-        result = _detect_face_center_in_video(test_clip_720p)
-        if result is not None:
-            # If detection returns something, it should be a valid 0-1 range
-            x, y = result
-            assert 0.0 <= x <= 1.0
-            assert 0.0 <= y <= 1.0
-        # None is the expected result for a test pattern
+        for box in detect_faces_in_video(test_clip_720p):
+            assert 0.0 <= box.x1 <= box.x2 <= 1.0
+            assert 0.0 <= box.y1 <= box.y2 <= 1.0
 
 
 # ---------------------------------------------------------------------------

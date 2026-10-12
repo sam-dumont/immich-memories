@@ -23,10 +23,18 @@ no `isEdited`, and every picture reads as unedited.
 
 ## Ken Burns, and where the pan lands
 
-One renderer for every photo: a zoom of 5 to 12 %, seeded from the asset ID so a re-render moves the
-same way, panning toward the largest face Immich found. With no face on the picture the pan ends at
-the centre, which suits landscapes, food and the dog. The face boxes come from Immich; framing runs
-no face detector of its own.
+One renderer for every photo. Each move has the whole picture at one end (zoom 1.0) and its
+closest frame at the other, seeded from the asset ID so a re-render moves the same way:
+
+| Film | Closest frame | Direction |
+|---|---|---|
+| About one person | That person, 25-35 % in; other faces only if they still fit | In |
+| About several people, or several faces in any film | The tightest crop holding every face plus half a face of air on each side, 15-50 % in; a 20 % pan across the group when that crop would zoom less than 15 % | In for a film about several people; in or out per photo otherwise |
+| Anything else | The lone face, 25-35 % in, or the centre when there is none | In or out, per photo |
+
+The ceiling is 50 % because the photo is prepared at 1.5 times the canvas; closer would upscale it.
+The face boxes come from Immich's faces endpoint, one request per still; framing runs no face
+detector of its own, and a still whose boxes can't be read moves toward its centre.
 
 Photo preparation uses the hardware encoder the app has verified, including NVIDIA and VAAPI.
 On Basic tier, a device with hardware H.264 but no hardware HEVC prepares photos as SDR H.264;

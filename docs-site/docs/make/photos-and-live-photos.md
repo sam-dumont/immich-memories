@@ -11,7 +11,13 @@ Photos and videos share one cut. A selected still gets a gentle zoom and pan; a 
 
 ## Ken Burns, and where the pan lands
 
-The pan moves toward the largest face Immich recognised, or toward the centre when there is none. Rendering does not run another face detector.
+Every still moves between the whole picture and a close-up, so you see the full photo at one end and the point of it at the other.
+
+- **A film about one person** opens on the whole picture and pushes in on that person, 25 to 35 %. Other faces stay if they still fit; the person always does.
+- **A film about several people, or several faces in any other film**, closes on the tightest crop that keeps every face, with some air around each head, up to 50 %. When the faces already span the picture, it pans across them at a 20 % zoom instead, so everyone is on screen at some point.
+- **Any other film** zooms in or out (each photo always the same way) toward its one face, or toward the centre when there is none.
+
+The face boxes come from Immich. Rendering does not run another face detector.
 
 If you crop, rotate or mirror a photo in Immich's own editor, the film uses that edited version, not the untouched original. An edited HDR photo comes out in SDR: Immich's editor does not carry the gain map over. Selection judges the edited version too, so a crop that cut someone out is read without them. Videos and Live Photos always play from their original: Immich's editor doesn't touch them.
 

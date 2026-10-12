@@ -94,6 +94,8 @@ _RENDER_CHANGES: dict[str, Callable] = {
     "scale mode": lambda _clip, params: setattr(params, "scale_mode", "fit"),
     "faces": lambda clip, _params: setattr(clip.asset, "people", [{"id": "p1", "name": ""}]),
     "place": lambda clip, _params: setattr(clip.asset, "exif_info", ExifInfo(city="Elsewhere")),
+    # The move heads for the people the film is about (#2440).
+    "film subjects": lambda _clip, params: setattr(params, "memory_people", ("kid",)),
 }
 
 

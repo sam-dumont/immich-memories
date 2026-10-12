@@ -88,6 +88,7 @@ def generation_params(
         subtitle=request.titles.subtitle or None,
         memory_type=request.memory.memory_type,
         person_name=request.memory.person_name,
+        memory_people=request.memory.memory_people,
         memory_preset_params=request.memory.preset_params,
         date_start=request.memory.date_start,
         date_end=request.memory.date_end,

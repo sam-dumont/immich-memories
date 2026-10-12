@@ -4,14 +4,14 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from immich_memories.processing.assembly_config import (
     AssemblyClip,
 )
 
 if TYPE_CHECKING:
-    from immich_memories.api.models import VideoClipInfo
+    from immich_memories.api.models import Asset, VideoClipInfo
     from immich_memories.generate import GenerationParams
 
 logger = logging.getLogger(__name__)
@@ -23,6 +23,38 @@ def detect_photo_resolution(params: GenerationParams) -> tuple[int, int]:
 
     canvas = resolve_generation_canvas(params)
     return canvas.width, canvas.height
+
+
+def memory_subjects(params: GenerationParams) -> tuple[str, ...]:
+    """The people the film is about, by name; empty for a film about nobody in particular."""
+    named = (*params.memory_people, params.person_name)
+    # memory_people arrive casefolded and person_name as typed: one person, not two.
+    return tuple(dict.fromkeys(" ".join(name.split()).casefold() for name in named if name))
+
+
+def with_face_boxes(asset: Asset, client: Any) -> Asset:
+    """The asset with Immich's face boxes on it, for the move to frame.
+
+    Immich's asset and search endpoints name the people in a picture but carry
+    no geometry for them; the boxes come from their own endpoint, one request
+    per still. A failed read leaves the still without faces: it moves toward
+    its centre rather than failing the film. That covers every way the read can
+    fail: Immich's refusal, a dropped connection, a reply this code cannot parse,
+    and a household client reporting that the owning account could not read it.
+    """
+    import httpx
+
+    from immich_memories.api.access_clients import AccountReadFailed
+    from immich_memories.api.immich import ImmichAPIError
+
+    if client is None or asset.faces or any(person.faces for person in asset.people):
+        return asset
+    try:
+        faces = list(client.get_asset_faces(asset.id))
+    except (ImmichAPIError, AccountReadFailed, httpx.HTTPError, OSError, ValueError) as exc:
+        logger.debug("No face boxes for %s: %s", asset.id, type(exc).__name__)
+        return asset
+    return asset.model_copy(update={"faces": faces}) if faces else asset
 
 
 def render_photo_as_clip(
@@ -59,7 +91,7 @@ def render_photo_as_clip(
         photo_config = photo_config.model_copy(update={"duration": duration_seconds})
 
     result = render_single_photo(
-        asset=clip.asset,
+        asset=with_face_boxes(clip.asset, params.client),
         config=photo_config,
         target_w=target_w,
         target_h=target_h,
@@ -74,6 +106,7 @@ def render_photo_as_clip(
             else HWAccelCapabilities()
         ),
         scale_mode=normalize_scale_mode(params.scale_mode or params.config.defaults.scale_mode),
+        subjects=memory_subjects(params),
     )
     if result is None:
         logger.warning(f"Failed to render photo {clip.asset.id}")

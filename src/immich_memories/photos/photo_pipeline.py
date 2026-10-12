@@ -6,26 +6,25 @@ one frame in memory at a time.
 
 from __future__ import annotations
 
-import hashlib
 import logging
-import random
 import subprocess
-from collections.abc import Iterator
+from collections.abc import Collection, Iterator
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import cv2
 import numpy as np
 
+from immich_memories.analysis.framing_target import picture_faces
 from immich_memories.api.immich import ImmichAPIError
 from immich_memories.api.models import Asset
 from immich_memories.config_models_render import PhotoConfig
 from immich_memories.generate_privacy import clip_location_name
 from immich_memories.photos.animator import prepare_photo_source
 from immich_memories.photos.encoding import photo_encoding_plan
+from immich_memories.photos.ken_burns_moves import film_subject, planned_move
 from immich_memories.photos.renderer import (
     KenBurnsParams,
-    face_aware_pan,
     render_ken_burns_streaming,
 )
 from immich_memories.processing.assembly_config import AssemblyClip
@@ -61,7 +60,7 @@ def _prepared_photo_pixels(raw_path: Path, target_w: int, target_h: int, work_di
     """Decode the source into integer RGB (16-bit for gain-mapped HDR), or report it unreadable."""
     # Prepare (HEIC decode, gain map extraction for HDR).
     # WHY 1.5x (#423): the renderer samples at most output x 1.12 max zoom
-    # x 1.26 pan margin = 1.41x, and it holds three copies of
+    # (1.41x before #2440 dropped the pan margin), and it holds three copies of
     # whatever it is given. Measured on a 24.5 MP HEIC at 4K: 2.0x paid
     # 0.63 s and 0.32 GB per photo for pixels its own resize discarded.
     prepared = prepare_photo_source(
@@ -78,16 +77,22 @@ def _prepared_photo_pixels(raw_path: Path, target_w: int, target_h: int, work_di
     return prepared, cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
 
-def _ken_burns_params(asset: Asset, prepared: Any, fps: int, duration: float) -> KenBurnsParams:
-    """Reproducible per-asset move: the same photograph always pans the same way."""
-    face_target = face_aware_pan(asset.people, prepared.width, prepared.height)
-    seed = int(hashlib.sha256(asset.id.encode()).hexdigest()[:8], 16)
-    rng = random.Random(seed)
-    return KenBurnsParams(
-        zoom_start=1.0,
-        zoom_end=1.0 + rng.uniform(0.05, 0.12),
-        pan_start=(rng.uniform(0.3, 0.7), rng.uniform(0.3, 0.7)),
-        pan_end=face_target,
+def _ken_burns_params(
+    asset: Asset,
+    fps: int,
+    duration: float,
+    *,
+    subjects: Collection[str | None] = (),
+) -> KenBurnsParams:
+    """Reproducible per-asset move between the whole picture and its closest frame.
+
+    ``subjects`` are the people the film is about, by name or person id: one
+    makes a person film, several a group film (see ``ken_burns_moves``).
+    """
+    return planned_move(
+        asset.id,
+        picture_faces(asset, subjects),
+        film_subject(subjects),
         fps=fps,
         duration=duration,
     )
@@ -117,11 +122,14 @@ def render_single_photo(
     capabilities: HWAccelCapabilities | None = None,
     output_format: str | None = None,
     scale_mode: str = "blur",
+    subjects: Collection[str | None] = (),
 ) -> AssemblyClip | None:
     """Download, prepare, render (streaming), and encode a single photo.
 
     `scale_mode` fills the bands around a still that does not match the canvas: its own
     blur ("blur") or black ("fit"), the same choice the film makes for its videos.
+    `subjects` are the people the memory is about, by name or person id; the move
+    ends on their faces.
     """
     try:
         raw_path = _source_photo_path(asset, work_dir) if source_path is None else source_path
@@ -131,7 +139,7 @@ def render_single_photo(
         if loaded is None:
             return None
         prepared, img = loaded
-        params = _ken_burns_params(asset, prepared, fps, config.duration)
+        params = _ken_burns_params(asset, fps, config.duration, subjects=subjects)
 
         # Stream-render to mp4 (O(1) memory — one frame at a time)
         output_path = work_dir / f"{asset.id}_photo.mp4"

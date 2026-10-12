@@ -14,6 +14,7 @@ Validated on real iPhone 16 Pro HEIC photos with HDR gain maps.
 from __future__ import annotations
 
 import logging
+import math
 from collections.abc import Iterator
 from dataclasses import dataclass
 
@@ -21,53 +22,6 @@ import cv2
 import numpy as np
 
 logger = logging.getLogger(__name__)
-
-
-def face_aware_pan(
-    people: list,
-    src_w: int,
-    src_h: int,
-) -> tuple[float, float]:
-    """Compute Ken Burns pan target from Immich person/face data.
-
-    Immich nests face bboxes under people[].faces[]. The bbox coordinates
-    are relative to a THUMBNAIL resolution (imageWidth/imageHeight), not
-    the original. This function normalizes to 0-1 regardless of source.
-
-    Falls back to (0.5, 0.5) if no faces found.
-    """
-    # Collect all faces from all people
-    all_faces = []
-    for person in people:
-        if hasattr(person, "faces"):
-            all_faces.extend(person.faces)
-
-    if not all_faces:
-        return (0.5, 0.5)
-
-    # Pick the largest face
-    largest = max(all_faces, key=lambda f: f.area if hasattr(f, "area") else 0)
-    cx, cy = largest.center
-
-    # Normalize using the bbox's own reference dimensions (thumbnail size)
-    # WHY: bbox coords are relative to imageWidth/imageHeight (thumbnail),
-    # not the original photo dimensions. Normalizing by the bbox's own
-    # reference gives correct 0-1 position regardless of resolution.
-    ref_w = (
-        largest.image_width
-        if hasattr(largest, "image_width") and largest.image_width > 0
-        else src_w
-    )
-    ref_h = (
-        largest.image_height
-        if hasattr(largest, "image_height") and largest.image_height > 0
-        else src_h
-    )
-
-    return (
-        max(0.0, min(1.0, cx / ref_w)),
-        max(0.0, min(1.0, cy / ref_h)),
-    )
 
 
 @dataclass
@@ -81,6 +35,55 @@ class KenBurnsParams:
     pan_end: tuple[float, float] = (0.5, 0.5)
     fps: int = 60
     duration: float = 4.0
+    # How the move paces itself: a name from EASINGS.
+    easing: str = "linear"
+
+
+# Each curve is blended with linear: eased(t) = (1 - k)·t + k·curve(t). The plain
+# curves (smoothstep, quadratic in and out) come to rest at an end, which reads as
+# a dead frame across a crossfade; at k = 0.4 the slowest end still moves at 60 %
+# of the move's average speed and the fastest point at 140 %, enough to tell one
+# still from the next and too little to look like a different effect.
+EASE_BLEND = 0.4
+_CURVES = {
+    "linear": lambda t: t,
+    "ease-in-out": lambda t: t * t * (3.0 - 2.0 * t),
+    "ease-out": lambda t: 1.0 - (1.0 - t) ** 2,
+    "ease-in": lambda t: t * t,
+}
+EASINGS = tuple(_CURVES)
+
+
+def eased(name: str, t: float) -> float:
+    """Progress at time ``t`` (0 to 1) under a gentle easing; linear for an unknown name."""
+    curve = _CURVES.get(name, _CURVES["linear"])
+    return (1.0 - EASE_BLEND) * t + EASE_BLEND * curve(t)
+
+
+def _rect(zoom: float, pan: tuple[float, float]) -> tuple[float, float, float]:
+    """A pan position at a zoom as the view's centre and size, in shares of the picture."""
+    size = 1.0 / zoom
+    room = max(0.0, 1.0 - size)
+    return (size / 2 + pan[0] * room, size / 2 + pan[1] * room, size)
+
+
+def crop_window(params: KenBurnsParams, t: float) -> tuple[float, float, float]:
+    """The view at time ``t`` (0 to 1): its centre x, centre y and size, shares of the picture.
+
+    One move, not a zoom and a pan: the start and end views are fixed rectangles
+    and the view travels between them on a single straight path. The size changes
+    by equal ratios for equal steps of the (gently eased) progress, so the zoom looks
+    even rather than speeding up, and the centre covers the same share of its way as
+    the size does at every frame.
+    """
+    x0, y0, s0 = _rect(params.zoom_start, params.pan_start)
+    x1, y1, s1 = _rect(params.zoom_end, params.pan_end)
+    # One eased parameter drives the size and, through it, the centre.
+    t = eased(params.easing, t)
+    size = math.exp(math.log(s0) + (math.log(s1) - math.log(s0)) * t)
+    # The centre follows the size's own progress, so both arrive together.
+    step = (size - s0) / (s1 - s0) if abs(s1 - s0) > 1e-12 else t
+    return (x0 + (x1 - x0) * step, y0 + (y1 - y0) * step, size)
 
 
 def render_ken_burns_streaming(
@@ -114,20 +117,14 @@ def render_ken_burns_streaming(
     letterboxed = (win_w < vp_w - 2) or (win_h < vp_h - 2)
     needs_blur = letterboxed and scale_mode == "blur"
 
-    # Scale source for KB headroom — use MAX zoom for crisp pixels
+    # Scale the source so the window at the largest zoom still samples one
+    # source pixel per output pixel. At zoom z the frame shows 1/z of the
+    # photograph: zoom 1.0 is the whole picture, and the pan moves the view
+    # within the room the zoom leaves, so it needs no margin of its own.
     max_z = max(params.zoom_start, params.zoom_end)
-    pan_travel = max(
-        abs(params.pan_end[0] - params.pan_start[0]),
-        abs(params.pan_end[1] - params.pan_start[1]),
-    )
-    margin = 1.0 + pan_travel * 0.6 + 0.02
-
-    kb_scale = max(
-        (win_w * max_z) * margin / src_w,
-        (win_h * max_z) * margin / src_h,
-    )
+    kb_scale = max(win_w * max_z / src_w, win_h * max_z / src_h)
     big = cv2.resize(
-        src, (int(src_w * kb_scale), int(src_h * kb_scale)), interpolation=cv2.INTER_AREA
+        src, (round(src_w * kb_scale), round(src_h * kb_scale)), interpolation=cv2.INTER_AREA
     )
     bh, bw = big.shape[:2]
 
@@ -138,14 +135,11 @@ def render_ken_burns_streaming(
 
     for i in range(n_frames):
         t = i / max(n_frames - 1, 1)
-        zoom = params.zoom_start + (params.zoom_end - params.zoom_start) * t
-        px = params.pan_start[0] + (params.pan_end[0] - params.pan_start[0]) * t
-        py = params.pan_start[1] + (params.pan_end[1] - params.pan_start[1]) * t
-
-        vis_w = win_w / zoom
-        vis_h = win_h / zoom
-        cx = vis_w / 2 + px * max(0, bw - vis_w)
-        cy = vis_h / 2 + py * max(0, bh - vis_h)
+        centre_x, centre_y, size = crop_window(params, t)
+        vis_w = bw * size
+        vis_h = bh * size
+        cx = centre_x * bw
+        cy = centre_y * bh
         x0 = cx - vis_w / 2
         y0 = cy - vis_h / 2
 

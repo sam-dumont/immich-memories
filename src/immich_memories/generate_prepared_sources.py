@@ -11,8 +11,9 @@ than preparing it again. So the key carries:
   render directive, its window, the tier, the `output` and `hardware` sections,
   and what this machine's FFmpeg and encoders can do;
 - for pictures rendered onto the canvas (photos, video stills, Live merges): the
-  canvas, `photos`, the output format, the scale mode and the asset metadata the
-  render bakes in (faces for the pan, the place and date it carries);
+  canvas, `photos`, the output format, the scale mode, the people the film is about
+  (the move heads for them) and the asset metadata the render bakes in (faces for
+  the pan, the place and date it carries);
 - `RECIPE_VERSION` and the app version, so a code change never reuses an older
   rendering. Bump `RECIPE_VERSION` when preparation changes between releases.
 
@@ -51,7 +52,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-RECIPE_VERSION = "prepared-source-v1"
+RECIPE_VERSION = "prepared-source-v2"
 
 Kind = Literal["photo", "still", "segment", "motion"]
 
@@ -177,8 +178,12 @@ def preparation_identity(request: PreparationRequest) -> dict[str, Any]:
         },
     }
     if kind != "segment":
+        from immich_memories.generate_photos import memory_subjects
+
         identity["picture"] = clip.asset.model_dump(mode="json", include=set(_PICTURE_FIELDS))
         identity["render"] = _canvas_recipe(params)
+        # A still's move heads for the people the film is about (#2440).
+        identity["subjects"] = sorted(memory_subjects(params))
     if kind == "motion":
         from immich_memories.processing.editorial_live_render import (
             FRAME_QUANTIZATION,
@@ -221,6 +226,11 @@ def _destination(output_dir: Path, facts: Mapping[str, Any]) -> Path:
     return _scratch() / f"prepared_{uuid.uuid4().hex[:16]}{facts['suffix']}"
 
 
+# Not stored with a banked picture: the path is the bank's own, and the faces a
+# video crop frames are read for each run (a picture's move is already baked in).
+_UNBANKED_ASSEMBLY_FIELDS = frozenset({"path", "known_faces"})
+
+
 def _facts(kind: Kind, fresh: AssemblyClip, output_dir: Path) -> dict[str, Any] | None:
     if not fresh.path.is_file():
         return None
@@ -234,7 +244,7 @@ def _facts(kind: Kind, fresh: AssemblyClip, output_dir: Path) -> dict[str, Any] 
         facts["assembly"] = {
             field.name: getattr(fresh, field.name)
             for field in dataclasses.fields(AssemblyClip)
-            if field.name != "path"
+            if field.name not in _UNBANKED_ASSEMBLY_FIELDS
         }
     return facts
 

@@ -7,6 +7,8 @@ import subprocess
 from collections.abc import Callable
 from pathlib import Path
 
+from immich_memories.analysis.framing_target import framing_centre
+from immich_memories.analysis.subject_framing import FaceBox
 from immich_memories.processing.assembly_config import (
     AssemblyClip,
     AssemblySettings,
@@ -34,7 +36,10 @@ from immich_memories.processing.hdr_utilities import (
     get_hdr_conversion_filter,
 )
 from immich_memories.processing.probe_cache import ProbeCache
-from immich_memories.processing.scaling_utilities import _get_smart_crop_filter
+from immich_memories.processing.scaling_utilities import (
+    _get_smart_crop_filter,
+    smart_crop_window,
+)
 from immich_memories.security import validate_video_path
 
 logger = logging.getLogger(__name__)
@@ -134,13 +139,13 @@ class ClipEncoder:
         self,
         settings: AssemblySettings,
         prober: FFmpegProber,
-        face_center_fn: Callable[[Path], tuple[float, float] | None],
+        detect_faces: Callable[[Path], tuple[FaceBox, ...]],
         *,
         default_resolution: tuple[int, int] = (1920, 1080),
     ) -> None:
         self.settings = settings
         self.prober = prober
-        self.face_center_fn = face_center_fn
+        self.detect_faces = detect_faces
         self.default_resolution = default_resolution
 
     def resolve_encode_resolution(
@@ -276,6 +281,30 @@ class ClipEncoder:
             raise RuntimeError(f"Failed to encode clip: {result.stderr[-500:]}")
         return effective_plan
 
+    def smart_zoom_crop(self, clip: AssemblyClip, target_w: int, target_h: int) -> str | None:
+        """The crop that frames the clip's subject and keeps its other faces; None without a face.
+
+        When Immich names the film's subjects on this clip, their faces lead.
+        Otherwise a detector reads the clip itself, and the largest face it finds
+        leads: it sees faces, not people.
+        """
+        known = clip.known_faces
+        if known.subject_ids:
+            faces, subjects = known.faces, known.subject_ids
+        else:
+            faces, subjects = self.detect_faces(clip.path), frozenset()
+        if not faces:
+            logger.debug(f"No face detected in {clip.path.name}, using blur background")
+            return None
+        clip_res = self.prober.get_video_resolution(clip.path)
+        if not clip_res:
+            return None
+        src_w, src_h = clip_res
+        window = smart_crop_window(src_w, src_h, target_w, target_h)
+        centre_x, centre_y = framing_centre(faces, subjects, window)
+        logger.info(f"Smart zoom: cropping centred at ({centre_x:.2f}, {centre_y:.2f})")
+        return _get_smart_crop_filter(src_w, src_h, target_w, target_h, centre_x, centre_y)
+
     def _build_single_clip_filter(
         self,
         clip: AssemblyClip,
@@ -297,25 +326,11 @@ class ClipEncoder:
         use_smart_zoom = self.settings.scale_mode == "smart_zoom" and not clip.is_title_screen
 
         if use_smart_zoom:
-            face_center = self.face_center_fn(clip.path)
-            if face_center:
-                clip_res = self.prober.get_video_resolution(clip.path)
-                if clip_res:
-                    src_w, src_h = clip_res
-                    crop_filter = _get_smart_crop_filter(
-                        src_w, src_h, target_w, target_h, face_center[0], face_center[1]
-                    )
-                    video_filter = f"{rotation_filter}{privacy_filter}setpts=PTS-STARTPTS,{crop_filter},{common_suffix}"
-                    logger.info(
-                        f"Smart zoom: cropping centered on face "
-                        f"at ({face_center[0]:.2f}, {face_center[1]:.2f})"
-                    )
-                    return f"[0:v]{video_filter}[vout];{audio_filter}"
-                else:
-                    use_blur = True
-            else:
-                logger.debug(f"No face detected in {clip.path.name}, using blur background")
-                use_blur = True
+            crop_filter = self.smart_zoom_crop(clip, target_w, target_h)
+            if crop_filter is not None:
+                video_filter = f"{rotation_filter}{privacy_filter}setpts=PTS-STARTPTS,{crop_filter},{common_suffix}"
+                return f"[0:v]{video_filter}[vout];{audio_filter}"
+            use_blur = True
 
         if use_blur:
             return (

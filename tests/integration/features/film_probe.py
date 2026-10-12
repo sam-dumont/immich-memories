@@ -151,3 +151,22 @@ def warm_side(path: Path, at_seconds: float | None = None, *, band: str = "iw:ih
     left = [w for index, w in enumerate(warmth) if index % 64 < 32]
     right = [w for index, w in enumerate(warmth) if index % 64 >= 32]
     return (sum(left) - sum(right)) / len(left)
+
+
+def luma_percentile(path: Path, at_seconds: float, percent: float) -> float:
+    """The luma code (8-bit) that `percent` % of the frame at `at_seconds` stays at or under.
+
+    A decoded frame's single brightest pixel is no measure of the picture's range: lossy
+    coding rings at a hard white edge, so a source held at 235 decodes a few codes above
+    it there. A high percentile reads where the picture itself sits.
+    """
+    import numpy as np
+
+    plane = subprocess.run(  # noqa: S603 -- fixed ffmpeg argv
+        ["ffmpeg", "-v", "error", "-ss", f"{at_seconds:.3f}", "-i", str(path), "-frames:v", "1"]
+        + ["-vf", "extractplanes=y", "-f", "rawvideo", "-pix_fmt", "gray", "-"],
+        capture_output=True,
+        check=True,
+    ).stdout
+    assert plane, f"no frame at {at_seconds}s in {path.name}"
+    return float(np.percentile(np.frombuffer(plane, np.uint8), percent))

@@ -12,6 +12,7 @@ from enum import StrEnum
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from immich_memories.analysis.framing_target import PictureFaces
 from immich_memories.processing.encoding_plan import EncodingPlan, HdrTransfer, OutputCodec
 from immich_memories.processing.map_move_timing import MapMoveTiming
 
@@ -219,6 +220,9 @@ class AssemblyClip:
     # None uses the original EXIF place; "" explicitly hides a familiar place.
     # Kept separate so maps retain their real location names and coordinates.
     caption_location_name: str | None = None
+    # Immich's faces on the source and which belong to the film's subjects; the
+    # smart-zoom crop centres on those people instead of whoever a detector finds.
+    known_faces: PictureFaces = PictureFaces()
 
 
 def _get_rotation_filter(rotation: int) -> str:

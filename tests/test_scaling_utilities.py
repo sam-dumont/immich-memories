@@ -288,11 +288,12 @@ class TestDetectFacesOpenCV:
     """The OpenCV fallback detector, run on real photographs."""
 
     def test_faces_are_found_and_normalised(self):
-        """A picnic with four people yields centres inside the 0-1 frame."""
-        centres = _detect_faces_opencv(FACE_PHOTO)
+        """A picnic with four people yields boxes inside the 0-1 frame, nobody named."""
+        boxes = _detect_faces_opencv(FACE_PHOTO)
 
-        assert centres != []
-        assert all(0.0 <= x <= 1.0 and 0.0 <= y <= 1.0 for x, y in centres)
+        assert boxes != []
+        assert all(0.0 <= b.x1 < b.x2 <= 1.0 and 0.0 <= b.y1 < b.y2 <= 1.0 for b in boxes)
+        assert all(b.person_id is None for b in boxes)
 
     @pytest.mark.parametrize("photo", FACELESS_LIBRARY, ids=lambda p: p.stem)
     def test_a_photo_without_a_face_yields_nothing(self, photo):

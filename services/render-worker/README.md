@@ -180,7 +180,8 @@ soundtrack belongs to the submitting app, which is why the result carries
 
 Clips also carry `rotation_override`, `has_music` and `llm_emotion`.
 The `titles` object accepts the full title configuration; `memory` accepts
-`person_name` and `preset_params`. `options` carries `scale_mode`, date/place
+`person_name`, `memory_people` (every person a film is about; the photo pan and
+smart crop frame them) and `preset_params`. `options` carries `scale_mode`, date/place
 overlays, `privacy_mode` and `photo_duration`. These preserve the submitted film
 and source-audio decisions when the worker rebuilds generation parameters.
 
