@@ -807,7 +807,9 @@ jobs:
 
   docker-smoke:
     name: Smoke Test Docker Image
-    if: github.repository_id == '1174219883'
+    if: >-
+      github.repository_id == '1174219883' && !cancelled() &&
+      needs.analyze.result == 'success' && needs.docker-build.result == 'success'
     needs: [analyze, docker-build]
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -917,7 +919,11 @@ jobs:
     name: Package matching deployment manifests
     # Packaged here, attached by `release`: there is no GitHub Release to attach to yet.
     needs: [analyze, package, docker-manifest, inference-manifest]
-    if: github.repository_id == '1174219883' && (needs.analyze.outputs.should_release == 'true' && !inputs.dry_run)
+    if: >-
+      github.repository_id == '1174219883' && !cancelled() &&
+      needs.analyze.outputs.should_release == 'true' && !inputs.dry_run &&
+      needs.package.result == 'success' && needs.docker-manifest.result == 'success' &&
+      needs.inference-manifest.result == 'success'
     runs-on: ubuntu-24.04
     permissions:
       contents: read
