@@ -20,6 +20,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from immich_memories.processing.preparation_fallbacks import note_fallback
+
 if TYPE_CHECKING:
     import numpy as np
     from PIL import Image as PILImage
@@ -406,6 +408,7 @@ def _convert_heif(
             )
         except (ValueError, OSError) as e:
             logger.warning(f"Gain map extraction failed, falling back to SDR: {e}")
+            note_fallback("photo rendered in SDR: its gain map could not be read")
 
     out_path = work_dir / f"{source_path.stem}_converted.jpg"
 
@@ -484,6 +487,7 @@ def _apply_hdr_gain_map(
     except ImportError:
         # Fallback: save SDR JPEG if cv2 not available
         logger.warning("cv2 not available — falling back to SDR JPEG (gain map not applied)")
+        note_fallback("photo rendered in SDR: OpenCV is not installed")
         out_path = work_dir / f"{source_path.stem}_converted.jpg"
         sdr_img.save(out_path, "JPEG", quality=95)
         return PreparedPhoto(path=out_path, width=w, height=h, has_gain_map=True)

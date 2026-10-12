@@ -11,11 +11,13 @@ from typing import TYPE_CHECKING
 
 from immich_memories.generate_privacy import clip_location_name
 from immich_memories.processing.assembly_config import AssemblyClip
+from immich_memories.processing.preparation_fallbacks import note_fallback
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
 
     from immich_memories.analysis.editorial_planner import EditorialSelection
+    from immich_memories.cache.prepared_source_bank import PreparedSourceBank
     from immich_memories.cache.video_cache import CacheBatch
     from immich_memories.generate import GenerationParams
     from immich_memories.processing.download_coordinator import (
@@ -219,6 +221,7 @@ class _Extraction:
     prefetched: dict[str, DownloadResult] | None
     probe_cache: ProbeCache | None
     report: Callable[[str, float, str], None]
+    prepared_sources: PreparedSourceBank | None = None
 
 
 def _rendered_photo(extraction: _Extraction, clip, directive: EditorialSelection | None):
@@ -269,8 +272,18 @@ def _extracted_segment(extraction: _Extraction, clip, video_path: Path, progress
             if extraction.probe_cache is not None
             else probe_file_duration(segment_path)
         )
-        duration = min(actual_duration, nominal_duration) if actual_duration else nominal_duration
+        if actual_duration:
+            duration = min(actual_duration, nominal_duration)
+        else:
+            note_fallback("segment timed by its request: ffprobe could not measure it")
+            duration = nominal_duration
 
+    return _segment_clip(extraction, clip, segment_path, duration)
+
+
+def _segment_clip(extraction: _Extraction, clip, segment_path: Path, duration: float):
+    """Label a prepared segment with this run's view of it: date, place, rotation, mood."""
+    params = extraction.params
     exif = clip.asset.exif_info
     directive = extraction.directives.get(clip.asset.id)
     return AssemblyClip(
@@ -287,7 +300,43 @@ def _extracted_segment(extraction: _Extraction, clip, video_path: Path, progress
     )
 
 
-def _rendered_clip(extraction: _Extraction, clip, progress: float, name: str):
+def _rendered_clip(
+    extraction: _Extraction,
+    clip,
+    progress: float,
+    name: str,
+    *,
+    sources: Callable[[], dict[str, DownloadResult]] | None = None,
+):
+    """Reuse this source's banked preparation, or prepare it and bank the result (#2032).
+
+    ``sources`` downloads the clip's media only when it has to be prepared: a reused
+    source costs no request to Immich.
+    """
+
+    def prepare():
+        resolved = extraction if sources is None else replace(extraction, prefetched=sources())
+        return _prepared_clip(resolved, clip, progress, name)
+
+    bank = extraction.prepared_sources
+    if bank is None:
+        return prepare()
+    from immich_memories.generate_prepared_sources import PreparationRequest, reuse_or_prepare
+
+    return reuse_or_prepare(
+        bank,
+        PreparationRequest(
+            extraction.params,
+            clip,
+            extraction.directives.get(clip.asset.id),
+            extraction.output_dir,
+        ),
+        prepare=prepare,
+        dress=lambda path, duration: _segment_clip(extraction, clip, path, duration),
+    )
+
+
+def _prepared_clip(extraction: _Extraction, clip, progress: float, name: str):
     """Render one selected source as the directive demands, or report nothing usable."""
     from immich_memories.api.models import AssetType
 
@@ -328,7 +377,9 @@ def _rendered_clip(extraction: _Extraction, clip, progress: float, name: str):
     return _extracted_segment(extraction, clip, video_path, progress, name)
 
 
-def _prepare_in_workers(params, video_cache, output_dir, directives, coordinator, report):
+def _prepare_in_workers(
+    params, video_cache, output_dir, directives, coordinator, report, prepared_sources
+):
     from immich_memories.processing.memory_budget import source_prepare_workers
     from immich_memories.processing.output_canvas import resolve_generation_canvas
     from immich_memories.processing.probe_cache import ProbeCache
@@ -350,13 +401,22 @@ def _prepare_in_workers(params, video_cache, output_dir, directives, coordinator
             video_cache,
             work_dir,
             directives,
-            coordinator.sources_for(client, _prefetch_assets([clip], directives)),
+            None,
             ProbeCache(),
             lambda *_args: None,
+            prepared_sources,
         )
         name = clip.asset.original_file_name or clip.asset.id[:8]
         try:
-            return _rendered_clip(extraction, clip, 0.0, name)
+            return _rendered_clip(
+                extraction,
+                clip,
+                0.0,
+                name,
+                sources=lambda: coordinator.sources_for(
+                    client, _prefetch_assets([clip], directives)
+                ),
+            )
         except (OSError, subprocess.SubprocessError, RuntimeError, ValueError) as exc:
             if clip.editorial_live_manifest is not None:
                 raise
@@ -385,8 +445,13 @@ def extract_clips(
     *,
     download_coordinator: DownloadCoordinator | None = None,
     probe_cache: ProbeCache | None = None,
+    prepared_sources: PreparedSourceBank | None = None,
 ) -> list[AssemblyClip]:
-    """Download videos and extract clip segments. Renders IMAGE clips as photo animations."""
+    """Download videos and extract clip segments. Renders IMAGE clips as photo animations.
+
+    With ``prepared_sources``, a source an earlier run prepared to the same recipe is
+    reused instead of downloaded and prepared again.
+    """
 
     def _report(phase: str, progress: float, msg: str) -> None:
         if params.progress_callback:
@@ -398,10 +463,23 @@ def extract_clips(
     prefetched: dict[str, DownloadResult] | None = None
     if download_coordinator is not None:
         return _prepare_in_workers(
-            params, video_cache, output_dir, directives, download_coordinator, _report
+            params,
+            video_cache,
+            output_dir,
+            directives,
+            download_coordinator,
+            _report,
+            prepared_sources,
         )
     extraction = _Extraction(
-        params, video_cache, output_dir, directives, prefetched, probe_cache, _report
+        params,
+        video_cache,
+        output_dir,
+        directives,
+        prefetched,
+        probe_cache,
+        _report,
+        prepared_sources,
     )
 
     for i, clip in enumerate(params.clips):

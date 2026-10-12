@@ -30,6 +30,7 @@ from immich_memories.processing.hdr_utilities import (
     get_colorspace_filter,
     get_hdr_conversion_filter,
 )
+from immich_memories.processing.preparation_fallbacks import note_fallback
 from immich_memories.security import private_temp_dir, validate_video_path
 
 logger = logging.getLogger(__name__)
@@ -358,6 +359,7 @@ class ClipExtractor:
                 "Hardware encoding failed (%s); falling back to software",
                 stderr.strip()[-200:],
             )
+            note_fallback("clip re-encoded in software: the hardware encoder failed")
             self._extract_with_reencode(segment, output_path, progress_callback, use_hw_accel=False)
             return
         raise RuntimeError(f"Failed to extract clip: {ffmpeg_error_excerpt(stderr)}")
@@ -429,6 +431,7 @@ class ClipExtractor:
                 # If hardware encoding failed, retry with software
                 if hw_caps and hw_caps.has_encoding:
                     logger.warning("Hardware encoding failed, falling back to software")
+                    note_fallback("clip re-encoded in software: the hardware encoder failed")
                     return self._extract_with_reencode(
                         segment, output_path, progress_callback, use_hw_accel=False
                     )

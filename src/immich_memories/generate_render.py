@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import inspect
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, TypeVar, cast
@@ -40,6 +40,7 @@ from immich_memories.tracking.timed import timed
 from immich_memories.tracking.timing import span
 
 if TYPE_CHECKING:
+    from immich_memories.cache.prepared_source_bank import PreparedSourceBank
     from immich_memories.config_loader import Config
     from immich_memories.generate import GenerationParams, PreparedGeneration
     from immich_memories.tracking import RunTracker
@@ -89,9 +90,10 @@ def _call_with_optional_probe_cache(
     callable_under_test: Callable[..., _CallResult],
     *args: object,
     probe_cache: ProbeCache,
+    optional: Mapping[str, object] | None = None,
     **kwargs: object,
 ) -> _CallResult:
-    """Pass run-scoped probing only through extension callables that accept it."""
+    """Pass run-scoped probing (and any ``optional`` keyword) only to callables that accept it."""
     signature_target = getattr(callable_under_test, "side_effect", None)
     if not callable(signature_target):
         signature_target = callable_under_test
@@ -100,12 +102,12 @@ def _call_with_optional_probe_cache(
         parameters = inspect.signature(signature_target).parameters.values()
     except (TypeError, ValueError):
         parameters = ()
-    accepts_probe_cache = any(
-        parameter.name == "probe_cache" or parameter.kind is inspect.Parameter.VAR_KEYWORD
-        for parameter in parameters
-    )
-    if accepts_probe_cache:
-        kwargs["probe_cache"] = probe_cache
+    parameters = tuple(parameters)
+    takes_any = any(parameter.kind is inspect.Parameter.VAR_KEYWORD for parameter in parameters)
+    names = {parameter.name for parameter in parameters}
+    for name, value in {"probe_cache": probe_cache, **(optional or {})}.items():
+        if takes_any or name in names:
+            kwargs[name] = value
     return callable_under_test(*args, **kwargs)
 
 
@@ -143,9 +145,11 @@ def _extract_clips_with_optional_prefetch(
     output_dir: Path,
     *,
     probe_cache: ProbeCache,
+    prepared_sources: PreparedSourceBank | None = None,
 ) -> list:
     """Keep the legacy extraction call shape when prefetch is unavailable."""
     coordinator = _build_download_coordinator(params, cache_batch, output_dir)
+    reuse = {"prepared_sources": prepared_sources}
     if coordinator is None:
         return _call_with_optional_probe_cache(
             extract_clips,
@@ -153,6 +157,7 @@ def _extract_clips_with_optional_prefetch(
             cache_batch,
             output_dir,
             probe_cache=probe_cache,
+            optional=reuse,
         )
     return _call_with_optional_probe_cache(
         extract_clips,
@@ -161,7 +166,46 @@ def _extract_clips_with_optional_prefetch(
         output_dir,
         download_coordinator=coordinator,
         probe_cache=probe_cache,
+        optional=reuse,
     )
+
+
+def _prepared_source_bank(config: Config) -> PreparedSourceBank | None:
+    """The bank of earlier runs' prepared sources, when caching is on (#2032).
+
+    It follows `cache.video_cache_enabled`: someone who keeps no downloaded videos
+    on disk gets no prepared ones either.
+    """
+    from immich_memories.cache.prepared_source_bank import PreparedSourceBank
+
+    budget_gb = config.analysis.prepared_source_cache_max_size_gb
+    if not config.cache.video_cache_enabled or budget_gb <= 0:
+        return None
+    try:
+        bank = PreparedSourceBank(
+            config.cache.cache_path / "prepared-sources",
+            max_bytes=int(budget_gb * 1_073_741_824),
+        )
+        bank.begin_run()
+    except OSError as exc:
+        logger.warning("Prepared sources will not be reused this run: %s", exc)
+        return None
+    return bank
+
+
+def _close_prepared_source_bank(bank: PreparedSourceBank | None, sources: int) -> None:
+    if bank is None:
+        return
+    logger.info(
+        "Prepared sources: %d reused from earlier runs, %d newly banked, of %d",
+        bank.taken,
+        bank.kept,
+        sources,
+    )
+    try:
+        bank.enforce_budget()
+    except OSError:
+        logger.debug("Prepared-source eviction failed", exc_info=True)
 
 
 def _emit_download_phase(
@@ -208,12 +252,20 @@ def _extracted_sources(
         max_size_gb=params.config.cache.video_cache_max_size_gb,
         max_age_days=params.config.cache.video_cache_max_age_days,
     )
+    bank = _prepared_source_bank(params.config)
     # One cache lifecycle owns all persistent-cache downloads for this
     # generation. It scans once, then evicts from the manifest on exit.
-    with video_cache.begin_batch() as cache_batch:
-        return _extract_clips_with_optional_prefetch(
-            params, cache_batch, run_output_dir, probe_cache=probe_cache
-        )
+    try:
+        with video_cache.begin_batch() as cache_batch:
+            return _extract_clips_with_optional_prefetch(
+                params,
+                cache_batch,
+                run_output_dir,
+                probe_cache=probe_cache,
+                prepared_sources=bank,
+            )
+    finally:
+        _close_prepared_source_bank(bank, len(params.clips))
 
 
 def _anonymized_params(params: GenerationParams) -> GenerationParams:

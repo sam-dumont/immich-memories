@@ -12,6 +12,7 @@ import httpx
 
 from immich_memories.api.asset_service import large_original_size
 from immich_memories.api.immich import ImmichAPIError
+from immich_memories.processing.preparation_fallbacks import note_fallback
 from immich_memories.security import sanitize_error_message
 
 if TYPE_CHECKING:
@@ -128,8 +129,11 @@ def _download_and_merge_burst(
         clip_paths, trim_points = _prefetched_burst_subset(
             prefetched_burst_results, burst_ids, trim_points
         )
+    if 0 < len(clip_paths) < len(burst_ids):
+        note_fallback("burst merged without the components that failed to download")
 
     if not clip_paths:
+        note_fallback("burst replaced by its companion video: no component downloaded")
         return _download_fallback(client, video_cache, clip.asset, output_dir)
 
     merged = _try_merge_burst(
@@ -140,7 +144,10 @@ def _download_and_merge_burst(
         hardware_enabled=hardware_enabled,
         config=config,
     )
-    return merged or _download_fallback(client, video_cache, clip.asset, output_dir)
+    if merged is not None:
+        return merged
+    note_fallback("burst replaced by its companion video: the merge failed")
+    return _download_fallback(client, video_cache, clip.asset, output_dir)
 
 
 def _certified_burst_sources(
@@ -339,6 +346,8 @@ def _try_merge_burst(
     )
     if not valid_paths:
         return None
+    if len(valid_paths) < len(clip_paths):
+        note_fallback("burst merged without the components ffprobe could not read")
 
     # Spectrogram alignment for sample-accurate audio + frame-accurate video
     audio_trims = None
@@ -374,6 +383,7 @@ def _try_merge_burst(
             valid_trims = video_trims  # Use frame-aligned trims for video
         except Exception as e:  # WHY: alignment only refines trims the burst already has
             logger.warning(f"Spectrogram alignment failed, using timestamp trims: {e}")
+            note_fallback("burst aligned on timestamps: spectrogram alignment failed")
             audio_trims = None
 
     cmd = build_merge_command(

@@ -492,6 +492,12 @@ the `OperationalPhase` lifecycle end to end (there is no `GenerationPipeline` cl
 these helper modules:
 - `generate_downloads.py`: parallel asset downloads
 - `generate_clips.py`: clip extraction, probing, cleanup
+- `generate_prepared_sources.py`: the strict recipe key (source identity, window, tier, output,
+  hardware, canvas, app and recipe version) under which `generate_clips.py` reuses a source an
+  earlier run prepared, before any download (#2032). A preparation that took a fallback
+  (companion instead of a burst merge, missing components, timestamp trims, software after a
+  failed hardware encode, SDR for an unreadable gain map) says so through
+  `processing/preparation_fallbacks.py` where it decides, and is never banked
 - `generate_photos.py`: photo rendering, budget allocation, clip merging
 - `generate_music.py`: music resolution, AI generation, audio mixing
 - `generate_privacy.py`: GPS anonymization, fake names/cities, trip titles
@@ -985,6 +991,8 @@ src/immich_memories/
 │   ├── thumbnail_cache.py      # File-based thumbnails; web filenames bind bytes to an account-set fingerprint
 │   ├── thumbnail_sizes.py      # The sizes the grid and avatars ask for, and the downscale to them
 │   ├── disk_budget.py          # LRU-by-mtime eviction that holds a cache directory to a size cap
+│   ├── prepared_source_bank.py # PreparedSourceBank: prepared sources by key, digest-verified, hard-linked
+│   │                           # into the run, capped by disk_budget (`<cache>/prepared-sources`)
 │   └── video_cache.py          # Downloaded video file cache
 │
 ├── store/                      # Repositories over the store's annotation tables: every banked fact and reading
