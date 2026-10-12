@@ -346,3 +346,35 @@ class TestTheAuthMiddlewareKnowsAboutHeadlessCallers:
 
         assert response.status_code == 404
         assert response.json()["detail"] == "trigger API is not enabled"
+
+
+def test_an_accepted_trigger_runs_even_when_its_request_loop_shuts_down_at_once():
+    """The decision's thread starts in the handler, not on a later turn of the event loop.
+
+    A loop that shut down right after answering cancelled the task before its first turn, so
+    the thread never started: the attempt stayed `running` and kept the automation lease.
+    """
+    import asyncio
+    import threading
+    from types import SimpleNamespace
+
+    from immich_memories.web import trigger
+
+    ran = threading.Event()
+
+    class Started:
+        def execute(self):
+            ran.set()
+            return SimpleNamespace(outcome=SimpleNamespace(value="completed"), reason="test")
+
+    async def answer_then_shut_down() -> None:
+        trigger._submit_to_background(Started())  # type: ignore[arg-type]
+        # What a closing loop does to every task that has not run yet.
+        for task in asyncio.all_tasks():
+            if task is not asyncio.current_task():
+                task.cancel()
+        await asyncio.sleep(0)
+
+    asyncio.run(answer_then_shut_down())
+
+    assert ran.wait(5)
