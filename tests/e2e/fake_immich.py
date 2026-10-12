@@ -17,6 +17,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any, Self
 from urllib.parse import parse_qs, urlsplit
+from zoneinfo import ZoneInfo
 
 from tests.e2e.fake_library import (
     ALL_PICTURES,
@@ -89,6 +90,11 @@ def _partner_person_payload(person_id: str, name: str, born: str | None) -> dict
 
 # The key under which a photo's edited render is served, beside its untouched original.
 EDITED = "#edited"
+# The edit the owner made in Immich's editor, as its edits endpoint takes one, and the same
+# transform in FFmpeg. Immich's editor crops, rotates and mirrors, nothing else: a fixture edit
+# it could not make (an earlier black-and-white one) proved nothing about a real server.
+IMMICH_EDIT = {"action": "rotate", "parameters": {"angle": 180}}
+_EDIT_FILTER = ",hflip,vflip"
 
 
 def _photo_size(picture: Picture) -> tuple[int, int]:
@@ -96,6 +102,17 @@ def _photo_size(picture: Picture) -> tuple[int, int]:
         return picture.size
     width, height = _PHOTO_SIZE
     return (height, width) if picture.portrait else (width, height)
+
+
+def _local_stamp(picture: Picture) -> str:
+    """The picture's `localDateTime` as Immich serves it: the wall clock where it was taken.
+
+    Immich finds the time zone from the GPS (`Place.zone`) and writes that local time with a
+    `Z`, whatever offset the file carries; a picture with no place keeps its UTC clock.
+    """
+    zone = ZoneInfo(picture.place.zone if picture.place is not None else "UTC")
+    local = datetime.fromisoformat(picture.taken_at.replace("Z", "+00:00")).astimezone(zone)
+    return local.replace(tzinfo=None).isoformat(timespec="milliseconds") + "Z"
 
 
 def _asset_payload(picture: Picture, owner: str = "fake-user") -> dict[str, Any]:
@@ -113,7 +130,7 @@ def _asset_payload(picture: Picture, owner: str = "fake-user") -> dict[str, Any]
         "thumbhash": None,
         "fileCreatedAt": picture.taken_at,
         "fileModifiedAt": picture.taken_at,
-        "localDateTime": picture.taken_at,
+        "localDateTime": _local_stamp(picture),
         "updatedAt": picture.taken_at,
         "isFavorite": picture.is_favorite,
         "isEdited": picture.edited,
@@ -144,7 +161,8 @@ TIMELINE_ASSETS = tuple(
     _asset_payload(picture) for picture in _VIDEOS if picture.asset_id in _PRIMARY_IDS
 ) + tuple(_asset_payload(picture) for picture in _PHOTOS if picture.asset_id in _PRIMARY_IDS)
 # A Live Photo's companion clip: a video Immich links from its still and hides from the
-# timeline and from search (v3 `visibility: hidden`), readable by id.
+# timeline (`visibility: hidden`), readable by id. v2's metadata search leaves it out; v3's
+# returns it unless the search names a visibility.
 _LIVE = tuple(picture for picture in ALL_PICTURES if picture.live_video_id)
 
 
@@ -157,7 +175,7 @@ def _companion_payload(still: Picture) -> dict[str, Any]:
         "originalFileName": still.filename.replace(".HEIC", ".MOV"),
         "originalMimeType": "video/quicktime",
         "fileCreatedAt": stamp,
-        "localDateTime": stamp,
+        "localDateTime": _local_stamp(still),
         "duration": int(LIVE_CLIP_SECONDS * 1000),
         "width": _VIDEO_SIZE[0],
         "height": _VIDEO_SIZE[1],
@@ -169,21 +187,28 @@ def _companion_payload(still: Picture) -> dict[str, Any]:
 
 COMPANION_ASSETS = tuple(_companion_payload(picture) for picture in _LIVE)
 
-# What the partner key reads: its own pictures, which the primary key never sees.
-PARTNER_ASSETS = tuple(_asset_payload(picture, PARTNER_USER_ID) for picture in PARTNER_PICTURES)
+# What the partner key reads: its own pictures, which the primary key never sees. The partner's
+# own people are recognised on them: Immich lists a person only once a face is theirs.
+PARTNER_ASSETS = tuple(
+    _asset_payload(picture, PARTNER_USER_ID)
+    | {"people": [_partner_person_payload(*person) for person in PARTNER_PEOPLE]}
+    for picture in PARTNER_PICTURES
+)
 
 # One album, the lake week as a family would file it: every picture taken at the lake.
 ALBUM_ID = "album-lake-week"
 ALBUM_ASSETS = frozenset(
     asset["id"] for asset in TIMELINE_ASSETS if asset["exifInfo"]["city"] == "Annecy"
 )
+# Immich dates an album by the local days of the first and the last picture it holds.
+_ALBUM_DAYS = sorted(a["localDateTime"][:10] for a in TIMELINE_ASSETS if a["id"] in ALBUM_ASSETS)
 ALBUMS = (
     {
         "id": ALBUM_ID,
         "albumName": "The lake week",
         "assetCount": len(ALBUM_ASSETS),
-        "startDate": "2024-06-21T00:00:00.000Z",
-        "endDate": "2024-06-27T00:00:00.000Z",
+        "startDate": f"{_ALBUM_DAYS[0]}T00:00:00.000Z",
+        "endDate": f"{_ALBUM_DAYS[-1]}T00:00:00.000Z",
     },
 )
 
@@ -208,6 +233,22 @@ def _reverse_geocode(query: dict[str, list[str]]) -> list[dict[str, Any]]:
     ][:1]
 
 
+def _as_served(asset: dict[str, Any], major: int) -> dict[str, Any]:
+    """An asset as an Immich of this major writes it.
+
+    v3 gives a duration in milliseconds (none for a photo); v2 writes it as text, "0:00:04.000000"
+    for a video and "0:00:00.00000" for a photo.
+    """
+    if major != 2 or "duration" not in asset:
+        return asset
+    millis = asset["duration"]
+    if millis is None:
+        return asset | {"duration": "0:00:00.00000"}
+    minutes, seconds = divmod(millis / 1000, 60)
+    hours, minutes = divmod(int(minutes), 60)
+    return asset | {"duration": f"{hours}:{minutes:02d}:{seconds:09.6f}"}
+
+
 def _instant(stamp: str | None) -> datetime | None:
     return None if stamp is None else datetime.fromisoformat(stamp.replace("Z", "+00:00"))
 
@@ -217,9 +258,9 @@ def _held(partner: bool) -> tuple[dict[str, Any], ...]:
     return PARTNER_ASSETS if partner else TIMELINE_ASSETS
 
 
-def _month_of(taken_at: str) -> str:
-    """The MONTH bucket an asset falls in, in the form Immich returns."""
-    return f"{taken_at[:7]}-01T00:00:00.000Z"
+def _month_of(asset: dict[str, Any]) -> str:
+    """The month bucket an asset falls in, by its local date, in the form Immich returns."""
+    return f"{asset['localDateTime'][:7]}-01"
 
 
 def _assets_for_query(
@@ -231,7 +272,7 @@ def _assets_for_query(
         asset
         for asset in held
         if (requested_type is None or asset["type"] == requested_type)
-        and (requested_bucket is None or _month_of(asset["fileCreatedAt"]) == requested_bucket)
+        and (requested_bucket is None or _month_of(asset) == requested_bucket[:10])
     ]
 
 
@@ -241,7 +282,7 @@ def _buckets_for_query(
     """One MONTH bucket per month that holds a matching asset, newest first like Immich."""
     counts: dict[str, int] = {}
     for asset in _assets_for_query({k: v for k, v in query.items() if k != "timeBucket"}, held):
-        month = _month_of(asset["fileCreatedAt"])
+        month = _month_of(asset)
         counts[month] = counts.get(month, 0) + 1
     return [
         {"count": count, "timeBucket": month}
@@ -421,8 +462,7 @@ class FakeImmichServer:
         else:
             media_dir = root / "media"
             media_dir.mkdir(exist_ok=True)
-            video_paths = _generate_videos(media_dir) | _generate_live_clips(media_dir)
-            photo_paths = _generate_photos(media_dir)
+            video_paths, photo_paths = generate_media(media_dir)
             thumbnail_paths = _generate_thumbnails(media_dir, video_paths | photo_paths)
         if held:
             held_dir = root / "held-media"
@@ -502,6 +542,17 @@ def _ffmpeg(*args: str) -> None:
     )
 
 
+def generate_media(media_dir: Path) -> tuple[dict[str, Path], dict[str, Path]]:
+    """Every file the service serves, by asset id: (videos and Live clips, photos).
+
+    The real-Immich feature pass uploads these same files, so both servers hold one library.
+    """
+    media_dir.mkdir(parents=True, exist_ok=True)
+    return _generate_videos(media_dir) | _generate_live_clips(media_dir), _generate_photos(
+        media_dir
+    )
+
+
 def _generate_live_clips(media_dir: Path) -> dict[str, Path]:
     """Each Live Photo's companion clip, made from its own still.
 
@@ -561,10 +612,10 @@ def _live_recording(source: Path, path: Path, seconds: float, *, moving: bool = 
     graph = (
         f"{prepared};[a]crop={width}:{height // 2}:x='t*{_LIVE_SLIDE}':y=0[top];"
         f"[b]crop={width}:{height // 2}:x='{wide - width}-t*{_LIVE_SLIDE}':y={height // 2}[bottom];"
-        "[top][bottom]vstack[v]"
+        "[top][bottom]vstack,setsar=1[v]"
         if moving
         else f"[0:v]scale={width}:{height}:force_original_aspect_ratio=increase,"
-        f"crop={width}:{height},scale=in_range=full:out_range=tv,format=yuv420p[v]"
+        f"crop={width}:{height},scale=in_range=full:out_range=tv,format=yuv420p,setsar=1[v]"
     )
     _ffmpeg(
         "-loop", "1", "-framerate", "30", "-i", str(source),
@@ -612,8 +663,9 @@ def _generate_videos(media_dir: Path) -> dict[str, Path]:
                 f"crop={width}:{height}:"
                 f"x='(in_w-out_w)*t/{picture.seconds}',"
                 # WHY: a JPEG decodes full-range, and libx264 would then tag the
-                # clip yuvj420p -- which the production probe reads as unknown.
-                "scale=in_range=full:out_range=tv,format=yuv420p"
+                # clip yuvj420p -- which the production probe reads as unknown. Square
+                # pixels, as a phone records: a reader of the display size sees 1920x1080.
+                "scale=in_range=full:out_range=tv,format=yuv420p,setsar=1"
             ),
             "-c:v",
             "libx264",
@@ -645,8 +697,8 @@ def _generate_videos(media_dir: Path) -> dict[str, Path]:
 def _generate_photos(media_dir: Path) -> dict[str, Path]:
     """Serve each source photograph at the size its asset record advertises.
 
-    A photo edited in Immich's editor also gets its edited render: the same picture in black
-    and white, which Immich serves when asked for `edited=true`.
+    A photo edited in Immich's editor also gets its edited render: the same picture turned
+    upside down (`IMMICH_EDIT`), which Immich serves when asked for `edited=true`.
     """
     photos: dict[str, Path] = {}
     for picture in _PHOTOS:
@@ -655,7 +707,7 @@ def _generate_photos(media_dir: Path) -> dict[str, Path]:
             _add_gain_map(media_dir / f"{picture.asset_id}.jpg")
         if picture.edited:
             edited = media_dir / f"{picture.asset_id}.edited.jpg"
-            _write_photo(picture, edited, photos, picture.asset_id + EDITED, ",hue=s=0")
+            _write_photo(picture, edited, photos, picture.asset_id + EDITED, _EDIT_FILTER)
     return photos
 
 
@@ -782,6 +834,17 @@ def _handler_type(
     held_assets = tuple(_asset_payload(picture) for picture in held)
     by_id = _BY_ID | {picture.asset_id: picture for picture in held}
 
+    def searched(partner: bool, payload: dict[str, Any]) -> tuple[dict[str, Any], ...]:
+        """What a metadata search looks through: v3 adds the hidden Live clips, unless asked
+        for one visibility (the primary holds every Live Photo)."""
+        wanted = payload.get("visibility")
+        hidden = () if partner else COMPANION_ASSETS
+        if wanted is None:
+            return assets_of(partner) + (hidden if wire.major >= 3 else ())
+        if wanted == "hidden":
+            return hidden
+        return assets_of(partner) if wanted == "timeline" else ()
+
     def assets_of(partner: bool) -> tuple[dict[str, Any], ...]:
         return _held(partner) if partner else _held(partner) + held_assets
 
@@ -868,7 +931,8 @@ def _handler_type(
             if path.startswith("/api/people/") and path.endswith("/statistics"):
                 person_id = path.split("/")[-2]
                 if partner:
-                    self._send_json(200, {"assets": 120 if person_id.endswith("01") else 30})
+                    on = [a for a in PARTNER_ASSETS if person_id in {p["id"] for p in a["people"]}]
+                    self._send_json(200, {"assets": len(on)})
                     return
                 count = sum(
                     person_id == f"person-{name.lower()}"
@@ -890,7 +954,8 @@ def _handler_type(
                 self._send_json(200, _buckets_for_query(query, assets_of(partner)))
                 return
             if path == "/api/timeline/bucket":
-                self._send_json(200, _assets_for_query(query, assets_of(partner)))
+                assets = _assets_for_query(query, assets_of(partner))
+                self._send_json(200, [_as_served(asset, wire.major) for asset in assets])
                 return
             parts = path.removeprefix("/api/assets/").split("/")
             if path.startswith("/api/assets/") and len(parts) == 1:
@@ -901,7 +966,7 @@ def _handler_type(
                 )
                 found = found or uploaded_asset(parts[0])
                 if found is not None:
-                    self._send_json(200, found)
+                    self._send_json(200, _as_served(found, wire.major))
                     return
             if len(parts) == 2 and parts[1] == "ocr" and parts[0] in by_id:
                 # Immich answers 404 for an asset its OCR job read no text on.
@@ -971,7 +1036,7 @@ def _handler_type(
                 payload = self._read_json()
                 if self._refused(path, {}, payload):
                     return
-                items = _assets_for_search(payload, assets_of(partner), by_id)
+                items = _assets_for_search(payload, searched(partner, payload), by_id)
                 if wanted_tags := payload.get("tagIds"):
                     items = self._tagged(items, wanted_tags)
                 self._send_json(
@@ -980,7 +1045,7 @@ def _handler_type(
                         "assets": {
                             "total": len(items),
                             "count": len(items),
-                            "items": items,
+                            "items": [_as_served(item, wire.major) for item in items],
                             "nextPage": None,
                         }
                     },
@@ -992,7 +1057,8 @@ def _handler_type(
                 if self._refused(path, {}, payload):
                     return
                 self._send_json(
-                    200, {"total": len(_assets_for_search(payload, assets_of(partner), by_id))}
+                    200,
+                    {"total": len(_assets_for_search(payload, searched(partner, payload), by_id))},
                 )
                 return
             if path == "/api/assets" and not partner:

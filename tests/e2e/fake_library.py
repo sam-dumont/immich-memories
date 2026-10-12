@@ -30,16 +30,19 @@ class Place:
     longitude: float
     city: str
     country: str
+    # The time zone at these coordinates. Immich derives it from a picture's GPS and dates the
+    # picture's local time (`localDateTime`) in it, whatever offset the file was saved with.
+    zone: str = "UTC"
 
 
 # The fixture home is a public landmark, never a real address (owner's rule).
-HOME = Place(50.8417, 4.3624, "Brussels", "Belgium")
-WOODS = Place(50.7806, 4.4200, "Tervuren", "Belgium")
-ROAD = Place(47.3220, 5.0415, "Dijon", "France")
-LAKE = Place(45.8992, 6.1294, "Annecy", "France")
-TALLOIRES = Place(45.8410, 6.2120, "Talloires", "France")
-SEMNOZ = Place(45.7920, 6.1010, "Semnoz", "France")
-MENTHON = Place(45.8600, 6.2000, "Menthon-Saint-Bernard", "France")
+HOME = Place(50.8417, 4.3624, "Brussels", "Belgium", "Europe/Brussels")
+WOODS = Place(50.7806, 4.4200, "Tervuren", "Belgium", "Europe/Brussels")
+ROAD = Place(47.3220, 5.0415, "Dijon", "France", "Europe/Paris")
+LAKE = Place(45.8992, 6.1294, "Annecy", "France", "Europe/Paris")
+TALLOIRES = Place(45.8410, 6.2120, "Talloires", "France", "Europe/Paris")
+SEMNOZ = Place(45.7920, 6.1010, "Semnoz", "France", "Europe/Paris")
+MENTHON = Place(45.8600, 6.2000, "Menthon-Saint-Bernard", "France", "Europe/Paris")
 
 # A made-up household. The names are the ones the fake Immich's people endpoint
 # returns; the people page fixture keeps its own roster.
@@ -120,8 +123,8 @@ class Scene:
     favorite: bool = False
     seconds: float = 4.0
     # What a phone library holds besides a plain landscape shot (the scene's main shot only):
-    # a tall picture, a photo the owner edited in Immich's editor (the edit is the picture in
-    # black and white), a clip with its own sound recorded (a steady hum), and a photo
+    # a tall picture, a photo the owner edited in Immich's editor (the edit turns the picture
+    # upside down), a clip with its own sound recorded (a steady hum), and a photo
     # carrying an HDR gain map, the way a recent phone saves one.
     portrait: bool = False
     edited: bool = False

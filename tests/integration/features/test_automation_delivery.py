@@ -1,8 +1,8 @@
 """Feature tests: automation over HTTP, from the decision to the film in Immich and the message.
 
 Every command is the real CLI in a child process with its own sealed HOME, reading the
-fixture library from the session's fake Immich over HTTP. `auto run` starts a real
-`generate` child, which renders with FFmpeg, uploads to the fake Immich and sends its
+fixture library from the session's Immich over HTTP. `auto run` starts a real
+`generate` child, which renders with FFmpeg, uploads to a fake Immich of its own and sends its
 completion message to a loopback Apprise JSON target. Two things are pinned in the
 children, as the other feature renders pin selection: the day discovery runs on (the
 fixture library is June 2024) and the scripted editor in the `generate` child.
@@ -24,7 +24,14 @@ import pytest
 from tests.e2e.fake_immich import ALBUMS, FakeImmichServer
 from tests.features.automation_library import LocalHttp
 from tests.features.cli_harness import CliResult, OutboundTrap, UserHome, basic_config
+from tests.integration.features.immich_server import LibraryServer
 from tests.integration.features.library import QUIET_DAY, day_args, own_immich
+
+# Each upload test reads its film back from the upload log of a fake Immich of its own, one
+# no other test uploaded to, and links to the id that fake gave it.
+_UPLOADS_TO_ITS_OWN_FAKE = pytest.mark.fake_immich_only(
+    "reads its film from the upload log of a fake Immich that holds no other test's upload"
+)
 
 # The child: pin discovery's day (argv[1], blank for the real one), and give the `generate`
 # child it starts the scripted editor (argv[2] == "scripted"), then run the real CLI.
@@ -89,10 +96,10 @@ def sink() -> Iterator[LocalHttp]:
 
 
 def _home(
-    root: Path, fake_immich: FakeImmichServer, trap: OutboundTrap, **advanced: Any
+    root: Path, immich: LibraryServer | FakeImmichServer, trap: OutboundTrap, **advanced: Any
 ) -> UserHome:
     home = UserHome(root, extra_env=tuple(trap.env().items()))
-    config = basic_config(fake_immich.base_url, fake_immich.api_key, home)
+    config = basic_config(immich.base_url, immich.api_key, home)
     for key, value in advanced.items():
         if key == "public_url":
             config["immich"]["public_url"] = value
@@ -121,9 +128,9 @@ LAKE_TRIP = "2024-06-21 to 2024-06-27"
 
 @pytest.mark.feature("detector.trip")
 def test_a_trip_is_proposed_7_days_after_coming_home(
-    tmp_path: Path, fake_immich: FakeImmichServer, outbound_trap: OutboundTrap
+    tmp_path: Path, immich: LibraryServer, outbound_trap: OutboundTrap
 ) -> None:
-    home = _home(tmp_path / "home", fake_immich, outbound_trap)
+    home = _home(tmp_path / "home", immich, outbound_trap)
 
     trips = [r for r in _suggested(home, today="2024-07-04") if r["category"] == "trip"]
 
@@ -133,9 +140,9 @@ def test_a_trip_is_proposed_7_days_after_coming_home(
 
 @pytest.mark.feature("detector.trip")
 def test_a_trip_6_days_after_coming_home_waits(
-    tmp_path: Path, fake_immich: FakeImmichServer, outbound_trap: OutboundTrap
+    tmp_path: Path, immich: LibraryServer, outbound_trap: OutboundTrap
 ) -> None:
-    home = _home(tmp_path / "home", fake_immich, outbound_trap)
+    home = _home(tmp_path / "home", immich, outbound_trap)
 
     rows = _suggested(home, today="2024-07-03")
 
@@ -144,9 +151,9 @@ def test_a_trip_6_days_after_coming_home_waits(
 
 @pytest.mark.feature("detector.trip")
 def test_a_trip_more_than_a_year_old_is_not_proposed(
-    tmp_path: Path, fake_immich: FakeImmichServer, outbound_trap: OutboundTrap
+    tmp_path: Path, immich: LibraryServer, outbound_trap: OutboundTrap
 ) -> None:
-    home = _home(tmp_path / "home", fake_immich, outbound_trap)
+    home = _home(tmp_path / "home", immich, outbound_trap)
 
     rows = _suggested(home, today="2025-07-04")
 
@@ -160,6 +167,7 @@ def test_a_trip_more_than_a_year_old_is_not_proposed(
 @pytest.mark.feature("automation.upload")
 @pytest.mark.feature("notifications.on-completion")
 @pytest.mark.feature("notifications.upload-link")
+@_UPLOADS_TO_ITS_OWN_FAKE
 def test_auto_run_renders_delivers_and_announces_the_film_with_its_immich_link(
     tmp_path: Path, delivery_immich: FakeImmichServer, outbound_trap: OutboundTrap, sink: LocalHttp
 ) -> None:
@@ -236,6 +244,7 @@ def hand_made_album(
 
 @pytest.mark.feature("notifications.on-completion")
 @pytest.mark.feature("notifications.upload-link")
+@_UPLOADS_TO_ITS_OWN_FAKE
 def test_generate_announces_its_uploaded_film_with_a_link_to_the_server(
     hand_made_album: _HandMade,
 ) -> None:
@@ -248,6 +257,7 @@ def test_generate_announces_its_uploaded_film_with_a_link_to_the_server(
 
 
 @pytest.mark.feature("automation.hand-made-counts")
+@_UPLOADS_TO_ITS_OWN_FAKE
 def test_an_album_filmed_by_hand_is_not_proposed_again(hand_made_album: _HandMade) -> None:
     assert hand_made_album.result.returncode == 0, hand_made_album.result.explain()
     lake_week = ALBUMS[0]["startDate"][:10] + " to " + ALBUMS[0]["endDate"][:10]
@@ -265,9 +275,9 @@ def test_an_album_filmed_by_hand_is_not_proposed_again(hand_made_album: _HandMad
 
 @pytest.mark.feature("notifications.on-completion")
 def test_a_saved_cut_sends_nothing_until_runs_render_makes_its_film(
-    tmp_path: Path, fake_immich: FakeImmichServer, outbound_trap: OutboundTrap, sink: LocalHttp
+    tmp_path: Path, immich: LibraryServer, outbound_trap: OutboundTrap, sink: LocalHttp
 ) -> None:
-    home = _home(tmp_path / "home", fake_immich, outbound_trap, notifications=_notifying(sink))
+    home = _home(tmp_path / "home", immich, outbound_trap, notifications=_notifying(sink))
 
     saved = home.run(*day_args(QUIET_DAY), "--no-render", scripted_selection=True)
     assert saved.returncode == 0, saved.explain()

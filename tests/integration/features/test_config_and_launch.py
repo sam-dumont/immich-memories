@@ -14,8 +14,8 @@ import yaml
 
 from immich_memories.config_loader import _REMOVED_CONFIG_KEYS, _REMOVED_TOP_LEVEL_SECTIONS
 from immich_memories.config_models_render import _LEGACY_SCALE_MODES
-from tests.e2e.fake_immich import FakeImmichServer
 from tests.features.cli_harness import UserHome, basic_config
+from tests.integration.features.immich_server import LibraryServer
 from tests.integration.features.served_ui import free_port, serve_ui
 
 UNREACHABLE = "http://127.0.0.1:9"  # discard port: refused at once, no DNS
@@ -47,9 +47,9 @@ def test_preflight_exits_one_and_names_the_fix_when_immich_cannot_be_reached(hom
 
 @pytest.mark.feature("preflight.errors-exit-one")
 def test_preflight_exits_one_and_names_the_fix_for_a_rejected_api_key(
-    home: UserHome, fake_immich: FakeImmichServer
+    home: UserHome, immich: LibraryServer
 ):
-    home.write_config(basic_config(fake_immich.base_url, "not-the-key-immich-issued", home))
+    home.write_config(basic_config(immich.base_url, "not-the-key-immich-issued", home))
 
     result = home.run("preflight", scripted_selection=True)
 

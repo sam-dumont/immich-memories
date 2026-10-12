@@ -23,11 +23,13 @@ import contextlib
 import json
 import time
 from collections.abc import Sequence
+from dataclasses import replace
 from hashlib import sha256
 from pathlib import Path
 from typing import Any
 
 from immich_memories.security import write_secret_file
+from tests.e2e import fake_library
 
 # Both accounts' pictures: a film that names the partner account ships the partner's too.
 from tests.e2e.fake_library import ACCOUNTS_BY_ID as BY_ID
@@ -82,6 +84,41 @@ def _asset_of(source: Any) -> Any:
     from immich_memories.api.models import VideoClipInfo
 
     return source.asset if isinstance(source, VideoClipInfo) else source
+
+
+# Fixture id -> the id the server gave that picture, for every picture read from a real Immich.
+_SERVER_IDS: dict[str, str] = {}
+_BY_FILENAME = {picture.filename: picture for picture in fake_library.ACCOUNTS_BY_ID.values()}
+
+
+def _adopt_server_ids(sources: Sequence[Any]) -> None:
+    """Name the fixture pictures by the ids the server they were read from gave them.
+
+    The fake Immich serves each picture under its fixture id. A real Immich seeded with the
+    same library (the real-Immich feature pass) gives every upload an id of its own and keeps
+    its file name, which is unique across the library: the script follows the file name.
+    """
+    global BY_ID, STORY_OF, CARRIERS, DROPPED, LIBRARY  # noqa: PLW0603 -- the script's own tables
+    found = {
+        _BY_FILENAME[asset.original_file_name].asset_id: asset.id
+        for asset in map(_asset_of, sources)
+        if asset.id not in BY_ID and asset.original_file_name in _BY_FILENAME
+    }
+    if not found:
+        return
+    _SERVER_IDS.update(found)
+
+    def server(fixture_id: str) -> str:
+        return _SERVER_IDS.get(fixture_id, fixture_id)
+
+    def moved(picture: Any) -> Any:
+        return replace(picture, asset_id=server(picture.asset_id))
+
+    BY_ID = {server(key): moved(p) for key, p in fake_library.ACCOUNTS_BY_ID.items()}
+    STORY_OF = {server(key): story for key, story in fake_library.ACCOUNTS_STORY_OF.items()}
+    DROPPED = {server(key): reason for key, reason in fake_library.DROPPED.items()}
+    LIBRARY = tuple(moved(picture) for picture in fake_library.LIBRARY)
+    CARRIERS = tuple(moved(picture) for picture in fake_library.CARRIERS)
 
 
 def _carrier_rows(candidates: Sequence[Any]) -> list[dict[str, Any]]:
@@ -408,6 +445,7 @@ class _FakeEditorialPipeline:
         from immich_memories.operations.cut_progress import ANALYSIS_PHASE, StageUpdate
         from immich_memories.operations.editorial_attempt import EditorialAttempt
 
+        _adopt_server_ids(sources)
         report_stage = EditorialStageReporter(self.tracker, progress_callback)
         self.tracker.start()
         request = self._request(sources, include_live_photos)

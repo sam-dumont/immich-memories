@@ -12,11 +12,11 @@ from pathlib import Path
 
 import pytest
 
-from tests.e2e.fake_immich import FakeImmichServer
 from tests.e2e.fake_library import LIVE_CLIP_SECONDS, LIVE_PICTURES
 from tests.features.cli_harness import UserHome
 from tests.integration.features.cuts import Shot, picture_of, story_of
 from tests.integration.features.film_probe import grey_frame, luma_difference
+from tests.integration.features.immich_server import LibraryServer
 from tests.integration.features.library import RenderedRun, render
 
 LIVE_DAY = "2024-06-12"
@@ -51,7 +51,7 @@ def _shots(home: UserHome, run: RenderedRun) -> dict[str, Shot]:
 
 def _inside(shot: Shot) -> list[float]:
     """Instants well inside a shot, clear of the transitions at either end."""
-    first, last = shot.at + 0.6, shot.at + shot.seconds - 0.6
+    first, last = shot.started + 0.6, shot.at + shot.seconds - 0.6
     return [first + _STEP * k for k in range(int((last - first) / _STEP) + 1)]
 
 
@@ -78,11 +78,12 @@ def test_a_live_photo_plays_as_motion_only_when_its_clip_moves(
 
 @pytest.mark.feature("live-photos.motion")
 def test_nearby_live_photos_stitch_into_one_clip_that_never_rewinds(
-    library_home: UserHome, live_film: RenderedRun, fake_immich: FakeImmichServer
+    library_home: UserHome, live_film: RenderedRun, immich: LibraryServer
 ):
     """The burst's clips are cuts of one recording; the stitch must play it forward, once."""
     kick = _shots(library_home, live_film)["live-kick-1"]
-    recording = fake_immich.root / "media" / "burst-home-football-lawn-01.mp4"
+    burst = next(p for p in LIVE_PICTURES if p.motion == "burst")
+    recording = immich.media / f"burst-{burst.source.stem}.mp4"
     reference = [grey_frame(recording, k / 10) for k in range(0, 60)]
 
     matches = []

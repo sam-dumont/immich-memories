@@ -1,6 +1,6 @@
 """What the store keeps: an upgrade from an older release, a rescan, a delivered film, a dead run.
 
-Every test drives the real CLI in a sealed home against the session's fake Immich, and reads
+Every test drives the real CLI in a sealed home against the session's Immich, and reads
 what it left: the printed text, the store's rows, the files on disk, the web server's answer.
 """
 
@@ -29,6 +29,7 @@ from tests.features.cli_harness import (
     basic_config,
     film_facts,
 )
+from tests.integration.features.immich_server import LibraryServer
 from tests.integration.features.library import GARDEN_DAY, QUIET_DAY, day_args
 from tests.integration.features.served_ui import free_port, serve_ui
 
@@ -39,9 +40,9 @@ _RC5_REVISION = "0012_annotation_assets_is_edited"
 
 
 @pytest.fixture
-def home(tmp_path, fake_immich: FakeImmichServer) -> UserHome:
+def home(tmp_path, immich: LibraryServer) -> UserHome:
     home = UserHome(tmp_path / "home")
-    home.write_config(basic_config(fake_immich.base_url, fake_immich.api_key, home))
+    home.write_config(basic_config(immich.base_url, immich.api_key, home))
     return home
 
 
@@ -160,17 +161,24 @@ def _export(home: UserHome, path: Path) -> dict:
     return yaml.safe_load(path.read_text())
 
 
+# The fixture cast are on 12 to 18 pictures each, under the scan's default floor of 25. A real
+# Immich counts a person's own pictures (the real-Immich gate scans with the same flag); the
+# fake still answers a person's timeline with the whole library's (test_fake_matches_real.py).
+_EVERYONE = ("--min-assets", "1")
+
+
 def _person(document: dict, person_id: str) -> dict:
     return next(entry for entry in document["people"] if entry["ids"] == [person_id])
 
 
 @pytest.mark.feature("people.scan-keeps-confirmed")
 def test_a_rescan_refreshes_suggestions_and_keeps_roles_relationships_and_groups(
-    home: UserHome, tmp_path
+    home: UserHome, immich: LibraryServer, tmp_path
 ):
-    first = home.run("people", "scan")
+    robin_id, kit_id = immich.person_of("person-robin"), immich.person_of("person-kit")
+    first = home.run("people", "scan", *_EVERYONE)
     document = _export(home, tmp_path / "people.yaml")
-    robin, kit = _person(document, "person-robin"), _person(document, "person-kit")
+    robin, kit = _person(document, robin_id), _person(document, kit_id)
     scanned = dict(kit["inferred"]["evidence"])
     # What the owner answered: a role, a note and a relationship, both ways.
     robin["confirmed"] = {
@@ -179,7 +187,7 @@ def test_a_rescan_refreshes_suggestions_and_keeps_roles_relationships_and_groups
         "links": [
             {
                 "kind": "parent-of",
-                "with": "person-kit",
+                "with": kit_id,
                 "reverse": "child-of",
                 "decision": "confirmed",
             }
@@ -188,7 +196,7 @@ def test_a_rescan_refreshes_suggestions_and_keeps_roles_relationships_and_groups
     kit["confirmed"]["links"] = [
         {
             "kind": "child-of",
-            "with": "person-robin",
+            "with": robin_id,
             "reverse": "parent-of",
             "decision": "confirmed",
         }
@@ -199,7 +207,7 @@ def test_a_rescan_refreshes_suggestions_and_keeps_roles_relationships_and_groups
     imported = home.run("people", "import", "--from", str(tmp_path / "edited.yaml"), "--replace")
     grouped = home.run("people", "group", "add", "parent-and-child", '"Robin" AND "Kit"')
 
-    rescan = home.run("people", "scan")
+    rescan = home.run("people", "scan", *_EVERYONE)
     after = _export(home, tmp_path / "after.yaml")
     groups = home.run("people", "group", "list")
 
@@ -207,16 +215,16 @@ def test_a_rescan_refreshes_suggestions_and_keeps_roles_relationships_and_groups
     assert imported.returncode == 0, imported.explain()
     assert grouped.returncode == 0, grouped.explain()
     assert rescan.returncode == 0, rescan.explain()
-    assert _person(after, "person-kit")["inferred"]["evidence"] == scanned
-    robin_after = _person(after, "person-robin")["confirmed"]
+    assert _person(after, kit_id)["inferred"]["evidence"] == scanned
+    robin_after = _person(after, robin_id)["confirmed"]
     assert robin_after["role"] == "parent"
     assert robin_after["notes"] == "answered by hand"
     assert [(link["kind"], link["with"]) for link in robin_after["links"]] == [
-        ("parent-of", "person-kit")
+        ("parent-of", kit_id)
     ]
     assert [
-        (link["kind"], link["with"]) for link in _person(after, "person-kit")["confirmed"]["links"]
-    ] == [("child-of", "person-robin")]
+        (link["kind"], link["with"]) for link in _person(after, kit_id)["confirmed"]["links"]
+    ] == [("child-of", robin_id)]
     assert "parent-and-child" in groups.stdout, groups.explain()
 
 
@@ -224,6 +232,10 @@ def test_a_rescan_refreshes_suggestions_and_keeps_roles_relationships_and_groups
 
 
 @pytest.mark.feature("upload.reclaims-local-copy")
+@pytest.mark.fake_immich_only(
+    "reads the film back from the fake's upload log, on an Immich of its own that holds no "
+    "other test's upload"
+)
 def test_a_delivered_film_is_removed_locally_and_the_run_keeps_its_record_and_immich_link(
     delivery_immich: FakeImmichServer, outbound_trap: OutboundTrap, tmp_path
 ):

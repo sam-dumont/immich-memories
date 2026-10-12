@@ -351,10 +351,11 @@ test-integration-titles:  ## Run ONLY title screen pixel tests (~30s, FFmpeg onl
 # process). Each worker starts its own fake Immich and homes, so workers share no state.
 # --dist loadfile keeps a file's tests on one worker, so a module-scoped render runs once.
 FEATURE_WORKERS ?= 4
+FEATURE_JUNIT ?= tests/features-junit.xml
 .PHONY: test-features feature-check
 test-features:  ## Feature tests on the fixture library, real CLI and FFmpeg (no Immich needed)
 	uv run pytest tests/integration/features/ -v -m integration --tb=short -p no:cacheprovider \
-		-n $(FEATURE_WORKERS) --dist loadfile --junitxml=tests/features-junit.xml $(FEATURE_ARGS)
+		-n $(FEATURE_WORKERS) --dist loadfile --junitxml=$(FEATURE_JUNIT) $(FEATURE_ARGS)
 
 # Every CLI command and flag, offered memory type and automation detector has a row in
 # tests/features/inventory.yaml; every row has feature tests or a lane_only/gap status; gaps only fall.
@@ -385,10 +386,11 @@ IMMICH_GATE_SERVER_v32-sharing := ghcr.io/immich-app/immich-server:v3.2.4@sha256
 IMMICH_GATE_SERVER_v33-sharing := $(IMMICH_GATE_SERVER_v3)
 IMMICH_GATE_VALKEY_v32-sharing := valkey/valkey:9@sha256:418652cfb58ef879d4978c33553735d7147016032d5aefaa14c828e611eb9dfd
 IMMICH_GATE_VALKEY_v33-sharing := $(IMMICH_GATE_VALKEY_v3)
+IMMICH_GATE_PROJECT ?= immich-gate-$(IMMICH_GATE_VERSION)
 IMMICH_GATE_COMPOSE = IMMICH_GATE_SERVER_IMAGE=$(IMMICH_GATE_SERVER_$(IMMICH_GATE_VERSION)) \
 	IMMICH_GATE_VALKEY_IMAGE=$(IMMICH_GATE_VALKEY_$(IMMICH_GATE_VERSION)) \
 	IMMICH_GATE_PORT=$(IMMICH_GATE_PORT) \
-	docker compose -f tests/integration/immich_gate/docker-compose.yml -p immich-gate-$(IMMICH_GATE_VERSION)
+	docker compose -f tests/integration/immich_gate/docker-compose.yml -p $(IMMICH_GATE_PROJECT)
 
 IMMICH_GATE_IMAGES_TAR ?= $(IMMICH_GATE_DIR)/images/$(IMMICH_GATE_VERSION).tar
 
@@ -487,6 +489,36 @@ immich-gate-run:
 	REQUIRE_IMMICH=1 IMMICH_GATE_VERSION=$(IMMICH_GATE_VERSION) uv run env HOME=$(IMMICH_GATE_RUN_HOME) \
 		pytest tests/integration/immich_gate/ -v -m integration --tb=short -p no:cacheprovider \
 		--junitxml=$(IMMICH_GATE_JUNIT)
+
+# ── The feature tests against a real Immich ─────────────────────────────
+# The whole feature suite again, against a real Immich (the gate's pinned images, its own
+# compose project and port) seeded with the files the fake Immich serves
+# (tests/integration/features/real_seed.py). Tests only the fake can drive skip with their
+# reason (`fake_immich_only`); test_fake_matches_real.py runs only here. CI runs v2 and v3.
+FEATURE_IMMICH_PORT ?= 2306
+FEATURE_IMMICH_ROOT = $(CURDIR)/$(IMMICH_GATE_DIR)/features-$(IMMICH_GATE_VERSION)
+FEATURE_IMMICH_STACK = IMMICH_GATE_PROJECT=immich-features-$(IMMICH_GATE_VERSION) \
+	IMMICH_GATE_PORT=127.0.0.1:$(FEATURE_IMMICH_PORT)
+.PHONY: test-features-real-immich
+test-features-real-immich: web-client-present  ## Feature tests against a real Immich in Docker seeded with the fixture library (IMMICH_GATE_VERSION=v2|v32|v3)
+	@status=0; \
+	$(MAKE) --no-print-directory immich-gate-up $(FEATURE_IMMICH_STACK) || status=$$?; \
+	if [ $$status -eq 0 ]; then \
+		uv run python -m tests.integration.features.real_seed \
+			--url http://127.0.0.1:$(FEATURE_IMMICH_PORT) --root $(FEATURE_IMMICH_ROOT) || status=$$?; \
+	fi; \
+	if [ $$status -eq 0 ]; then \
+		FEATURE_IMMICH_STATE=$(FEATURE_IMMICH_ROOT)/state.json $(MAKE) --no-print-directory test-features \
+			FEATURE_JUNIT=tests/features-real-immich-$(IMMICH_GATE_VERSION)-junit.xml || status=$$?; \
+	fi; \
+	if [ $$status -ne 0 ]; then \
+		mkdir -p $(IMMICH_GATE_DIR); \
+		$(MAKE) --no-print-directory immich-gate-logs $(FEATURE_IMMICH_STACK) \
+			> $(IMMICH_GATE_DIR)/immich-features-$(IMMICH_GATE_VERSION).log 2>&1 || true; \
+		echo "Immich logs: $(IMMICH_GATE_DIR)/immich-features-$(IMMICH_GATE_VERSION).log"; \
+	fi; \
+	[ -n "$(IMMICH_GATE_KEEP)" ] || $(MAKE) --no-print-directory immich-gate-down $(FEATURE_IMMICH_STACK); \
+	exit $$status
 
 test-integration:  ## Run ALL integration tests per-suite (requires FFmpeg/Immich), saves per-suite coverage XMLs
 	$(MAKE) test-integration-auth
