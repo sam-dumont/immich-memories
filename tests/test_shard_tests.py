@@ -204,3 +204,20 @@ def _ci_scope_outputs(event: str) -> dict[str, str]:
     sys.modules[spec.name] = module  # dataclasses resolve the owning module by name
     spec.loader.exec_module(module)
     return module.outputs(["src/immich_memories/cli/__init__.py"], event=event)
+
+
+def test_a_shard_listing_collects_its_files_and_no_other(tmp_path):
+    listing = tmp_path / "shard.txt"
+    kept = ["tests/test_shard_tests.py", "tests/test_ci_scope.py"]
+    listing.write_text("\n".join(kept) + "\n")
+
+    result = subprocess.run(
+        [sys.executable, "-m", "pytest", f"--shard-files={listing}", "--collect-only", "-q"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    collected = {line.split("::", 1)[0] for line in result.stdout.splitlines() if "::" in line}
+    assert collected == set(kept), result.stdout[-2000:] + result.stderr[-2000:]
