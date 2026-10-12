@@ -78,6 +78,7 @@ def test_nothing_irreversible_happens_until_nothing_can_fail():
 
     fallible = {
         "ci",
+        "immich-gate",
         "package",
         "docker-build",
         "docker-smoke",
@@ -90,11 +91,20 @@ def test_nothing_irreversible_happens_until_nothing_can_fail():
     for later in ("pypi-publish-music", "pypi-publish", "deploy-docs"):
         assert "release" in ancestors(later), later
     for irreversible in ("release", "pypi-publish-music", "pypi-publish"):
-        for job in ("ci", "package", "docker-build", "docker-smoke", "inference-build"):
+        for job in (
+            "ci",
+            "immich-gate",
+            "package",
+            "docker-build",
+            "docker-smoke",
+            "inference-build",
+        ):
             assert irreversible not in ancestors(job), (irreversible, job)
     # A version tag in the registry only moves once every phase-1 job has succeeded.
     for manifest in ("docker-manifest", "inference-manifest"):
-        assert {"package", "docker-smoke", "inference-build", "ci"} <= ancestors(manifest)
+        assert {"package", "docker-smoke", "inference-build", "ci", "immich-gate"} <= ancestors(
+            manifest
+        )
 
 
 def test_dry_run_uses_boolean_guards_for_publication():

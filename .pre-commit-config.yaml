@@ -1,6 +1,11 @@
 # Hooks without an explicit `stages` run only at pre-commit; the commit-msg stage runs
 # only the hooks that ask for it (commitizen, private-terms-commit-msg). Without this,
 # installing the commit-msg hook type would run every gate twice per commit.
+#
+# Each gate runs when a staged file is one of its inputs (`files`), and the privacy
+# and secrets gates on every commit. The unit tests are picked by
+# scripts/hook_scope.py (`make hook-tests`). `make ci` runs every gate and the whole
+# suite; `HOOK_FULL=1 git commit` runs the whole suite in the hook.
 default_stages: [pre-commit]
 default_install_hook_types: [pre-commit, commit-msg]
 
@@ -18,6 +23,7 @@ repos:
     rev: v8.24.3
     hooks:
       - id: gitleaks
+        always_run: true
 
   # Private terms (family names, birth dates, fine GPS, ...). The denylist
   # lives outside the repo -- see scripts/private_terms_gate.py -- so both
@@ -54,6 +60,9 @@ repos:
   # required everywhere else.
   # NOTE: refurb moved from upstream repo to local hook below (uses make refurb
   # to avoid src/ layout duplicate module detection issue)
+  #
+  # The Python gates read src/ and services/ (plus their config in pyproject.toml),
+  # never tests/ or scripts/, so a commit that touches neither skips them.
   - repo: local
     hooks:
       - id: mypy
@@ -61,93 +70,159 @@ repos:
         entry: make typecheck
         language: system
         pass_filenames: false
-        types: [python]
+        files: &python_gates ^((src|services)/.*\.pyi?|pyproject\.toml|uv\.lock|Makefile|\.pre-commit-config\.yaml|vulture-whitelist\.py|complexity-watermark\.json|scripts/complexity_watermark\.py)$
 
       - id: file-length
         name: File length gate (max 800 lines)
         entry: make file-length
         language: system
         pass_filenames: false
-        types: [python]
+        files: *python_gates
 
       - id: refurb
         name: Modernization (refurb)
         entry: make refurb
         language: system
         pass_filenames: false
-        types: [python]
+        files: *python_gates
 
       - id: complexity
         name: Complexity gate (Xenon grade C)
         entry: make complexity
         language: system
         pass_filenames: false
-        types: [python]
+        files: *python_gates
 
       - id: dead-code
         name: Dead code detection (Vulture)
         entry: make dead-code
         language: system
         pass_filenames: false
-        types: [python]
+        files: *python_gates
 
       - id: security-lint
         name: Security lint (Bandit)
         entry: make security-lint
         language: system
         pass_filenames: false
-        types: [python]
+        files: *python_gates
 
       - id: cognitive-complexity
         name: Cognitive complexity (complexipy against the watermark)
         entry: make cognitive-complexity
         language: system
         pass_filenames: false
-        types: [python]
+        files: *python_gates
 
       - id: dep-check
         name: Dependency hygiene (deptry)
         entry: make dep-check
         language: system
         pass_filenames: false
-        types: [python]
+        files: *python_gates
 
       - id: arch-check
         name: Architectural boundaries (import-linter)
         entry: make arch-check
         language: system
         pass_filenames: false
-        types: [python]
+        files: *python_gates
 
       - id: duplication
         name: Code duplication (jscpd ≤5%)
         entry: make duplication
         language: system
         pass_filenames: false
-        types: [python]
+        files: *python_gates
 
-
-      - id: diff-cover-check
-        name: Diff coverage check (≥80% on changed lines)
-        entry: make diff-cover-local
+      - id: critique
+        name: AI smell audit (mixins, split comments, test mock ratios)
+        entry: make critique
         language: system
         pass_filenames: false
-        types: [python]
+        files: ^((src|services|tests)/.*\.py|scripts/critique_tests\.py)$
 
+      # The unit tests this commit can affect (scripts/hook_scope.py picks them from
+      # what each test file ran on the last full run), then diff coverage. The
+      # selection decides; anything it cannot vouch for runs the whole suite.
+      - id: hook-tests
+        name: Unit tests the change can affect, then diff coverage (≥80% on changed lines)
+        entry: make hook-tests
+        language: system
+        pass_filenames: false
+        always_run: true
 
+      - id: workflow-guard
+        name: Workflow jobs carry the public-repo guard
+        entry: make workflow-guard
+        language: system
+        pass_filenames: false
+        files: ^(\.github/workflows/|scripts/check_workflow_repo_guard\.py$)
+
+      # The docs gates. The CLI and config references are generated from src/, and the
+      # commands and feature checks read the Makefile and the CLI, so source counts too.
       - id: docs-build
         name: Docs build and analytics
         entry: make docs-build
         language: system
         pass_filenames: false
-        files: ^(docs-site/|Makefile$)
+        files: ^(docs-site/|Makefile$|web/package\.json$)
 
       - id: docs-voice
         name: Documentation voice
         entry: make docs-voice
         language: system
         pass_filenames: false
-        files: ^(README\.md|docs-site/docs/)
+        files: ^(README\.md|docs-site/docs/|scripts/docs_voice_gate\.py$)
+
+      - id: docs-cli-check
+        name: CLI reference matches the CLI
+        entry: make docs-cli-check
+        language: system
+        pass_filenames: false
+        files: ^(src/immich_memories/.*\.py|scripts/generate_cli_docs\.py|docs-site/docs/reference/cli-reference\.md)$
+
+      - id: docs-config-check
+        name: Config reference matches the config
+        entry: make docs-config-check
+        language: system
+        pass_filenames: false
+        files: ^(src/immich_memories/.*\.py|scripts/check_config_docs\.py|docs-site/docs/reference/config-reference\.md)$
+
+      - id: docs-commands
+        name: Documented commands and Make targets exist
+        entry: make docs-commands
+        language: system
+        pass_filenames: false
+        files: ^(README\.md|docs-site/docs/|Makefile$|src/immich_memories/cli/|scripts/check_docs_commands\.py$)
+
+      - id: docs-brand
+        name: Product copy matches across surfaces
+        entry: make docs-brand
+        language: system
+        pass_filenames: false
+        files: ^(docs-site/product\.json|README\.md|pyproject\.toml|docker/Dockerfile|src/immich_memories/cli/__init__\.py|src/immich_memories/locales/|web/src/routes/login/|docs-site/remotion/src/scenes/TitleScene\.tsx|scripts/check_product_copy\.py)
+
+      - id: docs-diagrams-check
+        name: Docs diagrams match their figure scripts (Docker)
+        entry: make docs-diagrams-check
+        language: system
+        pass_filenames: false
+        files: ^docs-site/(diagrams|static/diagrams)/
+
+      - id: feature-check
+        name: Every advertised feature has a feature test
+        entry: make feature-check
+        language: system
+        pass_filenames: false
+        files: ^(tests/|docs-site/docs/|README\.md|src/immich_memories/automation/|Makefile$|scripts/check_feature_inventory\.py$)
+
+      - id: research-data-check
+        name: Research aggregates carry no private terms
+        entry: make research-data-check
+        language: system
+        pass_filenames: false
+        files: ^(docs/research/|scripts/private_terms_gate\.py|scripts/research_data_schema\.py)
 
       - id: notices-check
         name: Third-party notices drift
@@ -155,3 +230,17 @@ repos:
         language: system
         pass_filenames: false
         files: ^(uv\.lock|THIRD_PARTY_NOTICES(?:\.in)?)$
+
+      - id: compose-check
+        name: docker-compose.yml stands alone
+        entry: make compose-check
+        language: system
+        pass_filenames: false
+        files: ^(docker-compose\.yml|example\.env)$
+
+      - id: web-check
+        name: Web client types, contract and build
+        entry: make web-check
+        language: system
+        pass_filenames: false
+        files: ^(web/|src/immich_memories/web/|scripts/export-web-openapi\.py|scripts/check_web_brand\.py)

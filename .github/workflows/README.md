@@ -28,17 +28,17 @@ git push
 
 ### `ci.yml` - Continuous Integration
 
-Runs on pull requests and when the release calls it. All jobs use `make` targets as the single source of truth for commands.
+Runs on pull requests, on every push to `main`, and when the release (a nightly included) calls it. All jobs use `make` targets as the single source of truth for commands.
 
-A pull request runs only the jobs its changes can break: the `changes` job runs `make ci-scope` (`scripts/ci_scope.py`), and every other job reads the scope in its `if:`. The release, build and dependency files, workflows and unknown paths run everything. The table of what runs when is in `docs-site/docs/contribute/architecture.md`.
+A pull request runs only the jobs its changes can break: the `changes` job runs `make ci-scope` (`scripts/ci_scope.py`), which answers one output per heavy job, and every other job reads its output in its `if:`. Build and dependency files, workflows and unknown paths run everything. A push to `main` and a release are never scoped: every job runs, in a concurrency group of its own so no merge cancels another's run. The table of what runs when is in `docs-site/docs/contribute/ci.md`. The render worker's suite is a job here too (it used to be `render-worker.yml`).
 
 `CI Success` rolls every job up and is the check branch protection requires; a job the scope skipped counts as passing there, a failed, timed-out or cancelled one does not.
 
 Run the full CI pipeline locally with `make ci`, and `make ci-scope` to see what your branch would run.
 
-### `main-push.yml` - Main Tripwire
+### `immich-gate.yml` - Real-Immich Gate
 
-Runs on every push to `main`: the unit suite (`make test`) and `make typecheck`, on Python 3.12 and ubuntu-24.04. It exists because `ci.yml` only runs on pull requests, so two PRs that were each green can break `main` together. It is not a required check; a failure shows as a red mark on the commit.
+Runs on pull requests, on every push to `main`, and when the release calls it. The gate on Immich v2, 3.2 and v3 and the feature tests on a real Immich run when the scope's `immich` output says the app, the fakes, the seeding or these suites changed; on `main` and in a release, always. `Immich Gate` is the required rollup: it passes a skipped gate only when the scope said nothing it reads changed.
 
 ### `release.yml` - Release
 
@@ -69,7 +69,7 @@ Runs when dispatched (`stable` or `rc`) and when `nightly.yml` calls it (`nightl
 
 ### `nightly.yml` - Nightly Build
 
-Runs daily and on demand (`force` builds an unchanged `main`). It builds only when `main` has commits since the last nightly, read from the `Commit:` line of the rolling `nightly` prerelease (`scripts/nightly.py`). That check is all `nightly.yml` holds: the build is `release.yml` called with channel `nightly`, the same jobs in the same order as a stable or rc release. Where a nightly differs, it is an `if:` in `release.yml`: it skips the CI rerun (main already passed it) and the approval environment, rebuilds the inference images only when their inputs changed, tags `:nightly` and `:nightly-YYYYMMDD` instead of a version, moves the `nightly` tag instead of a `v*` tag, replaces the rolling `nightly` prerelease (wheel, sdist, provenance and Compose files, never "Latest") instead of creating a versioned release, and skips PyPI. The docs deploy lands it at `/dev/`. A **Release** dispatch offers only `stable` and `rc`; a nightly runs through **Nightly**, so it always passes the check.
+Runs daily and on demand (`force` builds an unchanged `main`). It builds only when `main` has commits since the last nightly, read from the `Commit:` line of the rolling `nightly` prerelease (`scripts/nightly.py`). That check is all `nightly.yml` holds: the build is `release.yml` called with channel `nightly`, the same jobs in the same order as a stable or rc release. Where a nightly differs, it is an `if:` in `release.yml`: it runs CI and the Immich gate in full like every release, but skips the approval environment, rebuilds the inference images only when their inputs changed, tags `:nightly` and `:nightly-YYYYMMDD` instead of a version, moves the `nightly` tag instead of a `v*` tag, replaces the rolling `nightly` prerelease (wheel, sdist, provenance and Compose files, never "Latest") instead of creating a versioned release, and skips PyPI. The docs deploy lands it at `/dev/`. A **Release** dispatch offers only `stable` and `rc`; a nightly runs through **Nightly**, so it always passes the check.
 
 ### `docs.yml` - Deploy Docs
 

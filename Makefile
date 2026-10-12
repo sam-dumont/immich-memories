@@ -815,6 +815,10 @@ npm-audit-reviewed-docs:  ## Time-limited docs advisory review; strict client au
 diff-cover-local:  ## Check diff-cover locally before pushing (runs tests + merges integration coverage)
 	@echo "Running unit tests with coverage..."
 	@uv run pytest $(PYTEST_WORKERS) $(COVERAGE_FLAGS) --cov-report=xml -q
+	@$(MAKE) --no-print-directory diff-cover-report
+
+.PHONY: diff-cover-report hook-tests test-scoped
+diff-cover-report:  ## Diff coverage (>=80% on changed lines) from coverage.xml and any integration XMLs
 	@echo "Checking diff coverage against main..."
 	@COVERAGE_FILES="coverage.xml"; \
 	for f in tests/*-coverage.xml; do \
@@ -834,6 +838,46 @@ diff-cover-local:  ## Check diff-cover locally before pushing (runs tests + merg
 		echo "   add unit tests. Subprocess boundaries can be stubbed -- see" && \
 		echo "   tests/test_ffmpeg_pipe.py for the pattern." && \
 		exit 1)
+
+# The pre-commit hook's tests. scripts/hook_scope.py picks the unit test files the
+# change can affect from a map of what each test file ran on the last green full run
+# (kept in the git directory every worktree shares). A subset run first imports each
+# changed source module in a fresh interpreter, then collects the whole suite (about
+# 10 s), which imports every test module, so an import-time break anywhere still fails. A full run (no map yet, a change everything reads, or
+# HOOK_FULL=1) records each test's coverage context and refreshes the map; that data
+# runs to hundreds of MB, so it goes to a temporary directory, never the worktree (the
+# Docker context test would count it). Either way,
+# diff-cover then reads the coverage of the changed lines.
+HOOK_SCOPE_BASE ?= origin/main
+HOOK_SCOPE = uv run python scripts/hook_scope.py
+hook-tests:  ## Run the unit tests this change can affect, then diff-cover (HOOK_FULL=1 runs them all)
+	@selection="$$($(HOOK_SCOPE) tests --base $(HOOK_SCOPE_BASE))" || exit $$?; \
+	if [ "$$selection" = all ]; then \
+		data=$$(mktemp -d); \
+		COVERAGE_FILE="$$data/.coverage" uv run pytest $(PYTEST_WORKERS) $(COVERAGE_FLAGS) \
+			--cov-context=test --cov-report=xml -q || { rm -rf "$${data:?}"; exit 1; }; \
+		$(HOOK_SCOPE) record --coverage "$$data/.coverage" \
+			|| echo "hook-tests: the map was not recorded; the next commit runs everything"; \
+		rm -rf "$${data:?}"; \
+	elif [ -n "$$selection" ]; then \
+		$(HOOK_SCOPE) import-check --base $(HOOK_SCOPE_BASE) || exit $$?; \
+		collected=$$(uv run pytest --collect-only -q -p no:cacheprovider 2>&1) || { \
+			printf '%s\n' "$$collected" | tail -40; echo "hook-tests: the suite no longer collects"; exit 1; }; \
+		uv run pytest $(PYTEST_WORKERS) $(COVERAGE_FLAGS) --cov-fail-under=0 --cov-report=xml -q $$selection || exit $$?; \
+	else \
+		exit 0; \
+	fi; \
+	$(MAKE) --no-print-directory diff-cover-report
+
+# The same selection without coverage, for CI's docs-only pull requests: the tests
+# that read the changed pages, against HOOK_SCOPE_BASE (origin/<base branch>).
+test-scoped:  ## Run only the unit tests the branch's changes can affect (HOOK_SCOPE_BASE=origin/main)
+	@selection="$$($(HOOK_SCOPE) tests --base $(HOOK_SCOPE_BASE))" || exit $$?; \
+	if [ "$$selection" = all ]; then \
+		uv run pytest $(PYTEST_WORKERS) -q; \
+	elif [ -n "$$selection" ]; then \
+		uv run pytest $(PYTEST_WORKERS) -q $$selection; \
+	fi
 
 .PHONY: test-integration-render-worker
 test-integration-render-worker:
@@ -958,9 +1002,9 @@ critique:  ## Run self-critique checks for AI code smells
 	@uv run python scripts/critique_tests.py
 	@echo "Self-critique complete."
 
-# Pre-commit hooks
+# Every hook on every file, and the whole unit suite (a commit runs only what it touches)
 pre-commit:
-	uv run pre-commit run --all-files
+	HOOK_FULL=1 uv run pre-commit run --all-files
 
 # ===============================================================# Building
 # ===============================================================

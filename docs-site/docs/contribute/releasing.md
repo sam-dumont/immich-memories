@@ -49,8 +49,8 @@ without opening the RC series.
 
 The nightly workflow only makes that check. The build is the **Release** workflow itself, called
 with channel `nightly`: the same jobs in the same order (images by digest first; nothing public
-until the wheel built and the app image passed its smoke film). It skips the CI rerun, since
-`main` already passed CI, and publishes:
+until the wheel built and the app image passed its smoke film), after CI and the real-Immich gate
+ran in full, as for every release. It publishes:
 
 | | Nightly |
 |---|---|

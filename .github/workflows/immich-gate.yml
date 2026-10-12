@@ -19,12 +19,16 @@ on:
   pull_request:
   push:
     branches: [main]
+  workflow_call:  # Called by the release and the nightly, which run everything.
 
 permissions:
   contents: read
 
+# As in ci.yml: a pull request's new push cancels its older run, and every merge to
+# main and every release gets a group of its own. Not `github.workflow`, which a
+# called workflow shares with its caller (and so with ci.yml in the same release).
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: immich-gate-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
   cancel-in-progress: true
 
 env:
@@ -32,14 +36,15 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  # Scoped like CI (scripts/ci_scope.py): a docs-only change skips the gate,
-  # and the PostgreSQL legs run when the store changes. A push to main runs all.
+  # Scoped like CI (scripts/ci_scope.py): the gate and the feature runs need a
+  # change to the app, the fakes, the seeding or these suites, and the PostgreSQL
+  # legs a change to the store. A push to main and the release run everything.
   changes:
     name: Change Scope
     if: github.repository_id == '1174219883'
     runs-on: ubuntu-24.04
     outputs:
-      docs_only: ${{ steps.scope.outputs.docs_only }}
+      immich: ${{ steps.scope.outputs.immich }}
       store: ${{ steps.scope.outputs.store }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -54,7 +59,7 @@ jobs:
   immich:
     name: Real Immich (${{ matrix.immich }}, ${{ matrix.database }})
     needs: [changes]
-    if: github.repository_id == '1174219883' && needs.changes.outputs.docs_only != 'true'
+    if: github.repository_id == '1174219883' && needs.changes.outputs.immich == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     strategy:
@@ -176,7 +181,7 @@ jobs:
   features:
     name: Feature tests on real Immich (${{ matrix.immich }})
     needs: [changes]
-    if: github.repository_id == '1174219883' && needs.changes.outputs.docs_only != 'true'
+    if: github.repository_id == '1174219883' && needs.changes.outputs.immich == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     strategy:
@@ -279,14 +284,14 @@ jobs:
           SCOPE: ${{ needs.changes.result }}
           IMMICH: ${{ needs.immich.result }}
           FEATURES: ${{ needs.features.result }}
-          DOCS_ONLY: ${{ needs.changes.outputs.docs_only }}
+          IN_SCOPE: ${{ needs.changes.outputs.immich }}
         run: |
           if [[ "$SCOPE" != "success" ]]; then
             echo "Change scope did not succeed: $SCOPE"
             exit 1
           fi
-          if [[ "$IMMICH" == "skipped" && "$FEATURES" == "skipped" && "$DOCS_ONLY" == "true" ]]; then
-            echo "Docs-only change: no real-Immich run needed"
+          if [[ "$IMMICH" == "skipped" && "$FEATURES" == "skipped" && "$IN_SCOPE" == "false" ]]; then
+            echo "Nothing a real Immich run reads changed"
             exit 0
           fi
           if [[ "$IMMICH" != "success" ]]; then

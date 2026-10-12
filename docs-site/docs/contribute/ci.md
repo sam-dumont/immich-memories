@@ -6,41 +6,104 @@ title: CI and quality gates
 
 ## CI pipeline
 
-CI runs in tiers, cheap to expensive, and a pull request only runs the jobs its changes can break.
+CI runs in tiers, cheap to expensive. A pull request runs only the jobs its changes can break;
+a push to `main`, a release and the nightly run every job.
 
 - **Tier 0: change scope and cache setup.** `make ci-scope` (`scripts/ci_scope.py`) sorts the diff
   into areas and every later job reads the answer in its `if:`. Every job that installs the project
   waits on the cache setup.
 - **Tier 1: quality gates** (the table below), one job, steps in order, each carrying
   `if: !cancelled()` so the first failure doesn't hide the rest. Commitlint runs on pull requests
-  only. A second job runs the security scans in parallel.
+  only. A second job runs the security scans in parallel. Both run on every pull request.
 - **Tier 2: tests**, after both tier 1 jobs pass. The unit suite (Ubuntu on 3.11/3.12/3.13; macOS on
-  3.13 for a pull request, all three for a release workflow call), plus `make test-extras`. Neither extras job pulls
-  torch, so what runs there is the subset that survives without it; the rest is a local target.
-- **Tier 3: build**, after tests. Package build, and the Docker image on pull requests.
+  3.13 for a pull request, all three on `main` and in a release), plus `make test-extras`. Neither
+  extras job pulls torch, so what runs there is the subset that survives without it; the rest is a
+  local target.
+- **Tier 3: build**, after tests. Package build, the Docker images and the container e2e job.
 
-The docs build starts immediately. The hermetic launch check runs on pull requests off the cache
-setup alone, Playwright e2e against a fake Immich: `make launch-check-ci` on SQLite, and
-`make launch-check-ci-postgres` too when the store changed. After the tests, the container e2e job
-builds the image and runs `make test-container` on each backend.
+The docs build starts immediately. The hermetic launch check starts off the cache setup alone:
+Playwright e2e against a fake Immich (`make launch-check-ci` on SQLite, and
+`make launch-check-ci-postgres` too when the store changed), then the feature tests on the fixture
+library. The render worker's own suite runs as a CI job too. `immich-gate.yml` runs the real-Immich
+gate (v2, 3.2 and v3) and the feature tests against a real Immich, scoped the same way.
 
 What a pull request runs:
 
 | The diff touches | Runs |
 |---|---|
-| Only docs (`docs-site/`, `docs/`, `*.md`) | Quality, security, the unit suite on one cell, the docs build if `docs-site/` changed |
-| Code (`src/`, `tests/`, `scripts/`) | The above plus the full test matrix, extras, package build, launch check and Immich gate on SQLite |
+| Only docs (`docs-site/`, `docs/`, `*.md`) | Quality, security, the docs build if `docs-site/` changed, and **Docs Contract Tests**: only the unit tests that read the changed pages. No test matrix |
+| A doc page the feature suites read (the upgrading page, for one) | The above plus the launch check and the Immich gate |
+| Only tests (`tests/` outside the e2e, feature and gate suites) | Quality, security, the unit suite on the full matrix. No docs build, package, launch check, gate or container job |
+| App code (`src/`, `web/`, `packages/`) | The unit suite (full matrix when Python changed, one cell for `web/` alone), package build, launch check, Immich gate; extras and the render worker when it touches what they import |
+| The fakes, the seeding or the gate suites (`tests/e2e/`, `tests/integration/immich_gate/`, `tests/integration/features/`, `tests/immich_fakes.py`) | The unit suite, launch check and Immich gate |
+| The render worker (`services/render-worker/`) | The unit suite, the render worker and the container jobs |
 | The store (`store/`, `db/`, `tests/store/`, `alembic.ini`) | Plus `make test-store` and the PostgreSQL legs of the launch check, container e2e and Immich gate |
-| The image or its deployment (`docker/`, `docker-compose.yml`, `deploy/`, `services/`, `packages/`) | Plus the Docker builds and container e2e |
+| The image or its deployment (`docker/`, `docker-compose.yml`, `deploy/`, `services/`, `packages/`) | Plus the Docker builds and container e2e, the unit suite on one cell |
 | `pyproject.toml`, `uv.lock`, `Makefile`, a workflow, `tests/conftest.py`, or a path no rule knows | Everything |
 
-CI runs on pull requests and `workflow_call`, not pushes to `main`.
-The release calls CI through `workflow_call` and always runs everything. `make ci-scope` prints
-what the current branch would run. Branch protection requires `CI Success` and `Immich Gate`, the
-two rollups, so skipping a job or adding a matrix leg never leaves a required check unreported.
+**Main and releases run everything.** `ci.yml` and `immich-gate.yml` run on every push to `main`,
+and the release calls both through `workflow_call`, a nightly included. The scope only ever narrows
+a `pull_request`: for any other event `ci_scope.py` answers "everything", whatever the diff, and
+`tests/test_ci_scope.py` holds it to that. Outside pull requests each run gets a concurrency group
+of its own, so one merge never cancels the previous merge's run.
+
+`make ci-scope` prints what the current branch would run. Branch protection requires `CI Success`
+and `Immich Gate`, the two rollups. A job the scope skipped counts as passing there; a failed,
+timed-out or cancelled one does not, and `Immich Gate` fails when the scope said the gate should
+run and it didn't. So skipping a job or adding a matrix leg never leaves a required check unreported.
 
 `make ci` runs the same gates locally plus the unit tests; the Makefile is the list. CI adds what
 needs a remote or a diff: commitlint, pip-audit, gitleaks, hadolint.
+
+## The pre-commit hook
+
+The hook runs the gates and tests a commit can affect, not all of them. On a one-file source change
+that is about 2 to 3 minutes instead of 5 on an idle machine, and a fraction of the CPU, which is
+what counts when several worktrees commit at once.
+
+**Gates run when a staged file is one of their inputs** (`files:` in `.pre-commit-config.yaml`):
+
+| Staged | Gates |
+|---|---|
+| Anything | Gitleaks, the private-terms gate, the unit tests the change can affect |
+| `src/` or `services/` Python, `pyproject.toml`, `uv.lock`, `Makefile` | mypy, file length, refurb, Xenon, Vulture, Bandit, complexipy, deptry, import-linter, jscpd |
+| Python in `src/`, `services/` or `tests/` | `make critique` |
+| `src/immich_memories/` Python | The CLI and config reference checks, which are generated from source |
+| `docs-site/` | The docs build; `docs-site/docs/` and `README.md` add the voice gate, the documented-commands check and the feature inventory |
+| `.github/workflows/` | `make workflow-guard` |
+| `web/`, `src/immich_memories/web/` | `make web-check` |
+| The diagrams, `docker-compose.yml`, `uv.lock`, research data | Their own check |
+
+**Tests come from a map of what each test file ran.** `scripts/hook_scope.py` (`make hook-tests`)
+reads the coverage of the last green full run, recorded per test with `--cov-context=test`, and
+picks:
+
+- for a change inside function bodies, the test files that executed the module;
+- for a change that runs on import (a signature, a constant, a decorator, a new function), also the
+  modules that read its names while they are imported, and every test that executed or imports one
+  of them; a name it no longer defines adds every test that imports, at any depth, a module whose
+  load imports that name;
+- for a doc page, a workflow, a script or package data, the files that name it, and what imports them;
+- the tests that walk the repository, on every commit, and the tests that start the app in a child
+  process (the map can't see into it), on every source change;
+- a changed test file, and the tests below a changed `conftest.py`.
+
+Before running the subset, the hook imports each changed source module in a fresh interpreter and
+collects the whole suite (about 10 seconds), which imports every test module, so a module that no
+longer loads, a circular import or a broken decorator still fails the commit. diff-cover
+then checks 80% of the changed lines, as before.
+
+The whole suite runs when the selection can't vouch for itself: no map yet (the first commit on a
+machine), `tests/conftest.py`, `tests/immich_fakes.py`, `tests/e2e/fake_*.py`, `pyproject.toml`,
+`uv.lock`, `Makefile` or the hook config changed, a change to what the package or the root conftest
+loads on start (config, the Immich models), source data nothing names, a source module no test
+reaches, more than half the suite selected, or git failing to say what changed. A full run records
+a new map in the git directory every worktree shares; everything that changed since the mapped
+tree counts as changed, so an old map or one from another branch only selects more.
+
+To run everything: `HOOK_FULL=1 git commit`, `make pre-commit` (every hook, every file, the whole
+suite) or `make ci`. Main, the release and the nightly run every suite in CI either way, so a
+selection miss surfaces within the hour of a merge, before any release.
 
 ## Quality gates
 

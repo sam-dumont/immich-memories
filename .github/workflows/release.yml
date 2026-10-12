@@ -160,13 +160,13 @@ jobs:
           python3 scripts/release_analyze.py --force-version "${FORCE_VERSION:-auto}" \
             --channel "${CHANNEL:-stable}" "${image_args[@]}" >> "$GITHUB_OUTPUT"
 
-  # Run CI before release. A nightly skips it: it builds main, which every merge
-  # already put through CI, and the rest of this workflow accepts that skip only for it.
+  # Every release runs every gate and every suite first, a nightly included: CI in
+  # full (a called workflow is never scoped) and the real-Immich gate.
   ci:
     name: CI
     needs: [analyze]
     if: >-
-      github.repository_id == '1174219883' && inputs.channel != 'nightly' &&
+      github.repository_id == '1174219883' &&
       (inputs.app_only || needs.analyze.outputs.should_release == 'true')
     uses: ./.github/workflows/ci.yml
     secrets: inherit
@@ -174,17 +174,27 @@ jobs:
       contents: read
       pull-requests: write
 
+  immich-gate:
+    name: Immich Gate
+    needs: [analyze]
+    if: >-
+      github.repository_id == '1174219883' &&
+      (inputs.app_only || needs.analyze.outputs.should_release == 'true')
+    uses: ./.github/workflows/immich-gate.yml
+    permissions:
+      contents: read
+
   # Everything that can fail before anything public happens: build the wheel, attest
   # it, write the notes. The tag, the GitHub Release and PyPI cannot be taken back,
   # so they wait for every job that could still fail (see `release`).
   package:
     name: Build Package
-    needs: [analyze, ci]
+    needs: [analyze, ci, immich-gate]
     if: >-
       github.repository_id == '1174219883' &&
       !cancelled() && needs.analyze.result == 'success' &&
       needs.analyze.outputs.should_release == 'true' &&
-      (needs.ci.result == 'success' || (inputs.channel == 'nightly' && needs.ci.result == 'skipped'))
+      (needs.ci.result == 'success' && needs.immich-gate.result == 'success')
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -347,11 +357,11 @@ jobs:
   # deployment bundle is packaged.
   release:
     name: Create Release
-    needs: [analyze, ci, package, docker-manifest, inference-manifest, deployment-bundle]
+    needs: [analyze, ci, immich-gate, package, docker-manifest, inference-manifest, deployment-bundle]
     if: >-
       github.repository_id == '1174219883' &&
       !cancelled() && !inputs.dry_run && needs.analyze.outputs.should_release == 'true' &&
-      (needs.ci.result == 'success' || (inputs.channel == 'nightly' && needs.ci.result == 'skipped')) &&
+      (needs.ci.result == 'success' && needs.immich-gate.result == 'success') &&
       needs.package.result == 'success' &&
       needs.docker-manifest.result == 'success' &&
       needs.inference-manifest.result == 'success' &&
@@ -573,11 +583,11 @@ jobs:
   # App and inference packages share the immich-memories registry namespace.
   docker-build:
     name: Build Docker Image (${{ matrix.platform }})
-    needs: [analyze, ci]
+    needs: [analyze, ci, immich-gate]
     if: >-
       github.repository_id == '1174219883' &&
       !cancelled() && needs.analyze.result == 'success' &&
-      (needs.ci.result == 'success' || (inputs.channel == 'nightly' && needs.ci.result == 'skipped')) &&
+      (needs.ci.result == 'success' && needs.immich-gate.result == 'success') &&
       (!inputs.dry_run && (inputs.app_only || needs.analyze.outputs.should_release == 'true'))
     runs-on: ${{ matrix.runner }}
     # Keep the existing approval before the first registry write. A nightly has none:
@@ -633,7 +643,7 @@ jobs:
     name: Build Inference Image (${{ matrix.device }}, ${{ matrix.platform }})
     # After docker-build so the approval on the app image still guards the first
     # registry write; the digests pushed here carry no tag until the manifests.
-    needs: [analyze, ci, docker-build]
+    needs: [analyze, ci, immich-gate, docker-build]
     # Also runs on a manual dispatch with no release, so a cuda image can be put
     # in front of a real GPU before anyone cuts a version. The tag is then the
     # commit rather than a version, so a test build can never shadow a release.
@@ -641,7 +651,7 @@ jobs:
       github.repository_id == '1174219883' &&
       !cancelled() && needs.analyze.result == 'success' && !inputs.dry_run &&
       (inputs.inference_only ||
-       ((needs.ci.result == 'success' || (inputs.channel == 'nightly' && needs.ci.result == 'skipped')) &&
+       ((needs.ci.result == 'success' && needs.immich-gate.result == 'success') &&
         needs.docker-build.result == 'success' &&
         needs.analyze.outputs.should_release == 'true' &&
         (inputs.channel != 'nightly' || inputs.rebuild_inference)))
@@ -692,7 +702,7 @@ jobs:
     name: Create Inference Manifest
     # Registry version tags move only once the app image passed its smoke test and
     # the wheel built, so a failure anywhere in phase 1 leaves every tag where it was.
-    needs: [analyze, ci, package, docker-smoke, inference-build]
+    needs: [analyze, ci, immich-gate, package, docker-smoke, inference-build]
     if: >-
       github.repository_id == '1174219883' &&
       !cancelled() && needs.analyze.result == 'success' &&
@@ -700,7 +710,7 @@ jobs:
        (inputs.channel == 'nightly' && !inputs.rebuild_inference &&
         needs.inference-build.result == 'skipped')) &&
       (inputs.inference_only ||
-       ((needs.ci.result == 'success' || (inputs.channel == 'nightly' && needs.ci.result == 'skipped')) &&
+       ((needs.ci.result == 'success' && needs.immich-gate.result == 'success') &&
         needs.package.result == 'success' &&
         needs.docker-smoke.result == 'success'))
     runs-on: ubuntu-24.04
@@ -834,13 +844,12 @@ jobs:
     name: Create Docker Manifest
     # A failing CUDA build must not leave an app version tag or `latest` moved, so
     # this waits for every phase-1 job, not just the app smoke test.
-    needs: [analyze, ci, package, docker-build, docker-smoke, inference-build]
+    needs: [analyze, ci, immich-gate, package, docker-build, docker-smoke, inference-build]
     if: >-
       github.repository_id == '1174219883' &&
       !cancelled() && needs.docker-smoke.result == 'success' &&
       (inputs.app_only ||
-       ((needs.ci.result == 'success' ||
-         (inputs.channel == 'nightly' && needs.ci.result == 'skipped')) &&
+       ((needs.ci.result == 'success' && needs.immich-gate.result == 'success') &&
         needs.package.result == 'success' &&
         (needs.inference-build.result == 'success' ||
          (inputs.channel == 'nightly' && !inputs.rebuild_inference &&
