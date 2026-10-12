@@ -449,6 +449,7 @@ def extract_clip(
     buffer_seconds: float = TRANSITION_BUFFER,
     *,
     config: Config,
+    scratch_dir: Path | None = None,
 ) -> Path:
     """Convenience function to extract a single clip.
 
@@ -462,6 +463,7 @@ def extract_clip(
         buffer_end: If True, add buffer at end for outgoing crossfade.
         buffer_seconds: Amount of buffer to add (default 0.5s).
         config: Application configuration.
+        scratch_dir: The run's own scratch directory; the shared one when None.
 
     Returns:
         Path to extracted clip.
@@ -473,7 +475,13 @@ def extract_clip(
 
     if output_path is None:
         output_path = _build_clip_output_path(
-            source_path, actual_start, actual_end, buffer_start, buffer_end, reencode
+            source_path,
+            actual_start,
+            actual_end,
+            buffer_start,
+            buffer_end,
+            reencode,
+            scratch_dir=scratch_dir,
         )
 
     segment = ClipSegment(
@@ -560,8 +568,12 @@ def _build_clip_output_path(
     buffer_start: bool,
     buffer_end: bool,
     reencode: bool,
+    *,
+    scratch_dir: Path | None = None,
 ) -> Path:
-    output_dir = private_temp_dir("clips")
+    # WHY (#2452): the name is the same for every run cutting this window of this
+    # file, so runs at once must each cut into a directory of their own.
+    output_dir = scratch_dir if scratch_dir is not None else private_temp_dir("clips")
     source_hash = hashlib.sha256(str(source_path).encode()).hexdigest()[:8]
     buffer_suffix = (
         f"_b{int(buffer_start)}{int(buffer_end)}" if (buffer_start or buffer_end) else ""

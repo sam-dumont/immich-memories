@@ -23,6 +23,7 @@ import httpx
 from tests.features.cli_harness import UserHome
 
 _STARTUP_SECONDS = 60.0
+_PORT_ATTEMPTS = 5
 
 
 def free_port() -> int:
@@ -95,19 +96,30 @@ def served_app(
     home: UserHome, *args: str, env: dict[str, str] | None = None
 ) -> Iterator[ServedApp]:
     """`immich-memories ui --port <free> <args>`, up until the block ends."""
-    port = free_port()
-    log = home.root / f"ui-{port}.log"
-    with log.open("w", encoding="utf-8") as sink:
-        process = subprocess.Popen(  # noqa: S603 -- our own CLI, fixed argv
-            [sys.executable, "-m", "immich_memories.cli", "ui", "--port", str(port), *args],
-            stdout=sink,
-            stderr=subprocess.STDOUT,
-            env=home.env(env),
-            cwd=home.root,
-        )
-    app = ServedApp(port, log)
+    # A free port is only free until it is bound: between the probe and the app binding it,
+    # another suite running beside this one can take it. The app then exits naming the port
+    # in use, and a fresh one is tried.
+    for _attempt in range(_PORT_ATTEMPTS):
+        port = free_port()
+        log = home.root / f"ui-{port}.log"
+        with log.open("w", encoding="utf-8") as sink:
+            process = subprocess.Popen(  # noqa: S603 -- our own CLI, fixed argv
+                [sys.executable, "-m", "immich_memories.cli", "ui", "--port", str(port), *args],
+                stdout=sink,
+                stderr=subprocess.STDOUT,
+                env=home.env(env),
+                cwd=home.root,
+            )
+        app = ServedApp(port, log)
+        try:
+            _wait_until_live(process, app)
+            break
+        except AssertionError:
+            if process.poll() is None or "already in use" not in app.output():
+                raise
+    else:
+        raise AssertionError(f"no free port held for ui after {_PORT_ATTEMPTS} tries")
     try:
-        _wait_until_live(process, app)
         yield app
     finally:
         process.send_signal(signal.SIGINT)

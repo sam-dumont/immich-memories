@@ -98,10 +98,15 @@ def _ken_burns_params(
     )
 
 
+def photo_rendition(asset: Asset) -> str:
+    """Which of Immich's files a still is rendered from: its edit when it has one (#2114)."""
+    return "edited" if asset.is_edited else "original"
+
+
 def _download_photo(download_fn: Any, asset: Asset, raw_path: Path) -> None:
     """Download from Immich, asking for Immich's own edited render (crop, rotate,
     mirror) when the asset carries one -- never the untouched original (#2114)."""
-    if asset.is_edited:
+    if photo_rendition(asset) == "edited":
         download_fn(asset.id, raw_path, edited=True)
     else:
         download_fn(asset.id, raw_path)

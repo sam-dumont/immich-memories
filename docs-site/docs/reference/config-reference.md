@@ -219,9 +219,11 @@ not configurable. Where a clip is cut, and how long it runs, is the editor's dec
 A render keeps each source it prepares (the cut video segment, the animated photo, the merged
 Live Photo) under `<cache.directory>/prepared-sources`. Rendering the same selection again, or
 re-running after a crash, reuses them instead of downloading and preparing them again. A source is
-reused only when nothing that shaped it has changed: the original in Immich, the cut window, the
-tier, the `output`, `hardware` and `photos` settings, the canvas, and the app version. Anything
-else prepares it again. A source the run had to settle for less on (a Live Photo that played its
+reused only when nothing that shaped it has changed: the picture as Immich describes it (its
+original, its edit, its Live Photo clips), whether it plays as a still, a stitched Live Photo or a
+cut of a video, the cut window and how long a still stays on screen, the canvas, every setting that
+reaches preparation (the tier, `output`, `hardware`, `photos`, `analysis` and the rest), this
+machine's encoders, and the app version. Anything else prepares it again. A source the run had to settle for less on (a Live Photo that played its
 single video because the burst would not merge, a burst missing a part that failed to download, a
 software encode after the hardware encoder failed) is never kept, so the next render tries again.
 `prepared_source_cache_max_size_gb` caps the folder; the least recently

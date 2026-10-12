@@ -83,6 +83,14 @@ _SOURCE_CHANGES: dict[str, Callable] = {
         setattr(clip, "live_burst_trim_points", [(0.0, 1.0), (0.0, 1.0)]),
     ),
     "certified live": lambda clip, _params: setattr(clip, "editorial_live_manifest", {"v": 1}),
+    "Live handling": lambda _clip, params: setattr(
+        params.config.analysis, "include_live_photos", False
+    ),
+    "output crf flag": lambda _clip, params: setattr(params, "output_crf", 30),
+    "codec policy": lambda _clip, params: setattr(params.config.output, "codec_policy", "strict"),
+    "canvas": lambda _clip, params: setattr(
+        params, "output_canvas", OutputCanvas(1080, 1920, "portrait")
+    ),
 }
 
 _RENDER_CHANGES: dict[str, Callable] = {
@@ -96,6 +104,54 @@ _RENDER_CHANGES: dict[str, Callable] = {
     "place": lambda clip, _params: setattr(clip.asset, "exif_info", ExifInfo(city="Elsewhere")),
     # The move heads for the people the film is about (#2440).
     "film subjects": lambda _clip, params: setattr(params, "memory_people", ("kid",)),
+    "subjects": lambda clip, _params: setattr(
+        clip.asset,
+        "faces",
+        [
+            {
+                "id": "f1",
+                "boundingBoxX1": 1,
+                "boundingBoxY1": 1,
+                "boundingBoxX2": 9,
+                "boundingBoxY2": 9,
+            }
+        ],
+    ),
+    "edited version": lambda clip, _params: setattr(clip.asset, "is_edited", True),
+    "photo duration flag": lambda _clip, params: setattr(params.config.photos, "duration", 6.0),
+}
+
+
+def _live(asset_id: str = "live-1"):
+    clip = _photo(asset_id)
+    clip.asset.live_photo_video_id = "companion-1"
+    clip.live_burst_video_ids = ["burst-1", "burst-2", "burst-3"]
+    clip.live_burst_trim_points = [(0.0, 1.0), (0.2, 1.4), (0.1, 1.2)]
+    return clip
+
+
+_LIVE_CHANGES: dict[str, Callable] = {
+    "a component swapped": lambda clip, _params: setattr(
+        clip, "live_burst_video_ids", ["burst-1", "burst-2", "burst-9"]
+    ),
+    "a component trimmed": lambda clip, _params: setattr(
+        clip, "live_burst_trim_points", [(0.0, 1.0), (0.2, 1.4), (0.1, 1.3)]
+    ),
+    "the companion": lambda clip, _params: setattr(clip.asset, "live_photo_video_id", "c-2"),
+    "shutter times": lambda clip, _params: setattr(
+        clip, "live_burst_shutter_timestamps", [1.0, 2.0, 3.0]
+    ),
+    "no burst": lambda clip, _params: setattr(clip, "live_burst_video_ids", None),
+    "Live handling": lambda _clip, params: setattr(
+        params.config.analysis, "include_live_photos", False
+    ),
+    "merge window": lambda _clip, params: setattr(
+        params.config.analysis, "live_photo_merge_window_seconds", 4.0
+    ),
+    "motion floor": lambda _clip, params: setattr(
+        params.config.analysis, "live_photo_min_clip_seconds", 2.5
+    ),
+    "the cut window": lambda clip, params: params.clip_segments.update({clip.asset.id: (0.5, 2.5)}),
 }
 
 
@@ -122,6 +178,52 @@ def test_every_source_and_recipe_input_changes_a_videos_key(change, tmp_path):
 def test_every_render_input_changes_a_photos_key(change, tmp_path):
     before, after = _key_after(change, _photo, tmp_path)
     assert before != after
+
+
+@pytest.mark.parametrize("change", list(_LIVE_CHANGES.values()), ids=list(_LIVE_CHANGES))
+def test_every_live_photo_input_changes_its_key(change, tmp_path):
+    before, after = _key_after(change, _live, tmp_path)
+    assert before != after
+
+
+def test_the_editors_hold_on_a_still_changes_its_key(tmp_path):
+    hold = EditorialSelection("photo-1", 0.0, 4.0, render_mode="still")
+    longer = EditorialSelection("photo-1", 0.0, 6.0, render_mode="still")
+
+    def request(directive, end):
+        clip = _photo()
+        return PreparationRequest(
+            _params(clip, clip_segments={"photo-1": (0.0, end)}), clip, directive, tmp_path
+        )
+
+    assert preparation_key(request(hold, 4.0)) != preparation_key(request(longer, 6.0))
+
+
+def test_a_live_photo_kept_as_a_still_is_another_preparation_than_its_motion(tmp_path):
+    from immich_memories.generate_downloads import preparation_route
+
+    still = EditorialSelection("live-1", 0.0, 3.0, render_mode="still")
+    motion = EditorialSelection("live-1", 0.0, 3.0, render_mode="motion")
+
+    assert preparation_route(_live(), still) == "photo"
+    assert preparation_route(_live(), motion) == "motion"
+    assert preparation_key(_request(_live(), tmp_path, still)) != preparation_key(
+        _request(_live(), tmp_path, motion)
+    )
+
+
+def test_this_machines_tone_map_route_changes_the_key(tmp_path, monkeypatch):
+    from immich_memories.processing import hdr_utilities
+
+    # WHY: pins both FFmpeg builds, with and without zscale (which keeps HDR); the machine
+    # running the test may have either, and a key compared against itself proves nothing.
+    keys = []
+    for has_zscale in (True, False):
+        monkeypatch.setattr(hdr_utilities, "check_zscale_available", lambda v=has_zscale: v)
+        monkeypatch.setattr(hdr_utilities, "_zscale_cache", has_zscale)
+        keys.append(preparation_key(_request(_photo(), tmp_path)))
+
+    assert keys[0] != keys[1]
 
 
 @pytest.mark.parametrize(
@@ -151,17 +253,24 @@ def test_a_new_app_version_retires_every_entry(tmp_path, monkeypatch):
     assert preparation_key(_request(_video(), tmp_path)) != before
 
 
-def test_labels_that_never_reach_the_bytes_keep_a_videos_key(tmp_path):
-    clip = _video()
-    clip.llm_emotion = "joyful"
-    clip.asset.is_favorite = True
-    clip.asset.exif_info = ExifInfo(city="Elsewhere")
-    params = _params(clip, clip_rotations={clip.asset.id: 90})
-    # A video's canvas, faces and place are applied at assembly, not baked into its segment.
-    params.output_canvas = OutputCanvas(1080, 1920, "portrait")
+def test_privacy_and_where_the_film_goes_never_reach_a_prepared_source(tmp_path):
+    clip = _photo()
+    # Privacy blurs and relabels at assembly; the output folder and upload hold the film.
+    params = _params(clip, privacy_mode=True, upload_enabled=True)
+    params.config.output.directory = str(tmp_path / "elsewhere")
 
     assert preparation_key(PreparationRequest(params, clip, None, tmp_path)) == preparation_key(
-        _request(_video(), tmp_path)
+        _request(_photo(), tmp_path)
+    )
+
+
+def test_a_credential_never_reaches_the_key(tmp_path):
+    clip = _photo()
+    params = _params(clip)
+    params.config.immich.api_key = "another-key"
+
+    assert preparation_key(PreparationRequest(params, clip, None, tmp_path)) == preparation_key(
+        _request(_photo(), tmp_path)
     )
 
 
@@ -347,3 +456,20 @@ def test_a_source_without_a_checksum_is_never_banked(tmp_path):
     )
 
     assert (first.calls, second.calls, bank.kept) == (1, 1, 0)
+
+
+def test_a_source_whose_inputs_cannot_be_keyed_is_still_prepared(tmp_path, monkeypatch):
+    bank = PreparedSourceBank(tmp_path / "bank", max_bytes=10**9)
+    preparer = _Preparer(tmp_path / "run1")
+
+    def unkeyable(_request):
+        raise ValueError("an input with no JSON form")
+
+    # WHY: stands in for a configuration value the key cannot serialise.
+    monkeypatch.setattr(generate_prepared_sources, "preparation_key", unkeyable)
+    result = reuse_or_prepare(
+        bank, _request(_photo(), preparer.output_dir), prepare=preparer.photo, dress=_dress(None)
+    )
+
+    assert result is not None and preparer.calls == 1
+    assert bank.kept == 0

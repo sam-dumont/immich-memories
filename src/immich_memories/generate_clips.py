@@ -6,6 +6,7 @@ import contextlib
 import logging
 import subprocess
 from dataclasses import dataclass, replace
+from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -222,18 +223,45 @@ class _Extraction:
     probe_cache: ProbeCache | None
     report: Callable[[str, float, str], None]
     prepared_sources: PreparedSourceBank | None = None
+    # This run's own directory for cut segments (#2452); the shared one when None.
+    scratch: Path | None = None
+
+
+def new_run_scratch() -> Path:
+    """A directory of this run's own for the segments it cuts, inside the private scratch.
+
+    Segment names are a function of the source file and the window, so two runs cutting
+    the same window of the same cached original would share one file, and the first to
+    finish deleted it from under the other: a film one shot short, without a word.
+    """
+    import tempfile
+
+    from immich_memories.security import private_temp_dir
+
+    return Path(tempfile.mkdtemp(prefix="run-", dir=private_temp_dir("clips")))
+
+
+def photo_hold_seconds(
+    params: GenerationParams, clip, directive: EditorialSelection | None
+) -> float | None:
+    """How long the editor holds a still on screen; None leaves it to `photos.duration`."""
+    segment = params.clip_segments.get(clip.asset.id) if directive is not None else None
+    return None if segment is None else segment[1] - segment[0]
+
+
+def segment_window(params: GenerationParams, clip) -> tuple[float, float]:
+    """The stretch of a video the run cuts: the editor's window, else the whole clip."""
+    return params.clip_segments.get(clip.asset.id, (0.0, clip.duration_seconds or 5.0))
 
 
 def _rendered_photo(extraction: _Extraction, clip, directive: EditorialSelection | None):
     from immich_memories.generate_photos import render_photo_as_clip
 
-    params = extraction.params
-    segment = params.clip_segments.get(clip.asset.id) if directive is not None else None
     return render_photo_as_clip(
         clip,
-        params,
+        extraction.params,
         extraction.output_dir,
-        duration_seconds=None if segment is None else segment[1] - segment[0],
+        duration_seconds=photo_hold_seconds(extraction.params, clip, directive),
     )
 
 
@@ -241,9 +269,7 @@ def _extracted_segment(extraction: _Extraction, clip, video_path: Path, progress
     from immich_memories.processing.clips import extract_clip
 
     params = extraction.params
-    start_time, end_time = params.clip_segments.get(
-        clip.asset.id, (0.0, clip.duration_seconds or 5.0)
-    )
+    start_time, end_time = segment_window(params, clip)
 
     extraction.report("extract", progress, f"Extracting segment: {name}")
     if clip.editorial_live_manifest is not None:
@@ -258,7 +284,11 @@ def _extracted_segment(extraction: _Extraction, clip, video_path: Path, progress
         )
     else:
         segment_path = extract_clip(
-            video_path, start_time=start_time, end_time=end_time, config=params.config
+            video_path,
+            start_time=start_time,
+            end_time=end_time,
+            config=params.config,
+            scratch_dir=extraction.scratch,
         )
 
         # WHY: extract_clip with -c copy can produce files shorter OR longer
@@ -334,6 +364,7 @@ def _rendered_clip(
             clip,
             extraction.directives.get(clip.asset.id),
             extraction.output_dir,
+            extraction.scratch,
         ),
         prepare=prepare,
         dress=lambda path, duration: _segment_clip(extraction, clip, path, duration),
@@ -342,19 +373,16 @@ def _rendered_clip(
 
 def _prepared_clip(extraction: _Extraction, clip, progress: float, name: str):
     """Render one selected source as the directive demands, or report nothing usable."""
-    from immich_memories.api.models import AssetType
+    from immich_memories.generate_downloads import preparation_route
 
     params = extraction.params
     directive = extraction.directives.get(clip.asset.id)
-    # IMAGE-type clips from the unified selection pool. The question is
-    # what the candidate CARRIES, not what kind of asset it is: a Live
-    # Photo whose burst was not worth stitching is a photograph, and
-    # asking whether it has a video component at all sent every one of
-    # them off to download a video for a still.
-    if clip.asset.type == AssetType.IMAGE and (
-        not clip.live_burst_video_ids
-        or (directive is not None and directive.render_mode == "still")
-    ):
+    # The question is what the candidate CARRIES, not what kind of asset it is: a
+    # Live Photo whose burst was not worth stitching is a photograph, and asking
+    # whether it has a video component at all sent every one of them off to
+    # download a video for a still.
+    route = preparation_route(clip, directive)
+    if route == "photo":
         return _rendered_photo(extraction, clip, directive)
 
     video_path = _download_video_path(
@@ -366,10 +394,10 @@ def _prepared_clip(extraction: _Extraction, clip, progress: float, name: str):
         logger.warning(f"Failed to download {clip.asset.id}, skipping")
         return None
 
-    if directive is not None and directive.render_mode == "still":
+    if route == "still":
         from immich_memories.generate_photos import _render_video_frame_as_clip
 
-        assert directive.render_frame_seconds is not None
+        assert directive is not None and directive.render_frame_seconds is not None
         return _render_video_frame_as_clip(
             clip,
             params,
@@ -382,7 +410,7 @@ def _prepared_clip(extraction: _Extraction, clip, progress: float, name: str):
 
 
 def _prepare_in_workers(
-    params, video_cache, output_dir, directives, coordinator, report, prepared_sources
+    params, video_cache, output_dir, directives, coordinator, report, prepared_sources, scratch
 ):
     from immich_memories.processing.memory_budget import source_prepare_workers
     from immich_memories.processing.output_canvas import resolve_generation_canvas
@@ -409,6 +437,7 @@ def _prepare_in_workers(
             ProbeCache(),
             lambda *_args: None,
             prepared_sources,
+            scratch,
         )
         name = clip.asset.original_file_name or clip.asset.id[:8]
         try:
@@ -450,13 +479,44 @@ def extract_clips(
     download_coordinator: DownloadCoordinator | None = None,
     probe_cache: ProbeCache | None = None,
     prepared_sources: PreparedSourceBank | None = None,
+    scratch_dir: Path | None = None,
 ) -> list[AssemblyClip]:
     """Download videos and extract clip segments. Renders IMAGE clips as photo animations.
 
     With ``prepared_sources``, a source an earlier run prepared to the same recipe is
-    reused instead of downloaded and prepared again.
+    reused instead of downloaded and prepared again. Segments are cut into
+    ``scratch_dir``, the run's own directory, or a new one made for this call.
     """
+    extract = partial(
+        _extract_clips_into,
+        params,
+        video_cache,
+        output_dir,
+        download_coordinator=download_coordinator,
+        probe_cache=probe_cache,
+        prepared_sources=prepared_sources,
+    )
+    if scratch_dir is not None:
+        return extract(scratch_dir)
+    scratch = new_run_scratch()
+    try:
+        return extract(scratch)
+    finally:
+        # Kept only while it holds segments; their cleanup removes it then.
+        with contextlib.suppress(OSError):
+            scratch.rmdir()
 
+
+def _extract_clips_into(
+    params: GenerationParams,
+    video_cache: CacheBatch | None,
+    output_dir: Path,
+    scratch: Path,
+    *,
+    download_coordinator: DownloadCoordinator | None,
+    probe_cache: ProbeCache | None,
+    prepared_sources: PreparedSourceBank | None,
+) -> list[AssemblyClip]:
     def _report(phase: str, progress: float, msg: str) -> None:
         if params.progress_callback:
             params.progress_callback(phase, progress, msg)
@@ -474,6 +534,7 @@ def extract_clips(
             download_coordinator,
             _report,
             prepared_sources,
+            scratch,
         )
     extraction = _Extraction(
         params,
@@ -484,6 +545,7 @@ def extract_clips(
         probe_cache,
         _report,
         prepared_sources,
+        scratch,
     )
 
     for i, clip in enumerate(params.clips):
@@ -522,10 +584,23 @@ def _temp_clip_paths(assembly_clips: list[AssemblyClip]) -> list[Path]:
     ]
 
 
+def _remove_emptied_run_dirs(paths: list[Path]) -> None:
+    """Drop the run directories those segments lived in, once nothing else is left in them."""
+    from immich_memories.security import private_temp_dir
+
+    root = private_temp_dir("clips")
+    for directory in {path.parent for path in paths}:
+        if directory != root and directory.is_relative_to(root):
+            with contextlib.suppress(OSError):
+                directory.rmdir()
+
+
 def cleanup_temp_clips(assembly_clips: list[AssemblyClip]) -> None:
-    for path in _temp_clip_paths(assembly_clips):
+    paths = _temp_clip_paths(assembly_clips)
+    for path in paths:
         with contextlib.suppress(OSError):
             path.unlink()
+    _remove_emptied_run_dirs(paths)
 
 
 def keep_temp_clips(assembly_clips: list[AssemblyClip], keep_dir: Path) -> None:
@@ -542,6 +617,7 @@ def keep_temp_clips(assembly_clips: list[AssemblyClip], keep_dir: Path) -> None:
     keep_dir.mkdir(parents=True, exist_ok=True)
     for path in paths:
         shutil.move(path, keep_dir / path.name)
+    _remove_emptied_run_dirs(paths)
     logger.info("Kept %d cut segments in %s", len(paths), keep_dir)
 
 
