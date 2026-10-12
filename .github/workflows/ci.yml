@@ -264,7 +264,7 @@ jobs:
   test:
     name: Test (Python ${{ matrix.python-version }}, ${{ matrix.os }}, ${{ matrix.shard }}/${{ matrix.shards }})
     if: github.repository_id == '1174219883' && needs.changes.outputs.unit == 'true'
-    needs: [changes, quality, security]
+    needs: [changes, setup]
     # uv follows .python-version (3.12) unless told otherwise, so without this every cell
     # ran 3.12 and 3.11, the Python the app image ships, was never tested.
     env:
@@ -339,7 +339,7 @@ jobs:
     if: >-
       github.repository_id == '1174219883'
       && needs.changes.outputs.integration_suites != '[]'
-    needs: [changes, quality, security]
+    needs: [changes, setup]
     env:
       UV_PYTHON: "3.12"  # the coverage cell's Python
     runs-on: ubuntu-24.04
@@ -466,7 +466,7 @@ jobs:
   test-extras:
     name: Test Extras (${{ matrix.os }})
     if: github.repository_id == '1174219883' && needs.changes.outputs.extras == 'true'
-    needs: [changes, quality, security]
+    needs: [changes, setup]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     strategy:
@@ -508,7 +508,7 @@ jobs:
   test-store:
     name: Test Store (SQLite + PostgreSQL)
     if: github.repository_id == '1174219883' && needs.changes.outputs.store == 'true'
-    needs: [changes, quality, security]
+    needs: [changes, setup]
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     services:
@@ -554,14 +554,12 @@ jobs:
   # ── Tier 3: Build + Docker (most expensive, after tests) ─────────────────
   build:
     name: Build Package
-    # A README-only change builds the wheel (it carries the README) with no test run:
-    # a test job the scope skipped is fine, one skipped by a failure upstream is not.
+    # Runs beside the tests, not after them: the wheel, image and container checks
+    # are their own gates, and CI Success fails the run when any job fails.
     if: >-
       github.repository_id == '1174219883' && !cancelled()
       && needs.changes.outputs.package == 'true'
-      && (needs.test.result == 'success'
-          || (needs.test.result == 'skipped' && needs.changes.outputs.unit != 'true'))
-    needs: [changes, test]
+    needs: [changes]
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -585,7 +583,7 @@ jobs:
 
   docker:
     name: Docker (${{ matrix.platform }})
-    needs: [changes, test]
+    needs: [changes]
     runs-on: ${{ matrix.runner }}
     if: github.repository_id == '1174219883' && needs.changes.outputs.container == 'true'
     strategy:
@@ -624,7 +622,7 @@ jobs:
   # the image, its deployment or the store it backs up changes.
   container-e2e:
     name: Container E2E (${{ matrix.database }})
-    needs: [changes, test]
+    needs: [changes]
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     if: >-
