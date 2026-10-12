@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import subprocess
+
 import pytest
 
 from immich_memories.processing.ffmpeg_runner import (
@@ -68,3 +70,26 @@ def test_other_signals_are_named_without_the_memory_guess() -> None:
 
 def test_an_unknown_signal_number_still_reads_as_a_signal() -> None:
     assert ffmpeg_exit_reason(-999) == "killed by signal 999"
+
+
+def test_a_version_read_under_a_stubbed_ffmpeg_is_forgotten_between_tests() -> None:
+    """A stub's banner parsed as 0 once made every later test on the worker use the
+    `-filter_complex_script` spelling FFmpeg 9 removed (#2456)."""
+    from unittest.mock import patch
+
+    from immich_memories.processing import ffmpeg_runner
+    from tests.ffmpeg_capabilities import forget_ffmpeg_capabilities
+
+    stubbed = subprocess.CompletedProcess([], 0, stdout="192000", stderr="")
+    nine = subprocess.CompletedProcess([], 0, stdout="ffmpeg version 9.0.1 Copyright", stderr="")
+    forget_ffmpeg_capabilities()
+    # WHY: a test that stubs every command, as the pre-extracted audio checks do
+    with patch("subprocess.run", return_value=stubbed):
+        assert ffmpeg_runner.ffmpeg_major_version() == 0
+
+    forget_ffmpeg_capabilities()
+
+    # WHY: the next test's FFmpeg, asked afresh
+    with patch("subprocess.run", return_value=nine):
+        assert ffmpeg_runner.ffmpeg_major_version() == 9
+    forget_ffmpeg_capabilities()
