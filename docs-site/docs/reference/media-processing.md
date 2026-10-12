@@ -101,9 +101,11 @@ already won its place. The answer is the same on every tier, model or not:
 ```mermaid
 flowchart TD
   L[Live Photo kept in the cut] --> B{Other Live Photos<br/>within 10 s?}
-  B -- no, lone --> R
-  B -- yes, a burst --> J{Stitched burst at least 3.5 s?}
-  J -- no --> O[The kept picture's own clip, alone] --> R
+  B -- no, lone --> O
+  B -- yes, a burst --> J{Stitch measured and<br/>at least 2.5 s?}
+  J -- no --> O{Kept picture's own clip<br/>at least 2.5 s?}
+  O -- no --> S
+  O -- yes --> R
   J -- yes --> R{Motion residual at least 1.5?}
   R -- no --> S[Plays as a still]
   R -- yes --> F{Clip shows the subject?}
@@ -117,12 +119,12 @@ flowchart TD
 2. **Bursts.** Photos within `live_photo_merge_window_seconds` (10 s) of each other form a burst. A
    burst collapses to one unit before the editor chooses: the favourite carries it, otherwise the
    sharpest, best-exposed frame, and the siblings are not separately selectable.
-3. **Length.** A lone Live Photo is a motion candidate. A join of two or more must stitch to at
-   least `live_photo_min_clip_seconds` (3.5 s), because a stitch shorter than that is more cut than
-   footage. A lone clip runs 1.7 to 3.3 s, so the rule only applies to joins. Shots a fraction of a
-   second apart overlap so much that their stitch can come out shorter than one of their clips (three
-   shots in 1.4 s can stitch to 2.4 s). A join like that drops back to the kept picture's own
-   clip, which then goes through the motion check like any lone Live Photo.
+3. **Length.** The clip that would play must last `live_photo_min_clip_seconds` (2.5 s,
+   `MIN_LIVE_MOTION_SECONDS`), whether it is a stitch or one Live Photo's own clip. A lone clip
+   runs 1.2 to 3.3 s; a 1.2 s clip is half a sentence, a 2.9 s one reads as a moment. When a
+   burst's joins cannot be measured, or its stitch comes out short (shots a fraction of a second
+   apart overlap so much that their stitch can be barely longer than one clip), the kept
+   picture's own clip gets the same test. Under the floor, the picture is its still.
 4. **Motion.** The residual is the optical flow left once the camera's own movement is removed,
    over 12 frames. At 1.5 or above something happened in every burst we measured; below it the
    answer is a coin flip, and a still always works where a dead clip does not.
@@ -135,7 +137,7 @@ A clip only ever costs a picture its motion, never its place, favourite or not. 
 plays is offered beside the videos, and a true video always plays whatever its residual.
 
 The keys that decide anything are `include_live_photos` (true) and `live_photo_min_clip_seconds`
-(3.5). `--include-live-photos` cannot turn the feature on when the config says false: both must
+(2.5). `--include-live-photos` cannot turn the feature on when the config says false: both must
 agree. With it off, a Live Photo is used as its still, never dropped.
 
 A shared album can hold a downscaled copy of a Live Photo pointing at the same video. The video
@@ -177,7 +179,7 @@ Three photos at t = 0, 0.5 s and 2 s, each clip about 3 s:
 These times share the first shutter as zero. The span is 5.0 s in total.
 
 Clips that do not overlap stay separate. With no shared content to line up on, nothing is stitched:
-the kept picture plays its own clip if that moves, and its still otherwise. The merge encodes at CRF
+the kept picture plays its own clip if it lasts 2.5 s and moves, and its still otherwise. The merge encodes at CRF
 18 with your hardware encoder if one passed a test encode, software otherwise. HDR bursts stay H.265
 10-bit with their transfer intact; the final render decides the rest.
 

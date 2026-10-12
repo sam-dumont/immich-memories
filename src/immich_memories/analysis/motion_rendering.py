@@ -53,33 +53,38 @@ class MotionRendering:
 
     @property
     def beats_a_still(self) -> bool:
-        """Whether a STITCH is worth the photograph it would replace.
+        """Whether this clip, stitched or single, lasts long enough to carry a moment.
 
-        Duration alone, and deliberately. A lone Live Photo stitches to exactly
-        the raw 3.0s with nothing merged, while the smallest genuine merge of
-        two reaches 4.0s, so the threshold sits between them.
+        Duration alone, and deliberately: the floor (`live_photo_min_clip_seconds`, default
+        `MIN_LIVE_MOTION_SECONDS`) applies the same way to a stitch of nearby Live Photos and to
+        one Live Photo's own clip (#2453). A ~1.2 s clip is half a sentence.
 
         Motion magnitude is NOT part of this. Measured on 64 real bursts it
         correlates with something having happened (median 2.04 against 0.48)
-        but does not separate it — a baby's mouth closing scored 0.31 while the
-        same instant twice with a camera shift scored 0.63 — so a gate on it
-        would drop the quiet moments a memory is for.
+        but does not separate it: a baby's mouth closing scored 0.31 while the
+        same instant twice with a camera shift scored 0.63. Whether a clip that
+        may play actually moves is the motion discriminant's question.
         """
         return self.duration_seconds >= self.minimum_seconds
 
     @property
     def may_play(self) -> bool:
-        """Whether this rendering may be offered as motion at all.
+        """Whether this rendering may be offered as motion at all: it lasts the floor."""
+        return self.beats_a_still
 
-        A join of two or more recordings has to earn its length, which is what `beats_a_still`
-        asks. A lone Live Photo is not a join: it is the single recording the camera made, and
-        every one of them is under the stitch minimum by construction, so that rule vetoed the
-        whole kind before the motion discriminant was ever consulted. Measured over four films
-        (#1066): 30 of the 38 Live Photos in the cuts were lone ones, 1.7-3.3s, none of which
-        reached the residual gate; the 8 joins did, and 5 of the 6 with a measurement played.
-        Whether a lone Live Photo plays is the discriminant's question, not the minimum's.
-        """
-        return self.beats_a_still or len(self.video_ids) <= 1
+    @property
+    def still_reason(self) -> str | None:
+        """Why this rendering may not play, in reader words, or None when it may."""
+        if self.may_play:
+            return None
+        recordings = len(self.video_ids)
+        clip = (
+            "its Live Photo clip runs" if recordings == 1 else f"{recordings} Live Photos stitch to"
+        )
+        return (
+            f"Shown as a still: {clip} only {self.duration_seconds:.1f} s, "
+            f"under the {self.minimum_seconds:g} s motion needs"
+        )
 
 
 def motion_renderings(

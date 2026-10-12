@@ -19,7 +19,7 @@ A short film lets a video play longer, up to twelve seconds, when it has content
 
 Detected speech can extend the cut to a pause, up to twelve seconds. A run of "speech" longer than twelve seconds (a crowd, a PA, music) is no sentence and never stretches a cut. A pause means a full second of quiet: the breath between two people trading lines doesn't count, so a joke keeps its punchline and the laugh after it.
 
-A Live Photo plays as motion when its clip moves and keeps its subject in view. Otherwise its still can remain in the film. See [Photos and Live Photos](../make/photos-and-live-photos.md).
+A Live Photo plays as motion when its clip, stitched with nearby Live Photos or its own, lasts at least 2.5 seconds, moves and keeps its subject in view. Otherwise its still can remain in the film. See [Photos and Live Photos](../make/photos-and-live-photos.md).
 
 A finger over the edge of the lens (a skin-toned, out-of-focus blob touching the border) is a warning, never a drop. The check runs on photos and on videos while the period is prepared. A flagged picture loses to a clean shot of the same moment, a flagged favourite still wins its moment, and a moment with only a flagged picture to show still gets shown. On a video it moves the cut, never the clip: when the picture decides where to cut, of two equally busy stretches the one with fewer flagged seconds plays. When the whole clip is flagged, the cut lands where it would have without the check.
 

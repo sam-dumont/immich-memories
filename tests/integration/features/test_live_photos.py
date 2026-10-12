@@ -3,7 +3,8 @@
 The fixture's Wednesday holds three Live Photos: a swing whose clip moves, a window whose clip
 holds still, and a burst of three takes of one kick whose clips overlap. The scripted editor
 keeps the pictures; whether each plays as motion, and how a burst joins, is decided and projected
-by production code (`tests/e2e/fake_live_motion.py` says which).
+by production code (`tests/e2e/fake_live_motion.py` says which). A clip plays only when it lasts
+the 2.5 s motion floor and moves (#2453): the swing's 3 s clip does, the window's does not move.
 """
 
 from __future__ import annotations

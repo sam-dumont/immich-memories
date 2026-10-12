@@ -722,11 +722,12 @@ src/immich_memories/
 │   ├── llm_preparation_usage.py # Caption/control/motion usage, including unmetered failed attempts
 │   ├── llm_usage_record.py     # Atomic usage checkpoints, split per model/stage, with unknown usage
 │   ├── live_photo_pipeline.py  # Keep a Live Photo's video half out of the video pool
+│   ├── added_live_motion.py    # A Live Photo added in review: stitched with its neighbours, motion only at the floor and moving
 │   ├── live_clock_offsets.py   # BankedClockOffsets: a burst's companion clock offsets, measured
 │   │                           # once per pair (each companion fetched and decoded once) and banked
 │   └── motion_rendering.py     # What a photograph could show as motion, if the memory wants it;
-│                               # may_play: a join earns its length, a lone Live Photo is put to
-│                               # the motion discriminant instead. The draft plans every burst on
+│                               # may_play: a stitch or a lone clip lasting the motion floor
+│                               # (2.5 s); still_reason says why not. The draft plans every burst on
 │                               # metadata (plan_before_measuring); UnitBuilder.measured_stitch
 │                               # measures only the bursts the cut keeps, when motion is resolved
 │

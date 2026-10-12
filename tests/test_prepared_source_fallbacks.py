@@ -40,16 +40,17 @@ from immich_memories.processing.preparation_fallbacks import note_fallback, watc
 from tests.conftest import make_clip
 
 TAKEN = datetime(2024, 6, 1, 12, 0, tzinfo=UTC)
-BURST = ["burst-1", "burst-2"]
-TRIMS = [(0.0, 0.5), (0.0, 0.5)]
+# Three 1.5 s components: losing one still leaves 3.0 s, over the 2.5 s motion floor (#2453).
+BURST = ["burst-1", "burst-2", "burst-3"]
+TRIMS = [(0.0, 1.5)] * len(BURST)
 
 
 def _ffmpeg_video(path: Path, *, audio: bool) -> Path:
-    sound = ["-f", "lavfi", "-i", "sine=frequency=440:duration=0.6"] if audio else []
+    sound = ["-f", "lavfi", "-i", "sine=frequency=440:duration=1.6"] if audio else []
     subprocess.run(
         [
             "ffmpeg", "-y", "-loglevel", "error",
-            "-f", "lavfi", "-i", "testsrc2=size=64x64:rate=30:duration=0.6",
+            "-f", "lavfi", "-i", "testsrc2=size=64x64:rate=30:duration=1.6",
             *sound,
             "-c:v", "libx264", "-preset", "ultrafast",
             *(["-c:a", "aac", "-shortest"] if audio else ["-an"]),
@@ -68,6 +69,7 @@ def media(tmp_path_factory) -> dict[str, Path]:
     junk.write_bytes(b"not a video at all" * 100)
     return {
         "silent": _ffmpeg_video(root / "silent.mp4", audio=False),
+        "silent-2": _ffmpeg_video(root / "silent-2.mp4", audio=False),
         "voiced-1": _ffmpeg_video(root / "voiced-1.mp4", audio=True),
         "voiced-2": _ffmpeg_video(root / "voiced-2.mp4", audio=True),
         "junk": junk,
@@ -105,21 +107,33 @@ def _merged_by_stand_in(monkeypatch) -> None:
     monkeypatch.setattr(generate_downloads, "_try_merge_burst", merge)
 
 
-def _companion_no_components(out: Path, media, monkeypatch) -> Path | None:
+def _held_still(out: Path) -> Path:
+    """The picture's still, which the run renders when its burst cannot play."""
+    still = out / "still.mp4"
+    still.write_bytes(b"the still, animated")
+    return still
+
+
+def _still_with_no_components(out: Path, media, monkeypatch) -> Path | None:
     failed = {key: DownloadResult(key, key, None, "timed out") for key in BURST}
-    return download_clip(_Immich(), None, _live_clip(), out, prefetched_burst_results=failed)
+    assert (
+        download_clip(_Immich(), None, _live_clip(), out, prefetched_burst_results=failed) is None
+    )
+    return _held_still(out)
 
 
-def _companion_after_failed_merge(out: Path, media, monkeypatch) -> Path | None:
+def _still_with_no_readable_component(out: Path, media, monkeypatch) -> Path | None:
     unreadable = {key: DownloadResult(key, key, media["junk"]) for key in BURST}
-    return download_clip(_Immich(), None, _live_clip(), out, prefetched_burst_results=unreadable)
+    burst = download_clip(_Immich(), None, _live_clip(), out, prefetched_burst_results=unreadable)
+    assert burst is None
+    return _held_still(out)
 
 
 def _partial_prefetched_burst(out: Path, media, monkeypatch) -> Path | None:
     _merged_by_stand_in(monkeypatch)
     results = {
         BURST[0]: DownloadResult(BURST[0], BURST[0], None, "timed out"),
-        BURST[1]: DownloadResult(BURST[1], BURST[1], media["silent"]),
+        **{key: DownloadResult(key, key, media["silent"]) for key in BURST[1:]},
     }
     return download_clip(_Immich(), None, _live_clip(), out, prefetched_burst_results=results)
 
@@ -131,7 +145,10 @@ def _partial_downloaded_burst(out: Path, media, monkeypatch) -> Path | None:
 
 def _merge_without_unreadable_component(out: Path, media, monkeypatch) -> Path | None:
     return _try_merge_burst(
-        [media["silent"], media["junk"]], list(TRIMS), out / "merged.mp4", hardware_enabled=False
+        [media["silent"], media["silent-2"], media["junk"]],
+        list(TRIMS),
+        out / "merged.mp4",
+        hardware_enabled=False,
     )
 
 
@@ -143,7 +160,7 @@ def _timestamp_trims_after_failed_alignment(out: Path, media, monkeypatch) -> Pa
     monkeypatch.setattr(live_photo_merger, "align_clips_spectrogram", fail)
     return _try_merge_burst(
         [media["voiced-1"], media["voiced-2"]],
-        list(TRIMS),
+        list(TRIMS[:2]),
         out / "merged.mp4",
         shutter_timestamps=[0.0, 0.6],
         hardware_enabled=False,
@@ -216,8 +233,8 @@ def _sdr_without_opencv(out: Path, media, monkeypatch) -> Path | None:
 
 
 FALLBACKS = {
-    "companion video, no burst component downloaded": _companion_no_components,
-    "companion video, burst merge failed": _companion_after_failed_merge,
+    "still, no burst component downloaded": _still_with_no_components,
+    "still, no burst component readable": _still_with_no_readable_component,
     "burst merged without a component whose prefetch failed": _partial_prefetched_burst,
     "burst merged without a component whose download failed": _partial_downloaded_burst,
     "burst merged without a component ffprobe cannot read": _merge_without_unreadable_component,

@@ -10,6 +10,7 @@ from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from immich_memories.generate_downloads import preparation_route
 from immich_memories.generate_privacy import clip_location_name
 from immich_memories.processing.assembly_config import AssemblyClip
 from immich_memories.processing.preparation_fallbacks import note_fallback
@@ -20,6 +21,7 @@ if TYPE_CHECKING:
     from immich_memories.analysis.editorial_planner import EditorialSelection
     from immich_memories.cache.prepared_source_bank import PreparedSourceBank
     from immich_memories.cache.video_cache import CacheBatch
+    from immich_memories.config_loader import Config
     from immich_memories.generate import GenerationParams
     from immich_memories.processing.download_coordinator import (
         DownloadCoordinator,
@@ -142,9 +144,9 @@ def probe_file_duration(path: Path, *, probe_cache: ProbeCache | None = None) ->
 def _prefetch_assets(
     clips: list,
     directives: dict[str, EditorialSelection] | None = None,
+    config: Config | None = None,
 ) -> list[PrefetchAsset]:
     """Return network-only video targets, including burst components."""
-    from immich_memories.api.models import AssetType
     from immich_memories.processing.download_coordinator import DownloadTarget
 
     targets: list[PrefetchAsset] = []
@@ -156,14 +158,7 @@ def _prefetch_assets(
             and Path(clip.local_path).exists()
         ):
             continue
-        directive = decisions.get(clip.asset.id)
-        if (
-            directive is not None
-            and directive.render_mode == "still"
-            and clip.asset.type == AssetType.IMAGE
-        ):
-            continue
-        if clip.asset.type == AssetType.IMAGE and not clip.live_burst_video_ids:
+        if preparation_route(clip, decisions.get(clip.asset.id), config) == "photo":
             continue
         if clip.live_burst_video_ids and clip.live_burst_trim_points:
             targets.extend(DownloadTarget(id=video_id) for video_id in clip.live_burst_video_ids)
@@ -373,15 +368,9 @@ def _rendered_clip(
 
 def _prepared_clip(extraction: _Extraction, clip, progress: float, name: str):
     """Render one selected source as the directive demands, or report nothing usable."""
-    from immich_memories.generate_downloads import preparation_route
-
     params = extraction.params
     directive = extraction.directives.get(clip.asset.id)
-    # The question is what the candidate CARRIES, not what kind of asset it is: a
-    # Live Photo whose burst was not worth stitching is a photograph, and asking
-    # whether it has a video component at all sent every one of them off to
-    # download a video for a still.
-    route = preparation_route(clip, directive)
+    route = preparation_route(clip, directive, params.config)
     if route == "photo":
         return _rendered_photo(extraction, clip, directive)
 
@@ -391,6 +380,9 @@ def _prepared_clip(extraction: _Extraction, clip, progress: float, name: str):
     if not video_path or not video_path.exists():
         if clip.editorial_live_manifest is not None:
             raise ValueError("Certified editorial Live source is unavailable")
+        if route == "motion":
+            # A burst that fell under the motion floor on the way plays its still (#2453).
+            return _rendered_photo(extraction, clip, directive)
         logger.warning(f"Failed to download {clip.asset.id}, skipping")
         return None
 
@@ -447,7 +439,8 @@ def _prepare_in_workers(
                 0.0,
                 name,
                 sources=lambda: coordinator.sources_for(
-                    client, _prefetch_assets([clip], directives)
+                    client,
+                    _prefetch_assets([clip], directives, params.config),
                 ),
             )
         except (OSError, subprocess.SubprocessError, RuntimeError, ValueError) as exc:

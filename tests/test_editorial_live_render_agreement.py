@@ -12,6 +12,7 @@ from immich_memories import generate_downloads as downloads
 from immich_memories.analysis.editorial_planner import EditorialSelection
 from immich_memories.api.models import AssetType, VideoClipInfo
 from immich_memories.config_models import HardwareAccelConfig
+from immich_memories.config_models_analysis import AnalysisConfig
 from immich_memories.config_models_render import OutputConfig
 from immich_memories.generate import GenerationParams
 from immich_memories.processing import editorial_live_render as certified
@@ -333,7 +334,11 @@ def test_strict_merge_never_filters_sources_or_rewrites_video_trims(source, tmp_
 
 @pytest.fixture
 def extraction_config():
-    return SimpleNamespace(hardware=HardwareAccelConfig(enabled=False), output=OutputConfig())
+    return SimpleNamespace(
+        hardware=HardwareAccelConfig(enabled=False),
+        output=OutputConfig(),
+        analysis=AnalysisConfig(),
+    )
 
 
 @pytest.fixture
@@ -503,7 +508,14 @@ def test_actual_extraction_missing_source_propagates_only_for_certified_live(
         with pytest.raises(ValueError, match="source is unavailable"):
             generate_clips.extract_clips(params, None, tmp_path)
     else:
+        # An uncertified burst whose clip is unavailable, or under the motion floor, plays its
+        # still (#2453). WHY: the Ken Burns render is the boundary; which path is the question.
+        photos = []
+        monkeypatch.setattr(
+            generate_clips, "_rendered_photo", lambda _extraction, clip, _d: photos.append(clip)
+        )
         assert generate_clips.extract_clips(params, None, tmp_path) == []
+        assert photos == [clip]
 
 
 def test_actual_prefetch_ignores_stale_local_path_for_certified_companions(source, tmp_path):

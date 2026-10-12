@@ -292,22 +292,27 @@ class UnitBuilder:
             or (residual is None and self._resolve_motion is not None)
         )
         stars = [s for s in members if self._assets[s].is_favorite]
-        return base | {
-            "favourite": bool(stars),
-            "kind": "live-motion" if motion else "live-still",
-            "motion_candidate": may_play,
-            "motion_assessed": residual is not None,
-            "asset_id": max(stars or members, key=self.quality),
-            "members": members,
-            "video_ids": list(r.video_ids),
-            "trim_points": [list(p) for p in r.trim_points],
-            "live_material": r.material.as_dict(),
-            "seconds": raw_centiseconds(min(r.duration_seconds, MOTION_CAP_SECONDS))
-            if motion
-            else self._still_hold(members),
-            "raw_seconds": raw_centiseconds(r.duration_seconds),
-            "residual": residual,
-        }
+        held = {} if r.may_play else {"live_note": r.still_reason}
+        return (
+            base
+            | held
+            | {
+                "favourite": bool(stars),
+                "kind": "live-motion" if motion else "live-still",
+                "motion_candidate": may_play,
+                "motion_assessed": residual is not None,
+                "asset_id": max(stars or members, key=self.quality),
+                "members": members,
+                "video_ids": list(r.video_ids),
+                "trim_points": [list(p) for p in r.trim_points],
+                "live_material": r.material.as_dict(),
+                "seconds": raw_centiseconds(min(r.duration_seconds, MOTION_CAP_SECONDS))
+                if motion
+                else self._still_hold(members),
+                "raw_seconds": raw_centiseconds(r.duration_seconds),
+                "residual": residual,
+            }
+        )
 
     def _video_unit(self, asset_id: str, base: dict) -> dict | None:
         """None for a clip too short to read as a shot rather than a stub.
@@ -410,6 +415,7 @@ class UnitBuilder:
                     "kind": "live-still",
                     "motion_candidate": False,
                     "seconds": self._still_hold(carrier["members"]),
+                    "live_note": "Shown as a still: its Live Photo clip does not play correctly",
                 }
         return carrier
 
@@ -449,16 +455,20 @@ class UnitBuilder:
         elif (own := self._own_clip(asset_id, members)) is not None:
             unit = self._live_unit(own, asset_id, {}, [asset_id])
         else:
-            unit = self._still_unit(asset_id, {})
+            unit = self._still_unit(asset_id, {}) | {
+                "kind": "live-still",
+                "motion_candidate": False,
+                "live_note": "Shown as a still: its Live Photos could not be stitched",
+            }
         return {k: v for k, v in self._with_banked_speech(unit).items() if k in _RENDERED_FIELDS}
 
     def _keepers_own_clip(self, members: list[str]) -> MotionRendering | None:
-        """The kept picture's own clip, for a burst whose stitch is too short to be worth its cuts.
+        """The kept picture's own clip, for a burst whose stitch is too short to play.
 
         Shutters a fraction of a second apart overlap so much that their join can come out
-        shorter than one of their clips, and a join under the minimum may not play. The kept
-        picture's own recording is not a join: it plays or not on its residual, like any lone
-        Live Photo, rather than the whole burst shipping as a photograph unmeasured (#1547).
+        shorter than one of their clips (#1547). The kept picture's own recording is held to
+        the same rule as any Live clip: it plays only when it lasts the motion floor and
+        moves. A 1.2 s clip is half a sentence, so it is the photograph (#2453).
         """
         if len(members) < 2:
             return None
@@ -476,8 +486,8 @@ class UnitBuilder:
         """The kept picture's own clip, when the burst it belongs to cannot be stitched.
 
         A refused join is refused because its offset could not be measured; one picture's own
-        recording has no join to measure, so it can still play (the residual decides whether it
-        does) instead of the whole burst falling back to a photograph.
+        recording has no join to measure, so it can still play when it lasts the motion floor
+        and moves (#2453) instead of the whole burst falling back to a photograph.
         """
         if len(members) < 2 or self._measure is None:
             return None
@@ -550,6 +560,7 @@ _RENDERED_FIELDS = frozenset(
         "speech_regions",
         "has_music",
         "source_integrity",
+        "live_note",
     }
 )
 

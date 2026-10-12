@@ -29,7 +29,7 @@ def _image(asset_id: str, *, live: bool = False) -> Asset:
 
 
 class TestTheThresholdIsConfigurable:
-    """The measured 3.5s boundary must live in the schema, not in a getattr."""
+    """The motion floor must live in the schema, not in a getattr."""
 
     def test_the_minimum_is_a_real_setting(self):
         """motion_rendering reads live_photo_min_clip_seconds off the config.
@@ -38,11 +38,10 @@ class TestTheThresholdIsConfigurable:
         not exist, so the measured boundary was a default nothing would flag if
         it drifted, and no user could change it.
 
-        The value divides a lone Live Photo, which stitches to exactly the raw
-        3.0s with nothing merged, from the smallest genuine merge of two, which
-        reaches 4.0s.
+        The value is the shortest clip a Live Photo plays as motion, stitched or
+        its own: 2.5 s (#2453). It was 3.5 s and applied to stitches only.
         """
-        assert AnalysisConfig().live_photo_min_clip_seconds == 3.5
+        assert AnalysisConfig().live_photo_min_clip_seconds == 2.5
 
 
 class TestALivePhotoIsAPhoto:

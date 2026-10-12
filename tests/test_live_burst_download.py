@@ -1,4 +1,7 @@
-"""A Live Photo burst reaches the film as one merged clip, or as its still's own video.
+"""A Live Photo burst reaches the film as one merged clip, or, under the floor, as its still.
+
+The merged clip must last the 2.5 s motion floor (#2453); a burst that falls short on the way,
+or whose merge fails, is its still, never its unstitched companion video.
 
 Real FFmpeg on one-second clips; only Immich is replaced.
 """
@@ -69,14 +72,17 @@ def _download(immich: _Immich, clip, tmp_path: Path) -> Path | None:
     return download_clip(immich, None, clip, tmp_path / "run", hardware_enabled=False)
 
 
-def test_a_burst_is_merged_into_one_clip(tmp_path):
-    immich = _Immich({f"member-{i}": _member(tmp_path / f"m{i}.mov") for i in range(2)})
+THREE = [(0.0, 1.0), (0.0, 1.0), (0.0, 1.0)]
 
-    merged = _download(immich, _burst([(0.0, 1.0), (0.0, 1.0)]), tmp_path)
+
+def test_a_burst_is_merged_into_one_clip(tmp_path):
+    immich = _Immich({f"member-{i}": _member(tmp_path / f"m{i}.mov") for i in range(3)})
+
+    merged = _download(immich, _burst(THREE), tmp_path)
 
     assert merged == tmp_path / "run" / ".live_merges" / "still-1_merged.mp4"
     duration, _ = _streams(merged)
-    assert duration == pytest.approx(2.0, abs=0.15)
+    assert duration == pytest.approx(3.0, abs=0.15)
 
 
 def test_a_merge_already_on_disk_is_reused_without_downloading(tmp_path):
@@ -85,47 +91,55 @@ def test_a_merge_already_on_disk_is_reused_without_downloading(tmp_path):
     existing.write_bytes(b"x" * 2000)
     immich = _Immich({})
 
-    assert _download(immich, _burst([(0.0, 1.0), (0.0, 1.0)]), tmp_path) == existing
+    assert _download(immich, _burst(THREE), tmp_path) == existing
     assert immich.requested == []
 
 
 def test_a_member_that_fails_to_download_leaves_the_rest_on_their_own_trims(tmp_path):
-    """The survivor keeps its own trim, not the first one in the list."""
-    immich = _Immich({"member-1": _member(tmp_path / "m1.mov")})
+    """The survivors keep their own trims, not the first ones in the list."""
+    immich = _Immich({f"member-{i}": _member(tmp_path / f"m{i}.mov") for i in (1, 2, 3)})
 
-    merged = _download(immich, _burst([(0.0, 1.0), (0.0, 0.5)]), tmp_path)
+    merged = _download(immich, _burst([(0.0, 0.5), *[(0.0, 1.0)] * 3]), tmp_path)
 
     duration, _ = _streams(merged)
-    assert duration == pytest.approx(0.5, abs=0.15)
+    assert duration == pytest.approx(3.0, abs=0.15)
 
 
-def test_when_no_member_downloads_the_still_video_is_used(tmp_path):
+def test_when_no_member_downloads_the_burst_is_its_still(tmp_path):
     immich = _Immich({"still-1": _member(tmp_path / "still.mov")})
 
-    fallback = _download(immich, _burst([(0.0, 1.0), (0.0, 1.0)]), tmp_path)
-
-    assert fallback is not None
-    assert fallback.stem == "still-1"
+    assert _download(immich, _burst(THREE), tmp_path) is None
+    assert "still-1" not in immich.requested
     assert not (tmp_path / "run" / ".live_merges" / "still-1_merged.mp4").exists()
 
 
-def test_when_no_member_is_a_video_the_still_video_is_used(tmp_path):
+def test_a_burst_left_under_the_floor_by_its_downloads_is_its_still(tmp_path):
+    immich = _Immich({f"member-{i}": _member(tmp_path / f"m{i}.mov") for i in (1, 2)})
+
+    assert _download(immich, _burst(THREE), tmp_path) is None
+    assert "still-1" not in immich.requested
+
+
+def test_when_no_member_is_a_video_the_burst_is_its_still(tmp_path):
     broken = tmp_path / "broken.mov"
     broken.write_bytes(b"not a video")
     immich = _Immich(
-        {"member-0": broken, "member-1": broken, "still-1": _member(tmp_path / "still.mov")}
+        {
+            "member-0": broken,
+            "member-1": broken,
+            "member-2": broken,
+            "still-1": _member(tmp_path / "still.mov"),
+        }
     )
 
-    fallback = _download(immich, _burst([(0.0, 1.0), (0.0, 1.0)]), tmp_path)
-
-    assert fallback is not None
-    assert fallback.stem == "still-1"
+    assert _download(immich, _burst(THREE), tmp_path) is None
+    assert "still-1" not in immich.requested
 
 
 def test_a_burst_with_sound_keeps_it_when_audio_alignment_fails(tmp_path):
     """Spectrogram alignment is an improvement; losing it must not lose the clip."""
-    immich = _Immich({f"member-{i}": _member(tmp_path / f"m{i}.mov", audio=True) for i in range(2)})
-    clip = _burst([(0.0, 1.0), (0.0, 1.0)], shutters=[100.0, 101.0])
+    immich = _Immich({f"member-{i}": _member(tmp_path / f"m{i}.mov", audio=True) for i in range(3)})
+    clip = _burst(THREE, shutters=[100.0, 101.0, 102.0])
 
     # WHY: forces the cross-correlation to fail, which real one-second tones rarely do
     with patch(
@@ -136,4 +150,4 @@ def test_a_burst_with_sound_keeps_it_when_audio_alignment_fails(tmp_path):
 
     duration, kinds = _streams(merged)
     assert kinds == {"video", "audio"}
-    assert duration == pytest.approx(2.0, abs=0.15)
+    assert duration == pytest.approx(3.0, abs=0.15)

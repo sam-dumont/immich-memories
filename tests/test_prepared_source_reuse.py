@@ -148,8 +148,9 @@ _LIVE_CHANGES: dict[str, Callable] = {
     "merge window": lambda _clip, params: setattr(
         params.config.analysis, "live_photo_merge_window_seconds", 4.0
     ),
+    # The default is 2.5 s (#2453); any other floor is another preparation.
     "motion floor": lambda _clip, params: setattr(
-        params.config.analysis, "live_photo_min_clip_seconds", 2.5
+        params.config.analysis, "live_photo_min_clip_seconds", 3.0
     ),
     "the cut window": lambda clip, params: params.clip_segments.update({clip.asset.id: (0.5, 2.5)}),
 }
@@ -473,3 +474,19 @@ def test_a_source_whose_inputs_cannot_be_keyed_is_still_prepared(tmp_path, monke
 
     assert result is not None and preparer.calls == 1
     assert bank.kept == 0
+
+
+def test_the_live_motion_floor_changes_a_short_bursts_route_and_key(tmp_path):
+    """A burst without a certified cut plays only when its stitch lasts the motion floor (#2453);
+    the floor decides the route, so the key follows it."""
+    from immich_memories.generate_downloads import preparation_route
+
+    short = _live()
+    short.live_burst_trim_points = [(0.0, 0.7), (0.2, 0.9), (0.1, 0.8)]  # 2.1 s stitched
+    low = _request(short, tmp_path)
+    low.params.config.analysis.live_photo_min_clip_seconds = 2.0
+    default = _request(short, tmp_path)
+
+    assert preparation_route(short, None, low.params.config) == "motion"
+    assert preparation_route(short, None, default.params.config) == "photo"
+    assert preparation_key(low) != preparation_key(default)
