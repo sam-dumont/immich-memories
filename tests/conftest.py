@@ -26,6 +26,9 @@ from immich_memories import config_loader
 from immich_memories.api.models import Asset, AssetType, ExifInfo, VideoClipInfo
 from immich_memories.config_loader import Config
 
+# CI's unit shards collect only their own files (`--shard-files`, tests/shard_files.py).
+from tests.shard_files import pytest_addoption, pytest_ignore_collect  # noqa: F401
+
 _TEST_ROOT: Path | None = None
 _TEST_ENV_KEYS = {
     "IMMICH_MEMORIES_CACHE__DATABASE": "cache.db",

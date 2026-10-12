@@ -609,13 +609,19 @@ test-cov:
 	@echo "Coverage report: htmlcov/index.html"
 
 # TEST_SHARD=i/N runs the i-th of N slices of the test files (scripts/shard_tests.py), as CI's
-# unit jobs do. A slice covers only part of the code, so it leaves the coverage floor to
+# unit jobs do. pytest still walks tests/ and skips the files the slice leaves out
+# (--shard-files, tests/shard_files.py): five hundred file arguments made collection five
+# times slower. A slice covers only part of the code, so it leaves the coverage floor to
 # `make coverage-combine`, which checks it on every slice's data together.
 TEST_SHARD ?=
 test-cov-xml:  ## Run tests with XML coverage + JUnit results (for CI upload)
-	files=$$(python3 scripts/shard_tests.py pick unit "$(TEST_SHARD)" $$(find tests -type f -name 'test_*.py')) && \
-	uv run pytest $$files $(PYTEST_WORKERS) $(COVERAGE_FLAGS) --cov-report=xml --junitxml=junit.xml -o junit_family=legacy -v \
-		$(if $(TEST_SHARD),--cov-fail-under=0)
+	shard=""; \
+	if [ -n "$(TEST_SHARD)" ]; then \
+		listing=$$(mktemp "$${TMPDIR:-/tmp}/test-shard.XXXXXX") || exit 1; \
+		python3 scripts/shard_tests.py pick unit "$(TEST_SHARD)" $$(find tests -type f -name 'test_*.py') > "$$listing" || exit 1; \
+		shard="--shard-files=$$listing --cov-fail-under=0"; \
+	fi; \
+	uv run pytest $$shard $(PYTEST_WORKERS) $(COVERAGE_FLAGS) --cov-report=xml --junitxml=junit.xml -o junit_family=legacy -v
 
 # The unit shards' coverage data (.coverage.* files in COVERAGE_DATA) as one: the floor
 # (fail_under) checked on the whole suite, and coverage.xml for diff-cover and Codecov.

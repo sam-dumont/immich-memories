@@ -221,6 +221,19 @@ def test_each_shard_uploads_its_artifacts_under_its_own_name(workflow: str, job:
     assert all(f"${{{{ matrix.{key} }}}}" in step["with"]["name"] for step in uploads)
 
 
+@pytest.mark.parametrize("workflow", ["ci.yml", "immich-gate.yml"])
+def test_an_upload_of_a_hidden_path_asks_for_hidden_files(workflow: str) -> None:
+    """upload-artifact skips dot-paths unless told: the Immich logs never reached a failed run."""
+    jobs = yaml.safe_load((REPO_ROOT / ".github" / "workflows" / workflow).read_text())["jobs"]
+    for job in jobs.values():
+        for step in job.get("steps", []):
+            if not str(step.get("uses", "")).startswith("actions/upload-artifact@"):
+                continue
+            paths = str(step["with"]["path"]).split()
+            if any(part.startswith(".") for path in paths for part in Path(path).parts):
+                assert step["with"].get("include-hidden-files") is True, step
+
+
 def test_duplication_gate_pins_a_supported_jscpd_cli() -> None:
     """The duplication gate must not install an arbitrary future CLI release."""
     commands = _make_dry_run("duplication")

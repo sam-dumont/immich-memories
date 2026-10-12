@@ -169,6 +169,8 @@ jobs:
         with:
           name: immich-gate-${{ matrix.immich }}-${{ matrix.database }}-logs
           if-no-files-found: ignore
+          # .immich-gate/ is a hidden directory, which upload-artifact leaves out unless asked.
+          include-hidden-files: true
           path: |
             .immich-gate/*.log
             tests/immich-gate-*-junit.xml
@@ -251,6 +253,8 @@ jobs:
         with:
           name: features-real-immich-${{ matrix.immich }}-${{ matrix.shard }}
           if-no-files-found: ignore
+          # .immich-gate/ is a hidden directory, which upload-artifact leaves out unless asked.
+          include-hidden-files: true
           path: |
             .immich-gate/*.log
             tests/features-real-immich-*-junit.xml
