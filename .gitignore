@@ -188,3 +188,5 @@ src/immich_memories/web/client/
 # Actual CC0 NAS/Full example films, tracked in LFS
 !docs-site/static/demo/tier-nas.mp4
 !docs-site/static/demo/tier-full.mp4
+# One recorded real run of each memory type, rendered from tests/e2e/fixtures/recordings.
+!docs-site/static/demo/films/*.mp4

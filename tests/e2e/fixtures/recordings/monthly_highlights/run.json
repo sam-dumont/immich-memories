@@ -1,4 +1,6 @@
 {
+ "title": "July 2025 highlights",
+ "title_source": "model",
  "memory_type": "monthly_highlights",
  "arguments": [
   "--memory-type",

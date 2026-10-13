@@ -92,8 +92,9 @@ EDITED = "#edited"
 # The edit the owner made in Immich's editor, as its edits endpoint takes one, and the same
 # transform in FFmpeg. Immich's editor crops, rotates and mirrors, nothing else: a fixture edit
 # it could not make (an earlier black-and-white one) proved nothing about a real server.
-IMMICH_EDIT = {"action": "rotate", "parameters": {"angle": 180}}
-_EDIT_FILTER = ",hflip,vflip"
+# A mirror, not a half turn: the picture is one of Kit's, and the sample films show it.
+IMMICH_EDIT = {"action": "mirror", "parameters": {"axis": "horizontal"}}
+_EDIT_FILTER = ",hflip"
 
 
 def _photo_size(picture: Picture) -> tuple[int, int]:

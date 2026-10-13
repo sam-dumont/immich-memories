@@ -1,0 +1,293 @@
+[
+  {
+    "memory_type": "monthly_highlights",
+    "title": "July 2025 highlights",
+    "arguments": [
+      "--memory-type",
+      "monthly_highlights",
+      "--month",
+      "7",
+      "--year",
+      "2025"
+    ],
+    "film": "/demo/films/monthly_highlights.mp4",
+    "poster": "/img/films/monthly_highlights.jpg",
+    "seconds": 60.9,
+    "read": 1129,
+    "moments": 129,
+    "stories": 5,
+    "kept": 15,
+    "left_out": [
+      {
+        "reason": "the film's content seconds were spent before its turn",
+        "pictures": 858
+      },
+      {
+        "reason": "its place already holds its share of the film",
+        "pictures": 29
+      },
+      {
+        "reason": "it does not stand on its own as a picture of its story",
+        "pictures": 3
+      }
+    ]
+  },
+  {
+    "memory_type": "year_in_review",
+    "title": "The road north 2025",
+    "arguments": [
+      "--memory-type",
+      "year_in_review",
+      "--year",
+      "2025",
+      "--duration",
+      "180"
+    ],
+    "film": "/demo/films/year_in_review.mp4",
+    "poster": "/img/films/year_in_review.jpg",
+    "seconds": 180.7,
+    "read": 1129,
+    "moments": 129,
+    "stories": 5,
+    "kept": 53,
+    "left_out": [
+      {
+        "reason": "the film's content seconds were spent before its turn",
+        "pictures": 747
+      },
+      {
+        "reason": "its place already holds its share of the film",
+        "pictures": 93
+      },
+      {
+        "reason": "it does not stand on its own as a picture of its story",
+        "pictures": 11
+      },
+      {
+        "reason": "other reasons",
+        "pictures": 1
+      }
+    ]
+  },
+  {
+    "memory_type": "season",
+    "title": "The road north, 2025",
+    "arguments": [
+      "--memory-type",
+      "season",
+      "--season",
+      "summer",
+      "--year",
+      "2025"
+    ],
+    "film": "/demo/films/season.mp4",
+    "poster": "/img/films/season.jpg",
+    "seconds": 195.7,
+    "read": 1129,
+    "moments": 129,
+    "stories": 5,
+    "kept": 57,
+    "left_out": [
+      {
+        "reason": "the film's content seconds were spent before its turn",
+        "pictures": 740
+      },
+      {
+        "reason": "its place already holds its share of the film",
+        "pictures": 94
+      },
+      {
+        "reason": "it does not stand on its own as a picture of its story",
+        "pictures": 11
+      },
+      {
+        "reason": "other reasons",
+        "pictures": 3
+      }
+    ]
+  },
+  {
+    "memory_type": "person_spotlight",
+    "title": "Kit in 2025",
+    "arguments": [
+      "--memory-type",
+      "person_spotlight",
+      "--person",
+      "Kit",
+      "--year",
+      "2025"
+    ],
+    "film": "/demo/films/person_spotlight.mp4",
+    "poster": "/img/films/person_spotlight.jpg",
+    "seconds": 66.0,
+    "read": 1131,
+    "moments": 18,
+    "stories": 3,
+    "kept": 15,
+    "left_out": [
+      {
+        "reason": "its story earned fewer shots than it has moments",
+        "pictures": 9
+      },
+      {
+        "reason": "it is not its own shot",
+        "pictures": 2
+      }
+    ]
+  },
+  {
+    "memory_type": "multi_person",
+    "title": "Robin and Kit in · 2025",
+    "arguments": [
+      "--memory-type",
+      "multi_person",
+      "--person",
+      "Robin",
+      "--person",
+      "Kit",
+      "--year",
+      "2025"
+    ],
+    "film": "/demo/films/multi_person.mp4",
+    "poster": "/img/films/multi_person.jpg",
+    "seconds": 13.0,
+    "read": 1131,
+    "moments": 3,
+    "stories": 2,
+    "kept": 2,
+    "left_out": [
+      {
+        "reason": "its story weighs nothing",
+        "pictures": 1
+      }
+    ]
+  },
+  {
+    "memory_type": "holiday",
+    "title": "21 July · 2025",
+    "arguments": [
+      "--memory-type",
+      "holiday",
+      "--holiday",
+      "07-21",
+      "--year",
+      "2025"
+    ],
+    "film": "/demo/films/holiday.mp4",
+    "poster": "/img/films/holiday.jpg",
+    "seconds": 53.0,
+    "read": 181,
+    "moments": 9,
+    "stories": 1,
+    "kept": 13,
+    "left_out": [
+      {
+        "reason": "it is not its own shot",
+        "pictures": 41
+      },
+      {
+        "reason": "it does not stand on its own as a picture of its story",
+        "pictures": 1
+      },
+      {
+        "reason": "its story earned fewer shots than it has moments",
+        "pictures": 1
+      }
+    ]
+  },
+  {
+    "memory_type": "trip",
+    "title": "19 DAYS ACROSS DENMARK → SWEDEN → FINLAND → NORWAY, JULY 2025",
+    "arguments": [
+      "--memory-type",
+      "trip",
+      "--year",
+      "2025",
+      "--trip-index",
+      "1"
+    ],
+    "film": "/demo/films/trip.mp4",
+    "poster": "/img/films/trip.jpg",
+    "seconds": 218.0,
+    "read": 952,
+    "moments": 90,
+    "stories": 1,
+    "kept": 58,
+    "left_out": [
+      {
+        "reason": "the film's content seconds were spent before its turn",
+        "pictures": 547
+      },
+      {
+        "reason": "it repeats a picture already in the cut",
+        "pictures": 7
+      },
+      {
+        "reason": "it does not stand on its own as a picture of its story",
+        "pictures": 6
+      }
+    ]
+  },
+  {
+    "memory_type": "album",
+    "title": "The road north",
+    "arguments": [
+      "--memory-type",
+      "album",
+      "--from-album",
+      "The road north"
+    ],
+    "film": "/demo/films/album.mp4",
+    "poster": "/img/films/album.jpg",
+    "seconds": 228.4,
+    "read": 990,
+    "moments": 92,
+    "stories": 1,
+    "kept": 66,
+    "left_out": [
+      {
+        "reason": "its story earned fewer shots than it has moments",
+        "pictures": 351
+      },
+      {
+        "reason": "it is not its own shot",
+        "pictures": 304
+      },
+      {
+        "reason": "its place already holds its share of the film",
+        "pictures": 35
+      },
+      {
+        "reason": "other reasons",
+        "pictures": 12
+      }
+    ]
+  },
+  {
+    "memory_type": "special_day",
+    "title": null,
+    "arguments": [
+      "--memory-type",
+      "special_day",
+      "--day",
+      "2025-07-05"
+    ],
+    "film": "/demo/films/special_day.mp4",
+    "poster": "/img/films/special_day.jpg",
+    "seconds": 27.0,
+    "read": 9,
+    "moments": 4,
+    "stories": 1,
+    "kept": 5,
+    "left_out": [
+      {
+        "reason": "it does not stand on its own as a picture of its story",
+        "pictures": 3
+      },
+      {
+        "reason": "it is not its own shot",
+        "pictures": 1
+      }
+    ]
+  }
+]

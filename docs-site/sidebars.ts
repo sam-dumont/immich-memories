@@ -110,7 +110,7 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category', label: 'Background',
-      items: ['welcome/about', 'welcome/how-this-was-built'],
+      items: ['welcome/about', 'welcome/how-this-was-built', 'welcome/demo-library'],
     },
     {
       type: 'category', label: 'Contribute',
