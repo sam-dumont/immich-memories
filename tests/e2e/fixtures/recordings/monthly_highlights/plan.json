@@ -23,37 +23,37 @@
    "divider_month_keys": null
   },
   "source_ids": [
-   "cast-0701-kit-lining-up-the-chocolate",
    "birthday-cake",
+   "birthday-cupcakes-2",
+   "birthday-superheroes",
    "forest-0706-pat-03",
-   "forest-0706-tervuren-00",
-   "cast-0707-pat-in-his-reading-glasses",
+   "forest-0706-tervuren-04",
+   "home-0707-park-1",
    "home-0707-park-3",
    "cast-0707-pat-and-lou-with-the-little",
-   "home-0711-flour-mill",
+   "cast-0710-charlie-and-robin-looking-up",
    "north-clip-0712-0",
-   "north-clip-0714-1",
-   "north-0715-0124",
    "north-0716-0196",
+   "north-0718-0252",
+   "north-clip-0718-3",
    "north-0721-0339",
-   "north-clip-0730-6",
    "north-0731-1002"
   ],
-  "sha256": "0716d492d1f019a793a40ad54f5c85c63e02752d96f6cf7db30d5cb561f0c9c2"
+  "sha256": "6c726107dc6b0304c9f4f6b7eb22c2a33a78105ede07b312eb1d2f00076b0fac"
  },
  "story": {
   "version": "story-first-selection-v7-prepared-candidates",
   "slots": 15,
-  "thesis": "The period featured various activities across multiple locations, including outdoor sports in Jette and a family gathering indoors. Sightseeing took place in Tervuren and Vossem, and the group visited Stege, Zealand, Denmark. Distinctive events included a blue cake display in a kitchen and posing sessions in a garden. The overall pattern shows a mix of leisure, travel, and domestic activities throughout July.",
+  "thesis": "Kit's birthday, then Lou and Pat's visit, then The road north",
   "priorities": [],
   "episodes": [
    {
     "episode": "S005",
-    "title": "posing at Stege / Copenhagen / posing at Gränna / working at Hagby / posing at Hagby / sport-active at Skutskär / sport-active at Ramvik / posing at Lövånger / sport-active at Korpilombolo / sport-active at Muonio / sport-active / eating-drinking at Alta / posing at Honningsvåg / sport-active at Honningsvåg / animal-nature / sport-active at Alta / posing at Burfjord / sport-active at Olderdalen / posing at Tromsø / Storsteinnes / Borkenes / posing at Kabelvåg / Ballstad / posing at Ballstad / posing at Reine / posing at Gravdal / posing at Sørland / playing / sport-active at Sørland / posing at Bodø / sightseeing / sport-active at Namsskogan / sport-active at Steinkjer / eating-drinking at Børsa / sport-active at Rensvik / posing at Eide / sport-active at Elnesvågen / Aukra / sport-active at Midsund / posing at Ålesund / posing at Stranda / posing at Stryn / sightseeing at Lærdalsøyri / working at Treungen / animal-nature at Åmli",
-    "role": "supporting",
-    "weight": "minor",
+    "title": "The road north",
+    "role": "central",
+    "weight": "major",
     "gate": "remarkable",
-    "purpose": "Capture dates, places and owner favourites",
+    "purpose": "20 days away, Gedser to Åmli",
     "day": "2025-07-12",
     "seen": {
      "days": 20,
@@ -115,31 +115,166 @@
     "units": 776,
     "depicted_moments": 153,
     "groups_offered": 153,
-    "granted": 7,
+    "granted": 6,
     "chosen": [
      "M069:cg",
      "M098:cg",
+     "M113:cg",
      "M130:cg",
      "M222:cg",
-     "M079:cg",
-     "M219:cg",
-     "M142:cg"
+     "M116:cg"
     ],
-    "kind": "story"
+    "kind": "trip",
+    "trip": "The road north",
+    "reserve": 6,
+    "occasion": "trip",
+    "people": [],
+    "days": [
+     "2025-07-12",
+     "2025-07-31"
+    ],
+    "places": [
+     "Gedser",
+     "Idestrup",
+     "Store Damme",
+     "Stege",
+     "Copenhagen",
+     "Gränna",
+     "Hagby",
+     "Älvkarleby",
+     "Skutskär",
+     "Ramvik",
+     "Lövånger",
+     "Korpilombolo",
+     "Kolari",
+     "Muonio",
+     "Alta",
+     "Honningsvåg",
+     "Burfjord",
+     "Olderdalen",
+     "Ivgobahta",
+     "Tromsø",
+     "Storsteinnes",
+     "Borkenes",
+     "Kabelvåg",
+     "Ballstad",
+     "Leknes",
+     "Reine",
+     "Ramberg",
+     "Gravdal",
+     "Sørland",
+     "Røst",
+     "Bodø",
+     "Namsskogan",
+     "Steinkjer",
+     "Børsa",
+     "Rensvik",
+     "Eide",
+     "Elnesvågen",
+     "Aukra",
+     "Midsund",
+     "Ålesund",
+     "Stordal",
+     "Stranda",
+     "Stryn",
+     "Lærdalsøyri",
+     "Treungen",
+     "Åmli"
+    ]
+   },
+   {
+    "episode": "S001-2025-07-05",
+    "title": "Kit's birthday",
+    "role": "central",
+    "weight": "major",
+    "gate": "remarkable",
+    "purpose": "Kit turns five",
+    "day": "2025-07-05",
+    "seen": {
+     "days": 1,
+     "moments": 8,
+     "pictures": 9,
+     "favourites": 1
+    },
+    "day_episodes": [
+     "R008",
+     "R009"
+    ],
+    "units": 9,
+    "depicted_moments": 8,
+    "groups_offered": 8,
+    "granted": 3,
+    "chosen": [
+     "M023:cg",
+     "M026:cg",
+     "M027:cg"
+    ],
+    "kind": "story",
+    "occasion": "birthday",
+    "people": [
+     "Kit"
+    ],
+    "days": [
+     "2025-07-05",
+     "2025-07-05"
+    ],
+    "places": [
+     "Ixelles"
+    ],
+    "trip": null
+   },
+   {
+    "episode": "S004-2025-07-07",
+    "title": "Lou and Pat's visit",
+    "role": "central",
+    "weight": "major",
+    "gate": "remarkable",
+    "purpose": "Lou and Pat come over",
+    "day": "2025-07-07",
+    "seen": {
+     "days": 1,
+     "moments": 3,
+     "pictures": 5,
+     "favourites": 0
+    },
+    "day_episodes": [
+     "R014",
+     "R015"
+    ],
+    "units": 5,
+    "depicted_moments": 3,
+    "groups_offered": 3,
+    "granted": 3,
+    "chosen": [
+     "M042:cg",
+     "M043:cg",
+     "M044:cg"
+    ],
+    "kind": "story",
+    "occasion": "visit",
+    "people": [],
+    "days": [
+     "2025-07-07",
+     "2025-07-07"
+    ],
+    "places": [
+     "Jette"
+    ],
+    "trip": null
    },
    {
     "episode": "S001",
-    "title": "Ganshoren / posing at Strombeek-Bever / posing / working at Schaerbeek / eating-drinking at Forest / playing / celebration at Ixelles / playing at Ixelles / playing at Watermael-Boitsfort",
+    "title": "Days at home, 1–6 July",
     "role": "supporting",
     "weight": "minor",
     "gate": "remarkable",
-    "purpose": "Capture dates, places and owner favourites",
+    "purpose": "Ordinary days at home: Ganshoren, Strombeek-Bever, Schaerbeek and 3 more places",
     "day": "2025-07-01",
     "seen": {
-     "days": 6,
-     "moments": 33,
-     "pictures": 55,
-     "favourites": 2
+     "days": 5,
+     "moments": 25,
+     "pictures": 46,
+     "favourites": 1
     },
     "day_episodes": [
      "R001",
@@ -148,39 +283,53 @@
      "R004",
      "R005",
      "R006",
-     "R008",
-     "R009",
      "R010",
      "R011"
     ],
-    "units": 55,
-    "depicted_moments": 32,
-    "groups_offered": 32,
-    "granted": 3,
+    "units": 46,
+    "depicted_moments": 24,
+    "groups_offered": 24,
+    "granted": 1,
     "chosen": [
-     "M003:cg",
-     "M023:cg",
      "M030:cg"
     ],
-    "kind": "story"
+    "kind": "story",
+    "occasion": null,
+    "people": [
+     "Kit",
+     "Remy",
+     "Robin",
+     "Charlie"
+    ],
+    "days": [
+     "2025-07-01",
+     "2025-07-06"
+    ],
+    "places": [
+     "Ganshoren",
+     "Strombeek-Bever",
+     "Schaerbeek",
+     "Forest",
+     "Watermael-Boitsfort",
+     "Overijse"
+    ],
+    "trip": null
    },
    {
     "episode": "S004",
-    "title": "sport-active at Jette / 2025-07-07 / playing / Woluwe-Saint-Lambert / posing / sightseeing at Strombeek-Bever / 2025-07-09 / sightseeing at Saint-Josse-ten-Noode / posing at Diegem",
+    "title": "Days at home, 8–11 July",
     "role": "supporting",
     "weight": "minor",
     "gate": "remarkable",
-    "purpose": "Capture dates, places and owner favourites",
-    "day": "2025-07-07",
+    "purpose": "Ordinary days at home: Woluwe-Saint-Lambert, Strombeek-Bever, Saint-Josse-ten-Noode and 1 more places",
+    "day": "2025-07-08",
     "seen": {
-     "days": 5,
-     "moments": 24,
-     "pictures": 58,
+     "days": 4,
+     "moments": 21,
+     "pictures": 53,
      "favourites": 0
     },
     "day_episodes": [
-     "R014",
-     "R015",
      "R016",
      "R017",
      "R018",
@@ -194,24 +343,44 @@
      "R026",
      "R027"
     ],
-    "units": 58,
-    "depicted_moments": 23,
-    "groups_offered": 23,
-    "granted": 3,
+    "units": 53,
+    "depicted_moments": 20,
+    "groups_offered": 20,
+    "granted": 1,
     "chosen": [
-     "M044:cg",
-     "M042:cg",
-     "M063:cg"
+     "M060:cg"
     ],
-    "kind": "story"
+    "kind": "story",
+    "occasion": null,
+    "people": [
+     "Kit",
+     "Jo",
+     "Alex",
+     "Robin",
+     "Sasha",
+     "Charlie",
+     "Mo",
+     "Remy"
+    ],
+    "days": [
+     "2025-07-08",
+     "2025-07-11"
+    ],
+    "places": [
+     "Woluwe-Saint-Lambert",
+     "Strombeek-Bever",
+     "Saint-Josse-ten-Noode",
+     "Diegem"
+    ],
+    "trip": null
    },
    {
     "episode": "S003",
-    "title": "sightseeing at Tervuren / posing",
+    "title": "Vossem, 6–7 July",
     "role": "supporting",
     "weight": "minor",
     "gate": "remarkable",
-    "purpose": "Capture dates, places and owner favourites",
+    "purpose": "Days out: Tervuren, Vossem",
     "day": "2025-07-06",
     "seen": {
      "days": 2,
@@ -226,20 +395,33 @@
     "units": 14,
     "depicted_moments": 6,
     "groups_offered": 6,
-    "granted": 2,
+    "granted": 1,
     "chosen": [
-     "M036:cg",
-     "M041:cg"
+     "M039:cg"
     ],
-    "kind": "story"
+    "kind": "story",
+    "occasion": null,
+    "people": [
+     "Lou",
+     "Pat"
+    ],
+    "days": [
+     "2025-07-06",
+     "2025-07-07"
+    ],
+    "places": [
+     "Tervuren",
+     "Vossem"
+    ],
+    "trip": null
    },
    {
     "episode": "S002",
-    "title": "sightseeing at Tervuren",
+    "title": "Tervuren, Friday 4 July",
     "role": "supporting",
     "weight": "minor",
     "gate": "remarkable",
-    "purpose": "Capture dates, places and owner favourites",
+    "purpose": "A day out: Tervuren",
     "day": "2025-07-04",
     "seen": {
      "days": 1,
@@ -255,7 +437,17 @@
     "groups_offered": 2,
     "granted": 0,
     "chosen": [],
-    "kind": "story"
+    "kind": "story",
+    "occasion": null,
+    "people": [],
+    "days": [
+     "2025-07-04",
+     "2025-07-04"
+    ],
+    "places": [
+     "Tervuren"
+    ],
+    "trip": null
    }
   ],
   "calls": {
@@ -263,8 +455,8 @@
    "story_pages_fresh": 0,
    "pick_calls": 0,
    "thread_questions": 0,
-   "selection_passes": 12,
-   "failed_standing": 1,
+   "selection_passes": 3,
+   "failed_standing": 10,
    "kept_without_standing": 0
   }
  },
@@ -324,6 +516,7 @@
   "north-0714-0059": "the film's content seconds were spent before its turn",
   "north-0714-0060": "the film's content seconds were spent before its turn",
   "north-0714-0061": "the film's content seconds were spent before its turn",
+  "north-clip-0714-1": "the film's content seconds were spent before its turn",
   "north-0714-0063": "the film's content seconds were spent before its turn",
   "north-0714-0064": "the film's content seconds were spent before its turn",
   "north-0714-0066": "the film's content seconds were spent before its turn",
@@ -466,7 +659,6 @@
   "north-0718-0249": "the film's content seconds were spent before its turn",
   "north-0718-0250": "the film's content seconds were spent before its turn",
   "north-0718-0251": "the film's content seconds were spent before its turn",
-  "north-0718-0252": "the film's content seconds were spent before its turn",
   "north-0718-0253": "the film's content seconds were spent before its turn",
   "north-0718-0254": "the film's content seconds were spent before its turn",
   "north-0718-0255": "the film's content seconds were spent before its turn",
@@ -492,7 +684,6 @@
   "north-0718-0276": "the film's content seconds were spent before its turn",
   "north-0718-0277": "the film's content seconds were spent before its turn",
   "north-0718-0278": "the film's content seconds were spent before its turn",
-  "north-clip-0718-3": "the film's content seconds were spent before its turn",
   "north-0718-0279": "the film's content seconds were spent before its turn",
   "north-0718-0280": "the film's content seconds were spent before its turn",
   "north-0718-0281": "the film's content seconds were spent before its turn",
@@ -596,24 +787,25 @@
   "north-0721-0394": "the film's content seconds were spent before its turn",
   "north-0721-0395": "the film's content seconds were spent before its turn",
   "north-0721-0396": "the film's content seconds were spent before its turn",
+  "north-0721-0397": "the film's content seconds were spent before its turn",
   "north-0721-0398": "the film's content seconds were spent before its turn",
   "north-0722-0399": "the film's content seconds were spent before its turn",
-  "north-0722-0400": "its place already holds its share of the film",
+  "north-0722-0400": "the film's content seconds were spent before its turn",
   "north-0722-0401": "the film's content seconds were spent before its turn",
   "north-0722-0402": "the film's content seconds were spent before its turn",
   "north-0722-0403": "the film's content seconds were spent before its turn",
   "north-0722-0404": "the film's content seconds were spent before its turn",
-  "north-0722-0405": "its place already holds its share of the film",
+  "north-0722-0405": "the film's content seconds were spent before its turn",
   "north-0722-0406": "the film's content seconds were spent before its turn",
   "north-0722-0407": "the film's content seconds were spent before its turn",
   "north-0722-0408": "the film's content seconds were spent before its turn",
-  "north-0722-0409": "its place already holds its share of the film",
-  "north-0722-0410": "its place already holds its share of the film",
-  "north-0722-0411": "its place already holds its share of the film",
+  "north-0722-0409": "the film's content seconds were spent before its turn",
+  "north-0722-0410": "the film's content seconds were spent before its turn",
+  "north-0722-0411": "the film's content seconds were spent before its turn",
   "north-0722-0412": "the film's content seconds were spent before its turn",
-  "north-0722-0413": "its place already holds its share of the film",
-  "north-0722-0414": "its place already holds its share of the film",
-  "north-0722-0415": "its place already holds its share of the film",
+  "north-0722-0413": "the film's content seconds were spent before its turn",
+  "north-0722-0414": "the film's content seconds were spent before its turn",
+  "north-0722-0415": "the film's content seconds were spent before its turn",
   "trip-0722-beach-gull": "the film's content seconds were spent before its turn",
   "north-0723-0416": "the film's content seconds were spent before its turn",
   "north-0723-0419": "the film's content seconds were spent before its turn",
@@ -621,7 +813,7 @@
   "north-0723-0422": "the film's content seconds were spent before its turn",
   "north-0723-0423": "the film's content seconds were spent before its turn",
   "north-0723-0424": "the film's content seconds were spent before its turn",
-  "north-clip-0723-4": "the film's content seconds were spent before its turn",
+  "north-clip-0723-4": "its place already holds its share of the film",
   "north-0723-0425": "the film's content seconds were spent before its turn",
   "north-0723-0426": "the film's content seconds were spent before its turn",
   "north-0723-0427": "the film's content seconds were spent before its turn",
@@ -629,7 +821,7 @@
   "north-0723-0431": "the film's content seconds were spent before its turn",
   "north-0723-0432": "the film's content seconds were spent before its turn",
   "north-0723-0433": "the film's content seconds were spent before its turn",
-  "north-0723-0434": "the film's content seconds were spent before its turn",
+  "north-0723-0434": "its place already holds its share of the film",
   "north-0723-0435": "the film's content seconds were spent before its turn",
   "north-0723-0436": "the film's content seconds were spent before its turn",
   "north-0723-0437": "the film's content seconds were spent before its turn",
@@ -1022,6 +1214,7 @@
   "north-0730-0954": "the film's content seconds were spent before its turn",
   "north-0730-0956": "the film's content seconds were spent before its turn",
   "north-0730-0957": "the film's content seconds were spent before its turn",
+  "north-clip-0730-6": "the film's content seconds were spent before its turn",
   "north-0730-0958": "the film's content seconds were spent before its turn",
   "north-0731-0959": "the film's content seconds were spent before its turn",
   "north-0731-0960": "the film's content seconds were spent before its turn",
@@ -1038,22 +1231,31 @@
   "north-0731-0984": "the film's content seconds were spent before its turn",
   "north-0731-0988": "the film's content seconds were spent before its turn",
   "north-0731-1000": "the film's content seconds were spent before its turn",
+  "birthday-kitchen": "it does not stand on its own as a picture of its story",
+  "birthday-decorating": "it does not stand on its own as a picture of its story",
+  "birthday-cupcakes-1": "it does not stand on its own as a picture of its story",
+  "birthday-stairs": "its place already holds its share of the film",
+  "birthday-sofa-film": "its place already holds its share of the film",
+  "birthday-dancing": "the film's content seconds were spent before its turn",
+  "home-0707-park-2": "the film's content seconds were spent before its turn",
+  "home-0707-park-4": "the film's content seconds were spent before its turn",
   "home-0701-ganshoren": "the film's content seconds were spent before its turn",
   "home-0701-laeken-park": "the film's content seconds were spent before its turn",
+  "cast-0701-kit-lining-up-the-chocolate": "the film's content seconds were spent before its turn",
   "cast-0701-robin-with-the-paper-on-the": "the film's content seconds were spent before its turn",
   "cast-0701-charlie-laughing-at-somethin": "the film's content seconds were spent before its turn",
   "cast-0701-remy-in-the-grass": "the film's content seconds were spent before its turn",
   "home-0702-kit-stuffie": "the film's content seconds were spent before its turn",
   "home-0702-tram-2": "the film's content seconds were spent before its turn",
   "home-0702-tram-1": "the film's content seconds were spent before its turn",
-  "home-0702-kit-beanbag": "its place already holds its share of the film",
-  "cast-0703-kit-s-paper-octopus": "its place already holds its share of the film",
+  "home-0702-kit-beanbag": "the film's content seconds were spent before its turn",
+  "cast-0703-kit-s-paper-octopus": "the film's content seconds were spent before its turn",
   "cast-0703-painting-with-the-watercolou": "the film's content seconds were spent before its turn",
-  "home-0703-baking": "its place already holds its share of the film",
+  "home-0703-baking": "the film's content seconds were spent before its turn",
   "cast-0703-remy-chewing-on-a-block": "the film's content seconds were spent before its turn",
-  "cast-0703-robin-in-the-hoodie": "its place already holds its share of the film",
-  "cast-0703-cutting-out-shapes-at-the-ta": "its place already holds its share of the film",
-  "cast-0703-charlie-and-remy-sharing-the": "its place already holds its share of the film",
+  "cast-0703-robin-in-the-hoodie": "the film's content seconds were spent before its turn",
+  "cast-0703-cutting-out-shapes-at-the-ta": "the film's content seconds were spent before its turn",
+  "cast-0703-charlie-and-remy-sharing-the": "the film's content seconds were spent before its turn",
   "home-0703-duden-00": "the film's content seconds were spent before its turn",
   "home-0703-duden-01": "the film's content seconds were spent before its turn",
   "home-0703-duden-02": "the film's content seconds were spent before its turn",
@@ -1065,20 +1267,12 @@
   "home-0703-duden-08": "the film's content seconds were spent before its turn",
   "home-0703-duden-09": "the film's content seconds were spent before its turn",
   "home-0703-duden-10": "the film's content seconds were spent before its turn",
-  "cast-0704-kit-digging-on-the-beach": "its place already holds its share of the film",
-  "cast-0704-remy-s-first-steps-on-the-sa": "its place already holds its share of the film",
+  "cast-0704-kit-digging-on-the-beach": "the film's content seconds were spent before its turn",
+  "cast-0704-remy-s-first-steps-on-the-sa": "the film's content seconds were spent before its turn",
   "cast-0704-remy-up-in-the-air": "the film's content seconds were spent before its turn",
   "home-0704-fountain": "the film's content seconds were spent before its turn",
   "cast-0704-charlie-with-the-flowers": "the film's content seconds were spent before its turn",
   "cast-0704-robin-in-the-tall-grass": "the film's content seconds were spent before its turn",
-  "birthday-kitchen": "the film's content seconds were spent before its turn",
-  "birthday-decorating": "the film's content seconds were spent before its turn",
-  "birthday-cupcakes-1": "the film's content seconds were spent before its turn",
-  "birthday-cupcakes-2": "the film's content seconds were spent before its turn",
-  "birthday-superheroes": "its place already holds its share of the film",
-  "birthday-stairs": "the film's content seconds were spent before its turn",
-  "birthday-sofa-film": "the film's content seconds were spent before its turn",
-  "birthday-dancing": "the film's content seconds were spent before its turn",
   "forest-0706-pat-02": "the film's content seconds were spent before its turn",
   "forest-0706-pat-05": "the film's content seconds were spent before its turn",
   "forest-0706-pat-00": "the film's content seconds were spent before its turn",
@@ -1088,15 +1282,12 @@
   "forest-0706-sonian-1": "the film's content seconds were spent before its turn",
   "forest-0706-sonian-2": "the film's content seconds were spent before its turn",
   "forest-0706-sonian-3": "the film's content seconds were spent before its turn",
-  "forest-0706-picnic": "its place already holds its share of the film",
+  "forest-0706-picnic": "the film's content seconds were spent before its turn",
   "forest-0706-spring": "the film's content seconds were spent before its turn",
-  "home-0707-park-2": "the film's content seconds were spent before its turn",
-  "home-0707-park-3": "the film's content seconds were spent before its turn",
-  "home-0707-park-4": "the film's content seconds were spent before its turn",
-  "cast-0708-jo-by-the-fireplace": "its place already holds its share of the film",
+  "cast-0708-jo-by-the-fireplace": "the film's content seconds were spent before its turn",
   "home-0708-saint-lambert": "the film's content seconds were spent before its turn",
   "cast-0708-climbing-the-fence": "the film's content seconds were spent before its turn",
-  "cast-0708-alex-and-mo-with-their-schoo": "its place already holds its share of the film",
+  "cast-0708-alex-and-mo-with-their-schoo": "the film's content seconds were spent before its turn",
   "cast-0708-sasha-by-the-hedge": "the film's content seconds were spent before its turn",
   "cast-0708-alex-with-the-football": "the film's content seconds were spent before its turn",
   "cast-0708-jo-and-alex-in-the-street": "the film's content seconds were spent before its turn",
@@ -1106,10 +1297,10 @@
   "cast-0708-jo-in-the-wind": "the film's content seconds were spent before its turn",
   "cast-0708-jo-listening": "the film's content seconds were spent before its turn",
   "cast-0708-alex-looking-up": "the film's content seconds were spent before its turn",
-  "cast-0708-jo-in-the-hairband": "its place already holds its share of the film",
+  "cast-0708-jo-in-the-hairband": "the film's content seconds were spent before its turn",
   "cast-0708-alex-and-mo-pulling-faces": "the film's content seconds were spent before its turn",
   "cast-0708-kit-in-the-dungarees": "the film's content seconds were spent before its turn",
-  "home-0708-ice-cream-bike": "its place already holds its share of the film",
+  "home-0708-ice-cream-bike": "the film's content seconds were spent before its turn",
   "live-quiet-sunrise": "the film's content seconds were spent before its turn",
   "home-0709-cycle-path": "the film's content seconds were spent before its turn",
   "live-fountain": "the film's content seconds were spent before its turn",
@@ -1119,25 +1310,25 @@
   "home-0709-atomium-05": "the film's content seconds were spent before its turn",
   "home-0709-atomium-06": "the film's content seconds were spent before its turn",
   "home-0709-atomium-07": "the film's content seconds were spent before its turn",
-  "live-ride-1": "its place already holds its share of the film",
+  "live-ride-1": "the film's content seconds were spent before its turn",
   "home-0710-botanique-0": "the film's content seconds were spent before its turn",
   "home-0710-botanique-1": "the film's content seconds were spent before its turn",
   "home-0710-botanique-2": "the film's content seconds were spent before its turn",
   "cast-0710-kit-waving-in-the-yellow-dre": "the film's content seconds were spent before its turn",
   "home-0710-botanique-3": "the film's content seconds were spent before its turn",
-  "cast-0710-kit-reading-on-the-rug": "its place already holds its share of the film",
+  "cast-0710-kit-reading-on-the-rug": "the film's content seconds were spent before its turn",
   "cast-0710-charlie-among-the-seed-heads": "the film's content seconds were spent before its turn",
   "cast-0710-charlie-at-the-edge-of-the-w": "the film's content seconds were spent before its turn",
   "home-0710-sofa": "the film's content seconds were spent before its turn",
   "cast-0710-kit-grinning": "the film's content seconds were spent before its turn",
   "cast-0710-robin-holding-the-baby-up": "the film's content seconds were spent before its turn",
-  "cast-0710-charlie-and-robin-looking-up": "its place already holds its share of the film",
   "home-0711-sunrise": "the film's content seconds were spent before its turn",
-  "cast-0711-remy-on-the-rug": "its place already holds its share of the film",
+  "cast-0711-remy-on-the-rug": "the film's content seconds were spent before its turn",
+  "home-0711-flour-mill": "the film's content seconds were spent before its turn",
   "cast-0711-kit-by-the-window": "the film's content seconds were spent before its turn",
   "cast-0711-sasha-sitting-on-the-road": "the film's content seconds were spent before its turn",
   "cast-0711-remy-holding-on": "the film's content seconds were spent before its turn",
-  "cast-0711-kit-with-the-braid": "its place already holds its share of the film",
+  "cast-0711-kit-with-the-braid": "the film's content seconds were spent before its turn",
   "cast-0711-robin-in-the-hat": "the film's content seconds were spent before its turn",
   "cast-0711-nico-home-for-the-summer": "the film's content seconds were spent before its turn",
   "cast-0711-robin-checking-the-train-tim": "the film's content seconds were spent before its turn",
@@ -1145,16 +1336,17 @@
   "cast-0711-sasha-dropping-off-the-keys": "the film's content seconds were spent before its turn",
   "cast-0711-sasha-on-the-terrace": "the film's content seconds were spent before its turn",
   "cast-0711-sparklers-in-the-garden": "the film's content seconds were spent before its turn",
+  "forest-0706-tervuren-00": "the film's content seconds were spent before its turn",
   "forest-0706-tervuren-01": "the film's content seconds were spent before its turn",
   "forest-0706-tervuren-02": "the film's content seconds were spent before its turn",
-  "forest-0706-tervuren-03": "its place already holds its share of the film",
-  "forest-0706-tervuren-04": "its place already holds its share of the film",
+  "forest-0706-tervuren-03": "the film's content seconds were spent before its turn",
   "forest-0706-tervuren-05": "the film's content seconds were spent before its turn",
   "cast-0707-lou-on-the-bench": "the film's content seconds were spent before its turn",
   "cast-0707-kit-and-the-neighbours-rabbi": "the film's content seconds were spent before its turn",
   "cast-0707-lou-by-the-hydrangeas": "the film's content seconds were spent before its turn",
   "cast-0707-lou-laughing-at-the-table": "the film's content seconds were spent before its turn",
   "cast-0707-lou-by-the-window": "the film's content seconds were spent before its turn",
+  "cast-0707-pat-in-his-reading-glasses": "the film's content seconds were spent before its turn",
   "cast-0707-pat-with-a-grandchild-on-his": "the film's content seconds were spent before its turn",
   "cast-0707-pat-with-the-old-camera": "the film's content seconds were spent before its turn",
   "home-0704-tervuren-station": "it does not stand on its own as a picture of its story",
@@ -1195,7 +1387,7 @@
   "policy": "final-cached-hash-duplicates-v2",
   "scope": "cached preview hashes within one story or one day; no model comparison",
   "maximum_hash_distance": 6,
-  "pairs_compared": 31,
+  "pairs_compared": 22,
   "input_carriers": 15,
   "output_carriers": 15,
   "removals": [],
@@ -1207,7 +1399,7 @@
   "scene": {
    "similarity": 0.65,
    "window_days": 14,
-   "pairs_compared": 58,
+   "pairs_compared": 70,
    "unavailable": []
   },
   "status": "complete"
@@ -1215,15 +1407,15 @@
  "thumbnail_metrics": {
   "method": "thumbnail-ahash-v1-bgr-gray-area-opencv-5.0.0-numpy-2.4.2",
   "hash_size": 8,
-  "requests": 1180,
-  "cache_hits": 1180,
+  "requests": 1150,
+  "cache_hits": 1150,
   "hashes_computed": 0,
   "unavailable": 0,
-  "preview_bytes": 57231034,
-  "wall_seconds": 0.13,
+  "preview_bytes": 54184074,
+  "wall_seconds": 0.12,
   "preview_acquisition": {
    "fetch_attempts": 0,
-   "cache_hits": 1123,
+   "cache_hits": 1122,
    "download_bytes": 0,
    "unavailable": 0,
    "fetch_seconds": 0.0,
@@ -1260,327 +1452,168 @@
   "check_policy": "all-captioned-carrier-members-v1",
   "verdicts": {
    "birthday-cake": {
-    "policy": "audience-evidence-v17-every-finding-needs-its-activity",
-    "verdict": "share",
+    "policy": "audience-rules-v1-detector-heads-and-flags",
+    "verdict": "family_only",
     "parsed": true,
     "missing_members": [],
-    "activity": {
-     "scope": "activity-content",
-     "parsed": true,
-     "finding": "none",
-     "verdict": "share",
-     "why": "laya hold p=0.000"
-    },
+    "activity": null,
     "exposure": null,
-    "activity_asked_in_batch": true,
-    "why": "laya hold p=0.000",
-    "finding": "none",
+    "finding": "unread_private_activity",
+    "why": "no detector head objected, but no description was read to clear it",
     "evidence_key": ""
    },
    "forest-0706-pat-03": {
-    "policy": "audience-evidence-v17-every-finding-needs-its-activity",
-    "verdict": "share",
+    "policy": "audience-rules-v1-detector-heads-and-flags",
+    "verdict": "family_only",
     "parsed": true,
     "missing_members": [],
-    "activity": {
-     "scope": "activity-content",
-     "parsed": true,
-     "finding": "none",
-     "verdict": "share",
-     "why": "laya hold p=0.000"
-    },
+    "activity": null,
     "exposure": null,
-    "activity_asked_in_batch": true,
-    "why": "laya hold p=0.000",
-    "finding": "none",
+    "finding": "unread_private_activity",
+    "why": "no detector head objected, but no description was read to clear it",
     "evidence_key": ""
    },
    "north-0716-0196": {
-    "policy": "audience-evidence-v17-every-finding-needs-its-activity",
-    "verdict": "share",
+    "policy": "audience-rules-v1-detector-heads-and-flags",
+    "verdict": "family_only",
     "parsed": true,
     "missing_members": [],
-    "activity": {
-     "scope": "activity-content",
-     "parsed": true,
-     "finding": "none",
-     "verdict": "share",
-     "why": "laya hold p=0.000"
-    },
+    "activity": null,
     "exposure": null,
-    "activity_asked_in_batch": true,
-    "why": "laya hold p=0.000",
-    "finding": "none",
+    "finding": "unread_private_activity",
+    "why": "no detector head objected, but no description was read to clear it",
     "evidence_key": ""
    },
    "north-0721-0339": {
-    "policy": "audience-evidence-v17-every-finding-needs-its-activity",
-    "verdict": "share",
+    "policy": "audience-rules-v1-detector-heads-and-flags",
+    "verdict": "family_only",
     "parsed": true,
     "missing_members": [],
-    "activity": {
-     "scope": "activity-content",
-     "parsed": true,
-     "finding": "none",
-     "verdict": "share",
-     "why": "laya hold p=0.000"
-    },
+    "activity": null,
     "exposure": null,
-    "activity_asked_in_batch": true,
-    "why": "laya hold p=0.000",
-    "finding": "none",
+    "finding": "unread_private_activity",
+    "why": "no detector head objected, but no description was read to clear it",
     "evidence_key": ""
    },
-   "cast-0701-kit-lining-up-the-chocolate": {
-    "policy": "audience-evidence-v17-every-finding-needs-its-activity",
-    "verdict": "share",
+   "birthday-cupcakes-2": {
+    "policy": "audience-rules-v1-detector-heads-and-flags",
+    "verdict": "family_only",
     "parsed": true,
     "missing_members": [],
-    "activity": {
-     "scope": "activity-content",
-     "parsed": true,
-     "finding": "none",
-     "verdict": "share",
-     "why": "laya hold p=0.000"
-    },
+    "activity": null,
     "exposure": null,
-    "activity_asked_in_batch": true,
-    "why": "laya hold p=0.000",
-    "finding": "none",
+    "finding": "unread_private_activity",
+    "why": "no detector head objected, but no description was read to clear it",
     "evidence_key": ""
    },
-   "forest-0706-tervuren-00": {
-    "policy": "audience-evidence-v17-every-finding-needs-its-activity",
-    "verdict": "share",
+   "birthday-superheroes": {
+    "policy": "audience-rules-v1-detector-heads-and-flags",
+    "verdict": "family_only",
     "parsed": true,
     "missing_members": [],
-    "activity": {
-     "scope": "activity-content",
-     "parsed": true,
-     "finding": "none",
-     "verdict": "share",
-     "why": "laya hold p=0.000"
-    },
+    "activity": null,
     "exposure": null,
-    "activity_asked_in_batch": true,
-    "why": "laya hold p=0.000",
-    "finding": "none",
+    "finding": "unread_private_activity",
+    "why": "no detector head objected, but no description was read to clear it",
     "evidence_key": ""
    },
-   "cast-0707-pat-in-his-reading-glasses": {
-    "policy": "audience-evidence-v17-every-finding-needs-its-activity",
-    "verdict": "share",
+   "forest-0706-tervuren-04": {
+    "policy": "audience-rules-v1-detector-heads-and-flags",
+    "verdict": "family_only",
     "parsed": true,
     "missing_members": [],
-    "activity": {
-     "scope": "activity-content",
-     "parsed": true,
-     "finding": "none",
-     "verdict": "share",
-     "why": "laya hold p=0.002"
-    },
+    "activity": null,
     "exposure": null,
-    "activity_asked_in_batch": true,
-    "why": "laya hold p=0.002",
-    "finding": "none",
+    "finding": "unread_private_activity",
+    "why": "no detector head objected, but no description was read to clear it",
     "evidence_key": ""
    },
    "home-0707-park-1": {
-    "policy": "audience-evidence-v17-every-finding-needs-its-activity",
-    "verdict": "share",
+    "policy": "audience-rules-v1-detector-heads-and-flags",
+    "verdict": "family_only",
     "parsed": true,
     "missing_members": [],
-    "activity": {
-     "scope": "activity-content",
-     "parsed": true,
-     "finding": "none",
-     "verdict": "share",
-     "why": "laya hold p=0.000"
-    },
+    "activity": null,
     "exposure": null,
-    "activity_asked_in_batch": true,
-    "why": "laya hold p=0.000",
-    "finding": "none",
-    "evidence_key": ""
-   },
-   "cast-0707-pat-and-lou-with-the-little": {
-    "policy": "audience-evidence-v17-every-finding-needs-its-activity",
-    "verdict": "share",
-    "parsed": true,
-    "missing_members": [],
-    "activity": {
-     "scope": "activity-content",
-     "parsed": true,
-     "finding": "none",
-     "verdict": "share",
-     "why": "laya hold p=0.000"
-    },
-    "exposure": null,
-    "activity_asked_in_batch": true,
-    "why": "laya hold p=0.000",
-    "finding": "none",
-    "evidence_key": ""
-   },
-   "home-0711-flour-mill": {
-    "policy": "audience-evidence-v17-every-finding-needs-its-activity",
-    "verdict": "share",
-    "parsed": true,
-    "missing_members": [],
-    "activity": {
-     "scope": "activity-content",
-     "parsed": true,
-     "finding": "none",
-     "verdict": "share",
-     "why": "laya hold p=0.000"
-    },
-    "exposure": null,
-    "activity_asked_in_batch": true,
-    "why": "laya hold p=0.000",
-    "finding": "none",
-    "evidence_key": ""
-   },
-   "north-clip-0712-0": {
-    "policy": "audience-evidence-v17-every-finding-needs-its-activity",
-    "verdict": "share",
-    "parsed": true,
-    "missing_members": [],
-    "activity": {
-     "scope": "activity-content",
-     "parsed": true,
-     "finding": "none",
-     "verdict": "share",
-     "why": "laya hold p=0.000"
-    },
-    "exposure": null,
-    "activity_asked_in_batch": true,
-    "why": "laya hold p=0.000",
-    "finding": "none",
-    "evidence_key": ""
-   },
-   "north-clip-0714-1": {
-    "policy": "audience-evidence-v17-every-finding-needs-its-activity",
-    "verdict": "share",
-    "parsed": true,
-    "missing_members": [],
-    "activity": {
-     "scope": "activity-content",
-     "parsed": true,
-     "finding": "none",
-     "verdict": "share",
-     "why": "laya hold p=0.000"
-    },
-    "exposure": null,
-    "activity_asked_in_batch": true,
-    "why": "laya hold p=0.000",
-    "finding": "none",
-    "evidence_key": ""
-   },
-   "north-0721-0397": {
-    "policy": "audience-evidence-v17-every-finding-needs-its-activity",
-    "verdict": "share",
-    "parsed": true,
-    "missing_members": [],
-    "activity": {
-     "scope": "activity-content",
-     "parsed": true,
-     "finding": "none",
-     "verdict": "share",
-     "why": "laya hold p=0.000"
-    },
-    "exposure": null,
-    "activity_asked_in_batch": true,
-    "why": "laya hold p=0.000",
-    "finding": "none",
-    "evidence_key": ""
-   },
-   "north-clip-0730-6": {
-    "policy": "audience-evidence-v17-every-finding-needs-its-activity",
-    "verdict": "share",
-    "parsed": true,
-    "missing_members": [],
-    "activity": {
-     "scope": "activity-content",
-     "parsed": true,
-     "finding": "none",
-     "verdict": "share",
-     "why": "laya hold p=0.000"
-    },
-    "exposure": null,
-    "activity_asked_in_batch": true,
-    "why": "laya hold p=0.000",
-    "finding": "none",
-    "evidence_key": ""
-   },
-   "north-0731-1002": {
-    "policy": "audience-evidence-v17-every-finding-needs-its-activity",
-    "verdict": "share",
-    "parsed": true,
-    "missing_members": [],
-    "activity": {
-     "scope": "activity-content",
-     "parsed": true,
-     "finding": "none",
-     "verdict": "share",
-     "why": "laya hold p=0.000"
-    },
-    "exposure": null,
-    "activity_asked_in_batch": true,
-    "why": "laya hold p=0.000",
-    "finding": "none",
+    "finding": "unread_private_activity",
+    "why": "no detector head objected, but no description was read to clear it",
     "evidence_key": ""
    },
    "home-0707-park-3": {
-    "policy": "audience-evidence-v17-every-finding-needs-its-activity",
-    "verdict": "share",
+    "policy": "audience-rules-v1-detector-heads-and-flags",
+    "verdict": "family_only",
     "parsed": true,
     "missing_members": [],
-    "activity": {
-     "scope": "activity-content",
-     "parsed": true,
-     "finding": "none",
-     "verdict": "share",
-     "why": "laya hold p=0.000"
-    },
+    "activity": null,
     "exposure": null,
-    "activity_asked_in_batch": true,
-    "why": "laya hold p=0.000",
-    "finding": "none",
+    "finding": "unread_private_activity",
+    "why": "no detector head objected, but no description was read to clear it",
     "evidence_key": ""
    },
-   "north-0715-0124": {
-    "policy": "audience-evidence-v17-every-finding-needs-its-activity",
-    "verdict": "share",
+   "cast-0707-pat-and-lou-with-the-little": {
+    "policy": "audience-rules-v1-detector-heads-and-flags",
+    "verdict": "family_only",
     "parsed": true,
     "missing_members": [],
-    "activity": {
-     "scope": "activity-content",
-     "parsed": true,
-     "finding": "none",
-     "verdict": "share",
-     "why": "laya hold p=0.000"
-    },
+    "activity": null,
     "exposure": null,
-    "activity_asked_in_batch": true,
-    "why": "laya hold p=0.000",
-    "finding": "none",
+    "finding": "unread_private_activity",
+    "why": "no detector head objected, but no description was read to clear it",
     "evidence_key": ""
    },
-   "north-0715-0126": {
-    "policy": "audience-evidence-v17-every-finding-needs-its-activity",
-    "verdict": "share",
+   "cast-0710-charlie-and-robin-looking-up": {
+    "policy": "audience-rules-v1-detector-heads-and-flags",
+    "verdict": "family_only",
     "parsed": true,
     "missing_members": [],
-    "activity": {
-     "scope": "activity-content",
-     "parsed": true,
-     "finding": "none",
-     "verdict": "share",
-     "why": "laya hold p=0.000"
-    },
+    "activity": null,
     "exposure": null,
-    "activity_asked_in_batch": true,
-    "why": "laya hold p=0.000",
-    "finding": "none",
+    "finding": "unread_private_activity",
+    "why": "no detector head objected, but no description was read to clear it",
+    "evidence_key": ""
+   },
+   "north-clip-0712-0": {
+    "policy": "audience-rules-v1-detector-heads-and-flags",
+    "verdict": "family_only",
+    "parsed": true,
+    "missing_members": [],
+    "activity": null,
+    "exposure": null,
+    "finding": "unread_private_activity",
+    "why": "no detector head objected, but no description was read to clear it",
+    "evidence_key": ""
+   },
+   "north-0718-0252": {
+    "policy": "audience-rules-v1-detector-heads-and-flags",
+    "verdict": "family_only",
+    "parsed": true,
+    "missing_members": [],
+    "activity": null,
+    "exposure": null,
+    "finding": "unread_private_activity",
+    "why": "no detector head objected, but no description was read to clear it",
+    "evidence_key": ""
+   },
+   "north-clip-0718-3": {
+    "policy": "audience-rules-v1-detector-heads-and-flags",
+    "verdict": "family_only",
+    "parsed": true,
+    "missing_members": [],
+    "activity": null,
+    "exposure": null,
+    "finding": "unread_private_activity",
+    "why": "no detector head objected, but no description was read to clear it",
+    "evidence_key": ""
+   },
+   "north-0731-1002": {
+    "policy": "audience-rules-v1-detector-heads-and-flags",
+    "verdict": "family_only",
+    "parsed": true,
+    "missing_members": [],
+    "activity": null,
+    "exposure": null,
+    "finding": "unread_private_activity",
+    "why": "no detector head objected, but no description was read to clear it",
     "evidence_key": ""
    }
   },
@@ -2354,17 +2387,17 @@
   "F93": 0,
   "F94": 0,
   "F95": 0,
-  "F96": 1
+  "F96": 0
  },
  "worthy_reasons": {
   "F01": "Outside home radius or the twelve usual cities",
   "F02": "Outside home radius or the twelve usual cities",
-  "F03": "posing",
+  "F03": "Wednesday 2 July",
   "F04": "Outside home radius or the twelve usual cities",
-  "F05": "eating-drinking at Forest",
+  "F05": "Forest",
   "F06": "Outside home radius or the twelve usual cities",
-  "F07": "playing",
-  "F08": "playing",
+  "F07": "Friday 4 July",
+  "F08": "Close family recorded in people metadata",
   "F09": "Outside home radius or the twelve usual cities",
   "F10": "Outside home radius or the twelve usual cities",
   "F11": "Outside home radius or the twelve usual cities",
@@ -2372,18 +2405,18 @@
   "F13": "Owner favourite present",
   "F14": "Outside home radius or the twelve usual cities",
   "F15": "Outside home radius or the twelve usual cities",
-  "F16": "posing",
+  "F16": "Close family recorded in people metadata",
   "F17": "Outside home radius or the twelve usual cities",
   "F18": "Outside home radius or the twelve usual cities",
   "F19": "Outside home radius or the twelve usual cities",
-  "F20": "playing",
+  "F20": "Wednesday 9 July",
   "F21": "Outside home radius or the twelve usual cities",
-  "F22": "2025-07-09",
+  "F22": "Wednesday 9 July",
   "F23": "Outside home radius or the twelve usual cities",
-  "F24": "posing",
-  "F25": "posing",
+  "F24": "Thursday 10 July",
+  "F25": "Close family recorded in people metadata",
   "F26": "Outside home radius or the twelve usual cities",
-  "F27": "posing",
+  "F27": "Close family recorded in people metadata",
   "F28": "Outside home radius or the twelve usual cities",
   "F29": "Outside home radius or the twelve usual cities",
   "F30": "Outside home radius or the twelve usual cities",
@@ -2452,33 +2485,39 @@
   "F93": "Outside home radius or the twelve usual cities",
   "F94": "Outside home radius or the twelve usual cities",
   "F95": "Outside home radius or the twelve usual cities",
-  "F96": "sport-active"
+  "F96": "Thursday 31 July"
  },
  "beats": [
-  "posing at Stege / Copenhagen / posing at Gränna / working at Hagby / posing at Hagby / sport-active at Skutskär / sport-active at Ramvik / posing at Lövånger / sport-active at Korpilombolo / sport-active at Muonio / sport-active / eating-drinking at Alta / posing at Honningsvåg / sport-active at Honningsvåg / animal-nature / sport-active at Alta / posing at Burfjord / sport-active at Olderdalen / posing at Tromsø / Storsteinnes / Borkenes / posing at Kabelvåg / Ballstad / posing at Ballstad / posing at Reine / posing at Gravdal / posing at Sørland / playing / sport-active at Sørland / posing at Bodø / sightseeing / sport-active at Namsskogan / sport-active at Steinkjer / eating-drinking at Børsa / sport-active at Rensvik / posing at Eide / sport-active at Elnesvågen / Aukra / sport-active at Midsund / posing at Ålesund / posing at Stranda / posing at Stryn / sightseeing at Lærdalsøyri / working at Treungen / animal-nature at Åmli",
-  "Ganshoren / posing at Strombeek-Bever / posing / working at Schaerbeek / eating-drinking at Forest / playing / celebration at Ixelles / playing at Ixelles / playing at Watermael-Boitsfort",
-  "sport-active at Jette / 2025-07-07 / playing / Woluwe-Saint-Lambert / posing / sightseeing at Strombeek-Bever / 2025-07-09 / sightseeing at Saint-Josse-ten-Noode / posing at Diegem",
-  "sightseeing at Tervuren / posing",
-  "sightseeing at Tervuren"
+  "The road north",
+  "Kit's birthday",
+  "Lou and Pat's visit",
+  "Days at home, 1–6 July",
+  "Days at home, 8–11 July",
+  "Vossem, 6–7 July",
+  "Tervuren, Friday 4 July"
  ],
  "threads": {
   "headings": [
-   "posing at Stege / Copenhagen / posing at Gränna / working at Hagby / posing at Hagby / sport-active at Skutskär / sport-active at Ramvik / posing at Lövånger / sport-active at Korpilombolo / sport-active at Muonio / sport-active / eating-drinking at Alta / posing at Honningsvåg / sport-active at Honningsvåg / animal-nature / sport-active at Alta / posing at Burfjord / sport-active at Olderdalen / posing at Tromsø / Storsteinnes / Borkenes / posing at Kabelvåg / Ballstad / posing at Ballstad / posing at Reine / posing at Gravdal / posing at Sørland / playing / sport-active at Sørland / posing at Bodø / sightseeing / sport-active at Namsskogan / sport-active at Steinkjer / eating-drinking at Børsa / sport-active at Rensvik / posing at Eide / sport-active at Elnesvågen / Aukra / sport-active at Midsund / posing at Ålesund / posing at Stranda / posing at Stryn / sightseeing at Lærdalsøyri / working at Treungen / animal-nature at Åmli",
-   "Ganshoren / posing at Strombeek-Bever / posing / working at Schaerbeek / eating-drinking at Forest / playing / celebration at Ixelles / playing at Ixelles / playing at Watermael-Boitsfort",
-   "sport-active at Jette / 2025-07-07 / playing / Woluwe-Saint-Lambert / posing / sightseeing at Strombeek-Bever / 2025-07-09 / sightseeing at Saint-Josse-ten-Noode / posing at Diegem",
-   "sightseeing at Tervuren / posing",
-   "sightseeing at Tervuren"
+   "The road north",
+   "Kit's birthday",
+   "Lou and Pat's visit",
+   "Days at home, 1–6 July",
+   "Days at home, 8–11 July",
+   "Vossem, 6–7 July",
+   "Tervuren, Friday 4 July"
   ],
   "beats": [
-   "posing at Stege / Copenhagen / posing at Gränna / working at Hagby / posing at Hagby / sport-active at Skutskär / sport-active at Ramvik / posing at Lövånger / sport-active at Korpilombolo / sport-active at Muonio / sport-active / eating-drinking at Alta / posing at Honningsvåg / sport-active at Honningsvåg / animal-nature / sport-active at Alta / posing at Burfjord / sport-active at Olderdalen / posing at Tromsø / Storsteinnes / Borkenes / posing at Kabelvåg / Ballstad / posing at Ballstad / posing at Reine / posing at Gravdal / posing at Sørland / playing / sport-active at Sørland / posing at Bodø / sightseeing / sport-active at Namsskogan / sport-active at Steinkjer / eating-drinking at Børsa / sport-active at Rensvik / posing at Eide / sport-active at Elnesvågen / Aukra / sport-active at Midsund / posing at Ålesund / posing at Stranda / posing at Stryn / sightseeing at Lærdalsøyri / working at Treungen / animal-nature at Åmli",
-   "Ganshoren / posing at Strombeek-Bever / posing / working at Schaerbeek / eating-drinking at Forest / playing / celebration at Ixelles / playing at Ixelles / playing at Watermael-Boitsfort",
-   "sport-active at Jette / 2025-07-07 / playing / Woluwe-Saint-Lambert / posing / sightseeing at Strombeek-Bever / 2025-07-09 / sightseeing at Saint-Josse-ten-Noode / posing at Diegem",
-   "sightseeing at Tervuren / posing",
-   "sightseeing at Tervuren"
+   "The road north",
+   "Kit's birthday",
+   "Lou and Pat's visit",
+   "Days at home, 1–6 July",
+   "Days at home, 8–11 July",
+   "Vossem, 6–7 July",
+   "Tervuren, Friday 4 July"
   ],
   "memory_worthy": {},
   "synthesis": {
-   "thesis": "The period featured various activities across multiple locations, including outdoor sports in Jette and a family gathering indoors. Sightseeing took place in Tervuren and Vossem, and the group visited Stege, Zealand, Denmark. Distinctive events included a blue cake display in a kitchen and posing sessions in a garden. The overall pattern shows a mix of leisure, travel, and domestic activities throughout July."
+   "thesis": "Kit's birthday, then Lou and Pat's visit, then The road north"
   }
  },
  "status": "selection-awaiting-owner-review-not-rendered",
@@ -2509,7 +2548,7 @@
  "target_seconds": 60.0,
  "slots_total": 13,
  "cap_per_anchor": 15,
- "wall_sha256": "94a1c4212c8200ad1acc8e01ac0bf1c96ac202ec5229c58e6778a9382b35804e",
+ "wall_sha256": "cf52e9bc36798f1cd8883b8258eadd9e023f5a313ed690af0aa85c381569d455",
  "families": {
   "rule": {
    "same_day": true,
@@ -2608,86 +2647,106 @@
  "chapters": [
   {
    "chapter": "S01",
-   "beat": "posing at Stege / Copenhagen / posing at Gränna / working at Hagby / posing at Hagby / sport-active at Skutskär / sport-active at Ramvik / posing at Lövånger / sport-active at Korpilombolo / sport-active at Muonio / sport-active / eating-drinking at Alta / posing at Honningsvåg / sport-active at Honningsvåg / animal-nature / sport-active at Alta / posing at Burfjord / sport-active at Olderdalen / posing at Tromsø / Storsteinnes / Borkenes / posing at Kabelvåg / Ballstad / posing at Ballstad / posing at Reine / posing at Gravdal / posing at Sørland / playing / sport-active at Sørland / posing at Bodø / sightseeing / sport-active at Namsskogan / sport-active at Steinkjer / eating-drinking at Børsa / sport-active at Rensvik / posing at Eide / sport-active at Elnesvågen / Aukra / sport-active at Midsund / posing at Ålesund / posing at Stranda / posing at Stryn / sightseeing at Lærdalsøyri / working at Treungen / animal-nature at Åmli",
+   "beat": "The road north",
    "anchors": [
     "F32",
-    "F39",
-    "F42",
     "F50",
+    "F58",
+    "F59",
     "F68",
-    "F95",
     "F96"
    ],
    "share": 0.0,
-   "show": "posing at Stege / Copenhagen / posing at Gränna / working at Hagby / posing at Hagby / sport-active at Skutskär / sport-active at Ramvik / posing at Lövånger / sport-active at Korpilombolo / sport-active at Muonio / sport-active / eating-drinking at Alta / posing at Honningsvåg / sport-active at Honningsvåg / animal-nature / sport-active at Alta / posing at Burfjord / sport-active at Olderdalen / posing at Tromsø / Storsteinnes / Borkenes / posing at Kabelvåg / Ballstad / posing at Ballstad / posing at Reine / posing at Gravdal / posing at Sørland / playing / sport-active at Sørland / posing at Bodø / sightseeing / sport-active at Namsskogan / sport-active at Steinkjer / eating-drinking at Børsa / sport-active at Rensvik / posing at Eide / sport-active at Elnesvågen / Aukra / sport-active at Midsund / posing at Ålesund / posing at Stranda / posing at Stryn / sightseeing at Lærdalsøyri / working at Treungen / animal-nature at Åmli",
-   "budget": 7,
+   "show": "The road north",
+   "budget": 6,
    "capacity": 153,
    "families": [
     "E38",
-    "E46",
-    "E49",
     "E58",
+    "E69",
+    "E70",
     "E79",
-    "E127",
     "E128"
    ]
   },
   {
    "chapter": "S02",
-   "beat": "Ganshoren / posing at Strombeek-Bever / posing / working at Schaerbeek / eating-drinking at Forest / playing / celebration at Ixelles / playing at Ixelles / playing at Watermael-Boitsfort",
+   "beat": "Kit's birthday",
    "anchors": [
-    "F02",
     "F11",
-    "F13"
+    "F12"
    ],
    "share": 0.0,
-   "show": "Ganshoren / posing at Strombeek-Bever / posing / working at Schaerbeek / eating-drinking at Forest / playing / celebration at Ixelles / playing at Ixelles / playing at Watermael-Boitsfort",
+   "show": "Kit's birthday",
    "budget": 3,
-   "capacity": 32,
+   "capacity": 8,
    "families": [
-    "E02",
     "E11",
-    "E14"
+    "E12"
    ]
   },
   {
    "chapter": "S03",
-   "beat": "sport-active at Jette / 2025-07-07 / playing / Woluwe-Saint-Lambert / posing / sightseeing at Strombeek-Bever / 2025-07-09 / sightseeing at Saint-Josse-ten-Noode / posing at Diegem",
+   "beat": "Lou and Pat's visit",
    "anchors": [
-    "F17",
-    "F28"
+    "F17"
    ],
    "share": 0.0,
-   "show": "sport-active at Jette / 2025-07-07 / playing / Woluwe-Saint-Lambert / posing / sightseeing at Strombeek-Bever / 2025-07-09 / sightseeing at Saint-Josse-ten-Noode / posing at Diegem",
+   "show": "Lou and Pat's visit",
    "budget": 3,
-   "capacity": 23,
+   "capacity": 3,
    "families": [
-    "E19",
-    "E34"
+    "E19"
    ]
   },
   {
    "chapter": "S04",
-   "beat": "sightseeing at Tervuren / posing",
+   "beat": "Days at home, 1–6 July",
    "anchors": [
-    "F15",
-    "F16"
+    "F13"
    ],
    "share": 0.0,
-   "show": "sightseeing at Tervuren / posing",
-   "budget": 2,
-   "capacity": 6,
+   "show": "Days at home, 1–6 July",
+   "budget": 1,
+   "capacity": 24,
    "families": [
-    "E17",
-    "E18"
+    "E14"
    ]
   },
   {
    "chapter": "S05",
-   "beat": "sightseeing at Tervuren",
+   "beat": "Days at home, 8–11 July",
+   "anchors": [
+    "F25"
+   ],
+   "share": 0.0,
+   "show": "Days at home, 8–11 July",
+   "budget": 1,
+   "capacity": 20,
+   "families": [
+    "E31"
+   ]
+  },
+  {
+   "chapter": "S06",
+   "beat": "Vossem, 6–7 July",
+   "anchors": [
+    "F15"
+   ],
+   "share": 0.0,
+   "show": "Vossem, 6–7 July",
+   "budget": 1,
+   "capacity": 6,
+   "families": [
+    "E17"
+   ]
+  },
+  {
+   "chapter": "S07",
+   "beat": "Tervuren, Friday 4 July",
    "anchors": [],
    "share": 0.0,
-   "show": "sightseeing at Tervuren",
+   "show": "Tervuren, Friday 4 July",
    "budget": 0,
    "capacity": 2,
    "families": []
@@ -2697,33 +2756,6 @@
  "left_out_anchors": [],
  "anchor_records": [],
  "carriers": [
-  {
-   "favourite": false,
-   "moment": "M003",
-   "taken": "2025-07-01T16:58:00+02:00",
-   "kind": "still",
-   "asset_id": "cast-0701-kit-lining-up-the-chocolate",
-   "members": [
-    "cast-0701-kit-lining-up-the-chocolate"
-   ],
-   "video_ids": [],
-   "trim_points": [],
-   "seconds": 3.5,
-   "raw_seconds": null,
-   "residual": null,
-   "event": "E02",
-   "anchor": "F02",
-   "chapter": 2,
-   "why": "Ganshoren / posing at Strombeek-Bever / posing / working at Schaerbeek / eating-drinking at Forest / playing / celebration at Ixelles / playing at Ixelles / playing at Watermael-Boitsfort: capture group",
-   "event_intention": "Capture dates, places and owner favourites",
-   "line": "2025-07-01 14:58+00:00 | with Kit | subject-framing:2 (5.99% of the frame, at the frame's edge, the largest face) | activity=eating-drinking, location=indoor, people=one | resolution:853x1280",
-   "story_episode": "S001",
-   "story_role": "supporting",
-   "story_weight": "minor",
-   "depicted_moment": "M003:cg",
-   "moment_alternatives": [],
-   "standing": 2
-  },
   {
    "favourite": true,
    "moment": "M023",
@@ -2741,13 +2773,68 @@
    "event": "E11",
    "anchor": "F11",
    "chapter": 2,
-   "why": "Ganshoren / posing at Strombeek-Bever / posing / working at Schaerbeek / eating-drinking at Forest / playing / celebration at Ixelles / playing at Ixelles / playing at Watermael-Boitsfort: capture group",
-   "event_intention": "Capture dates, places and owner favourites",
+   "why": "Ixelles · starred",
+   "event_intention": "Kit turns five",
    "line": "2025-07-05 05:12+00:00 | at Ixelles, Brussels Capital, Belgium | activity=celebration, frame=lone_everyday_object, location=indoor, people=none | STARRED by the photographer | resolution:1280x853",
-   "story_episode": "S001",
-   "story_role": "supporting",
-   "story_weight": "minor",
+   "story_episode": "S001-2025-07-05",
+   "story_role": "central",
+   "story_weight": "major",
    "depicted_moment": "M023:cg",
+   "moment_alternatives": [],
+   "standing": 2,
+   "notable_record": "Cake with number 1 on top"
+  },
+  {
+   "favourite": false,
+   "moment": "M026",
+   "taken": "2025-07-05T08:27:00+02:00",
+   "kind": "still",
+   "asset_id": "birthday-cupcakes-2",
+   "members": [
+    "birthday-cupcakes-2"
+   ],
+   "video_ids": [],
+   "trim_points": [],
+   "seconds": 3.5,
+   "raw_seconds": null,
+   "residual": null,
+   "event": "E11",
+   "anchor": "F11",
+   "chapter": 2,
+   "why": "Ixelles",
+   "event_intention": "Kit turns five",
+   "line": "2025-07-05 06:27+00:00 | at Ixelles, Brussels Capital, Belgium | activity=eating-drinking, location=indoor, people=none | resolution:500x333",
+   "story_episode": "S001-2025-07-05",
+   "story_role": "central",
+   "story_weight": "major",
+   "depicted_moment": "M026:cg",
+   "moment_alternatives": [],
+   "standing": 1
+  },
+  {
+   "favourite": false,
+   "moment": "M027",
+   "taken": "2025-07-05T16:10:00+02:00",
+   "kind": "still",
+   "asset_id": "birthday-superheroes",
+   "members": [
+    "birthday-superheroes"
+   ],
+   "video_ids": [],
+   "trim_points": [],
+   "seconds": 3.5,
+   "raw_seconds": null,
+   "residual": null,
+   "event": "E12",
+   "anchor": "F12",
+   "chapter": 2,
+   "why": "Kit",
+   "event_intention": "Kit turns five",
+   "line": "2025-07-05 14:10+00:00 | with Kit (child of library owner; aged 5) | subject-framing:3 (0.63% of the frame, inside the frame, the largest face) | activity=playing, children=yes, location=indoor, people=two | resolution:1280x853",
+   "story_episode": "S001-2025-07-05",
+   "story_role": "central",
+   "story_weight": "major",
+   "depicted_moment": "M027:cg",
    "moment_alternatives": [],
    "standing": 2
   },
@@ -2767,10 +2854,10 @@
    "residual": null,
    "event": "E14",
    "anchor": "F13",
-   "chapter": 2,
-   "why": "Ganshoren / posing at Strombeek-Bever / posing / working at Schaerbeek / eating-drinking at Forest / playing / celebration at Ixelles / playing at Ixelles / playing at Watermael-Boitsfort: capture group",
-   "event_intention": "Capture dates, places and owner favourites",
-   "line": "2025-07-06 04:22+00:00 | with Pat | subject-framing:3 (4.36% of the frame, inside the frame, the largest face) | activity=posing, children=no, location=outdoor, people=two | STARRED by the photographer | resolution:1280x851",
+   "chapter": 4,
+   "why": "Pat · starred · the only one with Pat",
+   "event_intention": "Ordinary days at home: Ganshoren, Strombeek-Bever, Schaerbeek and 3 more places",
+   "line": "2025-07-06 04:22+00:00 | with Pat (parent of library owner; aged 70) | subject-framing:3 (4.36% of the frame, inside the frame, the largest face) | activity=posing, children=no, location=outdoor, people=two | STARRED by the photographer | resolution:1280x851",
    "story_episode": "S001",
    "story_role": "supporting",
    "story_weight": "minor",
@@ -2782,12 +2869,12 @@
   },
   {
    "favourite": false,
-   "moment": "M036",
-   "taken": "2025-07-06T15:10:00+02:00",
+   "moment": "M039",
+   "taken": "2025-07-06T16:00:00+02:00",
    "kind": "still",
-   "asset_id": "forest-0706-tervuren-00",
+   "asset_id": "forest-0706-tervuren-04",
    "members": [
-    "forest-0706-tervuren-00"
+    "forest-0706-tervuren-04"
    ],
    "video_ids": [],
    "trim_points": [],
@@ -2796,51 +2883,43 @@
    "residual": null,
    "event": "E17",
    "anchor": "F15",
-   "chapter": 4,
-   "why": "sightseeing at Tervuren / posing: capture group",
-   "event_intention": "Capture dates, places and owner favourites",
-   "line": "2025-07-06 13:10+00:00 | at Tervuren, Flanders, Belgium | activity=sightseeing, location=outdoor, people=none | resolution:500x333",
+   "chapter": 6,
+   "why": "Tervuren",
+   "event_intention": "Days out: Tervuren, Vossem",
+   "line": "2025-07-06 14:00+00:00 | at Tervuren, Flanders, Belgium | activity=sightseeing, location=outdoor, people=none | resolution:500x333",
    "story_episode": "S003",
    "story_role": "supporting",
    "story_weight": "minor",
-   "depicted_moment": "M036:cg",
-   "moment_alternatives": [
-    "forest-0706-tervuren-01"
-   ],
+   "depicted_moment": "M039:cg",
+   "moment_alternatives": [],
    "standing": 2
   },
   {
    "favourite": false,
-   "moment": "M041",
-   "taken": "2025-07-07T13:41:00+02:00",
+   "moment": "M042",
+   "taken": "2025-07-07T15:57:20+02:00",
    "kind": "still",
-   "asset_id": "cast-0707-pat-in-his-reading-glasses",
+   "asset_id": "home-0707-park-1",
    "members": [
-    "cast-0707-pat-in-his-reading-glasses"
+    "home-0707-park-1"
    ],
    "video_ids": [],
    "trim_points": [],
    "seconds": 3.5,
    "raw_seconds": null,
    "residual": null,
-   "event": "E18",
-   "anchor": "F16",
-   "chapter": 4,
-   "why": "sightseeing at Tervuren / posing: capture group",
-   "event_intention": "Capture dates, places and owner favourites",
-   "line": "2025-07-07 11:41+00:00 | with Pat | subject-framing:3 (39.10% of the frame, inside the frame, the largest face) | activity=posing, children=no, location=indoor, people=one | resolution:333x500",
-   "story_episode": "S003",
-   "story_role": "supporting",
-   "story_weight": "minor",
-   "depicted_moment": "M041:cg",
+   "event": "E19",
+   "anchor": "F17",
+   "chapter": 3,
+   "why": "Jette",
+   "event_intention": "Lou and Pat come over",
+   "line": "2025-07-07 13:57+00:00 | at Jette, Brussels Capital, Belgium | activity=sport-active, children=yes, location=outdoor, people=none | resolution:500x375",
+   "story_episode": "S004-2025-07-07",
+   "story_role": "central",
+   "story_weight": "major",
+   "depicted_moment": "M042:cg",
    "moment_alternatives": [
-    "cast-0707-kit-and-the-neighbours-rabbi",
-    "cast-0707-pat-with-a-grandchild-on-his",
-    "cast-0707-pat-with-the-old-camera",
-    "cast-0707-lou-laughing-at-the-table",
-    "cast-0707-lou-by-the-window",
-    "cast-0707-lou-on-the-bench",
-    "cast-0707-lou-by-the-hydrangeas"
+    "home-0707-park-2"
    ],
    "standing": 2
   },
@@ -2861,14 +2940,17 @@
    "event": "E19",
    "anchor": "F17",
    "chapter": 3,
-   "why": "sport-active at Jette / 2025-07-07 / playing / Woluwe-Saint-Lambert / posing / sightseeing at Strombeek-Bever / 2025-07-09 / sightseeing at Saint-Josse-ten-Noode / posing at Diegem: 2025-07-07 14:13+00:00 | at Jette, Brussels Capital, Belgium | children=yes, loc",
-   "event_intention": "Capture dates, places and owner favourites",
+   "why": "Jette",
+   "event_intention": "Lou and Pat come over",
    "line": "2025-07-07 14:13+00:00 | at Jette, Brussels Capital, Belgium | children=yes, location=outdoor, people=none | resolution:375x500",
-   "story_episode": "S004",
-   "story_role": "supporting",
-   "story_weight": "minor",
-   "depicted_moment": "source:4ffbf1fb-20f9-4d43-940d-1b4b90dee861",
-   "moment_alternatives": []
+   "story_episode": "S004-2025-07-07",
+   "story_role": "central",
+   "story_weight": "major",
+   "depicted_moment": "M043:cg",
+   "moment_alternatives": [
+    "home-0707-park-4"
+   ],
+   "standing": 2
   },
   {
    "favourite": false,
@@ -2887,41 +2969,47 @@
    "event": "E19",
    "anchor": "F17",
    "chapter": 3,
-   "why": "sport-active at Jette / 2025-07-07 / playing / Woluwe-Saint-Lambert / posing / sightseeing at Strombeek-Bever / 2025-07-09 / sightseeing at Saint-Josse-ten-Noode / posing at Diegem: capture group",
-   "event_intention": "Capture dates, places and owner favourites",
-   "line": "2025-07-07 16:00+00:00 | with Lou; Pat | subject-framing:2 (4.39% of the frame, at the frame's edge, the largest face) | children=yes, location=outdoor, people=two | resolution:1280x853",
-   "story_episode": "S004",
-   "story_role": "supporting",
-   "story_weight": "minor",
+   "why": "Lou and Pat",
+   "event_intention": "Lou and Pat come over",
+   "line": "2025-07-07 16:00+00:00 | with Lou (parent of library owner; aged 67); Pat (parent of library owner; aged 70) | subject-framing:2 (4.39% of the frame, at the frame's edge, the largest face) | children=yes, location=outdoor, people=two | resolution:1280x853",
+   "story_episode": "S004-2025-07-07",
+   "story_role": "central",
+   "story_weight": "major",
    "depicted_moment": "M044:cg",
    "moment_alternatives": [],
    "standing": 2
   },
   {
    "favourite": false,
-   "moment": "M063",
-   "taken": "2025-07-11T18:42:38+02:00",
+   "moment": "M060",
+   "taken": "2025-07-10T17:36:00+02:00",
    "kind": "still",
-   "asset_id": "home-0711-flour-mill",
+   "asset_id": "cast-0710-charlie-and-robin-looking-up",
    "members": [
-    "home-0711-flour-mill"
+    "cast-0710-charlie-and-robin-looking-up"
    ],
    "video_ids": [],
    "trim_points": [],
    "seconds": 3.5,
    "raw_seconds": null,
    "residual": null,
-   "event": "E34",
-   "anchor": "F28",
-   "chapter": 3,
-   "why": "sport-active at Jette / 2025-07-07 / playing / Woluwe-Saint-Lambert / posing / sightseeing at Strombeek-Bever / 2025-07-09 / sightseeing at Saint-Josse-ten-Noode / posing at Diegem: capture group",
-   "event_intention": "Capture dates, places and owner favourites",
-   "line": "2025-07-11 16:42+00:00 | at Diegem, Flanders, Belgium | location=outdoor, people=none, venue=water | resolution:500x375",
+   "event": "E31",
+   "anchor": "F25",
+   "chapter": 5,
+   "why": "Charlie and Robin · the only one with both",
+   "event_intention": "Ordinary days at home: Woluwe-Saint-Lambert, Strombeek-Bever, Saint-Josse-ten-Noode and 1 more places",
+   "line": "2025-07-10 15:36+00:00 | with Charlie (partner of library owner; aged 38); Robin (library owner (confirmed); aged 38) | subject-framing:2 (7.89% of the frame, at the frame's edge, the largest face) | activity=posing, children=yes, location=indoor, people=two | BLOWN OUT | resolution:500x333",
    "story_episode": "S004",
    "story_role": "supporting",
    "story_weight": "minor",
-   "depicted_moment": "M063:cg",
-   "moment_alternatives": [],
+   "depicted_moment": "M060:cg",
+   "moment_alternatives": [
+    "home-0710-sofa",
+    "cast-0710-kit-grinning",
+    "cast-0710-robin-holding-the-baby-up",
+    "cast-0710-charlie-among-the-seed-heads",
+    "cast-0710-charlie-at-the-edge-of-the-w"
+   ],
    "standing": 2
   },
   {
@@ -2937,19 +3025,20 @@
     "north-clip-0712-0"
    ],
    "trim_points": [],
-   "seconds": 3.5,
+   "seconds": 4.0,
    "raw_seconds": 5.0,
-   "residual": null,
-   "motion_assessed": false,
+   "residual": 2.564,
+   "motion_assessed": true,
+   "speech_regions": [],
    "event": "E38",
    "anchor": "F32",
    "chapter": 1,
-   "why": "posing at Stege / Copenhagen / posing at Gränna / working at Hagby / posing at Hagby / sport-active at Skutskär / sport-active at Ramvik / posing at Lövånger / sport-active at Korpilombolo / sport-active at Muonio / sport-active / eating-drinking at Alta / posing at Honningsvåg / sport-active at Honningsvåg / animal-nature / sport-active at Alta / posing at Burfjord / sport-active at Olderdalen / posing at Tromsø / Storsteinnes / Borkenes / posing at Kabelvåg / Ballstad / posing at Ballstad / posing at Reine / posing at Gravdal / posing at Sørland / playing / sport-active at Sørland / posing at Bodø / sightseeing / sport-active at Namsskogan / sport-active at Steinkjer / eating-drinking at Børsa / sport-active at Rensvik / posing at Eide / sport-active at Elnesvågen / Aukra / sport-active at Midsund / posing at Ålesund / posing at Stranda / posing at Stryn / sightseeing at Lærdalsøyri / working at Treungen / animal-nature at Åmli: capture group",
-   "event_intention": "Capture dates, places and owner favourites",
+   "why": "a video",
+   "event_intention": "20 days away, Gedser to Åmli",
    "line": "2025-07-12 10:09+00:00 | VIDEO 5s raw | activity=posing, location=outdoor, people=none | resolution:1278x720 | duration:5.000s | motion:available",
    "story_episode": "S005",
-   "story_role": "supporting",
-   "story_weight": "minor",
+   "story_role": "central",
+   "story_weight": "major",
    "depicted_moment": "M069:cg",
    "moment_alternatives": [
     "north-0712-0010",
@@ -2966,89 +3055,9 @@
     "north-0712-0015"
    ],
    "standing": 2,
-   "speech_regions": [],
    "has_music": false,
-   "start_time": 1.5,
+   "start_time": 1.0,
    "end_time": 5.0
-  },
-  {
-   "favourite": false,
-   "moment": "M079",
-   "taken": "2025-07-14T11:40:00+02:00",
-   "kind": "video",
-   "asset_id": "north-clip-0714-1",
-   "members": [
-    "north-clip-0714-1"
-   ],
-   "video_ids": [
-    "north-clip-0714-1"
-   ],
-   "trim_points": [],
-   "seconds": 4.0,
-   "raw_seconds": 5.0,
-   "residual": null,
-   "motion_assessed": false,
-   "event": "E46",
-   "anchor": "F39",
-   "chapter": 1,
-   "why": "posing at Stege / Copenhagen / posing at Gränna / working at Hagby / posing at Hagby / sport-active at Skutskär / sport-active at Ramvik / posing at Lövånger / sport-active at Korpilombolo / sport-active at Muonio / sport-active / eating-drinking at Alta / posing at Honningsvåg / sport-active at Honningsvåg / animal-nature / sport-active at Alta / posing at Burfjord / sport-active at Olderdalen / posing at Tromsø / Storsteinnes / Borkenes / posing at Kabelvåg / Ballstad / posing at Ballstad / posing at Reine / posing at Gravdal / posing at Sørland / playing / sport-active at Sørland / posing at Bodø / sightseeing / sport-active at Namsskogan / sport-active at Steinkjer / eating-drinking at Børsa / sport-active at Rensvik / posing at Eide / sport-active at Elnesvågen / Aukra / sport-active at Midsund / posing at Ålesund / posing at Stranda / posing at Stryn / sightseeing at Lærdalsøyri / working at Treungen / animal-nature at Åmli: capture group",
-   "event_intention": "Capture dates, places and owner favourites",
-   "line": "2025-07-14 09:40+00:00 | VIDEO 5s raw | location=outdoor, people=none, venue=water | resolution:1278x720 | duration:5.000s | motion:available",
-   "story_episode": "S005",
-   "story_role": "supporting",
-   "story_weight": "minor",
-   "depicted_moment": "M079:cg",
-   "moment_alternatives": [
-    "north-0714-0061",
-    "north-0714-0063",
-    "north-0714-0060",
-    "north-0714-0064",
-    "north-0714-0059",
-    "north-0714-0066",
-    "north-0714-0057",
-    "north-0714-0068",
-    "north-0714-0056",
-    "north-0714-0070",
-    "north-0714-0055",
-    "north-0714-0071",
-    "north-0714-0054",
-    "north-0714-0072",
-    "north-0714-0053",
-    "north-0714-0073",
-    "north-0714-0052",
-    "north-0714-0077"
-   ],
-   "standing": 2,
-   "speech_regions": [],
-   "has_music": false,
-   "start_time": 0.0,
-   "end_time": 4.0
-  },
-  {
-   "favourite": false,
-   "moment": "M086",
-   "taken": "2025-07-15T17:21:22+02:00",
-   "kind": "still",
-   "asset_id": "north-0715-0124",
-   "members": [
-    "north-0715-0124"
-   ],
-   "video_ids": [],
-   "trim_points": [],
-   "seconds": 3.5,
-   "raw_seconds": null,
-   "residual": null,
-   "event": "E49",
-   "anchor": "F42",
-   "chapter": 1,
-   "why": "posing at Stege / Copenhagen / posing at Gränna / working at Hagby / posing at Hagby / sport-active at Skutskär / sport-active at Ramvik / posing at Lövånger / sport-active at Korpilombolo / sport-active at Muonio / sport-active / eating-drinking at Alta / posing at Honningsvåg / sport-active at Honningsvåg / animal-nature / sport-active at Alta / posing at Burfjord / sport-active at Olderdalen / posing at Tromsø / Storsteinnes / Borkenes / posing at Kabelvåg / Ballstad / posing at Ballstad / posing at Reine / posing at Gravdal / posing at Sørland / playing / sport-active at Sørland / posing at Bodø / sightseeing / sport-active at Namsskogan / sport-active at Steinkjer / eating-drinking at Børsa / sport-active at Rensvik / posing at Eide / sport-active at Elnesvågen / Aukra / sport-active at Midsund / posing at Ålesund / posing at Stranda / posing at Stryn / sightseeing at Lærdalsøyri / working at Treungen / animal-nature at Åmli: 2025-07-15 15:21+00:00 | at Korpilombolo, Norrbotten, Sweden | location=outdoor,",
-   "event_intention": "Capture dates, places and owner favourites",
-   "line": "2025-07-15 15:21+00:00 | at Korpilombolo, Norrbotten, Sweden | location=outdoor, people=none | resolution:500x334",
-   "story_episode": "S005",
-   "story_role": "supporting",
-   "story_weight": "minor",
-   "depicted_moment": "source:a5c78f1a-e3f1-45a2-a60a-1721a501c208",
-   "moment_alternatives": []
   },
   {
    "favourite": true,
@@ -3067,12 +3076,12 @@
    "event": "E58",
    "anchor": "F50",
    "chapter": 1,
-   "why": "posing at Stege / Copenhagen / posing at Gränna / working at Hagby / posing at Hagby / sport-active at Skutskär / sport-active at Ramvik / posing at Lövånger / sport-active at Korpilombolo / sport-active at Muonio / sport-active / eating-drinking at Alta / posing at Honningsvåg / sport-active at Honningsvåg / animal-nature / sport-active at Alta / posing at Burfjord / sport-active at Olderdalen / posing at Tromsø / Storsteinnes / Borkenes / posing at Kabelvåg / Ballstad / posing at Ballstad / posing at Reine / posing at Gravdal / posing at Sørland / playing / sport-active at Sørland / posing at Bodø / sightseeing / sport-active at Namsskogan / sport-active at Steinkjer / eating-drinking at Børsa / sport-active at Rensvik / posing at Eide / sport-active at Elnesvågen / Aukra / sport-active at Midsund / posing at Ålesund / posing at Stranda / posing at Stryn / sightseeing at Lærdalsøyri / working at Treungen / animal-nature at Åmli: capture group",
-   "event_intention": "Capture dates, places and owner favourites",
+   "why": "Honningsvåg · starred",
+   "event_intention": "20 days away, Gedser to Åmli",
    "line": "2025-07-16 21:36+00:00 | at Honningsvåg, Finnmark, Norway | location=outdoor, people=none | STARRED by the photographer | resolution:1280x960",
    "story_episode": "S005",
-   "story_role": "supporting",
-   "story_weight": "minor",
+   "story_role": "central",
+   "story_weight": "major",
    "depicted_moment": "M098:cg",
    "moment_alternatives": [
     "north-0716-0200",
@@ -3092,6 +3101,82 @@
    "standing": 2
   },
   {
+   "favourite": false,
+   "moment": "M113",
+   "taken": "2025-07-18T13:42:38+02:00",
+   "kind": "still",
+   "asset_id": "north-0718-0252",
+   "members": [
+    "north-0718-0252"
+   ],
+   "video_ids": [],
+   "trim_points": [],
+   "seconds": 3.5,
+   "raw_seconds": null,
+   "residual": null,
+   "event": "E69",
+   "anchor": "F58",
+   "chapter": 1,
+   "why": "Burfjord",
+   "event_intention": "20 days away, Gedser to Åmli",
+   "line": "2025-07-18 11:42+00:00 | at Burfjord, Troms, Norway | location=outdoor, people=none | resolution:500x375",
+   "story_episode": "S005",
+   "story_role": "central",
+   "story_weight": "major",
+   "depicted_moment": "M113:cg",
+   "moment_alternatives": [],
+   "standing": 2
+  },
+  {
+   "favourite": false,
+   "moment": "M116",
+   "taken": "2025-07-18T19:40:00+02:00",
+   "kind": "video",
+   "asset_id": "north-clip-0718-3",
+   "members": [
+    "north-clip-0718-3"
+   ],
+   "video_ids": [
+    "north-clip-0718-3"
+   ],
+   "trim_points": [],
+   "seconds": 4.0,
+   "raw_seconds": 5.0,
+   "residual": 0.504,
+   "motion_assessed": true,
+   "speech_regions": [],
+   "event": "E70",
+   "anchor": "F59",
+   "chapter": 1,
+   "why": "a video",
+   "event_intention": "20 days away, Gedser to Åmli",
+   "line": "2025-07-18 17:40+00:00 | VIDEO 5s raw | activity=sport-active, location=outdoor, people=none | resolution:720x1280 | duration:5.000s | motion:available",
+   "story_episode": "S005",
+   "story_role": "central",
+   "story_weight": "major",
+   "depicted_moment": "M116:cg",
+   "moment_alternatives": [
+    "north-0718-0278",
+    "north-0718-0277",
+    "north-0718-0276",
+    "north-0718-0279",
+    "north-0718-0275",
+    "north-0718-0280",
+    "north-0718-0274",
+    "north-0718-0281",
+    "north-0718-0273",
+    "north-0718-0282",
+    "north-0718-0272",
+    "north-0718-0283",
+    "north-0718-0271",
+    "north-0718-0284"
+   ],
+   "standing": 2,
+   "has_music": false,
+   "start_time": 0.0,
+   "end_time": 4.0
+  },
+  {
    "favourite": true,
    "moment": "M130",
    "taken": "2025-07-21T14:32:19+02:00",
@@ -3108,63 +3193,18 @@
    "event": "E79",
    "anchor": "F68",
    "chapter": 1,
-   "why": "posing at Stege / Copenhagen / posing at Gränna / working at Hagby / posing at Hagby / sport-active at Skutskär / sport-active at Ramvik / posing at Lövånger / sport-active at Korpilombolo / sport-active at Muonio / sport-active / eating-drinking at Alta / posing at Honningsvåg / sport-active at Honningsvåg / animal-nature / sport-active at Alta / posing at Burfjord / sport-active at Olderdalen / posing at Tromsø / Storsteinnes / Borkenes / posing at Kabelvåg / Ballstad / posing at Ballstad / posing at Reine / posing at Gravdal / posing at Sørland / playing / sport-active at Sørland / posing at Bodø / sightseeing / sport-active at Namsskogan / sport-active at Steinkjer / eating-drinking at Børsa / sport-active at Rensvik / posing at Eide / sport-active at Elnesvågen / Aukra / sport-active at Midsund / posing at Ålesund / posing at Stranda / posing at Stryn / sightseeing at Lærdalsøyri / working at Treungen / animal-nature at Åmli: capture group",
-   "event_intention": "Capture dates, places and owner favourites",
+   "why": "Reine · starred",
+   "event_intention": "20 days away, Gedser to Åmli",
    "line": "2025-07-21 12:32+00:00 | at Reine, Nordland, Norway | activity=posing, location=outdoor, people=none | STARRED by the photographer | resolution:1280x854",
    "story_episode": "S005",
-   "story_role": "supporting",
-   "story_weight": "minor",
+   "story_role": "central",
+   "story_weight": "major",
    "depicted_moment": "M130:cg",
    "moment_alternatives": [
     "north-0721-0338",
     "north-0721-0337"
    ],
    "standing": 2
-  },
-  {
-   "favourite": false,
-   "moment": "M219",
-   "taken": "2025-07-30T18:30:00+02:00",
-   "kind": "video",
-   "asset_id": "north-clip-0730-6",
-   "members": [
-    "north-clip-0730-6"
-   ],
-   "video_ids": [
-    "north-clip-0730-6"
-   ],
-   "trim_points": [],
-   "seconds": 4.0,
-   "raw_seconds": 5.0,
-   "residual": null,
-   "motion_assessed": false,
-   "event": "E127",
-   "anchor": "F95",
-   "chapter": 1,
-   "why": "posing at Stege / Copenhagen / posing at Gränna / working at Hagby / posing at Hagby / sport-active at Skutskär / sport-active at Ramvik / posing at Lövånger / sport-active at Korpilombolo / sport-active at Muonio / sport-active / eating-drinking at Alta / posing at Honningsvåg / sport-active at Honningsvåg / animal-nature / sport-active at Alta / posing at Burfjord / sport-active at Olderdalen / posing at Tromsø / Storsteinnes / Borkenes / posing at Kabelvåg / Ballstad / posing at Ballstad / posing at Reine / posing at Gravdal / posing at Sørland / playing / sport-active at Sørland / posing at Bodø / sightseeing / sport-active at Namsskogan / sport-active at Steinkjer / eating-drinking at Børsa / sport-active at Rensvik / posing at Eide / sport-active at Elnesvågen / Aukra / sport-active at Midsund / posing at Ålesund / posing at Stranda / posing at Stryn / sightseeing at Lærdalsøyri / working at Treungen / animal-nature at Åmli: capture group",
-   "event_intention": "Capture dates, places and owner favourites",
-   "line": "2025-07-30 16:30+00:00 | VIDEO 5s raw | location=outdoor, people=none | resolution:1278x720 | duration:5.000s | motion:available",
-   "story_episode": "S005",
-   "story_role": "supporting",
-   "story_weight": "minor",
-   "depicted_moment": "M219:cg",
-   "moment_alternatives": [
-    "north-0730-0958"
-   ],
-   "standing": 2,
-   "speech_regions": [
-    [
-     0.0,
-     0.8900000000000001
-    ],
-    [
-     2.44,
-     2.95
-    ]
-   ],
-   "has_music": false,
-   "start_time": 0.0,
-   "end_time": 4.0
   },
   {
    "favourite": false,
@@ -3183,12 +3223,12 @@
    "event": "E128",
    "anchor": "F96",
    "chapter": 1,
-   "why": "posing at Stege / Copenhagen / posing at Gränna / working at Hagby / posing at Hagby / sport-active at Skutskär / sport-active at Ramvik / posing at Lövånger / sport-active at Korpilombolo / sport-active at Muonio / sport-active / eating-drinking at Alta / posing at Honningsvåg / sport-active at Honningsvåg / animal-nature / sport-active at Alta / posing at Burfjord / sport-active at Olderdalen / posing at Tromsø / Storsteinnes / Borkenes / posing at Kabelvåg / Ballstad / posing at Ballstad / posing at Reine / posing at Gravdal / posing at Sørland / playing / sport-active at Sørland / posing at Bodø / sightseeing / sport-active at Namsskogan / sport-active at Steinkjer / eating-drinking at Børsa / sport-active at Rensvik / posing at Eide / sport-active at Elnesvågen / Aukra / sport-active at Midsund / posing at Ålesund / posing at Stranda / posing at Stryn / sightseeing at Lærdalsøyri / working at Treungen / animal-nature at Åmli: capture group",
-   "event_intention": "Capture dates, places and owner favourites",
+   "why": "a photo",
+   "event_intention": "20 days away, Gedser to Åmli",
    "line": "2025-07-31 08:21+00:00 | activity=sightseeing, location=outdoor, people=none | resolution:500x334",
    "story_episode": "S005",
-   "story_role": "supporting",
-   "story_weight": "minor",
+   "story_role": "central",
+   "story_weight": "major",
    "depicted_moment": "M222:cg",
    "moment_alternatives": [],
    "standing": 2
@@ -3200,30 +3240,35 @@
    "longitude": 4.3624,
    "location_name": "Ixelles"
   },
-  "forest-0706-tervuren-00": {
-   "latitude": 50.831861,
-   "longitude": 4.533489,
+  "birthday-cupcakes-2": {
+   "latitude": 50.8417,
+   "longitude": 4.3624,
+   "location_name": "Ixelles"
+  },
+  "forest-0706-tervuren-04": {
+   "latitude": 50.826378,
+   "longitude": 4.522761,
    "location_name": "Tervuren"
+  },
+  "home-0707-park-1": {
+   "latitude": 50.882806,
+   "longitude": 4.328907,
+   "location_name": "Jette"
   },
   "home-0707-park-3": {
    "latitude": 50.883527,
    "longitude": 4.325713,
    "location_name": "Jette"
   },
-  "home-0711-flour-mill": {
-   "latitude": 50.896317,
-   "longitude": 4.400744,
-   "location_name": "Diegem"
-  },
-  "north-0715-0124": {
-   "latitude": 66.651264,
-   "longitude": 22.712666,
-   "location_name": "Korpilombolo"
-  },
   "north-0716-0196": {
    "latitude": 71.160256,
    "longitude": 25.786572,
    "location_name": "Honningsvåg"
+  },
+  "north-0718-0252": {
+   "latitude": 70.083139,
+   "longitude": 22.008311,
+   "location_name": "Burfjord"
   },
   "north-0721-0339": {
    "latitude": 67.934527,
@@ -3231,70 +3276,7 @@
    "location_name": "Reine"
   }
  },
- "cut_carriers": [
-  {
-   "favourite": false,
-   "moment": "M042",
-   "taken": "2025-07-07T15:57:20+02:00",
-   "kind": "still",
-   "asset_id": "home-0707-park-1",
-   "members": [
-    "home-0707-park-1"
-   ],
-   "video_ids": [],
-   "trim_points": [],
-   "seconds": 3.5,
-   "raw_seconds": null,
-   "residual": null,
-   "event": "E19",
-   "anchor": "F17",
-   "chapter": 3,
-   "why": "sport-active at Jette / 2025-07-07 / playing / Woluwe-Saint-Lambert / posing / sightseeing at Strombeek-Bever / 2025-07-09 / sightseeing at Saint-Josse-ten-Noode / posing at Diegem: capture group",
-   "event_intention": "Capture dates, places and owner favourites",
-   "line": "2025-07-07 13:57+00:00 | at Jette, Brussels Capital, Belgium | activity=sport-active, children=yes, location=outdoor, people=none | resolution:500x375",
-   "story_episode": "S004",
-   "story_role": "supporting",
-   "story_weight": "minor",
-   "depicted_moment": "M042:cg",
-   "moment_alternatives": [
-    "home-0707-park-2"
-   ],
-   "standing": 2,
-   "reason": "The model polish took it out",
-   "review_stage": "thin-polish"
-  },
-  {
-   "favourite": false,
-   "moment": "M142",
-   "taken": "2025-07-21T19:15:50+02:00",
-   "kind": "still",
-   "asset_id": "north-0721-0397",
-   "members": [
-    "north-0721-0397"
-   ],
-   "video_ids": [],
-   "trim_points": [],
-   "seconds": 3.5,
-   "raw_seconds": null,
-   "residual": null,
-   "event": "E79",
-   "anchor": "F68",
-   "chapter": 1,
-   "why": "posing at Stege / Copenhagen / posing at Gränna / working at Hagby / posing at Hagby / sport-active at Skutskär / sport-active at Ramvik / posing at Lövånger / sport-active at Korpilombolo / sport-active at Muonio / sport-active / eating-drinking at Alta / posing at Honningsvåg / sport-active at Honningsvåg / animal-nature / sport-active at Alta / posing at Burfjord / sport-active at Olderdalen / posing at Tromsø / Storsteinnes / Borkenes / posing at Kabelvåg / Ballstad / posing at Ballstad / posing at Reine / posing at Gravdal / posing at Sørland / playing / sport-active at Sørland / posing at Bodø / sightseeing / sport-active at Namsskogan / sport-active at Steinkjer / eating-drinking at Børsa / sport-active at Rensvik / posing at Eide / sport-active at Elnesvågen / Aukra / sport-active at Midsund / posing at Ålesund / posing at Stranda / posing at Stryn / sightseeing at Lærdalsøyri / working at Treungen / animal-nature at Åmli: capture group",
-   "event_intention": "Capture dates, places and owner favourites",
-   "line": "2025-07-21 17:15+00:00 | at Gravdal, Nordland, Norway | location=outdoor, people=none, venue=water | resolution:500x375",
-   "story_episode": "S005",
-   "story_role": "supporting",
-   "story_weight": "minor",
-   "depicted_moment": "M142:cg",
-   "moment_alternatives": [
-    "north-0721-0398"
-   ],
-   "standing": 2,
-   "reason": "The model polish took it out",
-   "review_stage": "thin-polish"
-  }
- ],
+ "cut_carriers": [],
  "review": {
   "per_event": [],
   "cuts_order1": 0,
@@ -3359,120 +3341,36 @@
  "reservoir_beats": [],
  "content_seconds": 55.0,
  "llm_metrics": {
-  "llm_calls": 49,
+  "llm_calls": 0,
   "llm_cache_hits": 0,
-  "llm_prompt_tokens": 42425,
-  "llm_cached_prompt_tokens": 34304,
-  "llm_completion_tokens": 2369,
+  "llm_prompt_tokens": 0,
+  "llm_cached_prompt_tokens": 0,
+  "llm_completion_tokens": 0,
   "llm_truncated": 0,
-  "llm_wall_seconds": 24.696
+  "llm_wall_seconds": 0.0
  },
- "calls": [
-  {
-   "stage": "thesis-fit-1-source",
-   "wall_seconds": 0.683,
-   "warning": null,
-   "cache_hit": false,
-   "judgment_key": "",
-   "response_contract": "complete transport"
-  },
-  {
-   "stage": "thesis-fit-1-hashed",
-   "wall_seconds": 0.499,
-   "warning": null,
-   "cache_hit": false,
-   "judgment_key": "",
-   "response_contract": "complete transport"
-  },
-  {
-   "stage": "thesis-fit-1-source",
-   "wall_seconds": 0.475,
-   "warning": null,
-   "cache_hit": false,
-   "judgment_key": "",
-   "response_contract": "complete transport"
-  },
-  {
-   "stage": "thesis-fit-1-hashed",
-   "wall_seconds": 0.489,
-   "warning": null,
-   "cache_hit": false,
-   "judgment_key": "",
-   "response_contract": "complete transport"
-  },
-  {
-   "stage": "story-pick-S004-D906-source",
-   "wall_seconds": 0.976,
-   "warning": null,
-   "cache_hit": false,
-   "judgment_key": "",
-   "response_contract": "complete transport"
-  },
-  {
-   "stage": "story-pick-S005-D908-source",
-   "wall_seconds": 0.899,
-   "warning": null,
-   "cache_hit": false,
-   "judgment_key": "",
-   "response_contract": "complete transport"
-  },
-  {
-   "stage": "story-pick-S005-D913-source",
-   "wall_seconds": 0.497,
-   "warning": null,
-   "cache_hit": false,
-   "judgment_key": "",
-   "response_contract": "complete transport"
-  },
-  {
-   "stage": "thesis-fit-1-source",
-   "wall_seconds": 0.584,
-   "warning": null,
-   "cache_hit": false,
-   "judgment_key": "",
-   "response_contract": "complete transport"
-  },
-  {
-   "stage": "thesis-fit-1-source",
-   "wall_seconds": 0.466,
-   "warning": null,
-   "cache_hit": false,
-   "judgment_key": "",
-   "response_contract": "complete transport"
-  }
- ],
- "calls_by_stage": {
-  "thesis-fit": {
-   "asked": 6,
-   "cache_hits": 0,
-   "wall_seconds": 3.196
-  },
-  "story-pick": {
-   "asked": 3,
-   "cache_hits": 0,
-   "wall_seconds": 2.372
-  }
- },
+ "calls": [],
+ "calls_by_stage": {},
  "pixels_seen_by_text_model": false,
  "episode_reading_health": {
   "status": "complete",
   "unavailable_episodes": 0,
   "episodes": [
    {
-    "group_id": "episode-v1-b6822c36e9edcf377372ccc7a91ae3555d0b521c8a57be15fbd11042a9c53b0d",
-    "producer_key": "",
-    "evidence_key": "",
-    "status": "read",
-    "reason": null,
-    "cache_hit": false
-   },
-   {
     "group_id": "episode-v1-012d8821a16594460c6761f5972f8f2a7b20f2eb3121372f5566df3b1c1cf1a2",
     "producer_key": "",
     "evidence_key": "",
     "status": "read",
     "reason": null,
-    "cache_hit": false
+    "cache_hit": true
+   },
+   {
+    "group_id": "episode-v1-80990b55610358739c34deac0c2b6dd4b08757959db9d867652ccf4718d73d64",
+    "producer_key": "",
+    "evidence_key": "",
+    "status": "read",
+    "reason": null,
+    "cache_hit": true
    },
    {
     "group_id": "episode-v1-7dfb9058913b5e0dc5612770eeb88184c5be7eb84cf1a2b5fd56e7c071a69dd9",
@@ -3480,7 +3378,7 @@
     "evidence_key": "",
     "status": "read",
     "reason": null,
-    "cache_hit": false
+    "cache_hit": true
    },
    {
     "group_id": "episode-v1-154fbfe4c9ddcc7e4f939c3c615bd8f7d61208c15e8a0f3e5c254145344d161d",
@@ -3488,15 +3386,7 @@
     "evidence_key": "",
     "status": "read",
     "reason": null,
-    "cache_hit": false
-   },
-   {
-    "group_id": "episode-v1-2e9408bf9595fdde6d112c67268c27dd10958be76c2d27c1fa7a30992568a1ed",
-    "producer_key": "",
-    "evidence_key": "",
-    "status": "read",
-    "reason": null,
-    "cache_hit": false
+    "cache_hit": true
    },
    {
     "group_id": "episode-v1-cecf0aefe74bbf6e4c0098559e9f4dc7ab60df1d4122cf60e7f2adf3809ad6c4",
@@ -3504,7 +3394,7 @@
     "evidence_key": "",
     "status": "read",
     "reason": null,
-    "cache_hit": false
+    "cache_hit": true
    },
    {
     "group_id": "episode-v1-16137c40339e6d8e2e159399aba58d1f8fa4a969524824754988dee638f5c60c",
@@ -3512,15 +3402,15 @@
     "evidence_key": "",
     "status": "read",
     "reason": null,
-    "cache_hit": false
+    "cache_hit": true
    },
    {
-    "group_id": "episode-v1-56c7779251c9909849f3cf0fd169e7191d7e5fc621ebea42198a47bed5f27d95",
+    "group_id": "episode-v1-f5d67029149458354e43e065da44dc6f97d727a35f0fc7265ee5e8113099bce4",
     "producer_key": "",
     "evidence_key": "",
     "status": "read",
     "reason": null,
-    "cache_hit": false
+    "cache_hit": true
    },
    {
     "group_id": "episode-v1-e8cf89eddce1d0a10fcfdcf7d2c3ea10a3355ecabcbb290ed925949031d3b4a0",
@@ -3528,15 +3418,7 @@
     "evidence_key": "",
     "status": "read",
     "reason": null,
-    "cache_hit": false
-   },
-   {
-    "group_id": "episode-v1-25dff961a1066faa31abf55754d4524f6b2d033d4e0904f310327b6117bc7930",
-    "producer_key": "",
-    "evidence_key": "",
-    "status": "read",
-    "reason": null,
-    "cache_hit": false
+    "cache_hit": true
    },
    {
     "group_id": "episode-v1-584c9ab4dd777bb265094d65552b276c482f5190278c7ce0c027758b717bc3b9",
@@ -3544,7 +3426,23 @@
     "evidence_key": "",
     "status": "read",
     "reason": null,
-    "cache_hit": false
+    "cache_hit": true
+   },
+   {
+    "group_id": "episode-v1-de261cd7737415c7cccdefceb4f4115823f5367eeb28b72723aa28dd74703665",
+    "producer_key": "",
+    "evidence_key": "",
+    "status": "read",
+    "reason": null,
+    "cache_hit": true
+   },
+   {
+    "group_id": "episode-v1-51ede178c0ee489824c8fbda5f84e636864d59c94ec5c541e91bd7b1462b23ae",
+    "producer_key": "",
+    "evidence_key": "",
+    "status": "read",
+    "reason": null,
+    "cache_hit": true
    },
    {
     "group_id": "episode-v1-23dc4cc0cd16ea82ac5437c3cc021727333bd753f0d3ff5a3a9bf414179fbad3",
@@ -3552,23 +3450,7 @@
     "evidence_key": "",
     "status": "read",
     "reason": null,
-    "cache_hit": false
-   },
-   {
-    "group_id": "episode-v1-e98e59279f6a4c10193ca9010480dc4af1cc4a916893fad110deb247c5ee4b26",
-    "producer_key": "",
-    "evidence_key": "",
-    "status": "read",
-    "reason": null,
-    "cache_hit": false
-   },
-   {
-    "group_id": "episode-v1-b8bc62558259882b552cf525d00d26b6feea361423dd137252a70fd4e9bc3640",
-    "producer_key": "",
-    "evidence_key": "",
-    "status": "read",
-    "reason": null,
-    "cache_hit": false
+    "cache_hit": true
    },
    {
     "group_id": "episode-v1-19531b8b8a3b28d5efbfc4bb6293bade73ab4bb3a2c5945c93e19b3f8694b3a1",
@@ -3576,7 +3458,7 @@
     "evidence_key": "",
     "status": "read",
     "reason": null,
-    "cache_hit": false
+    "cache_hit": true
    }
   ]
  }

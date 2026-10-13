@@ -27,10 +27,11 @@ REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 
 # The people roster resolves through the home directory, so the recording must
-# not read the developer's own. Every provider override goes too.
+# not read the developer's own. Every provider override goes too, except the recording to
+# replay (`make demo-cli` passes the month the other demos show).
 _HOME = Path(tempfile.mkdtemp(prefix="demo-cli-home-"))
 for key in list(os.environ):
-    if key.startswith("IMMICH_MEMORIES_"):
+    if key.startswith("IMMICH_MEMORIES_") and key != "IMMICH_MEMORIES_E2E_RECORDING":
         del os.environ[key]
 os.environ.update(
     {

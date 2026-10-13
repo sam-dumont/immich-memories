@@ -65,15 +65,11 @@ const WEIGHTS: Record<string, string> = {
   glimpse: "Small moment",
 };
 
-/** The pool's other views of a shot's subject (home-rain-window-02 for -01), with what the cut did with each. */
-export const alternativesOf = (shot: Shot) => {
-  const subject = shot.picture.replace(/-\d+\.jpg$/, "");
-  return POOL.filter(
-    (card) =>
-      card.picture !== shot.picture &&
-      card.picture.replace(/-\d+\.jpg$/, "") === subject,
+/** The pool's other pictures of a shot's moment, with what the cut did with each. */
+export const alternativesOf = (shot: Shot) =>
+  shot.alternatives.flatMap((picture) =>
+    POOL.filter((card) => card.picture === picture),
   );
-};
 
 export type RunPageState = {
   view: "sheet" | "stories";

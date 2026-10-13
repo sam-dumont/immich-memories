@@ -11,7 +11,15 @@ import { WindowFrame, onScreen } from "../components/WindowFrame";
 import { AppShell, MAIN_X, MAIN_Y } from "../components/AppShell";
 import { AnimatedCursor } from "../components/AnimatedCursor";
 import { Button, Heading } from "../components/ui";
-import { POOL_TOTAL } from "../fixture";
+import {
+  ALBUM_FIRST,
+  ALBUM_LAST,
+  ALBUM_NAME,
+  ALBUM_PICTURES,
+  KIT_DAYS,
+  KIT_PICTURES,
+  POOL_TOTAL,
+} from "../fixture";
 
 /**
  * web/src/routes/suggestions/+page.svelte: what automation would make next, by
@@ -27,14 +35,14 @@ const CANDIDATES = [
     meta: `Monthly Highlights · 2025-07-01 – 2025-07-31 · Pictures: ${POOL_TOTAL}`,
   },
   {
-    reason: "New album 'The road north', 992 pictures, never filmed",
+    reason: `New album '${ALBUM_NAME}', ${ALBUM_PICTURES} pictures, never filmed`,
     people: "",
-    meta: "Album · 2025-07-12 – 2025-07-31 · Pictures: 992",
+    meta: `Album · ${ALBUM_FIRST} – ${ALBUM_LAST} · Pictures: ${ALBUM_PICTURES}`,
   },
   {
-    reason: "Kit in July 2025, 9 pictures over 7 days",
+    reason: `Kit in July 2025, ${KIT_PICTURES} pictures over ${KIT_DAYS} days`,
     people: "Kit",
-    meta: "Person month · 2025-07-01 – 2025-07-31 · Pictures: 9",
+    meta: `Person month · 2025-07-01 – 2025-07-31 · Pictures: ${KIT_PICTURES}`,
   },
 ];
 

@@ -93,6 +93,32 @@ def active_minutes() -> float | None:
     return None if recorded is None else round(recorded["plan"]["target_seconds"] / 60, 2)
 
 
+def active_edit() -> tuple[int, int]:
+    """Which shots of the active cut a demo or a screenshot edits: (swapped, removed).
+
+    The swapped one is the first still with another picture of its moment to put in its
+    place; the removed one is the first still after it that stands alone, the kind of shot an
+    owner cuts. The demo's edit scene and the film it ends on both read this, so they agree.
+    """
+    recorded = recording()
+    if recorded is None:
+        rows = [(p.is_video, bool(_siblings(p))) for p in CARRIERS]
+    else:
+        by_id = {row["asset_id"]: row for row in recorded["plan"]["carriers"]}
+        rows = [
+            (
+                by_id[asset_id]["kind"] == "video",
+                any(other in BY_ID for other in by_id[asset_id]["moment_alternatives"]),
+            )
+            for asset_id in recorded["render-projection"]["selected_ids"]
+        ]
+    swapped = next(i for i, (video, offered) in enumerate(rows) if not video and offered)
+    removed = next(
+        i for i, (video, offered) in enumerate(rows) if i > swapped and not video and not offered
+    )
+    return swapped, removed
+
+
 def _replay(
     sources: Sequence[Any], recorded: dict[str, Any]
 ) -> tuple[list[Any], list[tuple[str, str]]]:

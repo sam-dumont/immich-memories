@@ -6,7 +6,7 @@ description: Install Basic, GPU or Full with Docker Compose, connect Immich and 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import InstallationFiles from '@site/src/components/InstallationFiles';
-import ThemedScreenshot, {Screenshot} from '@site/src/components/ThemedScreenshot';
+import ThemedScreenshot from '@site/src/components/ThemedScreenshot';
 import ComposePort from '@site/src/components/ComposePort';
 
 # Quick start
@@ -44,11 +44,6 @@ The files match the release shown on this docs site.
 <InstallationFiles tier="basic" />
 
 This starts one app container. No GPU or separate model server is needed.
-
-<Screenshot src="/img/screenshots/compose-basic-setup.png" alt="Terminal showing the two Basic downloads and Compose resolving one app service and its image" />
-
-The two downloads and the resulting Compose configuration, captured with rc.9. The app has not started yet.
-Tap the screenshot to read it at full size.
 
 </TabItem>
 <TabItem value="gpu" label="GPU">

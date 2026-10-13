@@ -1,72 +1,72 @@
 {
  "format": "editorial-source-rendering-v1",
  "selected_ids": [
-  "cast-0701-kit-lining-up-the-chocolate",
-  "home-0702-tram-2",
+  "cast-0701-remy-in-the-grass",
+  "cast-0703-painting-with-the-watercolou",
   "cast-0704-kit-digging-on-the-beach",
   "cast-0704-remy-s-first-steps-on-the-sa",
-  "cast-0704-remy-up-in-the-air",
+  "cast-0704-charlie-with-the-flowers",
   "birthday-cake",
+  "birthday-cupcakes-2",
   "birthday-superheroes",
+  "birthday-sofa-film",
   "forest-0706-pat-03",
-  "forest-0706-sonian-2",
   "forest-0706-picnic",
-  "forest-0706-tervuren-03",
   "forest-0706-tervuren-04",
+  "forest-0706-tervuren-05",
+  "cast-0707-pat-with-a-grandchild-on-his",
+  "cast-0707-pat-and-lou-with-the-little",
   "cast-0708-jo-by-the-fireplace",
+  "home-0708-saint-lambert",
   "cast-0708-climbing-the-fence",
   "cast-0708-alex-with-the-football",
-  "cast-0708-jo-in-the-hairband",
-  "home-0708-ice-cream-bike",
-  "home-0711-flour-mill",
-  "north-0712-0000",
-  "north-0712-0002",
+  "cast-0708-jo-twirling-in-the-dress",
+  "cast-0710-kit-reading-on-the-rug",
   "north-0712-0003",
-  "north-0712-0007",
-  "north-clip-0712-0",
+  "north-0712-0005",
   "trip-0712-cargo-bike",
   "trip-0712-bike-harbour",
-  "north-0713-0016",
-  "north-0713-0035",
+  "north-0713-0018",
+  "north-0713-0023",
   "north-0713-0039",
-  "north-0715-0112",
+  "north-0714-0054",
+  "north-clip-0714-1",
+  "north-0714-0063",
+  "north-0714-0068",
   "north-clip-0715-2",
-  "north-0715-0133",
-  "north-0715-0137",
   "north-0716-0196",
-  "north-0718-0252",
-  "north-0718-0271",
-  "north-0719-0295",
-  "north-0719-0296",
-  "north-0719-0297",
+  "north-0717-0208",
+  "north-0717-0225",
+  "north-0718-0248",
+  "north-0718-0272",
+  "north-0718-0284",
   "north-0720-0331",
   "north-0721-0336",
   "north-0721-0339",
-  "north-0723-0416",
-  "north-0723-0423",
-  "north-0723-0474",
-  "north-0724-0539",
-  "north-0725-0559",
-  "north-0726-0597",
-  "north-0727-0668",
-  "north-clip-0727-5",
+  "north-0721-0374",
+  "north-0721-0395",
+  "north-0722-0414",
+  "north-clip-0723-4",
+  "north-0723-0437",
+  "north-0723-0463",
+  "north-0724-0526",
+  "north-0726-0584",
   "north-0728-0748",
-  "north-0729-0877",
-  "north-0729-0900",
-  "north-0729-0929",
-  "north-0729-0935",
+  "north-0729-0921",
   "north-0730-0950",
+  "north-0730-0951",
   "north-0730-0956",
-  "north-clip-0730-6"
+  "north-clip-0730-6",
+  "north-0731-1002"
  ],
  "adjustments": [],
  "allow_live_motion": true,
  "intervals": {
-  "cast-0701-kit-lining-up-the-chocolate": [
+  "cast-0701-remy-in-the-grass": [
    0.0,
    3.5
   ],
-  "home-0702-tram-2": [
+  "cast-0703-painting-with-the-watercolou": [
    0.0,
    3.5
   ],
@@ -78,7 +78,7 @@
    0.0,
    3.5
   ],
-  "cast-0704-remy-up-in-the-air": [
+  "cast-0704-charlie-with-the-flowers": [
    0.0,
    3.5
   ],
@@ -86,23 +86,23 @@
    0.0,
    3.5
   ],
+  "birthday-cupcakes-2": [
+   0.0,
+   3.5
+  ],
   "birthday-superheroes": [
+   0.0,
+   3.5
+  ],
+  "birthday-sofa-film": [
    0.0,
    3.5
   ],
   "forest-0706-pat-03": [
    0.0,
-   4.0
-  ],
-  "forest-0706-sonian-2": [
-   0.0,
    3.5
   ],
   "forest-0706-picnic": [
-   0.0,
-   4.0
-  ],
-  "forest-0706-tervuren-03": [
    0.0,
    3.5
   ],
@@ -110,9 +110,25 @@
    0.0,
    3.5
   ],
+  "forest-0706-tervuren-05": [
+   0.0,
+   3.5
+  ],
+  "cast-0707-pat-with-a-grandchild-on-his": [
+   0.0,
+   3.5
+  ],
+  "cast-0707-pat-and-lou-with-the-little": [
+   0.0,
+   3.5
+  ],
   "cast-0708-jo-by-the-fireplace": [
    0.0,
-   4.0
+   3.5
+  ],
+  "home-0708-saint-lambert": [
+   0.0,
+   3.5
   ],
   "cast-0708-climbing-the-fence": [
    0.0,
@@ -122,23 +138,11 @@
    0.0,
    3.5
   ],
-  "cast-0708-jo-in-the-hairband": [
+  "cast-0708-jo-twirling-in-the-dress": [
    0.0,
    3.5
   ],
-  "home-0708-ice-cream-bike": [
-   0.0,
-   3.5
-  ],
-  "home-0711-flour-mill": [
-   0.0,
-   3.5
-  ],
-  "north-0712-0000": [
-   0.0,
-   3.5
-  ],
-  "north-0712-0002": [
+  "cast-0710-kit-reading-on-the-rug": [
    0.0,
    3.5
   ],
@@ -146,13 +150,9 @@
    0.0,
    3.5
   ],
-  "north-0712-0007": [
+  "north-0712-0005": [
    0.0,
    3.5
-  ],
-  "north-clip-0712-0": [
-   1.0,
-   5.0
   ],
   "trip-0712-cargo-bike": [
    0.0,
@@ -162,11 +162,11 @@
    0.0,
    4.0
   ],
-  "north-0713-0016": [
+  "north-0713-0018": [
    0.0,
    3.5
   ],
-  "north-0713-0035": [
+  "north-0713-0023": [
    0.0,
    3.5
   ],
@@ -174,7 +174,19 @@
    0.0,
    3.5
   ],
-  "north-0715-0112": [
+  "north-0714-0054": [
+   0.0,
+   3.5
+  ],
+  "north-clip-0714-1": [
+   0.0,
+   4.0
+  ],
+  "north-0714-0063": [
+   0.0,
+   3.5
+  ],
+  "north-0714-0068": [
    0.0,
    3.5
   ],
@@ -182,35 +194,27 @@
    0.0,
    4.0
   ],
-  "north-0715-0133": [
-   0.0,
-   3.5
-  ],
-  "north-0715-0137": [
-   0.0,
-   3.5
-  ],
   "north-0716-0196": [
    0.0,
    4.0
   ],
-  "north-0718-0252": [
+  "north-0717-0208": [
    0.0,
    3.5
   ],
-  "north-0718-0271": [
+  "north-0717-0225": [
    0.0,
    3.5
   ],
-  "north-0719-0295": [
+  "north-0718-0248": [
    0.0,
    3.5
   ],
-  "north-0719-0296": [
+  "north-0718-0272": [
    0.0,
    3.5
   ],
-  "north-0719-0297": [
+  "north-0718-0284": [
    0.0,
    3.5
   ],
@@ -226,35 +230,35 @@
    0.0,
    4.0
   ],
-  "north-0723-0416": [
+  "north-0721-0374": [
    0.0,
    3.5
   ],
-  "north-0723-0423": [
+  "north-0721-0395": [
    0.0,
    3.5
   ],
-  "north-0723-0474": [
+  "north-0722-0414": [
    0.0,
    3.5
   ],
-  "north-0724-0539": [
+  "north-clip-0723-4": [
+   0.0,
+   4.0
+  ],
+  "north-0723-0437": [
    0.0,
    3.5
   ],
-  "north-0725-0559": [
+  "north-0723-0463": [
    0.0,
    3.5
   ],
-  "north-0726-0597": [
+  "north-0724-0526": [
    0.0,
    3.5
   ],
-  "north-0727-0668": [
-   0.0,
-   3.5
-  ],
-  "north-clip-0727-5": [
+  "north-0726-0584": [
    0.0,
    3.5
   ],
@@ -262,23 +266,15 @@
    0.0,
    3.5
   ],
-  "north-0729-0877": [
-   0.0,
-   3.5
-  ],
-  "north-0729-0900": [
-   0.0,
-   3.5
-  ],
-  "north-0729-0929": [
-   0.0,
-   3.5
-  ],
-  "north-0729-0935": [
+  "north-0729-0921": [
    0.0,
    3.5
   ],
   "north-0730-0950": [
+   0.0,
+   3.5
+  ],
+  "north-0730-0951": [
    0.0,
    3.5
   ],
@@ -287,6 +283,10 @@
    3.5
   ],
   "north-clip-0730-6": [
+   0.0,
+   4.0
+  ],
+  "north-0731-1002": [
    0.0,
    4.0
   ]

@@ -1,6 +1,6 @@
 {
- "title": null,
- "title_source": null,
+ "title": "Kit's birthday in Ixelles",
+ "title_source": "model",
  "memory_type": "special_day",
  "arguments": [
   "--memory-type",
@@ -8,5 +8,5 @@
   "--day",
   "2025-07-05"
  ],
- "seconds": 29
+ "seconds": 21
 }

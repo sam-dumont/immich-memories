@@ -13,7 +13,7 @@ import { WindowFrame } from "../components/WindowFrame";
 import { AppShell } from "../components/AppShell";
 import { Mdi } from "../components/Mdi";
 import { Badge, Button, Heading } from "../components/ui";
-import { SHOTS } from "../fixture";
+import { EDIT_REMOVED, EDIT_SWAPPED, SHOTS } from "../fixture";
 
 /**
  * web/src/routes/runs/+page.svelte: every run, newest first, as a card with
@@ -23,6 +23,38 @@ import { SHOTS } from "../fixture";
 
 const JULY = "Jul 1, 2025 to Jul 31, 2025";
 const firstFour = (pictures: string[]) => pictures.slice(0, 4);
+
+const MONTH_NAMES = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
+/** "2025-07-31" as the runs page prints a one-day range. */
+const oneDay = (day: string) => {
+  const label = `${MONTH_NAMES[Number(day.slice(5, 7)) - 1]} ${Number(day.slice(8))}, ${day.slice(0, 4)}`;
+  return `${label} to ${label}`;
+};
+// The cut with the saved revision applied: the swapped shot's other picture, the removed one gone.
+const REVISED = SHOTS.map((shot, i) =>
+  i === EDIT_SWAPPED ? shot.alternatives[0] : shot.picture,
+).filter((_, i) => i !== EDIT_REMOVED);
+// A custom range over the busiest day of the cut after its first one (the special day's).
+const shotsOn = (day: string) => SHOTS.filter((shot) => shot.day === day);
+const BUSY_DAY = SHOTS.map((shot) => shot.day)
+  .filter((day) => day !== SHOTS[0].day)
+  .reduce(
+    (best, day) => (shotsOn(day).length > shotsOn(best).length ? day : best),
+    SHOTS[SHOTS.length - 1].day,
+  );
 
 const RUNS: {
   type: string;
@@ -36,12 +68,7 @@ const RUNS: {
     span: JULY,
     status: "Completed",
     when: "now · Manual",
-    pictures: firstFour([
-      SHOTS[0].picture,
-      "library/home-0703-duden-00.jpg",
-      SHOTS[2].picture,
-      SHOTS[3].picture,
-    ]),
+    pictures: firstFour(REVISED),
   },
   {
     type: "Monthly Highlights",
@@ -63,25 +90,17 @@ const RUNS: {
   },
   {
     type: "Custom date range",
-    span: "Jul 23, 2025 to Jul 23, 2025",
+    span: oneDay(BUSY_DAY),
     status: "Completed",
     when: "3 days ago · Manual",
-    pictures: firstFour(
-      SHOTS.filter((shot) => shot.day === "2025-07-23").map(
-        (shot) => shot.picture,
-      ),
-    ),
+    pictures: firstFour(shotsOn(BUSY_DAY).map((shot) => shot.picture)),
   },
   {
     type: "Special day",
-    span: "Jul 5, 2025 to Jul 5, 2025",
+    span: oneDay(SHOTS[0].day),
     status: "Completed",
     when: "5 days ago · Automatic",
-    pictures: firstFour(
-      SHOTS.filter((shot) => shot.day === "2025-07-05").map(
-        (shot) => shot.picture,
-      ),
-    ),
+    pictures: firstFour(shotsOn(SHOTS[0].day).map((shot) => shot.picture)),
   },
 ];
 

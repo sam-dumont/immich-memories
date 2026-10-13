@@ -42,16 +42,16 @@
  "story": {
   "version": "story-first-selection-v7-prepared-candidates",
   "slots": 15,
-  "thesis": "2025-07-19..2025-07-23:\nThe period features scenes in Nordland, Norway, including a church in Leknes and coastal views in Reine and Ramberg. Evidence shows groups near water in Reine and Gravdal, and individuals in rocky areas of Ramberg. The overall pattern is outdoor activity and landscape observation across various locations in the region.",
+  "thesis": "Gravdal, Monday 21 July",
   "priorities": [],
   "episodes": [
    {
     "episode": "S001",
-    "title": "posing at Ballstad / posing at Reine",
+    "title": "Gravdal, Monday 21 July",
     "role": "supporting",
     "weight": "minor",
     "gate": "remarkable",
-    "purpose": "Capture dates, places and owner favourites",
+    "purpose": "A day out: Ballstad, Leknes, Reine and 2 more places",
     "day": "2025-07-21",
     "seen": {
      "days": 1,
@@ -82,7 +82,21 @@
      "M012:cg",
      "M013:cg"
     ],
-    "kind": "story"
+    "kind": "story",
+    "occasion": null,
+    "people": [],
+    "days": [
+     "2025-07-21",
+     "2025-07-21"
+    ],
+    "places": [
+     "Ballstad",
+     "Leknes",
+     "Reine",
+     "Ramberg",
+     "Gravdal"
+    ],
+    "trip": null
    }
   ],
   "calls": {
@@ -200,7 +214,7 @@
   "hashes_computed": 0,
   "unavailable": 0,
   "preview_bytes": 3793332,
-  "wall_seconds": 0.009,
+  "wall_seconds": 0.008,
   "preview_acquisition": {
    "fetch_attempts": 0,
    "cache_hits": 62,
@@ -240,237 +254,146 @@
   "check_policy": "all-captioned-carrier-members-v1",
   "verdicts": {
    "north-0721-0339": {
-    "policy": "audience-evidence-v17-every-finding-needs-its-activity",
-    "verdict": "share",
+    "policy": "audience-rules-v1-detector-heads-and-flags",
+    "verdict": "family_only",
     "parsed": true,
     "missing_members": [],
-    "activity": {
-     "scope": "activity-content",
-     "parsed": true,
-     "finding": "none",
-     "verdict": "share",
-     "why": "laya hold p=0.000"
-    },
+    "activity": null,
     "exposure": null,
-    "activity_asked_in_batch": true,
-    "why": "laya hold p=0.000",
-    "finding": "none",
+    "finding": "unread_private_activity",
+    "why": "no detector head objected, but no description was read to clear it",
     "evidence_key": ""
    },
    "north-0721-0336": {
-    "policy": "audience-evidence-v17-every-finding-needs-its-activity",
-    "verdict": "share",
+    "policy": "audience-rules-v1-detector-heads-and-flags",
+    "verdict": "family_only",
     "parsed": true,
     "missing_members": [],
-    "activity": {
-     "scope": "activity-content",
-     "parsed": true,
-     "finding": "none",
-     "verdict": "share",
-     "why": "laya hold p=0.000"
-    },
+    "activity": null,
     "exposure": null,
-    "activity_asked_in_batch": true,
-    "why": "laya hold p=0.000",
-    "finding": "none",
+    "finding": "unread_private_activity",
+    "why": "no detector head objected, but no description was read to clear it",
     "evidence_key": ""
    },
    "north-0721-0349": {
-    "policy": "audience-evidence-v17-every-finding-needs-its-activity",
-    "verdict": "share",
+    "policy": "audience-rules-v1-detector-heads-and-flags",
+    "verdict": "family_only",
     "parsed": true,
     "missing_members": [],
-    "activity": {
-     "scope": "activity-content",
-     "parsed": true,
-     "finding": "none",
-     "verdict": "share",
-     "why": "laya hold p=0.000"
-    },
+    "activity": null,
     "exposure": null,
-    "activity_asked_in_batch": true,
-    "why": "laya hold p=0.000",
-    "finding": "none",
+    "finding": "unread_private_activity",
+    "why": "no detector head objected, but no description was read to clear it",
     "evidence_key": ""
    },
    "north-0721-0365": {
-    "policy": "audience-evidence-v17-every-finding-needs-its-activity",
-    "verdict": "share",
+    "policy": "audience-rules-v1-detector-heads-and-flags",
+    "verdict": "family_only",
     "parsed": true,
     "missing_members": [],
-    "activity": {
-     "scope": "activity-content",
-     "parsed": true,
-     "finding": "none",
-     "verdict": "share",
-     "why": "laya hold p=0.000"
-    },
+    "activity": null,
     "exposure": null,
-    "activity_asked_in_batch": true,
-    "why": "laya hold p=0.000",
-    "finding": "none",
+    "finding": "unread_private_activity",
+    "why": "no detector head objected, but no description was read to clear it",
     "evidence_key": ""
    },
    "north-0721-0373": {
-    "policy": "audience-evidence-v17-every-finding-needs-its-activity",
-    "verdict": "share",
+    "policy": "audience-rules-v1-detector-heads-and-flags",
+    "verdict": "family_only",
     "parsed": true,
     "missing_members": [],
-    "activity": {
-     "scope": "activity-content",
-     "parsed": true,
-     "finding": "none",
-     "verdict": "share",
-     "why": "laya hold p=0.000"
-    },
+    "activity": null,
     "exposure": null,
-    "activity_asked_in_batch": true,
-    "why": "laya hold p=0.000",
-    "finding": "none",
+    "finding": "unread_private_activity",
+    "why": "no detector head objected, but no description was read to clear it",
     "evidence_key": ""
    },
    "north-0721-0374": {
-    "policy": "audience-evidence-v17-every-finding-needs-its-activity",
-    "verdict": "share",
+    "policy": "audience-rules-v1-detector-heads-and-flags",
+    "verdict": "family_only",
     "parsed": true,
     "missing_members": [],
-    "activity": {
-     "scope": "activity-content",
-     "parsed": true,
-     "finding": "none",
-     "verdict": "share",
-     "why": "laya hold p=0.000"
-    },
+    "activity": null,
     "exposure": null,
-    "activity_asked_in_batch": true,
-    "why": "laya hold p=0.000",
-    "finding": "none",
+    "finding": "unread_private_activity",
+    "why": "no detector head objected, but no description was read to clear it",
     "evidence_key": ""
    },
    "north-0721-0375": {
-    "policy": "audience-evidence-v17-every-finding-needs-its-activity",
-    "verdict": "share",
+    "policy": "audience-rules-v1-detector-heads-and-flags",
+    "verdict": "family_only",
     "parsed": true,
     "missing_members": [],
-    "activity": {
-     "scope": "activity-content",
-     "parsed": true,
-     "finding": "none",
-     "verdict": "share",
-     "why": "laya hold p=0.000"
-    },
+    "activity": null,
     "exposure": null,
-    "activity_asked_in_batch": true,
-    "why": "laya hold p=0.000",
-    "finding": "none",
+    "finding": "unread_private_activity",
+    "why": "no detector head objected, but no description was read to clear it",
     "evidence_key": ""
    },
    "north-0721-0381": {
-    "policy": "audience-evidence-v17-every-finding-needs-its-activity",
-    "verdict": "share",
+    "policy": "audience-rules-v1-detector-heads-and-flags",
+    "verdict": "family_only",
     "parsed": true,
     "missing_members": [],
-    "activity": {
-     "scope": "activity-content",
-     "parsed": true,
-     "finding": "none",
-     "verdict": "share",
-     "why": "laya hold p=0.000"
-    },
+    "activity": null,
     "exposure": null,
-    "activity_asked_in_batch": true,
-    "why": "laya hold p=0.000",
-    "finding": "none",
+    "finding": "unread_private_activity",
+    "why": "no detector head objected, but no description was read to clear it",
     "evidence_key": ""
    },
    "north-0721-0386": {
-    "policy": "audience-evidence-v17-every-finding-needs-its-activity",
-    "verdict": "share",
+    "policy": "audience-rules-v1-detector-heads-and-flags",
+    "verdict": "family_only",
     "parsed": true,
     "missing_members": [],
-    "activity": {
-     "scope": "activity-content",
-     "parsed": true,
-     "finding": "none",
-     "verdict": "share",
-     "why": "laya hold p=0.000"
-    },
+    "activity": null,
     "exposure": null,
-    "activity_asked_in_batch": true,
-    "why": "laya hold p=0.000",
-    "finding": "none",
+    "finding": "unread_private_activity",
+    "why": "no detector head objected, but no description was read to clear it",
     "evidence_key": ""
    },
    "north-0721-0390": {
-    "policy": "audience-evidence-v17-every-finding-needs-its-activity",
-    "verdict": "share",
+    "policy": "audience-rules-v1-detector-heads-and-flags",
+    "verdict": "family_only",
     "parsed": true,
     "missing_members": [],
-    "activity": {
-     "scope": "activity-content",
-     "parsed": true,
-     "finding": "none",
-     "verdict": "share",
-     "why": "laya hold p=0.000"
-    },
+    "activity": null,
     "exposure": null,
-    "activity_asked_in_batch": true,
-    "why": "laya hold p=0.000",
-    "finding": "none",
+    "finding": "unread_private_activity",
+    "why": "no detector head objected, but no description was read to clear it",
     "evidence_key": ""
    },
    "north-0721-0393": {
-    "policy": "audience-evidence-v17-every-finding-needs-its-activity",
-    "verdict": "share",
+    "policy": "audience-rules-v1-detector-heads-and-flags",
+    "verdict": "family_only",
     "parsed": true,
     "missing_members": [],
-    "activity": {
-     "scope": "activity-content",
-     "parsed": true,
-     "finding": "none",
-     "verdict": "share",
-     "why": "laya hold p=0.000"
-    },
+    "activity": null,
     "exposure": null,
-    "activity_asked_in_batch": true,
-    "why": "laya hold p=0.000",
-    "finding": "none",
+    "finding": "unread_private_activity",
+    "why": "no detector head objected, but no description was read to clear it",
     "evidence_key": ""
    },
    "north-0721-0395": {
-    "policy": "audience-evidence-v17-every-finding-needs-its-activity",
-    "verdict": "share",
+    "policy": "audience-rules-v1-detector-heads-and-flags",
+    "verdict": "family_only",
     "parsed": true,
     "missing_members": [],
-    "activity": {
-     "scope": "activity-content",
-     "parsed": true,
-     "finding": "none",
-     "verdict": "share",
-     "why": "laya hold p=0.000"
-    },
+    "activity": null,
     "exposure": null,
-    "activity_asked_in_batch": true,
-    "why": "laya hold p=0.000",
-    "finding": "none",
+    "finding": "unread_private_activity",
+    "why": "no detector head objected, but no description was read to clear it",
     "evidence_key": ""
    },
    "north-0721-0397": {
-    "policy": "audience-evidence-v17-every-finding-needs-its-activity",
-    "verdict": "share",
+    "policy": "audience-rules-v1-detector-heads-and-flags",
+    "verdict": "family_only",
     "parsed": true,
     "missing_members": [],
-    "activity": {
-     "scope": "activity-content",
-     "parsed": true,
-     "finding": "none",
-     "verdict": "share",
-     "why": "laya hold p=0.000"
-    },
+    "activity": null,
     "exposure": null,
-    "activity_asked_in_batch": true,
-    "why": "laya hold p=0.000",
-    "finding": "none",
+    "finding": "unread_private_activity",
+    "why": "no detector head objected, but no description was read to clear it",
     "evidence_key": ""
    }
   },
@@ -559,18 +482,18 @@
   "F03": "Outside home radius or the twelve usual cities"
  },
  "beats": [
-  "posing at Ballstad / posing at Reine"
+  "Gravdal, Monday 21 July"
  ],
  "threads": {
   "headings": [
-   "posing at Ballstad / posing at Reine"
+   "Gravdal, Monday 21 July"
   ],
   "beats": [
-   "posing at Ballstad / posing at Reine"
+   "Gravdal, Monday 21 July"
   ],
   "memory_worthy": {},
   "synthesis": {
-   "thesis": "2025-07-19..2025-07-23:\nThe period features scenes in Nordland, Norway, including a church in Leknes and coastal views in Reine and Ramberg. Evidence shows groups near water in Reine and Gravdal, and individuals in rocky areas of Ramberg. The overall pattern is outdoor activity and landscape observation across various locations in the region."
+   "thesis": "Gravdal, Monday 21 July"
   }
  },
  "status": "selection-awaiting-owner-review-not-rendered",
@@ -689,13 +612,13 @@
  "chapters": [
   {
    "chapter": "S01",
-   "beat": "posing at Ballstad / posing at Reine",
+   "beat": "Gravdal, Monday 21 July",
    "anchors": [
     "F02",
     "F03"
    ],
    "share": 0.0,
-   "show": "posing at Ballstad / posing at Reine",
+   "show": "Gravdal, Monday 21 July",
    "budget": 13,
    "capacity": 14,
    "families": [
@@ -725,8 +648,8 @@
    "event": "E02",
    "anchor": "F02",
    "chapter": 1,
-   "why": "posing at Ballstad / posing at Reine: capture group",
-   "event_intention": "Capture dates, places and owner favourites",
+   "why": "Leknes",
+   "event_intention": "A day out: Ballstad, Leknes, Reine and 2 more places",
    "line": "2025-07-21 10:26+00:00 | at Leknes, Nordland, Norway | activity=posing, children=yes, location=outdoor, people=one | resolution:500x334",
    "story_episode": "S001",
    "story_role": "supporting",
@@ -752,8 +675,8 @@
    "event": "E03",
    "anchor": "F03",
    "chapter": 1,
-   "why": "posing at Ballstad / posing at Reine: capture group",
-   "event_intention": "Capture dates, places and owner favourites",
+   "why": "Reine · starred",
+   "event_intention": "A day out: Ballstad, Leknes, Reine and 2 more places",
    "line": "2025-07-21 12:32+00:00 | at Reine, Nordland, Norway | activity=posing, location=outdoor, people=one | STARRED by the photographer | resolution:1280x854",
    "story_episode": "S001",
    "story_role": "supporting",
@@ -782,8 +705,8 @@
    "event": "E03",
    "anchor": "F03",
    "chapter": 1,
-   "why": "posing at Ballstad / posing at Reine: capture group",
-   "event_intention": "Capture dates, places and owner favourites",
+   "why": "Reine",
+   "event_intention": "A day out: Ballstad, Leknes, Reine and 2 more places",
    "line": "2025-07-21 13:15+00:00 | at Reine, Nordland, Norway | activity=posing, location=outdoor, people=one | resolution:500x334",
    "story_episode": "S001",
    "story_role": "supporting",
@@ -827,8 +750,8 @@
    "event": "E03",
    "anchor": "F03",
    "chapter": 1,
-   "why": "posing at Ballstad / posing at Reine: capture group",
-   "event_intention": "Capture dates, places and owner favourites",
+   "why": "Reine · the sharpest of 8",
+   "event_intention": "A day out: Ballstad, Leknes, Reine and 2 more places",
    "line": "2025-07-21 14:16+00:00 | at Reine, Nordland, Norway | activity=posing, location=outdoor, people=one, venue=water | resolution:334x500",
    "story_episode": "S001",
    "story_role": "supporting",
@@ -862,8 +785,8 @@
    "event": "E03",
    "anchor": "F03",
    "chapter": 1,
-   "why": "posing at Ballstad / posing at Reine: capture group",
-   "event_intention": "Capture dates, places and owner favourites",
+   "why": "Reine",
+   "event_intention": "A day out: Ballstad, Leknes, Reine and 2 more places",
    "line": "2025-07-21 15:19+00:00 | at Reine, Nordland, Norway | children=no, location=outdoor, people=one | resolution:375x500",
    "story_episode": "S001",
    "story_role": "supporting",
@@ -889,8 +812,8 @@
    "event": "E03",
    "anchor": "F03",
    "chapter": 1,
-   "why": "posing at Ballstad / posing at Reine: capture group",
-   "event_intention": "Capture dates, places and owner favourites",
+   "why": "Reine",
+   "event_intention": "A day out: Ballstad, Leknes, Reine and 2 more places",
    "line": "2025-07-21 15:30+00:00 | at Reine, Nordland, Norway | activity=posing, children=yes, location=outdoor, people=one, venue=water | resolution:375x500",
    "story_episode": "S001",
    "story_role": "supporting",
@@ -916,8 +839,8 @@
    "event": "E03",
    "anchor": "F03",
    "chapter": 1,
-   "why": "posing at Ballstad / posing at Reine: capture group",
-   "event_intention": "Capture dates, places and owner favourites",
+   "why": "Reine",
+   "event_intention": "A day out: Ballstad, Leknes, Reine and 2 more places",
    "line": "2025-07-21 15:43+00:00 | at Reine, Nordland, Norway | activity=working, location=outdoor, people=one | resolution:500x375",
    "story_episode": "S001",
    "story_role": "supporting",
@@ -945,8 +868,8 @@
    "event": "E03",
    "anchor": "F03",
    "chapter": 1,
-   "why": "posing at Ballstad / posing at Reine: capture group",
-   "event_intention": "Capture dates, places and owner favourites",
+   "why": "Reine",
+   "event_intention": "A day out: Ballstad, Leknes, Reine and 2 more places",
    "line": "2025-07-21 16:14+00:00 | at Reine, Nordland, Norway | location=outdoor, people=one, venue=water | resolution:500x375",
    "story_episode": "S001",
    "story_role": "supporting",
@@ -981,8 +904,8 @@
    "event": "E03",
    "anchor": "F03",
    "chapter": 1,
-   "why": "posing at Ballstad / posing at Reine: capture group",
-   "event_intention": "Capture dates, places and owner favourites",
+   "why": "Reine",
+   "event_intention": "A day out: Ballstad, Leknes, Reine and 2 more places",
    "line": "2025-07-21 16:24+00:00 | at Reine, Nordland, Norway | location=outdoor, people=one | resolution:500x375",
    "story_episode": "S001",
    "story_role": "supporting",
@@ -1008,8 +931,8 @@
    "event": "E03",
    "anchor": "F03",
    "chapter": 1,
-   "why": "posing at Ballstad / posing at Reine: capture group",
-   "event_intention": "Capture dates, places and owner favourites",
+   "why": "Reine",
+   "event_intention": "A day out: Ballstad, Leknes, Reine and 2 more places",
    "line": "2025-07-21 16:28+00:00 | at Reine, Nordland, Norway | location=outdoor, people=one, venue=water | resolution:500x375",
    "story_episode": "S001",
    "story_role": "supporting",
@@ -1040,8 +963,8 @@
    "event": "E03",
    "anchor": "F03",
    "chapter": 1,
-   "why": "posing at Ballstad / posing at Reine: capture group",
-   "event_intention": "Capture dates, places and owner favourites",
+   "why": "Ramberg",
+   "event_intention": "A day out: Ballstad, Leknes, Reine and 2 more places",
    "line": "2025-07-21 16:44+00:00 | at Ramberg, Nordland, Norway | activity=posing, location=outdoor, people=one | resolution:500x375",
    "story_episode": "S001",
    "story_role": "supporting",
@@ -1069,8 +992,8 @@
    "event": "E03",
    "anchor": "F03",
    "chapter": 1,
-   "why": "posing at Ballstad / posing at Reine: capture group",
-   "event_intention": "Capture dates, places and owner favourites",
+   "why": "Ramberg",
+   "event_intention": "A day out: Ballstad, Leknes, Reine and 2 more places",
    "line": "2025-07-21 16:55+00:00 | at Ramberg, Nordland, Norway | activity=posing, location=outdoor, people=one | resolution:500x375",
    "story_episode": "S001",
    "story_role": "supporting",
@@ -1096,8 +1019,8 @@
    "event": "E03",
    "anchor": "F03",
    "chapter": 1,
-   "why": "posing at Ballstad / posing at Reine: capture group",
-   "event_intention": "Capture dates, places and owner favourites",
+   "why": "a photo",
+   "event_intention": "A day out: Ballstad, Leknes, Reine and 2 more places",
    "line": "2025-07-21 17:15+00:00 | at Gravdal, Nordland, Norway | location=outdoor, people=two, venue=water | resolution:500x375",
    "story_episode": "S001",
    "story_role": "supporting",
@@ -1241,39 +1164,16 @@
  "reservoir_beats": [],
  "content_seconds": 47.0,
  "llm_metrics": {
-  "llm_calls": 4,
+  "llm_calls": 0,
   "llm_cache_hits": 0,
-  "llm_prompt_tokens": 5851,
-  "llm_cached_prompt_tokens": 1024,
-  "llm_completion_tokens": 237,
+  "llm_prompt_tokens": 0,
+  "llm_cached_prompt_tokens": 0,
+  "llm_completion_tokens": 0,
   "llm_truncated": 0,
-  "llm_wall_seconds": 5.35
+  "llm_wall_seconds": 0.0
  },
- "calls": [
-  {
-   "stage": "thesis-fit-1-source",
-   "wall_seconds": 0.746,
-   "warning": null,
-   "cache_hit": false,
-   "judgment_key": "",
-   "response_contract": "complete transport"
-  },
-  {
-   "stage": "thesis-fit-1-source",
-   "wall_seconds": 0.596,
-   "warning": null,
-   "cache_hit": false,
-   "judgment_key": "",
-   "response_contract": "complete transport"
-  }
- ],
- "calls_by_stage": {
-  "thesis-fit": {
-   "asked": 2,
-   "cache_hits": 0,
-   "wall_seconds": 1.342
-  }
- },
+ "calls": [],
+ "calls_by_stage": {},
  "pixels_seen_by_text_model": false,
  "episode_reading_health": {
   "status": "complete",
@@ -1301,7 +1201,7 @@
     "evidence_key": "",
     "status": "read",
     "reason": null,
-    "cache_hit": false
+    "cache_hit": true
    },
    {
     "group_id": "episode-v1-92cc2dbd0037845d515a8dc06d382412c141200f73a86ff4c90e609d3be0e7e2",
@@ -1317,7 +1217,7 @@
     "evidence_key": "",
     "status": "read",
     "reason": null,
-    "cache_hit": false
+    "cache_hit": true
    },
    {
     "group_id": "episode-v1-29cd62f5763cf97bae613464a0647573d5c083929520c7950092d3acd3acfc81",
