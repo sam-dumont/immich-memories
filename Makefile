@@ -600,8 +600,11 @@ contact-sheets:  ## Render contact sheets for a sweep of memories (SPEC=path OUT
 	@test -n "$(SPEC)" || (echo "SPEC=path/to/spec.json required — see examples/sweep-spec.example.json"; exit 1)
 	uv run python scripts/sweep_contact_sheets.py --spec "$(SPEC)" --out "$(or $(OUT),output/contact-sheets)"
 
+# The screenshots replay the recorded real run of the month (tests/e2e/fixtures/recordings).
+DEMO_RECORDING ?= monthly_highlights
+
 screenshots: web-client-present  ## Capture UI screenshots in light + dark mode (coverage from server subprocess)
-	uv run pytest tests/e2e/test_screenshots.py -v -m visual --log-cli-level=INFO --tb=short \
+	IMMICH_MEMORIES_E2E_RECORDING=$(DEMO_RECORDING) uv run pytest tests/e2e/test_screenshots.py -v -m visual --log-cli-level=INFO --tb=short \
 		--junitxml=tests/e2e-junit.xml
 
 test-cov:

@@ -71,3 +71,34 @@ def test_a_recurring_film_still_needs_two_occurrences():
 
     assert status(one_year) == "insufficient_material"
     assert status(both) != "insufficient_material"
+
+
+def test_one_year_asked_for_is_that_years_film():
+    """`--years-back 1` asks for one occurrence; its day is the film, not a refusal (#2467)."""
+    intent = build_editorial_intent("on_this_day", [_day(date(2030, 5, 2))], brief="This day")
+
+    report = validate_intent(
+        intent,
+        carriers=[CarrierView("a", date(2030, 5, 2), "morning", 4)],
+        evidence_partitions=set(),
+        requested_seconds=45,
+    )
+
+    assert report.status != "insufficient_material"
+    assert "fewer than two occurrences" not in intent.prompt_block()
+
+
+def test_a_recurring_decline_says_how_many_of_the_years_held_pictures():
+    years = [_day(date(year, 5, 2)) for year in (2029, 2030, 2031)]
+    intent = build_editorial_intent("on_this_day", years, brief="This day")
+
+    report = validate_intent(
+        intent,
+        carriers=[CarrierView("a", date(2030, 5, 2), "morning", 4)],
+        evidence_partitions=set(),
+        requested_seconds=45,
+    )
+
+    assert report.status == "insufficient_material"
+    assert report.reason is not None
+    assert "1 of the 3 years" in report.reason

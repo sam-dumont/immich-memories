@@ -68,7 +68,10 @@ jobs:
             git rev-parse -q --verify "refs/tags/$version" >/dev/null \
               || git fetch -q --depth=1 --no-tags origin tag "$version"
             check=$(mktemp -d)
-            git archive "$version" scripts | tar -x -C "$check"
+            # A file, not a pipe: bsdtar can stop reading at the end-of-archive marker while
+            # git archive is still writing padding, and pipefail then fails on SIGPIPE (141).
+            git archive -o "$check.tar" "$version" scripts
+            tar -x -f "$check.tar" -C "$check"
             cp scripts/check_docs_release_assets.py "$check/scripts/"
             gh release view "$version" --json tagName,assets </dev/null \
               | python3 "$check/scripts/check_docs_release_assets.py" "$version"

@@ -63,11 +63,11 @@ DEFAULT_STAGE_SECONDS = 0.15
 # replays its cut instead of the script: the docs and demos then show what the product chose,
 # and nothing has to run a model to show it again.
 RECORDINGS = Path(__file__).parent / "fixtures" / "recordings"
-RECORDING_ENV = "IMMICH_MEMORIES_FAKE_RECORDING"
+RECORDING_ENV = "IMMICH_MEMORIES_E2E_RECORDING"
 
 
 def recording() -> dict[str, Any] | None:
-    """The recording `IMMICH_MEMORIES_FAKE_RECORDING` names, or None for the scripted cut."""
+    """The recording `IMMICH_MEMORIES_E2E_RECORDING` names, or None for the scripted cut."""
     name = os.environ.get(RECORDING_ENV, "")
     if not name:
         return None
@@ -75,6 +75,22 @@ def recording() -> dict[str, Any] | None:
     if not (folder / "plan.json").is_file():
         raise RuntimeError(f"{RECORDING_ENV}={name!r}: no recording under {RECORDINGS}")
     return {path.stem: json.loads(path.read_text()) for path in folder.glob("*.json")}
+
+
+def active_cut() -> tuple[str, tuple[str, ...]]:
+    """The summary and the kept pictures of the cut this editor makes: the named recording's,
+    else the script's. What a screenshot or a demo expects to see on the page."""
+    recorded = recording()
+    if recorded is None:
+        return THESIS, tuple(picture.asset_id for picture in CARRIERS)
+    return recorded["plan"]["story"]["thesis"], tuple(recorded["render-projection"]["selected_ids"])
+
+
+def active_minutes() -> float | None:
+    """The length the named recording was cut at, in minutes, so a replay asks for what the
+    real run did; None for the script, whose callers pick their own."""
+    recorded = recording()
+    return None if recorded is None else round(recorded["plan"]["target_seconds"] / 60, 2)
 
 
 def _replay(

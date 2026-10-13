@@ -13,10 +13,12 @@ import re
 from collections.abc import Callable
 from pathlib import Path
 
+import httpx
 import pytest
 
 from tests.e2e.fake_library import (
     ALL_PICTURES,
+    BIRTH_DATES,
     CARRIERS,
     PARTNER_PICTURES,
     TRIP_DAYS,
@@ -265,18 +267,29 @@ def test_a_birthday_runs_the_year_ending_on_it_and_looks_back_at_earlier_ones(
 
 
 @pytest.mark.feature("memory-type.birthday")
-def test_a_birthday_refuses_a_person_with_no_birth_date(library_home: UserHome):
-    result = library_home.run(
-        "generate",
-        "--person",
-        "Kit",
-        "--year",
-        "2025",
-        "--birthday",
-        *_PICTURES,
-        "--no-render",
-        scripted_selection=True,
-    )
+def test_a_birthday_refuses_a_person_with_no_birth_date(
+    library_home: UserHome, immich: LibraryServer
+):
+    """With no birth date in Immich, a birthday film says where to set one and stops."""
+    kit = immich.person_of("person-kit")
+    with httpx.Client(
+        base_url=f"{immich.base_url}/api", headers={"x-api-key": immich.api_key}
+    ) as api:
+        api.put(f"/people/{kit}", json={"birthDate": None}).raise_for_status()
+        try:
+            result = library_home.run(
+                "generate",
+                "--person",
+                "Kit",
+                "--year",
+                "2025",
+                "--birthday",
+                *_PICTURES,
+                "--no-render",
+                scripted_selection=True,
+            )
+        finally:
+            api.put(f"/people/{kit}", json={"birthDate": BIRTH_DATES["Kit"]}).raise_for_status()
 
     assert result.returncode == 1
     assert "Kit has no birth date" in result.output, result.explain()

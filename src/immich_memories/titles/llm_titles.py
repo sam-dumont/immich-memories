@@ -35,6 +35,7 @@ from immich_memories.titles.title_routing import (
     PEOPLE_MEMORY_TYPES,
     is_trip,
 )
+from immich_memories.titles.title_slots import closing_empty_slots
 from immich_memories.titles.title_suggestion import TitleSuggestion
 
 if TYPE_CHECKING:
@@ -608,7 +609,7 @@ def _guarded_suggestion(
     """Run every title guard in turn, each free to trim or refuse what came before."""
     holiday = facts.holiday if facts else None
     people_store = facts.people_store if facts else None
-    suggestion = eliding_french(parsed, locale)
+    suggestion = closing_empty_slots(eliding_french(parsed, locale), locale, person_names)
     suggestion = refusing_invented_names(suggestion, prompt.facts)
     suggestion = refusing_unbacked_subtitle(
         suggestion, prompt.facts, memory_type, start_date, end_date, person_names, locale

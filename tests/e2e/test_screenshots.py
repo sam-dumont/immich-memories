@@ -25,7 +25,8 @@ from playwright.sync_api import Page, expect
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
 from tests.e2e.conftest import _launch_workspace, _serve_launch, set_theme
-from tests.e2e.fake_library import CARRIERS, LIBRARY, MONTH, THESIS, TRIP, YEAR
+from tests.e2e.fake_editorial import active_cut, active_minutes
+from tests.e2e.fake_library import LIBRARY, MONTH, TRIP, YEAR
 from tests.e2e.redaction import redact_page
 from tests.e2e.web_flow import contact_sheet, cut_month, render, the_film
 
@@ -186,9 +187,9 @@ def test_capture_memory_walkthrough(
         page, page.get_by_role("main").locator("form").first, d, _name("first-film-brief", theme)
     )
     page.get_by_text("Length and pictures").click()
-    # The fixture month holds 79 s of pictures and video; 1.5 minutes leaves room for the titles
-    # and stays inside the accepted shortfall, so the review shows no "selected less" notice.
-    page.get_by_label("Length in minutes", exact=False).fill("1.5")
+    # The length the recorded run was cut at, so the review shows no "selected less" notice; the
+    # scripted month holds 79 s of pictures and video, which 1.5 minutes fits with its titles.
+    page.get_by_label("Length in minutes", exact=False).fill(str(active_minutes() or 1.5))
     page.get_by_label("Who may see it").select_option("just-us")
     _blur(page)
     _save(page, d, _name("memory-brief-sharing", theme))
@@ -203,8 +204,9 @@ def test_capture_memory_walkthrough(
     page.evaluate("window.__holdJobs = false")
 
     page.wait_for_url("**/app/runs/**", timeout=240_000)
-    expect(page.get_by_text(THESIS)).to_be_visible()
-    expect(contact_sheet(page)).to_have_count(len(CARRIERS))
+    thesis, kept = active_cut()
+    expect(page.get_by_text(thesis)).to_be_visible()
+    expect(contact_sheet(page)).to_have_count(len(kept))
     _save(page, d, _name("memory-story", theme))
     page.get_by_role("radio", name="Stories").click()
     _save(page, d, _name("memory-story-ranked", theme))
@@ -214,9 +216,7 @@ def test_capture_memory_walkthrough(
     inspector = page.get_by_role("article", name="Picture review")
     contact_sheet(page).nth(1).click()
     inspector.get_by_role("button", name="Remove from this cut").click()
-    swappable = next(
-        (i for i in range(len(CARRIERS)) if i != 1 and _has_alternatives(page, i)), None
-    )
+    swappable = next((i for i in range(len(kept)) if i != 1 and _has_alternatives(page, i)), None)
     if swappable is not None:
         inspector.get_by_role("list", name="Other pictures of this moment").get_by_role(
             "button"
@@ -344,11 +344,12 @@ def test_capture_the_pool_and_picture_decisions(
 
     store = store_of(launch_workspace)
     flag_by_the_detector(store, _HELD)
-    ticked = next(p.asset_id for p in LIBRARY if p not in CARRIERS and p.asset_id != _HELD)
+    _thesis, kept = active_cut()
+    ticked = next(p.asset_id for p in LIBRARY if p.asset_id not in kept and p.asset_id != _HELD)
     d = screenshot_dir
     try:
         _open(page, f"{launch_app_url}/app/create", theme)
-        cut_month(page, launch_app_url, minutes=1.5)
+        cut_month(page, launch_app_url, minutes=active_minutes() or 1.5)
         page.get_by_role("link", name="Pool", exact=True).click()
         tiles = page.get_by_role("list", name="Pool").get_by_role("listitem")
         expect(tiles.first).to_be_visible(timeout=30_000)

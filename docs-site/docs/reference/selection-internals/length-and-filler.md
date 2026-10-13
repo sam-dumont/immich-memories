@@ -16,7 +16,10 @@ Taken to the end, a period can hold nothing worth a film at all: three pictures 
 being laid, say. Then no film is made, the run says `Nothing worth a film in February 2019` and
 exits 0. That is an answer, not a failure. But one shot worth showing is a film: a special day
 that keeps two good clips gets a 13-second film, not nothing. The only exception is on this day,
-which is about a day coming back, so it needs two years that hold something. A period with no pictures in it at all (a wrong date
+which is about a day coming back, so it needs two years that hold something, or the one year
+`--years-back 1` asked for. When it declines, the line says why: `Nothing worth a film in Jul 11,
+2024 - Jul 13, 2025: only 1 of the 2 years asked for holds pictures of the day, and a film about
+the day coming back needs 2`. A period with no pictures in it at all (a wrong date
 range, a filter, Immich unreachable) still ends in an error and exit 1.
 
 How the target itself is set (per memory type, per active day, `--duration`) is on

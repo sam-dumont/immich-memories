@@ -52,13 +52,22 @@ library has. The faces are strangers from CC0 and CC BY stock shoots, so a perso
 don't show one face; the pinned boxes make Immich group them anyway. The people pictures carry
 no GPS: a stock photo's own place would be a lie in a Brussels July.
 
+The household also carries the facts a real one keeps: Robin owns the library, Charlie is
+Robin's partner, Kit their child (born 5 July, so the 5th is a birthday), and Pat and Lou are
+Robin's parents. Immich holds the birth dates; the People page's registry holds who is who
+(`household_people` in `tests/e2e/fake_library.py`, which the feature suite and the recordings
+import with `people import`). That is what lets a film find "Kit's birthday" or the
+grandparents' visit from facts.
+
 Each memory type was also cut once for real: Full tier, a local model, a real Immich seeded with
 the library (`scripts/record_demo_runs.py`). Its decisions sit under
 `tests/e2e/fixtures/recordings/<memory type>/`: the plan, the decision trace, the render
-projection and the run's own story. Setting `IMMICH_MEMORIES_FAKE_RECORDING=<memory type>` makes
+projection and the run's own story. Setting `IMMICH_MEMORIES_E2E_RECORDING=<memory type>` makes
 the hermetic editor replay that cut instead of the scripted one, so docs and demos show what the
 product chose without running a model again. Record again only when the library or the editor
 changes on purpose.
+`make screenshots` replays the recorded month (`DEMO_RECORDING=monthly_highlights`); the tests
+themselves keep the scripted cut.
 
 The Synology setup screenshots under `docs-site/static/img/platforms/` come from the real DSM
 project and folder dialogs. Capture only the relevant dialog, with generic example names.

@@ -19,8 +19,10 @@ from collections.abc import Generator
 from pathlib import Path
 
 import pytest
+import yaml
 
 from tests.e2e.fake_immich import FakeImmichServer
+from tests.e2e.fake_library import household_people
 from tests.features.cli_harness import OutboundTrap, UserHome, basic_config
 from tests.integration.features.immich_server import LibraryServer, real_immich_state
 from tests.integration.features.library import (
@@ -105,7 +107,18 @@ def library_home(
         tmp_path_factory.mktemp("feature-home"), extra_env=tuple(outbound_trap.env().items())
     )
     home.write_config(basic_config(immich.base_url, immich.api_key, home))
+    _knows_the_household(home, immich)
     return home
+
+
+def _knows_the_household(home: UserHome, immich: LibraryServer) -> None:
+    """The registry a household's owner keeps: who they are, birth dates, who is who (#2490)."""
+    document = home.root / "household-people.yaml"
+    document.write_text(
+        yaml.safe_dump(household_people(lambda name: immich.person_of(f"person-{name.lower()}")))
+    )
+    imported = home.run("people", "import", "--from", str(document))
+    assert imported.returncode == 0, imported.explain()
 
 
 @pytest.fixture

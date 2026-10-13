@@ -8,7 +8,7 @@ import re
 import subprocess
 import threading
 import time
-from collections.abc import Iterator
+from collections.abc import Iterator, Mapping
 from dataclasses import dataclass
 from dataclasses import field as dataclass_field
 from datetime import datetime
@@ -21,6 +21,7 @@ from urllib.parse import parse_qs, urlsplit
 
 from tests.e2e.fake_library import (
     ALL_PICTURES,
+    BIRTH_DATES,
     BURST_STEP_SECONDS,
     CAST,
     HOME,
@@ -53,12 +54,14 @@ _VIDEOS = tuple(picture for picture in _SERVED if picture.is_video)
 _PHOTOS = tuple(picture for picture in _SERVED if not picture.is_video)
 
 
-def _person_payload(name: str) -> dict[str, Any]:
+def _person_payload(
+    name: str, birth_dates: Mapping[str, str | None] = BIRTH_DATES
+) -> dict[str, Any]:
     """The household's cast as Immich returns a person: an id, a name, a face crop."""
     return {
         "id": f"person-{name.lower()}",
         "name": name,
-        "birthDate": None,
+        "birthDate": birth_dates.get(name),
         "thumbnailPath": f"/fake/people/{name.lower()}.jpg",
         "isHidden": False,
         "updatedAt": "2025-07-01T12:00:00.000Z",
@@ -972,6 +975,8 @@ def _handler_type(
     # Tags created on this service, by value, and the assets each one holds.
     tags: dict[str, dict[str, Any]] = {}
     tagged: dict[str, set[str]] = {}
+    # The cast's birth dates as this server holds them: a test may clear one, as an owner can.
+    birth_dates: dict[str, str | None] = dict(BIRTH_DATES)
 
     def uploaded_asset(asset_id: str) -> dict[str, Any] | None:
         """An uploaded film as Immich serves it once read: its name, dates and tags."""
@@ -1044,7 +1049,7 @@ def _handler_type(
                 people = (
                     [_partner_person_payload(*person) for person in PARTNER_PEOPLE]
                     if partner
-                    else [_person_payload(name) for name in CAST]
+                    else [_person_payload(name, birth_dates) for name in CAST]
                 )
                 self._send_json(200, {"people": people, "total": len(people), "hidden": 0})
                 return
@@ -1125,7 +1130,7 @@ def _handler_type(
                     200,
                     _partner_person_payload(*found)
                     if found
-                    else _person_payload(person[0].removeprefix("person-").title()),
+                    else _person_payload(person[0].removeprefix("person-").title(), birth_dates),
                 )
                 return
             if (
@@ -1221,6 +1226,14 @@ def _handler_type(
                         }
                         tagged[tag_id] = set()
                 self._send_json(200, [tags[value] for value in payload.get("tags") or ()])
+                return
+            person = path.removeprefix("/api/people/")
+            name = person.removeprefix("person-").title()
+            if path.startswith("/api/people/") and "/" not in person and name in birth_dates:
+                # Only what an owner edits on a person here: the birth date.
+                if "birthDate" in payload:
+                    birth_dates[name] = payload["birthDate"]
+                self._send_json(200, _person_payload(name, birth_dates))
                 return
             tag_id = path.removeprefix("/api/tags/").removesuffix("/assets")
             if path.endswith("/assets") and tag_id in tagged:
