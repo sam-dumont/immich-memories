@@ -41,7 +41,7 @@ from tests.e2e.fake_immich import (
     PARTNER_PEOPLE,
     generate_media,
 )
-from tests.e2e.fake_library import ALL_PICTURES, CAST, PARTNER_PICTURES, Picture
+from tests.e2e.fake_library import ALL_PICTURES, BIRTH_DATES, CAST, PARTNER_PICTURES, Picture
 from tests.integration.immich_gate import media as gate_media
 from tests.integration.immich_gate.seed import (
     DEVICE_ID,
@@ -224,7 +224,13 @@ class _Library:
         says: Immich lists a person only once a face is theirs.
         """
         people = {
-            name: self.primary.call("POST", "/people", json={"name": name})["id"] for name in CAST
+            name: self.primary.call(
+                "POST",
+                "/people",
+                json={"name": name}
+                | ({"birthDate": BIRTH_DATES[name]} if name in BIRTH_DATES else {}),
+            )["id"]
+            for name in CAST
         }
         partner_people = {}
         for person_id, name, born in PARTNER_PEOPLE:

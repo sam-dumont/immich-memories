@@ -26,6 +26,7 @@ it come from the photographer's own shots, not from a list.
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
 from pathlib import Path
@@ -91,6 +92,63 @@ CAST: tuple[str, ...] = (
 )
 ADULTS = ("Robin", "Charlie")
 EVERYONE = CAST
+
+# What the household's own registry knows, as a user sets it on the People page: whose library
+# it is, everyone's birth date (Immich keeps those), and who each person is to the owner or to
+# Kit. A relationship reads "<person> is <kind> <other>"; the registry keeps both directions.
+OWNER = "Robin"
+BIRTH_DATES: dict[str, str] = {
+    "Robin": "1987-03-14",
+    "Charlie": "1986-11-02",
+    "Kit": "2020-07-05",
+    "Pat": "1955-04-20",
+    "Lou": "1957-09-09",
+    "Remy": "2024-02-10",
+    "Jo": "2019-10-01",
+    "Alex": "2020-01-15",
+    "Mo": "2019-06-03",
+    "Sasha": "1989-12-12",
+    "Nico": "2009-05-30",
+}
+RELATIONSHIPS: tuple[tuple[str, str, str], ...] = (
+    ("Charlie", "partner-of", "Robin"),
+    ("Kit", "child-of", "Robin"),
+    ("Kit", "child-of", "Charlie"),
+    ("Pat", "parent-of", "Robin"),
+    ("Lou", "parent-of", "Robin"),
+    ("Remy", "nibling-of", "Robin"),
+    ("Nico", "nibling-of", "Robin"),
+    ("Sasha", "friend-of", "Robin"),
+    ("Jo", "friend-of", "Kit"),
+    ("Alex", "friend-of", "Kit"),
+    ("Mo", "friend-of", "Kit"),
+)
+
+
+def household_people(person_id: Callable[[str], str]) -> dict[str, Any]:
+    """The household's registry as `people import` takes it, under the server's person ids."""
+    from immich_memories.people.relationships import reciprocal_kind
+
+    links: dict[str, list[dict[str, str]]] = {name: [] for name in CAST}
+    for name, kind, other in RELATIONSHIPS:
+        reverse = reciprocal_kind(kind)
+        for who, what, whom, back in ((name, kind, other, reverse), (other, reverse, name, kind)):
+            links[who].append(
+                {"kind": what, "with": person_id(whom), "reverse": back, "decision": "confirmed"}
+            )
+    return {
+        "version": 1,
+        "owner": {"person_id": person_id(OWNER), "name": OWNER, "identified": "confirmed"},
+        "people": [
+            {
+                "ids": [person_id(name)],
+                "name": name,
+                "birth_date": BIRTH_DATES[name],
+                "confirmed": {"role": None, "links": links[name], "notes": None},
+            }
+            for name in CAST
+        ],
+    }
 
 
 @dataclass(frozen=True, slots=True)

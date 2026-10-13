@@ -36,6 +36,7 @@ import yaml
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
+from tests.e2e.fake_library import household_people  # noqa: E402
 from tests.features.cli_harness import UserHome, basic_config  # noqa: E402
 
 RECORDINGS = ROOT / "tests" / "e2e" / "fixtures" / "recordings"
@@ -85,7 +86,18 @@ def _home(root: Path, state: dict[str, Any], llm: dict[str, Any]) -> UserHome:
     config["output"].update(resolution="720p", quality="medium")
     home.write_config(config)
     _models_into(root)
+    _household_into(home, state)
     return home
+
+
+def _household_into(home: UserHome, state: dict[str, Any]) -> None:
+    """The household's registry, as its owner keeps it, under the real Immich's person ids."""
+    document = home.root / "household-people.yaml"
+    people = household_people(lambda name: state["person_ids"][f"person-{name.lower()}"])
+    document.write_text(yaml.safe_dump(people))
+    imported = home.run("people", "import", "--from", str(document), "--replace")
+    if imported.returncode != 0:
+        raise SystemExit(f"the household did not import: {imported.output[-400:]}")
 
 
 def _models_into(root: Path) -> None:

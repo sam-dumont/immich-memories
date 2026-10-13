@@ -215,3 +215,28 @@ def test_the_module_refuses_to_stand_apart_from_its_pictures(tmp_path: Path) -> 
 
     assert proc.returncode != 0
     assert "the library is its files" in proc.stderr
+
+
+def test_the_household_imports_as_its_owner_keeps_it(tmp_path: Path) -> None:
+    """Robin's registry: Robin owns the library, Charlie, Kit, Pat and Lou are close family."""
+    from immich_memories.people.relationships import CLOSE_FAMILY_KINDS
+    from immich_memories.people.transfer import import_document
+    from tests.e2e.fake_library import BIRTH_DATES, OWNER, household_people
+    from tests.people_registry_seed import seed_people
+
+    document = household_people(lambda name: f"person-{name.lower()}")
+    store = seed_people(document)
+    assert import_document(store, document, replace=True) == len(CAST)
+    assert document["owner"] == {
+        "person_id": "person-robin",
+        "name": OWNER,
+        "identified": "confirmed",
+    }
+    close = {
+        entry["name"]
+        for entry in document["people"]
+        for link in entry["confirmed"]["links"]
+        if link["with"] == "person-robin" and link["kind"] in CLOSE_FAMILY_KINDS
+    }
+    assert close == {"Charlie", "Kit", "Pat", "Lou"}
+    assert BIRTH_DATES["Kit"][5:] == "07-05", "Kit's birthday is the fixture's birthday"
