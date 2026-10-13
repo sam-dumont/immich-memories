@@ -147,6 +147,9 @@ class SyncImmichClient:
     def get_asset_ocr_text(self, asset_id: str) -> str | None:
         return self._run(self._async_client.get_asset_ocr_text(asset_id))
 
+    def get_asset_edits(self, asset_id: str) -> list[dict[str, Any]]:
+        return self._run(self._async_client.get_asset_edits(asset_id))
+
     def get_asset_thumbnail(
         self, asset_id: str, size: str = "preview", *, edited: bool = False
     ) -> bytes:

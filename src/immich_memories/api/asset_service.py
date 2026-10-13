@@ -123,6 +123,21 @@ class AssetService:
             return None
         return _joined_ocr_text(data)
 
+    async def get_asset_edits(self, asset_id: str) -> list[dict[str, Any]]:
+        """The edits Immich's editor holds for this asset, in the order it applies them.
+
+        Each is an `action` (crop, rotate, mirror) with its `parameters`. Immich keeps
+        `updatedAt` and `isEdited` as they were when an edit is replaced, so this list is
+        the only thing that tells one edit of a picture from another (#2479).
+        """
+        from immich_memories.api.immich import ImmichAPIError
+
+        data = await self._request("GET", f"/assets/{asset_id}/edits")
+        edits = data.get("edits") if isinstance(data, dict) else None
+        if not isinstance(edits, list):
+            raise ImmichAPIError("Immich answered the asset's edits without an edits list")
+        return edits
+
     @timed("download.preview", items=1)
     async def get_asset_thumbnail(
         self, asset_id: str, size: str = "preview", *, edited: bool = False

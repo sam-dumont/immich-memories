@@ -36,6 +36,8 @@ pytestmark = pytest.mark.integration
 TAKEN = datetime(2024, 6, 1, 12, 0, tzinfo=UTC)
 ORIGINAL_RGB = (200, 40, 40)
 EDITED_RGB = (40, 40, 200)
+# The same photo after its edit in Immich was replaced by another (#2479).
+REEDITED_RGB = (40, 200, 40)
 
 
 def _video(path: Path, seconds: float, hue: int) -> Path:
@@ -55,7 +57,7 @@ def _video(path: Path, seconds: float, hue: int) -> Path:
 
 @pytest.fixture(scope="module")
 def served(tmp_path_factory) -> dict[str, Path]:
-    """What Immich would serve for each asset id, and for an edited photo its edit."""
+    """What Immich would serve for each asset id, and for an edited photo each edit."""
     root = tmp_path_factory.mktemp("served")
     files = {
         "video-1": _video(root / "video-1.mp4", 4, 0),
@@ -65,7 +67,8 @@ def served(tmp_path_factory) -> dict[str, Path]:
     }
     for name, rgb in (
         ("photo-1", ORIGINAL_RGB),
-        ("photo-1:edited", EDITED_RGB),
+        ("photo-1:rotate", EDITED_RGB),
+        ("photo-1:mirror", REEDITED_RGB),
         ("live-1", ORIGINAL_RGB),
     ):
         files[name] = root / f"{name.replace(':', '-')}.jpg"
@@ -74,17 +77,22 @@ def served(tmp_path_factory) -> dict[str, Path]:
 
 
 class _Immich:
-    """Copies the served bytes; asks for the edit when the run asks for it."""
+    """Copies the served bytes; serves the photo's current edit when the run asks for it."""
 
-    def __init__(self, served: dict[str, Path]) -> None:
+    def __init__(self, served: dict[str, Path], edit: str) -> None:
         self.served = served
+        self.edit = edit
+
+    def get_asset_edits(self, _asset_id):
+        # Replacing the edit leaves the asset record as it was; only this list moves.
+        return [{"id": "edit-1", "action": self.edit, "parameters": {}}]
 
     def get_asset_faces(self, _asset_id):
         # No face recognised: each still moves toward its centre.
         return []
 
     def download_asset(self, asset_id, destination, expected_size_bytes=None, edited=False):
-        shutil.copyfile(self.served[f"{asset_id}:edited" if edited else asset_id], destination)
+        shutil.copyfile(self.served[f"{asset_id}:{self.edit}" if edited else asset_id], destination)
 
 
 @dataclass
@@ -97,6 +105,8 @@ class _Source:
     canvas: OutputCanvas = field(default_factory=lambda: OutputCanvas(640, 360, "landscape"))
     photo_seconds: float = 2.0
     hdr: bool = False
+    # The edit Immich holds for the photo, when it is edited.
+    edit: str = "rotate"
 
 
 def _photo() -> _Source:
@@ -139,7 +149,7 @@ def _render(source: _Source, run: Path, served, bank: PreparedSourceBank | None)
         clips=[source.clip],
         output_path=run / "film.mp4",
         config=config,
-        client=_Immich(served),
+        client=_Immich(served, source.edit),
         output_canvas=source.canvas,
         clip_segments={} if source.segment is None else {source.clip.asset.id: source.segment},
         editorial_selections=() if source.directive is None else (source.directive,),
@@ -164,6 +174,16 @@ def _portrait(source: _Source) -> None:
 
 def _edited(source: _Source) -> None:
     source.clip.asset.is_edited = True
+
+
+def _edited_photo() -> _Source:
+    source = _photo()
+    source.clip.asset.is_edited = True
+    return source
+
+
+def _edit_replaced(source: _Source) -> None:
+    source.edit = "mirror"
 
 
 def _hdr_film(source: _Source) -> None:
@@ -197,6 +217,7 @@ CASES: dict[str, tuple[Callable[[], _Source], Callable[[_Source], None], bool]] 
     "the editor's hold": (_photo, _hold_from_editor, True),
     "the canvas": (_photo, _portrait, True),
     "the edited version": (_photo, _edited, True),
+    "another edit in Immich": (_edited_photo, _edit_replaced, True),
     "an HDR film": (_photo, _hdr_film, False),
     "a Live Photo kept as a still": (_live, _kept_as_still, True),
     "Live Photos turned off": (_live, _no_live_photos, True),
@@ -248,7 +269,7 @@ def test_a_changed_input_is_prepared_again_and_the_film_gets_it(case, tmp_path, 
 
 
 def test_the_same_inputs_are_reused_and_give_the_same_clip(tmp_path, served):
-    for make in (_photo, _live, _video_source):
+    for make in (_photo, _edited_photo, _live, _video_source):
         bank_dir = tmp_path / make.__name__ / "bank"
         first = _render(make(), tmp_path / make.__name__ / "run1", served,
                         PreparedSourceBank(bank_dir, max_bytes=10**9))  # fmt: skip

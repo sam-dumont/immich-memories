@@ -223,7 +223,9 @@ reused only when nothing that shaped it has changed: the picture as Immich descr
 original, its edit, its Live Photo clips), whether it plays as a still, a stitched Live Photo or a
 cut of a video, the cut window and how long a still stays on screen, the canvas, every setting that
 reaches preparation (the tier, `output`, `hardware`, `photos`, `analysis` and the rest), this
-machine's encoders, and the app version. Anything else prepares it again. A source the run had to settle for less on (a Live Photo that played its
+machine's encoders, and the app version. Anything else prepares it again. An edited photo is
+asked about its edit each render, since Immich changes nothing else on the asset when you replace
+an edit; if Immich can't say, the photo is prepared again rather than reused. A source the run had to settle for less on (a Live Photo that played its
 single video because the burst would not merge, a burst missing a part that failed to download, a
 software encode after the hardware encoder failed) is never kept, so the next render tries again.
 `prepared_source_cache_max_size_gb` caps the folder; the least recently
