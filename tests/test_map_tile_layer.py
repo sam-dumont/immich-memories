@@ -274,19 +274,22 @@ def test_large_map_resize_uses_available_workers_without_changing_pixels(
     expected = renderer.render(zoom=13, center=[2.35, 48.86]).resize(
         (width, height), Image.Resampling.LANCZOS
     )
-    workers = set()
+    strips = []
     resize = Image.Image.resize
 
-    def observe(image, *args, **kwargs):
-        workers.add(threading.get_ident())
-        return resize(image, *args, **kwargs)
+    def observe(image, size, *args, **kwargs):
+        if size[0] == width:
+            strips.append(size)
+        return resize(image, size, *args, **kwargs)
 
-    # WHY: observe real resampling; equal pixels alone cannot reveal parallel work.
+    # WHY: observe real resampling; equal pixels alone cannot reveal parallel work. Count the
+    # strips, not the threads: a pool may hand both strips to one thread when the first is done
+    # before the second thread starts, as it did on a loaded macOS runner.
     monkeypatch.setattr(Image.Image, "resize", observe)
     actual = map_animation._render_satellite(48.86, 2.35, zoom, width, height)
 
     assert actual.tobytes() == expected.tobytes()
-    assert len(workers) == expected_workers
+    assert len(strips) == expected_workers
 
 
 @pytest.mark.parametrize(
