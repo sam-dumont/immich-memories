@@ -308,7 +308,9 @@ The separate model-planning route can read banked lines or use plain clip facts.
   standing, audience, spacing and candidate repetition checks. Draft selection, thin swaps,
   audience replacements, duplicate refills and family seats use it. Later candidates acquire
   their bounded facts before standing is refreshed; the private admission record names each
-  result. `editorial_carrier.py` binds every candidate to its own story context. Story allocation
+  result. `editorial_carrier.py` binds every candidate to its own story context, and
+  `shot_reason.py` writes its reason from its own facts (who, what or where, what set it apart).
+  Story allocation
   still owns depth and recovery; these are explicit exceptions, never inherited by a refill.
   Batch readmission seats representatives before accepted depth, then restores chronological
   order. An earlier depth picture cannot consume the spacing slot of the representative it
@@ -611,6 +613,7 @@ src/immich_memories/
 │   ├── editorial_thin_catalogue.py # What a polish may read of a catalogued period: account, stories, hints
 │   ├── editorial_picture_admission.py # Shared candidate preparation and standing, audience, spacing and repetition checks
 │   ├── editorial_carrier.py        # A playable picture bound to its own story context
+│   ├── shot_reason.py              # Why a shot plays, in words, from its own facts
 │   ├── editorial_thin_vote.py      # One closed thesis-fit vote over the whole cut, in balanced blocks,
 │   │                               # source order first, the hashed order only where it decides
 │   │                               # rows carry close family relations; a relative's only shot is held

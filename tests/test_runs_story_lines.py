@@ -1,12 +1,14 @@
 """`runs story` reads like a shot list: a date on every shot, a short story label and a
-reason in words (#2156)."""
+reason in words (#2156, #2487)."""
 
 from __future__ import annotations
 
-from immich_memories.analysis.editorial_story_carriers import carrier_why
 from immich_memories.operations.storyboard import storyboard_from_plan, storyboard_lines
 
 _TITLE = " / ".join(f"playing at Park {n}" for n in range(1, 7))
+
+
+_LINE = "2024-06-08 10:15+00:00 | at Lakeside, Somewhere | with Kit (son) | activity=posing"
 
 
 def _plan(why: str) -> dict:
@@ -19,14 +21,16 @@ def _plan(why: str) -> dict:
                 "seconds": 4.0,
                 "taken": f"2024-06-08T1{n}:15:00+00:00",
                 "story_episode": "S1",
-                "why": f"{_TITLE}: {why}",
+                "why": why,
+                "line": _LINE,
+                "favourite": True,
             }
             for n in range(3)
         ],
     }
 
 
-def _lines(why: str = "capture group") -> list[str]:
+def _lines(why: str = f"{_TITLE}: capture group") -> list[str]:
     return [
         line for line in storyboard_lines(storyboard_from_plan(_plan(why), None)) if "s " in line
     ]
@@ -43,25 +47,23 @@ def test_a_story_of_many_places_is_named_by_its_first_two():
     assert "Park 3" not in line
 
 
-def test_the_no_model_reason_is_said_in_words():
+def test_a_plan_that_stored_the_reader_s_own_words_reads_the_shot_s_facts():
     line = _lines()[0]
 
     assert "capture group" not in line
-    assert "best frame of its moment" in line
+    assert "best frame of its moment" not in line
+    assert line.endswith("Kit at Lakeside · starred")
 
 
-def test_a_reason_read_off_an_annotation_line_drops_its_timestamp_field():
-    line = _lines("2024-06-08 10:15+00:00 | at Park 1 | with a friend")[0]
+def test_a_plan_that_stored_a_raw_annotation_line_reads_the_shot_s_facts():
+    line = _lines(f"{_TITLE}: {_LINE}")[0]
 
     assert "+00:00" not in line
-    assert "at Park 1, with a friend" in line
+    assert "activity=" not in line
+    assert line.endswith("Kit at Lakeside · starred")
 
 
-def test_a_long_reason_is_cut_between_words():
-    content = "posing at the lakeside with " + "somebody recurring " * 10
-    why = carrier_why("A day", content)
+def test_a_reason_in_words_is_shown_as_the_editor_wrote_it():
+    line = _lines("Kit on the jetty · the only one with a person")[0]
 
-    reason = why.removeprefix("A day: ")
-    assert reason.endswith("…")
-    assert reason.removesuffix("…").split()[-1] in {"somebody", "recurring"}
-    assert len(reason) <= 81
+    assert line.endswith("Kit on the jetty · the only one with a person")

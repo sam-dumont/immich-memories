@@ -9,6 +9,7 @@ to the editing rules the docs promise (how-it-chooses/ and reference/selection-i
 - the film plays in capture order;
 - a starred screenshot and a starred photographed form stay out all the same;
 - a person film shows only pictures that person is recognised on;
+- every shot says why it plays, in words: no telemetry, no reader vocabulary, no story title;
 - the film keeps to the length it was asked for.
 
 Every expectation is derived from the fixture library's own pictures (`fake_library.py`).
@@ -161,6 +162,30 @@ def assert_vouched_before_a_favourite_leaves(film: EditedFilm) -> None:
         )
 
 
+# What a reason must never print: the reader's own words, the line's timestamps, detector heads
+# and labels, framing numbers, resolutions and the media tag (#2487).
+_NOT_WORDS = re.compile(
+    r"capture group|best frame of its moment|\d{4}-\d\d-\d\d|\d\d:\d\d|=|%|\d+x\d+"
+    r"|subject-framing|resolution|VIDEO \d|\b(?:posing|sport-active|eating-drinking|sightseeing"
+    r"|animal-nature|celebration|working)\b"
+)
+_REASON_CHARS = 80
+
+
+def assert_every_shot_says_why_in_words(film: EditedFilm) -> None:
+    """Each shot's reason, in the plan and in `runs story`, is a short line a person would write."""
+    titles = {e["episode"]: e["title"] for e in film.plan["story"]["episodes"]}
+    for row in film.carriers:
+        why = str(row.get("why") or "")
+        title = titles.get(row.get("story_episode"), "")
+        assert why and len(why) <= _REASON_CHARS, (row["asset_id"], why)
+        assert not _NOT_WORDS.search(why), (row["asset_id"], why)
+        assert not title or not why.startswith(title), (row["asset_id"], why)
+    # `runs story` prints "<story label>: <reason>"; the label is the story's, the reason the shot's.
+    reasons = [shot.why.split(": ", 1)[-1] for shot in film.shots]
+    assert reasons and not any(_NOT_WORDS.search(reason) for reason in reasons), reasons
+
+
 def assert_within(film: EditedFilm, seconds: float) -> None:
     assert film_facts(film.film).duration <= seconds + _CONTAINER_SLACK, film.output
 
@@ -172,6 +197,7 @@ def assert_the_editing_rules(home, film: EditedFilm) -> None:
     assert_one_frame_per_moment(film)
     assert_vouched_before_a_favourite_leaves(film)
     assert_held_out(home, film)
+    assert_every_shot_says_why_in_words(film)
 
 
 # ── the films ────────────────────────────────────────────────────────────────
@@ -182,6 +208,7 @@ def assert_the_editing_rules(home, film: EditedFilm) -> None:
     "privacy.documents-held",
     "memory-type.year-in-review",
     "generate.duration",
+    "runs.story",
 )
 def test_a_year_through_the_real_editor_keeps_its_rules_and_its_minute(home):
     seconds = 60

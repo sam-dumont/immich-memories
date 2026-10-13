@@ -223,7 +223,9 @@ def test_story_first_selects_one_picture_per_depicted_moment_without_beats_or_la
     assert len(chapters) == len([row for row in plan["story"]["episodes"] if row["granted"]])
     assert {carrier["chapter"] for carrier in plan["carriers"]} <= set(range(1, len(chapters) + 1))
     for carrier in plan["carriers"]:
-        assert chapters[carrier["chapter"] - 1]["beat"] in carrier["why"]
+        # The reason is the picture's own caption, never its chapter's beat in front (#2487).
+        assert chapters[carrier["chapter"] - 1]["beat"] not in carrier["why"]
+        assert carrier["why"].split(" · ")[0].casefold() in carrier["line"].casefold()
 
     asked = {call["stage"] for call in judge.calls}
     assert not [stage for stage in asked if stage.startswith(SKIPPED_STAGES)], sorted(asked)
