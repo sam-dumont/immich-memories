@@ -52,6 +52,13 @@ library has. The faces are strangers from CC0 and CC BY stock shoots, so a perso
 don't show one face; the pinned boxes make Immich group them anyway. The people pictures carry
 no GPS: a stock photo's own place would be a lie in a Brussels July.
 
+The household also carries the facts a real one keeps: Robin owns the library, Charlie is
+Robin's partner, Kit their child (born 5 July, so the 5th is a birthday), and Pat and Lou are
+Robin's parents. Immich holds the birth dates; the People page's registry holds who is who
+(`household_people` in `tests/e2e/fake_library.py`, which the feature suite and the recordings
+import with `people import`). That is what lets a film find "Kit's birthday" or the
+grandparents' visit from facts.
+
 Each memory type was also cut once for real: Full tier, a local model, a real Immich seeded with
 the library (`scripts/record_demo_runs.py`). Its decisions sit under
 `tests/e2e/fixtures/recordings/<memory type>/`: the plan, the decision trace, the render
