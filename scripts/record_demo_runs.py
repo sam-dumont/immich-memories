@@ -64,6 +64,8 @@ MEMORY_TYPES: dict[str, list[str]] = {
 }  # fmt: skip
 
 _RUN_ID = re.compile(r"\b(\d{8}_\d{6}_[0-9a-f]{4})\b")
+# "Opening title from model: 'July 2025 highlights'": the title and who wrote it.
+_TITLE = re.compile(r"Opening title from (?P<source>[a-z ]+): '(?P<title>[^']*)'")
 
 
 def _operator_llm() -> dict[str, Any]:
@@ -186,7 +188,10 @@ def record(name: str, home: UserHome, state: dict[str, Any], log: Path) -> dict[
     FILMS.mkdir(parents=True, exist_ok=True)
     if films and films[-1].stat().st_mtime >= started:
         shutil.copy2(films[-1], FILMS / f"{name}.mp4")
+    title = _TITLE.search(output)
     meta = {
+        "title": title["title"] if title else None,
+        "title_source": title["source"] if title else None,
         "memory_type": name,
         "arguments": MEMORY_TYPES[name],
         "seconds": round(time.time() - started),

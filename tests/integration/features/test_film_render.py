@@ -136,7 +136,7 @@ def test_a_run_leaves_its_film_record_and_plan_and_nothing_else(
 
 @pytest.mark.feature("photos.edited-version")
 def test_a_photo_edited_in_immich_plays_as_its_edit(library_home: UserHome, short_quiet_film):
-    """The quiet day's still was turned upside down in Immich's editor; its original was not.
+    """The quiet day's still was mirrored in Immich's editor; its original was not.
 
     The tall film shows the wide picture across its middle, where the warm side of the picture
     (a yellow sign) has to sit on the side the edit put it.
