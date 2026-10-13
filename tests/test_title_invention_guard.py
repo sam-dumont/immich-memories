@@ -105,3 +105,16 @@ def test_a_title_prompt_names_no_place_but_the_facts_own(memory_type, person_nam
     words = {w.casefold() for w in re.findall(r"[^\W\d_]+", prompt.text)}
 
     assert not words & _country_island_and_region_words()
+
+
+def test_a_word_the_app_itself_writes_in_the_films_language_is_not_an_invention():
+    # WHY: the facts say "birthday" in English; the model titled a French birthday film with the
+    # app's own word for it, mid-title, and the guard threw the title away (cluster run).
+    facts = "Memory type: person_spotlight\nOccasion: birthday\nPeople: Korhan Kale\n"
+    assert invented_name("Korhan, Anniversaire 2026", facts, "fr") is None
+    assert invented_name("2026 : Anniversaire de Korhan", facts, "fr") is None
+
+
+def test_a_holiday_the_facts_never_name_is_still_caught_in_the_films_language():
+    facts = "Memory type: person_spotlight\nOccasion: birthday\nPeople: Korhan Kale\n"
+    assert invented_name("Korhan à Noël", facts, "fr") == "Noel"

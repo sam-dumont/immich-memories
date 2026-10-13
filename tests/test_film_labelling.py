@@ -105,6 +105,83 @@ def test_a_film_with_no_kept_title_is_described_by_the_title_it_opens_on(tmp_pat
     assert label.description.startswith("July 2025 · ")
 
 
+def test_a_birthday_film_is_described_by_its_whole_title_screen(tmp_path):
+    # WHY: a birthday's template title is the year, its subtitle whose birthday; the
+    # description said "2026 · ..." and never whose birthday it was.
+    attempt = tmp_path / "attempt"
+    attempt.mkdir()
+    (attempt / PLAN_FILE).write_text(json.dumps(PLAN))
+    write_cut_titles(attempt, title=None, subtitle=None, source=None, preset_params={})
+
+    label = label_for_cut(
+        Config(),
+        memory_type="person_spotlight",
+        date_start=date(2021, 7, 4),
+        date_end=date(2026, 7, 5),
+        attempt_dir=attempt,
+        person_name="Kit",
+        preset_params={"birthday": True, "person_names": ["Kit"]},
+    )
+
+    assert label is not None
+    assert label.description == f"2026 · Kit's birthday · {SUMMARY}"
+
+
+def test_a_kept_title_and_its_subtitle_both_describe_the_film(tmp_path):
+    attempt = tmp_path / "attempt"
+    attempt.mkdir()
+    (attempt / PLAN_FILE).write_text(json.dumps(PLAN))
+    write_cut_titles(
+        attempt, title="Nordkapp", subtitle="Twenty days north", source="model", preset_params={}
+    )
+
+    label = label_for_cut(
+        Config(),
+        memory_type="trip",
+        date_start=date(2025, 7, 1),
+        date_end=date(2025, 7, 20),
+        attempt_dir=attempt,
+    )
+
+    assert label is not None
+    assert label.description == f"Nordkapp · Twenty days north · {SUMMARY}"
+
+
+def test_a_holiday_film_is_described_by_the_years_its_cut_shows(tmp_path):
+    # WHY: the film opened on "Assomption · 2004–2026"; the description, rebuilt from the run's
+    # window, said "1997–2026" and tagged all thirty years.
+    plan = {
+        "story": {
+            "thesis": SUMMARY,
+            "episodes": [
+                {"title": "15 August 2004", "chosen": ["M1"], "days": ["2004-08-15"] * 2},
+                {"title": "15 August 2010", "chosen": [], "days": ["2010-08-15"] * 2},
+                {"title": "15 August 2026", "chosen": ["M2"], "days": ["2026-08-15"] * 2},
+            ],
+        }
+    }
+    attempt = tmp_path / "attempt"
+    attempt.mkdir()
+    (attempt / PLAN_FILE).write_text(json.dumps(plan))
+    write_cut_titles(attempt, title=None, subtitle=None, source=None, preset_params={})
+
+    label = label_for_cut(
+        _tagging(),
+        memory_type="holiday",
+        date_start=date(1997, 8, 13),
+        date_end=date(2026, 8, 17),
+        attempt_dir=attempt,
+        preset_params={"holiday": "Assumption Day", "country": "BE"},
+    )
+
+    assert label is not None
+    assert label.description == f"Assumption Day · 2004–2026 · {SUMMARY}"
+    assert [t for t in label.tags if "/year/" in t] == [
+        "immich-memories/year/2004",
+        "immich-memories/year/2026",
+    ]
+
+
 def test_a_cut_with_no_plan_still_gets_its_type_and_year(tmp_path):
     label = label_for_cut(
         _tagging(),

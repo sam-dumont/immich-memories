@@ -116,6 +116,9 @@ msgstr "{place} · 一日"
 msgid "summary.then"
 msgstr "{earlier}、そして{later}"
 
+msgid "summary.quoted"
+msgstr "「{name}」"
+
 # Story names (#2486): what the rules call a day, a stay, a trip or an occasion.
 msgid "story.weekday_date"
 msgstr "{date}{weekday}"

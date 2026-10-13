@@ -1249,6 +1249,17 @@ def _handler_type(
                     birth_dates[name] = payload["birthDate"]
                 self._send_json(200, _person_payload(name, birth_dates))
                 return
+            if path == "/api/tags/assets":
+                # Every tag on every asset in one write, answered with how many pairs it made.
+                pairs = [
+                    (t, a)
+                    for t in payload.get("tagIds") or ()
+                    for a in payload.get("assetIds") or ()
+                ]
+                for tag_id, asset_id in pairs:
+                    tagged.setdefault(tag_id, set()).add(asset_id)
+                self._send_json(200, {"count": len(pairs)})
+                return
             tag_id = path.removeprefix("/api/tags/").removesuffix("/assets")
             if path.endswith("/assets") and tag_id in tagged:
                 ids = list(payload.get("ids") or ())

@@ -105,11 +105,17 @@ def invented_name(line: str, facts: str, locale: str = "en") -> str | None:
     passes only when the facts name that same place, in any language. So this
     catches an invented name, not invention: a reworded fact passes, a festival
     or a country nobody recorded does not. German capitalises every noun, so
-    there a common noun ("im Jahr 2025") is not a name (`common_nouns`).
+    there a common noun ("im Jahr 2025") is not a name (`common_nouns`). Nor is a word the app
+    writes itself in the film's language: the facts say "birthday", the title "Anniversaire".
     """
     known = {word.casefold() for word in _name_words(facts)}
     words = _name_words(line)
-    named = [w for w in words[1:] if w[:1].isupper() and not is_a_common_noun(w, locale)]
+    own = own_words(locale)
+    named = [
+        w
+        for w in words[1:]
+        if w[:1].isupper() and not is_a_common_noun(w, locale) and w.casefold() not in own
+    ]
     if words and words[0].casefold() in _one_word_places():
         named.insert(0, words[0])
     return next(

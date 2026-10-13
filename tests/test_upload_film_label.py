@@ -23,7 +23,9 @@ LABEL = FilmLabel(
 class FakeImmich:
     """Just enough of Immich: an upload, a metadata read that wipes what came before it."""
 
-    def __init__(self, *, reads_after: int = 2, sticks: bool = True) -> None:
+    def __init__(
+        self, *, reads_after: int = 2, sticks: bool = True, sidecar_after: int = 0
+    ) -> None:
         self.reads_after = reads_after
         self.sticks = sticks
         self.gets = 0
@@ -32,6 +34,23 @@ class FakeImmich:
         self.tags: set[str] = set()
         self.description = ""
         self.writes: list[tuple[str, str]] = []
+        # Immich writes the sidecar after each tag or description write and reads it back
+        # `sidecar_after` reads later. Writes that overlap collide, and the read-back restores
+        # what the first of them wrote (an exiftool rename error in Immich's log).
+        self.sidecar_after = sidecar_after
+        self.sidecar: tuple[int, set[str], str] | None = None
+        self.updated = 0
+
+    def _wrote(self) -> None:
+        self.updated += 1
+        if self.sidecar_after and self.read and self.sidecar is None:
+            self.sidecar = (self.gets + self.sidecar_after, set(self.tags), self.description)
+
+    def _sidecar_read_back(self) -> None:
+        if self.sidecar is not None and self.gets >= self.sidecar[0]:
+            _, self.tags, self.description = self.sidecar
+            self.sidecar = None
+            self.updated += 1
 
     async def __call__(self, method: str, path: str, **kwargs):
         if (method, path) == ("POST", "/assets"):
@@ -43,7 +62,9 @@ class FakeImmich:
                 self.read = True
                 self.tags.clear()
                 self.description = ""
+            self._sidecar_read_back()
             return {
+                "updatedAt": f"t{self.updated}",
                 "exifInfo": {
                     "modifyDate": "2025-07-01" if self.read else None,
                     "description": self.description,
@@ -56,16 +77,25 @@ class FakeImmich:
             for value in values:
                 self.tag_ids.setdefault(value, f"id-{len(self.tag_ids)}")
             return [{"id": self.tag_ids[value], "value": value} for value in values]
+        if (method, path) == ("PUT", "/tags/assets"):
+            self.writes.append((method, path))
+            if self.sticks:
+                by_id = {i: v for v, i in self.tag_ids.items()}
+                self.tags.update(by_id[i] for i in kwargs["json"]["tagIds"])
+            self._wrote()
+            return {"count": 1}
         if method == "PUT" and path.startswith("/tags/") and path.endswith("/assets"):
             self.writes.append((method, path))
             value = next(v for v, i in self.tag_ids.items() if i == path.split("/")[2])
             if self.sticks:
                 self.tags.add(value)
+            self._wrote()
             return []
         if (method, path) == ("PUT", "/assets/film"):
             self.writes.append((method, path))
             if self.sticks:
                 self.description = kwargs["json"]["description"]
+            self._wrote()
             return {}
         pytest.fail(f"Unexpected request: {method} {path}")
 
@@ -106,6 +136,21 @@ async def test_description_and_tags_survive_immichs_own_read(film):
     assert immich.read
     assert immich.description == LABEL.description
     assert immich.tags == {PROVENANCE, *LABEL.tags}
+
+
+@pytest.mark.asyncio
+async def test_every_tag_survives_immich_reading_its_sidecar_back(film):
+    # WHY: one write per tag made Immich write the film's sidecar once per tag; the writes
+    # collided and the read-back dropped the story tag after our check had passed.
+    immich = FakeImmich(reads_after=1, sidecar_after=3)
+
+    result = await _service(immich).upload_memory(film, label=LABEL)
+
+    assert result["warnings"] == []
+    assert immich.sidecar is None
+    assert immich.tags == {PROVENANCE, *LABEL.tags}
+    assert immich.description == LABEL.description
+    assert immich.writes.count(("PUT", "/tags/assets")) == 1
 
 
 @pytest.mark.asyncio

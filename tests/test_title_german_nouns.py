@@ -110,7 +110,7 @@ def test_a_german_title_inventing_a_place_is_still_caught():
 @pytest.mark.parametrize(
     ("locale", "title", "invented"),
     [
-        ("en", "Robin and Kit in the Year 2025", "Year"),
+        ("en", "Robin and Kit at the Lake 2025", "Lake"),
         ("en", "Robin and Max in 2025", "Max"),
         ("fr", "Robin et Kit au Lac 2025", "Lac"),
         ("fr", "Robin et Max en 2025", "Max"),

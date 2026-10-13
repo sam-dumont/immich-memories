@@ -9,7 +9,7 @@ from typing import Any
 
 import click
 
-from immich_memories.cli._helpers import print_error, print_success
+from immich_memories.cli._helpers import print_error, print_success, print_warning
 from immich_memories.config_loader import Config
 
 
@@ -65,3 +65,5 @@ def register_upload_command(runs: click.Group) -> None:
         print_success(f"Uploaded to Immich{suffix}: asset {uploaded.asset_id}", highlight=False)
         if uploaded.asset_url:
             click.echo(uploaded.asset_url)
+        for warning in uploaded.warnings:
+            print_warning(warning)

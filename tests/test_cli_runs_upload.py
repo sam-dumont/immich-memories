@@ -18,8 +18,9 @@ RUN = "20261007_090000_aaaa"
 
 
 class FakeImmich:
-    def __init__(self, missing=()):
+    def __init__(self, missing=(), warnings=()):
         self.missing = tuple(missing)
+        self.warnings = list(warnings)
         self.uploads: list = []
 
     def get_key_capabilities(self):
@@ -27,7 +28,7 @@ class FakeImmich:
 
     def upload_memory(self, video_path, album_name=None, *, captured_at=None, label=None):
         self.uploads.append((video_path, album_name))
-        return {"asset_id": "asset-9", "delivery_complete": True, "warnings": []}
+        return {"asset_id": "asset-9", "delivery_complete": True, "warnings": self.warnings}
 
 
 def _run(tmp_path, *, film=True) -> Config:
@@ -83,6 +84,18 @@ def test_upload_sends_the_existing_film_to_the_album_and_prints_the_asset(tmp_pa
     assert fake.uploads == [(tmp_path / "film.mp4", "Summer")]
     assert "asset-9" in result.output
     assert RunDatabase(open_store(config)).get_run(RUN).immich_asset_id == "asset-9"
+
+
+def test_upload_says_what_did_not_land_on_the_film(tmp_path):
+    # WHY: a film whose tags did not stay was reported as a plain success.
+    config = _run(tmp_path)
+    fake = FakeImmich(warnings=["uploaded film's tags did not stay"])
+
+    result = _invoke(config, fake, RUN)
+
+    assert result.exit_code == 0
+    assert "asset-9" in result.output
+    assert "uploaded film's tags did not stay" in result.output
 
 
 def test_upload_says_why_when_the_key_cannot_upload(tmp_path):
