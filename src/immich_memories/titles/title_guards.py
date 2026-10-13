@@ -234,6 +234,12 @@ _TRAILING_YEARS = re.compile(
 _YEAR_SEPARATOR = " \u00b7 "
 
 
+def _ends_on_a_name(text: str, person_names: Sequence[str]) -> bool:
+    words = _name_words(text)
+    named = {word.casefold() for name in person_names for word in _name_words(name)}
+    return bool(words) and words[-1].casefold() in named
+
+
 def separating_the_years(
     suggestion: TitleSuggestion | None, person_names: Sequence[str]
 ) -> TitleSuggestion | None:
@@ -241,12 +247,14 @@ def separating_the_years(
 
     "Anna, Ben, Chloé et Dan 2013-2026" runs the years into the last name; a
     middle dot reads the same in every film language and needs no translation.
-    A single name keeps its years as the model wrote them.
+    A single name keeps its years as the model wrote them, and so do years
+    that follow any other word: "Robin and Kit in 2025" already reads right,
+    and a separator after "in" leaves the slot it promised empty (#2478).
     """
     if suggestion is None or len(person_names) < 2:
         return suggestion
     match = _TRAILING_YEARS.search(suggestion.title)
-    if match is None:
+    if match is None or not _ends_on_a_name(suggestion.title[: match.start()], person_names):
         return suggestion
     title = suggestion.title[: match.start()] + _YEAR_SEPARATOR + match["years"]
     return replace(suggestion, title=title)
