@@ -37,6 +37,7 @@ ENDPOINTS: tuple[tuple[str, str], ...] = (
     ("POST", "/assets"),
     ("POST", "/assets/bulk-upload-check"),
     ("GET", "/assets/{id}"),
+    ("GET", "/assets/{id}/edits"),
     ("GET", "/assets/{id}/ocr"),
     ("GET", "/assets/{id}/original"),
     ("GET", "/assets/{id}/thumbnail"),

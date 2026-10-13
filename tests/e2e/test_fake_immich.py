@@ -576,3 +576,17 @@ def test_a_service_on_borrowed_media_starts_empty_and_answers_tag_searches(
     assert asset_id == "uploaded-1"
     assert [asset["id"] for asset in found] == [asset_id]
     assert server.refused == []
+
+
+def test_the_edited_picture_answers_its_edit_and_others_none(fake_immich_server) -> None:
+    """GET /assets/{id}/edits, which keys a prepared edited photo (#2479)."""
+    edited = next(p for p in BY_ID.values() if p.edited)
+    plain = next(p for p in BY_ID.values() if not p.edited)
+    with SyncImmichClient(
+        fake_immich_server.base_url, fake_immich_server.api_key, api_version="v3"
+    ) as client:
+        [edit] = client.get_asset_edits(edited.asset_id)
+        assert {"action": edit["action"], "parameters": edit["parameters"]} == (
+            fake_immich.IMMICH_EDIT
+        )
+        assert client.get_asset_edits(plain.asset_id) == []

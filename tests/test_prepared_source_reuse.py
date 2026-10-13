@@ -6,11 +6,14 @@ import threading
 from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 import pytest
 
 from immich_memories import generate_prepared_sources
 from immich_memories.analysis.editorial_planner import EditorialSelection
+from immich_memories.api.access_clients import AccessBoundClient, AccountReadFailed
+from immich_memories.api.immich import ImmichNotFoundError
 from immich_memories.api.models import AssetType, ExifInfo
 from immich_memories.cache.prepared_source_bank import PreparedSourceBank
 from immich_memories.config_loader import Config
@@ -24,8 +27,20 @@ from immich_memories.processing.assembly_config import AssemblyClip
 from immich_memories.processing.encoding_plan import HdrMode
 from immich_memories.processing.output_canvas import OutputCanvas
 from tests.conftest import make_clip
+from tests.immich_fakes import fake_immich_client
 
 TAKEN = datetime(2024, 6, 1, 12, 0, tzinfo=UTC)
+
+
+ROTATED = {"id": "edit-1", "action": "rotate", "parameters": {"angle": 180}}
+MIRRORED = {"id": "edit-2", "action": "mirror", "parameters": {"axis": "horizontal"}}
+
+
+def _immich(*edits: dict) -> Any:
+    """Immich holding ``edits`` for every edited asset (rotated upside down by default)."""
+    client = fake_immich_client()
+    client.get_asset_edits.return_value = list(edits or (ROTATED,))
+    return client
 
 
 def _params(clip, **overrides) -> GenerationParams:
@@ -36,6 +51,8 @@ def _params(clip, **overrides) -> GenerationParams:
         "clips": [clip],
         "output_path": Path("film.mp4"),
         "config": config,
+        # WHY: the Immich read of an edited photo's edit; nothing else here asks Immich.
+        "client": _immich(),
         "output_canvas": OutputCanvas(1920, 1080, "landscape"),
         "clip_segments": {clip.asset.id: (1.0, 3.0)},
     }
@@ -492,3 +509,103 @@ def test_the_live_motion_floor_changes_a_short_bursts_route_and_key(tmp_path):
     assert preparation_route(short, None, low.params.config) == "motion"
     assert preparation_route(short, None, default.params.config) == "photo"
     assert preparation_key(low) != preparation_key(default)
+
+
+def _edited_photo():
+    clip = _photo()
+    clip.asset.is_edited = True
+    return clip
+
+
+def _edited_request(output_dir: Path, *edits: dict) -> PreparationRequest:
+    clip = _edited_photo()
+    return _request(clip, output_dir, client=_immich(*edits))
+
+
+def test_a_changed_edit_in_immich_changes_an_edited_photos_key(tmp_path):
+    # Immich keeps `updatedAt` and `isEdited` as they were when an edit is replaced (#2479).
+    assert preparation_key(_edited_request(tmp_path, ROTATED)) != preparation_key(
+        _edited_request(tmp_path, MIRRORED)
+    )
+
+
+def test_the_same_edit_saved_again_keeps_the_key(tmp_path):
+    # Saving the same edit again gives it a new id; the picture it renders is the same.
+    again = {**ROTATED, "id": "edit-9"}
+    assert preparation_key(_edited_request(tmp_path, ROTATED)) == preparation_key(
+        _edited_request(tmp_path, again)
+    )
+
+
+def test_the_order_of_the_edits_is_part_of_the_key(tmp_path):
+    assert preparation_key(_edited_request(tmp_path, ROTATED, MIRRORED)) != preparation_key(
+        _edited_request(tmp_path, MIRRORED, ROTATED)
+    )
+
+
+def test_an_unedited_photo_asks_immich_for_no_edit(tmp_path):
+    request = _request(_photo(), tmp_path)
+
+    preparation_key(request)
+
+    request.params.client.get_asset_edits.assert_not_called()
+
+
+def test_a_photo_whose_edit_changed_is_prepared_again_and_an_unchanged_one_reused(tmp_path):
+    bank = PreparedSourceBank(tmp_path / "bank", max_bytes=10**9)
+    first = _Preparer(tmp_path / "run1", payload=b"rotated")
+    same = _Preparer(tmp_path / "run2")
+    changed = _Preparer(tmp_path / "run3", payload=b"mirrored")
+
+    reuse_or_prepare(
+        bank, _edited_request(first.output_dir, ROTATED), prepare=first.photo, dress=_dress(None)
+    )
+    reused = reuse_or_prepare(
+        bank, _edited_request(same.output_dir, ROTATED), prepare=same.photo, dress=_dress(None)
+    )
+    again = reuse_or_prepare(
+        bank,
+        _edited_request(changed.output_dir, MIRRORED),
+        prepare=changed.photo,
+        dress=_dress(None),
+    )
+
+    assert (first.calls, same.calls, changed.calls) == (1, 0, 1)
+    assert reused is not None and reused.path.read_bytes() == b"rotated"
+    assert again is not None and again.path.read_bytes() == b"mirrored"
+
+
+@pytest.mark.parametrize(
+    "refusal",
+    [
+        ImmichNotFoundError("Not found", status_code=404),
+        AccountReadFailed("account 'partner' could not read it"),
+    ],
+    ids=["a server without the edits read", "a second account that refused"],
+)
+def test_an_edit_immich_cannot_tell_is_prepared_every_time_and_never_banked(refusal, tmp_path):
+    bank = PreparedSourceBank(tmp_path / "bank", max_bytes=10**9)
+    client = fake_immich_client(AccessBoundClient)
+    client.get_asset_edits.side_effect = refusal
+    runs = [_Preparer(tmp_path / name) for name in ("run1", "run2")]
+
+    for run in runs:
+        request = _request(_edited_photo(), run.output_dir, client=client)
+        assert reuse_or_prepare(bank, request, prepare=run.photo, dress=_dress(None)) is not None
+
+    assert [run.calls for run in runs] == [1, 1]
+    assert bank.kept == 0
+
+
+def test_an_edited_photo_with_no_immich_to_ask_is_prepared_and_never_banked(tmp_path):
+    bank = PreparedSourceBank(tmp_path / "bank", max_bytes=10**9)
+    run = _Preparer(tmp_path / "run1")
+
+    reuse_or_prepare(
+        bank,
+        _request(_edited_photo(), run.output_dir, client=None),
+        prepare=run.photo,
+        dress=_dress(None),
+    )
+
+    assert run.calls == 1 and bank.kept == 0

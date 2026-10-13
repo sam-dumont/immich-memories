@@ -10,6 +10,9 @@ fields someone judged relevant:
 - the whole clip as selection handed it over, asset included (its checksum and
   times, the edited flag, the Live companion and burst ids, faces, place, date),
   and the size and mtime of a local file the run reads instead of downloading;
+- for an edited photo, the edit itself as Immich holds it (`_immich_edit`): Immich
+  keeps `updatedAt` and `isEdited` when an edit is replaced, so nothing else on the
+  asset tells a rotated picture from a mirrored one (#2479);
 - the whole render directive, and the timing preparation resolves from it: the cut
   window (`generate_clips.segment_window`) and the time a still stays on screen
   (`generate_clips.photo_hold_seconds`, else `photos.duration`);
@@ -60,7 +63,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-RECIPE_VERSION = "prepared-source-v4"
+RECIPE_VERSION = "prepared-source-v5"
 
 # Config sections source preparation never reads. They are left out because several
 # carry credentials, addresses or storage paths, not because they were judged
@@ -108,6 +111,37 @@ def _local_source(local_path: str | None) -> dict[str, Any] | None:
     except OSError:
         return {"path": local_path, "missing": True}
     return {"path": local_path, "size": stat.st_size, "mtime_ns": stat.st_mtime_ns}
+
+
+class EditUnreadable(ValueError):
+    """An edited photo whose edit Immich could not tell: it is prepared, never reused."""
+
+
+def _immich_edit(request: PreparationRequest) -> list[dict[str, Any]] | None:
+    """The edit an edited photo is rendered with, as Immich's editor holds it.
+
+    Only an edited asset is asked about, so an unedited library sends no extra
+    request. Each edit keeps its action and parameters in Immich's order; its id
+    is left out, since saving the same edit again renders the same picture.
+    """
+    asset = request.clip.asset
+    if not asset.is_edited:
+        return None
+    import httpx
+
+    from immich_memories.api.access_clients import AccountReadFailed
+    from immich_memories.api.immich import ImmichAPIError
+
+    client = request.params.client
+    if client is None:
+        raise EditUnreadable("no Immich client to read the edit from")
+    try:
+        edits = client.get_asset_edits(asset.id)
+    except (ImmichAPIError, AccountReadFailed, httpx.HTTPError, OSError) as exc:
+        # A server that cannot say which edit it renders gets a fresh preparation:
+        # reusing a guess could put the old edit in the film.
+        raise EditUnreadable("Immich did not tell this photo's edit") from exc
+    return [{"action": edit.get("action"), "parameters": edit.get("parameters")} for edit in edits]
 
 
 def _machine(config: Config) -> dict[str, Any]:
@@ -169,6 +203,7 @@ def preparation_identity(request: PreparationRequest) -> dict[str, Any]:
         "app": __version__,
         "route": preparation_route(clip, directive, config),
         "clip": clip.model_dump(mode="json"),
+        "edit": _immich_edit(request),
         "local_source": _local_source(clip.local_path),
         "directive": None if directive is None else dataclasses.asdict(directive),
         "timing": _timing(request),

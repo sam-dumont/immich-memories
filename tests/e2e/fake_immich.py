@@ -1093,6 +1093,12 @@ def _handler_type(
                 else:
                     self._send_json(404, {"message": "Asset OCR not found"})
                 return
+            if len(parts) == 2 and parts[1] == "edits" and parts[0] in by_id:
+                # The edit Immich's editor holds; an unedited picture holds none.
+                edited = by_id[parts[0]].edited
+                edits = [{"id": f"{parts[0]}-edit", **IMMICH_EDIT}] if edited else []
+                self._send_json(200, {"assetId": parts[0], "edits": edits})
+                return
             if query.get("edited") == ["true"] and parts[0] + EDITED in media:
                 # Immich's editor render, asked for by name; any other asset has none to give.
                 parts = [parts[0] + EDITED, parts[1]]

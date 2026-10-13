@@ -13,7 +13,7 @@ from __future__ import annotations
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from pathlib import Path
 from threading import Lock
-from typing import TypeVar
+from typing import Any, TypeVar
 
 import httpx
 
@@ -181,6 +181,12 @@ class AccessBoundClient(SyncImmichClient):
         """This asset's OCR text, read through whichever account owns it (#2062)."""
         return self._routed(
             asset_id, lambda client: SyncImmichClient.get_asset_ocr_text(client, asset_id)
+        )
+
+    def get_asset_edits(self, asset_id: str) -> list[dict[str, Any]]:
+        """This asset's edits, read through whichever account owns it."""
+        return self._routed(
+            asset_id, lambda client: SyncImmichClient.get_asset_edits(client, asset_id)
         )
 
     def get_asset_thumbnail(

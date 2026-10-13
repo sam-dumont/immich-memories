@@ -635,6 +635,9 @@ class ImmichClient:
     async def get_asset_ocr_text(self, asset_id: str) -> str | None:
         return await self.assets.get_asset_ocr_text(asset_id)
 
+    async def get_asset_edits(self, asset_id: str) -> list[dict[str, Any]]:
+        return await self.assets.get_asset_edits(asset_id)
+
     async def get_asset_thumbnail(
         self, asset_id: str, size: str = "preview", *, edited: bool = False
     ) -> bytes:

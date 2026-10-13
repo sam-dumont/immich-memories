@@ -511,6 +511,40 @@ class TestAssetOcrText:
         assert await client.get_asset_ocr_text("card") is None
 
 
+class TestAssetEdits:
+    """GET /assets/{id}/edits: the edit Immich's editor holds for an asset (#2479)."""
+
+    @pytest.mark.asyncio
+    async def test_the_edits_come_back_in_the_order_immich_applies_them(self, _mock_config):
+        edits = [
+            {"id": "e-1", "action": "crop", "parameters": {"x": 0, "y": 0, "width": 9}},
+            {"id": "e-2", "action": "mirror", "parameters": {"axis": "horizontal"}},
+        ]
+        client = ImmichClient(_TEST_URL, _TEST_KEY)
+        response = httpx.Response(
+            200, request=httpx.Request("GET", "/test"), json={"assetId": "a", "edits": edits}
+        )
+        # WHY: the HTTP boundary; the client's own parsing is what is under test.
+        client._client = AsyncMock()
+        client._client.is_closed = False
+        client._client.request = AsyncMock(return_value=response)
+
+        assert await client.get_asset_edits("a") == edits
+        assert client._client.request.call_args.args[:2] == ("GET", "/api/assets/a/edits")
+
+    @pytest.mark.asyncio
+    async def test_an_answer_without_an_edits_list_is_an_error_not_no_edit(self, _mock_config):
+        client = ImmichClient(_TEST_URL, _TEST_KEY)
+        response = httpx.Response(200, request=httpx.Request("GET", "/test"), json={"x": 1})
+        # WHY: the HTTP boundary, answering a shape no supported release sends.
+        client._client = AsyncMock()
+        client._client.is_closed = False
+        client._client.request = AsyncMock(return_value=response)
+
+        with pytest.raises(ImmichAPIError):
+            await client.get_asset_edits("a")
+
+
 class TestImmichClientLifecycle:
     """Context manager and connection lifecycle."""
 

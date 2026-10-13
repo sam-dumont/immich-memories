@@ -165,6 +165,7 @@ Immich's trash when the key has `asset.delete`.
 | Metadata search and timeline buckets | the period's pictures, with capture time, EXIF, place, people, favourites and whether Immich's editor touched them (`isEdited`) |
 | `GET /assets/{id}/thumbnail` (preview size) | the previews preparation and selection judge; an edited photo's preview is asked for with `edited=true` |
 | `GET /assets/{id}/original` | the photos and clips the renderer plays; an edited photo is downloaded with `edited=true` |
+| `GET /assets/{id}/edits` | which edit an edited photo carries, so a later render reuses its prepared clip only while the edit is the same; asked for edited photos only |
 | `GET /assets/{id}/video/playback` | a video's sound, read for speech and for where to cut |
 | `GET /faces`, `GET /people` | face boxes for framing and the people checks, and the names Immich recognised |
 | `GET /assets/{id}/ocr` | readable documents (Immich 2.2 and later; off for the run on an older server) |
