@@ -11,6 +11,7 @@ from immich_memories.analysis.editorial_final_hash_review import (
 from immich_memories.analysis.editorial_pool import EditorialSourcePool
 from immich_memories.analysis.editorial_rule_reader import RuleStructureReader
 from immich_memories.analysis.editorial_story_slots import allocate_slots
+from immich_memories.config_models_automation import TripsConfig
 from immich_memories.config_models_editorial import EditorialConfig, EditorialPeopleConfig
 from tests.picture_fake import PictureFake
 
@@ -359,7 +360,7 @@ def _week_source(
         shareability_flags={},
         owner_required_asset_ids=(),
         config=SimpleNamespace(
-            trips=SimpleNamespace(homebase_latitude=None, homebase_longitude=None),
+            trips=TripsConfig(),
             editorial=SimpleNamespace(people=EditorialPeopleConfig()),
         ),
         intent=SimpleNamespace(product="monthly_highlights"),

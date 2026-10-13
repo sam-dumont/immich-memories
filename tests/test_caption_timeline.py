@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+from immich_memories.config_models_automation import TripsConfig
 from immich_memories.processing.assembly_config import AssemblyClip
 from immich_memories.processing.clip_caption import captions_for_timeline
 
@@ -48,7 +49,7 @@ class TestPlaceShowsOnChange:
             client=library,
             config=SimpleNamespace(
                 cache=SimpleNamespace(cache_path=tmp_path),
-                trips=SimpleNamespace(homebase_latitude=50.843, homebase_longitude=4.362),
+                trips=TripsConfig(homebase_latitude=50.843, homebase_longitude=4.362),
                 title_screens=SimpleNamespace(locale="en"),
             ),
         )

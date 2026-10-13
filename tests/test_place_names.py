@@ -12,6 +12,7 @@ import pytest
 from immich_memories.analysis.place_geocoder import PlaceGeocoder
 from immich_memories.analysis.place_names import PlaceNames, shown_city
 from immich_memories.api.models import ExifInfo
+from immich_memories.config_models_automation import TripsConfig
 from immich_memories.db import open_store
 from immich_memories.i18n import SUPPORTED_LOCALES
 from tests.conftest import make_asset
@@ -456,7 +457,7 @@ def test_a_rules_story_is_titled_after_the_city():
         annotations=annotations,
         audience_annotations={},
         config=SimpleNamespace(
-            trips=SimpleNamespace(homebase_latitude=0.0, homebase_longitude=0.0),
+            trips=TripsConfig(homebase_latitude=0.0, homebase_longitude=0.0),
             editorial=SimpleNamespace(people=EditorialPeopleConfig()),
         ),
         intent=SimpleNamespace(product="monthly_highlights"),

@@ -192,6 +192,14 @@ def test_a_span_records_a_peak_at_least_what_it_allocated():
     subprocess.run([sys.executable, "-c", script], check=True, timeout=30)
 
 
+def _tree_floor(child_size: int) -> int:
+    import os
+
+    from immich_memories.tracking import peak_memory
+
+    return (peak_memory.rss_bytes(os.getpid()) or 0) + child_size
+
+
 def _check_live_memory_peaks():
     import os
     import subprocess
@@ -201,9 +209,14 @@ def _check_live_memory_peaks():
     from immich_memories.tracking import peak_memory
 
     size = 64 * 1024 * 1024
-    # Random bytes keep macOS compression from shrinking the resident allocation.
+    # Random bytes keep macOS compression from shrinking the resident allocation, and
+    # touching a byte per page until stdin closes keeps a loaded runner from paging it out.
     child = (
-        f"import os, sys; held = os.urandom({size}); print('ready', flush=True); sys.stdin.read()"
+        "import os, select, sys\n"
+        f"held = os.urandom({size})\n"
+        "print('ready', flush=True)\n"
+        "while not select.select([sys.stdin], [], [], 0.05)[0]:\n"
+        "    bytes(held[::4096])\n"
     )
     with timing.collecting() as collected, timing.span("run"):
         with timing.span("download"):
@@ -216,12 +229,16 @@ def _check_live_memory_peaks():
                 assert ffmpeg.stdout.readline() == b"ready\n"
                 with timing.span("assembly"):
                     observed = peak_memory.watch_open()
-                    minimum_tree = observed.own + size
                     try:
+                        # The floor follows this process's RSS as it is now: macOS keeps the
+                        # freed download's pages cached as resident and reclaims them only
+                        # under pressure, so the RSS at open can drop by `size` mid-wait.
                         deadline = time.monotonic() + 10
+                        minimum_tree = _tree_floor(size)
                         while observed.tree < minimum_tree and time.monotonic() < deadline:
                             time.sleep(0.01)
-                        assert observed.tree >= minimum_tree
+                            minimum_tree = _tree_floor(size)
+                        assert observed.tree >= minimum_tree, (observed.tree, minimum_tree)
                     finally:
                         peak_memory.watch_close(observed)
             finally:

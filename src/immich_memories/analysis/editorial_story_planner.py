@@ -387,8 +387,17 @@ def _episodes_record(
         }
         | _funding_note(s)
         | _kind_of_story(s)
+        | _named_facts(s)
         for s in stories
     ]
+
+
+# What a story is about, as its reader named it (#2486): the summary and the titles read these.
+_NAMED_FACTS = ("occasion", "people", "days", "places", "trip")
+
+
+def _named_facts(s) -> dict[str, Any]:
+    return {key: s[key] for key in _NAMED_FACTS if key in s}
 
 
 def _funding_note(s) -> dict[str, Any]:

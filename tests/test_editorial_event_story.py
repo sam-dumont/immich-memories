@@ -18,6 +18,7 @@ import pytest
 from immich_memories.analysis.editorial_rule_reader import RuleStructureReader
 from immich_memories.analysis.editorial_story_planner import funding_order
 from immich_memories.analysis.editorial_story_slots import allocate_slots
+from immich_memories.config_models_automation import TripsConfig
 from immich_memories.config_models_editorial import EditorialPeopleConfig
 from tests.e2e.fake_library import LIBRARY
 from tests.picture_fake import PictureFake
@@ -95,7 +96,7 @@ def _read(days, *, gps=True, printed=None, starred=(), family=()):
         },
         audience_annotations=audience,
         config=SimpleNamespace(
-            trips=SimpleNamespace(homebase_latitude=HOME[0], homebase_longitude=HOME[1]),
+            trips=TripsConfig(homebase_latitude=HOME[0], homebase_longitude=HOME[1]),
             editorial=SimpleNamespace(people=EditorialPeopleConfig()),
         ),
         intent=SimpleNamespace(product="year_in_review"),

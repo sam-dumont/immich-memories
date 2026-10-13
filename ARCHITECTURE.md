@@ -274,7 +274,10 @@ The separate model-planning route can read banked lines or use plain clip facts.
 
 - **Rules draft**: the film the no-model reader cuts (`editorial_rule_reader.py`,
   `editorial_structure_planner.py`). It may read what a model already banked about the library,
-  which can only tighten it (`editorial_rule_banked_facts.py`).
+  which can only tighten it (`editorial_rule_banked_facts.py`). A birthday or a family visit
+  becomes its own story (`editorial_occasions.py`), and every story is named from its facts: an
+  occasion, a trip by its album or farthest place, a day out, days at home
+  (`editorial_story_names.py`, `editorial_rule_story_names.py`).
 - **Carrier**: the picture admitted to carry one chosen moment of a funded story, if it is free,
   in context and spaced from the shots already committed (`editorial_story_carriers.py`,
   `editorial_carrier_eligibility.py`). A carrier is a shot before it is rendered. A photographed
@@ -587,6 +590,9 @@ src/immich_memories/
 │   ├── editorial_rule_episodes.py  # Factual episode cards / omitted thesis; no semantic-bank writes
 │   ├── editorial_rule_reader.py    # Rules for worthiness, grouping and standing; shared allocation
 │   ├── editorial_rule_banked_facts.py # What a model already answered, read by the draft that asks nothing
+│   ├── editorial_occasions.py      # Birthdays and family visits, from birth dates and relations
+│   ├── editorial_story_names.py    # A story's name and purpose from its days, places and album
+│   ├── editorial_rule_story_names.py # Occasions out of their week; trips by the install's trip rule
 │   ├── editorial_story_standing.py # StandingGate: does a picture stand by itself, and may it serve as context
 │   ├── editorial_standing_facts.py # Standing from facts, no model: heads (+ caption words), faces and animals never refused
 │   ├── editorial_final_hash_review.py # The final duplicate review every cut runs: cached preview hashes, then scene prints across stories

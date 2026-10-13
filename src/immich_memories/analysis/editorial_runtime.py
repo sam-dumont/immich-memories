@@ -655,6 +655,7 @@ def build_editorial_planner(
         episode_demand=demand,
         prepare_refinement=refinement.refine if refinement else None,
         printed_near=_printed_near(client),
+        album_names=album_names,
         document_ocr_text=document_ocr_port(client, accounts=accounts),
     )
 

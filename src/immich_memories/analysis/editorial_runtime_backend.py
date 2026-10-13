@@ -92,9 +92,12 @@ class ProductionPostCardBackend:
         | None = None,
         printed_near: PrintedNear | None = None,
         document_ocr_text: Callable[[str, bool], str | None] | None = None,
+        album_names: Callable[[Sequence[str]], tuple[str, ...]] | None = None,
     ) -> None:
         self._prepare_refinement = prepare_refinement
         self._printed_near = printed_near
+        # What the owner's albums call a set of pictures: a trip is named after its album.
+        self._album_names = album_names
         self._document_ocr_text = document_ocr_text
         self._episode_demand = episode_demand
         self._fetch_preview = fetch_preview
@@ -330,7 +333,9 @@ class ProductionPostCardBackend:
                 # Narrowed so a violator never names a story or episode title (#1954);
                 # `_plan_structure` narrows the same way, idempotently, before planning.
                 rules=RuleStructureReader(
-                    exclude_people_condition_violators(source).source, printed=self._printed_near
+                    exclude_people_condition_violators(source).source,
+                    printed=self._printed_near,
+                    album_names=self._album_names,
                 ),
                 printed_near=self._printed_near,
                 document_ocr_text=self._document_ocr_text,
@@ -383,6 +388,7 @@ class ProductionPostCardBackend:
             exclude_people_condition_violators(source).source,
             printed=self._printed_near,
             promote_sparse_quality=False,
+            album_names=self._album_names,
         )
         return {
             "rules": rules,
