@@ -112,3 +112,6 @@ msgstr "{phrase}での一日"
 
 msgid "title.day_in_place_neutral"
 msgstr "{place} · 一日"
+
+msgid "summary.then"
+msgstr "{earlier}、そして{later}"

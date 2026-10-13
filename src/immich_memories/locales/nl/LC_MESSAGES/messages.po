@@ -113,3 +113,6 @@ msgstr "Een dag {phrase}"
 
 msgid "title.day_in_place_neutral"
 msgstr "{place} · Een dag"
+
+msgid "summary.then"
+msgstr "{earlier}, daarna {later}"

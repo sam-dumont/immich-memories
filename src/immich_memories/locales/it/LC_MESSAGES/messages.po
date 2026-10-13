@@ -113,3 +113,6 @@ msgstr "Una giornata {phrase}"
 
 msgid "title.day_in_place_neutral"
 msgstr "{place} · Una giornata"
+
+msgid "summary.then"
+msgstr "{earlier}, poi {later}"

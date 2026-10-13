@@ -82,7 +82,8 @@ Where it lives: `text_episode_reader.py`, `editorial_thin_layer.py`, `editorial_
 | **Episode reading** | a model's answer about one episode: what happened, a representative, moments worth a record |
 | **Record** | a picture an episode reading named as the record of something that happens once (an arrival, a milestone with its occasion visible, a change you can see, text naming the occasion), judged on the episode's own lines; protected from the vote |
 | **Account** | what the library says a period was about, written once from episode readings and reused |
-| **Thesis** | the account's statement of what the period was, up to 150 words |
+| **Thesis** | the account's statement of what the period was, up to 150 words; the polish votes under it, and it is never a film's summary |
+| **Summary** | what one film was about, written from the stories it shows: by the model on Full, as a line of story names on Basic |
 | **Polish / thin layer** | the model reads the draft once, names the shots that add nothing, fills the seats |
 | **Block vote** | every model yes or no: at most 12 rows, asked in up to two orders; both orders is firm, one is a maybe |
 | **Seat** | a slot the polish may fill: N (a record with no shot), R (replaces a voted-out shot), T (replaces a gate refusal), D (a swap) |

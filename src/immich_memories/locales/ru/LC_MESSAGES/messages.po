@@ -114,3 +114,6 @@ msgstr "День {phrase}"
 
 msgid "title.day_in_place_neutral"
 msgstr "{place} · День"
+
+msgid "summary.then"
+msgstr "{earlier}, затем {later}"

@@ -727,7 +727,7 @@ immich-memories prepare [OPTIONS]
 | `--start` | text | - | Start date (YYYY-MM-DD) |
 | `--end` | text | - | End date (use with --start) |
 | `--period` | text | - | Period from the start date (e.g. 6m, 1y, 2w) |
-| `--overviews` | boolean | false | Also bank each month's episode readings and the account a cut reads as its thesis |
+| `--overviews` | boolean | false | Also bank each month's episode readings and the account the model polish reads |
 | `--library-size` | integer | 1000 | Project the measured rate onto a library of this many pictures |
 
 ## `report`

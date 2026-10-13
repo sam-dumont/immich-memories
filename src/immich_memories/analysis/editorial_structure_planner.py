@@ -20,6 +20,7 @@ from immich_memories.analysis import llm_metrics
 from immich_memories.analysis.editorial_cut_invariants import check_finished_cut
 from immich_memories.analysis.editorial_exposure_chains import chain_holds_for
 from immich_memories.analysis.editorial_family_seat import FilmSeatSource, seat_in_film
+from immich_memories.analysis.editorial_film_summary import summarise_the_film
 from immich_memories.analysis.editorial_final_hash_review import (
     hash_repeat_relation,
     scene_pair_relation,
@@ -508,6 +509,7 @@ def _select(
     record_story("picture-admission", {"checks": gates.decisions})
     admit_retained_originals(run, source, material.builder)
     check_finished_cut(source, selection, material, run, gate, banked, share_log, record_story)
+    summarise_the_film(source, ports, selection, run.carriers, record=record_story)
     return PlanOutcome(
         contract=contract,
         carriers=run.carriers,

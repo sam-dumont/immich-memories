@@ -64,6 +64,9 @@ def test_no_template_asks_for_a_value_the_code_does_not_give(locale: str) -> Non
         "n",
         "place",
         "phrase",
+        # The plain film summary (#2488): the story names told so far, then the next one.
+        "earlier",
+        "later",
     }
     for prefix in ("", "start_", "end_"):
         given |= {f"{prefix}month", f"{prefix}month_lc", f"{prefix}month_of", f"{prefix}month_num"}
