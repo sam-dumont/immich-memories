@@ -1,0 +1,14 @@
+{
+ "memory_type": "multi_person",
+ "arguments": [
+  "--memory-type",
+  "multi_person",
+  "--person",
+  "Robin",
+  "--person",
+  "Kit",
+  "--year",
+  "2025"
+ ],
+ "seconds": 25
+}

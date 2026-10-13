@@ -1,0 +1,10 @@
+{
+ "memory_type": "special_day",
+ "arguments": [
+  "--memory-type",
+  "special_day",
+  "--day",
+  "2025-07-05"
+ ],
+ "seconds": 29
+}

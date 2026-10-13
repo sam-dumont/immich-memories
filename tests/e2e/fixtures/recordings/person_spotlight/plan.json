@@ -1,0 +1,1558 @@
+{
+ "render_timing": {
+  "policy": {
+   "target_seconds": 105.0,
+   "memory_type": "person_spotlight",
+   "title_settings_json": "{\"divider_mode\":\"month\",\"enabled\":true,\"ending_duration\":7.0,\"month_divider_duration\":2.0,\"month_divider_threshold\":2,\"show_location_cards\":true,\"show_month_dividers\":true,\"title_duration\":3.5}",
+   "transition": "smart",
+   "transition_duration": 0.5,
+   "version": "editorial-timing-overlap-v2"
+  },
+  "timeline": {
+   "target_duration": 105.0,
+   "content_budget": 100.1,
+   "title_budget": 10.5,
+   "title_duration": 3.5,
+   "ending_duration": 7.0,
+   "divider_duration": 2.0,
+   "max_dividers": 0,
+   "divider_policy": "all",
+   "eligible_dividers": 0,
+   "soft_max_duration": 115.0,
+   "transition_budget": 5.6,
+   "divider_month_keys": []
+  },
+  "source_ids": [
+   "home-0702-kit-stuffie",
+   "home-0702-kit-beanbag",
+   "cast-0703-kit-s-paper-octopus",
+   "home-0703-baking",
+   "cast-0703-cutting-out-shapes-at-the-ta",
+   "cast-0704-kit-digging-on-the-beach",
+   "home-0704-fountain",
+   "birthday-superheroes",
+   "birthday-stairs",
+   "birthday-sofa-film",
+   "forest-0706-pat-02",
+   "forest-0706-picnic",
+   "cast-0708-climbing-the-fence",
+   "home-0708-ice-cream-bike",
+   "home-0710-sofa"
+  ],
+  "sha256": "542719660431dfabf74bab7aec43469c6e6f24e40dbd53f8122627e40cfb7fc0"
+ },
+ "story": {
+  "version": "story-first-selection-v7-prepared-candidates",
+  "slots": 25,
+  "thesis": "Distinctive events include a tram passing in Schaerbeek, Brussels, and family outings in Forest, Brussels. Other scenes show beach play, picnics in Watermael-Boitsfort, and sightseeing in Tervuren and Vossem. The broad pattern is one of diverse family and group activities in both urban and natural settings across July.",
+  "priorities": [],
+  "episodes": [
+   {
+    "episode": "S001",
+    "title": "eating-drinking / posing / working / playing / playing at Ixelles",
+    "role": "supporting",
+    "weight": "minor",
+    "gate": "remarkable",
+    "purpose": "Capture dates, places and owner favourites",
+    "day": "2025-07-01",
+    "seen": {
+     "days": 6,
+     "moments": 13,
+     "pictures": 14,
+     "favourites": 0
+    },
+    "day_episodes": [
+     "R001",
+     "R002",
+     "R003",
+     "R004",
+     "R005",
+     "R006"
+    ],
+    "units": 14,
+    "depicted_moments": 13,
+    "groups_offered": 13,
+    "granted": 13,
+    "chosen": [
+     "M001:cg",
+     "M010:cg",
+     "M002:cg",
+     "M003:cg",
+     "M004:cg",
+     "M005:cg",
+     "M006:cg",
+     "M007:cg",
+     "M008:cg",
+     "M009:cg",
+     "M011:cg",
+     "M012:cg",
+     "M013:cg"
+    ],
+    "kind": "story"
+   },
+   {
+    "episode": "S003",
+    "title": "posing",
+    "role": "texture",
+    "weight": "glimpse",
+    "gate": "background",
+    "purpose": "Capture dates, places and owner favourites",
+    "day": "2025-07-10",
+    "seen": {
+     "days": 2,
+     "moments": 5,
+     "pictures": 8,
+     "favourites": 0
+    },
+    "day_episodes": [
+     "R009",
+     "R010"
+    ],
+    "units": 8,
+    "depicted_moments": 4,
+    "groups_offered": 4,
+    "granted": 1,
+    "chosen": [
+     "M020:cg"
+    ],
+    "funded_by": "quality",
+    "sparse_quality_reason": "The household's period is mostly indicator-less; funded by this week's best picture",
+    "kind": "story"
+   },
+   {
+    "episode": "S002",
+    "title": "posing / playing",
+    "role": "texture",
+    "weight": "glimpse",
+    "gate": "background",
+    "purpose": "Capture dates, places and owner favourites",
+    "day": "2025-07-07",
+    "seen": {
+     "days": 2,
+     "moments": 4,
+     "pictures": 4,
+     "favourites": 0
+    },
+    "day_episodes": [
+     "R007",
+     "R008"
+    ],
+    "units": 4,
+    "depicted_moments": 4,
+    "groups_offered": 4,
+    "granted": 1,
+    "chosen": [
+     "M015:cg"
+    ],
+    "funded_by": "quality",
+    "sparse_quality_reason": "The household's period is mostly indicator-less; funded by this week's best picture",
+    "kind": "story"
+   }
+  ],
+  "calls": {
+   "story_pages": 0,
+   "story_pages_fresh": 0,
+   "pick_calls": 0,
+   "thread_questions": 0,
+   "selection_passes": 2,
+   "failed_standing": 0,
+   "kept_without_standing": 0
+  },
+  "sparse_quality": {
+   "share": 0.6667,
+   "threshold": 0.6666666666666666,
+   "promoted": [
+    "S002",
+    "S003"
+   ],
+   "left_short": []
+  }
+ },
+ "left_out": {
+  "cast-0703-painting-with-the-watercolou": "it is not its own shot: a moment earns one shot for every 5 distinct pictures, or one every five minutes",
+  "cast-0710-kit-waving-in-the-yellow-dre": "its story earned fewer shots than it has moments",
+  "cast-0710-kit-reading-on-the-rug": "its story earned fewer shots than it has moments",
+  "cast-0710-kit-grinning": "it is not its own shot: a moment earns one shot for every 5 distinct pictures, or one every five minutes",
+  "cast-0711-kit-by-the-window": "its story earned fewer shots than it has moments",
+  "cast-0711-kit-with-the-braid": "its story earned fewer shots than it has moments",
+  "cast-0711-kit-and-the-lollipop": "its story earned fewer shots than it has moments",
+  "cast-0711-sparklers-in-the-garden": "its story earned fewer shots than it has moments",
+  "cast-0707-kit-and-the-neighbours-rabbi": "its story earned fewer shots than it has moments",
+  "cast-0708-kit-in-the-dungarees": "its story earned fewer shots than it has moments",
+  "home-0708-ice-cream-bike": "its story earned fewer shots than it has moments"
+ },
+ "period_evidence": [],
+ "content_cap_seconds": 100.1,
+ "duration_realization": {
+  "requested_seconds": 105.0,
+  "content_budget_seconds": 100.1,
+  "selected_content_seconds": 60.5,
+  "shortfall_seconds": 39.6,
+  "near_target_tolerance_seconds": 15.01,
+  "accepted_shortfall_fraction": 0.15,
+  "requested_picture_slots": 25,
+  "status": "editorial_shortfall"
+ },
+ "motion_shaves": 0,
+ "motion_metrics": {
+  "scope": "captured motion evidence",
+  "new_motion_downloads": 0,
+  "method": "median-flow-v1-12frames-320x240",
+  "candidate_carriers": 0,
+  "candidate_stills": 0,
+  "sampled_sources": 0,
+  "unsampled_stills": 0,
+  "fetch_attempts": 0,
+  "playback_cache_write_failures": 0,
+  "cache_hits": 0,
+  "outcome_replay_hits": 0,
+  "download_bytes": 0,
+  "unavailable_sources": 0,
+  "decode_seconds": 0.0,
+  "sample_limit_per_carrier": 3,
+  "wall_seconds": 0.0
+ },
+ "final_duplicate_review": {
+  "policy": "final-cached-hash-duplicates-v2",
+  "scope": "cached preview hashes within one story or one day; no model comparison",
+  "maximum_hash_distance": 6,
+  "pairs_compared": 67,
+  "input_carriers": 15,
+  "output_carriers": 15,
+  "removals": [],
+  "replaced_from": {},
+  "kept_only_shots": [],
+  "collapsed_favourites": [],
+  "unavailable": [],
+  "incomplete": false,
+  "scene": {
+   "similarity": 0.65,
+   "window_days": 14,
+   "pairs_compared": 95,
+   "unavailable": []
+  },
+  "status": "complete"
+ },
+ "thumbnail_metrics": {
+  "method": "thumbnail-ahash-v1-bgr-gray-area-opencv-5.0.0-numpy-2.4.2",
+  "hash_size": 8,
+  "requests": 71,
+  "cache_hits": 71,
+  "hashes_computed": 0,
+  "unavailable": 0,
+  "preview_bytes": 10005420,
+  "wall_seconds": 0.014,
+  "preview_acquisition": {
+   "fetch_attempts": 0,
+   "cache_hits": 26,
+   "download_bytes": 0,
+   "unavailable": 0,
+   "fetch_seconds": 0.0,
+   "failures": {}
+  }
+ },
+ "planning_scope": {
+  "anchors": 16,
+  "picture_ladders_read": 0,
+  "source_assets": 1131,
+  "selected_carriers": 15
+ },
+ "semantic_reuse": "exact-request-gateway; parsed files are per-run audit only",
+ "worthiness_review": {},
+ "schema_version": "structure-plan-v88-story-first",
+ "person_period_facts": {},
+ "story_motion_facts": {
+  "producer": "motion-line-v1@smolvlm2-500m-base-public/3-keyframes-320px",
+  "requested": 0,
+  "banked": 0,
+  "plain_facts": 0,
+  "unsupported": 0,
+  "unrecorded": 0
+ },
+ "shareability": {
+  "audience": "family",
+  "checked": 15,
+  "tightened": [],
+  "substituted": [],
+  "dropped": [],
+  "replacement_policy": "bounded editorial contribution review",
+  "funded_acquisition": {},
+  "prompt_version": "audience-evidence-v17-every-finding-needs-its-activity",
+  "check_policy": "all-captioned-carrier-members-v1",
+  "verdicts": {
+   "cast-0701-kit-lining-up-the-chocolate": {
+    "policy": "audience-evidence-v17-every-finding-needs-its-activity",
+    "verdict": "share",
+    "parsed": true,
+    "missing_members": [],
+    "activity": {
+     "scope": "activity-content",
+     "parsed": true,
+     "finding": "none",
+     "verdict": "share",
+     "why": "laya hold p=0.000"
+    },
+    "exposure": null,
+    "activity_asked_in_batch": true,
+    "why": "laya hold p=0.000",
+    "finding": "none",
+    "evidence_key": ""
+   },
+   "home-0702-kit-stuffie": {
+    "policy": "audience-evidence-v17-every-finding-needs-its-activity",
+    "verdict": "share",
+    "parsed": true,
+    "missing_members": [],
+    "activity": {
+     "scope": "activity-content",
+     "parsed": true,
+     "finding": "none",
+     "verdict": "share",
+     "why": "laya hold p=0.000"
+    },
+    "exposure": null,
+    "activity_asked_in_batch": true,
+    "why": "laya hold p=0.000",
+    "finding": "none",
+    "evidence_key": ""
+   },
+   "home-0702-kit-beanbag": {
+    "policy": "audience-evidence-v17-every-finding-needs-its-activity",
+    "verdict": "share",
+    "parsed": true,
+    "missing_members": [],
+    "activity": {
+     "scope": "activity-content",
+     "parsed": true,
+     "finding": "none",
+     "verdict": "share",
+     "why": "laya hold p=0.000"
+    },
+    "exposure": null,
+    "activity_asked_in_batch": true,
+    "why": "laya hold p=0.000",
+    "finding": "none",
+    "evidence_key": ""
+   },
+   "cast-0703-kit-s-paper-octopus": {
+    "policy": "audience-evidence-v17-every-finding-needs-its-activity",
+    "verdict": "share",
+    "parsed": true,
+    "missing_members": [],
+    "activity": {
+     "scope": "activity-content",
+     "parsed": true,
+     "finding": "none",
+     "verdict": "share",
+     "why": "laya hold p=0.000"
+    },
+    "exposure": null,
+    "activity_asked_in_batch": true,
+    "why": "laya hold p=0.000",
+    "finding": "none",
+    "evidence_key": ""
+   },
+   "home-0703-baking": {
+    "policy": "audience-evidence-v17-every-finding-needs-its-activity",
+    "verdict": "share",
+    "parsed": true,
+    "missing_members": [],
+    "activity": {
+     "scope": "activity-content",
+     "parsed": true,
+     "finding": "none",
+     "verdict": "share",
+     "why": "laya hold p=0.000"
+    },
+    "exposure": null,
+    "activity_asked_in_batch": true,
+    "why": "laya hold p=0.000",
+    "finding": "none",
+    "evidence_key": ""
+   },
+   "cast-0703-cutting-out-shapes-at-the-ta": {
+    "policy": "audience-evidence-v17-every-finding-needs-its-activity",
+    "verdict": "share",
+    "parsed": true,
+    "missing_members": [],
+    "activity": {
+     "scope": "activity-content",
+     "parsed": true,
+     "finding": "none",
+     "verdict": "share",
+     "why": "laya hold p=0.000"
+    },
+    "exposure": null,
+    "activity_asked_in_batch": true,
+    "why": "laya hold p=0.000",
+    "finding": "none",
+    "evidence_key": ""
+   },
+   "cast-0704-kit-digging-on-the-beach": {
+    "policy": "audience-evidence-v17-every-finding-needs-its-activity",
+    "verdict": "share",
+    "parsed": true,
+    "missing_members": [],
+    "activity": {
+     "scope": "activity-content",
+     "parsed": true,
+     "finding": "none",
+     "verdict": "share",
+     "why": "laya hold p=0.000"
+    },
+    "exposure": null,
+    "activity_asked_in_batch": true,
+    "why": "laya hold p=0.000",
+    "finding": "none",
+    "evidence_key": ""
+   },
+   "home-0704-fountain": {
+    "policy": "audience-rules-v1-detector-heads-and-flags",
+    "verdict": "family_only",
+    "parsed": true,
+    "missing_members": [],
+    "activity": null,
+    "exposure": null,
+    "finding": "exposure_evidence",
+    "why": "a detector or exposure flag marks this unit",
+    "evidence_key": ""
+   },
+   "birthday-superheroes": {
+    "policy": "audience-evidence-v17-every-finding-needs-its-activity",
+    "verdict": "share",
+    "parsed": true,
+    "missing_members": [],
+    "activity": {
+     "scope": "activity-content",
+     "parsed": true,
+     "finding": "none",
+     "verdict": "share",
+     "why": "laya hold p=0.000"
+    },
+    "exposure": null,
+    "activity_asked_in_batch": true,
+    "why": "laya hold p=0.000",
+    "finding": "none",
+    "evidence_key": ""
+   },
+   "birthday-stairs": {
+    "policy": "audience-evidence-v17-every-finding-needs-its-activity",
+    "verdict": "share",
+    "parsed": true,
+    "missing_members": [],
+    "activity": {
+     "scope": "activity-content",
+     "parsed": true,
+     "finding": "none",
+     "verdict": "share",
+     "why": "laya hold p=0.002"
+    },
+    "exposure": null,
+    "activity_asked_in_batch": true,
+    "why": "laya hold p=0.002",
+    "finding": "none",
+    "evidence_key": ""
+   },
+   "birthday-sofa-film": {
+    "policy": "audience-evidence-v17-every-finding-needs-its-activity",
+    "verdict": "share",
+    "parsed": true,
+    "missing_members": [],
+    "activity": {
+     "scope": "activity-content",
+     "parsed": true,
+     "finding": "none",
+     "verdict": "share",
+     "why": "laya hold p=0.000"
+    },
+    "exposure": null,
+    "activity_asked_in_batch": true,
+    "why": "laya hold p=0.000",
+    "finding": "none",
+    "evidence_key": ""
+   },
+   "forest-0706-pat-02": {
+    "policy": "audience-evidence-v17-every-finding-needs-its-activity",
+    "verdict": "share",
+    "parsed": true,
+    "missing_members": [],
+    "activity": {
+     "scope": "activity-content",
+     "parsed": true,
+     "finding": "none",
+     "verdict": "share",
+     "why": "laya hold p=0.000"
+    },
+    "exposure": null,
+    "activity_asked_in_batch": true,
+    "why": "laya hold p=0.000",
+    "finding": "none",
+    "evidence_key": ""
+   },
+   "forest-0706-picnic": {
+    "policy": "audience-evidence-v17-every-finding-needs-its-activity",
+    "verdict": "share",
+    "parsed": true,
+    "missing_members": [],
+    "activity": {
+     "scope": "activity-content",
+     "parsed": true,
+     "finding": "none",
+     "verdict": "share",
+     "why": "laya hold p=0.000"
+    },
+    "exposure": null,
+    "activity_asked_in_batch": true,
+    "why": "laya hold p=0.000",
+    "finding": "none",
+    "evidence_key": ""
+   },
+   "cast-0708-climbing-the-fence": {
+    "policy": "audience-evidence-v17-every-finding-needs-its-activity",
+    "verdict": "share",
+    "parsed": true,
+    "missing_members": [],
+    "activity": {
+     "scope": "activity-content",
+     "parsed": true,
+     "finding": "none",
+     "verdict": "share",
+     "why": "laya hold p=0.000"
+    },
+    "exposure": null,
+    "activity_asked_in_batch": true,
+    "why": "laya hold p=0.000",
+    "finding": "none",
+    "evidence_key": ""
+   },
+   "home-0710-sofa": {
+    "policy": "audience-evidence-v17-every-finding-needs-its-activity",
+    "verdict": "share",
+    "parsed": true,
+    "missing_members": [],
+    "activity": {
+     "scope": "activity-content",
+     "parsed": true,
+     "finding": "none",
+     "verdict": "share",
+     "why": "laya hold p=0.000"
+    },
+    "exposure": null,
+    "activity_asked_in_batch": true,
+    "why": "laya hold p=0.000",
+    "finding": "none",
+    "evidence_key": ""
+   },
+   "home-0708-ice-cream-bike": {
+    "policy": "audience-evidence-v17-every-finding-needs-its-activity",
+    "verdict": "share",
+    "parsed": true,
+    "missing_members": [],
+    "activity": {
+     "scope": "activity-content",
+     "parsed": true,
+     "finding": "none",
+     "verdict": "share",
+     "why": "laya hold p=0.000"
+    },
+    "exposure": null,
+    "activity_asked_in_batch": true,
+    "why": "laya hold p=0.000",
+    "finding": "none",
+    "evidence_key": ""
+   },
+   "cast-0703-painting-with-the-watercolou": {
+    "policy": "audience-evidence-v17-every-finding-needs-its-activity",
+    "verdict": "share",
+    "parsed": true,
+    "missing_members": [],
+    "activity": {
+     "scope": "activity-content",
+     "parsed": true,
+     "finding": "none",
+     "verdict": "share",
+     "why": "laya hold p=0.000"
+    },
+    "exposure": null,
+    "activity_asked_in_batch": true,
+    "why": "laya hold p=0.000",
+    "finding": "none",
+    "evidence_key": ""
+   }
+  },
+  "never_auto_excluded_units": 0,
+  "never_auto_excluded_anchors": [],
+  "anchors_without_shareable_picture": [],
+  "judgment_requests": 0
+ },
+ "carrier_source_exclusions": {
+  "policy": "screen-document-carrier-v1",
+  "sources": {
+   "cast-0707-pat-in-the-armchair": "screen-head"
+  },
+  "excluded_units_by_event": {}
+ },
+ "lineage": {
+  "episode_readings": [
+   {
+    "group_id": "episode-v1-b6822c36e9edcf377372ccc7a91ae3555d0b521c8a57be15fbd11042a9c53b0d",
+    "producer_key": "",
+    "evidence_key": ""
+   },
+   {
+    "group_id": "episode-v1-49d7312f621ea4957e4f46cd3ab5ecc55e72d52b77c81feacb77066527d6788a",
+    "producer_key": "",
+    "evidence_key": ""
+   },
+   {
+    "group_id": "episode-v1-40e440697e75ca8e0cf08c7493ad38b9f4aa32076b93660a5e52c145622d19de",
+    "producer_key": "",
+    "evidence_key": ""
+   },
+   {
+    "group_id": "episode-v1-6490e1585c50fbc76f3bb2ae1f470a04600ffd2373e6d77d1388f4dc44d85822",
+    "producer_key": "",
+    "evidence_key": ""
+   },
+   {
+    "group_id": "episode-v1-1136f060b13fe1f64d8255846f1c28d0dbf0dac246cd2772e34600234d7e6d6c",
+    "producer_key": "",
+    "evidence_key": ""
+   },
+   {
+    "group_id": "episode-v1-4ddadd3db5e1833500ec469c42ae45393358a03ac31d0ea31c122fa6c9f40038",
+    "producer_key": "",
+    "evidence_key": ""
+   },
+   {
+    "group_id": "episode-v1-af8f183c48211896d8d80e1b516a346a2a42fbfdbc5bdb5d5a022baa37b138c1",
+    "producer_key": "",
+    "evidence_key": ""
+   },
+   {
+    "group_id": "episode-v1-80990b55610358739c34deac0c2b6dd4b08757959db9d867652ccf4718d73d64",
+    "producer_key": "",
+    "evidence_key": ""
+   },
+   {
+    "group_id": "episode-v1-3893f179d587c69db15571b476fa6ebb6b1b673c486de5bafaa216cb30d0cc95",
+    "producer_key": "",
+    "evidence_key": ""
+   },
+   {
+    "group_id": "episode-v1-7dfb9058913b5e0dc5612770eeb88184c5be7eb84cf1a2b5fd56e7c071a69dd9",
+    "producer_key": "",
+    "evidence_key": ""
+   },
+   {
+    "group_id": "episode-v1-7743c77997b8fe7aa4c615df16aabcab6f7fdfe1319dd6b0670faf52eb959e36",
+    "producer_key": "",
+    "evidence_key": ""
+   },
+   {
+    "group_id": "episode-v1-1470acdda20c6d446ffbd93b86505e8e6b7dd7c3759535eaa2b6ac4eef58a82d",
+    "producer_key": "",
+    "evidence_key": ""
+   },
+   {
+    "group_id": "episode-v1-1c461a58c26ac7fd22812f317272ba13b02e1df86f8c5922ff5b47bc8a363a90",
+    "producer_key": "",
+    "evidence_key": ""
+   },
+   {
+    "group_id": "episode-v1-f0c619be25dfd820c64d0aa2b1afe6a9d2d2a6af79689cb03ba1d3e840c71d8d",
+    "producer_key": "",
+    "evidence_key": ""
+   },
+   {
+    "group_id": "episode-v1-f37fac5a0402e31ad130fe43c0f1f7e609197fd7ba956ea674d895b607ba2431",
+    "producer_key": "",
+    "evidence_key": ""
+   },
+   {
+    "group_id": "episode-v1-df208ba87912992955363da87b49feacc6770278b680d339cde322520546dc9e",
+    "producer_key": "",
+    "evidence_key": ""
+   },
+   {
+    "group_id": "episode-v1-f5d67029149458354e43e065da44dc6f97d727a35f0fc7265ee5e8113099bce4",
+    "producer_key": "",
+    "evidence_key": ""
+   },
+   {
+    "group_id": "episode-v1-56c7779251c9909849f3cf0fd169e7191d7e5fc621ebea42198a47bed5f27d95",
+    "producer_key": "",
+    "evidence_key": ""
+   }
+  ],
+  "eligible_ids_sha256": "7165d320c7c881418bf056f432ed0e87543e288a7d12bccf19eeed9e2f3b330e",
+  "sources": "conserved production workprint, no refetch",
+  "render_policy": {
+   "allow_live_motion": true
+  }
+ },
+ "tiers": {
+  "F01": 1,
+  "F02": 1,
+  "F03": 1,
+  "F04": 1,
+  "F05": 1,
+  "F06": 1,
+  "F07": 1,
+  "F08": 0,
+  "F09": 1,
+  "F10": 1,
+  "F11": 2,
+  "F12": 2,
+  "F13": 2,
+  "F14": 2,
+  "F15": 2,
+  "F16": 2
+ },
+ "worthy_reasons": {
+  "F01": "eating-drinking",
+  "F02": "posing",
+  "F03": "posing",
+  "F04": "working",
+  "F05": "working",
+  "F06": "playing",
+  "F07": "playing",
+  "F08": "Outside home radius or the twelve usual cities",
+  "F09": "posing",
+  "F10": "posing",
+  "F11": "No occasion indicator in available facts",
+  "F12": "No occasion indicator in available facts",
+  "F13": "No occasion indicator in available facts",
+  "F14": "No occasion indicator in available facts",
+  "F15": "No occasion indicator in available facts",
+  "F16": "No occasion indicator in available facts"
+ },
+ "beats": [
+  "eating-drinking / posing / working / playing / playing at Ixelles",
+  "posing",
+  "posing / playing"
+ ],
+ "threads": {
+  "headings": [
+   "eating-drinking / posing / working / playing / playing at Ixelles",
+   "posing",
+   "posing / playing"
+  ],
+  "beats": [
+   "eating-drinking / posing / working / playing / playing at Ixelles",
+   "posing",
+   "posing / playing"
+  ],
+  "memory_worthy": {},
+  "synthesis": {
+   "thesis": "Distinctive events include a tram passing in Schaerbeek, Brussels, and family outings in Forest, Brussels. Other scenes show beach play, picnics in Watermael-Boitsfort, and sightseeing in Tervuren and Vossem. The broad pattern is one of diverse family and group activities in both urban and natural settings across July."
+  }
+ },
+ "status": "selection-awaiting-owner-review-not-rendered",
+ "intent_report": {
+  "status": "ok",
+  "requested_seconds": 105.0,
+  "usable_seconds": 60.5,
+  "shortfall_seconds": 44.5,
+  "reason": null,
+  "coverage": {
+   "scope": 15
+  },
+  "violations": []
+ },
+ "allocation": {
+  "partition_first": false,
+  "background_refill": "never"
+ },
+ "event_funding": [],
+ "contract_key": "",
+ "intent": {
+  "product": "person_spotlight",
+  "scope": "Kit, 2025-01-01..2025-12-31",
+  "partitions": [
+   "2025-01-01..2025-12-31"
+  ]
+ },
+ "target_seconds": 105.0,
+ "slots_total": 25,
+ "cap_per_anchor": 29,
+ "wall_sha256": "51a5c540570af1d150f37a96f42e91ad830931158cf53cda1d3275515e9d6e54",
+ "families": {
+  "rule": {
+   "same_day": true,
+   "same_location_head": true,
+   "max_gap_seconds": 10800,
+   "near_km_by_gps": 10.0,
+   "fallback_without_gps": "shared place id or none",
+   "interleaved_episodes_unioned": false
+  },
+  "episodes_before": 18,
+  "families_after": 16,
+  "interleave_merges": 0,
+  "merged_families": {
+   "E08": [
+    "E08",
+    "E09"
+   ],
+   "E13": [
+    "E13",
+    "E14"
+   ]
+  }
+ },
+ "anchors": 16,
+ "structure_fallback": null,
+ "chapters": [
+  {
+   "chapter": "S01",
+   "beat": "eating-drinking / posing / working / playing / playing at Ixelles",
+   "anchors": [
+    "F02",
+    "F03",
+    "F04",
+    "F05",
+    "F06",
+    "F07",
+    "F08",
+    "F09",
+    "F10"
+   ],
+   "share": 0.0,
+   "show": "eating-drinking / posing / working / playing / playing at Ixelles",
+   "budget": 13,
+   "capacity": 13,
+   "families": [
+    "E02",
+    "E03",
+    "E04",
+    "E05",
+    "E06",
+    "E07",
+    "E08",
+    "E10",
+    "E11"
+   ]
+  },
+  {
+   "chapter": "S02",
+   "beat": "posing",
+   "anchors": [
+    "F15"
+   ],
+   "share": 0.0,
+   "show": "posing",
+   "budget": 1,
+   "capacity": 4,
+   "families": [
+    "E17"
+   ]
+  },
+  {
+   "chapter": "S03",
+   "beat": "posing / playing",
+   "anchors": [
+    "F12"
+   ],
+   "share": 0.0,
+   "show": "posing / playing",
+   "budget": 1,
+   "capacity": 4,
+   "families": [
+    "E13"
+   ]
+  }
+ ],
+ "synthesis_omission_policy": "deferred priority; eligible reserves remain available",
+ "left_out_anchors": [],
+ "anchor_records": [],
+ "carriers": [
+  {
+   "favourite": false,
+   "moment": "M002",
+   "taken": "2025-07-02T12:25:00+02:00",
+   "kind": "still",
+   "asset_id": "home-0702-kit-stuffie",
+   "members": [
+    "home-0702-kit-stuffie"
+   ],
+   "video_ids": [],
+   "trim_points": [],
+   "seconds": 4.0,
+   "raw_seconds": null,
+   "residual": null,
+   "event": "E02",
+   "anchor": "F02",
+   "chapter": 1,
+   "why": "eating-drinking / posing / working / playing / playing at Ixelles: capture group",
+   "event_intention": "Capture dates, places and owner favourites",
+   "line": "2025-07-02 10:25+00:00 | with Kit | subject-framing:3 (0.97% of the frame, inside the frame, the largest face) | activity=posing, children=yes, location=indoor, people=one | resolution:1280x854",
+   "story_episode": "S001",
+   "story_role": "supporting",
+   "story_weight": "minor",
+   "depicted_moment": "M002:cg",
+   "moment_alternatives": [],
+   "standing": 2
+  },
+  {
+   "favourite": false,
+   "moment": "M003",
+   "taken": "2025-07-02T17:28:00+02:00",
+   "kind": "still",
+   "asset_id": "home-0702-kit-beanbag",
+   "members": [
+    "home-0702-kit-beanbag"
+   ],
+   "video_ids": [],
+   "trim_points": [],
+   "seconds": 4.0,
+   "raw_seconds": null,
+   "residual": null,
+   "event": "E03",
+   "anchor": "F03",
+   "chapter": 1,
+   "why": "eating-drinking / posing / working / playing / playing at Ixelles: capture group",
+   "event_intention": "Capture dates, places and owner favourites",
+   "line": "2025-07-02 15:28+00:00 | with Kit | subject-framing:3 (1.36% of the frame, inside the frame, the largest face) | activity=playing, children=yes, location=indoor, people=one, venue=bedroom | resolution:1280x853",
+   "story_episode": "S001",
+   "story_role": "supporting",
+   "story_weight": "minor",
+   "depicted_moment": "M003:cg",
+   "moment_alternatives": [],
+   "standing": 2
+  },
+  {
+   "favourite": false,
+   "moment": "M004",
+   "taken": "2025-07-03T11:33:00+02:00",
+   "kind": "still",
+   "asset_id": "cast-0703-kit-s-paper-octopus",
+   "members": [
+    "cast-0703-kit-s-paper-octopus"
+   ],
+   "video_ids": [],
+   "trim_points": [],
+   "seconds": 4.0,
+   "raw_seconds": null,
+   "residual": null,
+   "event": "E04",
+   "anchor": "F04",
+   "chapter": 1,
+   "why": "eating-drinking / posing / working / playing / playing at Ixelles: capture group",
+   "event_intention": "Capture dates, places and owner favourites",
+   "line": "2025-07-03 09:33+00:00 | with Kit | subject-framing:2 (7.72% of the frame, at the frame's edge, the largest face) | activity=working, children=yes, location=indoor, people=two | resolution:500x333",
+   "story_episode": "S001",
+   "story_role": "supporting",
+   "story_weight": "minor",
+   "depicted_moment": "M004:cg",
+   "moment_alternatives": [
+    "cast-0703-painting-with-the-watercolou"
+   ],
+   "standing": 2
+  },
+  {
+   "favourite": false,
+   "moment": "M005",
+   "taken": "2025-07-03T12:53:00+02:00",
+   "kind": "still",
+   "asset_id": "home-0703-baking",
+   "members": [
+    "home-0703-baking"
+   ],
+   "video_ids": [],
+   "trim_points": [],
+   "seconds": 4.0,
+   "raw_seconds": null,
+   "residual": null,
+   "event": "E04",
+   "anchor": "F04",
+   "chapter": 1,
+   "why": "eating-drinking / posing / working / playing / playing at Ixelles: capture group",
+   "event_intention": "Capture dates, places and owner favourites",
+   "line": "2025-07-03 10:53+00:00 | with Kit | subject-framing:2 (4.73% of the frame, at the frame's edge, the largest face) | activity=eating-drinking, children=yes, location=indoor, people=two | resolution:1280x853",
+   "story_episode": "S001",
+   "story_role": "supporting",
+   "story_weight": "minor",
+   "depicted_moment": "M005:cg",
+   "moment_alternatives": [],
+   "standing": 2
+  },
+  {
+   "favourite": false,
+   "moment": "M006",
+   "taken": "2025-07-03T16:33:00+02:00",
+   "kind": "still",
+   "asset_id": "cast-0703-cutting-out-shapes-at-the-ta",
+   "members": [
+    "cast-0703-cutting-out-shapes-at-the-ta"
+   ],
+   "video_ids": [],
+   "trim_points": [],
+   "seconds": 4.0,
+   "raw_seconds": null,
+   "residual": null,
+   "event": "E05",
+   "anchor": "F05",
+   "chapter": 1,
+   "why": "eating-drinking / posing / working / playing / playing at Ixelles: capture group",
+   "event_intention": "Capture dates, places and owner favourites",
+   "line": "2025-07-03 14:33+00:00 | with Kit | subject-framing:2 (3.85% of the frame, at the frame's edge, the largest face) | activity=eating-drinking, children=yes, location=indoor, people=one | resolution:1280x853",
+   "story_episode": "S001",
+   "story_role": "supporting",
+   "story_weight": "minor",
+   "depicted_moment": "M006:cg",
+   "moment_alternatives": [],
+   "standing": 2
+  },
+  {
+   "favourite": false,
+   "moment": "M007",
+   "taken": "2025-07-04T10:07:00+02:00",
+   "kind": "still",
+   "asset_id": "cast-0704-kit-digging-on-the-beach",
+   "members": [
+    "cast-0704-kit-digging-on-the-beach"
+   ],
+   "video_ids": [],
+   "trim_points": [],
+   "seconds": 4.0,
+   "raw_seconds": null,
+   "residual": null,
+   "event": "E06",
+   "anchor": "F06",
+   "chapter": 1,
+   "why": "eating-drinking / posing / working / playing / playing at Ixelles: capture group",
+   "event_intention": "Capture dates, places and owner favourites",
+   "line": "2025-07-04 08:07+00:00 | with Kit | subject-framing:3 (0.94% of the frame, inside the frame, the largest face) | activity=playing, children=yes, location=outdoor, people=one, venue=water | resolution:1280x715",
+   "story_episode": "S001",
+   "story_role": "supporting",
+   "story_weight": "minor",
+   "depicted_moment": "M007:cg",
+   "moment_alternatives": [],
+   "standing": 2
+  },
+  {
+   "favourite": false,
+   "moment": "M008",
+   "taken": "2025-07-04T13:39:00+02:00",
+   "kind": "still",
+   "asset_id": "home-0704-fountain",
+   "members": [
+    "home-0704-fountain"
+   ],
+   "video_ids": [],
+   "trim_points": [],
+   "seconds": 4.0,
+   "raw_seconds": null,
+   "residual": null,
+   "event": "E07",
+   "anchor": "F07",
+   "chapter": 1,
+   "why": "eating-drinking / posing / working / playing / playing at Ixelles: capture group",
+   "event_intention": "Capture dates, places and owner favourites",
+   "line": "2025-07-04 11:39+00:00 | with Kit | subject-framing:3 (0.21% of the frame, inside the frame, the largest face) | activity=playing, children=yes, location=outdoor, people=small-group, uncovered_person=yes | resolution:1280x960",
+   "story_episode": "S001",
+   "story_role": "supporting",
+   "story_weight": "minor",
+   "depicted_moment": "M008:cg",
+   "moment_alternatives": [],
+   "standing": 2
+  },
+  {
+   "favourite": false,
+   "moment": "M009",
+   "taken": "2025-07-05T16:10:00+02:00",
+   "kind": "still",
+   "asset_id": "birthday-superheroes",
+   "members": [
+    "birthday-superheroes"
+   ],
+   "video_ids": [],
+   "trim_points": [],
+   "seconds": 4.0,
+   "raw_seconds": null,
+   "residual": null,
+   "event": "E08",
+   "anchor": "F08",
+   "chapter": 1,
+   "why": "eating-drinking / posing / working / playing / playing at Ixelles: capture group",
+   "event_intention": "Capture dates, places and owner favourites",
+   "line": "2025-07-05 14:10+00:00 | with Kit | subject-framing:3 (0.63% of the frame, inside the frame, the largest face) | activity=playing, children=yes, location=indoor, people=two | resolution:1280x853",
+   "story_episode": "S001",
+   "story_role": "supporting",
+   "story_weight": "minor",
+   "depicted_moment": "M009:cg",
+   "moment_alternatives": [],
+   "standing": 2
+  },
+  {
+   "favourite": false,
+   "moment": "M010",
+   "taken": "2025-07-05T16:51:00+02:00",
+   "kind": "still",
+   "asset_id": "birthday-stairs",
+   "members": [
+    "birthday-stairs"
+   ],
+   "video_ids": [],
+   "trim_points": [],
+   "seconds": 4.0,
+   "raw_seconds": null,
+   "residual": null,
+   "event": "E08",
+   "anchor": "F08",
+   "chapter": 1,
+   "why": "eating-drinking / posing / working / playing / playing at Ixelles: capture group",
+   "event_intention": "Capture dates, places and owner favourites",
+   "line": "2025-07-05 14:51+00:00 | at Ixelles, Brussels Capital, Belgium | with Kit | subject-framing:3 (0.24% of the frame, inside the frame, the largest face) | activity=posing, children=yes, location=indoor, people=small-group | resolution:1280x852",
+   "story_episode": "S001",
+   "story_role": "supporting",
+   "story_weight": "minor",
+   "depicted_moment": "M010:cg",
+   "moment_alternatives": [],
+   "standing": 2
+  },
+  {
+   "favourite": false,
+   "moment": "M011",
+   "taken": "2025-07-05T19:25:00+02:00",
+   "kind": "still",
+   "asset_id": "birthday-sofa-film",
+   "members": [
+    "birthday-sofa-film"
+   ],
+   "video_ids": [],
+   "trim_points": [],
+   "seconds": 4.0,
+   "raw_seconds": null,
+   "residual": null,
+   "event": "E08",
+   "anchor": "F08",
+   "chapter": 1,
+   "why": "eating-drinking / posing / working / playing / playing at Ixelles: capture group",
+   "event_intention": "Capture dates, places and owner favourites",
+   "line": "2025-07-05 17:25+00:00 | at Ixelles, Brussels Capital, Belgium | with Charlie; Kit; Robin | subject-framing:2 (0.68% of the frame, inside the frame, not the largest face) | children=yes, location=indoor, people=small-group | resolution:1280x853",
+   "story_episode": "S001",
+   "story_role": "supporting",
+   "story_weight": "minor",
+   "depicted_moment": "M011:cg",
+   "moment_alternatives": [],
+   "standing": 2
+  },
+  {
+   "favourite": false,
+   "moment": "M012",
+   "taken": "2025-07-06T06:22:00+02:00",
+   "kind": "still",
+   "asset_id": "forest-0706-pat-02",
+   "members": [
+    "forest-0706-pat-02"
+   ],
+   "video_ids": [],
+   "trim_points": [],
+   "seconds": 4.0,
+   "raw_seconds": null,
+   "residual": null,
+   "event": "E10",
+   "anchor": "F09",
+   "chapter": 1,
+   "why": "eating-drinking / posing / working / playing / playing at Ixelles: capture group",
+   "event_intention": "Capture dates, places and owner favourites",
+   "line": "2025-07-06 04:22+00:00 | with Kit | subject-framing:2 (3.17% of the frame, at the frame's edge, the largest face) | activity=posing, children=no, location=outdoor, people=two | resolution:1280x851",
+   "story_episode": "S001",
+   "story_role": "supporting",
+   "story_weight": "minor",
+   "depicted_moment": "M012:cg",
+   "moment_alternatives": [],
+   "standing": 2
+  },
+  {
+   "favourite": false,
+   "moment": "M013",
+   "taken": "2025-07-06T11:35:00+02:00",
+   "kind": "still",
+   "asset_id": "forest-0706-picnic",
+   "members": [
+    "forest-0706-picnic"
+   ],
+   "video_ids": [],
+   "trim_points": [],
+   "seconds": 4.0,
+   "raw_seconds": null,
+   "residual": null,
+   "event": "E11",
+   "anchor": "F10",
+   "chapter": 1,
+   "why": "eating-drinking / posing / working / playing / playing at Ixelles: capture group",
+   "event_intention": "Capture dates, places and owner favourites",
+   "line": "2025-07-06 09:35+00:00 | with Kit; Robin | subject-framing:2 (0.45% of the frame, inside the frame, not the largest face) | activity=playing, children=yes, location=outdoor, people=two, venue=private_facility | resolution:1280x853",
+   "story_episode": "S001",
+   "story_role": "supporting",
+   "story_weight": "minor",
+   "depicted_moment": "M013:cg",
+   "moment_alternatives": [],
+   "standing": 2
+  },
+  {
+   "favourite": false,
+   "moment": "M015",
+   "taken": "2025-07-08T16:01:00+02:00",
+   "kind": "still",
+   "asset_id": "cast-0708-climbing-the-fence",
+   "members": [
+    "cast-0708-climbing-the-fence"
+   ],
+   "video_ids": [],
+   "trim_points": [],
+   "seconds": 4.0,
+   "raw_seconds": null,
+   "residual": null,
+   "event": "E13",
+   "anchor": "F12",
+   "chapter": 3,
+   "why": "posing / playing: capture group",
+   "event_intention": "Capture dates, places and owner favourites",
+   "line": "2025-07-08 14:01+00:00 | with Kit | subject-framing:3 (0.98% of the frame, inside the frame, the largest face) | activity=playing, children=yes, location=outdoor, people=one | resolution:853x1280",
+   "story_episode": "S002",
+   "story_role": "texture",
+   "story_weight": "glimpse",
+   "depicted_moment": "M015:cg",
+   "moment_alternatives": [],
+   "standing": 2
+  },
+  {
+   "favourite": false,
+   "moment": "M017",
+   "taken": "2025-07-08T20:10:00+02:00",
+   "kind": "still",
+   "asset_id": "home-0708-ice-cream-bike",
+   "members": [
+    "home-0708-ice-cream-bike"
+   ],
+   "video_ids": [],
+   "trim_points": [],
+   "seconds": 4.0,
+   "raw_seconds": null,
+   "residual": null,
+   "event": "E13",
+   "anchor": "F12",
+   "chapter": 3,
+   "why": "posing / playing: 2025-07-08 18:10+00:00 | with Kit | subject-framing:2 (2.01% of the frame, at th",
+   "event_intention": "Capture dates, places and owner favourites",
+   "line": "2025-07-08 18:10+00:00 | with Kit | subject-framing:2 (2.01% of the frame, at the frame's edge, the largest face) | activity=playing, children=yes, location=outdoor, people=one | resolution:1280x1152",
+   "story_episode": "S002",
+   "story_role": "texture",
+   "story_weight": "glimpse",
+   "depicted_moment": "source:1a6ab3fe-e3fc-4952-9b35-9c2b66a14625",
+   "moment_alternatives": []
+  },
+  {
+   "favourite": false,
+   "moment": "M020",
+   "taken": "2025-07-10T17:20:00+02:00",
+   "kind": "still",
+   "asset_id": "home-0710-sofa",
+   "members": [
+    "home-0710-sofa"
+   ],
+   "video_ids": [],
+   "trim_points": [],
+   "seconds": 4.5,
+   "raw_seconds": null,
+   "residual": null,
+   "event": "E17",
+   "anchor": "F15",
+   "chapter": 2,
+   "why": "posing: capture group",
+   "event_intention": "Capture dates, places and owner favourites",
+   "line": "2025-07-10 15:20+00:00 | with Kit; Robin | subject-framing:2 (2.43% of the frame, inside the frame, not the largest face) | children=yes, location=indoor, people=two | resolution:1280x854",
+   "story_episode": "S003",
+   "story_role": "texture",
+   "story_weight": "glimpse",
+   "depicted_moment": "M020:cg",
+   "moment_alternatives": [
+    "cast-0710-kit-grinning"
+   ],
+   "standing": 2
+  }
+ ],
+ "locations": {
+  "birthday-stairs": {
+   "latitude": 50.8417,
+   "longitude": 4.3624,
+   "location_name": "Ixelles"
+  },
+  "birthday-sofa-film": {
+   "latitude": 50.8417,
+   "longitude": 4.3624,
+   "location_name": "Ixelles"
+  }
+ },
+ "cut_carriers": [
+  {
+   "favourite": false,
+   "moment": "M001",
+   "taken": "2025-07-01T16:58:00+02:00",
+   "kind": "still",
+   "asset_id": "cast-0701-kit-lining-up-the-chocolate",
+   "members": [
+    "cast-0701-kit-lining-up-the-chocolate"
+   ],
+   "video_ids": [],
+   "trim_points": [],
+   "seconds": 4.5,
+   "raw_seconds": null,
+   "residual": null,
+   "event": "E01",
+   "anchor": "F01",
+   "chapter": 1,
+   "why": "eating-drinking / posing / working / playing / playing at Ixelles: capture group",
+   "event_intention": "Capture dates, places and owner favourites",
+   "line": "2025-07-01 14:58+00:00 | with Kit | subject-framing:2 (5.99% of the frame, at the frame's edge, the largest face) | activity=eating-drinking, location=indoor, people=one | resolution:853x1280",
+   "story_episode": "S001",
+   "story_role": "supporting",
+   "story_weight": "minor",
+   "depicted_moment": "M001:cg",
+   "moment_alternatives": [],
+   "standing": 2,
+   "reason": "The model polish took it out",
+   "review_stage": "thin-polish"
+  }
+ ],
+ "review": {
+  "per_event": [],
+  "cuts_order1": 0,
+  "cuts_order2": 0,
+  "agreed_cuts": 0,
+  "adjudication": [],
+  "protected_prior_carriers": 0,
+  "degenerate_orders_discarded": 0,
+  "replacement_policy": "bounded editorial contribution review",
+  "refused_under_contract": []
+ },
+ "structural_review": {
+  "asked": false,
+  "removed": {},
+  "merged": [],
+  "missing": "",
+  "fallback": null
+ },
+ "whole_film_review": {
+  "asked": false,
+  "proposed": 0,
+  "applied": 0,
+  "degenerate": false,
+  "status": null
+ },
+ "assembly_repair": {
+  "status": "not_run",
+  "asked": false,
+  "input_carriers": 15,
+  "output_carriers": 15,
+  "shortfall_explanation": "",
+  "examined": 0,
+  "added": [],
+  "decisions": [],
+  "eligible_reserve_events": 0,
+  "discovery": {
+   "status": "not_started"
+  }
+ },
+ "selection_stages": {
+  "funded_picture_requests": 0,
+  "after_funded_acquisition": 15,
+  "before_shareability": 15,
+  "after_shareability": 15,
+  "before_picture_review": 15,
+  "after_final_duplicate_review": 15,
+  "after_unvouched_filler": 15
+ },
+ "prior_plan": null,
+ "review_proposed_assets": [],
+ "ineligible_anchors": {},
+ "starved_depth_added": 0,
+ "reservoir_added": 0,
+ "monotonic": {
+  "prior_carriers": 0,
+  "retained": 0,
+  "ok": true,
+  "prior_events": 0,
+  "events_retained": 0,
+  "events_ok": true
+ },
+ "reservoir_beats": [],
+ "content_seconds": 60.5,
+ "llm_metrics": {
+  "llm_calls": 10,
+  "llm_cache_hits": 0,
+  "llm_prompt_tokens": 13582,
+  "llm_cached_prompt_tokens": 2048,
+  "llm_completion_tokens": 976,
+  "llm_truncated": 0,
+  "llm_wall_seconds": 15.025
+ },
+ "calls": [
+  {
+   "stage": "thesis-fit-1-source",
+   "wall_seconds": 2.436,
+   "warning": null,
+   "cache_hit": false,
+   "judgment_key": "",
+   "response_contract": "complete transport"
+  },
+  {
+   "stage": "thesis-fit-1-hashed",
+   "wall_seconds": 0.696,
+   "warning": null,
+   "cache_hit": false,
+   "judgment_key": "",
+   "response_contract": "complete transport"
+  },
+  {
+   "stage": "thesis-fit-1-source",
+   "wall_seconds": 0.45,
+   "warning": null,
+   "cache_hit": false,
+   "judgment_key": "",
+   "response_contract": "complete transport"
+  },
+  {
+   "stage": "story-pick-S001-R001-source",
+   "wall_seconds": 0.664,
+   "warning": null,
+   "cache_hit": false,
+   "judgment_key": "",
+   "response_contract": "complete transport"
+  },
+  {
+   "stage": "thesis-fit-1-source",
+   "wall_seconds": 0.765,
+   "warning": null,
+   "cache_hit": false,
+   "judgment_key": "",
+   "response_contract": "complete transport"
+  }
+ ],
+ "calls_by_stage": {
+  "thesis-fit": {
+   "asked": 4,
+   "cache_hits": 0,
+   "wall_seconds": 4.347
+  },
+  "story-pick": {
+   "asked": 1,
+   "cache_hits": 0,
+   "wall_seconds": 0.664
+  }
+ },
+ "pixels_seen_by_text_model": false,
+ "episode_reading_health": {
+  "status": "complete",
+  "unavailable_episodes": 0,
+  "episodes": [
+   {
+    "group_id": "episode-v1-b6822c36e9edcf377372ccc7a91ae3555d0b521c8a57be15fbd11042a9c53b0d",
+    "producer_key": "",
+    "evidence_key": "",
+    "status": "read",
+    "reason": null,
+    "cache_hit": false
+   },
+   {
+    "group_id": "episode-v1-49d7312f621ea4957e4f46cd3ab5ecc55e72d52b77c81feacb77066527d6788a",
+    "producer_key": "",
+    "evidence_key": "",
+    "status": "read",
+    "reason": null,
+    "cache_hit": true
+   },
+   {
+    "group_id": "episode-v1-40e440697e75ca8e0cf08c7493ad38b9f4aa32076b93660a5e52c145622d19de",
+    "producer_key": "",
+    "evidence_key": "",
+    "status": "read",
+    "reason": null,
+    "cache_hit": true
+   },
+   {
+    "group_id": "episode-v1-6490e1585c50fbc76f3bb2ae1f470a04600ffd2373e6d77d1388f4dc44d85822",
+    "producer_key": "",
+    "evidence_key": "",
+    "status": "read",
+    "reason": null,
+    "cache_hit": false
+   },
+   {
+    "group_id": "episode-v1-1136f060b13fe1f64d8255846f1c28d0dbf0dac246cd2772e34600234d7e6d6c",
+    "producer_key": "",
+    "evidence_key": "",
+    "status": "read",
+    "reason": null,
+    "cache_hit": false
+   },
+   {
+    "group_id": "episode-v1-4ddadd3db5e1833500ec469c42ae45393358a03ac31d0ea31c122fa6c9f40038",
+    "producer_key": "",
+    "evidence_key": "",
+    "status": "read",
+    "reason": null,
+    "cache_hit": true
+   },
+   {
+    "group_id": "episode-v1-af8f183c48211896d8d80e1b516a346a2a42fbfdbc5bdb5d5a022baa37b138c1",
+    "producer_key": "",
+    "evidence_key": "",
+    "status": "read",
+    "reason": null,
+    "cache_hit": false
+   },
+   {
+    "group_id": "episode-v1-80990b55610358739c34deac0c2b6dd4b08757959db9d867652ccf4718d73d64",
+    "producer_key": "",
+    "evidence_key": "",
+    "status": "read",
+    "reason": null,
+    "cache_hit": true
+   },
+   {
+    "group_id": "episode-v1-3893f179d587c69db15571b476fa6ebb6b1b673c486de5bafaa216cb30d0cc95",
+    "producer_key": "",
+    "evidence_key": "",
+    "status": "read",
+    "reason": null,
+    "cache_hit": false
+   },
+   {
+    "group_id": "episode-v1-7dfb9058913b5e0dc5612770eeb88184c5be7eb84cf1a2b5fd56e7c071a69dd9",
+    "producer_key": "",
+    "evidence_key": "",
+    "status": "read",
+    "reason": null,
+    "cache_hit": false
+   },
+   {
+    "group_id": "episode-v1-7743c77997b8fe7aa4c615df16aabcab6f7fdfe1319dd6b0670faf52eb959e36",
+    "producer_key": "",
+    "evidence_key": "",
+    "status": "read",
+    "reason": null,
+    "cache_hit": false
+   },
+   {
+    "group_id": "episode-v1-1c461a58c26ac7fd22812f317272ba13b02e1df86f8c5922ff5b47bc8a363a90",
+    "producer_key": "",
+    "evidence_key": "",
+    "status": "read",
+    "reason": null,
+    "cache_hit": false
+   },
+   {
+    "group_id": "episode-v1-f5d67029149458354e43e065da44dc6f97d727a35f0fc7265ee5e8113099bce4",
+    "producer_key": "",
+    "evidence_key": "",
+    "status": "read",
+    "reason": null,
+    "cache_hit": false
+   }
+  ]
+ }
+}

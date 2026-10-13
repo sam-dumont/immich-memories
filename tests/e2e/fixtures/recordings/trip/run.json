@@ -1,0 +1,12 @@
+{
+ "memory_type": "trip",
+ "arguments": [
+  "--memory-type",
+  "trip",
+  "--year",
+  "2025",
+  "--trip-index",
+  "1"
+ ],
+ "seconds": 155
+}

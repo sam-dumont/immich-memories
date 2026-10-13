@@ -1,0 +1,19 @@
+{
+ "format": "editorial-source-rendering-v1",
+ "selected_ids": [
+  "birthday-sofa-film",
+  "forest-0706-picnic"
+ ],
+ "adjustments": [],
+ "allow_live_motion": true,
+ "intervals": {
+  "birthday-sofa-film": [
+   0.0,
+   4.5
+  ],
+  "forest-0706-picnic": [
+   0.0,
+   4.5
+  ]
+ }
+}

@@ -114,7 +114,7 @@ does, for both majors when the change scope calls for it (see [CI](./ci.md)):
    `tests/integration/immich_gate/docker-compose.yml`. Every image is pinned by digest, there is no
    machine-learning container, and Postgres and the uploads live on tmpfs, so `make immich-gate-down`
    leaves no volume behind.
-2. `seed.py` signs up an admin, uploads the July 2025 fixture month (1,061 pictures and 7 clips,
+2. `seed.py` signs up an admin, uploads the July 2025 fixture month (1,119 pictures and 7 clips,
    with EXIF camera, capture time and offset), places the ones whose file holds GPS, draws the
    face boxes the fixture pins to its four made-up people by hand,
    files the story albums, and adds 1,010 tiny pictures in one album so reads have to go past

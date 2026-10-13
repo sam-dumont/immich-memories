@@ -420,15 +420,26 @@ def faces_for(path: Path, people: list[str]) -> list[dict[str, Any]]:
     if len(boxes) < len(people):
         raise SystemExit(f"{path.name}: {len(people)} people named, {len(boxes)} faces found")
     return [
-        {
-            "person": person,
-            "x": round(x / width, 4),
-            "y": round(y / height, 4),
-            "w": round(w / width, 4),
-            "h": round(h / height, 4),
-        }
-        for person, (x, y, w, h) in zip(people, sorted(boxes), strict=True)
+        pinned_face(person, box, width=width, height=height)
+        for person, box in zip(people, sorted(boxes), strict=True)
     ]
+
+
+def pinned_face(person: str, box: tuple[float, ...], *, width: int, height: int) -> dict[str, Any]:
+    """One detected box as fractions of the picture, clipped to it as Immich stores faces.
+
+    A close-up's box can start above or left of the frame; the part outside is no face.
+    """
+    x, y, w, h = box[:4]
+    left, top = max(0.0, x), max(0.0, y)
+    right, bottom = min(float(width), x + w), min(float(height), y + h)
+    return {
+        "person": person,
+        "x": round(left / width, 4),
+        "y": round(top / height, 4),
+        "w": round((right - left) / width, 4),
+        "h": round((bottom - top) / height, 4),
+    }
 
 
 def credit_row(record: dict[str, Any]) -> str:

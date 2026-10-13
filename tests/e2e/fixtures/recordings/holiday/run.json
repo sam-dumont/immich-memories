@@ -1,0 +1,12 @@
+{
+ "memory_type": "holiday",
+ "arguments": [
+  "--memory-type",
+  "holiday",
+  "--holiday",
+  "07-21",
+  "--year",
+  "2025"
+ ],
+ "seconds": 36
+}
