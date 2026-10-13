@@ -302,8 +302,8 @@ succeed, app to any public host should time out, and the app's logs should name 
 Immich and `ollama:11434`.
 
 **Stopped provider.** `kubectl scale deploy/ollama -n "$NS" --replicas=0` makes `preflight` print
-`LLM  WARNING  Cannot connect` (exit 0). A film still renders, with the bundled track and the
-default mood and no hosted fallback. Scale back to 1 and `preflight` returns to `LLM OK` once
+`LLM  WARNING  Cannot connect` (exit 0). A film still renders, with the bundled track, a mood
+picked from the film's own facts, and no hosted fallback. Scale back to 1 and `preflight` returns to `LLM OK` once
 Ollama is ready again.
 
 ## Kubernetes services {#kubernetes-services}

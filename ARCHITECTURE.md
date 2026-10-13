@@ -381,8 +381,10 @@ The separate model-planning route can read banked lines or use plain clip facts.
   Full also prepare Marqo and Docling; their first draft retains that tier's detector policy.
   Caption and clip producers acquire missing evidence for selected shots and actual candidates;
   matching banked evidence is reused. A wider preparation scope requires an explicit `prepare`
-  job. The prose reader is text only, and so is music: its mood comes from the cut's thesis, story titles and
-  captions (`audio/text_mood.py`), else the clips' own mood, else `calm`. `refuse_pictures` in
+  job. The prose reader is text only, and so is music: its mood comes from the cut's thesis, story
+  titles and captions plus the film's facts (`audio/text_mood.py`), else from those facts alone
+  (`audio/film_mood.py`: memory type, weighed occasions, season, motion, music and groups in the
+  shots). `refuse_pictures` in
   `tests/no_pictures.py` wraps the one dispatch every model request passes through and fails on
   any request carrying a picture; `tests/test_editorial_demanded_previews.py` holds the production
   route to that, cold and warm, and `tests/test_audio_no_pictures.py` holds the music path to it
@@ -804,6 +806,7 @@ src/immich_memories/
 │   ├── music_generator_models.py # Music generation data models
 │   ├── music_sources.py        # Music source providers (local library)
 │   ├── text_mood.py            # Banked music judgment from saved cut text; private answering-route record
+│   ├── film_mood.py            # The music mood from the film's own facts when no model answers
 │   ├── generated_audio.py      # Decode and reject silent/non-finite generator output before fallback
 │   ├── music_pipeline.py       # Multi-provider pipeline (ACE-Step -> MusicGen fallback)
 │   ├── take_join.py            # One film's generated takes joined on bar lines
@@ -867,6 +870,7 @@ src/immich_memories/
 │   ├── script_fonts.py         # Pinned Noto script fonts, `titles fonts --install`
 │   ├── llm_titles.py           # LLM-generated titles: prompt building, parsing, the LLM call
 │   ├── title_guards.py         # Guards refusing an invented name, a missing year, a missing place
+│   ├── common_nouns.py         # German capitalises every noun: the nouns whose capital names nobody
 │   ├── title_slots.py          # Closes a model title's empty slots: a dangling preposition, an orphan separator
 │   ├── period_title.py         # A season/month/year film is titled by its period; the story moves to the subtitle
 │   ├── film_stories.py         # The cut's stories (heaviest first) and summary, read from its plan for the title

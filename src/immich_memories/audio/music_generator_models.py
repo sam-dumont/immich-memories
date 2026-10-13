@@ -14,19 +14,21 @@ from pathlib import Path
 # Seasonal Prompts
 # =============================================================================
 
+# Colour, not energy: the film's mood sets the energy (#2471). These words used to say
+# "upbeat", "energetic" or "cozy" whatever the film was, and pushed every film one way.
 SEASONAL_MOODS = {
-    1: "winter bright energetic",
-    2: "late winter hopeful driving",
-    3: "spring fresh bouncy uplifting",
-    4: "spring bright cheerful playful",
-    5: "late spring vibrant energetic fun",
-    6: "early summer carefree sunny groovy",
-    7: "midsummer bright joyful energetic",
-    8: "summer sunny upbeat fun",
-    9: "early autumn warm upbeat groovy",
-    10: "autumn cozy upbeat rhythmic",
-    11: "late autumn upbeat warm",
-    12: "winter holiday festive bouncy fun",
+    1: "midwinter, crisp",
+    2: "late winter, crisp",
+    3: "early spring, fresh",
+    4: "spring, fresh",
+    5: "late spring, fresh",
+    6: "early summer, sunny",
+    7: "midsummer, sunny",
+    8: "late summer, sunny",
+    9: "early autumn, golden",
+    10: "autumn, golden",
+    11: "late autumn, golden",
+    12: "winter holiday, festive",
 }
 
 
@@ -222,8 +224,8 @@ class VideoTimeline:
 
 
 def _scene_mood(clip: ClipMood, hemisphere: str) -> str:
-    """The clip's mood, lifted for a memory film and coloured by its season."""
-    mood = _transform_mood(clip.mood)
+    """The clip's mood, coloured by its season; the mood alone sets the energy."""
+    mood = clip.mood
     if clip.month:
         seasonal = get_seasonal_prompt(clip.month, hemisphere)
         if seasonal:
@@ -256,53 +258,6 @@ def _whole_second_scenes(scenes: list[tuple[str, float]], total: int) -> list[di
         {"mood": mood, "duration": duration}
         for (mood, _seconds), duration in zip(scenes, durations, strict=True)
     ]
-
-
-def _transform_mood(mood: str) -> str:
-    """Transform mood to be more upbeat for memory videos.
-
-    Memory videos should feel upbeat and fun, not slow and sad.
-
-    Args:
-        mood: Original mood string
-
-    Returns:
-        Transformed mood string
-    """
-    mood_lower = mood.lower()
-    mellow_words = [
-        "calm",
-        "peaceful",
-        "serene",
-        "gentle",
-        "soft",
-        "quiet",
-        "slow",
-        "relaxed",
-        "mellow",
-        "tender",
-    ]
-    sad_words = [
-        "sad",
-        "melancholy",
-        "somber",
-        "nostalgic",
-        "reflective",
-        "wistful",
-        "bittersweet",
-    ]
-
-    if any(word in mood_lower for word in mellow_words):
-        # Replace mellow with energetic but warm
-        return f"upbeat warm groovy {mood}"
-    elif any(word in mood_lower for word in sad_words):
-        # Boost with warm positive words but keep original for template matching
-        return f"warm hopeful {mood}"
-    else:
-        # For all other moods, ensure they're upbeat
-        if "upbeat" not in mood_lower and "energetic" not in mood_lower:
-            return f"upbeat {mood}"
-    return mood
 
 
 @dataclass

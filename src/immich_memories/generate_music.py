@@ -25,7 +25,6 @@ from immich_memories.processing.output_contract import (
     OutputProbe,
     check_output,
 )
-from immich_memories.processing.scaling_utilities import aggregate_mood_from_clips
 from immich_memories.security import configured_secret_values, sanitize_error_message
 
 if TYPE_CHECKING:
@@ -125,7 +124,7 @@ def resolve_music(
         return MusicSelection(music_path if music_path.exists() else None)
 
     assembly_clips, music_mood, mood_detail = _music_evidence(
-        config, assembly_clips, editorial_attempt_dir
+        config, assembly_clips, editorial_attempt_dir, memory_type
     )
 
     warning: str | None = None
@@ -183,10 +182,8 @@ def _resolve_bundled_music(
 ) -> MusicSelection:
     """The bundled fallback: one track, or a varied playlist for a long film."""
     cadence = photo_cadence_seconds(assembly_clips, transition_overlap=transition_overlap, fps=fps)
-    # The mood used to be read off a `clip.mood` field AssemblyClip has never
-    # had, so it was always None and the bundled mood folders never served their
-    # purpose. What the clips actually carry is llm_emotion, which the title
-    # stack already aggregates into mood families.
+    # The film's music mood (#2471) picks the bundled family, so a birthday is not
+    # served from the calm folder.
     bundled_sequence = _bundled_sequence(music_mood, bundled_library, cadence, video_duration)
     if not bundled_sequence:
         if warning:
@@ -253,28 +250,27 @@ def _crossfaded_playlist(sequence: list[Path], video_duration: float, run_output
 
 
 def _music_evidence(
-    config: Config, clips: list[AssemblyClip], attempt: Path | None
-) -> tuple[list[AssemblyClip], str | None, VideoMood | None]:
-    """Apply the text answer to music copies; preserve facts used by titles and replay.
+    config: Config, clips: list[AssemblyClip], attempt: Path | None, memory_type: str | None
+) -> tuple[list[AssemblyClip], str, VideoMood | None]:
+    """Apply the film's mood to music copies; preserve facts used by titles and replay.
 
-    Returns the clips, the mood the bundled branch reads, and the full reader
-    judgment the AI branch carries into the caption (energy, tempo, genres).
+    Returns the clips, the mood the bundled branch reads, and the reader's full judgment
+    the AI branch carries into the caption (energy, tempo, genres) when a model answered.
+    Without one the mood comes from the film's own facts (#2471), and its energy is the
+    mood's own.
     """
-    from immich_memories.audio.text_mood import mood_for_cut
+    from immich_memories.audio.film_mood import facts_for_render, read_plan
+    from immich_memories.audio.text_mood import mood_for_cut, music_hemisphere
 
-    fallback = aggregate_mood_from_clips(clips)
-    choice = asyncio.run(
-        mood_for_cut(
-            config,
-            attempt,
-            tuple(clip.asset_id for clip in clips),
-            fallback_mood=fallback or "calm",
-        )
+    facts = facts_for_render(
+        clips, read_plan(attempt), memory_type=memory_type, hemisphere=music_hemisphere(config)
     )
-    if choice.source != "cut_text":
-        return clips, fallback, None
+    choice = asyncio.run(
+        mood_for_cut(config, attempt, tuple(clip.asset_id for clip in clips), facts=facts)
+    )
     mood = choice.mood.primary_mood
-    return [replace(clip, llm_emotion=mood) for clip in clips], mood, choice.mood
+    detail = choice.mood if choice.source == "cut_text" else None
+    return [replace(clip, llm_emotion=mood) for clip in clips], mood, detail
 
 
 def _master(track: Path, run_output_dir: Path) -> Path:

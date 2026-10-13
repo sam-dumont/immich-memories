@@ -7,7 +7,7 @@ import subprocess
 from collections.abc import Callable
 from pathlib import Path
 
-from immich_memories.analysis.framing_target import framing_centre
+from immich_memories.analysis.framing_target import framing_centre, rotated_faces, rotated_size
 from immich_memories.analysis.subject_framing import FaceBox
 from immich_memories.processing.assembly_config import (
     AssemblyClip,
@@ -286,7 +286,8 @@ class ClipEncoder:
 
         When Immich names the film's subjects on this clip, their faces lead.
         Otherwise a detector reads the clip itself, and the largest face it finds
-        leads: it sees faces, not people.
+        leads: it sees faces, not people. A rotation override turns the picture
+        before this crop, so the faces and the size turn with it first.
         """
         known = clip.known_faces
         if known.subject_ids:
@@ -299,7 +300,8 @@ class ClipEncoder:
         clip_res = self.prober.get_video_resolution(clip.path)
         if not clip_res:
             return None
-        src_w, src_h = clip_res
+        src_w, src_h = rotated_size(*clip_res, clip.rotation_override)
+        faces = rotated_faces(faces, clip.rotation_override)
         window = smart_crop_window(src_w, src_h, target_w, target_h)
         centre_x, centre_y = framing_centre(faces, subjects, window)
         logger.info(f"Smart zoom: cropping centred at ({centre_x:.2f}, {centre_y:.2f})")

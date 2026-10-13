@@ -171,29 +171,32 @@ def _bundled_choice(clips, library, tmp_path, monkeypatch):
     ).path
 
 
-def test_the_analysers_emotion_reaches_the_bundled_mood_folder(library, tmp_path, monkeypatch):
-    """The five mood folders were inert: AssemblyClip carries llm_emotion, not mood.
+def _film(tmp_path, *, photos: bool):
+    from immich_memories.processing.assembly_config import AssemblyClip
+
+    return [
+        AssemblyClip(path=tmp_path / f"clip{i}.mp4", duration=3.0, is_photo=photos)
+        for i in range(6)
+    ]
+
+
+@pytest.mark.parametrize(("photos", "folder"), [(False, "happy"), (True, "calm")])
+def test_the_films_own_mood_picks_the_bundled_folder(
+    library, tmp_path, monkeypatch, photos, folder
+):
+    """With no text model the film's facts choose the mood (#2471): a lively film of
+    videos is not served from the calm folder, a still, quiet one is.
 
     Asserted over repeats because a mood-blind pick would land in the right
     folder by chance often enough to pass a single draw.
     """
-    clips = _emotional_clips("joyful", tmp_path)
+    clips = _film(tmp_path, photos=photos)
 
     folders = {
         _bundled_choice(clips, library, tmp_path, monkeypatch).parent.name for _ in range(30)
     }
 
-    assert folders == {"happy"}, "joyful belongs to the happy family"
-
-
-def test_clips_with_no_emotion_still_draw_from_the_whole_library(library, tmp_path, monkeypatch):
-    clips = _emotional_clips(None, tmp_path)
-
-    folders = {
-        _bundled_choice(clips, library, tmp_path, monkeypatch).parent.name for _ in range(30)
-    }
-
-    assert folders == {"calm", "happy"}
+    assert folders == {folder}
 
 
 @pytest.mark.parametrize(

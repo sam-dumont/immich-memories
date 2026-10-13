@@ -43,13 +43,14 @@ def normalize_time_signature(written: str) -> str:
 
 
 # "instrumental, no vocals" is reinforced in every caption to prevent singing.
-# Seasonal modifiers appended to tags
+# Seasonal colour appended to the caption. Timbre words only: the mood places the energy,
+# so a season never says "mellow" or "intimate" over a birthday in October (#2471).
 _SEASON_TAG_MODIFIERS = {
-    "winter": "cozy, warm tones, intimate",
-    "spring": "fresh, bright, blossoming",
-    "summer": "sunny, carefree, vibrant",
-    "autumn": "warm, golden, mellow",
-    "holiday": "festive, joyful, celebratory",
+    "winter": "crisp, warm tones",
+    "spring": "fresh, bright",
+    "summer": "sunny, bright",
+    "autumn": "warm, golden",
+    "holiday": "festive",
 }
 
 
@@ -217,9 +218,20 @@ _GENRE_TO_STYLE: dict[str, str] = {
 _ENERGY_LEVELS: dict[str, float] = {"low": 0.0, "medium": 0.5, "high": 1.0}
 _TEMPO_ENERGY: dict[str, float] = {"slow": 0.0, "medium": 0.5, "fast": 1.0}
 
-# Styles only a stated genre may choose. Metal suits a festival day the reader named
-# as metal; drawn at random for an ordinary film it was the jarring pick (#2472).
-_GENRE_ONLY_STYLES = frozenset({"metal"})
+# The styles the app picks by itself. The maintainer's listening tests (#308, again on real
+# films in #2471) kept acoustic, electronic and solo piano; jazz trio, indie rock, orchestral,
+# ambient and metal sounded wrong unasked. They stay in the matrix for an explicit `style` only.
+AUTOMATIC_STYLES = ("acoustic", "electronic", "piano")
+# A reader's genre yield whose style is opt-in lands on the automatic style nearest in feel:
+# jazz keeps its upright bass and brushed drums in acoustic; orchestral and cinematic keep their
+# slower, wide register in piano; rock, metal and ambient keep their drive or pads in electronic.
+_AUTOMATIC_STYLE_FOR = {
+    "jazz": "acoustic",
+    "orchestral": "piano",
+    "rock": "electronic",
+    "metal": "electronic",
+    "ambient": "electronic",
+}
 
 # Memory types that suggest a style; otherwise the style is sampled for variety.
 _MEMORY_TYPE_TO_STYLE: dict[str, str] = {
@@ -249,7 +261,7 @@ _MOOD_ALIASES: dict[str, str] = {
 }
 
 
-# _transform_mood prepends these to every mood, so they must not win a match:
+# Generic colour words a phrase may carry beside its mood; they must not win a match:
 # "upbeat romantic" is romantic, not upbeat.
 _BOOSTER_WORDS = frozenset({"upbeat", "warm", "groovy", "hopeful"})
 
@@ -282,22 +294,21 @@ def pick_style(
 ) -> str:
     """Choose the style for this generation.
 
-    An explicit style wins, then the reader's own genre yields, then a memory
-    type with a natural fit. Only when none of those speak is one sampled, so
-    repeated memories of the same mood still do not all sound alike. ``rng``
-    makes the sample one film's choice: every take of the film draws the same.
+    An explicit style wins, any style in the matrix. Otherwise the app picks one of
+    ``AUTOMATIC_STYLES``: the reader's own genre yield, folded onto its nearest automatic
+    style, then a memory type with a natural fit, then a sample, so repeated memories of the
+    same mood still do not all sound alike. ``rng`` makes the sample one film's choice: every
+    take of the film draws the same.
     """
     if style in STYLE_PROFILES:
         return style
-    if genres:
-        for genre in genres:
-            chosen = _GENRE_TO_STYLE.get(genre)
-            if chosen in STYLE_PROFILES:
-                return chosen
+    for genre in genres or ():
+        chosen = _GENRE_TO_STYLE.get(genre)
+        if chosen in STYLE_PROFILES:
+            return _AUTOMATIC_STYLE_FOR.get(chosen, chosen)
     if memory_type and memory_type in _MEMORY_TYPE_TO_STYLE:
         return _MEMORY_TYPE_TO_STYLE[memory_type]
-    pool = sorted(set(STYLE_PROFILES) - _GENRE_ONLY_STYLES)
-    return (rng or random).choice(pool)
+    return (rng or random).choice(AUTOMATIC_STYLES)
 
 
 def compose_caption(

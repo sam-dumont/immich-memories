@@ -254,17 +254,11 @@ class TestVideoTimeline:
         for scene in scenes:
             assert scene["duration"] >= 5
 
-    def test_build_scenes_mellow_mood_boosted(self):
-        """Mellow moods should get upbeat prefix."""
-        timeline = VideoTimeline(clips=[ClipMood(duration=30.0, mood="calm peaceful")])
+    def test_build_scenes_keep_the_mood_as_chosen(self):
+        """The mood sets the energy; a scene is not rewritten upbeat or hopeful (#2471)."""
+        timeline = VideoTimeline(clips=[ClipMood(duration=30.0, mood="sad")])
         scenes = timeline.build_scenes()
-        assert "upbeat" in scenes[0]["mood"].lower()
-
-    def test_build_scenes_sad_mood_transformed(self):
-        """Sad moods should be transformed to warm/uplifting."""
-        timeline = VideoTimeline(clips=[ClipMood(duration=30.0, mood="sad melancholy")])
-        scenes = timeline.build_scenes()
-        assert "warm" in scenes[0]["mood"].lower() or "uplifting" in scenes[0]["mood"].lower()
+        assert scenes[0]["mood"] == "sad"
 
     def test_from_clips_basic(self):
         timeline = VideoTimeline.from_clips(

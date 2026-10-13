@@ -19,6 +19,7 @@ from datetime import date
 from difflib import SequenceMatcher
 from functools import lru_cache
 
+from immich_memories.titles.common_nouns import is_a_common_noun
 from immich_memories.titles.relationship_words import name_words
 from immich_memories.titles.title_routing import PERIOD_MEMORY_TYPES, is_trip
 from immich_memories.titles.title_suggestion import TitleSuggestion
@@ -94,7 +95,7 @@ def _names_a_fact(word: str, known: set[str]) -> bool:
     return any(places & _one_word_places().get(name, frozenset()) for name in known)
 
 
-def invented_name(line: str, facts: str) -> str | None:
+def invented_name(line: str, facts: str, locale: str = "en") -> str | None:
     """The first name this line uses that the facts do not, if it uses one.
 
     A capitalised word past the first is a proper noun in the languages the
@@ -102,11 +103,12 @@ def invented_name(line: str, facts: str) -> str | None:
     it counts only when it is a country, island or region's whole name. A place
     passes only when the facts name that same place, in any language. So this
     catches an invented name, not invention: a reworded fact passes, a festival
-    or a country nobody recorded does not.
+    or a country nobody recorded does not. German capitalises every noun, so
+    there a common noun ("im Jahr 2025") is not a name (`common_nouns`).
     """
     known = {word.casefold() for word in _name_words(facts)}
     words = _name_words(line)
-    named = [word for word in words[1:] if word[:1].isupper()]
+    named = [w for w in words[1:] if w[:1].isupper() and not is_a_common_noun(w, locale)]
     if words and words[0].casefold() in _one_word_places():
         named.insert(0, words[0])
     return next(
@@ -150,17 +152,17 @@ def restore_fact_casing(suggestion: TitleSuggestion, facts: str) -> TitleSuggest
 
 
 def refusing_invented_names(
-    suggestion: TitleSuggestion | None, facts: str
+    suggestion: TitleSuggestion | None, facts: str, locale: str
 ) -> TitleSuggestion | None:
     """The suggestion, minus whatever part of it names something unrecorded."""
     if suggestion is None or not facts:
         return suggestion
-    if invented := invented_name(suggestion.title, facts):
+    if invented := invented_name(suggestion.title, facts, locale):
         logger.warning(
             "Title names %r, which no fact names; the template names this memory instead", invented
         )
         return None
-    if suggestion.subtitle and (invented := invented_name(suggestion.subtitle, facts)):
+    if suggestion.subtitle and (invented := invented_name(suggestion.subtitle, facts, locale)):
         logger.info("Subtitle names %r, which no fact names; dropping the subtitle", invented)
         return replace(suggestion, subtitle=None)
     return suggestion

@@ -6,6 +6,10 @@ title: Generate a soundtrack
 
 Your film already gets music: a bundled track, or an audio file you choose. A generator makes an original track for the film's mood and length. It is optional and off by default.
 
+The mood follows what the film is. A birthday or a trip gets a lively mood, an ordinary month moves with how many of its shots play, and a quiet month of still photos gets calm. A text reader can choose it from the cut's text; without one, the film's own facts do. [How the music is picked](../reference/output-rendering.md#music) has the table.
+
+The generator plays one of three styles: acoustic folk, electronic, or solo piano. Those are the ones that held up in listening tests on real films. Jazz trio, indie rock, orchestral, ambient and metal exist in the caption matrix but the app never picks them by itself.
+
 Without a generator, a film longer than one bundled track plays a varied, crossfaded playlist from the mood's folder instead of looping a single track, and the bundled mix is mastered to the same loudness as a generated one.
 
 Choose the route for your machine:

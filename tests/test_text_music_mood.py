@@ -21,9 +21,10 @@ async def test_music_uses_the_local_mood_without_a_configured_llm(tmp_path, tier
     (tmp_path / "plan.private.json").write_text(json.dumps({"story": {"thesis": "A fair"}}))
     # WHY: without a configured model, the HTTP boundary must stay unused.
     with patch("httpx.AsyncClient.post", side_effect=AssertionError("Unexpected LLM call")) as post:
-        choice = await mood_for_cut(config, tmp_path, (), fallback_mood="playful")
+        choice = await mood_for_cut(config, tmp_path, ())
 
     post.assert_not_called()
+    assert choice.source == "rules_no_model"
     assert choice.mood.primary_mood == "playful"
 
 
@@ -240,6 +241,6 @@ async def test_an_invalid_mood_is_not_banked_or_retried_with_pictures(tmp_path):
         failed = await mood_for_cut(config, tmp_path, ())
         recovered = await mood_for_cut(config, tmp_path, ())
         assert all("images" not in call.kwargs["json"] for call in post.call_args_list)
-    assert failed.source == "default_text_unavailable"
+    assert failed.source == "rules_text_unavailable"
     assert recovered.source == "cut_text"
     assert recovered.mood.primary_mood == "playful"
