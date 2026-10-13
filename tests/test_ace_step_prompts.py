@@ -94,8 +94,8 @@ class TestACEStepAPIPayload:
 class TestMoodVariety:
     """Mood resolution must not be hijacked by generic booster words.
 
-    _transform_mood prepends words like "upbeat" and "warm" to every mood, so a
-    naive first-match would send every memory to the same profile.
+    A phrase may carry generic colour words like "upbeat" and "warm" beside its
+    mood; a naive first-match would send every memory to the same profile.
     """
 
     @pytest.mark.parametrize(
@@ -196,10 +196,11 @@ class TestReaderJudgmentDrivesTheCaption:
     def test_genre_yields_pick_the_style(self):
         from immich_memories.audio.mood_analyzer import VideoMood
 
+        # Jazz is opt-in since the listening test (#308, #2471); its yield plays acoustic.
         detail = VideoMood(primary_mood="happy", genre_suggestions=["jazz"])
         result = build_ace_caption_structured("happy", mood_detail=detail)
 
-        assert result.caption.startswith("jazz trio")
+        assert result.caption.startswith("acoustic folk")
 
     def test_the_mood_still_sets_the_register_within_the_genre(self):
         from immich_memories.audio.mood_analyzer import VideoMood
@@ -234,10 +235,11 @@ class TestReaderJudgmentDrivesTheCaption:
             "happy", memory_type="person_spotlight", mood_detail=detail
         )
 
-        assert result.caption.startswith("cinematic orchestral")
+        # Orchestral is opt-in; its yield plays solo piano, not the type's acoustic default.
+        assert result.caption.startswith("solo piano")
 
-    def test_a_metal_festival_reader_picks_metal(self):
-        """A niche event the reader names must reach the caption, not fall to jazz."""
+    def test_a_metal_yield_keeps_its_drive_in_electronic(self):
+        """Metal is opt-in (#308, #2471): the reader's yield plays driving electronic."""
         from immich_memories.audio.mood_analyzer import VideoMood
 
         detail = VideoMood(
@@ -245,9 +247,8 @@ class TestReaderJudgmentDrivesTheCaption:
         )
         result = build_ace_caption_structured("energetic", mood_detail=detail)
 
-        assert result.caption.startswith("heavy metal")
-        assert "guitar" in result.caption
-        assert "drums" in result.caption
+        assert result.caption.startswith("drum and bass")
+        assert "heavy metal" not in result.caption
 
     def test_a_specific_style_wins_the_caption_verbatim(self):
         """A style the genre list cannot name still reaches ACE-Step, verbatim."""

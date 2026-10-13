@@ -249,7 +249,9 @@ def test_metal_is_never_a_random_pick() -> None:
     picks = {ace_step_captions.pick_style(rng=random.Random(seed)) for seed in range(400)}
 
     assert "metal" not in picks
-    assert ace_step_captions.pick_style(genres=["metal"]) == "metal"
+    # A metal yield from the model folds onto electronic; only an explicit style plays metal (#308).
+    assert ace_step_captions.pick_style(genres=["metal"]) == "electronic"
+    assert ace_step_captions.pick_style(style="metal") == "metal"
 
 
 class TestOneBackendPerFilm:

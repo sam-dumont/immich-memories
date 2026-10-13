@@ -98,6 +98,19 @@ def _catalogue(code: str) -> tuple[dict[str, object], Callable[[int], int]]:
     return strings, gettext.c2py(catalogue.plural_expr)
 
 
+def film_texts(locale_code: str) -> dict[str, tuple[str, ...]]:
+    """Every template this language's own catalogue carries, key -> its forms.
+
+    A plural message gives all its forms ("{n} Tag", "{n} Tage"); a key the
+    catalogue lacks is absent, not filled from English.
+    """
+    strings = _catalogue(_supported(locale_code))[0]
+    return {
+        key: tuple(map(str, value)) if isinstance(value, tuple) else (str(value),)
+        for key, value in strings.items()
+    }
+
+
 def film_text(key: str, locale_code: str = DEFAULT_LOCALE, **values: object) -> str:
     """The catalogue's template for `key` in this language, filled with `values`.
 

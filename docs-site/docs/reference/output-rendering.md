@@ -336,9 +336,36 @@ flowchart TD
     yours --> duck
 ```
 
-The mood comes from text only. With a reader configured, `mood_for_cut` sends the saved cut's text (story
-labels, captions of kept pictures) and gets back a mood, an energy, a tempo and up to five genres; no picture
-goes out. Without a reader, or when that call fails, the film gets the mood its clips carry, else `calm`.
+The mood comes from facts and text, never pictures. Without a reader, or when its call fails, the film's
+own facts pick it:
+
+| The film | Starting mood |
+|---|---|
+| A year in review | inspiring |
+| A holiday, a special day, or a birthday among its main stories | happy |
+| A trip, or a trip among its main stories | happy |
+| A visit or an event among its main stories | playful |
+| A season | happy in summer, playful in spring, tender in autumn and winter |
+| A person or group of people | playful |
+| On this day | tender |
+| Anything else (a month, an album) | playful |
+
+From there the shots move it. When more than a third of the shots move (videos, Live Photos that
+play), the mood goes one step livelier. It goes another step when a fifth carry music in their own
+sound or nearly a third show three or more people. The steps run calm, peaceful, tender, playful,
+happy, exciting, energetic. An ordinary month of still photos with no music and no group gets
+`calm`. A celebration or a trip in still photos steps down, but never below playful. The run's
+"Music mood:" note names the facts it used.
+
+With a reader configured, `mood_for_cut` sends the same facts and the saved cut's text (story labels,
+captions of kept pictures) and gets back a mood, an energy, a tempo and up to five genres. The prompt
+lists the moods from most to least energetic and keeps calm for still, quiet films. The season only
+colours the caption ("warm, golden" in autumn); the mood sets the tempo.
+
+A generated track is acoustic folk, electronic or solo piano. A reader's genre lands on the
+nearest of the three: jazz on acoustic, orchestral and classical on piano, rock, metal and ambient
+on electronic. The other styles in the caption matrix (jazz trio, indie rock, orchestral, ambient,
+metal) are never picked automatically.
 
 A generator that fails falls through to a bundled track, and the swap comes back as a warning on the finished
 video and in any completion notification, so a dead backend never passes for working music.

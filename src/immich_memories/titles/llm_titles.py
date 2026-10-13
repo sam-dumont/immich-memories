@@ -684,7 +684,7 @@ def _guarded_suggestion(
     holiday = facts.holiday if facts else None
     people_store = facts.people_store if facts else None
     suggestion = closing_empty_slots(eliding_french(parsed, locale), locale, person_names)
-    suggestion = refusing_invented_names(suggestion, prompt.facts)
+    suggestion = refusing_invented_names(suggestion, prompt.facts, locale)
     period = _period_of(
         facts, memory_type, date.fromisoformat(start_date), date.fromisoformat(end_date), locale
     )

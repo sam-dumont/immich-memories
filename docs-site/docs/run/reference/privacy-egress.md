@@ -72,8 +72,8 @@ clearance on a picture can lift those holds. `strict_sharing` also permits clean
 on Basic without captions.
 
 Two features ask a reader something besides the editor, and both send text only. Music
-selection reads the cut's text (thesis, story titles, ingest captions) and falls back to the clips'
-own mood, then `calm`; `music add` on a standalone video takes `--mood` or plays calm, and sends
+selection reads the cut's text (thesis, story titles, ingest captions) and the film's facts (memory
+type, main stories, season, how many shots move), and falls back to a mood those facts pick; `music add` on a standalone video takes `--mood` or plays calm, and sends
 nothing. A special-day scan uses prepared captions for a day with at least 20 described pictures
 over 6 hours of the clock, and the day's recorded facts below that.
 
