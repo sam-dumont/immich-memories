@@ -25,6 +25,7 @@ from playwright.sync_api import Page
 
 from immich_memories.db import Store, StoreLocation, close_stores, open_store
 from immich_memories.db.bootstrap import DEFAULT_SCHEMA, normalize_url
+from tests.e2e.fake_editorial import RECORDING_ENV
 from tests.e2e.fake_immich import FakeImmichServer
 from tests.store.backends import drop_schema
 
@@ -222,6 +223,10 @@ def _build_launch_environment(home: Path | None = None) -> dict[str, str]:
             "QD_LOG_LEVEL": "error",
         }
     )
+    # The one variable a demo run hands through: which recorded real run the hermetic editor
+    # replays (`fake_editorial.RECORDING_ENV`), so screenshots show what the product chose.
+    if recording := os.environ.get(RECORDING_ENV):
+        env[RECORDING_ENV] = recording
     if home is not None:
         # Not every path resolves through the config directory: the default store
         # (and the people registry in it) sits under `Path.home()`, so a launch that
