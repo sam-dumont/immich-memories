@@ -5,8 +5,9 @@ afternoon then sat inside "the week", weighed like the errands around it, and th
 spend its one picture of that week on the tram. Two facts the household itself recorded make
 such a day an occasion:
 
-- a birthday: a household member, or close family, on at least `OCCASION_MIN_PICTURES` of the
-  day's pictures on the day their Immich birth date comes round;
+- a birthday: a household member, or close family, on any of the day's pictures on the day
+  their Immich birth date comes round: the date is the evidence, so one picture of them on it
+  is enough (a film of two people may hold only one frame of both that day);
 - a visit: close family who are not of the owner's household (the owner's parents, say) on at
   least `OCCASION_MIN_PICTURES` of the day's pictures, and on at most `VISIT_MAX_DAYS`
   photographed days of the period, so a parent who lives in is never "visiting".
@@ -81,8 +82,10 @@ def find_occasions(
     household = {name for name, rel in relation_of.items() if _household(rel)}
     found: dict[str, Occasion] = {}
     for day, counts in sorted(day_people.items()):
-        present = [name for name, n in counts.most_common() if n >= OCCASION_MIN_PICTURES]
-        if birthday := _birthday(day, present, birth_dates, household | close_family):
+        # Most pictures first, then by name: ties never depend on the order lines were read.
+        seen = [name for name, _ in sorted(counts.items(), key=lambda row: (-row[1], row[0]))]
+        present = [name for name in seen if counts[name] >= OCCASION_MIN_PICTURES]
+        if birthday := _birthday(day, seen, birth_dates, household | close_family):
             found[day] = birthday
             continue
         visitors = [
