@@ -80,15 +80,17 @@ def differing_columns(first: bytes, second: bytes, *, width: int = 160) -> float
     """The share of the frame's width, from the left, that holds pixels the two frames differ on.
 
     A caption drawn over one of two otherwise identical frames shows up as how far it reaches.
+    Two encodes of the same pictures still differ by a stray pixel here and there, so a pixel
+    counts only beside another that differs too: letters are strokes, encoder noise is not.
     """
-    columns = [
-        x
+    height = len(first) // width
+    differs = {
+        (x, y)
+        for y in range(height)
         for x in range(width)
-        if any(
-            abs(first[y * width + x] - second[y * width + x]) > 24
-            for y in range(len(first) // width)
-        )
-    ]
+        if abs(first[y * width + x] - second[y * width + x]) > 24
+    }
+    columns = [x for x, y in differs if {(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)} & differs]
     return (max(columns) + 1) / width if columns else 0.0
 
 
