@@ -6,6 +6,7 @@ the MusicGen API client and high-level generation functions.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -65,6 +66,25 @@ class ClipMood:
     month: int | None = None  # Month number (1-12) for seasonal prompts
 
 
+# Once the film is assembled its length is known. The music runs this much past it so
+# the mixer trims the track: a track even slightly short is looped with a crossfade.
+MUSIC_TAIL_SECONDS = 1.0
+# The MusicGen soundtrack service takes 5-120 s per scene and at most 40 scenes.
+_SCENE_MIN_SECONDS = 5
+_SCENE_MAX_SECONDS = 120
+_MAX_SCENES = 40
+# A run of clips shorter than this is one clip's mood flicker, not a section of the film.
+_MIN_CHAPTER_SECONDS = 20.0
+
+
+@dataclass
+class _Chapter:
+    """A run of clips the soundtrack treats as one section."""
+
+    mood: str
+    seconds: float
+
+
 @dataclass
 class VideoTimeline:
     """Timeline info for music duration calculation."""
@@ -75,6 +95,10 @@ class VideoTimeline:
 
     # Per-clip mood information
     clips: list[ClipMood] = field(default_factory=list)
+
+    # The assembled film's real length, when the caller has it. Clip durations
+    # overlap at every crossfade, so their sum overstates the film.
+    film_duration: float | None = None
 
     @property
     def content_duration(self) -> float:
@@ -91,14 +115,21 @@ class VideoTimeline:
         """Total music duration needed."""
         return self.title_duration + self.content_duration + self.ending_duration + self.fade_buffer
 
-    def build_scenes(self, hemisphere: str = "north") -> list[dict]:
-        """Build scene list for MusicGen soundtrack API.
+    @property
+    def music_duration(self) -> float:
+        """How much music the film needs: its real length when known, else the clip estimate."""
+        if self.film_duration:
+            return self.film_duration + MUSIC_TAIL_SECONDS
+        return self.total_duration
 
-        Rules:
-        - Title duration is added to FIRST clip
-        - Transition durations are added to the clip BEFORE the transition
-        - Ending duration + fade buffer are added to LAST clip
-        - Seasonal keywords are combined with video mood for richer prompts
+    def build_scenes(self, hemisphere: str = "north") -> list[dict]:
+        """One scene per chapter of the film, summing to ``music_duration``.
+
+        A chapter is a run of clips with one mood that no month divider breaks.
+        Runs shorter than a short section join their neighbour, so a clip whose
+        mood flickers does not get a five-second fragment of its own (#2472). A
+        chapter longer than the soundtrack service takes is split into equal
+        scenes with the same mood, which the service continues from each other.
 
         Args:
             hemisphere: "north" or "south" for seasonal prompt generation
@@ -106,50 +137,37 @@ class VideoTimeline:
         Returns:
             List of {"mood": str, "duration": int} for soundtrack API
         """
+        total = self.music_duration
         if not self.clips:
-            # No clips, just return a single upbeat scene
-            return [{"mood": "upbeat", "duration": int(self.total_duration)}]
+            return [{"mood": "upbeat", "duration": max(_SCENE_MIN_SECONDS, round(total))}]
 
-        scenes = []
+        chapters = _merge_short_chapters(self._chapters(hemisphere))
+        scale = total / sum(chapter.seconds for chapter in chapters)
+        scenes: list[tuple[str, float]] = []
+        for chapter in chapters:
+            pieces = max(1, math.ceil(chapter.seconds * scale / _SCENE_MAX_SECONDS))
+            scenes.extend([(chapter.mood, chapter.seconds * scale / pieces)] * pieces)
+        return _whole_second_scenes(scenes, round(total))
 
+    def _chapters(self, hemisphere: str) -> list[_Chapter]:
+        """Runs of clips with one scene mood and no divider between them."""
+        chapters: list[_Chapter] = []
+        divider_before = False
         for i, clip in enumerate(self.clips):
-            scene_duration = clip.duration
-
-            # First clip: add title duration
+            seconds = clip.duration
             if i == 0:
-                scene_duration += self.title_duration
-
-            # Add transition duration if there's one after this clip
+                seconds += self.title_duration
             if clip.has_transition_after:
-                scene_duration += clip.transition_duration
-
-            # Last clip: add ending duration + fade buffer
+                seconds += clip.transition_duration
             if i == len(self.clips) - 1:
-                scene_duration += self.ending_duration + self.fade_buffer
-
-            # API requires integer seconds, minimum 5s
-            scene_duration = max(5, int(scene_duration))
-
-            # Combine video mood with seasonal keywords
-            mood = clip.mood
-
-            # Transform mellow moods to be more energetic
-            # Memory videos should feel upbeat and fun, not slow and sad
-            mood = _transform_mood(mood)
-
-            if clip.month:
-                seasonal = get_seasonal_prompt(clip.month, hemisphere)
-                if seasonal:
-                    mood = f"{mood}, {seasonal}"
-
-            scenes.append(
-                {
-                    "mood": mood,
-                    "duration": scene_duration,
-                }
-            )
-
-        return scenes
+                seconds += self.ending_duration + self.fade_buffer
+            mood = _scene_mood(clip, hemisphere)
+            if chapters and chapters[-1].mood == mood and not divider_before:
+                chapters[-1].seconds += seconds
+            else:
+                chapters.append(_Chapter(mood, seconds))
+            divider_before = clip.has_transition_after
+        return chapters
 
     @classmethod
     def from_clips(
@@ -201,6 +219,43 @@ class VideoTimeline:
             fade_buffer=fade_buffer,
             clips=clip_moods,
         )
+
+
+def _scene_mood(clip: ClipMood, hemisphere: str) -> str:
+    """The clip's mood, lifted for a memory film and coloured by its season."""
+    mood = _transform_mood(clip.mood)
+    if clip.month:
+        seasonal = get_seasonal_prompt(clip.month, hemisphere)
+        if seasonal:
+            mood = f"{mood}, {seasonal}"
+    return mood
+
+
+def _merge_short_chapters(chapters: list[_Chapter]) -> list[_Chapter]:
+    """Fold chapters too short to be a section, then the shortest, into a neighbour.
+
+    The service caps the scene count; a chapter split for length needs room too.
+    """
+    budget = _MAX_SCENES - math.ceil(sum(c.seconds for c in chapters) / _SCENE_MAX_SECONDS)
+    while len(chapters) > 1:
+        lengths = [chapter.seconds for chapter in chapters]
+        shortest = min(range(len(chapters)), key=lengths.__getitem__)
+        if lengths[shortest] >= _MIN_CHAPTER_SECONDS and len(chapters) <= max(budget, 1):
+            break
+        into = shortest - 1 if shortest > 0 else 1
+        chapters[into].seconds += chapters[shortest].seconds
+        del chapters[shortest]
+    return chapters
+
+
+def _whole_second_scenes(scenes: list[tuple[str, float]], total: int) -> list[dict]:
+    """Whole-second scenes of at least the service minimum, summing to ``total``."""
+    durations = [max(_SCENE_MIN_SECONDS, round(seconds)) for _mood, seconds in scenes]
+    durations[-1] = max(_SCENE_MIN_SECONDS, durations[-1] + total - sum(durations))
+    return [
+        {"mood": mood, "duration": duration}
+        for (mood, _seconds), duration in zip(scenes, durations, strict=True)
+    ]
 
 
 def _transform_mood(mood: str) -> str:

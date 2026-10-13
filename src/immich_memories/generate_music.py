@@ -113,8 +113,9 @@ def resolve_music(
 
     ``video_duration`` is the already-assembled film's length. When the caller
     has it, a bundled fallback that would otherwise loop one short track for
-    the whole film instead plays a varied playlist (#2070). Callers that
-    cannot supply it (most existing call sites) keep the single-track pick.
+    the whole film instead plays a varied playlist (#2070), and generated
+    music is planned to its length (#2472). Callers that cannot supply it keep
+    the single-track pick and a length estimated from the clips.
     ``work_dir`` holds disposable bundled playlist and mastering files until mixing ends.
     """
     if no_music:
@@ -141,6 +142,7 @@ def resolve_music(
                 transition_overlap=transition_overlap,
                 fps=fps,
                 mood_detail=mood_detail,
+                video_duration=video_duration,
             )
         except Exception as exc:  # WHY: optional music must not invalidate the base artifact
             # A configured generator that fails used to be worse than no generator
@@ -335,8 +337,13 @@ def auto_generate_music(
     transition_overlap: float,
     fps: float = 30,
     mood_detail: VideoMood | None = None,
+    video_duration: float | None = None,
 ) -> GeneratedMusic | None:
     """Auto-generate music using configured AI backends.
+
+    ``video_duration`` is the assembled film's length; the music is planned
+    from it rather than from the clips, whose durations overlap at every
+    crossfade (#2472).
 
     Returns the selected track and stems, or None when no backend
     is available. Backend failures propagate to the optional phase boundary.
@@ -368,6 +375,7 @@ def auto_generate_music(
                 config.title_screens.ending_duration if config.title_screens.enabled else 0
             ),
         )
+        timeline.film_duration = video_duration
 
         musicgen_config = MusicGenClientConfig.from_app_config(config.musicgen)
         musicgen_config.num_versions = 1 + config.audio.max_regenerations

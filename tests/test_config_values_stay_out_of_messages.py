@@ -43,6 +43,11 @@ def test_ace_step_logs_never_name_the_configured_address(caplog, mode, error, st
             "immich_memories.audio.generators.ace_step_backend.is_ace_step_importable",
             return_value=False,
         ),
+        # WHY: a checkout that ran `make install-acestep` has the isolated venv.
+        patch(
+            "immich_memories.audio.generators.ace_step_backend.ace_step_isolated.isolated_python",
+            return_value=None,
+        ),
         # WHY: the ACE-Step HTTP server is the network boundary.
         patch("httpx.AsyncClient", return_value=_failing_api(error, status)),
         caplog.at_level("WARNING"),

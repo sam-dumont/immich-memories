@@ -36,13 +36,13 @@ class AudioConfig(BaseModel):
         ),
     )
     music_block_seconds: int = Field(
-        default=120,
+        default=240,
         ge=30,
         le=300,
         description=(
-            "Longest single generated take before auto mode chains distinct takes. "
-            "A video longer than this is filled by several same-caption takes "
-            "joined with crossfades, never one phrase on repeat"
+            "Longest single ACE-Step take before auto mode joins several. A film "
+            "longer than this gets takes that share one caption, tempo and key, "
+            "joined on bar lines"
         ),
     )
     max_music_blocks: int = Field(
@@ -50,8 +50,7 @@ class AudioConfig(BaseModel):
         ge=1,
         le=6,
         description=(
-            "Distinct takes to chain for a video longer than music_block_seconds; "
-            "beyond this the chain is looped"
+            "Takes to join for a film longer than music_block_seconds; beyond this the takes repeat"
         ),
     )
 

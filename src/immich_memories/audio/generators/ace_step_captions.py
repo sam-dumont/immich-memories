@@ -217,6 +217,10 @@ _GENRE_TO_STYLE: dict[str, str] = {
 _ENERGY_LEVELS: dict[str, float] = {"low": 0.0, "medium": 0.5, "high": 1.0}
 _TEMPO_ENERGY: dict[str, float] = {"slow": 0.0, "medium": 0.5, "fast": 1.0}
 
+# Styles only a stated genre may choose. Metal suits a festival day the reader named
+# as metal; drawn at random for an ordinary film it was the jarring pick (#2472).
+_GENRE_ONLY_STYLES = frozenset({"metal"})
+
 # Memory types that suggest a style; otherwise the style is sampled for variety.
 _MEMORY_TYPE_TO_STYLE: dict[str, str] = {
     "person_spotlight": "acoustic",
@@ -274,12 +278,14 @@ def pick_style(
     memory_type: str | None = None,
     style: str | None = None,
     genres: list[str] | None = None,
+    rng: random.Random | None = None,
 ) -> str:
     """Choose the style for this generation.
 
     An explicit style wins, then the reader's own genre yields, then a memory
     type with a natural fit. Only when none of those speak is one sampled, so
-    repeated memories of the same mood still do not all sound alike.
+    repeated memories of the same mood still do not all sound alike. ``rng``
+    makes the sample one film's choice: every take of the film draws the same.
     """
     if style in STYLE_PROFILES:
         return style
@@ -290,7 +296,8 @@ def pick_style(
                 return chosen
     if memory_type and memory_type in _MEMORY_TYPE_TO_STYLE:
         return _MEMORY_TYPE_TO_STYLE[memory_type]
-    return random.choice(sorted(STYLE_PROFILES))
+    pool = sorted(set(STYLE_PROFILES) - _GENRE_ONLY_STYLES)
+    return (rng or random).choice(pool)
 
 
 def compose_caption(
@@ -353,6 +360,7 @@ def build_ace_caption_structured(
     style: str | None = None,
     cadence_seconds: float | None = None,
     mood_detail: VideoMood | None = None,
+    rng: random.Random | None = None,
 ) -> ACECaptionResult:
     """Build a structured ACE-Step caption from the mood x style matrix.
 
@@ -362,7 +370,8 @@ def build_ace_caption_structured(
     a music style the genre list cannot name), otherwise its genre yields pick
     the style and its stated energy or tempo places the tempo. Without either a
     style is sampled, so repeated memories of the same mood do not all sound
-    alike.
+    alike; ``rng`` seeded per film keeps that sample, and so the caption, BPM and
+    key, the same across all of one film's takes.
     """
     mood_key = resolve_mood(scene_moods[0] if scene_moods else mood)
     specific = mood_detail.specific_style if mood_detail else None
@@ -376,7 +385,7 @@ def build_ace_caption_structured(
         caption = f"{specific}, {profile.word}, {profile.production}, {bpm} bpm"
     else:
         genres = mood_detail.genre_suggestions if mood_detail else None
-        style_key = pick_style(memory_type=memory_type, style=style, genres=genres)
+        style_key = pick_style(memory_type=memory_type, style=style, genres=genres, rng=rng)
         caption, bpm, key_scale = compose_caption(
             mood_key, style_key, cadence_seconds, _energy_override(mood_detail)
         )

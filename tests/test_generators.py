@@ -228,16 +228,16 @@ class TestVideoTimeline:
             ending_duration=5.0,
             fade_buffer=4.0,
             clips=[
-                ClipMood(duration=15.0, mood="happy"),
-                ClipMood(duration=20.0, mood="calm"),
+                ClipMood(duration=40.0, mood="happy"),
+                ClipMood(duration=50.0, mood="calm"),
             ],
         )
         scenes = timeline.build_scenes()
         assert len(scenes) == 2
-        # First clip gets title duration added
-        assert scenes[0]["duration"] == int(3.0 + 15.0)
-        # Last clip gets ending + fade added
-        assert scenes[1]["duration"] == int(20.0 + 5.0 + 4.0)
+        # First chapter gets title duration added
+        assert scenes[0]["duration"] == int(3.0 + 40.0)
+        # Last chapter gets ending + fade added
+        assert scenes[1]["duration"] == int(50.0 + 5.0 + 4.0)
 
     def test_build_scenes_minimum_5s(self):
         """Scenes should be at least 5 seconds."""
