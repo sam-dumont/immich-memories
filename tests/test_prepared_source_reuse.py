@@ -119,6 +119,8 @@ _RENDER_CHANGES: dict[str, Callable] = {
     ),
     "edited version": lambda clip, _params: setattr(clip.asset, "is_edited", True),
     "photo duration flag": lambda _clip, params: setattr(params.config.photos, "duration", 6.0),
+    # A still moves at the film's own rate (#2475): a 30 fps clip in a 25 fps film jitters.
+    "the film's frame rate": lambda _clip, params: setattr(params, "photo_fps", 25),
 }
 
 

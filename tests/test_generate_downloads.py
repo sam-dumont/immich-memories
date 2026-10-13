@@ -327,7 +327,7 @@ def test_extraction_does_not_prefetch_static_photo(tmp_path: Path, monkeypatch) 
         assert source is clip
         assert request.clips == params.clips
         assert request.config is params.config
-        assert output_dir == tmp_path / ".source_preparation" / "0"
+        assert output_dir == tmp_path / ".source_preparation" / "static-photo"
         assert duration_seconds is None
 
     # WHY: rendering downloads media and invokes FFmpeg; inspect its request only.

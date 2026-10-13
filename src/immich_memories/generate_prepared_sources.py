@@ -60,7 +60,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-RECIPE_VERSION = "prepared-source-v3"
+RECIPE_VERSION = "prepared-source-v4"
 
 # Config sections source preparation never reads. They are left out because several
 # carry credentials, addresses or storage paths, not because they were judged
@@ -153,6 +153,8 @@ def _rendering(request: PreparationRequest) -> dict[str, Any]:
         "output_format": params.output_format,
         "output_crf": params.output_crf,
         "scale_mode": params.scale_mode or params.config.defaults.scale_mode,
+        # A still moves at the film's own rate (#2475).
+        "photo_fps": params.photo_fps,
         "live": {"render": RENDER_VERSION, "frames": FRAME_QUANTIZATION},
     }
 
