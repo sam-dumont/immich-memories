@@ -24,8 +24,9 @@ __all__ = ["CarrierView", "IntentReport", "Violation", "validate_intent"]
 # One real shot is a film; nothing is not (#1595). The owner's ruling: "if there's something, even
 # if small, we try". A thin film is shorter, not refused; the plan still reports its shortfall.
 MIN_CARRIERS = 1
-# An on-this-day film is about recurrence: one year of it is a single-year film, which its
-# contract refuses rather than inflating. A holiday of one year is still that holiday's film.
+# An on-this-day film is about recurrence: one year of several asked for is a single-year film,
+# which its contract refuses rather than inflating. A request for one year (`--years-back 1`)
+# asks for that year's day, and gets it (#2467). A holiday of one year is still that holiday's film.
 _RECURRING = ("on_this_day",)
 MIN_OCCURRENCES = 2
 
@@ -206,12 +207,26 @@ def _shows_excluded(excluded: Sequence[str], caption: str) -> bool:
     return False
 
 
-def _too_thin(intent: EditorialIntent, carriers: Sequence[CarrierView]) -> bool:
-    if len(carriers) < MIN_CARRIERS:
-        return True
+def _occurrences_needed(intent: EditorialIntent) -> int:
+    """How many occurrences must hold a carrier: two of a recurrence, or the one asked for."""
     if intent.product not in _RECURRING:
-        return False
-    return sum(count > 0 for count in _coverage(intent, carriers).values()) < MIN_OCCURRENCES
+        return 0
+    return min(MIN_OCCURRENCES, len(intent.partitions))
+
+
+def _thin_reason(intent: EditorialIntent, carriers: Sequence[CarrierView]) -> str | None:
+    """Why the material does not make this film, in the words the run prints; None when it does."""
+    if len(carriers) < MIN_CARRIERS:
+        return "no picture in the period could be used"
+    needed = _occurrences_needed(intent)
+    held = sum(count > 0 for count in _coverage(intent, carriers).values())
+    if held >= needed:
+        return None
+    asked = len(intent.partitions)
+    return (
+        f"only {held} of the {asked} years asked for {'holds' if held == 1 else 'hold'} "
+        f"pictures of the day, and a film about the day coming back needs {needed}"
+    )
 
 
 def _verdict(
@@ -219,17 +234,12 @@ def _verdict(
     violations: Sequence[Violation],
     *,
     carriers: Sequence[CarrierView],
-    usable: float,
-    requested_seconds: float,
 ) -> tuple[str, str | None]:
     structural = [v.detail for v in violations if v.severity == "structural"]
     if structural:
         return "structural_violation", "; ".join(structural)
-    if _too_thin(intent, carriers):
-        return "insufficient_material", (
-            f"{len(carriers)} carrier(s), {usable:.1f} s usable of {requested_seconds:g} s requested: "
-            "the material does not establish the requested memory; " + intent.abstention_policy
-        )
+    if (thin := _thin_reason(intent, carriers)) is not None:
+        return "insufficient_material", thin
     if violations:
         return "coverage_incomplete", "; ".join(v.detail for v in violations)
     return "ok", None
@@ -258,13 +268,7 @@ def validate_intent(
         *_people_violations(carriers, people_violations),
         *_excluded_violations(intent, carriers),
     ]
-    status, reason = _verdict(
-        intent,
-        violations,
-        carriers=carriers,
-        usable=usable,
-        requested_seconds=requested_seconds,
-    )
+    status, reason = _verdict(intent, violations, carriers=carriers)
     return IntentReport(
         status=status,
         violations=tuple(violations),

@@ -24,7 +24,7 @@ import pytest
 
 from tests.e2e.fake_immich import FakeImmichServer
 from tests.e2e.fake_library import CAST, HELD_PICTURES, HOME, LIBRARY, Picture
-from tests.features.cli_harness import OutboundTrap, film_facts
+from tests.features.cli_harness import OutboundTrap, film_facts, films_under
 from tests.integration.features.real_editor import (
     SERVED,
     EditedFilm,
@@ -265,3 +265,48 @@ def test_a_person_film_through_the_real_editor_shows_them_on_every_picture(home)
     target = re.search(r"Duration (\d+)s", spotlight.output)
     assert target, spotlight.result.explain()
     assert_within(spotlight, float(target.group(1)))
+
+
+# ── on this day ──────────────────────────────────────────────────────────────
+
+# The library's first day away, looked back on from the same date a year later.
+_ANNIVERSARY = f"{int(YEAR) + 1}-07-12"
+
+
+def _on_this_day(years_back: int) -> tuple[str, ...]:
+    return (
+        "--memory-type",
+        "on_this_day",
+        "--day",
+        _ANNIVERSARY,
+        "--years-back",
+        str(years_back),
+        *_RENDER,
+    )
+
+
+@pytest.mark.feature("memory-type.on-this-day")
+def test_on_this_day_one_year_back_renders_the_cut_the_editor_made(home):
+    # One year asked for is one occurrence: its day is the film, not a decline (#2467).
+    day = generate(home, *_on_this_day(1))
+
+    kept = day.kept()
+    assert kept, day.result.explain()
+    assert all(f"{YEAR}-07-11" <= p.day <= f"{YEAR}-07-13" for p in kept), [
+        p.asset_id for p in kept
+    ]
+    assert "Nothing worth a film" not in day.output
+    assert_capture_order(day)
+
+
+@pytest.mark.feature("memory-type.on-this-day")
+def test_on_this_day_with_one_year_of_two_holding_pictures_says_why_it_made_no_film(home):
+    # The library starts in YEAR: of the two years asked for, one holds pictures. A film about a
+    # day coming back needs two, and the run says so rather than a bare decline.
+    result = run(home, "generate", *_on_this_day(2))
+
+    assert result.returncode == 0, result.explain()
+    declined = re.search(r"Nothing worth a film in [^\n]*?: (.+)", result.output)
+    assert declined, result.explain()
+    assert "1 of the 2 years" in declined.group(1), result.explain()
+    assert not home.videos.exists() or not films_under(home.videos)

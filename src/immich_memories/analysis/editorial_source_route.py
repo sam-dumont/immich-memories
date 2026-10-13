@@ -36,9 +36,9 @@ class EditorialSourcePlan:
     render_adjustments: tuple[dict, ...] = ()
     render_timing: dict | None = None
     duration_realization: dict | None = None
-    # Why an empty `plan.selections` is empty, when the structure result knows a specific
-    # reason (a people condition excluded the whole pool, #1954) rather than the generic
-    # "nothing worth a film".
+    # Why an empty `plan.selections` is empty, when the contract declined the cut and said why
+    # (a people condition excluded the whole pool, #1954; one year of an on-this-day film,
+    # #2467) rather than the generic "nothing worth a film".
     no_selection_reason: str | None = None
     # The structure plan the cut came from, so the final-cut stage can say why each picture
     # it did not use is out (`editorial_left_out.final_cut_notes`).

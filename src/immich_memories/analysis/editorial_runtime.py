@@ -420,7 +420,7 @@ class RuntimeEditorialPlanner:
                     duration_realization=result.plan.get("duration_realization")
                     if result
                     else None,
-                    no_selection_reason=_people_condition_no_selection_reason(result),
+                    no_selection_reason=_no_selection_reason(result),
                 )
             if result is None:
                 raise RuntimeError("editorial source route has no completed structure result")
@@ -464,18 +464,15 @@ class RuntimeEditorialPlanner:
         return final, reach
 
 
-def _people_condition_no_selection_reason(result) -> str | None:
-    """A specific empty-cut reason when a people condition excluded the whole pool, else None.
+def _no_selection_reason(result) -> str | None:
+    """Why the contract declined the cut, when it did; None for any other empty cut.
 
-    `editorial_structure_planner._plan_structure` writes `people_condition_excluded`
-    whenever it left pictures out before planning, carriers or not (a recurring product
-    can still read "insufficient_material" from its own occurrence count with carriers
-    present): only an empty `carriers` means the reason is actually about the exclusion.
-    The generic "nothing worth a film" stays the answer for every other empty cut (#1954).
+    A declined cut can still hold the carriers the editor picked (an on-this-day film whose
+    pictures come from one year, #2467), so the reason comes from the verdict, not from an
+    empty carrier list. A people condition that excluded the whole pool writes its own reason
+    there (`with_people_condition_exclusion`, #1954).
     """
-    if result is None or not result.plan.get("people_condition_excluded"):
-        return None
-    if result.plan.get("carriers"):
+    if result is None or result.plan.get("status") != "insufficient_material":
         return None
     return result.plan.get("intent_report", {}).get("reason")
 

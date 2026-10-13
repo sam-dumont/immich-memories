@@ -295,10 +295,18 @@ def _recurring(product, spans, whole, *, brief, who):
             "the setting that marks the day",
         ),
         allowed_texture="the festive or ritual setting of the day itself",
-        abstention_policy="fewer than two occurrences hold usable material: insufficient_material rather than a single-year film",
+        abstention_policy=_recurring_abstention(len(partitions)),
         voice_per_partition=True,
         occurrence_is_subject=True,
     )
+
+
+def _recurring_abstention(occurrences: int) -> str:
+    # One occurrence asked for is that occurrence's film, the same rule the validator applies
+    # (`editorial_intent_validation._occurrences_needed`, #2467); several still need two.
+    if occurrences == 1:
+        return "the one occurrence asked for holds no usable material: insufficient_material"
+    return "fewer than two occurrences hold usable material: insufficient_material rather than a single-year film"
 
 
 def _person(product, spans, whole, *, brief, who):

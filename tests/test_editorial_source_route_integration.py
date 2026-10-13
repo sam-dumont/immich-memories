@@ -226,6 +226,35 @@ def test_empty_native_cut_does_not_claim_the_library_was_exhausted(tmp_path, mon
     assert saved["duration_realization"] == realization
 
 
+def test_a_declined_cut_carries_the_contracts_reason_to_the_run(tmp_path, monkeypatch):
+    """The editor picked pictures and the contract declined them: the run names why (#2467)."""
+    from immich_memories.analysis.editorial_structure_contract import StructurePlanningResult
+    from immich_memories.operations.editorial_attempt import read_editorial_attempt
+
+    reason = "only 1 of the 2 years asked for holds pictures of the day"
+
+    def declined(source, _ports):
+        first = next(iter(source.assets))
+        return StructurePlanningResult(
+            {
+                "carriers": [{"asset_id": first, "taken": "2025-01-01", "kind": "still"}],
+                "status": "insufficient_material",
+                "intent_report": {"status": "insufficient_material", "reason": reason},
+            },
+            "contract",
+            "diagnostic sheet",
+            {},
+        )
+
+    sources, _config, build, *_ = setup_runtime(tmp_path, monkeypatch, default_structure=declined)
+    runtime = build()
+    result = runtime.plan_source(sources, trace=Trace())
+
+    assert result.plan.selections == ()
+    assert result.no_selection_reason == reason
+    assert read_editorial_attempt(runtime.last_attempt_directory)["reason"] == reason
+
+
 def test_unavailable_canonical_evidence_does_not_trigger_legacy_selection(tmp_path, monkeypatch):
     sources, _config, build, calls, _captures, _images, _warm = setup_runtime(tmp_path, monkeypatch)
     planner = build()

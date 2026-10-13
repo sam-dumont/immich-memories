@@ -243,13 +243,14 @@ def test_model_chooses_event_and_picture_before_acquisition_and_warm_is_exact(tm
     assert all(c["cache_hit"] for c in warm_judge.calls)
 
 
-def test_single_eligible_year_is_still_capped_and_insufficiency_is_reported(tmp_path):
+def test_one_year_asked_for_is_still_capped_and_makes_its_film(tmp_path):
+    """`--years-back 1` asks for one occurrence: its capped cut is the film (#2467)."""
     from tests.editorial_story_fixtures import AnnualStoryJudge
 
     plan = run(make_source(tmp_path, years=(2030,), per_year_limit=1), AnnualStoryJudge())
     assert len(plan["carriers"]) == 1
     assert plan["intent_report"]["coverage"] == {"occurrence-1-2030-05-02": 1}
-    assert plan["intent_report"]["status"] == "insufficient_material"
+    assert plan["intent_report"]["status"] != "insufficient_material"
 
 
 def test_validator_catches_excess_across_families_and_reports_missing_year():
