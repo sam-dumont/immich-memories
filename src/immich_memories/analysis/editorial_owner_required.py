@@ -13,8 +13,7 @@ from operator import itemgetter
 from typing import Any
 
 from immich_memories.analysis.editorial_story_replies import WEIGHT_ROLE
-
-OWNER_WHY = "kept by the owner: ticked in the pool after the cut"
+from immich_memories.analysis.shot_reason import shot_reason_of_row
 
 
 def admit_owner_required(
@@ -118,13 +117,17 @@ def _owner_row(
     line_of: Callable[[str], str],
 ) -> dict:
     weight = str(story["weight"]) if story else "none"
+    line = line_of(unit["asset_id"])
+    title = str(story.get("title") or "") if story else ""
     return dict(unit) | {
         "event": family,
         "anchor": anchor_label.get(family, family),
         "chapter": index,
-        "why": OWNER_WHY,
+        "why": shot_reason_of_row(
+            dict(unit) | {"line": line, "owner_required": True}, story_title=title
+        ),
         "event_intention": "",
-        "line": line_of(unit["asset_id"]),
+        "line": line,
         "story_episode": story["key"] if story else "",
         "story_role": WEIGHT_ROLE.get(weight, "incidental"),
         "story_weight": weight,

@@ -110,7 +110,7 @@ def _carrier(row: Mapping[str, Any], title: str, render_modes: Mapping[str, str]
         asset_id=asset_id,
         seconds=float(row.get("seconds") or 0.0),
         taken=str(row.get("taken") or ""),
-        reason=carrier_reason(row.get("why"), title),
+        reason=carrier_reason(row, title),
         standing=str(row.get("standing") or ""),
         motion=motion,
     )

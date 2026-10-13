@@ -424,11 +424,12 @@ features:
       - tests/features/test_cli_surface.py::test_an_unknown_run_id_says_so_and_exits_non_zero
       - tests/integration/features/test_runs_and_report.py::test_an_ambiguous_run_prefix_lists_the_matches_and_exits_non_zero
   - id: runs.story
-    promise: "runs story prints the shots of a run in playback order, each with its timecode, capture date and kind."
+    promise: "runs story prints the shots of a run in playback order, each with its timecode, capture date, kind and why it plays, in words."
     doc: make/cli/runs.md#read-the-cut
     covers: ["cli:runs story"]
     tests:
       - tests/integration/features/test_runs_and_report.py::test_runs_story_reads_the_shots_in_playback_order
+      - tests/integration/features/test_real_editor_films.py::test_a_year_through_the_real_editor_keeps_its_rules_and_its_minute
   - id: runs.why
     promise: "runs why says where one picture was kept or dropped, and why, in the latest run or the one --run names."
     doc: make/cli/runs.md#read-the-cut

@@ -19,13 +19,13 @@ It lives outside the UI package because the terminal reads the same record:
 from __future__ import annotations
 
 import json
-import re
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from immich_memories.analysis.shot_reason import reads_as_telemetry, shot_reason_of_row
 from immich_memories.processing.assembly_config import AssemblyClip, TitleScreenSettings
 from immich_memories.processing.timeline_budget import TimelinePlan
 from immich_memories.processing.timeline_preview import preview_timeline
@@ -38,24 +38,21 @@ TRACE_FILE = "selection-trace.private.json"
 MOTION_KINDS = frozenset({"video", "live-motion", "motion"})
 
 
-# An annotation line opens on its capture timestamp: a field the shot's own date already says.
-_TIMESTAMP_FIELD = re.compile(r"^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}\S*\s*(\|\s*)?")
-# The no-model reader's own name for a moment, said in a reader's words.
-_READER_WORDS = {"capture group": "the best frame of its moment"}
 _TITLE_PARTS = 2
 
 
-def carrier_reason(why: object, title: str) -> str:
-    """The editor's reason for a carrier, without the story title it prefixed, in words.
+def carrier_reason(row: Mapping[str, Any], title: str) -> str:
+    """The editor's reason for a carrier, in words, without the story title in front.
 
-    The no-model reader's "capture group" and the raw annotation line some moments carry
-    are rewritten for a reader: `runs story` printed them as they were stored (#2156).
+    A plan written before #2487 stored the story title, then the no-model reader's
+    "capture group" or a raw annotation line; such a reason is rebuilt from the shot's own
+    facts, so `runs story` and the review page read the same either way.
     """
-    text = str(why or "").strip()
-    prefix = f"{title}: "
-    text = text[len(prefix) :] if title and text.startswith(prefix) else text
-    text = ", ".join(part.strip() for part in _TIMESTAMP_FIELD.sub("", text).split(" | "))
-    return _READER_WORDS.get(text, text)
+    text = str(row.get("why") or "").strip()
+    text = text.removeprefix(f"{title}: ") if title else text
+    if not text or reads_as_telemetry(text):
+        return shot_reason_of_row(row, story_title=title)
+    return text
 
 
 def short_story_title(title: str) -> str:
@@ -245,7 +242,7 @@ def storyboard_from_plan(
                 motion=str(row.get("kind", "")) in MOTION_KINDS,
                 new_day=day != previous_day,
                 chapter=month if month != previous_month else "",
-                reason=carrier_reason(row.get("why"), title),
+                reason=carrier_reason(row, title),
                 note=str(row.get("live_note") or ""),
             )
         )
