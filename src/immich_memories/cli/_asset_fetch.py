@@ -10,9 +10,10 @@ offered to selection in both forms.
 from __future__ import annotations
 
 import logging
-from collections.abc import Mapping
-from typing import TYPE_CHECKING
+from collections.abc import Callable, Mapping
+from typing import TYPE_CHECKING, Any
 
+from immich_memories.analysis.source_filter import asset_of
 from immich_memories.api.person_expression import PersonExpression
 from immich_memories.api.person_scope import (
     people_in_window,
@@ -80,6 +81,8 @@ def _report_per_window(
     person_ids: list[str],
     history_from: int | None = None,
     kind: str = "videos",
+    usable: Callable[[Any], bool] | None = None,
+    stand_in: bool = False,
 ) -> None:
     """Say what each window contributed, and shout when one contributed nothing.
 
@@ -96,13 +99,17 @@ def _report_per_window(
     most of those days hold nothing — warning once per empty year would bury
     the one warning that means something, so the tail is counted instead of
     listed. Everything before the mark keeps its own warning.
+
+    ``usable`` is what a film may use at all (`film_may_use`): a window holding only
+    forwarded copies holds no material, and the history line says how many it set aside.
     """
     if len(date_ranges) < 2:
         return
 
     from immich_memories.memory_types.eras import count_by_era
 
-    counts = count_by_era([a.local_taken_at for a in assets], date_ranges)
+    kept = [a for a in assets if usable is None or usable(a)]
+    counts = count_by_era([_taken(a) for a in kept], date_ranges)
     labels = [_window_label(r) for r in date_ranges]
     anchor = _anchor_name(assets, person_ids)
 
@@ -118,13 +125,32 @@ def _report_per_window(
 
     history = counts[reported:]
     if history:
-        _report_history(history, anchor)
+        refused = [a for a in assets if usable is not None and not usable(a)]
+        set_aside = sum(count_by_era([_taken(a) for a in refused], date_ranges)[reported:])
+        _report_history(history, anchor, set_aside, stand_in=stand_in)
 
 
-def _report_history(counts: list[int], anchor: str | None) -> None:
-    """One line for the whole tail, and a warning only if none of it landed."""
+def _taken(source: Any):
+    """When a fetched video or photo was taken, whichever shape the fetch handed over."""
+    return asset_of(source).local_taken_at
+
+
+def _report_history(
+    counts: list[int], anchor: str | None, set_aside: int = 0, *, stand_in: bool = False
+) -> None:
+    """One line for the whole tail, and a warning only if none of it landed.
+
+    `stand_in` is `analysis.forwarded_copies_when_short`: the set-aside copies may then stand
+    in where the film is short, and the run names the days they do.
+    """
     held = sum(1 for n in counts if n)
-    print_info(f"history: {held} of {len(counts)} earlier windows hold material")
+    use = "which may stand in where the film is short" if stand_in else "which no film uses"
+    aside = (
+        f"; {set_aside} pictures there are forwarded copies or saved images, {use}"
+        if set_aside
+        else ""
+    )
+    print_info(f"history: {held} of {len(counts)} earlier windows hold material{aside}")
     if held == 0:
         who = f"{anchor} appears in none" if anchor else "nothing was found in any"
         print_warning(f"{who} of the {len(counts)} earlier windows — the memory has no history")
@@ -192,6 +218,8 @@ def fetch_videos(
     person_expression: PersonExpression | None = None,
     history_from: int | None = None,
     report_windows: bool = True,
+    usable: Callable[[Any], bool] | None = None,
+    stand_in: bool = False,
 ) -> list:
     """Fetch the video assets for the memory's windows.
 
@@ -233,7 +261,9 @@ def fetch_videos(
     progress.update(task, completed=True)
     print_success(f"Found {len(assets)} videos")
     if report_windows:
-        _report_per_window(assets, date_ranges, person_ids, history_from)
+        _report_per_window(
+            assets, date_ranges, person_ids, history_from, usable=usable, stand_in=stand_in
+        )
 
     return assets
 
@@ -250,6 +280,8 @@ def fetch_media(
     include_photos: bool = True,
     history_from: int | None = None,
     face_accounts: Mapping[str, str | frozenset[str]] | None = None,
+    usable: Callable[[Any], bool] | None = None,
+    stand_in: bool = False,
 ) -> tuple[list, list]:
     """The videos and photos a memory's windows hold, as one fetch.
 
@@ -271,12 +303,20 @@ def fetch_media(
             person_ids=[],
             history_from=history_from,
             report_windows=not include_photos,
+            usable=usable,
+            stand_in=stand_in,
         )
         if not include_photos:
             return everything, []
         pictures = fetch_photos(client=client, date_ranges=date_ranges, person_ids=[])
         _report_per_window(
-            [*everything, *pictures], date_ranges, [], history_from, kind="photos and videos"
+            [*everything, *pictures],
+            date_ranges,
+            [],
+            history_from,
+            kind="photos and videos",
+            usable=usable,
+            stand_in=stand_in,
         )
         return everything, pictures
     task = progress.add_task("Fetching the pictures these people are in...", total=None)
@@ -298,6 +338,8 @@ def fetch_media(
         person_ids,
         history_from,
         kind="photos and videos" if include_photos else "videos",
+        usable=usable,
+        stand_in=stand_in,
     )
     return videos, photos
 

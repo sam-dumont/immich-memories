@@ -43,6 +43,7 @@ ENDPOINTS: tuple[tuple[str, str], ...] = (
     ("GET", "/assets/{id}/original"),
     ("GET", "/assets/{id}/thumbnail"),
     ("GET", "/assets/{id}/video/playback"),
+    ("GET", "/duplicates"),
     ("GET", "/faces"),
     ("GET", "/people"),
     ("GET", "/people/users"),

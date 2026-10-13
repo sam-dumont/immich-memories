@@ -97,11 +97,11 @@ def _llm_lines(counters: LLMCounters) -> list[str]:
     if counters.truncated:
         # The sentence #600 needed on the night it started, instead of two
         # months later in a server log nobody was reading.
+        # Every path counts here: a thinking call retried without thinking, and a plain call
+        # retried with a bigger budget. Calling them all "thinking" sent one review down the
+        # wrong path.
         call = "call" if counters.truncated == 1 else "calls"
-        lines.append(
-            f"        {counters.truncated} thinking {call} truncated at the "
-            "token budget and retried without it"
-        )
+        lines.append(f"        {counters.truncated} {call} hit the token budget and retried")
     return lines
 
 

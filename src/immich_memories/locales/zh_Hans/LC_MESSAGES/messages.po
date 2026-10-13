@@ -115,3 +115,78 @@ msgstr "{place} · 一天"
 
 msgid "summary.then"
 msgstr "{earlier}，然后{later}"
+
+# Story names (#2486): what the rules call a day, a stay, a trip or an occasion.
+msgid "story.weekday_date"
+msgstr "{date}{weekday}"
+
+msgid "story.span_same_month"
+msgstr "{month}{start}日至{end}日"
+
+msgid "story.span"
+msgstr "{first}至{last}"
+
+msgid "story.place_when"
+msgstr "{place}，{when}"
+
+msgid "story.home_day_purpose"
+msgstr "在家的一天，{day}"
+
+msgid "story.home_days"
+msgstr "在家的日子，{span}"
+
+msgid "story.home_days_purpose"
+msgstr "在家的平常日子"
+
+msgid "story.day_out"
+msgstr "一日出游"
+
+msgid "story.days_out"
+msgstr "几天出游"
+
+msgid "story.head_when"
+msgstr "{head}，{when}"
+
+msgid "story.across"
+msgstr "{head}：{places}"
+
+msgid "story.more_places"
+msgid_plural "story.more_places"
+msgstr[0] "{places}等另外{n}个地方"
+
+msgid "story.trip_to"
+msgstr "{place}之旅"
+
+msgid "story.trip_away"
+msgstr "一次旅行"
+
+msgid "story.leg"
+msgstr "从{first}到{last}"
+
+msgid "story.days_away"
+msgid_plural "story.days_away"
+msgstr[0] "在外{n}天"
+
+msgid "story.from_to"
+msgstr "{head}，从{first}到{last}"
+
+msgid "story.in_place"
+msgstr "{head}，在{place}"
+
+msgid "story.birthday"
+msgstr "{name}的生日"
+
+msgid "story.turns"
+msgid_plural "story.turns"
+msgstr[0] "{name}{age}岁了"
+
+msgid "story.visit"
+msgstr "{names}来访"
+
+msgid "story.comes_over"
+msgid_plural "story.comes_over"
+msgstr[0] "{names}来做客"
+
+# The word a birthday film's title must carry, or the stem every form of it shares.
+msgid "title.birthday_word"
+msgstr "生日"

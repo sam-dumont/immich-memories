@@ -15,6 +15,7 @@ import contextlib
 import gettext
 import io
 import os
+import re
 import subprocess
 import sys
 from collections.abc import Callable
@@ -332,3 +333,59 @@ def resolve_ui_locale(accept_language: str, *, preference: str = "auto") -> str:
             candidates.append((quality, code))
     candidates.sort(key=itemgetter(0), reverse=True)
     return candidates[0][1] if candidates else DEFAULT_LOCALE
+
+
+# No "y"/"Y": French treats an initial y as a consonant in most everyday
+# words and names ("le yaourt", "Yokohama", "Yuna"), so it never elides.
+_FRENCH_ELISION_VOWELS = frozenset("aàâeéèêëiîïoôuùûühAÀÂEÉÈÊËIÎÏOÔUÙÛÜH")
+
+# h aspiré: well-known place names and common nouns that keep their "h" as a
+# consonant ("le Havre", never "l'Havre"). Lexical, not a rule -- only the
+# exceptions a title is likely to actually name are listed. "Hérault" looks
+# the same shape but is h muet in common usage ("l'Hérault"), so it is kept
+# off this list rather than added to it.
+_FRENCH_ASPIRATED_H_PLACES = frozenset(
+    {
+        "havre", "haye", "havane", "hulpe", "hainaut", "hollande", "hongrie",
+        "huy", "hasselt", "hambourg", "honduras", "hanovre", "helsinki",
+        "hawaï", "hawai", "himalaya", "hongkong",
+    }
+)  # fmt: skip
+_FRENCH_ASPIRATED_H_COMMON_NOUNS = frozenset(
+    {"haricot", "haricots", "hibou", "hiboux", "héros", "hockey", "honte", "hutte"}
+)
+# A capitalised H name not on the aspiré list above is still not elided by
+# default: "when unsure, don't elide" a proper noun. Only a name confirmed
+# h muet in common usage (Hérault) is exempted from that caution.
+_FRENCH_ELIDABLE_H_NAMES = frozenset({"hérault", "hélène"})
+
+
+def _elided(word: str, next_word: str) -> str:
+    if not next_word or next_word[0] not in _FRENCH_ELISION_VOWELS:
+        return f"{word} {next_word}"
+    folded = next_word.casefold()
+    if folded in _FRENCH_ASPIRATED_H_PLACES or folded in _FRENCH_ASPIRATED_H_COMMON_NOUNS:
+        return f"{word} {next_word}"
+    if (
+        next_word[0].casefold() == "h"
+        and next_word[:1].isupper()
+        and folded not in _FRENCH_ELIDABLE_H_NAMES
+    ):
+        return f"{word} {next_word}"
+    prefix = "l" if word.casefold() in ("le", "la") else "d"
+    cased = prefix.upper() if word[:1].isupper() else prefix
+    return f"{cased}'{next_word}"
+
+
+def elide_french(text: str) -> str:
+    """French "de/le/la" before a vowel written "d'/l'" ("de Anne" -> "d'Anne").
+
+    Filled templates and model titles get the facts right and this grammar wrong, and the
+    rule is deterministic, so text is elided rather than refused over it.
+    """
+    return re.sub(
+        r"\b(de|le|la)\s+([^\W\d_]+)",
+        lambda m: _elided(m.group(1), m.group(2)),
+        text,
+        flags=re.IGNORECASE,
+    )

@@ -142,6 +142,9 @@ class SyncImmichClient:
     def get_stacks(self) -> list[Stack]:
         return self._run(self._async_client.get_stacks())
 
+    def get_duplicate_groups(self) -> list[tuple[str, ...]]:
+        return self._run(self._async_client.get_duplicate_groups())
+
     def get_asset_faces(self, asset_id: str) -> list[AssetFace]:
         return self._run(self._async_client.get_asset_faces(asset_id))
 

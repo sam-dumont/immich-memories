@@ -150,7 +150,7 @@ def _scene_reach(candidate: Mapping[str, Any], keeper: Mapping[str, Any]) -> boo
     of scene a frame shows, and a single-event day is one kind all day long, so stage after
     stage an evening apart scored 0.68 to 0.78 and five sets of one concert left the film as
     repeats of a sixth. Pairs on different days are read within the scene window, where every
-    repeat the owner named sat.
+    repeat the owner named sat, and so is a forwarded copy against anything of its own day.
     """
     if not repeat_may_be_refused(candidate, keeper):
         return False
@@ -159,7 +159,11 @@ def _scene_reach(candidate: Mapping[str, Any], keeper: Mapping[str, Any]) -> boo
     apart = abs(_taken(candidate) - _taken(keeper))
     if candidate.get("favourite") and keeper.get("favourite"):
         return apart <= timedelta(days=FAVOURITE_TWIN_DAYS)
-    if _taken(candidate).date() == _taken(keeper).date():
+    same_day = _taken(candidate).date() == _taken(keeper).date()
+    # A forwarded copy's time is when it arrived (`forwarded_fallback`): within its day it says
+    # nothing about which moment it shows, so the day is its moment.
+    received = candidate.get("forwarded") or keeper.get("forwarded")
+    if same_day and not received:
         return apart <= timedelta(minutes=MOMENT_WINDOW_MINUTES)
     return apart <= timedelta(days=SCENE_WINDOW_DAYS)
 

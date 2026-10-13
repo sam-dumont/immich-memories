@@ -135,6 +135,12 @@ class EditorialRunContext:
     person_expression: PersonExpression | None = None
     render_timing: EditorialTimingPolicy | None = None
     hemisphere: Literal["north", "south"] = "north"
+    # The birthday a birthday film celebrates ("MM-DD"), from `--birthday`: its subject's
+    # birthday is a story of its own on every photographed occurrence of it.
+    celebrated_birthday: str | None = None
+    # The forwarded copies that fill gaps in the film's camera timeline (`forwarded_fallback`),
+    # by asset id, chosen by the CLI; empty while `analysis.forwarded_copies_when_short` is off.
+    forwarded_stand_ins: tuple[str, ...] = ()
     window_origin: str | None = None  # why a window nobody typed starts where it does
     # The film's sharing level: just_us, family or shareable (`editorial_shareability.LEVELS`).
     audience: str = "family"
@@ -548,6 +554,7 @@ def build_editorial_planner(
         context.date_ranges,
         asset_ids=context.event_asset_ids if context.special_event_id else None,
         accept_any_provenance=context.accept_any_provenance,
+        forwarded_stand_ins=context.forwarded_stand_ins,
     )
     selection_request = EditorialSelectionRequest(
         scope=scope,

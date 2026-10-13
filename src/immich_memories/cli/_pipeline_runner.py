@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import logging
 import sys
+from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -32,6 +33,7 @@ from immich_memories.cli._run_summary import render_run_summary
 from immich_memories.cli._run_timeline import configure_timeline, final_timeline
 from immich_memories.cli.attempt_phase_reporter import AttemptPhaseReporter
 from immich_memories.cli.declined_period import end_run_without_a_film, nothing_worth_a_film_message
+from immich_memories.cli.film_length import copy_checks, sized_film
 from immich_memories.cli.source_progress import SourceProgressReporter
 from immich_memories.filename_builder import name_after_recipe
 from immich_memories.operations.run_index import run_id_for_attempt
@@ -46,42 +48,8 @@ if TYPE_CHECKING:
     from immich_memories.api.immich import SyncImmichClient
     from immich_memories.cli._live_display import ProgressDisplay
     from immich_memories.config_loader import Config
-    from immich_memories.planning.auto_duration import DurationDecision
     from immich_memories.processing.output_canvas import OutputCanvas
     from immich_memories.processing.timeline_budget import TimelinePlan
-
-
-def _decide_duration(
-    requested_duration: float | None,
-    *,
-    requested_source: str | None,
-    preset_duration: float | None,
-    memory_type: str | None,
-    clips: list,
-    photos: list | None,
-    config: Config,
-) -> DurationDecision:
-    """Fit the film to its material, now that the CLI has discovered some."""
-    from immich_memories.planning.auto_duration import (
-        DURATION_FROM_DURATION_FLAG,
-        decide_memory_duration,
-    )
-
-    title_config = config.title_screens
-    decision = decide_memory_duration(
-        clips,
-        photos or [],
-        requested_seconds=requested_duration,
-        requested_source=requested_source or DURATION_FROM_DURATION_FLAG,
-        preset_seconds=preset_duration,
-        memory_type=memory_type,
-        avg_clip_duration=config.analysis.optimal_clip_duration,
-        photo_duration=config.photos.duration,
-        title_duration=title_config.title_duration if title_config.enabled else 0.0,
-        ending_duration=title_config.ending_duration if title_config.enabled else 0.0,
-    )
-    logger.info("%s memory. %s", memory_type or "Custom", decision.sentence())
-    return decision
 
 
 def _configure_output_canvas(
@@ -370,7 +338,7 @@ def run_pipeline_and_generate(
         print_error("No usable content (no video clips or photos)")
         sys.exit(1)
 
-    duration_decision = _decide_duration(
+    duration_decision, stand_ins = sized_film(
         duration,
         requested_source=duration_source,
         preset_duration=preset_duration,
@@ -378,6 +346,10 @@ def run_pipeline_and_generate(
         clips=clips,
         photos=resolved.photo_assets,
         config=config,
+        span=date_range,
+        windows=date_ranges,
+        accept_any_provenance=accept_any_provenance,
+        checks=partial(copy_checks, client, config),
     )
     duration = duration_decision.seconds
     print_info(duration_decision.sentence())
@@ -448,6 +420,7 @@ def run_pipeline_and_generate(
         accept_any_provenance=accept_any_provenance,
         owner_required_asset_ids=owner_required_asset_ids,
         owner_excluded_asset_ids=owner_excluded_asset_ids,
+        forwarded_stand_ins=tuple(sorted(stand_ins.ids)),
     )
     if dry_run:
         from immich_memories.cli._generation_preview import print_dry_run_preparation

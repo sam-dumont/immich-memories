@@ -29,7 +29,8 @@ class PolishJudge:
             llm=LLMConfig(enabled=True, base_url="http://localhost:8080/v1", model="model-a")
         )
         self.bank = {} if bank is None else bank
-        self.calls: list[str] = []
+        # The real judge's shape (`StructureTextJudge.calls`): one row per call, by its stage.
+        self.calls: list[dict] = []
         self.require_hits = require_hits
 
     def ask(self, stage, prompt, max_tokens=260, *, accepts=None, **options):
@@ -39,7 +40,7 @@ class PolishJudge:
             pytest.fail(f"a replay asked something new at {stage}")
         if not hit:
             self.bank[key] = self.answer(stage, prompt)
-        self.calls.append(stage)
+        self.calls.append({"stage": stage})
         return self.bank[key]
 
     @staticmethod
@@ -53,6 +54,9 @@ class PolishJudge:
         if stage.startswith("story-pick-"):
             labels = re.findall(r"^(M\d{2}) \|", prompt, re.MULTILINE)
             return json.dumps({"keep": labels[:1]})
+        if stage == "film-summary":
+            # A Full film's summary is the model's, asked once the refined cut is settled.
+            return json.dumps({"summary": "A month of ordinary days at home."})
         raise AssertionError(f"the polish asked an unexpected question: {stage}")
 
 
@@ -227,8 +231,9 @@ def test_the_polish_spends_one_vote_one_pick_and_one_check_and_no_standing_quest
     # the vote named a shot, so it asked its second order; the one contested page is picked in
     # one order, the facts say whether its pick stands, and the re-check named nobody in its
     # first order
-    assert sum(1 for stage in judge.calls if stage.startswith("thesis-fit-")) == 3
-    assert sum(1 for stage in judge.calls if stage.startswith("story-pick-")) == 1
+    stages = [call["stage"] for call in judge.calls]
+    assert sum(1 for stage in stages if stage.startswith("thesis-fit-")) == 3
+    assert sum(1 for stage in stages if stage.startswith("story-pick-")) == 1
     assert len(judge.calls) == 4
 
 
@@ -313,7 +318,7 @@ def test_every_vote_including_the_newcomers_re_check_is_banked_for_the_next_run(
 
     warm = polish_once(tmp_path, second)
 
-    assert [stage for stage in second.calls if stage.startswith("thesis-fit-")] == []
+    assert [c["stage"] for c in second.calls if c["stage"].startswith("thesis-fit-")] == []
     assert [row["asset_id"] for row in warm] == [row["asset_id"] for row in cold]
 
 

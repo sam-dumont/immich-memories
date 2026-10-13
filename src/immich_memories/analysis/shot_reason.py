@@ -154,8 +154,11 @@ def _beats(
     starred: bool,
     kept_by_owner: bool,
     siblings: Sequence[str],
+    forwarded: bool = False,
 ) -> list[str]:
     beats = [
+        # A copy somebody sent, standing in where the film had no picture of its own.
+        "a forwarded copy" if forwarded else "",
         "kept by the owner" if kept_by_owner else "",
         "starred" if starred else "",
         _motion(facts, kind),
@@ -196,6 +199,7 @@ def shot_reason(
     kept_by_owner: bool = False,
     story_title: str = "",
     siblings: Sequence[str] = (),
+    forwarded: bool = False,
 ) -> str:
     """Why this shot is in the cut, at most `REASON_CHARS` characters, from its own facts.
 
@@ -208,7 +212,13 @@ def shot_reason(
     )
     place = "" if named else facts.place
     beats = _beats(
-        line, facts, kind=kind, starred=starred, kept_by_owner=kept_by_owner, siblings=siblings
+        line,
+        facts,
+        kind=kind,
+        starred=starred,
+        kept_by_owner=kept_by_owner,
+        siblings=siblings,
+        forwarded=forwarded,
     )
     tail = "".join(SEPARATOR + beat for beat in beats)
     head = _head(facts, place, REASON_CHARS - len(tail))
@@ -231,4 +241,5 @@ def shot_reason_of_row(
         kept_by_owner=bool(row.get("owner_required")),
         story_title=story_title,
         siblings=siblings,
+        forwarded=bool(row.get("forwarded")),
     )

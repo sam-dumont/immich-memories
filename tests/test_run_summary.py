@@ -27,7 +27,7 @@ def test_the_block_reports_what_it_measured_this_run() -> None:
     assert "14 planned from 312 candidates" in text
 
 
-def test_a_truncated_thinking_call_is_named_in_the_block() -> None:
+def test_a_truncated_call_is_named_in_the_block() -> None:
     """The sentence that would have surfaced #600 on the night it started."""
     counters = LLMCounters(calls=11, cache_hits=4, truncated=1, wall_seconds=138.0)
 
@@ -41,7 +41,7 @@ def test_a_truncated_thinking_call_is_named_in_the_block() -> None:
     )
 
     assert "11 calls" in text
-    assert "truncated" in text
+    assert "hit the token budget" in text
     assert "judgment cache" in text
 
 
@@ -72,7 +72,7 @@ def test_a_healthy_llm_run_stays_quiet_about_truncation() -> None:
     )
 
     assert "6 calls" in text
-    assert "truncated" not in text
+    assert "token budget" not in text
 
 
 def test_a_reduced_tier_says_so_and_the_full_one_reads_as_a_normal_run() -> None:

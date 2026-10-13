@@ -111,3 +111,74 @@ def test_public_birthday_command_keeps_its_annual_title_context(tmp_path):
         preset_params=request["memory_preset_params"],
     )
     assert title == "2024"
+
+
+# ── A birthday film's title names the birthday (rc.10, a birthday film titled by name alone) ──
+
+
+def _birthday_reply(title, subtitle):
+    return json.dumps({"title": title, "subtitle": subtitle})
+
+
+async def _model_title(reply: str, locale: str):
+    from unittest.mock import AsyncMock, patch
+
+    from immich_memories.config_models_llm import LLMConfig
+    from immich_memories.titles.llm_titles import generate_title_with_llm, memory_title_facts
+
+    # WHY: the remote model is the only boundary; parsing and all title guards run normally.
+    with patch(
+        "immich_memories.titles.llm_titles.query_llm", new_callable=AsyncMock, return_value=reply
+    ) as query:
+        result = await generate_title_with_llm(
+            memory_type="person_spotlight",
+            locale=locale,
+            start_date="2019-02-06",
+            end_date="2024-02-07",
+            duration_days=1827,
+            person_names=["Riley"],
+            facts=memory_title_facts({"birthday": True}),
+            llm_config=LLMConfig(enabled=True, model="test-model", base_url="http://llm.test/v1"),
+        )
+    return result, query.call_args.args[0]
+
+
+@pytest.mark.parametrize(
+    ("locale", "named"), [("en", "Riley's birthday"), ("fr", "Anniversaire de Riley")]
+)
+def test_the_birthday_template_names_the_birthday(locale, named):
+    span = DateRange(start=datetime(2019, 2, 8), end=datetime(2024, 2, 7, 23, 59, 59))
+
+    title = template_title(
+        Config(title_screens={"locale": locale}),
+        memory_type="person_spotlight",
+        date_range=span,
+        person_name="Riley",
+        preset_params={"birthday": True, "person_names": ["Riley"]},
+    )
+
+    assert title == ("2024", named)
+
+
+@pytest.mark.asyncio
+async def test_a_model_title_that_never_says_birthday_falls_back_to_the_template():
+    result, prompt = await _model_title(_birthday_reply("Riley en 2024", None), "fr")
+
+    assert result is None
+    assert "Occasion the title or subtitle must name: Riley's birthday" in prompt
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("locale", "title", "subtitle"),
+    [
+        ("fr", "L'anniversaire de Riley", "2024"),
+        ("de", "Rileys Geburtstag 2024", None),
+        ("ja", "Rileyの誕生日", "2024"),
+    ],
+)
+async def test_a_model_title_that_names_the_birthday_is_kept(locale, title, subtitle):
+    result, _prompt = await _model_title(_birthday_reply(title, subtitle), locale)
+
+    assert result is not None
+    assert (result.title, result.subtitle) == (title, subtitle)

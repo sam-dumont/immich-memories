@@ -559,11 +559,16 @@ def _story_selection(
         for carrier in carriers:
             for field in ("start_time", "end_time", "render_frame_seconds"):
                 carrier.pop(field, None)
-        return replace(
+        selection = replace(
             deepcopy(ports.draft.selection),
             lines=source.annotations,
             carriers=[material.builder.refresh_clip_facts(carrier) for carrier in carriers],
         )
+        # The draft's summary is the no-model line of the draft's cut. The refined cut is
+        # summarised again, by the model when there is one: kept, it read as a summary
+        # already written and the model was never asked.
+        selection.story.thesis = ""
+        return selection
     unit_of = {u["asset_id"]: u for units in material.units.values() for u in units}
     durations = [u["seconds"] for units in pool.units.values() for u in units if u["seconds"] > 0]
     seconds_per_slot = sum(durations) / len(durations) if durations else SECONDS_PER_SLOT
@@ -623,6 +628,7 @@ def _story_selection(
         context_without_life=source.intent.context_without_life,
         pool_is_subject=source.intent.pool_is_subject,
         occurrence_is_subject=source.intent.occurrence_is_subject,
+        story_shares=source.intent.story_shares,
         partition_of=lambda taken: (
             part.key
             if (part := source.intent.partition_for(datetime.fromisoformat(taken).date()))

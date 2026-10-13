@@ -13,7 +13,7 @@ Neither half knows a pass exists, and neither builds anything.
 from __future__ import annotations
 
 from collections import Counter
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from typing import TYPE_CHECKING
 
 from immich_memories.analysis.picture_copies import copy_reason
@@ -23,7 +23,7 @@ from immich_memories.analysis.source_filter import (
     not_on_the_timeline,
     not_shot_here,
 )
-from immich_memories.analysis.source_quality import forwarded_source_refusal
+from immich_memories.analysis.source_quality import FORWARDED_COPY, forwarded_source_refusal
 from immich_memories.analysis.stacks import stack_reason
 from immich_memories.analysis.trip_detection import haversine_km
 from immich_memories.api.models import Asset, VideoClipInfo
@@ -42,6 +42,7 @@ if TYPE_CHECKING:
         SourceScope,
     )
     from immich_memories.analysis.selection_source_groups import EditorialGroup
+    from immich_memories.config_loader import Config
 
 
 def _source_exclusion_reason(
@@ -144,18 +145,64 @@ def _provenance_exclusion_reason(
     """The camera-roll provenance rule, reading probed motion dimensions when present."""
     if scope.accept_any_provenance:
         return None
+    refusal = _camera_roll_refusal(
+        asset,
+        clip,
+        patterns=scope.excluded_filename_patterns,
+        stills_need_a_camera=scope.stills_need_a_camera,
+        min_short_side=scope.min_source_short_side,
+    )
+    # A forwarded copy named to fill a gap in the film's camera timeline stands in, when the
+    # run asked for that (`forwarded_fallback`); every later check still reads it.
+    if refusal == FORWARDED_COPY and asset.id in scope.forwarded_stand_ins:
+        return None
+    return refusal
+
+
+def _camera_roll_refusal(
+    asset: Asset,
+    clip: VideoClipInfo | None,
+    *,
+    patterns: Sequence[str],
+    stills_need_a_camera: bool,
+    min_short_side: int,
+) -> str | None:
     # The resolution-aware rule supersedes the old still-only EXIF veto. Keeping
     # both made a high-resolution published photo fail before its size could
     # rescue it. Retain the legacy behaviour only when the new provenance rule
     # has been explicitly disabled; filename exclusions always remain.
-    legacy_still_exif_veto = scope.stills_need_a_camera and scope.min_source_short_side <= 0
-    if not_shot_here(
-        asset,
-        patterns=scope.excluded_filename_patterns,
-        stills_need_a_camera=legacy_still_exif_veto,
-    ):
+    legacy_still_exif_veto = stills_need_a_camera and min_short_side <= 0
+    if not_shot_here(asset, patterns=patterns, stills_need_a_camera=legacy_still_exif_veto):
         return "not shot on this camera"
-    return forwarded_source_refusal(asset, min_short_side=scope.min_source_short_side, clip=clip)
+    return forwarded_source_refusal(asset, min_short_side=min_short_side, clip=clip)
+
+
+def camera_roll_refusal(source: Asset | VideoClipInfo, config: Config) -> str | None:
+    """Why the provenance rule refuses `source` under `config`, or None: the reason the
+    source admission of every film gives (`library_source_scope`'s settings)."""
+    analysis = config.analysis
+    return _camera_roll_refusal(
+        asset_of(source),
+        source if isinstance(source, VideoClipInfo) else None,
+        patterns=tuple(analysis.exclude_filename_patterns),
+        stills_need_a_camera=analysis.exclude_stills_without_camera_exif,
+        min_short_side=analysis.min_source_short_side,
+    )
+
+
+def film_may_use(
+    config: Config, *, accept_any_provenance: bool = False
+) -> Callable[[Asset | VideoClipInfo], bool]:
+    """Whether a fetched picture is one a film may use at all, by the provenance rule every
+    film's source admission applies first (`library_source_scope`'s settings).
+
+    What counts a period's material before the editor runs (the film's length, the history
+    a birthday reaches back for) counts with this, so it never promises pictures the editor
+    then refuses: a forwarded copy is no picture of this life, whoever is on it.
+    """
+    if accept_any_provenance:
+        return lambda _source: True
+    return lambda source: camera_roll_refusal(source, config) is None
 
 
 def _boundary_exclusion_reason(

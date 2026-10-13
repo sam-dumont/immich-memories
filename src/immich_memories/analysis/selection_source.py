@@ -110,6 +110,10 @@ class SourceScope:
     # This never relaxes date/person/library scope, privacy, owner exclusions,
     # or Live Photo component handling.
     accept_any_provenance: bool = False
+    # The forwarded copies that fill a gap in the film's camera timeline, by asset id
+    # (`forwarded_fallback`, `analysis.forwarded_copies_when_short`). Empty refuses every
+    # forwarded copy, as the provenance rule always has.
+    forwarded_stand_ins: tuple[str, ...] = ()
     # Cost, decided on Immich metadata before any download or analysis: one
     # selected six-second shot once dragged a 37GB hour-long original into
     # preparation (#1013). 0 disables the cap.

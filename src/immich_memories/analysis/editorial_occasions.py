@@ -12,9 +12,13 @@ such a day an occasion:
   least `OCCASION_MIN_PICTURES` of the day's pictures, and on at most `VISIT_MAX_DAYS`
   photographed days of the period, so a parent who lives in is never "visiting".
 
+A birthday film names its subject's birthday the same way: the request's own birthday
+(`--birthday 08-30`) is that evidence, whoever the subject is to the owner, so every
+photographed occurrence of it in the film is their birthday's story.
+
 The name and the purpose are written from those facts only ("Kit's birthday", "Kit turns five";
-"Pat and Lou's visit"), never an event the facts do not carry. Only stories at home are read:
-a trip names itself.
+"Pat and Lou's visit"), never an event the facts do not carry, in the film's language
+(`story.*` in its film-text catalogue). Only stories at home are read: a trip names itself.
 """
 
 from __future__ import annotations
@@ -23,6 +27,11 @@ from collections import Counter
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from itertools import chain
+
+from babel.lists import format_list
+
+from immich_memories.analysis.editorial_story_names import story_text, story_text_n
+from immich_memories.i18n import babel_locale
 
 OCCASION_MIN_PICTURES = 2
 VISIT_MAX_DAYS = 3
@@ -71,12 +80,15 @@ def find_occasions(
     relation_of: Mapping[str, str],
     birth_dates: Mapping[str, str | None],
     close_family: frozenset[str],
+    locale: str,
+    celebrated: Mapping[str, str] | None = None,
 ) -> dict[str, Occasion]:
     """Each photographed day's occasion, if it has one.
 
     `day_people` counts, for each ISO day, the pictures each person is on. `relation_of` is each
     person's relation to the owner as the lines state it; `close_family` the names the owner's
-    registry calls close family.
+    registry calls close family. `celebrated` is the birthday a birthday film was asked for, by
+    the name of its subject ("MM-DD"): their birthday on any day it comes round, family or not.
     """
     days_seen = Counter(chain.from_iterable(day_people.values()))
     household = {name for name, rel in relation_of.items() if _household(rel)}
@@ -85,7 +97,9 @@ def find_occasions(
         # Most pictures first, then by name: ties never depend on the order lines were read.
         seen = [name for name, _ in sorted(counts.items(), key=lambda row: (-row[1], row[0]))]
         present = [name for name in seen if counts[name] >= OCCASION_MIN_PICTURES]
-        if birthday := _birthday(day, seen, birth_dates, household | close_family):
+        if birthday := _birthday(
+            day, seen, birth_dates, household | close_family, celebrated or {}, locale
+        ):
             found[day] = birthday
             continue
         visitors = [
@@ -94,10 +108,13 @@ def find_occasions(
             if name in close_family and name not in household and days_seen[name] <= VISIT_MAX_DAYS
         ]
         if visitors:
-            names = spoken_list(visitors)
-            verb = "come" if len(visitors) > 1 else "comes"
+            names = spoken_list(visitors, locale)
             found[day] = Occasion(
-                "visit", day, tuple(visitors), f"{names}'s visit", f"{names} {verb} over"
+                "visit",
+                day,
+                tuple(visitors),
+                story_text("story.visit", locale, names=names),
+                story_text_n("story.comes_over", len(visitors), locale, names=names),
             )
     return found
 
@@ -112,23 +129,35 @@ def _birthday(
     present: Sequence[str],
     birth_dates: Mapping[str, str | None],
     family: set[str] | frozenset[str],
+    celebrated: Mapping[str, str],
+    locale: str,
 ) -> Occasion | None:
     for name in present:
         born = birth_dates.get(name)
         if name in family and born and born[5:10] == day[5:10] and born[:4] < day[:4]:
             age = int(day[:4]) - int(born[:4])
             return Occasion(
-                "birthday", day, (name,), f"{name}'s birthday", f"{name} turns {_number(age)}"
+                "birthday",
+                day,
+                (name,),
+                story_text("story.birthday", locale, name=name),
+                story_text_n("story.turns", age, locale, name=name, age=_number(age, locale)),
             )
+        if celebrated.get(name) == day[5:10]:
+            # The request names the day, not the year they were born: the name says it all.
+            named = story_text("story.birthday", locale, name=name)
+            return Occasion("birthday", day, (name,), named, named)
     return None
 
 
-def _number(n: int) -> str:
-    return _NUMBERS[n] if 0 <= n < len(_NUMBERS) else str(n)
+def _number(n: int, locale: str) -> str:
+    """An age as the purpose writes it: spelled out in English ("five"), a numeral elsewhere."""
+    return _NUMBERS[n] if locale == "en" and 0 <= n < len(_NUMBERS) else str(n)
 
 
-def spoken_list(names: Sequence[str]) -> str:
-    """Names as a sentence says them: "Pat", "Pat and Lou", "Pat, Lou and Remy"."""
+def spoken_list(names: Sequence[str], locale: str) -> str:
+    """Names as a sentence says them: "Pat", "Pat and Lou", "Pat, Lou and Remy" ("et", "und")."""
     if len(names) <= 1:
         return "".join(names)
-    return f"{', '.join(names[:-1])} and {names[-1]}"
+    # British English, like the English film text: no comma before the last "and".
+    return format_list(list(names), locale=babel_locale("en_GB" if locale == "en" else locale))

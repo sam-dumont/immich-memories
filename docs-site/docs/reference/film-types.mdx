@@ -131,8 +131,9 @@ recent years cannot take the whole film. Years with no picture of them take no p
 `--birthday` turns a person spotlight into the year of someone's life that **ends** on the birthday,
 plus that birthday in earlier years. For a 21 July birthday and `--year 2025` it runs 22 July 2024 to
 21 July 2025, so this year's party is in this year's film. Target: 10 minutes.
-The opening title or subtitle names the year of the birthday being celebrated, including when earlier
-birthdays are selected. An explicit `--title` keeps your own wording.
+The opening title is the year of the birthday being celebrated and the subtitle names it ("Emma's
+birthday"), including when earlier birthdays are selected. A reader title that doesn't say birthday
+falls back to that. An explicit `--title` keeps your own wording.
 
 ```bash
 immich-memories generate --person "Emma" --year 2025 --birthday
@@ -146,7 +147,11 @@ Automatic birthday films use only the completed birthday-to-birthday year. For a
 `--years-back 0` also keeps only that year. A manually requested birthday compilation
 reaches back to five earlier birthdays, each ±1 day, for the "look how small you were" cutaways. Most of
 those days hold nothing and the run prints one line (`history: 2 of 5 earlier windows hold material`)
-rather than a warning per year. 29 February is celebrated on the 28th in other years.
+rather than a warning per year. Only pictures a film can use count: a window holding nothing but
+forwarded copies or saved images holds no material, and the line says how many it set aside. The
+film's length is sized the same way. With `advanced.analysis.forwarded_copies_when_short` on, those
+copies may stand in for an earlier birthday that has no picture of its own
+([configuration reference](./config-reference.md)). 29 February is celebrated on the 28th in other years.
 
 In the web UI: **Person Spotlight**, then tick **Birthday to birthday, with earlier birthdays**. The
 **Birthday (MM-DD)** field under it overrides Immich's birth date, and **Years back** sets how many
@@ -201,7 +206,8 @@ depends on the country where the table says so:
 `--holiday` also takes any public holiday of your country by name (see below), and anything else is
 read as `MM-DD`, for a household's own occasion (`--holiday 09-14`, the day you moved in). Without `--year`, the starting year steps back when this year's occasion has not happened
 yet. The title is the holiday's name in the film's language, then the years the cut shows:
-"Assomption · 2004–2026", or "Noël · 2015, 2017–2026" when years are missing. A public holiday
+"Assomption · 2004–2026", from the first year with footage to the last, whatever years
+between hold none. A public holiday
 takes the name its country's calendar gives it in that language, and a day from `extra_holidays`
 takes the name you wrote there. No text model writes a holiday's title.
 

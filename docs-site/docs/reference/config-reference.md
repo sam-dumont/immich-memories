@@ -190,6 +190,7 @@ advanced:
     exclude_stills_without_camera_exif: true   # a photo naming no camera was received, not shot
     min_source_short_side: 1080    # Drop smaller clips unless they carry camera EXIF; 0 or more pixels
     max_source_video_seconds: 300  # Exclude longer source videos on Immich metadata, before download (0 disables)
+    forwarded_copies_when_short: false  # Let forwarded copies fill gaps in the film's camera timeline
 
     # Album source
     max_album_assets: 10000        # Most assets read from one album, per media type (min 1)
@@ -212,6 +213,25 @@ The filename globs exclude matching source media before preparation. Replacing t
 all defaults; `[]` disables that filter. `exclude_stills_without_camera_exif` excludes photos
 whose EXIF names no camera; videos are exempt. Set it to `false` for exported originals that lost
 camera metadata. These filters apply before selection, so a model cannot bring excluded media back.
+
+`forwarded_copies_when_short` is off by default. Turn it on and a picture refused only as a
+forwarded copy or saved image (a messaging export with no camera behind it) can fill a gap in the
+film's camera timeline. The film reads its time the way it already cuts it: each occurrence (a
+holiday's year, an earlier birthday), else each week of a film up to two months long, each month
+of one up to two years, each year of a longer one. A stretch with no camera picture is a gap. A gap
+gets about as many days of copies as a stretch with camera pictures has days of them, so a
+lockdown year fills its empty months without the copies taking over the film. How short the film
+is of its length no longer counts.
+
+A copy that would fill a gap still has to pass every check a camera picture does, and is left out
+when it's a collage (thin flat gutters between tiles, or a caption that says collage or
+composite) or a copy of a picture your library already holds, found through Immich's own
+duplicate groups and the duplicate review's preview hash. Screenshots and documents stay out
+either way. Two copies of one scene received hours apart count as one moment.
+
+The limit, and why this is opt-in: a copy is dated when it was received, not when it was taken.
+A photo re-shared years later, with no original in your library, lands in the year it arrived.
+The run names the copies that fill gaps, and the shot's reason says "a forwarded copy".
 
 Any Live Photo cluster of two or more within the merge window is treated as a burst; the count is
 not configurable. Where a clip is cut, and how long it runs, is the editor's decision per carrier.

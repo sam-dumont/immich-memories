@@ -49,17 +49,37 @@ _SLOT = re.compile(r"\{[^}]*\}")
 _MIN_INFLECTED_STEM = 4
 
 
-@lru_cache(maxsize=16)
-def _nouns(locale: str) -> frozenset[str]:
+def _catalogue_words(locale: str, left_out: tuple[str, ...]) -> frozenset[str]:
+    """The folded words of `locale`'s own film-text templates, but those of `left_out` keys."""
     from immich_memories.i18n import film_texts
 
-    words = set(_TITLE_NOUNS.get(locale, frozenset()))
+    return frozenset(
+        w.casefold()
+        for key, forms in film_texts(locale).items()
+        if not key.startswith(left_out)
+        for form in forms
+        for w in name_words(_SLOT.sub(" ", form))
+    )
+
+
+@lru_cache(maxsize=16)
+def own_words(locale: str) -> frozenset[str]:
+    """Every word the app itself writes in `locale`'s film text, folded: its titles, story
+    names and the summary's joining words ("puis", "jours", "maison" in French).
+
+    Holidays and seasons are left out: each names a day or a period the facts must back, in
+    every language ("Winter" over a summer film is wrong, not filler).
+    """
+    return _catalogue_words(locale, ("holiday.", "season."))
+
+
+@lru_cache(maxsize=16)
+def _nouns(locale: str) -> frozenset[str]:
+    # A season is a common noun to German orthography ("im Sommer"), a holiday is a name.
+    words = set(_TITLE_NOUNS.get(locale, frozenset())) | _catalogue_words(locale, ("holiday.",))
     for relation in relationship_words(locale):
         if len(folded := name_words(relation)) == 1:
             words.add(folded[0].casefold())
-    for key, forms in film_texts(locale).items():
-        if not key.startswith("holiday."):
-            words.update(w.casefold() for form in forms for w in name_words(_SLOT.sub(" ", form)))
     return frozenset(words)
 
 

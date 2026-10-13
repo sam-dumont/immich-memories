@@ -95,6 +95,18 @@ class AssetService:
         data = await self._request("GET", "/stacks")
         return [Stack(**row) for row in data] if isinstance(data, list) else []
 
+    async def get_duplicate_groups(self) -> list[tuple[str, ...]]:
+        """Immich's own duplicate groups, each as its assets' ids: one picture stored as
+        several files, found by Immich's duplicate detection over the whole library."""
+        data = await self._request("GET", "/duplicates")
+        if not isinstance(data, list):
+            return []
+        return [
+            tuple(str(asset["id"]) for asset in row.get("assets", ()) if isinstance(asset, dict))
+            for row in data
+            if isinstance(row, dict)
+        ]
+
     async def get_asset_faces(self, asset_id: str) -> list[AssetFace]:
         """Every face Immich found in one asset, with where each sits.
 

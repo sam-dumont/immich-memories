@@ -118,9 +118,11 @@ def test_rules_finish_product_selection_without_constructing_inference(tmp_path,
     # The no-model summary is made only of the film's story names (#2488): nothing invented.
     names = {row["title"] for row in plan["story"]["episodes"]}
     assert plan["story"]["thesis"]
-    assert all(part in names for part in plan["story"]["thesis"].split(", then ")), plan["story"][
-        "thesis"
-    ]
+    # Weeks at home one after another are told once, as the span they cover.
+    assert all(
+        part in names or part.startswith("Days at home, ")
+        for part in plan["story"]["thesis"].split(", then ")
+    ), plan["story"]["thesis"]
     if product == "on_this_day":
         assert {c.asset.file_created_at.year for c in result.selected_clips} == {
             2022,
@@ -367,10 +369,15 @@ def _week_source(
         config=SimpleNamespace(
             trips=TripsConfig(),
             editorial=SimpleNamespace(people=EditorialPeopleConfig()),
+            title_screens=SimpleNamespace(locale="en"),
         ),
         intent=SimpleNamespace(product="monthly_highlights"),
         case=SimpleNamespace(
-            product="monthly_highlights", people=(), target_seconds=target_seconds
+            celebrated_birthday=None,
+            ranges=(),
+            product="monthly_highlights",
+            people=(),
+            target_seconds=target_seconds,
         ),
         people=None,
     )

@@ -260,7 +260,7 @@ def test_cold_episodes_are_packed_below_the_serialized_prompt_limit(
             producer=producer,
             annotations=lines,
             requester=requester,
-            limits=TextEpisodeRequestLimits(max_prompt_chars=2_779),
+            limits=TextEpisodeRequestLimits(max_prompt_chars=2_951),
         ).read(projections)
 
     assert len(prompts) > 1
@@ -270,7 +270,7 @@ def test_cold_episodes_are_packed_below_the_serialized_prompt_limit(
         (index, len(prompts)) for index in range(1, len(prompts) + 1)
     ]
     assert announced[0].stage_label == f"Reading event evidence: 1/{len(prompts)}"
-    assert all(len(prompt) <= 2_779 for prompt in prompts)
+    assert all(len(prompt) <= 2_951 for prompt in prompts)
     assert all(asset_id not in "".join(prompts) for asset_id in prepared.candidate_ids)
     assert all(episode.reading is not None for episode in first.episodes)
     assert first.actual_calls == len(prompts)
@@ -282,7 +282,7 @@ def test_cold_episodes_are_packed_below_the_serialized_prompt_limit(
         requester=lambda _prompt: (_ for _ in ()).throw(
             AssertionError("packed episode readings should be independently reusable")
         ),
-        limits=TextEpisodeRequestLimits(max_prompt_chars=2_779),
+        limits=TextEpisodeRequestLimits(max_prompt_chars=2_951),
     ).read(projections)
 
     assert warm.actual_calls == 0
@@ -430,13 +430,13 @@ def test_episode_pages_shrink_to_the_serialized_prompt_limit(tmp_path: Path) -> 
         annotations=lines,
         requester=requester,
         limits=TextEpisodeRequestLimits(
-            max_prompt_chars=2_779,
+            max_prompt_chars=2_951,
             max_assets_per_page=90,
         ),
     ).read(projections)
 
     assert len(prompts) > 1
-    assert all(len(prompt) <= 2_779 for prompt in prompts)
+    assert all(len(prompt) <= 2_951 for prompt in prompts)
     assert result.actual_calls == len(prompts)
     assert result.episodes[0].reading is not None
     assert result.episodes[0].reading.full_asset_ids == prepared.candidate_ids
@@ -1259,7 +1259,7 @@ def test_a_swallowed_provider_failure_names_the_rejecting_check_once_in_the_log(
             requester=lambda _prompt: (_ for _ in ()).throw(
                 ValueError("LLM provider returned no choices: ['code', 'msg']")
             ),
-            limits=TextEpisodeRequestLimits(max_prompt_chars=2734),
+            limits=TextEpisodeRequestLimits(max_prompt_chars=2906),
         ).read(projections)
 
     assert all(episode.reading is None for episode in result.episodes)

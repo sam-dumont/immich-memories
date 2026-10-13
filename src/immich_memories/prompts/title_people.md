@@ -1,4 +1,4 @@
-<!-- title_people prompt v4 -->
+<!-- title_people prompt v5 -->
 Give the opening title of a personal memory film about people. Language: {lang}.
 
 Facts
@@ -19,6 +19,7 @@ Rules
 - Sentence case: capitalise the first word and proper nouns, nothing else.
 - Title: at most 40 characters. Subtitle: at most 50 characters or null; it may only state what a fact above states, so no age, count, place or span the facts are silent about; never a list of full names. Null beats a guess.
 - Dates: follow exactly what the "Year(s) the title or subtitle must show" fact says, in the title or the subtitle — "none" means no date at all, whatever the span's own notes above say about it.
+- Occasion: when an "Occasion the title or subtitle must name" fact is above, name that occasion in the title or the subtitle, in {lang}, with the person's first name.
 - No generic openers such as "Souvenirs de", "Moments avec", "Memories of".
 
 Return ONLY JSON: {"title": "...", "subtitle": "..." or null, "reason": "one sentence"}

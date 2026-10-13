@@ -54,6 +54,8 @@ class Case:
     # rule the fetch used to build the pool (#1954). None when the run names nobody.
     resolved_person_condition: PersonExpression | None = None
     face_accounts: Mapping[str, str] = field(default_factory=dict)
+    # The birthday a birthday film celebrates ("MM-DD"); None for every other film.
+    celebrated_birthday: str | None = None
 
     def __post_init__(self) -> None:
         from immich_memories.analysis.special_event_scope import validate_special_event_scope

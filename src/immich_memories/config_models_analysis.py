@@ -73,6 +73,15 @@ class AnalysisConfig(BaseModel):
         "library 1532 of 1541 such stills were received or downloaded. Turn "
         "off for a library of exported originals. Videos are exempt.",
     )
+    forwarded_copies_when_short: bool = Field(
+        default=False,
+        description="Let forwarded copies and saved images (no camera behind them) fill gaps in "
+        "the film's camera timeline: an occurrence, week, month or year with no camera picture, "
+        "about as many days as a stretch with camera pictures gets. Only when they pass every "
+        "check a camera picture does; collages and copies of a picture the library holds stay "
+        "out. A copy is dated when it was received, so a re-shared old photo can land in the "
+        "wrong year",
+    )
     optimal_clip_duration: float = Field(
         default=5.0,
         ge=2.0,

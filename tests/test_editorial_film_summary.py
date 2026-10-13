@@ -16,6 +16,7 @@ from immich_memories.analysis.editorial_film_summary import (
     read_summary,
     summarise_the_film,
 )
+from immich_memories.analysis.editorial_story_names import home_name
 from immich_memories.analysis.editorial_story_reading import PeriodStory
 from immich_memories.analysis.editorial_thin_step import polish_the_draft
 from tests.e2e.fake_library import STORY_BY_KEY, TRIP_DAYS
@@ -146,6 +147,37 @@ def test_a_period_of_small_stories_still_names_its_heaviest():
     ]
 
     assert plain_summary(stories, "en") == "A Sunday in the forest"
+
+
+def test_weeks_at_home_one_after_another_are_told_once_as_their_span():
+    """rc.10, a person's month: four "Days at home" weeks made the whole summary."""
+    weeks = [
+        ("S1", "2026-09-02", "2026-09-06"),
+        ("S2", "2026-09-07", "2026-09-13"),
+        ("S3", "2026-09-16", "2026-09-20"),
+    ]
+    stories = [
+        {
+            **_story(key, home_name([first, last], [], "fr")[0], "major", days=[first, last]),
+            "at_home": True,
+        }
+        for key, first, last in weeks
+    ] + [_story("S4", "Orchardville, Saturday 12 September", "major", days=["2026-09-12"] * 2)]
+
+    assert plain_summary(stories, "fr") == (
+        "Jours à la maison, 2–13 septembre, puis Orchardville, Saturday 12 September, "
+        "puis Jours à la maison, 16–20 septembre"
+    )
+
+
+def test_days_at_home_years_apart_are_never_one_span():
+    """A holiday film over twenty years has a day at home in many of them."""
+    stories = [
+        {**_story(key, f"Day {key}", "major", days=[day, day]), "at_home": True}
+        for key, day in (("S1", "2004-08-15"), ("S2", "2022-08-15"))
+    ]
+
+    assert plain_summary(stories, "en") == "Day S1, then Day S2"
 
 
 def test_a_period_with_no_named_story_has_no_summary():
@@ -361,3 +393,61 @@ def test_the_period_accounts_navigation_note_never_becomes_the_film_summary():
 
     assert story.thesis == FULL_REPLY
     assert NAVIGATION_NOTE not in story.thesis
+
+
+# --- A refined film is summarised by the model, not left with its draft's line --------------
+
+
+def test_a_refined_film_asks_the_model_for_its_summary_not_the_drafts_basic_line():
+    """On Full, the rules draft is summarised first (Basic, no model), then refined. The
+    refinement took the draft's selection over with that line on it, so the model summary
+    never ran and a Full film showed the Basic line (rc.10, a birthday film: 33 model
+    calls, no summary call)."""
+    from immich_memories.analysis.editorial_story_planner import StorySelection
+    from immich_memories.analysis.editorial_structure_planner import _story_selection
+
+    stories = demo_stories()
+    drafted = StorySelection(
+        carriers=_carriers(stories),
+        story=_period(stories),
+        episodes=[],
+        alternatives_of={},
+        slots=len(stories),
+        calls={},
+        lines={},
+    )
+    summarise_the_film(
+        _source(),
+        SimpleNamespace(thin=None, judge=None),
+        drafted,
+        drafted.carriers,
+        record=lambda *_args: None,
+    )
+    assert drafted.story.thesis == f"{BIRTHDAY.title}, then {TRIP.title}"
+
+    refined = _story_selection(
+        SimpleNamespace(annotations={}),
+        # WHY: the refinement's draft port; only the draft it hands over is read here.
+        SimpleNamespace(draft=SimpleNamespace(carriers=drafted.carriers, selection=drafted)),
+        wall=None,
+        material=SimpleNamespace(builder=SimpleNamespace(refresh_clip_facts=dict)),
+        pool=None,
+        gate=None,
+        contract="",
+        tier={},
+        marker="",
+        record=lambda *_args: None,
+        partition_limit=None,
+        banked=None,
+    )
+    records: dict = {}
+    summarise_the_film(
+        _source(),
+        SimpleNamespace(thin=object(), judge=ScriptedJudge(_reply(FULL_REPLY))),
+        refined,
+        refined.carriers,
+        record=records.__setitem__,
+    )
+
+    assert refined.story.thesis == FULL_REPLY
+    assert records["film-summary"]["tier"] == "full"

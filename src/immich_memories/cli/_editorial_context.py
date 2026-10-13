@@ -71,6 +71,7 @@ def build_editorial_context(
     accept_any_provenance: bool,
     owner_required_asset_ids: tuple[str, ...] = (),
     owner_excluded_asset_ids: tuple[str, ...] = (),
+    forwarded_stand_ins: tuple[str, ...] = (),
 ) -> EditorialRunContext:
     """Bind the run's identity, scope and timing before any source is touched."""
     from immich_memories.processing.editorial_timing import build_editorial_timing_policy
@@ -101,6 +102,8 @@ def build_editorial_context(
         target_seconds=duration,
         duration_source=duration_source,
         hemisphere=resolved.preset_params.get("hemisphere", "north"),
+        celebrated_birthday=_celebrated_birthday(product, resolved, date_range),
+        forwarded_stand_ins=forwarded_stand_ins,
         window_origin=resolved.preset_params.get("window_origin"),
         render_timing=build_editorial_timing_policy(
             config=config,
@@ -136,6 +139,16 @@ def build_editorial_context(
         resolved_person_condition=_resolved_person_condition(resolved),
         face_accounts=dict(resolved.preset_params.get("face_accounts") or {}),
     )
+
+
+def _celebrated_birthday(
+    product: str, resolved: ResolvedRunInputs, date_range: DateRange
+) -> str | None:
+    """The birthday a birthday film celebrates ("MM-DD"): the day its span ends on, the one
+    its title already names (`birthday_title`)."""
+    if product != "person_spotlight" or not resolved.preset_params.get("birthday"):
+        return None
+    return date_range.end.strftime("%m-%d")
 
 
 def _person_match(resolved: ResolvedRunInputs) -> Literal["and", "or"]:
@@ -207,6 +220,7 @@ def resolve_editorial_pool(
                 context.date_ranges,
                 asset_ids=context.event_asset_ids if context.special_event_id else None,
                 accept_any_provenance=context.accept_any_provenance,
+                forwarded_stand_ins=context.forwarded_stand_ins,
             ),
             accounts=context.accounts,
         )

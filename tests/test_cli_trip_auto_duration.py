@@ -11,8 +11,9 @@ from click.testing import CliRunner
 from immich_memories.analysis.trip_detection import DetectedTrip
 from immich_memories.api.models import Asset
 from immich_memories.cli import main
-from immich_memories.cli._pipeline_runner import _decide_duration, run_pipeline_and_generate
+from immich_memories.cli._pipeline_runner import run_pipeline_and_generate
 from immich_memories.cli._trip_generation import _print_trip_result
+from immich_memories.cli.film_length import decide_duration
 from immich_memories.config_loader import Config
 
 
@@ -89,11 +90,11 @@ def test_trip_click_reaches_media_resolver_after_normal_discovery(
             incoming=requested_duration,
             product=kwargs["memory_type"],
             photos=[photo.id for photo in kwargs["photos"]],
-            total=_decide_duration(requested_duration, **kwargs).seconds,
+            total=decide_duration(requested_duration, **kwargs).seconds,
         )
         raise _ResolvedBeforePlanning()
 
-    monkeypatch.setattr("immich_memories.cli._pipeline_runner._decide_duration", resolve_then_stop)
+    monkeypatch.setattr("immich_memories.cli.film_length.decide_duration", resolve_then_stop)
     monkeypatch.setattr(
         "immich_memories.cli._trip_generation.run_pipeline_and_generate", record_pipeline_entry
     )

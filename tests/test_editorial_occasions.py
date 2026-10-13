@@ -24,6 +24,7 @@ def _find(day_people):
         relation_of=_RELATION,
         birth_dates=_BORN,
         close_family=_CLOSE,
+        locale="en",
     )
 
 
@@ -82,8 +83,29 @@ def test_a_birthday_outranks_a_visit_on_the_same_day() -> None:
 
 
 def test_names_read_as_a_sentence_says_them() -> None:
-    assert [spoken_list(n) for n in (["Pat"], ["Pat", "Lou"], ["Pat", "Lou", "Remy"])] == [
+    assert [spoken_list(n, "en") for n in (["Pat"], ["Pat", "Lou"], ["Pat", "Lou", "Remy"])] == [
         "Pat",
         "Pat and Lou",
         "Pat, Lou and Remy",
     ]
+
+
+def test_a_birthday_films_subject_has_their_birthday_whoever_they_are_to_the_owner() -> None:
+    """rc.10: a birthday film of a friend (no birth date in the registry, not family) had no
+    birthday story, though the request named the day and the cut held it."""
+    found = find_occasions(
+        {
+            "2025-08-30": Counter({"Jo": 1}),
+            "2022-08-30": Counter({"Jo": 2}),
+            "2025-08-31": Counter({"Jo": 4}),
+        },
+        relation_of=_RELATION,
+        birth_dates={},
+        close_family=_CLOSE,
+        locale="en",
+        celebrated={"Jo": "08-30"},
+    )
+
+    assert sorted(found) == ["2022-08-30", "2025-08-30"]
+    assert (found["2025-08-30"].kind, found["2025-08-30"].name) == ("birthday", "Jo's birthday")
+    assert found["2025-08-30"].people == ("Jo",)

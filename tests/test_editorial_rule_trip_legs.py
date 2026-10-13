@@ -43,9 +43,10 @@ def _read_trip(days: dict[int, tuple[float, float]]) -> list[list[int]]:
         config=SimpleNamespace(
             trips=TripsConfig(homebase_latitude=HOME[0], homebase_longitude=HOME[1]),
             editorial=SimpleNamespace(people=EditorialPeopleConfig()),
+            title_screens=SimpleNamespace(locale="en"),
         ),
         intent=SimpleNamespace(product="trip"),
-        case=SimpleNamespace(product="trip", people=()),
+        case=SimpleNamespace(celebrated_birthday=None, ranges=(), product="trip", people=()),
         people=None,
     )
 

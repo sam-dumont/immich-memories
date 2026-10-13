@@ -182,6 +182,11 @@
     }
    }
   },
+  "GET /duplicates": {
+   "body": null,
+   "path": {},
+   "query": {}
+  },
   "GET /faces": {
    "body": null,
    "path": {},
@@ -1316,6 +1321,11 @@
      "type": "string"
     }
    }
+  },
+  "GET /duplicates": {
+   "body": null,
+   "path": {},
+   "query": {}
   },
   "GET /faces": {
    "body": null,
@@ -6451,6 +6461,11 @@
      "type": "string"
     }
    }
+  },
+  "GET /duplicates": {
+   "body": null,
+   "path": {},
+   "query": {}
   },
   "GET /faces": {
    "body": null,
