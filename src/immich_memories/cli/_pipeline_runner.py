@@ -560,6 +560,7 @@ def run_pipeline_and_generate(
     album_name = album or config.upload.album_name
     person_name = resolved.person_name
 
+    from immich_memories.titles.film_stories import read_film_stories
     from immich_memories.titles.film_title import resolve_film_title
 
     def album_of_the_cut() -> str | None:
@@ -582,6 +583,7 @@ def run_pipeline_and_generate(
         person_names=person_names,
         memory_preset_params=resolved.preset_params,
         album_lookup=album_of_the_cut,
+        stories=read_film_stories(_attempt_dir_of(pipeline_result)),
     )
     _keep_cut_titles(
         pipeline_result, resolved_title, resolved_subtitle, title_source, resolved.preset_params

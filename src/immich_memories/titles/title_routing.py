@@ -19,6 +19,9 @@ OCCASION_MEMORY_TYPES = frozenset(
         "year_in_review",
     }
 )
+# Films of a calendar period: their title is the period ("Summer 2025", "2025",
+# "July 2025"); the stories that ran through it may only fill the subtitle.
+PERIOD_MEMORY_TYPES = frozenset({"monthly_highlights", "season", "year", "year_in_review"})
 
 
 def is_trip(memory_type: str) -> bool:

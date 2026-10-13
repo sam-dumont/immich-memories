@@ -185,6 +185,7 @@ def build_title_settings(
         return None
 
     from immich_memories.filename_builder import build_title_person_name, get_divider_mode
+    from immich_memories.titles.film_title import film_hemisphere
 
     # Resolved once: every title-text consumer below (trip title, settings.locale,
     # the holiday label) must never see the raw "auto" the config allows.
@@ -236,7 +237,7 @@ def build_title_settings(
         use_first_name_only=config.title_screens.use_first_name_only,
         animated_background=config.title_screens.animated_background,
         memory_type=params.memory_type,
-        hemisphere=config.trips.hemisphere,
+        hemisphere=film_hemisphere(config, params.memory_type, params.memory_preset_params),
         trip_locations=trip_locations,
         trip_location_names=trip_location_names,
         trip_title_text=trip_title_text,

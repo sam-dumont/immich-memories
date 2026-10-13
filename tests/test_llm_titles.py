@@ -585,7 +585,8 @@ class TestATitleKeepsTheYearTheTemplateWouldShow:
     async def test_the_year_may_live_in_the_subtitle(self):
         result = await self._titled(
             '{"title": "Été au bord de mer", "subtitle": "L\'été 2024"}',
-            memory_type="season",
+            # Not a season: a season's title is the season itself (test_period_film_titles).
+            memory_type="album",
             start_date="2024-06-01",
             end_date="2024-08-31",
         )
@@ -686,7 +687,9 @@ class TestTheYearGuardReadsEveryFilmLanguage:
             return_value=raw,
         ):
             return await generate_title_with_llm(
-                memory_type="season",
+                # A season's own title is the period, never a model's
+                # (test_period_film_titles); a plain span exercises the same year guard.
+                memory_type="album",
                 locale=locale,
                 start_date="2024-06-01",
                 end_date="2024-08-31",
@@ -746,7 +749,9 @@ class TestTheCrossYearShortFormAcceptsEveryFilmSeparator:
             return_value=json.dumps({"title": title, "subtitle": None}),
         ):
             return await generate_title_with_llm(
-                memory_type="season",
+                # A season's own title is the period, never a model's
+                # (test_period_film_titles); a plain span exercises the same year guard.
+                memory_type="album",
                 locale=locale,
                 start_date="2024-12-01",
                 end_date="2025-02-28",

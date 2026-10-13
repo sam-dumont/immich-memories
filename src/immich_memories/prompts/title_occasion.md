@@ -1,4 +1,4 @@
-<!-- title_occasion prompt v3 -->
+<!-- title_occasion prompt v4 -->
 Give the opening title of a personal memory film. Language: {lang}.
 
 Facts
@@ -8,10 +8,9 @@ Span: {span}
 {required_year}
 
 Rules
-- Every name in the title comes from the facts above: an album's name, what the catalogue called the occasion, a place, a first name. A festival, a race, a venue, a town or an event no fact names did not happen. Reword the facts; never add to them.
+- Every name in the title comes from the facts above: a story's name, an album's name, what the catalogue called the occasion, a place, a first name. A festival, a race, a venue, a town or an event no fact names did not happen. Reword the facts; never add to them.
 - Place names above are English as the camera recorded them; write them as {lang} would (the English name becomes the name {lang} gives that same place; never a place the facts do not name). That is the only rewriting of a name allowed.
-- An album the pictures sit in is what somebody already called this day: use that name rather than describing the day around it. Where an album name and the catalogue disagree, the album name wins.
-- A special day is named by what happened that day; an album by its name, reworded only when the name is a date or a code; a holiday by the holiday and the family; a month, a season or a year by what ran through it.
+{naming_rules}
 - People: name people, only when they are the point of the film, by first name by default. Use a relationship word only when a fact line states that exact relationship between people this title names -- never a relationship to the film's maker. Nobody outside the people facts is named or given a role. A friend is named as a friend, or by first name -- never as family. Never narrate a parent or grandparent as "maman", "papa", "mamie", "papy" or any other child's-eye address word, even when a fact backs that relation -- use the person's first name instead.
 - Sentence case: capitalise the first word and proper nouns, nothing else.
 - Title: at most 40 characters. Subtitle: at most 50 characters or null; it may only state what a fact above states, so no distance, count, weather, time of day or feeling the facts are silent about; never a list of names. Null beats a guess.

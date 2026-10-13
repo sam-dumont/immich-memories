@@ -859,6 +859,8 @@ src/immich_memories/
 │   ├── llm_titles.py           # LLM-generated titles: prompt building, parsing, the LLM call
 │   ├── title_guards.py         # Guards refusing an invented name, a missing year, a missing place
 │   ├── title_slots.py          # Closes a model title's empty slots: a dangling preposition, an orphan separator
+│   ├── period_title.py         # A season/month/year film is titled by its period; the story moves to the subtitle
+│   ├── film_stories.py         # The cut's stories (heaviest first) and summary, read from its plan for the title
 │   ├── relationship_guard.py   # Guard refusing a relationship word the people record doesn't back
 │   ├── relationship_words.py   # Per-locale relationship vocabulary (perspective/record-backed/alias)
 │   ├── title_routing.py        # Which prompt a memory gets: PEOPLE/OCCASION_MEMORY_TYPES, is_trip
