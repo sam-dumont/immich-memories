@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any
 
 from immich_memories.api.album_service import AlbumRef, FilmScope
 from immich_memories.api.compatibility import ResolvedApiVersion
+from immich_memories.api.film_label import FilmLabel
 from immich_memories.api.models import (
     Asset,
     AssetFace,
@@ -367,7 +368,10 @@ class SyncImmichClient:
         album_name: str | None = None,
         *,
         captured_at: datetime | None = None,
+        label: FilmLabel | None = None,
     ) -> dict[str, Any]:
         return self._run(
-            self._async_client.upload_memory(video_path, album_name, captured_at=captured_at)
+            self._async_client.upload_memory(
+                video_path, album_name, captured_at=captured_at, label=label
+            )
         )

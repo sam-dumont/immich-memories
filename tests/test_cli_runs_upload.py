@@ -25,7 +25,7 @@ class FakeImmich:
     def get_key_capabilities(self):
         return SimpleNamespace(missing_upload=self.missing)
 
-    def upload_memory(self, video_path, album_name=None, *, captured_at=None):
+    def upload_memory(self, video_path, album_name=None, *, captured_at=None, label=None):
         self.uploads.append((video_path, album_name))
         return {"asset_id": "asset-9", "delivery_complete": True, "warnings": []}
 

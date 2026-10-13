@@ -1,0 +1,190 @@
+"""An uploaded film gets its description and tags once Immich has read it (#2505)."""
+
+from __future__ import annotations
+
+from pathlib import Path
+from unittest.mock import AsyncMock
+
+import pytest
+
+from immich_memories.api import album_service
+from immich_memories.api.album_service import AlbumService
+from immich_memories.api.compatibility import ResolvedApiVersion
+from immich_memories.api.film_label import FilmLabel
+from immich_memories.api.permissions import ApiKeyCapabilities
+
+PROVENANCE = "immich-memories/generated"
+LABEL = FilmLabel(
+    description="July 2025 · Kit's birthday",
+    tags=("immich-memories/type/Monthly highlights", "immich-memories/year/2025"),
+)
+
+
+class FakeImmich:
+    """Just enough of Immich: an upload, a metadata read that wipes what came before it."""
+
+    def __init__(self, *, reads_after: int = 2, sticks: bool = True) -> None:
+        self.reads_after = reads_after
+        self.sticks = sticks
+        self.gets = 0
+        self.read = False
+        self.tag_ids: dict[str, str] = {}
+        self.tags: set[str] = set()
+        self.description = ""
+        self.writes: list[tuple[str, str]] = []
+
+    async def __call__(self, method: str, path: str, **kwargs):
+        if (method, path) == ("POST", "/assets"):
+            return {"id": "film"}
+        if (method, path) == ("GET", "/assets/film"):
+            self.gets += 1
+            if not self.read and self.gets > self.reads_after:
+                # Immich's own metadata job: it ends by overwriting the asset's tags and description.
+                self.read = True
+                self.tags.clear()
+                self.description = ""
+            return {
+                "exifInfo": {
+                    "modifyDate": "2025-07-01" if self.read else None,
+                    "description": self.description,
+                },
+                "tags": [{"value": value} for value in sorted(self.tags)],
+            }
+        if (method, path) == ("PUT", "/tags"):
+            self.writes.append((method, path))
+            values = kwargs["json"]["tags"]
+            for value in values:
+                self.tag_ids.setdefault(value, f"id-{len(self.tag_ids)}")
+            return [{"id": self.tag_ids[value], "value": value} for value in values]
+        if method == "PUT" and path.startswith("/tags/") and path.endswith("/assets"):
+            self.writes.append((method, path))
+            value = next(v for v, i in self.tag_ids.items() if i == path.split("/")[2])
+            if self.sticks:
+                self.tags.add(value)
+            return []
+        if (method, path) == ("PUT", "/assets/film"):
+            self.writes.append((method, path))
+            if self.sticks:
+                self.description = kwargs["json"]["description"]
+            return {}
+        pytest.fail(f"Unexpected request: {method} {path}")
+
+
+def _service(immich: FakeImmich, *permissions: str) -> AlbumService:
+    capabilities = (
+        ApiKeyCapabilities(frozenset(permissions))
+        if permissions
+        else ApiKeyCapabilities(frozenset({"all"}))
+    )
+    return AlbumService(
+        immich,
+        AsyncMock(return_value=ResolvedApiVersion.V3),
+        AsyncMock(return_value=capabilities),
+    )
+
+
+@pytest.fixture(autouse=True)
+def _no_waiting(monkeypatch):
+    monkeypatch.setattr(album_service, "_POLL_SECONDS", 0)
+
+
+@pytest.fixture
+def film(tmp_path: Path) -> Path:
+    path = tmp_path / "film.mp4"
+    path.write_bytes(b"film")
+    return path
+
+
+@pytest.mark.asyncio
+async def test_description_and_tags_survive_immichs_own_read(film):
+    immich = FakeImmich(reads_after=3)
+
+    result = await _service(immich).upload_memory(film, label=LABEL)
+
+    assert result["warnings"] == []
+    assert result["delivery_complete"] is True
+    assert immich.read
+    assert immich.description == LABEL.description
+    assert immich.tags == {PROVENANCE, *LABEL.tags}
+
+
+@pytest.mark.asyncio
+async def test_a_label_that_did_not_stick_is_applied_again_then_warns(film):
+    immich = FakeImmich(sticks=False)
+
+    result = await _service(immich).upload_memory(film, label=LABEL)
+
+    # Nothing sticks here, the provenance tag included: that one does make it incomplete.
+    assert result["delivery_complete"] is False
+    assert any("description" in w and "did not stay" in w for w in result["warnings"])
+    assert any("tags" in w and "did not stay" in w for w in result["warnings"])
+    assert sum(1 for write in immich.writes if write == ("PUT", "/assets/film")) > 1
+
+
+@pytest.mark.asyncio
+async def test_a_key_without_asset_update_uploads_with_tags_and_warns(film):
+    immich = FakeImmich()
+    # A key made before films had labels: it can still replace the film's earlier render.
+    permissions = (
+        "asset.upload",
+        "asset.delete",
+        "tag.create",
+        "tag.asset",
+        "album.create",
+        "albumAsset.create",
+    )
+
+    result = await _service(immich, *permissions).upload_memory(film, label=LABEL)
+
+    assert result["asset_id"] == "film"
+    assert result["delivery_complete"] is True
+    assert not any("previous version kept" in w for w in result["warnings"])
+    assert "asset.update" in result["missing_permissions"]
+    assert any("description" in w and "asset.update" in w for w in result["warnings"])
+    assert ("PUT", "/assets/film") not in immich.writes
+    assert set(LABEL.tags) <= immich.tags
+
+
+@pytest.mark.asyncio
+async def test_a_key_without_tag_rights_still_sets_the_description(film):
+    immich = FakeImmich()
+
+    result = await _service(immich, "asset.upload", "asset.update").upload_memory(film, label=LABEL)
+
+    assert result["asset_id"] == "film"
+    assert immich.description == LABEL.description
+    assert immich.tags == set()
+    assert any("tag.create" in w for w in result["warnings"])
+
+
+@pytest.mark.asyncio
+async def test_a_label_with_nothing_to_say_asks_immich_for_nothing(film):
+    immich = FakeImmich()
+
+    result = await _service(immich).upload_memory(film, label=FilmLabel())
+
+    assert result["warnings"] == []
+    assert immich.description == ""
+    assert immich.tags == {PROVENANCE}
+
+
+@pytest.mark.asyncio
+async def test_a_failing_label_step_warns_and_keeps_the_upload(film):
+    immich = FakeImmich()
+    plain = immich.__call__
+
+    async def request(method, path, **kwargs):
+        if (method, path) == ("PUT", "/assets/film"):
+            raise RuntimeError("boom")
+        return await plain(method, path, **kwargs)
+
+    service = AlbumService(
+        request,
+        AsyncMock(return_value=ResolvedApiVersion.V3),
+        AsyncMock(return_value=ApiKeyCapabilities(frozenset({"all"}))),
+    )
+    result = await service.upload_memory(film, label=LABEL)
+
+    assert result["asset_id"] == "film"
+    assert result["delivery_complete"] is True
+    assert any("boom" in w for w in result["warnings"])

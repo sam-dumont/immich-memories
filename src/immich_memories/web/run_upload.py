@@ -13,6 +13,7 @@ from pydantic import BaseModel
 from immich_memories.api.immich import ImmichAPIError
 from immich_memories.config_loader import Config
 from immich_memories.db import open_store
+from immich_memories.operations.film_labelling import label_for_run
 from immich_memories.tracking import RunDatabase
 from immich_memories.web.dependencies import current_config
 from immich_memories.web.film_files import local_film
@@ -70,7 +71,11 @@ def upload_finished_film(
     if missing_upload:
         raise UploadRefused("Upload unavailable: the key lacks " + ", ".join(missing_upload))
     album_name = album.strip() if album and album.strip() else config.upload.album_name
-    result = client.upload_memory(video_path=film, album_name=album_name)
+    result = client.upload_memory(
+        video_path=film,
+        album_name=album_name,
+        label=label_for_run(config, record, store=db.store),
+    )
     asset_id = result.get("asset_id")
     warnings = [str(w) for w in result.get("warnings", [])]
     if result.get("delivery_complete") is False or not asset_id:

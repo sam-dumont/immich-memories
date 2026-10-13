@@ -166,3 +166,7 @@ class UploadConfig(BaseModel):
     album_name: str | None = Field(
         default=None, description="Album name (created if missing, reused if exists)"
     )
+    film_tags: bool = Field(
+        default=False,
+        description="Tag each uploaded film with its memory type, years and stories",
+    )

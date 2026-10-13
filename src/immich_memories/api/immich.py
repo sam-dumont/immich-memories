@@ -22,6 +22,7 @@ from immich_memories.api.compatibility import (
     ResolvedApiVersion,
     resolve_api_version,
 )
+from immich_memories.api.film_label import FilmLabel
 from immich_memories.api.local_network import local_network_hint
 from immich_memories.api.models import (
     Asset,
@@ -706,8 +707,11 @@ class ImmichClient:
         album_name: str | None = None,
         *,
         captured_at: datetime | None = None,
+        label: FilmLabel | None = None,
     ) -> dict[str, Any]:
-        return await self.albums.upload_memory(video_path, album_name, captured_at=captured_at)
+        return await self.albums.upload_memory(
+            video_path, album_name, captured_at=captured_at, label=label
+        )
 
 
 # Re-export SyncImmichClient — bottom import avoids circular dependency

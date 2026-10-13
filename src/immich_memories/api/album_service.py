@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     from immich_memories.timeperiod import DateRange
 
 from immich_memories.api.compatibility import ResolvedApiVersion
+from immich_memories.api.film_label import FilmLabel
 from immich_memories.api.generated_asset_tags import GENERATED_MEMORY_TAG, generated_asset_ids
 
 RequestFn = Callable[..., Any]
@@ -42,6 +43,8 @@ logger = logging.getLogger(__name__)
 _POLL_SECONDS = 0.5
 _READ_WAIT_POLLS = 120
 _TAG_ATTEMPTS = 3
+# The key right that lets the app write a film's description.
+DESCRIBE = "asset.update"
 
 
 class InvalidUploadResponse(ValueError):
@@ -460,6 +463,63 @@ class AlbumService:
         logger.warning("The provenance tag did not stay on the uploaded film")
         return False
 
+    async def apply_label_once_read(
+        self,
+        asset_id: str,
+        label: FilmLabel,
+        *,
+        description: bool = True,
+        tags: bool = True,
+    ) -> list[str]:
+        """Give a fresh upload its description and tags once Immich has read it (#2505).
+
+        The same timing as the provenance tag, for the same reason: Immich's metadata job
+        overwrites both. Reads them back and applies them again if they did not stick;
+        returns what still did not stay, as "description" and "tags".
+        """
+        wanted = {
+            "description": description and bool(label.description),
+            "tags": tags and bool(label.tags),
+        }
+        if not any(wanted.values()):
+            return []
+        if not await self._read_by_immich(asset_id):
+            logger.warning("Immich had not read the uploaded film yet; describing it anyway")
+        missing = [name for name, needed in wanted.items() if needed]
+        for _ in range(_TAG_ATTEMPTS):
+            if wanted["tags"]:
+                await self._put_tags(asset_id, label.tags)
+            if wanted["description"]:
+                await self._request(
+                    "PUT", f"/assets/{asset_id}", json={"description": label.description}
+                )
+            await asyncio.sleep(_POLL_SECONDS)
+            missing = await self._label_not_kept(asset_id, label, wanted)
+            if not missing:
+                return []
+        return missing
+
+    async def _put_tags(self, asset_id: str, values: Sequence[str]) -> None:
+        tags = await self._request("PUT", "/tags", json={"tags": list(values)})
+        ids = [tag["id"] for tag in tags if isinstance(tag, dict) and tag.get("value") in values]
+        for tag_id in ids:
+            await self._request("PUT", f"/tags/{tag_id}/assets", json={"ids": [asset_id]})
+
+    async def _label_not_kept(
+        self, asset_id: str, label: FilmLabel, wanted: dict[str, bool]
+    ) -> list[str]:
+        asset = await self._request("GET", f"/assets/{asset_id}") or {}
+        missing = []
+        if wanted["description"]:
+            kept = str((asset.get("exifInfo") or {}).get("description") or "").strip()
+            if kept != label.description:
+                missing.append("description")
+        if wanted["tags"]:
+            carried = {t.get("value") for t in asset.get("tags") or () if isinstance(t, dict)}
+            if not set(label.tags) <= carried:
+                missing.append("tags")
+        return missing
+
     async def _read_by_immich(self, asset_id: str) -> bool:
         for _ in range(_READ_WAIT_POLLS):
             asset = await self._request("GET", f"/assets/{asset_id}") or {}
@@ -499,20 +559,28 @@ class AlbumService:
         album_name: str | None = None,
         *,
         captured_at: datetime | None = None,
+        label: FilmLabel | None = None,
     ) -> dict[str, Any]:
         """Upload a generated memory video, optionally adding it to an album.
 
-        Reuses existing album if one with the same name exists.
+        Reuses existing album if one with the same name exists. A `label` gives the film
+        its description and tags once Immich has read it.
         """
         capabilities = await self._get_key_capabilities() if self._get_key_capabilities else None
         missing = list(capabilities.missing_upload) if capabilities else []
+        # Told to the user, but no reason to keep an old render: the film itself arrived.
+        label_missing = (
+            [DESCRIBE]
+            if label and label.description and capabilities and not capabilities.allows(DESCRIBE)
+            else []
+        )
         if capabilities is not None and not capabilities.allows("asset.upload"):
             return {
                 "asset_id": None,
                 "album_id": None,
                 "delivery_complete": False,
-                "missing_permissions": missing,
-                "warnings": ["not uploaded: the key lacks " + ", ".join(missing)],
+                "missing_permissions": missing + label_missing,
+                "warnings": ["not uploaded: the key lacks " + ", ".join(missing + label_missing)],
             }
         asset_id = await self.upload_asset(video_path, captured_at=captured_at)
         warnings: list[str] = []
@@ -520,8 +588,15 @@ class AlbumService:
             warnings.append("delivery incomplete: the key lacks " + ", ".join(missing))
         allows = capabilities.allows if capabilities else lambda _permission: True
         await self._tag_delivery(asset_id, allows, warnings)
+        # A description or tag that didn't land is reported, never an incomplete delivery:
+        # keys made before films had labels lack `asset.update`, and treating that as
+        # incomplete would keep every earlier render beside the new one.
+        label_notes: list[str] = []
+        if label:
+            await self._label_delivery(asset_id, label, allows, label_notes)
         album_id = await self._album_delivery(asset_id, album_name, allows, warnings)
         complete = not warnings
+        warnings.extend(label_notes)
         if not allows("asset.delete"):
             warnings.append("previous version kept: the key lacks asset.delete")
         elif not complete:
@@ -539,7 +614,7 @@ class AlbumService:
             "asset_id": asset_id,
             "album_id": album_id,
             "delivery_complete": complete,
-            "missing_permissions": missing,
+            "missing_permissions": missing + label_missing,
             "warnings": warnings,
         }
 
@@ -558,6 +633,30 @@ class AlbumService:
                 warnings.append("uploaded without verified provenance: the tag did not stay")
         except Exception as exc:
             warnings.append(f"uploaded without verified provenance: {exc}")
+
+    async def _label_delivery(
+        self,
+        asset_id: str,
+        label: FilmLabel,
+        allows: Callable[[str], bool],
+        warnings: list[str],
+    ) -> None:
+        tag_missing = [p for p in ("tag.create", "tag.asset") if not allows(p)]
+        if label.tags and tag_missing:
+            warnings.append("uploaded without story tags: the key lacks " + ", ".join(tag_missing))
+        if label.description and not allows(DESCRIBE):
+            warnings.append(f"uploaded without description: the key lacks {DESCRIBE}")
+        try:
+            not_kept = await self.apply_label_once_read(
+                asset_id,
+                label,
+                description=allows(DESCRIBE),
+                tags=not tag_missing,
+            )
+        except Exception as exc:
+            warnings.append(f"uploaded without a verified description and tags: {exc}")
+            return
+        warnings.extend(f"uploaded film's {name} did not stay" for name in not_kept)
 
     async def _album_delivery(
         self,

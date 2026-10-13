@@ -975,6 +975,8 @@ def _handler_type(
     # Tags created on this service, by value, and the assets each one holds.
     tags: dict[str, dict[str, Any]] = {}
     tagged: dict[str, set[str]] = {}
+    # The description an owner (or the app) set on each uploaded film.
+    descriptions: dict[str, str] = {}
     # The cast's birth dates as this server holds them: a test may clear one, as an owner can.
     birth_dates: dict[str, str | None] = dict(BIRTH_DATES)
 
@@ -993,7 +995,10 @@ def _handler_type(
             "fileCreatedAt": created,
             "fileModifiedAt": upload.fields.get("fileModifiedAt", created),
             # Immich's metadata job has read the file: what a fresh upload waits for.
-            "exifInfo": {"modifyDate": upload.fields.get("fileModifiedAt", created)},
+            "exifInfo": {
+                "modifyDate": upload.fields.get("fileModifiedAt", created),
+                "description": descriptions.get(asset_id, ""),
+            },
             "tags": [tag for tag in tags.values() if asset_id in tagged[tag["id"]]],
         }
 
@@ -1227,6 +1232,15 @@ def _handler_type(
                         tagged[tag_id] = set()
                 self._send_json(200, [tags[value] for value in payload.get("tags") or ()])
                 return
+            asset_id = path.removeprefix("/api/assets/")
+            if path.startswith("/api/assets/") and "/" not in asset_id:
+                film = uploaded_asset(asset_id)
+                if film is not None and "description" in payload:
+                    descriptions[asset_id] = payload["description"]
+                    film = uploaded_asset(asset_id)
+                if film is not None:
+                    self._send_json(200, film)
+                    return
             person = path.removeprefix("/api/people/")
             name = person.removeprefix("person-").title()
             if path.startswith("/api/people/") and "/" not in person and name in birth_dates:

@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import ANY, MagicMock, patch
 
 import pytest
 
@@ -90,7 +90,7 @@ def test_pending_delivery_succeeds_before_cooldown_or_candidate_selection(
     client.__enter__.return_value = client
     client.__exit__.return_value = False
 
-    def upload_memory(*, video_path: Path, album_name: str | None) -> dict[str, str]:
+    def upload_memory(*, video_path: Path, album_name: str | None, label) -> dict[str, str]:
         attempt = runner.state.get_last_attempt()
         assert attempt is not None
         assert attempt.outcome is AutoOutcome.RUNNING
@@ -125,6 +125,7 @@ def test_pending_delivery_succeeds_before_cooldown_or_candidate_selection(
     client.upload_memory.assert_called_once_with(
         video_path=Path(pending.output_path or ""),
         album_name="Original Album",
+        label=ANY,
     )
     suggest.assert_not_called()
     execute.assert_not_called()

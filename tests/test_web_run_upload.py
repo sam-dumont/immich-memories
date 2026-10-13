@@ -29,7 +29,7 @@ class FakeImmich:
             "warnings": [],
         }
 
-    def upload_memory(self, video_path, album_name=None, *, captured_at=None):
+    def upload_memory(self, video_path, album_name=None, *, captured_at=None, label=None):
         self.uploads.append((video_path, album_name))
         return self.result
 
@@ -123,7 +123,7 @@ def test_an_immich_failure_never_puts_the_server_address_in_the_answer(tmp_path)
     import httpx
 
     class Refusing(FakeImmich):
-        def upload_memory(self, video_path, album_name=None, *, captured_at=None):
+        def upload_memory(self, video_path, album_name=None, *, captured_at=None, label=None):
             raise httpx.ConnectError("cannot reach http://immich.internal.example:2283/api")
 
     _, client, _, _ = _setup(tmp_path, immich=Refusing())

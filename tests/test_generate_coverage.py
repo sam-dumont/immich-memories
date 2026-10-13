@@ -5,7 +5,7 @@ from __future__ import annotations
 import contextlib
 from datetime import date
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import ANY, MagicMock, patch
 
 import pytest
 
@@ -816,7 +816,7 @@ class TestGenerateMemoryRun:
             upload_mock.return_value = {"asset_id": "uploaded-asset"}
             generate_memory(params)
 
-        upload_mock.assert_called_once_with(mock_client, result_path, "test-album", None)
+        upload_mock.assert_called_once_with(mock_client, result_path, "test-album", None, ANY)
         mocks["tracker"].return_value.mark_delivered.assert_called_once_with("uploaded-asset")
 
     def test_upload_not_called_when_disabled(self, tmp_path):
@@ -1208,7 +1208,7 @@ class TestUploadToImmich:
         result = upload_to_immich(mock_client, video_path, "My Album")
 
         mock_client.upload_memory.assert_called_once_with(
-            video_path=video_path, album_name="My Album", captured_at=None
+            video_path=video_path, album_name="My Album", captured_at=None, label=None
         )
         assert result["asset_id"] == "abc123"
 
@@ -1222,7 +1222,7 @@ class TestUploadToImmich:
 
         upload_to_immich(mock_client, video_path, None)
         mock_client.upload_memory.assert_called_once_with(
-            video_path=video_path, album_name=None, captured_at=None
+            video_path=video_path, album_name=None, captured_at=None, label=None
         )
 
 

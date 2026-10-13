@@ -272,6 +272,45 @@ def test_a_delivered_film_is_removed_locally_and_the_run_keeps_its_record_and_im
     )
 
 
+@pytest.mark.feature("upload.film-description-and-tags")
+@pytest.mark.fake_immich_only(
+    "reads the film back from the fake's upload log, on an Immich of its own that holds no "
+    "other test's upload"
+)
+def test_a_delivered_film_carries_its_title_and_summary_as_description_and_its_year_as_a_tag(
+    delivery_immich: FakeImmichServer, outbound_trap: OutboundTrap, tmp_path
+):
+    home = UserHome(tmp_path / "home", extra_env=tuple(outbound_trap.env().items()))
+    config = basic_config(delivery_immich.base_url, delivery_immich.api_key, home)
+    # The type, year and story tags are opt-in; the description is always written.
+    config.setdefault("upload", {})["film_tags"] = True
+    home.write_config(config)
+
+    result = home.run(
+        *day_args(QUIET_DAY),
+        "--upload-to-immich",
+        "--output",
+        str(tmp_path / "out" / "labelled.mp4"),
+        scripted_selection=True,
+    )
+    asset = httpx.get(
+        f"{delivery_immich.base_url}/api/assets/uploaded-1",
+        headers={"x-api-key": delivery_immich.api_key},
+        timeout=30,
+    ).json()
+
+    assert result.returncode == 0, result.explain()
+    # The title it opens on, then its one-line story summary.
+    assert asset["exifInfo"]["description"].startswith("July 2025 · "), asset
+    tags = {tag["value"] for tag in asset["tags"]}
+    assert "immich-memories/generated" in tags
+    assert "immich-memories/year/2025" in tags, tags
+    assert all(
+        tag.startswith("immich-memories/") and tag.count("/") == 2
+        for tag in tags - {"immich-memories/generated"}
+    ), tags
+
+
 # ── a run whose process died ─────────────────────────────────────────────────
 
 # The scripted selection with slow stages, so a run is still going when the test looks.

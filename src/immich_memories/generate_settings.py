@@ -43,6 +43,7 @@ from immich_memories.tracking.timed import timed
 if TYPE_CHECKING:
     from datetime import datetime
 
+    from immich_memories.api.film_label import FilmLabel
     from immich_memories.api.immich import SyncImmichClient
     from immich_memories.config_loader import Config
     from immich_memories.generate import GenerationParams
@@ -511,9 +512,10 @@ def upload_to_immich(
     video_path: Path,
     album_name: str | None,
     captured_at: datetime | None = None,
+    label: FilmLabel | None = None,
 ) -> dict:
     result = client.upload_memory(
-        video_path=video_path, album_name=album_name, captured_at=captured_at
+        video_path=video_path, album_name=album_name, captured_at=captured_at, label=label
     )
     if result.get("asset_id"):
         logger.info("Uploaded to Immich: asset=%s, album=%s", result["asset_id"], album_name)
