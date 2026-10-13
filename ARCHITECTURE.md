@@ -794,6 +794,7 @@ src/immich_memories/
 │   ├── text_mood.py            # Banked music judgment from saved cut text; private answering-route record
 │   ├── generated_audio.py      # Decode and reject silent/non-finite generator output before fallback
 │   ├── music_pipeline.py       # Multi-provider pipeline (ACE-Step -> MusicGen fallback)
+│   ├── take_join.py            # One film's generated takes joined on bar lines
 │   ├── bundled_music.py        # The 28 bundled royalty-free tracks (`music` extra), used with no backend
 │   ├── track_tempo.py          # Measure a bundled track's tempo (numpy onset autocorrelation, no librosa)
 │   ├── beat_grid.py            # Ask the generator for a tempo whose beat divides the photo cut cadence

@@ -37,8 +37,17 @@ def ace_boundary(tmp_path, monkeypatch):
     waveform = tmp_path / "upstream.wav"
     write_audio(waveform, 0.5)
 
-    def local_generate(*, params, save_dir, **_kwargs):
-        captured.append({"duration": params.duration, "caption": params.caption})
+    def local_generate(*, params, config, save_dir, **_kwargs):
+        captured.append(
+            {
+                "duration": params.duration,
+                "caption": params.caption,
+                "bpm": params.bpm,
+                "keyscale": params.keyscale,
+                "timesignature": params.timesignature,
+                "seed": None if config.use_random_seed else config.seeds[0],
+            }
+        )
         return SimpleNamespace(success=True, audios=[{"path": str(waveform)}])
 
     def remote(request):
@@ -91,11 +100,12 @@ async def test_pipeline_block_bound_reaches_native_ace_params(
     pipeline = MusicPipeline(generators=[backend], block_seconds=75, max_blocks=3)
     scenes = [{"mood": "happy", "duration": 100}, {"mood": "calm", "duration": 83}]
 
-    def assemble(_blocks, _duration, output, **_kwargs):
+    def join(_takes, _duration, output, **_kwargs):
         write_audio(output, 0.5)
+        return output
 
-    # WHY: block assembly is a separate FFmpeg concern; native parameter translation is real.
-    monkeypatch.setattr("immich_memories.audio.music_pipeline.assemble_music", assemble)
+    # WHY: the bar-line join is a separate FFmpeg concern; native parameter translation is real.
+    monkeypatch.setattr("immich_memories.audio.music_pipeline.join_takes", join)
     result = await pipeline._generate_full_mix(
         scenes=scenes,
         primary_mood="happy",
@@ -111,11 +121,13 @@ async def test_pipeline_block_bound_reaches_native_ace_params(
     )
 
     assert result is not None
+    # 183 s in takes of at most 75 s: three takes of an even share (61 s) plus the
+    # join margin, never more than the bound.
     assert len(captured) == 3
-    assert [take["duration"] for take in captured] == [75, 75, 75]
+    assert [take["duration"] for take in captured] == [69, 69, 69]
     assert all(take["caption"] for take in captured)
     assert all(request.scenes == scenes for request in backend.requests)
-    assert [result.duration_seconds for result in backend.results] == [75, 75, 75]
+    assert [result.duration_seconds for result in backend.results] == [69, 69, 69]
 
 
 @pytest.mark.asyncio

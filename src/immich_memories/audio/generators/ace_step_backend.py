@@ -21,6 +21,7 @@ See: https://github.com/ace-step/ACE-Step-1.5
 from __future__ import annotations
 
 import logging
+import random
 import shutil
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -78,12 +79,19 @@ def _detect_season(mood: str) -> str | None:
     return None
 
 
+# The longest take this app asks ACE-Step for. ACE-Step itself accepts up to 600 s
+# (acestep.constants.DURATION_MAX), but its own GPU tiers allow 240-360 s on the
+# 8-16 GB cards it supports, so 300 s stays inside what common hardware renders.
+ACE_TAKE_CAP_SECONDS = 300
+
+
 def _mood_to_structured_prompt(
     mood: str,
     scene_moods: list[str] | None = None,
     memory_type: str | None = None,
     cadence_seconds: float | None = None,
     mood_detail=None,
+    rng: random.Random | None = None,
 ):
     """Convert mood to structured ACE-Step caption with explicit musical params.
 
@@ -96,11 +104,36 @@ def _mood_to_structured_prompt(
         scene_moods=scene_moods,
         memory_type=memory_type,
         mood_detail=mood_detail,
+        rng=rng,
     )
 
 
+def _caption_for(request: GenerationRequest):
+    """The structured caption for this request, the same for every take of one film."""
+    scene_moods = None
+    if request.is_multi_scene:
+        scene_moods = [s.get("mood", "upbeat") for s in request.scenes]
+    # WHY: a seeded draw is the film's style choice, not a security token.
+    rng = random.Random(request.seed) if request.seed is not None else None  # noqa: S311
+    return _mood_to_structured_prompt(
+        scene_moods[0] if scene_moods else request.prompt,
+        scene_moods=scene_moods,
+        memory_type=request.memory_type,
+        cadence_seconds=request.photo_cadence_seconds,
+        mood_detail=request.mood_detail,
+        rng=rng,
+    )
+
+
+def _take_seed(request: GenerationRequest) -> int | None:
+    """This take's diffusion seed: the film's seed, stepped per take."""
+    if request.seed is None:
+        return None
+    return (request.seed + request.variation_index) % (2**31)
+
+
 def _take_duration(request: GenerationRequest) -> float:
-    """Keep legacy scene timing, within an optional per-take bound and ACE's five-minute cap."""
+    """Keep legacy scene timing, within an optional per-take bound and the take cap."""
     duration = (
         sum(scene.get("duration", 30) for scene in request.scenes)
         if request.is_multi_scene
@@ -108,7 +141,7 @@ def _take_duration(request: GenerationRequest) -> float:
     )
     if request.duration_limit_seconds is not None:
         duration = min(duration, request.duration_limit_seconds)
-    return float(min(duration, 300))
+    return float(min(duration, ACE_TAKE_CAP_SECONDS))
 
 
 class ACEStepBackend(MusicGenerator):
@@ -127,6 +160,10 @@ class ACEStepBackend(MusicGenerator):
     def name(self) -> str:
         mode = self._effective_mode or self.config.mode
         return f"ACE-Step ({mode})"
+
+    @property
+    def max_take_seconds(self) -> int:
+        return ACE_TAKE_CAP_SECONDS
 
     async def is_available(self) -> bool:
         """Check if ACE-Step is available in configured mode."""
@@ -239,25 +276,7 @@ class ACEStepBackend(MusicGenerator):
 
         request.output_dir.mkdir(parents=True, exist_ok=True)
 
-        # Build structured prompt (same rich captions as API mode)
-        if request.is_multi_scene:
-            scene_moods = [s.get("mood", "upbeat") for s in request.scenes]
-            primary_mood = scene_moods[0] if scene_moods else "upbeat"
-            caption_result = _mood_to_structured_prompt(
-                primary_mood,
-                scene_moods=scene_moods,
-                memory_type=request.memory_type,
-                cadence_seconds=request.photo_cadence_seconds,
-                mood_detail=request.mood_detail,
-            )
-        else:
-            caption_result = _mood_to_structured_prompt(
-                request.prompt,
-                memory_type=request.memory_type,
-                cadence_seconds=request.photo_cadence_seconds,
-                mood_detail=request.mood_detail,
-            )
-
+        caption_result = _caption_for(request)
         duration = _take_duration(request)
         output_path = request.output_dir / f"ace_step_v{request.variation_index}.wav"
 
@@ -278,10 +297,11 @@ class ACEStepBackend(MusicGenerator):
             lyrics="[Instrumental]",
             instrumental=True,
             bpm=caption_result.bpm,
-            # WHY: ACE-Step's guides recommend leaving key and meter for the model to
-            # infer, and only pinning BPM (which the caption also states in tags).
-            keyscale="",
-            timesignature="",
+            # WHY: ACE-Step's guides suggest leaving key and meter to the model, but a
+            # long film's takes must agree on them or their seams change key (#2472).
+            # API mode has always pinned both.
+            keyscale=caption_result.key_scale,
+            timesignature=caption_result.time_signature,
             duration=duration,
             inference_steps=infer_step,
             guidance_scale=1.0 if is_turbo else 7.0,
@@ -291,9 +311,11 @@ class ACEStepBackend(MusicGenerator):
             use_cot_caption=self.config.use_lm,
             use_cot_language=False,
         )
+        seed = _take_seed(request)
         generation_config = runtime.generation_config_type(
             batch_size=1,
-            use_random_seed=True,
+            use_random_seed=seed is None,
+            seeds=None if seed is None else [seed],
             audio_format="wav",
         )
 
@@ -359,24 +381,7 @@ class ACEStepBackend(MusicGenerator):
 
         request.output_dir.mkdir(parents=True, exist_ok=True)
 
-        if request.is_multi_scene:
-            scene_moods = [s.get("mood", "upbeat") for s in request.scenes]
-            primary_mood = scene_moods[0] if scene_moods else "upbeat"
-            caption_result = _mood_to_structured_prompt(
-                primary_mood,
-                scene_moods=scene_moods,
-                memory_type=request.memory_type,
-                cadence_seconds=request.photo_cadence_seconds,
-                mood_detail=request.mood_detail,
-            )
-        else:
-            caption_result = _mood_to_structured_prompt(
-                request.prompt,
-                memory_type=request.memory_type,
-                cadence_seconds=request.photo_cadence_seconds,
-                mood_detail=request.mood_detail,
-            )
-
+        caption_result = _caption_for(request)
         duration = _take_duration(request)
 
         if progress_callback:
@@ -401,6 +406,8 @@ class ACEStepBackend(MusicGenerator):
                 "keyscale": caption_result.key_scale,
                 "timesignature": caption_result.time_signature,
             }
+            if (seed := _take_seed(request)) is not None:
+                task_payload |= {"use_random_seed": False, "seed": seed}
 
             resp = await client.post(f"{self.config.api_url}/release_task", json=task_payload)
             resp.raise_for_status()

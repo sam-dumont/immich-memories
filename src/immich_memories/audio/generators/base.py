@@ -51,6 +51,11 @@ class GenerationRequest:
     # None preserves backends' ordinary multi-scene duration behavior.
     duration_limit_seconds: int | None = None
 
+    # One film's musical identity. Every take of a film carries the same seed, so a
+    # backend that samples a style draws the same one, and seeds its takes from it
+    # (seed + variation_index): related takes rather than unrelated songs (#2472).
+    seed: int | None = None
+
     @property
     def is_multi_scene(self) -> bool:
         """Whether this is a multi-scene soundtrack request."""
@@ -84,6 +89,15 @@ class MusicGenerator(ABC):
     @abstractmethod
     def name(self) -> str:
         """Human-readable backend name (e.g., 'MusicGen', 'ACE-Step')."""
+
+    @property
+    def max_take_seconds(self) -> int | None:
+        """The longest take one request yields, or None when one request covers any film.
+
+        A backend with a cap gets a long film as several takes of one identity;
+        one without, such as a service that continues its own audio, gets it whole.
+        """
+        return None
 
     @abstractmethod
     async def is_available(self) -> bool:

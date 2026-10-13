@@ -401,8 +401,8 @@ and `--no-music` skips music. Music volume is per run too (`--music-volume`); th
 audio:
   local_music_dir: "~/Music/Memories"   # Library scanned by `immich-memories music search`
   max_regenerations: 2                  # Extra auto-mode takes when the first is flagged (0-3)
-  music_block_seconds: 120              # Longest single take before auto mode chains distinct takes (30-300)
-  max_music_blocks: 3                   # Distinct takes to chain for a longer video (1-6)
+  music_block_seconds: 240              # Longest single ACE-Step take before auto mode joins several (30-300)
+  max_music_blocks: 3                   # Takes to join for a longer film, repeated past that (1-6)
 advanced:
   musicgen:
     enabled: false                 # Use a MusicGen API server
@@ -441,10 +441,12 @@ flags as a repetitive "tic-tac". The first take is scored; if it is flagged, aut
 up to that many more takes and keeps the best-scored one. It never drops music, so a run ends with
 a track even when every take is flagged.
 
-A video longer than `audio.music_block_seconds` is not one long generation. Auto mode generates up
-to `audio.max_music_blocks` distinct same-caption takes and joins them with crossfades, then loops
-the sequence to fill the remaining length. One long take reads as a metronomic ramble, and one
-short phrase on repeat is its own kind of monotony; a chain of a few distinct takes is neither.
+Generated music is planned from the assembled film's length. A film up to
+`audio.music_block_seconds` gets one ACE-Step take. A longer one gets up to
+`audio.max_music_blocks` takes that share one caption, style, tempo and key, cut on bar lines and
+joined with a 0.3 s crossfade, then repeated if the film is longer still. Two takes never play over
+each other for longer than that crossfade. MusicGen continues its own audio, so it gets the whole
+film in one request, one scene per chapter.
 
 ## Text model and optional vision captions
 

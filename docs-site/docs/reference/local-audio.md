@@ -113,11 +113,12 @@ the substitution.
 - **A stuck loop is re-rolled.** Each take is checked for a metronomic, repetitive grid, and a
   flagged one is replaced by up to `audio.max_regenerations` (2) more takes, keeping the best.
   Music is never dropped for it.
-- **Long films chain takes.** Past `audio.music_block_seconds` (120), up to
-  `audio.max_music_blocks` (3) distinct takes are crossfaded and looped, rather than one long
-  generation. ACE-Step bounds each take to the block length while keeping all scene moods
-  in its prompt, even when the scenes describe a longer film. Each take's near-silent lead-in
-  or tail is trimmed first, so a crossfade seam never lands on a silent stretch.
+- **One film, one piece of music.** The music is planned from the assembled film's length, so a
+  100 s photo film gets about 100 s of music, not 5 s per photo. Up to
+  `audio.music_block_seconds` (240) that is one take. Past it, up to `audio.max_music_blocks` (3)
+  takes share one caption, style, tempo, key and seed, and are cut on bar lines and joined with a
+  0.3 s crossfade, matched in level. Each take ends a few seconds early, before its outro, and the
+  next starts on its first downbeat.
 - **Four stems.** The track is split with Demucs: vocals duck most under the clips' sound, drums
   keep their rhythm. Local Demucs uses Metal on Apple Silicon (`immich-memories[demucs]` alone);
   the configured [inference service](inference-service.md#music-stems) handles separation over HTTP,

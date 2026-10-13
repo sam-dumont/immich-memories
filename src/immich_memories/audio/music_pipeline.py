@@ -15,7 +15,9 @@ from __future__ import annotations
 
 import logging
 import math
+import secrets
 from collections.abc import Callable
+from dataclasses import replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -27,13 +29,13 @@ from immich_memories.audio.generators.base import (
     StemSeparator,
 )
 from immich_memories.audio.mastering import master_music_track
-from immich_memories.audio.mixer import assemble_music
 from immich_memories.audio.music_generator_models import (
     GeneratedMusic,
     MusicGenerationResult,
     MusicStems,
     VideoTimeline,
 )
+from immich_memories.audio.take_join import join_takes
 
 if TYPE_CHECKING:
     from immich_memories.audio.mood_analyzer import VideoMood
@@ -105,10 +107,15 @@ class MusicPipeline:
         output_dir.mkdir(parents=True, exist_ok=True)
 
         scenes = timeline.build_scenes(hemisphere=hemisphere)
-        total_duration = sum(s["duration"] for s in scenes)
+        total_duration = timeline.music_duration
         primary_mood = scenes[0]["mood"] if scenes else "calm"
 
-        logger.info(f"Pipeline: {len(scenes)} scenes, {total_duration}s, {num_versions} versions")
+        logger.info(
+            "Pipeline: %d scenes, %.1fs of music, %d versions",
+            len(scenes),
+            total_duration,
+            num_versions,
+        )
 
         if quality_gate is not None:
             return await self._generate_gated(
@@ -269,137 +276,100 @@ class MusicPipeline:
     ) -> tuple[GenerationResult, GenerationRequest] | None:
         """One mastered full-length mix (and its request), pre-stem.
 
-        Up to ``block_seconds`` this is a single take at the video length. Longer,
-        one long take reads as a metronomic ramble, so instead up to ``max_blocks``
-        distinct takes share the caption (fresh seed each, so same genre/key but
-        different music) and are folded together with crossfades, then tiled to the
-        full length. The result is mastered once, so stems and ducking see a
+        The whole film comes from the first backend that can make it, never a
+        block from one backend and the next block from another. Within the
+        backend's take length it is one take. Longer, its takes share one seed,
+        so they share the caption, style, BPM and key, and are joined on bar
+        lines with a short crossfade (``join_takes``). Takes used to be separate
+        songs crossfaded blind for two seconds, so two melodies played at every
+        seam (#2472). The result is mastered once, so stems and ducking see a
         balanced track.
         """
-        if total_duration <= self._block_seconds:
-            request = GenerationRequest(
-                prompt=primary_mood,
-                scenes=scenes,
-                duration_seconds=int(total_duration),
-                variation_index=candidate_index,
-                crossfade_duration=crossfade_duration,
-                output_dir=output_dir,
-                memory_type=memory_type,
-                photo_cadence_seconds=photo_cadence_seconds,
-                mood_detail=mood_detail,
-            )
-            result = await self._try_generate(
-                request, progress_callback, candidate_index, num_versions
-            )
-            if result is None:
-                return None
-            result.audio_path = master_music_track(
-                result.audio_path, output_dir / f"mastered_version_{candidate_index}.wav"
-            )
-            return result, request
-
-        n_blocks = min(
-            self._max_blocks,
-            max(1, int(math.ceil(total_duration / self._block_seconds))),
-        )
-        blocks: list[Path] = []
-        prompt = primary_mood
-        backend_name = ""
-        for b in range(n_blocks):
-            block_request = GenerationRequest(
-                prompt=primary_mood,
-                scenes=scenes,
-                duration_seconds=self._block_seconds,
-                duration_limit_seconds=self._block_seconds,
-                variation_index=b,
-                crossfade_duration=crossfade_duration,
-                output_dir=output_dir,
-                memory_type=memory_type,
-                photo_cadence_seconds=photo_cadence_seconds,
-                mood_detail=mood_detail,
-            )
-            block_result = await self._try_generate(block_request, progress_callback, b, n_blocks)
-            if block_result is None:
-                logger.warning("Music block %d/%d failed; skipping", b + 1, n_blocks)
-                continue
-            blocks.append(block_result.audio_path)
-            prompt = block_result.prompt or prompt
-            backend_name = block_result.backend_name or backend_name
-            logger.info("Music block %d/%d ready", len(blocks), n_blocks)
-
-        if not blocks:
-            return None
-
-        chained = output_dir / f"chained_version_{candidate_index}.wav"
-        assemble_music(blocks, total_duration, chained, crossfade_seconds=crossfade_duration)
-        mastered = master_music_track(
-            chained, output_dir / f"mastered_version_{candidate_index}.wav"
-        )
-
         request = GenerationRequest(
             prompt=primary_mood,
             scenes=scenes,
-            duration_seconds=int(total_duration),
+            duration_seconds=math.ceil(total_duration),
             variation_index=candidate_index,
             crossfade_duration=crossfade_duration,
             output_dir=output_dir,
             memory_type=memory_type,
             photo_cadence_seconds=photo_cadence_seconds,
             mood_detail=mood_detail,
+            seed=secrets.randbelow(_SEED_RANGE),
         )
-        result = GenerationResult(
-            audio_path=mastered,
-            duration_seconds=total_duration,
-            prompt=prompt,
-            backend_name=backend_name,
-        )
-        return result, request
-
-    async def _try_generate(
-        self,
-        request: GenerationRequest,
-        progress_callback: Any | None,
-        version_idx: int,
-        num_versions: int,
-    ) -> GenerationResult | None:
-        """Try each generator in priority order until one succeeds."""
-
-        def _progress(status, progress, detail):
-            if progress_callback:
-                scaled = progress * 0.8
-                progress_callback(version_idx, status, scaled, detail)
-
+        progress = _VersionProgress(progress_callback, candidate_index)
         for gen in self._generators:
-            try:
-                _progress("Checking music service", 0, None)
-                if not await gen.is_available():
-                    logger.info(f"{gen.name} unavailable, trying next...")
-                    continue
-
-                logger.info(f"Generating with {gen.name}")
-                _progress("Generating music", 0, None)
-                result = await gen.generate(request, _progress)
-                if reason := validate_generated_audio(result.audio_path):
-                    logger.warning(
-                        "Music backend %s rejected: %s; trying next backend", gen.name, reason
-                    )
-                    continue
-                return result
-
-            except Exception:
-                # WHY broad: the point of a backend chain is that one backend
-                # failing is not the run failing, and each backend fails in its
-                # own vocabulary — a hosted one raises httpx.HTTPStatusError,
-                # which is neither RuntimeError nor OSError and used to escape
-                # the chain entirely. CancelledError is a BaseException and
-                # still propagates.
-                # No exc_info: a backend's exception text can carry its URL or
-                # key, and these logs are kept deliberately quiet about that.
-                _progress("Music service failed; trying the next service", 0, None)
-                logger.warning("Music backend %s failed; trying next backend", gen.name)
+            if not await _is_ready(gen, progress):
                 continue
-
+            take_seconds = self._take_seconds(gen)
+            if take_seconds is None or total_duration <= take_seconds:
+                made = await _run(gen, request, progress)
+            else:
+                made = await self._joined_takes(
+                    gen, request, total_duration, take_seconds, progress
+                )
+            if made is not None:
+                made.audio_path = master_music_track(
+                    made.audio_path, output_dir / f"mastered_version_{candidate_index}.wav"
+                )
+                return made, request
         return None
+
+    def _take_seconds(self, gen: MusicGenerator) -> int | None:
+        """The longest take to ask this backend for, or None when it covers any film."""
+        cap = gen.max_take_seconds
+        return None if cap is None else min(self._block_seconds, cap)
+
+    async def _joined_takes(
+        self,
+        gen: MusicGenerator,
+        film: GenerationRequest,
+        total_duration: float,
+        take_seconds: int,
+        progress: _VersionProgress,
+    ) -> GenerationResult | None:
+        """Several takes of one musical identity from one backend, joined on bar lines."""
+        usable = max(take_seconds - _JOIN_MARGIN_SECONDS, 1)
+        count = min(self._max_blocks, math.ceil(total_duration / usable))
+        length = min(take_seconds, math.ceil(total_duration / count) + _JOIN_MARGIN_SECONDS)
+        takes: list[GenerationResult] = []
+        for index in range(count):
+            take = replace(
+                film,
+                duration_seconds=length,
+                duration_limit_seconds=length,
+                variation_index=index,
+            )
+            result = await _run(gen, take, progress)
+            if result is None:
+                logger.warning("Music take %d/%d failed; skipping", index + 1, count)
+                continue
+            takes.append(result)
+            logger.info("Music take %d/%d ready", len(takes), count)
+        if not takes:
+            return None
+
+        bpm = takes[0].metadata.get("bpm")
+        logger.info(
+            "Joining %d takes of %ss into %.1fs on a %s bpm bar grid",
+            len(takes),
+            length,
+            total_duration,
+            bpm or "measured",
+        )
+        joined = join_takes(
+            [take.audio_path for take in takes],
+            total_duration,
+            film.output_dir / f"chained_version_{film.variation_index}.wav",
+            bpm=bpm if isinstance(bpm, int | float) else None,
+        )
+        return GenerationResult(
+            audio_path=joined,
+            duration_seconds=total_duration,
+            prompt=takes[0].prompt,
+            backend_name=takes[0].backend_name,
+            metadata=takes[0].metadata.copy(),
+        )
 
     async def _try_separate_stems(
         self,
@@ -444,6 +414,63 @@ class MusicPipeline:
             # No exc_info, for the same reason as the backend chain above.
             logger.warning("Stem separation failed; continuing without stems")
             return None
+
+
+# A take is asked this much longer than its share of the film: the join drops its
+# closing bars (a take ends on an outro) and starts the next take on a downbeat.
+_JOIN_MARGIN_SECONDS = 8
+# A film's seed leaves room for its takes to step from it without wrapping.
+_SEED_RANGE = 2**30
+
+
+class _VersionProgress:
+    """Progress for one candidate version, scaled to the generation share."""
+
+    def __init__(self, callback: Any | None, version_idx: int):
+        self._callback = callback
+        self._version_idx = version_idx
+
+    def __call__(self, status: str, progress: float, detail: Any) -> None:
+        if self._callback:
+            self._callback(self._version_idx, status, progress * 0.8, detail)
+
+
+async def _is_ready(gen: MusicGenerator, progress: _VersionProgress) -> bool:
+    try:
+        progress("Checking music service", 0, None)
+        if await gen.is_available():
+            return True
+        logger.info(f"{gen.name} unavailable, trying next...")
+    except Exception:
+        # WHY broad: see _run; a backend's availability probe fails in its own vocabulary.
+        logger.warning("Music backend %s failed; trying next backend", gen.name)
+    return False
+
+
+async def _run(
+    gen: MusicGenerator, request: GenerationRequest, progress: _VersionProgress
+) -> GenerationResult | None:
+    """One request on one backend, or None when it fails or makes unusable audio."""
+    try:
+        logger.info(f"Generating with {gen.name}")
+        progress("Generating music", 0, None)
+        result = await gen.generate(request, progress)
+    except Exception:
+        # WHY broad: the point of a backend chain is that one backend
+        # failing is not the run failing, and each backend fails in its
+        # own vocabulary — a hosted one raises httpx.HTTPStatusError,
+        # which is neither RuntimeError nor OSError and used to escape
+        # the chain entirely. CancelledError is a BaseException and
+        # still propagates.
+        # No exc_info: a backend's exception text can carry its URL or
+        # key, and these logs are kept deliberately quiet about that.
+        progress("Music service failed; trying the next service", 0, None)
+        logger.warning("Music backend %s failed; trying next backend", gen.name)
+        return None
+    if reason := validate_generated_audio(result.audio_path):
+        logger.warning("Music backend %s rejected: %s; trying next backend", gen.name, reason)
+        return None
+    return result
 
 
 def _candidate_rank(

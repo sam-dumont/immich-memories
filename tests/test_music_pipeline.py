@@ -835,19 +835,27 @@ class TestMoodDetailThreadsThrough:
         assert seen[0].mood_detail is detail
 
 
-def _fake_assemble(_blocks, _target, out, **kwargs):
-    """Keep the block-count test independent of FFmpeg assembly."""
-    out.write_bytes(b"RIFF" + b"\x00" * 40)
+def _fake_join(_takes, _target, out, **kwargs):
+    """Keep the take-count test independent of the FFmpeg bar-line join."""
+    write_audio(out, 0.3)
     return out
 
 
-class TestLongVideoBlocks:
-    """A long video is filled by distinct same-caption takes, not one stuck phrase."""
+class CappedGenerator(CountingGenerator):
+    """A backend whose single take is bounded, as ACE-Step's is."""
 
-    async def test_a_long_video_generates_distinct_blocks(self, tmp_path: Path) -> None:
+    @property
+    def max_take_seconds(self) -> int:
+        return 300
+
+
+class TestLongVideoBlocks:
+    """A long video is filled by takes of one identity, joined on bar lines."""
+
+    async def test_a_long_video_generates_several_takes(self, tmp_path: Path) -> None:
         from immich_memories.audio.music_generator_models import ClipMood
 
-        gen = CountingGenerator()
+        gen = CappedGenerator()
         pipeline = MusicPipeline(
             generators=[gen], stem_separator=None, block_seconds=120, max_blocks=3
         )
@@ -855,19 +863,19 @@ class TestLongVideoBlocks:
         timeline = VideoTimeline()
         timeline.clips = [ClipMood(duration=600.0, mood="happy")]
 
-        # WHY: isolate generation block counts from FFmpeg crossfade assembly.
+        # WHY: isolate generation take counts from the FFmpeg bar-line join.
         with patch(
-            "immich_memories.audio.music_pipeline.assemble_music", side_effect=_fake_assemble
-        ) as assemble:
+            "immich_memories.audio.music_pipeline.join_takes", side_effect=_fake_join
+        ) as join:
             async with pipeline:
                 result = await pipeline.generate_music_for_video(
                     timeline=timeline, output_dir=tmp_path, num_versions=1
                 )
 
-        assert gen.calls == 3, "three distinct same-caption takes, not one long shot"
-        assert assemble.call_count == 1
-        blocks, target, _chained = assemble.call_args.args
-        assert len(blocks) == 3
+        assert gen.calls == 3, "three takes of one identity, not one long shot"
+        assert join.call_count == 1
+        takes, target, _chained = join.call_args.args
+        assert len(takes) == 3
         assert target > 120
         assert len(result.versions) == 1
         assert result.versions[0].duration > 120
@@ -875,7 +883,7 @@ class TestLongVideoBlocks:
     async def test_a_short_video_keeps_a_single_take(self, tmp_path: Path) -> None:
         from immich_memories.audio.music_generator_models import ClipMood
 
-        gen = CountingGenerator()
+        gen = CappedGenerator()
         pipeline = MusicPipeline(
             generators=[gen], stem_separator=None, block_seconds=120, max_blocks=3
         )
@@ -883,14 +891,14 @@ class TestLongVideoBlocks:
         timeline = VideoTimeline()
         timeline.clips = [ClipMood(duration=30.0, mood="happy")]
 
-        with patch("immich_memories.audio.music_pipeline.assemble_music") as assemble:
+        with patch("immich_memories.audio.music_pipeline.join_takes") as join:
             async with pipeline:
                 result = await pipeline.generate_music_for_video(
                     timeline=timeline, output_dir=tmp_path, num_versions=1
                 )
 
-        assert gen.calls == 1, "a short video is one shot, never assembled into blocks"
-        assemble.assert_not_called()
+        assert gen.calls == 1, "a short video is one shot, never joined from takes"
+        join.assert_not_called()
         assert len(result.versions) == 1
 
 
