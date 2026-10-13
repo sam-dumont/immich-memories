@@ -317,11 +317,17 @@ def _assets_for_query(
 ) -> list[dict[str, Any]]:
     requested_type = query.get("type", [None])[0]
     requested_bucket = query.get("timeBucket", [None])[0]
+    # A person's timeline holds that person's pictures only, as Immich answers it.
+    requested_person = query.get("personId", [None])[0]
     return [
         asset
         for asset in held
         if (requested_type is None or asset["type"] == requested_type)
         and (requested_bucket is None or _month_of(asset) == requested_bucket[:10])
+        and (
+            requested_person is None
+            or requested_person in {person["id"] for person in asset.get("people") or ()}
+        )
     ]
 
 

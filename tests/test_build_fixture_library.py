@@ -84,3 +84,11 @@ def test_a_credit_row_names_the_file_author_source_licence_and_hash(build) -> No
         "| https://commons.wikimedia.org/wiki/File:M%C3%B8ns_Klint.jpg | CC BY 4.0 "
         f"| `{'a' * 64}` |"
     )
+
+
+def test_a_face_box_past_the_edge_is_kept_inside_the_picture(build) -> None:
+    """A close-up's detected box can start above the frame; Immich stores it inside."""
+    face = build.pinned_face("Lou", (369.0, -14.6, 704.1, 878.1), width=1280, height=853)
+
+    assert face == {"person": "Lou", "x": 0.2883, "y": 0.0, "w": 0.5501, "h": 1.0}
+    assert 0 <= face["x"] <= face["x"] + face["w"] <= 1

@@ -1,0 +1,159 @@
+{
+ "warnings": [],
+ "stages": [
+  {
+   "name": "editorial final cut",
+   "kept": 5,
+   "dropped": 4,
+   "favorites_in": 1,
+   "favorites_out": 1,
+   "reasons": [],
+   "notes": {
+    "birthday-kitchen": "it does not stand on its own as a picture of its story",
+    "birthday-decorating": "it does not stand on its own as a picture of its story",
+    "birthday-cupcakes-1": "it does not stand on its own as a picture of its story",
+    "birthday-dancing": "it is not its own shot: a moment earns one shot for every 5 distinct pictures, or one every five minutes"
+   },
+   "kept_ids": [
+    "birthday-cake",
+    "birthday-cupcakes-2",
+    "birthday-superheroes",
+    "birthday-stairs",
+    "birthday-sofa-film"
+   ],
+   "lost_ids": [
+    "birthday-kitchen",
+    "birthday-decorating",
+    "birthday-cupcakes-1",
+    "birthday-dancing"
+   ],
+   "gained_ids": []
+  }
+ ],
+ "editorial_passes": [
+  {
+   "name": "source-eligibility",
+   "input_ids": [
+    "birthday-kitchen",
+    "birthday-cake",
+    "birthday-decorating",
+    "birthday-cupcakes-1",
+    "birthday-cupcakes-2",
+    "birthday-superheroes",
+    "birthday-stairs",
+    "birthday-sofa-film",
+    "birthday-dancing"
+   ],
+   "kept_ids": [
+    "birthday-kitchen",
+    "birthday-cake",
+    "birthday-decorating",
+    "birthday-cupcakes-1",
+    "birthday-cupcakes-2",
+    "birthday-superheroes",
+    "birthday-stairs",
+    "birthday-sofa-film",
+    "birthday-dancing"
+   ],
+   "rejected": [],
+   "unresolved": [],
+   "duration_before": 0.0,
+   "duration_after": 0.0,
+   "provenance": {
+    "pass_name": "source-eligibility",
+    "pass_version": "1",
+    "schema_version": "1",
+    "model_identity": "",
+    "input_ids": [
+     "birthday-kitchen",
+     "birthday-cake",
+     "birthday-decorating",
+     "birthday-cupcakes-1",
+     "birthday-cupcakes-2",
+     "birthday-superheroes",
+     "birthday-stairs",
+     "birthday-sofa-film",
+     "birthday-dancing"
+    ],
+    "sheet_hashes": [],
+    "request_key": "",
+    "cache_hit": false
+   },
+   "request_traces": [],
+   "conservation": {
+    "valid": true,
+    "missing_ids": [],
+    "duplicate_ids": [],
+    "unexpected_ids": []
+   }
+  },
+  {
+   "name": "pass-1-cull",
+   "input_ids": [
+    "birthday-kitchen",
+    "birthday-cake",
+    "birthday-decorating",
+    "birthday-cupcakes-1",
+    "birthday-cupcakes-2",
+    "birthday-superheroes",
+    "birthday-stairs",
+    "birthday-sofa-film",
+    "birthday-dancing"
+   ],
+   "kept_ids": [
+    "birthday-kitchen",
+    "birthday-cake",
+    "birthday-decorating",
+    "birthday-cupcakes-1",
+    "birthday-cupcakes-2",
+    "birthday-superheroes",
+    "birthday-stairs",
+    "birthday-sofa-film",
+    "birthday-dancing"
+   ],
+   "rejected": [],
+   "unresolved": [],
+   "duration_before": 0.0,
+   "duration_after": 0.0,
+   "provenance": {
+    "pass_name": "pass-1-cull",
+    "pass_version": "pass-1-cull-v3/rules-v1/2f6bf6858ebcf1d4",
+    "schema_version": "rules-v1",
+    "model_identity": "rules-v1",
+    "input_ids": [
+     "birthday-kitchen",
+     "birthday-cake",
+     "birthday-decorating",
+     "birthday-cupcakes-1",
+     "birthday-cupcakes-2",
+     "birthday-superheroes",
+     "birthday-stairs",
+     "birthday-sofa-film",
+     "birthday-dancing"
+    ],
+    "sheet_hashes": [],
+    "request_key": "",
+    "cache_hit": false
+   },
+   "request_traces": [],
+   "conservation": {
+    "valid": true,
+    "missing_ids": [],
+    "duplicate_ids": [],
+    "unexpected_ids": []
+   }
+  }
+ ],
+ "requests": [],
+ "clips": {
+  "birthday-kitchen": "IMG_2437.jpg  2025-07-05T02:36+02:00  score=0.00",
+  "birthday-cake": "IMG_2438.jpg  2025-07-05T07:12+02:00  score=0.00  starred",
+  "birthday-decorating": "IMG_2439.jpg  2025-07-05T07:43+02:00  score=0.00",
+  "birthday-cupcakes-1": "IMG_2440.jpg  2025-07-05T08:12+02:00  score=0.00",
+  "birthday-cupcakes-2": "IMG_2441.jpg  2025-07-05T08:27+02:00  score=0.00",
+  "birthday-superheroes": "IMG_2442.jpg  2025-07-05T16:10+02:00  score=0.00",
+  "birthday-stairs": "IMG_2443.jpg  2025-07-05T16:51+02:00  score=0.00",
+  "birthday-sofa-film": "IMG_2444.jpg  2025-07-05T19:25+02:00  score=0.00",
+  "birthday-dancing": "IMG_2445.jpg  2025-07-05T19:30+02:00  score=0.00"
+ }
+}

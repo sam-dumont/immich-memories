@@ -1,0 +1,12 @@
+{
+ "memory_type": "monthly_highlights",
+ "arguments": [
+  "--memory-type",
+  "monthly_highlights",
+  "--month",
+  "7",
+  "--year",
+  "2025"
+ ],
+ "seconds": 139
+}

@@ -1,0 +1,12 @@
+{
+ "memory_type": "year_in_review",
+ "arguments": [
+  "--memory-type",
+  "year_in_review",
+  "--year",
+  "2025",
+  "--duration",
+  "180"
+ ],
+ "seconds": 183
+}

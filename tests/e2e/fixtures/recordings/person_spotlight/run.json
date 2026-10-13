@@ -1,0 +1,12 @@
+{
+ "memory_type": "person_spotlight",
+ "arguments": [
+  "--memory-type",
+  "person_spotlight",
+  "--person",
+  "Kit",
+  "--year",
+  "2025"
+ ],
+ "seconds": 54
+}

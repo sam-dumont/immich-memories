@@ -1,0 +1,274 @@
+{
+ "format": "editorial-source-rendering-v1",
+ "selected_ids": [
+  "home-0701-laeken-park",
+  "cast-0701-kit-lining-up-the-chocolate",
+  "home-0702-tram-2",
+  "cast-0703-charlie-and-remy-sharing-the",
+  "cast-0704-remy-s-first-steps-on-the-sa",
+  "cast-0704-remy-up-in-the-air",
+  "birthday-cake",
+  "forest-0706-pat-03",
+  "forest-0706-picnic",
+  "forest-0706-tervuren-03",
+  "forest-0706-tervuren-05",
+  "cast-0707-lou-laughing-at-the-table",
+  "home-0707-park-1",
+  "cast-0707-pat-and-lou-with-the-little",
+  "live-quiet-sunrise",
+  "home-0710-botanique-1",
+  "home-0711-flour-mill",
+  "north-0712-0000",
+  "north-0712-0002",
+  "north-0712-0003",
+  "north-0712-0005",
+  "north-clip-0712-0",
+  "trip-0712-bike-harbour",
+  "north-0713-0018",
+  "north-0713-0025",
+  "north-0713-0039",
+  "north-0714-0044",
+  "north-0714-0049",
+  "north-clip-0714-1",
+  "north-0714-0086",
+  "north-0715-0098",
+  "north-clip-0715-2",
+  "north-0715-0133",
+  "north-0716-0141",
+  "north-0716-0144",
+  "north-0716-0196",
+  "north-0718-0252",
+  "north-0719-0295",
+  "north-0720-0306",
+  "north-0721-0339",
+  "north-0723-0416",
+  "north-0723-0437",
+  "north-0724-0520",
+  "north-0725-0559",
+  "north-0726-0622",
+  "north-clip-0727-5",
+  "north-0727-0682",
+  "north-0727-0740",
+  "north-0728-0818",
+  "north-0729-0877",
+  "north-0729-0890",
+  "north-0729-0929",
+  "north-0730-0956"
+ ],
+ "adjustments": [],
+ "allow_live_motion": true,
+ "intervals": {
+  "home-0701-laeken-park": [
+   0.0,
+   3.5
+  ],
+  "cast-0701-kit-lining-up-the-chocolate": [
+   0.0,
+   3.5
+  ],
+  "home-0702-tram-2": [
+   0.0,
+   3.5
+  ],
+  "cast-0703-charlie-and-remy-sharing-the": [
+   0.0,
+   3.5
+  ],
+  "cast-0704-remy-s-first-steps-on-the-sa": [
+   0.0,
+   3.5
+  ],
+  "cast-0704-remy-up-in-the-air": [
+   0.0,
+   3.5
+  ],
+  "birthday-cake": [
+   0.0,
+   3.5
+  ],
+  "forest-0706-pat-03": [
+   0.0,
+   3.5
+  ],
+  "forest-0706-picnic": [
+   0.0,
+   3.5
+  ],
+  "forest-0706-tervuren-03": [
+   0.0,
+   3.5
+  ],
+  "forest-0706-tervuren-05": [
+   0.0,
+   3.5
+  ],
+  "cast-0707-lou-laughing-at-the-table": [
+   0.0,
+   3.5
+  ],
+  "home-0707-park-1": [
+   0.0,
+   3.5
+  ],
+  "cast-0707-pat-and-lou-with-the-little": [
+   0.0,
+   3.5
+  ],
+  "live-quiet-sunrise": [
+   0.0,
+   4.0
+  ],
+  "home-0710-botanique-1": [
+   0.0,
+   3.5
+  ],
+  "home-0711-flour-mill": [
+   0.0,
+   3.5
+  ],
+  "north-0712-0000": [
+   0.0,
+   3.5
+  ],
+  "north-0712-0002": [
+   0.0,
+   3.5
+  ],
+  "north-0712-0003": [
+   0.0,
+   3.5
+  ],
+  "north-0712-0005": [
+   0.0,
+   3.5
+  ],
+  "north-clip-0712-0": [
+   1.5,
+   5.0
+  ],
+  "trip-0712-bike-harbour": [
+   0.0,
+   3.5
+  ],
+  "north-0713-0018": [
+   0.0,
+   3.5
+  ],
+  "north-0713-0025": [
+   0.0,
+   3.5
+  ],
+  "north-0713-0039": [
+   0.0,
+   3.5
+  ],
+  "north-0714-0044": [
+   0.0,
+   3.5
+  ],
+  "north-0714-0049": [
+   0.0,
+   3.5
+  ],
+  "north-clip-0714-1": [
+   0.0,
+   3.5
+  ],
+  "north-0714-0086": [
+   0.0,
+   3.5
+  ],
+  "north-0715-0098": [
+   0.0,
+   3.5
+  ],
+  "north-clip-0715-2": [
+   0.0,
+   4.0
+  ],
+  "north-0715-0133": [
+   0.0,
+   3.5
+  ],
+  "north-0716-0141": [
+   0.0,
+   3.5
+  ],
+  "north-0716-0144": [
+   0.0,
+   3.5
+  ],
+  "north-0716-0196": [
+   0.0,
+   4.0
+  ],
+  "north-0718-0252": [
+   0.0,
+   3.5
+  ],
+  "north-0719-0295": [
+   0.0,
+   3.5
+  ],
+  "north-0720-0306": [
+   0.0,
+   3.5
+  ],
+  "north-0721-0339": [
+   0.0,
+   4.0
+  ],
+  "north-0723-0416": [
+   0.0,
+   3.5
+  ],
+  "north-0723-0437": [
+   0.0,
+   3.5
+  ],
+  "north-0724-0520": [
+   0.0,
+   3.5
+  ],
+  "north-0725-0559": [
+   0.0,
+   3.5
+  ],
+  "north-0726-0622": [
+   0.0,
+   3.5
+  ],
+  "north-clip-0727-5": [
+   0.0,
+   4.0
+  ],
+  "north-0727-0682": [
+   0.0,
+   3.5
+  ],
+  "north-0727-0740": [
+   0.0,
+   3.5
+  ],
+  "north-0728-0818": [
+   0.0,
+   3.5
+  ],
+  "north-0729-0877": [
+   0.0,
+   3.5
+  ],
+  "north-0729-0890": [
+   0.0,
+   3.5
+  ],
+  "north-0729-0929": [
+   0.0,
+   3.5
+  ],
+  "north-0730-0956": [
+   0.0,
+   3.5
+  ]
+ }
+}

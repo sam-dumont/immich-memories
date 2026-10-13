@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import contextlib
 import json
+import os
 import time
 from collections.abc import Sequence
 from dataclasses import replace
@@ -57,6 +58,76 @@ STAGES = (
 # Long enough that a reload lands on a running cut, short enough that the whole
 # scripted selection stays well under the launch smoke's budget.
 DEFAULT_STAGE_SECONDS = 0.15
+
+# A real run of one memory type, recorded once by `scripts/record_demo_runs.py`. Naming one
+# replays its cut instead of the script: the docs and demos then show what the product chose,
+# and nothing has to run a model to show it again.
+RECORDINGS = Path(__file__).parent / "fixtures" / "recordings"
+RECORDING_ENV = "IMMICH_MEMORIES_FAKE_RECORDING"
+
+
+def recording() -> dict[str, Any] | None:
+    """The recording `IMMICH_MEMORIES_FAKE_RECORDING` names, or None for the scripted cut."""
+    name = os.environ.get(RECORDING_ENV, "")
+    if not name:
+        return None
+    folder = RECORDINGS / name
+    if not (folder / "plan.json").is_file():
+        raise RuntimeError(f"{RECORDING_ENV}={name!r}: no recording under {RECORDINGS}")
+    return {path.stem: json.loads(path.read_text()) for path in folder.glob("*.json")}
+
+
+def _replay(
+    sources: Sequence[Any], recorded: dict[str, Any]
+) -> tuple[list[Any], list[tuple[str, str]]]:
+    """The recorded cut over these sources: its pictures in its order, every other one with
+    the reason the recorded run gave it."""
+    order = {
+        asset_id: n for n, asset_id in enumerate(recorded["render-projection"]["selected_ids"])
+    }
+    reasons = {
+        row["asset_id"]: row["reason"]
+        for step in recorded["selection-trace"]["editorial_passes"]
+        for row in step.get("rejected", ())
+    }
+    kept = sorted(
+        (s for s in sources if _asset_of(s).id in order), key=lambda s: order[_asset_of(s).id]
+    )
+    dropped = [
+        (asset_id, reasons.get(asset_id, "not in the recorded cut"))
+        for asset_id in (_asset_of(s).id for s in sources)
+        if asset_id not in order
+    ]
+    return kept, dropped
+
+
+def _replayed_candidates(kept: Sequence[Any], recorded: dict[str, Any], *, photo_seconds: float):
+    """The recorded cut's rows, each played over the interval the recorded run gave it."""
+    intervals = recorded["render-projection"]["intervals"]
+    by_id = {row.clip.asset.id: row for row in _candidates(kept, photo_seconds=photo_seconds)}
+    rows = []
+    for source in kept:
+        row = by_id[_asset_of(source).id]
+        start, end = intervals.get(row.clip.asset.id, (row.start_time, row.end_time))
+        rows.append(replace(row, start_time=float(start), end_time=float(end)))
+    return tuple(rows)
+
+
+def write_recorded_plan(
+    attempt_dir: Path, recorded: dict[str, Any], render_timing: dict | None
+) -> None:
+    """Leave the recorded run's own plan and decision log in this attempt."""
+    plan = dict(recorded["plan"])
+    if render_timing:
+        plan["render_timing"] = render_timing
+    write_secret_file(
+        attempt_dir / "plan.private.json", json.dumps(plan, ensure_ascii=False, indent=2)
+    )
+    write_secret_file(
+        attempt_dir / "selection-trace.private.json",
+        json.dumps(recorded["selection-trace"], indent=2),
+    )
+
 
 # Both from the production carrier vocabulary: motion is capped, a still is held.
 _MOTION_CAP_SECONDS = 6.0
@@ -481,13 +552,18 @@ class _FakeEditorialPipeline:
                     report_stage(update)
                     time.sleep(self._stage_seconds)
                     check_cancelled()
-                kept, dropped = _select(
-                    sources,
-                    getattr(self._context, "owner_required_asset_ids", ()),
-                    getattr(self._context, "owner_excluded_asset_ids", ()),
-                )
+                recorded = recording()
                 photo_seconds = self._app_config.photos.duration
-                candidates = _candidates(kept, photo_seconds=photo_seconds)
+                if recorded is not None:
+                    kept, dropped = _replay(sources, recorded)
+                    candidates = _replayed_candidates(kept, recorded, photo_seconds=photo_seconds)
+                else:
+                    kept, dropped = _select(
+                        sources,
+                        getattr(self._context, "owner_required_asset_ids", ()),
+                        getattr(self._context, "owner_excluded_asset_ids", ()),
+                    )
+                    candidates = _candidates(kept, photo_seconds=photo_seconds)
                 live = live_projection(
                     candidates,
                     sources,
@@ -510,6 +586,12 @@ class _FakeEditorialPipeline:
                     dropped,
                     result.stats.get("editorial_render_timing"),
                 )
+                if recorded is not None:
+                    # The projection above carries the recorded intervals; the plan and the
+                    # decision log are the recorded run's own.
+                    write_recorded_plan(
+                        attempt.directory, recorded, result.stats.get("editorial_render_timing")
+                    )
                 if binding := result.stats.get("editorial_render_timing"):
                     from immich_memories.processing.render_inputs import write_render_inputs
 

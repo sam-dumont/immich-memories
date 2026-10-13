@@ -30,7 +30,7 @@ Nothing on the docs site or in the README is a screenshot of a real library. The
 React recreation of the UI rendered with Remotion over the demo library, the CLI demo is a VHS
 recording, and the app screenshots come from a hermetic run over the same library.
 
-The library is 1,061 pictures and 7 clips under `tests/e2e/fixtures/library/`, all real files from
+The library is 1,119 pictures and 7 clips under `tests/e2e/fixtures/library/`, all real files from
 Wikimedia Commons under CC0 or CC BY: one household's July 2025, ten days at home in Brussels and
 a road trip to Nordkapp that is one photographer's own holiday. `make fixture-library` builds it
 from `sources.json` (`scripts/build_fixture_library.py`): it checks each file's licence on the
@@ -43,8 +43,22 @@ A picture is served with the GPS in its own file or with none, and at its own ti
 days at most (the trip not at all). One indoor series from one shoot (the birthday at home) may stand
 for the household's home and is served there; the test refuses a second one. `tests/test_fixture_library.py` pins that, the credits, the
 hashes and the 60 MB ceiling. `tests/e2e/fake_library.py` is the script on top: which picture
-carries which story (27 carriers), and a reason for every picture left out, most of them computed
+carries which story (30 carriers), and a reason for every picture left out, most of them computed
 from the moments the photographers' own sets form.
+
+The household is eleven people pinned onto real faces: Kit (26 pictures), Robin, Charlie,
+Remy, Pat, Jo, Lou and Alex clear the people floor, and Sasha, Mo and Nico are the tail a real
+library has. The faces are strangers from CC0 and CC BY stock shoots, so a person's pictures
+don't show one face; the pinned boxes make Immich group them anyway. The people pictures carry
+no GPS: a stock photo's own place would be a lie in a Brussels July.
+
+Each memory type was also cut once for real: Full tier, a local model, a real Immich seeded with
+the library (`scripts/record_demo_runs.py`). Its decisions sit under
+`tests/e2e/fixtures/recordings/<memory type>/`: the plan, the decision trace, the render
+projection and the run's own story. Setting `IMMICH_MEMORIES_FAKE_RECORDING=<memory type>` makes
+the hermetic editor replay that cut instead of the scripted one, so docs and demos show what the
+product chose without running a model again. Record again only when the library or the editor
+changes on purpose.
 
 The Synology setup screenshots under `docs-site/static/img/platforms/` come from the real DSM
 project and folder dialogs. Capture only the relevant dialog, with generic example names.
@@ -63,7 +77,7 @@ saves that as revision 1 before rendering at 1080p without music. The finished f
 the walkthrough adds its own soundtrack. The generated fixture carries the cut's timeline
 positions, its weighed stories and the seconds the titles leave the pictures.
 
-The fixture has 1,068 files on disk. Visibility and metadata rules can reduce the pool before
+The fixture has 1,126 files on disk. Visibility and metadata rules can reduce the pool before
 selection, so the pool count can differ from the file count.
 
 | Command (repo root) | Produces |

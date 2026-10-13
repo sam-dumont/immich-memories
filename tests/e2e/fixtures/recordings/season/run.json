@@ -1,0 +1,12 @@
+{
+ "memory_type": "season",
+ "arguments": [
+  "--memory-type",
+  "season",
+  "--season",
+  "summer",
+  "--year",
+  "2025"
+ ],
+ "seconds": 146
+}

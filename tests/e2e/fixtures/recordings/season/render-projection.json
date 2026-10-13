@@ -1,0 +1,294 @@
+{
+ "format": "editorial-source-rendering-v1",
+ "selected_ids": [
+  "cast-0701-kit-lining-up-the-chocolate",
+  "home-0702-tram-2",
+  "cast-0704-kit-digging-on-the-beach",
+  "cast-0704-remy-s-first-steps-on-the-sa",
+  "cast-0704-remy-up-in-the-air",
+  "birthday-cake",
+  "birthday-superheroes",
+  "forest-0706-pat-03",
+  "forest-0706-sonian-2",
+  "forest-0706-picnic",
+  "forest-0706-tervuren-03",
+  "forest-0706-tervuren-04",
+  "cast-0708-jo-by-the-fireplace",
+  "cast-0708-climbing-the-fence",
+  "cast-0708-alex-with-the-football",
+  "cast-0708-jo-in-the-hairband",
+  "home-0708-ice-cream-bike",
+  "home-0711-flour-mill",
+  "north-0712-0000",
+  "north-0712-0002",
+  "north-0712-0003",
+  "north-0712-0007",
+  "north-clip-0712-0",
+  "trip-0712-cargo-bike",
+  "trip-0712-bike-harbour",
+  "north-0713-0016",
+  "north-0713-0035",
+  "north-0713-0039",
+  "north-0715-0112",
+  "north-clip-0715-2",
+  "north-0715-0133",
+  "north-0715-0137",
+  "north-0716-0196",
+  "north-0718-0252",
+  "north-0718-0271",
+  "north-0719-0295",
+  "north-0719-0296",
+  "north-0719-0297",
+  "north-0720-0331",
+  "north-0721-0336",
+  "north-0721-0339",
+  "north-0723-0416",
+  "north-0723-0423",
+  "north-0723-0474",
+  "north-0724-0539",
+  "north-0725-0559",
+  "north-0726-0597",
+  "north-0727-0668",
+  "north-clip-0727-5",
+  "north-0728-0748",
+  "north-0729-0877",
+  "north-0729-0900",
+  "north-0729-0929",
+  "north-0729-0935",
+  "north-0730-0950",
+  "north-0730-0956",
+  "north-clip-0730-6"
+ ],
+ "adjustments": [],
+ "allow_live_motion": true,
+ "intervals": {
+  "cast-0701-kit-lining-up-the-chocolate": [
+   0.0,
+   3.5
+  ],
+  "home-0702-tram-2": [
+   0.0,
+   3.5
+  ],
+  "cast-0704-kit-digging-on-the-beach": [
+   0.0,
+   3.5
+  ],
+  "cast-0704-remy-s-first-steps-on-the-sa": [
+   0.0,
+   3.5
+  ],
+  "cast-0704-remy-up-in-the-air": [
+   0.0,
+   3.5
+  ],
+  "birthday-cake": [
+   0.0,
+   3.5
+  ],
+  "birthday-superheroes": [
+   0.0,
+   3.5
+  ],
+  "forest-0706-pat-03": [
+   0.0,
+   4.0
+  ],
+  "forest-0706-sonian-2": [
+   0.0,
+   3.5
+  ],
+  "forest-0706-picnic": [
+   0.0,
+   4.0
+  ],
+  "forest-0706-tervuren-03": [
+   0.0,
+   3.5
+  ],
+  "forest-0706-tervuren-04": [
+   0.0,
+   3.5
+  ],
+  "cast-0708-jo-by-the-fireplace": [
+   0.0,
+   4.0
+  ],
+  "cast-0708-climbing-the-fence": [
+   0.0,
+   3.5
+  ],
+  "cast-0708-alex-with-the-football": [
+   0.0,
+   3.5
+  ],
+  "cast-0708-jo-in-the-hairband": [
+   0.0,
+   3.5
+  ],
+  "home-0708-ice-cream-bike": [
+   0.0,
+   3.5
+  ],
+  "home-0711-flour-mill": [
+   0.0,
+   3.5
+  ],
+  "north-0712-0000": [
+   0.0,
+   3.5
+  ],
+  "north-0712-0002": [
+   0.0,
+   3.5
+  ],
+  "north-0712-0003": [
+   0.0,
+   3.5
+  ],
+  "north-0712-0007": [
+   0.0,
+   3.5
+  ],
+  "north-clip-0712-0": [
+   1.0,
+   5.0
+  ],
+  "trip-0712-cargo-bike": [
+   0.0,
+   3.5
+  ],
+  "trip-0712-bike-harbour": [
+   0.0,
+   4.0
+  ],
+  "north-0713-0016": [
+   0.0,
+   3.5
+  ],
+  "north-0713-0035": [
+   0.0,
+   3.5
+  ],
+  "north-0713-0039": [
+   0.0,
+   3.5
+  ],
+  "north-0715-0112": [
+   0.0,
+   3.5
+  ],
+  "north-clip-0715-2": [
+   0.0,
+   4.0
+  ],
+  "north-0715-0133": [
+   0.0,
+   3.5
+  ],
+  "north-0715-0137": [
+   0.0,
+   3.5
+  ],
+  "north-0716-0196": [
+   0.0,
+   4.0
+  ],
+  "north-0718-0252": [
+   0.0,
+   3.5
+  ],
+  "north-0718-0271": [
+   0.0,
+   3.5
+  ],
+  "north-0719-0295": [
+   0.0,
+   3.5
+  ],
+  "north-0719-0296": [
+   0.0,
+   3.5
+  ],
+  "north-0719-0297": [
+   0.0,
+   3.5
+  ],
+  "north-0720-0331": [
+   0.0,
+   3.5
+  ],
+  "north-0721-0336": [
+   0.0,
+   3.5
+  ],
+  "north-0721-0339": [
+   0.0,
+   4.0
+  ],
+  "north-0723-0416": [
+   0.0,
+   3.5
+  ],
+  "north-0723-0423": [
+   0.0,
+   3.5
+  ],
+  "north-0723-0474": [
+   0.0,
+   3.5
+  ],
+  "north-0724-0539": [
+   0.0,
+   3.5
+  ],
+  "north-0725-0559": [
+   0.0,
+   3.5
+  ],
+  "north-0726-0597": [
+   0.0,
+   3.5
+  ],
+  "north-0727-0668": [
+   0.0,
+   3.5
+  ],
+  "north-clip-0727-5": [
+   0.0,
+   3.5
+  ],
+  "north-0728-0748": [
+   0.0,
+   3.5
+  ],
+  "north-0729-0877": [
+   0.0,
+   3.5
+  ],
+  "north-0729-0900": [
+   0.0,
+   3.5
+  ],
+  "north-0729-0929": [
+   0.0,
+   3.5
+  ],
+  "north-0729-0935": [
+   0.0,
+   3.5
+  ],
+  "north-0730-0950": [
+   0.0,
+   3.5
+  ],
+  "north-0730-0956": [
+   0.0,
+   3.5
+  ],
+  "north-clip-0730-6": [
+   0.0,
+   4.0
+  ]
+ }
+}

@@ -76,6 +76,172 @@
   "sha256": "5ae4593a9f10c56ca9061b6fb449b7e85d9a117109955756abc180a51c65b07f"
  },
  {
+  "stem": "cast-0701-kit-lining-up-the-chocolate",
+  "file": "cast-0701-kit-lining-up-the-chocolate.jpg",
+  "kind": "photo",
+  "tier": "film",
+  "set": "cast-0701-kit-lining-up-the-chocolate",
+  "taken_local": "2025-07-01T16:58:00",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-01T14:58:00.000Z",
+  "source_taken": "2014-12-07T16:58:00",
+  "gps_from": null,
+  "source_gps": null,
+  "time_from": "file",
+  "shift_days": 3859,
+  "place": null,
+  "width": 853,
+  "height": 1280,
+  "seconds": null,
+  "caption": "Kit lining up the chocolate biscuits",
+  "faces": [
+   {
+    "person": "Kit",
+    "x": 0.3136,
+    "y": 0.1628,
+    "w": 0.2772,
+    "h": 0.2165
+   }
+  ],
+  "people": [
+   "Kit"
+  ],
+  "source": {
+   "title": "A boy in a red apron putting peppermint bites on brownies on an oven baking tray (16036972425).jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:A_boy_in_a_red_apron_putting_peppermint_bites_on_brownies_on_an_oven_baking_tray_(16036972425).jpg",
+   "author": "Personal Creations",
+   "licence": "CC BY 2.0",
+   "licence_url": "https://creativecommons.org/licenses/by/2.0"
+  },
+  "sha256": "4f35d75d567ced2dc174fb41a6d3cbe9cb6e45311bcd0443bb31202c1c219630"
+ },
+ {
+  "stem": "cast-0701-robin-with-the-paper-on-the",
+  "file": "cast-0701-robin-with-the-paper-on-the.jpg",
+  "kind": "photo",
+  "tier": "pool",
+  "set": "cast-0701-robin-with-the-paper-on-the",
+  "taken_local": "2025-07-01T17:10:36",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-01T15:10:36.000Z",
+  "source_taken": "2016-10-29T17:10:36",
+  "gps_from": null,
+  "source_gps": null,
+  "time_from": "file",
+  "shift_days": 3167,
+  "place": null,
+  "width": 500,
+  "height": 333,
+  "seconds": null,
+  "caption": "Robin with the paper on the sofa",
+  "faces": [
+   {
+    "person": "Robin",
+    "x": 0.498,
+    "y": 0.3009,
+    "w": 0.0916,
+    "h": 0.1582
+   }
+  ],
+  "people": [
+   "Robin"
+  ],
+  "source": {
+   "title": "Business Woman is reading Newspaper - 35870943420.jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:Business_Woman_is_reading_Newspaper_-_35870943420.jpg",
+   "author": "tranmautritam (tranmautritam.com / unsplash.com/@tranmautritam)",
+   "licence": "CC0",
+   "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+  },
+  "sha256": "49e7c7241992a6ae7b54a41095c7742eb4246701fe02e6404bf0deb07f221f94"
+ },
+ {
+  "stem": "cast-0701-charlie-laughing-at-somethin",
+  "file": "cast-0701-charlie-laughing-at-somethin.jpg",
+  "kind": "photo",
+  "tier": "pool",
+  "set": "cast-0701-charlie-laughing-at-somethin",
+  "taken_local": "2025-07-01T18:14:00",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-01T16:14:00.000Z",
+  "source_taken": null,
+  "gps_from": null,
+  "source_gps": [
+   47.300506,
+   18.926522
+  ],
+  "time_from": "curated",
+  "shift_days": 0,
+  "place": null,
+  "width": 500,
+  "height": 333,
+  "seconds": null,
+  "caption": "Charlie laughing at something off camera",
+  "faces": [
+   {
+    "person": "Charlie",
+    "x": 0.3784,
+    "y": 0.2773,
+    "w": 0.2643,
+    "h": 0.5357
+   }
+  ],
+  "people": [
+   "Charlie"
+  ],
+  "source": {
+   "title": "Hungary (Unsplash lCVP-lu0kxk).jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:Hungary_(Unsplash_lCVP-lu0kxk).jpg",
+   "author": "Norman Toth 100rulez",
+   "licence": "CC0",
+   "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+  },
+  "sha256": "18c3f4ae608684bb505c121da01af716f575186e0cf75619b2c1b20ce2378751"
+ },
+ {
+  "stem": "cast-0701-remy-in-the-grass",
+  "file": "cast-0701-remy-in-the-grass.jpg",
+  "kind": "photo",
+  "tier": "pool",
+  "set": "cast-0701-remy-in-the-grass",
+  "taken_local": "2025-07-01T18:28:00",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-01T16:28:00.000Z",
+  "source_taken": null,
+  "gps_from": null,
+  "source_gps": [
+   50.494493,
+   15.515038
+  ],
+  "time_from": "curated",
+  "shift_days": 0,
+  "place": null,
+  "width": 500,
+  "height": 333,
+  "seconds": null,
+  "caption": "Remy in the grass",
+  "faces": [
+   {
+    "person": "Remy",
+    "x": 0.3296,
+    "y": 0.2629,
+    "w": 0.2778,
+    "h": 0.4999
+   }
+  ],
+  "people": [
+   "Remy"
+  ],
+  "source": {
+   "title": "Nová Paka, Czech Republic (Unsplash oZn9nTbECnc).jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:Nov%C3%A1_Paka,_Czech_Republic_(Unsplash_oZn9nTbECnc).jpg",
+   "author": "Jakub Kriz jakubkriz",
+   "licence": "CC0",
+   "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+  },
+  "sha256": "adca506bb5797bd588c108a7be2620eec768a93d8f764b9899f62cb6a51bcbf6"
+ },
+ {
   "stem": "home-0702-kit-stuffie",
   "file": "home-0702-kit-stuffie.jpg",
   "kind": "photo",
@@ -232,6 +398,86 @@
   "sha256": "f51a99ae41ed13bda533393f84beab7ce3cb92ea35140d8eb844b91ec1acfc8e"
  },
  {
+  "stem": "cast-0703-kit-s-paper-octopus",
+  "file": "cast-0703-kit-s-paper-octopus.jpg",
+  "kind": "photo",
+  "tier": "pool",
+  "set": "cast-0703-kit-s-paper-octopus",
+  "taken_local": "2025-07-03T11:33:00",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-03T09:33:00.000Z",
+  "source_taken": "2014-08-29T11:33:00",
+  "gps_from": null,
+  "source_gps": null,
+  "time_from": "file",
+  "shift_days": 3961,
+  "place": null,
+  "width": 500,
+  "height": 333,
+  "seconds": null,
+  "caption": "Kit's paper octopus",
+  "faces": [
+   {
+    "person": "Kit",
+    "x": 0.1652,
+    "y": 0.0566,
+    "w": 0.2045,
+    "h": 0.3777
+   }
+  ],
+  "people": [
+   "Kit"
+  ],
+  "source": {
+   "title": "After School Activities for Kids (14888575890).jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:After_School_Activities_for_Kids_(14888575890).jpg",
+   "author": "Personal Creations",
+   "licence": "CC BY 2.0",
+   "licence_url": "https://creativecommons.org/licenses/by/2.0"
+  },
+  "sha256": "6df196ff56d922c5864e24b7391596a695563a06a959a39a4d4ac838cf2d0a52"
+ },
+ {
+  "stem": "cast-0703-painting-with-the-watercolou",
+  "file": "cast-0703-painting-with-the-watercolou.jpg",
+  "kind": "photo",
+  "tier": "film",
+  "set": "cast-0703-painting-with-the-watercolou",
+  "taken_local": "2025-07-03T11:33:00",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-03T09:33:00.000Z",
+  "source_taken": "2014-08-29T11:33:00",
+  "gps_from": null,
+  "source_gps": null,
+  "time_from": "file",
+  "shift_days": 3961,
+  "place": null,
+  "width": 1280,
+  "height": 853,
+  "seconds": null,
+  "caption": "painting with the watercolour box",
+  "faces": [
+   {
+    "person": "Kit",
+    "x": 0.3639,
+    "y": 0.0279,
+    "w": 0.1843,
+    "h": 0.306
+   }
+  ],
+  "people": [
+   "Kit"
+  ],
+  "source": {
+   "title": "Girl drawing with pens and art kit (14888617088).jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:Girl_drawing_with_pens_and_art_kit_(14888617088).jpg",
+   "author": "Personal Creations",
+   "licence": "CC BY 2.0",
+   "licence_url": "https://creativecommons.org/licenses/by/2.0"
+  },
+  "sha256": "7a50cda53231601cdeb5a653fbc10775416bb7f8c6307844f21cd1664791840b"
+ },
+ {
   "stem": "home-0703-baking",
   "file": "home-0703-baking.jpg",
   "kind": "photo",
@@ -270,6 +516,177 @@
    "licence_url": "https://creativecommons.org/licenses/by/2.0"
   },
   "sha256": "6a8ebf0d1b62893b34578a9bf336debd071d1c99b32502f2ba252f5331011834"
+ },
+ {
+  "stem": "cast-0703-remy-chewing-on-a-block",
+  "file": "cast-0703-remy-chewing-on-a-block.jpg",
+  "kind": "photo",
+  "tier": "pool",
+  "set": "cast-0703-remy-chewing-on-a-block",
+  "taken_local": "2025-07-03T15:03:00",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-03T13:03:00.000Z",
+  "source_taken": null,
+  "gps_from": null,
+  "source_gps": null,
+  "time_from": "curated",
+  "shift_days": 0,
+  "place": null,
+  "width": 500,
+  "height": 400,
+  "seconds": null,
+  "caption": "Remy chewing on a block",
+  "faces": [
+   {
+    "person": "Remy",
+    "x": 0.2394,
+    "y": 0.1002,
+    "w": 0.4466,
+    "h": 0.6932
+   }
+  ],
+  "people": [
+   "Remy"
+  ],
+  "source": {
+   "title": "Baby Toys (Unsplash).jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:Baby_Toys_(Unsplash).jpg",
+   "author": "Colin Maynard invent",
+   "licence": "CC0",
+   "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+  },
+  "sha256": "bcde8b8402fe4dbc00ac75906dc8de8833becbe915f479255337042fbb02952e"
+ },
+ {
+  "stem": "cast-0703-robin-in-the-hoodie",
+  "file": "cast-0703-robin-in-the-hoodie.jpg",
+  "kind": "photo",
+  "tier": "pool",
+  "set": "cast-0703-robin-in-the-hoodie",
+  "taken_local": "2025-07-03T15:17:00",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-03T13:17:00.000Z",
+  "source_taken": null,
+  "gps_from": null,
+  "source_gps": [
+   43.318356,
+   -1.981307
+  ],
+  "time_from": "curated",
+  "shift_days": 0,
+  "place": null,
+  "width": 500,
+  "height": 333,
+  "seconds": null,
+  "caption": "Robin in the hoodie",
+  "faces": [
+   {
+    "person": "Robin",
+    "x": 0.4018,
+    "y": 0.2097,
+    "w": 0.1825,
+    "h": 0.3847
+   }
+  ],
+  "people": [
+   "Robin"
+  ],
+  "source": {
+   "title": "M (Unsplash).jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:M_(Unsplash).jpg",
+   "author": "Marivi Pazos marivi",
+   "licence": "CC0",
+   "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+  },
+  "sha256": "7bce5901133e0de15a37afc03c228ba0627b763787a7ff365774cf7051612ec3"
+ },
+ {
+  "stem": "cast-0703-cutting-out-shapes-at-the-ta",
+  "file": "cast-0703-cutting-out-shapes-at-the-ta.jpg",
+  "kind": "photo",
+  "tier": "film",
+  "set": "cast-0703-cutting-out-shapes-at-the-ta",
+  "taken_local": "2025-07-03T16:33:00",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-03T14:33:00.000Z",
+  "source_taken": "2014-08-25T16:33:00",
+  "gps_from": null,
+  "source_gps": null,
+  "time_from": "file",
+  "shift_days": 3965,
+  "place": null,
+  "width": 1280,
+  "height": 853,
+  "seconds": null,
+  "caption": "cutting out shapes at the table",
+  "faces": [
+   {
+    "person": "Kit",
+    "x": 0.3218,
+    "y": 0.0719,
+    "w": 0.139,
+    "h": 0.2772
+   }
+  ],
+  "people": [
+   "Kit"
+  ],
+  "source": {
+   "title": "After School Activities for Kids (15074854422).jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:After_School_Activities_for_Kids_(15074854422).jpg",
+   "author": "Personal Creations",
+   "licence": "CC BY 2.0",
+   "licence_url": "https://creativecommons.org/licenses/by/2.0"
+  },
+  "sha256": "ea7d320ce46ef8a7748c4c582c06fdbb0cfd247717dfc9f4bb1644d58445b036"
+ },
+ {
+  "stem": "cast-0703-charlie-and-remy-sharing-the",
+  "file": "cast-0703-charlie-and-remy-sharing-the.jpg",
+  "kind": "photo",
+  "tier": "pool",
+  "set": "cast-0703-charlie-and-remy-sharing-the",
+  "taken_local": "2025-07-03T17:40:00",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-03T15:40:00.000Z",
+  "source_taken": "2014-03-30T17:40:00",
+  "gps_from": null,
+  "source_gps": null,
+  "time_from": "file",
+  "shift_days": 4113,
+  "place": null,
+  "width": 500,
+  "height": 333,
+  "seconds": null,
+  "caption": "Charlie and Remy sharing the strawberries",
+  "faces": [
+   {
+    "person": "Charlie",
+    "x": 0.298,
+    "y": 0.0307,
+    "w": 0.1438,
+    "h": 0.2875
+   },
+   {
+    "person": "Remy",
+    "x": 0.7619,
+    "y": 0.3321,
+    "w": 0.1207,
+    "h": 0.2191
+   }
+  ],
+  "people": [
+   "Charlie",
+   "Remy"
+  ],
+  "source": {
+   "title": "A dad and his son preparing skewers for kebab night (14888842307).jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:A_dad_and_his_son_preparing_skewers_for_kebab_night_(14888842307).jpg",
+   "author": "Personal Creations",
+   "licence": "CC BY 2.0",
+   "licence_url": "https://creativecommons.org/licenses/by/2.0"
+  },
+  "sha256": "8246e4cd012569de2e2738c12bc97ead19969ddc51fc1d6feb518dc8904b1c97"
  },
  {
   "stem": "home-0703-duden-00",
@@ -690,6 +1107,129 @@
   "sha256": "854073b28a9fd4ea97da06d9d3db211682005e5051b595148c4669baedff3c1a"
  },
  {
+  "stem": "cast-0704-kit-digging-on-the-beach",
+  "file": "cast-0704-kit-digging-on-the-beach.jpg",
+  "kind": "photo",
+  "tier": "film",
+  "set": "cast-0704-kit-digging-on-the-beach",
+  "taken_local": "2025-07-04T10:07:00",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-04T08:07:00.000Z",
+  "source_taken": "2015-03-31T10:07:00",
+  "gps_from": null,
+  "source_gps": null,
+  "time_from": "file",
+  "shift_days": 3748,
+  "place": null,
+  "width": 1280,
+  "height": 715,
+  "seconds": null,
+  "caption": "Kit digging on the beach",
+  "faces": [
+   {
+    "person": "Kit",
+    "x": 0.591,
+    "y": 0.202,
+    "w": 0.0629,
+    "h": 0.1477
+   }
+  ],
+  "people": [
+   "Kit"
+  ],
+  "source": {
+   "title": "Little girl in blue polka dot swimsuit on sand beach with white fence adirondack chair beach toys and bucket with towel and ocean waves (16805106589).jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:Little_girl_in_blue_polka_dot_swimsuit_on_sand_beach_with_white_fence_adirondack_chair_beach_toys_and_bucket_with_towel_and_ocean_waves_(16805106589).jpg",
+   "author": "Personal Creations",
+   "licence": "CC BY 2.0",
+   "licence_url": "https://creativecommons.org/licenses/by/2.0"
+  },
+  "sha256": "59d46c4869e9be00949bbc6323878236f016265d06ff86a0d98b58d5c98c71e7"
+ },
+ {
+  "stem": "cast-0704-remy-s-first-steps-on-the-sa",
+  "file": "cast-0704-remy-s-first-steps-on-the-sa.jpg",
+  "kind": "photo",
+  "tier": "pool",
+  "set": "cast-0704-remy-s-first-steps-on-the-sa",
+  "taken_local": "2025-07-04T13:31:00",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-04T11:31:00.000Z",
+  "source_taken": null,
+  "gps_from": null,
+  "source_gps": [
+   43.276753,
+   -70.581164
+  ],
+  "time_from": "curated",
+  "shift_days": 0,
+  "place": null,
+  "width": 500,
+  "height": 333,
+  "seconds": null,
+  "caption": "Remy's first steps on the sand",
+  "faces": [
+   {
+    "person": "Remy",
+    "x": 0.5928,
+    "y": 0.3689,
+    "w": 0.114,
+    "h": 0.2149
+   }
+  ],
+  "people": [
+   "Remy"
+  ],
+  "source": {
+   "title": "Moody Beach, Wells, United States (Unsplash).jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:Moody_Beach,_Wells,_United_States_(Unsplash).jpg",
+   "author": "David Straight davidstraight",
+   "licence": "CC0",
+   "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+  },
+  "sha256": "9b0f254ef09601a0a49104f7d99952377ea1de5e32c2ec2598f502b8fbdbaef7"
+ },
+ {
+  "stem": "cast-0704-remy-up-in-the-air",
+  "file": "cast-0704-remy-up-in-the-air.jpg",
+  "kind": "photo",
+  "tier": "pool",
+  "set": "cast-0704-remy-up-in-the-air",
+  "taken_local": "2025-07-04T13:38:00",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-04T11:38:00.000Z",
+  "source_taken": null,
+  "gps_from": null,
+  "source_gps": null,
+  "time_from": "curated",
+  "shift_days": 0,
+  "place": null,
+  "width": 500,
+  "height": 333,
+  "seconds": null,
+  "caption": "Remy up in the air",
+  "faces": [
+   {
+    "person": "Remy",
+    "x": 0.4189,
+    "y": 0.1679,
+    "w": 0.0926,
+    "h": 0.1712
+   }
+  ],
+  "people": [
+   "Remy"
+  ],
+  "source": {
+   "title": "Woman lifting child during daytime.jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:Woman_lifting_child_during_daytime.jpg",
+   "author": "Thiago Cerqueira",
+   "licence": "CC0",
+   "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+  },
+  "sha256": "7134d8ede3ccac095408c42c584c1b269ff6bef9f8f6dd60ed4dd0cef66e09ef"
+ },
+ {
   "stem": "home-0704-fountain",
   "file": "home-0704-fountain.jpg",
   "kind": "photo",
@@ -728,6 +1268,86 @@
    "licence_url": "https://creativecommons.org/licenses/by/2.0"
   },
   "sha256": "41338d05fbcadd11325ad9146c70671e274fa7214196a58ba0133a8a6a678795"
+ },
+ {
+  "stem": "cast-0704-charlie-with-the-flowers",
+  "file": "cast-0704-charlie-with-the-flowers.jpg",
+  "kind": "photo",
+  "tier": "pool",
+  "set": "cast-0704-charlie-with-the-flowers",
+  "taken_local": "2025-07-04T13:45:00",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-04T11:45:00.000Z",
+  "source_taken": null,
+  "gps_from": null,
+  "source_gps": null,
+  "time_from": "curated",
+  "shift_days": 0,
+  "place": null,
+  "width": 500,
+  "height": 333,
+  "seconds": null,
+  "caption": "Charlie with the flowers",
+  "faces": [
+   {
+    "person": "Charlie",
+    "x": 0.4702,
+    "y": 0.0013,
+    "w": 0.1676,
+    "h": 0.2284
+   }
+  ],
+  "people": [
+   "Charlie"
+  ],
+  "source": {
+   "title": "36 (Unsplash).jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:36_(Unsplash).jpg",
+   "author": "Alvin Mahmudov alvinmahmudov",
+   "licence": "CC0",
+   "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+  },
+  "sha256": "24835ddf115d30df478b42c182e38bdc0276bd6c1f5f28c6de759ea6c20980d6"
+ },
+ {
+  "stem": "cast-0704-robin-in-the-tall-grass",
+  "file": "cast-0704-robin-in-the-tall-grass.jpg",
+  "kind": "photo",
+  "tier": "pool",
+  "set": "cast-0704-robin-in-the-tall-grass",
+  "taken_local": "2025-07-04T13:52:00",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-04T11:52:00.000Z",
+  "source_taken": null,
+  "gps_from": null,
+  "source_gps": null,
+  "time_from": "curated",
+  "shift_days": 0,
+  "place": null,
+  "width": 500,
+  "height": 333,
+  "seconds": null,
+  "caption": "Robin in the tall grass",
+  "faces": [
+   {
+    "person": "Robin",
+    "x": 0.383,
+    "y": 0.2972,
+    "w": 0.1859,
+    "h": 0.3334
+   }
+  ],
+  "people": [
+   "Robin"
+  ],
+  "source": {
+   "title": "Smiling in a cornfield (Unsplash).jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:Smiling_in_a_cornfield_(Unsplash).jpg",
+   "author": "Allef Vinicius seteales",
+   "licence": "CC0",
+   "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+  },
+  "sha256": "6d24e7984e6479566a53a01527525979c99730a9cddd58d471cf69d03d3e648b"
  },
  {
   "stem": "home-0704-tervuren-station",
@@ -1850,6 +2470,372 @@
   "sha256": "580d323fa449451079ab768d2e7e13a48b038bfe0d46d393fd166f64bf0e4d67"
  },
  {
+  "stem": "cast-0707-pat-in-the-armchair",
+  "file": "cast-0707-pat-in-the-armchair.jpg",
+  "kind": "photo",
+  "tier": "pool",
+  "set": "cast-0707-pat-in-the-armchair",
+  "taken_local": "2025-07-07T13:02:00",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-07T11:02:00.000Z",
+  "source_taken": null,
+  "gps_from": null,
+  "source_gps": [
+   37.029869,
+   -76.345222
+  ],
+  "time_from": "curated",
+  "shift_days": 0,
+  "place": null,
+  "width": 500,
+  "height": 333,
+  "seconds": null,
+  "caption": "Pat in the armchair",
+  "faces": [
+   {
+    "person": "Pat",
+    "x": 0.3706,
+    "y": 0.3166,
+    "w": 0.154,
+    "h": 0.2859
+   }
+  ],
+  "people": [
+   "Pat"
+  ],
+  "source": {
+   "title": "Grandpa sitting for Television (Unsplash).jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:Grandpa_sitting_for_Television_(Unsplash).jpg",
+   "author": "JD Mason jmason",
+   "licence": "CC0",
+   "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+  },
+  "sha256": "1449d843d487cdf098a296daa774d4793217fa044b0e4cbe7745af7aa61e0293"
+ },
+ {
+  "stem": "cast-0707-lou-on-the-bench",
+  "file": "cast-0707-lou-on-the-bench.jpg",
+  "kind": "photo",
+  "tier": "pool",
+  "set": "cast-0707-lou-on-the-bench",
+  "taken_local": "2025-07-07T13:13:00",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-07T11:13:00.000Z",
+  "source_taken": null,
+  "gps_from": null,
+  "source_gps": null,
+  "time_from": "curated",
+  "shift_days": 0,
+  "place": null,
+  "width": 393,
+  "height": 500,
+  "seconds": null,
+  "caption": "Lou on the bench",
+  "faces": [
+   {
+    "person": "Lou",
+    "x": 0.3123,
+    "y": 0.1673,
+    "w": 0.3145,
+    "h": 0.3144
+   }
+  ],
+  "people": [
+   "Lou"
+  ],
+  "source": {
+   "title": "Homeless woman smiling.jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:Homeless_woman_smiling.jpg",
+   "author": "Leroy Skalstad",
+   "licence": "CC0",
+   "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+  },
+  "sha256": "479ab46ae7b9cc01f4969b0eea42c6728bdd3896b37625bdaa37bc217bb0a330"
+ },
+ {
+  "stem": "cast-0707-kit-and-the-neighbours-rabbi",
+  "file": "cast-0707-kit-and-the-neighbours-rabbi.jpg",
+  "kind": "photo",
+  "tier": "film",
+  "set": "cast-0707-kit-and-the-neighbours-rabbi",
+  "taken_local": "2025-07-07T13:16:00",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-07T11:16:00.000Z",
+  "source_taken": null,
+  "gps_from": null,
+  "source_gps": null,
+  "time_from": "curated",
+  "shift_days": 0,
+  "place": null,
+  "width": 1280,
+  "height": 813,
+  "seconds": null,
+  "caption": "Kit and the neighbours' rabbit",
+  "faces": [
+   {
+    "person": "Kit",
+    "x": 0.3846,
+    "y": 0.2262,
+    "w": 0.2462,
+    "h": 0.4879
+   }
+  ],
+  "people": [
+   "Kit"
+  ],
+  "source": {
+   "title": "Adorable-animal-baby-160933.jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:Adorable-animal-baby-160933.jpg",
+   "author": "AdinaVoicu",
+   "licence": "CC0",
+   "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+  },
+  "sha256": "732408590b5802c2610c19e19fe7aecb62bf83239baff1234535ad856059056b"
+ },
+ {
+  "stem": "cast-0707-lou-by-the-hydrangeas",
+  "file": "cast-0707-lou-by-the-hydrangeas.jpg",
+  "kind": "photo",
+  "tier": "pool",
+  "set": "cast-0707-lou-by-the-hydrangeas",
+  "taken_local": "2025-07-07T13:20:00",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-07T11:20:00.000Z",
+  "source_taken": null,
+  "gps_from": null,
+  "source_gps": null,
+  "time_from": "curated",
+  "shift_days": 0,
+  "place": null,
+  "width": 500,
+  "height": 407,
+  "seconds": null,
+  "caption": "Lou by the hydrangeas",
+  "faces": [
+   {
+    "person": "Lou",
+    "x": 0.2585,
+    "y": 0.1958,
+    "w": 0.193,
+    "h": 0.2883
+   }
+  ],
+  "people": [
+   "Lou"
+  ],
+  "source": {
+   "title": "Lady with flowers.jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:Lady_with_flowers.jpg",
+   "author": "Brenkee , See Pixabay",
+   "licence": "CC0",
+   "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+  },
+  "sha256": "84d8e437a630b32fae8b6add903352c7943c1c976908399773e3e1c7d7aac234"
+ },
+ {
+  "stem": "cast-0707-lou-laughing-at-the-table",
+  "file": "cast-0707-lou-laughing-at-the-table.jpg",
+  "kind": "photo",
+  "tier": "pool",
+  "set": "cast-0707-lou-laughing-at-the-table",
+  "taken_local": "2025-07-07T13:27:00",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-07T11:27:00.000Z",
+  "source_taken": null,
+  "gps_from": null,
+  "source_gps": null,
+  "time_from": "curated",
+  "shift_days": 0,
+  "place": null,
+  "width": 500,
+  "height": 332,
+  "seconds": null,
+  "caption": "Lou laughing at the table",
+  "faces": [
+   {
+    "person": "Lou",
+    "x": 0.2882,
+    "y": 0.0,
+    "w": 0.5501,
+    "h": 1.0
+   }
+  ],
+  "people": [
+   "Lou"
+  ],
+  "source": {
+   "title": "Close-up portrait of an old woman.jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:Close-up_portrait_of_an_old_woman.jpg",
+   "author": "aunhtet0",
+   "licence": "CC0",
+   "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+  },
+  "sha256": "e2e2509927eded2de2ba872dd085f63081ded6ad72a34a7a1e80d4adbe383477"
+ },
+ {
+  "stem": "cast-0707-lou-by-the-window",
+  "file": "cast-0707-lou-by-the-window.jpg",
+  "kind": "photo",
+  "tier": "pool",
+  "set": "cast-0707-lou-by-the-window",
+  "taken_local": "2025-07-07T13:34:00",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-07T11:34:00.000Z",
+  "source_taken": null,
+  "gps_from": null,
+  "source_gps": null,
+  "time_from": "curated",
+  "shift_days": 0,
+  "place": null,
+  "width": 500,
+  "height": 330,
+  "seconds": null,
+  "caption": "Lou by the window",
+  "faces": [
+   {
+    "person": "Lou",
+    "x": 0.2619,
+    "y": 0.0,
+    "w": 0.3211,
+    "h": 0.6113
+   }
+  ],
+  "people": [
+   "Lou"
+  ],
+  "source": {
+   "title": "Thomas Hafeneth 2017-04-22 (Unsplash).jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:Thomas_Hafeneth_2017-04-22_(Unsplash).jpg",
+   "author": "Thomas Hafeneth thomashafeneth",
+   "licence": "CC0",
+   "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+  },
+  "sha256": "f4575366e1679672a425fcce30334cd6298c90d502f659e9a9f2b337dc575c17"
+ },
+ {
+  "stem": "cast-0707-pat-in-his-reading-glasses",
+  "file": "cast-0707-pat-in-his-reading-glasses.jpg",
+  "kind": "photo",
+  "tier": "pool",
+  "set": "cast-0707-pat-in-his-reading-glasses",
+  "taken_local": "2025-07-07T13:41:00",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-07T11:41:00.000Z",
+  "source_taken": null,
+  "gps_from": null,
+  "source_gps": null,
+  "time_from": "curated",
+  "shift_days": 0,
+  "place": null,
+  "width": 333,
+  "height": 500,
+  "seconds": null,
+  "caption": "Pat in his reading glasses",
+  "faces": [
+   {
+    "person": "Pat",
+    "x": 0.1899,
+    "y": 0.1088,
+    "w": 0.6517,
+    "h": 0.6004
+   }
+  ],
+  "people": [
+   "Pat"
+  ],
+  "source": {
+   "title": "Man with a white beard and glasses, by Angelina Litvin, 2015-10-05 (Unsplash).jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:Man_with_a_white_beard_and_glasses,_by_Angelina_Litvin,_2015-10-05_(Unsplash).jpg",
+   "author": "Angelina Litvin",
+   "licence": "CC0",
+   "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+  },
+  "sha256": "5a28091424f1b24fe9db354dc08a9ecc330cb985735b95de235815e6f115b12e"
+ },
+ {
+  "stem": "cast-0707-pat-with-a-grandchild-on-his",
+  "file": "cast-0707-pat-with-a-grandchild-on-his.jpg",
+  "kind": "photo",
+  "tier": "film",
+  "set": "cast-0707-pat-with-a-grandchild-on-his",
+  "taken_local": "2025-07-07T13:48:00",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-07T11:48:00.000Z",
+  "source_taken": null,
+  "gps_from": null,
+  "source_gps": [
+   34.420831,
+   -119.69819
+  ],
+  "time_from": "curated",
+  "shift_days": 0,
+  "place": null,
+  "width": 1280,
+  "height": 850,
+  "seconds": null,
+  "caption": "Pat with a grandchild on his shoulders",
+  "faces": [
+   {
+    "person": "Pat",
+    "x": 0.2906,
+    "y": 0.4197,
+    "w": 0.2221,
+    "h": 0.4501
+   }
+  ],
+  "people": [
+   "Pat"
+  ],
+  "source": {
+   "title": "My Old Man (Unsplash).jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:My_Old_Man_(Unsplash).jpg",
+   "author": "O.C. Gonzalez ocvisual",
+   "licence": "CC0",
+   "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+  },
+  "sha256": "b544d34a2621552c2fa2b5c934708e9a6546c3667df68eefc0d0abd827caea76"
+ },
+ {
+  "stem": "cast-0707-pat-with-the-old-camera",
+  "file": "cast-0707-pat-with-the-old-camera.jpg",
+  "kind": "photo",
+  "tier": "pool",
+  "set": "cast-0707-pat-with-the-old-camera",
+  "taken_local": "2025-07-07T13:55:00",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-07T11:55:00.000Z",
+  "source_taken": null,
+  "gps_from": null,
+  "source_gps": null,
+  "time_from": "curated",
+  "shift_days": 0,
+  "place": null,
+  "width": 500,
+  "height": 333,
+  "seconds": null,
+  "caption": "Pat with the old camera",
+  "faces": [
+   {
+    "person": "Pat",
+    "x": 0.2646,
+    "y": 0.2999,
+    "w": 0.1097,
+    "h": 0.229
+   }
+  ],
+  "people": [
+   "Pat"
+  ],
+  "source": {
+   "title": "Old man holding camera (Unsplash).jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:Old_man_holding_camera_(Unsplash).jpg",
+   "author": "Kahar Saidyhalam kahar",
+   "licence": "CC0",
+   "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+  },
+  "sha256": "a8921b0b5fdd84400ab09c70ec5c6c4a30829382a76623532cddfc10e7f8fb67"
+ },
+ {
   "stem": "home-0707-park-1",
   "file": "home-0707-park-1.jpg",
   "kind": "photo",
@@ -2002,6 +2988,94 @@
   "sha256": "1a35136ffbaf9a70462b8fa9d15afb19931644c3bf0ad1db7591c982102be037"
  },
  {
+  "stem": "cast-0707-pat-and-lou-with-the-little",
+  "file": "cast-0707-pat-and-lou-with-the-little.jpg",
+  "kind": "photo",
+  "tier": "film",
+  "set": "cast-0707-pat-and-lou-with-the-little",
+  "taken_local": "2025-07-07T18:00:59",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-07T16:00:59.000Z",
+  "source_taken": "2016-11-19T18:00:59",
+  "gps_from": null,
+  "source_gps": null,
+  "time_from": "file",
+  "shift_days": 3152,
+  "place": null,
+  "width": 1280,
+  "height": 853,
+  "seconds": null,
+  "caption": "Pat and Lou with the little ones",
+  "faces": [
+   {
+    "person": "Pat",
+    "x": 0.2307,
+    "y": 0.08,
+    "w": 0.1391,
+    "h": 0.3157
+   },
+   {
+    "person": "Lou",
+    "x": 0.6973,
+    "y": 0.3131,
+    "w": 0.1225,
+    "h": 0.2345
+   }
+  ],
+  "people": [
+   "Pat",
+   "Lou"
+  ],
+  "source": {
+   "title": "Grandparents-1969824.jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:Grandparents-1969824.jpg",
+   "author": "sylviebliss",
+   "licence": "CC0",
+   "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+  },
+  "sha256": "cba515d433b66f15ceccee7c7c57681c5e7726e5ba222d9332b2547ce9dee8c7"
+ },
+ {
+  "stem": "cast-0708-jo-by-the-fireplace",
+  "file": "cast-0708-jo-by-the-fireplace.jpg",
+  "kind": "photo",
+  "tier": "pool",
+  "set": "cast-0708-jo-by-the-fireplace",
+  "taken_local": "2025-07-08T11:44:00",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-08T09:44:00.000Z",
+  "source_taken": "2014-11-26T11:44:00",
+  "gps_from": null,
+  "source_gps": null,
+  "time_from": "file",
+  "shift_days": 3877,
+  "place": null,
+  "width": 333,
+  "height": 500,
+  "seconds": null,
+  "caption": "Jo by the fireplace",
+  "faces": [
+   {
+    "person": "Jo",
+    "x": 0.3951,
+    "y": 0.3706,
+    "w": 0.1458,
+    "h": 0.1137
+   }
+  ],
+  "people": [
+   "Jo"
+  ],
+  "source": {
+   "title": "Little girl sitting next to the fireplace in front of a window with a personalized snowman mug sipping out of it leaning against a pillow (15883946801).jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:Little_girl_sitting_next_to_the_fireplace_in_front_of_a_window_with_a_personalized_snowman_mug_sipping_out_of_it_leaning_against_a_pillow_(15883946801).jpg",
+   "author": "Personal Creations",
+   "licence": "CC BY 2.0",
+   "licence_url": "https://creativecommons.org/licenses/by/2.0"
+  },
+  "sha256": "245a2948173ff911cb20cad7987c3b8eb6cf933c764ab0fad400a681b9ea2cb2"
+ },
+ {
   "stem": "home-0708-saint-lambert",
   "file": "home-0708-saint-lambert.jpg",
   "kind": "photo",
@@ -2038,6 +3112,596 @@
    "licence_url": "https://creativecommons.org/licenses/by/2.0"
   },
   "sha256": "495d54f76cba2c43231651616debe94ea384be63e1d43ce798a1987a4b22eee4"
+ },
+ {
+  "stem": "cast-0708-climbing-the-fence",
+  "file": "cast-0708-climbing-the-fence.jpg",
+  "kind": "photo",
+  "tier": "film",
+  "set": "cast-0708-climbing-the-fence",
+  "taken_local": "2025-07-08T16:01:00",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-08T14:01:00.000Z",
+  "source_taken": null,
+  "gps_from": null,
+  "source_gps": [
+   61.908971,
+   5.994645
+  ],
+  "time_from": "curated",
+  "shift_days": 0,
+  "place": null,
+  "width": 853,
+  "height": 1280,
+  "seconds": null,
+  "caption": "climbing the fence",
+  "faces": [
+   {
+    "person": "Kit",
+    "x": 0.5597,
+    "y": 0.3477,
+    "w": 0.0984,
+    "h": 0.1
+   }
+  ],
+  "people": [
+   "Kit"
+  ],
+  "source": {
+   "title": "Nordfjordeid, Norway (Unsplash RxE8UCGLXk8).jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:Nordfjordeid,_Norway_(Unsplash_RxE8UCGLXk8).jpg",
+   "author": "Steinar Engeland steinart",
+   "licence": "CC0",
+   "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+  },
+  "sha256": "0eb96debd33491a25fd7ee915d52096d6adfea426995347f6eb4dc0ed42ac409"
+ },
+ {
+  "stem": "cast-0708-alex-and-mo-with-their-schoo",
+  "file": "cast-0708-alex-and-mo-with-their-schoo.jpg",
+  "kind": "photo",
+  "tier": "pool",
+  "set": "cast-0708-alex-and-mo-with-their-schoo",
+  "taken_local": "2025-07-08T16:05:00",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-08T14:05:00.000Z",
+  "source_taken": null,
+  "gps_from": null,
+  "source_gps": [
+   32.009999,
+   77.314962
+  ],
+  "time_from": "curated",
+  "shift_days": 0,
+  "place": null,
+  "width": 500,
+  "height": 332,
+  "seconds": null,
+  "caption": "Alex and Mo with their schoolbags",
+  "faces": [
+   {
+    "person": "Alex",
+    "x": 0.4577,
+    "y": 0.1156,
+    "w": 0.1474,
+    "h": 0.298
+   },
+   {
+    "person": "Mo",
+    "x": 0.6395,
+    "y": 0.1402,
+    "w": 0.1643,
+    "h": 0.3383
+   }
+  ],
+  "people": [
+   "Alex",
+   "Mo"
+  ],
+  "source": {
+   "title": "Good Old School Friends (Unsplash).jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:Good_Old_School_Friends_(Unsplash).jpg",
+   "author": "Aman Shrivastava amansks91",
+   "licence": "CC0",
+   "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+  },
+  "sha256": "ceb3300ce978a4f110ea2903b0c082d1d7b72631a55635202dc6359a38ce27ce"
+ },
+ {
+  "stem": "cast-0708-sasha-by-the-hedge",
+  "file": "cast-0708-sasha-by-the-hedge.jpg",
+  "kind": "photo",
+  "tier": "pool",
+  "set": "cast-0708-sasha-by-the-hedge",
+  "taken_local": "2025-07-08T16:12:00",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-08T14:12:00.000Z",
+  "source_taken": null,
+  "gps_from": null,
+  "source_gps": null,
+  "time_from": "curated",
+  "shift_days": 0,
+  "place": null,
+  "width": 500,
+  "height": 333,
+  "seconds": null,
+  "caption": "Sasha by the hedge",
+  "faces": [
+   {
+    "person": "Sasha",
+    "x": 0.1338,
+    "y": 0.1786,
+    "w": 0.3098,
+    "h": 0.6831
+   }
+  ],
+  "people": [
+   "Sasha"
+  ],
+  "source": {
+   "title": "Monochrome woman in leaves (Unsplash).jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:Monochrome_woman_in_leaves_(Unsplash).jpg",
+   "author": "Olivia Snow olivia_snow",
+   "licence": "CC0",
+   "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+  },
+  "sha256": "4e62e5043dfe73b5c8cdab42ba44a8805c20468d07740ea84312eb5e314b83ea"
+ },
+ {
+  "stem": "cast-0708-alex-with-the-football",
+  "file": "cast-0708-alex-with-the-football.jpg",
+  "kind": "photo",
+  "tier": "pool",
+  "set": "cast-0708-alex-with-the-football",
+  "taken_local": "2025-07-08T16:19:00",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-08T14:19:00.000Z",
+  "source_taken": null,
+  "gps_from": null,
+  "source_gps": null,
+  "time_from": "curated",
+  "shift_days": 0,
+  "place": null,
+  "width": 500,
+  "height": 500,
+  "seconds": null,
+  "caption": "Alex with the football",
+  "faces": [
+   {
+    "person": "Alex",
+    "x": 0.4328,
+    "y": 0.1917,
+    "w": 0.1719,
+    "h": 0.2171
+   }
+  ],
+  "people": [
+   "Alex"
+  ],
+  "source": {
+   "title": "Seth Doyle 2017-01-22 (Unsplash).jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:Seth_Doyle_2017-01-22_(Unsplash).jpg",
+   "author": "Seth Doyle sethdoylee",
+   "licence": "CC0",
+   "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+  },
+  "sha256": "bf1a643efbc789450438f317d32bdb7523c2619982f01c1115115519bda60310"
+ },
+ {
+  "stem": "cast-0708-jo-and-alex-in-the-street",
+  "file": "cast-0708-jo-and-alex-in-the-street.jpg",
+  "kind": "photo",
+  "tier": "pool",
+  "set": "cast-0708-jo-and-alex-in-the-street",
+  "taken_local": "2025-07-08T16:23:00",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-08T14:23:00.000Z",
+  "source_taken": null,
+  "gps_from": null,
+  "source_gps": null,
+  "time_from": "curated",
+  "shift_days": 0,
+  "place": null,
+  "width": 500,
+  "height": 500,
+  "seconds": null,
+  "caption": "Jo and Alex in the street",
+  "faces": [
+   {
+    "person": "Jo",
+    "x": 0.3331,
+    "y": 0.3671,
+    "w": 0.1252,
+    "h": 0.1535
+   },
+   {
+    "person": "Alex",
+    "x": 0.6251,
+    "y": 0.2282,
+    "w": 0.146,
+    "h": 0.1862
+   }
+  ],
+  "people": [
+   "Jo",
+   "Alex"
+  ],
+  "source": {
+   "title": "A girl and a boy with blond hair-3315770.jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:A_girl_and_a_boy_with_blond_hair-3315770.jpg",
+   "author": "thepoorphotographer",
+   "licence": "CC0",
+   "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+  },
+  "sha256": "802f947b60519016b13bae730eded6995907edc8527d58d568fa41d6df69a963"
+ },
+ {
+  "stem": "cast-0708-charlie-with-the-camera",
+  "file": "cast-0708-charlie-with-the-camera.jpg",
+  "kind": "photo",
+  "tier": "pool",
+  "set": "cast-0708-charlie-with-the-camera",
+  "taken_local": "2025-07-08T16:26:00",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-08T14:26:00.000Z",
+  "source_taken": null,
+  "gps_from": null,
+  "source_gps": null,
+  "time_from": "curated",
+  "shift_days": 0,
+  "place": null,
+  "width": 500,
+  "height": 389,
+  "seconds": null,
+  "caption": "Charlie with the camera",
+  "faces": [
+   {
+    "person": "Charlie",
+    "x": 0.4347,
+    "y": 0.1554,
+    "w": 0.2904,
+    "h": 0.5453
+   }
+  ],
+  "people": [
+   "Charlie"
+  ],
+  "source": {
+   "title": "Shadowed man holding a camera (Unsplash).jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:Shadowed_man_holding_a_camera_(Unsplash).jpg",
+   "author": "Stephen Caserta caserta",
+   "licence": "CC0",
+   "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+  },
+  "sha256": "8842b6030acfe994392fcf0e2a91a2f900bc677d07f5bfc02c72ca786641bd18"
+ },
+ {
+  "stem": "cast-0708-mo-in-the-field",
+  "file": "cast-0708-mo-in-the-field.jpg",
+  "kind": "photo",
+  "tier": "pool",
+  "set": "cast-0708-mo-in-the-field",
+  "taken_local": "2025-07-08T16:33:00",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-08T14:33:00.000Z",
+  "source_taken": null,
+  "gps_from": null,
+  "source_gps": null,
+  "time_from": "curated",
+  "shift_days": 0,
+  "place": null,
+  "width": 500,
+  "height": 375,
+  "seconds": null,
+  "caption": "Mo in the field",
+  "faces": [
+   {
+    "person": "Mo",
+    "x": 0.6194,
+    "y": 0.2756,
+    "w": 0.1191,
+    "h": 0.2095
+   }
+  ],
+  "people": [
+   "Mo"
+  ],
+  "source": {
+   "title": "Wilco Van Meppelen 2017 (Unsplash).jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:Wilco_Van_Meppelen_2017_(Unsplash).jpg",
+   "author": "Wilco Van Meppelen wilcovanmeppelen",
+   "licence": "CC0",
+   "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+  },
+  "sha256": "9a0af35086868a63a572e4f942b21553eb7dd2058007199b1732d3c8f0a23657"
+ },
+ {
+  "stem": "cast-0708-jo-twirling-in-the-dress",
+  "file": "cast-0708-jo-twirling-in-the-dress.jpg",
+  "kind": "photo",
+  "tier": "pool",
+  "set": "cast-0708-jo-twirling-in-the-dress",
+  "taken_local": "2025-07-08T16:40:00",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-08T14:40:00.000Z",
+  "source_taken": null,
+  "gps_from": null,
+  "source_gps": null,
+  "time_from": "curated",
+  "shift_days": 0,
+  "place": null,
+  "width": 500,
+  "height": 333,
+  "seconds": null,
+  "caption": "Jo twirling in the dress",
+  "faces": [
+   {
+    "person": "Jo",
+    "x": 0.4248,
+    "y": 0.1523,
+    "w": 0.1168,
+    "h": 0.2458
+   }
+  ],
+  "people": [
+   "Jo"
+  ],
+  "source": {
+   "title": "Kids is everything (Unsplash).jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:Kids_is_everything_(Unsplash).jpg",
+   "author": "Enis Yavuz enisyavuz",
+   "licence": "CC0",
+   "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+  },
+  "sha256": "6e8a81110374c8ad33ed0deaf789de8c08fda71da292b03414360b992608e7da"
+ },
+ {
+  "stem": "cast-0708-jo-in-the-wind",
+  "file": "cast-0708-jo-in-the-wind.jpg",
+  "kind": "photo",
+  "tier": "pool",
+  "set": "cast-0708-jo-in-the-wind",
+  "taken_local": "2025-07-08T16:47:00",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-08T14:47:00.000Z",
+  "source_taken": null,
+  "gps_from": null,
+  "source_gps": null,
+  "time_from": "curated",
+  "shift_days": 0,
+  "place": null,
+  "width": 500,
+  "height": 333,
+  "seconds": null,
+  "caption": "Jo in the wind",
+  "faces": [
+   {
+    "person": "Jo",
+    "x": 0.328,
+    "y": 0.1263,
+    "w": 0.2662,
+    "h": 0.5145
+   }
+  ],
+  "people": [
+   "Jo"
+  ],
+  "source": {
+   "title": "Ratiu Bia 2016 (Unsplash).jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:Ratiu_Bia_2016_(Unsplash).jpg",
+   "author": "Ratiu Bia ratiubia",
+   "licence": "CC0",
+   "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+  },
+  "sha256": "db24a58323a510c29d55a63ebb9553a6150ce61aa29f78b0307a6b7e09be4c98"
+ },
+ {
+  "stem": "cast-0708-jo-listening",
+  "file": "cast-0708-jo-listening.jpg",
+  "kind": "photo",
+  "tier": "pool",
+  "set": "cast-0708-jo-listening",
+  "taken_local": "2025-07-08T16:51:00",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-08T14:51:00.000Z",
+  "source_taken": "2000-01-01T16:51:00",
+  "gps_from": null,
+  "source_gps": null,
+  "time_from": "file",
+  "shift_days": 9320,
+  "place": null,
+  "width": 500,
+  "height": 264,
+  "seconds": null,
+  "caption": "Jo listening",
+  "faces": [
+   {
+    "person": "Jo",
+    "x": 0.3279,
+    "y": 0.1451,
+    "w": 0.2182,
+    "h": 0.5607
+   }
+  ],
+  "people": [
+   "Jo"
+  ],
+  "source": {
+   "title": "Little girl in a green blouse thinking (16030472049).jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:Little_girl_in_a_green_blouse_thinking_(16030472049).jpg",
+   "author": "Personal Creations",
+   "licence": "CC BY 2.0",
+   "licence_url": "https://creativecommons.org/licenses/by/2.0"
+  },
+  "sha256": "0317e5b63025d1a740bd7957164845e49654fb16ffda795286ea38b3bc4dac75"
+ },
+ {
+  "stem": "cast-0708-alex-looking-up",
+  "file": "cast-0708-alex-looking-up.jpg",
+  "kind": "photo",
+  "tier": "pool",
+  "set": "cast-0708-alex-looking-up",
+  "taken_local": "2025-07-08T16:58:00",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-08T14:58:00.000Z",
+  "source_taken": null,
+  "gps_from": null,
+  "source_gps": null,
+  "time_from": "curated",
+  "shift_days": 0,
+  "place": null,
+  "width": 500,
+  "height": 375,
+  "seconds": null,
+  "caption": "Alex looking up",
+  "faces": [
+   {
+    "person": "Alex",
+    "x": 0.3289,
+    "y": 0.0905,
+    "w": 0.3079,
+    "h": 0.5928
+   }
+  ],
+  "people": [
+   "Alex"
+  ],
+  "source": {
+   "title": "下巴bibi.jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:%E4%B8%8B%E5%B7%B4bibi.jpg",
+   "author": "Riala",
+   "licence": "CC0",
+   "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+  },
+  "sha256": "15d48baffc4066bf3df006a57aa03bf835ceb5757c125f95e4fb5036d5c1f059"
+ },
+ {
+  "stem": "cast-0708-jo-in-the-hairband",
+  "file": "cast-0708-jo-in-the-hairband.jpg",
+  "kind": "photo",
+  "tier": "pool",
+  "set": "cast-0708-jo-in-the-hairband",
+  "taken_local": "2025-07-08T17:37:10",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-08T15:37:10.000Z",
+  "source_taken": "2015-05-12T17:37:10",
+  "gps_from": null,
+  "source_gps": null,
+  "time_from": "file",
+  "shift_days": 3710,
+  "place": null,
+  "width": 500,
+  "height": 333,
+  "seconds": null,
+  "caption": "Jo in the hairband",
+  "faces": [
+   {
+    "person": "Jo",
+    "x": 0.3506,
+    "y": 0.2498,
+    "w": 0.3008,
+    "h": 0.5604
+   }
+  ],
+  "people": [
+   "Jo"
+  ],
+  "source": {
+   "title": "An Arab girl-883011.jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:An_Arab_girl-883011.jpg",
+   "author": "Abdulmomn Kadhim",
+   "licence": "CC0",
+   "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+  },
+  "sha256": "a7042975594d468ed232990d8cfead043205780e11b002d0e4c47391e51b86b0"
+ },
+ {
+  "stem": "cast-0708-alex-and-mo-pulling-faces",
+  "file": "cast-0708-alex-and-mo-pulling-faces.jpg",
+  "kind": "photo",
+  "tier": "pool",
+  "set": "cast-0708-alex-and-mo-pulling-faces",
+  "taken_local": "2025-07-08T19:34:03",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-08T17:34:03.000Z",
+  "source_taken": "2010-12-03T19:34:03",
+  "gps_from": null,
+  "source_gps": null,
+  "time_from": "file",
+  "shift_days": 5331,
+  "place": null,
+  "width": 500,
+  "height": 333,
+  "seconds": null,
+  "caption": "Alex and Mo pulling faces",
+  "faces": [
+   {
+    "person": "Alex",
+    "x": 0.2544,
+    "y": 0.303,
+    "w": 0.1737,
+    "h": 0.3431
+   },
+   {
+    "person": "Mo",
+    "x": 0.6022,
+    "y": 0.297,
+    "w": 0.1695,
+    "h": 0.3313
+   }
+  ],
+  "people": [
+   "Alex",
+   "Mo"
+  ],
+  "source": {
+   "title": "Happy Children.jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:Happy_Children.jpg",
+   "author": "White77",
+   "licence": "CC0",
+   "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+  },
+  "sha256": "cc89fdef99998c69e7b079b012be0920ad0ca306ebb428f04f234bdcaaa39038"
+ },
+ {
+  "stem": "cast-0708-kit-in-the-dungarees",
+  "file": "cast-0708-kit-in-the-dungarees.jpg",
+  "kind": "photo",
+  "tier": "film",
+  "set": "cast-0708-kit-in-the-dungarees",
+  "taken_local": "2025-07-08T19:36:13",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-08T17:36:13.000Z",
+  "source_taken": "2016-07-01T19:36:13",
+  "gps_from": null,
+  "source_gps": null,
+  "time_from": "file",
+  "shift_days": 3294,
+  "place": null,
+  "width": 970,
+  "height": 1280,
+  "seconds": null,
+  "caption": "Kit in the dungarees",
+  "faces": [
+   {
+    "person": "Kit",
+    "x": 0.3796,
+    "y": 0.1514,
+    "w": 0.3613,
+    "h": 0.3122
+   }
+  ],
+  "people": [
+   "Kit"
+  ],
+  "source": {
+   "title": "Children-of-palestine-1882573.jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:Children-of-palestine-1882573.jpg",
+   "author": "Yaser Yousef",
+   "licence": "CC0",
+   "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+  },
+  "sha256": "014ed95c95df2238f65b38f974900b63d127b61f97c50b82647c2fbc7973f78d"
  },
  {
   "stem": "home-0708-ice-cream-bike",
@@ -2528,6 +4192,46 @@
   "sha256": "c52a578e6f01e4c0546020c67b0e5616567a24f31b40a6c93ba98e0300181fbb"
  },
  {
+  "stem": "cast-0710-kit-waving-in-the-yellow-dre",
+  "file": "cast-0710-kit-waving-in-the-yellow-dre.jpg",
+  "kind": "photo",
+  "tier": "film",
+  "set": "cast-0710-kit-waving-in-the-yellow-dre",
+  "taken_local": "2025-07-10T11:33:00",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-10T09:33:00.000Z",
+  "source_taken": "2014-08-29T11:33:00",
+  "gps_from": null,
+  "source_gps": null,
+  "time_from": "file",
+  "shift_days": 3968,
+  "place": null,
+  "width": 1280,
+  "height": 853,
+  "seconds": null,
+  "caption": "Kit waving in the yellow dress",
+  "faces": [
+   {
+    "person": "Kit",
+    "x": 0.4754,
+    "y": 0.0852,
+    "w": 0.1196,
+    "h": 0.2474
+   }
+  ],
+  "people": [
+   "Kit"
+  ],
+  "source": {
+   "title": "Girl with hopscotch mat (14888662837).jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:Girl_with_hopscotch_mat_(14888662837).jpg",
+   "author": "Personal Creations",
+   "licence": "CC BY 2.0",
+   "licence_url": "https://creativecommons.org/licenses/by/2.0"
+  },
+  "sha256": "ac72b2e5ec187ae9b8c01f6b1f7a90c866362b2166c6304106851ce84c5a73bc"
+ },
+ {
   "stem": "home-0710-botanique-3",
   "file": "home-0710-botanique-3.jpg",
   "kind": "photo",
@@ -2564,6 +4268,132 @@
    "licence_url": "https://creativecommons.org/licenses/by/2.0"
   },
   "sha256": "70d5145ffe012f29f1575410915f339c3e3e720d8bdd67312edcda13276359ba"
+ },
+ {
+  "stem": "cast-0710-kit-reading-on-the-rug",
+  "file": "cast-0710-kit-reading-on-the-rug.jpg",
+  "kind": "photo",
+  "tier": "film",
+  "set": "cast-0710-kit-reading-on-the-rug",
+  "taken_local": "2025-07-10T15:10:00",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-10T13:10:00.000Z",
+  "source_taken": "2014-08-09T15:10:00",
+  "gps_from": null,
+  "source_gps": null,
+  "time_from": "file",
+  "shift_days": 3988,
+  "place": null,
+  "width": 1280,
+  "height": 853,
+  "seconds": null,
+  "caption": "Kit reading on the rug",
+  "faces": [
+   {
+    "person": "Kit",
+    "x": 0.5417,
+    "y": 0.2825,
+    "w": 0.1561,
+    "h": 0.3228
+   }
+  ],
+  "people": [
+   "Kit"
+  ],
+  "source": {
+   "title": "Girl reading a book (15072194361).jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:Girl_reading_a_book_(15072194361).jpg",
+   "author": "Personal Creations",
+   "licence": "CC BY 2.0",
+   "licence_url": "https://creativecommons.org/licenses/by/2.0"
+  },
+  "sha256": "0c7130f859080557f208ec5fb620ff25dfa2cec428782bb848e3a7ef724c7360"
+ },
+ {
+  "stem": "cast-0710-charlie-among-the-seed-heads",
+  "file": "cast-0710-charlie-among-the-seed-heads.jpg",
+  "kind": "photo",
+  "tier": "pool",
+  "set": "cast-0710-charlie-among-the-seed-heads",
+  "taken_local": "2025-07-10T17:11:00",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-10T15:11:00.000Z",
+  "source_taken": null,
+  "gps_from": null,
+  "source_gps": [
+   43.498905,
+   -79.778177
+  ],
+  "time_from": "curated",
+  "shift_days": 0,
+  "place": null,
+  "width": 500,
+  "height": 342,
+  "seconds": null,
+  "caption": "Charlie among the seed heads",
+  "faces": [
+   {
+    "person": "Charlie",
+    "x": 0.4447,
+    "y": 0.2979,
+    "w": 0.1202,
+    "h": 0.2227
+   }
+  ],
+  "people": [
+   "Charlie"
+  ],
+  "source": {
+   "title": "Man with crossed arms (Unsplash).jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:Man_with_crossed_arms_(Unsplash).jpg",
+   "author": "Warren Wong wflwong",
+   "licence": "CC0",
+   "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+  },
+  "sha256": "f59c81f34c2eba1bf31923e15327faa42d6ad6732fa734d072d6ebba011c1cdf"
+ },
+ {
+  "stem": "cast-0710-charlie-at-the-edge-of-the-w",
+  "file": "cast-0710-charlie-at-the-edge-of-the-w.jpg",
+  "kind": "photo",
+  "tier": "pool",
+  "set": "cast-0710-charlie-at-the-edge-of-the-w",
+  "taken_local": "2025-07-10T17:18:00",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-10T15:18:00.000Z",
+  "source_taken": null,
+  "gps_from": null,
+  "source_gps": [
+   -33.5952,
+   151.297987
+  ],
+  "time_from": "curated",
+  "shift_days": 0,
+  "place": null,
+  "width": 500,
+  "height": 333,
+  "seconds": null,
+  "caption": "Charlie at the edge of the wood",
+  "faces": [
+   {
+    "person": "Charlie",
+    "x": 0.4617,
+    "y": 0.3679,
+    "w": 0.0988,
+    "h": 0.1914
+   }
+  ],
+  "people": [
+   "Charlie"
+  ],
+  "source": {
+   "title": "The Waiting Game (Unsplash).jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:The_Waiting_Game_(Unsplash).jpg",
+   "author": "Louis Blythe louisjblythe",
+   "licence": "CC0",
+   "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+  },
+  "sha256": "67b1dd547122e4fdc727c834ee5a057c1015d87444bf2352fdd4421f4a19ef76"
  },
  {
   "stem": "home-0710-sofa",
@@ -2614,6 +4444,134 @@
   "sha256": "b72e6833ec476bd0420ad86e8448c8bef7f81d3b87fefb4150fb4b6b7a443d11"
  },
  {
+  "stem": "cast-0710-kit-grinning",
+  "file": "cast-0710-kit-grinning.jpg",
+  "kind": "photo",
+  "tier": "pool",
+  "set": "cast-0710-kit-grinning",
+  "taken_local": "2025-07-10T17:22:00",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-10T15:22:00.000Z",
+  "source_taken": null,
+  "gps_from": null,
+  "source_gps": null,
+  "time_from": "curated",
+  "shift_days": 0,
+  "place": null,
+  "width": 500,
+  "height": 333,
+  "seconds": null,
+  "caption": "Kit grinning",
+  "faces": [
+   {
+    "person": "Kit",
+    "x": 0.279,
+    "y": 0.1374,
+    "w": 0.3865,
+    "h": 0.7147
+   }
+  ],
+  "people": [
+   "Kit"
+  ],
+  "source": {
+   "title": "Girl Portrait Kid Cute Hair Sunlight Arab Young.jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:Girl_Portrait_Kid_Cute_Hair_Sunlight_Arab_Young.jpg",
+   "author": "Abdulmomn Kadhim",
+   "licence": "CC0",
+   "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+  },
+  "sha256": "bc6a90665657f3108927252a70c5748856cb32b2c56fb4b0a7a32b0c079e898f"
+ },
+ {
+  "stem": "cast-0710-robin-holding-the-baby-up",
+  "file": "cast-0710-robin-holding-the-baby-up.jpg",
+  "kind": "photo",
+  "tier": "pool",
+  "set": "cast-0710-robin-holding-the-baby-up",
+  "taken_local": "2025-07-10T17:29:00",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-10T15:29:00.000Z",
+  "source_taken": null,
+  "gps_from": null,
+  "source_gps": null,
+  "time_from": "curated",
+  "shift_days": 0,
+  "place": null,
+  "width": 500,
+  "height": 332,
+  "seconds": null,
+  "caption": "Robin holding the baby up",
+  "faces": [
+   {
+    "person": "Robin",
+    "x": 0.6057,
+    "y": 0.1592,
+    "w": 0.1856,
+    "h": 0.3809
+   }
+  ],
+  "people": [
+   "Robin"
+  ],
+  "source": {
+   "title": "Mother and newborn sharing a moment.jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:Mother_and_newborn_sharing_a_moment.jpg",
+   "author": "tabakpolska",
+   "licence": "CC0",
+   "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+  },
+  "sha256": "6243f6d8d1a747a5e2dbbb9b9db0be0673805b34e252a4f778b70b92fcba82df"
+ },
+ {
+  "stem": "cast-0710-charlie-and-robin-looking-up",
+  "file": "cast-0710-charlie-and-robin-looking-up.jpg",
+  "kind": "photo",
+  "tier": "pool",
+  "set": "cast-0710-charlie-and-robin-looking-up",
+  "taken_local": "2025-07-10T17:36:00",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-10T15:36:00.000Z",
+  "source_taken": null,
+  "gps_from": null,
+  "source_gps": null,
+  "time_from": "curated",
+  "shift_days": 0,
+  "place": null,
+  "width": 500,
+  "height": 333,
+  "seconds": null,
+  "caption": "Charlie and Robin looking up",
+  "faces": [
+   {
+    "person": "Charlie",
+    "x": 0.1954,
+    "y": 0.1991,
+    "w": 0.2102,
+    "h": 0.3532
+   },
+   {
+    "person": "Robin",
+    "x": 0.6249,
+    "y": 0.2192,
+    "w": 0.1952,
+    "h": 0.4025
+   }
+  ],
+  "people": [
+   "Charlie",
+   "Robin"
+  ],
+  "source": {
+   "title": "White group representing White ethnicity.jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:White_group_representing_White_ethnicity.jpg",
+   "author": "PublicDomainPictures",
+   "licence": "CC0",
+   "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+  },
+  "sha256": "6b5ba607e6f6ed7538093707145077990560cb30547a3a18ca76c92a127ef475"
+ },
+ {
   "stem": "home-0711-sunrise",
   "file": "home-0711-sunrise.jpg",
   "kind": "photo",
@@ -2652,6 +4610,46 @@
   "sha256": "6c7590b3d1a74e68ed13bdcf540e08f8a0152e749f56145ff551fd1eb12a4231"
  },
  {
+  "stem": "cast-0711-remy-on-the-rug",
+  "file": "cast-0711-remy-on-the-rug.jpg",
+  "kind": "photo",
+  "tier": "pool",
+  "set": "cast-0711-remy-on-the-rug",
+  "taken_local": "2025-07-11T12:28:48",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-11T10:28:48.000Z",
+  "source_taken": "2015-01-03T12:28:48",
+  "gps_from": null,
+  "source_gps": null,
+  "time_from": "file",
+  "shift_days": 3842,
+  "place": null,
+  "width": 333,
+  "height": 500,
+  "seconds": null,
+  "caption": "Remy on the rug",
+  "faces": [
+   {
+    "person": "Remy",
+    "x": 0.26,
+    "y": 0.3516,
+    "w": 0.2415,
+    "h": 0.1936
+   }
+  ],
+  "people": [
+   "Remy"
+  ],
+  "source": {
+   "title": "Baby wearing hat and babygrow.jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:Baby_wearing_hat_and_babygrow.jpg",
+   "author": "Victoria Borodinova (Виктория Бородинова) https://pixabay.com/users/victoria_borodinova-6314823/",
+   "licence": "CC0",
+   "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+  },
+  "sha256": "8c368aead8e7f0a0e33dc624ca6f9e8efc1e36c6834ef07d1e555aad779f39a7"
+ },
+ {
   "stem": "home-0711-flour-mill",
   "file": "home-0711-flour-mill.jpg",
   "kind": "photo",
@@ -2688,6 +4686,461 @@
    "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
   },
   "sha256": "d46bef1de51dacc8f55828f79b9838f6e5d01c57512742e2f4337ae8004837f9"
+ },
+ {
+  "stem": "cast-0711-kit-by-the-window",
+  "file": "cast-0711-kit-by-the-window.jpg",
+  "kind": "photo",
+  "tier": "pool",
+  "set": "cast-0711-kit-by-the-window",
+  "taken_local": "2025-07-11T19:00:00",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-11T17:00:00.000Z",
+  "source_taken": null,
+  "gps_from": null,
+  "source_gps": null,
+  "time_from": "curated",
+  "shift_days": 0,
+  "place": null,
+  "width": 439,
+  "height": 500,
+  "seconds": null,
+  "caption": "Kit by the window",
+  "faces": [
+   {
+    "person": "Kit",
+    "x": 0.3617,
+    "y": 0.1621,
+    "w": 0.3356,
+    "h": 0.4113
+   }
+  ],
+  "people": [
+   "Kit"
+  ],
+  "source": {
+   "title": "Girl with blue eyes-3315767.jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:Girl_with_blue_eyes-3315767.jpg",
+   "author": "thepoorphotographer",
+   "licence": "CC0",
+   "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+  },
+  "sha256": "436c3d47da1fedf846134b67c9d3259cad01e485cd8c762eff0d53c27c926ee9"
+ },
+ {
+  "stem": "cast-0711-sasha-sitting-on-the-road",
+  "file": "cast-0711-sasha-sitting-on-the-road.jpg",
+  "kind": "photo",
+  "tier": "pool",
+  "set": "cast-0711-sasha-sitting-on-the-road",
+  "taken_local": "2025-07-11T19:03:00",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-11T17:03:00.000Z",
+  "source_taken": null,
+  "gps_from": null,
+  "source_gps": [
+   37.864639,
+   -119.537945
+  ],
+  "time_from": "curated",
+  "shift_days": 0,
+  "place": null,
+  "width": 500,
+  "height": 333,
+  "seconds": null,
+  "caption": "Sasha sitting on the road",
+  "faces": [
+   {
+    "person": "Sasha",
+    "x": 0.4575,
+    "y": 0.2374,
+    "w": 0.0705,
+    "h": 0.1477
+   }
+  ],
+  "people": [
+   "Sasha"
+  ],
+  "source": {
+   "title": "Smiling cross-legged on road (Unsplash).jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:Smiling_cross-legged_on_road_(Unsplash).jpg",
+   "author": "Omar Lopez omarlopez1",
+   "licence": "CC0",
+   "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+  },
+  "sha256": "f9ebc5264ae5d6f33400e26d7058bc87c6a435c74047cbf7e734fe408a2a511c"
+ },
+ {
+  "stem": "cast-0711-remy-holding-on",
+  "file": "cast-0711-remy-holding-on.jpg",
+  "kind": "photo",
+  "tier": "pool",
+  "set": "cast-0711-remy-holding-on",
+  "taken_local": "2025-07-11T19:17:00",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-11T17:17:00.000Z",
+  "source_taken": null,
+  "gps_from": null,
+  "source_gps": null,
+  "time_from": "curated",
+  "shift_days": 0,
+  "place": null,
+  "width": 500,
+  "height": 333,
+  "seconds": null,
+  "caption": "Remy holding on",
+  "faces": [
+   {
+    "person": "Remy",
+    "x": 0.468,
+    "y": 0.1884,
+    "w": 0.1938,
+    "h": 0.3182
+   }
+  ],
+  "people": [
+   "Remy"
+  ],
+  "source": {
+   "title": "Priscilla Du Preez 2017-04-05 (Unsplash).jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:Priscilla_Du_Preez_2017-04-05_(Unsplash).jpg",
+   "author": "Priscilla Du Preez artographybyp",
+   "licence": "CC0",
+   "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+  },
+  "sha256": "066bd75e4bb9756dde8c9adc8c32e4ff3f76e73a373427bb195813f720f246e4"
+ },
+ {
+  "stem": "cast-0711-kit-with-the-braid",
+  "file": "cast-0711-kit-with-the-braid.jpg",
+  "kind": "photo",
+  "tier": "pool",
+  "set": "cast-0711-kit-with-the-braid",
+  "taken_local": "2025-07-11T19:25:00",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-11T17:25:00.000Z",
+  "source_taken": null,
+  "gps_from": null,
+  "source_gps": null,
+  "time_from": "curated",
+  "shift_days": 0,
+  "place": null,
+  "width": 500,
+  "height": 334,
+  "seconds": null,
+  "caption": "Kit with the braid",
+  "faces": [
+   {
+    "person": "Kit",
+    "x": 0.3388,
+    "y": 0.1318,
+    "w": 0.3496,
+    "h": 0.7029
+   }
+  ],
+  "people": [
+   "Kit"
+  ],
+  "source": {
+   "title": "Young girl's portrait-1871104.jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:Young_girl%27s_portrait-1871104.jpg",
+   "author": "Bess-Hamiti",
+   "licence": "CC0",
+   "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+  },
+  "sha256": "2e612ef858c747afd0cb42caa270a1e5edfe3ea99f5012a3f9446a55d3f73d89"
+ },
+ {
+  "stem": "cast-0711-robin-in-the-hat",
+  "file": "cast-0711-robin-in-the-hat.jpg",
+  "kind": "photo",
+  "tier": "pool",
+  "set": "cast-0711-robin-in-the-hat",
+  "taken_local": "2025-07-11T19:28:00",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-11T17:28:00.000Z",
+  "source_taken": null,
+  "gps_from": null,
+  "source_gps": null,
+  "time_from": "curated",
+  "shift_days": 0,
+  "place": null,
+  "width": 500,
+  "height": 333,
+  "seconds": null,
+  "caption": "Robin in the hat",
+  "faces": [
+   {
+    "person": "Robin",
+    "x": 0.3998,
+    "y": 0.2274,
+    "w": 0.1479,
+    "h": 0.2717
+   }
+  ],
+  "people": [
+   "Robin"
+  ],
+  "source": {
+   "title": "Red lipstick smile (Unsplash).jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:Red_lipstick_smile_(Unsplash).jpg",
+   "author": "Allef Vinicius seteales",
+   "licence": "CC0",
+   "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+  },
+  "sha256": "755b8b807b67657009be8b51b288e8099b8134f5fbad384824f621b845ccae6a"
+ },
+ {
+  "stem": "cast-0711-nico-home-for-the-summer",
+  "file": "cast-0711-nico-home-for-the-summer.jpg",
+  "kind": "photo",
+  "tier": "pool",
+  "set": "cast-0711-nico-home-for-the-summer",
+  "taken_local": "2025-07-11T19:32:00",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-11T17:32:00.000Z",
+  "source_taken": null,
+  "gps_from": null,
+  "source_gps": [
+   43.653226,
+   -79.383184
+  ],
+  "time_from": "curated",
+  "shift_days": 0,
+  "place": null,
+  "width": 500,
+  "height": 500,
+  "seconds": null,
+  "caption": "Nico home for the summer",
+  "faces": [
+   {
+    "person": "Nico",
+    "x": 0.4199,
+    "y": 0.1919,
+    "w": 0.1398,
+    "h": 0.214
+   }
+  ],
+  "people": [
+   "Nico"
+  ],
+  "source": {
+   "title": "Always smile (Unsplash).jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:Always_smile_(Unsplash).jpg",
+   "author": "michael m_minimal",
+   "licence": "CC0",
+   "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+  },
+  "sha256": "f34a40c4a831bf9d07af3e3ed54a2b3fcd2729d0ded3c35369ad2fc27a6e3f6b"
+ },
+ {
+  "stem": "cast-0711-robin-checking-the-train-tim",
+  "file": "cast-0711-robin-checking-the-train-tim.jpg",
+  "kind": "photo",
+  "tier": "pool",
+  "set": "cast-0711-robin-checking-the-train-tim",
+  "taken_local": "2025-07-11T19:35:00",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-11T17:35:00.000Z",
+  "source_taken": null,
+  "gps_from": null,
+  "source_gps": [
+   40.740083,
+   -73.990349
+  ],
+  "time_from": "curated",
+  "shift_days": 0,
+  "place": null,
+  "width": 500,
+  "height": 333,
+  "seconds": null,
+  "caption": "Robin checking the train times",
+  "faces": [
+   {
+    "person": "Robin",
+    "x": 0.3711,
+    "y": 0.3339,
+    "w": 0.1437,
+    "h": 0.2967
+   }
+  ],
+  "people": [
+   "Robin"
+  ],
+  "source": {
+   "title": "Outdoor portrait (Unsplash).jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:Outdoor_portrait_(Unsplash).jpg",
+   "author": "Anthony Ginsbrook aginsbrook",
+   "licence": "CC0",
+   "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+  },
+  "sha256": "675aca8e195f7bc40ad4745d1312a1a441e53542788448c4022cd56d178c4a2e"
+ },
+ {
+  "stem": "cast-0711-kit-and-the-lollipop",
+  "file": "cast-0711-kit-and-the-lollipop.jpg",
+  "kind": "photo",
+  "tier": "film",
+  "set": "cast-0711-kit-and-the-lollipop",
+  "taken_local": "2025-07-11T19:39:00",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-11T17:39:00.000Z",
+  "source_taken": null,
+  "gps_from": null,
+  "source_gps": null,
+  "time_from": "curated",
+  "shift_days": 0,
+  "place": null,
+  "width": 1280,
+  "height": 853,
+  "seconds": null,
+  "caption": "Kit and the lollipop",
+  "faces": [
+   {
+    "person": "Kit",
+    "x": 0.2553,
+    "y": 0.1303,
+    "w": 0.1681,
+    "h": 0.3161
+   }
+  ],
+  "people": [
+   "Kit"
+  ],
+  "source": {
+   "title": "Ari Sherbill 2017 (Unsplash).jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:Ari_Sherbill_2017_(Unsplash).jpg",
+   "author": "Ari Sherbill ariysherbill",
+   "licence": "CC0",
+   "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+  },
+  "sha256": "9ee96763c5bc0c1bd8d6f3d2513d65f68ef17a2cc63441ab7fa11a3c6fbdc003"
+ },
+ {
+  "stem": "cast-0711-sasha-dropping-off-the-keys",
+  "file": "cast-0711-sasha-dropping-off-the-keys.jpg",
+  "kind": "photo",
+  "tier": "pool",
+  "set": "cast-0711-sasha-dropping-off-the-keys",
+  "taken_local": "2025-07-11T19:42:00",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-11T17:42:00.000Z",
+  "source_taken": null,
+  "gps_from": null,
+  "source_gps": [
+   45.523062,
+   -122.676482
+  ],
+  "time_from": "curated",
+  "shift_days": 0,
+  "place": null,
+  "width": 500,
+  "height": 333,
+  "seconds": null,
+  "caption": "Sasha dropping off the keys",
+  "faces": [
+   {
+    "person": "Sasha",
+    "x": 0.5038,
+    "y": 0.2513,
+    "w": 0.1247,
+    "h": 0.2501
+   }
+  ],
+  "people": [
+   "Sasha"
+  ],
+  "source": {
+   "title": "PNW (Unsplash).jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:PNW_(Unsplash).jpg",
+   "author": "Avel Chuklanov chuklanov",
+   "licence": "CC0",
+   "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+  },
+  "sha256": "a56de0771773ef935ad27e305993bfaead3d216a42e2b6f70c5eb844e3090dd9"
+ },
+ {
+  "stem": "cast-0711-sasha-on-the-terrace",
+  "file": "cast-0711-sasha-on-the-terrace.jpg",
+  "kind": "photo",
+  "tier": "pool",
+  "set": "cast-0711-sasha-on-the-terrace",
+  "taken_local": "2025-07-11T19:49:00",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-11T17:49:00.000Z",
+  "source_taken": null,
+  "gps_from": null,
+  "source_gps": [
+   46.975033,
+   31.994583
+  ],
+  "time_from": "curated",
+  "shift_days": 0,
+  "place": null,
+  "width": 500,
+  "height": 332,
+  "seconds": null,
+  "caption": "Sasha on the terrace",
+  "faces": [
+   {
+    "person": "Sasha",
+    "x": 0.4698,
+    "y": 0.3456,
+    "w": 0.1273,
+    "h": 0.2904
+   }
+  ],
+  "people": [
+   "Sasha"
+  ],
+  "source": {
+   "title": "Skater Girl (Unsplash).jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:Skater_Girl_(Unsplash).jpg",
+   "author": "Sergey Fediv sergeymf",
+   "licence": "CC0",
+   "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+  },
+  "sha256": "c196e0b1c2ca73e44edf3e5e3ed4a3325d35c3a9ab98e196a815e34eb2e4a665"
+ },
+ {
+  "stem": "cast-0711-sparklers-in-the-garden",
+  "file": "cast-0711-sparklers-in-the-garden.jpg",
+  "kind": "photo",
+  "tier": "film",
+  "set": "cast-0711-sparklers-in-the-garden",
+  "taken_local": "2025-07-11T19:53:00",
+  "utc_offset": "+02:00",
+  "taken_utc": "2025-07-11T17:53:00.000Z",
+  "source_taken": null,
+  "gps_from": null,
+  "source_gps": null,
+  "time_from": "curated",
+  "shift_days": 0,
+  "place": null,
+  "width": 1280,
+  "height": 853,
+  "seconds": null,
+  "caption": "sparklers in the garden",
+  "faces": [
+   {
+    "person": "Kit",
+    "x": 0.5172,
+    "y": 0.1997,
+    "w": 0.1926,
+    "h": 0.3301
+   }
+  ],
+  "people": [
+   "Kit"
+  ],
+  "source": {
+   "title": "Priscilla Du Preez 2017-03-28 (Unsplash).jpg",
+   "page": "https://commons.wikimedia.org/wiki/File:Priscilla_Du_Preez_2017-03-28_(Unsplash).jpg",
+   "author": "Priscilla Du Preez artographybyp",
+   "licence": "CC0",
+   "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+  },
+  "sha256": "522aeafa351a091672617da1a5c540df8b928f0ae0351af547b1879a97dec171"
  },
  {
   "stem": "north-0712-0000",

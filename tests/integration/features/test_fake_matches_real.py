@@ -45,14 +45,6 @@ _PLACE_NAMES_DIFFER = pytest.mark.xfail(
     strict=True,
     reason="the fixture names places through OpenStreetMap, not Immich's GeoNames towns",
 )
-# The fake answers a person's timeline with the whole library's months; a real Immich counts
-# that person's pictures only. Making the fake honest leaves the web "Rescan now" with nobody
-# over its 25-picture floor on this library, which the people-page e2e test relies on: that
-# needs a ruling first.
-_PERSON_TIMELINE_DIFFERS = pytest.mark.xfail(
-    strict=True,
-    reason="the fake gives each person the whole library's timeline until the web scan's floor scales with the library (#2424)",
-)
 
 
 class _Pair:
@@ -290,7 +282,6 @@ def test_timeline_buckets_count_the_same(pair: _Pair) -> None:
     assert fake == real
 
 
-@_PERSON_TIMELINE_DIFFERS
 def test_a_persons_timeline_buckets_count_the_same(pair: _Pair) -> None:
     found = []
     for name in CAST:

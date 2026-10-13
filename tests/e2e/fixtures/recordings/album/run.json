@@ -1,0 +1,10 @@
+{
+ "memory_type": "album",
+ "arguments": [
+  "--memory-type",
+  "album",
+  "--from-album",
+  "The road north"
+ ],
+ "seconds": 171
+}

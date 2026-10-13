@@ -1,0 +1,84 @@
+{
+ "format": "editorial-source-rendering-v1",
+ "selected_ids": [
+  "cast-0701-kit-lining-up-the-chocolate",
+  "birthday-cake",
+  "forest-0706-pat-03",
+  "forest-0706-tervuren-00",
+  "cast-0707-pat-in-his-reading-glasses",
+  "home-0707-park-3",
+  "cast-0707-pat-and-lou-with-the-little",
+  "home-0711-flour-mill",
+  "north-clip-0712-0",
+  "north-clip-0714-1",
+  "north-0715-0124",
+  "north-0716-0196",
+  "north-0721-0339",
+  "north-clip-0730-6",
+  "north-0731-1002"
+ ],
+ "adjustments": [],
+ "allow_live_motion": true,
+ "intervals": {
+  "cast-0701-kit-lining-up-the-chocolate": [
+   0.0,
+   3.5
+  ],
+  "birthday-cake": [
+   0.0,
+   3.5
+  ],
+  "forest-0706-pat-03": [
+   0.0,
+   3.5
+  ],
+  "forest-0706-tervuren-00": [
+   0.0,
+   3.5
+  ],
+  "cast-0707-pat-in-his-reading-glasses": [
+   0.0,
+   3.5
+  ],
+  "home-0707-park-3": [
+   0.0,
+   3.5
+  ],
+  "cast-0707-pat-and-lou-with-the-little": [
+   0.0,
+   3.5
+  ],
+  "home-0711-flour-mill": [
+   0.0,
+   3.5
+  ],
+  "north-clip-0712-0": [
+   1.5,
+   5.0
+  ],
+  "north-clip-0714-1": [
+   0.0,
+   4.0
+  ],
+  "north-0715-0124": [
+   0.0,
+   3.5
+  ],
+  "north-0716-0196": [
+   0.0,
+   4.0
+  ],
+  "north-0721-0339": [
+   0.0,
+   4.0
+  ],
+  "north-clip-0730-6": [
+   0.0,
+   4.0
+  ],
+  "north-0731-1002": [
+   0.0,
+   4.0
+  ]
+ }
+}

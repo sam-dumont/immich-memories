@@ -72,9 +72,23 @@ YEAR = 2025
 MONTH = 7
 MONTH_NAME = "July"
 
-# A made-up household. The names are the ones the fake Immich's people endpoint
-# returns; the people page fixture keeps its own roster.
-CAST: tuple[str, ...] = ("Robin", "Charlie", "Kit", "Pat")
+# A made-up household and the people around it. The names are the ones the fake Immich's
+# people endpoint returns; the people page fixture keeps its own roster. The household and
+# the grandparents clear the people floor; a cousin, two friends' kids and a neighbour
+# sit around it; a teenager seen once is the tail a real library has.
+CAST: tuple[str, ...] = (
+    "Robin",
+    "Charlie",
+    "Kit",
+    "Pat",
+    "Lou",
+    "Remy",
+    "Jo",
+    "Alex",
+    "Mo",
+    "Sasha",
+    "Nico",
+)
 ADULTS = ("Robin", "Charlie")
 EVERYONE = CAST
 
