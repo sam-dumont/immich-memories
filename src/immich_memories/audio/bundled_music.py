@@ -95,6 +95,7 @@ def bundled_playlist_for_mood(
     candidates = _mood_candidates(mood, root)
     if not candidates:
         return []
+    candidates = _one_family(candidates, cadence_seconds, seed)
 
     durations = {track: get_audio_duration(track) for track in candidates}
     if sum(durations.values()) <= 0:
@@ -137,6 +138,24 @@ def _covering_playlist(
         covered += durations[track]
         previous = track
     return playlist
+
+
+def _one_family(
+    candidates: list[Path], cadence_seconds: float | None, seed: int | None
+) -> list[Path]:
+    """The candidates of one mood family: a film's playlist never crosses families (#2465).
+
+    A mood's own folder is already one family. Without one, the candidates are the whole
+    library, and a walk over it crossfaded happy into nostalgic into energetic. The film keeps
+    the family of the track whose beat fits its cadence, or one family picked at random, so
+    two films can still sound different.
+    """
+    families = sorted({track.parent for track in candidates})
+    if len(families) <= 1:
+        return candidates
+    fitting = _fitting_track(candidates, cadence_seconds)
+    family = fitting.parent if fitting is not None else random.Random(seed).choice(families)
+    return [track for track in candidates if track.parent == family]
 
 
 def _mood_candidates(mood: str | None, root: Path) -> list[Path]:

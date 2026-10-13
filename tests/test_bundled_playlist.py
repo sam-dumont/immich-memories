@@ -118,3 +118,35 @@ def test_unreadable_durations_degrade_to_one_track_instead_of_spinning(
     playlist = bundled_playlist_for_mood("calm", total_duration=300.0, library=library)
 
     assert len(playlist) == 1
+
+
+def _two_families(tmp_path: Path) -> Path:
+    _library(tmp_path, "happy", ("h1", "h2", "h3"))
+    return _library(tmp_path, "nostalgic", ("n1", "n2", "n3"))
+
+
+def test_a_long_film_with_no_mood_stays_in_one_family(tmp_path: Path, _fixed_duration) -> None:
+    """#2465: without a mood the walk drew on every folder, so a film's music jumped families."""
+    _fixed_duration(30.0)
+    library = _two_families(tmp_path)
+
+    for seed in range(20):
+        playlist = bundled_playlist_for_mood(None, total_duration=300.0, library=library, seed=seed)
+
+        assert len(playlist) > 1
+        assert len({track.parent.name for track in playlist}) == 1, playlist
+
+
+def test_films_with_no_mood_still_differ_in_family(tmp_path: Path, _fixed_duration) -> None:
+    """One family per film, not one family for every film."""
+    _fixed_duration(30.0)
+    library = _two_families(tmp_path)
+
+    families = {
+        bundled_playlist_for_mood(None, total_duration=300.0, library=library, seed=seed)[
+            0
+        ].parent.name
+        for seed in range(20)
+    }
+
+    assert families == {"happy", "nostalgic"}
