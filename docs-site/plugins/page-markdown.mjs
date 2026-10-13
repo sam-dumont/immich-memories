@@ -212,7 +212,7 @@ function element(node, page, file, partials, inner) {
 }
 
 /** Text renderings of the site's own components, keyed by component name. */
-export function siteComponents({siteDir, version, deployment, installation}) {
+export function siteComponents({siteDir, version, deployment, installation, composeHostPort}) {
   const diagramSvg = name => {
     const path = join(siteDir, 'static', 'diagrams', `${name}.svg`);
     return existsSync(path) ? readFileSync(path, 'utf8') : '';
@@ -264,6 +264,14 @@ export function siteComponents({siteDir, version, deployment, installation}) {
         return [{type: 'blockquote', children: [paragraph(strong('Warning:'), text(' Prebuilt installation for this preview is not published. This page describes development code; check the '), link('https://github.com/sam-dumont/immich-memories/releases', 'application releases'), text(' for an installable version and its matching documentation.'))]}];
       }
       return [paragraph(strong(`${files.title}:`)), code('bash', files.commands)];
+    },
+    ComposePort(node, page) {
+      if (!composeHostPort) return [link(page.htmlUrl, 'the host port on the HTML page')];
+      const port = String(composeHostPort(version));
+      const host = page.attribute(node, 'host');
+      if (!host) return [text(port)];
+      const url = `http://${host}:${port}`;
+      return [page.attribute(node, 'link') ? link(url, url) : text(url)];
     },
     SetupBuilder(node, page) {
       return [paragraph(text('The setup builder on '), link(page.htmlUrl, 'the HTML page'), text(' generates the setup files for your choices in the browser. Pick a platform, a tier and the options there; nothing is sent anywhere.'))];

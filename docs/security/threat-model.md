@@ -27,7 +27,7 @@ The operator's Immich media and deliberately connected partner libraries are tru
 
 ## Deployment defaults
 
-Authentication is off by default. The ordinary CLI path uses loopback, and the compose quickstart publishes the app on `127.0.0.1:8080`. Enable authentication before exposing it beyond localhost. Optional compose model services also publish on loopback. Kubernetes uses a ClusterIP service, one replica and read-only container roots; network reachability inside a cluster is the operator's responsibility.
+Authentication is off by default. The ordinary CLI path uses loopback, and the [Compose file](../../docker-compose.yml) publishes the app only on host address `127.0.0.1`. Enable authentication before exposing it beyond localhost. Optional compose model services also publish on loopback. Kubernetes uses a ClusterIP service, one replica and read-only container roots; network reachability inside a cluster is the operator's responsibility.
 
 SQLite private state and secrets are created with restrictive file permissions. The core model-fetch path validates pinned digests before making downloaded files available. Container base images and external GitHub Actions are pinned, but deployment tags and some optional provider checkpoints are mutable; pinning claims must identify the artifact concerned.
 

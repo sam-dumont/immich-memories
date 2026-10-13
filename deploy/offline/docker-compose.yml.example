@@ -4,7 +4,7 @@ services:
     image: "${IMMICH_MEMORIES_IMAGE:?Set a release image tag or digest}"
     user: "1000:1000"
     ports:
-      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:22830:8080"
     environment:
       IMMICH_URL: "${IMMICH_URL:?Use the Immich container alias on the internal network}"
       IMMICH_API_KEY: "${IMMICH_API_KEY:?Set your Immich API key}"

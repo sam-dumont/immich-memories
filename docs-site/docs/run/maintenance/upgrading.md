@@ -136,7 +136,18 @@ Keep that backup and manifest. Download the new release's Compose assets and set
 `IMMICH_MEMORIES_VERSION=X.Y.Z` in `.env`, without the `v` prefix. That one value selects matching
 app, inference and standalone worker images; the CUDA file adds the inference CUDA suffix.
 Keep your chosen `COMPOSE_FILE`, credentials and saved Settings. If you use a single-file export,
-regenerate it with the new version and preserve its private settings key. Then upgrade:
+regenerate it with the new version and preserve its private settings key.
+
+**Keep your existing host port when replacing or regenerating Compose files.** From 1.0.0-rc.10
+on, the release Compose files and the Unraid template publish host port **22830**; 1.0.0-rc.9 and
+earlier published **8080**. Copy your current `ports:` mapping into the new file before starting
+it, including the bind address. For example, an existing `127.0.0.1:8080:8080` can stay exactly
+that. The last number is the container port, which remains 8080. An image-only upgrade keeps the
+existing mapping, and an existing Unraid container keeps its **Extra Parameters**.
+
+If you choose to move an existing install to 22830, update browser bookmarks and any host-based
+reverse proxy, tunnel or firewall rule that names the old port. Proxies that connect directly
+to the app container still use 8080. Then upgrade:
 
 ```bash
 docker compose pull

@@ -77,6 +77,7 @@ export async function buildComponents(siteDir, version) {
     siteDir, version,
     deployment: await import(pathToFileURL(join(siteDir, 'src/components/deploymentModel.ts')).href),
     installation: await installationText(siteDir),
+    composeHostPort: (await import(pathToFileURL(join(siteDir, 'src/compose-port.ts')).href)).composeHostPort,
   });
 }
 

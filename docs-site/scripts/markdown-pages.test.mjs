@@ -104,6 +104,17 @@ test('the site\'s components render as their text; an unknown one points at the 
   assert.doesNotMatch(text.replace(/```[\s\S]*?```/g, ''), /<\/?[A-Z]/);
 });
 
+test('the Compose host port renders as text for the release being built', async () => {
+  const page = `import ComposePort from '@site/src/components/ComposePort';\n\n# Page\n\nThe mapping is <code>127.0.0.1:<ComposePort />:8080</code>. Open <ComposePort host="localhost" link /> or <code><ComposePort host="your-server" /></code>.\n`;
+  for (const [version, port] of [['v1.0.0-rc.9', 8080], ['v1.0.0-rc.10', 22830], ['development', 22830]]) {
+    const text = render(page, await buildComponents(siteDir, version));
+    assert.match(text, new RegExp(`\`127\\.0\\.0\\.1:${port}:8080\``), version);
+    assert.match(text, new RegExp(`<http://localhost:${port}>`), version);
+    assert.match(text, new RegExp(`\`http://your-server:${port}\``), version);
+    assert.doesNotMatch(text, /interactive/, version);
+  }
+});
+
 test('links are absolute in the track being built, and docs links go to Markdown', () => {
   const text = render('# Page\n\n[Docker](./docker.md#the-api-key), [builder](/setup), [credits](/demo/credits.txt), [index](pathname:///llms.txt), [Immich](https://immich.app), [below](#later)\n');
   assert.match(text, /\[Docker\]\(https:\/\/sam-dumont\.github\.io\/immich-memories\/next\/docs\/run\/docker\.md#the-api-key\)/);
