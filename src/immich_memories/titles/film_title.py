@@ -20,13 +20,23 @@ if TYPE_CHECKING:
 
     from immich_memories.config_loader import Config
     from immich_memories.timeperiod import DateRange
+    from immich_memories.titles.film_stories import FilmStories
 
 from immich_memories.i18n import resolve_film_locale
 from immich_memories.titles.title_source import TitleSource, override_source
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["holiday_title", "resolve_film_title", "template_title", "years_written"]
+__all__ = [
+    "film_hemisphere",
+    "holiday_title",
+    "resolve_film_title",
+    "template_title",
+    "years_written",
+]
+
+# The people a special day's title may name, when the run named none: the most present.
+_MOST_PEOPLE = 4
 
 
 def _descriptions(clips: list[Any]) -> list[str]:
@@ -49,6 +59,66 @@ def _album_of_the_cut(lookup: Callable[[], str | None] | None) -> str | None:
     except Exception:  # WHY: a title fact must not fail the whole run
         logger.debug("Album lookup failed; the title goes without it", exc_info=True)
         return None
+
+
+def _places_by_day(clips: list[Any]) -> list[str]:
+    """Where the cut's pictures were taken, one line per day: "2025-07-05: Ixelles, Belgium"."""
+    from immich_memories.analysis.place_names import shown_city
+
+    by_day: dict[str, dict[str, None]] = {}
+    for clip in clips:
+        if (asset := getattr(clip, "asset", None)) is None:
+            continue
+        exif = getattr(asset, "exif_info", None)
+        place = ", ".join(
+            part
+            for part in (shown_city(exif), getattr(exif, "country", None) if exif else None)
+            if part
+        )
+        if place:
+            day = asset.local_taken_at.date().isoformat()
+            by_day.setdefault(day, {})[place] = None
+    return [f"{day}: {' / '.join(places)}" for day, places in sorted(by_day.items())]
+
+
+def _people_in_pictures(clips: list[Any]) -> list[str]:
+    """The named people the cut's pictures show most, most present first."""
+    from collections import Counter
+
+    seen = Counter(
+        person.name
+        for clip in clips
+        for person in (getattr(getattr(clip, "asset", None), "people", None) or [])
+        if getattr(person, "name", "")
+    )
+    return [name for name, _count in seen.most_common(_MOST_PEOPLE)]
+
+
+def film_hemisphere(
+    config: Config, memory_type: str | None, preset_params: dict | None
+) -> str | None:
+    """The hemisphere that names this film's season: the one its window was built for.
+
+    A season run carries the hemisphere its dates came from; anything else reads the
+    home base. Without it a summer is titled by its months.
+    """
+    if memory_type == "season" and (hemisphere := (preset_params or {}).get("hemisphere")):
+        return str(hemisphere)
+    return config.trips.hemisphere
+
+
+def _period_title(
+    config: Config, memory_type: str | None, date_range: DateRange, preset_params: dict | None
+) -> str | None:
+    """A period film's title as the rules write it, which its model title must lead with."""
+    from immich_memories.titles.title_routing import PERIOD_MEMORY_TYPES
+
+    if (memory_type or "year") not in PERIOD_MEMORY_TYPES:
+        return None
+    return template_title(
+        config, memory_type=memory_type, date_range=date_range, person_name=None,
+        preset_params=preset_params,
+    )[0]  # fmt: skip
 
 
 def _place_and_kind_from_clips(clips: list[Any]) -> tuple[str, str] | None:
@@ -129,11 +199,15 @@ def _special_day_place_title(
     return _day_in_place_title(place_name, kind, locale), subtitle
 
 
-def _catalogue_fallback(
-    from_catalogue: bool, clips: list[Any], config: Config, date_range: DateRange
+def _special_day_fallback(
+    memory_type: str | None, clips: list[Any], config: Config, date_range: DateRange
 ) -> tuple[str, str] | None:
-    """The place-named fallback, only when the title in play is the catalogue's."""
-    if not from_catalogue:
+    """A special day named after its place when nothing else names it.
+
+    Catalogued or not: a day the scan never found is still one day somewhere, and the
+    month-and-year card ("July 2025") says nothing about it.
+    """
+    if memory_type != "special_day":
         return None
     return _special_day_place_title(clips, config, date_range)
 
@@ -174,6 +248,7 @@ def _model_suggested_title(
     memory_preset_params: dict | None,
     album_lookup: Callable[[], str | None] | None,
     subtitle_override: str | None,
+    stories: FilmStories | None,
 ) -> tuple[str | None, str | None, TitleSource | None]:
     """Ask the reader for a title; any failure falls back to the template layers."""
     from dataclasses import replace
@@ -183,7 +258,13 @@ def _model_suggested_title(
     display = (memory_preset_params or {}).get("person_display_names")
     if display is not None:
         person_names = [name for name in display.values() if name]
-    facts = memory_title_facts(memory_preset_params)
+    if not person_names and memory_type == "special_day":
+        person_names = _people_in_pictures(clips)
+    facts = replace(
+        memory_title_facts(memory_preset_params),
+        stories=stories,
+        period_title=_period_title(config, memory_type, date_range, memory_preset_params),
+    )
     if facts.album_name is None and memory_type != "album":
         facts = replace(facts, album_name=_album_of_the_cut(album_lookup))
 
@@ -198,6 +279,7 @@ def _model_suggested_title(
             start_date=str(start),
             end_date=str(end),
             duration_days=(end - start).days,
+            daily_locations=_places_by_day(clips) or None,
             person_names=person_names or None,
             clip_descriptions=_descriptions(clips) or None,
             facts=facts,
@@ -245,6 +327,7 @@ def resolve_film_title(
     person_names: list[str],
     memory_preset_params: dict | None = None,
     album_lookup: Callable[[], str | None] | None = None,
+    stories: FilmStories | None = None,
     ask: Callable[..., Any] = _ask_the_llm,
 ) -> tuple[str | None, str | None, TitleSource | None]:
     """Return the (title, subtitle, source) the run should use.
@@ -252,7 +335,8 @@ def resolve_film_title(
     Owns the whole precedence so the caller gains no branches: an explicit
     title wins, then the model's, then the template (signalled by ``None``,
     with no source: the template layers name it later). The subtitle falls
-    back to ``subtitle_override`` on every path.
+    back to ``subtitle_override`` on every path. ``stories`` are the cut's own,
+    read from its plan: what the model may name the film, or its subtitle, after.
 
     A special day's catalogue title travels through this same ``title_override``
     slot (see ``title_source.override_source``), but it is an English fact
@@ -263,7 +347,6 @@ def resolve_film_title(
     """
     locale = resolve_film_locale(config.title_screens.locale if config.title_screens else "en")
 
-    from_catalogue = False
     if title_override:
         override_result = _title_override_result(
             title_override,
@@ -274,7 +357,6 @@ def resolve_film_title(
         )
         if override_result is not None:
             return override_result
-        from_catalogue = True
         if subtitle_override == (memory_preset_params or {}).get("subtitle"):
             subtitle_override = None
 
@@ -284,7 +366,7 @@ def resolve_film_title(
         memory_type=memory_type,
         configured=bool(llm_config.enabled and llm_config.model),
     ):
-        if fallback := _catalogue_fallback(from_catalogue, clips, config, date_range):
+        if fallback := _special_day_fallback(memory_type, clips, config, date_range):
             return fallback[0], fallback[1], TitleSource.FALLBACK
         return None, subtitle_override, None
 
@@ -299,9 +381,10 @@ def resolve_film_title(
         memory_preset_params=memory_preset_params,
         album_lookup=album_lookup,
         subtitle_override=subtitle_override,
+        stories=stories,
     )
     if model_result[0] is None and (
-        fallback := _catalogue_fallback(from_catalogue, clips, config, date_range)
+        fallback := _special_day_fallback(memory_type, clips, config, date_range)
     ):
         return fallback[0], fallback[1], TitleSource.FALLBACK
     return model_result
@@ -400,15 +483,15 @@ def template_title(
     )
     if birthday := birthday_title(params, memory_type, date_range.end, name, locale):
         return birthday
-    selection = infer_selection_type(
-        start_date=date_range.start, end_date=date_range.end, memory_type=memory_type
-    )
+    # Calendar days, not instants: a season is recognised by its first and last day.
+    start, end = date_range.start.date(), date_range.end.date()
+    selection = infer_selection_type(start_date=start, end_date=end, memory_type=memory_type)
     info = generate_title(
         selection,
-        start_date=date_range.start,
-        end_date=date_range.end,
+        start_date=start,
+        end_date=end,
         person_name=name,
         locale=locale,
-        hemisphere=config.trips.hemisphere,
+        hemisphere=film_hemisphere(config, memory_type, params),
     )
     return info.main_title, info.subtitle or None

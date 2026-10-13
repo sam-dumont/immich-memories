@@ -20,7 +20,7 @@ from difflib import SequenceMatcher
 from functools import lru_cache
 
 from immich_memories.titles.relationship_words import name_words
-from immich_memories.titles.title_routing import is_trip
+from immich_memories.titles.title_routing import PERIOD_MEMORY_TYPES, is_trip
 from immich_memories.titles.title_suggestion import TitleSuggestion
 
 logger = logging.getLogger(__name__)
@@ -592,6 +592,10 @@ def refusing_contentless_title(
     """
     if suggestion is None:
         return suggestion
+    if memory_type in PERIOD_MEMORY_TYPES:
+        # A period film's title is the period (`leading_with_the_period`): what the model
+        # adds is its subtitle, and with none the rules title says the same thing plainer.
+        return suggestion if suggestion.subtitle else None
     if _is_album_copy_shape(suggestion.title):
         logger.info(
             "Title %r is the album-copy shape, not a crafted title; "
