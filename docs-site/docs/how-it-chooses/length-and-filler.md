@@ -17,6 +17,6 @@ immich-memories generate --year 2024 --month 6 --duration 60
 
 For a longer result, choose a wider period or [add pictures in the review](./overrule-it.md). A saved edit can grow the film to fit what you keep.
 
-If the period has pictures but nothing suitable, the run can finish successfully with **Nothing worth a film** and produce no video. A film with one usable shot is still a film. **On this day** needs usable material from at least two years because its point is the comparison.
+If the period has pictures but nothing suitable, the run can finish successfully with **Nothing worth a film** and produce no video. A film with one usable shot is still a film. **On this day** needs usable material from at least two years because its point is the comparison, unless `--years-back 1` asked for one. When it declines, it says how many of the years held pictures.
 
 Default lengths are on [Film lengths](../reference/film-types.mdx#how-long-a-film-runs). Shot holds, timing trims and filler rules are in the [length reference](../reference/selection-internals/length-and-filler.md).

@@ -204,6 +204,8 @@ features:
     covers: ["memory-type:on_this_day", "cli:generate --day", "cli:generate --years-back"]
     tests:
       - tests/integration/immich_gate/test_generate_rules.py::test_on_this_day_looks_back_to_the_same_day_a_year_earlier
+      - tests/integration/features/test_real_editor_films.py::test_on_this_day_one_year_back_renders_the_cut_the_editor_made
+      - tests/integration/features/test_real_editor_films.py::test_on_this_day_with_one_year_of_two_holding_pictures_says_why_it_made_no_film
   - id: memory-type.holiday
     promise: "A holiday film reads one window per year around the named holiday or MM-DD, across the years asked for."
     doc: reference/film-types.mdx#holiday
