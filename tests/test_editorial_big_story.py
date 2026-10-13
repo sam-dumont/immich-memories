@@ -11,6 +11,7 @@ from datetime import date, datetime, timedelta
 from types import SimpleNamespace
 
 from immich_memories.analysis.editorial_rule_reader import RuleStructureReader
+from immich_memories.config_models_automation import TripsConfig
 from immich_memories.config_models_editorial import EditorialPeopleConfig
 from tests.editorial_subject_family import film_of, her_parents, subject_people
 from tests.picture_fake import PictureFake
@@ -63,7 +64,7 @@ def _read_month(*, family_line=FAMILY, film=None):
         annotations=annotations,
         audience_annotations={},
         config=SimpleNamespace(
-            trips=SimpleNamespace(homebase_latitude=0.0, homebase_longitude=0.0),
+            trips=TripsConfig(homebase_latitude=0.0, homebase_longitude=0.0),
             editorial=SimpleNamespace(people=EditorialPeopleConfig()),
         ),
         intent=SimpleNamespace(product="monthly_highlights"),

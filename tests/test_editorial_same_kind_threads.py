@@ -14,6 +14,7 @@ from types import SimpleNamespace
 from immich_memories.analysis.editorial_rule_reader import RuleStructureReader
 from immich_memories.analysis.editorial_story_planner import funding_order
 from immich_memories.analysis.editorial_story_slots import allocate_slots
+from immich_memories.config_models_automation import TripsConfig
 from immich_memories.config_models_editorial import EditorialPeopleConfig
 from tests.e2e.fake_library import HOME as FIXTURE_HOME
 from tests.e2e.fake_library import LIBRARY
@@ -125,7 +126,7 @@ def _read(month, *, gps=True, family_days=()):
         },
         audience_annotations=audience,
         config=SimpleNamespace(
-            trips=SimpleNamespace(homebase_latitude=HOME[0], homebase_longitude=HOME[1]),
+            trips=TripsConfig(homebase_latitude=HOME[0], homebase_longitude=HOME[1]),
             editorial=SimpleNamespace(people=EditorialPeopleConfig()),
         ),
         intent=SimpleNamespace(
@@ -253,7 +254,7 @@ def test_the_public_fixture_month_folds_nothing():
         annotations={},
         audience_annotations=audience,
         config=SimpleNamespace(
-            trips=SimpleNamespace(
+            trips=TripsConfig(
                 homebase_latitude=FIXTURE_HOME.latitude, homebase_longitude=FIXTURE_HOME.longitude
             ),
             editorial=SimpleNamespace(people=EditorialPeopleConfig()),

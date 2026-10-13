@@ -6,6 +6,7 @@ from datetime import date, datetime, timedelta
 from types import SimpleNamespace
 
 from immich_memories.analysis.editorial_rule_reader import RuleStructureReader
+from immich_memories.config_models_automation import TripsConfig
 from immich_memories.config_models_editorial import EditorialPeopleConfig
 from tests.picture_fake import PictureFake
 
@@ -40,7 +41,7 @@ def _read_trip(days: dict[int, tuple[float, float]]) -> list[list[int]]:
         annotations=annotations,
         audience_annotations={},
         config=SimpleNamespace(
-            trips=SimpleNamespace(homebase_latitude=HOME[0], homebase_longitude=HOME[1]),
+            trips=TripsConfig(homebase_latitude=HOME[0], homebase_longitude=HOME[1]),
             editorial=SimpleNamespace(people=EditorialPeopleConfig()),
         ),
         intent=SimpleNamespace(product="trip"),

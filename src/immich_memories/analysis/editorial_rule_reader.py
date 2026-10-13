@@ -12,6 +12,7 @@ from typing import Any
 import numpy as np
 
 from immich_memories.analysis.editorial_clip_frames import CLIP_FRAMES_HEAD, SUBJECT_OFTEN_MISSING
+from immich_memories.analysis.editorial_event_families import _km
 from immich_memories.analysis.editorial_event_story import (
     EpisodeShape,
     PrintedNear,
@@ -19,8 +20,19 @@ from immich_memories.analysis.editorial_event_story import (
     split_events,
 )
 from immich_memories.analysis.editorial_home_radius import home_of, near_home_of
+from immich_memories.analysis.editorial_occasions import (
+    OCCASION_MIN_PICTURES,
+    Occasion,
+    find_occasions,
+)
 from immich_memories.analysis.editorial_rule_episodes import RULES_VERSION
 from immich_memories.analysis.editorial_rule_quality import quality_facts, quality_key
+from immich_memories.analysis.editorial_rule_story_names import (
+    StoryFacts,
+    name_stories,
+    raise_kept_days,
+    take_out_occasions,
+)
 from immich_memories.analysis.editorial_same_kind import EpisodeKind, same_kind_threads
 from immich_memories.analysis.editorial_shareability import (
     SHAREABLE,
@@ -33,6 +45,7 @@ from immich_memories.analysis.editorial_standing_facts import (
     face_evidence,
     shows_only_a_body_part,
 )
+from immich_memories.analysis.editorial_story_names import day_label
 from immich_memories.analysis.editorial_story_reading import (
     PeriodStory,
     StoryEpisode,
@@ -41,6 +54,7 @@ from immich_memories.analysis.editorial_story_reading import (
 from immich_memories.analysis.editorial_story_replies import (
     WEIGHT_ROLE,
     film_close_family,
+    people_on,
     relations_on,
 )
 from immich_memories.analysis.editorial_story_shortlist import spread_evenly
@@ -53,6 +67,7 @@ from immich_memories.analysis.editorial_story_weighing import (
 from immich_memories.analysis.editorial_structure_budget import NOMINAL_STILL_SECONDS
 from immich_memories.analysis.place_names import shown_city
 from immich_memories.analysis.trip_legs import legs_of_days
+from immich_memories.people.relationships import is_close_family
 
 # The place labels of the shipped head bundle the standing rule reads. A picture is in a
 # private or utility interior, or in a public place; every other venue label says nothing.
@@ -95,6 +110,7 @@ class RuleStructureReader:
         *,
         printed: PrintedNear | None = None,
         promote_sparse_quality: bool = True,
+        album_names: Callable[[Sequence[str]], tuple[str, ...]] | None = None,
     ) -> None:
         self.source = source
         self._face: Callable[[str], bool | None] | None = None
@@ -103,6 +119,9 @@ class RuleStructureReader:
         # False for the draft a thin model layer polishes (#2048 review, point C): the
         # owner's ruling is BASIC-only, and the model tier may still read a bare week itself.
         self._promote_sparse_quality_enabled = promote_sparse_quality
+        # What the owner's albums call a set of pictures (the run's album index), so a trip is
+        # named the way its owner named it; None where the run cannot reach the albums.
+        self._album_names = album_names
 
     def _day_threshold(self) -> float:
         """A day at least this dense is an occasion by its capture count alone."""
@@ -184,14 +203,10 @@ class RuleStructureReader:
 
     def _title(self, members) -> str:
         # The title is read by a viewer: the shown place, not the city the usual-city vote uses.
+        # Never the activity head's label: it describes a frame, not a happening (#2486).
         cities = Counter(shown for a in members if (shown := shown_city(a.exif_info)))
         city = cities.most_common(1)[0][0] if cities else ""
-        activity = self._activity(members)
-        return (
-            f"{activity} at {city}"
-            if activity and city
-            else city or activity or f"{members[0].local_taken_at:%Y-%m-%d}"
-        )
+        return city or day_label(members[0].local_taken_at.date().isoformat())
 
     def _day_chunks(self):
         groups = []
@@ -389,6 +404,14 @@ class RuleStructureReader:
         hints = enrich(episodes)
         stories = self._stories(episodes, hints)
         by_key = {e.key: e for e in episodes}
+        away = lambda story: any(self._away_from_home(by_key[k]) for k in story["episodes"])  # noqa: E731
+        occasions = take_out_occasions(
+            stories,
+            self._occasions(),
+            day_of={key: str(hint["day"]) for key, hint in hints.items()},
+            hints=hints,
+            away=away,
+        )
         self._big_stories(stories, episodes)
         events = split_events(
             stories,
@@ -415,6 +438,14 @@ class RuleStructureReader:
             threshold=self._day_threshold(),
             away=lambda story: any(self._away_from_home(by_key[k]) for k in story["episodes"]),
         )
+        trips = self.source.config.trips
+        name_stories(
+            stories,
+            facts_of=lambda story: self._story_facts(story, by_key),
+            away=away,
+            trip_rule=(trips.min_distance_km, trips.min_duration_days),
+        )
+        raised = raise_kept_days(stories)
         for story in stories:
             for key in story["episodes"]:
                 by_key[key].role = WEIGHT_ROLE[story["weight"]]
@@ -425,6 +456,8 @@ class RuleStructureReader:
             "big_stories": big,
             "same_kind": kinds,
             "events": events,
+            "occasions": occasions,
+            "occasion_weights": raised,
         }
         # Absent, not empty, when the mechanism never engaged: a below-threshold or FULL
         # plan stays byte-identical to one built before #2048 existed.
@@ -433,6 +466,65 @@ class RuleStructureReader:
         result = PeriodStory("", episodes, [], [], [], meta, stories)
         record(result.as_record())
         return result
+
+    def _occasions(self) -> dict[str, Occasion]:
+        """The days the household keeps, from the people each picture names (#2486)."""
+        day_people: dict[str, Counter[str]] = {}
+        relation_of: dict[str, str] = {}
+        for asset_id, asset in self.source.assets.items():
+            named = people_on(self.source.annotations.get(asset_id, ""))
+            if not named:
+                continue
+            counts = day_people.setdefault(asset.local_taken_at.date().isoformat(), Counter())
+            for name, relation in named.items():
+                counts[name] += 1
+                relation_of.setdefault(name, relation)
+        people = self.source.people
+        births = {fact.name: fact.birth_date for fact in people.values()} if people else {}
+        close = frozenset(name for name, rel in relation_of.items() if is_close_family(rel))
+        return find_occasions(
+            day_people, relation_of=relation_of, birth_dates=births, close_family=close
+        )
+
+    def _story_facts(self, story, by_key) -> StoryFacts:
+        """What a story's pictures say: its days, places, people, album and farthest place."""
+        members = sorted(
+            (self.source.assets[a] for a in self._story_members(story, by_key)),
+            key=lambda a: a.local_taken_at,
+        )
+        named = Counter(
+            name for a in members for name in people_on(self.source.annotations.get(a.id, ""))
+        )
+        farthest, reach = self._farthest_place(members)
+        return StoryFacts(
+            days=tuple(sorted({a.local_taken_at.date().isoformat() for a in members})),
+            places=tuple(dict.fromkeys(c for a in members if (c := shown_city(a.exif_info)))),
+            people=tuple(n for n, count in named.most_common() if count >= OCCASION_MIN_PICTURES),
+            album=self._album_holding_most(members),
+            farthest=farthest,
+            reach_km=reach,
+        )
+
+    def _album_holding_most(self, members) -> str | None:
+        """The album holding at least half of these pictures: what the owner called them."""
+        if self._album_names is None:
+            return None
+        held = Counter(name for a in members for name in self._album_names([a.id]))
+        name, count = held.most_common(1)[0] if held else (None, 0)
+        return name if members and count * 2 >= len(members) else None
+
+    def _farthest_place(self, members) -> tuple[str | None, float | None]:
+        """The town farthest from home among these pictures, and how far it is."""
+        home = home_of(self.source.config.trips)
+        placed = [
+            (point, city)
+            for a in members
+            if (point := self.source.gps.get(a.id)) and (city := shown_city(a.exif_info))
+        ]
+        if home is None or not placed:
+            return None, None
+        point, city = max(placed, key=lambda row: _km(home, row[0]))
+        return city, _km(home, point)
 
     def _at_home(self, story, by_key) -> bool:
         return not any(self._away_from_home(by_key[k]) for k in story["episodes"])

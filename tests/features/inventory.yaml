@@ -1419,6 +1419,11 @@ features:
       - tests/integration/features/test_real_editor_films.py::test_a_year_through_the_real_editor_keeps_its_rules_and_its_minute
       - tests/integration/features/test_real_editor_films.py::test_a_trip_through_the_real_editor_films_the_time_away_by_its_rules
       - tests/integration/features/test_real_editor_films.py::test_a_person_film_through_the_real_editor_shows_them_on_every_picture
+  - id: selection.story-names
+    promise: "A birthday or a family visit is a story of its own, and every story is named from its facts: the occasion, the trip's album or farthest place, a day out by place and date, days at home by their span."
+    doc: how-it-chooses/moments-and-stories.md#what-a-story-is-called
+    tests:
+      - tests/integration/features/test_real_editor_stories.py::test_a_month_through_the_real_editor_names_its_occasions_and_its_trip
   - id: selection.local-time-dates
     promise: "A picture's day, month and year come from its local capture time, not UTC."
     doc: reference/film-types.mdx#film-types-and-length-rules
