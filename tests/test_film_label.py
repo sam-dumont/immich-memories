@@ -99,3 +99,42 @@ def test_a_name_that_is_only_slashes_is_dropped():
     assert not [
         t for t in label(episodes=[{"title": "//", "occasion": "visit"}]).tags if "story" in t
     ]
+
+
+# A person film's plan, as the planner writes it: `chosen` holds the shots a story put in the
+# cut, `days` its first and last day. Its window runs five birthdays back.
+SHOWN_2022 = {
+    "title": "Kit's birthday",
+    "occasion": "birthday",
+    "chosen": ["M1"],
+    "days": ["2022-08-30", "2022-08-30"],
+}
+SHOWN_2025 = {
+    "title": "A day at home",
+    "occasion": None,
+    "chosen": ["M2", "M3"],
+    "days": ["2025-12-31", "2026-01-01"],
+}
+LEFT_OUT_2024 = {
+    "title": "Lou and Pat's visit",
+    "occasion": "visit",
+    "chosen": [],
+    "days": ["2024-05-04", "2024-05-04"],
+}
+
+
+def test_years_are_the_years_the_films_shots_show_not_its_whole_window():
+    # WHY: a birthday film over 2021-2026 was tagged 2021 and 2024, which it never shows.
+    tags = label(
+        date_start=date(2021, 8, 29),
+        date_end=date(2026, 8, 30),
+        episodes=[SHOWN_2022, SHOWN_2025, LEFT_OUT_2024],
+    ).tags
+    assert [t for t in tags if "/year/" in t] == [
+        f"immich-memories/year/{year}" for year in (2022, 2025, 2026)
+    ]
+
+
+def test_a_story_the_cut_left_out_gets_no_tag():
+    tags = label(episodes=[SHOWN_2022, LEFT_OUT_2024]).tags
+    assert [t for t in tags if "/story/" in t] == ["immich-memories/story/Kit's birthday"]

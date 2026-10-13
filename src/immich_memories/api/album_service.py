@@ -43,6 +43,9 @@ logger = logging.getLogger(__name__)
 _POLL_SECONDS = 0.5
 _READ_WAIT_POLLS = 120
 _TAG_ATTEMPTS = 3
+# Reads with the asset unchanged before Immich counts as done rewriting it: each tag or
+# description write makes it write the film's sidecar and read it back.
+_SETTLE_POLLS = 4
 # The key right that lets the app write a film's description.
 DESCRIBE = "asset.update"
 
@@ -457,7 +460,7 @@ class AlbumService:
             logger.warning("Immich had not read the uploaded film yet; tagging it anyway")
         for _ in range(_TAG_ATTEMPTS):
             await self.tag_as_generated(asset_id)
-            await asyncio.sleep(_POLL_SECONDS)
+            await self._settled(asset_id)
             if await self._carries_generated_tag(asset_id):
                 return True
         logger.warning("The provenance tag did not stay on the uploaded film")
@@ -487,13 +490,16 @@ class AlbumService:
             logger.warning("Immich had not read the uploaded film yet; describing it anyway")
         missing = [name for name, needed in wanted.items() if needed]
         for _ in range(_TAG_ATTEMPTS):
+            # One write at a time, each left to settle: Immich rewrites the film's sidecar per
+            # write, and two rewrites that overlap lose one of them.
             if wanted["tags"]:
                 await self._put_tags(asset_id, label.tags)
+                await self._settled(asset_id)
             if wanted["description"]:
                 await self._request(
                     "PUT", f"/assets/{asset_id}", json={"description": label.description}
                 )
-            await asyncio.sleep(_POLL_SECONDS)
+                await self._settled(asset_id)
             missing = await self._label_not_kept(asset_id, label, wanted)
             if not missing:
                 return []
@@ -502,8 +508,25 @@ class AlbumService:
     async def _put_tags(self, asset_id: str, values: Sequence[str]) -> None:
         tags = await self._request("PUT", "/tags", json={"tags": list(values)})
         ids = [tag["id"] for tag in tags if isinstance(tag, dict) and tag.get("value") in values]
-        for tag_id in ids:
-            await self._request("PUT", f"/tags/{tag_id}/assets", json={"ids": [asset_id]})
+        if ids:
+            # Every tag in one write: one per tag made Immich rewrite the sidecar per tag, and
+            # the rewrites collided (#2505 on a real server: the story tag was lost).
+            await self._request("PUT", "/tags/assets", json={"tagIds": ids, "assetIds": [asset_id]})
+
+    async def _settled(self, asset_id: str) -> None:
+        """Wait until Immich has stopped rewriting the asset, a minute at most.
+
+        A check made sooner passes, then the sidecar read-back that lands after it takes back
+        what was just written.
+        """
+        last, unchanged = None, 0
+        for _ in range(_READ_WAIT_POLLS):
+            stamp = (await self._request("GET", f"/assets/{asset_id}") or {}).get("updatedAt")
+            unchanged = unchanged + 1 if stamp == last else 0
+            if unchanged >= _SETTLE_POLLS:
+                return
+            last = stamp
+            await asyncio.sleep(_POLL_SECONDS)
 
     async def _label_not_kept(
         self, asset_id: str, label: FilmLabel, wanted: dict[str, bool]

@@ -218,6 +218,85 @@ def test_the_full_prompt_is_fed_the_stories_their_days_people_occasions_and_the_
 
 
 @pytest.mark.parametrize(
+    ("locale", "quoted"),
+    [("en", "“Kit's birthday”"), ("fr", "« Kit's birthday »"), ("de", "„Kit's birthday“")],
+    ids=["en", "fr", "de"],
+)
+def test_story_names_the_model_quotes_keep_the_summary_in_the_films_quotation_marks(locale, quoted):
+    # WHY: asked to name the stories, the model quotes them; a straight quote voided every such
+    # summary and the film fell back to its story names (seen on a cluster birthday film).
+    judge = ScriptedJudge(_reply('July was "Kit\'s birthday" and the road north.'))
+
+    summary = read_summary(judge, demo_stories(), scope="a month film, 2025-07", locale=locale)
+
+    assert summary == f"July was {quoted} and the road north."
+
+
+def _home_weeks() -> list[dict]:
+    weeks = [("S1", "2026-09-02", "2026-09-06"), ("S2", "2026-09-07", "2026-09-13")]
+    return [
+        {
+            **_story(
+                key,
+                home_name([first, last], [], "en")[0],
+                "major",
+                days=[first, last],
+                people=["Kit"],
+                places=["Jette"],
+            ),
+            "at_home": True,
+        }
+        for key, first, last in weeks
+    ]
+
+
+def test_weeks_at_home_one_after_another_reach_the_model_as_one_story():
+    # WHY: fed five "Days at home" weeks, the model listed all five, twice over.
+    judge = ScriptedJudge(_reply("September was days at home with Kit."))
+
+    read_summary(judge, _home_weeks(), scope="a month film, 2026-09", locale="en")
+
+    cards = [json.loads(line) for line in judge.prompts[0].split("STORIES\n", 1)[1].splitlines()]
+    assert [card["name"] for card in cards] == ["Days at home, 2–13 September"]
+    assert cards[0]["days"] == ["2026-09-02", "2026-09-13"]
+    assert cards[0]["people"] == ["Kit"]
+
+
+def test_the_model_is_asked_to_name_each_story_once_unquoted():
+    judge = ScriptedJudge(_reply(FULL_REPLY))
+
+    read_summary(judge, demo_stories(), scope="a month film, 2025-07", locale="en")
+
+    assert "Name a story at most once" in judge.prompts[0]
+    assert "without quotation marks" in judge.prompts[0]
+
+
+def test_a_summary_naming_one_story_twice_is_refused():
+    name = BIRTHDAY.title
+    judge = ScriptedJudge(_reply(f"July was {name} and the road north; {name} mattered most."))
+
+    with pytest.raises(ValueError, match="summary"):
+        read_summary(judge, demo_stories(), scope="a month film, 2025-07", locale="en")
+
+
+def test_a_story_named_inside_a_longer_name_is_not_a_repeat():
+    stories = [
+        _story("S1", "Oslo", "major", days=["2025-07-01"] * 2),
+        _story("S2", "Oslo to Tromso", "major", days=["2025-07-02"] * 2),
+    ]
+    judge = ScriptedJudge(_reply("July began in Oslo, then Oslo to Tromso was the drive."))
+
+    assert read_summary(judge, stories, scope="a month film, 2025-07", locale="en")
+
+
+def test_an_unpaired_quote_still_voids_the_summary():
+    judge = ScriptedJudge(_reply("July was \"Kit's birthday and the road north."))
+
+    with pytest.raises(ValueError, match="summary"):
+        read_summary(judge, demo_stories(), scope="a month film, 2025-07", locale="en")
+
+
+@pytest.mark.parametrize(
     "reply",
     ["not json", json.dumps({"summary": ""}), json.dumps({"summary": "word " * 400})],
 )

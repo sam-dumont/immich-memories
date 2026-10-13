@@ -57,6 +57,7 @@ ENDPOINTS: tuple[tuple[str, str], ...] = (
     ("GET", "/stacks"),
     ("GET", "/tags"),
     ("PUT", "/tags"),
+    ("PUT", "/tags/assets"),
     ("PUT", "/tags/{id}/assets"),
     ("GET", "/timeline/bucket"),
     ("GET", "/timeline/buckets"),

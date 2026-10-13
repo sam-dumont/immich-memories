@@ -1099,6 +1099,28 @@
    "path": {},
    "query": {}
   },
+  "PUT /tags/assets": {
+   "body": {
+    "assetIds": {
+     "items": {
+      "format": "uuid",
+      "type": "string"
+     },
+     "required": true,
+     "type": "array"
+    },
+    "tagIds": {
+     "items": {
+      "format": "uuid",
+      "type": "string"
+     },
+     "required": true,
+     "type": "array"
+    }
+   },
+   "path": {},
+   "query": {}
+  },
   "PUT /tags/{id}/assets": {
    "body": {
     "ids": {
@@ -6228,6 +6250,30 @@
    "body": {
     "tags": {
      "items": {
+      "type": "string"
+     },
+     "required": true,
+     "type": "array"
+    }
+   },
+   "path": {},
+   "query": {}
+  },
+  "PUT /tags/assets": {
+   "body": {
+    "assetIds": {
+     "items": {
+      "format": "uuid",
+      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
+      "type": "string"
+     },
+     "required": true,
+     "type": "array"
+    },
+    "tagIds": {
+     "items": {
+      "format": "uuid",
+      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
       "type": "string"
      },
      "required": true,
@@ -11433,6 +11479,30 @@
    "body": {
     "tags": {
      "items": {
+      "type": "string"
+     },
+     "required": true,
+     "type": "array"
+    }
+   },
+   "path": {},
+   "query": {}
+  },
+  "PUT /tags/assets": {
+   "body": {
+    "assetIds": {
+     "items": {
+      "format": "uuid",
+      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
+      "type": "string"
+     },
+     "required": true,
+     "type": "array"
+    },
+    "tagIds": {
+     "items": {
+      "format": "uuid",
+      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
       "type": "string"
      },
      "required": true,

@@ -8,7 +8,7 @@ named occasions or trips in its plan. People get no tag: Immich's faces already 
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date
 from typing import Any
@@ -43,6 +43,34 @@ def _years(start: date | None, end: date | None) -> range:
     return range(first.year, last.year + 1) if first and last else range(0)
 
 
+def _day(value: Any) -> date | None:
+    try:
+        return date.fromisoformat(str(value)[:10])
+    except ValueError:
+        return None
+
+
+def _in_the_cut(episodes: Iterable[Mapping[str, Any]]) -> list[Mapping[str, Any]]:
+    """The episodes that put a shot in the film. A plan that never says (no `chosen`) shows all."""
+    return [e for e in episodes if "chosen" not in e or e.get("chosen")]
+
+
+def years_shown(
+    episodes: Sequence[Mapping[str, Any]], start: date | None, end: date | None
+) -> list[int]:
+    """The years the stories with a shot in the film show; its window when none names a day.
+
+    A person film's window runs five birthdays back, and the years it has no picture of are
+    not years it is about.
+    """
+    years: set[int] = set()
+    for episode in _in_the_cut(episodes):
+        days = [d for d in map(_day, episode.get("days") or ()) if d]
+        if days:
+            years.update(_years(days[0], days[-1]))
+    return sorted(years) or list(_years(start, end))
+
+
 def _story_names(episodes: Iterable[Mapping[str, Any]]) -> list[str]:
     names = []
     for episode in episodes:
@@ -69,11 +97,13 @@ def film_label(
 
     `episodes` are the plan's `story.episodes`; `summary` is its `story.thesis`.
     """
+    episodes = list(episodes)
+    shown = _in_the_cut(episodes)
     tags = []
     if kind := _name(type_label):
         tags.append(f"{TAG_ROOT}/type/{kind}")
-    tags += [f"{TAG_ROOT}/year/{year}" for year in _years(date_start, date_end)]
-    tags += [f"{TAG_ROOT}/story/{name}" for name in _story_names(episodes)]
+    tags += [f"{TAG_ROOT}/year/{year}" for year in years_shown(episodes, date_start, date_end)]
+    tags += [f"{TAG_ROOT}/story/{name}" for name in _story_names(shown)]
     return FilmLabel(
         description=_description(
             " ".join((title or "").split()), " ".join((summary or "").split())

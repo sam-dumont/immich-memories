@@ -118,6 +118,9 @@ msgstr "{place} · Dzień"
 msgid "summary.then"
 msgstr "{earlier}, potem {later}"
 
+msgid "summary.quoted"
+msgstr "„{name}”"
+
 # Story names (#2486): what the rules call a day, a stay, a trip or an occasion.
 msgid "story.weekday_date"
 msgstr "{weekday}, {date}"

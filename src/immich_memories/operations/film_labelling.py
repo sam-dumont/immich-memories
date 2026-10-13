@@ -16,7 +16,7 @@ from datetime import date, datetime, time
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from immich_memories.api.film_label import FilmLabel, film_label
+from immich_memories.api.film_label import FilmLabel, film_label, years_shown
 from immich_memories.operations.storyboard import PLAN_FILE
 
 if TYPE_CHECKING:
@@ -68,27 +68,42 @@ def _title_of_the_cut(
     end: date | None,
     person_name: str | None,
     preset_params: Mapping[str, Any] | None,
+    years: list[int],
 ) -> str | None:
-    """The title the film opens on: the one given, the one the cut kept, else the template's."""
+    """The title screen the film opens on: the title given, the one the cut kept with its
+    subtitle, else the template's. A birthday's template title is only the year; its
+    subtitle says whose birthday it is."""
     from immich_memories.processing.render_inputs import read_cut_titles
 
     kept = read_cut_titles(attempt_dir) if attempt_dir is not None else None
-    if title or (kept and kept.title):
-        return title or (kept.title if kept else None)
+    if title:
+        return title
+    if kept and kept.title:
+        return _screen(kept.title, kept.subtitle)
     if start is None or end is None:
         return None
     from immich_memories.timeperiod import DateRange
     from immich_memories.titles.film_title import template_title
 
     params = dict(preset_params or (kept.preset_params if kept else {}))
-    return template_title(
-        config,
-        memory_type=memory_type,
-        date_range=DateRange(datetime.combine(start, time.min), datetime.combine(end, time.min)),
-        person_name=person_name,
-        preset_params=params,
-        years=range(start.year, end.year + 1),
-    )[0]
+    return _screen(
+        *template_title(
+            config,
+            memory_type=memory_type,
+            date_range=DateRange(
+                datetime.combine(start, time.min), datetime.combine(end, time.min)
+            ),
+            person_name=person_name,
+            preset_params=params,
+            years=years,
+        )
+    )
+
+
+def _screen(title: str, subtitle: str | None) -> str:
+    from immich_memories.api.film_label import DESCRIPTION_SEPARATOR
+
+    return DESCRIPTION_SEPARATOR.join(part for part in (title, subtitle) if part)
 
 
 def label_for_cut(
@@ -106,6 +121,7 @@ def label_for_cut(
     start, end = _as_date(date_start), _as_date(date_end)
     try:
         story = _read_plan_story(attempt_dir)
+        episodes = [e for e in story.get("episodes") or () if isinstance(e, Mapping)]
         label = film_label(
             title=_title_of_the_cut(
                 config,
@@ -116,12 +132,14 @@ def label_for_cut(
                 end=end,
                 person_name=person_name,
                 preset_params=preset_params,
+                # The years the cut shows, as the title screen read them: a holiday's span.
+                years=years_shown(episodes, start, end),
             ),
             summary=str(story.get("thesis") or ""),
             type_label=memory_type_label(memory_type),
             date_start=start,
             date_end=end,
-            episodes=[e for e in story.get("episodes") or () if isinstance(e, Mapping)],
+            episodes=episodes,
         )
         # The type, year and story tags are opt-in (`upload.film_tags`); the description is not.
         return label if config.upload.film_tags else replace(label, tags=())

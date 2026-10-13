@@ -47,11 +47,11 @@ With delivery enabled:
 
 1. Upload the finished film as a new asset.
 2. Tag it `immich-memories/generated`, so it is not selected as source footage later.
-3. Describe it: the description is the film's title and its one-line story summary, for example
-   `July 2025 · Kit's birthday, then Lou and Pat's visit, then The road north`. With
+3. Describe it: the description is the film's title and subtitle, then its story summary, for
+   example `July 2025 · Kit's birthday, then Lou and Pat's visit, then The road north`. With
    `upload.film_tags: true`, also tag it `immich-memories/type/<film type>`,
-   `immich-memories/year/<year>` for each year it covers and `immich-memories/story/<name>` for
-   each birthday, visit or trip in it. People get no tag; Immich's faces already say who is in a
+   `immich-memories/year/<year>` for each year its pictures come from and
+   `immich-memories/story/<name>` for each birthday, visit or trip it shows. People get no tag; Immich's faces already say who is in a
    film. Only new uploads and re-renders get these.
 4. Add it to the configured album (create the album if needed).
 5. Move a recognised previous render of the same recipe to trash, if the API key permits it.

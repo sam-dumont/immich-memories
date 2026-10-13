@@ -970,10 +970,11 @@ upload:
   film_tags: false               # Tag each film with its type, years and stories
 ```
 
-Each uploaded film gets a description in Immich: its title and its one-line story summary. With
-`film_tags: true` it is also tagged under `immich-memories/`: `type/` (Monthly highlights, Trip,
-...), `year/` for each year it covers, and `story/` for each birthday, visit or trip in it, so you
-can find every trip film or every film of a year from Immich's tag list. The
+Each uploaded film gets a description in Immich: its title and subtitle, then its story summary.
+With `film_tags: true` it is also tagged under `immich-memories/`: `type/` (Monthly highlights,
+Trip, ...), `year/` for each year its pictures come from, and `story/` for each birthday, visit or
+trip it shows, so you can find every trip film or every film of a year from Immich's tag list. A
+birthday film that looks back five years but has no picture from two of them gets three year tags. The
 `immich-memories/generated` tag is always set: it is how a later run recognises its own films.
 
 An uploaded memory is filed on the day of its last picture, in the timezone most of its pictures
