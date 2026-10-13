@@ -34,16 +34,16 @@
  "story": {
   "version": "story-first-selection-v7-prepared-candidates",
   "slots": 10,
-  "thesis": "Evidence from July 2025 shows several indoor family activities. A birthday celebration featuring a blue cake with the number 1 occurred indoors. Additionally, two toddlers danced in a living room, and a young girl posed on a staircase in Ixelles, Brussels Capital, Belgium. Another image shows a family of four watching TV on a couch.",
+  "thesis": "Kit's birthday",
   "priorities": [],
   "episodes": [
    {
     "episode": "S001",
-    "title": "celebration at Ixelles / playing at Ixelles",
-    "role": "supporting",
-    "weight": "minor",
+    "title": "Kit's birthday",
+    "role": "central",
+    "weight": "major",
     "gate": "maybe",
-    "purpose": "Capture dates, places and owner favourites",
+    "purpose": "Kit turns five",
     "day": "2025-07-05",
     "seen": {
      "days": 1,
@@ -66,7 +66,19 @@
      "M007:cg",
      "M008:cg"
     ],
-    "kind": "story"
+    "kind": "story",
+    "occasion": "birthday",
+    "people": [
+     "Kit"
+    ],
+    "days": [
+     "2025-07-05",
+     "2025-07-05"
+    ],
+    "places": [
+     "Ixelles"
+    ],
+    "trip": null
    }
   ],
   "calls": {
@@ -185,93 +197,58 @@
   "check_policy": "all-captioned-carrier-members-v1",
   "verdicts": {
    "birthday-cake": {
-    "policy": "audience-evidence-v17-every-finding-needs-its-activity",
-    "verdict": "share",
+    "policy": "audience-rules-v1-detector-heads-and-flags",
+    "verdict": "family_only",
     "parsed": true,
     "missing_members": [],
-    "activity": {
-     "scope": "activity-content",
-     "parsed": true,
-     "finding": "none",
-     "verdict": "share",
-     "why": "laya hold p=0.000"
-    },
+    "activity": null,
     "exposure": null,
-    "activity_asked_in_batch": true,
-    "why": "laya hold p=0.000",
-    "finding": "none",
+    "finding": "unread_private_activity",
+    "why": "no detector head objected, but no description was read to clear it",
     "evidence_key": ""
    },
    "birthday-cupcakes-2": {
-    "policy": "audience-evidence-v17-every-finding-needs-its-activity",
-    "verdict": "share",
+    "policy": "audience-rules-v1-detector-heads-and-flags",
+    "verdict": "family_only",
     "parsed": true,
     "missing_members": [],
-    "activity": {
-     "scope": "activity-content",
-     "parsed": true,
-     "finding": "none",
-     "verdict": "share",
-     "why": "laya hold p=0.000"
-    },
+    "activity": null,
     "exposure": null,
-    "activity_asked_in_batch": true,
-    "why": "laya hold p=0.000",
-    "finding": "none",
+    "finding": "unread_private_activity",
+    "why": "no detector head objected, but no description was read to clear it",
     "evidence_key": ""
    },
    "birthday-superheroes": {
-    "policy": "audience-evidence-v17-every-finding-needs-its-activity",
-    "verdict": "share",
+    "policy": "audience-rules-v1-detector-heads-and-flags",
+    "verdict": "family_only",
     "parsed": true,
     "missing_members": [],
-    "activity": {
-     "scope": "activity-content",
-     "parsed": true,
-     "finding": "none",
-     "verdict": "share",
-     "why": "laya hold p=0.000"
-    },
+    "activity": null,
     "exposure": null,
-    "activity_asked_in_batch": true,
-    "why": "laya hold p=0.000",
-    "finding": "none",
+    "finding": "unread_private_activity",
+    "why": "no detector head objected, but no description was read to clear it",
     "evidence_key": ""
    },
    "birthday-stairs": {
-    "policy": "audience-evidence-v17-every-finding-needs-its-activity",
-    "verdict": "share",
+    "policy": "audience-rules-v1-detector-heads-and-flags",
+    "verdict": "family_only",
     "parsed": true,
     "missing_members": [],
-    "activity": {
-     "scope": "activity-content",
-     "parsed": true,
-     "finding": "none",
-     "verdict": "share",
-     "why": "laya hold p=0.002"
-    },
+    "activity": null,
     "exposure": null,
-    "activity_asked_in_batch": true,
-    "why": "laya hold p=0.002",
-    "finding": "none",
+    "finding": "unread_private_activity",
+    "why": "no detector head objected, but no description was read to clear it",
     "evidence_key": ""
    },
    "birthday-sofa-film": {
-    "policy": "audience-evidence-v17-every-finding-needs-its-activity",
-    "verdict": "share",
+    "policy": "audience-rules-v1-detector-heads-and-flags",
+    "verdict": "family_only",
     "parsed": true,
     "missing_members": [],
-    "activity": {
-     "scope": "activity-content",
-     "parsed": true,
-     "finding": "none",
-     "verdict": "share",
-     "why": "laya hold p=0.000"
-    },
+    "activity": null,
     "exposure": null,
-    "activity_asked_in_batch": true,
-    "why": "laya hold p=0.000",
-    "finding": "none",
+    "finding": "unread_private_activity",
+    "why": "no detector head objected, but no description was read to clear it",
     "evidence_key": ""
    }
   },
@@ -315,28 +292,28 @@
   }
  },
  "tiers": {
-  "F01": 1,
-  "F02": 1,
-  "F03": 1
+  "F01": 0,
+  "F02": 0,
+  "F03": 0
  },
  "worthy_reasons": {
-  "F01": "celebration at Ixelles",
-  "F02": "Owner favourite present",
-  "F03": "playing at Ixelles"
+  "F01": "Ixelles",
+  "F02": "Ixelles",
+  "F03": "Ixelles"
  },
  "beats": [
-  "celebration at Ixelles / playing at Ixelles"
+  "Kit's birthday"
  ],
  "threads": {
   "headings": [
-   "celebration at Ixelles / playing at Ixelles"
+   "Kit's birthday"
   ],
   "beats": [
-   "celebration at Ixelles / playing at Ixelles"
+   "Kit's birthday"
   ],
   "memory_worthy": {},
   "synthesis": {
-   "thesis": "Evidence from July 2025 shows several indoor family activities. A birthday celebration featuring a blue cake with the number 1 occurred indoors. Additionally, two toddlers danced in a living room, and a young girl posed on a staircase in Ixelles, Brussels Capital, Belgium. Another image shows a family of four watching TV on a couch."
+   "thesis": "Kit's birthday"
   }
  },
  "status": "selection-awaiting-owner-review-not-rendered",
@@ -367,7 +344,7 @@
  "target_seconds": 45.0,
  "slots_total": 9,
  "cap_per_anchor": 11,
- "wall_sha256": "4bad65934adae01566cabc1858dbe24c3f7968ed2cd172a3286889fc5ae21744",
+ "wall_sha256": "3bcbf5a1dada234ec72886f0492115b5ff3c068a407c8cdbbb7c588a45434e46",
  "families": {
   "rule": {
    "same_day": true,
@@ -392,13 +369,13 @@
  "chapters": [
   {
    "chapter": "S01",
-   "beat": "celebration at Ixelles / playing at Ixelles",
+   "beat": "Kit's birthday",
    "anchors": [
     "F02",
     "F03"
    ],
    "share": 0.0,
-   "show": "celebration at Ixelles / playing at Ixelles",
+   "show": "Kit's birthday",
    "budget": 5,
    "capacity": 8,
    "families": [
@@ -428,12 +405,12 @@
    "event": "E02",
    "anchor": "F02",
    "chapter": 1,
-   "why": "celebration at Ixelles / playing at Ixelles: capture group",
-   "event_intention": "Capture dates, places and owner favourites",
+   "why": "Ixelles · starred",
+   "event_intention": "Kit turns five",
    "line": "2025-07-05 05:12+00:00 | at Ixelles, Brussels Capital, Belgium | activity=celebration, frame=lone_everyday_object, location=indoor, people=none | STARRED by the photographer | resolution:1280x853",
    "story_episode": "S001",
-   "story_role": "supporting",
-   "story_weight": "minor",
+   "story_role": "central",
+   "story_weight": "major",
    "depicted_moment": "M002:cg",
    "moment_alternatives": [],
    "standing": 2,
@@ -456,12 +433,12 @@
    "event": "E02",
    "anchor": "F02",
    "chapter": 1,
-   "why": "celebration at Ixelles / playing at Ixelles: capture group",
-   "event_intention": "Capture dates, places and owner favourites",
+   "why": "Ixelles",
+   "event_intention": "Kit turns five",
    "line": "2025-07-05 06:27+00:00 | at Ixelles, Brussels Capital, Belgium | activity=eating-drinking, location=indoor, people=none | resolution:500x333",
    "story_episode": "S001",
-   "story_role": "supporting",
-   "story_weight": "minor",
+   "story_role": "central",
+   "story_weight": "major",
    "depicted_moment": "M005:cg",
    "moment_alternatives": [],
    "standing": 1
@@ -483,12 +460,12 @@
    "event": "E03",
    "anchor": "F03",
    "chapter": 1,
-   "why": "celebration at Ixelles / playing at Ixelles: capture group",
-   "event_intention": "Capture dates, places and owner favourites",
-   "line": "2025-07-05 14:10+00:00 | with Kit | subject-framing:3 (0.63% of the frame, inside the frame, the largest face) | activity=playing, children=yes, location=indoor, people=two | resolution:1280x853",
+   "why": "Kit",
+   "event_intention": "Kit turns five",
+   "line": "2025-07-05 14:10+00:00 | with Kit (child of library owner; aged 5) | subject-framing:3 (0.63% of the frame, inside the frame, the largest face) | activity=playing, children=yes, location=indoor, people=two | resolution:1280x853",
    "story_episode": "S001",
-   "story_role": "supporting",
-   "story_weight": "minor",
+   "story_role": "central",
+   "story_weight": "major",
    "depicted_moment": "M006:cg",
    "moment_alternatives": [],
    "standing": 2
@@ -510,12 +487,12 @@
    "event": "E03",
    "anchor": "F03",
    "chapter": 1,
-   "why": "celebration at Ixelles / playing at Ixelles: capture group",
-   "event_intention": "Capture dates, places and owner favourites",
-   "line": "2025-07-05 14:51+00:00 | at Ixelles, Brussels Capital, Belgium | with Kit | subject-framing:3 (0.24% of the frame, inside the frame, the largest face) | activity=posing, children=yes, location=indoor, people=small-group | resolution:1280x852",
+   "why": "Kit at Ixelles",
+   "event_intention": "Kit turns five",
+   "line": "2025-07-05 14:51+00:00 | at Ixelles, Brussels Capital, Belgium | with Kit (child of library owner; aged 5) | subject-framing:3 (0.24% of the frame, inside the frame, the largest face) | activity=posing, children=yes, location=indoor, people=small-group | resolution:1280x852",
    "story_episode": "S001",
-   "story_role": "supporting",
-   "story_weight": "minor",
+   "story_role": "central",
+   "story_weight": "major",
    "depicted_moment": "M007:cg",
    "moment_alternatives": [],
    "standing": 2
@@ -537,12 +514,12 @@
    "event": "E03",
    "anchor": "F03",
    "chapter": 1,
-   "why": "celebration at Ixelles / playing at Ixelles: capture group",
-   "event_intention": "Capture dates, places and owner favourites",
-   "line": "2025-07-05 17:25+00:00 | at Ixelles, Brussels Capital, Belgium | with Charlie; Kit; Robin | subject-framing:3 (0.90% of the frame, inside the frame, the largest face) | children=yes, location=indoor, people=small-group | resolution:1280x853",
+   "why": "Charlie, Kit and Robin at Ixelles · the only one with a person",
+   "event_intention": "Kit turns five",
+   "line": "2025-07-05 17:25+00:00 | at Ixelles, Brussels Capital, Belgium | with Charlie (partner of library owner; aged 38); Kit (child of library owner; aged 5); Robin (library owner (confirmed); aged 38) | subject-framing:3 (0.90% of the frame, inside the frame, the largest face) | children=yes, location=indoor, people=small-group | resolution:1280x853",
    "story_episode": "S001",
-   "story_role": "supporting",
-   "story_weight": "minor",
+   "story_role": "central",
+   "story_weight": "major",
    "depicted_moment": "M008:cg",
    "moment_alternatives": [
     "birthday-dancing"
@@ -637,31 +614,16 @@
  "reservoir_beats": [],
  "content_seconds": 20.5,
  "llm_metrics": {
-  "llm_calls": 3,
+  "llm_calls": 0,
   "llm_cache_hits": 0,
-  "llm_prompt_tokens": 2521,
-  "llm_cached_prompt_tokens": 512,
-  "llm_completion_tokens": 224,
+  "llm_prompt_tokens": 0,
+  "llm_cached_prompt_tokens": 0,
+  "llm_completion_tokens": 0,
   "llm_truncated": 0,
-  "llm_wall_seconds": 4.282
+  "llm_wall_seconds": 0.0
  },
- "calls": [
-  {
-   "stage": "thesis-fit-1-source",
-   "wall_seconds": 0.501,
-   "warning": null,
-   "cache_hit": false,
-   "judgment_key": "",
-   "response_contract": "complete transport"
-  }
- ],
- "calls_by_stage": {
-  "thesis-fit": {
-   "asked": 1,
-   "cache_hits": 0,
-   "wall_seconds": 0.501
-  }
- },
+ "calls": [],
+ "calls_by_stage": {},
  "pixels_seen_by_text_model": false,
  "episode_reading_health": {
   "status": "complete",
@@ -689,7 +651,7 @@
     "evidence_key": "",
     "status": "read",
     "reason": null,
-    "cache_hit": false
+    "cache_hit": true
    }
   ]
  }

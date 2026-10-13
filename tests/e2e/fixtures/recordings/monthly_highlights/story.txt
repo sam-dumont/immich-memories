@@ -1,41 +1,23 @@
 Sharing: family
-Run 20261013_061229_4375: 15 pictures, 0:54 of pictures and video, about 1:01 of
+Run 20261013_135748_fd7a: 15 pictures, 0:54 of pictures and video, about 1:00 of
 film
-  The period featured various activities across multiple locations, including 
-outdoor sports in Jette and a family gathering indoors. Sightseeing took place 
-in Tervuren and Vossem, and the group visited Stege, Zealand, Denmark. 
-Distinctive events included a blue cake display in a kitchen and posing sessions
-in a garden. The overall pattern shows a mix of leisure, travel, and domestic 
-activities throughout July.
+  Kit's birthday, then Lou and Pat's visit, then The road north
 
   July 2025
-   0:03  2025-07-01  photo     3 s  Ganshoren / posing at Strombeek-Bever and 7 
-more: the best frame of its moment
-   0:06  2025-07-05  photo   3.5 s  Ganshoren / posing at Strombeek-Bever and 7 
-more: the best frame of its moment
-   0:09  2025-07-06  photo   3.5 s  Ganshoren / posing at Strombeek-Bever and 7 
-more: the best frame of its moment
-   0:12  2025-07-06  photo   3.5 s  sightseeing at Tervuren / posing: the best 
-frame of its moment
-   0:16  2025-07-07  photo   3.5 s  sightseeing at Tervuren / posing: the best 
-frame of its moment
-   0:19  2025-07-07  photo   3.5 s  sport-active at Jette / 2025-07-07 and 7 
-more: at Jette, Brussels Capital, Belgium, children=yes, loc
-   0:22  2025-07-07  photo   3.5 s  sport-active at Jette / 2025-07-07 and 7 
-more: the best frame of its moment
-   0:25  2025-07-11  photo   3.5 s  sport-active at Jette / 2025-07-07 and 7 
-more: the best frame of its moment
-   0:29  2025-07-12  video   3.5 s  posing at Stege / Copenhagen and 43 more: 
-the best frame of its moment
-   0:32  2025-07-14  video     4 s  posing at Stege / Copenhagen and 43 more: 
-the best frame of its moment
-   0:36  2025-07-15  photo   3.5 s  posing at Stege / Copenhagen and 43 more: at
-Korpilombolo, Norrbotten, Sweden, location=outdoor,
-   0:39  2025-07-16  photo     4 s  posing at Stege / Copenhagen and 43 more: 
-the best frame of its moment
-   0:42  2025-07-21  photo     4 s  posing at Stege / Copenhagen and 43 more: 
-the best frame of its moment
-   0:46  2025-07-30  video     4 s  posing at Stege / Copenhagen and 43 more: 
-the best frame of its moment
-   0:50  2025-07-31  photo   3.5 s  posing at Stege / Copenhagen and 43 more: 
-the best frame of its moment
+   0:03  2025-07-05  photo     3 s  Kit's birthday: Ixelles · starred
+   0:06  2025-07-05  photo   3.5 s  Kit's birthday: Ixelles
+   0:09  2025-07-05  photo   3.5 s  Kit's birthday: Kit
+   0:12  2025-07-06  photo   3.5 s  Days at home, 1–6 July: Pat · starred · the 
+only one with Pat
+   0:15  2025-07-06  photo   3.5 s  Vossem, 6–7 July: Tervuren
+   0:18  2025-07-07  photo   3.5 s  Lou and Pat's visit: Jette
+   0:22  2025-07-07  photo   3.5 s  Lou and Pat's visit: Jette
+   0:25  2025-07-07  photo   3.5 s  Lou and Pat's visit: Lou and Pat
+   0:28  2025-07-10  photo   3.5 s  Days at home, 8–11 July: Charlie and Robin ·
+the only one with both
+   0:31  2025-07-12  video     4 s  The road north: a video
+   0:35  2025-07-16  photo     4 s  The road north: Honningsvåg · starred
+   0:39  2025-07-18  photo   3.5 s  The road north: Burfjord
+   0:42  2025-07-18  video     4 s  The road north: a video
+   0:46  2025-07-21  photo     4 s  The road north: Reine · starred
+   0:49  2025-07-31  photo   3.5 s  The road north: a photo

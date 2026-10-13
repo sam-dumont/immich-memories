@@ -2,7 +2,8 @@
  "format": "editorial-source-rendering-v1",
  "selected_ids": [
   "birthday-sofa-film",
-  "forest-0706-picnic"
+  "forest-0706-picnic",
+  "home-0710-sofa"
  ],
  "adjustments": [],
  "allow_live_motion": true,
@@ -12,6 +13,10 @@
    4.5
   ],
   "forest-0706-picnic": [
+   0.0,
+   4.0
+  ],
+  "home-0710-sofa": [
    0.0,
    4.5
   ]

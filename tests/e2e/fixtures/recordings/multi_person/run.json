@@ -1,5 +1,5 @@
 {
- "title": "Robin and Kit in · 2025",
+ "title": "Kit and Robin in 2025",
  "title_source": "model",
  "memory_type": "multi_person",
  "arguments": [
@@ -12,5 +12,5 @@
   "--year",
   "2025"
  ],
- "seconds": 25
+ "seconds": 20
 }

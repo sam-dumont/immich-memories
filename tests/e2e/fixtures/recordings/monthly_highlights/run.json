@@ -1,5 +1,5 @@
 {
- "title": "July 2025 highlights",
+ "title": "July 2025",
  "title_source": "model",
  "memory_type": "monthly_highlights",
  "arguments": [
@@ -10,5 +10,5 @@
   "--year",
   "2025"
  ],
- "seconds": 139
+ "seconds": 29
 }

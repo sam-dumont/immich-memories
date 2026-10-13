@@ -3,21 +3,18 @@
  "stages": [
   {
    "name": "editorial final cut",
-   "kept": 2,
-   "dropped": 1,
+   "kept": 3,
+   "dropped": 0,
    "favorites_in": 0,
    "favorites_out": 0,
    "reasons": [],
-   "notes": {
-    "home-0710-sofa": "its story weighs nothing: no shot is asked of it"
-   },
+   "notes": {},
    "kept_ids": [
     "birthday-sofa-film",
-    "forest-0706-picnic"
-   ],
-   "lost_ids": [
+    "forest-0706-picnic",
     "home-0710-sofa"
    ],
+   "lost_ids": [],
    "gained_ids": []
   }
  ],
@@ -3464,7 +3461,7 @@
      "north-0731-1002"
     ],
     "sheet_hashes": [],
-    "request_key": "",
+    "request_key": "source-eligibility",
     "cache_hit": false
    },
    "request_traces": [],

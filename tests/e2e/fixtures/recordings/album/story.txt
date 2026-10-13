@@ -1,143 +1,74 @@
 Sharing: family
-Run 20261013_063425_3920: 66 pictures, 3:58 of pictures and video, about 3:48 of
+Run 20261013_135842_fc36: 67 pictures, 4:02 of pictures and video, about 3:51 of
 film
-  The period features diverse outdoor activities across Norway and Finland. 
-Distinctive events include observing a moose near a road in Norway and visiting 
-coastal areas like Honningsvåg and Reine. Other activities involved exploring 
-forests in Gränna, viewing churches in various locations, and observing 
-landscapes in Troms and Vestland. The broad pattern is extensive travel and 
-outdoor exploration across multiple regions.
+  The road north
 
   July 2025
-   0:03  2025-07-12  photo     3 s  posing at Stege / posing at Gränna and 41 
-more: the best frame of its moment
-   0:06  2025-07-12  photo   3.5 s  posing at Stege / posing at Gränna and 41 
-more: the best frame of its moment
-   0:09  2025-07-12  video  4.46 s  posing at Stege / posing at Gränna and 41 
-more: the best frame of its moment
-   0:13  2025-07-13  photo   3.5 s  posing at Stege / posing at Gränna and 41 
-more: the best frame of its moment
-   0:16  2025-07-13  photo   3.5 s  posing at Stege / posing at Gränna and 41 
-more: at Gränna, Jönköping, Sweden, activity=posing, locatio
-   0:19  2025-07-13  photo   3.5 s  posing at Stege / posing at Gränna and 41 
-more: the best frame of its moment
-   0:22  2025-07-13  photo   3.5 s  posing at Stege / posing at Gränna and 41 
-more: at Hagby, Uppsala, Sweden, activity=sport-active, loca
-   0:25  2025-07-14  photo   3.5 s  posing at Stege / posing at Gränna and 41 
-more: at Hagby, Uppsala, Sweden, activity=posing, children=y
-   0:28  2025-07-14  photo   3.5 s  posing at Stege / posing at Gränna and 41 
-more: at Älvkarleby, Uppsala, Sweden, activity=sightseeing,
-   0:32  2025-07-14  video  4.96 s  posing at Stege / posing at Gränna and 41 
-more: the best frame of its moment
-   0:37  2025-07-14  photo   3.5 s  posing at Stege / posing at Gränna and 41 
-more: at Skutskär, Uppsala, Sweden, activity=sport-active, l
-   0:40  2025-07-14  photo   3.5 s  posing at Stege / posing at Gränna and 41 
-more: the best frame of its moment
-   0:43  2025-07-15  photo   3.5 s  posing at Stege / posing at Gränna and 41 
-more: the best frame of its moment
-   0:46  2025-07-15  video     5 s  posing at Stege / posing at Gränna and 41 
-more: VIDEO 5s raw, location=outdoor, people=one, resolutio
-   0:51  2025-07-15  photo   3.5 s  posing at Stege / posing at Gränna and 41 
-more: the best frame of its moment
-   0:54  2025-07-16  photo   3.5 s  posing at Stege / posing at Gränna and 41 
-more: the best frame of its moment
-   0:57  2025-07-16  photo   3.5 s  posing at Stege / posing at Gränna and 41 
-more: the best frame of its moment
-   1:01  2025-07-16  photo   3.5 s  posing at Stege / posing at Gränna and 41 
-more: the best frame of its moment
-   1:04  2025-07-16  photo   3.5 s  posing at Stege / posing at Gränna and 41 
-more: the best frame of its moment
-   1:07  2025-07-16  photo     4 s  posing at Stege / posing at Gränna and 41 
-more: the best frame of its moment
-   1:11  2025-07-17  photo   3.5 s  posing at Stege / posing at Gränna and 41 
-more: at Honningsvåg, Finnmark, Norway, activity=sport-activ
-   1:14  2025-07-17  photo   3.5 s  posing at Stege / posing at Gränna and 41 
-more: the best frame of its moment
-   1:17  2025-07-17  photo   3.5 s  posing at Stege / posing at Gränna and 41 
-more: at Honningsvåg, Finnmark, Norway, location=outdoor, pe
-   1:20  2025-07-17  photo   3.5 s  posing at Stege / posing at Gränna and 41 
-more: at Honningsvåg, Finnmark, Norway, activity=posing, chi
-   1:23  2025-07-18  photo   3.5 s  posing at Stege / posing at Gränna and 41 
-more: at Norway, activity=animal-nature, location=outdoor, p
-   1:26  2025-07-18  photo   3.5 s  posing at Stege / posing at Gränna and 41 
-more: the best frame of its moment
-   1:30  2025-07-18  photo   3.5 s  posing at Stege / posing at Gränna and 41 
-more: the best frame of its moment
-   1:33  2025-07-18  photo   3.5 s  posing at Stege / posing at Gränna and 41 
-more: at Olderdalen, Troms, Norway, activity=posing, childre
-   1:36  2025-07-18  photo   3.5 s  posing at Stege / posing at Gränna and 41 
-more: the best frame of its moment
-   1:39  2025-07-18  photo   3.5 s  posing at Stege / posing at Gränna and 41 
-more: at Ivgobahta, Troms, Norway, activity=sport-active, lo
-   1:42  2025-07-19  photo   3.5 s  posing at Stege / posing at Gränna and 41 
-more: the best frame of its moment
-   1:45  2025-07-19  photo   3.5 s  posing at Stege / posing at Gränna and 41 
-more: the best frame of its moment
-   1:48  2025-07-20  photo   3.5 s  posing at Stege / posing at Gränna and 41 
-more: at Kabelvåg, Nordland, Norway, children=no, location=o
-   1:51  2025-07-20  photo   3.5 s  posing at Stege / posing at Gränna and 41 
-more: the best frame of its moment
-   1:55  2025-07-21  photo   3.5 s  posing at Stege / posing at Gränna and 41 
-more: the best frame of its moment
-   1:58  2025-07-21  photo     4 s  posing at Stege / posing at Gränna and 41 
-more: the best frame of its moment
-   2:01  2025-07-21  photo   3.5 s  posing at Stege / posing at Gränna and 41 
-more: the best frame of its moment
-   2:05  2025-07-21  photo   3.5 s  posing at Stege / posing at Gränna and 41 
-more: the best frame of its moment
-   2:08  2025-07-21  photo   3.5 s  posing at Stege / posing at Gränna and 41 
-more: the best frame of its moment
-   2:11  2025-07-21  photo   3.5 s  posing at Stege / posing at Gränna and 41 
-more: the best frame of its moment
-   2:14  2025-07-21  photo   3.5 s  posing at Stege / posing at Gränna and 41 
-more: the best frame of its moment
-   2:18  2025-07-21  photo   3.5 s  posing at Stege / posing at Gränna and 41 
-more: the best frame of its moment
-   2:21  2025-07-22  photo   3.5 s  posing at Stege / posing at Gränna and 41 
-more: the best frame of its moment
-   2:24  2025-07-22  photo   3.5 s  posing at Stege / posing at Gränna and 41 
-more: the best frame of its moment
-   2:27  2025-07-23  photo   3.5 s  posing at Stege / posing at Gränna and 41 
-more: the best frame of its moment
-   2:30  2025-07-23  video  4.96 s  posing at Stege / posing at Gränna and 41 
-more: the best frame of its moment
-   2:35  2025-07-23  photo   3.5 s  posing at Stege / posing at Gränna and 41 
-more: the best frame of its moment
-   2:38  2025-07-23  photo   3.5 s  posing at Stege / posing at Gränna and 41 
-more: at Sørland, Nordland, Norway, activity=posing, locatio
-   2:41  2025-07-23  photo   3.5 s  posing at Stege / posing at Gränna and 41 
-more: at Sørland, Nordland, Norway, location=outdoor, people
-   2:45  2025-07-23  photo   3.5 s  posing at Stege / posing at Gränna and 41 
-more: children=no, location=outdoor, people=one, resolution:
-   2:48  2025-07-24  photo   3.5 s  posing at Stege / posing at Gränna and 41 
-more: the best frame of its moment
-   2:51  2025-07-24  photo   3.5 s  posing at Stege / posing at Gränna and 41 
-more: at Bodø, Nordland, Norway, activity=working, location=
-   2:54  2025-07-24  photo   3.5 s  posing at Stege / posing at Gränna and 41 
-more: the best frame of its moment
-   2:57  2025-07-25  photo   3.5 s  posing at Stege / posing at Gränna and 41 
-more: the best frame of its moment
-   3:01  2025-07-25  photo   3.5 s  posing at Stege / posing at Gränna and 41 
-more: the best frame of its moment
-   3:04  2025-07-26  photo   3.5 s  posing at Stege / posing at Gränna and 41 
-more: the best frame of its moment
-   3:07  2025-07-26  photo   3.5 s  posing at Stege / posing at Gränna and 41 
-more: the best frame of its moment
-   3:10  2025-07-27  photo   3.5 s  posing at Stege / posing at Gränna and 41 
-more: the best frame of its moment
-   3:13  2025-07-27  photo   3.5 s  posing at Stege / posing at Gränna and 41 
-more: at Elnesvågen, Møre og Romsdal, Norway, activity=sport
-   3:17  2025-07-27  video  4.46 s  posing at Stege / posing at Gränna and 41 
-more: VIDEO 5s raw, activity=sightseeing, location=outdoor,
-   3:21  2025-07-27  photo   3.5 s  posing at Stege / posing at Gränna and 41 
-more: the best frame of its moment
-   3:24  2025-07-28  photo   3.5 s  posing at Stege / posing at Gränna and 41 
-more: the best frame of its moment
-   3:28  2025-07-29  photo   3.5 s  posing at Stege / posing at Gränna and 41 
-more: the best frame of its moment
-   3:31  2025-07-30  photo   3.5 s  posing at Stege / posing at Gränna and 41 
-more: the best frame of its moment
-   3:34  2025-07-30  photo   3.5 s  posing at Stege / posing at Gränna and 41 
-more: the best frame of its moment
-   3:37  2025-07-30  video  4.46 s  posing at Stege / posing at Gränna and 41 
-more: the best frame of its moment
+   0:03  2025-07-12  photo     3 s  The road north: Gedser
+   0:06  2025-07-12  photo   3.5 s  The road north: Idestrup
+   0:09  2025-07-12  photo   3.5 s  The road north: Store Damme
+   0:12  2025-07-12  video     5 s  The road north: a video
+   0:17  2025-07-13  photo   3.5 s  The road north: Gränna
+   0:20  2025-07-13  photo   3.5 s  The road north: Gränna
+   0:23  2025-07-13  photo   3.5 s  The road north: Gränna
+   0:26  2025-07-13  photo   3.5 s  The road north: Hagby
+   0:29  2025-07-14  photo   3.5 s  The road north: Hagby
+   0:33  2025-07-14  photo   3.5 s  The road north: Hagby
+   0:36  2025-07-14  photo   3.5 s  The road north: Älvkarleby
+   0:39  2025-07-14  video     5 s  The road north: a video
+   0:44  2025-07-14  photo   3.5 s  The road north: Skutskär
+   0:47  2025-07-14  photo   3.5 s  The road north: Ramvik
+   0:50  2025-07-15  video     5 s  The road north: a video
+   0:55  2025-07-15  photo   3.5 s  The road north: Muonio
+   0:58  2025-07-16  photo   3.5 s  The road north: a photo
+   1:02  2025-07-16  photo   3.5 s  The road north: a photo
+   1:05  2025-07-16  photo   3.5 s  The road north: a photo
+   1:08  2025-07-16  photo   3.5 s  The road north: a photo
+   1:11  2025-07-16  photo   3.5 s  The road north: Honningsvåg · starred
+   1:14  2025-07-17  photo   3.5 s  The road north: Honningsvåg
+   1:17  2025-07-17  photo   3.5 s  The road north: Honningsvåg
+   1:20  2025-07-17  photo   3.5 s  The road north: Honningsvåg · the sharpest 
+of 6
+   1:23  2025-07-17  photo   3.5 s  The road north: Honningsvåg
+   1:27  2025-07-17  photo   3.5 s  The road north: Honningsvåg
+   1:30  2025-07-18  photo   3.5 s  The road north: Norway
+   1:33  2025-07-18  photo   3.5 s  The road north: a photo
+   1:36  2025-07-18  photo   3.5 s  The road north: Olderdalen
+   1:39  2025-07-18  photo   3.5 s  The road north: Olderdalen
+   1:42  2025-07-18  photo   3.5 s  The road north: Olderdalen
+   1:46  2025-07-18  photo   3.5 s  The road north: Ivgobahta
+   1:49  2025-07-19  photo   3.5 s  The road north: Tromsø
+   1:52  2025-07-19  photo   3.5 s  The road north: Borkenes
+   1:55  2025-07-20  photo   3.5 s  The road north: Kabelvåg
+   1:58  2025-07-20  photo   3.5 s  The road north: Kabelvåg · the sharpest of 7
+   2:02  2025-07-21  photo   3.5 s  The road north: Leknes
+   2:05  2025-07-21  photo     4 s  The road north: Reine · starred
+   2:08  2025-07-21  photo   3.5 s  The road north: Reine
+   2:11  2025-07-21  photo   3.5 s  The road north: Reine
+   2:15  2025-07-22  photo   3.5 s  The road north: Reine
+   2:18  2025-07-22  photo   3.5 s  The road north: Reine
+   2:21  2025-07-22  photo   3.5 s  The road north: a photo
+   2:24  2025-07-22  photo   3.5 s  The road north: Reine
+   2:28  2025-07-23  photo   3.5 s  The road north: Gravdal
+   2:31  2025-07-23  photo   3.5 s  The road north: Sørland
+   2:34  2025-07-23  photo   3.5 s  The road north: Sørland
+   2:37  2025-07-24  photo   3.5 s  The road north: a photo · the sharpest of 10
+   2:40  2025-07-24  photo   3.5 s  The road north: Bodø
+   2:43  2025-07-24  photo   3.5 s  The road north: a photo
+   2:47  2025-07-25  photo   3.5 s  The road north: Norway
+   2:50  2025-07-26  photo   3.5 s  The road north: Rensvik
+   2:53  2025-07-27  video     5 s  The road north: a video · the sharpest of 11
+   2:58  2025-07-27  photo   3.5 s  The road north: Elnesvågen
+   3:01  2025-07-27  photo   3.5 s  The road north: a photo
+   3:04  2025-07-28  photo   3.5 s  The road north: Ålesund
+   3:07  2025-07-28  photo   3.5 s  The road north: Ålesund
+   3:10  2025-07-29  photo   3.5 s  The road north: Stordal · the sharpest of 6
+   3:14  2025-07-29  photo   3.5 s  The road north: Stranda
+   3:17  2025-07-29  photo   3.5 s  The road north: Stranda
+   3:20  2025-07-29  photo   3.5 s  The road north: Stranda
+   3:23  2025-07-29  photo   3.5 s  The road north: a photo · the sharpest of 3
+   3:26  2025-07-29  photo   3.5 s  The road north: Stryn · the sharpest of 4
+   3:30  2025-07-29  photo   3.5 s  The road north: a photo
+   3:33  2025-07-30  photo   3.5 s  The road north: Treungen
+   3:36  2025-07-30  video     5 s  The road north: a video
+   3:40  2025-07-31  photo   3.5 s  The road north: a photo

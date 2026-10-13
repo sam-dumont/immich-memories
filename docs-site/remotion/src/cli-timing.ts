@@ -2,9 +2,9 @@
 // command starts at in cli-demo.mp4. Do not edit; re-record instead.
 export const CLI_TIMING = {
   generate: 1.2,
-  story: 37.86,
-  why: 41.38,
-  whyNot: 45.52,
-  open: 49.67,
-  end: 55.12,
+  story: 36.59,
+  why: 40.15,
+  whyNot: 44.21,
+  open: 48.54,
+  end: 54.18,
 } as const;

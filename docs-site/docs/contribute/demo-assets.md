@@ -74,17 +74,16 @@ project and folder dialogs. Capture only the relevant dialog, with generic examp
 Exclude server addresses, account names, keys and unrelated projects before saving the image.
 These captures verify the controls shown, not a completed installation.
 
-The Compose setup screenshot comes from `make demo-compose-setup`. It downloads the two Basic
-release files into a disposable folder, copies `example.env` to `.env`, and runs the real Compose
-parser. It uses a separate Docker configuration and never pulls or starts a container. The image
-shows downloaded files and a valid configuration, not a running app. The release is pinned in
-`scripts/demo-compose-setup.py`; update it when installation downloads change.
-
-The demo asks for a two-minute film and reviews the fixture's cut (27 pictures). It swaps the
-evening in Duden park for another picture of the same walk, removes the birthday cupcakes and
-saves that as revision 1 before rendering at 1080p without music. The finished film is about 80 seconds;
-the walkthrough adds its own soundtrack. The generated fixture carries the cut's timeline
-positions, its weighed stories and the seconds the titles leave the pictures.
+The demo shows the recorded run of the month (`DEMO_RECORDING=monthly_highlights`, the same one the
+screenshots replay), not the scripted cut. `make demo-fixture` reads that recording: its one-line
+summary, its 15 pictures in cut order with the reason the run gave each, its stories heaviest first,
+and for every other picture the reason the run left it out. The edit scene swaps the first still that
+has another picture of its moment and removes the first lone still after it; both picks come from the
+cut (`active_edit` in `tests/e2e/fake_editorial.py`), and the output clip is cut with the same two
+edits, saved as revision 1 and rendered at 1080p without music. The finished film is about 57
+seconds; the walkthrough adds its own soundtrack. The generated fixture carries the cut's timeline
+positions, its weighed stories, the seconds the titles leave the pictures and where the film's last
+photograph ends.
 
 The fixture has 1,126 files on disk. Visibility and metadata rules can reduce the pool before
 selection, so the pool count can differ from the file count.
@@ -93,7 +92,6 @@ selection, so the pool count can differ from the file count.
 |---|---|
 | `make demo-ui` | `docs-site/static/demo/demo.mp4`, 2,754 video frames at 30 fps (about 92 s), 1920×1080 H.264; it shows the film the product made, then holds a closing frame with the docs address |
 | `make demo-hero` | `docs-site/static/img/demo-hero.gif`, the README hero: the brief, the cut and the review, then Render pressed and the film arriving on the page, then that film full bleed from the moment the page's player shows (the shared timeline supplies the windows), 720 px, 10 fps, under 4 MB |
-| `make demo-compose-setup` | `docs-site/static/img/screenshots/compose-basic-setup.png`, actual Basic release downloads and Compose validation; requires VHS, curl, Docker and `docker-compose` on PATH |
 | `make demo-cli` | `docs-site/remotion/public/cli-demo.mp4` and `docs-site/remotion/src/cli-timing.ts`, VHS recording the real CLI: `scripts/demo-cli-hermetic.py` runs `generate`, `runs story` and `runs why` against the hermetic fakes from `tests/e2e`, types each command, and writes the second each one starts at so the scene cuts there; it also copies the video to `docs-site/static/demo/cli-demo.mp4` and cuts its poster `cli-demo-poster.jpg`, which the homepage's CLI section plays (`make demo-cli-run` plays the same session without recording; as root in a container, set `VHS_NO_SANDBOX=true`) |
 | `make demo-output` | `docs-site/remotion/public/output-preview.mp4` and `output-frame.jpg`, cut on the hermetic launch |
 | `make demo-output-trip` | `docs-site/static/demo/trip-preview.mp4` and `docs-site/static/img/trip-map-flyover.jpg`, the fixture's road north cut as a trip memory and the still of its map fly-over, both played by the trip memory page. Needs the network: the satellite tiles come from ArcGIS World Imagery and the trip's name from Nominatim, and neither has an offline stand-in |

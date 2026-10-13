@@ -31,12 +31,13 @@ import time
 from pathlib import Path
 from typing import Any
 
+import httpx
 import yaml
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from tests.e2e.fake_library import household_people  # noqa: E402
+from tests.e2e.fake_library import BIRTH_DATES, household_people  # noqa: E402
 from tests.features.cli_harness import UserHome, basic_config  # noqa: E402
 
 RECORDINGS = ROOT / "tests" / "e2e" / "fixtures" / "recordings"
@@ -66,7 +67,10 @@ MEMORY_TYPES: dict[str, list[str]] = {
 
 _RUN_ID = re.compile(r"\b(\d{8}_\d{6}_[0-9a-f]{4})\b")
 # "Opening title from model: 'July 2025 highlights'": the title and who wrote it.
-_TITLE = re.compile(r"Opening title from (?P<source>[a-z ]+): '(?P<title>[^']*)'")
+# repr() quotes a title holding an apostrophe with double quotes ("Kit's birthday").
+_TITLE = re.compile(
+    r"Opening title from (?P<source>[a-z ]+): (?:'(?P<single>[^']*)'|\"(?P<double>[^\"]*)\")"
+)
 
 
 def _operator_llm() -> dict[str, Any]:
@@ -86,8 +90,24 @@ def _home(root: Path, state: dict[str, Any], llm: dict[str, Any]) -> UserHome:
     config["output"].update(resolution="720p", quality="medium")
     home.write_config(config)
     _models_into(root)
+    _birth_dates_into(state)
     _household_into(home, state)
     return home
+
+
+def _birth_dates_into(state: dict[str, Any]) -> None:
+    """The cast's birth dates on the real Immich, as the fixture's own server serves them.
+
+    A gate seeded before the cast had birth dates has none, and a birthday then never
+    shows up in the recordings.
+    """
+    headers = {"x-api-key": state["api_key"]}
+    for name, born in BIRTH_DATES.items():
+        person = state["person_ids"][f"person-{name.lower()}"]
+        response = httpx.put(
+            f"{state['url']}/api/people/{person}", json={"birthDate": born}, headers=headers
+        )
+        response.raise_for_status()
 
 
 def _household_into(home: UserHome, state: dict[str, Any]) -> None:
@@ -202,7 +222,7 @@ def record(name: str, home: UserHome, state: dict[str, Any], log: Path) -> dict[
         shutil.copy2(films[-1], FILMS / f"{name}.mp4")
     title = _TITLE.search(output)
     meta = {
-        "title": title["title"] if title else None,
+        "title": (title["single"] or title["double"]) if title else None,
         "title_source": title["source"] if title else None,
         "memory_type": name,
         "arguments": MEMORY_TYPES[name],

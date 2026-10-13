@@ -14,6 +14,7 @@ const player = SCENE_START.film / FPS + 3;
 const tail = PLAYER_FROM + 3 - PLAYER_PLAY / FPS - 0.5;
 const first = to - from;
 const second = player - render;
+// 96 colours, not 255: the recorded month is photographs end to end, and at 255 the GIF ran 5.1 MB.
 const filter = "fps=10,scale=720:405:flags=lanczos,format=yuv420p";
 const graph = [
   `[0:v]trim=${from}:${to},setpts=PTS-STARTPTS,${filter}[a]`,
@@ -21,7 +22,7 @@ const graph = [
   `[1:v]trim=${tail}:${tail + 3},setpts=PTS-STARTPTS,${filter}[c]`,
   `[a][b]xfade=transition=fade:duration=0.3:offset=${first - 0.3}[ab]`,
   `[ab][c]xfade=transition=fade:duration=0.5:offset=${first + second - 0.8},hqdn3d,split[x][y]`,
-  "[y]palettegen=max_colors=255:stats_mode=diff[p]",
+  "[y]palettegen=max_colors=96:stats_mode=diff[p]",
   "[x][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle",
 ].join(";");
 const result = spawnSync("ffmpeg", [

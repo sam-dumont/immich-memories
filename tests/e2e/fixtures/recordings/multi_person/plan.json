@@ -10,7 +10,7 @@
   },
   "timeline": {
    "target_duration": 20.0,
-   "content_budget": 15.55,
+   "content_budget": 15.9,
    "title_budget": 5.5,
    "title_duration": 3.5,
    "ending_duration": 2.0,
@@ -19,56 +19,101 @@
    "divider_policy": "all",
    "eligible_dividers": 0,
    "soft_max_duration": 24.0,
-   "transition_budget": 1.0499999999999998,
+   "transition_budget": 1.4,
    "divider_month_keys": []
   },
   "source_ids": [
    "birthday-sofa-film",
-   "forest-0706-picnic"
+   "forest-0706-picnic",
+   "home-0710-sofa"
   ],
-  "sha256": "5efceb82e1a0ed91b9de4d153f1675d06d816b2cde45a0121143e3a03b1e9a36"
+  "sha256": "1a4e08008902ccb1aa34e3c7df6d2d2b88949b98a14b8b2fa8219fb36cf5d3b6"
  },
  "story": {
   "version": "story-first-selection-v7-prepared-candidates",
   "slots": 4,
-  "thesis": "Distinctive events include a tram passing in Schaerbeek, Brussels, and family outings in Forest, Brussels. Other scenes show beach play, picnics in Watermael-Boitsfort, and sightseeing in Tervuren and Vossem. The broad pattern is one of diverse family and group activities in both urban and natural settings across July.",
+  "thesis": "Kit's birthday",
   "priorities": [],
   "episodes": [
    {
-    "episode": "S001",
-    "title": "Ixelles / playing",
-    "role": "supporting",
-    "weight": "minor",
+    "episode": "S001-2025-07-05",
+    "title": "Kit's birthday",
+    "role": "central",
+    "weight": "major",
     "gate": "remarkable",
-    "purpose": "Capture dates, places and owner favourites",
+    "purpose": "Kit turns five",
     "day": "2025-07-05",
     "seen": {
-     "days": 2,
-     "moments": 2,
-     "pictures": 2,
+     "days": 1,
+     "moments": 1,
+     "pictures": 1,
      "favourites": 0
     },
     "day_episodes": [
-     "R001",
+     "R001"
+    ],
+    "units": 1,
+    "depicted_moments": 1,
+    "groups_offered": 1,
+    "granted": 1,
+    "chosen": [
+     "M001:cg"
+    ],
+    "kind": "story",
+    "occasion": "birthday",
+    "people": [],
+    "days": [
+     "2025-07-05",
+     "2025-07-05"
+    ],
+    "places": [
+     "Ixelles"
+    ],
+    "trip": null
+   },
+   {
+    "episode": "S001",
+    "title": "Sunday 6 July",
+    "role": "texture",
+    "weight": "glimpse",
+    "gate": "background",
+    "purpose": "A day at home, Sunday 6 July",
+    "day": "2025-07-06",
+    "seen": {
+     "days": 1,
+     "moments": 1,
+     "pictures": 1,
+     "favourites": 0
+    },
+    "day_episodes": [
      "R002"
     ],
-    "units": 2,
-    "depicted_moments": 2,
-    "groups_offered": 2,
-    "granted": 2,
+    "units": 1,
+    "depicted_moments": 1,
+    "groups_offered": 1,
+    "granted": 1,
     "chosen": [
-     "M001:cg",
      "M002:cg"
     ],
-    "kind": "story"
+    "funded_by": "quality",
+    "sparse_quality_reason": "The household's period is mostly indicator-less; funded by this week's best picture",
+    "kind": "story",
+    "occasion": null,
+    "people": [],
+    "days": [
+     "2025-07-06",
+     "2025-07-06"
+    ],
+    "places": [],
+    "trip": null
    },
    {
     "episode": "S002",
-    "title": "2025-07-10",
-    "role": "incidental",
-    "weight": "none",
+    "title": "Thursday 10 July",
+    "role": "texture",
+    "weight": "glimpse",
     "gate": "background",
-    "purpose": "Capture dates, places and owner favourites",
+    "purpose": "A day at home, Thursday 10 July",
     "day": "2025-07-10",
     "seen": {
      "days": 1,
@@ -82,9 +127,21 @@
     "units": 1,
     "depicted_moments": 1,
     "groups_offered": 1,
-    "granted": 0,
-    "chosen": [],
-    "kind": "story"
+    "granted": 1,
+    "chosen": [
+     "M003:cg"
+    ],
+    "funded_by": "quality",
+    "sparse_quality_reason": "The household's period is mostly indicator-less; funded by this week's best picture",
+    "kind": "story",
+    "occasion": null,
+    "people": [],
+    "days": [
+     "2025-07-10",
+     "2025-07-10"
+    ],
+    "places": [],
+    "trip": null
    }
   ],
   "calls": {
@@ -95,19 +152,26 @@
    "selection_passes": 2,
    "failed_standing": 0,
    "kept_without_standing": 0
+  },
+  "sparse_quality": {
+   "share": 0.6667,
+   "threshold": 0.6666666666666666,
+   "promoted": [
+    "S001",
+    "S002"
+   ],
+   "left_short": []
   }
  },
- "left_out": {
-  "home-0710-sofa": "its story weighs nothing: no shot is asked of it"
- },
+ "left_out": {},
  "period_evidence": [],
- "content_cap_seconds": 15.55,
+ "content_cap_seconds": 15.9,
  "duration_realization": {
   "requested_seconds": 20.0,
-  "content_budget_seconds": 15.55,
-  "selected_content_seconds": 9.0,
-  "shortfall_seconds": 6.55,
-  "near_target_tolerance_seconds": 2.33,
+  "content_budget_seconds": 15.9,
+  "selected_content_seconds": 13.0,
+  "shortfall_seconds": 2.9,
+  "near_target_tolerance_seconds": 2.38,
   "accepted_shortfall_fraction": 0.15,
   "requested_picture_slots": 4,
   "status": "editorial_shortfall"
@@ -135,9 +199,9 @@
   "policy": "final-cached-hash-duplicates-v2",
   "scope": "cached preview hashes within one story or one day; no model comparison",
   "maximum_hash_distance": 6,
-  "pairs_compared": 1,
-  "input_carriers": 2,
-  "output_carriers": 2,
+  "pairs_compared": 0,
+  "input_carriers": 3,
+  "output_carriers": 3,
   "removals": [],
   "replaced_from": {},
   "kept_only_shots": [],
@@ -147,7 +211,7 @@
   "scene": {
    "similarity": 0.65,
    "window_days": 14,
-   "pairs_compared": 1,
+   "pairs_compared": 3,
    "unavailable": []
   },
   "status": "complete"
@@ -155,11 +219,11 @@
  "thumbnail_metrics": {
   "method": "thumbnail-ahash-v1-bgr-gray-area-opencv-5.0.0-numpy-2.4.2",
   "hash_size": 8,
-  "requests": 7,
-  "cache_hits": 7,
+  "requests": 9,
+  "cache_hits": 9,
   "hashes_computed": 0,
   "unavailable": 0,
-  "preview_bytes": 1252116,
+  "preview_bytes": 1523616,
   "wall_seconds": 0.002,
   "preview_acquisition": {
    "fetch_attempts": 0,
@@ -174,7 +238,7 @@
   "anchors": 3,
   "picture_ladders_read": 0,
   "source_assets": 1131,
-  "selected_carriers": 2
+  "selected_carriers": 3
  },
  "semantic_reuse": "exact-request-gateway; parsed files are per-run audit only",
  "worthiness_review": {},
@@ -190,7 +254,7 @@
  },
  "shareability": {
   "audience": "family",
-  "checked": 2,
+  "checked": 3,
   "tightened": [],
   "substituted": [],
   "dropped": [],
@@ -200,39 +264,36 @@
   "check_policy": "all-captioned-carrier-members-v1",
   "verdicts": {
    "birthday-sofa-film": {
-    "policy": "audience-evidence-v17-every-finding-needs-its-activity",
-    "verdict": "share",
+    "policy": "audience-rules-v1-detector-heads-and-flags",
+    "verdict": "family_only",
     "parsed": true,
     "missing_members": [],
-    "activity": {
-     "scope": "activity-content",
-     "parsed": true,
-     "finding": "none",
-     "verdict": "share",
-     "why": "laya hold p=0.000"
-    },
+    "activity": null,
     "exposure": null,
-    "activity_asked_in_batch": true,
-    "why": "laya hold p=0.000",
-    "finding": "none",
+    "finding": "unread_private_activity",
+    "why": "no detector head objected, but no description was read to clear it",
     "evidence_key": ""
    },
    "forest-0706-picnic": {
-    "policy": "audience-evidence-v17-every-finding-needs-its-activity",
-    "verdict": "share",
+    "policy": "audience-rules-v1-detector-heads-and-flags",
+    "verdict": "family_only",
     "parsed": true,
     "missing_members": [],
-    "activity": {
-     "scope": "activity-content",
-     "parsed": true,
-     "finding": "none",
-     "verdict": "share",
-     "why": "laya hold p=0.000"
-    },
+    "activity": null,
     "exposure": null,
-    "activity_asked_in_batch": true,
-    "why": "laya hold p=0.000",
-    "finding": "none",
+    "finding": "unread_private_activity",
+    "why": "no detector head objected, but no description was read to clear it",
+    "evidence_key": ""
+   },
+   "home-0710-sofa": {
+    "policy": "audience-rules-v1-detector-heads-and-flags",
+    "verdict": "family_only",
+    "parsed": true,
+    "missing_members": [],
+    "activity": null,
+    "exposure": null,
+    "finding": "unread_private_activity",
+    "why": "no detector head objected, but no description was read to clear it",
     "evidence_key": ""
    }
   },
@@ -272,41 +333,44 @@
  },
  "tiers": {
   "F01": 0,
-  "F02": 1,
+  "F02": 2,
   "F03": 2
  },
  "worthy_reasons": {
   "F01": "Outside home radius or the twelve usual cities",
-  "F02": "playing",
+  "F02": "No occasion indicator in available facts",
   "F03": "No occasion indicator in available facts"
  },
  "beats": [
-  "Ixelles / playing",
-  "2025-07-10"
+  "Kit's birthday",
+  "Sunday 6 July",
+  "Thursday 10 July"
  ],
  "threads": {
   "headings": [
-   "Ixelles / playing",
-   "2025-07-10"
+   "Kit's birthday",
+   "Sunday 6 July",
+   "Thursday 10 July"
   ],
   "beats": [
-   "Ixelles / playing",
-   "2025-07-10"
+   "Kit's birthday",
+   "Sunday 6 July",
+   "Thursday 10 July"
   ],
   "memory_worthy": {},
   "synthesis": {
-   "thesis": "Distinctive events include a tram passing in Schaerbeek, Brussels, and family outings in Forest, Brussels. Other scenes show beach play, picnics in Watermael-Boitsfort, and sightseeing in Tervuren and Vossem. The broad pattern is one of diverse family and group activities in both urban and natural settings across July."
+   "thesis": "Kit's birthday"
   }
  },
  "status": "selection-awaiting-owner-review-not-rendered",
  "intent_report": {
   "status": "ok",
   "requested_seconds": 20.0,
-  "usable_seconds": 9.0,
-  "shortfall_seconds": 11.0,
+  "usable_seconds": 13.0,
+  "shortfall_seconds": 7.0,
   "reason": null,
   "coverage": {
-   "scope": 2
+   "scope": 3
   },
   "violations": []
  },
@@ -326,7 +390,7 @@
  "target_seconds": 20.0,
  "slots_total": 4,
  "cap_per_anchor": 4,
- "wall_sha256": "2eb56e5fac885903a524cf3cc926ed8edb7fcaad31e23c6db91b0388ac476e4a",
+ "wall_sha256": "37d9c5d1935bf56a503ac37fc55151802e3606f7bc8eebad787732f89cc25345",
  "families": {
   "rule": {
    "same_day": true,
@@ -346,29 +410,45 @@
  "chapters": [
   {
    "chapter": "S01",
-   "beat": "Ixelles / playing",
+   "beat": "Kit's birthday",
    "anchors": [
-    "F01",
-    "F02"
+    "F01"
    ],
    "share": 0.0,
-   "show": "Ixelles / playing",
-   "budget": 2,
-   "capacity": 2,
+   "show": "Kit's birthday",
+   "budget": 1,
+   "capacity": 1,
    "families": [
-    "E01",
-    "E02"
+    "E01"
    ]
   },
   {
    "chapter": "S02",
-   "beat": "2025-07-10",
-   "anchors": [],
+   "beat": "Sunday 6 July",
+   "anchors": [
+    "F02"
+   ],
    "share": 0.0,
-   "show": "2025-07-10",
-   "budget": 0,
+   "show": "Sunday 6 July",
+   "budget": 1,
    "capacity": 1,
-   "families": []
+   "families": [
+    "E02"
+   ]
+  },
+  {
+   "chapter": "S03",
+   "beat": "Thursday 10 July",
+   "anchors": [
+    "F03"
+   ],
+   "share": 0.0,
+   "show": "Thursday 10 July",
+   "budget": 1,
+   "capacity": 1,
+   "families": [
+    "E03"
+   ]
   }
  ],
  "synthesis_omission_policy": "deferred priority; eligible reserves remain available",
@@ -392,12 +472,12 @@
    "event": "E01",
    "anchor": "F01",
    "chapter": 1,
-   "why": "Ixelles / playing: capture group",
-   "event_intention": "Capture dates, places and owner favourites",
-   "line": "2025-07-05 17:25+00:00 | at Ixelles, Brussels Capital, Belgium | with Charlie; Kit; Robin | subject-framing:2 (0.81% of the frame, inside the frame, not the largest face) | children=yes, location=indoor, people=small-group | resolution:1280x853",
-   "story_episode": "S001",
-   "story_role": "supporting",
-   "story_weight": "minor",
+   "why": "Charlie, Kit and Robin at Ixelles",
+   "event_intention": "Kit turns five",
+   "line": "2025-07-05 17:25+00:00 | at Ixelles, Brussels Capital, Belgium | with Charlie (partner of library owner; aged 38); Kit (child of library owner; aged 5); Robin (library owner (confirmed); aged 38) | subject-framing:2 (0.81% of the frame, inside the frame, not the largest face) | children=yes, location=indoor, people=small-group | resolution:1280x853",
+   "story_episode": "S001-2025-07-05",
+   "story_role": "central",
+   "story_weight": "major",
    "depicted_moment": "M001:cg",
    "moment_alternatives": [],
    "standing": 2
@@ -413,19 +493,46 @@
    ],
    "video_ids": [],
    "trim_points": [],
-   "seconds": 4.5,
+   "seconds": 4.0,
    "raw_seconds": null,
    "residual": null,
    "event": "E02",
    "anchor": "F02",
-   "chapter": 1,
-   "why": "Ixelles / playing: capture group",
-   "event_intention": "Capture dates, places and owner favourites",
-   "line": "2025-07-06 09:35+00:00 | with Kit; Robin | subject-framing:3 (0.86% of the frame, inside the frame, the largest face) | activity=playing, children=yes, location=outdoor, people=two, venue=private_facility | resolution:1280x853",
+   "chapter": 2,
+   "why": "Kit and Robin",
+   "event_intention": "A day at home, Sunday 6 July",
+   "line": "2025-07-06 09:35+00:00 | with Kit (child of library owner; aged 5); Robin (library owner (confirmed); aged 38) | subject-framing:3 (0.86% of the frame, inside the frame, the largest face) | activity=playing, children=yes, location=outdoor, people=two, venue=private_facility | resolution:1280x853",
    "story_episode": "S001",
-   "story_role": "supporting",
-   "story_weight": "minor",
+   "story_role": "texture",
+   "story_weight": "glimpse",
    "depicted_moment": "M002:cg",
+   "moment_alternatives": [],
+   "standing": 2
+  },
+  {
+   "favourite": false,
+   "moment": "M003",
+   "taken": "2025-07-10T17:20:00+02:00",
+   "kind": "still",
+   "asset_id": "home-0710-sofa",
+   "members": [
+    "home-0710-sofa"
+   ],
+   "video_ids": [],
+   "trim_points": [],
+   "seconds": 4.5,
+   "raw_seconds": null,
+   "residual": null,
+   "event": "E03",
+   "anchor": "F03",
+   "chapter": 3,
+   "why": "Kit and Robin",
+   "event_intention": "A day at home, Thursday 10 July",
+   "line": "2025-07-10 15:20+00:00 | with Kit (child of library owner; aged 5); Robin (library owner (confirmed); aged 38) | subject-framing:2 (2.64% of the frame, at the frame's edge, the largest face) | children=yes, location=indoor, people=two | resolution:1280x854",
+   "story_episode": "S002",
+   "story_role": "texture",
+   "story_weight": "glimpse",
+   "depicted_moment": "M003:cg",
    "moment_alternatives": [],
    "standing": 2
   }
@@ -466,8 +573,8 @@
  "assembly_repair": {
   "status": "not_run",
   "asked": false,
-  "input_carriers": 2,
-  "output_carriers": 2,
+  "input_carriers": 3,
+  "output_carriers": 3,
   "shortfall_explanation": "",
   "examined": 0,
   "added": [],
@@ -479,12 +586,12 @@
  },
  "selection_stages": {
   "funded_picture_requests": 0,
-  "after_funded_acquisition": 2,
-  "before_shareability": 2,
-  "after_shareability": 2,
-  "before_picture_review": 2,
-  "after_final_duplicate_review": 2,
-  "after_unvouched_filler": 2
+  "after_funded_acquisition": 3,
+  "before_shareability": 3,
+  "after_shareability": 3,
+  "before_picture_review": 3,
+  "after_final_duplicate_review": 3,
+  "after_unvouched_filler": 3
  },
  "prior_plan": null,
  "review_proposed_assets": [],
@@ -500,33 +607,18 @@
   "events_ok": true
  },
  "reservoir_beats": [],
- "content_seconds": 9.0,
+ "content_seconds": 13.0,
  "llm_metrics": {
-  "llm_calls": 3,
+  "llm_calls": 0,
   "llm_cache_hits": 0,
-  "llm_prompt_tokens": 2754,
-  "llm_cached_prompt_tokens": 1024,
-  "llm_completion_tokens": 237,
+  "llm_prompt_tokens": 0,
+  "llm_cached_prompt_tokens": 0,
+  "llm_completion_tokens": 0,
   "llm_truncated": 0,
-  "llm_wall_seconds": 3.952
+  "llm_wall_seconds": 0.0
  },
- "calls": [
-  {
-   "stage": "thesis-fit-1-source",
-   "wall_seconds": 0.468,
-   "warning": null,
-   "cache_hit": false,
-   "judgment_key": "",
-   "response_contract": "complete transport"
-  }
- ],
- "calls_by_stage": {
-  "thesis-fit": {
-   "asked": 1,
-   "cache_hits": 0,
-   "wall_seconds": 0.468
-  }
- },
+ "calls": [],
+ "calls_by_stage": {},
  "pixels_seen_by_text_model": false,
  "episode_reading_health": {
   "status": "complete",
@@ -538,7 +630,7 @@
     "evidence_key": "",
     "status": "read",
     "reason": null,
-    "cache_hit": false
+    "cache_hit": true
    },
    {
     "group_id": "episode-v1-7743c77997b8fe7aa4c615df16aabcab6f7fdfe1319dd6b0670faf52eb959e36",
@@ -554,7 +646,7 @@
     "evidence_key": "",
     "status": "read",
     "reason": null,
-    "cache_hit": false
+    "cache_hit": true
    }
   ]
  }

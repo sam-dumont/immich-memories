@@ -26,6 +26,7 @@ from playwright.sync_api import Page, expect
 
 from tests.e2e.cli_bootstrap import CLI_BOOTSTRAP
 from tests.e2e.conftest import _REPO_ROOT, _build_launch_environment
+from tests.e2e.fake_editorial import active_edit, active_minutes
 from tests.e2e.fake_library import YEAR
 from tests.e2e.web_flow import (
     contact_sheet,
@@ -49,22 +50,23 @@ def demo_public_dir() -> Path:
 
 
 def _render_at_1080p(page: Page, launch_app_url: str) -> None:
-    cut_month(page, launch_app_url)
-    # Match EditScene: swap the evening in Duden park for another shot of that walk,
-    # remove the cupcakes (the cake already tells the birthday), save revision 1.
+    cut_month(page, launch_app_url, minutes=active_minutes() or 2)
+    # Match EditScene: swap the first shot that has another picture of its moment, remove the
+    # first lone still after it (`active_edit` picks both), save revision 1.
+    swapped, removed = active_edit()
     shots = contact_sheet(page)
     inspector = page.get_by_role("article", name="Picture review")
-    shots.nth(1).click()
+    shots.nth(swapped).click()
     inspector.get_by_role("list", name="Other pictures of this moment").get_by_role(
         "button"
     ).first.click()
     inspector.get_by_role("button", name="Use this picture instead").click()
-    shots.nth(3).click()
+    shots.nth(removed).click()
     inspector.get_by_role("button", name="Remove from this cut").click()
     page.get_by_role("button", name="Save revision").click()
     expect(page.get_by_role("status")).to_have_text("Saved as revision 1.")
-    expect(contact_sheet(page).nth(1).get_by_text("Swapped", exact=True)).to_be_visible()
-    expect(contact_sheet(page).nth(3).get_by_text("Removed", exact=True)).to_be_visible()
+    expect(contact_sheet(page).nth(swapped).get_by_text("Swapped", exact=True)).to_be_visible()
+    expect(contact_sheet(page).nth(removed).get_by_text("Removed", exact=True)).to_be_visible()
     expect(page.get_by_role("region", name="Render").get_by_label("What to render")).to_have_value(
         "1"
     )

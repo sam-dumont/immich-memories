@@ -1,30 +1,34 @@
 {
  "format": "editorial-source-rendering-v1",
  "selected_ids": [
-  "cast-0701-kit-lining-up-the-chocolate",
   "birthday-cake",
+  "birthday-cupcakes-2",
+  "birthday-superheroes",
   "forest-0706-pat-03",
-  "forest-0706-tervuren-00",
-  "cast-0707-pat-in-his-reading-glasses",
+  "forest-0706-tervuren-04",
+  "home-0707-park-1",
   "home-0707-park-3",
   "cast-0707-pat-and-lou-with-the-little",
-  "home-0711-flour-mill",
+  "cast-0710-charlie-and-robin-looking-up",
   "north-clip-0712-0",
-  "north-clip-0714-1",
-  "north-0715-0124",
   "north-0716-0196",
+  "north-0718-0252",
+  "north-clip-0718-3",
   "north-0721-0339",
-  "north-clip-0730-6",
   "north-0731-1002"
  ],
  "adjustments": [],
  "allow_live_motion": true,
  "intervals": {
-  "cast-0701-kit-lining-up-the-chocolate": [
+  "birthday-cake": [
    0.0,
    3.5
   ],
-  "birthday-cake": [
+  "birthday-cupcakes-2": [
+   0.0,
+   3.5
+  ],
+  "birthday-superheroes": [
    0.0,
    3.5
   ],
@@ -32,11 +36,11 @@
    0.0,
    3.5
   ],
-  "forest-0706-tervuren-00": [
+  "forest-0706-tervuren-04": [
    0.0,
    3.5
   ],
-  "cast-0707-pat-in-his-reading-glasses": [
+  "home-0707-park-1": [
    0.0,
    3.5
   ],
@@ -48,31 +52,27 @@
    0.0,
    3.5
   ],
-  "home-0711-flour-mill": [
+  "cast-0710-charlie-and-robin-looking-up": [
    0.0,
    3.5
   ],
   "north-clip-0712-0": [
-   1.5,
+   1.0,
    5.0
-  ],
-  "north-clip-0714-1": [
-   0.0,
-   4.0
-  ],
-  "north-0715-0124": [
-   0.0,
-   3.5
   ],
   "north-0716-0196": [
    0.0,
    4.0
   ],
-  "north-0721-0339": [
+  "north-0718-0252": [
+   0.0,
+   3.5
+  ],
+  "north-clip-0718-3": [
    0.0,
    4.0
   ],
-  "north-clip-0730-6": [
+  "north-0721-0339": [
    0.0,
    4.0
   ],

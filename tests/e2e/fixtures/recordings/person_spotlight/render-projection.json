@@ -1,56 +1,19 @@
 {
  "format": "editorial-source-rendering-v1",
  "selected_ids": [
-  "home-0702-kit-stuffie",
-  "home-0702-kit-beanbag",
-  "cast-0703-kit-s-paper-octopus",
-  "home-0703-baking",
-  "cast-0703-cutting-out-shapes-at-the-ta",
-  "cast-0704-kit-digging-on-the-beach",
-  "home-0704-fountain",
   "birthday-superheroes",
   "birthday-stairs",
   "birthday-sofa-film",
-  "forest-0706-pat-02",
-  "forest-0706-picnic",
+  "cast-0707-kit-and-the-neighbours-rabbi",
   "cast-0708-climbing-the-fence",
-  "home-0708-ice-cream-bike",
   "home-0710-sofa"
  ],
  "adjustments": [],
  "allow_live_motion": true,
  "intervals": {
-  "home-0702-kit-stuffie": [
-   0.0,
-   4.0
-  ],
-  "home-0702-kit-beanbag": [
-   0.0,
-   4.0
-  ],
-  "cast-0703-kit-s-paper-octopus": [
-   0.0,
-   4.0
-  ],
-  "home-0703-baking": [
-   0.0,
-   4.0
-  ],
-  "cast-0703-cutting-out-shapes-at-the-ta": [
-   0.0,
-   4.0
-  ],
-  "cast-0704-kit-digging-on-the-beach": [
-   0.0,
-   4.0
-  ],
-  "home-0704-fountain": [
-   0.0,
-   4.0
-  ],
   "birthday-superheroes": [
    0.0,
-   4.0
+   4.5
   ],
   "birthday-stairs": [
    0.0,
@@ -60,19 +23,11 @@
    0.0,
    4.0
   ],
-  "forest-0706-pat-02": [
-   0.0,
-   4.0
-  ],
-  "forest-0706-picnic": [
+  "cast-0707-kit-and-the-neighbours-rabbi": [
    0.0,
    4.0
   ],
   "cast-0708-climbing-the-fence": [
-   0.0,
-   4.0
-  ],
-  "home-0708-ice-cream-bike": [
    0.0,
    4.0
   ],

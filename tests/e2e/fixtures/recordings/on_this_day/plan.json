@@ -1,0 +1,1164 @@
+{
+ "render_timing": {
+  "policy": {
+   "target_seconds": 45.0,
+   "memory_type": "on_this_day",
+   "title_settings_json": "{\"divider_mode\":\"year\",\"enabled\":true,\"ending_duration\":7.0,\"month_divider_duration\":2.0,\"month_divider_threshold\":2,\"show_location_cards\":true,\"show_month_dividers\":false,\"title_duration\":3.5}",
+   "transition": "smart",
+   "transition_duration": 0.5,
+   "version": "editorial-timing-overlap-v2"
+  },
+  "timeline": {
+   "target_duration": 45.0,
+   "content_budget": 39.85,
+   "title_budget": 9.0,
+   "title_duration": 3.5,
+   "ending_duration": 5.5,
+   "divider_duration": 2.0,
+   "max_dividers": 0,
+   "divider_policy": "capped",
+   "eligible_dividers": 0,
+   "soft_max_duration": null,
+   "transition_budget": 3.8499999999999996,
+   "divider_month_keys": null
+  },
+  "source_ids": [
+   "north-0720-0299",
+   "north-0720-0324",
+   "north-0721-0339",
+   "north-0721-0349",
+   "north-0721-0365",
+   "north-0721-0375",
+   "north-0721-0389",
+   "north-0721-0397",
+   "north-0722-0409",
+   "north-0722-0413"
+  ],
+  "sha256": "0500c0c1cfebb08c170343baec5be1f7b76d05a40962c2da099e3694e39e917d"
+ },
+ "story": {
+  "version": "story-first-selection-v7-prepared-candidates",
+  "slots": 11,
+  "thesis": "The road north",
+  "priorities": [],
+  "episodes": [
+   {
+    "episode": "S001",
+    "title": "The road north",
+    "role": "central",
+    "weight": "major",
+    "gate": "remarkable",
+    "purpose": "3 days away, Kabelvåg to Gravdal",
+    "day": "2025-07-20",
+    "seen": {
+     "days": 3,
+     "moments": 30,
+     "pictures": 106,
+     "favourites": 1
+    },
+    "day_episodes": [
+     "R001",
+     "R002",
+     "R003",
+     "R004",
+     "R005"
+    ],
+    "units": 106,
+    "depicted_moments": 29,
+    "groups_offered": 29,
+    "granted": 11,
+    "chosen": [
+     "M001:cg",
+     "M004:cg",
+     "M007:cg",
+     "M009:cg",
+     "M011:cg",
+     "M017:cg",
+     "M021:cg",
+     "M024:cg",
+     "M027:cg",
+     "M006:cg",
+     "M014:cg"
+    ],
+    "kind": "trip",
+    "trip": "The road north",
+    "reserve": 6,
+    "occasion": "trip",
+    "people": [],
+    "days": [
+     "2025-07-20",
+     "2025-07-22"
+    ],
+    "places": [
+     "Kabelvåg",
+     "Ballstad",
+     "Leknes",
+     "Reine",
+     "Ramberg",
+     "Gravdal"
+    ]
+   }
+  ],
+  "calls": {
+   "story_pages": 0,
+   "story_pages_fresh": 0,
+   "pick_calls": 0,
+   "thread_questions": 0,
+   "selection_passes": 6,
+   "failed_standing": 0,
+   "kept_without_standing": 0
+  }
+ },
+ "left_out": {
+  "north-0720-0298": "the film's content seconds were spent before its turn",
+  "north-0720-0300": "the film's content seconds were spent before its turn",
+  "north-0720-0301": "the film's content seconds were spent before its turn",
+  "north-0720-0302": "the film's content seconds were spent before its turn",
+  "north-0720-0303": "the film's content seconds were spent before its turn",
+  "north-0720-0304": "the film's content seconds were spent before its turn",
+  "north-0720-0305": "the film's content seconds were spent before its turn",
+  "north-0720-0306": "its place already holds its share of the film",
+  "north-0720-0307": "the film's content seconds were spent before its turn",
+  "north-0720-0308": "the film's content seconds were spent before its turn",
+  "north-0720-0309": "the film's content seconds were spent before its turn",
+  "north-0720-0310": "the film's content seconds were spent before its turn",
+  "north-0720-0311": "the film's content seconds were spent before its turn",
+  "north-0720-0312": "the film's content seconds were spent before its turn",
+  "north-0720-0313": "the film's content seconds were spent before its turn",
+  "north-0720-0314": "the film's content seconds were spent before its turn",
+  "north-0720-0315": "its place already holds its share of the film",
+  "north-0720-0316": "the film's content seconds were spent before its turn",
+  "north-0720-0317": "the film's content seconds were spent before its turn",
+  "north-0720-0318": "the film's content seconds were spent before its turn",
+  "north-0720-0319": "the film's content seconds were spent before its turn",
+  "north-0720-0320": "the film's content seconds were spent before its turn",
+  "north-0720-0321": "the film's content seconds were spent before its turn",
+  "north-0720-0322": "the film's content seconds were spent before its turn",
+  "north-0720-0325": "the film's content seconds were spent before its turn",
+  "north-0720-0326": "the film's content seconds were spent before its turn",
+  "north-0720-0330": "the film's content seconds were spent before its turn",
+  "north-0720-0331": "its place already holds its share of the film",
+  "north-0720-0332": "the film's content seconds were spent before its turn",
+  "north-0721-0336": "the film's content seconds were spent before its turn",
+  "north-0721-0337": "the film's content seconds were spent before its turn",
+  "north-0721-0338": "the film's content seconds were spent before its turn",
+  "north-0721-0340": "the film's content seconds were spent before its turn",
+  "north-0721-0342": "the film's content seconds were spent before its turn",
+  "north-0721-0343": "the film's content seconds were spent before its turn",
+  "north-0721-0344": "the film's content seconds were spent before its turn",
+  "north-0721-0345": "the film's content seconds were spent before its turn",
+  "north-0721-0346": "the film's content seconds were spent before its turn",
+  "north-0721-0347": "the film's content seconds were spent before its turn",
+  "north-0721-0348": "the film's content seconds were spent before its turn",
+  "north-0721-0349": "the film's content seconds were spent before its turn",
+  "north-0721-0350": "the film's content seconds were spent before its turn",
+  "north-0721-0351": "the film's content seconds were spent before its turn",
+  "north-0721-0352": "the film's content seconds were spent before its turn",
+  "north-0721-0353": "the film's content seconds were spent before its turn",
+  "north-0721-0354": "the film's content seconds were spent before its turn",
+  "north-0721-0355": "the film's content seconds were spent before its turn",
+  "north-0721-0356": "the film's content seconds were spent before its turn",
+  "north-0721-0357": "the film's content seconds were spent before its turn",
+  "north-0721-0358": "the film's content seconds were spent before its turn",
+  "north-0721-0359": "the film's content seconds were spent before its turn",
+  "north-0721-0360": "the film's content seconds were spent before its turn",
+  "north-0721-0364": "the film's content seconds were spent before its turn",
+  "north-0721-0366": "the film's content seconds were spent before its turn",
+  "north-0721-0367": "the film's content seconds were spent before its turn",
+  "north-0721-0368": "the film's content seconds were spent before its turn",
+  "north-0721-0372": "the film's content seconds were spent before its turn",
+  "north-0721-0373": "the film's content seconds were spent before its turn",
+  "north-0721-0374": "the film's content seconds were spent before its turn",
+  "north-0721-0376": "the film's content seconds were spent before its turn",
+  "north-0721-0377": "the film's content seconds were spent before its turn",
+  "north-0721-0378": "the film's content seconds were spent before its turn",
+  "north-0721-0379": "the film's content seconds were spent before its turn",
+  "north-0721-0380": "the film's content seconds were spent before its turn",
+  "north-0721-0381": "the film's content seconds were spent before its turn",
+  "north-0721-0382": "the film's content seconds were spent before its turn",
+  "north-0721-0383": "the film's content seconds were spent before its turn",
+  "north-0721-0384": "the film's content seconds were spent before its turn",
+  "north-0721-0385": "the film's content seconds were spent before its turn",
+  "north-0721-0386": "the film's content seconds were spent before its turn",
+  "north-0721-0388": "the film's content seconds were spent before its turn",
+  "north-0721-0389": "the film's content seconds were spent before its turn",
+  "north-0721-0391": "the film's content seconds were spent before its turn",
+  "north-0721-0392": "the film's content seconds were spent before its turn",
+  "north-0721-0393": "the film's content seconds were spent before its turn",
+  "north-0721-0394": "the film's content seconds were spent before its turn",
+  "north-0721-0395": "the film's content seconds were spent before its turn",
+  "north-0721-0396": "the film's content seconds were spent before its turn",
+  "north-0721-0398": "the film's content seconds were spent before its turn",
+  "north-0722-0399": "the film's content seconds were spent before its turn",
+  "north-0722-0400": "the film's content seconds were spent before its turn",
+  "north-0722-0401": "the film's content seconds were spent before its turn",
+  "north-0722-0402": "the film's content seconds were spent before its turn",
+  "north-0722-0403": "the film's content seconds were spent before its turn",
+  "north-0722-0404": "the film's content seconds were spent before its turn",
+  "north-0722-0405": "the film's content seconds were spent before its turn",
+  "north-0722-0406": "the film's content seconds were spent before its turn",
+  "north-0722-0407": "the film's content seconds were spent before its turn",
+  "north-0722-0408": "the film's content seconds were spent before its turn",
+  "north-0722-0410": "it repeats a picture already in the cut",
+  "north-0722-0411": "its place already holds its share of the film",
+  "north-0722-0412": "the film's content seconds were spent before its turn",
+  "north-0722-0414": "its place already holds its share of the film",
+  "north-0722-0415": "its place already holds its share of the film",
+  "trip-0722-beach-gull": "its place already holds its share of the film"
+ },
+ "period_evidence": [],
+ "content_cap_seconds": 39.85,
+ "duration_realization": {
+  "requested_seconds": 45.0,
+  "content_budget_seconds": 39.85,
+  "selected_content_seconds": 36.5,
+  "shortfall_seconds": 3.35,
+  "near_target_tolerance_seconds": 5.98,
+  "accepted_shortfall_fraction": 0.15,
+  "requested_picture_slots": 9,
+  "status": "near_target"
+ },
+ "motion_shaves": 0,
+ "motion_metrics": {
+  "scope": "captured motion evidence",
+  "new_motion_downloads": 0,
+  "method": "median-flow-v1-12frames-320x240",
+  "candidate_carriers": 0,
+  "candidate_stills": 0,
+  "sampled_sources": 0,
+  "unsampled_stills": 0,
+  "fetch_attempts": 0,
+  "playback_cache_write_failures": 0,
+  "cache_hits": 0,
+  "outcome_replay_hits": 0,
+  "download_bytes": 0,
+  "unavailable_sources": 0,
+  "decode_seconds": 0.0,
+  "sample_limit_per_carrier": 3,
+  "wall_seconds": 0.0
+ },
+ "final_duplicate_review": {
+  "policy": "final-cached-hash-duplicates-v2",
+  "scope": "cached preview hashes within one story or one day; no model comparison",
+  "maximum_hash_distance": 6,
+  "pairs_compared": 45,
+  "input_carriers": 10,
+  "output_carriers": 10,
+  "removals": [],
+  "replaced_from": {},
+  "kept_only_shots": [],
+  "collapsed_favourites": [],
+  "unavailable": [],
+  "incomplete": false,
+  "scene": {
+   "similarity": 0.65,
+   "window_days": 14,
+   "pairs_compared": 28,
+   "unavailable": []
+  },
+  "status": "complete"
+ },
+ "thumbnail_metrics": {
+  "method": "thumbnail-ahash-v1-bgr-gray-area-opencv-5.0.0-numpy-2.4.2",
+  "hash_size": 8,
+  "requests": 137,
+  "cache_hits": 137,
+  "hashes_computed": 0,
+  "unavailable": 0,
+  "preview_bytes": 6233288,
+  "wall_seconds": 0.014,
+  "preview_acquisition": {
+   "fetch_attempts": 0,
+   "cache_hits": 117,
+   "download_bytes": 0,
+   "unavailable": 0,
+   "fetch_seconds": 0.0,
+   "failures": {}
+  }
+ },
+ "planning_scope": {
+  "anchors": 6,
+  "picture_ladders_read": 0,
+  "source_assets": 117,
+  "selected_carriers": 10
+ },
+ "semantic_reuse": "exact-request-gateway; parsed files are per-run audit only",
+ "worthiness_review": {},
+ "schema_version": "structure-plan-v88-story-first",
+ "person_period_facts": {},
+ "story_motion_facts": {
+  "producer": "motion-line-v1@smolvlm2-500m-base-public/3-keyframes-320px",
+  "requested": 0,
+  "banked": 0,
+  "plain_facts": 0,
+  "unsupported": 0,
+  "unrecorded": 0
+ },
+ "shareability": {
+  "audience": "family",
+  "checked": 10,
+  "tightened": [],
+  "substituted": [],
+  "dropped": [],
+  "replacement_policy": "bounded editorial contribution review",
+  "funded_acquisition": {},
+  "prompt_version": "audience-evidence-v17-every-finding-needs-its-activity",
+  "check_policy": "all-captioned-carrier-members-v1",
+  "verdicts": {
+   "north-0721-0339": {
+    "policy": "audience-rules-v1-detector-heads-and-flags",
+    "verdict": "family_only",
+    "parsed": true,
+    "missing_members": [],
+    "activity": null,
+    "exposure": null,
+    "finding": "unread_private_activity",
+    "why": "no detector head objected, but no description was read to clear it",
+    "evidence_key": ""
+   },
+   "north-0720-0299": {
+    "policy": "audience-rules-v1-detector-heads-and-flags",
+    "verdict": "family_only",
+    "parsed": true,
+    "missing_members": [],
+    "activity": null,
+    "exposure": null,
+    "finding": "unread_private_activity",
+    "why": "no detector head objected, but no description was read to clear it",
+    "evidence_key": ""
+   },
+   "north-0720-0324": {
+    "policy": "audience-rules-v1-detector-heads-and-flags",
+    "verdict": "family_only",
+    "parsed": true,
+    "missing_members": [],
+    "activity": null,
+    "exposure": null,
+    "finding": "unread_private_activity",
+    "why": "no detector head objected, but no description was read to clear it",
+    "evidence_key": ""
+   },
+   "north-0721-0349": {
+    "policy": "audience-rules-v1-detector-heads-and-flags",
+    "verdict": "family_only",
+    "parsed": true,
+    "missing_members": [],
+    "activity": null,
+    "exposure": null,
+    "finding": "unread_private_activity",
+    "why": "no detector head objected, but no description was read to clear it",
+    "evidence_key": ""
+   },
+   "north-0721-0365": {
+    "policy": "audience-rules-v1-detector-heads-and-flags",
+    "verdict": "family_only",
+    "parsed": true,
+    "missing_members": [],
+    "activity": null,
+    "exposure": null,
+    "finding": "unread_private_activity",
+    "why": "no detector head objected, but no description was read to clear it",
+    "evidence_key": ""
+   },
+   "north-0721-0375": {
+    "policy": "audience-rules-v1-detector-heads-and-flags",
+    "verdict": "family_only",
+    "parsed": true,
+    "missing_members": [],
+    "activity": null,
+    "exposure": null,
+    "finding": "unread_private_activity",
+    "why": "no detector head objected, but no description was read to clear it",
+    "evidence_key": ""
+   },
+   "north-0721-0389": {
+    "policy": "audience-rules-v1-detector-heads-and-flags",
+    "verdict": "family_only",
+    "parsed": true,
+    "missing_members": [],
+    "activity": null,
+    "exposure": null,
+    "finding": "unread_private_activity",
+    "why": "no detector head objected, but no description was read to clear it",
+    "evidence_key": ""
+   },
+   "north-0721-0397": {
+    "policy": "audience-rules-v1-detector-heads-and-flags",
+    "verdict": "family_only",
+    "parsed": true,
+    "missing_members": [],
+    "activity": null,
+    "exposure": null,
+    "finding": "unread_private_activity",
+    "why": "no detector head objected, but no description was read to clear it",
+    "evidence_key": ""
+   },
+   "north-0722-0409": {
+    "policy": "audience-rules-v1-detector-heads-and-flags",
+    "verdict": "family_only",
+    "parsed": true,
+    "missing_members": [],
+    "activity": null,
+    "exposure": null,
+    "finding": "unread_private_activity",
+    "why": "no detector head objected, but no description was read to clear it",
+    "evidence_key": ""
+   },
+   "north-0722-0413": {
+    "policy": "audience-rules-v1-detector-heads-and-flags",
+    "verdict": "family_only",
+    "parsed": true,
+    "missing_members": [],
+    "activity": null,
+    "exposure": null,
+    "finding": "unread_private_activity",
+    "why": "no detector head objected, but no description was read to clear it",
+    "evidence_key": ""
+   }
+  },
+  "never_auto_excluded_units": 0,
+  "never_auto_excluded_anchors": [],
+  "anchors_without_shareable_picture": [],
+  "judgment_requests": 0
+ },
+ "carrier_source_exclusions": {
+  "policy": "screen-document-carrier-v1",
+  "sources": {
+   "north-0721-0361": "document-head:geographical_map",
+   "north-0721-0362": "document-head:geographical_map",
+   "north-0721-0363": "document-head:geographical_map"
+  },
+  "excluded_units_by_event": {
+   "E05": [
+    "north-0721-0361",
+    "north-0721-0362",
+    "north-0721-0363"
+   ]
+  }
+ },
+ "lineage": {
+  "episode_readings": [
+   {
+    "group_id": "episode-v1-dd386fbe929ca2e4c0d43993b95475f175b6863016e04bf8b6249da5d34387ba",
+    "producer_key": "",
+    "evidence_key": ""
+   },
+   {
+    "group_id": "episode-v1-ae305d5d042b490c38d0abc3e676e82509aa506675acb8e8c31482a864590fa5",
+    "producer_key": "",
+    "evidence_key": ""
+   },
+   {
+    "group_id": "episode-v1-c784eaab00e79d0258179676f19b2127a51e793f9c528d13462cc526db11b87a",
+    "producer_key": "",
+    "evidence_key": ""
+   },
+   {
+    "group_id": "episode-v1-9b913a10331acd74048336fa2933ac3a7f19adcf53f1d93e4c3adafa2887164c",
+    "producer_key": "",
+    "evidence_key": ""
+   },
+   {
+    "group_id": "episode-v1-23dc4cc0cd16ea82ac5437c3cc021727333bd753f0d3ff5a3a9bf414179fbad3",
+    "producer_key": "",
+    "evidence_key": ""
+   },
+   {
+    "group_id": "episode-v1-3da9a1973f35a331f7360eab317a532b51510517e2b77e07611eab4a9e6da9b3",
+    "producer_key": "",
+    "evidence_key": ""
+   },
+   {
+    "group_id": "episode-v1-92cc2dbd0037845d515a8dc06d382412c141200f73a86ff4c90e609d3be0e7e2",
+    "producer_key": "",
+    "evidence_key": ""
+   },
+   {
+    "group_id": "episode-v1-1961949a089cf930924bf61282a04cc50ff2b93a78f25bc0f5027bd2190f39c8",
+    "producer_key": "",
+    "evidence_key": ""
+   },
+   {
+    "group_id": "episode-v1-29cd62f5763cf97bae613464a0647573d5c083929520c7950092d3acd3acfc81",
+    "producer_key": "",
+    "evidence_key": ""
+   },
+   {
+    "group_id": "episode-v1-34e5de0f4ca623c3bafa403c3722c169dcc6e790e345f5d4c72487f9c3237068",
+    "producer_key": "",
+    "evidence_key": ""
+   },
+   {
+    "group_id": "episode-v1-e98e59279f6a4c10193ca9010480dc4af1cc4a916893fad110deb247c5ee4b26",
+    "producer_key": "",
+    "evidence_key": ""
+   },
+   {
+    "group_id": "episode-v1-316c71331d919506fde380993a3d4ee68f6fdc5cddcc09bf865aef45d65aa1ee",
+    "producer_key": "",
+    "evidence_key": ""
+   }
+  ],
+  "eligible_ids_sha256": "d30d4bed8e94cd62a91621f5085fc62d61b428ee3dcb385918985d2a1fc64cb3",
+  "sources": "conserved production workprint, no refetch",
+  "render_policy": {
+   "allow_live_motion": true
+  }
+ },
+ "tiers": {
+  "F01": 0,
+  "F02": 0,
+  "F03": 0,
+  "F04": 0,
+  "F05": 0,
+  "F06": 0
+ },
+ "worthy_reasons": {
+  "F01": "Outside home radius or the twelve usual cities",
+  "F02": "Outside home radius or the twelve usual cities",
+  "F03": "Outside home radius or the twelve usual cities",
+  "F04": "Outside home radius or the twelve usual cities",
+  "F05": "Outside home radius or the twelve usual cities",
+  "F06": "Outside home radius or the twelve usual cities"
+ },
+ "beats": [
+  "The road north"
+ ],
+ "threads": {
+  "headings": [
+   "The road north"
+  ],
+  "beats": [
+   "The road north"
+  ],
+  "memory_worthy": {},
+  "synthesis": {
+   "thesis": "The road north"
+  }
+ },
+ "status": "selection-awaiting-owner-review-not-rendered",
+ "intent_report": {
+  "status": "ok",
+  "requested_seconds": 45.0,
+  "usable_seconds": 36.5,
+  "shortfall_seconds": 8.5,
+  "reason": null,
+  "coverage": {
+   "occurrence-1-2025-07-20": 10
+  },
+  "violations": []
+ },
+ "allocation": {
+  "partition_first": false,
+  "background_refill": "never"
+ },
+ "event_funding": [],
+ "contract_key": "",
+ "intent": {
+  "product": "on_this_day",
+  "scope": "this day of the year across 1 occurrences, 2025..2025",
+  "partitions": [
+   "2025-07-20..2025-07-22"
+  ]
+ },
+ "target_seconds": 45.0,
+ "slots_total": 9,
+ "cap_per_anchor": 11,
+ "wall_sha256": "11f28b187b3d054bc4e1f86b90637bc021978acf0fdef7a90673cf1dafeb5efb",
+ "families": {
+  "rule": {
+   "same_day": true,
+   "same_location_head": true,
+   "max_gap_seconds": 10800,
+   "near_km_by_gps": 10.0,
+   "fallback_without_gps": "shared place id or none",
+   "interleaved_episodes_unioned": false
+  },
+  "episodes_before": 12,
+  "families_after": 6,
+  "interleave_merges": 0,
+  "merged_families": {
+   "E05": [
+    "E05",
+    "E06",
+    "E07",
+    "E08",
+    "E09",
+    "E10",
+    "E11"
+   ]
+  }
+ },
+ "anchors": 6,
+ "structure_fallback": null,
+ "chapters": [
+  {
+   "chapter": "S01",
+   "beat": "The road north",
+   "anchors": [
+    "F01",
+    "F05",
+    "F06"
+   ],
+   "share": 0.0,
+   "show": "The road north",
+   "budget": 11,
+   "capacity": 29,
+   "families": [
+    "E01",
+    "E05",
+    "E12"
+   ]
+  }
+ ],
+ "synthesis_omission_policy": "deferred priority; eligible reserves remain available",
+ "left_out_anchors": [],
+ "anchor_records": [],
+ "carriers": [
+  {
+   "favourite": false,
+   "moment": "M001",
+   "taken": "2025-07-20T14:13:52+02:00",
+   "kind": "still",
+   "asset_id": "north-0720-0299",
+   "members": [
+    "north-0720-0299"
+   ],
+   "video_ids": [],
+   "trim_points": [],
+   "seconds": 4.0,
+   "raw_seconds": null,
+   "residual": null,
+   "event": "E01",
+   "anchor": "F01",
+   "chapter": 1,
+   "why": "a photo",
+   "event_intention": "3 days away, Kabelvåg to Gravdal",
+   "line": "2025-07-20 12:13+00:00 | location=outdoor, people=one, venue=water | resolution:500x334",
+   "story_episode": "S001",
+   "story_role": "central",
+   "story_weight": "major",
+   "depicted_moment": "M001:cg",
+   "moment_alternatives": [
+    "north-0720-0298",
+    "north-0720-0300"
+   ],
+   "standing": 2
+  },
+  {
+   "favourite": false,
+   "moment": "M004",
+   "taken": "2025-07-20T16:20:27+02:00",
+   "kind": "still",
+   "asset_id": "north-0720-0324",
+   "members": [
+    "north-0720-0324"
+   ],
+   "video_ids": [],
+   "trim_points": [],
+   "seconds": 3.5,
+   "raw_seconds": null,
+   "residual": null,
+   "event": "E01",
+   "anchor": "F01",
+   "chapter": 1,
+   "why": "Kabelvåg · the sharpest of 7",
+   "event_intention": "3 days away, Kabelvåg to Gravdal",
+   "line": "2025-07-20 14:20+00:00 | at Kabelvåg, Nordland, Norway | activity=posing, location=outdoor, people=two | resolution:1280x854",
+   "story_episode": "S001",
+   "story_role": "central",
+   "story_weight": "major",
+   "depicted_moment": "M004:cg",
+   "moment_alternatives": [
+    "north-0720-0322",
+    "north-0720-0325",
+    "north-0720-0321",
+    "north-0720-0326",
+    "north-0720-0320",
+    "north-0720-0330"
+   ],
+   "standing": 2
+  },
+  {
+   "favourite": true,
+   "moment": "M009",
+   "taken": "2025-07-21T14:32:19+02:00",
+   "kind": "still",
+   "asset_id": "north-0721-0339",
+   "members": [
+    "north-0721-0339"
+   ],
+   "video_ids": [],
+   "trim_points": [],
+   "seconds": 4.0,
+   "raw_seconds": null,
+   "residual": null,
+   "event": "E05",
+   "anchor": "F05",
+   "chapter": 1,
+   "why": "Reine · starred",
+   "event_intention": "3 days away, Kabelvåg to Gravdal",
+   "line": "2025-07-21 12:32+00:00 | at Reine, Nordland, Norway | activity=posing, location=outdoor, people=one | STARRED by the photographer | resolution:1280x854",
+   "story_episode": "S001",
+   "story_role": "central",
+   "story_weight": "major",
+   "depicted_moment": "M009:cg",
+   "moment_alternatives": [
+    "north-0721-0338",
+    "north-0721-0337"
+   ],
+   "standing": 2
+  },
+  {
+   "story_episode": "S001",
+   "story_role": "central",
+   "story_weight": "major",
+   "favourite": false,
+   "moment": "M010",
+   "taken": "2025-07-21T15:15:52+02:00",
+   "kind": "still",
+   "asset_id": "north-0721-0349",
+   "members": [
+    "north-0721-0349"
+   ],
+   "video_ids": [],
+   "trim_points": [],
+   "seconds": 3.5,
+   "raw_seconds": null,
+   "residual": null,
+   "event": "E05",
+   "anchor": "F05",
+   "chapter": 1,
+   "why": "Reine",
+   "event_intention": "3 days away, Kabelvåg to Gravdal",
+   "line": "2025-07-21 13:15+00:00 | at Reine, Nordland, Norway | activity=posing, location=outdoor, people=one | resolution:500x334",
+   "depicted_moment": "source:df78f126-bd97-4508-a96a-429056b0711a",
+   "moment_alternatives": []
+  },
+  {
+   "favourite": false,
+   "moment": "M011",
+   "taken": "2025-07-21T16:16:45+02:00",
+   "kind": "still",
+   "asset_id": "north-0721-0365",
+   "members": [
+    "north-0721-0365"
+   ],
+   "video_ids": [],
+   "trim_points": [],
+   "seconds": 3.5,
+   "raw_seconds": null,
+   "residual": null,
+   "event": "E05",
+   "anchor": "F05",
+   "chapter": 1,
+   "why": "Reine · the sharpest of 8",
+   "event_intention": "3 days away, Kabelvåg to Gravdal",
+   "line": "2025-07-21 14:16+00:00 | at Reine, Nordland, Norway | activity=posing, location=outdoor, people=one, venue=water | resolution:334x500",
+   "story_episode": "S001",
+   "story_role": "central",
+   "story_weight": "major",
+   "depicted_moment": "M011:cg",
+   "moment_alternatives": [
+    "north-0721-0364",
+    "north-0721-0367",
+    "north-0721-0368",
+    "north-0721-0359",
+    "north-0721-0372",
+    "north-0721-0366",
+    "north-0721-0360"
+   ],
+   "standing": 2
+  },
+  {
+   "favourite": false,
+   "moment": "M014",
+   "taken": "2025-07-21T17:43:26+02:00",
+   "kind": "still",
+   "asset_id": "north-0721-0375",
+   "members": [
+    "north-0721-0375"
+   ],
+   "video_ids": [],
+   "trim_points": [],
+   "seconds": 3.5,
+   "raw_seconds": null,
+   "residual": null,
+   "event": "E05",
+   "anchor": "F05",
+   "chapter": 1,
+   "why": "Reine",
+   "event_intention": "3 days away, Kabelvåg to Gravdal",
+   "line": "2025-07-21 15:43+00:00 | at Reine, Nordland, Norway | activity=working, location=outdoor, people=one | resolution:500x375",
+   "story_episode": "S001",
+   "story_role": "central",
+   "story_weight": "major",
+   "depicted_moment": "M014:cg",
+   "moment_alternatives": [
+    "north-0721-0376"
+   ],
+   "standing": 2
+  },
+  {
+   "story_episode": "S001",
+   "story_role": "central",
+   "story_weight": "major",
+   "favourite": false,
+   "moment": "M017",
+   "taken": "2025-07-21T18:27:56+02:00",
+   "kind": "still",
+   "asset_id": "north-0721-0389",
+   "members": [
+    "north-0721-0389"
+   ],
+   "video_ids": [],
+   "trim_points": [],
+   "seconds": 3.5,
+   "raw_seconds": null,
+   "residual": null,
+   "event": "E05",
+   "anchor": "F05",
+   "chapter": 1,
+   "why": "Reine",
+   "event_intention": "3 days away, Kabelvåg to Gravdal",
+   "line": "2025-07-21 16:27+00:00 | at Reine, Nordland, Norway | location=outdoor, people=one, venue=water | resolution:500x375",
+   "depicted_moment": "source:d770e76d-8cf9-46f0-8b57-fcf122e40bb7",
+   "moment_alternatives": []
+  },
+  {
+   "favourite": false,
+   "moment": "M021",
+   "taken": "2025-07-21T19:15:50+02:00",
+   "kind": "still",
+   "asset_id": "north-0721-0397",
+   "members": [
+    "north-0721-0397"
+   ],
+   "video_ids": [],
+   "trim_points": [],
+   "seconds": 3.5,
+   "raw_seconds": null,
+   "residual": null,
+   "event": "E05",
+   "anchor": "F05",
+   "chapter": 1,
+   "why": "Gravdal",
+   "event_intention": "3 days away, Kabelvåg to Gravdal",
+   "line": "2025-07-21 17:15+00:00 | at Gravdal, Nordland, Norway | location=outdoor, people=two, venue=water | resolution:500x375",
+   "story_episode": "S001",
+   "story_role": "central",
+   "story_weight": "major",
+   "depicted_moment": "M021:cg",
+   "moment_alternatives": [
+    "north-0721-0398"
+   ],
+   "standing": 2
+  },
+  {
+   "favourite": false,
+   "moment": "M024",
+   "taken": "2025-07-22T13:19:18+02:00",
+   "kind": "still",
+   "asset_id": "north-0722-0409",
+   "members": [
+    "north-0722-0409"
+   ],
+   "video_ids": [],
+   "trim_points": [],
+   "seconds": 3.5,
+   "raw_seconds": null,
+   "residual": null,
+   "event": "E12",
+   "anchor": "F06",
+   "chapter": 1,
+   "why": "a photo",
+   "event_intention": "3 days away, Kabelvåg to Gravdal",
+   "line": "2025-07-22 11:19+00:00 | location=outdoor, people=one, venue=water | resolution:500x334",
+   "story_episode": "S001",
+   "story_role": "central",
+   "story_weight": "major",
+   "depicted_moment": "M024:cg",
+   "moment_alternatives": [],
+   "standing": 2
+  },
+  {
+   "favourite": false,
+   "moment": "M027",
+   "taken": "2025-07-22T14:42:40+02:00",
+   "kind": "still",
+   "asset_id": "north-0722-0413",
+   "members": [
+    "north-0722-0413"
+   ],
+   "video_ids": [],
+   "trim_points": [],
+   "seconds": 4.0,
+   "raw_seconds": null,
+   "residual": null,
+   "event": "E12",
+   "anchor": "F06",
+   "chapter": 1,
+   "why": "a photo",
+   "event_intention": "3 days away, Kabelvåg to Gravdal",
+   "line": "2025-07-22 12:42+00:00 | children=no, location=outdoor, people=one | resolution:500x334",
+   "story_episode": "S001",
+   "story_role": "central",
+   "story_weight": "major",
+   "depicted_moment": "M027:cg",
+   "moment_alternatives": [],
+   "standing": 2
+  }
+ ],
+ "locations": {
+  "north-0720-0324": {
+   "latitude": 68.178114,
+   "longitude": 14.225314,
+   "location_name": "Kabelvåg"
+  },
+  "north-0721-0339": {
+   "latitude": 67.934527,
+   "longitude": 13.085381,
+   "location_name": "Reine"
+  },
+  "north-0721-0349": {
+   "latitude": 67.922203,
+   "longitude": 13.078508,
+   "location_name": "Reine"
+  },
+  "north-0721-0365": {
+   "latitude": 67.927787,
+   "longitude": 13.073984,
+   "location_name": "Reine"
+  },
+  "north-0721-0375": {
+   "latitude": 67.933853,
+   "longitude": 13.08855,
+   "location_name": "Reine"
+  },
+  "north-0721-0389": {
+   "latitude": 68.006247,
+   "longitude": 13.172792,
+   "location_name": "Reine"
+  },
+  "north-0721-0397": {
+   "latitude": 68.133317,
+   "longitude": 13.436772,
+   "location_name": "Gravdal"
+  }
+ },
+ "cut_carriers": [
+  {
+   "favourite": false,
+   "moment": "M006",
+   "taken": "2025-07-20T20:59:04+02:00",
+   "kind": "still",
+   "asset_id": "north-0720-0334",
+   "members": [
+    "north-0720-0334"
+   ],
+   "video_ids": [],
+   "trim_points": [],
+   "seconds": 3.5,
+   "raw_seconds": null,
+   "residual": null,
+   "event": "E02",
+   "anchor": "F02",
+   "chapter": 1,
+   "why": "Ballstad",
+   "event_intention": "3 days away, Kabelvåg to Gravdal",
+   "line": "2025-07-20 18:59+00:00 | at Ballstad, Nordland, Norway | location=outdoor, people=one, venue=water | resolution:500x334",
+   "story_episode": "S001",
+   "story_role": "central",
+   "story_weight": "major",
+   "depicted_moment": "M006:cg",
+   "moment_alternatives": [],
+   "standing": 2,
+   "reason": "Final visual duplicate of retained source 08f217a5-d048-44a8-bb10-fb6a635cbd52",
+   "review_stage": "final-duplicates"
+  },
+  {
+   "favourite": false,
+   "moment": "M017",
+   "taken": "2025-07-21T18:28:04+02:00",
+   "kind": "still",
+   "asset_id": "north-0721-0390",
+   "members": [
+    "north-0721-0390"
+   ],
+   "video_ids": [],
+   "trim_points": [],
+   "seconds": 3.5,
+   "raw_seconds": null,
+   "residual": null,
+   "event": "E05",
+   "anchor": "F05",
+   "chapter": 1,
+   "why": "Reine",
+   "event_intention": "3 days away, Kabelvåg to Gravdal",
+   "line": "2025-07-21 16:28+00:00 | at Reine, Nordland, Norway | location=outdoor, people=one, venue=water | resolution:500x375",
+   "story_episode": "S001",
+   "story_role": "central",
+   "story_weight": "major",
+   "depicted_moment": "M017:cg",
+   "moment_alternatives": [
+    "north-0721-0389",
+    "north-0721-0391",
+    "north-0721-0388",
+    "north-0721-0392"
+   ],
+   "standing": 2,
+   "reason": "Final visual duplicate of retained source 08f217a5-d048-44a8-bb10-fb6a635cbd52",
+   "review_stage": "final-duplicates"
+  },
+  {
+   "favourite": false,
+   "moment": "M007",
+   "taken": "2025-07-21T11:04:43+02:00",
+   "kind": "still",
+   "asset_id": "north-0721-0335",
+   "members": [
+    "north-0721-0335"
+   ],
+   "video_ids": [],
+   "trim_points": [],
+   "seconds": 3.5,
+   "raw_seconds": null,
+   "residual": null,
+   "event": "E03",
+   "anchor": "F03",
+   "chapter": 1,
+   "why": "Ballstad",
+   "event_intention": "3 days away, Kabelvåg to Gravdal",
+   "line": "2025-07-21 09:04+00:00 | at Ballstad, Nordland, Norway | frame=lone_everyday_object, location=indoor, people=one | resolution:960x1280",
+   "story_episode": "S001",
+   "story_role": "central",
+   "story_weight": "major",
+   "depicted_moment": "M007:cg",
+   "moment_alternatives": [],
+   "standing": 0,
+   "reason": "Filler with no indicator that the frame head reads as showing nothing",
+   "review_stage": "unvouched-filler"
+  }
+ ],
+ "review": {
+  "per_event": [],
+  "cuts_order1": 0,
+  "cuts_order2": 0,
+  "agreed_cuts": 0,
+  "adjudication": [],
+  "protected_prior_carriers": 0,
+  "degenerate_orders_discarded": 0,
+  "replacement_policy": "bounded editorial contribution review",
+  "refused_under_contract": []
+ },
+ "structural_review": {
+  "asked": false,
+  "removed": {},
+  "merged": [],
+  "missing": "",
+  "fallback": null
+ },
+ "whole_film_review": {
+  "asked": false,
+  "proposed": 0,
+  "applied": 0,
+  "degenerate": false,
+  "status": null
+ },
+ "assembly_repair": {
+  "status": "not_run",
+  "asked": false,
+  "input_carriers": 10,
+  "output_carriers": 10,
+  "shortfall_explanation": "",
+  "examined": 0,
+  "added": [],
+  "decisions": [],
+  "eligible_reserve_events": 0,
+  "discovery": {
+   "status": "not_started"
+  }
+ },
+ "selection_stages": {
+  "funded_picture_requests": 0,
+  "after_funded_acquisition": 10,
+  "before_shareability": 10,
+  "after_shareability": 10,
+  "before_picture_review": 10,
+  "after_final_duplicate_review": 10,
+  "after_unvouched_filler": 10
+ },
+ "prior_plan": null,
+ "review_proposed_assets": [],
+ "ineligible_anchors": {},
+ "starved_depth_added": 0,
+ "reservoir_added": 0,
+ "monotonic": {
+  "prior_carriers": 0,
+  "retained": 0,
+  "ok": true,
+  "prior_events": 0,
+  "events_retained": 0,
+  "events_ok": true
+ },
+ "reservoir_beats": [],
+ "content_seconds": 36.5,
+ "llm_metrics": {
+  "llm_calls": 1,
+  "llm_cache_hits": 0,
+  "llm_prompt_tokens": 1717,
+  "llm_cached_prompt_tokens": 512,
+  "llm_completion_tokens": 100,
+  "llm_truncated": 0,
+  "llm_wall_seconds": 1.799
+ },
+ "calls": [],
+ "calls_by_stage": {},
+ "pixels_seen_by_text_model": false,
+ "episode_reading_health": {
+  "status": "complete",
+  "unavailable_episodes": 0,
+  "episodes": [
+   {
+    "group_id": "episode-v1-dd386fbe929ca2e4c0d43993b95475f175b6863016e04bf8b6249da5d34387ba",
+    "producer_key": "",
+    "evidence_key": "",
+    "status": "read",
+    "reason": null,
+    "cache_hit": true
+   },
+   {
+    "group_id": "episode-v1-23dc4cc0cd16ea82ac5437c3cc021727333bd753f0d3ff5a3a9bf414179fbad3",
+    "producer_key": "",
+    "evidence_key": "",
+    "status": "read",
+    "reason": null,
+    "cache_hit": true
+   },
+   {
+    "group_id": "episode-v1-92cc2dbd0037845d515a8dc06d382412c141200f73a86ff4c90e609d3be0e7e2",
+    "producer_key": "",
+    "evidence_key": "",
+    "status": "read",
+    "reason": null,
+    "cache_hit": true
+   },
+   {
+    "group_id": "episode-v1-e98e59279f6a4c10193ca9010480dc4af1cc4a916893fad110deb247c5ee4b26",
+    "producer_key": "",
+    "evidence_key": "",
+    "status": "read",
+    "reason": null,
+    "cache_hit": true
+   },
+   {
+    "group_id": "episode-v1-316c71331d919506fde380993a3d4ee68f6fdc5cddcc09bf865aef45d65aa1ee",
+    "producer_key": "",
+    "evidence_key": "",
+    "status": "read",
+    "reason": null,
+    "cache_hit": false
+   }
+  ]
+ }
+}

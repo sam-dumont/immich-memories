@@ -1,5 +1,5 @@
 {
- "title": "The road north, 2025",
+ "title": "Summer 2025",
  "title_source": "model",
  "memory_type": "season",
  "arguments": [
@@ -10,5 +10,5 @@
   "--year",
   "2025"
  ],
- "seconds": 146
+ "seconds": 132
 }

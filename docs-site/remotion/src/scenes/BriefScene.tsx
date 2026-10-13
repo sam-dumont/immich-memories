@@ -6,6 +6,7 @@ import { WindowFrame, onScreen } from "../components/WindowFrame";
 import { AppShell, MAIN_X, MAIN_Y } from "../components/AppShell";
 import { AnimatedCursor } from "../components/AnimatedCursor";
 import { Badge, Button, Check, CommandLine, Field, Heading } from "../components/ui";
+import { REQUEST_SECONDS } from "../fixture";
 
 /**
  * web/src/routes/create/+page.svelte: the memory type as chips, the fields
@@ -75,7 +76,7 @@ const command = (monthly: boolean, year: string, month: number) =>
     `--memory-type=${monthly ? "monthly_highlights" : "year_in_review"}`,
     ...(year ? [`--year=${year}`] : []),
     ...(monthly ? [`--month=${month}`] : []),
-    "--duration=120",
+    `--duration=${REQUEST_SECONDS}`,
     "--include-photos --include-live-photos --no-render",
   ].join(" ");
 
@@ -268,7 +269,7 @@ const BriefForm: React.FC<{ frame: number }> = ({ frame }) => {
       >
         <Disclosure bold open>Length and pictures</Disclosure>
         <div style={{ marginTop: 16, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-          <Field label="Length in minutes (fitted to the pictures when empty)" value="2" />
+          <Field label="Length in minutes (fitted to the pictures when empty)" value={String(REQUEST_SECONDS / 60)} />
           <Field label="Who may see it" value="As configured" select />
           <Check label="Include photos" checked />
           <Check label="Include Live Photos" checked />

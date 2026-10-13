@@ -17,7 +17,12 @@ import {
   alternativesOf,
   cardAt,
 } from "../components/RunPage";
-import { CUT_CONTENT_BUDGET, SHOTS } from "../fixture";
+import {
+  CUT_CONTENT_BUDGET,
+  EDIT_REMOVED,
+  EDIT_SWAPPED,
+  SHOTS,
+} from "../fixture";
 
 /**
  * The cut is a draft: one shot swapped for another picture of the same moment
@@ -26,8 +31,10 @@ import { CUT_CONTENT_BUDGET, SHOTS } from "../fixture";
  * "Save revision" keeps them as revision 1.
  */
 
-const SWAPPED = 1;
-const REMOVED = 3;
+// The first shot with another picture of its moment, and the first lone still after
+// it: the exporter picks both from the cut, the same two the output clip is cut with.
+const SWAPPED = EDIT_SWAPPED;
+const REMOVED = EDIT_REMOVED;
 const ALTERNATIVE = alternativesOf(SHOTS[SWAPPED])[0].picture;
 
 const PICK_SWAP = 22;
@@ -90,7 +97,7 @@ export const EditScene: React.FC = () => {
     },
   );
   const selected =
-    frame < PICK_SWAP ? 2 : frame < PICK_REMOVE ? SWAPPED : REMOVED;
+    frame < PICK_SWAP ? (SWAPPED > 0 ? SWAPPED - 1 : REMOVED) : frame < PICK_REMOVE ? SWAPPED : REMOVED;
   const swapped: Record<number, string> =
     frame >= USE_IT ? { [SWAPPED]: ALTERNATIVE } : {};
   const removed = frame >= REMOVE ? [REMOVED] : [];

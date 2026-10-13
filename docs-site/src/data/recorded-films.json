@@ -1,7 +1,7 @@
 [
   {
     "memory_type": "monthly_highlights",
-    "title": "July 2025 highlights",
+    "title": "July 2025",
     "arguments": [
       "--memory-type",
       "monthly_highlights",
@@ -12,29 +12,29 @@
     ],
     "film": "/demo/films/monthly_highlights.mp4",
     "poster": "/img/films/monthly_highlights.jpg",
-    "seconds": 60.9,
+    "seconds": 60.0,
     "read": 1129,
     "moments": 129,
-    "stories": 5,
+    "stories": 7,
     "kept": 15,
     "left_out": [
       {
         "reason": "the film's content seconds were spent before its turn",
-        "pictures": 858
-      },
-      {
-        "reason": "its place already holds its share of the film",
-        "pictures": 29
+        "pictures": 880
       },
       {
         "reason": "it does not stand on its own as a picture of its story",
-        "pictures": 3
+        "pictures": 6
+      },
+      {
+        "reason": "its place already holds its share of the film",
+        "pictures": 4
       }
     ]
   },
   {
     "memory_type": "year_in_review",
-    "title": "The road north 2025",
+    "title": "2025",
     "arguments": [
       "--memory-type",
       "year_in_review",
@@ -45,33 +45,33 @@
     ],
     "film": "/demo/films/year_in_review.mp4",
     "poster": "/img/films/year_in_review.jpg",
-    "seconds": 180.7,
+    "seconds": 180.6,
     "read": 1129,
     "moments": 129,
-    "stories": 5,
+    "stories": 7,
     "kept": 53,
     "left_out": [
       {
         "reason": "the film's content seconds were spent before its turn",
-        "pictures": 747
+        "pictures": 805
       },
       {
         "reason": "its place already holds its share of the film",
-        "pictures": 93
+        "pictures": 31
       },
       {
         "reason": "it does not stand on its own as a picture of its story",
-        "pictures": 11
+        "pictures": 9
       },
       {
         "reason": "other reasons",
-        "pictures": 1
+        "pictures": 7
       }
     ]
   },
   {
     "memory_type": "season",
-    "title": "The road north, 2025",
+    "title": "Summer 2025",
     "arguments": [
       "--memory-type",
       "season",
@@ -82,27 +82,27 @@
     ],
     "film": "/demo/films/season.mp4",
     "poster": "/img/films/season.jpg",
-    "seconds": 195.7,
+    "seconds": 195.2,
     "read": 1129,
     "moments": 129,
-    "stories": 5,
+    "stories": 7,
     "kept": 57,
     "left_out": [
       {
         "reason": "the film's content seconds were spent before its turn",
-        "pictures": 740
+        "pictures": 805
       },
       {
         "reason": "its place already holds its share of the film",
-        "pictures": 94
+        "pictures": 29
       },
       {
         "reason": "it does not stand on its own as a picture of its story",
-        "pictures": 11
+        "pictures": 8
       },
       {
         "reason": "other reasons",
-        "pictures": 3
+        "pictures": 6
       }
     ]
   },
@@ -119,25 +119,25 @@
     ],
     "film": "/demo/films/person_spotlight.mp4",
     "poster": "/img/films/person_spotlight.jpg",
-    "seconds": 66.0,
+    "seconds": 33.5,
     "read": 1131,
     "moments": 18,
-    "stories": 3,
-    "kept": 15,
+    "stories": 5,
+    "kept": 6,
     "left_out": [
       {
         "reason": "its story earned fewer shots than it has moments",
-        "pictures": 9
+        "pictures": 19
       },
       {
         "reason": "it is not its own shot",
-        "pictures": 2
+        "pictures": 1
       }
     ]
   },
   {
     "memory_type": "multi_person",
-    "title": "Robin and Kit in · 2025",
+    "title": "Kit and Robin in 2025",
     "arguments": [
       "--memory-type",
       "multi_person",
@@ -150,14 +150,42 @@
     ],
     "film": "/demo/films/multi_person.mp4",
     "poster": "/img/films/multi_person.jpg",
-    "seconds": 13.0,
+    "seconds": 16.5,
     "read": 1131,
     "moments": 3,
-    "stories": 2,
-    "kept": 2,
+    "stories": 3,
+    "kept": 3,
+    "left_out": []
+  },
+  {
+    "memory_type": "on_this_day",
+    "title": "The road north",
+    "arguments": [
+      "--memory-type",
+      "on_this_day",
+      "--day",
+      "2026-07-21",
+      "--years-back",
+      "1"
+    ],
+    "film": "/demo/films/on_this_day.mp4",
+    "poster": "/img/films/on_this_day.jpg",
+    "seconds": 41.0,
+    "read": 117,
+    "moments": 12,
+    "stories": 1,
+    "kept": 10,
     "left_out": [
       {
-        "reason": "its story weighs nothing",
+        "reason": "the film's content seconds were spent before its turn",
+        "pictures": 87
+      },
+      {
+        "reason": "its place already holds its share of the film",
+        "pictures": 7
+      },
+      {
+        "reason": "it repeats a picture already in the cut",
         "pictures": 1
       }
     ]
@@ -208,7 +236,7 @@
     ],
     "film": "/demo/films/trip.mp4",
     "poster": "/img/films/trip.jpg",
-    "seconds": 218.0,
+    "seconds": 217.5,
     "read": 952,
     "moments": 90,
     "stories": 1,
@@ -239,33 +267,29 @@
     ],
     "film": "/demo/films/album.mp4",
     "poster": "/img/films/album.jpg",
-    "seconds": 228.4,
+    "seconds": 230.6,
     "read": 990,
     "moments": 92,
     "stories": 1,
-    "kept": 66,
+    "kept": 67,
     "left_out": [
       {
-        "reason": "its story earned fewer shots than it has moments",
-        "pictures": 351
+        "reason": "the film's content seconds were spent before its turn",
+        "pictures": 689
       },
       {
-        "reason": "it is not its own shot",
-        "pictures": 304
+        "reason": "it repeats a picture already in the cut",
+        "pictures": 11
       },
       {
         "reason": "its place already holds its share of the film",
-        "pictures": 35
-      },
-      {
-        "reason": "other reasons",
-        "pictures": 12
+        "pictures": 2
       }
     ]
   },
   {
     "memory_type": "special_day",
-    "title": null,
+    "title": "Kit's birthday in Ixelles",
     "arguments": [
       "--memory-type",
       "special_day",

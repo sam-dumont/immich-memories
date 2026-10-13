@@ -1,0 +1,14 @@
+{
+ "title": "The road north",
+ "title_source": "model",
+ "memory_type": "on_this_day",
+ "arguments": [
+  "--memory-type",
+  "on_this_day",
+  "--day",
+  "2026-07-21",
+  "--years-back",
+  "1"
+ ],
+ "seconds": 25
+}
