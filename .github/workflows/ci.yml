@@ -270,7 +270,9 @@ jobs:
     env:
       UV_PYTHON: ${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 20
+    # A shard fits in 20 minutes. Main and release run a cell whole (one shard), and the
+    # whole suite on a macOS runner took 21 minutes on 2026-10-13, so it gets 40.
+    timeout-minutes: ${{ matrix.shards == 1 && 40 || 20 }}
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.changes.outputs.unit_matrix) }}
