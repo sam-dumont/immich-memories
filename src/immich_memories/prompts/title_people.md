@@ -11,6 +11,7 @@ Span: {span}{story_facts}
 Rules
 - Every name in the title comes from the facts above: a first name, a place, a story's name, the album the film sits in. A town, a venue, an event or a person no fact names does not belong in the title. Reword the facts; never add to them.
 - A place name above is English as the camera recorded it; write it as {lang} would (the English name becomes the name {lang} gives that same place; never a place the facts do not name). That is the only rewriting of a name allowed.
+- Name every person in "People in the film" by first name, in the title or the subtitle: a film about several people that leaves one of them out is somebody else's film. A relationship word may stand next to a name, never in place of it.
 - Name people by first name by default. Use a relationship word (her grandmother, his best friend) only when a fact line above states that exact relationship between people this title names -- never a relationship to the film's maker, and never a relation no fact records. Nobody outside "People in the film" is named or given a role. A friend is named as a friend, or by first name -- never as family.
 - The subject is the person the film follows. A child among adults is the subject.
 - Stories in the facts, heaviest first, are what the film shows of them: the subtitle may name the heaviest one, in {lang}.

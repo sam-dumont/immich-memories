@@ -21,6 +21,7 @@ from immich_memories.titles.relationship_guard import refusing_unfounded_relatio
 from immich_memories.titles.title_guards import (
     _template_title_text,
     eliding_french,
+    naming_everyone,
     refusing_a_wrong_year,
     refusing_contentless_title,
     refusing_invented_names,
@@ -709,6 +710,9 @@ def _guarded_suggestion(
     )
     suggestion = refusing_contentless_title(
         suggestion, memory_type, start_date, end_date, person_names, locale
+    )
+    suggestion = naming_everyone(
+        suggestion, memory_type, person_names, facts.people_condition if facts else None
     )
     suggestion = separating_the_years(suggestion, person_names)
     if memory_type in PEOPLE_MEMORY_TYPES or memory_type in OCCASION_MEMORY_TYPES:
