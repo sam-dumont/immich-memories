@@ -51,23 +51,46 @@ def setup_site(tmp_path_factory):
 
 def test_builder_changes_files_for_full_then_native_mac(page, setup_site):
     page.goto(setup_site)
+    port = page.get_by_label("UI host port")
+    expect(port).to_have_value("22830")
     expect(page.get_by_label("Immich API key")).to_have_count(0)
     expect(page.get_by_label("Release version", exact=True)).to_have_count(0)
     page.get_by_role("radio", name="Full").check()
     page.get_by_label("Reader URL", exact=True).fill("http://reader.example.lan:8000/v1")
-    assert page.locator("input[type=password]").count() == 0
+    # The only secret the builder asks for is the app login it writes into the files.
+    expect(page.locator("input[type=password]")).to_have_count(1)
+    expect(page.get_by_label("App login: password")).to_have_attribute("type", "password")
     page.get_by_label("Reader model", exact=True).fill("served-model")
     page.get_by_text("Preview .env", exact=True).click()
     expect(page.locator("pre").filter(has_text="READER_ENABLED=true")).to_be_visible()
     expect(page.locator("pre").filter(has_text="docker compose up -d")).to_be_visible()
 
-    page.get_by_label("Where will it run?", exact=True).select_option("mac")
+    platform = page.get_by_label("Where will it run?", exact=True)
+    platform.select_option("mac")
+    expect(port).to_have_value("8080")
 
     expect(page.locator("pre").filter(has_text="immich-memories[all-mac]")).to_be_visible()
     expect(
         page.locator("pre").filter(has_text="immich-memories ui --host 127.0.0.1")
     ).to_be_visible()
     expect(page.get_by_label("GPU box address (optional)", exact=True)).to_have_count(0)
+
+    platform.select_option("linux")
+    expect(port).to_have_value("22830")
+    port.fill("18081")
+    expect(page.locator("pre").filter(has_text="docker compose up -d")).to_contain_text(
+        "http://localhost:18081"
+    )
+    platform.select_option("mac")
+    expect(port).to_have_value("18081")
+    expect(
+        page.locator("pre").filter(has_text="immich-memories ui --host 127.0.0.1 --port 18081")
+    ).to_be_visible()
+    platform.select_option("linux")
+    expect(port).to_have_value("18081")
+    expect(page.locator("pre").filter(has_text="docker compose up -d")).to_contain_text(
+        "http://localhost:18081"
+    )
 
 
 def test_builder_mobile_has_no_horizontal_overflow_and_labels_are_usable(page, setup_site):

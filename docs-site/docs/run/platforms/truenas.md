@@ -2,6 +2,8 @@
 title: TrueNAS
 ---
 
+import ComposePort from '@site/src/components/ComposePort';
+
 import SetupBuilder from '@site/src/components/SetupBuilder';
 import StackStorage from './_stack-storage.mdx';
 import StackAccess from './_stack-access.mdx';
@@ -37,7 +39,7 @@ Set film language after startup in [Settings](../../get-started/after-install.md
 
 ## 3. Open the app and download models {#3-prepare-and-check}
 
-Open `http://your-server-address:8080` (use your chosen host port) and sign in with the app
+Open <code><ComposePort host="your-server-address" /></code> (use your chosen host port) and sign in with the app
 username and password you just set. If you chose private localhost access, use its forwarded URL.
 
 On **Memory**, click **Download models** and wait for it to finish. The card lists the files and

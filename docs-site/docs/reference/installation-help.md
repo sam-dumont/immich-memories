@@ -3,6 +3,8 @@ title: Installation help
 description: Fix installation problems with permissions, ports, model preparation and networking.
 ---
 
+import ComposePort from '@site/src/components/ComposePort';
+
 # Installation help
 
 For a first installation, follow [Quick start](../get-started/quick-start.md) or your
@@ -54,8 +56,8 @@ a warning because its files do not survive container replacement.
 
 ## Port or container name already in use
 
-The release Compose file uses host port 8080 and `container_name: immich-memories`.
-Change only the host port in its `ports:` entry, preserving the bind address:
+The release Compose file uses host port <ComposePort /> and `container_name: immich-memories`.
+Change only the host port in its `ports:` entry, preserving the bind address. For example:
 
 ```yaml
 ports:

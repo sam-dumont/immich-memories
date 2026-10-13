@@ -3,7 +3,8 @@
 The files carry a real version, never `latest`. A release run stamps it into the
 published assets (`package_compose.py`, `package_deployment.py`);
 `make pin-release VERSION=X.Y.Z` moves the pin in the repository after a release,
-in one commit.
+in one commit. The README's browser URLs move with it, to the host port of the Compose
+file that release ships.
 """
 
 from __future__ import annotations
@@ -35,6 +36,8 @@ _TERRAFORM_DEFAULT = re.compile(
     r"(?P<pre>variable \"image_tag\" \{[^}]*?default\s*=\s*\")[^\"]*(?P<post>\")", re.DOTALL
 )
 _TFVARS = re.compile(r"(?m)^(?P<pre>image_tag\s*=\s*\")[^\"]*(?P<post>\")")
+_COMPOSE_HOST_PORT = re.compile(r"(?m)^\s*-\s*\S*:(?P<port>\d+):8080\s*$")
+_README_URL = re.compile(r"(?P<pre>http://(?:localhost|your-server-address):)\d+")
 _TABLE_DEFAULT = re.compile(r"(?P<pre>`\")(?:latest|\d[^\"]*)(?P<post>\"`)")
 
 _MANIFESTS = (_MANIFEST_IMAGE,)
@@ -95,7 +98,22 @@ def pin_repository(root: Path, version: str) -> list[Path]:
         if after != before:
             path.write_text(after, encoding="utf-8")
             changed.append(path)
+    if _pin_readme_port(root) and root / "README.md" not in changed:
+        changed.append(root / "README.md")
     return changed
+
+
+def _pin_readme_port(root: Path) -> bool:
+    """Point the README's browser URLs at the host port the pinned Compose file publishes."""
+    port = _COMPOSE_HOST_PORT.search((root / "docker-compose.yml").read_text(encoding="utf-8"))
+    if port is None:
+        raise ValueError("docker-compose.yml publishes no host port for the app")
+    readme = root / "README.md"
+    before = readme.read_text(encoding="utf-8")
+    after = _README_URL.sub(lambda m: m["pre"] + port["port"], before)
+    if after != before:
+        readme.write_text(after, encoding="utf-8")
+    return after != before
 
 
 if __name__ == "__main__":

@@ -2,6 +2,8 @@
 title: "Network and security"
 ---
 
+import ComposePort from '@site/src/components/ComposePort';
+
 # Network and security
 
 Keep the app private until authentication works. An Immich API key gives the app access to the
@@ -12,7 +14,8 @@ library; a proxy or render worker is part of that trust boundary.
 With auth off, Python binds to `127.0.0.1`. Enabling auth normally permits all interfaces.
 Use `ui --host 127.0.0.1` to keep an authenticated app local.
 In Docker, the image starts with `ui --host 0.0.0.0`. Only the shipped Compose mapping
-`127.0.0.1:8080:8080` keeps it reachable from the host alone. `docker run -p 8080:8080`,
+<code>127.0.0.1:<ComposePort />:8080</code> keeps it reachable from the host alone.
+For example, `docker run -p 8080:8080`,
 a NAS template or a Portainer stack with an all-interface mapping exposes the unauthenticated
 app unless you enable auth. For LAN access, follow
 [Docker's login and mapping steps](./docker.md#reaching-the-ui-from-another-machine).
@@ -80,7 +83,9 @@ No page may show the app in a frame: every response carries `X-Frame-Options: DE
 ## HTTPS reverse proxy
 
 This example uses nginx on the same host, proxying the shipped loopback mapping. Enable
-[Basic auth or OIDC](./authentication.mdx) first. Configure the app:
+[Basic auth or OIDC](./authentication.mdx) first. Replace `APP_HOST_PORT` in the nginx config
+with your published host port: <ComposePort /> with the release Compose file, or the port you
+chose. Configure the app:
 
 ```yaml
 advanced:
@@ -116,7 +121,7 @@ server {
     ssl_certificate_key /etc/nginx/tls/privkey.pem;
     client_max_body_size 100m;
     location / {
-        proxy_pass http://127.0.0.1:8080;
+        proxy_pass http://127.0.0.1:APP_HOST_PORT;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Forwarded-Proto $scheme;
@@ -318,7 +323,8 @@ If you try one, [report your proxy version, host platform and the checks that pa
 
 | Connection | Default port | Needed when |
 |---|---|---|
-| Browser/proxy to app | 8080 | Always |
+| Browser/proxy to Compose host | <ComposePort /> | Published Compose port |
+| App listener (native or container) | 8080 | All installs |
 | App to Immich | 2283, or your HTTPS proxy | Always |
 | App to PostgreSQL | 5432 | PostgreSQL store |
 | App to inference/captions | 8092 | Configured model services |

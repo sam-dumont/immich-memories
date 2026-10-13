@@ -103,3 +103,22 @@ def test_release_assets_stamp_the_release_over_the_pin(tmp_path):
         "immich-memories:${IMMICH_MEMORIES_VERSION:-7.8.9}"
         in (tmp_path / "docker-compose.yml").read_text()
     )
+
+
+def test_pinning_moves_the_readme_browser_urls_to_the_shipped_host_port(tmp_path):
+    for name in PINNED_FILES:
+        target = tmp_path / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text((ROOT / name).read_text(encoding="utf-8"), encoding="utf-8")
+    compose = tmp_path / "docker-compose.yml"
+    compose.write_text(
+        re.sub(r":\d+:8080\b", ":18081:8080", compose.read_text(encoding="utf-8")),
+        encoding="utf-8",
+    )
+
+    pin_repository(tmp_path, "7.8.9-rc.1")
+
+    readme = (tmp_path / "README.md").read_text(encoding="utf-8")
+    assert "http://localhost:18081" in readme
+    assert "http://your-server-address:18081" in readme
+    assert not re.search(r"http://(?:localhost|your-server-address):(?!18081)\d+", readme)

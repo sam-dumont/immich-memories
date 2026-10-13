@@ -3,6 +3,8 @@ title: Synology access and troubleshooting
 description: SSH and Compose installation, DSM permissions, reverse proxies and access checks.
 ---
 
+import ComposePort from '@site/src/components/ComposePort';
+
 # Synology access and troubleshooting
 
 For a new Container Manager project, use [Synology setup](../platforms/synology.md).
@@ -45,7 +47,7 @@ For a file-based setting, add `locale: fr` under `title_screens:` in `config.yam
 Automatic language detection reads the container's locale, not DSM's. Adding `LANG` to `.env`
 has no effect because the release Compose file does not pass it into the container.
 
-This stock release-file route uses host port **8080**. If occupied, change only the number before
+This stock release-file route uses host port **<ComposePort />**. If occupied, change only the number before
 `:8080` in the port line, so it reads `${UI_BIND_ADDRESS:-127.0.0.1}:18081:8080`.
 Keep `${UI_BIND_ADDRESS:-127.0.0.1}`: the LAN route depends on it. Use the new NAS port in the
 tunnel and proxy destinations below.
@@ -57,9 +59,7 @@ need permission to run without an interactive `sudo` password prompt.
 
 On your **desktop**, the permitted-tunnel route is:
 
-```bash
-ssh -o ExitOnForwardFailure=yes -L 8080:127.0.0.1:8080 your-user@your-nas
-```
+<pre><code>ssh -o ExitOnForwardFailure=yes -L 8080:127.0.0.1:<ComposePort /> your-user@your-nas</code></pre>
 
 Keep that session open and visit `http://localhost:8080` on the desktop. If you changed the NAS
 port to 18081, use `-L 8080:127.0.0.1:18081`; the browser URL stays the same. If forwarding is
@@ -69,7 +69,7 @@ denied, use either the [HTTPS proxy](#authenticated-proxy) or
 ## Authenticated proxy when forwarding is disabled {#authenticated-proxy}
 
 Use DSM's HTTPS reverse proxy on the NAS with **application Basic auth**. The app remains
-published on `127.0.0.1:8080`; there is no unauthenticated LAN mapping in this procedure.
+published on <code>127.0.0.1:<ComposePort /></code>; there is no unauthenticated LAN mapping in this procedure.
 `memories.example.com` below is an example: substitute your LAN DNS name and its valid TLS
 certificate, already configured on the NAS. This does not require internet exposure or router forwarding.
 
@@ -86,8 +86,9 @@ certificate, already configured on the NAS. This does not require internet expos
 
    ```bash
    sudo docker compose -p immich-memories up -d
-   curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8080/api/v1/settings
    ```
+
+   <pre><code>{"curl -s -o /dev/null -w '%{http_code}\\n' http://127.0.0.1:"}<ComposePort />/api/v1/settings</code></pre>
 
    The protected settings endpoint must answer **401** without a session (and 200 after login).
    Add `-u user:password` and it still answers 401: the login is a form that sets a session
@@ -96,7 +97,7 @@ certificate, already configured on the NAS. This does not require internet expos
    Stop if it returns settings. The public health endpoint is deliberately anonymous and is not an auth test.
 4. In DSM **Control Panel → Login Portal → Advanced → Reverse Proxy**, create a source
    **HTTPS**, hostname `memories.example.com`, port **443**, and destination **HTTP**,
-   hostname `127.0.0.1`, port **8080**. Assign the matching certificate in DSM's certificate
+   hostname `127.0.0.1`, port **<ComposePort />** (or your chosen host port). Assign the matching certificate in DSM's certificate
    settings. Preserve `Host`, set `X-Forwarded-Proto` to `https`, and overwrite forwarded
    client headers as in the [proxy checklist](../network-security.md#https-reverse-proxy).
    Menu labels depend on DSM; this GUI sequence still needs the validation below.
@@ -138,7 +139,8 @@ the password. Sign in over `/auth/login`, keep the cookie, and ask again:
 
 Set `memories_url` to the URL you use in the browser. For the proxy route, use
 `https://memories.example.com`: its secure session cookie is not sent over plain HTTP.
-Replace the sample credentials with your app login.
+Replace the sample credentials with your app login. The example below uses a chosen host port
+of 8080; use your installation's URL.
 
 ```bash
 memories_url=http://nas-address:8080
