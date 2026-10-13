@@ -167,6 +167,59 @@ def test_a_still_moves_while_it_is_on_screen(library_home: UserHome, departure_f
         assert luma_difference(early, late) > 2, shot
 
 
+def _steps(film: Path, start: float, frames: int) -> list[float]:
+    """How far the picture shifts from each frame to the next, in pixels (phase correlation)."""
+    import subprocess
+
+    import cv2
+    import numpy as np
+
+    facts = film_facts(film)
+    raw = subprocess.run(  # noqa: S603, S607 - our own film, fixed argv
+        [
+            "ffmpeg",
+            "-v",
+            "error",
+            "-ss",
+            f"{start:.3f}",
+            "-i",
+            str(film),
+            "-frames:v",
+            str(frames),
+            "-f",
+            "rawvideo",
+            "-pix_fmt",
+            "gray",
+            "-",
+        ],
+        capture_output=True,
+        check=True,
+    ).stdout
+    stack = np.frombuffer(raw, np.uint8).reshape(-1, facts.height, facts.width).astype(np.float32)
+    window = cv2.createHanningWindow((facts.width, facts.height), cv2.CV_32F)
+    return [
+        float(np.hypot(*cv2.phaseCorrelate(a, b, window)[0]))
+        for a, b in zip(stack, stack[1:], strict=False)
+    ]
+
+
+@pytest.mark.feature("photos.ken-burns")
+def test_a_still_moves_in_even_steps_at_the_films_own_rate(
+    library_home: UserHome, departure_film: RenderedRun
+):
+    """#2475: a still animated at 30 fps in a 25 fps film lost a frame in six, and every fifth
+    step was twice as long as the ones around it."""
+    facts = film_facts(departure_film.film)
+    assert round(facts.fps) == 25, "the departure day's clips make a 25 fps film"
+    stills = [s for s in story_of(library_home, departure_film.run_id) if s.kind == "photo"]
+
+    assert stills
+    for shot in stills:
+        steps = _steps(departure_film.film, shot.started, int(facts.fps))
+        typical = sorted(steps)[len(steps) // 2]
+        assert max(steps) < 1.5 * typical + 0.1, (shot, [round(v, 2) for v in steps])
+
+
 # ── length ───────────────────────────────────────────────────────────────────
 
 

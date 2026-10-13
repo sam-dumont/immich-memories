@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from pathlib import Path
 
 from immich_memories.processing.assembly_config import (
@@ -162,41 +163,11 @@ class FFmpegProber:
             return 0
 
     def detect_framerate(self, video_path: Path) -> float | None:
-        try:
-            fps = self.probe_cache.get(video_path).fps
-            return fps or None
-        except (OSError, ProbeError, ValueError) as e:
-            logger.debug(f"Failed to detect frame rate: {e}")
-        return None
+        return probe_rate(self.probe_cache, video_path)
 
     def detect_max_framerate(self, clips: list[AssemblyClip]) -> int:
-        """Max frame rate across the video clips, snapped to 24, 25, 30, 50 or 60.
-
-        Title screens and photos are excluded: both are rendered at whatever
-        rate the film picks, not the other way around. A film with no video
-        plays at 30.
-        """
-        rates = [
-            fps
-            for clip in clips
-            if not getattr(clip, "is_title_screen", False) and not getattr(clip, "is_photo", False)
-            if (fps := self.detect_framerate(clip.path))
-        ]
-        if not rates:
-            return 30
-        # WHY (#2348): the search used to start at 30 and probe only the first 20
-        # clips, so 24 and 25 fps libraries were stretched to 30 with judder and a
-        # 60 fps clip late in the film played at half its rate.
-        max_fps = max(rates)
-        if max_fps >= 55:
-            return 60
-        if max_fps >= 45:
-            return 50
-        if max_fps >= 27.5:
-            return 30
-        if max_fps >= 24.5:
-            return 25
-        return 24
+        """The film's frame rate, from its videos (`film_frame_rate`)."""
+        return film_frame_rate(clips, self.detect_framerate)
 
     def estimate_duration(self, clips: list[AssemblyClip]) -> float:
         """Estimate final duration, accounting for transition overlaps."""
@@ -211,3 +182,47 @@ class FFmpegProber:
             total -= overlap
 
         return max(0, total)
+
+
+# A film with no video has no rate of its own to follow.
+FILM_WITHOUT_VIDEO_FPS = 30
+
+
+def film_frame_rate(clips: list[AssemblyClip], rate_of: Callable[[Path], float | None]) -> int:
+    """Max frame rate across the video clips, snapped to 24, 25, 30, 50 or 60.
+
+    Title screens and photos are excluded: both are rendered at whatever
+    rate the film picks, not the other way around. A film with no video
+    plays at 30.
+    """
+
+    rates = [
+        fps
+        for clip in clips
+        if not getattr(clip, "is_title_screen", False) and not getattr(clip, "is_photo", False)
+        if (fps := rate_of(clip.path))
+    ]
+    if not rates:
+        return FILM_WITHOUT_VIDEO_FPS
+    # WHY (#2348): the search used to start at 30 and probe only the first 20
+    # clips, so 24 and 25 fps libraries were stretched to 30 with judder and a
+    # 60 fps clip late in the film played at half its rate.
+    max_fps = max(rates)
+    if max_fps >= 55:
+        return 60
+    if max_fps >= 45:
+        return 50
+    if max_fps >= 27.5:
+        return 30
+    if max_fps >= 24.5:
+        return 25
+    return 24
+
+
+def probe_rate(probe_cache: ProbeCache, video_path: Path) -> float | None:
+    """A video's frame rate, or None when it cannot be read."""
+    try:
+        return probe_cache.get(video_path).fps or None
+    except (OSError, ProbeError, ValueError) as e:
+        logger.debug(f"Failed to detect frame rate: {e}")
+    return None

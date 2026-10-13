@@ -73,6 +73,7 @@ def render_photo_as_clip(
     """
     from immich_memories.config_models_render import normalize_scale_mode
     from immich_memories.photos.photo_pipeline import render_single_photo
+    from immich_memories.processing.ffmpeg_prober import FILM_WITHOUT_VIDEO_FPS
     from immich_memories.processing.hardware import (
         HWAccelCapabilities,
         detect_hardware_acceleration,
@@ -97,6 +98,7 @@ def render_photo_as_clip(
         target_h=target_h,
         work_dir=photo_dir,
         download_fn=params.client.download_asset if params.client else None,
+        fps=params.photo_fps or FILM_WITHOUT_VIDEO_FPS,
         source_path=source_path,
         encoding_config=params.config,
         output_format=params.output_format,

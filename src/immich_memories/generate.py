@@ -73,6 +73,9 @@ class GenerationParams:
     output_orientation: str | None = None
     output_canvas: OutputCanvas | None = None
     output_crf: int | None = None
+    # The rate a still animates at: the film's own, which its videos decide (#2475).
+    # None until preparation knows it.
+    photo_fps: int | None = None
 
     # Title settings
     title: str | None = None

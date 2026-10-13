@@ -417,7 +417,8 @@ def _prepare_in_workers(
 
     def prepare(client, job):
         index, clip = job
-        work_dir = output_dir / ".source_preparation" / str(index)
+        # Named by the source: videos and stills are prepared in separate passes (#2475).
+        work_dir = output_dir / ".source_preparation" / clip.asset.id
         work_dir.mkdir(parents=True, exist_ok=True)
         worker_params = replace(params, client=client, output_canvas=canvas, progress_callback=None)
         extraction = _Extraction(
@@ -461,7 +462,7 @@ def _prepare_in_workers(
         if rendered is not None:
             ordered[index] = rendered
         report("extract", completed / len(jobs) * 0.7, f"Prepared {completed}/{len(jobs)} sources")
-    return [ordered[index] for index in sorted(ordered)]
+    return sorted(ordered.items())
 
 
 def extract_clips(
@@ -510,12 +511,64 @@ def _extract_clips_into(
     probe_cache: ProbeCache | None,
     prepared_sources: PreparedSourceBank | None,
 ) -> list[AssemblyClip]:
+    """Prepare the videos, then the stills at the rate those videos give the film (#2475).
+
+    A still animated at 30 fps in a 25 fps film loses a frame in six and jitters. Its rate
+    is decided before its bank lookup, so a re-render never reuses a still made at another.
+    """
+    from immich_memories.processing.ffmpeg_prober import film_frame_rate, probe_rate
+    from immich_memories.processing.probe_cache import ProbeCache
+
+    directives = _validated_render_directives(params)
+    still = [
+        preparation_route(clip, directives.get(clip.asset.id), params.config) == "photo"
+        for clip in params.clips
+    ]
+    prepare = partial(
+        _prepare_part,
+        video_cache=video_cache,
+        output_dir=output_dir,
+        scratch=scratch,
+        download_coordinator=download_coordinator,
+        probe_cache=probe_cache,
+        prepared_sources=prepared_sources,
+        directives=directives,
+    )
+    if not any(still):
+        return [clip for _position, clip in prepare(params)]
+    moving = [i for i, is_still in enumerate(still) if not is_still]
+    stills = [i for i, is_still in enumerate(still) if is_still]
+    prepared: dict[int, AssemblyClip] = {}
+    for position, clip in prepare(replace(params, clips=[params.clips[i] for i in moving])):
+        prepared[moving[position]] = clip
+    cache = probe_cache or ProbeCache()
+    rate = film_frame_rate(list(prepared.values()), partial(probe_rate, cache))
+    at_film_rate = replace(params, clips=[params.clips[i] for i in stills], photo_fps=rate)
+    for position, clip in prepare(at_film_rate):
+        prepared[stills[position]] = clip
+    return [prepared[i] for i in sorted(prepared)]
+
+
+def _prepare_part(
+    params: GenerationParams,
+    *,
+    video_cache: CacheBatch | None,
+    output_dir: Path,
+    scratch: Path,
+    download_coordinator: DownloadCoordinator | None,
+    probe_cache: ProbeCache | None,
+    prepared_sources: PreparedSourceBank | None,
+    directives: dict[str, EditorialSelection],
+) -> list[tuple[int, AssemblyClip]]:
+    """Prepare ``params.clips``; each prepared clip with its position among them."""
+
     def _report(phase: str, progress: float, msg: str) -> None:
         if params.progress_callback:
             params.progress_callback(phase, progress, msg)
 
-    directives = _validated_render_directives(params)
-    assembly_clips: list[AssemblyClip] = []
+    if not params.clips:
+        return []
+    assembly_clips: list[tuple[int, AssemblyClip]] = []
     total = len(params.clips)
     prefetched: dict[str, DownloadResult] | None = None
     if download_coordinator is not None:
@@ -556,7 +609,7 @@ def _extract_clips_into(
             logger.warning("%s leaves the film — %s", clip_name, e)
             continue
         if rendered:
-            assembly_clips.append(rendered)
+            assembly_clips.append((i, rendered))
 
     return assembly_clips
 
