@@ -9,7 +9,7 @@ from immich_memories.titles.title_suggestion import TitleSuggestion
 def test_a_place_the_facts_capitalise_keeps_its_capital_in_the_title():
     title = TitleSuggestion(title="Mai à split", subtitle="Six jours à split")
 
-    fixed = restore_fact_casing(title, "Places by day:\n  05-02: Split, Croatia\n")
+    fixed = restore_fact_casing(title, "Places by day:\n  05-02: Split, Croatia\n", "fr")
 
     assert (fixed.title, fixed.subtitle) == ("Mai à Split", "Six jours à Split")
 
@@ -17,7 +17,7 @@ def test_a_place_the_facts_capitalise_keeps_its_capital_in_the_title():
 def test_a_short_word_or_a_word_the_facts_never_capitalise_is_left_alone():
     title = TitleSuggestion(title="Janvier à annecy", subtitle=None)
 
-    fixed = restore_fact_casing(title, "À la maison. Places by day:\n  01-02: Lyon\n")
+    fixed = restore_fact_casing(title, "À la maison. Places by day:\n  01-02: Lyon\n", "fr")
 
     assert fixed.title == "Janvier à annecy"
 

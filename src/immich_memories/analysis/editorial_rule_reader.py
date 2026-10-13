@@ -25,6 +25,7 @@ from immich_memories.analysis.editorial_occasions import (
     Occasion,
     find_occasions,
 )
+from immich_memories.analysis.editorial_occurrence_runs import episode_day, within_occurrences
 from immich_memories.analysis.editorial_rule_episodes import RULES_VERSION
 from immich_memories.analysis.editorial_rule_quality import quality_facts, quality_key
 from immich_memories.analysis.editorial_rule_story_names import (
@@ -67,6 +68,7 @@ from immich_memories.analysis.editorial_story_weighing import (
 from immich_memories.analysis.editorial_structure_budget import NOMINAL_STILL_SECONDS
 from immich_memories.analysis.place_names import shown_city
 from immich_memories.analysis.trip_legs import legs_of_days
+from immich_memories.i18n import resolve_film_locale
 from immich_memories.people.relationships import is_close_family
 
 # The place labels of the shipped head bundle the standing rule reads. A picture is in a
@@ -206,7 +208,9 @@ class RuleStructureReader:
         # Never the activity head's label: it describes a frame, not a happening (#2486).
         cities = Counter(shown for a in members if (shown := shown_city(a.exif_info)))
         city = cities.most_common(1)[0][0] if cities else ""
-        return city or day_label(members[0].local_taken_at.date().isoformat())
+        return city or day_label(
+            members[0].local_taken_at.date().isoformat(), self._locale, year=self._over_years
+        )
 
     def _day_chunks(self):
         groups = []
@@ -284,10 +288,16 @@ class RuleStructureReader:
         pictures say nothing about where they were does not end a trip.
         """
         away_of = {e.key: self._away_from_home(e) for e in episodes}
+        by_key = {e.key: e for e in episodes}
+        # An episode none of whose pictures the editor can select carries no day of its own;
+        # its pictures still have one, and without it the episode joined whatever day sorted
+        # beside it ("15 August" of 2004 and 2022 as one story).
+        day_of = {k: str(hints[k]["day"]) or episode_day(self.source, by_key[k]) for k in by_key}
+        days = consecutive_runs(by_key, day_of.__getitem__)
         runs: list[list[str]] = []
-        for keys in consecutive_runs({e.key: e for e in episodes}, lambda key: hints[key]["day"]):
+        for keys in within_occurrences(days, day_of, self.source.case.ranges):
             chunks: dict[tuple, list[str]] = {}
-            dated = next((w for k in keys if (w := _calendar_week(hints[k]["day"]))), ())
+            dated = next((w for k in keys if (w := _calendar_week(day_of[k]))), ())
             away, was_away, trips = False, False, 0
             for key in keys:
                 known = away_of[key]
@@ -295,7 +305,7 @@ class RuleStructureReader:
                     away = known
                 trips += away and not was_away
                 was_away = away
-                week = _calendar_week(hints[key]["day"]) or dated
+                week = _calendar_week(day_of[key]) or dated
                 chunks.setdefault((True, trips) if away else (False, week), []).append(key)
             for (away_run, _), chunk in chunks.items():
                 runs.extend(self._legs(chunk, episodes, hints) if away_run else [chunk])
@@ -444,6 +454,8 @@ class RuleStructureReader:
             facts_of=lambda story: self._story_facts(story, by_key),
             away=away,
             trip_rule=(trips.min_distance_km, trips.min_duration_days),
+            locale=self._locale,
+            years=self._over_years,
         )
         raised = raise_kept_days(stories)
         for story in stories:
@@ -482,9 +494,30 @@ class RuleStructureReader:
         people = self.source.people
         births = {fact.name: fact.birth_date for fact in people.values()} if people else {}
         close = frozenset(name for name, rel in relation_of.items() if is_close_family(rel))
-        return find_occasions(
-            day_people, relation_of=relation_of, birth_dates=births, close_family=close
+        case = self.source.case
+        # A birthday film's subject: the request names the day, whoever they are to the owner.
+        celebrated = (
+            dict.fromkeys(case.people, case.celebrated_birthday) if case.celebrated_birthday else {}
         )
+        return find_occasions(
+            day_people,
+            relation_of=relation_of,
+            birth_dates=births,
+            close_family=close,
+            locale=self._locale,
+            celebrated=celebrated,
+        )
+
+    @property
+    def _over_years(self) -> bool:
+        """Whether the film covers more than one calendar year, so a day needs its year."""
+        ranges = self.source.case.ranges
+        return bool(ranges) and min(r.start.year for r in ranges) != max(r.end.year for r in ranges)
+
+    @property
+    def _locale(self) -> str:
+        """The film's language, which every name the rules write is in."""
+        return resolve_film_locale(self.source.config.title_screens.locale)
 
     def _story_facts(self, story, by_key) -> StoryFacts:
         """What a story's pictures say: its days, places, people, album and farthest place."""

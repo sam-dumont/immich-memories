@@ -206,7 +206,8 @@ the code named beside it; if the two disagree, the code wins and this entry is s
   on Full one question fed their names, days, people, occasions, places and trip, with the
   film's kind, dates and subject in the prompt so the judgment bank never answers another
   scope's film; on Basic, or when that answer is unusable, a line of the story names in the
-  film's language (`summary.then` in the film-text catalogues).
+  film's language (`summary.then` in the film-text catalogues). A Full film refines its rules
+  draft, and the refinement clears the draft's Basic line so the model writes the summary.
 - **Notable record**: a picture an episode reading named as a moment worth a place of its own,
   with the reason (`banked_notable_records` in `catalogue_runtime.py`). Only a story holding one
   can earn an N seat.
@@ -283,9 +284,13 @@ The separate model-planning route can read banked lines or use plain clip facts.
 - **Rules draft**: the film the no-model reader cuts (`editorial_rule_reader.py`,
   `editorial_structure_planner.py`). It may read what a model already banked about the library,
   which can only tighten it (`editorial_rule_banked_facts.py`). A birthday or a family visit
-  becomes its own story (`editorial_occasions.py`), and every story is named from its facts: an
+  becomes its own story (`editorial_occasions.py`), as does a birthday film's own birthday
+  (`Case.celebrated_birthday`, from `--birthday`), and every story is named from its facts: an
   occasion, a trip by its album or farthest place, a day out, days at home
-  (`editorial_story_names.py`, `editorial_rule_story_names.py`).
+  (`editorial_story_names.py`, `editorial_rule_story_names.py`). Names are in the film's
+  language (`story.*` in the film-text catalogues, CLDR dates), with the year when the film
+  covers several. In a person film no story deepens past a quarter of the cut, half when
+  dominant (`EditorialIntent.story_shares`, read by the depth fill).
 - **Carrier**: the picture admitted to carry one chosen moment of a funded story, if it is free,
   in context and spaced from the shots already committed (`editorial_story_carriers.py`,
   `editorial_carrier_eligibility.py`). A carrier is a shot before it is rendered. A photographed
@@ -604,6 +609,7 @@ src/immich_memories/
 │   ├── editorial_rule_banked_facts.py # What a model already answered, read by the draft that asks nothing
 │   ├── editorial_occasions.py      # Birthdays and family visits, from birth dates and relations
 │   ├── editorial_story_names.py    # A story's name and purpose from its days, places and album
+│   ├── editorial_occurrence_runs.py # A film of several occurrences keeps each one's days in its own stories
 │   ├── editorial_rule_story_names.py # Occasions out of their week; trips by the install's trip rule
 │   ├── editorial_story_standing.py # StandingGate: does a picture stand by itself, and may it serve as context
 │   ├── editorial_standing_facts.py # Standing from facts, no model: heads (+ caption words), faces and animals never refused
@@ -726,6 +732,9 @@ src/immich_memories/
 │   ├── album_source.py         # Album mode: the album is the candidate pool, nothing is searched for
 │   ├── source_filter.py        # Drop doorbell / dashcam / screen-recorder uploads by filename
 │   ├── source_quality.py       # Drop messaging re-encodes: sub-1080p with no camera EXIF
+│   ├── selection_source_validation.py # Source admission; `film_may_use` lets the CLI size a film and count a birthday's history on what admission keeps
+│   ├── forwarded_fallback.py   # Opt-in: the forwarded copies that fill gaps in a film's camera timeline, a gap's share at most
+│   ├── forwarded_copy_checks.py # A copy that is a collage (flat gutters, or its caption says so) never stands in
 │   ├── exact_copies.py         # Same SHA-1 + kind under distinct UUIDs: one item (a Live copy with its motion, favourite, primary owner, ids); a video equal to a Live Photo's motion folds into the Live Photo; any member's star stars the kept item
 │   ├── picture_copies.py       # One picture stored as several files: fold, keep the most pixels
 │   ├── llm_failures.py         # Separate "the model could not answer" from a bug in the calling code
@@ -907,6 +916,7 @@ src/immich_memories/
 │   ├── _config_errors.py       # Config error formatting
 │   ├── _flags.py               # Shared validation for flags more than one command takes
 │   ├── _pipeline_runner.py     # Run SmartPipeline over the fetched assets + generate
+│   ├── film_length.py          # How long a film runs, sized on the pictures it may use (and any forwarded stand-ins)
 │   ├── declined_period.py      # A period with nothing to film ends as a declined film (marker automation reads)
 │   ├── source_progress.py      # Source-stage progress bar, plus the throttled phase-log feed
 │   ├── attempt_phase_reporter.py # Feeds a scheduled attempt's phase events from the generate child

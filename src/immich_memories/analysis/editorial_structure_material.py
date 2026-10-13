@@ -46,6 +46,7 @@ from immich_memories.analysis.editorial_structure_lines import (
     UnitLines,
     metadata_life,
 )
+from immich_memories.analysis.forwarded_fallback import is_forwarded_copy, refused_in_words
 from immich_memories.analysis.motion_rendering import (
     MotionRendering,
     motion_renderings,
@@ -219,6 +220,7 @@ class UnitBuilder:
         plan: Callable[[list[str]], Mapping[str, MotionRendering]] | None = None,
     ) -> None:
         self._assets = source.assets
+        self._config = source.config
         self._residuals = source.motion_residuals
         self._clip_frames = source.clip_frames
         self._live_source_integrity = ports.live_source_integrity
@@ -358,6 +360,9 @@ class UnitBuilder:
                 "moment": self._moment_of_asset.get(a),
                 "taken": asset.local_taken_at.isoformat(),
             }
+            # A forwarded copy standing in where the film was short says so in its reason.
+            if is_forwarded_copy(asset, self._config):
+                base["forwarded"] = True
             # A rendering belongs to a photograph. A video-typed id here falls through to
             # the ordinary video branch, so borrowed rendering state can never make a
             # video pretend to be Live material.
@@ -644,12 +649,20 @@ def source_exclusions(
         for asset_id, record in source.audience_annotations.items()
         if asset_id in lines
     }
-    return excluded_carrier_sources(
+    excluded = excluded_carrier_sources(
         lines,
         heads_of=heads_of,
         ocr_text_of=ports.document_ocr_text,
         protected=source.owner_required_asset_ids,
     )
+    # A forwarded copy standing in for a gap whose caption says it was made, not taken (a
+    # collage, a composite): no picture of this life, whoever is on it.
+    for asset_id, line in lines.items():
+        asset = source.assets.get(asset_id)
+        copy = asset is not None and is_forwarded_copy(asset, source.config)
+        if copy and (reason := refused_in_words(line)):
+            excluded.setdefault(asset_id, reason)
+    return excluded
 
 
 def refresh_candidates(source, ports, material: Material, chains, carriers) -> None:

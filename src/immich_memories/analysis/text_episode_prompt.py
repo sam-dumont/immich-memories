@@ -45,6 +45,8 @@ Return JSON only:
 "reason":"short reason"}}],"cull":[{{"asset":2,"bucket":"notes"}}],
 "notable_moments":[{{"asset":1,"reason":"what this is a record of"}}]}}]}}
 
+{count}
+
 {episodes}"""
 
 _LEAN_PROMPT_NAME = "episode-prompt-v4-lean"
@@ -84,6 +86,8 @@ Return JSON only:
 "what_happened":"plain factual sentence","representatives":[{{"asset":1,
 "reason":"short reason"}}],
 "notable_moments":[{{"asset":1,"reason":"what this is a record of"}}]}}]}}
+
+{count}
 
 {episodes}"""
     "\n\nReturn the complete JSON object now. After the final episode, close the episodes "
@@ -132,4 +136,19 @@ def episode_prompt(
         albums = facts.albums_line(scope.full_asset_ids)
         blocks.append(f"episode {episode_alias}\n{albums}{page}{asset_lines}")
     template = _LEAN_PROMPT if facts.lean else _PROMPT
-    return template.format(episodes="\n\n".join(blocks))
+    return template.format(count=_count_line(len(scopes)), episodes="\n\n".join(blocks))
+
+
+def _count_line(episodes: int) -> str:
+    """How many entries the answer holds, said outright.
+
+    Handed one episode of fifty pictures, a small model wrote an entry per picture and ran out
+    of tokens on every film; a local endpoint gets no schema to bound the array instead.
+    """
+    entries = "entry" if episodes == 1 else "entries"
+    return (
+        f"There {'is' if episodes == 1 else 'are'} exactly {episodes} "
+        f"episode{'' if episodes == 1 else 's'} below. Return exactly {episodes} {entries} in "
+        '"episodes", one per "episode" heading, each about all of that episode\'s assets: '
+        "never one entry per asset."
+    )

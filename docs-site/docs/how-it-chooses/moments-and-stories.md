@@ -16,6 +16,7 @@ A birthday or a family visit doesn't get folded into its week. The editor gives 
 
 - **A birthday**: someone from your household or close family is in a picture that day, and their birth date in Immich falls on it. Kit's birthday, "Kit turns five".
 - **A visit**: close family who don't live with you (your parents, say) are on at least 2 pictures that day, and on 3 photographed days of the period at most. Someone who lives with you never "visits".
+- **A birthday film's own birthday**: with `--birthday`, the day you asked for is the subject's birthday in every year the film shows it, family or not.
 
 Both need the facts from [Home and people](../get-started/who-is-who.md): birth dates set in Immich, and who is who in your household.
 
@@ -28,10 +29,12 @@ Each story is named from what its pictures say, never from what an image classif
 - a day out by its place and date ("Tervuren, Sunday 6 July");
 - days at home by their span ("Days at home, 1–4 July").
 
+Names are written in the film's language, with its own month and weekday names ("Jours à la maison, 1–4 juillet"). A film that covers more than one calendar year puts the year in every date ("Monday 15 August 2016"). Without a text reader, the film's summary is these names in order, and weeks at home one after another are told once as their span.
+
 A stay away is a trip only by your own trip settings: at least `trips.min_distance_km` from home (50 km by default) over at least `trips.min_duration_days` (2). An evening concert 11 km away is a day out.
 
 ## Chapters and pacing
 
-A trip that changes where it stays can become separate chapters. A long film about a person spreads its shots across the years it covers. A period with little worth showing stays short.
+A trip that changes where it stays can become separate chapters. A long film about a person spreads its shots across the years it covers. In a film about a person, no story takes more than a quarter of the shots (half for the one the editor weighs dominant): when the other days run out of pictures, the film goes short rather than fill up on one wedding. A period with little worth showing stays short.
 
 Want to steer those choices? [Review and adjust](./overrule-it.md). Want the thresholds, event rules and shot allocation? [Grouping and allocation reference](../reference/selection-internals/moments-and-stories.md).

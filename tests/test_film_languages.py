@@ -67,6 +67,20 @@ def test_no_template_asks_for_a_value_the_code_does_not_give(locale: str) -> Non
         # The plain film summary (#2488): the story names told so far, then the next one.
         "earlier",
         "later",
+        # Story names (#2486): a day, a span, a place, a stay, a trip's ends, an occasion's people.
+        "weekday",
+        "date",
+        "start",
+        "end",
+        "first",
+        "last",
+        "when",
+        "head",
+        "places",
+        "span",
+        "name",
+        "names",
+        "age",
     }
     for prefix in ("", "start_", "end_"):
         given |= {f"{prefix}month", f"{prefix}month_lc", f"{prefix}month_of", f"{prefix}month_num"}

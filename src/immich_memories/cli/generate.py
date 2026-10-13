@@ -692,6 +692,10 @@ def register_generate_commands(main: click.Group) -> None:
                     # A birthday memory's flashback windows are single days years
                     # apart, so most of them are empty and #661's per-window
                     # warning would bury the one that matters — the rolling year.
+                    from immich_memories.analysis.selection_source_validation import (
+                        film_may_use,
+                    )
+
                     assets, fetched_photos = fetch_media(
                         history_from=BIRTHDAY_HISTORY_FROM if birthday else None,
                         client=run_windows(client, household),
@@ -702,6 +706,8 @@ def register_generate_commands(main: click.Group) -> None:
                         person_expression=run_people.condition,
                         include_photos=use_photos,
                         face_accounts=run_people.face_accounts,
+                        usable=film_may_use(config, accept_any_provenance=accept_any_provenance),
+                        stand_in=config.analysis.forwarded_copies_when_short,
                     )
                     if fetched_photos:
                         print_info(f"Found {len(fetched_photos)} photos")

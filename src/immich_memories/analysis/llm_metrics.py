@@ -281,7 +281,8 @@ def _group_event(
 
 
 def record_truncation() -> None:
-    """A thinking call hit the token budget and its reasoning was discarded."""
+    """A call hit the token budget: a thinking call's reasoning was discarded, or a plain
+    call's answer was cut off; either is retried."""
     for counters in _active.get():
         with counters._lock:
             counters.truncated += 1

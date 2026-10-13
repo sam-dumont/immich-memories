@@ -459,9 +459,12 @@ def test_a_rules_story_is_titled_after_the_city():
         config=SimpleNamespace(
             trips=TripsConfig(homebase_latitude=0.0, homebase_longitude=0.0),
             editorial=SimpleNamespace(people=EditorialPeopleConfig()),
+            title_screens=SimpleNamespace(locale="en"),
         ),
         intent=SimpleNamespace(product="monthly_highlights"),
-        case=SimpleNamespace(product="monthly_highlights", people=()),
+        case=SimpleNamespace(
+            celebrated_birthday=None, ranges=(), product="monthly_highlights", people=()
+        ),
         people=None,
     )
 

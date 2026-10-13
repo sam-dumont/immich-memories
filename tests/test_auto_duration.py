@@ -7,7 +7,7 @@ from datetime import UTC, datetime, timedelta
 import pytest
 
 from immich_memories.api.models import Asset, AssetType, VideoClipInfo
-from immich_memories.cli._pipeline_runner import _decide_duration
+from immich_memories.cli.film_length import decide_duration
 from immich_memories.config_loader import Config
 from immich_memories.planning.auto_duration import (
     DURATION_FROM_DURATION_FLAG,
@@ -61,7 +61,7 @@ def _decide_trip(
     photos: list[Asset],
     memory_type: str = "trip",
 ):
-    return _decide_duration(
+    return decide_duration(
         requested,
         requested_source=None,
         preset_duration=None,

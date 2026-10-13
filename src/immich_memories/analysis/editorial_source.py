@@ -46,6 +46,7 @@ def library_source_scope(
     *,
     asset_ids: tuple[str, ...] | None = None,
     accept_any_provenance: bool = False,
+    forwarded_stand_ins: tuple[str, ...] = (),
 ) -> SourceScope:
     """The pictures a scope holds, for a cut and for `prepare` alike.
 
@@ -61,6 +62,10 @@ def library_source_scope(
         min_source_short_side=config.analysis.min_source_short_side,
         max_source_video_seconds=config.analysis.max_source_video_seconds,
         accept_any_provenance=accept_any_provenance,
+        # Never without the setting that asks for them, whatever a caller hands over.
+        forwarded_stand_ins=(
+            forwarded_stand_ins if config.analysis.forwarded_copies_when_short else ()
+        ),
         include_off_timeline=False,
         generated_asset_ids=tuple(
             sorted(

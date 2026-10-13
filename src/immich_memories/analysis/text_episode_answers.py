@@ -131,6 +131,10 @@ def _read_response_result(
     if not isinstance(values, list):
         return _unreadable(response_hash, scopes, embedded=embedded)
     by_alias = _rows_by_alias(values)
+    if any(alias > len(scopes) for alias in by_alias):
+        # Numbered past the episodes asked: an entry per picture, not per episode, so even its
+        # first row describes one picture rather than the episode it would be banked for.
+        return _unreadable(response_hash, scopes, embedded=embedded)
     readings: list[_EpisodePageReading] = []
     discarded = [0, 0, 0]
     for episode_alias, scope in enumerate(scopes, start=1):

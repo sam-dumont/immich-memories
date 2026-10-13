@@ -104,8 +104,12 @@ def name_stories(
     facts_of: Callable[[Mapping[str, Any]], StoryFacts],
     away: Callable[[Mapping[str, Any]], bool],
     trip_rule: tuple[float, int],
+    locale: str,
+    years: bool = False,
 ) -> None:
-    """Name every story the occasions left unnamed; a run of stories away is one trip's legs.
+    """Name every story the occasions left unnamed, in the film's language (`locale`); a run
+    of stories away is one trip's legs. `years` is a film over several calendar years: its
+    days are named with their year.
 
     `trip_rule` is the install's own trip: at least so many km from home, over at least so
     many days (`trips.min_distance_km`, `trips.min_duration_days`). A stay away short of it is
@@ -116,10 +120,10 @@ def name_stories(
         named.update(id(story) for story, _ in run)
         facts = [fact for _, fact in run]
         if _is_trip(facts, trip_rule):
-            _name_trip([story for story, _ in run], facts)
+            _name_trip([story for story, _ in run], facts, locale)
         else:
             for story, fact in run:
-                _set(story, fact, *outing_name(fact.days, fact.places), None)
+                _set(story, fact, *outing_name(fact.days, fact.places, locale, year=years), None)
     for story in stories:
         if id(story) in named:
             continue
@@ -129,8 +133,10 @@ def name_stories(
             _set(story, own, story["title"], story["purpose"], story["occasion"])
             story["people"] = list(dict.fromkeys([*story["people"], *own.people]))
             continue
-        name, purpose = home_name(own.days, own.places)
+        name, purpose = home_name(own.days, own.places, locale, year=years)
         _set(story, own, name, purpose, "event" if story.get("event") else None)
+        # Ordinary days at home, which the summary tells once when weeks of them follow.
+        story["at_home"] = not story.get("event")
 
 
 def _trips(stories, away, facts_of) -> list[list[tuple[dict[str, Any], StoryFacts]]]:
@@ -171,17 +177,19 @@ def _is_trip(facts: Sequence[StoryFacts], trip_rule: tuple[float, int]) -> bool:
     return length >= min_days and (reach is None or reach >= min_km)
 
 
-def _name_trip(legs: list[dict[str, Any]], facts: Sequence[StoryFacts]) -> None:
+def _name_trip(legs: list[dict[str, Any]], facts: Sequence[StoryFacts], locale: str) -> None:
     albums = Counter(f.album for f in facts if f.album)
     farthest = next((f.farthest for f in facts if f.farthest), None)
-    whole = trip_name(album=albums.most_common(1)[0][0] if albums else None, farthest=farthest)
+    whole = trip_name(
+        album=albums.most_common(1)[0][0] if albums else None, farthest=farthest, locale=locale
+    )
     for leg, fact in zip(legs, facts, strict=True):
-        name = leg_name(fact.places, trip=whole, legs=len(legs))
+        name = leg_name(fact.places, trip=whole, legs=len(legs), locale=locale)
         _set(
             leg,
             fact,
             name,
-            trip_purpose(fact.days, fact.places),
+            trip_purpose(fact.days, fact.places, locale),
             "trip" if len(legs) == 1 else "leg",
         )
         leg["trip"] = whole

@@ -15,6 +15,7 @@ When distinct shots run out before the budget does, the film stops and says so i
 
 from __future__ import annotations
 
+import math
 from collections.abc import Mapping, Sequence
 from dataclasses import replace
 from datetime import datetime
@@ -118,6 +119,8 @@ class DepthFill:
             era = self._era_of_story(s)
             if era is not None and (era in deepened or self._era_full(era)):
                 continue
+            if self._story_full(s):
+                continue
             if self._deepen_once(index, s):
                 progressed = True
                 deepened.update([era] if era is not None else [])
@@ -131,6 +134,17 @@ class DepthFill:
         assert voice_of is not None
         held = sum(voice_of(c["taken"]) == era for c in host.carriers)
         return held >= host.parts.era_share(host.slots, host.carriers)
+
+    def _story_full(self, s) -> bool:
+        """Whether a person film's story already holds its share of the cut: a quarter, half
+        for a dominant one. The film goes short rather than give one day of a person's year
+        the turns the others had no picture for, as an era does in a film about the dates."""
+        host = self._host
+        if not host.parts.story_shares:
+            return False
+        held = sum(c["story_episode"] == s["key"] for c in host.carriers)
+        share = 2 if s["weight"] == "dominant" else 4
+        return held >= math.ceil((len(host.carriers) + 1) / share)
 
     def _era_of_story(self, s) -> str | None:
         """The era a story's frames lie in, on a film whose eras each take their turn."""

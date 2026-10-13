@@ -128,12 +128,15 @@ def _read(month, *, gps=True, family_days=()):
         config=SimpleNamespace(
             trips=TripsConfig(homebase_latitude=HOME[0], homebase_longitude=HOME[1]),
             editorial=SimpleNamespace(people=EditorialPeopleConfig()),
+            title_screens=SimpleNamespace(locale="en"),
         ),
         intent=SimpleNamespace(
             product="year_in_review",
             partition_for=lambda day: SimpleNamespace(key=f"month-{day.month}"),
         ),
-        case=SimpleNamespace(product="year_in_review", people=()),
+        case=SimpleNamespace(
+            celebrated_birthday=None, ranges=(), product="year_in_review", people=()
+        ),
         people=None,
     )
 
@@ -258,12 +261,15 @@ def test_the_public_fixture_month_folds_nothing():
                 homebase_latitude=FIXTURE_HOME.latitude, homebase_longitude=FIXTURE_HOME.longitude
             ),
             editorial=SimpleNamespace(people=EditorialPeopleConfig()),
+            title_screens=SimpleNamespace(locale="en"),
         ),
         intent=SimpleNamespace(
             product="monthly_highlights",
             partition_for=lambda day: SimpleNamespace(key=f"month-{day.month}"),
         ),
-        case=SimpleNamespace(product="monthly_highlights", people=()),
+        case=SimpleNamespace(
+            celebrated_birthday=None, ranges=(), product="monthly_highlights", people=()
+        ),
         people=None,
     )
 

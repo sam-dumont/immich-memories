@@ -45,6 +45,7 @@ def _reader(days, *, place, home=HOME):
             trips=TripsConfig(homebase_latitude=home[0], homebase_longitude=home[1])
         ),
         intent=SimpleNamespace(product="monthly_highlights"),
+        case=SimpleNamespace(ranges=(), people=(), celebrated_birthday=None),
     )
     return RuleStructureReader(source)
 

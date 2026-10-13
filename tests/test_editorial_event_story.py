@@ -98,9 +98,12 @@ def _read(days, *, gps=True, printed=None, starred=(), family=()):
         config=SimpleNamespace(
             trips=TripsConfig(homebase_latitude=HOME[0], homebase_longitude=HOME[1]),
             editorial=SimpleNamespace(people=EditorialPeopleConfig()),
+            title_screens=SimpleNamespace(locale="en"),
         ),
         intent=SimpleNamespace(product="year_in_review"),
-        case=SimpleNamespace(product="year_in_review", people=()),
+        case=SimpleNamespace(
+            celebrated_birthday=None, ranges=(), product="year_in_review", people=()
+        ),
         people=None,
     )
 

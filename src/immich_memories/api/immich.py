@@ -630,6 +630,9 @@ class ImmichClient:
     async def get_stacks(self) -> list[Stack]:
         return await self.assets.get_stacks()
 
+    async def get_duplicate_groups(self) -> list[tuple[str, ...]]:
+        return await self.assets.get_duplicate_groups()
+
     async def get_asset_faces(self, asset_id: str) -> list[AssetFace]:
         return await self.assets.get_asset_faces(asset_id)
 

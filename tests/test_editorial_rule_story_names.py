@@ -26,6 +26,7 @@ def _named(stories_facts, away_keys, rule=_RULE) -> dict[str, dict]:
         facts_of=lambda story: facts[story["key"]],
         away=lambda story: story["key"] in away_keys,
         trip_rule=rule,
+        locale="en",
     )
     return {story["key"]: story for story in stories}
 

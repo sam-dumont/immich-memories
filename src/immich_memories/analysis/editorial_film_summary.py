@@ -18,10 +18,12 @@ from __future__ import annotations
 import json
 import logging
 from collections.abc import Callable, Mapping, Sequence
+from datetime import date, timedelta
 from typing import Any
 
 from babel import Locale
 
+from immich_memories.analysis.editorial_story_names import span_label, story_text
 from immich_memories.analysis.editorial_story_replies import WEIGHTS
 from immich_memories.analysis.strict_json import bounded_model_text, final_json_object
 from immich_memories.i18n import babel_locale, film_text, resolve_film_locale
@@ -32,6 +34,8 @@ SUMMARY_VERSION = "film-summary-v1"
 # The thesis has always been up to 150 words; a summary a film page can show whole.
 _MAX_WORDS = 150
 _MAX_CHARS = 1200
+# Days at home this close are the next week of the same stretch of home life.
+_HOME_WEEK_GAP_DAYS = 7
 # The weights that make a story one the period was about, before any smaller one.
 _LEADING = ("dominant", "major")
 
@@ -58,7 +62,7 @@ def plain_summary(stories: Sequence[Mapping[str, Any]], locale: str) -> str:
     stories instead. A trip's legs are told once, by the trip's name. "Kit's birthday, then the
     road north", in the film's language.
     """
-    names = _told_names(stories)
+    names = _told_names(stories, locale)
     if not names:
         return ""
     line = names[0]
@@ -164,21 +168,51 @@ def _trip_name(story: Mapping[str, Any]) -> str:
     return trip.strip() if isinstance(trip, str) else ""
 
 
-def _told_names(stories: Sequence[Mapping[str, Any]]) -> list[str]:
-    """The names a plain summary tells, chronological, a trip once for all its legs."""
+def _told_names(stories: Sequence[Mapping[str, Any]], locale: str) -> list[str]:
+    """The names a plain summary tells, chronological, a trip once for all its legs, and weeks
+    at home one after another once, as the span they cover."""
     weights = {str(s.get("weight") or "") for s in stories}
     told = set(_LEADING) & weights
     if not told:
         heaviest = next((w for w in WEIGHTS if w in weights and w != "none"), None)
         told = {heaviest} if heaviest else set()
-    names: list[str] = []
+    runs: list[list[Mapping[str, Any]]] = []
     for story in sorted(stories, key=_first_day):
         if str(story.get("weight") or "") not in told:
             continue
-        name = _trip_name(story) or str(story.get("title") or "").strip()
+        if story.get("at_home") and runs and _follows_at_home(runs[-1][-1], story):
+            runs[-1].append(story)
+        else:
+            runs.append([story])
+    names: list[str] = []
+    for run in runs:
+        name = _run_name(run, locale)
         if name and name not in names:
             names.append(name)
     return names
+
+
+def _follows_at_home(earlier: Mapping[str, Any], later: Mapping[str, Any]) -> bool:
+    """Whether `later` is days at home within a week of `earlier`'s: the next week of a month,
+    never the same day of another year in a film over several."""
+    if not earlier.get("at_home"):
+        return False
+    ends, starts = list(earlier.get("days") or ()), list(later.get("days") or ())
+    if not ends or not starts:
+        return False
+    gap = date.fromisoformat(str(starts[0])[:10]) - date.fromisoformat(str(ends[-1])[:10])
+    return gap <= timedelta(days=_HOME_WEEK_GAP_DAYS)
+
+
+def _run_name(run: Sequence[Mapping[str, Any]], locale: str) -> str:
+    """One story's name, or a run of weeks at home as one span ("Days at home, 2–13 September"):
+    four "Days at home" in a row said nothing about a month."""
+    if len(run) > 1:
+        days = sorted(str(day) for story in run for day in story.get("days") or ())
+        if days:
+            return story_text("story.home_days", locale, span=span_label(days[0], days[-1], locale))
+    story = run[0]
+    return _trip_name(story) or str(story.get("title") or "").strip()
 
 
 def _story_card(story: Mapping[str, Any]) -> dict[str, Any]:

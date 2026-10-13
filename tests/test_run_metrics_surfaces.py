@@ -57,7 +57,7 @@ def test_a_truncation_is_reported_after_the_fact_too() -> None:
     """The run block says it live; `runs show` has to still say it tomorrow."""
     line = render_llm_totals({"llm_calls": 9, "llm_truncated": 2})
 
-    assert "2 thinking calls truncated" in line
+    assert "2 calls hit the token budget" in line
 
 
 def test_a_run_with_no_model_spend_renders_nothing() -> None:

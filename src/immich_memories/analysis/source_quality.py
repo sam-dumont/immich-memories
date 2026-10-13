@@ -113,6 +113,11 @@ def source_dimensions(asset: Any, clip: Any = None) -> tuple[int, int]:
     return getattr(asset, "width", 0), getattr(asset, "height", 0)
 
 
+# The refusal of a picture somebody sent rather than shot: a messaging export or a saved
+# image. The one refusal `analysis.forwarded_copies_when_short` may lift (`forwarded_fallback`).
+FORWARDED_COPY = "likely forwarded source without camera provenance"
+
+
 def forwarded_source_refusal(asset: Any, *, min_short_side: int, clip: Any = None) -> str | None:
     """Why this file's size and provenance read as a forwarded copy, or None.
 
@@ -133,7 +138,7 @@ def forwarded_source_refusal(asset: Any, *, min_short_side: int, clip: Any = Non
         original_file_name=getattr(asset, "original_file_name", None),
     ):
         return None
-    return "likely forwarded source without camera provenance"
+    return FORWARDED_COPY
 
 
 def grounded_source_annotations(

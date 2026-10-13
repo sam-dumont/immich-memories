@@ -19,7 +19,7 @@ from immich_memories.generate import GenerationParams
 from immich_memories.generate_settings import build_title_settings
 from immich_memories.processing.assembly_config import AssemblyClip
 from immich_memories.timeperiod import DateRange
-from immich_memories.titles.film_title import resolve_film_title, years_written
+from immich_memories.titles.film_title import resolve_film_title, years_spanned
 from immich_memories.titles.title_source import TitleSource
 from tests.conftest import make_asset
 
@@ -45,7 +45,8 @@ def test_the_title_is_the_holidays_own_name_and_the_years_in_the_cut(tmp_path):
     )
 
     assert settings is not None
-    assert settings.title_override == "Assomption · 2015, 2017–2026"
+    # The span of years in the cut, gaps not written out (owner ruling, rc.10).
+    assert settings.title_override == "Assomption · 2015–2026"
     assert settings.subtitle_override is None
     assert settings.title_source is TitleSource.OCCASION
 
@@ -66,11 +67,11 @@ def test_a_household_day_is_named_as_the_household_wrote_it(tmp_path):
     [
         ([2026], "2026"),
         ([2004, 2005, 2006], "2004–2006"),
-        ([2004, 2007, 2015, 2016, 2017], "2004, 2007, 2015–2017"),
+        ([2004, 2007, 2015, 2016, 2017], "2004–2017"),
     ],
 )
-def test_years_are_written_as_runs_and_gaps(years, written):
-    assert years_written(years) == written
+def test_years_are_written_as_the_span_of_the_cut(years, written):
+    assert years_spanned(years) == written
 
 
 def test_a_holiday_never_asks_the_model_for_its_title(tmp_path):

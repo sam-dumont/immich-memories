@@ -48,5 +48,8 @@ def film_of(product: str) -> SimpleNamespace:
     """The parts of a planning source that say whose film it is."""
     people, _relation = subject_people()
     return SimpleNamespace(
-        case=SimpleNamespace(product=product, people=("Subject",)), people=people
+        case=SimpleNamespace(
+            product=product, people=("Subject",), celebrated_birthday=None, ranges=()
+        ),
+        people=people,
     )

@@ -10,7 +10,7 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 
 from immich_memories.api.models import Asset, AssetType, VideoClipInfo
-from immich_memories.cli._pipeline_runner import _decide_duration
+from immich_memories.cli.film_length import decide_duration
 from immich_memories.config import Config
 from immich_memories.memory_types.registry import MemoryType
 from immich_memories.planning.auto_duration import (
@@ -69,7 +69,7 @@ def cli_auto_seconds(
 ) -> float:
     """The length ``run_pipeline_and_generate`` settles on for this pool."""
     clips, photos = pool
-    decision = _decide_duration(
+    decision = decide_duration(
         duration,
         requested_source=DURATION_FROM_DURATION_FLAG
         if duration is not None

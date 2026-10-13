@@ -80,6 +80,11 @@ class EditorialIntent:
     # own speaks however ordinary its story reads against the busier years, so the film goes
     # short only when the years run out of distinct shots (#2134). Standing still applies.
     occurrence_is_subject: bool = False
+    # A film about a person, not about any one day of theirs: no story deepens past a quarter
+    # of the cut (half for the one the plan made dominant). When the other days run out of
+    # pictures the film goes short, as a holiday does across its years (#2441), rather than
+    # pour every free second into the one day that had more (a friend's wedding, 9 of 28).
+    story_shares: bool = False
     # Phrases a free-text request asked left out ("no humans", "sans les enfants"): hard
     # rules the brief carries so the planner never selects what the pool already excluded,
     # and the report can count a violation if one ever slips through (#2061).
@@ -340,7 +345,10 @@ def _person(product, spans, whole, *, brief, who):
         allowed_texture="domestic life only when it shows a relationship or a change; presence alone is not merit",
         abstention_policy="a required era or window has no usable material: say so in the plan; do not fill it with another era",
         subject=subject,
-        voice_per_partition=eras,
+        # Every era, and every window of a film with several (a birthday's earlier birthdays),
+        # holds its voice when it has material: "every window with material has a voice".
+        voice_per_partition=eras or len(spans) > 1,
+        story_shares=True,
     )
 
 

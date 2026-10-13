@@ -116,3 +116,82 @@ msgstr "{place} · En dag"
 
 msgid "summary.then"
 msgstr "{earlier}, sedan {later}"
+
+# Story names (#2486): what the rules call a day, a stay, a trip or an occasion.
+msgid "story.weekday_date"
+msgstr "{weekday} {date}"
+
+msgid "story.span_same_month"
+msgstr "{start}–{end} {month}"
+
+msgid "story.span"
+msgstr "{first} – {last}"
+
+msgid "story.place_when"
+msgstr "{place}, {when}"
+
+msgid "story.home_day_purpose"
+msgstr "En dag hemma, {day}"
+
+msgid "story.home_days"
+msgstr "Dagar hemma, {span}"
+
+msgid "story.home_days_purpose"
+msgstr "Vanliga dagar hemma"
+
+msgid "story.day_out"
+msgstr "En utflykt"
+
+msgid "story.days_out"
+msgstr "Några dagar borta"
+
+msgid "story.head_when"
+msgstr "{head}, {when}"
+
+msgid "story.across"
+msgstr "{head}: {places}"
+
+msgid "story.more_places"
+msgid_plural "story.more_places"
+msgstr[0] "{places} och {n} plats till"
+msgstr[1] "{places} och {n} platser till"
+
+msgid "story.trip_to"
+msgstr "Resa till {place}"
+
+msgid "story.trip_away"
+msgstr "En resa"
+
+msgid "story.leg"
+msgstr "Från {first} till {last}"
+
+msgid "story.days_away"
+msgid_plural "story.days_away"
+msgstr[0] "En dag borta"
+msgstr[1] "{n} dagar borta"
+
+msgid "story.from_to"
+msgstr "{head}, från {first} till {last}"
+
+msgid "story.in_place"
+msgstr "{head} i {place}"
+
+msgid "story.birthday"
+msgstr "{name}s födelsedag"
+
+msgid "story.turns"
+msgid_plural "story.turns"
+msgstr[0] "{name} fyller {age}"
+msgstr[1] "{name} fyller {age}"
+
+msgid "story.visit"
+msgstr "Besök av {names}"
+
+msgid "story.comes_over"
+msgid_plural "story.comes_over"
+msgstr[0] "{names} kommer på besök"
+msgstr[1] "{names} kommer på besök"
+
+# The word a birthday film's title must carry, or the stem every form of it shares.
+msgid "title.birthday_word"
+msgstr "födelsedag"

@@ -116,3 +116,82 @@ msgstr "{place} · Un día"
 
 msgid "summary.then"
 msgstr "{earlier}, luego {later}"
+
+# Story names (#2486): what the rules call a day, a stay, a trip or an occasion.
+msgid "story.weekday_date"
+msgstr "{weekday}, {date}"
+
+msgid "story.span_same_month"
+msgstr "{start}–{end} de {month}"
+
+msgid "story.span"
+msgstr "{first} – {last}"
+
+msgid "story.place_when"
+msgstr "{place}, {when}"
+
+msgid "story.home_day_purpose"
+msgstr "Un día en casa, {day}"
+
+msgid "story.home_days"
+msgstr "Días en casa, {span}"
+
+msgid "story.home_days_purpose"
+msgstr "Días normales en casa"
+
+msgid "story.day_out"
+msgstr "Una salida"
+
+msgid "story.days_out"
+msgstr "Unos días fuera"
+
+msgid "story.head_when"
+msgstr "{head}, {when}"
+
+msgid "story.across"
+msgstr "{head}: {places}"
+
+msgid "story.more_places"
+msgid_plural "story.more_places"
+msgstr[0] "{places} y {n} lugar más"
+msgstr[1] "{places} y {n} lugares más"
+
+msgid "story.trip_to"
+msgstr "Viaje a {place}"
+
+msgid "story.trip_away"
+msgstr "Un viaje"
+
+msgid "story.leg"
+msgstr "De {first} a {last}"
+
+msgid "story.days_away"
+msgid_plural "story.days_away"
+msgstr[0] "Un día fuera"
+msgstr[1] "{n} días fuera"
+
+msgid "story.from_to"
+msgstr "{head}, de {first} a {last}"
+
+msgid "story.in_place"
+msgstr "{head} en {place}"
+
+msgid "story.birthday"
+msgstr "Cumpleaños de {name}"
+
+msgid "story.turns"
+msgid_plural "story.turns"
+msgstr[0] "{name} cumple {age}"
+msgstr[1] "{name} cumple {age}"
+
+msgid "story.visit"
+msgstr "Visita de {names}"
+
+msgid "story.comes_over"
+msgid_plural "story.comes_over"
+msgstr[0] "{names} viene de visita"
+msgstr[1] "{names} vienen de visita"
+
+# The word a birthday film's title must carry, or the stem every form of it shares.
+msgid "title.birthday_word"
+msgstr "cumpleaños"

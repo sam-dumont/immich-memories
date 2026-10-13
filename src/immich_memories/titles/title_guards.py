@@ -19,7 +19,8 @@ from datetime import date
 from difflib import SequenceMatcher
 from functools import lru_cache
 
-from immich_memories.titles.common_nouns import is_a_common_noun
+from immich_memories.i18n import elide_french, film_text
+from immich_memories.titles.common_nouns import is_a_common_noun, own_words
 from immich_memories.titles.relationship_words import name_words
 from immich_memories.titles.title_routing import PERIOD_MEMORY_TYPES, is_trip
 from immich_memories.titles.title_suggestion import TitleSuggestion
@@ -121,18 +122,20 @@ def invented_name(line: str, facts: str, locale: str = "en") -> str | None:
     )
 
 
-def restore_fact_casing(suggestion: TitleSuggestion, facts: str) -> TitleSuggestion:
+def restore_fact_casing(suggestion: TitleSuggestion, facts: str, locale: str) -> TitleSuggestion:
     """A name the facts spell with a capital keeps it, whatever case the model wrote it in.
 
     Asked for sentence case, a small model lowercases proper nouns too ("Mai à split"). Only a
-    word of three letters or more that the facts themselves capitalise is touched.
+    word of three letters or more that the facts themselves capitalise is touched, and never a
+    word the app writes itself in the film's language: a story name opening on "Days" made
+    every "days" of a subtitle "Days".
     """
     # An all-capitals word is the condition's own AND/OR, never a name to capitalise.
     names = {
         word.casefold()
         for word in _name_words(facts)
         if word[:1].isupper() and len(word) > 2 and not word.isupper()
-    }
+    } - own_words(locale)
 
     def capital(match: re.Match[str]) -> str:
         word = match.group(0)
@@ -208,8 +211,10 @@ def refusing_unbacked_subtitle(
     """The suggestion, minus a subtitle that names a quality or a mood nothing in the film backs.
 
     A subtitle may carry dates, places and people, and the words the facts or the template
-    title themselves use. "Salt air and golden light" over a trip film is decoration no
-    fact supports, so the subtitle goes and the title stands.
+    title themselves use, and any word the app writes in the film's language itself: its
+    story names and the summary's "then" are the film's own words, not invention. "Salt air
+    and golden light" over a trip film is decoration no fact supports, so the subtitle goes
+    and the title stands.
     """
     if suggestion is None or not suggestion.subtitle or not facts:
         return suggestion
@@ -221,6 +226,7 @@ def refusing_unbacked_subtitle(
         locale,
     )
     backing = {word.casefold() for word in _name_words(f"{facts} {template}")}
+    backing |= own_words(locale)
     if unbacked := _unbacked_word(suggestion.subtitle, backing):
         logger.info(
             "Subtitle uses %r, which no fact in the film backs; dropping the subtitle", unbacked
@@ -628,6 +634,29 @@ def _is_album_copy_shape(title: str) -> bool:
     return bool(_ALBUM_COPY_SHAPE.match(title.strip()))
 
 
+def naming_the_birthday(
+    suggestion: TitleSuggestion | None, birthday: bool, locale: str
+) -> TitleSuggestion | None:
+    """The suggestion, unless a birthday film's title and subtitle never say "birthday".
+
+    A birthday film titled "Kit en 2026" says nothing about what it celebrates; the template
+    ("2026", "Anniversaire de Kit") does. The word is the film language's own
+    (`title.birthday_word`), read as part of a longer word too ("Geburtstagsfeier", "誕生日").
+    """
+    if suggestion is None or not birthday:
+        return suggestion
+    word = "".join(_name_words(film_text("title.birthday_word", locale))).casefold()
+    said = "".join(_name_words(f"{suggestion.title} {suggestion.subtitle or ''}")).casefold()
+    if word and word in said:
+        return suggestion
+    logger.info(
+        "Title %r (subtitle %r) does not name the birthday; the template names this memory instead",
+        suggestion.title,
+        suggestion.subtitle,
+    )
+    return None
+
+
 def refusing_contentless_title(
     suggestion: TitleSuggestion | None,
     memory_type: str,
@@ -668,57 +697,6 @@ def refusing_contentless_title(
     return None
 
 
-# No "y"/"Y": French treats an initial y as a consonant in most everyday
-# words and names ("le yaourt", "Yokohama", "Yuna"), so it never elides.
-_FRENCH_ELISION_VOWELS = frozenset("aàâeéèêëiîïoôuùûühAÀÂEÉÈÊËIÎÏOÔUÙÛÜH")
-
-# h aspiré: well-known place names and common nouns that keep their "h" as a
-# consonant ("le Havre", never "l'Havre"). Lexical, not a rule -- only the
-# exceptions a title is likely to actually name are listed. "Hérault" looks
-# the same shape but is h muet in common usage ("l'Hérault"), so it is kept
-# off this list rather than added to it.
-_FRENCH_ASPIRATED_H_PLACES = frozenset(
-    {
-        "havre", "haye", "havane", "hulpe", "hainaut", "hollande", "hongrie",
-        "huy", "hasselt", "hambourg", "honduras", "hanovre", "helsinki",
-        "hawaï", "hawai", "himalaya", "hongkong",
-    }
-)  # fmt: skip
-_FRENCH_ASPIRATED_H_COMMON_NOUNS = frozenset(
-    {"haricot", "haricots", "hibou", "hiboux", "héros", "hockey", "honte", "hutte"}
-)
-# A capitalised H name not on the aspiré list above is still not elided by
-# default: "when unsure, don't elide" a proper noun. Only a name confirmed
-# h muet in common usage (Hérault) is exempted from that caution.
-_FRENCH_ELIDABLE_H_NAMES = frozenset({"hérault", "hélène"})
-
-
-def _elided(word: str, next_word: str) -> str:
-    if not next_word or next_word[0] not in _FRENCH_ELISION_VOWELS:
-        return f"{word} {next_word}"
-    folded = next_word.casefold()
-    if folded in _FRENCH_ASPIRATED_H_PLACES or folded in _FRENCH_ASPIRATED_H_COMMON_NOUNS:
-        return f"{word} {next_word}"
-    if (
-        next_word[0].casefold() == "h"
-        and next_word[:1].isupper()
-        and folded not in _FRENCH_ELIDABLE_H_NAMES
-    ):
-        return f"{word} {next_word}"
-    prefix = "l" if word.casefold() in ("le", "la") else "d"
-    cased = prefix.upper() if word[:1].isupper() else prefix
-    return f"{cased}'{next_word}"
-
-
-def _elide_french_text(text: str) -> str:
-    return re.sub(
-        r"\b(de|le|la)\s+([^\W\d_]+)",
-        lambda m: _elided(m.group(1), m.group(2)),
-        text,
-        flags=re.IGNORECASE,
-    )
-
-
 def eliding_french(suggestion: TitleSuggestion | None, locale: str) -> TitleSuggestion | None:
     """A model title's "de/le/la + vowel" elided to "d'/l'", in French films only.
 
@@ -731,6 +709,6 @@ def eliding_french(suggestion: TitleSuggestion | None, locale: str) -> TitleSugg
         return suggestion
     return replace(
         suggestion,
-        title=_elide_french_text(suggestion.title),
-        subtitle=_elide_french_text(suggestion.subtitle) if suggestion.subtitle else None,
+        title=elide_french(suggestion.title),
+        subtitle=elide_french(suggestion.subtitle) if suggestion.subtitle else None,
     )

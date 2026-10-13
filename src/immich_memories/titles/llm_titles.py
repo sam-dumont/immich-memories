@@ -22,6 +22,7 @@ from immich_memories.titles.title_guards import (
     _template_title_text,
     eliding_french,
     naming_everyone,
+    naming_the_birthday,
     refusing_a_wrong_year,
     refusing_contentless_title,
     refusing_invented_names,
@@ -435,6 +436,12 @@ def _summary_line(stories: FilmStories | None) -> str:
     return f"\nWhat the film is about: {stories.summary}"
 
 
+def birthday_requirement_line(person_names: Sequence[str]) -> str:
+    """The fact line naming what `naming_the_birthday` checks: whose birthday the title names."""
+    whose = f"{person_names[0]}'s birthday" if person_names else "the birthday"
+    return f"Occasion the title or subtitle must name: {whose}"
+
+
 def _plain_condition(person_names: Sequence[str], match: str) -> str:
     """The condition a plain --person run selected on, written the way one reads it."""
     quoted = [json.dumps(name, ensure_ascii=False) for name in person_names]
@@ -463,6 +470,7 @@ def _people_prompt(
     )
     if facts.birthday:
         span += f"; birthday celebrated: {end}"
+        year_line += "\n" + birthday_requirement_line(person_names)
     stories = "".join(f"\n{line}" for line in _story_lines(facts.stories))
     return TitlePrompt(
         _load_prompt_template("title_people.md")
@@ -711,6 +719,7 @@ def _guarded_suggestion(
     suggestion = refusing_contentless_title(
         suggestion, memory_type, start_date, end_date, person_names, locale
     )
+    suggestion = naming_the_birthday(suggestion, bool(facts and facts.birthday), locale)
     suggestion = naming_everyone(
         suggestion, memory_type, person_names, facts.people_condition if facts else None
     )
@@ -773,7 +782,7 @@ async def generate_title_with_llm(
         )
         parsed = parse_title_response(raw)
         if parsed is not None:
-            parsed = restore_fact_casing(parsed, prompt.facts or prompt.text)
+            parsed = restore_fact_casing(parsed, prompt.facts or prompt.text, locale)
         return _guarded_suggestion(
             parsed,
             prompt=prompt,

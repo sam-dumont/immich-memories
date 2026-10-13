@@ -115,3 +115,78 @@ msgstr "{place} · 하루"
 
 msgid "summary.then"
 msgstr "{earlier}, 그리고 {later}"
+
+# Story names (#2486): what the rules call a day, a stay, a trip or an occasion.
+msgid "story.weekday_date"
+msgstr "{date} {weekday}"
+
+msgid "story.span_same_month"
+msgstr "{month} {start}일~{end}일"
+
+msgid "story.span"
+msgstr "{first} ~ {last}"
+
+msgid "story.place_when"
+msgstr "{place}, {when}"
+
+msgid "story.home_day_purpose"
+msgstr "집에서 보낸 하루, {day}"
+
+msgid "story.home_days"
+msgstr "집에서 보낸 날들, {span}"
+
+msgid "story.home_days_purpose"
+msgstr "집에서의 평범한 날들"
+
+msgid "story.day_out"
+msgstr "나들이"
+
+msgid "story.days_out"
+msgstr "며칠간의 나들이"
+
+msgid "story.head_when"
+msgstr "{head}, {when}"
+
+msgid "story.across"
+msgstr "{head}: {places}"
+
+msgid "story.more_places"
+msgid_plural "story.more_places"
+msgstr[0] "{places} 외 {n}곳"
+
+msgid "story.trip_to"
+msgstr "{place} 여행"
+
+msgid "story.trip_away"
+msgstr "여행"
+
+msgid "story.leg"
+msgstr "{first}에서 {last}까지"
+
+msgid "story.days_away"
+msgid_plural "story.days_away"
+msgstr[0] "{n}일간의 여행"
+
+msgid "story.from_to"
+msgstr "{head}, {first}에서 {last}까지"
+
+msgid "story.in_place"
+msgstr "{head}, {place}"
+
+msgid "story.birthday"
+msgstr "{name}의 생일"
+
+msgid "story.turns"
+msgid_plural "story.turns"
+msgstr[0] "{name} {age}살"
+
+msgid "story.visit"
+msgstr "{names} 방문"
+
+msgid "story.comes_over"
+msgid_plural "story.comes_over"
+msgstr[0] "{names} 방문"
+
+# The word a birthday film's title must carry, or the stem every form of it shares.
+msgid "title.birthday_word"
+msgstr "생일"

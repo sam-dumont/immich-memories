@@ -247,6 +247,7 @@ class ProductionPostCardBackend:
             excluded_person_ids=context.excluded_person_ids,
             resolved_person_condition=context.resolved_person_condition,
             face_accounts=context.face_accounts,
+            celebrated_birthday=context.celebrated_birthday,
         )
         source = capture_structure_input(
             workprint,

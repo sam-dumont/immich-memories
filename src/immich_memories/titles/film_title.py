@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     from immich_memories.timeperiod import DateRange
     from immich_memories.titles.film_stories import FilmStories
 
-from immich_memories.i18n import resolve_film_locale
+from immich_memories.i18n import elide_french, film_text, resolve_film_locale
 from immich_memories.titles.title_source import TitleSource, override_source
 
 logger = logging.getLogger(__name__)
@@ -32,7 +32,7 @@ __all__ = [
     "holiday_title",
     "resolve_film_title",
     "template_title",
-    "years_written",
+    "years_spanned",
 ]
 
 # The people a special day's title may name, when the run named none: the most present.
@@ -399,10 +399,10 @@ def holiday_title(
 ) -> tuple[str, None] | None:
     """A holiday film's title: the holiday's own name and the years the cut shows, or None.
 
-    "Assomption · 2015, 2017–2026": the name in the film's language, then every year with
-    footage, a run of years as a range. Never a season label, and never a year with no
-    footage, so the years come from the cut (`years`); before there is a cut, the name stands
-    alone. No fallback occasion: a holiday that arrives without its parameter keeps the
+    "Assomption · 2004–2026": the name in the film's language, then the span of the years
+    with footage, the first to the last (owner ruling: a list of every run of years was too
+    much). Never a season label, and never a year with no footage at either end, so the years
+    come from the cut (`years`); before there is a cut, the name stands alone. No fallback occasion: a holiday that arrives without its parameter keeps the
     template's own title rather than claiming to be somebody's Christmas.
     """
     holiday = preset_params.get("holiday")
@@ -417,19 +417,13 @@ def holiday_title(
         country=preset_params.get("country") or "US",
         own_name=preset_params.get("holiday_name"),
     )
-    return (f"{name} · {years_written(years)}" if years else name), None
+    return (f"{name} · {years_spanned(years)}" if years else name), None
 
 
-def years_written(years: Collection[int]) -> str:
-    """Years as a title writes them: runs as ranges, gaps as commas ("2015, 2017–2026")."""
-    ordered = sorted(set(years))
-    runs: list[list[int]] = []
-    for year in ordered:
-        if runs and year == runs[-1][-1] + 1:
-            runs[-1].append(year)
-        else:
-            runs.append([year])
-    return ", ".join(str(run[0]) if len(run) == 1 else f"{run[0]}\u2013{run[-1]}" for run in runs)
+def years_spanned(years: Collection[int]) -> str:
+    """Years as a title writes them: the first to the last ("2004–2026"), one year alone."""
+    first, last = min(years), max(years)
+    return str(first) if first == last else f"{first}\u2013{last}"
 
 
 def birthday_title(
@@ -439,15 +433,22 @@ def birthday_title(
     person_name: str | None,
     locale: str,
 ) -> tuple[str, str | None] | None:
-    """Name the birthday being celebrated, even when the search includes earlier birthdays."""
+    """Name the birthday being celebrated, even when the search includes earlier birthdays.
+
+    The year of the birthday over whose birthday it is ("2026", "Anniversaire de Kit"): a
+    birthday film titled with the person's name alone never said what it celebrated.
+    """
     if memory_type != "person_spotlight" or not preset_params.get("birthday") or end is None:
         return None
-    from immich_memories.titles.text_builder import SelectionType, generate_title
+    if not person_name:
+        return str(end.year), None
+    return str(end.year), birthday_words(person_name, locale)
 
-    info = generate_title(
-        SelectionType.PERSON_SPOTLIGHT, year=end.year, person_name=person_name, locale=locale
-    )
-    return info.main_title, info.subtitle
+
+def birthday_words(person_name: str, locale: str) -> str:
+    """ "Kit's birthday", "Anniversaire d'Anne", in the film's language."""
+    named = film_text("story.birthday", locale, name=person_name)
+    return elide_french(named) if locale == "fr" else named
 
 
 def template_title(

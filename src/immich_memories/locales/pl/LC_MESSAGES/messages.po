@@ -117,3 +117,86 @@ msgstr "{place} · Dzień"
 
 msgid "summary.then"
 msgstr "{earlier}, potem {later}"
+
+# Story names (#2486): what the rules call a day, a stay, a trip or an occasion.
+msgid "story.weekday_date"
+msgstr "{weekday}, {date}"
+
+msgid "story.span_same_month"
+msgstr "{start}–{end} {month}"
+
+msgid "story.span"
+msgstr "{first} – {last}"
+
+msgid "story.place_when"
+msgstr "{place}, {when}"
+
+msgid "story.home_day_purpose"
+msgstr "Dzień w domu, {day}"
+
+msgid "story.home_days"
+msgstr "Dni w domu, {span}"
+
+msgid "story.home_days_purpose"
+msgstr "Zwykłe dni w domu"
+
+msgid "story.day_out"
+msgstr "Jednodniowy wypad"
+
+msgid "story.days_out"
+msgstr "Kilka dni poza domem"
+
+msgid "story.head_when"
+msgstr "{head}, {when}"
+
+msgid "story.across"
+msgstr "{head}: {places}"
+
+msgid "story.more_places"
+msgid_plural "story.more_places"
+msgstr[0] "{places} i {n} inne miejsce"
+msgstr[1] "{places} i {n} inne miejsca"
+msgstr[2] "{places} i {n} innych miejsc"
+
+msgid "story.trip_to"
+msgstr "Podróż: {place}"
+
+msgid "story.trip_away"
+msgstr "Podróż"
+
+msgid "story.leg"
+msgstr "{first} – {last}"
+
+msgid "story.days_away"
+msgid_plural "story.days_away"
+msgstr[0] "Jeden dzień poza domem"
+msgstr[1] "{n} dni poza domem"
+msgstr[2] "{n} dni poza domem"
+
+msgid "story.from_to"
+msgstr "{head}, {first} – {last}"
+
+msgid "story.in_place"
+msgstr "{head}: {place}"
+
+msgid "story.birthday"
+msgstr "Urodziny: {name}"
+
+msgid "story.turns"
+msgid_plural "story.turns"
+msgstr[0] "{name} kończy {age} rok"
+msgstr[1] "{name} kończy {age} lata"
+msgstr[2] "{name} kończy {age} lat"
+
+msgid "story.visit"
+msgstr "Wizyta: {names}"
+
+msgid "story.comes_over"
+msgid_plural "story.comes_over"
+msgstr[0] "{names} przychodzi w odwiedziny"
+msgstr[1] "{names} przychodzą w odwiedziny"
+msgstr[2] "{names} przychodzą w odwiedziny"
+
+# The word a birthday film's title must carry, or the stem every form of it shares.
+msgid "title.birthday_word"
+msgstr "urodzin"

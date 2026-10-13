@@ -272,8 +272,11 @@ class PartitionedSlots:
         voiced: bool = False,
         every_era_speaks: bool = False,
         even_eras: bool = False,
+        story_shares: bool = False,
     ) -> None:
         self._unit_by_asset = unit_by_asset
+        # No story deepens past its share of the cut (a person film); read by the depth fill.
+        self.story_shares = story_shares
         self._partition_of = partition_of
         self.limit = limit
         self._voiced = voiced
