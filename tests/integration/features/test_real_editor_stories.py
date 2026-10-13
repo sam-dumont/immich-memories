@@ -53,7 +53,7 @@ def test_a_month_through_the_real_editor_names_its_occasions_and_its_trip(home: 
         "Kit turns five",
         ["2025-07-05", "2025-07-05"],
     )
-    visit = stories["Pat and Lou's visit"]
+    visit = stories["Lou and Pat's visit"]
     assert (visit["occasion"], visit["days"][0]) == ("visit", "2025-07-07")
     legs = [s for s in stories.values() if s.get("trip")]
     assert legs, list(stories)

@@ -51,8 +51,20 @@ def test_close_familys_visit_is_named_after_the_visitors() -> None:
     )
 
 
-def test_one_picture_is_not_an_occasion() -> None:
-    assert _find({"2025-07-05": {"Kit": 1}, "2025-07-07": {"Pat": 1}}) == {}
+def test_one_picture_of_a_visitor_is_not_a_visit() -> None:
+    assert _find({"2025-07-07": {"Pat": 1, "Lou": 1}}) == {}
+
+
+def test_one_picture_on_their_birth_date_is_their_birthday() -> None:
+    # The date is the evidence: a film of Kit and Robin may hold one frame of both that day.
+    assert _find({"2025-07-05": {"Kit": 1, "Robin": 1}})["2025-07-05"].name == "Kit's birthday"
+
+
+def test_visitors_seen_equally_are_named_the_same_way_in_every_film() -> None:
+    one = _find({"2025-07-07": {"Pat": 3, "Lou": 3}})["2025-07-07"].name
+    other = _find({"2025-07-07": {"Lou": 3, "Pat": 3}})["2025-07-07"].name
+
+    assert one == other == "Lou and Pat's visit"
 
 
 def test_a_friends_birthday_is_theirs_not_the_households() -> None:

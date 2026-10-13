@@ -145,7 +145,10 @@ def plan_structure(
             ports,
             judge=NoModelJudge(),
             rules=RuleStructureReader(
-                exclude_people_condition_violators(nas).source, printed=ports.printed_near
+                exclude_people_condition_violators(nas).source,
+                printed=ports.printed_near,
+                # The draft names a trip after its album like the run's own reader does.
+                album_names=ports.rules.album_names if ports.rules is not None else None,
             ),
             thin=None,
             laya=None,

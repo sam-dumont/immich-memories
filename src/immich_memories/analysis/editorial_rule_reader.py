@@ -121,7 +121,7 @@ class RuleStructureReader:
         self._promote_sparse_quality_enabled = promote_sparse_quality
         # What the owner's albums call a set of pictures (the run's album index), so a trip is
         # named the way its owner named it; None where the run cannot reach the albums.
-        self._album_names = album_names
+        self.album_names = album_names
 
     def _day_threshold(self) -> float:
         """A day at least this dense is an occasion by its capture count alone."""
@@ -507,9 +507,9 @@ class RuleStructureReader:
 
     def _album_holding_most(self, members) -> str | None:
         """The album holding at least half of these pictures: what the owner called them."""
-        if self._album_names is None:
+        if self.album_names is None:
             return None
-        held = Counter(name for a in members for name in self._album_names([a.id]))
+        held = Counter(name for a in members for name in self.album_names([a.id]))
         name, count = held.most_common(1)[0] if held else (None, 0)
         return name if members and count * 2 >= len(members) else None
 

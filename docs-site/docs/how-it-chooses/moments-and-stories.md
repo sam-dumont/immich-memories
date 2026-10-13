@@ -14,7 +14,7 @@ Set your home location and confirm your family in [Home and people](../get-start
 
 A birthday or a family visit doesn't get folded into its week. The editor gives it a story of its own when your library says so:
 
-- **A birthday**: someone from your household or close family is on at least 2 pictures that day, and their birth date in Immich falls on it. Kit's birthday, "Kit turns five".
+- **A birthday**: someone from your household or close family is in a picture that day, and their birth date in Immich falls on it. Kit's birthday, "Kit turns five".
 - **A visit**: close family who don't live with you (your parents, say) are on at least 2 pictures that day, and on 3 photographed days of the period at most. Someone who lives with you never "visits".
 
 Both need the facts from [Home and people](../get-started/who-is-who.md): birth dates set in Immich, and who is who in your household.
@@ -23,7 +23,7 @@ Both need the facts from [Home and people](../get-started/who-is-who.md): birth 
 
 Each story is named from what its pictures say, never from what an image classifier guessed they show:
 
-- an occasion by itself: "Kit's birthday", "Pat and Lou's visit";
+- an occasion by itself: "Kit's birthday", "Lou and Pat's visit";
 - a trip by the album you made for it, else the farthest place it reached ("Trip to Nordkapp"). Each leg of a long trip runs from its first place to its last ("Copenhagen to Nordkapp");
 - a day out by its place and date ("Tervuren, Sunday 6 July");
 - days at home by their span ("Days at home, 1–4 July").
