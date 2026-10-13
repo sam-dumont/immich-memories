@@ -853,7 +853,11 @@ def test_optional_music_failure_preserves_base_and_uploads_valid_artifact(
     uploaded: list[bytes] = []
 
     def upload(
-        _client: object, video_path: Path, _album: object, _captured_at: object = None
+        _client: object,
+        video_path: Path,
+        _album: object,
+        _captured_at: object = None,
+        _label: object = None,
     ) -> dict[str, str]:
         uploaded.append(video_path.read_bytes())
         return {"asset_id": "asset-1"}

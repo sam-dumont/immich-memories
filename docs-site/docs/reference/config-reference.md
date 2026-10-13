@@ -946,7 +946,14 @@ Saving settings does not write `config.yaml`. Set a LAN bind deliberately, with 
 upload:
   enabled: false
   album_name: null               # Created if missing, reused if exists
+  film_tags: false               # Tag each film with its type, years and stories
 ```
+
+Each uploaded film gets a description in Immich: its title and its one-line story summary. With
+`film_tags: true` it is also tagged under `immich-memories/`: `type/` (Monthly highlights, Trip,
+...), `year/` for each year it covers, and `story/` for each birthday, visit or trip in it, so you
+can find every trip film or every film of a year from Immich's tag list. The
+`immich-memories/generated` tag is always set: it is how a later run recognises its own films.
 
 An uploaded memory is filed on the day of its last picture, in the timezone most of its pictures
 share, so it lands in your timeline where the memory ends instead of on the day it was rendered.

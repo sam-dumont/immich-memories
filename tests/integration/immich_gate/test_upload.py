@@ -89,3 +89,37 @@ def test_a_rerendered_film_is_filed_in_its_album_and_replaces_the_earlier_one(
     # the earlier render of the same recipe goes to Immich's trash.
     assert filed == [second["asset_id"]]
     assert gate_client.get_asset(first["asset_id"]).is_trashed
+
+
+@pytest.mark.feature("upload.film-description-and-tags")
+def test_a_film_keeps_its_description_and_tags_after_immich_reads_it(gate_client, tmp_path):
+    import httpx
+
+    from immich_memories.api.film_label import FilmLabel
+
+    label = FilmLabel(
+        description="July 2025 · Kit's birthday, then The road north",
+        tags=(
+            "immich-memories/type/Monthly highlights",
+            "immich-memories/year/2025",
+            "immich-memories/story/Kit's birthday",
+        ),
+    )
+    answer = gate_client.upload_memory(
+        _render(tmp_path / "label", "green"), None, captured_at=_CAPTURED, label=label
+    )
+    with httpx.Client(
+        base_url=f"{gate_client.base_url}/api",
+        headers={"x-api-key": gate_client.api_key},
+        timeout=30,
+    ) as admin:
+        try:
+            asset = admin.get(f"/assets/{answer['asset_id']}").raise_for_status().json()
+        finally:
+            admin.request(
+                "DELETE", "/assets", json={"ids": [answer["asset_id"]], "force": True}
+            ).raise_for_status()
+
+    assert answer["warnings"] == []
+    assert asset["exifInfo"]["description"] == label.description
+    assert {tag["value"] for tag in asset["tags"]} == {"immich-memories/generated", *label.tags}

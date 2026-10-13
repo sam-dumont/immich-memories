@@ -1026,6 +1026,61 @@
     }
    }
   },
+  "PUT /assets/{id}": {
+   "body": {
+    "dateTimeOriginal": {
+     "required": false,
+     "type": "string"
+    },
+    "description": {
+     "required": false,
+     "type": "string"
+    },
+    "isFavorite": {
+     "required": false,
+     "type": "boolean"
+    },
+    "latitude": {
+     "required": false,
+     "type": "number"
+    },
+    "livePhotoVideoId": {
+     "format": "uuid",
+     "nullable": true,
+     "required": false,
+     "type": "string"
+    },
+    "longitude": {
+     "required": false,
+     "type": "number"
+    },
+    "rating": {
+     "maximum": 5,
+     "minimum": -1,
+     "nullable": true,
+     "required": false,
+     "type": "number"
+    },
+    "visibility": {
+     "enum": [
+      "archive",
+      "timeline",
+      "hidden",
+      "locked"
+     ],
+     "required": false,
+     "type": "string"
+    }
+   },
+   "path": {
+    "id": {
+     "format": "uuid",
+     "required": true,
+     "type": "string"
+    }
+   },
+   "query": {}
+  },
   "PUT /tags": {
    "body": {
     "tags": {
@@ -6084,6 +6139,69 @@
      },
      "required": true,
      "type": "array"
+    }
+   },
+   "path": {
+    "id": {
+     "format": "uuid",
+     "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
+     "required": true,
+     "type": "string"
+    }
+   },
+   "query": {}
+  },
+  "PUT /assets/{id}": {
+   "body": {
+    "dateTimeOriginal": {
+     "required": false,
+     "type": "string"
+    },
+    "description": {
+     "required": false,
+     "type": "string"
+    },
+    "isFavorite": {
+     "required": false,
+     "type": "boolean"
+    },
+    "latitude": {
+     "format": "double",
+     "maximum": 90,
+     "minimum": -90,
+     "required": false,
+     "type": "number"
+    },
+    "livePhotoVideoId": {
+     "format": "uuid",
+     "nullable": true,
+     "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
+     "required": false,
+     "type": "string"
+    },
+    "longitude": {
+     "format": "double",
+     "maximum": 180,
+     "minimum": -180,
+     "required": false,
+     "type": "number"
+    },
+    "rating": {
+     "maximum": 5,
+     "minimum": -1,
+     "nullable": true,
+     "required": false,
+     "type": "integer"
+    },
+    "visibility": {
+     "enum": [
+      "archive",
+      "timeline",
+      "hidden",
+      "locked"
+     ],
+     "required": false,
+     "type": "string"
     }
    },
    "path": {
@@ -11221,6 +11339,69 @@
      },
      "required": true,
      "type": "array"
+    }
+   },
+   "path": {
+    "id": {
+     "format": "uuid",
+     "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
+     "required": true,
+     "type": "string"
+    }
+   },
+   "query": {}
+  },
+  "PUT /assets/{id}": {
+   "body": {
+    "dateTimeOriginal": {
+     "required": false,
+     "type": "string"
+    },
+    "description": {
+     "required": false,
+     "type": "string"
+    },
+    "isFavorite": {
+     "required": false,
+     "type": "boolean"
+    },
+    "latitude": {
+     "format": "double",
+     "maximum": 90,
+     "minimum": -90,
+     "required": false,
+     "type": "number"
+    },
+    "livePhotoVideoId": {
+     "format": "uuid",
+     "nullable": true,
+     "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
+     "required": false,
+     "type": "string"
+    },
+    "longitude": {
+     "format": "double",
+     "maximum": 180,
+     "minimum": -180,
+     "required": false,
+     "type": "number"
+    },
+    "rating": {
+     "maximum": 5,
+     "minimum": -1,
+     "nullable": true,
+     "required": false,
+     "type": "integer"
+    },
+    "visibility": {
+     "enum": [
+      "archive",
+      "timeline",
+      "hidden",
+      "locked"
+     ],
+     "required": false,
+     "type": "string"
     }
    },
    "path": {

@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, NoReturn
 from immich_memories.delivery_timestamp import film_capture_instant
 from immich_memories.generate_progress import _report
 from immich_memories.generate_settings import upload_to_immich
+from immich_memories.operations.film_labelling import label_for_params
 from immich_memories.operations.phases import OperationalPhase
 from immich_memories.processing.output_contract import InvalidOutputArtifact
 from immich_memories.security import configured_secret_values, sanitize_error_message
@@ -125,6 +126,7 @@ def deliver_completed_artifact(
             result_path,
             params.upload_album,
             film_capture_instant(clip.asset for clip in params.clips),
+            label_for_params(params),
         )
         asset_id = result.get("asset_id")
         if result.get("delivery_complete") is False:

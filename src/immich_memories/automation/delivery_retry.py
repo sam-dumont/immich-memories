@@ -17,6 +17,7 @@ from immich_memories.automation.models import (
 from immich_memories.automation.notifications import send_configured_notification
 from immich_memories.automation.state_store import AutomationStateStore
 from immich_memories.config_loader import Config
+from immich_memories.operations.film_labelling import label_for_run
 from immich_memories.operations.phases import OperationalPhase, PhaseEvent
 from immich_memories.tracking.models import DeliveryStatus, RunMetadata
 from immich_memories.tracking.run_database import RunDatabase
@@ -262,6 +263,7 @@ class PendingDeliveryRetry:
                 upload = client.upload_memory(
                     video_path=output_path,
                     album_name=pending.delivery_album,
+                    label=label_for_run(self._config, pending, store=self._db.store),
                 )
             if upload.get("delivery_complete") is False:
                 return self._finish_incomplete(attempt, pending, upload, output_path)
