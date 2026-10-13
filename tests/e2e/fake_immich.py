@@ -230,6 +230,8 @@ def _companion_payload(still: Picture) -> dict[str, Any]:
         "width": _VIDEO_SIZE[0],
         "height": _VIDEO_SIZE[1],
         "livePhotoVideoId": None,
+        # Immich recognises faces on the still, never on its motion clip.
+        "people": [],
         "visibility": "hidden",
         "checksum": f"fake-checksum-{still.live_video_id}",
     }
