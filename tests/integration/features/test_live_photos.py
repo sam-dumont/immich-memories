@@ -116,6 +116,29 @@ def test_a_live_photo_plays_as_motion_only_when_its_clip_moves(
 
 
 @pytest.mark.feature("live-photos.motion")
+def test_a_live_photo_clip_counts_the_face_its_still_shows(
+    library_home: UserHome, tmp_path_factory
+):
+    """Immich puts Kit's face on the fountain still, never on its clip (#2079).
+
+    A film about Kit keeps that Live Photo, and the 3 s clip plays as motion (#2453). The
+    hermetic editor reads no annotation store, so this proves the fixture's shape and the
+    person flow; `tests/test_detector_cache_contract.py` guards the clip taking its still's face.
+    """
+    directory = tmp_path_factory.mktemp("kit")
+    film = render(
+        library_home,
+        "generate", "--start", "2025-07-01", "--end", "2025-07-31", "--person", "Kit",
+        "--include-photos", "--no-music", "--quiet", "--output", str(directory / "kit.mp4"),
+        into=directory,
+    )  # fmt: skip
+    shots = _shots(library_home, film)
+
+    assert "live-fountain" in shots, sorted(shots)
+    assert _change(film.film, shots["live-fountain"]) > _MOTION_CHANGE
+
+
+@pytest.mark.feature("live-photos.motion")
 def test_nearby_live_photos_stitch_into_one_clip_that_never_rewinds(
     library_home: UserHome, live_film: RenderedRun, immich: LibraryServer
 ):

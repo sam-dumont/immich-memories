@@ -622,6 +622,7 @@ features:
     covers: ["cli:generate --include-live-photos"]
     tests:
       - tests/integration/features/test_live_photos.py::test_a_live_photo_plays_as_motion_only_when_its_clip_moves
+      - tests/integration/features/test_live_photos.py::test_a_live_photo_clip_counts_the_face_its_still_shows
       - tests/integration/features/test_live_photos.py::test_nearby_live_photos_stitch_into_one_clip_that_never_rewinds
       - tests/integration/features/test_live_photos.py::test_no_live_photos_keeps_every_live_photo_a_still
   - id: hdr.end-to-end

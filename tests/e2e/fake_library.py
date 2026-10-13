@@ -512,6 +512,9 @@ LIVE_PICTURES: tuple[Picture, ...] = (
         "moving",
         "home-0704-fountain",
         story_key="S0004",
+        # Immich puts faces on the still, never on its motion clip (#2079).
+        people=_BY_STEM["home-0704-fountain"].people,
+        faces=_BY_STEM["home-0704-fountain"].faces,
     ),
     _live(
         "live-quiet-sunrise",
