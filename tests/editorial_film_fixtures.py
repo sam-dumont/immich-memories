@@ -317,6 +317,12 @@ class FilmJudge(StoryJudge):
                     "retitle": {},
                 }
             )
+        if stage == "film-summary":
+            # The film's summary, told from the stories the prompt was fed (#2488).
+            names = [
+                json.loads(line)["name"] for line in prompt.split("STORIES\n", 1)[1].splitlines()
+            ]
+            return json.dumps({"summary": "A film of " + "; ".join(names) + "."})
         if stage.startswith("story-threads") and self.threads is not None:
             rows = re.findall(r"^K\d{2} \|.*$", prompt, re.MULTILINE)
             return json.dumps({"same": self.threads(rows, prompt)})  # groups: flattened on read

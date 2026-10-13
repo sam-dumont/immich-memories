@@ -140,8 +140,15 @@ serializes requests.
   trips only with `--llm-title`, and `--no-llm-title` keeps the template. With no model the template writes it.
 - **The music's mood**, from the film's story titles and captions, in one text call
   (`audio/text_mood.mood_for_cut`). With no model the clips' own mood decides, or "calm".
-- **The thesis**, the period's account in up to 150 words. It steers the vote, and the storyboard and
-  `runs story` show it on every film the model polished or planned.
+- **The summary**, up to 150 words on what the film was about and which stories mattered. One
+  question, fed the film's own stories: their names, days, people, occasions, places, and the trip
+  each leg belongs to. The question names the film's kind, dates and subject, so a person, season or
+  year film never gets a month's summary back from the bank. The storyboard, the film page and the
+  title read it. With no model, or when the answer is unusable, the summary is one line of the
+  stories' names in the film's language: "Kit's birthday, then The road north". Nothing in it is
+  invented.
+- **The thesis**, the period's account in up to 150 words, shared by every film of that period. It
+  steers the vote and nothing else.
 
 The captions under the pictures are dates and places, on every tier: the date from Immich
 metadata, the place from Immich's city, or the resolved city, town or village when `network.geocoding` is on and found

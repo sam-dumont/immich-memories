@@ -198,7 +198,15 @@ the code named beside it; if the two disagree, the code wins and this entry is s
   reading.
 - **Thesis**: the up-to-150-word statement of what a period was about. The story synthesis writes
   it (`editorial_story_grouping.py`) and the account carries it to the thin layer
-  (`editorial_thin_catalogue.py`), where it sits above every block the model votes on.
+  (`editorial_thin_catalogue.py`), where it sits above every block the model votes on. The
+  account is shared by every film of its period, so it is never a film's summary.
+- **Summary**: what one film was about, stored as the plan's `story.thesis` (the storyboard, the
+  film page, `runs story`, the music mood and the title read it). When no synthesis wrote one,
+  `editorial_film_summary.py` writes it once the cut is settled, from the stories the cut shows:
+  on Full one question fed their names, days, people, occasions, places and trip, with the
+  film's kind, dates and subject in the prompt so the judgment bank never answers another
+  scope's film; on Basic, or when that answer is unusable, a line of the story names in the
+  film's language (`summary.then` in the film-text catalogues).
 - **Notable record**: a picture an episode reading named as a moment worth a place of its own,
   with the reason (`banked_notable_records` in `catalogue_runtime.py`). Only a story holding one
   can earn an N seat.
@@ -610,6 +618,7 @@ src/immich_memories/
 │   ├── editorial_thin_layer.py     # ThinPolish: the model reads a rules cut once instead of planning the film;
 │   │                               # held to 4 calls per 12 draft shots + 4 per seat (thin_budget)
 │   ├── editorial_thin_step.py      # The planner's polish step; an unpolished draft (unread period) gets the no-model passes
+│   ├── editorial_film_summary.py   # The film's summary from its own stories: a model question on Full, story names on Basic
 │   ├── editorial_thin_catalogue.py # What a polish may read of a catalogued period: account, stories, hints
 │   ├── editorial_picture_admission.py # Shared candidate preparation and standing, audience, spacing and repetition checks
 │   ├── editorial_carrier.py        # A playable picture bound to its own story context

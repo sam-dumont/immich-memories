@@ -112,3 +112,6 @@ msgstr "{phrase}的一天"
 
 msgid "title.day_in_place_neutral"
 msgstr "{place} · 一天"
+
+msgid "summary.then"
+msgstr "{earlier}，然后{later}"

@@ -117,7 +117,7 @@ def register_prepare_commands(cli_group: click.Group) -> None:
     @click.option(
         "--overviews",
         is_flag=True,
-        help="Also bank each month's episode readings and the account a cut reads as its thesis",
+        help="Also bank each month's episode readings and the account the model polish reads",
     )
     @click.option(
         "--library-size",

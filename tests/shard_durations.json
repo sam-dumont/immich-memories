@@ -672,7 +672,6 @@
     "tests/test_editorial_thin_refill.py": 0.3,
     "tests/test_editorial_thin_refill_calls.py": 1.5,
     "tests/test_editorial_thin_short_film.py": 0.7,
-    "tests/test_editorial_thin_step_thesis.py": 0.1,
     "tests/test_editorial_thin_variety.py": 0.7,
     "tests/test_editorial_thin_vote.py": 0.1,
     "tests/test_editorial_thin_vote_relations.py": 0.9,

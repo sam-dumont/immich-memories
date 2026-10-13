@@ -4,6 +4,7 @@ from datetime import date
 from functools import partial
 
 from immich_memories.analysis.editorial_block_votes import judge_worthiness
+from immich_memories.analysis.editorial_film_summary import read_summary
 from immich_memories.analysis.editorial_story_reading import (
     PeriodStory,
     StoryEpisode,
@@ -208,8 +209,54 @@ def recurring_activity(llm: LLMConfig) -> str:
     return "folds both swimming lessons while keeping the home day separate"
 
 
+def film_summary(llm: LLMConfig) -> str:
+    stories = [
+        {
+            "key": "S1",
+            "title": "Avery's birthday",
+            "weight": "dominant",
+            "occasion": "birthday",
+            "people": ["Avery"],
+            "days": ["2030-06-04", "2030-06-04"],
+            "places": ["home"],
+        },
+        {
+            "key": "S2",
+            "title": "Through the hills",
+            "weight": "major",
+            "occasion": "leg",
+            "days": ["2030-06-10", "2030-06-16"],
+            "places": ["Hill Town", "Lake Town"],
+            "trip": "The road to the lakes",
+        },
+        {
+            "key": "S3",
+            "title": "Lakes and back",
+            "weight": "major",
+            "occasion": "leg",
+            "days": ["2030-06-17", "2030-06-24"],
+            "places": ["Lake Town"],
+            "trip": "The road to the lakes",
+        },
+        {"key": "S4", "title": "Ordinary days", "weight": "glimpse", "days": ["2030-06-01"] * 2},
+    ]
+    with scratch_judge(llm) as judge:
+        answer = read_summary(
+            judge, stories, scope="a monthly_highlights film, 2030-06-01 to 2030-06-30", locale="en"
+        )
+    text = answer.casefold()
+    assert "birthday" in text, "film summary lost the birthday"
+    assert "lake" in text or "road" in text, "film summary lost the trip"
+    return "summary parses and names the birthday and the trip from the film's own stories"
+
+
 def editorial_cases(llm: LLMConfig) -> tuple[Case, ...]:
     return (
+        Case(
+            "film summary",
+            partial(film_summary, llm),
+            frozenset({"analysis.editorial_film_summary:read_summary"}),
+        ),
         Case(
             "recurring activity",
             partial(recurring_activity, llm),

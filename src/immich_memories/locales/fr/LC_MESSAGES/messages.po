@@ -117,3 +117,6 @@ msgstr "{place} · Une journée"
 
 msgid "date.ordinal_1"
 msgstr "1er"
+
+msgid "summary.then"
+msgstr "{earlier}, puis {later}"

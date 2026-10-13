@@ -672,7 +672,8 @@ only adds to a rule another producer already answered, and none of them can clea
 The top-level [`tier`](#tier) sets `reader`: `rules` on `basic` and `gpu`, `model` on `full`.
 Rules cover the ten standard memory products, including albums and recurring dates,
 from dates, places, favourites, people metadata and whatever preparation facts exist. They reuse
-the normal allocation, spacing, audience and timing checks, omit a thesis, keep unsampled Live
+the normal allocation, spacing, audience and timing checks, write a one-line summary made only of
+the film's story names, keep unsampled Live
 Photos as stills, and write no semantic model banks. Saved plans identify the producer as
 `rules-v1`. A custom `--start`/`--end` range is cut the same way as a month or a year.
 

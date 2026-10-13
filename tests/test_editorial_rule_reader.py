@@ -115,7 +115,12 @@ def test_rules_finish_product_selection_without_constructing_inference(tmp_path,
     attempt = planner.last_attempt_directory
     plan = json.loads((attempt / "plan.private.json").read_text())
     assert plan["reader"] == "rules-v1"
-    assert not plan["story"]["thesis"]
+    # The no-model summary is made only of the film's story names (#2488): nothing invented.
+    names = {row["title"] for row in plan["story"]["episodes"]}
+    assert plan["story"]["thesis"]
+    assert all(part in names for part in plan["story"]["thesis"].split(", then ")), plan["story"][
+        "thesis"
+    ]
     if product == "on_this_day":
         assert {c.asset.file_created_at.year for c in result.selected_clips} == {
             2022,

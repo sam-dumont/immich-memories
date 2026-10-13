@@ -108,3 +108,6 @@ msgstr "A day {phrase}"
 
 msgid "title.day_in_place_neutral"
 msgstr "{place} · A day"
+
+msgid "summary.then"
+msgstr "{earlier}, then {later}"

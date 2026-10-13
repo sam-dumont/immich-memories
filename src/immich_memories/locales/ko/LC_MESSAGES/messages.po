@@ -112,3 +112,6 @@ msgstr "{phrase}에서의 하루"
 
 msgid "title.day_in_place_neutral"
 msgstr "{place} · 하루"
+
+msgid "summary.then"
+msgstr "{earlier}, 그리고 {later}"

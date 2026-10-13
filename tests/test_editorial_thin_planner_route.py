@@ -77,6 +77,16 @@ def test_a_catalogued_period_has_its_cut_voted_on_once(tmp_path):
     assert sum(c["seconds"] for c in plan["carriers"]) <= source.case.target_seconds
 
 
+def test_a_polished_film_says_what_its_own_stories_were_never_the_period_account(tmp_path):
+    source = film(tmp_path)
+    plan = run(source, PolishJudge(), account=ACCOUNT)
+
+    names = [row["title"] for row in plan["story"]["episodes"] if row["chosen"]]
+    assert plan["story"]["thesis"].startswith("A film of ")
+    assert all(name in plan["story"]["thesis"] for name in names)
+    assert ACCOUNT not in plan["story"]["thesis"]
+
+
 def test_a_period_with_no_account_falls_back_to_the_planner_and_asks_no_vote(tmp_path):
     source = film(tmp_path)
     judge = PolishJudge()
