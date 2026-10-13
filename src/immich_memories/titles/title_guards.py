@@ -260,6 +260,57 @@ def separating_the_years(
     return replace(suggestion, title=title)
 
 
+# Japanese, Korean and Chinese glue a particle to the name before it ("RobinとKit"), so these
+# scripts end a name the way a space would.
+_GLUED_SCRIPTS = re.compile(r"[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]")
+
+
+def _first_names_shown(text: str) -> set[str]:
+    return {word.casefold() for word in _name_words(_GLUED_SCRIPTS.sub(" ", text))}
+
+
+def _shows_first_name(name: str, shown: set[str], text: str) -> bool:
+    words = _name_words(name)
+    if not words:
+        return True
+    first = words[0].casefold()
+    if _GLUED_SCRIPTS.search(first):
+        return first in text.casefold()
+    return first in shown
+
+
+def naming_everyone(
+    suggestion: TitleSuggestion | None,
+    memory_type: str,
+    person_names: Sequence[str],
+    people_condition: str | None,
+) -> TitleSuggestion | None:
+    """The suggestion, unless a film about several people leaves one of them unnamed.
+
+    Every person a multi-person film was asked for appears by first name, in the title or
+    the subtitle, as the rules title shows the whole cast in its subtitle. Leaving one out
+    ("Kit in 2025" over a film of Robin and Kit) makes it somebody else's film, so the rules
+    title names this memory instead. A people expression is not checked: its condition can
+    name somebody the film leaves out ("Robin AND NOT Kit").
+    """
+    if suggestion is None or memory_type != "multi_person" or people_condition:
+        return suggestion
+    text = f"{suggestion.title} {suggestion.subtitle or ''}"
+    shown = _first_names_shown(text)
+    missing = [name for name in person_names if not _shows_first_name(name, shown, text)]
+    if len(person_names) < 2 or not missing:
+        return suggestion
+    logger.warning(
+        "Title %r (subtitle %r) leaves out %d of the film's %d people; "
+        "the template names this memory instead",
+        suggestion.title,
+        suggestion.subtitle,
+        len(missing),
+        len(person_names),
+    )
+    return None
+
+
 def names_the_place(title: str, place: str, locale: str) -> bool:
     """Whether `title` names the trip's place, in English or in `locale`.
 
