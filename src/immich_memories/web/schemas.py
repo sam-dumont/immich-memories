@@ -310,6 +310,9 @@ class Language(BaseModel):
 class Messages(BaseModel):
     locale: str
     messages: dict[str, str]
+    # A counted label's forms, keyed by its singular, and the CLDR category of each form.
+    plurals: dict[str, list[str]]
+    plural_forms: list[str]
     # Every interface language, each named in its own tongue, for the picker.
     languages: list[Language]
 

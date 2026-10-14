@@ -1926,6 +1926,12 @@ export interface components {
             messages: {
                 [key: string]: string;
             };
+            /** Plural Forms */
+            plural_forms: string[];
+            /** Plurals */
+            plurals: {
+                [key: string]: string[];
+            };
         };
         /** ModelAcquisitionStatus */
         ModelAcquisitionStatus: {

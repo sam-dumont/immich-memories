@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { components } from './api-types';
+  import { roughDuration as duration } from './format';
   import { N_, t } from './i18n.svelte';
 
   let { forecast }: { forecast: components['schemas']['JobForecast'] } = $props();
@@ -10,7 +11,6 @@
   const states: Record<string, string> = {
     pending: N_('Pending'), running: N_('Running'), completed: N_('Completed'), skipped: N_('Skipped'),
   };
-  const duration = (seconds: number) => seconds < 60 ? `${Math.ceil(seconds)}s` : `${Math.ceil(seconds / 60)} min`;
   const label = (key: string) => t(names[key] ?? key);
 </script>
 

@@ -559,6 +559,7 @@ def template_title(
         preset_params=params,
         person_name=person_name,
         use_first_name_only=config.title_screens.use_first_name_only,
+        locale=locale,
     )
     if birthday := birthday_title(params, memory_type, date_range.end, name, locale, years):
         return birthday

@@ -68,3 +68,11 @@ def test_french_choices_make_a_cut_without_changing_the_film_language(
         page.wait_for_url("**/app/runs/**", timeout=240_000)
         expect(page.locator("html")).to_have_attribute("lang", "fr")
         expect(page.get_by_role("link", name="Retour aux exécutions")).to_be_visible(timeout=30_000)
+        # The run page's filters and the runs list's statuses are built at run time; they are
+        # French too, not the English the client keeps them under.
+        expect(page.get_by_role("radio", name="Toutes les images", exact=True)).to_be_visible(
+            timeout=60_000
+        )
+        page.goto(launch_app_url + "/app/runs")
+        expect(page.get_by_role("radio", name="Échouée", exact=True)).to_be_visible()
+        expect(page.get_by_role("radio", name="Interrompue", exact=True)).to_be_visible()

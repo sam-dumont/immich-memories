@@ -2,7 +2,7 @@ import { api, type Messages } from './api';
 
 const PREFERENCE_KEY = 'immich-memories.ui-language';
 
-let current = $state<Messages>({ locale: 'en', messages: {}, languages: [] });
+let current = $state<Messages>({ locale: 'en', messages: {}, plurals: {}, plural_forms: ['one', 'other'], languages: [] });
 
 function preference(): string {
   try {
@@ -33,7 +33,24 @@ export async function chooseLanguage(code: string): Promise<void> {
 
 /** Translate an interface template from the shared `ui.po`; `{name}` placeholders are filled in. */
 export function t(message: string, values: Record<string, string | number> = {}): string {
-  const template = current.messages[message] || message;
+  return fill(current.messages[message] || message, values);
+}
+
+/**
+ * Translate a counted label: the form the reader's language writes for `n` ("1 photo",
+ * "2 photos", Russian's three forms), with `{n}` written the way the language writes numbers.
+ */
+export function tn(singular: string, plural: string, n: number, values: Record<string, string | number> = {}): string {
+  const forms = current.plurals[singular];
+  let template = n === 1 ? singular : plural;
+  if (forms?.length) {
+    const form = current.plural_forms.indexOf(new Intl.PluralRules(current.locale).select(n));
+    template = forms[form < 0 ? forms.length - 1 : form] || template;
+  }
+  return fill(template, { n: new Intl.NumberFormat(current.locale).format(n), ...values });
+}
+
+function fill(template: string, values: Record<string, string | number>): string {
   return template.replace(/\{(\w+)\}/g, (whole, key: string) => (key in values ? String(values[key]) : whole));
 }
 

@@ -23,6 +23,19 @@ export const memoryTypeLabel = (value: string | null) => t(MEMORY_TYPES[value ??
 export const RUN_STATUSES = ['completed', 'running', 'failed', 'cancelled', 'interrupted'] as const;
 export type RunStatus = (typeof RUN_STATUSES)[number];
 
+// A run's status, and how an automation attempt ended, in the reader's words.
+const STATUSES: Record<string, string> = {
+  all: N_('All'),
+  completed: N_('Completed'),
+  running: N_('Running'),
+  failed: N_('Failed'),
+  cancelled: N_('Cancelled'),
+  interrupted: N_('Interrupted'),
+  skipped: N_('Skipped'),
+};
+
+export const statusLabel = (status: string) => t(STATUSES[status] ?? status);
+
 const SOURCES: Record<string, string> = { manual: N_('Manual'), scheduled: N_('Scheduled'), auto: N_('Automatic') };
 
 export const sourceLabel = (value: string) => t(SOURCES[value] ?? value);
@@ -68,6 +81,9 @@ export const weightLabel = (weight: string) => (WEIGHTS[weight] ? t(WEIGHTS[weig
 N_('Edited without descriptions — picture content was classified, not read.');
 N_('Some pictures were edited without descriptions.');
 N_('Edited from metadata only — picture content was neither classified nor read, so every picture is held to family viewing.');
+// Sign-in refusals (web/server.py), shown as the server words them.
+N_('Invalid username or password');
+N_('Too many failed attempts. Try again later.');
 // The connection's refusals (web/connection.py), shown as the server words them.
 N_('The server URL changed: enter the API key for the new server.');
 N_('Please enter both URL and API key');

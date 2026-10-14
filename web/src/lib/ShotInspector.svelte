@@ -3,6 +3,7 @@
   import { mdiArrowULeftTop, mdiContentCut, mdiDeleteOutline, mdiSwapHorizontal } from '@mdi/js';
   import { thumbnail, video, type CutShot } from './api';
   import type { CutEditor } from './cut-edits.svelte';
+  import { seconds, tenths } from './format';
   import { t } from './i18n.svelte';
   import { clock, seatLabel } from './labels';
 
@@ -65,7 +66,7 @@
       <div class="flex flex-wrap items-center gap-2 text-sm tabular-nums">
         <Button size="small" variant="ghost" leadingIcon={mdiContentCut} onclick={() => mark(0)}>{t('Start here')}</Button>
         <Button size="small" variant="ghost" leadingIcon={mdiContentCut} onclick={() => mark(1)}>{t('End here')}</Button>
-        <span>{interval[0].toFixed(1)}–{interval[1].toFixed(1)} s</span>
+        <span>{tenths(interval[0])}–{seconds(interval[1])}</span>
       </div>
     {:else if !removed && !shot.motion}
       <label class="flex items-center gap-2 text-sm">{t('Screen time (seconds)')}
@@ -81,7 +82,7 @@
       <span class="font-semibold text-dark">#{shot.position}</span>
       <span>{clock(shot.start)}</span>
       <span>{shot.day}</span>
-      <span>{t('{seconds} s on screen', { seconds: editor.onScreen(shot).toFixed(1) })}</span>
+      <span>{t('{seconds} on screen', { seconds: seconds(editor.onScreen(shot)) })}</span>
       <Badge size="tiny" color={shot.motion ? 'info' : 'secondary'}>{shot.motion ? t('Video') : t('Still')}</Badge>
     </p>
     <!-- A rules-made story title can list every place of the week: two lines, the rest on hover. -->

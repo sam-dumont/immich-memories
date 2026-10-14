@@ -83,6 +83,23 @@ def test_the_client_reads_its_language_from_the_shared_interface_catalogue(clien
     assert answer["messages"]["Back to runs"] == "Retour aux exécutions"
 
 
+@pytest.mark.parametrize(
+    ("language", "categories", "forms"),
+    [
+        ("fr", ["one", "other"], ["{n} photo", "{n} photos"]),
+        ("ru", ["one", "few", "many"], ["{n} фотография", "{n} фотографии", "{n} фотографий"]),
+        ("ja", ["other"], ["写真 {n} 枚"]),
+    ],
+)
+def test_a_count_gets_every_plural_form_its_language_writes(client, language, categories, forms):
+    # The client picks a form with the browser's plural rules: each form says which rule it is.
+    answer = client.get("/api/v1/i18n", params={"preference": language}).json()
+
+    assert answer["plural_forms"] == categories
+    assert answer["plurals"]["{n} photo"] == forms
+    assert "{n} photo" not in answer["messages"]
+
+
 def test_a_deep_link_into_the_client_loads_the_app_and_assets_load_as_files(tmp_path):
     built = tmp_path / "client"
     (built / "_app").mkdir(parents=True)

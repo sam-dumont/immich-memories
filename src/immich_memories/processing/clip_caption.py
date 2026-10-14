@@ -6,6 +6,7 @@ text and geometry, and it is worth testing without spinning up FFmpeg.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from datetime import date
 from typing import Any
@@ -13,7 +14,7 @@ from typing import Any
 from babel import Locale
 from babel.dates import format_date, format_skeleton
 
-from immich_memories.i18n import babel_locale, get_weekday_name
+from immich_memories.i18n import babel_locale
 from immich_memories.processing.caption_image import (
     CaptionStyle,
     needs_image,
@@ -115,10 +116,19 @@ def _worded(taken: date | None, same_month: bool, same_year: bool, locale_code: 
     if same_month:
         if locale_code in _CJK:
             return _plain_spaces(format_skeleton("EEEEd", taken, locale=where))
-        return f"{get_weekday_name(taken.weekday(), locale_code)} {taken.day}"
+        return _weekday_and_day(taken, where)
     if same_year:
         return _plain_spaces(format_skeleton("MMMMd", taken, locale=where))
     return _plain_spaces(format_date(taken, format="long", locale=where))
+
+
+def _weekday_and_day(taken: date, where: Locale) -> str:
+    """ "Sunday 10", "Sonntag, 10.": CLDR's order for the two, with the weekday written out."""
+    pattern = where.datetime_skeletons["Ed"].pattern
+    # CLDR's pattern abbreviates the weekday ("So., 10."); the caption has always written it out.
+    pattern = re.sub(r"E+", "EEEE", re.sub(r"c+", "cccc", pattern))
+    worded = _plain_spaces(format_date(taken, format=pattern, locale=where))
+    return worded[:1].upper() + worded[1:]
 
 
 def _plain_spaces(text: str) -> str:

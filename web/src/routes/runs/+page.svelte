@@ -3,7 +3,7 @@
   import { mdiImageOffOutline } from '@mdi/js';
   import { api, thumbnail, type RunPage, type RunSummary } from '$lib/api';
   import { locale, t } from '$lib/i18n.svelte';
-  import { memoryTypeLabel, RUN_STATUSES, sourceLabel, type RunStatus } from '$lib/labels';
+  import { memoryTypeLabel, RUN_STATUSES, sourceLabel, statusLabel, type RunStatus } from '$lib/labels';
 
   const PAGE = 24;
   const STATUS_COLOR: Record<string, Color> = {
@@ -84,8 +84,8 @@
   <div class="flex flex-wrap gap-2" role="radiogroup" aria-label={t('Status')}>
     {#each ['all', ...RUN_STATUSES] as const as value (value)}
       <Button size="small" shape="round" variant={status === value ? 'filled' : 'outline'}
-        color={status === value ? 'primary' : 'secondary'} role="radio" aria-checked={status === value} class="capitalize"
-        onclick={() => choose(value)}>{t(value)}</Button>
+        color={status === value ? 'primary' : 'secondary'} role="radio" aria-checked={status === value}
+        onclick={() => choose(value)}>{statusLabel(value)}</Button>
     {/each}
   </div>
 
@@ -110,7 +110,7 @@
                 <p class="truncate font-medium">{memoryTypeLabel(run.memory_type)}</p>
                 <p class="truncate text-sm text-gray-600 dark:text-gray-400">{span(run) || run.run_id}</p>
               </div>
-              <Badge size="tiny" class="shrink-0 capitalize" color={STATUS_COLOR[run.status] ?? 'secondary'}>{t(run.status)}</Badge>
+              <Badge size="tiny" class="shrink-0" color={STATUS_COLOR[run.status] ?? 'secondary'}>{statusLabel(run.status)}</Badge>
             </div>
             <p class="px-1 text-xs text-gray-600 dark:text-gray-400"><time datetime={run.created_at}>{when(run.created_at)}</time> · {sourceLabel(run.source)}</p>
           </a>

@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import date
 
 from immich_memories.i18n import month_name_forms
+from immich_memories.i18n_places import cast_list
 from immich_memories.titles.text_builder import (
     SelectionType,
     TitleInfo,
@@ -78,19 +79,12 @@ def generate_person_spotlight_title(
 def generate_multi_person_title(
     year: int | None,
     person_names: list[str] | None,
-    locale: str,  # noqa: ARG001
+    locale: str,
 ) -> TitleInfo:
     """Generate title for a multi-person memory."""
     if year is None:
         raise ValueError("Year required for multi-person selection")
-    subtitle = None
-    if person_names:
-        if len(person_names) == 1:
-            subtitle = person_names[0]
-        elif len(person_names) == 2:
-            subtitle = f"{person_names[0]} & {person_names[1]}"
-        else:
-            subtitle = f"{', '.join(person_names[:-1])} & {person_names[-1]}"
+    subtitle = cast_list(person_names, locale) if person_names else None
     return TitleInfo(
         main_title=str(year),
         subtitle=subtitle,

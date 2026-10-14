@@ -2,6 +2,7 @@
   import { Button, ProgressBar } from '@immich/ui';
   import { mdiContentCopy, mdiStop } from '@mdi/js';
   import { thumbnail, type JobView } from './api';
+  import { elapsed as elapsedText, roughDuration as clockText } from './format';
   import { t } from './i18n.svelte';
   import { progressCount, stageLabel } from './labels';
   import { jobConnection } from './job.svelte';
@@ -29,9 +30,7 @@
   });
 
   const elapsed = $derived.by(() => {
-    const seconds = Math.max(0, Math.round(((job.finished_at ?? now / 1000) - job.started_at)));
-    const minutes = Math.floor(seconds / 60);
-    return minutes ? `${minutes}m ${String(seconds % 60).padStart(2, '0')}s` : `${seconds}s`;
+    return elapsedText(Math.max(0, Math.round(((job.finished_at ?? now / 1000) - job.started_at))));
   });
   const connection = $derived(jobConnection(job.id));
   const fraction = $derived(job.progress.fraction_scope === 'stage'
@@ -46,7 +45,6 @@
       ? stageLabel(job.progress.stage_name)
       : job.progress.label,
   );
-  const clockText = (seconds: number) => (seconds < 60 ? `${Math.ceil(seconds)}s` : `${Math.ceil(seconds / 60)} min`);
   // The whole job's estimate when a finished run measured it; a first cut only has its stage's.
   // Rounded on purpose, as the terminal rounds it: an estimate, not a countdown.
   const remaining = $derived.by(() => {

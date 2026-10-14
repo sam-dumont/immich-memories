@@ -1771,11 +1771,30 @@
             },
             "title": "Messages",
             "type": "object"
+          },
+          "plural_forms": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Plural Forms",
+            "type": "array"
+          },
+          "plurals": {
+            "additionalProperties": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "title": "Plurals",
+            "type": "object"
           }
         },
         "required": [
           "locale",
           "messages",
+          "plurals",
+          "plural_forms",
           "languages"
         ],
         "title": "Messages",

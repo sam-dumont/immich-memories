@@ -24,7 +24,7 @@ from operator import itemgetter
 from pathlib import Path
 
 from babel import Locale
-from babel.dates import get_day_names, get_month_names
+from babel.dates import get_month_names
 
 # Film-text languages, as the config spells them.
 SUPPORTED_LOCALES = [
@@ -175,14 +175,6 @@ def ngettext(
 
 def _capitalised(word: str) -> str:
     return word[:1].upper() + word[1:]
-
-
-def get_weekday_name(weekday: int, locale_code: str = "en") -> str:
-    """Localized weekday name; ``weekday`` follows ``date.weekday()`` (0=Monday)."""
-    if not 0 <= weekday <= 6:
-        raise ValueError(f"Weekday must be 0-6, got {weekday}")
-    names = get_day_names("wide", "format", babel_locale(_supported(locale_code)))
-    return _capitalised(names[weekday])
 
 
 def month_name_forms(month: int, locale_code: str = "en") -> dict[str, str]:

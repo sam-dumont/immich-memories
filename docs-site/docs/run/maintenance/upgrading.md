@@ -43,6 +43,14 @@ film as maps. When the frame head is all but certain such a picture is a place, 
 a photograph and can reach a film. Nothing needs re-preparing: the next run reads the facts you
 already have. Maps, map boards and map screenshots stay out.
 
+### The web app writes numbers your way
+
+Lengths, sizes and counts in the web app follow the interface language: "1,5 s" and "88,0 Mo" in
+French, "1.5 sec" in English (it said "1.5 s" before). Run statuses, the run page's filters and
+the sign-in refusals are translated too. A date caption reads "Sonntag, 10." in German instead of
+"Sonntag 10", and a Japanese or Chinese title card separates three or more names with its own
+comma. Film file names don't change.
+
 ## From 1.0.0-rc.9 to 1.0.0-rc.10
 
 Nothing to migrate by hand. These are the changes you will notice, and the keys that control

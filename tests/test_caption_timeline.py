@@ -414,6 +414,24 @@ class TestCaptionsOutsideTheCaptionFont:
         assert hebrew.startswith("null[date_frame]")
 
 
+@pytest.mark.parametrize(
+    ("locale", "expected"),
+    [
+        ("en", "Sunday 10"),
+        ("fr", "Dimanche 10"),
+        ("de", "Sonntag, 10."),
+        ("pl", "Niedziela, 10"),
+        ("pt-BR", "Domingo, 10"),
+        ("ru", "Воскресенье, 10"),
+    ],
+)
+def test_a_weekday_and_day_follow_the_languages_own_order(locale, expected):
+    # "Sonntag 10" was the English shape with a German weekday; German writes "Sonntag, 10.".
+    captions = captions_for_timeline([_clip("2025-08-10")], locale_code=locale)
+
+    assert captions[0].date == expected
+
+
 def test_a_japanese_weekday_follows_its_day():
     captions = captions_for_timeline([_clip("2025-08-10")], locale_code="ja")
 

@@ -1,6 +1,7 @@
 """UI language selection uses the browser, independently of film settings."""
 
 import importlib.util
+import re
 from pathlib import Path
 
 from immich_memories.i18n import resolve_ui_locale
@@ -87,8 +88,6 @@ def test_catalogue_extraction_finishes_on_an_unterminated_escaped_label(tmp_path
 def test_every_memory_type_a_detector_proposes_has_a_web_label():
     # WHY: no external boundary; reads source files only. The detectors name their memory_type as a
     # literal, and a missing label would render a suggestion as the generic "Memory".
-    import re
-
     root = Path(__file__).resolve().parents[1]
     labels = (root / "web/src/lib/labels.ts").read_text()
     labelled = set(
@@ -101,3 +100,136 @@ def test_every_memory_type_a_detector_proposes_has_a_web_label():
     }
     assert {"person_monthly", "monthly_backfill", "album", "season", "holiday"} <= emitted
     assert emitted <= labelled, emitted - labelled
+
+
+def test_a_counted_label_is_extracted_with_its_plural():
+    labels = {message for _, _, message in _web_client_labels()}
+
+    assert ("{n} photo", "{n} photos") in labels
+
+
+def test_labels_the_client_builds_at_run_time_reach_the_catalogue():
+    # Run statuses, the run page's views and filters, suggestion outcomes and the refusals
+    # the client falls back to were built at run time, so the extractor never saw them.
+    labels = {message for _, _, message in _web_client_labels()}
+
+    assert {
+        "Completed",
+        "Running",
+        "Failed",
+        "Cancelled",
+        "Interrupted",
+        "All",
+        "Contact sheet",
+        "All pictures",
+        "Videos",
+        "Stills",
+        "Skipped",
+        "Invalid username or password",
+        "Too many failed attempts. Try again later.",
+        "Run not found. It may have been removed.",
+        "Upload availability could not be checked. The film can still be rendered and downloaded.",
+    } <= labels
+
+
+# Arguments the server words: each is registered with N_() where the server's sentences are
+# listed (web/src/lib/labels.ts), since no table in the calling file can name them.
+_SERVER_WORDED = {
+    ("lib/RenderPanel.svelte", "answer.detail"),
+    ("routes/settings/+page.svelte", "body.detail"),
+    ("routes/login/+page.svelte", "body.detail"),
+    ("routes/runs/[run_id]/+page.svelte", "story.preparation"),
+}
+
+
+def test_every_label_built_at_run_time_comes_from_a_registered_table():
+    # WHY: no boundary; reads the client's source. The extractor sees only literal t('...')
+    # and N_('...'); t(value) on anything else stays English in every language.
+    root = Path(__file__).resolve().parents[1] / "web/src"
+    unregistered = []
+    for path in sorted(root.rglob("*")):
+        if path.suffix not in {".svelte", ".ts"} or path.name in {"api-types.ts", "i18n.svelte.ts"}:
+            continue
+        source = path.read_text()
+        name = str(path.relative_to(root))
+        for argument, before in _dynamic_t_arguments(source):
+            if (name, argument) in _SERVER_WORDED:
+                continue
+            table = _table_behind(argument, before)
+            if not (table and _is_registered(table, source, root)):
+                unregistered.append(f"{name}: t({argument})")
+    assert not unregistered, unregistered
+
+
+def test_the_guard_catches_an_unregistered_label():
+    source = "const LABELS = { a: 'Apple' };\nconst x = t(LABELS[key]);\nconst y = t(run.status);"
+
+    assert [
+        _table_behind(argument, before) for argument, before in _dynamic_t_arguments(source)
+    ] == ["LABELS", None]
+    assert not _is_registered("LABELS", source, Path("/nowhere"))
+
+
+def _dynamic_t_arguments(source: str) -> list[tuple[str, str]]:
+    """Each t() whose first argument is not a literal, with the source that comes before it."""
+    found = []
+    for match in re.finditer(r"(?<![\w.$])t\(", source):
+        start = match.end()
+        depth, end = 0, start
+        while end < len(source):
+            char = source[end]
+            if char in "([{":
+                depth += 1
+            elif char in ")]}":
+                if depth == 0:
+                    break
+                depth -= 1
+            elif char == "," and depth == 0:
+                break
+            end += 1
+        argument = source[start:end].strip()
+        if argument and argument[0] not in "'\"`":
+            found.append((argument, source[: match.start()]))
+    return found
+
+
+def _table_behind(argument: str, before: str) -> str | None:
+    """The table a dynamic argument reads: `TABLE[key]`, or the nearest loop or const over one."""
+    root = re.match(r"[A-Za-z_$][\w$]*", argument)
+    if not root:
+        return None
+    name = root.group(0)
+    if argument[len(name) :].startswith("["):
+        return name
+    sources = list(
+        re.finditer(
+            rf"#each\s+([A-Za-z_$][\w$]*)\s+as\s+[^}}]*\b{re.escape(name)}\b"
+            rf"|\b{re.escape(name)}\s*=\s*([A-Za-z_$][\w$]*)\[",
+            before,
+        )
+    )
+    if not sources:
+        return None
+    return sources[-1].group(1) or sources[-1].group(2)
+
+
+def _is_registered(table: str, source: str, root: Path) -> bool:
+    """The table is defined here or in labels.ts, and every label in it is marked with N_()."""
+    for text in (source, (root / "lib/labels.ts").read_text() if root.is_dir() else ""):
+        definition = re.search(rf"\bconst\s+{re.escape(table)}\b[^=]*=\s*([\[{{])", text)
+        if definition:
+            body = text[definition.end() : text.find(";", definition.end())]
+            return "N_(" in body and not _bare_words(body)
+    return False
+
+
+def _bare_words(body: str) -> list[str]:
+    """Strings in a table that a reader would see but no N_() marks; keys and codes are fine."""
+    unmarked = re.sub(r"N_\(\s*(['\"])(?:\\.|(?!\1).)*\1\s*\)", "", body)
+    literals = re.finditer(r"(['\"])((?:\\.|(?!\1).)*)\1", unmarked)
+    return [
+        literal.group(2)
+        for literal in literals
+        if not re.match(r"\s*:", unmarked[literal.end() :])
+        and not re.fullmatch(r"[a-z0-9_-]*", literal.group(2))
+    ]
