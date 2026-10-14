@@ -68,6 +68,9 @@ them back for one picture.
 (`excluded_carrier_sources`): a document the detector names, a screen the `screen` head flags, a
 still at an exact phone-screen size, and, where there is a caption, a caption about a screen, a face
 close-up, medical care or a grid of identical items.
+The detector was trained on documents, not photographs, so it calls streets and water seen from a
+summit, a plane or a drone a map. A map label counts only when the `frame_kind` head isn't all but
+certain (0.99) the frame is a place; when it is, the picture is a photograph.
 The check covers every burst member and motion clip, before standing is scored. New evidence
 from preparing a replacement runs through the same check; a refusal leaves its slot open for
 another eligible candidate. A refused companion does not mark its clean lead as permanently bad.

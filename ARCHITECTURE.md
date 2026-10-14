@@ -308,7 +308,10 @@ The separate model-planning route can read banked lines or use plain clip facts.
   head already calls document-like is read anyway, since an MRZ line or a card number can't be
   found by a keyword search. Every read is memoised per asset, shared across the material
   build, a candidate refresh and the audience gate. Only an explicit owner pin exempts a
-  picture. The memory-worthy tier gate, the near-home test, the written-subject pool, chapter
+  picture. The document head's map label is corrected at the read, before any of this sees it:
+  `corroborated_document` turns it into `photograph` when the public `frame_kind` head is all but
+  certain the frame is a place (a view from a summit, a plane or a drone), in
+  `AssetAnnotationFactRepository` and `load_detector_heads` alike. The memory-worthy tier gate, the near-home test, the written-subject pool, chapter
   assembly and the per-partition slot/depth caps live in `editorial_structure_framing.py`,
   split out of `editorial_structure_planner.py`.
   `CarrierAdmission` composes a `DepthFill` (`editorial_story_depth_fill.py`) for the pass after
