@@ -278,8 +278,8 @@ def _shape_problem(raw: dict[str, Any]) -> str | None:
     for key in ("name", "origin"):
         if raw.get(key) is not None and not isinstance(raw[key], _SCALARS):
             return f"`{key}` must be text"
-    if raw.get("birth_date") is not None and not isinstance(raw["birth_date"], str | date):
-        return "`birth_date` must be a date"
+    if raw.get("birth_date") is not None and not _is_date(raw["birth_date"]):
+        return "`birth_date` must be a date, as YYYY-MM-DD"
     if "accounts" in raw:
         return (
             "`accounts` is no longer read; list each account's ids under `ids` instead, "
@@ -294,6 +294,20 @@ def _shape_problem(raw: dict[str, Any]) -> str | None:
     ):
         return "`confirmed.links` must be a list of mappings"
     return None
+
+
+def _is_date(value: object) -> bool:
+    # Every reader parses the stored text with date.fromisoformat and skips what fails, so a
+    # typo let through here would quietly lose the person's birthday.
+    if isinstance(value, date):
+        return True
+    if not isinstance(value, str):
+        return False
+    try:
+        date.fromisoformat(value)
+    except ValueError:
+        return False
+    return True
 
 
 def _link(link: dict[str, Any]) -> dict[str, Any]:

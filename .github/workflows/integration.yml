@@ -102,7 +102,7 @@ jobs:
       - run: uv python install "$PYTHON_VERSION"
       - name: Pin Python version for uv
         run: echo "$PYTHON_VERSION" > .python-version
-      - run: make dev-test
+      - run: make dev-test-integration
 
       - name: Restore config
         env:

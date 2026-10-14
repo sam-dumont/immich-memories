@@ -350,6 +350,20 @@ class TestExportAndImport:
         assert "--replace" in output
         assert load_document() == before
 
+    def test_a_birth_date_that_is_no_date_refuses_the_whole_file(self, tmp_path):
+        _run(["people", "scan"])
+        target = tmp_path / "people.yaml"
+        _run(["people", "export", "--to", str(target)])
+        document = yaml.safe_load(target.read_text())
+        document["people"][0]["birth_date"] = "1987-14-03"
+        target.write_text(yaml.dump(document, sort_keys=False))
+        before = load_document()
+
+        output = _run(["people", "import", "--from", str(target), "--replace"], exit_code=1)
+
+        assert "people[0]: `birth_date` must be a date, as YYYY-MM-DD" in output
+        assert load_document() == before
+
     def test_a_person_only_the_partner_sees_comes_in_by_import_and_outlives_a_scan(self, tmp_path):
         _run(["people", "scan"])
         target = tmp_path / "people.yaml"

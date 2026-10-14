@@ -85,6 +85,33 @@ def test_early_cancellation_still_stops_the_owned_decoder(tmp_path, monkeypatch,
     assert spawned[0].poll() is not None
 
 
+def test_audio_that_never_finishes_after_the_last_picture_is_named(tmp_path, monkeypatch):
+    real_popen = subprocess.Popen
+    spawned = []
+
+    def start(_cmd, **kwargs):
+        child = "import os,time; os.write(1,bytes(24)); time.sleep(30)"
+        process = real_popen([sys.executable, "-c", child], **kwargs)
+        spawned.append(process)
+        return process
+
+    # WHY: a real child that delivers both pictures and then never exits stands in for an
+    # FFmpeg stuck on its audio; the bound is shortened so the test does not wait 120 s.
+    monkeypatch.setattr(decoder_module.subprocess, "Popen", start)
+    monkeypatch.setattr(decoder_module.FrameDecoder, "_audio_input", lambda _self: ([], "0:a?"))
+    monkeypatch.setattr(decoder_module, "AUDIO_FINISH_SECONDS", 0.2)
+    clip = SimpleNamespace(path=tmp_path / "source.mp4", duration=2 / 30)
+    decoder = decoder_module.make_decoder(clip, 0, 2, 2, 30, audio_work_dir=tmp_path)
+    frames = iter(decoder)
+    try:
+        next(frames)
+        with pytest.raises(RuntimeError, match="did not finish the clip's audio within 0.2 s"):
+            next(frames)
+    finally:
+        frames.close()
+    assert spawned[0].poll() is not None
+
+
 @requires_ffmpeg
 @pytest.mark.parametrize("consumer_delay", [0, 0.005])
 @pytest.mark.parametrize("read_ahead", [None, False, True])
@@ -114,7 +141,7 @@ def test_bounded_real_decoder_finishes_exact_seek_audio_before_last_frame(
         ],
         check=True,
         capture_output=True,
-        timeout=10,
+        timeout=60,
     )
     reference = tmp_path / "reference.wav"
     subprocess.run(
@@ -141,7 +168,7 @@ def test_bounded_real_decoder_finishes_exact_seek_audio_before_last_frame(
         ],
         check=True,
         capture_output=True,
-        timeout=10,
+        timeout=60,
     )
     clip = SimpleNamespace(path=source, duration=0.5, input_seek=0.25)
     decoder = decoder_module.make_decoder(clip, 0, 72, 128, 60, audio_work_dir=tmp_path)

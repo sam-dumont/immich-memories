@@ -25,7 +25,7 @@
 #
 # `doc` is relative to docs-site/docs/ (or README.md), with the heading anchor that makes the promise.
 
-gap_ceiling: 47
+gap_ceiling: 0
 
 features:
   # ── Generate: films, output and flags ────────────────────────────────────────────────────────
@@ -101,6 +101,7 @@ features:
     doc: reference/film-types.mdx#how-long-a-film-runs
     tests:
       - tests/integration/features/test_film_render.py::test_without_duration_the_material_sets_the_length_and_the_run_says_so
+      - tests/integration/features/test_real_editor_forwarded.py::test_with_the_setting_off_no_copy_plays_or_sizes_the_film
   - id: generate.short-form
     promise: "--short-form 30 makes a vertical film of about 30 seconds, without padding a thin period."
     doc: make/memory-types.mdx#how-long-a-film-runs
@@ -124,7 +125,8 @@ features:
     promise: "--quality high, medium or low maps to config quality high, balanced and fast."
     doc: make/cli/generate.md#output
     covers: ["cli:generate --quality"]
-    status: "gap: #2394"
+    tests:
+      - tests/integration/features/test_render_options.py::test_quality_flag_encodes_the_film_as_the_config_tier_it_names
   - id: render.transitions
     promise: "--transition picks the transition style; the default smart mixes fades and cuts, and crossfades use whole frames."
     doc: make/titles-maps-music.md#titles-and-language
@@ -148,7 +150,8 @@ features:
     promise: "--accept-any-provenance keeps forwarded and re-encoded media for one memory, while date, person and privacy boundaries still apply."
     doc: reference/cli-reference.md#generate
     covers: ["cli:generate --accept-any-provenance"]
-    status: "gap: #2394"
+    tests:
+      - tests/integration/features/test_trip_names_and_sources.py::test_accept_any_provenance_lets_forwarded_copies_in_within_every_other_boundary
   - id: sharing.levels
     promise: "--sharing just-us, family or shareable decides which private moments the film may show, and runs show prints the level."
     doc: reference/generation-contract.md#generation-and-output-contract
@@ -157,6 +160,7 @@ features:
       - tests/integration/features/test_access_and_reports.py::test_runs_show_prints_the_sharing_level_a_cut_was_made_for
       - tests/test_sharing_levels.py::test_a_just_us_film_plays_the_bath_a_family_film_leaves_out
       - tests/test_sharing_levels.py::test_a_shareable_nas_film_plays_the_clean_pictures_and_leaves_the_flagged_one
+      - tests/integration/features/test_detector_heads.py::test_a_picture_the_exposure_head_flags_stays_in_the_family_film_only
   - id: cli.quiet-progress
     promise: "--quiet replaces the live progress display with plain log lines for cron and logs."
     doc: reference/generation-contract.md#what-the-terminal-shows-while-it-runs
@@ -171,7 +175,8 @@ features:
   - id: generate.prepares-only-reachable-pictures
     promise: "generate prepares only the pictures the film can reach and banks the facts so later cuts reuse them."
     doc: reference/generation-contract.md#generation-and-output-contract
-    status: "gap: #2394"
+    tests:
+      - tests/integration/features/test_prepare_and_maintenance.py::test_a_person_film_prepares_that_person_s_pictures_and_their_bursts_and_a_recut_reuses_them
   - id: generate.copies-fold
     promise: "Identical bytes, other files of the same picture and Immich stacks fold into one candidate before the editor sees the pool."
     doc: reference/generation-contract.md#what-it-reads-from-immich
@@ -212,6 +217,7 @@ features:
     covers: ["memory-type:holiday", "cli:generate --holiday"]
     tests:
       - tests/integration/immich_gate/test_generate_rules.py::test_the_christmas_holiday_finds_its_two_years
+      - tests/integration/features/test_real_editor_holiday.py::test_a_holiday_over_three_years_tells_each_years_day_and_lets_it_lead
   - id: trip.none-found-exits-nonzero
     promise: "A trip request in a year with no detected trip ends with a non-zero exit, not an empty film."
     doc: make/memory-types.mdx#trip
@@ -253,11 +259,13 @@ features:
   - id: people.no-dates-window
     promise: "A people memory with no dates runs from the first day one of its pictures could exist, read off birth dates, to today."
     doc: reference/film-types.mdx#a-people-memory-with-no-dates
-    status: "gap: #2394"
+    tests:
+      - tests/integration/features/test_people_commands.py::test_a_people_memory_without_dates_runs_from_the_first_possible_day_to_today
   - id: people.duplicate-name-warning
     promise: "A name two registry people share picks both and prints each with its id; a UUID always picks exactly one person."
     doc: reference/generation-contract.md#examples
-    status: "gap: #2394"
+    tests:
+      - tests/integration/features/test_people_commands.py::test_a_shared_name_picks_both_people_and_an_id_picks_one
   - id: memory-type.birthday
     promise: "--birthday runs the year of a person's life ending on the birthday and nothing earlier; with --years-back it makes the birthdays film, the birthdays alone ±1 day; it refuses without a birth date."
     doc: reference/film-types.mdx#birthdays
@@ -282,7 +290,8 @@ features:
   - id: trip.named-offline
     promise: "A trip is named at the smallest place holding most of its located pictures, from the places Immich already stored, offline."
     doc: reference/film-types.mdx#trip
-    status: "gap: #2394"
+    tests:
+      - tests/integration/features/test_trip_names_and_sources.py::test_a_trip_is_named_at_the_smallest_place_holding_its_pictures_offline
   - id: memory-type.album
     promise: "An album film takes its pool from one Immich album, by name or id, and is titled after the album."
     doc: reference/film-types.mdx#album
@@ -323,22 +332,26 @@ features:
     promise: "people owner says whose library an account is, --nobody marks a shared account, and no later scan changes it."
     doc: make/cli/people.md#say-whose-library-it-is
     covers: ["cli:people owner", "cli:people owner --account", "cli:people owner --nobody", "cli:people scan --owner"]
-    status: "gap: #2394"
+    tests:
+      - tests/integration/features/test_people_commands.py::test_the_owner_you_name_outlasts_every_scan_and_nobody_is_an_answer
   - id: people.export-import
     promise: "people export writes the registry as YAML and people import --from --replace reads an edited file back after validating all of it."
     doc: make/cli/people.md#export-and-edit
     covers: ["cli:people export", "cli:people export --to", "cli:people import", "cli:people import --from", "cli:people import --replace"]
-    status: "gap: #2394"
+    tests:
+      - tests/integration/features/test_people_commands.py::test_an_edited_export_comes_back_whole_and_a_broken_one_changes_nothing
   - id: people.bind
     promise: "people bind declares that a person has this id in another account, so a film reading both accounts finds them there."
     doc: make/cli/people.md#bind-another-accounts-face
     covers: ["cli:people bind", "cli:people bind --account", "cli:people bind --id"]
-    status: "gap: #2394"
+    tests:
+      - tests/integration/features/test_people_commands.py::test_a_bound_face_brings_the_other_accounts_pictures_into_the_persons_film
   - id: people.saved-groups
     promise: "A saved group names a people condition that generate --group reuses; removing it never touches its people."
     doc: make/cli/people.md#saved-groups
     covers: ["cli:people group", "cli:people group add", "cli:people group list", "cli:people group rm", "cli:generate --group"]
-    status: "gap: #2394"
+    tests:
+      - tests/integration/features/test_people_commands.py::test_a_saved_group_picks_its_people_by_id_and_removing_it_keeps_them
   - id: accounts.read-both
     promise: "--accounts primary,partner reads each named account into one film; an unknown name fails before any request, and albums and trips refuse it."
     doc: run/multi-account.mdx#read-both-accounts-into-one-film
@@ -350,7 +363,8 @@ features:
   - id: who-is-who.home-and-people
     promise: "Setting home and who's who changes which people get priority and lets the editor tell a week away from a week at home."
     doc: get-started/who-is-who.md#what-changes
-    status: "gap: #2394"
+    tests:
+      - tests/integration/features/test_holds_and_home.py::test_home_and_whos_who_turn_ordinary_weeks_into_a_trip_and_a_family_visit
 
   # ── Pictures, prepare and special days ───────────────────────────────────────────────────────
   - id: pictures.owner-decision-persists
@@ -363,7 +377,8 @@ features:
     promise: "pictures show names what holds a picture; pictures clear-hold --level --yes clears it for that audience until undone."
     doc: make/cli/pictures.md#clear-a-hold
     covers: ["cli:pictures show", "cli:pictures clear-hold", "cli:pictures clear-hold --level", "cli:pictures clear-hold --yes"]
-    status: "gap: #2394"
+    tests:
+      - tests/integration/features/test_holds_and_home.py::test_a_cleared_hold_lets_the_picture_into_films_up_to_its_level_until_undone
   - id: prepare.reuses-banked-facts
     promise: "prepare reads a scope's pictures ahead of time; a rerun resumes and later cuts reuse the banked facts."
     doc: make/cli/prepare.md#resume-and-reuse
@@ -374,7 +389,9 @@ features:
     promise: "prepare takes the same start/end/period scope as generate, prints each producer's time and rate, projects it on --library-size, and exits 1 when facts are missing."
     doc: make/cli/prepare.md#measure-the-cost
     covers: ["cli:prepare --start", "cli:prepare --end", "cli:prepare --period", "cli:prepare --library-size"]
-    status: "gap: #2394"
+    tests:
+      - tests/integration/features/test_prepare_and_maintenance.py::test_prepare_takes_generate_s_scope_and_prints_each_producer_s_rate_and_a_projection
+      - tests/integration/features/test_prepare_and_maintenance.py::test_prepare_exits_one_naming_the_missing_producer_and_a_rerun_finishes_the_scope
   - id: prepare.overviews
     promise: "prepare --overviews banks episode and month summaries once picture facts are complete; the rules reader refuses it."
     doc: make/cli/prepare.md#optional-text-summaries
@@ -384,7 +401,8 @@ features:
     promise: "discover-days builds the special-days catalogue from --since to --until, resumes by default, and --replace rescans a year."
     doc: make/cli/discover-days.md#build-the-catalogue
     covers: ["cli:discover-days", "cli:discover-days --since", "cli:discover-days --until", "cli:discover-days --also-skip", "cli:discover-days --replace"]
-    status: "gap: #2394"
+    tests:
+      - tests/integration/features/test_special_days.py::test_discover_days_catalogues_the_days_away_resumes_and_replaces_one_year
   - id: special-days.rescan-with-reader
     promise: "discover-days --rescan rechecks catalogue entries with the text reader."
     doc: reference/film-types.mdx#with-a-model
@@ -394,12 +412,14 @@ features:
     promise: "days-due lists catalogued anniversaries within three days of today, or of --on."
     doc: make/cli/discover-days.md#see-what-is-due
     covers: ["cli:days-due", "cli:days-due --on"]
-    status: "gap: #2394"
+    tests:
+      - tests/integration/features/test_special_days.py::test_days_due_lists_the_anniversaries_within_three_days
   - id: special-days.export-import
     promise: "days-export writes the catalogue as JSON and days-import replaces the catalogue with an edited file."
     doc: make/cli/discover-days.md#edit-the-catalogue
     covers: ["cli:days-export", "cli:days-export --to", "cli:days-import", "cli:days-import --from"]
-    status: "gap: #2394"
+    tests:
+      - tests/integration/features/test_special_days.py::test_an_edited_export_replaces_the_catalogue
 
   # ── Runs, reports and history ────────────────────────────────────────────────────────────────
   - id: runs.list-and-show
@@ -412,7 +432,8 @@ features:
     promise: "runs list --person lists only runs about that person."
     doc: reference/cli-reference.md#runs-list
     covers: ["cli:runs list --person"]
-    status: "gap: #2394"
+    tests:
+      - tests/integration/features/test_people_commands.py::test_runs_list_person_lists_only_that_persons_runs
   - id: runs.interrupted
     promise: "A run whose process is gone reads interrupted in list, show and the browser; one still going elsewhere stays running."
     doc: make/cli/runs.md#find-a-run
@@ -447,12 +468,14 @@ features:
     promise: "runs render takes a saved --revision and changes only output options (title, music, size, orientation, upload); the selected pictures stay fixed."
     doc: make/cli/runs.md#runs-render
     covers: ["cli:runs render --revision", "cli:runs render --title", "cli:runs render --subtitle", "cli:runs render --llm-title", "cli:runs render --transition", "cli:runs render --fade-color", "cli:runs render --title-style", "cli:runs render --resolution", "cli:runs render --orientation", "cli:runs render --scale-mode", "cli:runs render --format", "cli:runs render --quality", "cli:runs render --music", "cli:runs render --no-music", "cli:runs render --original-audio", "cli:runs render --music-volume", "cli:runs render --add-date", "cli:runs render --add-place", "cli:runs render --privacy-mode", "cli:runs render --upload-to-immich", "cli:runs render --album", "cli:runs render --progress-file"]
-    status: "gap: #2394"
+    tests:
+      - tests/integration/features/test_runs_render_and_upload.py::test_runs_render_takes_a_saved_revision_and_changes_only_the_output
   - id: runs.upload
     promise: "runs upload sends a render run's film already on disk to Immich, optionally into --album; a cut never rendered says so."
     doc: make/web-ui.mdx#find-a-finished-film
     covers: ["cli:runs upload", "cli:runs upload --album"]
-    status: "gap: #2394"
+    tests:
+      - tests/integration/features/test_runs_render_and_upload.py::test_runs_upload_sends_the_film_on_disk_into_the_album_and_frees_it
   - id: runs.delete
     promise: "runs delete removes the run record and its output after confirmation; --keep-output keeps the film and --yes skips the question."
     doc: make/cli/runs.md#storage-and-deletion
@@ -544,12 +567,15 @@ features:
   - id: titles.locale
     promise: "Titles render in title_screens.locale; auto follows the host's language variables."
     doc: make/titles-maps-music.md#titles-and-language
-    status: "gap: #2394"
+    tests:
+      - tests/integration/features/test_render_options.py::test_titles_follow_the_configured_locale_and_auto_follows_the_host
+      - tests/integration/features/test_real_editor_languages.py::test_a_french_film_names_its_stories_and_tells_its_summary_in_french
   - id: titles.fade-color
     promise: "--fade-color white or black sets the opening and closing fade for one render, leaving the saved default alone."
     doc: make/titles-maps-music.md#opening-and-closing-fades
     covers: ["cli:generate --fade-color"]
-    status: "gap: #2394"
+    tests:
+      - tests/integration/features/test_render_options.py::test_fade_color_sets_both_ends_of_this_film_and_leaves_the_saved_default
   - id: captions.date-place
     promise: "Date and place captions are on by default; --add-date and --add-place turn them off, and place captions show a city only when it changes."
     doc: make/titles-maps-music.md#date-and-place-captions
@@ -596,12 +622,14 @@ features:
     promise: "music add mixes a track under a video with automatic ducking and the given volume and fades."
     doc: reference/output-rendering.md#the-music-commands
     covers: ["cli:music add", "cli:music add --music", "cli:music add --mood", "cli:music add --genre", "cli:music add --volume", "cli:music add --fade-in", "cli:music add --fade-out"]
-    status: "gap: #2394"
+    tests:
+      - tests/integration/features/test_music_commands.py::test_music_add_mixes_a_track_under_a_video_ducked_faded_and_at_the_given_volume
   - id: music.search
     promise: "music search finds tracks in the local library by mood, genre, tempo and length."
     doc: reference/output-rendering.md#the-music-commands
     covers: ["cli:music search", "cli:music search --mood", "cli:music search --genre", "cli:music search --tempo", "cli:music search --min-duration", "cli:music search --limit"]
-    status: "gap: #2394"
+    tests:
+      - tests/integration/features/test_music_commands.py::test_music_search_finds_local_tracks_by_mood_genre_tempo_and_length
   - id: photos.ken-burns
     promise: "A selected still with people in it moves between the whole picture and a close-up: on the person a film is about, on every face of a group (or a pan across a wide one), else the lone face; a still with nobody in it mostly pans gently along its long side."
     doc: make/photos-and-live-photos.md#ken-burns-and-where-the-pan-lands
@@ -647,7 +675,8 @@ features:
   - id: privacy.privacy-mode-names
     promise: "--privacy-mode substitutes the names the encoded film shows."
     doc: run/privacy.md#privacy-mode
-    status: "gap: #2128"
+    tests:
+      - tests/integration/features/test_runs_render_and_upload.py::test_privacy_mode_shows_a_stand_in_for_the_name_the_title_would_show
   - id: hardware.encoding
     promise: "On NVIDIA, Apple Silicon, Intel Quick Sync or AMD VAAPI the film encodes on the hardware encoder."
     doc: run/hardware.md#backends
@@ -764,7 +793,8 @@ features:
     promise: "auto status shows the scheduler in use and the last attempt; auto history lists recent automatic films; --json for scripts."
     doc: make/automate.md#check-on-it
     covers: ["cli:auto status", "cli:auto status --json", "cli:auto history", "cli:auto history --limit"]
-    status: "gap: #2394"
+    tests:
+      - tests/integration/features/test_auto_scheduler.py::test_auto_status_and_history_show_the_last_attempt_and_the_automatic_films
   - id: automation.rotation-rules
     promise: "The rotation rules (no repeat category, per-type caps, person cooldown) are hard: if every candidate is rejected the day is skipped."
     doc: reference/automation-contract.md#how-it-picks-one-memory
@@ -799,12 +829,15 @@ features:
     promise: "auto install refuses a git worktree or a checkout behind its upstream unless --force."
     doc: reference/automation-contract.md#bare-metal-auto-install
     covers: ["cli:auto install --force"]
-    status: "gap: #2394"
+    tests:
+      - tests/integration/features/test_auto_scheduler.py::test_auto_install_refuses_a_worktree_unless_forced
+      - tests/integration/features/test_auto_scheduler.py::test_auto_install_refuses_a_checkout_behind_its_upstream
   - id: scheduler.auto-uninstall
     promise: "auto install --uninstall deletes the launcher and scheduler files."
     doc: reference/automation-contract.md#bare-metal-auto-install
     covers: ["cli:auto install --uninstall"]
-    status: "gap: #2394"
+    tests:
+      - tests/integration/features/test_auto_scheduler.py::test_auto_install_uninstall_deletes_the_launcher_and_the_scheduler_files
   - id: scheduler.launchd
     promise: "On macOS the schedule is a launchd job that runs a missed fire when the Mac wakes and logs to auto.log."
     doc: reference/automation-contract.md#bare-metal-auto-install
@@ -823,7 +856,8 @@ features:
     promise: "Without launchd or systemd, auto install prints a crontab line to paste."
     doc: reference/automation-contract.md#bare-metal-auto-install
     covers: ["scheduler:crontab"]
-    status: "gap: #2394"
+    tests:
+      - tests/integration/features/test_auto_scheduler.py::test_without_launchd_or_systemd_auto_install_prints_a_crontab_line_to_paste
   - id: automation.trigger-api
     promise: "POST /api/trigger asks automation to choose and make a memory, with the same rules as the daily run."
     doc: reference/automation-contract.md#trigger-it-over-http
@@ -848,12 +882,15 @@ features:
   - id: automation.accounts-and-groups
     promise: "automation.accounts names exactly the accounts automation reads, and detect_groups proposes one film of last year per saved group."
     doc: reference/automation-contract.md#across-accounts-and-saved-groups
-    status: "gap: #2394"
+    tests:
+      - tests/integration/features/test_auto_scheduler.py::test_automation_reads_exactly_the_named_accounts_and_proposes_each_saved_group
   - id: notifications.test
     promise: "auto test-notification sends a test message to each configured Apprise target."
     doc: make/automate.md#get-told-when-it-runs
     covers: ["cli:auto test-notification"]
-    status: "gap: #2394"
+    tests:
+      - tests/integration/features/test_auto_scheduler.py::test_auto_test_notification_sends_a_message_to_each_configured_target
+      - tests/integration/features/test_auto_scheduler.py::test_auto_test_notification_says_so_when_off_or_when_the_target_fails
   - id: notifications.on-completion
     promise: "A successful generate, auto run, timer or runs render film sends a completion message; saving a cut without rendering sends none."
     doc: make/automate.md#get-told-when-it-runs
@@ -1001,7 +1038,8 @@ features:
     promise: "config --url and --api-key save the Immich connection."
     doc: reference/cli-reference.md#config
     covers: ["cli:config --url", "cli:config --api-key"]
-    status: "gap: #2394"
+    tests:
+      - tests/integration/features/test_config_sources.py::test_config_url_and_api_key_save_the_connection_the_next_command_uses
   - id: config.precedence
     promise: "An environment variable wins over the same key in config.yaml, and config show names the source of each value."
     doc: run/config-file.md#where-a-setting-comes-from
@@ -1010,7 +1048,8 @@ features:
   - id: config.precedence-full-order
     promise: "For each key the first source wins: environment, then config.yaml, then saved Settings, then deployment defaults, then built-in defaults."
     doc: run/config-file.md#where-a-setting-comes-from
-    status: "gap: #2394"
+    tests:
+      - tests/integration/features/test_config_sources.py::test_each_source_wins_over_every_source_below_it
   - id: config.env-pattern
     promise: "Every key can be set as IMMICH_MEMORIES_<SECTION>__<FIELD>, with no ADVANCED prefix, and lists take JSON."
     doc: run/environment-variables.md#the-pattern
@@ -1019,11 +1058,13 @@ features:
   - id: config.env-shorthands
     promise: "IMMICH_URL and IMMICH_API_KEY override the nested variables; the Basic-auth shortcuts need both values."
     doc: run/environment-variables.md#shorthands
-    status: "gap: #2394"
+    tests:
+      - tests/integration/features/test_config_sources.py::test_immich_shorthands_beat_the_nested_variables_and_basic_auth_needs_both
   - id: config.var-substitution
     promise: "${VAR_NAME} in config.yaml substitutes credentials and selected path and service fields; Settings refuses a value containing ${."
     doc: run/config-file.md#environment-variable-substitution
-    status: "gap: #2394"
+    tests:
+      - tests/integration/features/test_config_sources.py::test_braced_variables_fill_credentials_and_service_fields_and_settings_refuses_them
   - id: config.invalid-shape
     promise: "A config that is a scalar or a list is rejected, an empty file means no overrides, and unknown authentication keys are errors."
     doc: run/config-file.md#invalid-configuration
@@ -1032,12 +1073,14 @@ features:
   - id: config.secrets-in-db
     promise: "Saving a credential from Settings or the CLI needs IMMICH_MEMORIES_SECRET_KEY and is refused without it."
     doc: run/config-file.md#secrets-in-the-database
-    status: "gap: #2394"
+    tests:
+      - tests/integration/features/test_config_sources.py::test_saving_a_credential_without_the_secret_key_is_refused_in_the_cli_and_settings
   - id: config.move-to-db
     promise: "config move-to-db moves named keys out of config.yaml so Settings controls them."
     doc: run/config-file.md#moving-a-key-out-of-the-file
     covers: ["cli:config move-to-db"]
-    status: "gap: #2394"
+    tests:
+      - tests/integration/features/test_config_sources.py::test_move_to_db_hands_named_keys_to_settings_and_keeps_the_rest_of_the_file
   - id: config.deprecated-keys
     promise: "A renamed or removed key keeps working with a warning that names its replacement until the next major version."
     doc: run/maintenance/upgrading.md#config-compatibility
@@ -1054,16 +1097,19 @@ features:
     promise: "--preset fast applies the CPU-only profile to every knob you did not set."
     doc: reference/generation-contract.md#generation-and-output-contract
     covers: ["cli:--preset"]
-    status: "gap: #2394"
+    tests:
+      - tests/integration/features/test_render_options.py::test_preset_fast_fills_every_knob_left_unset_and_keeps_the_ones_set
   - id: config.log-level
     promise: "-v or --log-level DEBUG turns on verbose logs for any command."
     doc: reference/generation-contract.md#generation-and-output-contract
     covers: ["cli:--verbose", "cli:--log-level"]
-    status: "gap: #2394"
+    tests:
+      - tests/integration/features/test_config_sources.py::test_verbose_and_log_level_debug_turn_on_debug_logs_for_a_command
   - id: config.tiers
     promise: "tier basic, gpu or full chooses the compute tier, and the TIER deployment default can be overridden by YAML or Settings."
     doc: run/config-file.md#compute-tier
-    status: "gap: #2394"
+    tests:
+      - tests/integration/features/test_config_sources.py::test_tier_chooses_the_compute_tier_and_the_deployment_default_yields_to_yaml_and_settings
   - id: cli.version
     promise: "--version prints the installed version."
     doc: reference/cli-reference.md#global-options
@@ -1090,11 +1136,13 @@ features:
   - id: preflight.outside-calls
     promise: "preflight's Outside call rows name every enabled geocoding and map destination."
     doc: run/privacy.md#before-adding-a-service
-    status: "gap: #2394"
+    tests:
+      - tests/integration/features/test_config_sources.py::test_preflight_names_every_enabled_outside_destination_and_none_by_default
   - id: preflight.weak-password-warning
     promise: "A Basic-auth password under 12 characters makes startup and preflight warn."
     doc: run/authentication.mdx#basic-auth
-    status: "gap: #2394"
+    tests:
+      - tests/integration/features/test_config_sources.py::test_a_basic_auth_password_under_twelve_characters_warns_at_preflight_and_startup
 
   # ── Privacy ──────────────────────────────────────────────────────────────────────────────────
   - id: privacy.immich-only-by-default
@@ -1160,21 +1208,29 @@ features:
     promise: "store copy --to copies every table from SQLite to PostgreSQL, or back."
     doc: run/reference/store-commands.md#moving-from-sqlite-to-postgresql-store-copy---to-url
     covers: ["cli:store copy", "cli:store copy --to", "cli:store copy --schema", "cli:store copy --force"]
-    status: "gap: #2394"
+    tests:
+      - tests/integration/features/test_store_commands.py::test_store_copy_moves_every_table_and_the_copy_answers_like_the_original
+      - tests/store/test_store_on_postgresql.py::test_store_copy_moves_a_sqlite_store_to_postgresql_and_back
   - id: store.import
     promise: "store import brings the files an older install used into the store, and --verify checks them."
     doc: run/database.md#managing-the-store
     covers: ["cli:store import", "cli:store import --from", "cli:store import --verify"]
-    status: "gap: #2394"
+    tests:
+      - tests/integration/features/test_store_commands.py::test_store_import_brings_an_older_install_s_files_in_verifies_them_and_never_changes_them
+      - tests/integration/features/test_store_commands.py::test_store_import_verify_exits_one_naming_a_record_the_store_lost
   - id: store.facts
     promise: "store facts status shows banked producer versions, migrate carries compatible facts forward, and refresh plans a selective refresh that --apply carries out."
     doc: run/database.md#prepared-facts
     covers: ["cli:store facts", "cli:store facts status", "cli:store facts status --json", "cli:store facts migrate", "cli:store facts migrate --apply", "cli:store facts migrate --json", "cli:store facts refresh", "cli:store facts refresh --head", "cli:store facts refresh --asset", "cli:store facts refresh --apply", "cli:store facts refresh --json"]
-    status: "gap: #2394"
+    tests:
+      - tests/integration/features/test_store_commands.py::test_store_facts_reports_versions_migrates_compatible_stills_and_refreshes_only_what_is_named
   - id: store.postgresql
     promise: "The store runs on SQLite by default or on PostgreSQL, in its own database or a schema of Immich's."
     doc: run/database.md#database-and-backups
-    status: "gap: #2394"
+    tests:
+      - tests/store/test_store_on_postgresql.py::test_without_a_database_setting_the_store_is_one_sqlite_file_in_the_home
+      - tests/store/test_store_on_postgresql.py::test_a_schema_in_immich_s_database_keeps_the_store_beside_immich_s_tables
+      - tests/store/test_store_on_postgresql.py::test_a_database_of_its_own_holds_the_store
 
   # ── Web UI and server ────────────────────────────────────────────────────────────────────────
   - id: web.ui-launch
@@ -1338,11 +1394,13 @@ features:
   - id: maintenance.caches
     promise: "Caches can be cleared without losing films or decisions, and the preview cache grows with the library."
     doc: run/maintenance/health-logs-cache.md#caches
-    status: "gap: #2394"
+    tests:
+      - tests/integration/features/test_prepare_and_maintenance.py::test_clearing_the_caches_keeps_films_runs_people_and_prepared_facts
   - id: maintenance.lifecycle
     promise: "The app can be stopped keeping everything, removed keeping data, reset for a fresh trial, or removed completely."
     doc: run/lifecycle.md#stop-reset-or-remove-the-app
-    status: "gap: #2394"
+    tests:
+      - tests/integration/features/test_prepare_and_maintenance.py::test_a_native_install_stops_keeping_everything_resets_aside_and_removes_completely
   - id: maintenance.upgrade-keeps-data
     promise: "An upgrade migrates the store automatically and never loses data; rollback steps are documented."
     doc: run/maintenance/upgrading.md#upgrading

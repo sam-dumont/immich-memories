@@ -34,6 +34,12 @@ from immich_memories.processing.probe_cache import ProbeCache
 
 logger = logging.getLogger(__name__)
 
+# After its last picture FFmpeg has nothing left to write to the pipe (-frames:v caps it,
+# stdin and stderr are null, the audio goes to a file), so nothing the reader does can
+# block it: this wait only absorbs a machine that stalls. A CI runner once paused every
+# process for 14 s, past the 10 s this used to allow (#2515).
+AUDIO_FINISH_SECONDS = 120.0
+
 if TYPE_CHECKING:
     from immich_memories.processing.probe_cache import VideoProbe
 
@@ -390,11 +396,16 @@ class FrameDecoder:
         # The assembler closes this generator after its last picture.
         # Both outputs are bounded, so let the WAV finish before that
         # close can SIGTERM a still-writing audio producer.
-        if (
-            self._frame_limit is not None
-            and decoded == self._frame_limit
-            and proc.wait(timeout=10) != 0
-        ):
+        if self._frame_limit is None or decoded != self._frame_limit:
+            return
+        try:
+            status = proc.wait(timeout=AUDIO_FINISH_SECONDS)
+        except subprocess.TimeoutExpired:
+            raise RuntimeError(
+                f"Frame decoder did not finish the clip's audio within "
+                f"{AUDIO_FINISH_SECONDS:g} s of its last picture"
+            ) from None
+        if status != 0:
             raise RuntimeError("Frame decoder failed before completing clip audio")
 
     def _audio_output_args(self, audio_map: str) -> list[str]:

@@ -18,8 +18,10 @@ from immich_memories.generate_clips import (
 )
 from immich_memories.generate_privacy import (
     anonymize_clips_for_privacy,
-    anonymize_name,
     anonymize_preset_params,
+    fake_names,
+    preset_person_names,
+    swap_names,
 )
 from immich_memories.generate_progress import (
     _OperationalProgress,
@@ -281,10 +283,15 @@ def _extracted_sources(
 
 
 def _anonymized_params(params: GenerationParams) -> GenerationParams:
+    # One mapping for the selected person and the preset's cast, so a film names each
+    # person by the same fake wherever the name shows.
+    fakes = fake_names([params.person_name, *preset_person_names(params.memory_preset_params)])
     return replace(
         params,
-        person_name=anonymize_name(params.person_name),
-        memory_preset_params=anonymize_preset_params(params.memory_preset_params),
+        person_name=fakes.get(params.person_name) if params.person_name else None,
+        title=swap_names(params.title, fakes),
+        subtitle=swap_names(params.subtitle, fakes),
+        memory_preset_params=anonymize_preset_params(params.memory_preset_params, fakes),
     )
 
 

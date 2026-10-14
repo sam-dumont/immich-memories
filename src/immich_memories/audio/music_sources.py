@@ -121,8 +121,8 @@ class LocalMusicSource(MusicSource):
         self._tracks: list[MusicTrack] | None = None
 
     @staticmethod
-    def _read_tag_metadata(path: Path) -> tuple[float, str, str]:
-        """Read duration, title and artist with ffprobe.
+    def _read_tag_metadata(path: Path) -> tuple[float, str, str, str | None]:
+        """Read duration, title, artist and genre with ffprobe.
 
         Tags live on the container for MP3/M4A/FLAC but on the audio stream for
         Ogg and Opus, and their keys can be upper case (Vorbis comments), so
@@ -149,7 +149,8 @@ class LocalMusicSource(MusicSource):
         for block in (*probe.get("streams", []), probe.get("format", {})):
             tags |= {key.lower(): value for key, value in block.get("tags", {}).items()}
         duration = float(probe.get("format", {}).get("duration") or 0.0)
-        return duration, tags.get("title") or path.stem, tags.get("artist") or "Unknown"
+        title, artist = tags.get("title") or path.stem, tags.get("artist") or "Unknown"
+        return duration, title, artist, tags.get("genre") or None
 
     @staticmethod
     def _extract_tags_from_path(path: Path, title: str) -> list[str]:
@@ -164,12 +165,12 @@ class LocalMusicSource(MusicSource):
         title_lower = title.lower()
         return sorted(mood for mood in VALID_MOODS if mood in parent_name or mood in title_lower)
 
-    def _load_track_metadata(self, path: Path) -> tuple[float, str, str]:
-        """Load duration, title, artist — falls back to filename on error."""
+    def _load_track_metadata(self, path: Path) -> tuple[float, str, str, str | None]:
+        """Load duration, title, artist, genre — falls back to filename on error."""
         try:
             return self._read_tag_metadata(path)
         except (OSError, subprocess.SubprocessError, ValueError):
-            return 0.0, path.stem, "Unknown"
+            return 0.0, path.stem, "Unknown", None
 
     def _scan_directory(self) -> list[MusicTrack]:
         """Scan directory for music files."""
@@ -181,7 +182,7 @@ class LocalMusicSource(MusicSource):
         for path in self.music_dir.rglob("*"):
             if path.suffix.lower() not in self.SUPPORTED_EXTENSIONS:
                 continue
-            duration, title, artist = self._load_track_metadata(path)
+            duration, title, artist, genre = self._load_track_metadata(path)
             tags = self._extract_tags_from_path(path, title)
             tracks.append(
                 MusicTrack(
@@ -191,6 +192,7 @@ class LocalMusicSource(MusicSource):
                     duration_seconds=duration,
                     url=f"file://{path}",
                     tags=tags,
+                    genre=genre,
                     source="local",
                     local_path=path,
                 )
@@ -213,11 +215,18 @@ class LocalMusicSource(MusicSource):
             return True
         return min_duration <= track.duration_seconds <= max_duration
 
-    @staticmethod
-    def _track_matches_term(track: MusicTrack, term: str) -> bool:
-        """Return True if term appears in any of the track's tags, title, or artist."""
+    def _track_matches_term(self, track: MusicTrack, term: str) -> bool:
+        """Whether term appears in the track's tags, title, artist, genre tag or folders.
+
+        A library is sorted the way its owner sorts it: `Memories/acoustic/slow/x.mp3`
+        answers `--genre acoustic` and `--tempo slow` as much as a genre tag does.
+        """
+        folders: tuple[str, ...] = ()
+        if track.local_path is not None and track.local_path.is_relative_to(self.music_dir):
+            folders = track.local_path.relative_to(self.music_dir).parts[:-1]
+        words = [*track.tags, track.title, track.artist, track.genre or "", *folders]
         term_lower = term.lower()
-        return any(term_lower in t.lower() for t in track.tags + [track.title, track.artist])
+        return any(term_lower in word.lower() for word in words)
 
     async def search(
         self,
@@ -236,6 +245,8 @@ class LocalMusicSource(MusicSource):
             if mood and not self._track_matches_term(track, mood):
                 continue
             if genre and not self._track_matches_term(track, genre):
+                continue
+            if tempo and not self._track_matches_term(track, tempo):
                 continue
             results.append(track)
             if len(results) >= limit:

@@ -170,6 +170,16 @@ def test_a_shortcut_variable_is_named_as_the_override(config_path, monkeypatch):
     assert (entry.source, entry.override) == ("env", "IMMICH_URL")
 
 
+def test_a_shortcut_that_beats_the_nested_variable_is_the_one_named(config_path, monkeypatch):
+    # The shortcut is applied after the nested variable, so it is the value in use.
+    monkeypatch.setenv("IMMICH_MEMORIES_IMMICH__URL", "http://nested.invalid:2283")
+    monkeypatch.setenv("IMMICH_URL", "http://immich.invalid:2283")
+    load_config(config_path)
+
+    entry = _source("immich.url")
+    assert (entry.value, entry.override) == ("http://immich.invalid:2283", "IMMICH_URL")
+
+
 def test_a_save_writes_the_database_and_never_the_file(config_path, location):
     config_path.write_text("output:\n  resolution: 720p\n")
     before = config_path.read_bytes()

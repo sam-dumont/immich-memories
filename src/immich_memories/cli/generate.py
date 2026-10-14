@@ -263,8 +263,7 @@ def register_generate_commands(main: click.Group) -> None:
 
         # CLI quality flag overrides config
         if quality:
-            config.output.quality = quality
-            config.output.crf = None  # Let quality preset determine CRF
+            config.output = config.output.with_quality(quality)
 
         people_condition, person_names = resolve_people_condition(
             person_expression,

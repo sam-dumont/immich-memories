@@ -157,6 +157,39 @@ def _tagged_track(path: Path, *, seconds: float, title: str | None, artist: str 
 class TestLocalMusicMetadata:
     """Track metadata comes from the file's own tags, read with ffprobe (#1890)."""
 
+    @pytest.mark.asyncio
+    async def test_search_filters_on_the_tempo_and_genre_the_library_is_sorted_by(self, tmp_path):
+        _tagged_track(
+            tmp_path / "acoustic" / "slow" / "a.flac", seconds=1.0, title=None, artist=None
+        )
+        _tagged_track(
+            tmp_path / "acoustic" / "fast" / "b.flac", seconds=1.0, title=None, artist=None
+        )
+        _tagged_track(
+            tmp_path / "electronic" / "slow" / "c.flac", seconds=1.0, title=None, artist=None
+        )
+        source = LocalMusicSource(tmp_path)
+
+        slow = await source.search(tempo="slow", min_duration=0)
+        slow_acoustic = await source.search(genre="acoustic", tempo="slow", min_duration=0)
+
+        assert sorted(track.title for track in slow) == ["a", "c"]
+        assert [track.title for track in slow_acoustic] == ["a"]
+
+    @pytest.mark.asyncio
+    async def test_the_genre_tag_answers_a_genre_search(self, tmp_path):
+        tagged = tmp_path / "x.flac"
+        subprocess.run(
+            ["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "sine=duration=1"]
+            + ["-metadata", "genre=Acoustic", str(tagged)],
+            check=True,
+        )
+        _tagged_track(tmp_path / "y.flac", seconds=1.0, title=None, artist=None)
+
+        found = await LocalMusicSource(tmp_path).search(genre="acoustic", min_duration=0)
+
+        assert [(track.title, track.genre) for track in found] == [("x", "Acoustic")]
+
     @pytest.mark.parametrize("suffix", [".mp3", ".m4a", ".flac", ".opus"])
     def test_title_artist_and_duration_come_from_the_tags(self, tmp_path, suffix):
         _tagged_track(

@@ -465,6 +465,9 @@ def test_one_cell_records_the_coverage_in_all_its_shards(ci_scope, event):
         (["src/immich_memories/photos/animator.py"], ["photos"]),
         (["src/immich_memories/audio/mixer.py"], ["audio-mixing"]),
         (["src/immich_memories/generate.py"], ["assembly"]),
+        (["src/immich_memories/speech/fireredvad.py"], ["assembly"]),
+        (["src/immich_memories/analysis/editorial_runtime_ports.py"], ["assembly"]),
+        (["src/immich_memories/analysis/editorial_speech.py"], ["assembly"]),
         (["services/render-worker/immich_memories_render_worker/worker.py"], ["render-worker"]),
         (["src/immich_memories/cli/__init__.py", "README.md", "tests/test_x.py"], []),
         (["src/immich_memories/titles/fonts/readme.txt"], []),  # not Python

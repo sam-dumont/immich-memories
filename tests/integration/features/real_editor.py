@@ -18,7 +18,7 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
@@ -120,10 +120,15 @@ def _attempt_record(plan: dict[str, Any], name: str) -> dict[str, Any]:
     return json.loads((directory / f"{name}.private.json").read_text())
 
 
-def generate(home: UserHome, *args: str) -> EditedFilm:
-    """`immich-memories generate <args>` through the real editor; one film must come out."""
+def generate(
+    home: UserHome, *args: str, runner: Callable[..., CliResult] | None = None
+) -> EditedFilm:
+    """`immich-memories generate <args>` through the real editor; one film must come out.
+
+    `runner` runs the child another way (`scripted_preparation.run_prepared`); default `run`.
+    """
     before = set(films_under(home.videos)) if home.videos.exists() else set()
-    result = run(home, "generate", *args)
+    result = (runner or run)(home, "generate", *args)
     assert result.returncode == 0, result.explain()
     added = [film for film in films_under(home.videos) if film not in before]
     assert len(added) == 1, f"expected one new film, got {added}\n{result.explain()}"
@@ -133,14 +138,20 @@ def generate(home: UserHome, *args: str) -> EditedFilm:
     return EditedFilm(result, run_id, added[0], plan_of(home, run_id), story_of(home, run_id))
 
 
-def run(home: UserHome, *args: str) -> CliResult:
-    """`immich-memories <args>` with the real editor in the child; never raises on exit."""
+def run(
+    home: UserHome, *args: str, child: str = _REAL_EDITOR, env: dict[str, str] | None = None
+) -> CliResult:
+    """`immich-memories <args>` with the real editor in the child; never raises on exit.
+
+    `child` is the script the child runs before the CLI (`_REAL_EDITOR` unless a test swaps
+    other seams), and `env` adds to the home's environment.
+    """
     completed = subprocess.run(  # noqa: S603 -- our own CLI, fixed argv
-        [sys.executable, "-c", _REAL_EDITOR, *args],
+        [sys.executable, "-c", child, *args],
         capture_output=True,
         text=True,
         timeout=600,
-        env=home.env(),
+        env=home.env(env),
         cwd=home.root,
         check=False,
     )

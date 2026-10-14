@@ -1,11 +1,8 @@
 """Real local speech detection and encoding preserve the planned runtime."""
 
-import subprocess
 from contextlib import ExitStack
-from pathlib import Path
 from types import SimpleNamespace
 
-import numpy as np
 import pytest
 
 from immich_memories.analysis.editorial_runtime_ports import production_cut_resolvers
@@ -21,62 +18,35 @@ from immich_memories.processing.assembly_engine import AssemblyEngine
 from immich_memories.processing.clip_encoder import ClipEncoder
 from immich_memories.processing.ffmpeg_prober import FFmpegProber
 from immich_memories.processing.probe_cache import ProbeCache
+from immich_memories.speech.fireredvad import FireRedSpeechDetector
 from tests.conftest import make_asset
 from tests.integration.conftest import requires_ffmpeg
+from tests.speech_videos import SPOKEN, SUNG, video_with_sound
 
 pytestmark = [pytest.mark.integration, requires_ffmpeg]
 
 
-def _video_from_fixture(path: Path, fixture_name: str) -> Path:
-    fixture = Path(__file__).parents[2] / "fixtures/speech" / fixture_name
-    audio = np.load(fixture).astype(np.float32) / 32768.0
-    subprocess.run(
-        [
-            "ffmpeg",
-            "-v",
-            "error",
-            "-f",
-            "lavfi",
-            "-i",
-            "testsrc2=s=160x90:r=30:d=3",
-            "-f",
-            "f32le",
-            "-ar",
-            "16000",
-            "-ac",
-            "1",
-            "-i",
-            "pipe:0",
-            "-t",
-            "3",
-            "-c:v",
-            "libx264",
-            "-preset",
-            "ultrafast",
-            "-threads",
-            "1",
-            "-c:a",
-            "aac",
-            str(path),
-        ],
-        input=audio.tobytes(),
-        check=True,
-        capture_output=True,
-        timeout=30,
+@pytest.fixture
+def speech_detector_installed():
+    # The production cut quietly keeps its planned length without the detector (a logged
+    # warning), so a missing extra would read as a cut that stops mid-sentence (#2549).
+    assert FireRedSpeechDetector().available, (
+        "the assembly suite runs the real speech detector: install the editorial extra "
+        "(make dev-test-integration)"
     )
-    return path
 
 
 @pytest.fixture
 def spoken_video(tmp_path):
-    return _video_from_fixture(tmp_path / "speech.mp4", "synthetic_speech_16k.npy")
+    return video_with_sound(tmp_path / "speech.mp4", SPOKEN)
 
 
 @pytest.fixture
 def sung_video(tmp_path):
-    return _video_from_fixture(tmp_path / "singing.mp4", "singing_excerpt_16k.npy")
+    return video_with_sound(tmp_path / "singing.mp4", SUNG)
 
 
+@pytest.mark.usefixtures("speech_detector_installed")
 def test_production_speech_cuts_use_real_detector_and_reuse_facts(
     spoken_video, tmp_path, monkeypatch
 ):
@@ -120,6 +90,7 @@ def test_production_speech_cuts_use_real_detector_and_reuse_facts(
     assert calls == ["video", "closed"]
 
 
+@pytest.mark.usefixtures("speech_detector_installed")
 def test_production_cuts_flag_has_music_for_a_clip_whose_own_audio_sings(
     sung_video, tmp_path, monkeypatch
 ):
@@ -151,6 +122,7 @@ def test_production_cuts_flag_has_music_for_a_clip_whose_own_audio_sings(
     assert resolved["has_music"] is True
 
 
+@pytest.mark.usefixtures("speech_detector_installed")
 def test_production_cuts_flag_has_music_for_a_stitched_live_motion_carrier(
     spoken_video, sung_video, tmp_path, monkeypatch
 ):

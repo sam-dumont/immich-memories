@@ -17,19 +17,24 @@ def supervise(command: list[str]) -> int:
     Atexit cannot handle an application killed by the OS. The pipe reaches EOF on
     ordinary exit, crash and SIGKILL without platform-specific parent-death signals.
     """
-    stopped = threading.Event()
+    owner_gone = threading.Event()
+    # A signal handler runs on the main thread between bytecodes, possibly while that thread
+    # holds the Event's own lock inside wait(). Event.set() there deadlocks the supervisor,
+    # and the application's forced stop then strands the native server in its own session
+    # (#2550). The handler only appends to a list, which takes no lock.
+    signalled: list[int] = []
     for kind in (signal.SIGTERM, signal.SIGINT):
-        signal.signal(kind, lambda *_: stopped.set())
+        signal.signal(kind, lambda number, _frame: signalled.append(number))
 
     def watch_owner() -> None:
         while os.read(sys.stdin.fileno(), 1):
             pass
-        stopped.set()
+        owner_gone.set()
 
     threading.Thread(target=watch_owner, daemon=True).start()
     process = subprocess.Popen(command, stdin=subprocess.DEVNULL, start_new_session=True)
     try:
-        while process.poll() is None and not stopped.wait(0.05):
+        while process.poll() is None and not signalled and not owner_gone.wait(0.05):
             pass
     finally:
         # This bound is shorter than the application's supervisor-stop deadline,
