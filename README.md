@@ -50,7 +50,7 @@ For a NAS container manager, [use its platform guide](https://sam-dumont.github.
 
    ```bash
    mkdir -p immich-memories && cd immich-memories
-   VERSION=1.0.0-rc.9
+   VERSION=1.0.0-rc.10
    curl -fLO "https://github.com/sam-dumont/immich-memories/releases/download/v${VERSION}/docker-compose.yml"
    curl -fLO "https://github.com/sam-dumont/immich-memories/releases/download/v${VERSION}/example.env"
    cp example.env .env
@@ -95,7 +95,7 @@ For a NAS container manager, [use its platform guide](https://sam-dumont.github.
    [DSM folder permissions](https://sam-dumont.github.io/immich-memories/docs/run/nas#the-output-folder)
    instead of `chown`.
 
-4. **Open the app** at `http://localhost:8080`, or `http://your-server-address:8080` for LAN
+4. **Open the app** at `http://localhost:22830`, or `http://your-server-address:22830` for LAN
    access and sign in with the app login above. On **Memory**, click **Download models** and
    wait for the card to disappear. If no card or error appears, the required files are ready.
 
@@ -117,12 +117,16 @@ covers home, people, language, backups and automation.
 - **Change the cut before rendering.** Remove a shot, trim a video, swap a picture or pull one
   in from the pool, then render that revision. "Never use" is a lasting decision, separate from
   dropping a shot from one film.
-- **Titles and music out of the box.** A film is titled by what it is and when ("Summer 2025",
-  "Kit's birthday · 2026") and gets a bundled track. Maps and generated music are optional
-  extras with their own setup.
+- **Titles and music out of the box.** A film is titled by what it is and when, in the film's
+  language: "Summer 2025", "Kit's birthday · 2026", "Kit & Pat · 2025", "Christmas ·
+  2019–2025". Those are the app's own titles, never a model's. A text reader names special
+  days, and trips when you pass `--llm-title`.
+  Every film gets a bundled track. Maps and generated music are optional extras with their own
+  setup.
 - **Automate it later.** A daily timer picks one memory worth making (a trip, a birthday, last
   month) and can upload it to Immich, with its title and story summary as the description, or
-  keep it on disk. Make a few films by hand first.
+  keep it on disk. Tags for the type, years and stories are opt-in (`upload.film_tags`). Make a
+  few films by hand first.
 - **Ask in your own words.** "our cat through the years" can become a film. Highly
   experimental: tuned on one real library, so preview before you trust it.
 - **Add a GPU or a model when you want.** Basic makes complete films on a CPU. A GPU adds

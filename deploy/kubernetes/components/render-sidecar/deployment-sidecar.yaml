@@ -35,7 +35,7 @@ spec:
                   name: immich-memories-render-worker
                   key: token
         - name: render-worker
-          image: ghcr.io/sam-dumont/immich-memories:1.0.0-rc.9
+          image: ghcr.io/sam-dumont/immich-memories:1.0.0-rc.10
           command: [python, -m, immich_memories_render_worker]
           securityContext:
             allowPrivilegeEscalation: false

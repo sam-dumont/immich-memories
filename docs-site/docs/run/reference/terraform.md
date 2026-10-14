@@ -55,23 +55,23 @@ holds them. Everything else has a default:
 | Name | Description | Default |
 |------|-------------|---------|
 | `namespace`, `create_namespace` | Kubernetes namespace, and whether to create it | `"immich-memories"`, `true` |
-| `image_repository`, `image_tag` | Container image. No `v` prefix, so release `vX.Y.Z` is tag `X.Y.Z` | `ghcr.io/sam-dumont/immich-memories`, `"1.0.0-rc.9"` |
+| `image_repository`, `image_tag` | Container image. No `v` prefix, so release `vX.Y.Z` is tag `X.Y.Z` | `ghcr.io/sam-dumont/immich-memories`, `"1.0.0-rc.10"` |
 | `replicas` | Keep at 1; the UI is single-replica | `1` |
 | `resources` | Requests/limits object (`requests.memory/cpu`, `limits.memory/cpu`) | `2Gi/1000m` to `8Gi/4000m` |
-| `tmp_size` | `/tmp` emptyDir for FFmpeg intermediates (8Gi for 4K) | `"4Gi"` |
+| `tmp_size` | `/tmp` emptyDir for FFmpeg intermediates (8Gi for 4K) | `"1.0.0-rc.10"` |
 | `env`, `secret_env` | Extra env vars, the second stored in the Secret | `{}` |
 | `labels` | Extra labels on every resource | `{}` |
 | `gpu_enabled`, `gpu_count` | Schedule on NVIDIA GPU nodes: RuntimeClass, `nvidia.com/gpu`, node selector, toleration, `NVIDIA_*` env | `false`, `1` |
 | `gpu_node_selector`, `runtime_class_name` | how GPU nodes are found | `{"nvidia.com/gpu.present": "true"}`, `"nvidia"` |
-| `output_storage_size`, `cache_storage_size` | PVC sizes | `"50Gi"`, `"60Gi"` |
-| `models_storage_size` | Models PVC size (the Kubernetes manifests ship `5Gi`) | `"10Gi"` |
+| `output_storage_size`, `cache_storage_size` | PVC sizes | `"1.0.0-rc.10"`, `"1.0.0-rc.10"` |
+| `models_storage_size` | Models PVC size (the Kubernetes manifests ship `5Gi`) | `"1.0.0-rc.10"` |
 | `storage_class_name` | Storage class for all three PVCs | `null` (cluster default) |
 | `ingress_enabled`, `ingress_class_name`, `ingress_host` | Ingress, off by default | `false`, `"nginx"`, `"memories.example.com"` |
 | `ingress_tls_enabled`, `ingress_tls_secret_name`, `ingress_annotations` | TLS and extras for it | `false`, `"immich-memories-tls"`, `{}` |
 | `llm_base_url`, `llm_model`, `llm_api_key` | Optional text reader (Ollama: append `/v1`). URL and model do not enable it; set `IMMICH_MEMORIES_LLM__ENABLED = "true"` in `env` | `""` |
 | `musicgen_enabled`, `musicgen_base_url`, `musicgen_api_key` | AI music through a MusicGen server | `false`, the in-cluster service, `""` |
 | `database_url`, `database_schema` | The store on PostgreSQL instead of the default SQLite file. Empty stays SQLite | `""`, `"immich_memories"` |
-| `output_resolution` | `720p`, `1080p` or `4k` | `"1080p"` |
+| `output_resolution` | `720p`, `1080p` or `4k` | `"1.0.0-rc.10"` |
 
 For a local-network reader, set `IMMICH_MEMORIES_LLM__ENABLED = "true"` in `env` and provide
 an external server. The app image does not include llama-server. Follow [reader setup](../../better/reader.md#let-the-app-run-the-local-model).

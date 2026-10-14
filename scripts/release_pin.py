@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import argparse
 import re
+import subprocess
+import sys
 from pathlib import Path
 
 RELEASE_VERSION = re.compile(r"\d+\.\d+\.\d+(?:-rc\.\d+)?")
@@ -116,9 +118,62 @@ def _pin_readme_port(root: Path) -> bool:
     return after != before
 
 
+def _release_key(version: str) -> tuple[int, int, int, int]:
+    """Order releases: 1.0.0-rc.9 < 1.0.0-rc.10 < 1.0.0."""
+    core, _, rc = version.partition("-rc.")
+    major, minor, patch = (int(part) for part in core.split("."))
+    return major, minor, patch, int(rc) if rc else sys.maxsize
+
+
+def newer_release_than_pin(readme: str, tags: list[str]) -> str | None:
+    """The latest released version when the README still pins an older one, else None.
+
+    A release stops here until the previous one's pin has landed on main: the files people
+    copy from main never fall more than one release behind.
+    """
+    pinned = _README.search(readme)
+    if pinned is None:
+        raise ValueError("README.md pins no VERSION")
+    current = readme[pinned.end("pre") : pinned.end()].strip()
+    released = [
+        tag[1:] for tag in tags if tag.startswith("v") and RELEASE_VERSION.fullmatch(tag[1:])
+    ]
+    if not released:
+        return None
+    latest = max(released, key=_release_key)
+    return latest if _release_key(latest) > _release_key(current) else None
+
+
+def _check_pin(root: Path) -> int:
+    tags = subprocess.run(
+        ["git", "-C", str(root), "tag", "--list", "v*"],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.split()
+    behind = newer_release_than_pin((root / "README.md").read_text(encoding="utf-8"), tags)
+    if behind is None:
+        return 0
+    print(
+        f"::error::main still pins an older release than v{behind}. "
+        f"Merge the build/pin-v{behind} branch (or run `make pin-release VERSION={behind}`) first."
+    )
+    return 1
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("version")
+    parser.add_argument("version", nargs="?")
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="fail when main pins an older release than the latest tag",
+    )
     args = parser.parse_args()
-    for changed in pin_repository(Path(__file__).resolve().parents[1], args.version):
+    repo = Path(__file__).resolve().parents[1]
+    if args.check:
+        sys.exit(_check_pin(repo))
+    if args.version is None:
+        parser.error("a version is required unless --check")
+    for changed in pin_repository(repo, args.version):
         print(f"pinned {changed}")

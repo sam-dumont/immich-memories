@@ -42,7 +42,7 @@ spec:
       # so NAS re-runs fetch at each start; fetch checks existing artifact digests.
       initContainers:
         - name: fetch-models
-          image: ghcr.io/sam-dumont/immich-memories:1.0.0-rc.9
+          image: ghcr.io/sam-dumont/immich-memories:1.0.0-rc.10
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false
@@ -92,7 +92,7 @@ spec:
               mountPath: /tmp
       containers:
         - name: generate
-          image: ghcr.io/sam-dumont/immich-memories:1.0.0-rc.9
+          image: ghcr.io/sam-dumont/immich-memories:1.0.0-rc.10
           imagePullPolicy: Always
 
           securityContext:

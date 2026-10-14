@@ -127,10 +127,10 @@ module "immich_memories" {
 | `namespace` | Kubernetes namespace | `string` | `"immich-memories"` |
 | `create_namespace` | Create the namespace | `bool` | `true` |
 | `image_repository` | Container image | `string` | `"ghcr.io/sam-dumont/immich-memories"` |
-| `image_tag` | Image tag (no `v` prefix: `vX.Y.Z` ships as `X.Y.Z`, plus `latest`) | `string` | `"1.0.0-rc.9"` |
+| `image_tag` | Image tag (no `v` prefix: `vX.Y.Z` ships as `X.Y.Z`, plus `latest`) | `string` | `"1.0.0-rc.10"` |
 | `replicas` | Keep at 1 | `number` | `1` |
 | `resources` | Requests/limits object | `object` | `2Gi/1000m` – `8Gi/4000m` |
-| `tmp_size` | `/tmp` emptyDir (8Gi for 4K) | `string` | `"4Gi"` |
+| `tmp_size` | `/tmp` emptyDir (8Gi for 4K) | `string` | `"1.0.0-rc.10"` |
 | `env` | Extra `IMMICH_MEMORIES_*` env vars | `map(string)` | `{}` |
 | `existing_secret_name` | Existing Secret in the namespace; skips managed Secret and ignores credential inputs | `string` | `""` |
 | `secret_env` | Extra env vars stored in the Secret | `map(string)` | `{}` |
@@ -146,7 +146,7 @@ module "immich_memories" {
 | `musicgen_enabled` | AI music via a MusicGen server | `bool` | `false` |
 | `musicgen_base_url` | MusicGen server URL | `string` | in-cluster URL |
 | `musicgen_api_key` | MusicGen API key (Secret) | `string` | `""` |
-| `output_resolution` | `720p`, `1080p`, `4k` | `string` | `"1080p"` |
+| `output_resolution` | `720p`, `1080p`, `4k` | `string` | `"1.0.0-rc.10"` |
 
 ### GPU
 
@@ -161,8 +161,8 @@ module "immich_memories" {
 
 | Name | Description | Type | Default |
 |------|-------------|------|---------|
-| `output_storage_size` | Output PVC | `string` | `"50Gi"` |
-| `cache_storage_size` | Cache/state PVC | `string` | `"60Gi"` |
+| `output_storage_size` | Output PVC | `string` | `"1.0.0-rc.10"` |
+| `cache_storage_size` | Cache/state PVC | `string` | `"1.0.0-rc.10"` |
 | `storage_class_name` | Storage class (`null` = cluster default) | `string` | `null` |
 
 ### Ingress
@@ -230,7 +230,7 @@ When enabling `render_worker_sidecar_enabled`, set `render_worker_token` to a ge
 |------|-------------|------|---------|
 | `captioner_enabled` | Deploy the SmolVLM2 caption server (a separate Deployment/Service/PVC) | `bool` | `false` |
 | `captioner_cuda` | Run it on an NVIDIA card (`--n-gpu-layers 99`) | `bool` | `false` |
-| `captioner_storage_size` | Size of the caption weights PVC | `string` | `"2Gi"` |
+| `captioner_storage_size` | Size of the caption weights PVC | `string` | `"1.0.0-rc.10"` |
 
 llama.cpp's CUDA build still runs on Pascal (`sm_61`), where PyTorch cu128 wheels have already
 dropped that architecture.
