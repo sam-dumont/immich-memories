@@ -1,12 +1,12 @@
 """Forwarded copies fill the gaps in a film's camera timeline (opt-in).
 
 Every film refuses a picture nobody's camera took: a messaging export or a saved image
-(`source_quality.FORWARDED_COPY`). A year in lockdown, or a birthday's earlier years, can hold
+(`source_quality.FORWARDED_COPY`). A year in lockdown, or a birthdays film's earlier birthdays, can hold
 nothing else, and the film then shows none of them. With `analysis.forwarded_copies_when_short`
 on, a copy may stand in where the film's camera timeline has a gap, and only there.
 
 The timeline is cut the way the film already cuts time (`gap_units`): each occurrence of a film
-of several (a holiday's years, a birthday's earlier birthdays), else the weeks of a film up to two
+of several (a holiday's years, a birthdays film's birthdays), else the weeks of a film up to two
 months long, the months of one up to two years long, the years of a longer one. A unit holding no
 camera picture of the film's material is a gap. A gap takes about the share of the film a unit
 with camera pictures gets: as many days of copies as such a unit holds days of camera pictures

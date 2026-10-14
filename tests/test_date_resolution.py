@@ -12,15 +12,14 @@ from immich_memories.cli._date_resolution import (
     resolve_date_range,
 )
 from immich_memories.cli._trip_display import _closest_trip_to_date, select_trips
-from immich_memories.memory_types.date_builders import BIRTHDAY_HISTORY_FROM
 from immich_memories.planning.memory_length import default_duration_for_type
 from immich_memories.timeperiod import DateRange
 
 
 def _rolling_year(resolved: DateRange | list[DateRange]) -> DateRange:
-    """The year a birthday memory is made of, ahead of its flashback windows."""
-    assert isinstance(resolved, list), "a birthday memory resolves to several windows"
-    assert len(resolved) > BIRTHDAY_HISTORY_FROM, "the flashbacks are missing"
+    """The year a birthday film is made of, and nothing from earlier years."""
+    assert isinstance(resolved, list), "a birthday film resolves to its list of windows"
+    assert len(resolved) == 1, "a birthday film holds no earlier birthday"
     return resolved[0]
 
 

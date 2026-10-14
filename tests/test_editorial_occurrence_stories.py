@@ -101,8 +101,8 @@ def test_a_day_with_no_selectable_picture_stays_in_its_own_year():
 
 
 def test_days_running_on_from_one_occurrence_into_the_next_are_two_stories():
-    # A 2 July birthday: its earlier birthday (1-3 July) and the year that starts on the 3rd,
-    # all four days inside one calendar week.
+    # A day window (1-3 July) and a window that starts on its last day, all four days inside
+    # one calendar week.
     days = [datetime(2025, 7, d, tzinfo=UTC) for d in (1, 2, 3, 4)]
     ranges = (
         _window(2025, (7, 1), (7, 3)),

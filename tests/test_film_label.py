@@ -102,7 +102,7 @@ def test_a_name_that_is_only_slashes_is_dropped():
 
 
 # A person film's plan, as the planner writes it: `chosen` holds the shots a story put in the
-# cut, `days` its first and last day. Its window runs five birthdays back.
+# cut, `days` its first and last day. A birthdays film's windows reach years back.
 SHOWN_2022 = {
     "title": "Kit's birthday",
     "occasion": "birthday",

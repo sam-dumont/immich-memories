@@ -146,37 +146,27 @@ def build_on_this_day(
     if effective_years_back <= 0:
         return []
 
-    ranges: list[DateRange] = []
-
-    for i in range(1, effective_years_back + 1):
-        past_year = target_date.year - i
-
-        # Resolve the target day in the past year
-        center = same_day_in_year(target_date, past_year)
-
-        day_before = _subtract_one_day(center)
-        day_after = _add_one_day(center)
-
-        ranges.append(
-            DateRange(
-                start=datetime(day_before.year, day_before.month, day_before.day, 0, 0, 0),
-                end=datetime(day_after.year, day_after.month, day_after.day, 23, 59, 59),
-            )
-        )
-
-    return ranges
+    return [
+        day_with_neighbours(same_day_in_year(target_date, target_date.year - i))
+        for i in range(1, effective_years_back + 1)
+    ]
 
 
-# build_birthday_windows returns the rolling year first and the flashbacks after
-# it, so this is where the expected-sparse tail of the list begins. A caller
-# reporting per-window emptiness needs it: one empty rolling year is a real
-# failure, a handful of empty single days is what a library looks like.
+def day_with_neighbours(center: date) -> DateRange:
+    """The day and the one either side of it, a day remembered across the years."""
+    day_before = _subtract_one_day(center)
+    day_after = _add_one_day(center)
+    return DateRange(
+        start=datetime(day_before.year, day_before.month, day_before.day, 0, 0, 0),
+        end=datetime(day_after.year, day_after.month, day_after.day, 23, 59, 59),
+    )
+
+
+# The birthdays film lists the birthday being celebrated first and the earlier ones after it,
+# so this is where the expected-sparse tail of the list begins. A caller reporting
+# per-window emptiness needs it: an empty celebrated birthday is worth a warning, a
+# handful of empty earlier birthdays is what a library looks like.
 BIRTHDAY_HISTORY_FROM = 1
-
-# How many earlier birthdays to look for. The builder's own thirty-year ceiling is still reachable with
-# --years-back, but as a default it turns every birthday memory into a
-# decades-wide fetch and names the file after a span it barely uses.
-BIRTHDAY_HISTORY_YEARS = 5
 
 
 def build_birthday_windows(
@@ -185,13 +175,13 @@ def build_birthday_windows(
     years_back: int | None = None,
     today: date | None = None,
 ) -> list[DateRange]:
-    """Everything a memory anchored on a birthday covers, most recent first.
+    """The windows of a film anchored on a birthday, most recent first.
 
-    Two kinds of window. The rolling year is the twelve months ending on the
-    birthday being celebrated, and the flashbacks are ±1 day around that
-    birthday in each earlier year — the same shape On This Day builds, so a
-    birthday's history and a date's history are the same thing seen twice, leap
-    day included.
+    Two films, never mixed. The birthday film is the rolling year, the twelve months
+    ending on the birthday being celebrated, and nothing from earlier years. With
+    ``years_back``, the birthdays film instead: that birthday and each of the
+    ``years_back`` before it, ±1 day, the shape On This Day builds (leap day
+    included), and no rolling year.
 
     ``year`` names the birthday celebrated rather than a calendar year to run
     forward from. With no year the most recent birthday on or before ``today``
@@ -201,19 +191,37 @@ def build_birthday_windows(
     ``build_holiday`` follows.
 
     Most recent first, so the display span the callers derive as
-    ``ranges[-1].start`` to ``ranges[0].end`` reaches from the oldest flashback
-    to the birthday.
+    ``ranges[-1].start`` to ``ranges[0].end`` reaches from the oldest birthday
+    to the one celebrated.
     """
     celebrated = (
         same_day_in_year(birthday, year)
         if year is not None
         else _last_occurrence(birthday, today or date.today())
     )
-    reach = BIRTHDAY_HISTORY_YEARS if years_back is None else years_back
-    return [
-        birthday_year(birthday, celebrated.year),
-        *build_on_this_day(celebrated, reach),
-    ]
+    if (years_back or 0) <= 0:
+        return [birthday_year(birthday, celebrated.year)]
+    return [day_with_neighbours(celebrated), *build_on_this_day(celebrated, years_back)]
+
+
+def birthdays_params(birthday: object, years_back: int | None) -> dict[str, int]:
+    """What a run records when it asked for the birthdays film rather than the year.
+
+    The title spans the years its cut shows and the length is a holiday's, so both read
+    ``birthday_years_back`` off the run's preset params; a birthday film carries nothing.
+    """
+    if not birthday or years_back is None or years_back <= 0:
+        return {}
+    return {"birthday_years_back": years_back}
+
+
+def celebrated_day(end: date, preset_params: dict) -> date:
+    """The birthday a film celebrates, read off the end of its span.
+
+    The birthday film's year ends on the party; the birthdays film's last window is the
+    party ±1 day, so its span ends the day after.
+    """
+    return end - timedelta(days=1) if preset_params.get("birthday_years_back") else end
 
 
 def birthday_anchor(

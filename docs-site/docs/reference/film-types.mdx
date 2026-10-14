@@ -131,38 +131,41 @@ A spotlight over more than about 18 months is told as the person, one era per ca
 year that holds a usable picture of them gets one moment before any story gets a second, so the dense
 recent years cannot take the whole film. Years with no picture of them take no part.
 
-### Birthday compilations
+### Birthdays
 
 `--birthday` turns a person spotlight into the year of someone's life that **ends** on the birthday,
-plus that birthday in earlier years. For a 21 July birthday and `--year 2025` it runs 22 July 2024 to
-21 July 2025, so this year's party is in this year's film. Target: 10 minutes.
-The opening title names the birthday being celebrated and its year ("Emma's birthday · 2025"),
-including when earlier birthdays are selected. The app writes it; no model is asked. An explicit
-`--title` keeps your own wording.
+and nothing else. For a 21 July birthday and `--year 2025` it runs 22 July 2024 to 21 July 2025, so
+this year's party is in this year's film and last year's is in last year's. Target: 10 minutes. The
+opening title names the birthday being celebrated and its year ("Emma's birthday · 2025"). The app
+writes it; no model is asked. An explicit `--title` keeps your own wording.
 
 ```bash
 immich-memories generate --person "Emma" --year 2025 --birthday
 ```
 
-The birth date lives in Immich (**People**, pick the person, edit). Without one a birthday memory
+The birth date lives in Immich (**People**, pick the person, edit). Without one a birthday film
 refuses rather than guessing. `--birthday 07-21` overrides it for one run, month first; slashed forms
-are rejected.
+are rejected. Automatic birthday films are this same year.
 
-Automatic birthday films use only the completed birthday-to-birthday year. For a manual film,
-`--years-back 0` also keeps only that year. A manually requested birthday compilation
-reaches back to five earlier birthdays, each ±1 day, for the "look how small you were" cutaways. Most of
-those days hold nothing and the run prints one line (`history: 2 of 5 earlier windows hold material`)
-rather than a warning per year. Only pictures a film can use count: a window holding nothing but
-forwarded copies or saved images holds no material, and the line says how many it set aside. The
-film's length is sized the same way. With `advanced.analysis.forwarded_copies_when_short` on, those
-copies may stand in for an earlier birthday that has no picture of its own
-([configuration reference](./config-reference.md)). 29 February is celebrated on the 28th in other years.
+Add `--years-back` and you get a different film: the birthdays themselves. The party and that many
+earlier birthdays, each ±1 day, and nothing from the days in between. It's the "look how small you
+were" film, about a minute long, titled with the years it shows ("Emma's birthday · 2021–2025").
 
-In the web UI: **Person Spotlight**, then tick **Birthday to birthday, with earlier birthdays**. The
-**Birthday (MM-DD)** field under it overrides Immich's birth date, and **Years back** sets how many
-earlier birthdays it reaches for (five when left empty). For the rolling year without the cutaways, use **Custom date range**
-from the day after last year's birthday to this year's. Cut it the night before: a year of one person
-is a cold run the first time.
+```bash
+immich-memories generate --person "Emma" --year 2025 --birthday --years-back 5
+```
+
+Most earlier birthdays hold nothing, so the run prints one line (`history: 2 of 5 earlier windows hold
+material`) rather than a warning per year. Only pictures a film can use count: a day holding nothing
+but forwarded copies or saved images holds no material, and the line says how many it set aside.
+With `advanced.analysis.forwarded_copies_when_short` on, those copies may stand in for a birthday
+that has no picture of its own ([configuration reference](./config-reference.md)). 29 February is
+celebrated on the 28th in other years.
+
+In the web UI: **Person Spotlight**, then tick **Birthday to birthday**. The **Birthday (MM-DD)**
+field under it overrides Immich's birth date. Leave **Only the birthdays, this many years back**
+empty for the year; fill it in for the birthdays film. Cut a year the night before: a year of one
+person is a cold run the first time.
 
 ## On this day
 

@@ -1106,9 +1106,9 @@ class TestBirthdayFlagNamesTheWindowItRenders:
             )
 
         assert result.exit_code == 0, result.output
-        # --year names the birthday celebrated, so the memory ends on 15 March
-        # 2025 and reaches back to the oldest flashback window it looks in.
-        assert captured["output_path"].name == "person_a_person_spotlight_20200314-20250315.mp4"
+        # --year names the birthday celebrated, so the film is the year that
+        # ends on 15 March 2025, and nothing earlier.
+        assert captured["output_path"].name == "person_a_person_spotlight_20240316-20250315.mp4"
 
     def test_a_person_with_no_birth_date_is_told_where_to_put_one(self, tmp_path: Path) -> None:
         """Refuse over fake, and make the refusal teach the Immich workflow."""

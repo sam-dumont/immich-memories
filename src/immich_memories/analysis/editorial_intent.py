@@ -345,7 +345,7 @@ def _person(product, spans, whole, *, brief, who):
         allowed_texture="domestic life only when it shows a relationship or a change; presence alone is not merit",
         abstention_policy="a required era or window has no usable material: say so in the plan; do not fill it with another era",
         subject=subject,
-        # Every era, and every window of a film with several (a birthday's earlier birthdays),
+        # Every era, and every window of a film with several (a birthdays film's birthdays),
         # holds its voice when it has material: "every window with material has a voice".
         voice_per_partition=eras or len(spans) > 1,
         story_shares=True,

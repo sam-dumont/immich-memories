@@ -1,4 +1,4 @@
-"""An annual birthday film keeps its year even when its search includes flashbacks."""
+"""A birthday film is titled by the birthday it celebrates; a birthdays film by its years."""
 
 import json
 from datetime import datetime
@@ -182,3 +182,50 @@ async def test_a_model_title_that_names_the_birthday_is_kept(locale, title, subt
 
     assert result is not None
     assert (result.title, result.subtitle) == (title, subtitle)
+
+
+@pytest.mark.parametrize(("days", "years"), [((2022, 2026), "2022–2026"), ((2026,), "2026")])
+def test_the_birthdays_film_renders_the_years_its_cut_shows(tmp_path, days, years):
+    from types import SimpleNamespace
+
+    config = Config(title_screens={"locale": "en"})
+    params = {"birthday": True, "birthday_years_back": 5, "person_names": ["Riley"]}
+    clips = [
+        SimpleNamespace(
+            asset=SimpleNamespace(local_taken_at=datetime(year, 2, 7, 12, 0)),
+            llm_description=None,
+        )
+        for year in days
+    ]
+    rendered = build_title_settings(
+        GenerationParams(
+            clips=clips,
+            output_path=tmp_path / "film.mp4",
+            config=config,
+            memory_type="person_spotlight",
+            memory_preset_params=params,
+            person_name="Riley",
+            date_start=datetime(2021, 2, 6).date(),
+            date_end=datetime(2026, 2, 8).date(),
+        ),
+        config,
+        [],
+    )
+
+    assert (rendered.title_override, rendered.subtitle_override) == (years, "Riley's birthday")
+
+
+def test_a_new_years_eve_birthdays_film_before_its_cut_names_the_celebrated_year():
+    config = Config(title_screens={"locale": "en"})
+    span = DateRange(start=datetime(2020, 12, 30), end=datetime(2026, 1, 1, 23, 59, 59))
+    params = {"birthday": True, "birthday_years_back": 5, "person_names": ["Riley"]}
+
+    title = template_title(
+        config,
+        memory_type="person_spotlight",
+        date_range=span,
+        person_name="Riley",
+        preset_params=params,
+    )
+
+    assert title == ("2025", "Riley's birthday")

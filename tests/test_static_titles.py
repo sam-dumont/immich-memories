@@ -51,6 +51,12 @@ TYPED = {
                          "Kit · 2025", "Kit · 2025"),
     "birthday": (date(2025, 8, 31), date(2026, 8, 30), {"birthday": True}, ("Kit",), (),
                  "Kit's birthday · 2026", "Anniversaire de Kit · 2026"),
+    "birthdays": (date(2021, 8, 29), date(2026, 8, 31), {"birthday": True,
+                  "birthday_years_back": 5}, ("Kit",), (date(2022, 8, 30), date(2026, 8, 30)),
+                  "Kit's birthday · 2022–2026", "Anniversaire de Kit · 2022–2026"),
+    "one_birthday_shown": (date(2021, 8, 29), date(2026, 8, 31), {"birthday": True,
+                           "birthday_years_back": 5}, ("Kit",), (date(2026, 8, 30),),
+                           "Kit's birthday · 2026", "Anniversaire de Kit · 2026"),
     "multi_person": (date(2025, 1, 1), date(2025, 12, 31), {"person_names": ["Kit", "Pat"]},
                      ("Kit", "Pat"), (), "Kit & Pat · 2025", "Kit & Pat · 2025"),
     "either_person": (date(2025, 1, 1), date(2025, 12, 31),
@@ -63,7 +69,8 @@ TYPED = {
                     (date(2012, 10, 14), date(2025, 10, 14)), "October 14 · 2012–2025",
                     "14 octobre · 2012–2025"),
 }  # fmt: skip
-_MEMORY_TYPE = {"birthday": "person_spotlight", "person_month": "monthly_highlights",
+_MEMORY_TYPE = {"birthday": "person_spotlight", "birthdays": "person_spotlight",
+                "one_birthday_shown": "person_spotlight", "person_month": "monthly_highlights",
                 "either_person": "multi_person"}  # fmt: skip
 
 

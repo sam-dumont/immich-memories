@@ -28,10 +28,12 @@ from immich_memories.memory_types.presets import (
 from immich_memories.memory_types.registry import MemoryType
 from immich_memories.timeperiod import calendar_year
 
-# A birthday memory is a year plus a stack of flashbacks, and #703's use case
+# A birthday film is the year up to the birthday, and #703's use case
 # asks for five to ten minutes of it. Ten is what the CLI's span curve already
 # returns for a year with one person, so both surfaces land on the same number.
 BIRTHDAY_MEMORY_SECONDS = 600.0
+# The birthdays film is a few days across the years, so it asks for what a holiday's days do.
+BIRTHDAYS_FILM_SECONDS = 60.0
 
 # Registry: maps MemoryType -> factory callable
 _REGISTRY: dict[MemoryType, Callable[..., MemoryPreset]] = {}
@@ -173,19 +175,29 @@ def _person_spotlight(
     """A year with one person — a calendar one, or the one between two birthdays.
 
     Anchored on a birthday it is a different memory: the rolling year ending on
-    the party, plus that birthday in every earlier year the library reaches.
-    Long enough to be a story rather than a montage, which is why it asks for
-    ten minutes where the calendar year asks for two.
+    the party, long enough to be a story rather than a montage, which is why it
+    asks for ten minutes where the calendar year asks for two. With years back it
+    is the birthdays film instead, the party and the earlier ones, ±1 day each.
     """
     if not person_names:
         raise ValueError("person_names is required for PERSON_SPOTLIGHT memory type")
     name = person_names[0]
     if use_birthday and birthday:
+        windows = build_birthday_windows(birthday, year, years_back)
+        if len(windows) > 1:
+            return MemoryPreset(
+                memory_type=MemoryType.PERSON_SPOTLIGHT,
+                name=f"{name}'s Birthdays",
+                description=f"{name}'s birthdays across the years",
+                date_ranges=windows,
+                person_filter=person_filter_for([name]),
+                default_duration_seconds=BIRTHDAYS_FILM_SECONDS,
+            )
         return MemoryPreset(
             memory_type=MemoryType.PERSON_SPOTLIGHT,
             name=f"{name}'s Year",
             description=f"A year with {name}, birthday to birthday",
-            date_ranges=build_birthday_windows(birthday, year, years_back),
+            date_ranges=windows,
             person_filter=person_filter_for([name]),
             default_duration_seconds=BIRTHDAY_MEMORY_SECONDS,
         )

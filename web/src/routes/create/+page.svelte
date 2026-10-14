@@ -137,7 +137,7 @@
       season: has('season') ? season : null,
       hemisphere: has('hemisphere') ? hemisphere : null,
       day: has('day') ? day : null,
-      // --years-back reaches back over earlier birthdays only when the year runs birthday to birthday.
+      // With a birthday, --years-back makes the birthdays film: the birthdays alone, not the year.
       years_back: has('years_back') && (kind !== 'person_spotlight' || birthdayYear) ? yearsBack : null,
       start: has('start') && start ? start : null,
       end: has('end') && span === 'until' && end ? end : null,
@@ -335,11 +335,11 @@
         {/if}
         {#if shown.includes('day')}<label class={label}>{t('Day')}<input class={field} type="date" bind:value={day} oninput={() => (eventId = null)} /></label>{/if}
         {#if shown.includes('birthday')}
-          <label class="flex items-center gap-2 text-sm sm:col-span-2"><input type="checkbox" bind:checked={birthdayYear} />{t('Birthday to birthday, with earlier birthdays')}</label>
+          <label class="flex items-center gap-2 text-sm sm:col-span-2"><input type="checkbox" bind:checked={birthdayYear} />{t('Birthday to birthday')}</label>
           {#if birthdayYear}<label class={label}>{t('Birthday (MM-DD; Immich’s birth date when empty)')}<input class={field} bind:value={birthdayOverride} placeholder="03-15" pattern="\d\d-\d\d" /></label>{/if}
         {/if}
         {#if shown.includes('years_back') && (kind !== 'person_spotlight' || birthdayYear)}
-          <label class={label}>{kind === 'holiday' ? t('Years to span') : t('Years back (all when empty)')}<input class={field} type="number" min="1" bind:value={yearsBack} /></label>
+          <label class={label}>{kind === 'holiday' ? t('Years to span') : kind === 'person_spotlight' ? t('Only the birthdays, this many years back (empty: the whole year)') : t('Years back (all when empty)')}<input class={field} type="number" min="1" bind:value={yearsBack} /></label>
         {/if}
         {#if shown.includes('start')}<label class={label}>{t('From')}<input class={field} type="date" bind:value={start} required /></label>{/if}
         {#if shown.includes('period')}

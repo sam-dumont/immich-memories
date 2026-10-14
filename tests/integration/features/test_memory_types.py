@@ -242,7 +242,7 @@ def test_trips_refuse_a_grouped_people_condition(library_home: UserHome):
 
 
 @pytest.mark.feature("memory-type.birthday")
-def test_a_birthday_runs_the_year_ending_on_it_and_looks_back_at_earlier_ones(
+def test_a_birthday_runs_the_year_ending_on_it_and_nothing_earlier(
     library_home: UserHome,
 ):
     # The party at home, 5 July: the person's year runs from 6 July 2024 to the party.
@@ -261,9 +261,33 @@ def test_a_birthday_runs_the_year_ending_on_it_and_looks_back_at_earlier_ones(
     kept = birthday.pictures()
     assert kept and all("Kit" in p.people for p in kept)
     assert _ids(kept) == {p.asset_id for p in CARRIERS if "Kit" in p.people and p.day <= BIRTHDAY}
-    # Five earlier birthdays are looked at; the library starts in 2025, so none holds anything.
-    assert "history: 0 of 5 earlier windows hold material" in birthday.output
+    # The year alone: no earlier birthday is looked for.
+    assert "earlier windows hold material" not in birthday.output
     assert "Title: Kit's birthday · 2025" in birthday.output
+
+
+@pytest.mark.feature("memory-type.birthday")
+def test_years_back_makes_the_birthdays_film_and_nothing_between(library_home: UserHome):
+    """With --years-back the film is the birthdays themselves, ±1 day, and no rolling year."""
+    birthdays = cut(
+        library_home,
+        "generate",
+        "--person",
+        "Kit",
+        "--year",
+        "2025",
+        "--birthday",
+        "07-05",
+        "--years-back",
+        "2",
+        *_PICTURES,
+    )
+
+    kept = birthdays.pictures()
+    assert kept and all("Kit" in p.people for p in kept)
+    assert all("2025-07-04" <= p.day <= "2025-07-06" for p in kept)
+    assert "history: 0 of 2 earlier windows hold material" in birthdays.output
+    assert "Title: Kit's birthday · 2025" in birthdays.output
 
 
 @pytest.mark.feature("memory-type.birthday")

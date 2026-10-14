@@ -1,6 +1,6 @@
 """Forwarded copies stand in where a film is short of its own pictures, when asked (opt-in).
 
-A birthday film's earlier birthdays held only pictures somebody sent: messaging exports with no
+A birthdays film's earlier birthdays held only pictures somebody sent: messaging exports with no
 camera behind them, which every film refuses (`film_may_use`). With
 `analysis.forwarded_copies_when_short` on, such copies become candidates on the days a short
 part of the film holds no camera picture of its own, and then pass every check a camera

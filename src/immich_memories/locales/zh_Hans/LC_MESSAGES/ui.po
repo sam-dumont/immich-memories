@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-10 16:22+0200\n"
+"POT-Creation-Date: 2026-10-14 13:27+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_Hans\n"
@@ -78,7 +78,7 @@ msgstr "添加"
 msgid "Add a relationship"
 msgstr "添加关系"
 
-#: web/lib/RenderPanel.svelte:236
+#: web/lib/RenderPanel.svelte:238
 msgid "Add date overlay"
 msgstr "显示日期"
 
@@ -117,7 +117,7 @@ msgstr "一段时间之后"
 msgid "Album"
 msgstr "相册"
 
-#: web/lib/RenderPanel.svelte:279 web/lib/UploadFilm.svelte:46
+#: web/lib/RenderPanel.svelte:283 web/lib/UploadFilm.svelte:46
 msgid "Album name"
 msgstr "相册名称"
 
@@ -156,26 +156,26 @@ msgstr "任何人"
 msgid "Anyone. Only pictures nothing held back: no detector flag, no private moment."
 msgstr "任何人。仅使用未受限制的画面：没有检测标记，也没有私密时刻。"
 
-#: web/lib/RenderPanel.svelte:176 web/lib/RenderPanel.svelte:182 web/lib/RenderPanel.svelte:191
-#: web/lib/RenderPanel.svelte:214 web/lib/RenderPanel.svelte:220 web/lib/RenderPanel.svelte:226
-#: web/lib/RenderPanel.svelte:232 web/lib/RenderPanel.svelte:279 web/lib/UploadFilm.svelte:47
+#: web/lib/RenderPanel.svelte:178 web/lib/RenderPanel.svelte:184 web/lib/RenderPanel.svelte:193
+#: web/lib/RenderPanel.svelte:216 web/lib/RenderPanel.svelte:222 web/lib/RenderPanel.svelte:228
+#: web/lib/RenderPanel.svelte:234 web/lib/RenderPanel.svelte:283 web/lib/UploadFilm.svelte:47
 #: web/routes/create/+page.svelte:494
 msgid "As configured"
 msgstr "按配置"
 
-#: web/lib/RenderPanel.svelte:200
+#: web/lib/RenderPanel.svelte:202
 msgid "As generate decides"
 msgstr "由 generate 决定"
 
-#: web/lib/RenderPanel.svelte:183
+#: web/lib/RenderPanel.svelte:185
 msgid "Auto (match the mood)"
 msgstr "自动（配合影片氛围）"
 
-#: web/lib/RenderPanel.svelte:208 web/lib/labels.ts:26
+#: web/lib/RenderPanel.svelte:210 web/lib/labels.ts:26
 msgid "Automatic"
 msgstr "自动"
 
-#: web/lib/RenderPanel.svelte:249
+#: web/lib/RenderPanel.svelte:253
 msgid "Automatic (as configured)"
 msgstr "自动（按配置）"
 
@@ -208,14 +208,14 @@ msgid "Birthday (MM-DD; Immich’s birth date when empty)"
 msgstr "生日 (MM-DD；留空则使用 Immich 中的出生日期)"
 
 #: web/routes/create/+page.svelte:338
-msgid "Birthday to birthday, with earlier birthdays"
-msgstr "从生日到生日，包含更早的生日"
+msgid "Birthday to birthday"
+msgstr "从生日到生日"
 
-#: web/lib/RenderPanel.svelte:192
+#: web/lib/RenderPanel.svelte:194
 msgid "Black"
 msgstr "黑色"
 
-#: web/lib/RenderPanel.svelte:232
+#: web/lib/RenderPanel.svelte:234
 msgid "Blurred background"
 msgstr "模糊背景"
 
@@ -235,7 +235,7 @@ msgstr "取消"
 msgid "Candidate key"
 msgstr "候选项标识"
 
-#: web/lib/RenderPanel.svelte:237
+#: web/lib/RenderPanel.svelte:239
 msgid "Caption clips with their place"
 msgstr "在片段上显示地点"
 
@@ -369,7 +369,7 @@ msgstr "复制报告"
 msgid "Could not load people."
 msgstr "无法加载人物。"
 
-#: web/lib/RenderPanel.svelte:177
+#: web/lib/RenderPanel.svelte:179
 msgid "Crossfade"
 msgstr "交叉淡化"
 
@@ -450,7 +450,7 @@ msgstr "已完成。"
 msgid "Download child output"
 msgstr "下载处理日志"
 
-#: web/lib/RenderPanel.svelte:159 web/routes/runs/[run_id]/+page.svelte:169
+#: web/lib/RenderPanel.svelte:161 web/routes/runs/[run_id]/+page.svelte:169
 msgid "Download film"
 msgstr "下载影片"
 
@@ -486,7 +486,7 @@ msgstr "此剪辑仅依据元数据完成，未对素材内容进行分类或分
 msgid "Edited without descriptions — picture content was classified, not read."
 msgstr "此剪辑未使用素材描述：素材内容经过了分类，但没有进行详细分析。"
 
-#: web/lib/RenderPanel.svelte:184
+#: web/lib/RenderPanel.svelte:186
 msgid "Elegant minimal"
 msgstr "简约雅致"
 
@@ -576,11 +576,11 @@ msgstr "搜索姓名"
 msgid "Finding faces"
 msgstr "正在查找人脸"
 
-#: web/lib/RenderPanel.svelte:232
+#: web/lib/RenderPanel.svelte:234
 msgid "Fit with bars"
 msgstr "加黑边适配"
 
-#: web/lib/RenderPanel.svelte:218
+#: web/lib/RenderPanel.svelte:220
 msgid "Format"
 msgstr "格式"
 
@@ -600,7 +600,7 @@ msgstr "祖父母、兄弟姐妹、群聊。排除私密时刻。"
 msgid "Grouped condition"
 msgstr "分组条件"
 
-#: web/lib/RenderPanel.svelte:177
+#: web/lib/RenderPanel.svelte:179
 msgid "Hard cut"
 msgstr "硬切"
 
@@ -613,7 +613,7 @@ msgstr "已限制：{reasons}。"
 msgid "Hemisphere"
 msgstr "半球"
 
-#: web/lib/RenderPanel.svelte:226
+#: web/lib/RenderPanel.svelte:228
 msgid "High"
 msgstr "高"
 
@@ -695,6 +695,10 @@ msgstr "仅自己家"
 msgid "Keep apart"
 msgstr "保持分开"
 
+#: web/lib/RenderPanel.svelte:250
+msgid "Keep original audio"
+msgstr "保留原始音频"
+
 #: web/lib/ShotInspector.svelte:61
 msgid "Keep the original"
 msgstr "保留原始素材"
@@ -712,7 +716,7 @@ msgstr "保留原因"
 msgid "Label"
 msgstr "标签"
 
-#: web/lib/RenderPanel.svelte:208
+#: web/lib/RenderPanel.svelte:210
 msgid "Landscape"
 msgstr "横屏"
 
@@ -758,7 +762,7 @@ msgstr "正在浏览媒体库以推荐回忆..."
 msgid "Looks linked to"
 msgstr "看起来已关联到"
 
-#: web/lib/RenderPanel.svelte:227
+#: web/lib/RenderPanel.svelte:229
 msgid "Low"
 msgstr "低"
 
@@ -790,7 +794,7 @@ msgstr "手动和自动任务，包括失败任务。打开任务可查看剪辑
 msgid "Marked Never use. Tick it to include it in this revision."
 msgstr "已标记为“永不使用”。勾选可将其加入此修订版本。"
 
-#: web/lib/RenderPanel.svelte:214
+#: web/lib/RenderPanel.svelte:216
 msgid "Match the sources"
 msgstr "与源一致"
 
@@ -806,7 +810,7 @@ msgstr "正在测量视频片段中的运动"
 msgid "Measuring the pictures"
 msgstr "正在分析素材的特征"
 
-#: web/lib/RenderPanel.svelte:227
+#: web/lib/RenderPanel.svelte:229
 msgid "Medium"
 msgstr "中"
 
@@ -842,7 +846,7 @@ msgstr "无法检查模型状态。"
 msgid "Model suggestion"
 msgstr "模型建议"
 
-#: web/lib/RenderPanel.svelte:184
+#: web/lib/RenderPanel.svelte:186
 msgid "Modern warm"
 msgstr "现代温暖"
 
@@ -858,11 +862,11 @@ msgstr "月度精选"
 msgid "Multi-Person"
 msgstr "多人"
 
-#: web/lib/PhaseTimeline.svelte:8 web/lib/RenderPanel.svelte:247
+#: web/lib/PhaseTimeline.svelte:8 web/lib/RenderPanel.svelte:249
 msgid "Music"
 msgstr "音乐"
 
-#: web/lib/RenderPanel.svelte:270
+#: web/lib/RenderPanel.svelte:274
 msgid "Music volume:"
 msgstr "音乐音量："
 
@@ -902,7 +906,7 @@ msgstr "媒体库中没有足够的匹配素材来制作这部影片。试着换
 msgid "No model read this cut: the rules chose every picture."
 msgstr "此剪辑完全由筛选规则生成，没有经过模型分析。"
 
-#: web/lib/RenderPanel.svelte:250
+#: web/lib/RenderPanel.svelte:254
 msgid "No music"
 msgstr "无音乐"
 
@@ -970,7 +974,7 @@ msgid ""
 "does."
 msgstr "暂时没有人。这个列表会在首次准备媒体库或重新扫描时填充。新建回忆里的人物选择器直接读取 Immich，所以可能比本页更早显示名字。"
 
-#: web/lib/RenderPanel.svelte:177
+#: web/lib/RenderPanel.svelte:179
 msgid "None"
 msgstr "无"
 
@@ -1016,6 +1020,10 @@ msgid ""
 " place it can be fixed."
 msgstr "一个名字对应两条人物记录：被拆开的人脸分组。请在 Immich 中合并这些记录，只有那里能修复。"
 
+#: web/routes/create/+page.svelte:342
+msgid "Only the birthdays, this many years back (empty: the whole year)"
+msgstr "只要生日，往前这么多年（留空：整整一年）"
+
 #: web/routes/create/+page.svelte:431
 msgid "Only with (optional)"
 msgstr "仅包含（可选）"
@@ -1032,7 +1040,7 @@ msgstr "在 Immich 中打开"
 msgid "Open run"
 msgstr "打开任务"
 
-#: web/lib/RenderPanel.svelte:161
+#: web/lib/RenderPanel.svelte:163
 msgid "Open the film run"
 msgstr "打开影片任务"
 
@@ -1041,7 +1049,7 @@ msgstr "打开影片任务"
 msgid "Open {name} in Immich"
 msgstr "在 Immich 中打开 {name}"
 
-#: web/lib/RenderPanel.svelte:189
+#: web/lib/RenderPanel.svelte:191
 msgid "Opening and closing fade"
 msgstr "开头和结尾的淡入淡出"
 
@@ -1049,7 +1057,7 @@ msgstr "开头和结尾的淡入淡出"
 msgid "Order and timecodes from the saved cut."
 msgstr "已保存剪辑的顺序和时间码。"
 
-#: web/lib/RenderPanel.svelte:206
+#: web/lib/RenderPanel.svelte:208
 msgid "Orientation"
 msgstr "方向"
 
@@ -1149,7 +1157,7 @@ msgstr "包含以下人物的素材"
 msgid "Pictures: {count}"
 msgstr "素材：{count}"
 
-#: web/lib/RenderPanel.svelte:185
+#: web/lib/RenderPanel.svelte:187
 msgid "Playful bright"
 msgstr "明快活泼"
 
@@ -1162,7 +1170,7 @@ msgstr "请同时填写地址和 API 密钥"
 msgid "Pool"
 msgstr "候选素材"
 
-#: web/lib/RenderPanel.svelte:209
+#: web/lib/RenderPanel.svelte:211
 msgid "Portrait"
 msgstr "竖屏"
 
@@ -1182,7 +1190,7 @@ msgstr "准备选中的片段"
 msgid "Preview"
 msgstr "预览"
 
-#: web/lib/RenderPanel.svelte:257
+#: web/lib/RenderPanel.svelte:261
 msgid "Preview a track"
 msgstr "试听曲目"
 
@@ -1194,7 +1202,7 @@ msgstr "按此选择预览"
 msgid "Previous stages"
 msgstr "之前的步骤"
 
-#: web/lib/RenderPanel.svelte:243
+#: web/lib/RenderPanel.svelte:245
 msgid "Privacy mode: blur every picture and scramble names"
 msgstr "隐私模式：模糊所有素材并打乱姓名"
 
@@ -1210,11 +1218,11 @@ msgstr "进度"
 msgid "Put it back"
 msgstr "放回"
 
-#: web/lib/RenderPanel.svelte:224
+#: web/lib/RenderPanel.svelte:226
 msgid "Quality"
 msgstr "画质"
 
-#: web/lib/RenderPanel.svelte:183
+#: web/lib/RenderPanel.svelte:185
 msgid "Random"
 msgstr "随机"
 
@@ -1278,7 +1286,7 @@ msgstr "移除此关系"
 msgid "Removed"
 msgstr "已移除"
 
-#: web/lib/RenderPanel.svelte:147 web/lib/RenderPanel.svelte:148 web/lib/RenderPanel.svelte:282
+#: web/lib/RenderPanel.svelte:149 web/lib/RenderPanel.svelte:150 web/lib/RenderPanel.svelte:286
 msgid "Render"
 msgstr "渲染"
 
@@ -1302,7 +1310,7 @@ msgstr "立即重新扫描"
 msgid "Rescan the library"
 msgstr "重新扫描媒体库"
 
-#: web/lib/RenderPanel.svelte:212
+#: web/lib/RenderPanel.svelte:214
 msgid "Resolution"
 msgstr "分辨率"
 
@@ -1318,7 +1326,7 @@ msgstr "正在复用已保存的图片检查结果"
 msgid "Review the report, then copy it. Nothing is sent automatically."
 msgstr "请先查看报告，再复制。不会自动发送任何内容。"
 
-#: web/lib/RenderPanel.svelte:171 web/routes/runs/[run_id]/+page.svelte:326
+#: web/lib/RenderPanel.svelte:173 web/routes/runs/[run_id]/+page.svelte:326
 #, python-brace-format
 msgid "Revision {number}"
 msgstr "修订 {number}"
@@ -1414,7 +1422,7 @@ msgstr "已保存到数据库"
 msgid "Saved to: {output_path}"
 msgstr "已保存至：{output_path}"
 
-#: web/lib/RenderPanel.svelte:230
+#: web/lib/RenderPanel.svelte:232
 msgid "Scaling Mode"
 msgstr "缩放模式"
 
@@ -1493,11 +1501,11 @@ msgstr "已跳过"
 msgid "Small moment"
 msgstr "小片段"
 
-#: web/lib/RenderPanel.svelte:176
+#: web/lib/RenderPanel.svelte:178
 msgid "Smart (fades and cuts)"
 msgstr "智能（淡入淡出与剪切）"
 
-#: web/lib/RenderPanel.svelte:186
+#: web/lib/RenderPanel.svelte:188
 msgid "Soft romantic"
 msgstr "柔和浪漫"
 
@@ -1508,6 +1516,10 @@ msgstr "其中的一些素材"
 #: web/lib/labels.ts:69
 msgid "Some pictures were edited without descriptions."
 msgstr "部分素材在没有描述的情况下完成了剪辑。"
+
+#: web/lib/RenderPanel.svelte:251
+msgid "Sound recorded in videos and Live Photos. Turn off for music only, or silence with No music."
+msgstr "视频和实况照片中录制的声音。关闭后只播放音乐，同时选择“无音乐”则生成无声影片。"
 
 #: web/routes/create/+page.svelte:334
 msgid "South"
@@ -1521,7 +1533,7 @@ msgstr "特别的日子"
 msgid "Spring"
 msgstr "春季"
 
-#: web/lib/RenderPanel.svelte:209
+#: web/lib/RenderPanel.svelte:211
 msgid "Square"
 msgstr "正方形"
 
@@ -1553,7 +1565,7 @@ msgstr "已停止。"
 msgid "Stories"
 msgstr "故事"
 
-#: web/lib/RenderPanel.svelte:196
+#: web/lib/RenderPanel.svelte:198
 msgid "Subtitle"
 msgstr "副标题"
 
@@ -1594,7 +1606,7 @@ msgstr "无法保存。"
 msgid "That expression could not be saved."
 msgstr "该表达式无法保存。"
 
-#: web/lib/RenderPanel.svelte:133
+#: web/lib/RenderPanel.svelte:135
 msgid "That file is not an MP3, M4A or WAV"
 msgstr "此文件不是 MP3、M4A 或 WAV"
 
@@ -1616,7 +1628,7 @@ msgstr "API 密钥的账户名称尚未匹配到已命名的人物。请选择�
 msgid "The connection could not be checked."
 msgstr "无法检查连接。"
 
-#: web/lib/RenderPanel.svelte:170
+#: web/lib/RenderPanel.svelte:172
 msgid "The cut as chosen"
 msgstr "当前选择的剪辑"
 
@@ -1628,7 +1640,7 @@ msgstr "剪辑无法启动。"
 msgid "The cut is ready."
 msgstr "剪辑已准备好。"
 
-#: web/lib/RenderPanel.svelte:202
+#: web/lib/RenderPanel.svelte:204
 msgid "The dates and places, never a model"
 msgstr "只用日期和地点，绝不使用模型"
 
@@ -1638,7 +1650,7 @@ msgid ""
 "either of the first two sets is greyed out: change it where its label says."
 msgstr "环境变量优先，其次是 config.yaml，然后是此处保存的值，最后是默认值。由前两者之一设定的选项会显示为灰色：请在其标签所指示的位置修改。"
 
-#: web/lib/AskPanel.svelte:27 web/lib/RenderPanel.svelte:154
+#: web/lib/AskPanel.svelte:27 web/lib/RenderPanel.svelte:156
 #: web/routes/runs/[run_id]/+page.svelte:151
 msgid "The film"
 msgstr "影片"
@@ -1669,7 +1681,7 @@ msgid ""
 "part of the sentence became and how many pictures fit, and films nothing."
 msgstr "模型会根据媒体库中已准备好的素材理解你的描述。先预览，看看每部分描述是如何理解的，以及有多少素材符合条件。此时不会制作影片。"
 
-#: web/lib/RenderPanel.svelte:201
+#: web/lib/RenderPanel.svelte:203
 msgid "The model, when one is configured"
 msgstr "已配置模型时使用模型"
 
@@ -1681,7 +1693,7 @@ msgstr "人物登记：谁比较亲近、他们的角色，以及彼此的关系
 msgid "The picture it replaced"
 msgstr "被替换的素材"
 
-#: web/lib/RenderPanel.svelte:240
+#: web/lib/RenderPanel.svelte:242
 msgid ""
 "The place is Immich's. With geocoding on (Settings, network), it names the district in the "
 "film's language, through the public Nominatim or network.geocoding_url."
@@ -1695,7 +1707,7 @@ msgstr "候选素材"
 msgid "The preview could not start."
 msgstr "预览无法启动。"
 
-#: web/lib/RenderPanel.svelte:251
+#: web/lib/RenderPanel.svelte:255
 msgid "The previewed track"
 msgstr "已试听的曲目"
 
@@ -1707,7 +1719,7 @@ msgstr "上一次自动生成的回忆使用了这个分类。"
 msgid "The remaining work changed. The estimate has been revised."
 msgstr "剩余工作已变化。估算已更新。"
 
-#: web/lib/RenderPanel.svelte:112
+#: web/lib/RenderPanel.svelte:114
 msgid "The render could not start."
 msgstr "渲染无法启动。"
 
@@ -1767,11 +1779,11 @@ msgstr "缩略图缓存"
 msgid "Time not known yet"
 msgstr "时间尚不清楚"
 
-#: web/lib/RenderPanel.svelte:195
+#: web/lib/RenderPanel.svelte:197
 msgid "Title (decided as generate decides when empty)"
 msgstr "标题（留空则由 generate 决定）"
 
-#: web/lib/RenderPanel.svelte:180
+#: web/lib/RenderPanel.svelte:182
 msgid "Title style"
 msgstr "标题样式"
 
@@ -1787,7 +1799,7 @@ msgstr "替换了未通过检查的素材。"
 msgid "Took the seat of a picture the model removed from this story."
 msgstr "替换了模型从这个故事中移除的素材。"
 
-#: web/lib/RenderPanel.svelte:174
+#: web/lib/RenderPanel.svelte:176
 msgid "Transition Style"
 msgstr "转场样式"
 
@@ -1820,7 +1832,7 @@ msgstr "取消关联"
 msgid "Updated {when}"
 msgstr "{when}更新"
 
-#: web/lib/RenderPanel.svelte:260
+#: web/lib/RenderPanel.svelte:264
 msgid "Upload a track"
 msgstr "上传曲目"
 
@@ -1832,7 +1844,7 @@ msgstr "无法检查上传是否可用。"
 msgid "Upload film"
 msgstr "上传影片"
 
-#: web/lib/RenderPanel.svelte:277
+#: web/lib/RenderPanel.svelte:281
 msgid "Upload the film to Immich"
 msgstr "将影片上传到 Immich"
 
@@ -1887,7 +1899,7 @@ msgstr "查看"
 msgid "View in Immich"
 msgstr "在 Immich 中查看"
 
-#: web/lib/RenderPanel.svelte:185
+#: web/lib/RenderPanel.svelte:187
 msgid "Vintage charm"
 msgstr "复古韵味"
 
@@ -1918,7 +1930,7 @@ msgstr "剪辑规则会排除的素材"
 msgid "What the library measures"
 msgstr "媒体库中的测量结果"
 
-#: web/lib/RenderPanel.svelte:168
+#: web/lib/RenderPanel.svelte:170
 msgid "What to render"
 msgstr "渲染内容"
 
@@ -1930,7 +1942,7 @@ msgstr "何时"
 msgid "Where"
 msgstr "何地"
 
-#: web/lib/RenderPanel.svelte:192
+#: web/lib/RenderPanel.svelte:194
 msgid "White"
 msgstr "白色"
 
@@ -1946,7 +1958,7 @@ msgstr "谁是谁，以及他们的角色和关系。"
 msgid "Who may see it"
 msgstr "谁可以看到"
 
-#: web/lib/RenderPanel.svelte:198
+#: web/lib/RenderPanel.svelte:200
 msgid "Who names the film"
 msgstr "谁来命名影片"
 
@@ -2166,10 +2178,3 @@ msgstr "剩余约 {amount}"
 msgid "~{amount} left in this stage"
 msgstr "此阶段约剩 {amount}"
 
-#: web/lib/RenderPanel.svelte:250
-msgid "Keep original audio"
-msgstr "保留原始音频"
-
-#: web/lib/RenderPanel.svelte:251
-msgid "Sound recorded in videos and Live Photos. Turn off for music only, or silence with No music."
-msgstr "视频和实况照片中录制的声音。关闭后只播放音乐，同时选择“无音乐”则生成无声影片。"

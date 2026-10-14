@@ -1,8 +1,9 @@
-"""A birthday memory runs birthday to birthday, whatever month it is today.
+"""A birthday film runs birthday to birthday, whatever month it is today.
 
-The windows are event-anchored: the rolling year ends on the birthday being
-celebrated, and the flashbacks sit on that birthday in earlier years. Nothing
-here is allowed to depend on which calendar year the request happened to name.
+Two films, never mixed. The birthday film is the rolling year that ends on the
+birthday being celebrated, and nothing else. Asked for with years back, the
+birthdays film is that birthday and each earlier one, ±1 day, and no rolling
+year. Nothing here may depend on which calendar year the request happened to name.
 """
 
 from __future__ import annotations
@@ -81,35 +82,63 @@ class TestRollingYear:
         assert windows[0].end.day == 7
 
 
-class TestHistory:
-    """The flashbacks sit on the birthday in each earlier year."""
+class TestTheBirthdayFilmIsTheYear:
+    """A birthday film holds the year up to the birthday and no earlier birthday."""
 
-    def test_each_earlier_birthday_gets_its_own_window(self):
+    def test_a_birthday_film_is_the_rolling_year_alone(self):
+        windows = build_birthday_windows(date(2018, 2, 7), year=2026)
+
+        assert windows == [
+            DateRange(start=datetime(2025, 2, 8), end=datetime(2026, 2, 7, 23, 59, 59))
+        ]
+
+    def test_no_years_back_is_the_same_film(self):
+        assert build_birthday_windows(date(2018, 2, 7), year=2026, years_back=0) == (
+            build_birthday_windows(date(2018, 2, 7), year=2026)
+        )
+
+    def test_the_cli_birthday_film_holds_nothing_from_earlier_years(self):
+        windows = resolve_date_range(
+            year=2026,
+            start=None,
+            end=None,
+            period=None,
+            birthday="08-30",
+            memory_type="person_spotlight",
+        )
+
+        assert isinstance(windows, list)
+        assert len(windows) == 1
+        assert windows[0].start == datetime(2025, 8, 31)
+
+
+class TestTheBirthdaysFilm:
+    """Asked for with years back: the birthdays themselves, ±1 day, and nothing between."""
+
+    def test_the_celebrated_birthday_and_each_earlier_one(self):
         windows = build_birthday_windows(date(2018, 2, 7), year=2026, years_back=3)
 
-        assert [w.start.year for w in windows[BIRTHDAY_HISTORY_FROM:]] == [2025, 2024, 2023]
+        assert [w.start.year for w in windows] == [2026, 2025, 2024, 2023]
 
-    def test_a_flashback_is_the_birthday_plus_or_minus_a_day(self):
-        windows = build_birthday_windows(date(2018, 2, 7), year=2026, years_back=1)
+    def test_every_window_is_the_birthday_plus_or_minus_a_day(self):
+        windows = build_birthday_windows(date(2018, 2, 7), year=2026, years_back=3)
 
+        assert windows[0].start == datetime(2026, 2, 6)
+        assert windows[0].end == datetime(2026, 2, 8, 23, 59, 59)
         assert windows[BIRTHDAY_HISTORY_FROM].start == datetime(2025, 2, 6)
         assert windows[BIRTHDAY_HISTORY_FROM].end == datetime(2025, 2, 8, 23, 59, 59)
+        assert all((w.end - w.start).days < 3 for w in windows)
 
-    def test_the_default_reach_matches_on_this_day(self):
-        """One convention for how far back a memory that spans years looks."""
-        on_this_day = create_preset(MemoryType.ON_THIS_DAY, target_date=date(2026, 2, 7))
-        windows = build_birthday_windows(date(1990, 2, 7), year=2026)
+    def test_no_rolling_year_comes_with_it(self):
+        windows = build_birthday_windows(date(2018, 2, 7), year=2026, years_back=5)
 
-        assert len(windows) - BIRTHDAY_HISTORY_FROM == len(on_this_day.date_ranges)
+        assert not any(w.contains(datetime(2025, 9, 1, 12, 0)) for w in windows)
 
-    def test_the_display_span_reaches_from_the_oldest_flashback_to_the_birthday(self):
+    def test_the_display_span_reaches_from_the_oldest_birthday_to_the_newest(self):
         windows = build_birthday_windows(date(2018, 2, 7), year=2026, years_back=4)
 
         assert windows[-1].start == datetime(2022, 2, 6)
-        assert windows[0].end == datetime(2026, 2, 7, 23, 59, 59)
-
-    def test_no_history_asked_for_leaves_the_rolling_year_alone(self):
-        assert len(build_birthday_windows(date(2018, 2, 7), year=2026, years_back=0)) == 1
+        assert windows[0].end == datetime(2026, 2, 8, 23, 59, 59)
 
 
 class TestWhereTheBirthdayComesFrom:
@@ -174,7 +203,7 @@ class _RecordingDisplay:
 
 
 class TestSparseHistoryReporting:
-    """Five empty flashbacks are a library; an empty rolling year is a bug."""
+    """Five empty earlier birthdays are a library; an empty celebrated birthday is worth a warning."""
 
     def _report(self, *, history_from: int | None) -> str:
         display = _RecordingDisplay()
@@ -183,7 +212,7 @@ class TestSparseHistoryReporting:
             fetch_videos(
                 client=_EmptyLibrary(),
                 progress=display,
-                date_ranges=build_birthday_windows(date(2018, 2, 7), year=2026),
+                date_ranges=build_birthday_windows(date(2018, 2, 7), year=2026, years_back=5),
                 person_ids=["person-ada"],
                 history_from=history_from,
             )
@@ -191,15 +220,15 @@ class TestSparseHistoryReporting:
             set_active_display(None)
         return "\n".join(display.lines)
 
-    def test_the_flashbacks_are_summarised_rather_than_warned_about(self):
+    def test_the_earlier_birthdays_are_summarised_rather_than_warned_about(self):
         out = self._report(history_from=BIRTHDAY_HISTORY_FROM)
 
         assert "history: 0 of 5 earlier windows hold material" in out
 
-    def test_an_empty_rolling_year_still_gets_its_own_warning(self):
+    def test_an_empty_celebrated_birthday_still_gets_its_own_warning(self):
         out = self._report(history_from=BIRTHDAY_HISTORY_FROM)
 
-        assert "2025-02-08..2026-02-07" in out
+        assert "2026-02-06..2026-02-08" in out
 
     def test_without_the_mark_every_window_shouts(self):
         """The behaviour the mark exists to avoid, pinned so it stays avoided."""
@@ -230,7 +259,7 @@ class TestHistoryCountsPhotosToo:
             fetch_media(
                 client=_PhotoLibrary(photos),
                 progress=display,
-                date_ranges=build_birthday_windows(date(2018, 2, 7), year=2026),
+                date_ranges=build_birthday_windows(date(2018, 2, 7), year=2026, years_back=5),
                 person_ids=[],
                 include_photos=True,
                 history_from=BIRTHDAY_HISTORY_FROM,
@@ -253,7 +282,7 @@ class TestHistoryCountsPhotosToo:
         out = self._report([])
 
         assert "the memory has no history" in out
-        assert "no photos and videos found for 2025-02-08..2026-02-07" in out
+        assert "no photos and videos found for 2026-02-06..2026-02-08" in out
 
 
 class TestAutomationRoundTrip:
@@ -289,20 +318,50 @@ class TestAutomationRoundTrip:
 
 
 class TestLength:
-    """The memory is a year long, whatever the flashbacks reach back over."""
+    """The birthday film is a year long; the birthdays film is a few days across years."""
 
-    def test_the_flashbacks_do_not_shrink_it_to_the_floor(self):
-        """The span curve goes negative past ~40 months and clamps to 30s (#511).
-
-        Collapsed for display, a birthday memory spans decades; what it is
-        actually made of is the rolling year.
-        """
+    def test_the_birthday_film_asks_for_ten_minutes(self):
         windows = build_birthday_windows(date(1990, 2, 7), year=2026)
-        display = DateRange(start=windows[-1].start, end=windows[0].end)
 
-        length = default_duration_for_type("person_spotlight", display, primary_window=windows[0])
+        length = default_duration_for_type(
+            "person_spotlight", windows[0], primary_window=windows[0]
+        )
 
         assert length == pytest.approx(600.0)
+
+    def test_the_birthdays_film_asks_for_a_holiday_length(self):
+        """Its days would floor at 30 s on the span curve; a holiday's days ask for 60."""
+        windows = build_birthday_windows(date(1990, 2, 7), year=2026, years_back=5)
+        display = DateRange(start=windows[-1].start, end=windows[0].end)
+
+        length = default_duration_for_type(
+            "person_spotlight",
+            display,
+            {"birthday_years_back": 5},
+            primary_window=windows[0],
+        )
+
+        assert length == pytest.approx(60.0)
+
+    def test_the_presets_agree(self):
+        year = create_preset(
+            MemoryType.PERSON_SPOTLIGHT,
+            year=2026,
+            person_names=["Kit"],
+            use_birthday=True,
+            birthday=date(2018, 2, 7),
+        )
+        days = create_preset(
+            MemoryType.PERSON_SPOTLIGHT,
+            year=2026,
+            person_names=["Kit"],
+            use_birthday=True,
+            birthday=date(2018, 2, 7),
+            years_back=3,
+        )
+
+        assert (year.default_duration_seconds, len(year.date_ranges)) == (600, 1)
+        assert (days.default_duration_seconds, len(days.date_ranges)) == (60, 4)
 
 
 class TestLeapDay:
@@ -313,7 +372,7 @@ class TestLeapDay:
 
         assert windows[0].end == datetime(2026, 2, 28, 23, 59, 59)
 
-    def test_a_leap_year_flashback_still_reaches_the_twenty_ninth(self):
+    def test_a_leap_year_birthday_still_reaches_the_twenty_ninth(self):
         """±1 day around the 28th covers the 29th in the years that have one."""
         windows = build_birthday_windows(date(2000, 2, 29), year=2026, years_back=2)
 

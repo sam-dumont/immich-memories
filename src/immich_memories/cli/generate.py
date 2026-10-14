@@ -64,7 +64,11 @@ from immich_memories.cli.run_people import (
     run_windows,
 )
 from immich_memories.filename_builder import build_memory_output_path, normalize_output_path
-from immich_memories.memory_types.date_builders import BIRTHDAY_HISTORY_FROM, birthday_anchor
+from immich_memories.memory_types.date_builders import (
+    BIRTHDAY_HISTORY_FROM,
+    birthday_anchor,
+    birthdays_params,
+)
 from immich_memories.planning.auto_duration import (
     DURATION_FROM_DURATION_FLAG,
     DURATION_FROM_MATERIAL,
@@ -346,8 +350,8 @@ def register_generate_commands(main: click.Group) -> None:
             print_error("--near-date requires --memory-type trip")
             sys.exit(1)
 
-        # A birthday memory reaches back over earlier birthdays, so --years-back
-        # means something to it too -- how many of them to look for.
+        # With --birthday, --years-back makes the birthdays film: the party and
+        # that many earlier birthdays, each ±1 day, instead of the year.
         if (
             years_back is not None
             and not birthday
@@ -472,7 +476,7 @@ def register_generate_commands(main: click.Group) -> None:
         preset_duration = default_duration_for_type(
             memory_type,
             date_range,
-            special_day,
+            special_day or birthdays_params(birthday, years_back),
             primary_window=next(iter(date_ranges), None),
         ) or duration_from_date_range(date_range)
 
@@ -689,9 +693,9 @@ def register_generate_commands(main: click.Group) -> None:
                                 person_match=person_match,
                             )
 
-                    # A birthday memory's flashback windows are single days years
+                    # A birthdays film's earlier birthdays are single days years
                     # apart, so most of them are empty and #661's per-window
-                    # warning would bury the one that matters — the rolling year.
+                    # warning would bury the one that matters — the party itself.
                     from immich_memories.analysis.selection_source_validation import (
                         film_may_use,
                     )
@@ -781,6 +785,7 @@ def register_generate_commands(main: click.Group) -> None:
                             **holiday_params,
                             "hemisphere": hemisphere,
                             "birthday": bool(birthday),
+                            **birthdays_params(birthday, years_back),
                             "person_names": person_names,
                             "person_display_names": run_people.display_names,
                             "person_match": person_match,
