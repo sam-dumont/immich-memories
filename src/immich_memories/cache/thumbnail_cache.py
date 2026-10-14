@@ -23,7 +23,7 @@ class ThumbnailCache:
     _PUTS_BETWEEN_BUDGET_CHECKS = 200
 
     def __init__(
-        self, cache_dir: Path, max_size_mb: float = 10_000.0, *, namespace: str = ""
+        self, cache_dir: Path, max_size_mb: float = 30_000.0, *, namespace: str = ""
     ) -> None:
         self.cache_dir = cache_dir
         self._namespace = namespace

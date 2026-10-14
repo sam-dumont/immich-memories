@@ -288,9 +288,11 @@ class CacheConfig(BaseModel):
     # and one real cache held 12,159 previews for 3.92 GB. At 500 MB every run
     # evicted the previous run's previews, and the next overlapping memory
     # re-downloaded them and re-captioned the assets whose banked caption failure
-    # no longer validated. 10 GB holds roughly 31,000 previews -- three scopes of
-    # that size -- and matches what video_cache_max_size_gb already treats as an
-    # acceptable cache footprint. A bigger library gets a warning naming this key.
+    # no longer validated. A year, a lifetime or a captioning pass reads every
+    # picture in scope, so the real budget is the library: one real install held
+    # 50,600 previews in 16 GB, another 57,116 in 19 GB, and both had to raise a
+    # 10 GB default. 30 GB holds about 90,000 previews. A bigger library gets a
+    # warning naming this key.
     #
     # It is the full Immich preview on purpose, not a smaller derived tile, even
     # though nothing consumes 1440 px: the preview bytes ARE the contact-sheet
@@ -299,7 +301,7 @@ class CacheConfig(BaseModel):
     # the duplicate-hash bank and banked caption failures are both keyed on them.
     # Shrinking the rendition is a re-grade, not a config change.
     thumbnail_cache_max_size_mb: float = Field(
-        default=10_000.0, ge=50, le=100_000, description="Maximum thumbnail cache size in MB"
+        default=30_000.0, ge=50, le=100_000, description="Maximum thumbnail cache size in MB"
     )
 
     @property

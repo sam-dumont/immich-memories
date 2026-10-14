@@ -981,7 +981,7 @@ def test_the_maximalist_overlay_config_yaml_carries_every_advertised_feature(
 @pytest.mark.skipif(shutil.which("kubectl") is None, reason="kubectl not installed")
 def test_the_maximalist_overlay_cache_pvc_fits_its_own_cache_caps(tmp_path: Path) -> None:
     """The reference setup's caps (5 GB video + 3 GB thumbnails) sit inside the base's
-    20Gi cache PVC, which the overlay keeps: a bound claim cannot shrink, so an overlay
+    60Gi cache PVC, which the overlay keeps: a bound claim cannot shrink, so an overlay
     that sized it down would fail over an existing install. Whichever way a reader
     changes the caps, the PVC must still hold config.yaml/store.db/automation history
     on top of both of them."""
@@ -1228,3 +1228,37 @@ def test_trigger_pods_name_a_host_the_app_answers_with_auth_off() -> None:
     """The service name is a foreign Host; localhost is answered in every auth mode."""
     for label, pod in _trigger_pod_specs():
         assert "Host: localhost" in pod["containers"][0]["command"], label
+
+
+@pytest.mark.skipif(shutil.which("kubectl") is None, reason="kubectl not installed")
+def test_the_base_cache_claim_holds_the_app_s_default_caches_and_its_state() -> None:
+    """The base install keeps the app's own cache defaults, so its claim must hold all
+    three (previews, video, prepared sources) plus the store, models and backups, which
+    measured about 4 GB on a real install."""
+    from immich_memories.config_models import CacheConfig
+    from immich_memories.config_models_analysis import AnalysisConfig
+
+    cache, analysis = CacheConfig(), AnalysisConfig()
+    caps_gb = (
+        cache.thumbnail_cache_max_size_mb / 1000
+        + cache.video_cache_max_size_gb
+        + analysis.prepared_source_cache_max_size_gb
+    )
+    pvc = next(
+        doc
+        for doc in _kustomize(K8S_ROOT / "base")
+        if doc["kind"] == "PersistentVolumeClaim"
+        and doc["metadata"]["name"] == "immich-memories-cache"
+    )
+    claim_gi = int(pvc["spec"]["resources"]["requests"]["storage"].removesuffix("Gi"))
+
+    assert claim_gi * 1.073741824 >= caps_gb + 5
+
+
+def test_terraform_sizes_the_cache_claim_like_the_base_manifests() -> None:
+    variables = (REPO_ROOT / "deploy" / "terraform" / "variables.tf").read_text()
+    block = variables.split('variable "cache_storage_size"', 1)[1].split("}", 1)[0]
+    pvc = (K8S_ROOT / "base" / "pvc.yaml").read_text()
+
+    default = re.search(r'default\s*=\s*"(\d+Gi)"', block)
+    assert default and f"storage: {default.group(1)}" in pvc

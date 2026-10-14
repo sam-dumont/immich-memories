@@ -149,7 +149,7 @@ read-only. Five writable paths:
 
 Laya files remain under the data PVC's `models/` directory. On native installs an owned
 reader's GGUF also lives there; these app images have no `llama-server` and use an external reader.
-The data claim defaults to 30Gi; the app is capped at 8Gi/four CPUs and model init at 2Gi/two CPUs.
+The data claim defaults to 60Gi; the app is capped at 8Gi/four CPUs and model init at 2Gi/two CPUs.
 
 A deployment that predates the models claim has to add it before the next apply, or the pod stays
 `Pending` waiting for a volume that does not exist.

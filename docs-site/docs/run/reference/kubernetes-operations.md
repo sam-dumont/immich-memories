@@ -13,8 +13,8 @@ manifests, changes to a running installation and troubleshooting.
 ## Prerequisites
 
 - Immich reachable from the cluster, normally port 2283.
-- A storage class for three `ReadWriteOnce` PVCs: data/cache 30Gi, output 50Gi, models 5Gi. The
-  GPU tier adds two more, caption-models 2Gi and inference-cache 10Gi: five PVCs, 97Gi in total.
+- A storage class for three `ReadWriteOnce` PVCs: data/cache 60Gi, output 50Gi, models 5Gi. The
+  GPU tier adds two more, caption-models 2Gi and inference-cache 10Gi: five PVCs, 127Gi in total.
   Check the class's reclaim policy first: `Delete` removes the volumes with the namespace,
   `Retain` keeps them (and your store) for a reinstall.
 - For NVIDIA overlays: GPU Operator, `nvidia` RuntimeClass and labelled GPU nodes.
@@ -233,9 +233,10 @@ and a read-only root.
 
 The app requests 2Gi RAM and one CPU, with limits of 8Gi and four CPUs. The fetch init
 container requests 512Mi/250m and is capped at 2Gi/two CPUs. Compose's app limit is 4 GB;
-these are different budgets. The 30Gi data claim leaves room beyond the two default 10 GB
-preview/video caches. Size larger claims for the largest period you prepare: 60,000 pictures
-need about 21 GB of previews alone, before the store, runtime caches, video clips and scratch.
+these are different budgets. The 60Gi data claim holds the default caches (30 GB of previews,
+10 GB of video clips, 10 GB of prepared sources) plus the store, models and backups. Previews
+scale with the library, about 0.35 GB per 1,000 pictures and videos: past 90,000, raise
+`cache.thumbnail_cache_max_size_mb` and grow the claim with it.
 [Cache sizing and recovery](.././maintenance/storage-backups.md#caches) explains the headroom.
 
 Existing claims do not automatically grow when you raise a cache budget. Your StorageClass must
