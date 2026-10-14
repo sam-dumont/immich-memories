@@ -19,6 +19,7 @@ from immich_memories.analysis.subject_framing import FaceBox
 from immich_memories.api.models import Asset, AssetFace, AssetType, Person
 from immich_memories.photos.ken_burns_moves import (
     FACE_AIR,
+    GENTLE_ZOOM,
     MAX_ZOOM,
     MIN_ZOOM,
     PAN_ZOOM,
@@ -181,25 +182,74 @@ class TestOtherFilms:
         assert _has_full_end(move)
         assert _holds(_closest(move), faces.faces[0], FACE_AIR)
 
-    def test_without_a_face_the_zoom_is_clearly_visible_toward_the_centre(self):
-        move = _move(PictureFaces(), FilmSubject.OTHER)
 
-        closest = max(move.zoom_start, move.zoom_end)
-        assert _has_full_end(move)
-        assert closest >= MIN_ZOOM
-        assert _closest(move) == pytest.approx(_frame(closest, (0.5, 0.5)))
+class TestNobodyInThePicture:
+    """A landscape, a building, a plate: a gentle drift, mostly a pan, never the 30 % push.
 
-    def test_stills_vary_between_zooming_in_and_out_but_each_always_moves_the_same(self):
-        moves = [_move(PictureFaces(), FilmSubject.OTHER, f"still-{n}") for n in range(40)]
+    The owner's ruling after #2440: a still with no people in it only ever zoomed into its
+    centre, which read as aggressive on a film of landscapes. It now mostly pans along its
+    long side at a gentle zoom, and now and then zooms softly for variety.
+    """
 
-        directions = {move.zoom_end > move.zoom_start for move in moves}
-        assert directions == {True, False}
-        assert _move(PictureFaces(), FilmSubject.OTHER, "still-7") == moves[7]
+    def _moves(self, film=FilmSubject.OTHER, *, portrait=False, n=80):
+        return [
+            planned_move(
+                f"still-{i}", PictureFaces(), film, fps=10, duration=1.0, portrait=portrait
+            )
+            for i in range(n)
+        ]
 
-    def test_a_memory_film_always_moves_in(self):
-        for n in range(20):
-            move = _move(PictureFaces(), FilmSubject.GROUP, f"still-{n}")
-            assert move.zoom_start == 1.0 < move.zoom_end
+    @staticmethod
+    def _pans(move):
+        return move.pan_start != move.pan_end
+
+    def test_a_landscape_picture_mostly_pans_sideways(self):
+        moves = self._moves()
+        pans = [m for m in moves if self._pans(m)]
+
+        assert len(pans) >= 0.6 * len(moves)
+        for move in pans:
+            assert {move.pan_start[0], move.pan_end[0]} == {0.0, 1.0}
+            assert move.pan_start[1] == move.pan_end[1] == 0.5
+
+    def test_a_portrait_picture_pans_up_or_down(self):
+        pans = [m for m in self._moves(portrait=True) if self._pans(m)]
+
+        assert pans
+        for move in pans:
+            assert {move.pan_start[1], move.pan_end[1]} == {0.0, 1.0}
+            assert move.pan_start[0] == move.pan_end[0] == 0.5
+
+    def test_every_move_stays_gentle(self):
+        for move in self._moves():
+            closest = max(move.zoom_start, move.zoom_end)
+            assert closest <= GENTLE_ZOOM[1] + 0.05
+            if self._pans(move):
+                # A pan holds its zoom, with at most a slight drift.
+                assert min(move.zoom_start, move.zoom_end) >= GENTLE_ZOOM[0]
+                assert abs(move.zoom_end - move.zoom_start) <= 0.05
+
+    def test_now_and_then_a_soft_zoom_from_the_whole_picture(self):
+        zooms = [m for m in self._moves() if not self._pans(m)]
+
+        assert zooms
+        for move in zooms:
+            assert _has_full_end(move)
+            assert move.pan_start == move.pan_end == (0.5, 0.5)
+
+    def test_both_directions_and_each_still_always_moves_the_same(self):
+        moves = self._moves()
+
+        assert {m.pan_end[0] > m.pan_start[0] for m in moves if self._pans(m)} == {True, False}
+        assert (
+            planned_move("still-7", PictureFaces(), FilmSubject.OTHER, fps=10, duration=1.0)
+            == moves[7]
+        )
+
+    def test_a_memory_film_zooms_softly_in_never_out(self):
+        for move in self._moves(FilmSubject.GROUP):
+            if not self._pans(move):
+                assert move.zoom_start == 1.0 < move.zoom_end
 
 
 def test_pan_for_centre_maps_the_window_centre_into_the_pan_range():

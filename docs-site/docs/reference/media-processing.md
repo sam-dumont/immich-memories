@@ -23,14 +23,16 @@ no `isEdited`, and every picture reads as unedited.
 
 ## Ken Burns, and where the pan lands
 
-One renderer for every photo. Each move has the whole picture at one end (zoom 1.0) and its
-closest frame at the other, seeded from the asset ID so a re-render moves the same way:
+One renderer for every photo. A move on a picture with faces has the whole picture at one end
+(zoom 1.0) and its closest frame at the other. Every choice is seeded from the asset ID, so a
+re-render moves the same way:
 
 | Film | Closest frame | Direction |
 |---|---|---|
 | About one person | That person, 25-35 % in; other faces only if they still fit | In |
 | About several people, or several faces in any film | The tightest crop holding every face plus half a face of air on each side, 15-50 % in; a 20 % pan across the group when that crop would zoom less than 15 % | In for a film about several people; in or out per photo otherwise |
-| Anything else | The lone face, 25-35 % in, or the centre when there is none | In or out, per photo |
+| Anything else | The lone face, 25-35 % in | In or out, per photo |
+| Nobody in the picture, any film | Three times in four, a pan from one end of the long side to the other at 12-15 %, with at most a 3 % zoom drift; otherwise a soft zoom from the whole picture to the centre at 12-15 % | Pan either way; a soft zoom goes in for a film about people, in or out otherwise |
 
 The move is one continuous glide, size and position together. Each still draws one of four easings
 (in, out, in-out or linear) from the same seed, blended with linear so no move stalls at either end.

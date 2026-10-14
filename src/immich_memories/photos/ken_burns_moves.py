@@ -9,8 +9,11 @@ at the other. What the closest frame is depends on what the film is about:
   closes on the tightest crop that keeps every face, with air around each head.
   When that crop would barely zoom (the faces span the picture), the move pans
   across the group at a fixed 20 % zoom instead, so everyone is seen on the way;
-* **any other film** zooms in or out, chosen per asset, toward its one face, or
-  toward the centre when the picture has none.
+* **any other film** zooms in or out, chosen per asset, toward its one face;
+* **a picture with nobody in it** (a landscape, a building, a plate), in any film,
+  drifts: mostly a pan along its long side at a gentle 12-15 % zoom, now and then a
+  soft zoom of the same strength. Pushing 30 % into a landscape's centre read as
+  aggressive, and a film of landscapes was a run of identical zooms.
 
 A memory film moves in; other films vary between in and out. Each still also
 gets one of four gentle easings (renderer.EASINGS). Every choice is seeded from
@@ -41,6 +44,12 @@ MAX_ZOOM = 1.5
 MIN_ZOOM = 1.15
 # The zoom a pan across a wide group holds from one end to the other.
 PAN_ZOOM = 1.2
+# A picture with nobody in it: the zoom a pan holds (enough room to travel 11-13 % of
+# the picture over the still), the slight drift it may add, and how often it pans
+# rather than zooming softly.
+GENTLE_ZOOM = (1.12, 1.15)
+GENTLE_DRIFT = 0.03
+GENTLE_PAN_SHARE = 0.75
 # Air around a face box on every side, as a share of the box itself: Immich's
 # box covers the face, not the hair or chin, and a head touching the frame's
 # edge looks cut off.
@@ -78,8 +87,13 @@ def planned_move(
     *,
     fps: int,
     duration: float,
+    portrait: bool = False,
 ) -> KenBurnsParams:
-    """The move for one still, the same every time for the same picture and film."""
+    """The move for one still, the same every time for the same picture and film.
+
+    ``portrait`` is the picture's own shape: a picture with nobody in it pans along its
+    long side.
+    """
     rng = random.Random(int(hashlib.sha256(seed_key.encode()).hexdigest()[:8], 16))
     single_zoom = rng.uniform(*SINGLE_ZOOM)
     zoom_in = film is not FilmSubject.OTHER or rng.random() < 0.5
@@ -87,6 +101,8 @@ def planned_move(
     easing = rng.choice(EASINGS)
 
     padded = _with_air(faces.faces)
+    if not padded:
+        return _drift(rng, zoom_in, forward, easing, portrait=portrait, fps=fps, duration=duration)
     subject = [face for face in padded if face.person_id and face.person_id in faces.subject_ids]
     if film is FilmSubject.PERSON and subject:
         closest = _single(padded, faces.subject_ids, subject, single_zoom)
@@ -95,10 +111,8 @@ def planned_move(
         if group is None:
             return _pan_across(padded, forward, easing, fps=fps, duration=duration)
         closest = group
-    elif padded:
-        closest = _single(padded, frozenset(), padded, single_zoom)
     else:
-        closest = _Frame(single_zoom, (0.5, 0.5))
+        closest = _single(padded, frozenset(), padded, single_zoom)
 
     full = _Frame(*_FULL_FRAME)
     start, end = (full, closest) if zoom_in else (closest, full)
@@ -198,6 +212,37 @@ def _pan_across(
     return KenBurnsParams(
         zoom_start=PAN_ZOOM,
         zoom_end=PAN_ZOOM,
+        pan_start=start,
+        pan_end=end,
+        fps=fps,
+        duration=duration,
+        easing=easing,
+    )
+
+
+def _drift(
+    rng: random.Random,
+    zoom_in: bool,
+    forward: bool,
+    easing: str,
+    *,
+    portrait: bool,
+    fps: int,
+    duration: float,
+) -> KenBurnsParams:
+    """A picture with nobody in it: mostly a pan along its long side, else a soft zoom."""
+    zoom = rng.uniform(*GENTLE_ZOOM)
+    if rng.random() < GENTLE_PAN_SHARE:
+        drift = rng.uniform(0.0, GENTLE_DRIFT)
+        zooms = (zoom, zoom + drift) if zoom_in else (zoom + drift, zoom)
+        ends = ((0.5, 0.0), (0.5, 1.0)) if portrait else ((0.0, 0.5), (1.0, 0.5))
+        start, end = ends if forward else ends[::-1]
+    else:
+        zooms = (1.0, zoom) if zoom_in else (zoom, 1.0)
+        start = end = (0.5, 0.5)
+    return KenBurnsParams(
+        zoom_start=zooms[0],
+        zoom_end=zooms[1],
         pan_start=start,
         pan_end=end,
         fps=fps,
