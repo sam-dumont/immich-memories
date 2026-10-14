@@ -39,7 +39,7 @@
       return;
     }
     const body = await response.json().catch(() => ({}));
-    problem = t(body.detail ?? 'Invalid username or password');
+    problem = body.detail ? t(body.detail) : t('Invalid username or password');
   }
 </script>
 

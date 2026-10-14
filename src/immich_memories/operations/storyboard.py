@@ -25,6 +25,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from babel.dates import format_skeleton
+
 from immich_memories.analysis.shot_reason import reads_as_telemetry, shot_reason_of_row
 from immich_memories.processing.assembly_config import AssemblyClip, TitleScreenSettings
 from immich_memories.processing.timeline_budget import TimelinePlan
@@ -125,8 +127,10 @@ def _clock(seconds: float) -> str:
 
 
 def _month(taken: str) -> str:
+    # The terminal's words are English; strftime would follow whatever C locale the host set.
+    # The web client words the chapter itself from `taken`, in the reader's language.
     try:
-        return datetime.fromisoformat(taken).strftime("%B %Y")
+        return format_skeleton("yMMMM", datetime.fromisoformat(taken), locale="en")
     except ValueError:
         return ""
 

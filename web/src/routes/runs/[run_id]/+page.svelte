@@ -7,8 +7,9 @@
   import RunReport from '$lib/RunReport.svelte';
   import type { components } from '$lib/api-types';
   import { CutEditor } from '$lib/cut-edits.svelte';
-  import { locale, t } from '$lib/i18n.svelte';
-  import { clock, memoryTypeLabel, sourceLabel, weightLabel } from '$lib/labels';
+  import { monthOf, seconds } from '$lib/format';
+  import { locale, N_, t } from '$lib/i18n.svelte';
+  import { clock, memoryTypeLabel, sourceLabel, statusLabel, weightLabel } from '$lib/labels';
   import ShotInspector from '$lib/ShotInspector.svelte';
 
   let { data } = $props();
@@ -113,14 +114,14 @@
   }
 
   const VIEWS = [
-    ['sheet', 'Contact sheet'],
-    ['stories', 'Stories'],
+    ['sheet', N_('Contact sheet')],
+    ['stories', N_('Stories')],
   ] as const;
 
   const FILTERS = [
-    ['all', 'All pictures'],
-    ['videos', 'Videos'],
-    ['stills', 'Stills'],
+    ['all', N_('All pictures')],
+    ['videos', N_('Videos')],
+    ['stills', N_('Stills')],
   ] as const;
 </script>
 
@@ -134,7 +135,7 @@
     </a>
     <div class="flex flex-wrap items-center gap-3">
       <Heading size="large" tag="h1">{memoryTypeLabel(run.memory_type)}</Heading>
-      <Badge color={run.status === 'completed' ? 'success' : run.status === 'failed' ? 'danger' : 'secondary'} class="capitalize">{t(run.status)}</Badge>
+      <Badge color={run.status === 'completed' ? 'success' : run.status === 'failed' ? 'danger' : 'secondary'}>{statusLabel(run.status)}</Badge>
     </div>
     <p class="flex flex-wrap gap-x-3 text-sm text-gray-600 tabular-nums dark:text-gray-400">
       <span>{run.run_id}</span>
@@ -239,7 +240,7 @@
       <ol class="grid grid-cols-[repeat(auto-fill,minmax(9.5rem,1fr))] gap-x-3 gap-y-4" aria-label={t('Cut contact sheet')}>
         {#each shots as shot (shot.asset_id)}
           {#if shot.chapter}
-            <li class="col-span-full pt-2 text-sm font-semibold" aria-hidden="true">{shot.chapter}</li>
+            <li class="col-span-full pt-2 text-sm font-semibold" aria-hidden="true">{monthOf(shot.taken) || shot.chapter}</li>
           {/if}
           <li>
             <button id={`shot-${shot.asset_id}`} type="button" onclick={() => choose(shot)} aria-pressed={selected?.asset_id === shot.asset_id}
@@ -256,7 +257,7 @@
                 <span class="absolute top-1 left-1 rounded bg-black/60 px-1.5 text-[11px] font-semibold text-white tabular-nums">{shot.position}</span>
                 <span class="absolute right-1 bottom-1 flex items-center gap-0.5 rounded bg-black/60 px-1.5 text-[11px] text-white tabular-nums">
                   {#if shot.motion}<svg viewBox="0 0 24 24" class="size-3 fill-current" aria-label={t('Video')}><path d={mdiPlay} /></svg>{/if}
-                  {(editor?.seconds(shot) ?? shot.seconds).toFixed(1)} s
+                  {seconds(editor?.seconds(shot) ?? shot.seconds)}
                 </span>
               </span>
               <span class="flex justify-between gap-2 px-0.5 text-[11px] text-gray-600 tabular-nums dark:text-gray-400">
@@ -347,7 +348,7 @@
     {#if run.phases.length}
       <dl class="grid w-fit grid-cols-[auto_auto] gap-x-6 gap-y-1 text-sm tabular-nums">
         {#each run.phases as phase, index (index)}
-          <dt class="capitalize">{phase.name.replaceAll('_', ' ')}</dt><dd>{phase.seconds.toFixed(1)} s</dd>
+          <dt class="capitalize">{phase.name.replaceAll('_', ' ')}</dt><dd>{seconds(phase.seconds)}</dd>
           {#each phase.errors as problem, index (index)}<dd class="col-span-2 text-xs whitespace-pre-wrap text-danger">{problem}</dd>{/each}
         {/each}
       </dl>

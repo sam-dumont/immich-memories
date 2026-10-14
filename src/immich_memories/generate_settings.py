@@ -197,6 +197,7 @@ def build_title_settings(
         preset_params=params.memory_preset_params,
         person_name=params.person_name,
         use_first_name_only=config.title_screens.use_first_name_only,
+        locale=resolved_locale,
     )
 
     divider_mode = get_divider_mode(

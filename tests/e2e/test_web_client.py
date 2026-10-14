@@ -144,7 +144,7 @@ def test_a_first_cut_shows_its_stage_s_share_and_time_left(page, launch_app_url)
     expect(panel.get_by_role("progressbar")).to_have_attribute(
         "aria-valuetext", "50% of this stage"
     )
-    expect(panel.get_by_text("~42s left in this stage")).to_be_visible()
+    expect(panel.get_by_text("~42 sec left in this stage")).to_be_visible()
 
 
 def _seed(workspace) -> None:
@@ -342,7 +342,7 @@ def test_a_trim_before_the_window_moves_the_start_and_the_time_on_screen(
     inspector = page.get_by_role("article", name="Picture review")
     page.get_by_role("radio", name="Videos").click()
     page.get_by_role("list", name="Cut contact sheet").get_by_role("button").first.click()
-    expect(inspector.get_by_text("1.5 s on screen")).to_be_visible()
+    expect(inspector.get_by_text("1.5 sec on screen")).to_be_visible()
     player = inspector.locator("video")
     page.wait_for_function("video => video.readyState >= 2", arg=player.element_handle())
 
@@ -353,8 +353,8 @@ def test_a_trim_before_the_window_moves_the_start_and_the_time_on_screen(
     )
     inspector.get_by_role("button", name="Start here").click()
 
-    expect(inspector.get_by_text("0.4–2.5 s")).to_be_visible()
-    expect(inspector.get_by_text("2.1 s on screen")).to_be_visible()
+    expect(inspector.get_by_text("0.4–2.5 sec")).to_be_visible()
+    expect(inspector.get_by_text("2.1 sec on screen")).to_be_visible()
 
 
 @pytest.mark.feature("web.review-and-revise")

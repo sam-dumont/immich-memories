@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-14 16:29+0200\n"
+"POT-Creation-Date: 2026-10-14 17:42+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ja\n"
@@ -15,7 +15,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
-#: web/lib/AskPanel.svelte:133
+#: web/lib/AskPanel.svelte:132
 msgid ""
 "A film from a sentence needs the model tier: set advanced.llm.base_url and advanced.llm.model"
 " to the reader that answers it (tier: full)."
@@ -27,15 +27,15 @@ msgstr ""
 msgid "A label for a people condition. Pick it on the New memory page, or with generate --group."
 msgstr "人物の絞り込み条件に名前を付けます。「新しい思い出」ページや generate --group で選べるようになります。"
 
-#: web/lib/labels.ts:50
+#: web/lib/labels.ts:63
 msgid "A monthly review already finished this month."
 msgstr "今月はすでに月の振り返りムービーを作成しています。"
 
-#: web/routes/settings/+page.svelte:91
+#: web/routes/settings/+page.svelte:90
 msgid "API Key"
 msgstr "APIキー"
 
-#: web/lib/JobPanel.svelte:54
+#: web/lib/JobPanel.svelte:52
 #, python-brace-format
 msgid "About {amount} left overall"
 msgstr "全体で残り約{amount}"
@@ -55,7 +55,7 @@ msgstr "編集案の完成まで約{amount}"
 msgid "About {amount} until the film is ready"
 msgstr "動画の完成まで約{amount}"
 
-#: web/lib/JobPanel.svelte:42
+#: web/lib/JobPanel.svelte:41
 #, python-brace-format, python-format
 msgid "About {percent}% overall"
 msgstr "全体の約{percent}%"
@@ -93,12 +93,12 @@ msgstr "Immich にいない人物を追加"
 msgid "Add: {include} · Take out: {exclude}"
 msgstr "追加：{include}・除外：{exclude}"
 
-#: web/lib/labels.ts:35
+#: web/lib/labels.ts:48
 msgid "Added for a moment the catalogue records as notable."
 msgstr "カタログで注目すべき瞬間として記録されているため追加されました。"
 
-#: web/routes/runs/[run_id]/+page.svelte:286 web/routes/runs/[run_id]/+page.svelte:288
-#: web/routes/runs/[run_id]/+page.svelte:291
+#: web/routes/runs/[run_id]/+page.svelte:287 web/routes/runs/[run_id]/+page.svelte:289
+#: web/routes/runs/[run_id]/+page.svelte:292
 msgid "Added from the pool"
 msgstr "候補の素材から追加"
 
@@ -123,16 +123,24 @@ msgstr "アルバム"
 msgid "Album name"
 msgstr "アルバム名"
 
+#: web/lib/labels.ts:28
+msgid "All"
+msgstr "すべて"
+
 #: web/lib/people/GroupsSection.svelte:75
 msgid "All of them"
 msgstr "選んだ全員"
+
+#: web/routes/runs/[run_id]/+page.svelte:122
+msgid "All pictures"
+msgstr "すべての素材"
 
 #: web/routes/runs/[run_id]/pool/+page.svelte:113
 #, python-brace-format
 msgid "Also show the {count} pictures outside this memory"
 msgstr "この思い出の対象外の素材 {count} 件も表示"
 
-#: web/lib/ShotInspector.svelte:172
+#: web/lib/ShotInspector.svelte:173
 msgid "Alternatives considered"
 msgstr "検討された代替候補"
 
@@ -173,7 +181,7 @@ msgstr "generate におまかせ"
 msgid "Auto (match the mood)"
 msgstr "自動（雰囲気に合わせる）"
 
-#: web/lib/RenderPanel.svelte:210 web/lib/labels.ts:26
+#: web/lib/RenderPanel.svelte:210 web/lib/labels.ts:39
 msgid "Automatic"
 msgstr "自動"
 
@@ -193,11 +201,11 @@ msgstr "自動化はすでに実行中です。実行履歴を開いて確認し
 msgid "Autumn"
 msgstr "秋"
 
-#: web/routes/runs/[run_id]/+page.svelte:278
+#: web/routes/runs/[run_id]/+page.svelte:279
 msgid "Back to pictures"
 msgstr "素材一覧に戻る"
 
-#: web/routes/runs/[run_id]/+page.svelte:133
+#: web/routes/runs/[run_id]/+page.svelte:134
 msgid "Back to runs"
 msgstr "実行履歴に戻る"
 
@@ -221,16 +229,20 @@ msgstr "黒"
 msgid "Blurred background"
 msgstr "ぼかした背景"
 
-#: web/lib/ShotInspector.svelte:144
+#: web/lib/ShotInspector.svelte:145
 msgid "Browse the whole pool"
 msgstr "候補の素材をすべて見る"
 
-#: web/routes/settings/+page.svelte:112 web/routes/settings/+page.svelte:113
+#: web/routes/settings/+page.svelte:111 web/routes/settings/+page.svelte:112
 msgid "Caches"
 msgstr "キャッシュ"
 
-#: web/lib/JobPanel.svelte:140 web/routes/runs/[run_id]/pool/+page.svelte:171
+#: web/lib/JobPanel.svelte:138 web/routes/runs/[run_id]/pool/+page.svelte:171
 msgid "Cancel"
+msgstr "キャンセル"
+
+#: web/lib/labels.ts:32
+msgid "Cancelled"
 msgstr "キャンセル"
 
 #: web/routes/suggestions/+page.svelte:108
@@ -241,7 +253,7 @@ msgstr "候補キー"
 msgid "Caption clips with their place"
 msgstr "クリップに場所を表示"
 
-#: web/lib/ShotInspector.svelte:151
+#: web/lib/ShotInspector.svelte:152
 msgid "Captions were read; the rules chose this cut."
 msgstr "説明文を読み取り、ルールに基づいてこのカットを選びました。"
 
@@ -249,7 +261,7 @@ msgstr "説明文を読み取り、ルールに基づいてこのカットを選
 msgid "Catalogued days"
 msgstr "記録済みの日"
 
-#: web/routes/runs/[run_id]/+page.svelte:302
+#: web/routes/runs/[run_id]/+page.svelte:303
 #, python-brace-format
 msgid "Changes: {count}"
 msgstr "変更: {count}"
@@ -258,39 +270,39 @@ msgstr "変更: {count}"
 msgid "Check eligibility"
 msgstr "対象になるか確認"
 
-#: web/lib/PhaseTimeline.svelte:8
+#: web/lib/PhaseTimeline.svelte:9
 msgid "Check playback"
 msgstr "再生を確認"
 
-#: web/lib/labels.ts:100
+#: web/lib/labels.ts:116
 msgid "Checking Live Photo clips"
 msgstr "Live Photoクリップを確認中"
 
-#: web/lib/labels.ts:102
+#: web/lib/labels.ts:118
 msgid "Checking Live Photo clips for a covered lens"
 msgstr "Live Photoクリップのレンズ遮蔽を確認中"
 
-#: web/lib/labels.ts:84
+#: web/lib/labels.ts:100
 msgid "Checking Live Photo frames for the family audience"
 msgstr "Live Photoのフレームが家族向けか確認中"
 
-#: web/lib/labels.ts:93
+#: web/lib/labels.ts:109
 msgid "Checking for a covered lens"
 msgstr "レンズ遮蔽を確認中"
 
-#: web/lib/labels.ts:89
+#: web/lib/labels.ts:105
 msgid "Checking pictures for the family audience"
 msgstr "家族向けかどうかを確認しています"
 
-#: web/lib/labels.ts:95
+#: web/lib/labels.ts:111
 msgid "Checking video clips"
 msgstr "動画クリップを確認中"
 
-#: web/lib/labels.ts:98
+#: web/lib/labels.ts:114
 msgid "Checking video clips for a covered lens"
 msgstr "動画クリップのレンズ遮蔽を確認中"
 
-#: web/lib/labels.ts:82
+#: web/lib/labels.ts:98
 msgid "Checking video frames for the family audience"
 msgstr "動画フレームが家族向けか確認中"
 
@@ -308,7 +320,7 @@ msgid ""
 "it before anything renders."
 msgstr "ムービーに収めたい内容を選んでください。下のコマンドで編集結果を作り、レンダリングの前に確認できます。"
 
-#: web/routes/settings/+page.svelte:118
+#: web/routes/settings/+page.svelte:117
 msgid "Clear"
 msgstr "消去"
 
@@ -320,7 +332,7 @@ msgstr "制限を解除"
 msgid "Clear this hold?"
 msgstr "この制限を解除しますか？"
 
-#: web/routes/settings/+page.svelte:69
+#: web/routes/settings/+page.svelte:70
 #, python-brace-format
 msgid "Cleared {count} entries from the {cache}."
 msgstr "{cache} から {count} 件のエントリを消去しました。"
@@ -333,7 +345,7 @@ msgstr "クリップボードを使用できません。下のレポートを選
 msgid "Command"
 msgstr "コマンド"
 
-#: web/lib/PhaseTimeline.svelte:11
+#: web/lib/PhaseTimeline.svelte:12 web/lib/labels.ts:29
 msgid "Completed"
 msgstr "完了"
 
@@ -346,20 +358,24 @@ msgstr "設定ファイル：{config_path}"
 msgid "Configuration"
 msgstr "設定"
 
-#: web/routes/settings/+page.svelte:58
+#: web/routes/settings/+page.svelte:59
 #, python-brace-format
 msgid "Connected as: {name}"
 msgstr "{name} として接続中"
 
-#: web/lib/ShotInspector.svelte:167
+#: web/lib/ShotInspector.svelte:168
 msgid "Considered by the model"
 msgstr "モデルが検討"
 
-#: web/lib/JobPanel.svelte:138 web/lib/RunReport.svelte:76
+#: web/routes/runs/[run_id]/+page.svelte:117
+msgid "Contact sheet"
+msgstr "コンタクトシート"
+
+#: web/lib/JobPanel.svelte:136 web/lib/RunReport.svelte:76
 msgid "Copied"
 msgstr "コピーしました"
 
-#: web/lib/JobPanel.svelte:138
+#: web/lib/JobPanel.svelte:136
 msgid "Copy as CLI command"
 msgstr "コマンドラインのコマンドとしてコピー"
 
@@ -387,7 +403,7 @@ msgstr "日付範囲を指定"
 msgid "Cut"
 msgstr "編集する"
 
-#: web/routes/runs/[run_id]/+page.svelte:239
+#: web/routes/runs/[run_id]/+page.svelte:240
 msgid "Cut contact sheet"
 msgstr "編集結果のコンタクトシート"
 
@@ -399,7 +415,7 @@ msgstr "日"
 msgid "Day (MM-DD)"
 msgstr "日 (MM-DD)"
 
-#: web/lib/AskPanel.svelte:211
+#: web/lib/AskPanel.svelte:214
 msgid "Decided while cutting"
 msgstr "編集中に判断"
 
@@ -407,7 +423,7 @@ msgstr "編集中に判断"
 msgid "Default"
 msgstr "既定値"
 
-#: web/routes/runs/[run_id]/+page.svelte:155
+#: web/routes/runs/[run_id]/+page.svelte:156
 msgid "Delivered to Immich. The local file was removed to save disk space."
 msgstr "Immich に送信しました。ディスク容量を節約するため、ローカルファイルを削除しました。"
 
@@ -415,19 +431,19 @@ msgstr "Immich に送信しました。ディスク容量を節約するため�
 msgid "Demo mode"
 msgstr "デモモード"
 
-#: web/lib/AskPanel.svelte:123
+#: web/lib/AskPanel.svelte:122
 msgid "Describe the film in your own words"
 msgstr "自分の言葉でムービーを説明"
 
-#: web/lib/AskPanel.svelte:142
+#: web/lib/AskPanel.svelte:141
 msgid "Describe the film you want"
 msgstr "作りたいムービーを説明してください"
 
-#: web/lib/labels.ts:91
+#: web/lib/labels.ts:107
 msgid "Describing the pictures"
 msgstr "素材の説明を作成しています"
 
-#: web/lib/labels.ts:81
+#: web/lib/labels.ts:97
 msgid "Descriptions not requested"
 msgstr "説明は要求されていません"
 
@@ -435,7 +451,7 @@ msgstr "説明は要求されていません"
 msgid "Detecting trips from GPS data..."
 msgstr "GPSデータから旅行を検出しています…"
 
-#: web/routes/runs/[run_id]/+page.svelte:311
+#: web/routes/runs/[run_id]/+page.svelte:312
 msgid "Discard changes"
 msgstr "変更を破棄"
 
@@ -444,15 +460,15 @@ msgstr "変更を破棄"
 msgid "Discovery failed: {error}"
 msgstr "検索に失敗しました：{error}"
 
-#: web/lib/JobPanel.svelte:71
+#: web/lib/JobPanel.svelte:69
 msgid "Done."
 msgstr "完了しました。"
 
-#: web/routes/runs/[run_id]/+page.svelte:356
+#: web/routes/runs/[run_id]/+page.svelte:357
 msgid "Download child output"
 msgstr "処理ログをダウンロード"
 
-#: web/lib/RenderPanel.svelte:161 web/routes/runs/[run_id]/+page.svelte:169
+#: web/lib/RenderPanel.svelte:161 web/routes/runs/[run_id]/+page.svelte:170
 msgid "Download film"
 msgstr "ムービーをダウンロード"
 
@@ -474,17 +490,17 @@ msgid ""
 "the other account. Nothing is matched for you: the same name only comes first in the list."
 msgstr "Immichのアカウントごとに、同じ人物でも別のIDが付きます。人物の下で、もう一方のアカウントでの該当者を選んでください。自動では対応付けません。同じ名前が一覧の先頭に出るだけです。"
 
-#: web/lib/ShotInspector.svelte:56
+#: web/lib/ShotInspector.svelte:57
 msgid "Edit this shot"
 msgstr "このショットを編集"
 
-#: web/lib/labels.ts:70
+#: web/lib/labels.ts:83
 msgid ""
 "Edited from metadata only — picture content was neither classified nor read, so every picture"
 " is held to family viewing."
 msgstr "メタデータのみを使って編集しました。素材の内容は分類も分析もしていないため、家族向けの視聴に限定されます。"
 
-#: web/lib/labels.ts:68
+#: web/lib/labels.ts:81
 msgid "Edited without descriptions — picture content was classified, not read."
 msgstr "説明文なしで編集しました。素材の内容は分類しましたが、詳しい分析はしていません。"
 
@@ -492,7 +508,7 @@ msgstr "説明文なしで編集しました。素材の内容は分類しまし
 msgid "Elegant minimal"
 msgstr "上品でシンプル"
 
-#: web/lib/ShotInspector.svelte:117
+#: web/lib/ShotInspector.svelte:118
 msgid "Eligible when this shot was chosen. Open one to compare."
 msgstr "このショットが選ばれた時点で候補でした。開いて比較できます。"
 
@@ -500,7 +516,7 @@ msgstr "このショットが選ばれた時点で候補でした。開いて比
 msgid "Eligible. No video was generated."
 msgstr "対象です。動画は作成されていません。"
 
-#: web/lib/ShotInspector.svelte:67
+#: web/lib/ShotInspector.svelte:68
 msgid "End here"
 msgstr "ここで終了"
 
@@ -508,7 +524,7 @@ msgstr "ここで終了"
 msgid "Ends"
 msgstr "終了"
 
-#: web/routes/settings/+page.svelte:117
+#: web/routes/settings/+page.svelte:116
 #, python-brace-format
 msgid "Entries: {count}"
 msgstr "件数：{count}"
@@ -524,7 +540,7 @@ msgid ""
 "across every run."
 msgstr "この編集で候補になった素材を撮影順に表示します。チェックを入れるか外してプレビューすると、その選択がそのままムービーに反映されます。「今後使わない」と「制限を解除」は次回以降の実行でも有効です。"
 
-#: web/routes/settings/+page.svelte:82
+#: web/routes/settings/+page.svelte:81
 msgid ""
 "Every setting and where its value comes from. What you save here goes to the database; "
 "config.yaml and the environment are never written, and they win over it."
@@ -534,7 +550,7 @@ msgstr "各設定とその値の出所。ここで保存した内容はデータ
 msgid "Every trip of the year"
 msgstr "その年のすべての旅行"
 
-#: web/lib/AskPanel.svelte:126
+#: web/lib/AskPanel.svelte:125
 msgid "Experimental"
 msgstr "実験的"
 
@@ -549,20 +565,24 @@ msgid ""
 "Immich or keep them apart."
 msgstr "顔認識は同じ顔をまとめるため、この2件のうち片方にほぼ全ての写真があり、もう片方にはほとんどありません。どちらの数も単独では意味を持ちません。Immichで統合するか、別々のままにしてください。"
 
+#: web/lib/labels.ts:31
+msgid "Failed"
+msgstr "失敗"
+
 #: web/routes/create/+page.svelte:495 web/routes/runs/[run_id]/pool/+page.svelte:87
 #: web/routes/runs/[run_id]/pool/+page.svelte:165
 msgid "Family"
 msgstr "家族"
 
-#: web/lib/labels.ts:83
+#: web/lib/labels.ts:99
 msgid "Fetching Live Photo clip previews"
 msgstr "Live Photoクリップのプレビューを取得中"
 
-#: web/lib/labels.ts:85
+#: web/lib/labels.ts:101
 msgid "Fetching picture previews"
 msgstr "素材のプレビューを取得しています"
 
-#: web/lib/AskPanel.svelte:174
+#: web/lib/AskPanel.svelte:177
 msgid "Fewer than 12 pictures fit: the film will be short."
 msgstr "条件に合う素材が12件未満のため、短いムービーになります。"
 
@@ -574,7 +594,7 @@ msgstr "この素材を使えるムービー"
 msgid "Find a name"
 msgstr "名前を検索"
 
-#: web/lib/labels.ts:87
+#: web/lib/labels.ts:103
 msgid "Finding faces"
 msgstr "顔を検出しています"
 
@@ -623,23 +643,23 @@ msgstr "高"
 msgid "Holiday"
 msgstr "祝日・行事"
 
-#: web/lib/AskPanel.svelte:19
+#: web/lib/AskPanel.svelte:20
 msgid "How it read your words"
 msgstr "リクエストの解釈"
 
-#: web/lib/ShotInspector.svelte:105
+#: web/lib/ShotInspector.svelte:106
 msgid "How the rules got here"
 msgstr "ルールによる選別の流れ"
 
-#: web/lib/AskPanel.svelte:227
+#: web/lib/AskPanel.svelte:230
 msgid "How the sentence was read"
 msgstr "文章の解釈"
 
-#: web/routes/settings/+page.svelte:85 web/routes/settings/+page.svelte:86
+#: web/routes/settings/+page.svelte:84 web/routes/settings/+page.svelte:85
 msgid "Immich Connection"
 msgstr "Immich接続"
 
-#: web/routes/settings/+page.svelte:88
+#: web/routes/settings/+page.svelte:87
 msgid "Immich Server URL"
 msgstr "Immichサーバーの URL"
 
@@ -647,7 +667,7 @@ msgstr "Immichサーバーの URL"
 msgid "Immich accounts to read (primary alone when none are picked)"
 msgstr "読み込むImmichアカウント(選択がなければプライマリのみ)"
 
-#: web/routes/runs/[run_id]/+page.svelte:346
+#: web/routes/runs/[run_id]/+page.svelte:347
 #, python-brace-format
 msgid "Immich delivery: {value}"
 msgstr "Immich への送信：{value}"
@@ -656,11 +676,11 @@ msgstr "Immich への送信：{value}"
 msgid "Immich unreachable"
 msgstr "Immich に接続できません"
 
-#: web/lib/labels.ts:59
+#: web/lib/labels.ts:72
 msgid "Important"
 msgstr "重要"
 
-#: web/lib/ShotInspector.svelte:133
+#: web/lib/ShotInspector.svelte:134
 msgid "In the cut"
 msgstr "編集に使用"
 
@@ -684,7 +704,15 @@ msgstr "写真を含める"
 msgid "Interface language"
 msgstr "画面の言語"
 
-#: web/lib/JobPanel.svelte:73
+#: web/lib/labels.ts:33
+msgid "Interrupted"
+msgstr "中断"
+
+#: web/lib/labels.ts:85 web/routes/login/+page.svelte:42
+msgid "Invalid username or password"
+msgstr "ユーザー名またはパスワードが正しくありません"
+
+#: web/lib/JobPanel.svelte:71
 msgid "It did not finish."
 msgstr "完了しませんでした。"
 
@@ -701,16 +729,16 @@ msgstr "別々のままにする"
 msgid "Keep original audio"
 msgstr "元の音声を残す"
 
-#: web/lib/ShotInspector.svelte:61
+#: web/lib/ShotInspector.svelte:62
 msgid "Keep the original"
 msgstr "元のままにする"
 
-#: web/lib/ShotInspector.svelte:108
+#: web/lib/ShotInspector.svelte:109
 #, python-brace-format
 msgid "Kept at {stage}"
 msgstr "{stage}で残されました"
 
-#: web/lib/ShotInspector.svelte:163
+#: web/lib/ShotInspector.svelte:164
 msgid "Kept because"
 msgstr "残された理由"
 
@@ -722,7 +750,7 @@ msgstr "ラベル"
 msgid "Landscape"
 msgstr "横向き"
 
-#: web/lib/JobPanel.svelte:102
+#: web/lib/JobPanel.svelte:100
 #, python-brace-format
 msgid "Last measured progress: {amount} ago."
 msgstr "最後に進捗を計測したのは{amount}前です。"
@@ -752,7 +780,7 @@ msgstr "リンク先"
 msgid "Live"
 msgstr "Live"
 
-#: web/lib/JobPanel.svelte:97
+#: web/lib/JobPanel.svelte:95
 msgid "Live updates disconnected. Checking the saved job status."
 msgstr "リアルタイム更新が切断されました。保存されたジョブの状態を確認中です。"
 
@@ -772,19 +800,19 @@ msgstr "低"
 msgid "Main navigation"
 msgstr "メインナビゲーション"
 
-#: web/lib/labels.ts:58
+#: web/lib/labels.ts:71
 msgid "Main story"
 msgstr "主要ストーリー"
 
-#: web/lib/AskPanel.svelte:148
+#: web/lib/AskPanel.svelte:147
 msgid "Make the film"
 msgstr "ムービーを作る"
 
-#: web/lib/AskPanel.svelte:168
+#: web/lib/AskPanel.svelte:171
 msgid "Making the film prepares them first."
 msgstr "ムービーを作る前に素材を準備します。"
 
-#: web/lib/labels.ts:26
+#: web/lib/labels.ts:39
 msgid "Manual"
 msgstr "手動"
 
@@ -800,15 +828,15 @@ msgstr "「今後使わない」が設定されています。このリビジョ
 msgid "Match the sources"
 msgstr "元の解像度に合わせる"
 
-#: web/lib/labels.ts:90
+#: web/lib/labels.ts:106
 msgid "Measuring motion in the videos"
 msgstr "動画内の動きを測定しています"
 
-#: web/lib/labels.ts:97
+#: web/lib/labels.ts:113
 msgid "Measuring motion in video clips"
 msgstr "動画クリップの動きを計測中"
 
-#: web/lib/labels.ts:86
+#: web/lib/labels.ts:102
 msgid "Measuring the pictures"
 msgstr "素材の特徴を分析しています"
 
@@ -828,7 +856,7 @@ msgstr "思い出の種類"
 msgid "Missed month"
 msgstr "作っていない月"
 
-#: web/lib/labels.ts:80
+#: web/lib/labels.ts:96
 msgid "Model checks not requested"
 msgstr "モデルによる確認は要求されていません"
 
@@ -836,7 +864,7 @@ msgstr "モデルによる確認は要求されていません"
 msgid "Model downloads failed to start."
 msgstr "モデルのダウンロードを開始できませんでした。"
 
-#: web/lib/ShotInspector.svelte:149
+#: web/lib/ShotInspector.svelte:150
 msgid "Model polish"
 msgstr "モデルによる仕上げ"
 
@@ -844,7 +872,7 @@ msgstr "モデルによる仕上げ"
 msgid "Model status could not be checked."
 msgstr "モデルの状態を確認できませんでした。"
 
-#: web/lib/ShotInspector.svelte:160
+#: web/lib/ShotInspector.svelte:161
 msgid "Model suggestion"
 msgstr "モデルの提案"
 
@@ -864,7 +892,7 @@ msgstr "月のハイライト"
 msgid "Multi-Person"
 msgstr "複数の人物"
 
-#: web/lib/PhaseTimeline.svelte:8 web/lib/RenderPanel.svelte:249
+#: web/lib/PhaseTimeline.svelte:9 web/lib/RenderPanel.svelte:249
 msgid "Music"
 msgstr "音楽"
 
@@ -872,7 +900,7 @@ msgstr "音楽"
 msgid "Music volume:"
 msgstr "音楽の音量："
 
-#: web/lib/AskPanel.svelte:33
+#: web/lib/AskPanel.svelte:34
 msgid "Needs preparation"
 msgstr "準備が必要"
 
@@ -884,7 +912,7 @@ msgstr "今後使わない"
 msgid "New memory"
 msgstr "新しい思い出"
 
-#: web/lib/JobPanel.svelte:87
+#: web/lib/JobPanel.svelte:85
 msgid "Next: select pictures and save the cut. More checks may be needed during selection."
 msgstr "次に画像を選択し、編集案を保存します。選択中に追加の確認が必要になる場合があります。"
 
@@ -894,17 +922,17 @@ msgid ""
 "its date."
 msgstr "まだ記録済みの日がありません。immich-memories discover-days で探すか、日付を指定してムービーを作れます。"
 
-#: web/routes/runs/[run_id]/+page.svelte:358
+#: web/routes/runs/[run_id]/+page.svelte:359
 msgid "No child output was retained for this run."
 msgstr "この実行の処理ログは保存されていません。"
 
-#: web/lib/AskPanel.svelte:172
+#: web/lib/AskPanel.svelte:175
 msgid ""
 "No film: the library cannot show this. Try other words, or read below what each part of the "
 "sentence found."
 msgstr "このリクエストに合う素材がライブラリに見つからず、ムービーを作れません。別の言葉で試すか、下の結果で文章のどの部分に素材が見つかったかを確認してください。"
 
-#: web/lib/ShotInspector.svelte:151
+#: web/lib/ShotInspector.svelte:152
 msgid "No model read this cut: the rules chose every picture."
 msgstr "この編集は選別ルールだけで行いました。モデルによる分析はしていません。"
 
@@ -920,24 +948,24 @@ msgstr "一致する名前がありません。"
 msgid "No named people in Immich yet."
 msgstr "Immich にはまだ名前付きの人物がいません。"
 
-#: web/lib/JobPanel.svelte:99
+#: web/lib/JobPanel.svelte:97
 #, python-brace-format
 msgid "No new progress for {amount}. The job is still running."
 msgstr "{amount}の間、新しい進捗はありません。ジョブはまだ実行中です。"
 
-#: web/lib/ShotInspector.svelte:168
+#: web/lib/ShotInspector.svelte:169
 msgid "No outcome recorded."
 msgstr "結果の記録がありません。"
 
-#: web/routes/runs/[run_id]/+page.svelte:269
+#: web/routes/runs/[run_id]/+page.svelte:270
 msgid "No pictures match this filter."
 msgstr "このフィルターに一致する素材はありません。"
 
-#: web/lib/ShotInspector.svelte:93
+#: web/lib/ShotInspector.svelte:94
 msgid "No reason recorded for this picture."
 msgstr "この素材を選んだ理由の記録がありません。"
 
-#: web/lib/AskPanel.svelte:208
+#: web/lib/AskPanel.svelte:211
 msgid "No rule the preview can check would drop a picture."
 msgstr "プレビューで確認したルールでは、除外される素材はありません。"
 
@@ -945,7 +973,7 @@ msgstr "プレビューで確認したルールでは、除外される素材は
 msgid "No runs match this view. Make a memory from Memory or Suggestions."
 msgstr "この表示に一致する実行はありません。「思い出」か「提案」から作成してください。"
 
-#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:338
+#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:339
 msgid "No saved cut is available for this run."
 msgstr "この実行に保存された編集結果はありません。"
 
@@ -986,11 +1014,11 @@ msgstr "なし"
 msgid "North"
 msgstr "北"
 
-#: web/lib/AskPanel.svelte:211
+#: web/lib/AskPanel.svelte:214
 msgid "Not applied to a film you asked for"
 msgstr "リクエストして作るムービーには適用されません"
 
-#: web/lib/AskPanel.svelte:32
+#: web/lib/AskPanel.svelte:33
 msgid "Not possible"
 msgstr "不可能"
 
@@ -1032,7 +1060,7 @@ msgstr "誕生日だけ、この年数さかのぼる（空欄：1年分すべ�
 msgid "Only with (optional)"
 msgstr "対象を限定（任意）"
 
-#: web/routes/runs/[run_id]/+page.svelte:329
+#: web/routes/runs/[run_id]/+page.svelte:330
 msgid "Open"
 msgstr "開く"
 
@@ -1057,7 +1085,7 @@ msgstr "{name}をImmichで開く"
 msgid "Opening and closing fade"
 msgstr "開始と終了のフェード"
 
-#: web/routes/runs/[run_id]/+page.svelte:204
+#: web/routes/runs/[run_id]/+page.svelte:205
 msgid "Order and timecodes from the saved cut."
 msgstr "保存済みの編集内容の順序とタイムコードです。"
 
@@ -1065,15 +1093,15 @@ msgstr "保存済みの編集内容の順序とタイムコードです。"
 msgid "Orientation"
 msgstr "向き"
 
-#: web/lib/ShotInspector.svelte:124 web/lib/ShotInspector.svelte:136
+#: web/lib/ShotInspector.svelte:125 web/lib/ShotInspector.svelte:137
 msgid "Other picture of this moment"
 msgstr "この瞬間のほかの素材"
 
-#: web/lib/ShotInspector.svelte:116 web/lib/ShotInspector.svelte:118
+#: web/lib/ShotInspector.svelte:117 web/lib/ShotInspector.svelte:119
 msgid "Other pictures of this moment"
 msgstr "この瞬間のほかの素材"
 
-#: web/lib/JobPanel.svelte:92 web/lib/PhaseTimeline.svelte:26
+#: web/lib/JobPanel.svelte:90 web/lib/PhaseTimeline.svelte:26
 msgid "Overall time remaining is not known yet."
 msgstr "全体の残り時間はまだ不明です。"
 
@@ -1082,7 +1110,7 @@ msgstr "全体の残り時間はまだ不明です。"
 msgid "Owner of {account}"
 msgstr "{account}の所有者"
 
-#: web/lib/ShotInspector.svelte:107
+#: web/lib/ShotInspector.svelte:108
 #, python-brace-format
 msgid "Passed {stages}"
 msgstr "{stages}を通過"
@@ -1091,12 +1119,12 @@ msgstr "{stages}を通過"
 msgid "Password"
 msgstr "パスワード"
 
-#: web/lib/PhaseTimeline.svelte:11
+#: web/lib/PhaseTimeline.svelte:12
 msgid "Pending"
 msgstr "待機中"
 
 #: web/routes/+layout.svelte:24 web/routes/create/+page.svelte:431
-#: web/routes/settings/+page.svelte:106 web/routes/settings/people/+page.svelte:113
+#: web/routes/settings/+page.svelte:105 web/routes/settings/people/+page.svelte:113
 #: web/routes/settings/people/+page.svelte:119
 msgid "People"
 msgstr "人物"
@@ -1134,19 +1162,19 @@ msgstr "写真の表示時間（秒）"
 msgid "Pick the people"
 msgstr "人物を選ぶ"
 
-#: web/lib/ShotInspector.svelte:98
+#: web/lib/ShotInspector.svelte:99
 msgid "Picture description"
 msgstr "写真の説明"
 
-#: web/lib/ShotInspector.svelte:42
+#: web/lib/ShotInspector.svelte:43
 msgid "Picture review"
 msgstr "素材の確認"
 
-#: web/lib/JobPanel.svelte:105
+#: web/lib/JobPanel.svelte:103
 msgid "Pictures just read"
 msgstr "分析したばかりの素材"
 
-#: web/lib/AskPanel.svelte:235
+#: web/lib/AskPanel.svelte:238
 msgid "Pictures left after each step"
 msgstr "各ステップ後に残った素材"
 
@@ -1155,7 +1183,7 @@ msgid "Pictures with"
 msgstr "素材の条件"
 
 #: web/lib/people/AccountLinks.svelte:63 web/lib/people/PersonCard.svelte:23
-#: web/routes/runs/[run_id]/+page.svelte:143 web/routes/runs/[run_id]/+page.svelte:218
+#: web/routes/runs/[run_id]/+page.svelte:144 web/routes/runs/[run_id]/+page.svelte:219
 #: web/routes/suggestions/+page.svelte:106
 #, python-brace-format
 msgid "Pictures: {count}"
@@ -1165,11 +1193,11 @@ msgstr "素材: {count}"
 msgid "Playful bright"
 msgstr "明るく楽しい雰囲気"
 
-#: web/lib/labels.ts:73
+#: web/lib/labels.ts:89
 msgid "Please enter both URL and API key"
 msgstr "URLとAPIキーの両方を入力してください"
 
-#: web/routes/runs/[run_id]/+page.svelte:205 web/routes/runs/[run_id]/pool/+page.svelte:99
+#: web/routes/runs/[run_id]/+page.svelte:206 web/routes/runs/[run_id]/pool/+page.svelte:99
 #: web/routes/runs/[run_id]/pool/+page.svelte:106 web/routes/runs/[run_id]/pool/+page.svelte:120
 msgid "Pool"
 msgstr "候補の素材"
@@ -1178,19 +1206,19 @@ msgstr "候補の素材"
 msgid "Portrait"
 msgstr "縦向き"
 
-#: web/lib/AskPanel.svelte:30
+#: web/lib/AskPanel.svelte:31
 msgid "Possible"
 msgstr "可能"
 
-#: web/lib/PhaseTimeline.svelte:7
+#: web/lib/PhaseTimeline.svelte:8
 msgid "Prepare pictures"
 msgstr "画像を準備"
 
-#: web/lib/PhaseTimeline.svelte:7
+#: web/lib/PhaseTimeline.svelte:8
 msgid "Prepare selected clips"
 msgstr "選択したクリップを準備"
 
-#: web/lib/AskPanel.svelte:146 web/lib/AskPanel.svelte:156
+#: web/lib/AskPanel.svelte:145 web/lib/AskPanel.svelte:155
 msgid "Preview"
 msgstr "プレビュー"
 
@@ -1202,7 +1230,7 @@ msgstr "曲を試聴"
 msgid "Preview with these choices"
 msgstr "この選択でプレビュー"
 
-#: web/lib/JobPanel.svelte:117
+#: web/lib/JobPanel.svelte:115
 msgid "Previous stages"
 msgstr "前のステージ"
 
@@ -1210,15 +1238,15 @@ msgstr "前のステージ"
 msgid "Privacy mode: blur every picture and scramble names"
 msgstr "プライバシーモード: すべての素材をぼかし、名前を隠します"
 
-#: web/lib/JobPanel.svelte:121
+#: web/lib/JobPanel.svelte:119
 msgid "Processed"
 msgstr "処理済み"
 
-#: web/lib/JobPanel.svelte:67 web/lib/JobPanel.svelte:81
+#: web/lib/JobPanel.svelte:65 web/lib/JobPanel.svelte:79
 msgid "Progress"
 msgstr "進行状況"
 
-#: web/lib/ShotInspector.svelte:59
+#: web/lib/ShotInspector.svelte:60
 msgid "Put it back"
 msgstr "元に戻す"
 
@@ -1230,23 +1258,23 @@ msgstr "画質"
 msgid "Random"
 msgstr "ランダム"
 
-#: web/lib/labels.ts:92
+#: web/lib/labels.ts:108
 msgid "Reading picture facts"
 msgstr "素材の情報を読み取っています"
 
-#: web/lib/labels.ts:101
+#: web/lib/labels.ts:117
 msgid "Reading what each Live Photo clip shows"
 msgstr "各Live Photoクリップの内容を解析中"
 
-#: web/lib/labels.ts:88
+#: web/lib/labels.ts:104
 msgid "Reading what each picture shows"
 msgstr "素材の内容を分析しています"
 
-#: web/lib/labels.ts:96
+#: web/lib/labels.ts:112
 msgid "Reading what each video shows"
 msgstr "各動画の内容を解析中"
 
-#: web/lib/ShotInspector.svelte:167
+#: web/lib/ShotInspector.svelte:168
 msgid "Recorded alternative"
 msgstr "記録された代替候補"
 
@@ -1278,7 +1306,7 @@ msgstr "ディスクから再読み込み"
 msgid "Remove"
 msgstr "削除"
 
-#: web/lib/ShotInspector.svelte:59
+#: web/lib/ShotInspector.svelte:60
 msgid "Remove from this cut"
 msgstr "この編集から外す"
 
@@ -1286,7 +1314,7 @@ msgstr "この編集から外す"
 msgid "Remove this relationship"
 msgstr "この関係を削除"
 
-#: web/routes/runs/[run_id]/+page.svelte:252
+#: web/routes/runs/[run_id]/+page.svelte:253
 msgid "Removed"
 msgstr "外しました"
 
@@ -1294,11 +1322,11 @@ msgstr "外しました"
 msgid "Render"
 msgstr "レンダリングする"
 
-#: web/lib/PhaseTimeline.svelte:8
+#: web/lib/PhaseTimeline.svelte:9
 msgid "Render film"
 msgstr "動画をレンダリング"
 
-#: web/lib/labels.ts:32
+#: web/lib/labels.ts:45
 msgid "Replaced a picture the model doubted."
 msgstr "モデルが疑問を持った素材を置き換えました。"
 
@@ -1318,11 +1346,11 @@ msgstr "ライブラリを再スキャン"
 msgid "Resolution"
 msgstr "解像度"
 
-#: web/lib/JobPanel.svelte:121
+#: web/lib/JobPanel.svelte:119
 msgid "Reused"
 msgstr "再利用済み"
 
-#: web/lib/labels.ts:79
+#: web/lib/labels.ts:95
 msgid "Reusing saved picture checks"
 msgstr "保存済みの画像確認結果を再利用中"
 
@@ -1330,12 +1358,12 @@ msgstr "保存済みの画像確認結果を再利用中"
 msgid "Review the report, then copy it. Nothing is sent automatically."
 msgstr "レポートを確認してからコピーしてください。自動で送信されるものはありません。"
 
-#: web/lib/RenderPanel.svelte:173 web/routes/runs/[run_id]/+page.svelte:326
+#: web/lib/RenderPanel.svelte:173 web/routes/runs/[run_id]/+page.svelte:327
 #, python-brace-format
 msgid "Revision {number}"
 msgstr "リビジョン {number}"
 
-#: web/routes/runs/[run_id]/+page.svelte:322
+#: web/routes/runs/[run_id]/+page.svelte:323
 msgid "Revisions"
 msgstr "リビジョン"
 
@@ -1343,15 +1371,19 @@ msgstr "リビジョン"
 msgid "Role (suggestions; type your own)"
 msgstr "役割（候補から選ぶか自由入力）"
 
-#: web/routes/runs/[run_id]/+page.svelte:344
+#: web/routes/runs/[run_id]/+page.svelte:345
 msgid "Run details"
 msgstr "実行の詳細"
+
+#: web/routes/runs/[run_id]/+page.ts:12
+msgid "Run not found. It may have been removed."
+msgstr "実行が見つかりません。削除された可能性があります。"
 
 #: web/routes/suggestions/+page.svelte:111
 msgid "Run this suggestion"
 msgstr "この提案を実行"
 
-#: web/lib/PhaseTimeline.svelte:11
+#: web/lib/PhaseTimeline.svelte:12 web/lib/labels.ts:30
 msgid "Running"
 msgstr "実行中"
 
@@ -1361,7 +1393,7 @@ msgid "Running on the server: {phase}. It continues if you leave this page."
 msgstr "サーバーで実行中：{phase}。このページを離れても続行します。"
 
 #: web/routes/+layout.svelte:23 web/routes/runs/+page.svelte:76 web/routes/runs/+page.svelte:80
-#: web/routes/runs/+page.svelte:93 web/routes/runs/[run_id]/+page.svelte:127
+#: web/routes/runs/+page.svelte:93 web/routes/runs/[run_id]/+page.svelte:128
 msgid "Runs"
 msgstr "実行履歴"
 
@@ -1370,11 +1402,11 @@ msgstr "実行履歴"
 msgid "Same person as {name}?"
 msgstr "{name}と同じ人物ですか?"
 
-#: web/lib/labels.ts:99
+#: web/lib/labels.ts:115
 msgid "Sampling Live Photo frames"
 msgstr "Live Photoのフレームを抽出中"
 
-#: web/lib/labels.ts:94
+#: web/lib/labels.ts:110
 msgid "Sampling video frames"
 msgstr "動画フレームを抽出中"
 
@@ -1382,7 +1414,7 @@ msgstr "動画フレームを抽出中"
 msgid "Save"
 msgstr "保存"
 
-#: web/routes/settings/+page.svelte:97
+#: web/routes/settings/+page.svelte:96
 msgid "Save Config"
 msgstr "設定を保存"
 
@@ -1390,15 +1422,15 @@ msgstr "設定を保存"
 msgid "Save group"
 msgstr "グループを保存"
 
-#: web/routes/runs/[run_id]/+page.svelte:313
+#: web/routes/runs/[run_id]/+page.svelte:314
 msgid "Save revision"
 msgstr "リビジョンを保存"
 
-#: web/lib/SettingsEditor.svelte:110 web/routes/settings/+page.svelte:93
+#: web/lib/SettingsEditor.svelte:110 web/routes/settings/+page.svelte:92
 msgid "Saved - type a new key to replace it"
 msgstr "保存済み。置き換えるには新しいキーを入力してください"
 
-#: web/routes/runs/[run_id]/+page.svelte:316
+#: web/routes/runs/[run_id]/+page.svelte:317
 #, python-brace-format
 msgid "Saved as revision {number}."
 msgstr "リビジョン {number} として保存しました。"
@@ -1417,11 +1449,11 @@ msgstr "ここで保存"
 msgid "Saved here, but {name} cannot decrypt it: the default is in use"
 msgstr "ここに保存されていますが、{name} で復号できません。既定値を使用中です"
 
-#: web/lib/SettingsEditor.svelte:57 web/routes/settings/+page.svelte:63
+#: web/lib/SettingsEditor.svelte:57 web/routes/settings/+page.svelte:64
 msgid "Saved to the database"
 msgstr "データベースに保存しました"
 
-#: web/routes/runs/[run_id]/+page.svelte:345
+#: web/routes/runs/[run_id]/+page.svelte:346
 #, python-brace-format
 msgid "Saved to: {output_path}"
 msgstr "保存先：{output_path}"
@@ -1430,11 +1462,11 @@ msgstr "保存先：{output_path}"
 msgid "Scaling Mode"
 msgstr "拡大縮小の方法"
 
-#: web/lib/labels.ts:26
+#: web/lib/labels.ts:39
 msgid "Scheduled"
 msgstr "スケジュール"
 
-#: web/lib/ShotInspector.svelte:71
+#: web/lib/ShotInspector.svelte:72
 msgid "Screen time (seconds)"
 msgstr "表示時間（秒）"
 
@@ -1449,7 +1481,7 @@ msgid ""
 "config.yaml."
 msgstr "{name} が設定されるまで、ここに秘密情報を保存できません。設定するか、環境変数か config.yaml に保存してください。"
 
-#: web/lib/PhaseTimeline.svelte:7
+#: web/lib/PhaseTimeline.svelte:8
 msgid "Select pictures"
 msgstr "画像を選択"
 
@@ -1463,8 +1495,8 @@ msgstr "{name} で設定（環境変数）"
 msgid "Set in config.yaml as {key}"
 msgstr "config.yaml の {key} で設定"
 
-#: web/routes/+layout.svelte:25 web/routes/settings/+page.svelte:77
-#: web/routes/settings/+page.svelte:81 web/routes/settings/people/+page.svelte:118
+#: web/routes/+layout.svelte:25 web/routes/settings/+page.svelte:76
+#: web/routes/settings/+page.svelte:80 web/routes/settings/people/+page.svelte:118
 msgid "Settings"
 msgstr "設定"
 
@@ -1472,7 +1504,7 @@ msgstr "設定"
 msgid "Shareable"
 msgstr "共有可能"
 
-#: web/routes/runs/[run_id]/+page.svelte:194
+#: web/routes/runs/[run_id]/+page.svelte:195
 msgid "Show"
 msgstr "表示"
 
@@ -1480,7 +1512,7 @@ msgstr "表示"
 msgid "Show more"
 msgstr "もっと見る"
 
-#: web/lib/JobPanel.svelte:95 web/routes/login/+page.svelte:46 web/routes/login/+page.svelte:58
+#: web/lib/JobPanel.svelte:93 web/routes/login/+page.svelte:46 web/routes/login/+page.svelte:58
 #: web/routes/login/+page.svelte:69
 msgid "Sign in"
 msgstr "サインイン"
@@ -1497,11 +1529,11 @@ msgstr "サインアウト"
 msgid "Sign-in expired. Try again."
 msgstr "サインインの有効期限が切れました。もう一度サインインしてください。"
 
-#: web/lib/PhaseTimeline.svelte:11
+#: web/lib/PhaseTimeline.svelte:12 web/lib/labels.ts:34
 msgid "Skipped"
 msgstr "スキップ済み"
 
-#: web/lib/labels.ts:61
+#: web/lib/labels.ts:74
 msgid "Small moment"
 msgstr "小さな瞬間"
 
@@ -1513,11 +1545,11 @@ msgstr "スマート（フェードとカット）"
 msgid "Soft romantic"
 msgstr "柔らかくロマンチック"
 
-#: web/lib/AskPanel.svelte:199
+#: web/lib/AskPanel.svelte:202
 msgid "Some of its pictures"
 msgstr "該当する素材の一部"
 
-#: web/lib/labels.ts:69
+#: web/lib/labels.ts:82
 msgid "Some pictures were edited without descriptions."
 msgstr "一部の素材は説明なしで編集されました。"
 
@@ -1541,11 +1573,11 @@ msgstr "春"
 msgid "Square"
 msgstr "正方形"
 
-#: web/lib/ShotInspector.svelte:66
+#: web/lib/ShotInspector.svelte:67
 msgid "Start here"
 msgstr "ここから開始"
 
-#: web/lib/JobPanel.svelte:70
+#: web/lib/JobPanel.svelte:68
 msgid "Starting"
 msgstr "開始中"
 
@@ -1553,19 +1585,23 @@ msgstr "開始中"
 msgid "Status"
 msgstr "状態"
 
-#: web/lib/ShotInspector.svelte:85
+#: web/lib/ShotInspector.svelte:86
 msgid "Still"
 msgstr "静止画"
 
-#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:336
+#: web/routes/runs/[run_id]/+page.svelte:124
+msgid "Stills"
+msgstr "静止画"
+
+#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:337
 msgid "Stopped before it saved a film. The cut it came from is under Runs, in its own run."
 msgstr "ムービーを保存する前に停止しました。元の編集結果は「実行履歴」の、その編集を行った実行に保存されています。"
 
-#: web/lib/JobPanel.svelte:72
+#: web/lib/JobPanel.svelte:70
 msgid "Stopped."
 msgstr "停止しました。"
 
-#: web/routes/runs/[run_id]/+page.svelte:211
+#: web/routes/runs/[run_id]/+page.svelte:118 web/routes/runs/[run_id]/+page.svelte:212
 msgid "Stories"
 msgstr "ストーリー"
 
@@ -1586,19 +1622,19 @@ msgstr "提案を読み込めませんでした。"
 msgid "Summer"
 msgstr "夏"
 
-#: web/lib/labels.ts:60
+#: web/lib/labels.ts:73
 msgid "Supporting"
 msgstr "補助的"
 
-#: web/routes/runs/[run_id]/+page.svelte:254
+#: web/routes/runs/[run_id]/+page.svelte:255
 msgid "Swapped"
 msgstr "差し替え"
 
-#: web/routes/runs/[run_id]/+page.svelte:292
+#: web/routes/runs/[run_id]/+page.svelte:293
 msgid "Take out"
 msgstr "外す"
 
-#: web/routes/settings/+page.svelte:96
+#: web/routes/settings/+page.svelte:95
 msgid "Test Connection"
 msgstr "接続をテスト"
 
@@ -1614,7 +1650,7 @@ msgstr "その式は保存できませんでした。"
 msgid "That file is not an MP3, M4A or WAV"
 msgstr "このファイルは MP3、M4A、WAV ではありません"
 
-#: web/lib/labels.ts:75
+#: web/lib/labels.ts:91
 msgid "That file is too large for a soundtrack"
 msgstr "そのファイルはサウンドトラックには大きすぎます"
 
@@ -1628,7 +1664,7 @@ msgid ""
 "people in Immich and rescan."
 msgstr "APIキーのアカウント名に一致する名前付きの人物が見つかっていません。所有者を選ぶか、Immichで人物に名前を付けて再スキャンしてください。"
 
-#: web/routes/settings/+page.svelte:54
+#: web/routes/settings/+page.svelte:55
 msgid "The connection could not be checked."
 msgstr "接続を確認できませんでした。"
 
@@ -1640,7 +1676,7 @@ msgstr "選択した編集結果"
 msgid "The cut could not start."
 msgstr "編集を開始できませんでした。"
 
-#: web/lib/JobPanel.svelte:71
+#: web/lib/JobPanel.svelte:69
 msgid "The cut is ready."
 msgstr "編集結果の準備ができました。"
 
@@ -1656,8 +1692,8 @@ msgstr ""
 "環境変数が最優先され、次に "
 "config.yaml、次にここでの保存内容、最後に既定値が使われます。先の2つのいずれかで設定されている項目はグレー表示になります。ラベルに示された場所で変更してください。"
 
-#: web/lib/AskPanel.svelte:27 web/lib/RenderPanel.svelte:156
-#: web/routes/runs/[run_id]/+page.svelte:151
+#: web/lib/AskPanel.svelte:28 web/lib/RenderPanel.svelte:156
+#: web/routes/runs/[run_id]/+page.svelte:152
 msgid "The film"
 msgstr "ムービー"
 
@@ -1665,11 +1701,11 @@ msgstr "ムービー"
 msgid "The film file is gone, so there is nothing to upload."
 msgstr "ムービーのファイルが見つからないため、アップロードできません。"
 
-#: web/lib/JobPanel.svelte:71
+#: web/lib/JobPanel.svelte:69
 msgid "The film is ready."
 msgstr "ムービーができました。"
 
-#: web/lib/JobPanel.svelte:89
+#: web/lib/JobPanel.svelte:87
 msgid "The film still needs its playback check before it is ready."
 msgstr "動画の完成には、まだ再生確認が必要です。"
 
@@ -1681,11 +1717,11 @@ msgstr "同居家族。説明文に記された入浴などの私的な場面も
 msgid "The local film was removed: Immich holds it now."
 msgstr "ローカルのフィルムを削除しました。現在は Immich に保存されています。"
 
-#: web/lib/ShotInspector.svelte:153
+#: web/lib/ShotInspector.svelte:154
 msgid "The model had nothing to say about this picture."
 msgstr "モデルはこの素材について何も記録していません。"
 
-#: web/lib/AskPanel.svelte:136
+#: web/lib/AskPanel.svelte:135
 msgid ""
 "The model reads your words against your prepared library. Preview first: it shows what each "
 "part of the sentence became and how many pictures fit, and films nothing."
@@ -1699,7 +1735,7 @@ msgstr "設定されている場合はモデル"
 msgid "The people registry: who is close, their roles, and how they relate."
 msgstr "人物レジストリ: 誰が身近か、その役割、互いの関係。"
 
-#: web/lib/ShotInspector.svelte:157
+#: web/lib/ShotInspector.svelte:158
 msgid "The picture it replaced"
 msgstr "置き換えられた素材"
 
@@ -1711,11 +1747,11 @@ msgstr ""
 "場所の情報は Immich から取得します。設定の network でジオコーディングを有効にすると、公開の Nominatim または network.geocoding_url "
 "を使い、ムービーの言語で地区名を表示します。"
 
-#: web/lib/AskPanel.svelte:25
+#: web/lib/AskPanel.svelte:26
 msgid "The pool"
 msgstr "候補の素材"
 
-#: web/lib/AskPanel.svelte:106
+#: web/lib/AskPanel.svelte:105
 msgid "The preview could not start."
 msgstr "プレビューを開始できませんでした。"
 
@@ -1723,7 +1759,7 @@ msgstr "プレビューを開始できませんでした。"
 msgid "The previewed track"
 msgstr "試聴した曲"
 
-#: web/lib/labels.ts:48
+#: web/lib/labels.ts:61
 msgid "The previous automatic memory used this category."
 msgstr "前回の自動思い出はこのカテゴリーを使用しました。"
 
@@ -1739,7 +1775,7 @@ msgstr "レンダリングを開始できませんでした。"
 msgid "The report could not be loaded."
 msgstr "レポートを読み込めませんでした。"
 
-#: web/routes/runs/[run_id]/+page.svelte:71 web/routes/runs/[run_id]/pool/+page.svelte:81
+#: web/routes/runs/[run_id]/+page.svelte:72 web/routes/runs/[run_id]/pool/+page.svelte:81
 msgid "The revision could not be saved."
 msgstr "リビジョンを保存できませんでした。"
 
@@ -1747,7 +1783,7 @@ msgstr "リビジョンを保存できませんでした。"
 msgid "The runs could not be loaded."
 msgstr "実行履歴を読み込めませんでした。"
 
-#: web/lib/labels.ts:72
+#: web/lib/labels.ts:88
 msgid "The server URL changed: enter the API key for the new server."
 msgstr "サーバーのURLが変更されました。新しいサーバーのAPIキーを入力してください。"
 
@@ -1759,23 +1795,23 @@ msgstr "設定を保存できませんでした。"
 msgid "The upload failed."
 msgstr "アップロードに失敗しました。"
 
-#: web/lib/AskPanel.svelte:177
+#: web/lib/AskPanel.svelte:180
 msgid "The words changed since this preview: preview again before making the film."
 msgstr "プレビュー後にリクエストが変更されています。ムービーを作る前に、もう一度プレビューしてください。"
 
-#: web/lib/labels.ts:51
+#: web/lib/labels.ts:64
 msgid "These people appear in the last two people memories."
 msgstr "これらの人物は直近2件の人物思い出に登場しています。"
 
-#: web/routes/runs/[run_id]/+page.svelte:287
+#: web/routes/runs/[run_id]/+page.svelte:288
 msgid "They play in the order they were taken, prepared like the rest of the cut."
 msgstr "撮影された順番で再生され、編集の他の部分と同様に準備されます。"
 
-#: web/lib/AskPanel.svelte:31
+#: web/lib/AskPanel.svelte:32
 msgid "Thin"
 msgstr "使える素材が少なめ"
 
-#: web/lib/labels.ts:49
+#: web/lib/labels.ts:62
 msgid "This category already appears twice in the last six memories."
 msgstr "このカテゴリーは直近6件の思い出にすでに2回登場しています。"
 
@@ -1783,7 +1819,7 @@ msgstr "このカテゴリーは直近6件の思い出にすでに2回登場し�
 msgid "This run kept no record of its pool. Cut again to see one."
 msgstr "この実行では候補の素材一覧が保存されていません。もう一度編集すると確認できます。"
 
-#: web/routes/settings/+page.svelte:29
+#: web/routes/settings/+page.svelte:30
 msgid "Thumbnail cache"
 msgstr "サムネイルキャッシュ"
 
@@ -1803,11 +1839,15 @@ msgstr "タイトルのスタイル"
 msgid "To"
 msgstr "終了日"
 
-#: web/lib/labels.ts:34
+#: web/lib/labels.ts:86
+msgid "Too many failed attempts. Try again later."
+msgstr "失敗した試行が多すぎます。しばらくしてから再試行してください。"
+
+#: web/lib/labels.ts:47
 msgid "Took the seat of a picture a check refused."
 msgstr "チェックで除外された素材の枠に入りました。"
 
-#: web/lib/labels.ts:33
+#: web/lib/labels.ts:46
 msgid "Took the seat of a picture the model removed from this story."
 msgstr "モデルがこのストーリーから外した素材の枠に入りました。"
 
@@ -1831,7 +1871,7 @@ msgstr "旅行"
 msgid "Try again"
 msgstr "再試行"
 
-#: web/routes/runs/[run_id]/+page.svelte:310 web/routes/runs/[run_id]/pool/+page.svelte:136
+#: web/routes/runs/[run_id]/+page.svelte:311 web/routes/runs/[run_id]/pool/+page.svelte:136
 msgid "Undo"
 msgstr "元に戻す"
 
@@ -1852,7 +1892,11 @@ msgstr "曲をアップロード"
 msgid "Upload availability could not be checked."
 msgstr "アップロードが使えるか確認できませんでした。"
 
-#: web/lib/PhaseTimeline.svelte:8
+#: web/lib/RenderPanel.svelte:64
+msgid "Upload availability could not be checked. The film can still be rendered and downloaded."
+msgstr "アップロードできるか確認できませんでした。映像の作成とダウンロードは引き続き可能です。"
+
+#: web/lib/PhaseTimeline.svelte:9
 msgid "Upload film"
 msgstr "動画をアップロード"
 
@@ -1877,7 +1921,7 @@ msgstr "Immichにアップロードしました。"
 msgid "Use exact library names; each picture must match. It replaces the names above."
 msgstr "ライブラリの名前を正確に入力してください。各素材が一致する必要があります。上の名前の代わりに使われます。"
 
-#: web/lib/ShotInspector.svelte:141
+#: web/lib/ShotInspector.svelte:142
 msgid "Use this picture instead"
 msgstr "代わりにこの素材を使う"
 
@@ -1885,29 +1929,33 @@ msgstr "代わりにこの素材を使う"
 msgid "Username"
 msgstr "ユーザー名"
 
-#: web/lib/AskPanel.svelte:26
+#: web/lib/AskPanel.svelte:27
 msgid "Verdict"
 msgstr "判定"
 
-#: web/lib/ShotInspector.svelte:85 web/routes/runs/[run_id]/+page.svelte:228
-#: web/routes/runs/[run_id]/+page.svelte:258 web/routes/runs/[run_id]/pool/+page.svelte:127
+#: web/lib/ShotInspector.svelte:86 web/routes/runs/[run_id]/+page.svelte:229
+#: web/routes/runs/[run_id]/+page.svelte:259 web/routes/runs/[run_id]/pool/+page.svelte:127
 msgid "Video"
 msgstr "動画"
 
-#: web/routes/settings/+page.svelte:28
+#: web/routes/settings/+page.svelte:29
 msgid "Video cache"
 msgstr "動画キャッシュ"
 
-#: web/routes/runs/[run_id]/+page.svelte:144
+#: web/routes/runs/[run_id]/+page.svelte:123
+msgid "Videos"
+msgstr "動画"
+
+#: web/routes/runs/[run_id]/+page.svelte:145
 #, python-brace-format
 msgid "Videos: {count}"
 msgstr "動画: {count}"
 
-#: web/routes/runs/[run_id]/+page.svelte:186
+#: web/routes/runs/[run_id]/+page.svelte:187
 msgid "View"
 msgstr "表示"
 
-#: web/lib/UploadFilm.svelte:56 web/routes/runs/[run_id]/+page.svelte:157
+#: web/lib/UploadFilm.svelte:56 web/routes/runs/[run_id]/+page.svelte:158
 msgid "View in Immich"
 msgstr "Immich で見る"
 
@@ -1919,7 +1967,7 @@ msgstr "懐かしいレトロな雰囲気"
 msgid "Watch your memories again, in films you can make your own."
 msgstr "思い出をもう一度。自分らしく仕上げたムービーで。"
 
-#: web/lib/AskPanel.svelte:23
+#: web/lib/AskPanel.svelte:24
 msgid "What"
 msgstr "何"
 
@@ -1934,11 +1982,11 @@ msgstr "自動化が次に作成する内容で、`auto suggest` が表示する
 msgid "What is {name} to {other}?"
 msgstr "{name}さんは、{other}さんの何にあたりますか？"
 
-#: web/lib/AskPanel.svelte:183
+#: web/lib/AskPanel.svelte:186
 msgid "What the editor's rules would drop"
 msgstr "編集ルールで除外される素材"
 
-#: web/lib/AskPanel.svelte:24
+#: web/lib/AskPanel.svelte:25
 msgid "What the library measures"
 msgstr "ライブラリが測るもの"
 
@@ -1946,11 +1994,11 @@ msgstr "ライブラリが測るもの"
 msgid "What to render"
 msgstr "レンダリングする対象"
 
-#: web/lib/AskPanel.svelte:21
+#: web/lib/AskPanel.svelte:22
 msgid "When"
 msgstr "いつ"
 
-#: web/lib/AskPanel.svelte:22
+#: web/lib/AskPanel.svelte:23
 msgid "Where"
 msgstr "どこ"
 
@@ -1958,11 +2006,11 @@ msgstr "どこ"
 msgid "White"
 msgstr "白"
 
-#: web/lib/AskPanel.svelte:20
+#: web/lib/AskPanel.svelte:21
 msgid "Who"
 msgstr "誰"
 
-#: web/routes/settings/+page.svelte:106
+#: web/routes/settings/+page.svelte:105
 msgid "Who is who, their roles and relationships."
 msgstr "誰が誰か、その役割と関係です。"
 
@@ -1984,11 +2032,11 @@ msgstr "このライブラリの持ち主は誰ですか？ 人物の関係、�
 msgid "Why other suggestions were skipped"
 msgstr "ほかの提案が除外された理由"
 
-#: web/lib/ShotInspector.svelte:160
+#: web/lib/ShotInspector.svelte:161
 msgid "Why the model replaced the other picture"
 msgstr "モデルがもう一方の素材を置き換えた理由"
 
-#: web/lib/ShotInspector.svelte:92
+#: web/lib/ShotInspector.svelte:93
 msgid "Why this picture"
 msgstr "この素材が選ばれた理由"
 
@@ -2029,7 +2077,7 @@ msgstr "IDプロバイダーへリダイレクトされます"
 msgid "Your first film needs these model files. Nothing downloads until you press the button."
 msgstr "最初のムービーにはこれらのモデルファイルが必要です。ボタンを押すまでダウンロードは始まりません。"
 
-#: web/lib/JobPanel.svelte:95
+#: web/lib/JobPanel.svelte:93
 msgid "Your login expired. Sign in again to see the job’s status."
 msgstr "セッションの有効期限が切れました。ジョブの状態を見るには、再度ログインしてください。"
 
@@ -2037,7 +2085,7 @@ msgstr "セッションの有効期限が切れました。ジョブの状態を
 msgid "a guess: the longest span and the most pictures"
 msgstr "推測: 最も長い期間と最も多い素材"
 
-#: web/routes/runs/[run_id]/+page.svelte:146
+#: web/routes/runs/[run_id]/+page.svelte:147
 #, python-brace-format
 msgid "about {film} of film"
 msgstr "ムービーの長さは約{film}"
@@ -2058,7 +2106,7 @@ msgstr "Immichのアカウント名と一致"
 msgid "not known yet"
 msgstr "まだ不明"
 
-#: web/lib/AskPanel.svelte:142
+#: web/lib/AskPanel.svelte:141
 msgid "our cat along the years"
 msgstr "うちの猫と過ごした年月"
 
@@ -2091,12 +2139,12 @@ msgstr "あなたがスキャンに指定"
 msgid "{amount} elapsed"
 msgstr "{amount}経過"
 
-#: web/routes/runs/[run_id]/+page.svelte:145
+#: web/routes/runs/[run_id]/+page.svelte:146
 #, python-brace-format
 msgid "{content} of pictures and video"
 msgstr "素材と動画で{content}"
 
-#: web/routes/runs/[run_id]/+page.svelte:305
+#: web/routes/runs/[run_id]/+page.svelte:306
 #, python-brace-format
 msgid "{content}: the film grows past its {budget} to hold them"
 msgstr "{content}：すべて収めるため、ムービーが予定の{budget}より長くなります"
@@ -2111,64 +2159,81 @@ msgstr "{date_range_start} から {date_range_end}"
 msgid "{days} days · {count} pictures"
 msgstr "{days} 日間・素材 {count} 件"
 
-#: web/lib/labels.ts:114
+#: web/lib/labels.ts:130
 #, python-brace-format
 msgid "{done} of {total}"
 msgstr "{done}/{total}"
 
-#: web/lib/labels.ts:111
+#: web/lib/labels.ts:127
 #, python-brace-format
 msgid "{done} of {total} bytes"
 msgstr "{total}バイト中{done}バイト"
 
-#: web/lib/labels.ts:110
+#: web/lib/labels.ts:126
 #, python-brace-format
 msgid "{done} of {total} checks"
 msgstr "{total}件中{done}件の確認"
 
-#: web/lib/labels.ts:108
+#: web/lib/labels.ts:124
 #, python-brace-format
 msgid "{done} of {total} clips"
 msgstr "{total}クリップ中{done}クリップ"
 
-#: web/lib/labels.ts:109
+#: web/lib/labels.ts:125
 #, python-brace-format
 msgid "{done} of {total} pictures"
 msgstr "{total}枚中{done}枚"
 
-#: web/lib/AskPanel.svelte:188
+#: web/lib/AskPanel.svelte:162
+#, python-brace-format
+msgid "{n} photo"
+msgid_plural "{n} photos"
+msgstr[0] "写真 {n} 枚"
+
+#: web/lib/AskPanel.svelte:161
+#, python-brace-format
+msgid "{n} picture"
+msgid_plural "{n} pictures"
+msgstr[0] "素材 {n} 件"
+
+#: web/lib/AskPanel.svelte:170
+#, python-brace-format
+msgid "{n} picture in this period isn't prepared yet; preparing it first takes about {amount}"
+msgid_plural "{n} pictures in this period aren't prepared yet; preparing them first takes about {amount}"
+msgstr[0] "この期間の素材 {n} 件はまだ準備されていません。準備には約 {amount} かかります"
+
+#: web/lib/AskPanel.svelte:163
+#, python-brace-format
+msgid "{n} video"
+msgid_plural "{n} videos"
+msgstr[0] "動画 {n} 本"
+
+#: web/lib/AskPanel.svelte:191
 #, python-brace-format
 msgid "{passed} of {checked} pictures pass the rules checked before cutting."
 msgstr "素材 {checked} 件のうち {passed} 件が、編集前に確認できる条件を満たしています。"
 
-#: web/lib/AskPanel.svelte:186
+#: web/lib/AskPanel.svelte:189
 #, python-brace-format
 msgid ""
 "{passed} of {checked} prepared pictures pass the rules checked before cutting; {unread} are "
 "not prepared yet."
 msgstr "準備済みの素材 {checked} 件のうち {passed} 件が、編集前に確認できる条件を満たしています。{unread} 件はまだ準備されていません。"
 
-#: web/lib/JobPanel.svelte:41
+#: web/lib/JobPanel.svelte:40
 #, python-brace-format, python-format
 msgid "{percent}% of this stage"
 msgstr "このステージの{percent}%"
 
-#: web/lib/AskPanel.svelte:167
+#: web/lib/AskPanel.svelte:160
 #, python-brace-format
-msgid ""
-"{pictures} pictures in this period aren't prepared yet; preparing them first takes about "
-"{amount}"
-msgstr "この期間の素材 {pictures} 件はまだ準備されていません。準備には約 {amount} かかります"
+msgid "{pictures}: {photos}, {videos}"
+msgstr "{pictures}：{photos}、{videos}"
 
-#: web/lib/AskPanel.svelte:161
+#: web/lib/ShotInspector.svelte:85
 #, python-brace-format
-msgid "{pictures} pictures: {photos} photos, {videos} videos"
-msgstr "素材 {pictures} 件：写真 {photos} 枚、動画 {videos} 本"
-
-#: web/lib/ShotInspector.svelte:84
-#, python-brace-format
-msgid "{seconds} s on screen"
-msgstr "画面に{seconds}秒"
+msgid "{seconds} on screen"
+msgstr "画面に{seconds}"
 
 #: web/routes/create/+page.svelte:385
 #, python-brace-format
@@ -2185,7 +2250,7 @@ msgstr "推定約{amount}、さらに未計測の作業あり"
 msgid "~{amount} left"
 msgstr "残り約{amount}"
 
-#: web/lib/JobPanel.svelte:56
+#: web/lib/JobPanel.svelte:54
 #, python-brace-format
 msgid "~{amount} left in this stage"
 msgstr "この段階、残り約 {amount}"

@@ -4,7 +4,8 @@
   import { onMount } from 'svelte';
   import { api, post, thumbnail, type AskAvailability, type AskPreview, type JobView } from './api';
   import { docsPage } from './docs';
-  import { N_, t } from './i18n.svelte';
+  import { roughDuration as clockText } from './format';
+  import { N_, t, tn } from './i18n.svelte';
   import { followJob } from './job.svelte';
   import JobPanel from './JobPanel.svelte';
 
@@ -32,8 +33,6 @@
     'not possible': { label: N_('Not possible'), color: 'danger' },
     'needs preparation': { label: N_('Needs preparation'), color: 'warning' },
   };
-  // Durations the way the terminal says them, without borrowing the server's own English.
-  const clockText = (seconds: number) => (seconds < 60 ? `${Math.ceil(seconds)}s` : `${Math.ceil(seconds / 60)} min`);
 
   let availability = $state<AskAvailability | null>(null);
   let sentence = $state('');
@@ -158,13 +157,17 @@
           <div class="flex flex-wrap items-center gap-3">
             <Badge color={verdict.color}>{t(verdict.label)}</Badge>
             {#if preview.verdict !== 'needs preparation'}
-              <span class="text-sm tabular-nums">{t('{pictures} pictures: {photos} photos, {videos} videos', { ...preview.pool })}</span>
+              <span class="text-sm tabular-nums">{t('{pictures}: {photos}, {videos}', {
+                pictures: tn('{n} picture', '{n} pictures', preview.pool.pictures),
+                photos: tn('{n} photo', '{n} photos', preview.pool.photos),
+                videos: tn('{n} video', '{n} videos', preview.pool.videos),
+              })}</span>
             {/if}
           </div>
           {#if preview.verdict !== 'needs preparation'}<p class="text-sm">{preview.why}</p>{/if}
           {#if preview.preparation}
             <p class="text-sm font-medium" role="alert">
-              {t("{pictures} pictures in this period aren't prepared yet; preparing them first takes about {amount}", { pictures: preview.preparation.pictures, amount: clockText(preview.preparation.estimated_seconds) })}
+              {tn("{n} picture in this period isn't prepared yet; preparing it first takes about {amount}", "{n} pictures in this period aren't prepared yet; preparing them first takes about {amount}", preview.preparation.pictures, { amount: clockText(preview.preparation.estimated_seconds) })}
               {t('Making the film prepares them first.')}
             </p>
           {/if}

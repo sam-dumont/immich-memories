@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
 from immich_memories.api.person_expression import PersonExpression
+from immich_memories.i18n_places import cast_list
 
 if TYPE_CHECKING:
     from immich_memories.analysis.editorial_planner import EditorialSelection
@@ -108,6 +109,7 @@ def build_title_person_name(
     preset_params: dict,
     person_name: str | None,
     use_first_name_only: bool = True,
+    locale: str = "en",
 ) -> str | None:
     """Build person name for title screens, handling multi-person presets.
 
@@ -116,6 +118,7 @@ def build_title_person_name(
         preset_params: Memory preset parameters dict.
         person_name: Single selected person name, or None.
         use_first_name_only: Whether to truncate to first name.
+        locale: The film's language, whose comma separates a cast of three or more.
 
     Returns:
         Formatted person name string, or None.
@@ -124,7 +127,8 @@ def build_title_person_name(
     if preset_params.get("person_expression") is not None:
         return " · ".join(names) or None
     if memory_type == "multi_person" and len(names) >= 2:
-        return _multi_person_label(names)
+        # A film of pictures with either person is still about both of them.
+        return cast_list(names, locale)
     if names:
         return names[0]
     if "person_display_names" in preset_params or not person_name:
@@ -141,16 +145,6 @@ def _title_cast_names(preset_params: dict, use_first_name_only: bool) -> list[st
     else:
         names = preset_params.get("person_names", [])
     return [name.split()[0] for name in names] if use_first_name_only else names
-
-
-def _multi_person_label(names: list[str]) -> str:
-    """Everyone the film is about, for a title card: "&" reads the same in every language.
-
-    A film of pictures with either person is still about both of them.
-    """
-    if len(names) == 2:
-        return f"{names[0]} & {names[1]}"
-    return f"{', '.join(names[:-1])} & {names[-1]}"
 
 
 def get_divider_mode(

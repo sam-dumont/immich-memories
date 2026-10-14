@@ -5,6 +5,8 @@ from __future__ import annotations
 from datetime import date
 from pathlib import Path
 
+import pytest
+
 from immich_memories.filename_builder import (
     build_memory_output_path,
     build_title_person_name,
@@ -138,6 +140,27 @@ class TestBuildTitlePersonName:
         )
 
         assert result == "Riley, Bob & Carol"
+
+    @pytest.mark.parametrize(
+        ("locale", "expected"),
+        [("en", "Kit, Pat & Lou"), ("fr", "Kit, Pat & Lou"), ("ja", "Kit、Pat & Lou")],
+    )
+    def test_a_cast_list_uses_the_films_comma(self, locale, expected):
+        # "Kit, Pat" with a Latin comma in a Japanese title card read as an English list.
+        result = build_title_person_name(
+            "multi_person", {"person_names": ["Kit A", "Pat B", "Lou C"]}, None, locale=locale
+        )
+
+        assert result == expected
+
+    def test_the_multi_person_title_card_and_its_template_title_agree(self):
+        from immich_memories.titles._text_memory_types import generate_multi_person_title
+
+        title = generate_multi_person_title(2025, ["Kit", "Pat", "Lou"], "zh-Hans")
+
+        assert title.subtitle == build_title_person_name(
+            "multi_person", {"person_names": ["Kit", "Pat", "Lou"]}, None, locale="zh-Hans"
+        )
 
     def test_multi_person_full_names(self):
         result = build_title_person_name(

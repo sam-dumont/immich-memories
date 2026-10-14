@@ -6,7 +6,7 @@
   import type { components } from '$lib/api-types';
   import { t } from '$lib/i18n.svelte';
   import { updatedAgo } from '$lib/ago';
-  import { memoryTypeLabel, ruleLabel } from '$lib/labels';
+  import { memoryTypeLabel, ruleLabel, statusLabel } from '$lib/labels';
 
   type Suggestions = components['schemas']['Suggestions'];
   type Attempt = components['schemas']['AttemptView'];
@@ -63,7 +63,7 @@
   const settled = (value: Attempt) =>
     value.outcome === 'dry_run'
       ? t('Eligible. No video was generated.')
-      : `${t(value.outcome.replaceAll('_', ' '))}: ${value.reason}`;
+      : `${statusLabel(value.outcome)}: ${value.reason}`;
 </script>
 
 <svelte:head><title>{t('Suggestions')} · Immich Memories</title></svelte:head>

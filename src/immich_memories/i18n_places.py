@@ -154,6 +154,16 @@ def comma(locale: str) -> str:
     return _COMMAS.get(locale, ", ")
 
 
+def cast_list(names: list[str], locale: str) -> str:
+    """Everyone a title card names: the language's comma between them, "&" before the last.
+
+    "&" reads the same in every language, so a cast never needs a translated "and".
+    """
+    if len(names) < 2:
+        return "".join(names)
+    return f"{comma(locale).join(names[:-1])} & {names[-1]}"
+
+
 def localise_place(name: str | None, locale: str) -> str | None:
     """Translate a "Place, Country" label: the country, and the place when it is known.
 

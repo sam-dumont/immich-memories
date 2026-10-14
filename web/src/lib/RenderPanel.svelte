@@ -61,7 +61,7 @@
     }).catch(() => {
       upload = false;
       uploadCapability = {upload_available: false, missing_upload: [], upload_reason:
-        'Upload availability could not be checked. The film can still be rendered and downloaded.'};
+        t('Upload availability could not be checked. The film can still be rendered and downloaded.')};
     });
     void api<JobView | null>('/jobs/active').then((running) => {
       if (!running || running.meta?.run_id !== runId) return;

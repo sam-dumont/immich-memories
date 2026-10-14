@@ -4,6 +4,7 @@
   import { onMount } from 'svelte';
   import { api, post } from '$lib/api';
   import type { components } from '$lib/api-types';
+  import { fileSize } from '$lib/format';
   import { N_, t } from '$lib/i18n.svelte';
   import ModelSetup from '$lib/ModelSetup.svelte';
   import SettingsEditor from '$lib/SettingsEditor.svelte';
@@ -70,8 +71,6 @@
     caches = await api<CacheStats[]>('/caches');
   }
 
-  const size = (bytes: number) =>
-    bytes < 1024 ** 2 ? `${(bytes / 1024).toFixed(1)} KB` : bytes < 1024 ** 3 ? `${(bytes / 1024 ** 2).toFixed(1)} MB` : `${(bytes / 1024 ** 3).toFixed(2)} GB`;
 </script>
 
 <svelte:head><title>{t('Settings')} · Immich Memories</title></svelte:head>
@@ -114,7 +113,7 @@
     <ul class="flex flex-col divide-y divide-gray-200 rounded-xl border border-gray-200 dark:divide-gray-800 dark:border-gray-800">
       {#each caches as cache (cache.name)}
         <li class="flex flex-wrap items-center justify-between gap-2 px-4 py-2">
-          <span><span class="font-medium">{t(CACHE_LABELS[cache.name])}</span> <span class="text-sm text-gray-600 tabular-nums dark:text-gray-400">{t('Entries: {count}', { count: cache.items })} · {size(cache.bytes)}</span></span>
+          <span><span class="font-medium">{t(CACHE_LABELS[cache.name])}</span> <span class="text-sm text-gray-600 tabular-nums dark:text-gray-400">{t('Entries: {count}', { count: cache.items })} · {fileSize(cache.bytes)}</span></span>
           <Button size="small" variant="ghost" color="danger" leadingIcon={mdiDeleteOutline} disabled={!cache.items} onclick={() => clear(cache.name)}>{t('Clear')}</Button>
         </li>
       {/each}

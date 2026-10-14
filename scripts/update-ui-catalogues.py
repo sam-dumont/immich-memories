@@ -13,19 +13,26 @@ from immich_memories.i18n import LOCALES_DIR, SUPPORTED_LOCALES
 WEB_ROOT = Path(__file__).resolve().parents[1] / "web/src"
 # The Svelte client marks labels as t('...') or N_('...'); only literal first arguments count.
 _WEB_LABEL = re.compile(r"""\b(?:t|N_)\(\s*(['"])((?:\\.|(?!\1)[^\\])+)\1""")
+# A counted label is tn('{n} photo', '{n} photos', count): both literals make one plural entry.
+_WEB_PLURAL = re.compile(
+    r"""\btn\(\s*(['"])((?:\\.|(?!\1)[^\\])+)\1\s*,\s*(['"])((?:\\.|(?!\3)[^\\])+)\3"""
+)
 
 
-def _web_labels() -> Iterator[tuple[str, int, str]]:
+def _web_labels() -> Iterator[tuple[str, int, str | tuple[str, str]]]:
     for path in sorted(WEB_ROOT.rglob("*")):
         if path.suffix not in {".svelte", ".ts"} or path.name == "api-types.ts":
             continue
         for number, line in enumerate(path.read_text().splitlines(), start=1):
+            where = f"web/{path.relative_to(WEB_ROOT)}"
             for match in _WEB_LABEL.finditer(line):
-                yield (
-                    f"web/{path.relative_to(WEB_ROOT)}",
-                    number,
-                    match.group(2).replace("\\'", "'"),
-                )
+                yield where, number, _unescaped(match.group(2))
+            for match in _WEB_PLURAL.finditer(line):
+                yield where, number, (_unescaped(match.group(2)), _unescaped(match.group(4)))
+
+
+def _unescaped(label: str) -> str:
+    return label.replace("\\'", "'")
 
 
 def main() -> None:
