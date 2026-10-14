@@ -51,7 +51,7 @@ dependencies = [
     "watchdog>=3.0",
     "geopy>=2.5.0",
     "staticmap>=0.5",
-    "apprise>=1.9",
+    "apprise>=1.11.0,<2",
     # The GPU kernel library the title renderer compiles against (#558). Title
     # rendering is the phase that dominates a run, so it ships by default: the
     # fallback is a visibly poorer title, not a missing feature.
