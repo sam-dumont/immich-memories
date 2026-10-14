@@ -76,6 +76,7 @@ from immich_memories.config_models_triage import TriageConfig
 from immich_memories.db import Store
 from immich_memories.db.tables import pixel_facts_thresholds
 from immich_memories.operations.cancellation import check_cancelled as current_check_cancelled
+from immich_memories.process_scratch import active_scratch
 from immich_memories.store.caption_provenance import CaptionOrigin, origins_for
 from immich_memories.store.caption_selection import conflicting_caption_ids
 from immich_memories.store.editorial_preparation import (
@@ -751,7 +752,10 @@ def prepare_editorial_annotations(
     _acquire_pixels(stage, pending(f"pixel:{pixel_producer_key}"), pixel_producer_key)
     stage.faces(source, fetch_faces, flipped_edits=flipped_edits)
     if preparation_config.demands_models:
-        frames = DetectorFrames(source, read_playback, cache_path)
+        # The process's own scratch, which the next start sweeps if this run is killed
+        # mid-batch; frames written straight into the cache outlived their run. The cache
+        # stays the fallback outside a CLI or server process, where system temp may be full.
+        frames = DetectorFrames(source, read_playback, active_scratch() or cache_path)
         clips = heads_missing_for(
             store, sorted(frames.video_ids), CLIP_FRAMES_HEAD, CLIP_FRAMES_VERSION
         )

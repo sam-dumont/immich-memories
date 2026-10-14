@@ -2762,6 +2762,11 @@ export interface components {
             asset_id: string;
             /** Asset Url */
             asset_url: string | null;
+            /**
+             * Local Film Removed
+             * @default false
+             */
+            local_film_removed: boolean;
             /** Warnings */
             warnings: string[];
         };

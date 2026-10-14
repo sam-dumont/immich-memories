@@ -8,7 +8,7 @@ import pytest
 requires_ffmpeg = pytest.mark.skipif(shutil.which("ffmpeg") is None, reason="needs ffmpeg")
 
 
-def _wiring(tmp_path, read_playback):
+def _wiring(tmp_path, read_playback, seen=None):
     """Run one pass over a still and a video, recording what the detector seam was handed.
 
     The tier has no caption seat, so the motion line is not owed and the only producer
@@ -27,6 +27,8 @@ def _wiring(tmp_path, read_playback):
         handed.update(
             {key: [path.exists() for path in paths] for key, paths in kwargs["frame_paths"].items()}
         )
+        if seen is not None:
+            seen.extend(path for paths in kwargs["frame_paths"].values() for path in paths)
         return ports.detectors(**kwargs)
 
     result = run(
@@ -84,6 +86,28 @@ def test_preparation_keeps_sampled_frames_in_its_cache_when_system_temp_is_unava
     assert result.complete
     assert handed["vv1"] and all(handed["vv1"])
     assert unavailable.is_file()
+
+
+@requires_ffmpeg
+def test_a_runs_frames_sit_in_its_own_scratch_which_a_later_start_can_sweep(tmp_path):
+    """#2528: frames written straight into the cache outlived a killed run for good."""
+    import tempfile
+    from pathlib import Path
+
+    from immich_memories.security import runtime_scratch
+    from tests.test_playback_keyframes import encode
+
+    data = encode(tmp_path / "clip.mp4", gop=30)
+    seen: list = []
+    with runtime_scratch(tmp_path / "mounted-cache"):
+        own = Path(tempfile.gettempdir())
+        result, _handed = _wiring(
+            tmp_path, lambda _id, start, length: (data[start : start + length], len(data)), seen
+        )
+
+    assert result.complete
+    assert seen
+    assert all(path.is_relative_to(own) for path in seen)
 
 
 def test_a_clip_whose_playback_cannot_be_read_falls_back_to_its_preview_and_says_so(tmp_path):

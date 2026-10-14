@@ -71,3 +71,18 @@ def test_deleting_an_already_gone_output_is_a_harmless_no_op(tmp_path: Path) -> 
 
 def test_a_run_with_no_output_path_has_nothing_to_delete() -> None:
     assert delete_local_output(_run("run-7", None)) is False
+
+
+def test_a_cleanup_that_fails_never_fails_the_confirmed_upload(tmp_path: Path) -> None:
+    from immich_memories.operations.local_output_cleanup import remove_after_confirmed_upload
+
+    locked = tmp_path / "read-only"
+    locked.mkdir()
+    film = locked / "memory.mp4"
+    film.write_bytes(b"film")
+    locked.chmod(0o500)  # unlink() raises PermissionError, as on a read-only mount
+    try:
+        assert remove_after_confirmed_upload(_run("run-1", film)) is False
+        assert film.exists()
+    finally:
+        locked.chmod(0o700)

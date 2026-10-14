@@ -912,7 +912,8 @@ Upload RUN_ID's finished film to Immich, as it is on disk.
 RUN_ID is the render run's id (`runs list` shows it; it ends the film's folder name):
 the run that holds the film, not the cut it was rendered from. Nothing is rendered again. The key
 needs the same upload scope the render-time option checks, and a cut never rendered
-or a film removed from disk is refused.
+or a film removed from disk is refused. Once Immich confirms the upload, the local film
+is removed, as automation does; a failed or incomplete upload keeps it.
 
 ```bash
 immich-memories runs upload [OPTIONS] RUN_ID

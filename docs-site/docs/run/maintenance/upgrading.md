@@ -22,6 +22,20 @@ automatic birthday films already were. The earlier birthdays are their own film:
 the web app the checkbox is **Birthday to birthday**, and the years field under it makes the
 birthdays film. `--years-back 5` gives you the five earlier birthdays the old default looked at.
 
+### Scratch and past cuts clean up after themselves
+
+A run killed mid-way (out of memory, a pod restart) used to leave its scratch folder behind for
+good, and `editorial-runs/` grew without a limit. Each process now works in a scratch folder of
+its own, and the next start removes the ones dead processes left. Leftovers from earlier
+releases, including `immich-detector-frames-*` folders at the top of the cache, go once they're
+a day old. `editorial-runs/` is held to the new `cache.editorial_runs_max_size_gb` (5 GB by
+default): the first run after the upgrade may remove a lot of old attempts, failed and replaced
+ones first. Raise the key before upgrading if you want to keep more.
+
+`runs upload` and **Upload to Immich** on the run page now remove the local film once Immich
+confirms the upload, as the automation already did. A failed or incomplete upload keeps it.
+Copy a film out of the output folder before uploading it if you want a local copy too.
+
 ## From 1.0.0-rc.9 to 1.0.0-rc.10
 
 Nothing to migrate by hand. These are the changes you will notice, and the keys that control

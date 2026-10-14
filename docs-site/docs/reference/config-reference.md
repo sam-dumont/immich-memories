@@ -881,9 +881,16 @@ cache:
   video_cache_max_size_gb: 10.0  # Max disk usage for video cache (1-500 GB)
   video_cache_max_age_days: 7    # Auto-delete cached videos older than this (1-365)
   thumbnail_cache_max_size_mb: 30000.0 # Max disk for Immich previews (50 MB-100 GB)
+  editorial_runs_max_size_gb: 5.0 # Max disk for past cut attempts in editorial-runs (0.5-500 GB)
 ```
 
 Tight on disk: lower `video_cache_max_size_gb`, or turn it off with `video_cache_enabled: false`.
+
+`editorial_runs_max_size_gb` caps `editorial-runs/`, where every cut keeps its plan, frames and
+records. Each run start trims it, oldest first: failed, cancelled and replaced attempts go before
+the ones a run in `runs list` points at, which `runs story`, `runs why` and `runs render` read.
+A running cut, the newest attempt of each memory and anything from the last 24 hours always stay;
+when those alone are over the budget, the run logs a warning naming this key.
 
 ### Size the thumbnail cache by your library
 

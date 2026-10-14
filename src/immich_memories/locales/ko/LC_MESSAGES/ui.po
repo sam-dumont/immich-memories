@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-14 13:27+0200\n"
+"POT-Creation-Date: 2026-10-14 16:29+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ko\n"
@@ -1680,6 +1680,10 @@ msgstr "영상이 완료되려면 아직 재생 확인이 필요합니다."
 #: web/routes/create/+page.svelte:36
 msgid "The household. Private moments a caption names, like a bath, play too."
 msgstr "집안 식구. 설명에 언급된 목욕 같은 사적인 순간도 포함합니다."
+
+#: web/lib/UploadFilm.svelte:58
+msgid "The local film was removed: Immich holds it now."
+msgstr "로컬 영상을 삭제했습니다. 이제 Immich에 보관됩니다."
 
 #: web/lib/ShotInspector.svelte:153
 msgid "The model had nothing to say about this picture."

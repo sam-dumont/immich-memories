@@ -150,7 +150,7 @@ The preview cache defaults to 30 GB, about 0.35 MB per picture a film's scope re
 library of 90,000 fits. Video clips default to 10 GB, and so do prepared sources: the cut segments
 and photo clips a later render of the same selection reuses
 (`advanced.analysis.prepared_source_cache_max_size_gb`). Local-only films and failed deliveries remain on
-disk. After a confirmed upload to Immich, the local film and run directory are removed.
+disk. After a confirmed upload to Immich, the local film and run directory are removed, whether the run uploaded it or you did later with `runs upload` or **Upload to Immich**.
 Use `runs storage` to inspect retained runs; use `runs delete` only for runs you want to remove.
 
 ```yaml
@@ -191,8 +191,16 @@ Video and Live Photo preparation can keep sampled frames for many source clips a
 `advanced.editorial.preparation.batch_size` setting does not cap that disk usage.
 
 Scratch needs space beyond the preview and video cache budgets. Temporary files are removed
-when their work finishes; a killed process can leave files behind. Stop the app and its workers
-before removing leftover scratch files. Keep the store and retained run inputs.
+when their work finishes. Each process works in a folder of its own inside the scratch and holds
+a lock on it while it runs, so a process that gets killed (out of memory, a pod restart) leaves
+an unlocked folder. The next start of the app, a CLI command or a worker removes those folders
+an hour after they last changed, and never touches one a live process still holds. You don't
+need to clean scratch by hand.
+
+Past cut attempts live in `<cache.directory>/editorial-runs` and stay under
+`cache.editorial_runs_max_size_gb` (5 GB by default). The
+[config reference](../../reference/config-reference.md#cache) lists what is trimmed first and what
+always stays.
 
 ### Full disk during preparation
 
