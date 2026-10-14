@@ -138,7 +138,9 @@ jobs:
           SUITE: ${{ steps.params.outputs.suite }}
         run: |
           case "$SUITE" in
-            all)         make test-integration ;;
+            # The feature tests run in CI's own feature jobs, with the music extra and a sealed
+            # home; here they'd share the runner's real home and miss the music extra.
+            all)         make test-integration INTEGRATION_SKIP_FEATURES=1 ;;
             assembly)    make test-integration-assembly ;;
             titles)      make test-integration-titles ;;
             photos)      make test-integration-photos ;;

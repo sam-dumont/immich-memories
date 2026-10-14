@@ -538,7 +538,7 @@ test-integration:  ## Run ALL integration tests per-suite (requires FFmpeg/Immic
 	$(MAKE) test-integration-assembly
 	$(MAKE) test-integration-audio-mixing
 	$(MAKE) test-integration-processing
-	$(MAKE) test-features
+	$(if $(INTEGRATION_SKIP_FEATURES),@echo "feature tests skipped: CI runs them in their own jobs",$(MAKE) test-features)
 	$(MAKE) test-integration-titles
 	$(MAKE) test-integration-photos
 	$(MAKE) test-integration-pipeline
