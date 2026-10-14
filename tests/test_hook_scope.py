@@ -383,7 +383,7 @@ PYTHON_GATES = {
     "arch-check",
     "duplication",
 }
-EVERY_COMMIT = {"gitleaks", "private-terms", "hook-tests"}
+EVERY_COMMIT = {"gitleaks", "private-terms", "hook-tests", "pin-latest-release"}
 
 
 def _gates_for(staged: list[str]) -> set[str]:

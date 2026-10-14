@@ -36,6 +36,7 @@ jobs:
       contents: read
     outputs:
       tracks: ${{ steps.tracks.outputs.tracks }}
+      dev_tag: ${{ steps.tracks.outputs.dev_tag }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -48,6 +49,8 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           dev_ref=$(python3 scripts/nightly.py last-commit)
+          # The dev docs pin their setup files to the images that nightly pushed.
+          echo "dev_tag=$(python3 scripts/nightly.py last-tag)" >> "$GITHUB_OUTPUT"
           # Until 1.0 the root is built from main; a release event checks out its tag, so ask.
           main_ref=$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)
           tracks=$(gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/releases?per_page=100" \
@@ -115,6 +118,17 @@ jobs:
 
       - name: Install dependencies
         run: cd docs-site && npm ci
+
+      # main pins the last release; the dev tree is the nightly's, so its Compose, Kubernetes
+      # and Terraform snippets name the nightly's images. The script comes from main, since
+      # an older nightly's own copy may not take a nightly tag. Nothing is committed.
+      - name: Pin the dev tree to its nightly
+        if: matrix.track == 'dev' && needs.plan.outputs.dev_tag != ''
+        env:
+          DEV_TAG: ${{ needs.plan.outputs.dev_tag }}
+        run: |
+          git show origin/main:scripts/release_pin.py > scripts/release_pin.py
+          python3 scripts/release_pin.py "$DEV_TAG"
 
       - name: Stamp the release version
         if: matrix.version != ''

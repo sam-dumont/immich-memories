@@ -16,6 +16,7 @@ from scripts.nightly import (
     inference_changed,
     inference_sources,
     last_nightly_commit,
+    last_nightly_tag,
     nightly_notes,
     nightly_version,
     plan,
@@ -88,6 +89,15 @@ def test_the_notes_carry_the_marker_the_next_run_reads():
     assert last_nightly_commit(notes) == HEAD
     assert "ghcr.io/sam-dumont/immich-memories:nightly-20261011" in notes
     assert "not for production" in notes.lower()
+
+
+def test_the_dev_docs_read_the_nightly_tag_from_its_notes():
+    """The dev docs pin the setup files to the nightly they were built from."""
+    assert last_nightly_tag(nightly_notes("1.0.1.dev20261011", HEAD, "nightly-20261011")) == (
+        "nightly-20261011"
+    )
+    assert last_nightly_tag(None) is None
+    assert last_nightly_tag("Commit: " + HEAD) is None
 
 
 # --- did what the inference image builds from change? -------------------------------
