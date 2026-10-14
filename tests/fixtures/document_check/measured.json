@@ -1,0 +1,170 @@
+{
+ "about": "What the pinned document head (doc_docling det-v2) and frame head (frame_kind public-v1) answered on these pictures; `held` is what the document check must decide. Re-measured by tests/integration/photos/test_document_check_models.py.",
+ "pictures": {
+  "aerial-coastline-drone.jpg": {
+   "doc_docling": [
+    "geographical_map",
+    0.47847
+   ],
+   "frame_kind": [
+    "place_or_scenery",
+    0.99784
+   ],
+   "held": false
+  },
+  "aerial-drone-houses.jpg": {
+   "doc_docling": [
+    "geographical_map",
+    0.99821
+   ],
+   "frame_kind": [
+    "place_or_scenery",
+    0.99601
+   ],
+   "held": false
+  },
+  "aerial-lake.jpg": {
+   "doc_docling": [
+    "geographical_map",
+    0.56607
+   ],
+   "frame_kind": [
+    "place_or_scenery",
+    0.99997
+   ],
+   "held": false
+  },
+  "map-board-irchel.jpg": {
+   "doc_docling": [
+    "geographical_map",
+    0.99927
+   ],
+   "frame_kind": [
+    "screen_or_document",
+    0.42651
+   ],
+   "held": true
+  },
+  "map-board-ohori-park.jpg": {
+   "doc_docling": [
+    "geographical_map",
+    0.99704
+   ],
+   "frame_kind": [
+    "screen_or_document",
+    0.81068
+   ],
+   "held": true
+  },
+  "map-board-trail.jpg": {
+   "doc_docling": [
+    "geographical_map",
+    0.41067
+   ],
+   "frame_kind": [
+    "screen_or_document",
+    0.99447
+   ],
+   "held": true
+  },
+  "map-printed-changwon.jpg": {
+   "doc_docling": [
+    "geographical_map",
+    0.72506
+   ],
+   "frame_kind": [
+    "place_or_scenery",
+    0.57828
+   ],
+   "held": true
+  },
+  "map-scanned-newcastle-1941.jpg": {
+   "doc_docling": [
+    "geographical_map",
+    0.95443
+   ],
+   "frame_kind": [
+    "screen_or_document",
+    0.63547
+   ],
+   "held": true
+  },
+  "map-screenshot-plant-distribution.jpg": {
+   "doc_docling": [
+    "geographical_map",
+    0.98097
+   ],
+   "frame_kind": [
+    "lone_everyday_object",
+    0.82703
+   ],
+   "held": true
+  },
+  "map-screenshot-wikipedia-us.jpg": {
+   "doc_docling": [
+    "geographical_map",
+    0.49429
+   ],
+   "frame_kind": [
+    "screen_or_document",
+    0.9997
+   ],
+   "held": true
+  },
+  "map-topographic-kansai.jpg": {
+   "doc_docling": [
+    "geographical_map",
+    0.9935
+   ],
+   "frame_kind": [
+    "place_or_scenery",
+    0.90013
+   ],
+   "held": true
+  },
+  "map-topographic-shikoku.jpg": {
+   "doc_docling": [
+    "geographical_map",
+    0.99515
+   ],
+   "frame_kind": [
+    "place_or_scenery",
+    0.619
+   ],
+   "held": true
+  },
+  "north-0721-0361.jpg": {
+   "doc_docling": [
+    "geographical_map",
+    0.9686
+   ],
+   "frame_kind": [
+    "place_or_scenery",
+    0.99989
+   ],
+   "held": false
+  },
+  "north-0721-0362.jpg": {
+   "doc_docling": [
+    "geographical_map",
+    0.80714
+   ],
+   "frame_kind": [
+    "place_or_scenery",
+    0.9999
+   ],
+   "held": false
+  },
+  "north-0721-0363.jpg": {
+   "doc_docling": [
+    "geographical_map",
+    0.80022
+   ],
+   "frame_kind": [
+    "place_or_scenery",
+    0.99936
+   ],
+   "held": false
+  }
+ }
+}

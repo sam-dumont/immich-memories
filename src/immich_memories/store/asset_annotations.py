@@ -13,6 +13,7 @@ import sqlalchemy as sa
 from sqlalchemy.engine import Connection
 from sqlalchemy.exc import SQLAlchemyError
 
+from immich_memories.analysis.editorial_carrier_eligibility import corroborated_document
 from immich_memories.analysis.editorial_preparation_heads import PUBLIC_HEAD_VERSIONS
 from immich_memories.analysis.editorial_standing_facts import names_a_person
 from immich_memories.analysis.llm_caption_identity import LLM_CAPTION_PREFIX
@@ -129,6 +130,24 @@ def corroborated_people(
     if not library_has_faces or label == "none" or has_face:
         return label
     return label if description and names_a_person(description) else "none"
+
+
+def corroborate_document_heads(
+    heads: Mapping[str, dict[str, str]], frame_confidence: Mapping[str, float | None]
+) -> None:
+    """Correct each picture's document head against its frame head, in place (#2544).
+
+    Done once, at the read, before anything downstream reads the document head: the
+    annotation read and the clip rows a Live Photo's shareability reads share it, the way
+    they share `corroborated_people`. Only the public frame head was measured for it.
+    """
+    for asset_id, row in heads.items():
+        if "doc_docling" in row:
+            row["doc_docling"] = corroborated_document(
+                row["doc_docling"],
+                frame_kind=row.get("frame_kind"),
+                frame_confidence=frame_confidence.get(asset_id),
+            )
 
 
 class AssetAnnotationFactRepository:
@@ -327,19 +346,27 @@ class AssetAnnotationFactRepository:
         records: dict[str, _MutableAssetFacts],
     ) -> None:
         h = head_facts
+        frame_confidence: dict[str, float | None] = {}
         # Split the bind budget between requested IDs and exact head/version pairs.
         for versions in in_chunks(connection, tuple(self._head_versions.items()), per_row=4):
             rows = _rows(
                 connection,
-                sa.select(h.c.asset_id, h.c.head, h.c.label).where(
+                sa.select(h.c.asset_id, h.c.head, h.c.label, h.c.confidence).where(
                     sa.tuple_(h.c.head, h.c.version).in_(versions)
                 ),
                 h.c.asset_id,
                 asset_ids,
                 per_row=2,
             )
-            for asset_id, head, label in rows:
+            for asset_id, head, label, confidence in rows:
                 records[str(asset_id)].heads[str(head)] = _clean(label)
+                if head == "frame_kind":
+                    frame_confidence[str(asset_id)] = _as_float(confidence)
+        if self._head_versions.get("frame_kind") == PUBLIC_HEAD_VERSIONS["frame_kind"]:
+            corroborate_document_heads(
+                {asset_id: record.heads for asset_id, record in records.items()},
+                frame_confidence,
+            )
 
     def _corroborate_people_head(self, records: dict[str, _MutableAssetFacts]) -> None:
         """#2069: public-v1 almost never says "none"; every reader of its people head trusts it.

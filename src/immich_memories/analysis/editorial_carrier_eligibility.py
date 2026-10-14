@@ -46,6 +46,36 @@ SCREEN_DOCUMENT_LABELS = frozenset(
         "engineering_drawing",
     }
 )
+MAP_LABEL = "geographical_map"
+PLACE_KIND = "place_or_scenery"
+# Measured on public pictures the document head calls a map: the demo library's three views of
+# a harbour from a summit, 16 Commons aerial and drone photographs and 68 Commons maps (scans,
+# screenshots, boards, printed and shaded-relief maps). No map read above 0.985 as a place; the
+# summit views read 0.999 and 9 of the 16 aerial photographs 0.99 or more.
+PLACE_BAND = 0.99
+
+
+def corroborated_document(
+    label: str, *, frame_kind: str | None, frame_confidence: float | None
+) -> str:
+    """The document head's label after the frame head has had its say on a map.
+
+    `doc_docling` was trained on figures cut out of documents and has never seen a camera
+    pointed at the ground, so it reads streets, fields and water seen from a summit, a plane or
+    a drone as a map (#2544). The frame head was distilled over photographs; only when it is all
+    but certain the frame is a place does the map label give way to `photograph`. Every other
+    document label stands, and so does a map the frame head reads any other way.
+    """
+    if (
+        label == MAP_LABEL
+        and frame_kind == PLACE_KIND
+        and frame_confidence is not None
+        and frame_confidence >= PLACE_BAND
+    ):
+        return "photograph"
+    return label
+
+
 _DOCUMENT_FIELD = re.compile(r"(?:^|[|,])\s*document=([a-z_]+)(?=\s*(?:[,|]|$))")
 SCREEN_HEAD_YES = "yes"
 _SCREEN_HEAD_FIELD = re.compile(rf"(?:^|[|,])\s*screen={SCREEN_HEAD_YES}(?=\s*(?:[,|]|$))")

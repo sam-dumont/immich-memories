@@ -36,6 +36,13 @@ ones first. Raise the key before upgrading if you want to keep more.
 confirms the upload, as the automation already did. A failed or incomplete upload keeps it.
 Copy a film out of the output folder before uploading it if you want a local copy too.
 
+### Views from above count as photographs
+
+On GPU and Full, the document check held views from a summit, a plane or a drone out of every
+film as maps. When the frame head is all but certain such a picture is a place, it now counts as
+a photograph and can reach a film. Nothing needs re-preparing: the next run reads the facts you
+already have. Maps, map boards and map screenshots stay out.
+
 ## From 1.0.0-rc.9 to 1.0.0-rc.10
 
 Nothing to migrate by hand. These are the changes you will notice, and the keys that control

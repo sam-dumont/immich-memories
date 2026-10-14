@@ -22,7 +22,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
-from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
+from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
@@ -46,7 +46,10 @@ from immich_memories.analysis.editorial_shareability_audience import (
 from immich_memories.analysis.editorial_story_shortlist import capture_space_available
 from immich_memories.analysis.editorial_text_failures import TextCompletionFailure
 from immich_memories.db.tables import annotation_assets, asset_flags, face_boxes, head_facts
-from immich_memories.store.asset_annotations import corroborated_people
+from immich_memories.store.asset_annotations import (
+    corroborate_document_heads,
+    corroborated_people,
+)
 from immich_memories.store.batches import id_in, in_chunks
 
 if TYPE_CHECKING:
@@ -159,20 +162,33 @@ def load_detector_heads(
     out: dict[str, dict[str, str]] = {}
     if not ids or not wanted:
         return out
-    h = head_facts
+    frame_confidence: dict[str, float | None] = {}
     with store.connect() as connection:
-        for chunk in in_chunks(connection, ids):
-            rows = connection.execute(
-                sa.select(h.c.asset_id, h.c.head, h.c.version, h.c.label).where(
-                    id_in(connection, h.c.asset_id, chunk), h.c.head.in_(list(wanted))
-                )
-            )
-            for asset_id, head, version, label in rows:
-                if wanted.get(str(head)) == str(version) and _clean(label):
-                    out.setdefault(str(asset_id), {})[str(head)] = _clean(label)
+        for asset_id, head, label, confidence in _wanted_head_rows(connection, ids, wanted):
+            out.setdefault(asset_id, {})[head] = label
+            if head == "frame_kind":
+                frame_confidence[asset_id] = confidence
+        if wanted.get("frame_kind") == PUBLIC_HEAD_VERSIONS["frame_kind"]:
+            corroborate_document_heads(out, frame_confidence)
         if wanted.get("people") == PUBLIC_HEAD_VERSIONS["people"]:
             _corroborate_people(connection, ids, out, frozenset(named_now))
     return out
+
+
+def _wanted_head_rows(
+    connection, ids: Sequence[str], wanted: Mapping[str, str]
+) -> Iterator[tuple[str, str, str, float | None]]:
+    """Each banked head row at the version this run reads, as (source, head, label, confidence)."""
+    h = head_facts
+    for chunk in in_chunks(connection, ids):
+        rows = connection.execute(
+            sa.select(h.c.asset_id, h.c.head, h.c.version, h.c.label, h.c.confidence).where(
+                id_in(connection, h.c.asset_id, chunk), h.c.head.in_(list(wanted))
+            )
+        )
+        for asset_id, head, version, label, confidence in rows:
+            if wanted.get(str(head)) == str(version) and _clean(label):
+                yield str(asset_id), str(head), _clean(label), confidence
 
 
 def named_now_of(assets: Iterable[Any]) -> frozenset[str]:
