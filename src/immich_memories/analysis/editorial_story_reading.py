@@ -82,6 +82,9 @@ class PeriodStory:
     audit: dict[str, Any]
     # Stories group day episodes and carry the weight the synthesis gave them for this memory.
     stories: list[dict[str, Any]] = field(default_factory=list)
+    # The film language the summary (`thesis`) was written in; empty when no film summary
+    # wrote it.
+    thesis_locale: str = ""
 
     def as_record(self):
         return asdict(self)

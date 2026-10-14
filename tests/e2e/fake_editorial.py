@@ -392,7 +392,8 @@ def write_plan_files(
                 # the same way, so a reader of this attempt sees the timeline the
                 # renderer was certified against.
                 **({"render_timing": render_timing} if render_timing else {}),
-                "story": {"thesis": _THESIS, "episodes": list(_EPISODES)},
+                # The script's summary is English, as its film is.
+                "story": {"thesis": _THESIS, "thesis_locale": "en", "episodes": list(_EPISODES)},
                 "carriers": list(carriers),
                 "content_seconds": content,
                 "duration_realization": realization,

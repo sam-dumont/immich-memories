@@ -178,8 +178,10 @@ def extract_trip_pins(
     return locations, names
 
 
-def generate_trip_title_text(preset_params: dict, locale: str = "en") -> str | None:
-    """Generate trip title text from preset params."""
+def generate_trip_title_text(
+    preset_params: dict, locale: str = "en", *, capitals: bool = True
+) -> str | None:
+    """Generate trip title text from preset params, in capitals as the title card sets it."""
     from immich_memories.titles._trip_titles import generate_trip_title
 
     location_name = preset_params.get("location_name")
@@ -190,4 +192,6 @@ def generate_trip_title_text(preset_params: dict, locale: str = "en") -> str | N
         return None
 
     kind = preset_params.get("location_kind") or None
-    return generate_trip_title(location_name, trip_start, trip_end, locale=locale, kind=kind)
+    return generate_trip_title(
+        location_name, trip_start, trip_end, locale=locale, kind=kind, capitals=capitals
+    )

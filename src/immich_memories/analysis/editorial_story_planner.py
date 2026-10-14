@@ -98,6 +98,8 @@ class StorySelection:
         # Absent, not an empty dict, when the mechanism never engaged (#2048 review, point
         # D): a below-threshold or FULL plan stays byte-identical to one built before it
         # existed.
+        if self.story.thesis_locale:
+            record["thesis_locale"] = self.story.thesis_locale
         sparse_quality = self.story.audit.get("sparse_quality")
         if sparse_quality:
             record["sparse_quality"] = sparse_quality

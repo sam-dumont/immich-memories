@@ -42,6 +42,12 @@ logger = logging.getLogger(__name__)
 # that read runs is wiped (#1270). Only that read gives the exif a modifyDate.
 _POLL_SECONDS = 0.5
 _READ_WAIT_POLLS = 120
+# Immich reads a film once it reaches the front of its metadata queue, and a long film waits
+# there behind its own thumbnails and transcode: a 1 GB year film was read after the minute a
+# short film needs, and the read took its description back (#2540). The wait grows with the
+# file, up to a quarter of an hour.
+_READ_WAIT_POLLS_PER_GB = 480
+_READ_WAIT_MAX_POLLS = 1800
 _TAG_ATTEMPTS = 3
 # Reads with the asset unchanged before Immich counts as done rewriting it: each tag or
 # description write makes it write the film's sidecar and read it back.
@@ -168,6 +174,12 @@ def _upload_asset_id(data: Any) -> str:
     if not isinstance(asset_id, str) or not asset_id.strip():
         raise InvalidUploadResponse("Upload response must contain a non-empty string id")
     return asset_id
+
+
+def read_wait_polls(size_bytes: int) -> int:
+    """How many polls to give Immich to read an upload of this size before going on."""
+    extra = int(_READ_WAIT_POLLS_PER_GB * max(size_bytes, 0) / 1_000_000_000)
+    return min(_READ_WAIT_POLLS + extra, _READ_WAIT_MAX_POLLS)
 
 
 def _upload_media_type(file_path: Path) -> str:
@@ -448,16 +460,21 @@ class AlbumService:
         )
         await self._request("PUT", f"/tags/{tag_id}/assets", json={"ids": [asset_id]})
 
-    async def tag_as_generated_once_read(self, asset_id: str) -> bool:
+    async def tag_as_generated_once_read(
+        self, asset_id: str, *, read_polls: int = _READ_WAIT_POLLS
+    ) -> bool:
         """Tag a fresh upload as this app's own once Immich has finished reading it.
 
         Tagging sooner loses the tag to Immich's own metadata job, and an untagged
         v3 film is never recognised as ours: it is kept beside its re-render and can
-        come back as source footage. Waits up to a minute for the read, then tags
-        and reads the tag back, re-applying it if it did not stick.
+        come back as source footage. Waits `read_polls` polls for the read (a minute by
+        default; `read_wait_polls` sizes it for a film), then tags and reads the tag back,
+        re-applying it if it did not stick. A tag written before the read is not verified.
         """
-        if not await self._read_by_immich(asset_id):
+        if not await self._read_by_immich(asset_id, read_polls):
             logger.warning("Immich had not read the uploaded film yet; tagging it anyway")
+            await self.tag_as_generated(asset_id)
+            return False
         for _ in range(_TAG_ATTEMPTS):
             await self.tag_as_generated(asset_id)
             await self._settled(asset_id)
@@ -473,12 +490,14 @@ class AlbumService:
         *,
         description: bool = True,
         tags: bool = True,
+        read_polls: int = _READ_WAIT_POLLS,
     ) -> list[str]:
         """Give a fresh upload its description and tags once Immich has read it (#2505).
 
         The same timing as the provenance tag, for the same reason: Immich's metadata job
         overwrites both. Reads them back and applies them again if they did not stick;
-        returns what still did not stay, as "description" and "tags".
+        returns what still did not stay, as "description" and "tags". Written before
+        Immich's read, both are returned as not kept: the read can still take them back.
         """
         wanted = {
             "description": description and bool(label.description),
@@ -486,7 +505,8 @@ class AlbumService:
         }
         if not any(wanted.values()):
             return []
-        if not await self._read_by_immich(asset_id):
+        read = await self._read_by_immich(asset_id, read_polls)
+        if not read:
             logger.warning("Immich had not read the uploaded film yet; describing it anyway")
         missing = [name for name, needed in wanted.items() if needed]
         for _ in range(_TAG_ATTEMPTS):
@@ -501,6 +521,8 @@ class AlbumService:
                 )
                 await self._settled(asset_id)
             missing = await self._label_not_kept(asset_id, label, wanted)
+            if not read:
+                return [name for name, needed in wanted.items() if needed]
             if not missing:
                 return []
         return missing
@@ -543,8 +565,8 @@ class AlbumService:
                 missing.append("tags")
         return missing
 
-    async def _read_by_immich(self, asset_id: str) -> bool:
-        for _ in range(_READ_WAIT_POLLS):
+    async def _read_by_immich(self, asset_id: str, polls: int = _READ_WAIT_POLLS) -> bool:
+        for _ in range(polls):
             asset = await self._request("GET", f"/assets/{asset_id}") or {}
             if (asset.get("exifInfo") or {}).get("modifyDate"):
                 return True
@@ -606,17 +628,19 @@ class AlbumService:
                 "warnings": ["not uploaded: the key lacks " + ", ".join(missing + label_missing)],
             }
         asset_id = await self.upload_asset(video_path, captured_at=captured_at)
+        read_polls = read_wait_polls(video_path.stat().st_size)
         warnings: list[str] = []
         if missing:
             warnings.append("delivery incomplete: the key lacks " + ", ".join(missing))
         allows = capabilities.allows if capabilities else lambda _permission: True
-        await self._tag_delivery(asset_id, allows, warnings)
-        # A description or tag that didn't land is reported, never an incomplete delivery:
-        # keys made before films had labels lack `asset.update`, and treating that as
-        # incomplete would keep every earlier render beside the new one.
+        await self._tag_delivery(asset_id, allows, warnings, read_polls)
+        # A key that cannot label is reported, never an incomplete delivery: keys made
+        # before films had labels lack `asset.update`, and treating that as incomplete
+        # would keep every earlier render beside the new one. A label the key may write
+        # but that did not stay leaves the delivery pending, so the retry writes it again.
         label_notes: list[str] = []
         if label:
-            await self._label_delivery(asset_id, label, allows, label_notes)
+            await self._label_delivery(asset_id, label, allows, (label_notes, warnings), read_polls)
         album_id = await self._album_delivery(asset_id, album_name, allows, warnings)
         complete = not warnings
         warnings.extend(label_notes)
@@ -646,13 +670,14 @@ class AlbumService:
         asset_id: str,
         allows: Callable[[str], bool],
         warnings: list[str],
+        read_polls: int,
     ) -> None:
         tag_missing = [p for p in ("tag.create", "tag.asset") if not allows(p)]
         if tag_missing:
             warnings.append("uploaded without provenance: the key lacks " + ", ".join(tag_missing))
             return
         try:
-            if not await self.tag_as_generated_once_read(asset_id):
+            if not await self.tag_as_generated_once_read(asset_id, read_polls=read_polls):
                 warnings.append("uploaded without verified provenance: the tag did not stay")
         except Exception as exc:
             warnings.append(f"uploaded without verified provenance: {exc}")
@@ -662,19 +687,24 @@ class AlbumService:
         asset_id: str,
         label: FilmLabel,
         allows: Callable[[str], bool],
-        warnings: list[str],
+        reports: tuple[list[str], list[str]],
+        read_polls: int,
     ) -> None:
+        """Label the film; `reports` are (notes, warnings): a key that cannot label is a
+        note, a label that did not stay is a warning that leaves the delivery pending."""
+        notes, warnings = reports
         tag_missing = [p for p in ("tag.create", "tag.asset") if not allows(p)]
         if label.tags and tag_missing:
-            warnings.append("uploaded without story tags: the key lacks " + ", ".join(tag_missing))
+            notes.append("uploaded without story tags: the key lacks " + ", ".join(tag_missing))
         if label.description and not allows(DESCRIBE):
-            warnings.append(f"uploaded without description: the key lacks {DESCRIBE}")
+            notes.append(f"uploaded without description: the key lacks {DESCRIBE}")
         try:
             not_kept = await self.apply_label_once_read(
                 asset_id,
                 label,
                 description=allows(DESCRIBE),
                 tags=not tag_missing,
+                read_polls=read_polls,
             )
         except Exception as exc:
             warnings.append(f"uploaded without a verified description and tags: {exc}")

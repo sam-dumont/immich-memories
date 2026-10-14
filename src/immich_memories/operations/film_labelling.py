@@ -27,16 +27,39 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def memory_type_label(memory_type: str | None) -> str | None:
-    """The memory type as the film-type list names it, in sentence case ("Monthly highlights")."""
+# The film-type names the web client shows (`web/src/lib/labels.ts`), whose translations every
+# language's UI catalogue already carries.
+_TYPE_NAMES = {
+    "year_in_review": "Year in Review",
+    "season": "Season",
+    "person_spotlight": "Person Spotlight",
+    "multi_person": "Multi-Person",
+    "monthly_highlights": "Monthly Highlights",
+    "on_this_day": "On This Day",
+    "album": "Album",
+    "trip": "Trip",
+    "holiday": "Holiday",
+    "special_day": "Special day",
+}
+
+
+def memory_type_label(memory_type: str | None, locale: str = "en") -> str | None:
+    """The memory type as the film-type list names it, in the film's language.
+
+    English is in sentence case ("Monthly highlights"); another language takes the name its
+    UI catalogue gives the type ("Moments du mois"), as its translator wrote it.
+    """
     if not memory_type:
         return None
+    from immich_memories.i18n import get_translator
     from immich_memories.memory_types import list_memory_types
 
-    for entry in list_memory_types():
-        if entry["type"] == memory_type:
-            return _sentence(entry["name"])
-    return _sentence(memory_type.replace("_", " "))
+    name = _TYPE_NAMES.get(memory_type) or next(
+        (e["name"] for e in list_memory_types() if e["type"] == memory_type),
+        memory_type.replace("_", " "),
+    )
+    translated = get_translator(locale, "ui").gettext(name)
+    return _sentence(name) if locale == "en" or translated == name else translated
 
 
 def _sentence(text: str) -> str:
@@ -45,6 +68,42 @@ def _sentence(text: str) -> str:
 
 def _as_date(value: date | datetime | None) -> date | None:
     return value.date() if isinstance(value, datetime) else value
+
+
+def _summary_in(story: Mapping[str, Any], locale: str) -> str:
+    """The plan's summary when it is in the film's language, else none (#2535).
+
+    A cut rendered again in another language, or one made before the summary recorded its
+    language, would describe a French film in English: the description is then its title.
+    Places a summary lists more than once are said once.
+    """
+    if story.get("thesis_locale") != locale:
+        return ""
+    from immich_memories.analysis.editorial_film_summary import one_place_once
+
+    places = [
+        p
+        for e in story.get("episodes") or ()
+        if isinstance(e, Mapping)
+        for p in e.get("places") or ()
+    ]
+    return one_place_once(str(story.get("thesis") or ""), [str(p) for p in places], locale)
+
+
+def _ordinary_case(
+    title: str | None, memory_type: str | None, params: Mapping[str, Any], locale: str
+) -> str | None:
+    """The title with a trip's title-card capitals in ordinary case, as other films read."""
+    if not title or memory_type != "trip":
+        return title
+    from immich_memories.generate_privacy import generate_trip_title_text
+
+    shouted = generate_trip_title_text(dict(params), locale)
+    if not shouted or shouted not in title:
+        return title
+    return title.replace(
+        shouted, generate_trip_title_text(dict(params), locale, capitals=False) or shouted
+    )
 
 
 def _read_plan_story(attempt_dir: Path | None) -> Mapping[str, Any]:
@@ -85,7 +144,7 @@ def _title_of_the_cut(
     from immich_memories.timeperiod import DateRange
     from immich_memories.titles.film_title import template_title
 
-    params = dict(preset_params or (kept.preset_params if kept else {}))
+    params = _preset_params(preset_params, kept)
     return _screen(
         *template_title(
             config,
@@ -98,6 +157,10 @@ def _title_of_the_cut(
             years=years,
         )
     )
+
+
+def _preset_params(given: Mapping[str, Any] | None, kept: Any) -> dict[str, Any]:
+    return dict(given or (kept.preset_params if kept else {}))
 
 
 def _screen(title: str, subtitle: str | None) -> str:
@@ -118,25 +181,31 @@ def label_for_cut(
     preset_params: Mapping[str, Any] | None = None,
 ) -> FilmLabel | None:
     """The label for one film, or None when it cannot be built: a label never stops an upload."""
+    from immich_memories.i18n import resolve_film_locale
+    from immich_memories.processing.render_inputs import read_cut_titles
+
     start, end = _as_date(date_start), _as_date(date_end)
     try:
+        locale = resolve_film_locale(config.title_screens.locale)
         story = _read_plan_story(attempt_dir)
         episodes = [e for e in story.get("episodes") or () if isinstance(e, Mapping)]
+        kept = read_cut_titles(attempt_dir) if attempt_dir is not None else None
+        screen = _title_of_the_cut(
+            config,
+            title=title,
+            attempt_dir=attempt_dir,
+            memory_type=memory_type,
+            start=start,
+            end=end,
+            person_name=person_name,
+            preset_params=preset_params,
+            # The years the cut shows, as the title screen read them: a holiday's span.
+            years=years_shown(episodes, start, end),
+        )
         label = film_label(
-            title=_title_of_the_cut(
-                config,
-                title=title,
-                attempt_dir=attempt_dir,
-                memory_type=memory_type,
-                start=start,
-                end=end,
-                person_name=person_name,
-                preset_params=preset_params,
-                # The years the cut shows, as the title screen read them: a holiday's span.
-                years=years_shown(episodes, start, end),
-            ),
-            summary=str(story.get("thesis") or ""),
-            type_label=memory_type_label(memory_type),
+            title=_ordinary_case(screen, memory_type, _preset_params(preset_params, kept), locale),
+            summary=_summary_in(story, locale),
+            type_label=memory_type_label(memory_type, locale),
             date_start=start,
             date_end=end,
             episodes=episodes,

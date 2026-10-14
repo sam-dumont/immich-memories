@@ -208,6 +208,9 @@ the code named beside it; if the two disagree, the code wins and this entry is s
   scope's film; on Basic, or when that answer is unusable, a line of the story names in the
   film's language (`summary.then` in the film-text catalogues). A Full film refines its rules
   draft, and the refinement clears the draft's Basic line so the model writes the summary.
+  A list of places the model repeats is said once (`one_place_once`), and the plan records the
+  summary's language as `story.thesis_locale`: the Immich label (`operations/film_labelling.py`)
+  uses the summary only when the render is in that language.
 - **Notable record**: a picture an episode reading named as a moment worth a place of its own,
   with the reason (`banked_notable_records` in `catalogue_runtime.py`). Only a story holding one
   can earn an N seat.

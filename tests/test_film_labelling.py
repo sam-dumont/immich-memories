@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 from datetime import UTC, date, datetime
 
+import pytest
+
 from immich_memories.config_loader import Config
 from immich_memories.db import open_store
 from immich_memories.operations.film_labelling import (
@@ -21,6 +23,7 @@ SUMMARY = "Kit's birthday, then Lou and Pat's visit, then The road north"
 PLAN = {
     "story": {
         "thesis": SUMMARY,
+        "thesis_locale": "en",
         "episodes": [
             {"title": "Kit's birthday", "occasion": "birthday", "trip": None},
             {"title": "Days at home", "occasion": None, "trip": None},
@@ -62,6 +65,109 @@ def test_memory_types_read_as_the_film_type_list_names_them():
     assert memory_type_label("trip") == "Trip"
     assert memory_type_label("album") == "Album"
     assert memory_type_label(None) is None
+
+
+def test_a_film_type_is_named_in_the_films_language():
+    # WHY: a French film carried "type/Person spotlight" beside French story tags (#2535).
+    assert memory_type_label("person_spotlight", "fr") == "Portrait d’une personne"
+    assert memory_type_label("monthly_highlights", "fr") == "Moments du mois"
+    assert memory_type_label("holiday", "de") == "Feiertag"
+
+
+def _french() -> Config:
+    config = _tagging()
+    config.title_screens.locale = "fr"
+    return config
+
+
+def _plan_attempt(tmp_path, story, *, title="Juillet 2025", preset_params=None):
+    attempt = tmp_path / "attempt"
+    attempt.mkdir()
+    (attempt / PLAN_FILE).write_text(json.dumps({"story": story}))
+    write_cut_titles(
+        attempt, title=title, subtitle=None, source=None, preset_params=preset_params or {}
+    )
+    return attempt
+
+
+def test_a_french_films_type_tag_is_french(tmp_path):
+    story = {"thesis": "L'anniversaire de Kit", "thesis_locale": "fr", "episodes": []}
+
+    label = label_for_cut(
+        _french(),
+        memory_type="monthly_highlights",
+        date_start=date(2025, 7, 1),
+        date_end=date(2025, 7, 31),
+        attempt_dir=_plan_attempt(tmp_path, story),
+    )
+
+    assert label is not None
+    assert label.tags[0] == "immich-memories/type/Moments du mois"
+    assert label.description == "Juillet 2025 · L'anniversaire de Kit"
+
+
+@pytest.mark.parametrize("written_in", [{"thesis_locale": "en"}, {}], ids=["english", "unknown"])
+def test_a_render_in_another_language_never_mixes_the_cuts_summary_in(tmp_path, written_in):
+    # WHY: a French re-render of a cut whose summary was English went to Immich with an
+    # English description under a French title (#2535).
+    story = {"thesis": "Kit's birthday, then the road north", "episodes": []} | written_in
+
+    label = label_for_cut(
+        _french(),
+        memory_type="monthly_highlights",
+        date_start=date(2025, 7, 1),
+        date_end=date(2025, 7, 31),
+        attempt_dir=_plan_attempt(tmp_path, story),
+    )
+
+    assert label is not None
+    assert label.description == "Juillet 2025"
+
+
+def test_a_summary_lists_each_place_once(tmp_path):
+    # WHY: a month's description read "à Lyon, Annecy, Grenoble, Lyon, Annecy et Chambéry".
+    story = {
+        "thesis": "Juillet à Lyon, Annecy, Grenoble, Lyon, Annecy et Chambéry.",
+        "thesis_locale": "fr",
+        "episodes": [
+            {"title": "Les Alpes", "places": ["Lyon", "Annecy", "Grenoble"]},
+            {"title": "Retour", "places": ["Lyon", "Annecy", "Chambéry"]},
+        ],
+    }
+
+    label = label_for_cut(
+        _french(),
+        memory_type="monthly_highlights",
+        date_start=date(2025, 7, 1),
+        date_end=date(2025, 7, 31),
+        attempt_dir=_plan_attempt(tmp_path, story),
+    )
+
+    assert label is not None
+    assert label.description == "Juillet 2025 · Juillet à Lyon, Annecy, Grenoble et Chambéry."
+
+
+def test_a_trip_title_reads_in_ordinary_case(tmp_path):
+    # WHY: the description started with the title card's capitals (#2535).
+    trip = {
+        "location_name": "Crete, Greece",
+        "trip_start": date(2025, 7, 1),
+        "trip_end": date(2025, 7, 14),
+    }
+    story = {"thesis": "", "thesis_locale": "fr", "episodes": []}
+
+    label = label_for_cut(
+        _french(),
+        memory_type="trip",
+        date_start=date(2025, 7, 1),
+        date_end=date(2025, 7, 14),
+        attempt_dir=_plan_attempt(
+            tmp_path, story, title="DEUX SEMAINES EN CRÈTE, GRÈCE, JUILLET 2025", preset_params=trip
+        ),
+    )
+
+    assert label is not None
+    assert label.description == "Deux semaines en Crète, Grèce, Juillet 2025"
 
 
 def test_a_cut_is_labelled_from_its_plan_and_title(tmp_path):
@@ -153,6 +259,7 @@ def test_a_holiday_film_is_described_by_the_years_its_cut_shows(tmp_path):
     plan = {
         "story": {
             "thesis": SUMMARY,
+            "thesis_locale": "en",
             "episodes": [
                 {"title": "15 August 2004", "chosen": ["M1"], "days": ["2004-08-15"] * 2},
                 {"title": "15 August 2010", "chosen": [], "days": ["2010-08-15"] * 2},
