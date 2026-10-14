@@ -52,7 +52,7 @@ from immich_memories.config_models_soundtrack import ACEStepConfig, AudioConfig,
 from immich_memories.config_models_triage import TriageConfig
 from immich_memories.config_presets import PresetName, apply_preset
 from immich_memories.config_tiers import TierSetting, apply_tier
-from immich_memories.deployment_config import deployment_defaults
+from immich_memories.deployment_config import DEPLOYMENT_TIER, deployment_defaults, deployment_tier
 from immich_memories.logging_config import install_secret_redaction
 from immich_memories.security import configured_secret_values
 
@@ -94,7 +94,7 @@ _REMOVED_CONFIG_KEYS: dict[str, str] = {
     "CronJob that runs `generate`",
     "cache.max_age_days": "nothing expired the cache by age",
     "title_screens.show_decorative_lines": "no shipped title style draws line accents",
-    "triage.enabled": "editorial.preparation.tier decides when the heads run",
+    "triage.enabled": "the tier decides when the heads run",
     "triage.bundle": "the head weights are editorial.preparation.head_bundle",
     "content_analysis": _WENT_WITH_THE_SCORER,
     "audio_content": _WENT_WITH_THE_SCORER,
@@ -113,6 +113,8 @@ _REMOVED_CONFIG_KEYS: dict[str, str] = {
     "audio.pixabay_api_key": "there is no Pixabay music source; remove it from your config",
     "defaults.target_duration_minutes": "replaced by per-memory-type defaults and `--duration`",
     "defaults.target_duration_seconds": "replaced by per-memory-type defaults and `--duration`",
+    "server.allow_unauthenticated_lan": "without sign-in the UI answers on localhost only; for "
+    "LAN access without a login of its own, put it behind your proxy with header sign-in",
     **{
         f"audio.{field}": _REMOVED_IN_325
         for field in (
@@ -208,8 +210,7 @@ def _drop_app_written_wildcard_host(data: dict, path: Path) -> None:
     logging.getLogger(__name__).warning(
         "Ignoring 'server.host: %s' in %s — older versions wrote that line "
         "automatically, so it does not count as a choice. With authentication "
-        "disabled the UI binds 127.0.0.1 unless you pass --host or set "
-        "server.allow_unauthenticated_lan: true.",
+        "disabled the UI binds 127.0.0.1 unless you pass --host.",
         WILDCARD_HOST,
         path,
     )
@@ -241,6 +242,9 @@ def _load_yaml_data(path: Path) -> dict:
     """Load and flatten YAML config data (advanced: → top-level)."""
     if not path.exists():
         return {}
+    # The path is the operator's own (--config, the config-path environment variable or the
+    # default under the home folder); no request ever supplies it. Code scanning flags this as
+    # path injection because those inputs are user-controlled in the scanner's model.
     with path.open() as f:
         data = yaml.safe_load(f)
     if data is None:
@@ -301,6 +305,20 @@ def _stored_settings(yaml_data: dict) -> dict:
             database[field] = value
     bootstrap = Config.model_construct(database=DatabaseConfig.model_validate(database))
     return nest_dotted(load_stored_settings(bootstrap))
+
+
+def _warn_overridden_tier() -> None:
+    """Name a file or saved `tier` that the deployment's TIER replaces."""
+    if not deployment_tier(os.environ) or _env_value("IMMICH_MEMORIES_TIER"):
+        return
+    for where, data in (("config.yaml", _yaml_source_data), ("Settings", _database_source_data)):
+        if "tier" in data:
+            logging.getLogger(__name__).warning(
+                "Ignoring tier in %s: this deployment sets it with %s (TIER in the Compose "
+                ".env); change it there",
+                where,
+                DEPLOYMENT_TIER,
+            )
 
 
 def _env_value(name: str) -> str | None:
@@ -442,6 +460,15 @@ class Config(BaseSettings):
         return self
 
     @model_validator(mode="after")
+    def _warn_unsupported_keys(self) -> Config:
+        # Before the preset and the tier: both assign fields, and those count as set.
+        from immich_memories.config_unsupported import apply_moved_keys, warn_unsupported_keys
+
+        warn_unsupported_keys(self)
+        apply_moved_keys(self)
+        return self
+
+    @model_validator(mode="after")
     def _apply_preset(self) -> Config:
         apply_preset(self)
         return self
@@ -506,6 +533,7 @@ class Config(BaseSettings):
             config._unknown_keys = tuple(dict.fromkeys((*file_keys, *config.unknown_keys)))
             for key in file_keys:
                 logging.getLogger(__name__).warning("Ignoring unknown config key %s", key)
+            _warn_overridden_tier()
             _arm_log_redaction(config)
             return config
         finally:
@@ -526,6 +554,8 @@ class Config(BaseSettings):
         return (
             init_settings,
             env_settings,
+            # The deployment's TIER ranks with the environment, above the file and Settings.
+            _MappingSettingsSource(settings_cls, deployment_tier(os.environ)),
             yaml_source,
             database_source,
             dotenv_settings,
@@ -611,6 +641,8 @@ def env_alias_overrides(config: Config) -> dict[str, str]:
         for path, (name, parse) in _ENV_ALIASES.items()
         if (raw := os.environ.get(name)) and parse(raw) is not None
     }
+    if deployment_tier(os.environ) and not _env_value("IMMICH_MEMORIES_TIER"):
+        applied["tier"] = DEPLOYMENT_TIER
     name = _llm_key_variable(config.llm)
     if os.environ.get(name) and os.environ[name] == config.llm.api_key:
         applied["llm.api_key"] = name

@@ -167,6 +167,7 @@ def _setting(view: dict, key: str) -> object:
 @pytest.mark.feature("web.ui-launch")
 def test_ui_binds_localhost_by_default_and_serves_the_web_client(home: UserHome):
     home.write_config(basic_config(UNREACHABLE, "a-key", home))
+    home.turn_sign_in_off()  # this test is about the launch, not sign-in
     port = free_port()
 
     with serve_ui(home, "ui", "--port", str(port), port=port) as log:

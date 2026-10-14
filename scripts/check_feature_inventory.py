@@ -316,8 +316,9 @@ def is_node_test(node: str) -> bool:
     return node.split("::", 1)[0].endswith(NODE_TEST_SUFFIXES)
 
 
-# A `test(` or `it(` call opening with a quoted title, at the start of a line.
-_NODE_TEST_CALL = re.compile(r"^\s*(?:test|it)\(\s*(['\"`])((?:\\.|(?!\1).)*)\1")
+# A `test(` or `it(` call opening with a quoted title, at the start of a line. The title body
+# alternates an escape pair with a non-backslash character, so no input matches two ways.
+_NODE_TEST_CALL = re.compile(r"^\s*(?:test|it)\(\s*(['\"`])((?:\\.|(?!\1)[^\\\n])*)\1")
 _FEATURE_COMMENT = re.compile(r"^\s*//\s*feature:\s*(\S+)\s*$")
 
 

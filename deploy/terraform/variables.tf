@@ -207,7 +207,7 @@ variable "models_storage_size" {
   default     = "10Gi"
 }
 
-# Ingress. Authentication is disabled by default: enable it before turning this on.
+# Ingress. Sign-in is on by default (a generated password, printed once in the pod log); set your own with secret_env before turning this on.
 variable "ingress_enabled" {
   description = "Enable ingress"
   type        = bool

@@ -47,11 +47,11 @@ docker compose up -d
 | `IMMICH_MEMORIES_IMMICH__PUBLIC_URL` | Optional: the Immich address your browser opens, for the links the app shows. Unset uses `IMMICH_URL`; add it to `environment:` only when you set it. Requests never use it |
 | `IMMICH_MEMORIES_TRIPS__HOMEBASE_LATITUDE`, `IMMICH_MEMORIES_TRIPS__HOMEBASE_LONGITUDE` | Home coordinates for trips and public holidays |
 | `TZ` | Daily timer and log timezone |
-| `IMMICH_MEMORIES_AUTH_USERNAME`, `IMMICH_MEMORIES_AUTH_PASSWORD` | Set both to enable Basic auth (password: 12+ characters, or startup warns); shipped `.env` support |
+| `IMMICH_MEMORIES_AUTH_USERNAME`, `IMMICH_MEMORIES_AUTH_PASSWORD` | Set both to choose the Basic sign-in yourself instead of the generated password (password: 12+ characters, or startup warns); shipped `.env` support |
 | `IMMICH_MEMORIES_STORAGE_SECRET` | Optional session signing key, generated when unset; 32+ random characters (`openssl rand -hex 32`) or the app refuses to start |
 | `IMMICH_MEMORIES_SECRET_KEY` | Encrypt credentials saved in Settings; shipped `.env` support |
 | `IMMICH_MEMORIES_UPLOAD__ENABLED`, `IMMICH_MEMORIES_UPLOAD__ALBUM_NAME` | Upload CLI/daily films; add to `environment:` |
-| `IMMICH_MEMORIES_TIER` | `auto` by default; `basic`, `gpu` or `full` override |
+| `IMMICH_MEMORIES_DEPLOYMENT_TIER` | The deployment's tier: `auto`, `basic`, `gpu` or `full` (Compose `.env`: `TIER`) |
 | `IMMICH_MEMORIES_DATABASE_URL` | Optional PostgreSQL store; set only in the PostgreSQL and maximalist Compose files |
 
 For service setup, use the [reader](../better/reader.md), [caption](../better/captions.md),
@@ -85,7 +85,7 @@ Find field names/defaults in the [config reference](../reference/config-referenc
 another Immich, pass `-e IMMICH_URL=...` (for example `docker compose exec -e IMMICH_URL=http://other:2283 ...`):
 that one wins. `IMMICH_MEMORIES_IMMICH__URL` silently loses to an `IMMICH_URL` that is set, and the
 shipped Compose file always sets it.
-The Basic-auth shortcuts only activate when **both** values are present.
+The Basic-auth shortcuts only activate when **both** values are present. Without them, sign-in is on and the first start generates a password ([where to find it](./authentication.mdx#the-generated-password)). `IMMICH_MEMORIES_AUTH__ENABLED=false` runs with no sign-in.
 
 `IMMICH_MEMORIES_DATABASE_URL` and `IMMICH_MEMORIES_DATABASE_SCHEMA` win over the nested
 `DATABASE__URL` and `DATABASE__SCHEMA` variables. `immich-memories config show database`
@@ -116,11 +116,13 @@ The generic LLM key shorthands above are the exception to environment-first prec
 
 ## Compute tier
 
-`IMMICH_MEMORIES_TIER` overrides `tier:` in YAML. The shipped Compose file maps `.env`'s
-`TIER=basic` to `IMMICH_MEMORIES_DEPLOYMENT_TIER`; GPU/Full tier files request their own tier.
-Deployment defaults remain editable through Settings. Use `IMMICH_MEMORIES_TIER` in the
-container environment when you need a fixed override. [The tier guide](./requirements.md#which-tier-you-get)
-explains what is detected.
+A deployment sets its tier with `IMMICH_MEMORIES_DEPLOYMENT_TIER` (`auto`, `basic`, `gpu` or
+`full`). The shipped Compose file maps `.env`'s `TIER=basic` to it; GPU/Full tier files request
+their own tier. It ranks with the environment: a `tier` in `config.yaml` or Settings is ignored
+with a warning naming the variable, and Settings shows the tier as set by the environment.
+`IMMICH_MEMORIES_TIER` is only the plain environment form of the `tier` key, for an install that
+is not a deployment (a pip or uv install, say); do not set both.
+[The tier guide](./requirements.md#which-tier-you-get) explains what is detected.
 
 ### Immich connection
 

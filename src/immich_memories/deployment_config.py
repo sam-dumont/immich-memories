@@ -1,4 +1,10 @@
-"""Infrastructure presets supply editable defaults, below saved operator settings."""
+"""What a deployment (Compose, Kubernetes, Terraform) tells the app about itself.
+
+`IMMICH_MEMORIES_DEPLOYMENT_TIER` (the Compose `.env` `TIER`) is the deployment's one tier:
+it sets the config `tier` like an environment variable does, so the `.env` and a config
+file can't disagree. The service endpoints it implies are editable defaults, below saved
+operator settings.
+"""
 
 from collections.abc import Mapping
 from contextlib import suppress
@@ -6,22 +12,29 @@ from ipaddress import AddressValueError, IPv6Address
 from typing import Any
 from urllib.parse import urlsplit
 
+DEPLOYMENT_TIER = "IMMICH_MEMORIES_DEPLOYMENT_TIER"
+
 
 def _validated_preset(environ: Mapping[str, str]) -> str:
-    preset = environ.get("IMMICH_MEMORIES_DEPLOYMENT_TIER", "basic") or "basic"
+    preset = environ.get(DEPLOYMENT_TIER, "basic") or "basic"
     if preset == "nas":
         raise ValueError("tier 'nas' is now called 'basic': set tier: basic")
-    if preset not in {"basic", "gpu", "full"}:
-        raise ValueError("IMMICH_MEMORIES_DEPLOYMENT_TIER must be basic, gpu or full")
+    if preset not in {"auto", "basic", "gpu", "full"}:
+        raise ValueError(f"{DEPLOYMENT_TIER} must be auto, basic, gpu or full")
     return preset
+
+
+def deployment_tier(environ: Mapping[str, str]) -> dict[str, Any]:
+    """The config `tier` the deployment sets, ranked with the environment; empty when unset."""
+    if not environ.get(DEPLOYMENT_TIER):
+        return {}
+    return {"tier": _validated_preset(environ)}
 
 
 def deployment_defaults(environ: Mapping[str, str]) -> dict[str, Any]:
     """Wire Compose model services without overriding YAML, env or saved Settings."""
     preset = _validated_preset(environ)
-    defaults: dict[str, Any] = (
-        {"tier": preset} if "IMMICH_MEMORIES_DEPLOYMENT_TIER" in environ else {}
-    )
+    defaults: dict[str, Any] = {}
     gpu_box = environ.get("IMMICH_MEMORIES_DEPLOYMENT_GPU_BOX", "").strip()
     if preset in {"gpu", "full"}:
         inference = _gpu_worker_url(gpu_box) if gpu_box else "http://immich-memories-inference:8092"

@@ -1,5 +1,5 @@
 # Production deployment: pinned image, ingress with TLS, GPU optional.
-# Enable authentication (secret_env below) before enabling the ingress.
+# Sign-in is on by default; secret_env below sets your own login before the ingress.
 
 terraform {
   required_version = ">= 1.9"
@@ -56,7 +56,7 @@ module "immich_memories" {
   musicgen_base_url = var.musicgen_base_url
   musicgen_api_key  = var.musicgen_api_key
 
-  # Basic auth for the UI (required before exposing it through the ingress)
+  # Your own login for the UI (without it the first start generates a password)
   secret_env = {
     IMMICH_MEMORIES_AUTH_USERNAME = var.auth_username
     IMMICH_MEMORIES_AUTH_PASSWORD = var.auth_password

@@ -320,7 +320,7 @@ features:
   - id: people.scan-is-stored
     promise: "people scan builds the people registry from Immich counts and dates, and people show reads it back."
     doc: make/cli/people.md#scan-and-inspect
-    covers: ["cli:people", "cli:people scan", "cli:people scan --min-assets", "cli:people show", "cli:people show --tier"]
+    covers: ["cli:people", "cli:people scan", "cli:people scan --min-assets", "cli:people show", "cli:people show --closeness"]
     tests:
       - tests/integration/immich_gate/test_store_round_trip.py::test_a_people_scan_is_read_back_from_the_store
   - id: people.scan-keeps-confirmed
@@ -871,11 +871,11 @@ features:
     doc: reference/automation-contract.md#kubernetes
     status: "lane_only: needs a Kubernetes cluster"
   - id: automation.upload
-    promise: "automation.upload_to_immich or upload.enabled delivers automatic films; automation.album_name wins over upload.album_name for a scheduled run."
+    promise: "upload.enabled delivers automatic films to upload.album_name; the old automation.upload_to_immich and automation.album_name still land on them."
     doc: make/automate.md#docker-switch-on-the-built-in-timer
     tests:
-      - tests/features/test_automation_runs.py::test_upload_to_immich_delivers_automatic_films_to_the_automation_album
-      - tests/features/test_automation_runs.py::test_upload_enabled_delivers_automatic_films_to_the_automation_album
+      - tests/features/test_automation_runs.py::test_the_old_automation_switch_and_album_still_deliver_automatic_films
+      - tests/features/test_automation_runs.py::test_upload_set_by_itself_wins_over_the_old_automation_pair
       - tests/features/test_automation_runs.py::test_without_an_automation_album_films_go_to_the_upload_album
       - tests/features/test_automation_runs.py::test_with_both_switches_off_films_stay_on_disk
       - tests/integration/features/test_automation_delivery.py::test_auto_run_renders_delivers_and_announces_the_film_with_its_immich_link
@@ -1106,10 +1106,10 @@ features:
     tests:
       - tests/integration/features/test_config_sources.py::test_verbose_and_log_level_debug_turn_on_debug_logs_for_a_command
   - id: config.tiers
-    promise: "tier basic, gpu or full chooses the compute tier, and the TIER deployment default can be overridden by YAML or Settings."
+    promise: "tier basic, gpu or full chooses the compute tier, and a deployment's TIER sets it above YAML and Settings."
     doc: run/config-file.md#compute-tier
     tests:
-      - tests/integration/features/test_config_sources.py::test_tier_chooses_the_compute_tier_and_the_deployment_default_yields_to_yaml_and_settings
+      - tests/integration/features/test_config_sources.py::test_tier_chooses_the_compute_tier_and_the_deployment_tier_beats_yaml_and_settings
   - id: cli.version
     promise: "--version prints the installed version."
     doc: reference/cli-reference.md#global-options
@@ -1320,18 +1320,26 @@ features:
     doc: run/privacy.md#privacy-mode
     tests:
       - tests/e2e/test_web_features.py::test_demo_mode_blurs_the_pictures_the_browser_shows
-  - id: auth.off-by-default-localhost
-    promise: "Authentication is off by default and native installs and the shipped Compose file listen on localhost only."
+  - id: auth.on-by-default
+    promise: "Authentication is on by default with a generated password printed once in the log and reset with auth reset-password; turning it off is explicit; native installs and the shipped Compose file listen on localhost only."
     doc: run/authentication.mdx#authentication
     tests:
-      - tests/features/test_web_server.py::test_a_default_install_needs_no_login_and_listens_on_localhost_only
+      - tests/features/test_web_server.py::test_a_default_install_asks_for_a_generated_login_and_listens_on_localhost_only
+      - tests/features/test_web_server.py::test_turning_the_sign_in_off_opens_the_ui_on_localhost_only
+      - tests/e2e/test_generated_login.py::test_a_fresh_server_says_where_its_password_is_and_the_logged_one_signs_in
       - tests/features/test_web_server.py::test_the_shipped_compose_file_publishes_the_ui_on_localhost_only
+  - id: auth.reset-password
+    promise: "auth reset-password replaces the generated password, prints the new one once to the terminal, and signs every browser out."
+    doc: run/authentication.mdx#the-generated-password
+    covers: ["cli:auth", "cli:auth reset-password"]
+    tests:
+      - tests/features/test_web_server.py::test_auth_reset_password_prints_a_new_one_and_signs_every_browser_out
   - id: auth.basic
     promise: "Setting both the username and password turns on the app login; an Authorization: Basic header is refused."
     doc: run/authentication.mdx#basic-auth
     tests:
       - tests/features/test_web_server.py::test_the_username_and_password_turn_on_the_login_and_a_basic_header_is_refused
-      - tests/features/test_web_server.py::test_a_username_alone_leaves_the_login_off
+      - tests/features/test_web_server.py::test_a_username_alone_does_not_pick_the_name_the_generated_password_goes_with
   - id: auth.oidc
     promise: "OIDC signs in through the provider with PKCE and admits only allowed emails or domains."
     doc: run/authentication.mdx#oidc--sso

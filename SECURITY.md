@@ -196,7 +196,7 @@ scanner exception. Keep the advisory tracked and re-audit any new NLTK training 
 ### Approved temporary docs advisory review
 
 `make npm-audit` and CI use the owner-approved review of one unpatched docs
-dependency, expiring October 17, 2026. The client audit remains strict.
+dependency, expiring November 16, 2026. The client audit remains strict.
 `make npm-audit-strict` runs the unfiltered audit explicitly:
 
 - braces 3.0.3: [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm).

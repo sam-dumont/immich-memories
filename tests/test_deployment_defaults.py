@@ -1,5 +1,6 @@
-"""Deployment wiring supplies defaults without locking the Settings page."""
+"""Deployment wiring: TIER sets the tier; the service URLs it implies stay editable defaults."""
 
+import logging
 import os
 
 import pytest
@@ -21,11 +22,40 @@ def test_gpu_compose_defaults_wire_services_below_saved_settings(monkeypatch, tm
         == "http://immich-memories-captioner:8092/v1"
     )
     assert saved.inference.facts_base_url == "https://model-box.example"
-    assert defaults.tier == "basic"
+
+
+def test_the_deployment_tier_beats_the_file_and_saved_settings(monkeypatch, tmp_path, caplog):
+    monkeypatch.setenv("IMMICH_MEMORIES_DEPLOYMENT_TIER", "gpu")
+    path = tmp_path / "config.yaml"
+    path.write_text("tier: basic\n")
+
+    from_file = Config.from_yaml(path, stored={})
+    from_settings = Config.from_yaml(tmp_path / "missing.yaml", stored={"tier": "full"})
+
+    assert from_file.tier == from_settings.tier == "gpu"
+    warnings = [r.getMessage() for r in caplog.records if r.levelno == logging.WARNING]
+    assert any("tier in config.yaml" in w and "DEPLOYMENT_TIER" in w for w in warnings)
+    assert any("tier in Settings" in w for w in warnings)
+
+
+def test_the_deployment_tier_locks_the_settings_page(monkeypatch):
+    from immich_memories.config_loader import env_alias_overrides
+
+    monkeypatch.setenv("IMMICH_MEMORIES_DEPLOYMENT_TIER", "basic")
+
+    assert env_alias_overrides(Config())["tier"] == "IMMICH_MEMORIES_DEPLOYMENT_TIER"
+
+
+def test_auto_is_a_deployment_tier(monkeypatch, tmp_path):
+    monkeypatch.setenv("IMMICH_MEMORIES_DEPLOYMENT_TIER", "auto")
+
+    config = Config.from_yaml(tmp_path / "missing.yaml", stored={})
+
+    assert config.tier == "basic"  # resolved: the unit fixture has no GPU runtime
 
 
 def test_reader_url_and_model_require_explicit_activation(monkeypatch, tmp_path):
-    monkeypatch.setenv("IMMICH_MEMORIES_DEPLOYMENT_TIER", "full")
+    monkeypatch.setenv("IMMICH_MEMORIES_DEPLOYMENT_TIER", "gpu")
     monkeypatch.setenv("IMMICH_MEMORIES_DEPLOYMENT_READER_URL", "http://reader.example:8000/v1")
     monkeypatch.setenv("IMMICH_MEMORIES_DEPLOYMENT_READER_MODEL", "reader-model")
     path = tmp_path / "config.yaml"
@@ -43,7 +73,7 @@ def test_reader_url_and_model_require_explicit_activation(monkeypatch, tmp_path)
     assert not saved_disabled.llm.enabled
 
 
-def test_full_preset_requires_activation_and_saved_tier_wins(monkeypatch, tmp_path):
+def test_full_preset_requires_activation_and_beats_a_saved_tier(monkeypatch, tmp_path):
     monkeypatch.setenv("IMMICH_MEMORIES_DEPLOYMENT_TIER", "full")
     monkeypatch.setenv("IMMICH_MEMORIES_DEPLOYMENT_READER_MODEL", "reader-model")
     path = tmp_path / "missing.yaml"
@@ -55,7 +85,7 @@ def test_full_preset_requires_activation_and_saved_tier_wins(monkeypatch, tmp_pa
     saved = Config.from_yaml(path, stored={"tier": "basic"})
 
     assert full.tier == "full"
-    assert saved.tier == "basic"
+    assert saved.tier == "full"
 
 
 def test_gpu_box_uses_the_combined_worker_address(monkeypatch, tmp_path):
@@ -141,7 +171,7 @@ def test_invalid_gpu_box_is_rejected_before_any_connection(monkeypatch, tmp_path
 def test_invalid_deployment_tier_is_actionable(monkeypatch, tmp_path):
     with monkeypatch.context() as invalid:
         invalid.setenv("IMMICH_MEMORIES_DEPLOYMENT_TIER", "unknown")
-        with pytest.raises(ValueError, match="must be basic, gpu or full"):
+        with pytest.raises(ValueError, match="must be auto, basic, gpu or full"):
             Config.from_yaml(tmp_path / "missing.yaml", stored={})
 
 

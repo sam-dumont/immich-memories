@@ -28,7 +28,7 @@ docker run --rm --user 0:0 --entrypoint sh \
   -v immich-memories-offline-models:/models "$IMMICH_MEMORIES_IMAGE" \
   -c 'chown 1000:1000 /models'
 docker run --rm \
-  -e IMMICH_MEMORIES_TIER=basic -e IMMICH_MEMORIES_LLM__ENABLED=false \
+  -e IMMICH_MEMORIES_DEPLOYMENT_TIER=basic -e IMMICH_MEMORIES_LLM__ENABLED=false \
   -e IMMICH_MEMORIES_TRIAGE__ENCODER=/models/triage/dinov2-small.onnx \
   -e IMMICH_MEMORIES_FREE_TEXT__WORDNET=/models/wordnet/wordnet.zip \
   -v immich-memories-offline-models:/models "$IMMICH_MEMORIES_IMAGE" \
@@ -156,15 +156,13 @@ kubectl rollout status -n immich-memories deployment/immich-memories
 kubectl patch deployment immich-memories -n immich-memories --type=json \
   -p='[{"op":"remove","path":"/spec/template/spec/initContainers"}]'
 kubectl set env deployment/immich-memories -n immich-memories \
-  IMMICH_MEMORIES_TIER=basic IMMICH_MEMORIES_LLM__ENABLED=false \
+  IMMICH_MEMORIES_DEPLOYMENT_TIER=basic IMMICH_MEMORIES_LLM__ENABLED=false \
   IMMICH_MEMORIES_RENDER__WORKER_BASE_URL= IMMICH_MEMORIES_INFERENCE__FACTS_BASE_URL= \
   IMMICH_MEMORIES_NETWORK__GEOCODING=false IMMICH_MEMORIES_NETWORK__MAP_TILES=false \
   IMMICH_MEMORIES_ACE_STEP__ENABLED=false IMMICH_MEMORIES_MUSICGEN__ENABLED=false \
   IMMICH_MEMORIES_NOTIFICATIONS__URLS='[]' \
   IMMICH_MEMORIES_EDITORIAL__PREPARATION__ALLOW_MODEL_DOWNLOADS=false \
   IMMICH_MEMORIES_EDITORIAL__PREPARATION__CAPTION_PROVIDER=smolvlm \
-  IMMICH_MEMORIES_EDITORIAL__PREPARATION__TIER=no_captions \
-  IMMICH_MEMORIES_EDITORIAL__DETECTORS_ENABLED=false IMMICH_MEMORIES_EDITORIAL__LAYA_AUDIENCE=false \
   HF_HUB_OFFLINE=1
 kubectl apply -f networkpolicy.offline.yaml
 kubectl rollout status -n immich-memories deployment/immich-memories

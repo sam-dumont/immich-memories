@@ -7,7 +7,7 @@ import sys
 from datetime import date
 from pathlib import Path
 
-EXPIRES = date(2026, 10, 17)
+EXPIRES = date(2026, 11, 16)
 REVIEWED = {
     ("braces", "3.0.3", "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm"),
 }

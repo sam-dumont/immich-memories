@@ -79,6 +79,7 @@ def test_runs_render_takes_a_saved_revision_and_changes_only_the_output(
     # The owner takes the last still out in the browser editor: revision 1.
     removed = shipped_on(DEPARTURE_DAY)[-1]
     assert not removed.is_video
+    home.turn_sign_in_off()  # this test is about revisions, not sign-in
     with served_app(home) as app, app.client() as browser:
         saved = browser.post(
             f"/api/v1/runs/{cut_id}/revisions", json={"removed": [immich.id_of(removed.asset_id)]}

@@ -42,7 +42,7 @@ makes a complete film, and you can change tiers later.
 | **Full** | A text reader refines the cut, writes the film's summary and names special days. | The GPU setup plus an enabled reader with a 32k context window. | Select **Full** in [Quick start](https://sam-dumont.github.io/immich-memories/docs/get-started/quick-start). |
 
 You need an existing Immich server, Docker Compose v2 and **about 25 GB of app data plus 0.35 GB per 1,000
-pictures and videos in your library, plus images and finished films**. Immich v2 and v3 both work; the [deployment matrix](https://sam-dumont.github.io/immich-memories/docs/run/tested-deployments)
+pictures and videos in your library, plus images and finished films**. Immich v2 (2.7.5 or later) and v3 (3.2.4 or later) both work; the [deployment matrix](https://sam-dumont.github.io/immich-memories/docs/run/tested-deployments)
 records tested versions. GPU services can run on another machine.
 For a NAS container manager, [use its platform guide](https://sam-dumont.github.io/immich-memories/docs/run/nas).
 
@@ -70,16 +70,15 @@ For a NAS container manager, [use its platform guide](https://sam-dumont.github.
    [ten read permissions](https://sam-dumont.github.io/immich-memories/docs/run/docker#the-api-key).
    Use an Immich address the container can reach; `localhost` means the container itself.
 
-   To open the app from another computer on your LAN, also set these in `.env`:
+   To open the app from another computer on your LAN, also set this in `.env`:
 
    ```ini
-   IMMICH_MEMORIES_AUTH_USERNAME=admin
-   IMMICH_MEMORIES_AUTH_PASSWORD=replace-with-your-own-long-password
    UI_BIND_ADDRESS=0.0.0.0
    ```
 
-   Choose a password of at least 12 characters. This is the **Immich Memories app login**.
-   LAN access uses HTTP; [HTTPS setup](https://sam-dumont.github.io/immich-memories/docs/run/authentication#behind-a-reverse-proxy-with-tls)
+   The app has its own login, separate from Immich. If you set none, the first start generates one
+   (step 4). To choose your own, add `IMMICH_MEMORIES_AUTH_USERNAME` and
+   `IMMICH_MEMORIES_AUTH_PASSWORD` (at least 12 characters). LAN access uses HTTP; [HTTPS setup](https://sam-dumont.github.io/immich-memories/docs/run/authentication#behind-a-reverse-proxy-with-tls)
    is separate. Otherwise, keep the default localhost binding.
 
 3. **Prepare the output folder and start the app.** On Linux:
@@ -96,7 +95,8 @@ For a NAS container manager, [use its platform guide](https://sam-dumont.github.
    instead of `chown`.
 
 4. **Open the app** at `http://localhost:22830`, or `http://your-server-address:22830` for LAN
-   access and sign in with the app login above. On **Memory**, click **Download models** and
+   access. Sign in as `admin` with the generated password, printed once in
+   `docker logs immich-memories` (or use the login you set). On **Memory**, click **Download models** and
    wait for the card to disappear. If no card or error appears, the required files are ready.
 
    Make [your first film](https://sam-dumont.github.io/immich-memories/docs/get-started/first-film)
@@ -146,9 +146,10 @@ have their own data flow, and a local URL alone doesn't prove nothing leaves.
 [Privacy](https://sam-dumont.github.io/immich-memories/docs/run/privacy) lists every recipient
 and how to check the Basic tier is offline.
 
-**Turn on authentication before you open it to your LAN.** Authentication is disabled by default. Native installs
-and the shipped Compose file listen on localhost only; change the port mapping and anyone who
-can reach it can read your library through it. [Operate and configure](https://sam-dumont.github.io/immich-memories/docs/run/overview)
+**Sign-in is on by default.** The first start generates a password: find it in the container log
+(`docker logs immich-memories`). Lost it? `immich-memories auth reset-password` makes a new one. Native installs
+and the shipped Compose file listen on localhost only; change the port mapping and the sign-in
+is what stands between your LAN and your library. [Operate and configure](https://sam-dumont.github.io/immich-memories/docs/run/overview)
 covers login, NAS/Kubernetes setup, backups and storage. Keep one UI replica.
 Report vulnerabilities as [SECURITY.md](SECURITY.md) describes.
 

@@ -84,8 +84,8 @@ class Deployment:
     def _override(self) -> str:
         # `!reset` drops the published port rather than adding to it: a run must not
         # take the port a real install on this machine may already hold.
-        # The curl container calls the app by its service name, a host it only answers
-        # (auth off) once the operator lists it.
+        # The curl container calls the app by its service name; listing it keeps the call
+        # answered even when a deployment turns sign-in off, where unlisted hosts are refused.
         override = f"""services:
   {APP}:
     image: {self.image}

@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-14 17:42+0200\n"
+"POT-Creation-Date: 2026-10-15 06:04+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_Hans\n"
@@ -1111,7 +1111,7 @@ msgstr "{account} 的所有者"
 msgid "Passed {stages}"
 msgstr "通过了{stages}"
 
-#: web/routes/login/+page.svelte:66
+#: web/routes/login/+page.svelte:69
 msgid "Password"
 msgstr "密码"
 
@@ -1509,11 +1509,11 @@ msgid "Show more"
 msgstr "显示更多"
 
 #: web/lib/JobPanel.svelte:93 web/routes/login/+page.svelte:46 web/routes/login/+page.svelte:58
-#: web/routes/login/+page.svelte:69
+#: web/routes/login/+page.svelte:72
 msgid "Sign in"
 msgstr "登录"
 
-#: web/routes/login/+page.svelte:72
+#: web/routes/login/+page.svelte:75
 msgid "Sign in through the proxy in front of this server."
 msgstr "通过此服务器前端的代理登录。"
 
@@ -1811,6 +1811,14 @@ msgstr "这个分类已在最近六次回忆中出现两次。"
 msgid "This run kept no record of its pool. Cut again to see one."
 msgstr "此任务未保存候选素材列表。重新剪辑即可查看。"
 
+#: web/routes/login/+page.svelte:63
+msgid ""
+"This server made its own password and printed it once in its log (docker compose logs immich-"
+"memories). Run immich-memories auth reset-password to make a new one."
+msgstr ""
+"此服务器已自动生成密码，并在日志中输出过一次 (docker compose logs immich-memories)。运行 immich-memories auth reset-"
+"password 可生成新密码。"
+
 #: web/routes/settings/+page.svelte:30
 msgid "Thumbnail cache"
 msgstr "缩略图缓存"
@@ -1917,7 +1925,7 @@ msgstr "请使用媒体库中的准确姓名，每个素材都须符合此条件
 msgid "Use this picture instead"
 msgstr "改用这个素材"
 
-#: web/routes/login/+page.svelte:63
+#: web/routes/login/+page.svelte:66
 msgid "Username"
 msgstr "用户名"
 

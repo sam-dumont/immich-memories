@@ -20,7 +20,7 @@ export interface Setup {
   secretKey?: string;
   automation?: boolean;
   triggerToken?: string;
-  // Docker Compose only: publish the UI on the LAN, and the app login that must come with it.
+  // Docker Compose only: publish the UI on the LAN. The app login is optional: without one the first start generates a password.
   lanAccess?: boolean;
   authUsername?: string;
   authPassword?: string;
@@ -91,7 +91,6 @@ export function validateSetup(setup: Setup): string | null {
     const user = setup.authUsername ?? '';
     const password = setup.authPassword ?? '';
     if (/[\r\n\0]/.test(user + password)) return 'Use one line for each setting.';
-    if (setup.lanAccess && !user) return 'LAN access needs an app login: enter a username and a password.';
     if (user && password.length < 12) return 'Choose a password of at least 12 characters.';
     if (password && !user) return 'Enter a username for the password.';
   }

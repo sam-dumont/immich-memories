@@ -231,6 +231,7 @@ def test_clearing_the_caches_keeps_films_runs_people_and_prepared_facts(home: Us
     runs_before = home.run("runs", "list", "--limit", "50").stdout
     people_before = home.run("people", "list").stdout
     port = free_port()
+    home.turn_sign_in_off()  # this test is about the caches, not sign-in
 
     with serve_ui(home, "ui", "--host", "127.0.0.1", "--port", str(port), port=port):
         filled = _caches(port)
@@ -317,6 +318,7 @@ def test_a_native_install_stops_keeping_everything_resets_aside_and_removes_comp
     # 1. Stop the app: Ctrl-C in the terminal running `ui`, then start it again.
     stopped = _stop_with_ctrl_c(home, free_port())
     port = free_port()
+    home.turn_sign_in_off()  # this test is about the install's data, not sign-in
     with serve_ui(home, "ui", "--port", str(port), port=port):
         listed = httpx.get(f"http://127.0.0.1:{port}/api/v1/runs", timeout=30)
 

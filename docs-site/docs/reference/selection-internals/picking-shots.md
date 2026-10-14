@@ -195,8 +195,7 @@ costs what a one-minute one does. A clip with nothing that stands out keeps its 
 
 A Live Photo plays as motion on every tier, Basic included, when the clip it would play lasts at
 least 2.5 seconds, moves and shows its subject. That clip is a stitch of nearby Live Photos, or its
-own clip when it stands alone or the burst can't be stitched. The 2.5 s floor is
-`advanced.analysis.live_photo_min_clip_seconds`; anything shorter plays as its still, and no
+own clip when it stands alone or the burst can't be stitched. The 2.5 s floor is fixed; anything shorter plays as its still, and no
 fallback plays a shorter clip. The motion is measured during the cut, for the Live Photos the cut
 kept, and banked per picture so the next cut reads it instead (`store/cut_measurements`). A Live
 Photo you add in review is stitched with its neighbours and decided the same way, and `runs story`

@@ -223,6 +223,8 @@ class UnitBuilder:
         self._config = source.config
         self._residuals = source.motion_residuals
         self._clip_frames = source.clip_frames
+        self._audience = source.audience
+        self._clip_heads = source.companion_detectors
         self._live_source_integrity = ports.live_source_integrity
         self._speech = source.speech_regions
         self._speech_buffer = speech_buffer(source.config)
@@ -279,6 +281,17 @@ class UnitBuilder:
         ]
         return max(vals) if vals else None
 
+    def _clip_withheld(self, clip_ids: Sequence[str]) -> bool:
+        """Whether a Live Photo plays as its still: its clip misses the subject, or was never read.
+
+        The still of a shareable film was checked; a clip no detector read was not, so it
+        keeps the picture without the motion. A household film plays the clip it has.
+        """
+        unread = self._audience == "shareable" and any(
+            not self._clip_heads.get(clip) for clip in clip_ids
+        )
+        return unread or clips_miss_subject(self._clip_frames, clip_ids)
+
     def _live_unit(self, r: MotionRendering, asset_id: str, base: dict, ids: list[str]) -> dict:
         if r.material is None:
             raise ValueError("Live rendering lacks canonical source material")
@@ -288,7 +301,7 @@ class UnitBuilder:
         residual = self._family_residual(members)
         # Motion is used only when the clip is interesting: measured motion with the subject
         # in frame. A clip of wall keeps the picture, as its still.
-        may_play = r.may_play and not clips_miss_subject(self._clip_frames, r.video_ids)
+        may_play = r.may_play and not self._clip_withheld(r.video_ids)
         motion = may_play and (
             (residual is not None and residual >= RESIDUAL_MIN)
             or (residual is None and self._resolve_motion is not None)
@@ -387,7 +400,7 @@ class UnitBuilder:
         if (
             not str(carrier.get("kind", "")).startswith("live")
             or not (carrier.get("motion_candidate") or carrier["kind"] == "live-motion")
-            or not clips_miss_subject(self._clip_frames, carrier.get("video_ids", ()))
+            or not self._clip_withheld(carrier.get("video_ids", ()))
         ):
             return carrier
         return carrier | {

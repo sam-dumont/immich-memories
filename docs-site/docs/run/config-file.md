@@ -50,7 +50,7 @@ Command-specific flags can override these for that command. LLM key shorthands h
 [special rule](./environment-variables.md#shorthands).
 The UI greys out settings controlled by the file or environment and shows their source.
 
-Authentication (`auth.*`) and server (`server.*`) settings, like the database location, are set
+Authentication (`auth.*`; the generated first password is kept as a hash in `generated-login.json` beside the config file) and server (`server.*`) settings, like the database location, are set
 only in the environment or `config.yaml` and take effect on restart; Settings shows them
 read-only. So are the keys that pick a program the server runs, a file it writes or the host that
 receives your Immich keys: the render worker URL and token, and the model and helper paths.

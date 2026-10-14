@@ -210,7 +210,9 @@ def main(
 def ui(ctx: click.Context, port: int | None, host: str | None, reload: bool) -> None:
     """Launch the web client: make, review, refine and render memories in the browser."""
     config: Config = ctx.obj["config"]
-    host = host or config.server.effective_host(auth_enabled=config.auth.enabled)
+    # A generated password nobody chose keeps the localhost default; --host opens it up.
+    chosen_sign_in = config.auth.enabled and not config.auth.generates_login
+    host = host or config.server.effective_host(auth_enabled=chosen_sign_in)
     port = port or config.server.port
     _warn_about_unauthenticated_external_bind(config, host)
     print_info(f"Starting Immich Memories UI on http://{host}:{port}")
@@ -224,6 +226,7 @@ def ui(ctx: click.Context, port: int | None, host: str | None, reload: bool) -> 
 
 
 # Register all sub-command groups
+from immich_memories.cli.auth_cmd import register_auth_commands  # noqa: E402
 from immich_memories.cli.auto_cmd import register_auto_commands  # noqa: E402
 from immich_memories.cli.capabilities_cmd import register_capabilities_command  # noqa: E402
 from immich_memories.cli.config_cmd import register_config_commands  # noqa: E402
@@ -255,6 +258,7 @@ register_prepare_commands(main)
 register_models_commands(main)
 register_auto_commands(main)
 register_store_commands(main)
+register_auth_commands(main)
 
 
 if __name__ == "__main__":

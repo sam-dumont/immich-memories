@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-14 17:42+0200\n"
+"POT-Creation-Date: 2026-10-15 06:04+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: nl\n"
@@ -1150,7 +1150,7 @@ msgstr "Eigenaar van {account}"
 msgid "Passed {stages}"
 msgstr "Geslaagd voor {stages}"
 
-#: web/routes/login/+page.svelte:66
+#: web/routes/login/+page.svelte:69
 msgid "Password"
 msgstr "Wachtwoord"
 
@@ -1550,11 +1550,11 @@ msgid "Show more"
 msgstr "Meer weergeven"
 
 #: web/lib/JobPanel.svelte:93 web/routes/login/+page.svelte:46 web/routes/login/+page.svelte:58
-#: web/routes/login/+page.svelte:69
+#: web/routes/login/+page.svelte:72
 msgid "Sign in"
 msgstr "Aanmelden"
 
-#: web/routes/login/+page.svelte:72
+#: web/routes/login/+page.svelte:75
 msgid "Sign in through the proxy in front of this server."
 msgstr "Meld je aan via de proxy voor deze server."
 
@@ -1872,6 +1872,15 @@ msgstr ""
 "Voor deze uitvoering is geen lijst van beschikbare media bewaard. Maak de montage opnieuw om "
 "die te zien."
 
+#: web/routes/login/+page.svelte:63
+msgid ""
+"This server made its own password and printed it once in its log (docker compose logs immich-"
+"memories). Run immich-memories auth reset-password to make a new one."
+msgstr ""
+"Deze server heeft zelf een wachtwoord gemaakt en het één keer in zijn log gezet (docker "
+"compose logs immich-memories). Voer immich-memories auth reset-password uit voor een nieuw "
+"wachtwoord."
+
 #: web/routes/settings/+page.svelte:30
 msgid "Thumbnail cache"
 msgstr "Miniaturencache"
@@ -1980,7 +1989,7 @@ msgstr ""
 msgid "Use this picture instead"
 msgstr "Dit beeld in de plaats gebruiken"
 
-#: web/routes/login/+page.svelte:63
+#: web/routes/login/+page.svelte:66
 msgid "Username"
 msgstr "Gebruikersnaam"
 

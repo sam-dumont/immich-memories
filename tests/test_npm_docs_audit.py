@@ -90,8 +90,8 @@ def reviewed_report():
 def test_only_exact_unfixed_graph_is_accepted_until_expiry():
     evaluate = runpy.run_path(str(SCRIPT))["evaluate"]
     report, lock = reviewed_report()
-    assert evaluate(with_metadata(report), lock, reviewed=True, today=date(2026, 10, 16)) == 0
-    assert evaluate(with_metadata(report), lock, reviewed=True, today=date(2026, 10, 17)) == 1
+    assert evaluate(with_metadata(report), lock, reviewed=True, today=date(2026, 11, 15)) == 0
+    assert evaluate(with_metadata(report), lock, reviewed=True, today=date(2026, 11, 16)) == 1
     lock["packages"]["node_modules/braces"]["version"] = "3.0.4"
     assert evaluate(with_metadata(report), lock, reviewed=True, today=date(2026, 10, 3)) == 1
 

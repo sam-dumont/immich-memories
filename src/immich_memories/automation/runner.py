@@ -724,16 +724,14 @@ class AutoRunner:
             if candidate_result is not None:
                 return candidate_result
             assert candidate is not None
-            # Either switch requests delivery; the automation album wins for a scheduled run.
-            effective_upload = (
-                upload or self.config.automation.upload_to_immich or self.config.upload.enabled
-            )
+            # One switch for manual and automatic films (automation's old pair maps onto it).
+            effective_upload = upload or self.config.upload.enabled
             cmd = _build_generate_command(
                 candidate,
                 effective_upload,
                 automation_attempt_id=attempt.id,
                 config_path=self.config_path,
-                album_name=self.config.automation.album_name or self.config.upload.album_name,
+                album_name=self.config.upload.album_name,
             )
 
             if dry_run:

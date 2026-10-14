@@ -24,6 +24,7 @@ from immich_memories.config_loader import (
     get_config,
     get_config_path,
 )
+from immich_memories.config_unsupported import UNDOCUMENTED
 from immich_memories.db import redact_url, resolve_location
 from immich_memories.settings_store import (
     is_bootstrap_key,
@@ -140,7 +141,9 @@ def describe_settings(
 ) -> list[SettingSource]:
     """Every leaf setting with its effective value, source and exact override name.
 
-    Precedence is env > config.yaml > database > default. Without arguments this
+    Precedence is env > config.yaml > database > default. Keys that are no longer part of
+    the documented config (`config_unsupported`) appear only when a source sets them.
+    Without arguments this
     describes the loaded config, its file, and the keys saved in its store.
     """
     config = config or get_config()
@@ -165,6 +168,9 @@ def describe_settings(
             source = "file"
         elif key in stored:
             source = "database"
+        if source == "default" and key in UNDOCUMENTED:
+            # Not a setting any more: listed only while something still sets it.
+            continue
         shown = _display(key, value, secret)
         report.append(
             SettingSource(

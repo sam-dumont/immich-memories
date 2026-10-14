@@ -169,6 +169,8 @@ def video_unit(video, residuals):
         config=Config(),
         pixel_facts={},
         clip_frames={},
+        audience="family",
+        companion_detectors={},
     )
     wall = SimpleNamespace(event_assets={"F01": [video.id]}, moment_of_asset={video.id: "M01"})
     ports = SimpleNamespace(

@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 
 from tests.e2e.fake_library import CAST
-from tests.features.cli_harness import CliResult, UserHome, basic_config
+from tests.features.cli_harness import CliResult, UserHome, basic_config, without_sign_in
 from tests.features.served_app import ServedApp, served_app
 from tests.integration.features.immich_server import LibraryServer
 from tests.integration.features.library import (
@@ -36,7 +36,8 @@ def two_account_app(
     config["immich"]["accounts"] = {
         "partner": {"url": immich.base_url, "api_key": immich.partner_api_key}
     }
-    home.write_config(config)
+    # This module's thumbnails test is about which pictures are served, not sign-in.
+    home.write_config(without_sign_in(config))
     with served_app(home) as app:
         yield home, app, immich
 

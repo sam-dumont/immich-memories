@@ -82,7 +82,7 @@ def test_a_wildcard_forwarded_allow_ips_with_auth_on_stops_the_server(monkeypatc
 
 
 def test_a_wildcard_forwarded_allow_ips_with_auth_off_starts(monkeypatch):
-    assert _app(monkeypatch, Config(), FORWARDED_ALLOW_IPS="*")
+    assert _app(monkeypatch, Config(auth={"enabled": False}), FORWARDED_ALLOW_IPS="*")
 
 
 def test_header_auth_with_forwarded_allow_ips_stops_the_server(monkeypatch):

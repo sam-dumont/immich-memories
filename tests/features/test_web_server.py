@@ -40,12 +40,46 @@ def _basic_login(username: str = "", password: str = "") -> dict[str, str]:
     return {name: value for name, value in login.items() if value}
 
 
-# ── authentication off by default, on localhost ──────────────────────────────
+# ── sign-in on by default, on localhost ──────────────────────────────────────
 
 
-@pytest.mark.feature("auth.off-by-default-localhost")
-def test_a_default_install_needs_no_login_and_listens_on_localhost_only(tmp_path):
+def _logged_password(output: str) -> str:
+    """The generated password, from the one log line the first start prints it on."""
+    match = re.search(r"password: (\S+)", output)
+    assert match, output
+    return match.group(1)
+
+
+@pytest.mark.feature("auth.on-by-default")
+def test_a_default_install_asks_for_a_generated_login_and_listens_on_localhost_only(tmp_path):
     home = _home(tmp_path)
+
+    with served_app(home) as app, app.client() as browser:
+        session = browser.get("/api/v1/session").json()
+        anonymous = browser.get(PROTECTED)
+        password = _logged_password(app.output())
+        route = browser.get("/api/v1/session/first-login")
+        wrong = browser.post("/auth/login", json={"username": "admin", "password": "not-it"})
+        right = browser.post("/auth/login", json={"username": "admin", "password": password})
+        signed_in = browser.get(PROTECTED)
+        lan, reachable_from_lan = lan_answer(app.port)
+        output = app.output()
+
+    assert session["auth_enabled"] is True
+    assert anonymous.status_code == 401
+    assert session["generated_login"] is True
+    # Logs only: no route hands the password out.
+    assert password not in route.text
+    assert wrong.status_code == 401
+    assert right.status_code == 200
+    assert signed_in.status_code == 200
+    assert f"Starting Immich Memories UI on http://127.0.0.1:{app.port}" in output
+    assert not reachable_from_lan, f"the default UI answers on {lan}"
+
+
+@pytest.mark.feature("auth.on-by-default")
+def test_turning_the_sign_in_off_opens_the_ui_on_localhost_only(tmp_path):
+    home = _home(tmp_path, auth={"enabled": False})
 
     with served_app(home) as app, app.client() as browser:
         session = browser.get("/api/v1/session").json()
@@ -55,10 +89,10 @@ def test_a_default_install_needs_no_login_and_listens_on_localhost_only(tmp_path
     assert session["auth_enabled"] is False
     assert protected.status_code == 200
     assert f"Starting Immich Memories UI on http://127.0.0.1:{app.port}" in app.output()
-    assert not reachable_from_lan, f"the default UI answers on {lan}"
+    assert not reachable_from_lan, f"the UI without sign-in answers on {lan}"
 
 
-@pytest.mark.feature("auth.off-by-default-localhost")
+@pytest.mark.feature("auth.on-by-default")
 def test_the_shipped_compose_file_publishes_the_ui_on_localhost_only():
     compose = yaml.safe_load((REPO / "docker-compose.yml").read_text(encoding="utf-8"))
 
@@ -108,16 +142,44 @@ def test_the_username_and_password_turn_on_the_login_and_a_basic_header_is_refus
     )
 
 
-@pytest.mark.feature("auth.basic")
-def test_a_username_alone_leaves_the_login_off(tmp_path):
+@pytest.mark.feature("auth.reset-password")
+def test_auth_reset_password_prints_a_new_one_and_signs_every_browser_out(tmp_path):
     home = _home(tmp_path)
 
-    with served_app(home, env=_basic_login("admin")) as app, app.client() as browser:
-        session = browser.get("/api/v1/session").json()
-        protected = browser.get(PROTECTED)
+    with served_app(home) as app, app.client() as browser:
+        old = _logged_password(app.output())
+        signed_in = browser.post("/auth/login", json={"username": "admin", "password": old})
+        reset = home.run("auth", "reset-password")
+        new = re.search(r"password: (\S+)", reset.output)
+        signed_out = browser.get(PROTECTED)
+        refused = browser.post("/auth/login", json={"username": "admin", "password": old})
+        accepted = browser.post(
+            "/auth/login", json={"username": "admin", "password": new.group(1) if new else ""}
+        )
+        logged = app.output()
 
-    assert session["auth_enabled"] is False
-    assert protected.status_code == 200
+    assert signed_in.status_code == 200
+    assert reset.returncode == 0, reset.explain()
+    assert new and new.group(1) != old
+    assert new.group(1) not in logged
+    assert signed_out.status_code == 401
+    assert refused.status_code == 401
+    assert accepted.status_code == 200
+
+
+@pytest.mark.feature("auth.basic")
+def test_a_username_alone_does_not_pick_the_name_the_generated_password_goes_with(tmp_path):
+    home = _home(tmp_path)
+
+    with served_app(home, env=_basic_login("family")) as app, app.client() as browser:
+        password = _logged_password(app.output())
+        anonymous = browser.get(PROTECTED)
+        renamed = browser.post("/auth/login", json={"username": "family", "password": password})
+        right = browser.post("/auth/login", json={"username": "admin", "password": password})
+
+    assert anonymous.status_code == 401
+    assert renamed.status_code == 401
+    assert right.status_code == 200
 
 
 # ── health endpoints ─────────────────────────────────────────────────────────
@@ -274,7 +336,7 @@ def test_oidc_refuses_an_account_off_the_allow_list(oidc_app, oidc: OidcProvider
 
 @pytest.mark.feature("web.allowed-hosts")
 def test_the_server_answers_only_the_hosts_it_was_told_to_accept(tmp_path):
-    home = _home(tmp_path, server={"allowed_hosts": ["nas.lan"]})
+    home = _home(tmp_path, auth={"enabled": False}, server={"allowed_hosts": ["nas.lan"]})
 
     with served_app(home) as app, app.client() as browser:
         statuses = {
@@ -292,7 +354,7 @@ def test_the_server_answers_only_the_hosts_it_was_told_to_accept(tmp_path):
 
 @pytest.mark.feature("web.allowed-hosts")
 def test_a_write_from_another_site_is_refused_and_changes_nothing(tmp_path):
-    home = _home(tmp_path)
+    home = _home(tmp_path, auth={"enabled": False})
     cached = (
         home.root / ".immich-memories" / "cache" / "thumbnails" / "ab" / "ab-picture_preview.jpg"
     )

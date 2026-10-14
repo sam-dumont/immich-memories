@@ -35,13 +35,18 @@ From your desktop, a tunnel needs no port change:
 
 Open `http://localhost:8080` on the desktop.
 
-For LAN access, set these in `.env`:
+The app asks for a sign-in on first start and generates a password for it: read the
+username and password in `docker logs immich-memories`
+([where it lives](./authentication.mdx#the-generated-password)).
+
+For LAN access, set this in `.env`:
 
 ```ini
-IMMICH_MEMORIES_AUTH_USERNAME=admin
-IMMICH_MEMORIES_AUTH_PASSWORD=choose-a-long-password
 UI_BIND_ADDRESS=0.0.0.0
 ```
+
+To choose your own sign-in instead of the generated one, add
+`IMMICH_MEMORIES_AUTH_USERNAME` and `IMMICH_MEMORIES_AUTH_PASSWORD` next to it.
 
 `UI_BIND_ADDRESS` is the switch: the shipped mapping is
 <code>{"${UI_BIND_ADDRESS:-127.0.0.1}:"}<ComposePort />:8080</code>, so there is no need to edit it.
@@ -49,7 +54,7 @@ Run `docker compose up -d`, then open <code><ComposePort host="your-server" /></
 If that host port is taken, change only the number before the final `:8080`, for example
 `22831:8080`. Keep the bind address and container port.
 
-To check that auth is on, call a protected route without logging in, from another machine:
+To check that sign-in is on, call a protected route without logging in, from another machine:
 
 <pre><code>{"curl -s -o /dev/null -w '%{http_code}\\n' http://your-server:"}<ComposePort />/api/v1/settings</code></pre>
 
@@ -62,7 +67,7 @@ TLS, put a reverse proxy in front and keep `UI_BIND_ADDRESS=127.0.0.1`
 ([Authentication](./authentication.mdx)).
 
 :::caution This app can access your library
-Authentication is disabled by default. Enable it before exposing the port.
+Sign-in is on by default, with a generated password. Keep it on before exposing the port.
 Keep one UI replica.
 :::
 
@@ -71,7 +76,9 @@ For OIDC or a proxy with HTTPS, see [Authentication](./authentication.mdx).
 ### Stack editor LAN access {#stack-editor-lan-access}
 
 The builder's **Single file for a stack editor** output has no `.env`. Before deploying it on
-a trusted LAN, set these entries directly under the app service's existing `environment:`:
+a trusted LAN, you can keep the generated sign-in (the password is in `docker logs immich-memories`)
+or choose your own by setting these entries directly under the app service's existing
+`environment:`:
 
 ```yaml
 IMMICH_MEMORIES_AUTH_USERNAME: admin

@@ -6,11 +6,11 @@ title: Generate a soundtrack
 
 Your film already gets music: a bundled track, or an audio file you choose. A generator makes an original track for the film's mood and length. It is optional and off by default.
 
-The mood follows what the film is. A birthday or a trip gets a lively mood, an ordinary month moves with how many of its shots play, and a quiet month of still photos gets calm. A text reader can choose it from the cut's text; without one, the film's own facts do. [How the music is picked](../reference/output-rendering.md#music) has the table.
+The music reads the season in your home base's hemisphere, the same way titles do (set the home base in Settings, or `trips.homebase_latitude`). The mood follows what the film is. A birthday or a trip gets a lively mood, an ordinary month moves with how many of its shots play, and a quiet month of still photos gets calm. A text reader can choose it from the cut's text; without one, the film's own facts do. [How the music is picked](../reference/output-rendering.md#music) has the table.
 
 The generator plays one of three styles: acoustic folk, electronic, or solo piano. Those are the ones that held up in listening tests on real films. Jazz trio, indie rock, orchestral, ambient and metal exist in the caption matrix but the app never picks them by itself.
 
-A generated soundtrack plays as one piece. With ACE-Step, a film up to 4 minutes gets a single take (`audio.music_block_seconds`, 240 by default); a longer one joins takes that share one style, tempo and key, on a bar line.
+A generated soundtrack plays as one piece. With ACE-Step, a film up to 4 minutes gets a single take; a longer one joins takes that share one style, tempo and key, on a bar line.
 
 Without a generator, a film longer than one bundled track plays a varied, crossfaded playlist from the mood's folder instead of looping a single track, and the bundled mix is mastered to the same loudness as a generated one.
 

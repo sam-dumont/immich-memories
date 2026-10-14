@@ -122,14 +122,14 @@ export default function SetupBuilder({initialPlatform = 'linux', initialInline =
       <label className={styles.check}>
         <input type="checkbox" checked={Boolean(setup.lanAccess)} onChange={event => update({lanAccess: event.target.checked})} />
         Open the UI to other machines on my LAN
-        <small>Publishes the port on every interface instead of localhost only. It needs the login below. Leave it off to use an SSH tunnel.</small>
+        <small>Publishes the port on every interface instead of localhost only. The app signs you in either way: pick a login below, or leave it empty and read the generated password in the container log. Leave it off to use an SSH tunnel.</small>
       </label>
-      <label>App login: username
+      <label>App login: username (optional)
         <input autoComplete="off" value={setup.authUsername ?? ''} onChange={event => update({authUsername: event.target.value})} placeholder="admin" />
       </label>
-      <label>App login: password
+      <label>App login: password (optional)
         <input type="password" autoComplete="new-password" value={setup.authPassword ?? ''} onChange={event => update({authPassword: event.target.value})} />
-        <small>At least 12 characters. It goes into the generated files in your browser and nowhere else.</small>
+        <small>Leave both empty to get a generated password on first start. At least 12 characters. It goes into the generated files in your browser and nowhere else.</small>
       </label>
     </div>}
     {compose && <label className={styles.check}>
@@ -179,7 +179,7 @@ export default function SetupBuilder({initialPlatform = 'linux', initialInline =
         <summary>Private UI access with an SSH tunnel</summary>
         <CodeBlock language="bash" title="Private UI access">{result.accessCommands}</CodeBlock>
       </details>}
-      {compose && !setup.lanAccess && <p>On a server or NAS, configure <Link to={setup.inline ? "/docs/run/docker#stack-editor-lan-access" : "/docs/get-started/quick-start#2-connect-immich"}>app login for LAN access</Link> before starting, or use the private SSH tunnel above.</p>}
+      {compose && !setup.lanAccess && <p>On a server or NAS, read <Link to={setup.inline ? "/docs/run/docker#stack-editor-lan-access" : "/docs/get-started/quick-start#2-connect-immich"}>how to open the app to your LAN</Link> before starting, or use the private SSH tunnel above.</p>}
       {compose && !setup.inline && <p>The commands below use <code>immich-memories/output</code> for finished films. On Linux, run <code>mkdir -p immich-memories/output &amp;&amp; sudo chown 1000:1000 immich-memories/output</code> before those commands. On Synology, give that folder write access for UID/GID 1000 using the <Link to="/docs/run/nas#the-output-folder">folder permissions recipe</Link>.</p>}
       {showCommands && <CodeBlock language="bash" title={result.workerCommands ? "On the app host" : "Install and check"}>{result.commands}</CodeBlock>}
     </div>}

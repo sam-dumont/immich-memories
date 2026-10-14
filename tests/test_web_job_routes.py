@@ -375,6 +375,29 @@ def test_invalid_job_ids_are_missing_jobs_in_every_endpoint(client):
     assert client.get("/api/v1/ask/preview/invalid").status_code == 404
 
 
+@pytest.mark.parametrize(
+    "crafted",
+    [
+        "..%2F..%2Fetc",
+        "%2e%2e%2f%2e%2e%2fetc%2fpasswd",
+        "..%5C..%5Cetc",
+        "g" * 32,
+        "A" * 32,
+        "%2Fetc%2Fpasswd",
+        "0" * 31 + "%2F",
+        "0" * 33,
+    ],
+)
+def test_a_crafted_job_id_never_reaches_the_filesystem(client, tmp_path, crafted):
+    outside = tmp_path / "cache" / "secret.json"
+    outside.parent.mkdir(parents=True, exist_ok=True)
+    outside.write_text("{}")
+    for suffix in ("", "/events", "/output"):
+        assert client.get(f"/api/v1/jobs/{crafted}{suffix}").status_code == 404
+    assert client.post(f"/api/v1/jobs/{crafted}/cancel").status_code == 404
+    assert client.get(f"/api/v1/ask/preview/{crafted}").status_code == 404
+
+
 def test_render_fade_override_is_validated_and_becomes_a_cli_flag():
     import pytest
     from pydantic import ValidationError

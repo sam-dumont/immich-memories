@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-14 17:42+0200\n"
+"POT-Creation-Date: 2026-10-15 06:04+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ja\n"
@@ -1115,7 +1115,7 @@ msgstr "{account}の所有者"
 msgid "Passed {stages}"
 msgstr "{stages}を通過"
 
-#: web/routes/login/+page.svelte:66
+#: web/routes/login/+page.svelte:69
 msgid "Password"
 msgstr "パスワード"
 
@@ -1513,11 +1513,11 @@ msgid "Show more"
 msgstr "もっと見る"
 
 #: web/lib/JobPanel.svelte:93 web/routes/login/+page.svelte:46 web/routes/login/+page.svelte:58
-#: web/routes/login/+page.svelte:69
+#: web/routes/login/+page.svelte:72
 msgid "Sign in"
 msgstr "サインイン"
 
-#: web/routes/login/+page.svelte:72
+#: web/routes/login/+page.svelte:75
 msgid "Sign in through the proxy in front of this server."
 msgstr "このサーバーの前段にあるプロキシ経由でサインインします。"
 
@@ -1819,6 +1819,14 @@ msgstr "このカテゴリーは直近6件の思い出にすでに2回登場し�
 msgid "This run kept no record of its pool. Cut again to see one."
 msgstr "この実行では候補の素材一覧が保存されていません。もう一度編集すると確認できます。"
 
+#: web/routes/login/+page.svelte:63
+msgid ""
+"This server made its own password and printed it once in its log (docker compose logs immich-"
+"memories). Run immich-memories auth reset-password to make a new one."
+msgstr ""
+"このサーバーはパスワードを自動作成し、ログに一度だけ出力しました (docker compose logs immich-memories)。新しいパスワードは immich-"
+"memories auth reset-password で作成できます。"
+
 #: web/routes/settings/+page.svelte:30
 msgid "Thumbnail cache"
 msgstr "サムネイルキャッシュ"
@@ -1925,7 +1933,7 @@ msgstr "ライブラリの名前を正確に入力してください。各素材
 msgid "Use this picture instead"
 msgstr "代わりにこの素材を使う"
 
-#: web/routes/login/+page.svelte:63
+#: web/routes/login/+page.svelte:66
 msgid "Username"
 msgstr "ユーザー名"
 

@@ -33,7 +33,7 @@ Or add `IMMICH_MEMORIES_AUTOMATION__ENABLED: "true"` and
 and set the time there. A line in `.env` alone
 does not reach the container. Recreate with `docker compose up -d`.
 Settings also exposes **Automation > enabled** and **daily_at** while those Compose lines are absent.
-Either `automation.upload_to_immich: true` or `upload.enabled: true` requests delivery to Immich; `upload.album_name` names the destination. The film arrives with the same description and tags a manual upload gets, a retry included ([What Immich sees](../run/privacy.md#what-immich-sees)). Confirmed delivery removes the local copy.
+`upload.enabled: true` requests delivery to Immich for manual and automatic films; `upload.album_name` names the destination. The film arrives with the same description and tags a manual upload gets, a retry included ([What Immich sees](../run/privacy.md#what-immich-sees)). Confirmed delivery removes the local copy.
 
 The UI process then runs the same `auto run` decision once a day, with the same lock, history, upload retry
 and notifications as the CLI. A container that was down at `daily_at` catches up when it starts; if the day's

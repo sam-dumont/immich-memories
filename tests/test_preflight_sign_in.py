@@ -21,7 +21,12 @@ def test_a_long_basic_password_passes():
 
 
 def test_auth_off_skips_the_check():
-    assert check_sign_in(Config()).status is CheckStatus.SKIPPED
+    assert check_sign_in(Config(auth={"enabled": False})).status is CheckStatus.SKIPPED
+
+
+def test_the_generated_password_is_not_checked_for_length():
+    """Sign-in is on by default and, with no password set, the app made a strong one itself."""
+    assert check_sign_in(Config()).status is not CheckStatus.WARNING
 
 
 def test_preflight_runs_the_sign_in_check():

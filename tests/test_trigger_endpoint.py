@@ -19,7 +19,9 @@ TOKEN = "workflow-token"  # noqa: S105
 
 
 def _config(tmp_path: Path, **server: object) -> Config:
+    """A server whose only way in is the trigger token: sign-in is explicitly off."""
     return Config(
+        auth={"enabled": False},
         immich={"url": "http://immich.test", "api_key": "immich-key"},
         cache={"database": str(tmp_path / "runs.db"), "directory": str(tmp_path / "cache")},
         server={"trigger_token": TOKEN, **server},
@@ -87,8 +89,9 @@ class TestTriggerIsOffUntilSomethingAuthenticatesIt:
     @pytest.mark.parametrize(
         ("auth", "server", "expected"),
         [
-            ({}, {}, False),
-            ({}, {"trigger_token": "workflow-token"}, True),
+            ({"enabled": False}, {}, False),
+            ({"enabled": False}, {"trigger_token": "workflow-token"}, True),
+            ({}, {}, True),  # sign-in is on by default, so something authenticates callers
             ({"enabled": True, "username": "u", "password": "p"}, {}, True),
             (
                 {"enabled": True, "username": "u", "password": "p"},

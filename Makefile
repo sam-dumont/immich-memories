@@ -390,8 +390,8 @@ IMMICH_GATE_PORT ?= 2299
 IMMICH_GATE_DIR ?= .immich-gate
 IMMICH_GATE_SERVER_v2 := ghcr.io/immich-app/immich-server:v2.7.5@sha256:c15bff75068effb03f4355997d03dc7e0fc58720c2b54ad6f7f10d1bc57efaa5
 IMMICH_GATE_VALKEY_v2 := docker.io/valkey/valkey:9@sha256:3b55fbaa0cd93cf0d9d961f405e4dfcc70efe325e2d84da207a0a8e6d8fde4f9
-IMMICH_GATE_SERVER_v32 := ghcr.io/immich-app/immich-server:v3.2.2@sha256:79cc1623323d5894922686d8743b4780181428f98eecbfb58ce12c41ef02d1ea
-IMMICH_GATE_SERVER_v3 := ghcr.io/immich-app/immich-server:v3.3.0@sha256:be56bc12c17a84617a979ad1eab1d9105bbec1955ffa7da09b3f9cf79d3bd09d
+IMMICH_GATE_SERVER_v32 := ghcr.io/immich-app/immich-server:v3.2.4@sha256:d317916b28090c33eb36b308464ea391f8b7df1d850fcfea227a39ec879718c2
+IMMICH_GATE_SERVER_v3 := ghcr.io/immich-app/immich-server:v3.3.3@sha256:bae7664ff3aa4c2c1fcbdcdd86b40b105643c5f861f3e6a770fc760089f25862
 IMMICH_GATE_VALKEY_v3 := docker.io/valkey/valkey:9@sha256:70739f85ad2ee01a726a965584a0f94895f01b0c60b3cc8b0aeef11eaa6888cf
 IMMICH_GATE_VALKEY_v32 := $(IMMICH_GATE_VALKEY_v3)
 # Native identity gates: stable 3.2 and 3.3 final.
@@ -585,7 +585,7 @@ e2e: web-client-present  ## Run required fake-service contracts and real hermeti
 	files=$$(python3 scripts/shard_tests.py pick e2e "$(E2E_SHARD)" tests/e2e/test_fake_immich.py tests/e2e/test_launch_smoke.py \
 		tests/e2e/test_memory_page.py tests/e2e/test_picture_decisions.py tests/e2e/test_sharing_levels.py \
 		tests/e2e/test_web_client.py tests/e2e/test_job_errors.py tests/e2e/test_keep_intermediates.py \
-		tests/e2e/test_people_page.py tests/e2e/test_people_owner_and_links.py tests/e2e/test_people_accounts_and_groups.py tests/e2e/test_phone_width.py tests/e2e/test_automation_pages.py tests/e2e/test_ui_languages.py tests/e2e/test_web_features.py) && \
+		tests/e2e/test_people_page.py tests/e2e/test_people_owner_and_links.py tests/e2e/test_people_accounts_and_groups.py tests/e2e/test_phone_width.py tests/e2e/test_automation_pages.py tests/e2e/test_ui_languages.py tests/e2e/test_web_features.py tests/e2e/test_generated_login.py) && \
 	uv run pytest $$files -v \
 		-m "e2e and not visual" --log-cli-level=INFO --tb=short -n $(E2E_WORKERS) --dist loadfile \
 		--junitxml=tests/e2e-junit.xml $(E2E_ARGS)

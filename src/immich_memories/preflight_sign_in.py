@@ -10,6 +10,12 @@ def check_sign_in(config: Config) -> CheckResult:
         return CheckResult(
             name="Sign-in", status=CheckStatus.SKIPPED, message="Authentication disabled"
         )
+    if config.auth.generates_login:
+        return CheckResult(
+            name="Sign-in",
+            status=CheckStatus.OK,
+            message="Generated password; the first start prints it in the server log",
+        )
     if warnings := startup_warnings(config):
         return CheckResult(name="Sign-in", status=CheckStatus.WARNING, message=warnings[0])
     return CheckResult(

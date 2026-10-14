@@ -14,7 +14,7 @@ def _config(**overrides) -> Config:
 
 class TestEffectiveHost:
     def test_auth_off_and_nothing_set_binds_localhost(self):
-        config = _config()
+        config = _config(auth={"enabled": False})
 
         host = config.server.effective_host(auth_enabled=config.auth.enabled)
 
@@ -31,10 +31,10 @@ class TestEffectiveHost:
 
         assert config.server.effective_host(auth_enabled=False) == "0.0.0.0"  # noqa: S104 — the assertion IS about the broad bind
 
-    def test_the_named_escape_hatch_works(self):
+    def test_the_retired_escape_hatch_no_longer_opens_the_lan(self):
         config = _config(server={"allow_unauthenticated_lan": True})
 
-        assert config.server.effective_host(auth_enabled=False) == "0.0.0.0"  # noqa: S104 — the assertion IS about the broad bind
+        assert config.server.effective_host(auth_enabled=False) == "127.0.0.1"
 
 
 class TestConfigsAlreadyCarryingTheWildcard:

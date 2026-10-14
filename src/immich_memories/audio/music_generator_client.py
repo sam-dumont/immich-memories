@@ -50,7 +50,6 @@ class MusicGenClientConfig:
             base_url=app_config.base_url,
             api_key=app_config.api_key or None,
             timeout_seconds=app_config.timeout_seconds,
-            num_versions=app_config.num_versions,
         )
 
 

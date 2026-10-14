@@ -35,7 +35,7 @@ end up in no shot. The seat fixes that on every tier (`editorial_family_seat.py`
 
 - **Who is owed one.** A close family member (partner, child or parent, as confirmed in
   the people registry) on at least 20 of the period's pictures, or 5 % of them, and in none of its shots.
-  The two numbers are `advanced.editorial.people.seat_min_pictures` and `seat_min_share`. Only
+  Both numbers are fixed. Only
   pictures the film could show count: someone whose every picture is refused as a shot is owed
   nothing, and the record says so.
 - **In a film about a person**, close family is relative to that person as well as to you: for example, in a film
@@ -134,6 +134,8 @@ Anything else stays `family_only` and leaves the shareable film (`clean_evidence
 still pass. Captions and Laya add an activity check, but cannot guarantee that every private
 moment is recognised.
 
+A Live Photo's clip is judged apart from its still. In a shareable film, a Live Photo whose clip no detector read plays as its still (Basic reads no clips, so there it is every one); family films keep the motion.
+
 **On GPU and Full**, Laya answers the activity question from each shot's caption, acquired when
 needed and then banked. This works with either reader: a prose LLM is never asked about sharing.
 - Four findings are a household's private moments and give `just_us`: breastfeeding, bathing,
@@ -219,8 +221,8 @@ No tier asks a model to compare two pictures.
      primary. A member whose primary is outside the pool stays a
      candidate. The read needs `stack.read`; a key without it, or a server with no stacks
      endpoint, logs one warning per account and the run folds no stacks.
-2. **Bursts, before the editor.** Photos within `photos.burst_window_seconds` (300) of each other
-   **and** within `photos.burst_hash_threshold` (8) bits on a preview hash are one burst; the
+2. **Bursts, before the editor.** Photos within 300 s of each other
+   **and** within 8 bits on a preview hash are one burst; the
    favourite survives it, else the best frame. A photo with no hash is kept.
 3. **Inside a story, while the cut is built.** A 10-bit hash check against the shots around it (see
    [Picking each shot](./picking-shots.md#what-a-frame-must-pass)). A further frame of a moment the

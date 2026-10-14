@@ -21,11 +21,12 @@ from typing import Any
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql, sqlite
 
-from immich_memories.config_loader import Config
+from immich_memories.config_loader import Config, config_state_dir
 from immich_memories.config_models_auth import AuthConfig
 from immich_memories.db import now_db, open_store
 from immich_memories.db.tables.session_generations import session_generations
 from immich_memories.web.auth import set_session
+from immich_memories.web.generated_login import generated_login_digest, login_path
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +75,8 @@ def end_sessions(config: Config, username: str | None) -> None:
 
 
 def auth_fingerprint(auth: AuthConfig, secret: str) -> str:
-    """A keyed digest of the sign-in rules; any change to them ends every session.
+    """A keyed digest of the sign-in rules (a generated password's hash included); any change
+    to them ends every session.
 
     Keyed with the session secret so the readable cookie does not carry a plain hash of
     the password.
@@ -90,6 +92,9 @@ def auth_fingerprint(auth: AuthConfig, secret: str) -> str:
         auth.user_header,
         sorted(auth.trusted_proxies),
     ]
+    if auth.generates_login:
+        # A new generated password (its file deleted, the server restarted) ends the old sessions.
+        rules.append(generated_login_digest(login_path(config_state_dir())))
     message = json.dumps(rules).encode("utf-8")
     return hmac.new(secret.encode("utf-8"), message, hashlib.sha256).hexdigest()
 

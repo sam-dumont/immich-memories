@@ -3,7 +3,8 @@
 Kustomize manifests for Immich Memories. The base runs on any cluster (CPU only);
 NVIDIA GPU scheduling is an overlay.
 
-Authentication is disabled by default. Do not expose the Service until auth is enabled. The UI is
+Sign-in is on by default. With no credentials set, the first start generates a password and prints it once in the pod
+log (`kubectl logs deploy/immich-memories`); set your own in the Secret before exposing the Service. The UI is
 single-user, single-replica because active workflow state is in-process; keep `replicas: 1`.
 
 These manifests get less exercise than Docker Compose. They are validated with
@@ -204,7 +205,7 @@ The four modes, and the exact SQL for the dedicated-schema one, are on
 
 ## Ingress
 
-Not shipped by default because auth is off. Enable auth first (basic auth keys in the Secret, or
+Not shipped by default. Set your own login first (basic auth keys in the Secret, or
 OIDC), then `cp base/ingress.yaml.example base/ingress.yaml`, set the host, and add
 `- ingress.yaml` to `base/kustomization.yaml`.
 

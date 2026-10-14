@@ -6,29 +6,31 @@ import ComposePort from '@site/src/components/ComposePort';
 
 # Network and security
 
-Keep the app private until authentication works. An Immich API key gives the app access to the
-library; a proxy or render worker is part of that trust boundary.
+The app asks for a sign-in by default, because an Immich API key gives it access to the library.
+A proxy or render worker is part of that trust boundary. The first start generates a password;
+[Authentication](./authentication.mdx#the-generated-password) says where to find it.
 
 ## Listen on the right address
 
-With auth off, Python binds to `127.0.0.1`. Enabling auth normally permits all interfaces.
-Use `ui --host 127.0.0.1` to keep an authenticated app local.
-In Docker, the image starts with `ui --host 0.0.0.0`. Only the shipped Compose mapping
+A pip or uv install binds to `127.0.0.1` by default, with the generated sign-in.
+`ui --host 0.0.0.0` opens it to the LAN, still behind the sign-in.
+In Docker, the image starts with `ui --host 0.0.0.0`. The shipped Compose mapping
 <code>127.0.0.1:<ComposePort />:8080</code> keeps it reachable from the host alone.
-For example, `docker run -p 8080:8080`,
-a NAS template or a Portainer stack with an all-interface mapping exposes the unauthenticated
-app unless you enable auth. For LAN access, follow
+For LAN access, follow
 [Docker's login and mapping steps](./docker.md#reaching-the-ui-from-another-machine).
 
-An explicit `ui --host 0.0.0.0` or `IMMICH_MEMORIES_SERVER__HOST=0.0.0.0` can expose an
-unauthenticated app. `advanced.server.allow_unauthenticated_lan: true` also permits a wildcard
-bind without auth. Anyone reaching that port can use the app's Immich access.
-A YAML `server.host: 0.0.0.0` is ignored because older versions wrote it automatically.
-Enable auth for LAN access, or use one of the explicit overrides only on a restricted network.
+With sign-in turned off on purpose (`IMMICH_MEMORIES_AUTH__ENABLED=false`), the UI binds to
+localhost unless you pass an explicit host.
+An explicit `ui --host 0.0.0.0` or `IMMICH_MEMORIES_SERVER__HOST=0.0.0.0` then exposes an app with
+no login: anyone reaching that port can use its Immich access. Use these only on a restricted
+network. A YAML `server.host: 0.0.0.0` is ignored.
+
+To reach the app from the LAN, keep the sign-in, or put your own auth proxy in front and let it
+sign users in with a header ([trusted header sign-in](authentication.mdx#trusted-header-reverse-proxy)).
 
 ## Allowed hosts
 
-Every request names a host in its `Host` header. With auth off, the app answers only these:
+Every request names a host in its `Host` header. With sign-in on, the app answers any host: the sign-in protects it. With sign-in off, it answers only these:
 
 - `localhost`, `127.0.0.1`, `[::1]` and `host.docker.internal`, on any port;
 - `server.host`, when it is a name or a specific address (not `0.0.0.0` or `::`);
@@ -38,26 +40,23 @@ Every request names a host in its `Host` header. With auth off, the app answers 
 Any other host gets **421 Misdirected Request**. Without this, a web page on another site could
 point its own name at your machine and read the app as if it were that site.
 
-With auth on, any host is answered only when both `auth.public_url` and `server.allowed_hosts`
-are empty. Setting either restricts requests to the public URL's hostname, entries in
-`server.allowed_hosts` and the localhost names above. To also open the app by a LAN IP or
-another name, add it to `server.allowed_hosts`. Other names get **421 Misdirected Request**.
+With sign-in on you can still set `server.allowed_hosts` or `auth.public_url`; either one restricts
+requests to the public URL's hostname, the listed entries and the localhost names above. Other
+names get **421 Misdirected Request**.
 
 `/health/live` and `/health/ready` answer whatever host they name, since Kubernetes probes use the
 pod IP. A host the app would otherwise refuse gets the status field and nothing else, in every auth
 mode, so a page that rebinds its own name to your machine can't read the automation state. An
 allowed host gets status and version; the automation, delivery, disk and Immich detail goes only
-to a signed-in session, or to anyone when auth is off. The compatibility `/health`
+to a signed-in session, or to anyone when sign-in is off. The compatibility `/health`
 endpoint keeps the host checks above: a pod-IP request can receive 421. Use the dedicated
 [liveness and readiness paths](reference/kubernetes-operations.md#probes) for Kubernetes probes.
 
-An unauthenticated LAN install (`allow_unauthenticated_lan: true`) must list the names it is
-reached by:
+To have the app answer to extra names (a proxy's public name, say), list them:
 
 ```yaml
 advanced:
   server:
-    allow_unauthenticated_lan: true
     allowed_hosts: [nas.lan, 192.168.1.20]
 ```
 

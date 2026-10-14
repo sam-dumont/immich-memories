@@ -66,7 +66,12 @@ def startup_warnings(config: Config) -> list[str]:
     """Weak settings worth a line in the log and in preflight, but not a refusal."""
     auth = config.auth
     warnings = []
-    if auth.enabled and auth.provider == "basic" and len(auth.password) < MIN_PASSWORD_LENGTH:
+    if (
+        auth.enabled
+        and auth.provider == "basic"
+        and not auth.generates_login
+        and len(auth.password) < MIN_PASSWORD_LENGTH
+    ):
         warnings.append(
             f"auth.password is shorter than {MIN_PASSWORD_LENGTH} characters; "
             "a longer one resists guessing far better"

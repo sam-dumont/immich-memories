@@ -97,15 +97,9 @@ def apply_tier(config: Config) -> dict[str, Any]:
             "Model refinement requires GPU capability and the full tier's caption and Laya services.",
             config.tier,
         )
+    # A source that set one of these keys was already named by `warn_unsupported_keys`.
     for (path, field), value in TIERS[config.tier].items():
         section = _section(config, path)
-        if field in section.model_fields_set and getattr(section, field) != value:
-            logger.warning(
-                "Ignoring %s: selection tier %s requires %s",
-                ".".join((*path, field)),
-                config.tier,
-                value,
-            )
         setattr(section, field, value)
         applied[".".join((*path, field))] = value
     return applied

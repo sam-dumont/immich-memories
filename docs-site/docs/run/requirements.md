@@ -84,11 +84,12 @@ an enabled `openai-compatible` or `ollama` reader with blank `base_url` starts l
 `llama-server` is installed. Hosted provider presets use their vendor URL instead. The shipped
 Docker and Kubernetes app images need an external reader.
 
-`IMMICH_MEMORIES_DEPLOYMENT_TIER` supplies a deployment default: it accepts `basic`, `gpu` or
-`full`, and YAML or saved Settings can override it. The base Compose and Kubernetes files default
-to Basic; their GPU/Full files add the selected tier and its service connections. Use the runtime
-variable `IMMICH_MEMORIES_TIER` when the deployment must fix the tier above YAML and Settings.
-Terraform and the Kubernetes one-shot job default to `auto`.
+A deployment sets its tier with one variable, `IMMICH_MEMORIES_DEPLOYMENT_TIER`: `auto`, `basic`,
+`gpu` or `full`. It ranks with the environment, above YAML and Settings. A `tier` in `config.yaml`
+or Settings is ignored with a warning naming the variable, and the Settings page shows the tier as
+set by the environment. The base Compose and Kubernetes files default to Basic; their GPU/Full
+files add the selected tier and its service connections. Terraform and the Kubernetes one-shot
+job default to `auto`.
 
 Selecting a tier does not install models or start servers. Full without an enabled reader fails
 configuration loading, before the UI or `preflight` can start: configure and enable the reader

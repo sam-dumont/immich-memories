@@ -108,7 +108,7 @@ identities; partial or mixed-artifact answers are never banked. A Live Photo's
 clip is read the same way: it is no candidate, so `acquire_clip_companions`
 (`editorial_preparation_model_facts.py`) reads it for the exposure head alone and banks it under the
 clip's own id, and `load_detector_heads` puts those rows in the gate's `companion_detectors`, which
-had been empty for every Live Photo. A flagged clip holds its still. The same sampled frames of a video
+had been empty for every Live Photo. A flagged clip holds its still. In a shareable film a clip no detector read plays as its still (`UnitBuilder._clip_withheld`); family films keep the motion. The same sampled frames of a video
 go through the `frame_kind` head (`prepare_clip_frames` in `editorial_preparation_heads.py`), and
 `editorial_clip_frames.py` banks the clip's `clip_frames` fact: a clip that shows its moment in
 fewer than three frames of four reads `frames=subject_often_missing` on its line, which the rules
@@ -908,6 +908,7 @@ src/immich_memories/
 │   ├── people_cmd.py           # `people` scan/show
 │   ├── models_cmd.py           # `models fetch`
 │   ├── prepare_cmd.py          # `prepare`
+│   ├── auth_cmd.py             # `auth reset-password`: a new generated password, printed once; ends every session
 │   ├── auto_cmd.py             # `auto suggest/run/history/status/install/test-notification`
 │   ├── special_days_cmd.py     # `discover-days`, `days-due`, `days-export`/`days-import`: the days worth a memory
 │   ├── store_cmd.py            # `store status/import/copy/backup/restore`
@@ -947,6 +948,7 @@ src/immich_memories/
 │   ├── request_origin.py       # Shared browser-origin check for unsafe requests, including sign-out
 │   ├── session.py              # GET /api/v1/session: who is signed in, and which sign-in the login page offers
 │   ├── auth.py                 # Who gets in: credential check, rate limiter, bypass paths, session helpers
+│   ├── generated_login.py      # Auth on by default: first start generates a password, keeps its scrypt hash, logs it once (no route returns it)
 │   ├── session_validity.py     # Whether a cookie still stands: TTL, sign-in rules, atomic revocations
 │   │                           # in session_generations (one integer per user plus a global generation)
 │   ├── auth_oidc.py            # OIDC client (authlib starlette integration, singleton)
@@ -1259,6 +1261,7 @@ src/immich_memories/
 ├── settings_edit.py            # save_settings (the UI/CLI write path, database only), move_to_database (`config move-to-db`)
 ├── config_presets.py           # Named presets (`preset: fast`) that fill several knobs at once
 ├── config_tiers.py             # One resolved product tier: reader, preparation producers, Laya
+├── config_unsupported.py       # Keys out of the documented config (tier-owned, internal, merged, moved, ignored): warned until 2.0
 ├── config_compute.py           # Inference capability discovery, separate from video encoding
 ├── config_models.py            # Resources a run uses: Immich server, cache, hardware (+ config.yaml `${VAR}` expansion)
 ├── config_models_analysis.py   # Source admission and the expected seconds per clip
@@ -1406,9 +1409,11 @@ flowchart TD
   is opened from env + the file's `database:` block only, so it never recurses into `get_config()`.
   `config_sources.describe_settings` is the per-key source report the settings page and
   `config show` render.
-- `deployment_defaults` (deployment_config.py): `IMMICH_MEMORIES_DEPLOYMENT_*` supplies requested
-  tier and service endpoints below the saved settings source. Compose/Kubernetes wiring therefore
-  stays editable in Settings; normal runtime env and YAML precedence is unchanged. Explicit reader
+- `deployment_defaults` (deployment_config.py): `IMMICH_MEMORIES_DEPLOYMENT_*` supplies service
+  endpoints below the saved settings source, so Compose/Kubernetes wiring stays editable in
+  Settings. `deployment_tier` is the exception: `IMMICH_MEMORIES_DEPLOYMENT_TIER` (Compose `TIER`)
+  sets `tier` ranked with the environment, so `.env` and the file can't disagree; a file or saved
+  `tier` it replaces is named in a warning, and Settings shows it as env-set. Explicit reader
   activation is required for Full. Preflight reports inference compute separately from video encoding.
 - `AssemblySettings` (assembly_config.py): video assembly parameters
 - `PipelineConfig` (smart_pipeline.py): the per-run switches the editorial route reads
@@ -1434,9 +1439,13 @@ Config is organized in 3 tiers (see `config_loader.py`):
 At runtime, all sections are flat fields on `Config` (e.g. `config.analysis`).
 Both flat and nested YAML formats are accepted.
 
-These YAML tiers are not the product `tier` (`config_tiers.py`): `nas` (inexpensive CPU classifiers), `gpu`
+These YAML layers are not the product `tier` (`config_tiers.py`): `nas` (inexpensive CPU classifiers), `gpu`
 (every light model, no LLM) or `full` (plus an enabled local or server LLM). The product
-tier owns `editorial.reader`, `editorial.preparation.tier` and `editorial.laya_audience`.
+tier owns `editorial.reader`, `editorial.preparation.tier`, `editorial.laya_audience` and
+`editorial.detectors_enabled`; none is a setting (`config_unsupported.TIER_OWNED`). Keys that left
+the documented config stay readable until 2.0: `warn_unsupported_keys` names each one a source set,
+before the preset and tier assign fields, `describe_settings` lists them only when set, and
+`scripts/check_config_docs.py` refuses them on the reference page.
 `auto` resolves from inference capability and the configured LLM; conflicting legacy preparation
 settings are ignored with a notice. A save stores only the keys that changed, so an automatic
 config never becomes a machine-specific pin. Internal metadata-only component fixtures remain

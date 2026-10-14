@@ -8,7 +8,7 @@
   <Privileged>false</Privileged>
   <Support>https://github.com/sam-dumont/immich-memories/issues/1801</Support>
   <Project>https://github.com/sam-dumont/immich-memories</Project>
-  <Overview>Make films from your Immich library. NAS setup: allow 4 GiB RAM and 25 GB persistent state plus finished films. Not yet tested on Unraid; please report results in issue #1801. The UI holds your library API key. Localhost-only by default. Enable BOTH authentication fields before exposing it to your LAN. Keep bridge networking; host networking bypasses the private port binding.</Overview>
+  <Overview>Make films from your Immich library. NAS setup: allow 4 GiB RAM and 25 GB persistent state plus finished films. Not yet tested on Unraid; please report results in issue #1801. The UI holds your library API key. Sign-in is on: with the two login fields empty, the first start generates a password and prints it once in the container log (the Unraid log icon). Fill BOTH fields to choose your own. Keep bridge networking; host networking bypasses the private port binding.</Overview>
   <Category>MediaApp:Video</Category>
   <WebUI>http://localhost:22830</WebUI>
   <Icon>https://raw.githubusercontent.com/sam-dumont/immich-memories/main/docs-site/static/img/favicon.png</Icon>
@@ -19,7 +19,7 @@
   <Config Name="Configuration and model cache" Target="/home/immich/.immich-memories" Default="/mnt/user/appdata/immich-memories" Mode="rw" Description="Persistent state and model cache. Directory must be writable by UID/GID 1000." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/immich-memories</Config>
   <Config Name="Finished films" Target="/app/output" Default="/mnt/user/immich-memories-output" Mode="rw" Description="Persistent finished films. Directory must be writable by UID/GID 1000." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/immich-memories-output</Config>
   <Config Name="Timezone" Target="TZ" Default="Etc/UTC" Mode="" Description="Timezone for scheduled runs." Type="Variable" Display="always" Required="false" Mask="false">Etc/UTC</Config>
-  <Config Name="UI username" Target="IMMICH_MEMORIES_AUTH_USERNAME" Default="" Mode="" Description="Set BOTH username and password before publishing the UI beyond localhost." Type="Variable" Display="always" Required="false" Mask="false" />
-  <Config Name="UI password" Target="IMMICH_MEMORIES_AUTH_PASSWORD" Default="" Mode="" Description="Use a strong unique password; set the username too." Type="Variable" Display="always" Required="false" Mask="true" />
+  <Config Name="UI username" Target="IMMICH_MEMORIES_AUTH_USERNAME" Default="" Mode="" Description="Optional. Set BOTH username and password to choose your own login; leave both empty to get a generated password in the container log." Type="Variable" Display="always" Required="false" Mask="false" />
+  <Config Name="UI password" Target="IMMICH_MEMORIES_AUTH_PASSWORD" Default="" Mode="" Description="Optional. A strong unique password (12+ characters); set the username too." Type="Variable" Display="always" Required="false" Mask="true" />
   <Config Name="Settings encryption key" Target="IMMICH_MEMORIES_SECRET_KEY" Default="" Mode="" Description="Optional random secret of at least 32 characters. Required to save credentials through Settings; keep it stable and backed up." Type="Variable" Display="always" Required="false" Mask="true" />
 </Container>

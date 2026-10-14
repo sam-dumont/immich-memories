@@ -27,7 +27,7 @@ def _transport_failure(exc: Exception, unreachable: str = _UNREACHABLE) -> Check
             name="LLM",
             status=CheckStatus.WARNING,
             message="Reader is slow to answer",
-            details="Increase llm.preflight_timeout_seconds for a busy reader and retry",
+            details="Retry when the reader is less busy",
         )
     if isinstance(exc, httpx.ConnectError):
         return CheckResult(

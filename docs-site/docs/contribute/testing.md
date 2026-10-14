@@ -110,7 +110,7 @@ Unit tests talk to a patched HTTP client and the integration suites skip when no
 configured, so neither proves the product still speaks to a real server. The `Immich Gate` check
 does, on Immich 2.7, 3.2 and 3.3 when the change scope calls for it (see [CI](./ci.md)):
 
-1. `make immich-gate-up` starts Immich 3.3.0, Postgres and Valkey from
+1. `make immich-gate-up` starts Immich 3.3.3, Postgres and Valkey from
    `tests/integration/immich_gate/docker-compose.yml`. Every image is pinned by digest, there is no
    machine-learning container, and Postgres and the uploads live on tmpfs, so `make immich-gate-down`
    leaves no volume behind.
@@ -136,7 +136,7 @@ does, on Immich 2.7, 3.2 and 3.3 when the change scope calls for it (see [CI](./
 | generate | on the rules tier, `--no-render`: a monthly cut from the fixture month, an on-this-day cut one year back, a holiday cut across two years, and a trip year with no trips exits 1 |
 | store | a `people scan` and a `pictures never-use` read back from the store, a second `prepare` of the month changes no banked fact, and a rendered film is in the run history with its phases |
 
-Choose the server with `IMMICH_GATE_VERSION=v2` (2.7.5), `v32` (3.2.2) or `v3` (3.3.0, the
+Choose the server with `IMMICH_GATE_VERSION=v2` (2.7.5), `v32` (3.2.4) or `v3` (3.3.3, the
 default). Locally, each version can run on either store backend. CI runs all three with SQLite
 for applicable changes and adds PostgreSQL when the store changes.
 `IMMICH_GATE_DATABASE=postgresql` starts a throwaway `postgres:16` for the run, in CI too (a job
@@ -282,4 +282,4 @@ The gates cover the partner-only person episode, selected-owner scope, timeline 
 favourites on absorbed copies, read-only keys and upstream person merges. The 3.3 gate also
 checks people-sharing roles and revocation. The 3.2 fixture connects manually assigned faces
 through the disposable database; it does not test recognition accuracy. Production fetching
-never writes cluster or sharing state. The pinned versions are 3.2.4 and 3.3.0.
+never writes cluster or sharing state. The pinned versions are 3.2.4 and 3.3.3.

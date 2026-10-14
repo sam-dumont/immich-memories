@@ -364,6 +364,7 @@ def test_a_run_whose_process_died_reads_interrupted_and_a_live_one_stays_running
 
     dead_list = home.run("runs", "list")
     dead_show = home.run("runs", "show", run_id)
+    home.turn_sign_in_off()  # this test is about run states, not sign-in
     port = free_port()
     with serve_ui(home, "ui", "--port", str(port), port=port):
         served = httpx.get(f"http://127.0.0.1:{port}/api/v1/runs/{run_id}", timeout=30)

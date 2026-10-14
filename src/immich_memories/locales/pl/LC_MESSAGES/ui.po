@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-14 17:42+0200\n"
+"POT-Creation-Date: 2026-10-15 06:04+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pl\n"
@@ -1144,7 +1144,7 @@ msgstr "Właściciel {account}"
 msgid "Passed {stages}"
 msgstr "Przeszło {stages}"
 
-#: web/routes/login/+page.svelte:66
+#: web/routes/login/+page.svelte:69
 msgid "Password"
 msgstr "Hasło"
 
@@ -1544,11 +1544,11 @@ msgid "Show more"
 msgstr "Pokaż więcej"
 
 #: web/lib/JobPanel.svelte:93 web/routes/login/+page.svelte:46 web/routes/login/+page.svelte:58
-#: web/routes/login/+page.svelte:69
+#: web/routes/login/+page.svelte:72
 msgid "Sign in"
 msgstr "Zaloguj się"
 
-#: web/routes/login/+page.svelte:72
+#: web/routes/login/+page.svelte:75
 msgid "Sign in through the proxy in front of this server."
 msgstr "Zaloguj się przez serwer proxy stojący przed tym serwerem."
 
@@ -1860,6 +1860,14 @@ msgstr "Ta kategoria pojawia się już dwukrotnie w ostatnich sześciu wspomnien
 msgid "This run kept no record of its pool. Cut again to see one."
 msgstr "To zadanie nie zachowało listy dostępnych mediów. Utwórz montaż ponownie, aby ją zobaczyć."
 
+#: web/routes/login/+page.svelte:63
+msgid ""
+"This server made its own password and printed it once in its log (docker compose logs immich-"
+"memories). Run immich-memories auth reset-password to make a new one."
+msgstr ""
+"Ten serwer utworzył własne hasło i raz zapisał je w swoim dzienniku (docker compose logs "
+"immich-memories). Uruchom immich-memories auth reset-password, aby utworzyć nowe."
+
 #: web/routes/settings/+page.svelte:30
 msgid "Thumbnail cache"
 msgstr "Pamięć podręczna miniatur"
@@ -1968,7 +1976,7 @@ msgstr "Użyj dokładnych nazw z biblioteki; każdy obraz musi pasować. Zastęp
 msgid "Use this picture instead"
 msgstr "Użyj tego obrazu zamiast poprzedniego"
 
-#: web/routes/login/+page.svelte:63
+#: web/routes/login/+page.svelte:66
 msgid "Username"
 msgstr "Nazwa użytkownika"
 

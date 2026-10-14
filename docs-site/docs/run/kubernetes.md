@@ -24,8 +24,9 @@ For Terraform-managed resources, use the [Terraform module](./terraform.md).
   compute requirements. [GPU allocation details](./local-models.md#kubernetes-services).
 - **Full:** an existing reader endpoint with a served model, 32k context and any required API key.
 
-Keep one UI replica. Authentication is disabled by default. The initial route uses a private
-port-forward; configure
+Keep one UI replica. Sign-in is on by default; the first start generates a password and prints it once
+in the pod log (`kubectl logs -n immich-memories deploy/immich-memories`). The initial route uses a private
+port-forward; set your own credentials with
 [authentication](./authentication.mdx) before adding an Ingress.
 
 ## 1. Choose the tier {#generated-tier-setup}

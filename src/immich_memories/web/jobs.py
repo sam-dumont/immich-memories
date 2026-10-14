@@ -72,11 +72,14 @@ class JobRunner:
     def _path(self, job_id: str, suffix: str, *, progress: bool = False) -> Path:
         if re.fullmatch(r"[0-9a-f]{32}", job_id) is None:
             raise ValueError("Invalid job ID")
-        root = self._dir.resolve()
-        path = (root / "progress" if progress else root) / f"{job_id}.{suffix}"
-        if not path.resolve().is_relative_to(root):
+        # realpath + startswith on the joined string is the form CodeQL reads as a path guard;
+        # realpath also follows a symlink planted in the jobs folder, so it can't lead outside.
+        root = os.path.realpath(self._dir)
+        folder = os.path.join(root, "progress") if progress else root
+        full = os.path.realpath(os.path.join(folder, f"{job_id}.{suffix}"))
+        if not full.startswith(root + os.sep):
             raise ValueError("Invalid job ID")
-        return path
+        return Path(full)
 
     def _record(self, job_id: str) -> Path:
         return self._path(job_id, "json")

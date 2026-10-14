@@ -3399,6 +3399,11 @@
             "title": "Demo Mode Offered",
             "type": "boolean"
           },
+          "generated_login": {
+            "default": false,
+            "title": "Generated Login",
+            "type": "boolean"
+          },
           "music_preview_offered": {
             "default": false,
             "title": "Music Preview Offered",

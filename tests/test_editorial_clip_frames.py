@@ -200,7 +200,7 @@ def test_the_producer_banks_each_clips_reading_of_its_own_frames(tmp_path):
     assert progress == [("clip_frames", 0, 2), ("clip_frames", 1, 2), ("clip_frames", 2, 2)]
 
 
-def _live_unit(*, rules, favourite, clip_frames, residual=9.0):
+def _live_unit(*, rules, favourite, clip_frames, residual=9.0, audience="family", clip_heads=None):
     """One Live Photo through the unit builder both tiers plan on."""
     from datetime import UTC, datetime
 
@@ -223,6 +223,8 @@ def _live_unit(*, rules, favourite, clip_frames, residual=9.0):
         config=config,
         pixel_facts={"still": (900.0, 118.0)},
         clip_frames=clip_frames,
+        audience=audience,
+        companion_detectors=clip_heads or {},
     )
     wall = SimpleNamespace(event_assets={"F01": ["still"]}, moment_of_asset={"still": "M01"})
     ports = SimpleNamespace(
@@ -268,6 +270,38 @@ def test_a_live_photo_with_an_interesting_clip_plays_as_motion(rules):
     assert shows["kind"] == "live-motion"
     # Interesting is measured motion AND the subject in frame; either alone is a still.
     assert quiet["kind"] == "live-still"
+
+
+@pytest.mark.parametrize("rules", [True, False])
+def test_a_shareable_film_plays_an_unread_live_clip_as_its_still(rules):
+    # Basic reads no clip; the still was checked, the motion was not.
+    unit = _live_unit(rules=rules, favourite=False, clip_frames={}, audience="shareable")
+
+    assert (unit["asset_id"], unit["kind"], unit["motion_candidate"]) == (
+        "still",
+        "live-still",
+        False,
+    )
+
+
+@pytest.mark.parametrize("rules", [True, False])
+def test_a_shareable_film_plays_a_read_live_clip_as_motion(rules):
+    unit = _live_unit(
+        rules=rules,
+        favourite=False,
+        clip_frames={},
+        audience="shareable",
+        clip_heads={"clip-of-still": {"uncovered_person": "no"}},
+    )
+
+    assert unit["kind"] == "live-motion"
+
+
+@pytest.mark.parametrize("audience", ["family", "just_us"])
+def test_a_household_film_keeps_the_motion_of_an_unread_live_clip(audience):
+    unit = _live_unit(rules=False, favourite=False, clip_frames={}, audience=audience)
+
+    assert unit["kind"] == "live-motion"
 
 
 def test_a_live_photo_line_never_refuses_it_on_the_model_tier():

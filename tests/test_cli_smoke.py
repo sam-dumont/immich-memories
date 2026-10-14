@@ -195,7 +195,7 @@ class TestUIExposureWarning:
             return _invoke(["ui"], config=config), fake_main
 
     def test_ui_warns_before_unauthenticated_external_bind(self) -> None:
-        config = Config(server={"host": "0.0.0.0"})  # noqa: S104
+        config = Config(server={"host": "0.0.0.0"}, auth={"enabled": False})  # noqa: S104
 
         result, fake_main = self._invoke_ui(config)
 
@@ -205,7 +205,7 @@ class TestUIExposureWarning:
         fake_main.assert_called_once_with(port=8080, host="0.0.0.0", reload=False, log_level=None)  # noqa: S104
 
     def test_ui_does_not_warn_for_loopback_bind(self) -> None:
-        config = Config(server={"host": "127.0.0.1"})
+        config = Config(server={"host": "127.0.0.1"}, auth={"enabled": False})
 
         result, _ = self._invoke_ui(config)
 

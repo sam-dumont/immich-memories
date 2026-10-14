@@ -28,7 +28,7 @@ Change the time there, then recreate the container:
 docker compose up -d
 ```
 
-The time uses the container's timezone (`TZ`). Upload is a separate choice: either `automation.upload_to_immich: true` or `upload.enabled: true` enables delivery for automatic films. Set `upload.album_name` for the destination; set `automation.album_name` instead if automatic films should land in a different album than manual ones, since it wins over `upload.album_name` for a scheduled run. An uploaded film carries its title and story summary as its Immich description; `upload.film_tags: true` also tags it with its type, years and stories. Leave both upload switches false to keep films on disk. A key missing an upload permission still gets a completed film, kept locally with the reason named; [upload permissions and retries](../reference/automation-contract.md#docker-switch-on-the-built-in-timer) covers what happens next.
+The time uses the container's timezone (`TZ`). Upload is a separate choice: `upload.enabled: true` turns on delivery for manual and automatic films alike, and `upload.album_name` names the one destination album. An uploaded film carries its title and story summary as its Immich description; `upload.film_tags: true` also tags it with its type, years and stories. Leave `upload.enabled` false to keep films on disk. A key missing an upload permission still gets a completed film, kept locally with the reason named; [upload permissions and retries](../reference/automation-contract.md#docker-switch-on-the-built-in-timer) covers what happens next.
 
 Or omit those Compose lines and save **Settings > Automation > enabled** and
 **daily_at**. Settings also holds the other automation options; file and environment values win.

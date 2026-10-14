@@ -81,7 +81,6 @@ def _app_config_to_ace_step(app_config) -> Any:
         "lm_model_size",
         "use_lm",
         "disable_offload",
-        "num_versions",
         "hemisphere",
         "timeout_seconds",
     ):

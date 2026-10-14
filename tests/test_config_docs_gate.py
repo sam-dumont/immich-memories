@@ -113,7 +113,7 @@ def test_sections_come_from_config_itself_not_a_hand_kept_list() -> None:
 
     assert sections.keys() == set(Config.model_fields)
     assert sections["photos"].model == "PhotoConfig"
-    assert "burst_window_seconds" in sections["photos"].fields
+    assert "duration" in sections["photos"].fields
     assert sections["llm"].model == "LLMConfig"
     assert sections["preset"].fields == frozenset()
 
@@ -130,3 +130,16 @@ def test_the_published_page_lists_exactly_the_keys_the_schema_accepts() -> None:
     page = (Path(__file__).resolve().parents[1] / PAGE).read_text()
 
     assert find_drift(schema_sections(), documented_keys(page)) == []
+
+
+def test_a_key_out_of_the_documented_config_must_leave_the_page() -> None:
+    sections = schema_sections()
+    documented = {"photos": {"enabled", "duration", "burst_hash_threshold"}}
+
+    drift = find_drift({"photos": sections["photos"]}, documented)
+
+    assert drift == ["photos: no longer documented, remove: burst_hash_threshold"]
+
+
+def test_a_block_of_nothing_but_retired_keys_is_not_asked_for() -> None:
+    assert "people" in schema_sections()["editorial"].hidden

@@ -6,6 +6,9 @@ from what the server happened to answer last time.
 
 from __future__ import annotations
 
+import re
+from pathlib import Path
+
 import pytest
 
 from immich_memories.api.models import AssetType
@@ -20,14 +23,24 @@ _VIDEOS = sorted(picture.filename for picture in LIBRARY if picture.is_video)
 _STILLS = sorted(picture.filename for picture in LIBRARY if not picture.is_video)
 
 
-def test_connects_and_speaks_the_major_it_was_started_on(gate_client, gate_version):
+def _pinned_release(gate_version: str) -> tuple[int, int, int]:
+    """The release the Makefile pins for this gate leg, read from its image tag."""
+    makefile = (Path(__file__).resolve().parents[3] / "Makefile").read_text()
+    pin = re.search(
+        rf"^IMMICH_GATE_SERVER_{gate_version} := \S+:v(\d+)\.(\d+)\.(\d+)@", makefile, re.M
+    )
+    assert pin, f"no pinned image for {gate_version}"
+    major, minor, patch = (int(part) for part in pin.groups())
+    return major, minor, patch
+
+
+def test_connects_and_speaks_the_release_it_was_started_on(gate_client, gate_version):
     assert gate_client.validate_connection()
-    major, minor = {"v2": (2, 7), "v32": (3, 2), "v3": (3, 3)}[gate_version]
+    major, minor, patch = _pinned_release(gate_version)
     version = gate_client.get_server_info()
-    assert (version.major, version.minor) == (major, minor)
+    assert (version.major, version.minor, version.patch) == (major, minor, patch)
+    assert version.prerelease is None
     assert gate_client.get_api_version().value == f"v{major}"
-    if gate_version == "v3":
-        assert version.patch == 0 and version.prerelease is None
 
 
 def test_the_fixture_month_reads_every_video_and_still(gate_client):

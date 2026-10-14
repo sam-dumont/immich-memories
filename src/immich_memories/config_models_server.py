@@ -29,14 +29,6 @@ class ServerConfig(BaseModel):
             "with authentication off, the trigger API is not served at all."
         ),
     )
-    allow_unauthenticated_lan: bool = Field(
-        default=False,
-        description=(
-            "Bind beyond localhost even with authentication disabled. The name "
-            "spells out the risk: anyone who can reach the port can use the UI "
-            "and, through it, the Immich library."
-        ),
-    )
 
     allowed_hosts: list[str] = Field(
         default_factory=list,
@@ -55,11 +47,12 @@ class ServerConfig(BaseModel):
     def effective_host(self, *, auth_enabled: bool) -> str:
         """The address to bind, secure by default (#476).
 
-        With authentication disabled and no explicit decision — no
-        ``server.host`` in the config, no escape hatch — the UI binds
+        With no sign-in the operator chose (authentication disabled, or the
+        generated password nobody configured) and no explicit decision -- no
+        ``server.host`` in the config -- the UI binds
         localhost. An explicitly configured host (or a --host flag upstream,
         like the Docker image's CMD) is the operator's decision and wins.
         """
-        if auth_enabled or self.allow_unauthenticated_lan or "host" in self.model_fields_set:
+        if auth_enabled or "host" in self.model_fields_set:
             return self.host
         return "127.0.0.1"

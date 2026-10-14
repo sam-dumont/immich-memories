@@ -80,7 +80,7 @@ def test_preflight_honors_reader_timeout_and_names_a_slow_body(provider: str) ->
 
     assert result.status is CheckStatus.WARNING
     assert "slow to answer" in result.message.lower()
-    assert "preflight_timeout_seconds" in (result.details or "")
+    assert "less busy" in (result.details or "")
 
 
 @pytest.mark.parametrize(

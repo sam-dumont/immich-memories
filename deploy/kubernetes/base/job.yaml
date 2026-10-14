@@ -121,7 +121,7 @@ spec:
           env:
             - name: IMMICH_MEMORIES_OUTPUT__DIRECTORY
               value: /app/output
-            - name: IMMICH_MEMORIES_TIER
+            - name: IMMICH_MEMORIES_DEPLOYMENT_TIER
               value: auto
             - name: IMMICH_MEMORIES_TRIAGE__ENCODER
               value: /models/triage/dinov2-small.onnx

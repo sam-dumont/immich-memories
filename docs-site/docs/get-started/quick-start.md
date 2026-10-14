@@ -22,7 +22,7 @@ You can change tiers later.
 | **GPU** | Basic plus picture descriptions and extra selection and sharing checks | NVIDIA GPU, driver and Container Toolkit; room for the app and model services |
 | **Full** | GPU plus a text reader that refines the draft and writes the film's summary | The GPU setup and a reader server with 32k context |
 
-All three need Docker Compose v2, an Immich v2 or v3 library and an API key. Allow at least
+All three need Docker Compose v2, an Immich library and an API key, on Immich 2.7.5 or later (v2) or 3.2.4 or later (v3). Older v3 releases have security holes Immich has since fixed. Allow at least
 About 25 GB for app data plus 0.35 GB per 1,000 pictures and videos, plus images, model-service caches and finished films. GPU and Full give the
 app an 8 GiB limit; model services need memory too. Check the [tier requirements](../run/requirements.md)
 if you are choosing hardware.
@@ -114,17 +114,24 @@ Keep `.env` with your backups. On Synology, use the
 
 ### Open the app from another computer {#if-the-app-runs-on-a-server-or-nas}
 
-For access from another computer on your trusted LAN, also set these in `.env` **before starting**:
+The app asks for a sign-in. With nothing configured, the first start generates a password
+(step 4 says where to read it). This is the Immich Memories login, separate from your Immich account.
+
+For access from another computer on your trusted LAN, also set this in `.env` **before starting**:
+
+```ini
+UI_BIND_ADDRESS=0.0.0.0
+```
+
+To choose your own login instead of the generated one, add these two lines as well, with a
+password of at least 12 characters:
 
 ```ini
 IMMICH_MEMORIES_AUTH_USERNAME=admin
 IMMICH_MEMORIES_AUTH_PASSWORD=replace-with-your-own-long-password
-UI_BIND_ADDRESS=0.0.0.0
 ```
 
-Choose your own app password of at least 12 characters. This is the Immich Memories login,
-separate from your Immich account. This setup uses HTTP on your trusted LAN.
-On your own desktop, keep the default localhost binding.
+This setup uses HTTP on your trusted LAN. On your own desktop, keep the default localhost binding.
 
 ## 3. Start the app {#3-start-and-download-the-local-models}
 
@@ -139,8 +146,12 @@ Later starts reuse the downloaded files.
 ## 4. Open the app and download models {#4-open-the-app}
 
 - **On this computer:** open <ComposePort host="localhost" link />.
-- **From another computer:** open <code><ComposePort host="your-server-address" /></code>, using the Docker host's LAN address,
-  and sign in with the Immich Memories username and password you set above.
+- **From another computer:** open <code><ComposePort host="your-server-address" /></code>, using the Docker host's LAN address.
+
+Sign in. If you set no login of your own, the username is `admin` and the generated password is
+in the container log: run `docker compose logs immich-memories` and look for the line with the
+username and password. Write it down: later starts do not print it again. Lost it? See
+[the generated password](../run/authentication.mdx#the-generated-password).
 
 Open **Memory**. In the **Download models** card, review the files and press **Download models**.
 Wait for it to finish: the card disappears when the required files are ready. These are downloaded

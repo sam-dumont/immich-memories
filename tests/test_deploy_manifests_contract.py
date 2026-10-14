@@ -178,7 +178,7 @@ def test_terraform_initializes_models_on_a_persistent_claim() -> None:
     assert "immich-memories models fetch" in main
     assert "kubernetes_persistent_volume_claim_v1.models.metadata[0].name" in main
     assert all(key in main for key in MODEL_PATH_ENV)
-    assert "IMMICH_MEMORIES_TIER" in main
+    assert "IMMICH_MEMORIES_DEPLOYMENT_TIER" in main
 
 
 def test_only_the_kustomization_pin_names_a_concrete_version() -> None:

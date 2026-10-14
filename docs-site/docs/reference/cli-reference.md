@@ -18,6 +18,25 @@ Run `make docs-cli` to regenerate.
 | `--verbose`, `-v` | boolean | false | Log at DEBUG level. Shorthand for --log-level DEBUG |
 | `--log-level` | choice: `DEBUG` \| `INFO` \| `WARNING` \| `ERROR` | - | Log level for this run (default: IMMICH_MEMORIES_LOG_LEVEL or INFO) |
 
+## `auth`
+
+The web UI's sign-in.
+
+```bash
+immich-memories auth [OPTIONS] COMMAND [ARGS]...
+```
+
+### `auth reset-password`
+
+Make a new sign-in password, print it once, and sign every browser out.
+
+For the password the server generated because none is configured. Only its hash is
+kept. A password you set in auth.password is changed there instead.
+
+```bash
+immich-memories auth reset-password [OPTIONS]
+```
+
 ## `auto`
 
 Automation -- detect and generate memory candidates.
@@ -608,7 +627,7 @@ immich-memories people show [OPTIONS]
 
 | Flag | Type | Default | Description |
 | --- | --- | --- | --- |
-| `--tier` | choice: `inner` \| `recurring` \| `episodic` \| `event` | - | Show only one tier |
+| `--closeness` | choice: `inner` \| `recurring` \| `episodic` \| `event` | - | Show only the people at one closeness: inner, recurring, episodic or event |
 
 ## `pictures`
 
