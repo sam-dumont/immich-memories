@@ -101,9 +101,9 @@ For a safe preview:
 immich-memories auto run --dry-run
 ```
 
-Automatic birthday films cover only the completed birthday-to-birthday year. Their title names
-the birthday being celebrated: "Kit's birthday · 2026". Earlier birthdays remain available in
-[manually requested birthday compilations](../reference/film-types.mdx#birthday-compilations).
+Automatic birthday films cover the completed birthday-to-birthday year. Their title names
+the birthday being celebrated: "Kit's birthday · 2026". A film of the birthdays themselves, across
+the years, is [asked for by hand](../reference/film-types.mdx#birthdays).
 
 ## Get told when it runs
 

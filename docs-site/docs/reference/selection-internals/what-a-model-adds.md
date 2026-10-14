@@ -30,7 +30,7 @@ the same shared admission and final checks.
   only the polish has the captions a shareable clearance needs, so the shareable check runs there,
   on every shot and replacement.
 - **Route B** covers months, years, seasons, trips, special days and person films. It also covers
-  separate date windows, such as the same day across years or a birthday with flashbacks.
+  separate date windows, such as the same day across years or the birthdays film.
 - **Route C** is selected with `advanced.editorial.thin_model_layer: false`.
   There the model reads the period's stories, weighs
   them, folds trips and recurring activities, and picks the moments. Standing, spacing, the

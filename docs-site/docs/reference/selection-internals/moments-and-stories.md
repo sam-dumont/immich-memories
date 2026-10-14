@@ -218,7 +218,7 @@ day is thin ([Film types](../film-types.mdx)).
 
 On a model install, the model plans the whole film only when `advanced.editorial.thin_model_layer`
 is `false` (Route C in [What a model adds](./what-a-model-adds.md)). Every other film, one over
-several separate windows included (on this day across years, a birthday with flashbacks), starts
+several separate windows included (on this day across years, the birthdays film), starts
 from the no-model draft on this page and gets the polish. Only Route C adds these:
 
 - **Trip legs get a reserve** (`editorial_story_trips`) beyond the leg splitting already used by the rules draft:

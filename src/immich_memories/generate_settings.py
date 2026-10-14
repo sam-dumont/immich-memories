@@ -277,6 +277,7 @@ def build_title_settings(
         params.date_end,
         title_person_name,
         resolved_locale,
+        _years_shown(params, assembly_clips),
     ):
         settings.title_override, settings.subtitle_override = birthday
 
@@ -296,8 +297,14 @@ def build_title_settings(
 
 
 def _years_shown(params: GenerationParams, assembly_clips: list[AssemblyClip]) -> set[int]:
-    """The years a holiday film's content shows: its clips' own dates, else its pictures'."""
-    if params.memory_type != "holiday":
+    """The years a film across the years shows: its clips' own dates, else its pictures'.
+
+    A holiday film and a birthdays film are titled by the span of these years.
+    """
+    across_years = params.memory_type == "holiday" or params.memory_preset_params.get(
+        "birthday_years_back"
+    )
+    if not across_years:
         return set()
     dated = {
         int(clip.date[:4]) for clip in assembly_clips if clip.date and not clip.is_title_screen

@@ -58,7 +58,7 @@ def scope_options(command: FC) -> FC:
             flag_value="auto",
             default=None,
             help=(
-                "Run the year up to a birthday, plus earlier birthdays "
+                "Run the year up to a birthday; with --years-back, only the birthdays "
                 "(reads Immich's birth date, or override with MM-DD, e.g. 03-15)"
             ),
         ),
@@ -434,7 +434,10 @@ def per_memory_type_options(command: FC) -> FC:
             "--years-back",
             type=int,
             default=None,
-            help="Years to look back for --birthday, on_this_day or holiday",
+            help=(
+                "Years to look back for on_this_day or holiday; with --birthday, makes "
+                "the birthdays film: each birthday ±1 day, not the year"
+            ),
         ),
         click.option(
             "--near-date",

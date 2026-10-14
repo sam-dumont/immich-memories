@@ -144,11 +144,13 @@ def build_editorial_context(
 def _celebrated_birthday(
     product: str, resolved: ResolvedRunInputs, date_range: DateRange
 ) -> str | None:
-    """The birthday a birthday film celebrates ("MM-DD"): the day its span ends on, the one
-    its title already names (`birthday_title`)."""
+    """The birthday a birthday film celebrates ("MM-DD"), the one its title already names
+    (`birthday_title`): the day its year ends on, or the middle of a birthdays film's newest window."""
     if product != "person_spotlight" or not resolved.preset_params.get("birthday"):
         return None
-    return date_range.end.strftime("%m-%d")
+    from immich_memories.memory_types.date_builders import celebrated_day
+
+    return celebrated_day(date_range.end, resolved.preset_params).strftime("%m-%d")
 
 
 def _person_match(resolved: ResolvedRunInputs) -> Literal["and", "or"]:

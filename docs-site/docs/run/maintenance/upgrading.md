@@ -11,6 +11,17 @@ Read the [release notes](https://github.com/sam-dumont/immich-memories/releases)
 back up the store, then upgrade. Keep the backup for rollback: a newer release can migrate the
 store to a revision older code will refuse.
 
+## From 1.0.0-rc.10 to 1.0.0
+
+### A birthday film is the year
+
+`--birthday` used to give you the year up to the birthday plus that birthday ±1 day in five
+earlier years, mixed into one film. Now it's the year and nothing else, which is what the
+automatic birthday films already were. The earlier birthdays are their own film: add
+`--years-back N` for the birthday and N earlier ones, each ±1 day, with no year around them. In
+the web app the checkbox is **Birthday to birthday**, and the years field under it makes the
+birthdays film. `--years-back 5` gives you the five earlier birthdays the old default looked at.
+
 ## From 1.0.0-rc.9 to 1.0.0-rc.10
 
 Nothing to migrate by hand. These are the changes you will notice, and the keys that control

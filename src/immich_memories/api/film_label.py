@@ -60,7 +60,7 @@ def years_shown(
 ) -> list[int]:
     """The years the stories with a shot in the film show; its window when none names a day.
 
-    A person film's window runs five birthdays back, and the years it has no picture of are
+    A birthdays film's windows reach years back, and the years it has no picture of are
     not years it is about.
     """
     years: set[int] = set()

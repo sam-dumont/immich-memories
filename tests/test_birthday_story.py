@@ -11,8 +11,12 @@ from immich_memories.cli._run_inputs import ResolvedRunInputs
 from immich_memories.config_loader import Config
 from immich_memories.timeperiod import DateRange
 
+_YEAR = DateRange(datetime(2025, 8, 31), datetime(2026, 8, 30, 23, 59, 59))
+# The birthdays film's span: the oldest birthday's eve to the day after the one celebrated.
+_BIRTHDAYS = DateRange(datetime(2021, 8, 29), datetime(2026, 8, 31, 23, 59, 59))
 
-def _context(memory_type: str, preset: dict):
+
+def _context(memory_type: str, preset: dict, date_range: DateRange = _YEAR):
     config = Config()
     resolved = ResolvedRunInputs.from_arguments(
         include_photos=True,
@@ -32,8 +36,7 @@ def _context(memory_type: str, preset: dict):
         memory_key=None,
         output_stem="jo",
         assets=[],
-        # Oldest flashback to the birthday celebrated, as `build_birthday_windows` spans it.
-        date_range=DateRange(datetime(2021, 8, 29), datetime(2026, 8, 30, 23, 59, 59)),
+        date_range=date_range,
         date_ranges=None,
         duration=120.0,
         transition="smart",
@@ -45,6 +48,12 @@ def _context(memory_type: str, preset: dict):
 
 def test_a_birthday_film_tells_the_editor_whose_birthday_falls_when():
     assert _context("person_spotlight", {"birthday": True}).celebrated_birthday == "08-30"
+
+
+def test_the_birthdays_film_names_the_birthday_not_the_day_after_it():
+    preset = {"birthday": True, "birthday_years_back": 5}
+
+    assert _context("person_spotlight", preset, _BIRTHDAYS).celebrated_birthday == "08-30"
 
 
 @pytest.mark.parametrize(

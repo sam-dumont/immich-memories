@@ -1,6 +1,6 @@
 """A film of several occurrences tells each one's days as its own stories (no model).
 
-A holiday's years, on this day's years and a birthday's earlier birthdays are separate
+A holiday's years, on this day's years and a birthdays film's birthdays are separate
 occurrences of one date. The rules reader groups consecutive photographed days into stories;
 in such a film a story never runs from one occurrence into the next. A holiday film once named
 a story "Days at home, 15 August – 15 August": 15 August 2004 and 15 August 2022, because an
@@ -32,8 +32,8 @@ def within_occurrences(
 ) -> list[list[str]]:
     """`runs` of episode keys, cut wherever they move from one occurrence window into the next.
 
-    A day in two windows belongs to the one that starts last: a birthday's year begins on the
-    day its earlier birthday's window ends. A film of one window, or none, is left as it is,
+    A day in two windows belongs to the one that starts last, where one window ends on the day
+    the next begins. A film of one window, or none, is left as it is,
     and a window across New Year (31 December to 1 January) is one occurrence.
     """
     windows = sorted(ranges, key=lambda window: window.start)

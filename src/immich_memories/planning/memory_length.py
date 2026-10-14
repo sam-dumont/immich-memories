@@ -83,8 +83,9 @@ def default_duration_for_type(
     happened on and how long it stayed awake.
 
     ``primary_window`` is the window a memory is actually made of, when that is
-    narrower than the span it displays. A birthday memory shows decades but is
-    made from a rolling year (#511, #719).
+    narrower than the span it displays (#511, #719). A birthdays film
+    (``birthday_years_back`` in ``preset_params``) is a few days across the years
+    and asks for a holiday's length.
     """
     if not memory_type:
         return None
@@ -99,6 +100,10 @@ def default_duration_for_type(
         days = max(1, (date_range.end - date_range.start).days + 1)
         return trip_editorial_duration_seconds(days)
     if memory_type in ("person_spotlight", "multi_person"):
+        if (preset_params or {}).get("birthday_years_back"):
+            from immich_memories.memory_types.factory import BIRTHDAYS_FILM_SECONDS
+
+            return BIRTHDAYS_FILM_SECONDS
         if date_range is None:
             return 120.0
         return _recap_duration_from_date_range(primary_window or date_range)

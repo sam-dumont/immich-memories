@@ -343,18 +343,26 @@ class TestDateWindowParity:
 
         SPECS pins the calendar-year spotlight, which says nothing about the
         birthday-anchored one -- and that is the variant that ran July to July
-        (#719). Both surfaces must land on the rolling year *and* every
-        flashback window, so a divergence in either half fails here.
+        (#719). Both surfaces must land on the rolling year and nothing else.
         """
         spec = replace(SPECS[MemoryType.PERSON_SPOTLIGHT], birthday=date(2018, 2, 7))
 
         windows = cli_windows(MemoryType.PERSON_SPOTLIGHT, spec)
 
         assert windows == ui_windows(MemoryType.PERSON_SPOTLIGHT, spec)
-        assert len(windows) > 1, "a birthday memory looks at earlier birthdays too"
+        assert len(windows) == 1, "a birthday film holds no earlier birthday"
         assert windows[0][1] == datetime(2024, 2, 7, 23, 59, 59), (
             "the rolling year must end on the birthday --year names"
         )
+
+    def test_a_birthdays_film_resolves_the_same_days_on_both_surfaces(self) -> None:
+        """With years back both surfaces make the birthdays film: the days, no year."""
+        spec = replace(SPECS[MemoryType.PERSON_SPOTLIGHT], birthday=date(2018, 2, 7), years_back=3)
+
+        windows = cli_windows(MemoryType.PERSON_SPOTLIGHT, spec)
+
+        assert windows == ui_windows(MemoryType.PERSON_SPOTLIGHT, spec)
+        assert [start.year for start, _end in windows] == [2024, 2023, 2022, 2021]
 
     def test_a_birthday_spotlight_is_the_same_length_on_both_surfaces(self) -> None:
         """The split #630 recorded is about the calendar-year card, not this one."""

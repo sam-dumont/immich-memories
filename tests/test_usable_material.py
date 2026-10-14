@@ -1,6 +1,6 @@
 """A film's length and its history count only the pictures a film may use.
 
-A birthday film asked for 245 s and filled 127 s: its length was sized on 36 photographed days,
+A birthday film (then the year plus its earlier birthdays) asked for 245 s and filled 127 s: its length was sized on 36 photographed days,
 half of them holding only forwarded copies (messaging exports with no camera behind them) that
 every film refuses before it reads a picture (`film_may_use`). The same run said "history: 3 of
 5 earlier windows hold material", and its earlier birthdays held nothing but such copies, so the
@@ -85,7 +85,7 @@ def test_earlier_birthdays_holding_only_forwarded_copies_hold_no_history():
         fetch_media(
             client=_PhotoLibrary(copies),
             progress=display,
-            date_ranges=build_birthday_windows(date(2018, 2, 7), year=2026),
+            date_ranges=build_birthday_windows(date(2018, 2, 7), year=2026, years_back=5),
             person_ids=[],
             include_photos=True,
             history_from=BIRTHDAY_HISTORY_FROM,

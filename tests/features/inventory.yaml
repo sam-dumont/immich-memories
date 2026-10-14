@@ -259,11 +259,12 @@ features:
     doc: reference/generation-contract.md#examples
     status: "gap: #2394"
   - id: memory-type.birthday
-    promise: "--birthday runs the year of a person's life ending on the birthday, plus earlier birthdays, and refuses without a birth date."
-    doc: reference/film-types.mdx#birthday-compilations
+    promise: "--birthday runs the year of a person's life ending on the birthday and nothing earlier; with --years-back it makes the birthdays film, the birthdays alone ±1 day; it refuses without a birth date."
+    doc: reference/film-types.mdx#birthdays
     covers: ["cli:generate --birthday"]
     tests:
-      - tests/integration/features/test_memory_types.py::test_a_birthday_runs_the_year_ending_on_it_and_looks_back_at_earlier_ones
+      - tests/integration/features/test_memory_types.py::test_a_birthday_runs_the_year_ending_on_it_and_nothing_earlier
+      - tests/integration/features/test_memory_types.py::test_years_back_makes_the_birthdays_film_and_nothing_between
       - tests/integration/features/test_memory_types.py::test_a_birthday_refuses_a_person_with_no_birth_date
   - id: memory-type.trip
     promise: "A trip film comes from GPS: it lists detected trips, then films the one picked by --trip-index, --near-date or --month, or every one with --all-trips."

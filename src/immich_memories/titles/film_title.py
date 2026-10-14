@@ -472,17 +472,24 @@ def birthday_title(
     end: Any,
     person_name: str | None,
     locale: str,
+    years: Collection[int] = (),
 ) -> tuple[str, str | None] | None:
-    """Name the birthday being celebrated, even when the search includes earlier birthdays.
+    """Name the birthday being celebrated, or the years a birthdays film shows.
 
     The year of the birthday over whose birthday it is ("2026", "Anniversaire de Kit"): a
-    birthday film titled with the person's name alone never said what it celebrated.
+    birthday film titled with the person's name alone never said what it celebrated. A
+    birthdays film (``birthday_years_back``) gets the span of the years its cut shows, as a
+    holiday does ("2021–2026"); before there is a cut, the celebrated year.
     """
     if memory_type != "person_spotlight" or not preset_params.get("birthday") or end is None:
         return None
+    from immich_memories.memory_types.date_builders import celebrated_day
+
+    spanned = preset_params.get("birthday_years_back") and years
+    when = years_spanned(years) if spanned else str(celebrated_day(end, preset_params).year)
     if not person_name:
-        return str(end.year), None
-    return str(end.year), birthday_words(person_name, locale)
+        return when, None
+    return when, birthday_words(person_name, locale)
 
 
 def birthday_words(person_name: str, locale: str) -> str:
@@ -553,7 +560,7 @@ def template_title(
         person_name=person_name,
         use_first_name_only=config.title_screens.use_first_name_only,
     )
-    if birthday := birthday_title(params, memory_type, date_range.end, name, locale):
+    if birthday := birthday_title(params, memory_type, date_range.end, name, locale, years):
         return birthday
     # Calendar days, not instants: a season is recognised by its first and last day.
     start, end = date_range.start.date(), date_range.end.date()

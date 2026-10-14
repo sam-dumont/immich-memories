@@ -81,12 +81,12 @@ def test_run_context_sorts_exact_windows_without_collapsing_the_gaps(
     assert context.date_ranges == (earlier, later)
 
 
-def test_run_context_preserves_native_birthday_windows_including_overlap(tmp_path) -> None:
+def test_run_context_preserves_the_birthdays_film_windows(tmp_path) -> None:
     windows = tuple(build_birthday_windows(date(1990, 4, 2), year=2026, years_back=5))
 
     context = EditorialRunContext(
         key="birthday",
-        label="Birthday year with flashbacks",
+        label="Birthdays across the years",
         product="person_spotlight",
         date_ranges=windows,
         target_seconds=90,
@@ -95,11 +95,11 @@ def test_run_context_preserves_native_birthday_windows_including_overlap(tmp_pat
 
     assert context.date_ranges == tuple(sorted(windows))
     assert context.case_ranges == context.date_ranges
-    overlap = datetime(2025, 4, 3, 12)
-    assert sum(window.contains(overlap) for window in context.date_ranges) == 2
-    assert not any(window.contains(datetime(2024, 8, 1)) for window in context.date_ranges)
-    shared = make_asset("birthday-overlap", file_created_at=overlap)
-    gap = make_asset("outside-birthday-windows", file_created_at=datetime(2024, 8, 1))
+    party = datetime(2025, 4, 3, 12)
+    assert sum(window.contains(party) for window in context.date_ranges) == 1
+    assert not any(window.contains(datetime(2025, 8, 1)) for window in context.date_ranges)
+    shared = make_asset("birthday-party", file_created_at=party)
+    gap = make_asset("between-two-birthdays", file_created_at=datetime(2025, 8, 1))
     prepared = prepare_editorial_source(
         EditorialSelectionRequest(scope=SourceScope(date_ranges=context.date_ranges)),
         EditorialDependencies(source_fetcher=lambda _scope: (shared, shared, gap)),
