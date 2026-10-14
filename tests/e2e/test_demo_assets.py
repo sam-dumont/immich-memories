@@ -140,6 +140,9 @@ _TRIP_POSTER = "trip-map-flyover.jpg"
 # both pins and their names clear of it. That is the still the trip page shows.
 _FLYOVER_SECONDS = 5.5
 _TRIP_MAX_BYTES = 8 * 1024 * 1024
+# A preview, not the trip film: the road north fills over two minutes at its own length
+# (the recorded trip film is on the memory types page), so the preview asks for 40 seconds.
+_TRIP_SECONDS = 40
 # The finished film carries a soundtrack, as a real one does: a bundled track, pinned so a
 # re-cut sounds the same. Calm, for twenty days of fjords.
 _TRIP_TRACK = (
@@ -298,6 +301,8 @@ def _run_trip_cli(workspace, output_dir: Path) -> Path:
             str(YEAR),
             "--trip-index",
             "1",
+            "--duration",
+            str(_TRIP_SECONDS),
             "--music",
             str(_TRIP_TRACK),
             "--quiet",

@@ -1,0 +1,229 @@
+{
+ "source_sha": "98a273663cd13200b19ae68ae07e6b544279bea3",
+ "software": {
+  "immich-memories": "1.0.0rc11.dev2+g98a273663",
+  "onnxruntime": "1.28.0",
+  "torch": "2.14.0",
+  "mlx": "0.32.3",
+  "laya-mlx": "0.4.0",
+  "immich-memories-music": "0.1.0"
+ },
+ "platform": "Darwin arm64",
+ "request": [
+  "--memory-type",
+  "monthly_highlights",
+  "--month",
+  "7",
+  "--year",
+  "2025",
+  "--duration",
+  "60",
+  "--include-photos",
+  "--sharing",
+  "family",
+  "--no-llm-title",
+  "--music",
+  "calm_acoustic_1.opus"
+ ],
+ "services": {
+  "captioner": "smolvlm2-500m-base-public (gpu, full)",
+  "reader": "gemma-4-e4b-it-6bit"
+ },
+ "tiers": {
+  "basic": {
+   "selected": [
+    "birthday-cake.jpg",
+    "birthday-cupcakes-2.jpg",
+    "birthday-superheroes.jpg",
+    "forest-0706-pat-03.jpg",
+    "forest-0706-tervuren-04.jpg",
+    "home-0707-park-1.jpg",
+    "home-0707-park-3.jpg",
+    "cast-0707-pat-and-lou-with-the-little.jpg",
+    "cast-0710-charlie-and-robin-looking-up.jpg",
+    "clips/north-clip-0712-0.mp4",
+    "north-0716-0196.jpg",
+    "north-0718-0252.jpg",
+    "clips/north-clip-0718-3.mp4",
+    "north-0721-0339.jpg",
+    "north-0731-1002.jpg"
+   ],
+   "summary": "Kit's birthday, then Lou and Pat's visit, then The road north",
+   "pipeline_seconds": {
+    "total": 68.0,
+    "analysis": 45.9,
+    "generation": 22.1
+   },
+   "wall_seconds": 71,
+   "source_film": {
+    "seconds": 60.0,
+    "streams": [
+     [
+      "video",
+      "h264",
+      1280,
+      720
+     ],
+     [
+      "audio",
+      "aac",
+      null,
+      null
+     ]
+    ],
+    "decode_exit": 0
+   },
+   "frames_md5": "e479690c70dcf59bb7e1096e8c1d29c4",
+   "film": {
+    "path": "tiers/month.mp4",
+    "bytes": 8730339,
+    "seconds": 60.0,
+    "streams": [
+     [
+      "video",
+      "h264",
+      1280,
+      720
+     ],
+     [
+      "audio",
+      "aac",
+      null,
+      null
+     ]
+    ],
+    "decode_exit": 0
+   }
+  },
+  "gpu": {
+   "selected": [
+    "birthday-cake.jpg",
+    "birthday-cupcakes-2.jpg",
+    "birthday-superheroes.jpg",
+    "forest-0706-pat-03.jpg",
+    "forest-0706-tervuren-04.jpg",
+    "home-0707-park-1.jpg",
+    "home-0707-park-3.jpg",
+    "cast-0707-pat-and-lou-with-the-little.jpg",
+    "cast-0710-charlie-and-robin-looking-up.jpg",
+    "clips/north-clip-0712-0.mp4",
+    "north-0716-0196.jpg",
+    "north-0718-0252.jpg",
+    "clips/north-clip-0718-3.mp4",
+    "north-0721-0339.jpg",
+    "north-0731-1002.jpg"
+   ],
+   "summary": "Kit's birthday, then Lou and Pat's visit, then The road north",
+   "pipeline_seconds": {
+    "total": 96.0,
+    "analysis": 73.7,
+    "generation": 22.3
+   },
+   "wall_seconds": 99,
+   "source_film": {
+    "seconds": 60.0,
+    "streams": [
+     [
+      "video",
+      "h264",
+      1280,
+      720
+     ],
+     [
+      "audio",
+      "aac",
+      null,
+      null
+     ]
+    ],
+    "decode_exit": 0
+   },
+   "frames_md5": "e479690c70dcf59bb7e1096e8c1d29c4",
+   "film": {
+    "path": "tiers/month.mp4",
+    "bytes": 8730339,
+    "seconds": 60.0,
+    "streams": [
+     [
+      "video",
+      "h264",
+      1280,
+      720
+     ],
+     [
+      "audio",
+      "aac",
+      null,
+      null
+     ]
+    ],
+    "decode_exit": 0
+   }
+  },
+  "full": {
+   "selected": [
+    "birthday-cake.jpg",
+    "birthday-cupcakes-2.jpg",
+    "birthday-superheroes.jpg",
+    "forest-0706-pat-03.jpg",
+    "forest-0706-tervuren-04.jpg",
+    "home-0707-park-1.jpg",
+    "home-0707-park-3.jpg",
+    "cast-0707-pat-and-lou-with-the-little.jpg",
+    "cast-0710-charlie-and-robin-looking-up.jpg",
+    "clips/north-clip-0712-0.mp4",
+    "north-0716-0196.jpg",
+    "north-0718-0252.jpg",
+    "clips/north-clip-0718-3.mp4",
+    "north-0721-0339.jpg",
+    "north-0731-1002.jpg"
+   ],
+   "summary": "The period included ordinary days at home and several visits. Kit's birthday and Lou and Pat's visit were major events, while The road north was a major trip spanning from July 12th to July 31st.",
+   "pipeline_seconds": {
+    "total": 122.8,
+    "analysis": 99.7,
+    "generation": 23.2
+   },
+   "wall_seconds": 126,
+   "source_film": {
+    "seconds": 60.0,
+    "streams": [
+     [
+      "video",
+      "h264",
+      1280,
+      720
+     ],
+     [
+      "audio",
+      "aac",
+      null,
+      null
+     ]
+    ],
+    "decode_exit": 0
+   },
+   "frames_md5": "e479690c70dcf59bb7e1096e8c1d29c4",
+   "film": {
+    "path": "tiers/month.mp4",
+    "bytes": 8730339,
+    "seconds": 60.0,
+    "streams": [
+     [
+      "video",
+      "h264",
+      1280,
+      720
+     ],
+     [
+      "audio",
+      "aac",
+      null,
+      null
+     ]
+    ],
+    "decode_exit": 0
+   }
+  }
+ }
+}

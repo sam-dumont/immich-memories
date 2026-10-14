@@ -69,6 +69,13 @@ changes on purpose.
 `make screenshots` replays the recorded month (`DEMO_RECORDING=monthly_highlights`); the tests
 themselves keep the scripted cut.
 
+The [three tiers page](../better/tier-example.md) is that month cut once more on each tier, against
+the same seeded Immich: `scripts/record_tier_example.py --state <real_seed state.json> --home <dir>`
+gives Basic, GPU and Full a home each, so nothing one tier prepared reaches the next, and the same
+bundled track. GPU and Full read the caption server the Apple Silicon setup starts on port 8092,
+Full the model your own config names, and the GPU tier needs `laya-mlx` installed. It writes the
+films, their contact sheets and `provenance.json` under `docs-site/static/demo/tiers/`.
+
 The Synology setup screenshots under `docs-site/static/img/platforms/` come from the real DSM
 project and folder dialogs. Capture only the relevant dialog, with generic example names.
 Exclude server addresses, account names, keys and unrelated projects before saving the image.
@@ -94,7 +101,7 @@ selection, so the pool count can differ from the file count.
 | `make demo-hero` | `docs-site/static/img/demo-hero.gif`, the README hero: the brief, the cut and the review, then Render pressed and the film arriving on the page, then that film full bleed from the moment the page's player shows (the shared timeline supplies the windows), 720 px, 10 fps, under 4 MB |
 | `make demo-cli` | `docs-site/remotion/public/cli-demo.mp4` and `docs-site/remotion/src/cli-timing.ts`, VHS recording the real CLI: `scripts/demo-cli-hermetic.py` runs `generate`, `runs story` and `runs why` against the hermetic fakes from `tests/e2e`, types each command, and writes the second each one starts at so the scene cuts there; it also copies the video to `docs-site/static/demo/cli-demo.mp4` and cuts its poster `cli-demo-poster.jpg`, which the homepage's CLI section plays (`make demo-cli-run` plays the same session without recording; as root in a container, set `VHS_NO_SANDBOX=true`) |
 | `make demo-output` | `docs-site/remotion/public/output-preview.mp4` and `output-frame.jpg`, cut on the hermetic launch |
-| `make demo-output-trip` | `docs-site/static/demo/trip-preview.mp4` and `docs-site/static/img/trip-map-flyover.jpg`, the fixture's road north cut as a trip memory and the still of its map fly-over, both played by the trip memory page. Needs the network: the satellite tiles come from ArcGIS World Imagery and the trip's name from Nominatim, and neither has an offline stand-in |
+| `make demo-output-trip` | `docs-site/static/demo/trip-preview.mp4` and `docs-site/static/img/trip-map-flyover.jpg`, the fixture's road north cut as a 40-second trip memory and the still of its map fly-over, both played by the trip memory page. Needs the network: the satellite tiles come from ArcGIS World Imagery and the trip's name from Nominatim, and neither has an offline stand-in |
 | `make demo-soundtrack` | `docs-site/remotion/public/demo-music.wav`, crossfaded and normalised from a bundled acoustic track; also runs with `make demo-ui` |
 | `make demo-music` | Optional ACE-Step candidates under `docs-site/static/demo/music-candidates/` |
 | `make screenshots` | the light and dark screenshots under `docs-site/static/img/screenshots/` |

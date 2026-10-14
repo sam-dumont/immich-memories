@@ -219,9 +219,9 @@ Memory generated in 42s
   CHECK 2 pictures to check before sharing · immich-memories runs why <asset id> --run 20260913_083421_9dcb
 
   the cut, in order (6 shots, 0:24)
-  June 2024
-   0:00  2024-06-08  video     4 s  Lunch in the garden: Kit · the table and chairs out on the lawn · a video
-   0:04  2024-06-09  photo     4 s  Lunch in the garden: Kit and Pat · the cake with the candles · starred
+  July 2025
+   0:03  2025-07-05  photo     3 s  Kit's birthday: Ixelles · starred
+   0:06  2025-07-05  photo   3.5 s  Kit's birthday: Ixelles
    ...
   why any picture is in or out: immich-memories runs why <asset id> --run 20260913_083421_9dcb
 ```
