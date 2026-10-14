@@ -154,7 +154,12 @@ def test_every_docs_deploy_plans_all_tracks_from_the_published_state(tmp_path, n
             ]
         )
     )
-    nightly_body = json.dumps({"body": f"Commit: {'c' * 40}"})
+    nightly_body = json.dumps(
+        {
+            "body": "- App image: `ghcr.io/sam-dumont/immich-memories:nightly-20261022`\n\n"
+            f"Commit: {'c' * 40}"
+        }
+    )
     # WHY: GitHub is the release catalogue; exercise the real shell and selectors.
     gh = tmp_path / "gh"
     gh.write_text(
@@ -186,9 +191,10 @@ def test_every_docs_deploy_plans_all_tracks_from_the_published_state(tmp_path, n
     assert (tmp_path / "gh-arguments").read_text().strip() == (
         "api --paginate --slurp repos/owner/project/releases?per_page=100"
     )
-    key, _, value = output.read_text().strip().partition("=")
-    assert key == "tracks"
-    tracks = {entry["track"]: entry["ref"] for entry in json.loads(value)}
+    outputs = dict(line.partition("=")[::2] for line in output.read_text().splitlines())
+    # The dev docs pin their setup files to the nightly's images; no nightly, no tag.
+    assert outputs["dev_tag"] == ("nightly-20261022" if nightly else "")
+    tracks = {entry["track"]: entry["ref"] for entry in json.loads(outputs["tracks"])}
     expected = {"stable": "v1.0.0", "next": "v1.1.0-rc.1"}
     if nightly:
         expected["dev"] = "c" * 40

@@ -32,6 +32,7 @@ except ModuleNotFoundError:
 RELEASE = "nightly"
 INFERENCE_DOCKERFILE = "docker/Dockerfile.inference"
 _MARKER = re.compile(r"(?m)^Commit: ([0-9a-f]{40})\s*$")
+_IMAGE_TAG = re.compile(r"immich-memories:(nightly-\d{8})\b")
 _TAG = re.compile(r"^v(\d+)\.(\d+)\.(\d+)(?:-rc\.(\d+))?$")
 
 
@@ -47,6 +48,12 @@ class NightlyPlan:
 def last_nightly_commit(body: str | None) -> str | None:
     """The commit the published nightly was built from, if its release says so."""
     match = _MARKER.search(body or "")
+    return match[1] if match else None
+
+
+def last_nightly_tag(body: str | None) -> str | None:
+    """The dated image tag the published nightly pushed, as its notes name it."""
+    match = _IMAGE_TAG.search(body or "")
     return match[1] if match else None
 
 
@@ -196,6 +203,7 @@ def main() -> int:
     plan_parser = commands.add_parser("plan")
     plan_parser.add_argument("--date", default=datetime.now(UTC).strftime("%Y%m%d"))
     commands.add_parser("last-commit")
+    commands.add_parser("last-tag")
     notes = commands.add_parser("notes")
     notes.add_argument("version")
     notes.add_argument("commit")
@@ -205,6 +213,9 @@ def main() -> int:
         return _plan_command(args.date)
     if args.command == "last-commit":
         print(last_nightly_commit(_published_body()) or "")
+        return 0
+    if args.command == "last-tag":
+        print(last_nightly_tag(_published_body()) or "")
         return 0
     print(nightly_notes(args.version, args.commit, args.tag), end="")
     return 0

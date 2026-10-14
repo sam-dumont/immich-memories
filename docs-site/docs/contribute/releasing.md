@@ -128,11 +128,12 @@ whole site passes 900 MB, under the 1 GB Pages limit.
 
 The files people copy from `main` (the Unraid template, the Compose files, `example.env`, the
 README download recipe, the Kubernetes and Terraform image tags) name the last published release,
-never `latest`. After a stable or rc release, the `pin-refs` job runs
-`make pin-release VERSION=X.Y.Z` on a `build/pin-vX.Y.Z` branch and puts an "open the PR" link in
-the run summary; open it and let it merge. Nothing opens that PR for you: the repository lets no
-workflow open one, and a PR opened by the workflow token wouldn't start the required checks. The
-next release refuses to start until main pins the latest tag (`release_pin.py --check`). A test
+never `latest`. Nobody pins them by hand: the pre-commit hook runs `make pin-latest`, so the first
+commit after a release moves every pin to it and stops, like a formatter; stage the files and
+commit again. The hook reads the tags on `origin`, since CI tags the release and a clone may not
+have it yet. A release refuses to start while main still pins an older one
+(`release_pin.py --check`). The `/dev/` docs are built from a nightly's tree, so the deploy pins
+that tree to the nightly's own images before building; nothing is committed for that. A test
 fails if any pinned file says `latest` or the pins disagree. The pin also points the README's
 browser URLs at the host port of the Compose file that release ships. The release assets are
 stamped with their own version regardless.

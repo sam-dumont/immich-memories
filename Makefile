@@ -1426,6 +1426,9 @@ pin-release:  ## Pin the Unraid template, Compose files, example.env and README 
 	@test -n "$(VERSION)" || { echo "usage: make pin-release VERSION=X.Y.Z"; exit 1; }
 	uv run python scripts/release_pin.py "$(VERSION)"
 
+pin-latest:  ## Pin the setup files to the newest published release (the pre-commit hook runs it)
+	python3 scripts/release_pin.py --latest
+
 docs-setup:  ## Refresh the builder from the shipped Compose templates
 	uv run --no-project --with pyyaml==6.0.3 python scripts/sync_setup_templates.py
 

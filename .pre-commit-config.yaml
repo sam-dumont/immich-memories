@@ -37,6 +37,15 @@ repos:
         pass_filenames: false
         always_run: true
 
+      # The first commit after a release moves the README, docs and setup files to it,
+      # so no release needs a follow-up PR. Fails like a formatter: stage and commit again.
+      - id: pin-latest-release
+        name: Setup files pin the latest release
+        entry: make pin-latest
+        language: system
+        pass_filenames: false
+        always_run: true
+
       - id: private-terms-commit-msg
         name: Private terms (commit message)
         entry: uv run python scripts/private_terms_gate.py --commit-msg
