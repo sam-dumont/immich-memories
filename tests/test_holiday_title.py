@@ -84,14 +84,15 @@ def test_a_holiday_never_asks_the_model_for_its_title(tmp_path):
         clips=[],
         config=config,
         memory_type="holiday",
-        date_range=DateRange(datetime(2022, 8, 13), datetime(2026, 8, 17, 23, 59, 59)),
+        date_range=DateRange(datetime(2022, 12, 23), datetime(2026, 12, 27, 23, 59, 59)),
         person_names=[],
-        memory_preset_params={"holiday": "Assumption Day"},
+        memory_preset_params={"holiday": "christmas"},
+        # WHY: ask is the title model boundary; a holiday never reaches it.
         ask=lambda **kwargs: asked.append(kwargs),
     )
 
     assert asked == []
-    assert title == (None, None, None)
+    assert title == ("Christmas", None, "occasion")
 
 
 class _Immich:

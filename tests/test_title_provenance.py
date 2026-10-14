@@ -145,13 +145,19 @@ def test_a_title_the_model_wrote_is_the_models():
         tier="full", llm={"enabled": True, "base_url": "http://llm.test/v1", "model": "some-model"}
     )
 
-    title, _subtitle, source = _resolve(memory_type="multi_person", config=config)
+    title, _subtitle, source = _resolve(memory_type="special_day", config=config)
 
     assert (title, source) == ("A summer by the sea", "model")
 
 
+def test_a_typed_film_is_titled_by_the_app_and_says_so():
+    title, _subtitle, source = _resolve(memory_type="multi_person")
+
+    assert (title, source) == ("July 2025", "fallback")
+
+
 def test_no_title_yet_leaves_the_source_to_the_template_layers():
-    title, _subtitle, source = _resolve()
+    title, _subtitle, source = _resolve(memory_type="trip")
 
     assert (title, source) == (None, None)
 

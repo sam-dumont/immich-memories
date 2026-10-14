@@ -1,12 +1,12 @@
-"""Decide a film's title for any surface: an explicit title, the model's, or the template.
+"""Decide a film's title for any surface: an explicit title, the app's own, the model's.
 
-A memory about people or an occasion is named by the model as soon as a reader
-is configured: the template opens a three-person film on a date span with three
-full names stacked underneath, and the family record holds enough to write
-"<child> and her grandparents" instead. Trips keep their own prompt and their
-own opt-in, and `--no-llm-title` pins the template for the contact-sheet
-matrix, where a run that starts inventing titles makes every run before and
-after it incomparable.
+A typed film (a period, a person, a birthday, a holiday, a day across the years) is
+titled by what it is and when, as the app writes it: "Kit's birthday · 2026". No model
+writes it and nothing goes under it unless someone typed a subtitle: a model asked for
+a birthday's title put a day of the year before under the birthday's year, and the
+cut's stories do not yet say enough for a line about what the film is about. A special
+day is still named by the model, from what the catalogue saw. Trips keep their own
+prompt and their own opt-in, and `--no-llm-title` pins the template.
 """
 
 from __future__ import annotations
@@ -31,6 +31,7 @@ __all__ = [
     "film_hemisphere",
     "holiday_title",
     "resolve_film_title",
+    "static_title",
     "template_title",
     "years_spanned",
 ]
@@ -296,12 +297,8 @@ def _model_suggested_title(
 
 
 def _asks_the_model(*, enabled: bool | None, memory_type: str | None, configured: bool) -> bool:
-    """Whether this run should put the question to the reader at all.
-
-    Never for a holiday: its title is the holiday's own name and the years in the cut, and a
-    model asked for one wrote a season label over years the film did not show.
-    """
-    if enabled is False or memory_type == "holiday":
+    """Whether this run should put the question to the reader at all."""
+    if enabled is False:
         return False
     if not configured:
         if enabled:
@@ -313,6 +310,35 @@ def _asks_the_model(*, enabled: bool | None, memory_type: str | None, configured
     from immich_memories.titles.title_routing import OCCASION_MEMORY_TYPES, PEOPLE_MEMORY_TYPES
 
     return memory_type in PEOPLE_MEMORY_TYPES or memory_type in OCCASION_MEMORY_TYPES
+
+
+def _years_in(clips: list[Any]) -> set[int]:
+    """The years the selected pictures were taken in, as the film's dates read them."""
+    taken = (getattr(getattr(c, "asset", None), "local_taken_at", None) for c in clips)
+    return {day.year for day in taken if day is not None}
+
+
+def _titled_by_its_kind(
+    *,
+    config: Config,
+    memory_type: str,
+    date_range: DateRange,
+    person_names: list[str],
+    preset_params: dict | None,
+    clips: list[Any],
+    subtitle_override: str | None,
+) -> tuple[str, str | None, TitleSource]:
+    """A typed film's own title, with no line under it unless one was typed."""
+    title = static_title(
+        config,
+        memory_type=memory_type,
+        date_range=date_range,
+        person_name=person_names[0] if person_names else None,
+        preset_params=preset_params,
+        years=_years_in(clips),
+    )
+    source = TitleSource.OCCASION if memory_type == "holiday" else TitleSource.FALLBACK
+    return title, subtitle_override, source
 
 
 def resolve_film_title(
@@ -333,10 +359,11 @@ def resolve_film_title(
     """Return the (title, subtitle, source) the run should use.
 
     Owns the whole precedence so the caller gains no branches: an explicit
-    title wins, then the model's, then the template (signalled by ``None``,
-    with no source: the template layers name it later). The subtitle falls
-    back to ``subtitle_override`` on every path. ``stories`` are the cut's own,
-    read from its plan: what the model may name the film, or its subtitle, after.
+    title wins, then a typed film's own (`static_title`), then the model's, then
+    the template (signalled by ``None``, with no source: the template layers name
+    it later). The subtitle falls back to ``subtitle_override`` on every path.
+    ``stories`` are the cut's own, read from its plan: what the model may name a
+    special day, or its subtitle, after.
 
     A special day's catalogue title travels through this same ``title_override``
     slot (see ``title_source.override_source``), but it is an English fact
@@ -359,6 +386,19 @@ def resolve_film_title(
             return override_result
         if subtitle_override == (memory_preset_params or {}).get("subtitle"):
             subtitle_override = None
+
+    from immich_memories.titles.title_routing import STATIC_TITLE_MEMORY_TYPES
+
+    if memory_type in STATIC_TITLE_MEMORY_TYPES:
+        return _titled_by_its_kind(
+            config=config,
+            memory_type=memory_type,
+            date_range=date_range,
+            person_names=person_names,
+            preset_params=memory_preset_params,
+            clips=clips,
+            subtitle_override=subtitle_override,
+        )
 
     llm_config = config.llm
     if not _asks_the_model(
@@ -449,6 +489,37 @@ def birthday_words(person_name: str, locale: str) -> str:
     """ "Kit's birthday", "Anniversaire d'Anne", in the film's language."""
     named = film_text("story.birthday", locale, name=person_name)
     return elide_french(named) if locale == "fr" else named
+
+
+def static_title(
+    config: Config,
+    *,
+    memory_type: str,
+    date_range: DateRange,
+    person_name: str | None,
+    preset_params: dict | None = None,
+    years: Collection[int] = (),
+) -> str:
+    """A typed film's title as the app writes it: who or what, then when.
+
+    "Kit's birthday · 2026", "Kit & Pat · 2025", "Summer 2025", "Christmas · 2019–2025": the
+    template's two lines on one, the person or occasion first. A day across the years gets the
+    span of the years its cut shows, as a holiday does, in place of a line saying it spans
+    years.
+    """
+    main, beneath = template_title(
+        config,
+        memory_type=memory_type,
+        date_range=date_range,
+        person_name=person_name,
+        preset_params=preset_params,
+        years=years,
+    )
+    if memory_type == "on_this_day":
+        beneath = None
+        if years:
+            main = f"{main} · {years_spanned(years)}"
+    return " · ".join(dict.fromkeys(part for part in (beneath, main) if part))
 
 
 def template_title(

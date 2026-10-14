@@ -263,7 +263,7 @@ def test_a_birthday_runs_the_year_ending_on_it_and_looks_back_at_earlier_ones(
     assert _ids(kept) == {p.asset_id for p in CARRIERS if "Kit" in p.people and p.day <= BIRTHDAY}
     # Five earlier birthdays are looked at; the library starts in 2025, so none holds anything.
     assert "history: 0 of 5 earlier windows hold material" in birthday.output
-    assert "Title: 2025" in birthday.output
+    assert "Title: Kit's birthday · 2025" in birthday.output
 
 
 @pytest.mark.feature("memory-type.birthday")

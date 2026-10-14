@@ -1,7 +1,7 @@
 """Who names a memory on the CLI, and with what.
 
-A film about people or an occasion is named by the model as soon as a reader is
-configured: a date span with three full names under it describes no film. Trips
+A special day is named by the model as soon as a reader is configured, from what the
+catalogue saw; a typed film's title is the app's own (`test_static_titles.py`). Trips
 keep their own prompt and still wait to be asked, and `--no-llm-title` pins the
 template for a matrix run that has to stay comparable across months.
 """
@@ -67,25 +67,6 @@ def _answers(title: str = "Ada and her grandparents", subtitle: str | None = Non
     return ask, seen
 
 
-def test_a_people_memory_is_named_by_the_model_with_no_flag_at_all() -> None:
-    """A reader is configured, so the family record beats the name list."""
-    ask, seen = _answers()
-
-    title, subtitle, _source = resolve_film_title(
-        enabled=None,
-        title_override=None,
-        clips=[make_clip("clip-1")],
-        config=_config_with_llm(),
-        memory_type="multi_person",
-        date_range=_RANGE,
-        person_names=["Ada Example", "Grace Example"],
-        ask=ask,
-    )
-
-    assert (title, subtitle) == ("Ada and her grandparents", None)
-    assert seen["person_names"] == ["Ada Example", "Grace Example"]
-
-
 def test_no_llm_title_pins_the_template() -> None:
     """The contact-sheet matrix needs runs before and after to stay comparable."""
     called = []
@@ -101,7 +82,8 @@ def test_no_llm_title_pins_the_template() -> None:
         ask=lambda **kwargs: called.append(kwargs),
     )
 
-    assert (title, subtitle) == (None, None)
+    assert title is not None
+    assert subtitle is None
     assert called == []
 
 
@@ -113,7 +95,7 @@ def test_requesting_a_title_without_a_model_explains_the_template_fallback(caplo
         subtitle_override="Summer",
         clips=[make_clip("clip-1")],
         config=Config(tier="basic"),
-        memory_type="multi_person",
+        memory_type="special_day",
         date_range=_RANGE,
         person_names=[],
         # WHY: fail visibly if a missing model still reaches the external LLM boundary.
@@ -190,7 +172,7 @@ def test_the_grouped_condition_travels_with_the_names() -> None:
         title_override=None,
         clips=[make_clip("clip-1")],
         config=_config_with_llm(),
-        memory_type="multi_person",
+        memory_type="special_day",
         date_range=_RANGE,
         person_names=["Ada Example", "Grace Example"],
         memory_preset_params={
@@ -529,7 +511,7 @@ def test_the_album_the_cut_sits_in_reaches_the_facts() -> None:
         title_override=None,
         clips=[make_clip("clip-1")],
         config=_config_with_llm(),
-        memory_type="multi_person",
+        memory_type="special_day",
         date_range=_RANGE,
         person_names=["Ada Example"],
         album_lookup=lambda: "Sunday at the lake",
@@ -567,7 +549,7 @@ def test_a_year_film_in_the_phone_catch_all_gets_its_normal_title_facts() -> Non
         title_override=None,
         clips=[make_clip("clip-1")],
         config=_config_with_llm(),
-        memory_type="year",
+        memory_type="special_day",
         date_range=year,
         person_names=[],
         album_lookup=lambda: asyncio.run(service.album_holding_most(cut, scope=scope)),
@@ -609,7 +591,7 @@ def test_an_unanswerable_album_lookup_leaves_the_rest_of_the_facts_alone() -> No
         title_override=None,
         clips=[make_clip("clip-1")],
         config=_config_with_llm(),
-        memory_type="multi_person",
+        memory_type="special_day",
         date_range=_RANGE,
         person_names=["Ada Example"],
         album_lookup=explode,
@@ -629,7 +611,7 @@ def test_the_model_answering_without_a_subtitle_leaves_no_subtitle_line() -> Non
         title_override=None,
         clips=[make_clip("clip-1")],
         config=_config_with_llm(),
-        memory_type="multi_person",
+        memory_type="special_day",
         date_range=_RANGE,
         person_names=["Ada Example", "Grace Example"],
         ask=ask,
@@ -678,7 +660,7 @@ def test_nas_selection_can_use_a_configured_llm_for_its_title() -> None:
         config=Config(
             tier="basic", llm={"enabled": True, "base_url": "http://llm.test/v1", "model": "m"}
         ),
-        memory_type="multi_person",
+        memory_type="special_day",
         date_range=_RANGE,
         person_names=["Ada Example"],
         ask=ask,
@@ -695,7 +677,7 @@ def test_a_missing_reader_leaves_the_template_alone() -> None:
         title_override=None,
         clips=[make_clip("clip-1")],
         config=Config(),
-        memory_type="multi_person",
+        memory_type="special_day",
         date_range=_RANGE,
         person_names=["Ada Example"],
         ask=lambda **_kwargs: None,
@@ -754,7 +736,7 @@ def test_titles_use_the_shared_llm_configuration():
         title_override=None,
         clips=[],
         config=config,
-        memory_type="year",
+        memory_type="special_day",
         date_range=_RANGE,
         person_names=[],
         ask=ask,
@@ -777,7 +759,7 @@ def test_locale_auto_asks_the_model_in_the_french_hosts_language() -> None:
             title_override=None,
             clips=[],
             config=config,
-            memory_type="year",
+            memory_type="special_day",
             date_range=_RANGE,
             person_names=[],
             ask=ask,
@@ -796,7 +778,7 @@ def test_explicit_locale_reaches_the_model_unresolved_by_the_host() -> None:
             title_override=None,
             clips=[],
             config=config,
-            memory_type="year",
+            memory_type="special_day",
             date_range=_RANGE,
             person_names=[],
             ask=ask,
