@@ -24,7 +24,7 @@ export default function CliDemo() {
       poster={poster}
       width={1400}
       height={780}
-      aria-label="A terminal: immich-memories generate cuts June 2024 into an 18-picture film, runs story lists the cut in order, and runs why explains one picture."
+      aria-label="A terminal: immich-memories generate cuts July 2025 into a 15-shot film, runs story lists the cut in order, and runs why explains one picture."
       style={{width: '100%', height: 'auto', display: 'block', borderRadius: 10, border: '1px solid var(--im-border)'}}
     >
       <source src={src} type="video/mp4" />

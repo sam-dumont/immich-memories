@@ -204,5 +204,5 @@ format fixed, note the hardware, and watch both films rather than trusting the n
 Measure the app and each service separately. A local reader and local audio can share machine
 memory when the app owns their runtimes; external servers keep memory resident on their own
 schedule, even while idle. See [benchmarking your own setup](../reference/performance-evidence.md)
-for what to record, and [two tiers of the same month](./tier-example.md) for a side-by-side film
-comparison.
+for what to record, and [one month, three tiers](./tier-example.md) for the same month cut on
+Basic, GPU and Full.
