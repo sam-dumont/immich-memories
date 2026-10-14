@@ -42,7 +42,7 @@ class TestThumbnailCache:
         stats = cache.get_stats()
         assert stats["file_count"] == 0
         assert stats["total_size_bytes"] == 0
-        assert stats["max_size_mb"] == 10_000.0
+        assert stats["max_size_mb"] == 30_000.0
 
     def test_put_and_get(self, cache):
         """Stored thumbnail can be retrieved."""
@@ -195,18 +195,18 @@ class TestAWorkingSetLargerThanTheBudget:
         assert "thumbnail_cache_max_size_mb" in warnings[0].getMessage()
 
 
-def test_the_default_budget_holds_a_real_memory_s_working_set():
-    """500 MB was sized for the per-clip scorer, which only ever fetched the
-    selected clips. Story-first prepares an annotation per candidate in scope:
-    one run reported 10,793 candidates, and the previews already on disk
-    measured 315 KB each. The default has to cover that, or every overlapping
-    memory re-downloads the previews and re-captions the assets whose caption
-    evidence no longer validates against bytes that are gone.
+def test_the_default_budget_holds_a_whole_library_s_previews():
+    """A year, a lifetime or a captioning pass reads every picture in scope, so the
+    budget is a function of the library. Measured on a real library: 50,600 cached
+    previews took 16 GB and 57,116 took 19 GB, about 0.32 MB each. At 10 GB a library
+    that size evicted previews it still needed and re-downloaded and re-captioned them
+    on the next film. The default holds about 90,000 pictures and videos; a bigger
+    library gets the warning naming this key.
     """
     from immich_memories.config_models import CacheConfig
 
-    measured_preview_bytes = 315_000
-    candidates_in_one_memory_scope = 10_793
-    working_set_mb = measured_preview_bytes * candidates_in_one_memory_scope / 1_000_000
+    measured_preview_bytes = 320_000
+    library_items = 90_000
+    working_set_mb = measured_preview_bytes * library_items / 1_000_000
 
     assert CacheConfig().thumbnail_cache_max_size_mb >= working_set_mb

@@ -192,7 +192,7 @@ variable "output_storage_size" {
 variable "cache_storage_size" {
   description = "Size of the cache/state PVC (/home/immich/.immich-memories: config, cache.db, video cache)"
   type        = string
-  default     = "30Gi"
+  default     = "60Gi"
 }
 
 variable "storage_class_name" {

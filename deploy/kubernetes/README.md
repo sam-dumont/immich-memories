@@ -26,7 +26,7 @@ overlays/postgres/     optional: point the store at PostgreSQL instead of the de
 
 ## Prerequisites
 
-1. A storage class for three `ReadWriteOnce` PVCs: `immich-memories-cache` 30Gi,
+1. A storage class for three `ReadWriteOnce` PVCs: `immich-memories-cache` 60Gi,
    `immich-memories-output` 50Gi, `immich-memories-models` 5Gi. The cache PVC holds SQLite:
    use local/block storage. The app refuses a SQLite store on NFS/SMB; use PostgreSQL if the
    store must live on another machine. All three claims must exist before the pod can start.

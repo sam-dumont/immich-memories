@@ -878,7 +878,7 @@ cache:
   video_cache_enabled: true      # Cache downloaded videos locally
   video_cache_max_size_gb: 10.0  # Max disk usage for video cache (1-500 GB)
   video_cache_max_age_days: 7    # Auto-delete cached videos older than this (1-365)
-  thumbnail_cache_max_size_mb: 10000.0 # Max disk for Immich previews (50 MB-100 GB)
+  thumbnail_cache_max_size_mb: 30000.0 # Max disk for Immich previews (50 MB-100 GB)
 ```
 
 Tight on disk: lower `video_cache_max_size_gb`, or turn it off with `video_cache_enabled: false`.
@@ -891,7 +891,7 @@ Tight on disk: lower `video_cache_max_size_gb`, or turn it off with `video_cache
 budget in MB ≈ 0.35 × (assets a memory's scope can reach)
 ```
 
-A scope of ten thousand candidates wants about 3.4 GB; the `0.35` leaves a little headroom over the measured 0.315 MB. The 10 GB default holds roughly 31,000 previews, which covers three scopes that size.
+A scope of ten thousand candidates wants about 3.4 GB; the `0.35` leaves a little headroom over the measured 0.315 MB. A year, a lifetime or a captioning pass can reach the whole library: two real installs held 16 GB for 50,600 previews and 19 GB for 57,116. The 30 GB default holds about 90,000 previews; past that, the run warns and names this key.
 
 If the run's working set does not fit, nothing is lost mid-run: previews still in use are never deleted and the cache overflows the limit instead. The *next* run reclaims them, so the next overlapping memory re-downloads every preview. You get one `WARNING` per run saying how far over you are. Raise it rather than ignoring it.
 
