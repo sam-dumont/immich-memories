@@ -12,7 +12,7 @@ import StackAccess from './_stack-access.mdx';
 
 Use a **Docker Standalone** environment in Portainer. This recipe runs the app on that Docker host, which may be a different machine from the Portainer server. The interface steps follow [Portainer's stack documentation](https://docs.portainer.io/user/docker/stacks/add).
 
-The Docker Standalone Web editor and Console route has been checked; see [tested deployments](../tested-deployments.md) for its scope.
+Portainer CE on Docker Standalone has been checked on an Apple Silicon host: Web editor deployment, app readiness and the Console commands below. A remote NAS and a published-release download have not. [Tested deployments](../tested-deployments.md) covers the other platforms.
 
 ## 1. Create the stack
 

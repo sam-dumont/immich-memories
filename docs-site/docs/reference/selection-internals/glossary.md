@@ -18,7 +18,8 @@ Where it lives: `moment_grouping.py`, `editorial_rule_reader.py`, `editorial_fil
 | **Capture run** | captures each within five minutes of the one before; it spaces shots and is the unit of an exposure chain |
 | **Episode** | the block a moment sits in (an afternoon at the beach, a party), cut at a 90-minute gap or 2 km |
 | **Happening** | a group of moments close in time and place; the unit the worthiness reading judges |
-| **Story** | days grouped into one thing that happened: a week at home, a stretch away, a trip |
+| **Story** | days grouped into one thing that happened: a week at home, a day out, a trip, a birthday, a visit; named from its facts, never from an activity label |
+| **Occasion** | a birthday (an Immich birth date coming round) or a close-family visit, taken out of its week into a story of its own that weighs at least `major` |
 | **Reach** | the pictures a film can select, plus their Live Photo siblings and capture runs; only these get prepared |
 
 ## Preparation
@@ -33,7 +34,7 @@ Where it lives: `editorial_preparation_heads.py`, `editorial_preparation_detecto
 | **Caption** | a banked description or motion line, acquired for selected shots and candidates by SmolVLM2 500M or an explicitly approved LLM provider |
 | **Tier** | `basic` (CPU heads), `gpu` (adds Marqo, Docling, captions and Laya), `full` (adds prose refinement); `auto` resolves from GPU inference and LLM configuration |
 | **Scene print** | the pooled DINOv2 vector of a preview; two prints at a cosine of 0.65 or more are the same scene |
-| **Residual** | the motion left in a clip once the camera's own movement is removed; 1.5 or more plays as motion |
+| **Residual** | the motion left in a clip once the camera's own movement is removed; a Live Photo plays as motion at 1.5 or more, when its clip lasts at least 2.5 s |
 | **Bank** | an answer stored under its exact inputs and producer version, so the next run asks nothing; no row means nobody asked |
 | **Banked picture evidence** | matching facts and captions are reused; missing evidence is acquired for selected shots and actual candidates; the prose reader receives text only |
 
@@ -49,6 +50,7 @@ Where it lives: `editorial_story_carriers.py`, `editorial_story_depth_fill.py`, 
 | **Weight** | a story's size: `dominant`, `major`, `minor`, `glimpse`, `none`; `none` gets no shot |
 | **Big story** | dense (twice the median day) and at least 30 % close-family pictures; weighs `major` |
 | **Carrier** | the picture admitted to carry one moment of a funded story; a shot before it is rendered |
+| **Shot reason** | why a shot is in the cut, in under 80 characters from its own facts; `runs story` and `runs why` print it |
 | **Carrier rule** | a picture kept as evidence and never a shot: a document, a screen, a screenshot, a face close-up |
 | **Standing** | whether a picture stands on its own, scored 0 to 2 from its facts, never asked of a model |
 | **Look-alike** | a story's next shot must not repeat one it holds (hash within 10 bits) |

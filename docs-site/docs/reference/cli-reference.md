@@ -338,9 +338,9 @@ immich-memories generate [OPTIONS]
 | `--keep-intermediates` | boolean | false | Keep intermediate files for debugging |
 | `--privacy-mode` | boolean | false | Demo mode: blur every clip frame, scramble the audio, fake the person names |
 | `--title` | text | - | Override video title text |
-| `--llm-title`, `--no-llm-title` | boolean | - | People and occasion memories are named by the model whenever a reader is configured. --llm-title adds trips, --no-llm-title pins the template everywhere (--title still wins) |
+| `--llm-title`, `--no-llm-title` | boolean | - | Special days are named by the model whenever a reader is configured; period, people, birthday, holiday and on-this-day films always get the app's own title. --llm-title adds trips, --no-llm-title pins the template everywhere (--title still wins) |
 | `--subtitle` | text | - | Override video subtitle text |
-| `--include-live-photos`, `--no-live-photos` | boolean | - | Include Live Photo video clips (3s iPhone clips, merged when burst-captured) |
+| `--include-live-photos`, `--no-live-photos` | boolean | - | Include Live Photo clips: one plays as motion when its clip (merged when burst-captured) lasts at least 2.5 s and moves |
 | `--include-photos`, `--no-photos` | boolean | - | Include photos as animated Ken Burns clips (blur background, face-aware pan) |
 | `--accept-any-provenance` | boolean | false | Keep forwarded and re-encoded media for this memory; date, person, privacy, and Live Photo boundaries still apply |
 | `--photo-duration` | float | - | Duration per photo clip in seconds (default: 4.0) |

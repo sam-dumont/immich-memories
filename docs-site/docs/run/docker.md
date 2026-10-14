@@ -114,7 +114,7 @@ Partner accounts need the read set only.
 |---|---|
 | `asset.upload` | Uploading the film and checking for duplicate uploads |
 | `tag.create` | Creating or finding the app's generated-film tag |
-| `tag.asset` | Attaching that tag, and the film's type, year and story tags, to the film |
+| `tag.asset` | Attaching that tag to the film, and its type, year and story tags when `upload.film_tags` is on |
 | `asset.update` | Writing the film's description (its title and story summary). Without it the film uploads and replaces its earlier render as before, just with no description |
 | `album.create` | Creating the destination album |
 | `albumAsset.create` | Adding the film to the album |
@@ -278,7 +278,7 @@ fetch the current model pins and run preflight.
 
 ## Disk
 
-The preview/video caches default to 10 GB each. Uploaded films are removed locally after confirmed
+The preview cache defaults to 30 GB (about 0.35 MB per picture your films reach), the video and prepared-source caches to 10 GB each. Uploaded films are removed locally after confirmed
 delivery; local-only or failed deliveries keep their files. [Storage and caches](./maintenance/health-logs-cache.md#caches)
 covers sizing and cleanup.
 

@@ -70,12 +70,10 @@ On Debian/Ubuntu, install FFmpeg with `sudo apt install ffmpeg` and run the same
 
 Use the versioned package command from [Native installation](../uv-pip.md).
 
-The command pins `--python 3.12` on purpose. The package supports Python 3.11 and newer, but the
-GPU title renderer (`quadrants`) is only installed below 3.14. Without the pin, `uv` picks the
-newest Python on your `PATH` (Homebrew's default is 3.14 now), the install succeeds, and titles
-quietly fall back to PIL without SDF effects: preflight shows "Title rendering: WARNING PIL + FFmpeg".
-If you already installed that way, reinstall with `--force --python 3.12`. With pip, create the
-virtual environment from Python 3.11, 3.12 or 3.13.
+The command pins `--python 3.12` on purpose. The package runs on Python 3.11, 3.12 and 3.13: the
+GPU title renderer (`quadrants`) ships no 3.14 wheel, so 3.14 is refused. `uv tool install` finds or
+downloads a compatible interpreter on its own; the pin just makes it the same one everywhere. With
+pip, create the virtual environment from Python 3.11, 3.12 or 3.13; pip on 3.14 refuses the package.
 
 RC and final commands pin the matching PyPI version. No source checkout or local wheel build is
 part of the install. A preview without published assets cannot supply this install.

@@ -13,7 +13,7 @@ one take each stage in turn.
 
 You pick a period: a month, a year, a trip, a person. The editor reads what Immich already knows
 about every picture in it (when, where, who, whether you starred it, whether it moves), groups the
-pictures into moments and the moments into stories, decides which stories earn a place in a film
+pictures into moments and the moments into stories, names each story from those facts, decides which stories earn a place in a film
 of that length, picks the best frame of each moment it funds, and checks the finished cut against
 a list of promises before anything renders.
 
@@ -37,9 +37,9 @@ These hold on every tier.
   the duplicate review still apply. When they keep it out, nothing else from that moment takes
   its place: the moment is dropped and the slot goes to another one.
 - **Stories are weighed, days aren't counted.** A week with nothing marked gets no shot; a stretch
-  away from home or an unusually busy day does. See [Moments, episodes and stories](./moments-and-stories.md).
+  away from home, a birthday, a family visit or an unusually busy day does. See [Moments, episodes and stories](./moments-and-stories.md).
 - **Videos are first class.** A video always plays, and a Live Photo plays as motion when its clip
-  moves and shows its subject. See [Picking each shot](./picking-shots.md).
+  lasts at least 2.5 seconds, moves and shows its subject. See [Picking each shot](./picking-shots.md).
 - **Close family gets a shot.** A partner, child or parent who is all over the period and in none of
   its shots gets a seat. See [Family, audience and duplicates](./family-audience-duplicates.md).
 - **Short beats a guess.** When the material runs out, the film runs shorter than its target rather
@@ -68,5 +68,6 @@ Preparation banks versioned picture facts before selection, then reads missing c
 
 Every cut writes a durable attempt under `~/.immich-memories/cache/editorial-runs/`, with each
 pass's decisions kept alongside it. `immich-memories runs why <asset-id>` reads them for
-one picture, `runs story` prints the storyboard, and `runs show` prints the run with its count of
-broken promises. See [runs](../../make/cli/runs.md).
+one picture, `runs story` prints the cut in the order it plays with the reason each shot is there
+([Why each shot is there](./picking-shots.md#why-each-shot-is-there)), and `runs show` prints the
+run with its count of broken promises. See [runs](../../make/cli/runs.md).

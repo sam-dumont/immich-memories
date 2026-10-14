@@ -13,7 +13,7 @@ model that reads the draft, as annotation lines, and polishes it: this page is h
 adds, feature by feature: [What a GPU or a model adds](../../get-started/choose-your-setup.md).
 
 The prose model gets text only and never decides sharing. Rules, picture classifiers and Laya
-own that check. A configured LLM can also write titles and music mood on Basic or GPU without
+own that check. A configured LLM can also write some titles and the music mood on Basic or GPU without
 changing the selection tier. Costs and setup are on [What a model adds, what it costs](../../better/overview.md).
 
 ## Which route a cut takes
@@ -136,8 +136,11 @@ serializes requests.
 
 ## What else the model writes
 
-- **The title**, for person, month, season, year, album, holiday, on-this-day and special-day films;
-  trips only with `--llm-title`, and `--no-llm-title` keeps the template. With no model the template writes it.
+- **The title**, for special-day and `--ask` films; trips only with `--llm-title`, and
+  `--no-llm-title` keeps the template. Year, month, season, person, birthday, several-people,
+  holiday and on-this-day films always get the app's own title ("Kit · 2025", "Christmas ·
+  2019–2025") and no subtitle unless you type one (`STATIC_TITLE_MEMORY_TYPES` in
+  `titles/title_routing.py`). With no model the template writes every title.
 - **The music's mood**, from the film's story titles and captions, in one text call
   (`audio/text_mood.mood_for_cut`). With no model the clips' own mood decides, or "calm".
 - **The summary**, up to 150 words on what the film was about and which stories mattered. One

@@ -116,8 +116,8 @@ the substitution.
 - **A stuck loop is re-rolled.** Each take is checked for a metronomic, repetitive grid, and a
   flagged one is replaced by up to `audio.max_regenerations` (2) more takes, keeping the best.
   Music is never dropped for it.
-- **One film, one piece of music.** The music is planned from the assembled film's length, so a
-  100 s photo film gets about 100 s of music, not 5 s per photo. Up to
+- **One film, one piece of music.** One generator makes the whole soundtrack, planned from the assembled film's length, so a
+  100 s photo film gets about 100 s of music. Up to
   `audio.music_block_seconds` (240) that is one take. Past it, up to `audio.max_music_blocks` (3)
   takes share one caption, style, tempo, key and seed, and are cut on bar lines and joined with a
   0.3 s crossfade, matched in level. Each take ends a few seconds early, before its outro, and the

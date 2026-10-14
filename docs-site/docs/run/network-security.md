@@ -44,7 +44,10 @@ are empty. Setting either restricts requests to the public URL's hostname, entri
 another name, add it to `server.allowed_hosts`. Other names get **421 Misdirected Request**.
 
 `/health/live` and `/health/ready` answer whatever host they name, since Kubernetes probes use the
-pod IP. They tell an anonymous caller nothing beyond up or down. The compatibility `/health`
+pod IP. A host the app would otherwise refuse gets the status field and nothing else, in every auth
+mode, so a page that rebinds its own name to your machine can't read the automation state. An
+allowed host gets status and version; the automation, delivery, disk and Immich detail goes only
+to a signed-in session, or to anyone when auth is off. The compatibility `/health`
 endpoint keeps the host checks above: a pod-IP request can receive 421. Use the dedicated
 [liveness and readiness paths](reference/kubernetes-operations.md#probes) for Kubernetes probes.
 
@@ -351,6 +354,21 @@ Terraform does not create a NetworkPolicy.
 
 Prefer HTTPS for services beyond loopback. Review access to deployment Secrets, Terraform state,
 backup files and worker hosts as access to your library.
+
+## Settings only the operator sets
+
+Someone who reaches the Settings page shouldn't be able to choose a program the server runs, a
+file it overwrites, or the host that receives your Immich keys. These keys are read only from
+`config.yaml` or the environment, and take effect on restart:
+
+- `render.worker_base_url`, `render.worker_token`;
+- `llm.local_server`;
+- `triage.encoder`, `free_text.wordnet`, `editorial.laya_checkpoint`;
+- `editorial.preparation.detector_python`, `editorial.preparation.detector_cache_dir`,
+  `editorial.preparation.marqo_onnx`.
+
+The settings API refuses them. A value saved from the UI by an older release is ignored at
+startup with a warning; move it to `config.yaml` or the environment.
 
 
 ## Configured service addresses

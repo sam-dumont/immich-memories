@@ -23,9 +23,9 @@ A day ends when the pictures stop for five hours, not at midnight. Days inside a
 tells that story). A holiday spent at home has its own type, so with a reader it is judged like any day
 and then asked one narrow question: was its occasion the holiday itself? A Father's Day lunch is the
 holiday's, and stays out; a cycling race that happened to fall on that date is a special day. With no
-answer, or on Basic, a holiday spent at home is skipped as before.
+answer, or on Basic and GPU, a holiday spent at home is skipped.
 
-**On Basic** (the default) nothing is asked. A day counts when one recorded fact is loud: most of its
+**On Basic and GPU** (no model reader; Basic is the default) nothing is asked. A day counts when one recorded fact is loud: most of its
 located pictures away from home, at least three favourites, at least three videos making half the day, or a
 long day (20 pictures over six active hours) with your close family on it. Each year keeps its strongest
 `advanced.automation.special_days_per_year` (6): days away first, the furthest first, then favourites, then
@@ -53,7 +53,7 @@ words. A year with fewer than 34 described days proposes nothing this way. Every
 still goes through the same day check.
 
 A confirmed day is named by its moment when its name misses what made it stand out. A day that held
-a baby at home and a concert that night came back "Baby's Day in Jette": the reader named what came
+a baby at home and a concert that night came back "Baby's Day at Home": the reader named what came
 first. The pictures that write the day's own unusual words, taken close together, mark its moment;
 when the day's title names none of those words, the moment is asked about alone, and an occasion
 found there gives the day its name and its window. The moment only renames: it never makes an
@@ -67,7 +67,7 @@ pregnancy test is two pictures of an ordinary day), nor is a day that stands out
 
 A picture stored as several files counts once. A shared album keeps the camera's file and a smaller copy
 under the same name at the same instant; discovery reads the full-size one, with a star either file
-carries, the same way the editor does (one 2024 held 2,368 such copies in 21,520 files).
+carries, the same way the editor does (one real library year held 2,368 such copies in 21,520 files).
 
 Pictures forwarded to the library (sent by someone else or saved: stills with no camera in their
 EXIF) are evidence, not material. They never make a day of their own and never count toward its

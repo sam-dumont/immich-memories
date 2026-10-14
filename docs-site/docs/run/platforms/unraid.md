@@ -24,7 +24,7 @@ In Unraid's **Terminal** in the browser, install the unconfigured template:
 
 Open **Docker → Add Container**, select **immich-memories** from **Template**, and fill in the required Immich URL and API key. The template names a released app version. To use another one, set **Repository** to `ghcr.io/sam-dumont/immich-memories:X.Y.Z`, replacing `X.Y.Z` with that version (no `v` prefix).
 
-Choose persistent host directories for configuration/models and finished films. They must be writable by UID/GID 1000; allow at least 25 GB for state plus films. Do not change permissions on an entire existing share. Set **Settings encryption key** to a random secret of at least 32 characters if you want to save credentials in Settings, and retain it across upgrades.
+Choose persistent host directories for configuration/models and finished films. They must be writable by UID/GID 1000; allow about 25 GB plus 0.35 GB per 1,000 pictures for state, plus films. Do not change permissions on an entire existing share. Set **Settings encryption key** to a random secret of at least 32 characters if you want to save credentials in Settings, and retain it across upgrades.
 
 Keep **Network Type: Bridge** and the existing **Extra Parameters**. Its <code>--publish=127.0.0.1:<ComposePort />:8080/tcp</code> mapping is deliberately private. There is no separate port entry. For direct LAN access, set **both UI username and UI password**, then change it to <code>--publish=0.0.0.0:<ComposePort />:8080/tcp</code>. Choose another host port if <ComposePort /> is taken. Host networking bypasses it. The Unraid admin login does not protect the app.
 

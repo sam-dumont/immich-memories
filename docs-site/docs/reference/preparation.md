@@ -21,8 +21,9 @@ immich-memories prepare --year 2024 --month 6
 
 It prepares the month and stops: no selection, no video. The scope flags are `generate`'s (`--year`,
 `--year --month`, `--start --end`, `--start --period`), and the scope is the one a cut would read: no archived
-or hidden assets, no forwarded or re-encoded media, none of the films this app uploaded. `--month` needs
-`--year`. Each run resumes where the last stopped, so a loop over twelve months works through a year.
+or hidden assets, no forwarded or re-encoded media, none of the films this app uploaded. With `advanced.analysis.forwarded_copies_when_short` on, a cut can let
+forwarded copies fill a gap in its timeline and prepares those itself; `prepare` leaves them out either way.
+`--month` needs `--year`. Each run resumes where the last stopped, so a loop over twelve months works through a year.
 
 Results are banked per picture, and stay free for every later cut until a producer's version changes (a new
 head is paid for once, at the next run). Compatible facts are reused. See the

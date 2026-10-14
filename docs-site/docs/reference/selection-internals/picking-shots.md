@@ -190,12 +190,17 @@ squeal) with a second and a half of build-up before it, or, with no standout mom
 with the most talking. Only the sound is fetched, a minute of it at most, so a five-minute clip
 costs what a one-minute one does. A clip with nothing that stands out keeps its opening.
 
-A Live Photo plays as motion on every tier, Basic included, when its clip moves and shows its
-subject. The motion is measured during the cut, for the Live Photos the cut kept, and banked
-per picture so the next cut reads it instead (`store/cut_measurements`).
+A Live Photo plays as motion on every tier, Basic included, when the clip it would play lasts at
+least 2.5 seconds, moves and shows its subject. That clip is a stitch of nearby Live Photos, or its
+own clip when it stands alone or the burst can't be stitched. The 2.5 s floor is
+`advanced.analysis.live_photo_min_clip_seconds`; anything shorter plays as its still, and no
+fallback plays a shorter clip. The motion is measured during the cut, for the Live Photos the cut
+kept, and banked per picture so the next cut reads it instead (`store/cut_measurements`). A Live
+Photo you add in review is stitched with its neighbours and decided the same way, and `runs story`
+says why one played as its still.
 
-A selected Live Photo's clip is read or measured for motion, then checked for subject
-visibility; it plays as motion only when both pass, otherwise it keeps the still.
+Immich reads faces on a Live Photo's still, never on its clip, so a clip takes its still's faces
+as its own: a person film keeps the Live Photo whose still shows them.
 
 The residual is the optical flow left after the camera's own movement is taken out, over 12 frames
 at 320x240. A clip only ever costs a Live Photo its motion, never its place: a starred Live Photo
@@ -215,6 +220,19 @@ sentence withheld unless you starred it. Standing, spacing and the look-alike ch
 facts as above. Missing motion sentences use plain clip facts; the cut does not contact the
 motion-description server. Explicit `prepare` reports missing sentences. Normal film refinement
 reuses its rules draft without consuming them, so that pass does not report them as missing.
+
+## Why each shot is there
+
+Every shot in a cut carries a reason, written from its own facts (`analysis/shot_reason.py`): who is
+on it, what its caption shows or else where it was taken, and what made it beat the rest of its
+moment. That last part is at most two of: a star, you kept it, it moves (a video or a Live Photo),
+the only frame with its people, the clearest view of them, the sharpest of its run. A reason stays
+under 80 characters, never repeats the story's name, and names a place only when the story's name
+doesn't already.
+
+It never prints what the pipeline wrote for itself: timestamps, detector heads, framing
+percentages, resolutions. The main pick, a refill, a replacement and a shot you required all get
+one. `runs story` and the review page show it, and `runs why <asset-id>` shows it for one picture.
 
 ## Favourite guarantees
 

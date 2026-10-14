@@ -62,9 +62,10 @@ Start with favourites, confirmed roles and home before changing thresholds. For 
 
 ## Read why
 
-Open a picture's explanation in the contact sheet or pool. The CLI gives the same reasoning:
+Every shot in the cut says why it's there. Open a picture's explanation in the contact sheet or pool for the full trail. The CLI gives the same reasoning, for the whole cut or one picture:
 
 ```bash
+immich-memories runs story
 immich-memories runs why ASSET_ID
 ```
 

@@ -52,7 +52,9 @@ The UI greys out settings controlled by the file or environment and shows their 
 
 Authentication (`auth.*`) and server (`server.*`) settings, like the database location, are set
 only in the environment or `config.yaml` and take effect on restart; Settings shows them
-read-only. The [configuration reference](./reference/configuration.md) has the full precedence
+read-only. So are the keys that pick a program the server runs, a file it writes or the host that
+receives your Immich keys: the render worker URL and token, and the model and helper paths.
+[Network and security](./network-security.md#settings-only-the-operator-sets) lists them. The [configuration reference](./reference/configuration.md) has the full precedence
 rules, including what happens to a stale value an older version saved.
 
 ### Keys pinned by Docker
@@ -86,7 +88,7 @@ If a configured store is unreadable, startup stops rather than silently using di
 Fix the database, or use `IMMICH_MEMORIES_SKIP_STORED_SETTINGS=1` for a deliberate recovery start
 without its saved settings. A new URL for a server that receives a credential (Immich, an extra
 account, the LLM, the caption server, MusicGen, ACE-Step) needs that credential typed again in
-the same save, when one is set; a new render worker URL always needs its token.
+the same save, when one is set.
 
 ### Moving a key out of the file
 
@@ -236,8 +238,9 @@ upload:
   album_name: "Memories"
 ```
 
-Off by default. The web Render panel has its own upload choice.
-[Privacy](./privacy.md#what-immich-sees) lists every write.
+Off by default. The web Render panel has its own upload choice. An uploaded film gets its title
+and story summary as its Immich description. `film_tags: true` also tags it with its memory type,
+years and stories. [Privacy](./privacy.md#what-immich-sees) lists every write.
 
 ## Outside calls
 
@@ -247,8 +250,10 @@ Geocoding and map tiles are off by default. Enable them under `network` only aft
 ## Enabling a reader
 
 A model name or endpoint on its own does not turn the reader on. Set
-`advanced.llm.enabled: true` to use it for titles, the selection reader, music mood, special
-days and captions; one section now covers all of those. With it off, `preflight` warns that a
+`advanced.llm.enabled: true` to use it for special-day titles, the selection reader,
+the Full film summary, music mood and captions; one section covers all of those. Year, month,
+season, person, couple, birthday, holiday and on-this-day films get the app's own title and never
+ask the reader for one. With it off, `preflight` warns that a
 reader is configured but disabled. Upgrading an existing config past 0.103.0 needs this one
 explicit step; see [upgrading](./maintenance/upgrading.md#config-compatibility).
 

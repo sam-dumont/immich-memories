@@ -304,10 +304,10 @@ through production features and can incur provider charges. Free-text cases also
 public WordNet corpus installed by `immich-memories models fetch`. Each banked feature gets a
 fresh temporary SQLite store. The suite opens no personal library or people file.
 
-The 34 probes cover occasion, trip and people titles; free-text reading, linking and pool
-selection; occasion discovery; music mood; image captions and motion; full and lean episode
-readings; month and year accounts; editorial grouping, weighting, picking and recurring
-activities; and both audience text readers still present in the code.
+The 36 probes cover occasion, trip and people titles; free-text reading, linking and pool
+selection; occasion discovery; music mood, quiet and lively; image captions and motion; full and
+lean episode readings; month and year accounts; the film summary; editorial grouping, weighting,
+picking and recurring activities; and both audience text readers still present in the code.
 
 Each row reports whether the provider was called, HTTP attempts, reported tokens, elapsed
 seconds, validity and a feature-specific quality check. Unknown usage is shown as unknown.

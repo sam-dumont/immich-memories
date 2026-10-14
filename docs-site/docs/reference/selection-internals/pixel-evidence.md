@@ -24,7 +24,17 @@ inspect the selected candidates, then bank the complete evidence.
 Admission refuses a few things before anything is read: a video over five minutes
 (`advanced.analysis.max_source_video_seconds`, 300 s), the video half of a Live Photo (it plays
 inside its still), anything tagged `immich-memories/generated` or listed in this install's upload receipts (a film this app made
-is not footage), and pictures that look forwarded rather than shot on your camera. After the heads
+is not footage), and pictures that look forwarded rather than shot on your camera.
+
+Forwarded copies and saved images can come back with `advanced.analysis.forwarded_copies_when_short`, off
+by default (`forwarded_fallback.py`). With it on, a copy may fill a gap in the film's camera
+timeline, and only there: an occurrence (a holiday's year, an earlier birthday), else a week, month
+or year with no camera picture, taking about as many days as a stretch with camera pictures gets.
+A collage, or a copy of a picture the library already holds, stays out, and every later check reads
+the copy like any picture. A copy is dated when it was received, so a re-shared old photo can land
+in the wrong year; that is why the key is off.
+
+After the heads
 run, screenshots and photos of screens go too: a phone-screen pixel size, the `screen` head, or the
 document detector, enabled on GPU and Full, calling it a screenshot, a table or a QR code.
 

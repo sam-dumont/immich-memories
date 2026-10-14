@@ -66,6 +66,11 @@ When the cut is ready, the app opens its run page under **Runs**. Open a shot to
 
 ## Upload permissions
 
+An uploaded film gets its title and one-line story summary as its Immich description. With
+`upload.film_tags: true` it is also tagged under `immich-memories/` by type, year and story, so
+you can find every trip film from Immich's tag list. Writing the description needs `asset.update`;
+without it the film still uploads, with a warning.
+
 The Render panel checks whether your Immich key has the [upload permissions](../run/docker.md#the-api-key).
 If any are missing, **Upload the film to Immich** is unavailable and names them. You can still
 render and download the film. A key that could not be checked also leaves only upload unavailable.

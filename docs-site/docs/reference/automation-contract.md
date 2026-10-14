@@ -33,7 +33,7 @@ Or add `IMMICH_MEMORIES_AUTOMATION__ENABLED: "true"` and
 and set the time there. A line in `.env` alone
 does not reach the container. Recreate with `docker compose up -d`.
 Settings also exposes **Automation > enabled** and **daily_at** while those Compose lines are absent.
-Either `automation.upload_to_immich: true` or `upload.enabled: true` requests delivery to Immich; `upload.album_name` names the destination. Confirmed delivery removes the local copy.
+Either `automation.upload_to_immich: true` or `upload.enabled: true` requests delivery to Immich; `upload.album_name` names the destination. The film arrives with the same description and tags a manual upload gets, a retry included ([What Immich sees](../run/privacy.md#what-immich-sees)). Confirmed delivery removes the local copy.
 
 The UI process then runs the same `auto run` decision once a day, with the same lock, history, upload retry
 and notifications as the CLI. A container that was down at `daily_at` catches up when it starts; if the day's
@@ -103,7 +103,7 @@ editor's job, see [How it chooses](../how-it-chooses/overview.md).
 | Yearly | past years with content, after 15 January | 0.8, 10 % off per year of age, floor 0.24 |
 | Birthday | a person whose birthday was 2 to 60 days ago, with at least 50 pictures on 3 days in the film's windows | 0.75 × [closeness](#closeness) × their pictures against the busiest person's (floor 0.5) |
 | Monthly | the latest completed month, if not made yet | 0.7, and it never looks further back |
-| Activity burst | a month with more than 2× the rolling 12-month average | 0.7 once over the threshold |
+| Activity burst | a month, once it has ended, with more than 2× the rolling 12-month average | 0.7 once over the threshold |
 | Trip | trips in the trailing year, 7 days after coming home | up to 0.75, by length (14 days) × pictures (200) |
 | Person spotlight | the five most-pictured people | 0.6 × their share of the top person's count (floor 0.2) × closeness |
 | Multi-person | pairs who appear together on at least 10 pictures last year, the year the film reads | 0.55, by shared pictures up to 500, × the pair's average closeness |
@@ -209,10 +209,8 @@ The outcomes are `skipped`, `dry_run`, `completed` and `failed`; the first three
 Quiet output is a stable JSON object with `runtime` as its first key. Key a wrapper on `outcome`: `action` is
 `generation` or `delivery_retry`. Logging is disabled during `auto run --quiet`; its result is one JSON line, not formatted multiline output.
 
-**Known limitation:** an attempt killed mid-run (the process is terminated rather than exiting on its own)
-stays recorded as `running` forever. `auto status` and the trigger API's `status_url` both keep reporting it
-as active, since nothing marks it otherwise. Restarting the app does not clear it; recognise this case by an
-attempt whose `started_at` is far in the past with no `finished_at`.
+An attempt killed mid-run reads `failed`, reason `interrupted: …`, as described
+[above](#docker-switch-on-the-built-in-timer).
 
 ```json
 {"runtime": {"version": "<running version>", "checkout": null, "commit": null, "upstream": null, "commits_behind": null, "stale": false}, "outcome": "dry_run", "action": "generation", "reason": "dry run", "candidate_key": "trip:2026-07-02:2026-07-09:", "category": "trip", "run_id": null, "error": null, "output_path": null, "recent_categories": ["monthly_review", "birthday"], "rejections": []}
@@ -237,7 +235,7 @@ immich-memories auto history --limit 5  # the last five films it made on its own
 
 The `Scheduler:` line names what actually wakes automation, and lists every one in use: `built-in timer (enabled, daily at 07:45 CEST, next firing 2026-10-08 07:45)`, an installed `launchd`/`systemd`/`cron` unit, or `external trigger (POST /api/trigger), last trigger 2026-10-07 07:45` when a trigger token is set or the trigger API has been called. With none of them it says `none`. `--json` adds `scheduler.in_use` and `scheduler.summary` next to the existing keys. The last trigger time is kept per host, beside the automation lock.
 
-While a run works, its log carries a `Phase …` line at least every 45 seconds: counted steps (preparation, the family-viewing check, the render) show `n/N`, and a step that has no count repeats itself with `still working (Nm in this step)`.
+While a run works, its log carries a `Phase …` line for each step and at least one about every 30 seconds: counted steps (preparation, the family-viewing check, the render) show `n/N`, and a step that has gone quiet repeats itself with `process alive; no new progress (Nm in this step)`.
 
 `auto history` lists only completed automatic runs; a film you made with `generate` or the web UI is in
 `runs list` ([runs](../make/cli/runs.md)). In Docker, prefix each with `docker compose exec immich-memories`.
@@ -309,7 +307,7 @@ A caller that sends no `Origin` header (curl, a CronJob, Home Assistant) needs n
 `server.allowed_hosts`; the shipped Kubernetes CronJobs send `Host: localhost` for that reason. See
 [Allowed hosts](../run/network-security.md#allowed-hosts).
 
-The answer is `202 Accepted` with an `attempt_id` and a `status_url`; `Authorization: Bearer <token>` works too.
+The answer is `202 Accepted` with an `attempt_id` and a `status_url`, sent once the run has started; `Authorization: Bearer <token>` works too.
 **401** means authentication failed (`{"detail":"invalid trigger token"}`). **409** means a run is already going, and the body names it. GET the `status_url` for attempt fields: `attempt_id`, `state`, `reason`, `started_at`, `finished_at`, `phase`, `memory_type` and `error`. The final `state` is `completed`, `failed`, `skipped` or `dry_run`. Its `run` is null until a run exists, then holds `run_id`, `status`, timestamps, `last_phase`, `output_duration_seconds`, `delivery_status` and `immich_asset_id`.
 
 `skipped` is a normal answer: a workflow that fires on every upload mostly gets it back, and one that fires on a

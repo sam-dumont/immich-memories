@@ -6,7 +6,7 @@ title: Add a text reader
 
 Installing Full from scratch? Select its tab in [Quick start](../get-started/quick-start.md), or use [native Mac](../run/uv-pip.md#apple-silicon). This page sets up the reader those routes need.
 
-A reader writes special-day titles (and trip titles with `--llm-title`) and picks the music mood on any tier. With GPU inference, captions and Laya ready, it also enables **Full**: refinement of the rules draft. The selection reader receives text, not pictures.
+A reader names special days (and trips with `--llm-title`) and picks the music mood on any tier. Years, months, seasons, people, birthdays, holidays and "on this day" films keep the app's own title. On Full it also writes the film's one-line summary. With GPU inference, captions and Laya ready, it also enables **Full**: refinement of the rules draft. The selection reader receives text, not pictures.
 
 Use a model with a 32k context and valid structured replies. The app can run its local default, or call an API server you already use.
 
@@ -88,7 +88,7 @@ immich-memories preflight
 immich-memories capabilities
 ```
 
-These report connections, installation and available features; they do not certify the quality of a film. With `tier: auto`, GPU inference plus an enabled reader selects Full. GPU capability includes a remote inference service, a working local CUDA ONNX runtime, or a Mac's Metal GPU. Without these, selection remains Basic and the reader can still write titles and music mood. GPU and Full also require captions and Laya.
+These report connections, installation and available features; they do not certify the quality of a film. With `tier: auto`, GPU inference plus an enabled reader selects Full. GPU capability includes a remote inference service, a working local CUDA ONNX runtime, or a Mac's Metal GPU. Without these, selection remains Basic and the reader can still name special days and albums and pick the music mood. GPU and Full also require captions and Laya.
 
 Review the result. A failed refinement can leave the rules draft and reports that refinement did not run. [Laya](../reference/llm-providers.md#the-laya-audience-pre-screen) handles caption-based sharing separately; sharing never asks the prose reader.
 

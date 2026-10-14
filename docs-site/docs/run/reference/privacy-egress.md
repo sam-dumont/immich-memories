@@ -13,9 +13,9 @@ Only `enabled: true` enables the reader. A model or endpoint alone leaves it dis
 
 | Destination | When | What leaves your network | Default |
 |---|---|---|---|
-| Your Immich server | always | metadata, previews and source media; the film, its tag and its album with upload on | upload off |
+| Your Immich server | always | metadata, previews and source media; with upload on, the film, its description (title and story summary), its tags and its album | upload off |
 | `llm.base_url` (reader) | an enabled model reads a period | text only: your memory brief/owner sentence, candidate annotations, capture dates/times, places, people and their relationships, and Immich album names holding those pictures. Never a picture | `llm.enabled: false`: no call; blank URL with `openai-compatible` or `ollama` runs locally |
-| `llm.base_url` (titles) | a special day's opening title, with an enabled reader; trips only with `--llm-title`. Period, people, birthday, holiday and "on this day" titles never call it | text only: first names, birth dates and ages, recorded relationships, the date span, places by day (up to 30), and the album/occasion name. Trip prompts also include country, clip captions (up to 10) and object labels (up to 20), when available | `--no-llm-title` or `--title` |
+| `llm.base_url` (titles) | a special day's opening title, with an enabled reader; trips only with `--llm-title`. Period, people, birthday, holiday and "on this day" titles never call it | text only: first names, birth dates and ages, recorded relationships, the date span, places by day (up to 30), and the album/occasion name. A special day's prompt adds the cut's story names and its summary; a trip's adds up to 10 clip captions | `--no-llm-title` or `--title` |
 | `llm.base_url` (music, special days) | music selection and special-day scans, with a model | text only: the cut's story labels and captions; for a day, capture times, places, coordinates and recognised names | disabled reader: no call |
 | A hosted reader endpoint | an enabled reader uses a hosted provider or explicit remote `llm.base_url` | the reader rows above, with configured provider credentials | `openai`, `anthropic`, `zai` supply their preset URL when blank; blank `openai-compatible` or `ollama` runs locally |
 | `caption_base_url` | GPU and Full with the default SmolVLM provider, for selected shots and actual candidates; a wider scope only with an explicit `prepare` job | a 400 px JPEG per picture; a strip of three keyframes per video and per playing Live Photo; `caption_api_key` as a bearer token if set | `localhost:8092`; Basic does not call it |
@@ -34,9 +34,8 @@ Only `enabled: true` enables the reader. A model or endpoint alone leaves it dis
 | Hugging Face and its download/CDN hosts | ACE-Step `lib` mode checkpoint preparation, including music capability tests | checkpoint requests, no library data | optional generated music; the app pins immutable snapshot revisions listed below and refuses incomplete snapshots |
 | `raw.githubusercontent.com` | only `titles fonts --install`, `models fetch`, or while the Docker image builds | nothing about your library: 42 Noto files, 43 MB; the WordNet 3.0 corpus, 11 MB, checked by SHA-256 | a render never downloads |
 
-The film-title caller passes names, date bounds, clip captions and preset/album facts. The title
-prompt also accepts daily locations, country and object labels when a caller supplies them;
-the ordinary film-title caller currently leaves those three optional inputs unset.
+The trip prompt also has room for a country and up to 20 object labels; the film-title caller
+leaves both empty.
 
 `preflight`'s **Outside call** rows cover geocoding and map tiles only, naming their configured
 destinations. No rows means those two switches are off; it is not a complete egress audit.

@@ -6,7 +6,9 @@ title: Basic with a local text model
 
 This reference adds **Ollama 0.35.1**, model **`gemma4:e4b-it-q4_K_M`**, to the prebuilt Basic
 app. It supplies a reader: a **text model (LLM)** configured under `advanced.llm`.
-It can write titles and music mood. It does **not** add GPU selection, Full or vision captions.
+It names special days (trips too with `--llm-title`) and picks the music mood. Year, month, season, person,
+couple, birthday, holiday and on-this-day films keep the app's own title and never ask it.
+It does **not** add GPU selection, Full or vision captions.
 Full additionally needs GPU inference, the caption service and Laya.
 
 The published Docker image has no `llama-server`: Docker and Kubernetes require an external
@@ -120,7 +122,7 @@ and NetworkPolicies replace the firewall. Start from the
 [Kubernetes installation](./kubernetes.md); `kubectl apply -k` your own root, never base files singly.
 
 **Hardware.** Check the model fits your node's free VRAM before requesting a GPU; without one,
-Ollama runs on CPU. Titles and mood are one or a few calls per film, so plan for minutes, not
+Ollama runs on CPU. A title and the mood are one or a few calls per film, so plan for minutes, not
 seconds, per call without a GPU. [Measured numbers for this setup](../better/measured.md#local-reader-time-and-accuracy)
 are on the measurements page.
 

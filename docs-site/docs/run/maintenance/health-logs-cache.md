@@ -12,9 +12,10 @@ The endpoints answer "is the web process up". `preflight` answers "will a film w
 
 ```bash
 immich-memories preflight        # one row per check: OK, WARNING, ERROR or SKIPPED
-immich-memories preflight -v     # adds a Details column
+immich-memories preflight -v     # also fills in details for the OK rows
 ```
 
+WARNING and ERROR rows always show their cause and fix in the Details column.
 In Docker: `docker compose exec immich-memories immich-memories preflight`.
 
 It checks the Immich connection and API key (and each extra account), the model files and their digests,

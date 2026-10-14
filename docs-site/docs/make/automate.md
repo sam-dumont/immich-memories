@@ -28,7 +28,7 @@ Change the time there, then recreate the container:
 docker compose up -d
 ```
 
-The time uses the container's timezone (`TZ`). Upload is a separate choice: either `automation.upload_to_immich: true` or `upload.enabled: true` enables delivery for automatic films. Set `upload.album_name` for the destination; set `automation.album_name` instead if automatic films should land in a different album than manual ones, since it wins over `upload.album_name` for a scheduled run. Leave both upload switches false to keep films on disk. A key missing an upload permission still gets a completed film, kept locally with the reason named; [upload permissions and retries](../reference/automation-contract.md#docker-switch-on-the-built-in-timer) covers what happens next.
+The time uses the container's timezone (`TZ`). Upload is a separate choice: either `automation.upload_to_immich: true` or `upload.enabled: true` enables delivery for automatic films. Set `upload.album_name` for the destination; set `automation.album_name` instead if automatic films should land in a different album than manual ones, since it wins over `upload.album_name` for a scheduled run. An uploaded film carries its title and story summary as its Immich description; `upload.film_tags: true` also tags it with its type, years and stories. Leave both upload switches false to keep films on disk. A key missing an upload permission still gets a completed film, kept locally with the reason named; [upload permissions and retries](../reference/automation-contract.md#docker-switch-on-the-built-in-timer) covers what happens next.
 
 Or omit those Compose lines and save **Settings > Automation > enabled** and
 **daily_at**. Settings also holds the other automation options; file and environment values win.
@@ -67,7 +67,7 @@ answers "insufficient permissions", so read the transcript above instead.
 
 It ranks suitable memories and avoids repeating the same category or person too often. That choice selects the subject; the normal editor still chooses the shots. Trips wait until after you are home and birthdays wait a little for phone uploads. A person is only suggested when they have pictures in the period the film would read (last year for a spotlight), and the count shown is for that period, not their lifetime.
 
-Besides those, it can propose the season that just ended, a holiday your pictures show you keep (the day stands out from the days around it), across every year you photographed it, a new or grown album, and months that never got a film. It films the last month of each person close to you, and weighs birthdays and spotlights by how close each person is, so a stranger's birthday no longer outranks a trip. Each is a switch under `automation:` in the [config reference](../reference/config-reference.md#automation); the [automation reference](../reference/automation-contract.md#how-it-picks-one-memory) lists the thresholds. A season needs your home base, since the hemisphere comes from it.
+Besides those, it can propose the season that just ended, a holiday your pictures show you keep (the day stands out from the days around it in at least three years), across every year you photographed it, a new or grown album, and months that never got a film. It films the last month of each person close to you, and weighs birthdays and spotlights by how close each person is, so a trip outranks the birthday of someone who isn't close to you. Each is a switch under `automation:` in the [config reference](../reference/config-reference.md#automation); the [automation reference](../reference/automation-contract.md#how-it-picks-one-memory) lists the thresholds. A season needs your home base, since the hemisphere comes from it.
 
 **Suggestions** shows each reason. **Check eligibility** previews the checks without rendering, and **Run this suggestion** makes that candidate now. A manual request still respects the rotation rules, but not the daily cooldown: you asked for this film. A check is a dry run: it shows up in the history, and the day's scheduled film still runs at its time.
 
@@ -101,8 +101,8 @@ For a safe preview:
 immich-memories auto run --dry-run
 ```
 
-Automatic birthday films cover only the completed birthday-to-birthday year. Their opening title or
-subtitle names the year of the birthday being celebrated. Earlier birthdays remain available in
+Automatic birthday films cover only the completed birthday-to-birthday year. Their title names
+the birthday being celebrated: "Kit's birthday · 2026". Earlier birthdays remain available in
 [manually requested birthday compilations](../reference/film-types.mdx#birthday-compilations).
 
 ## Get told when it runs

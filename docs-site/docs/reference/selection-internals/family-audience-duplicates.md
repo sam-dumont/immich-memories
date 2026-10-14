@@ -257,7 +257,8 @@ the last pass the cut is read once against all of them (`editorial_cut_invariant
 2. no non-favourite carries a moment whose favourite could have carried it (a favourite folded into
    its starred twin counts as shown by the twin);
 3. in a film split into years or ranges, every one with a story has a shot;
-4. a Live Photo whose clip measured at least 1.5 with its subject in frame plays as motion;
+4. a Live Photo whose clip lasts at least 2.5 s and measured at least 1.5 with its subject in frame
+   plays as motion;
 5. nothing a carrier rule or the gate refuses, and nothing the gate never judged, is in the cut;
 6. the cut is in capture order.
 

@@ -6,8 +6,8 @@ title: "Kubernetes topology and add-ons"
 
 ## Bring your own Secret
 
-The base references `immich-memories-secrets` in namespace `immich-memories`; it no longer
-creates a Secret. That name is a literal: the base does not contain the Secret, so a kustomize
+The base references `immich-memories-secrets` in namespace `immich-memories`; it does not
+create a Secret. That name is a literal: the base does not contain the Secret, so a kustomize
 `namespace:` or `namePrefix` never rewrites it. Create the Secret with exactly this name in
 whatever namespace you deploy to. Create it before starting the Deployment. No manifest edits are needed
 when your SOPS, Sealed Secrets or External Secrets workflow produces that name.
@@ -26,9 +26,6 @@ Other secret environment settings can use the same Secret. Explicit Deployment `
 win over `envFrom`. The render-sidecar overlay additionally expects
 `immich-memories-render-worker` with keys `token` and `immich-url`; the PostgreSQL overlay
 expects its own database Secret. Keep their separate contracts when using those overlays.
-
-This path works with SOPS, Sealed Secrets or External Secrets: none of them need manifest edits,
-only a Secret with the right name in place before the Deployment starts.
 
 ### Verified Terraform runs {#verified-terraform-runs}
 
@@ -137,7 +134,9 @@ transformations; include optional Jobs or CronJobs in a kustomization instead.
 
 The image runs as `immich`, UID/GID 1000, `HOME=/home/immich`. The manifests set `runAsUser` and
 `fsGroup` 1000, drop all capabilities, use the `RuntimeDefault` seccomp profile and mount the root
-read-only. Five writable paths:
+read-only. `fsGroupChangePolicy: OnRootMismatch` stops the kubelet re-chmodding a volume it has
+already set up, so the app's private `0700` directories stay private across restarts. Copy it if you
+write your own manifest. Five writable paths:
 
 | Mount | Backed by | Holds |
 |---|---|---|

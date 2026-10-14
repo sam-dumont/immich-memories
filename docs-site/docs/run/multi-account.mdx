@@ -56,8 +56,8 @@ In Docker, prefix commands with `docker compose exec immich-memories`.
 The output identifies the owner of each key:
 
 ```text
-✓ Connected as Alex: Server: https://photos.example.com; API: v3
-✓ Immich account partner: Connected as Sam: API: v3
+✓ Connected as Kit: Server: https://photos.example.com; API: v3
+✓ Immich account partner: Connected as Pat: API: v3
 ```
 
 The `partner` line must identify the second account’s owner. If it names you, ask that owner to create a key from their account.
@@ -131,7 +131,7 @@ Face matching between the two accounts is not part of this. It would mean compar
 The same thing from the terminal needs the partner's id, from the `/people/<id>` part of the URL when the other owner opens that person in Immich:
 
 ```bash
-immich-memories people bind "Alex" --account partner --id <person-id-in-partner-account>
+immich-memories people bind "Lou" --account partner --id <person-id-in-partner-account>
 ```
 
 A link preserves the person's confirmed details. An ID already linked to somebody else is refused.
@@ -145,7 +145,7 @@ Each account has its own owner too, because the primary account's owner and the 
 ```bash
 immich-memories generate \
   --accounts primary,partner \
-  --person "Alex" --memory-type person_spotlight --year 2026
+  --person "Lou" --memory-type person_spotlight --year 2026
 ```
 
 In the web **New memory** page, select both under **Immich accounts to read**.
@@ -191,7 +191,7 @@ Trips stay primary-only. Saved-group films can use both accounts.
 Save a repeated people condition, so you don't retype `--person` every time:
 
 ```bash
-immich-memories people group add "Kids" '"<alex-id>" OR "<sam-jr-id>"'
+immich-memories people group add "Kids" '"<lou-id>" OR "<robin-id>"'
 immich-memories generate --group "Kids" --accounts primary,partner --memory-type multi_person --year 2026
 ```
 

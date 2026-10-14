@@ -56,6 +56,8 @@ A named person the scan leaves out has fewer pictures than its floor: a tenth of
 
 Close family gets a place in the film when the period holds enough pictures of them. Their presence can make a busy day a bigger story, and an ordinary week worth keeping. A person film also uses the relationships you confirmed.
 
+Set birth dates on people in Immich too. A birthday in the household or close family then gets a story of its own instead of disappearing into its week, and so does a visit from close family who don't live with you. [Days that get their own story](../how-it-chooses/moments-and-stories.md#days-that-get-their-own-story).
+
 These settings apply to the next cut. Cut the same month again and compare it with the first one; you do not need to clear the preparation cache.
 
 The [people registry reference](../reference/people-registry.md) has CLI editing, saved groups and account bindings. The exact family-seat thresholds are in the [configuration reference](../reference/config-reference.md).

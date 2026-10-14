@@ -6,35 +6,38 @@ title: CI and quality gates
 
 ## CI pipeline
 
-CI runs in tiers, cheap to expensive. A pull request runs only the jobs its changes can break;
-a push to `main`, a release and the nightly run every job.
+A pull request runs only the jobs its changes can break; a push to `main`, a release and the
+nightly run every job. Jobs start as soon as what they need is ready, so the gates, the tests and
+the build run side by side.
 
-- **Tier 0: change scope and cache setup.** `make ci-scope` (`scripts/ci_scope.py`) sorts the diff
+- **Change scope and cache setup.** `make ci-scope` (`scripts/ci_scope.py`) sorts the diff
   into areas and every later job reads the answer in its `if:`. Every job that installs the project
   waits on the cache setup.
-- **Tier 1: quality gates** (the table below), one job, steps in order, each carrying
+- **Quality gates** (the table below), one job, steps in order, each carrying
   `if: !cancelled()` so the first failure doesn't hide the rest. Commitlint runs on pull requests
   only. A second job runs the security scans in parallel. Both run on every pull request.
-- **Tier 2: tests**, after both tier 1 jobs pass. The unit suite (Ubuntu on 3.11/3.12/3.13; macOS on
-  3.13 for a pull request, all three on `main` and in a release), each cell in two shards
-  (`make test-cov-xml TEST_SHARD=1/2`), plus `make test-extras`. On `main` and in a release the
-  macOS cells run whole, one job each, since six macOS shards would queue behind the 5-job macOS cap. Neither extras job pulls torch, so
-  what runs there is the subset that survives without it; the rest is a local target. A pull request
-  also runs, beside them, one job per FFmpeg integration suite its changed source reaches
+- **Tests**, beside the quality gates, off the cache setup. The unit suite (Ubuntu on
+  3.11/3.12/3.13; macOS on 3.13 for a pull request, all three on `main` and in a release), each
+  cell in two shards (`make test-cov-xml TEST_SHARD=1/2`), plus `make test-extras`. On `main` and in
+  a release the macOS cells run whole, one job each, since six macOS shards would queue behind the
+  5-job macOS cap. A shard gets 20 minutes, a cell run whole 40. Neither extras job pulls torch, so
+  what runs there is the subset that survives without it; the rest is a local target. A pull
+  request also runs, beside them, one job per FFmpeg integration suite its changed source reaches
   (`make test-integration-<suite>`).
 - **Coverage**, once every unit shard passed. The 3.12 Ubuntu shards upload their coverage data;
   `make coverage-combine` merges it, checks the 65% floor on the whole suite and writes
   `coverage.xml`. On a pull request, diff-cover then checks 80% of the changed lines against it
   plus the integration suites' XMLs, and posts the report on the pull request.
-- **Tier 3: build**, after tests. Package build, the Docker images and the container e2e job.
+- **Build**, beside the tests, off the change scope alone: the package build, the Docker images
+  and the container e2e job. A failure in any of them fails `CI Success` like a failed test.
 
 The docs build starts immediately. The hermetic launch check and the feature tests start off the
 cache setup alone, in parallel shards. The launch check is Playwright e2e against a fake Immich in
 two shards per store backend (`make launch-check-ci E2E_SHARD=1/2` on SQLite, and
 `make launch-check-ci-postgres` too when the store changed). The feature tests on the fixture
 library run in three (`make test-features FEATURE_SHARD=1/3`). The render worker's own suite runs
-as a CI job too. `immich-gate.yml` runs the real-Immich gate (v2, 3.2 and v3) and the feature tests
-against a real Immich, two shards per major, each seeding its own Immich; scoped the same way.
+as a CI job too. `immich-gate.yml` runs the real-Immich gate on v2, 3.2 and v3, and the feature tests against a
+real Immich on v2 and v3 in two shards each, every job seeding its own Immich; scoped the same way.
 
 Shards cost runner slots. A pull request that changes Python runs about 35 jobs across `ci.yml`
 and `immich-gate.yml`, and the account runs 20 at once (5 of them macOS), so with a few pull

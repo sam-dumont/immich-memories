@@ -9,7 +9,7 @@ release; `example.env` and every image default carry that release's version, inc
 
 | File | Purpose |
 |---|---|
-| `docker-compose.yml` | One Basic app, its persistent config/store volume and output mount |
+| `docker-compose.yml` | One Basic app on `127.0.0.1:22830`, its persistent config/store volume and output mount |
 | `example.env` | Immich connection, one `IMMICH_MEMORIES_VERSION`, optional reader/auth inputs |
 | `docker-compose.gpu.yml` | Inference, pinned caption weights and a caption server; requests GPU tier |
 | `docker-compose.full.yml` | Requests Full; add after the GPU file and explicitly enable a reader |
@@ -20,7 +20,9 @@ release; `example.env` and every image default carry that release's version, inc
 <Diagram name="deploy-compose" headline="Basic is one container. GPU adds inference and captions; Full connects your reader." />
 ## Select the files
 
-The base file runs Basic alone. For NVIDIA, download the GPU and CUDA files from the same
+The base file runs Basic alone and publishes the web UI on host port 22830 (the app listens on
+8080 inside the container). To reach it from another machine, enable auth and set
+`UI_BIND_ADDRESS`. For NVIDIA, download the GPU and CUDA files from the same
 release as your app; Full also needs its tier file and a configured reader. The matching tab in
 [Quick start](../get-started/quick-start.md#1-download-the-files) has the downloads.
 
@@ -43,7 +45,7 @@ COMPOSE_FILE=docker-compose.yml:docker-compose.gpu.yml:docker-compose.cuda.yml
 ```
 
 Without the CUDA file, the GPU file's default images run on CPU for diagnosis. The CUDA file needs NVIDIA Container Toolkit and
-an exposed NVIDIA GPU. Selecting a tier expresses intent; it does not prove the hardware works.
+an exposed NVIDIA GPU. Selecting a tier says what you want; it doesn't prove the hardware works.
 `preflight` reports inference compute separately from video encoding and warns when acceleration
 is missing. It leaves the requested tier unchanged.
 

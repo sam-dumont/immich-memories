@@ -23,7 +23,7 @@ your own hardware or outside your network.
 
 | Feature | What it receives |
 |---|---|
-| Text reader | Candidate annotations, dates, places, people/relationship and album names, plus your memory brief |
+| Text reader | Candidate annotations, dates, places, people/relationship and album names, plus your memory brief. On Full, one card per story in the cut for the film summary. A special day's title prompt (a trip's too with `--llm-title`); never a title for a year, month, season, person, couple, birthday, holiday or on-this-day film |
 | Caption server | Small picture tiles and video-frame strips |
 | LLM captions | Pictures, only with explicit `caption_provider: llm` |
 | Inference service | Previews and sampled frames for classification; generated WAV music for stem separation |
@@ -50,9 +50,10 @@ With delivery enabled:
 3. Describe it: the description is the film's title and subtitle, then its story summary, for
    example `July 2025 · Kit's birthday, then Lou and Pat's visit, then The road north`. With
    `upload.film_tags: true`, also tag it `immich-memories/type/<film type>`,
-   `immich-memories/year/<year>` for each year its pictures come from and
+   `immich-memories/year/<year>` for each year its stories in the cut cover and
    `immich-memories/story/<name>` for each birthday, visit or trip it shows. People get no tag; Immich's faces already say who is in a
-   film. Only new uploads and re-renders get these.
+   film. Only new uploads and re-renders get these. An API key without `asset.update` or the
+   tag permissions still uploads the film, with a warning that the label didn't land.
 4. Add it to the configured album (create the album if needed).
 5. Move a recognised previous render of the same recipe to trash, if the API key permits it.
 

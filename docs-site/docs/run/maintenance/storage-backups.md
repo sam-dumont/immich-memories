@@ -67,7 +67,8 @@ Docker, with backup and manifest on the same mounted volume:
 
 ```bash
 docker compose stop immich-memories
-docker compose run --rm immich-memories immich-memories store restore   --from /home/immich/.immich-memories/backups/store.db --force
+docker compose run --rm immich-memories immich-memories store restore \
+  --from /home/immich/.immich-memories/backups/store.db --force
 docker compose up -d
 docker compose exec immich-memories immich-memories preflight
 ```
@@ -145,7 +146,8 @@ first, then use [store copy](../database.md).
 
 ## Caches
 
-Preview and video caches default to 10 GB each, and so do prepared sources: the cut segments
+The preview cache defaults to 30 GB, about 0.35 MB per picture a film's scope reaches, so a
+library of 90,000 fits. Video clips default to 10 GB, and so do prepared sources: the cut segments
 and photo clips a later render of the same selection reuses
 (`advanced.analysis.prepared_source_cache_max_size_gb`). Local-only films and failed deliveries remain on
 disk. After a confirmed upload to Immich, the local film and run directory are removed.

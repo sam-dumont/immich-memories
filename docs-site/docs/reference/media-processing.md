@@ -32,6 +32,11 @@ closest frame at the other, seeded from the asset ID so a re-render moves the sa
 | About several people, or several faces in any film | The tightest crop holding every face plus half a face of air on each side, 15-50 % in; a 20 % pan across the group when that crop would zoom less than 15 % | In for a film about several people; in or out per photo otherwise |
 | Anything else | The lone face, 25-35 % in, or the centre when there is none | In or out, per photo |
 
+The move is one continuous glide, size and position together. Each still draws one of four easings
+(in, out, in-out or linear) from the same seed, blended with linear so no move stalls at either end.
+It animates at the film's own frame rate, the rate its videos set (30 fps with no video), so a
+24 fps film doesn't drop frames out of every pan.
+
 The ceiling is 50 % because the photo is prepared at 1.5 times the canvas; closer would upscale it.
 The face boxes come from Immich's faces endpoint, one request per still; framing runs no face
 detector of its own, and a still whose boxes can't be read moves toward its centre.

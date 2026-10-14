@@ -26,8 +26,8 @@ of your camera roll:
 All of this works on a plain NAS. Titles come from templates, the special-day catalogue and your album names; a
 reader only names special days and, when asked, trips (see [When a model names the film](#when-a-model-names-the-film)).
 
-A configured LLM can write titles and choose music mood from the cut's text on every selection
-tier, including Basic. These requests send no pictures and need no local GPU. If the model is
+A configured LLM can name special days (and trips, when asked) and choose the music mood from the
+cut's text on every selection tier, including Basic. These requests send no pictures and need no local GPU. If the model is
 missing or fails, the template title and local music mood still work. Adding a text model does
 not opt you into using it to caption pictures.
 
@@ -291,11 +291,10 @@ titled by the app, never the model, by what they are and when ("Kit's birthday Â
 
 The title reader gets facts, never pictures and never coordinates: first names, birth dates and ages, the
 relations your [people registry](../get-started/who-is-who.md) confirms, the special-day catalogue's words, the
-album that holds most of the cut, and the place names by day. A capitalised word found in none of those facts
+album that holds most of the cut, the cut's named stories and summary, and the place names by day. A capitalised word found in none of those facts
 gets the title refused in favour of the template, and so does a country, island or region the facts do not
-name, even as the title's first word. A title missing the year or years the template would show for that
-memory is refused the same way (on-this-day films and multi-year person-spotlight films stay yearless, so
-they are exempt). A trip title has to name the trip's place. Refusing costs a plainer title, so the check
+name, even as the title's first word. A title missing the year or years the template would show is refused
+the same way. A trip title has to name the trip's place. Refusing costs a plainer title, so the check
 leans towards refusing.
 
 ### Where the title came from
@@ -369,6 +368,11 @@ nearest of the three: jazz on acoustic, orchestral and classical on piano, rock,
 on electronic. The other styles in the caption matrix (jazz trio, indie rock, orchestral, ambient,
 metal) are never picked automatically.
 
+A generated soundtrack is one piece. One backend makes all of it, and a film up to 4 minutes
+(`audio.music_block_seconds`, 240 by default, 300 at most) is a single ACE-Step take. A longer film
+gets up to `audio.max_music_blocks` takes (3 by default) that share one caption, tempo and key, joined
+on a bar line with a 0.3 s crossfade. The music is planned to the film's real length.
+
 A generator that fails falls through to a bundled track, and the swap comes back as a warning on the finished
 video and in any completion notification, so a dead backend never passes for working music.
 
@@ -376,7 +380,9 @@ The bundled tracks come with the `music` extra, which the Docker image and the `
 royalty-free tracks in five moods (calm, energetic, happy, nostalgic, tender), about 30 s each, looped with a
 crossfade. They were generated locally with ACE-Step from nothing sampled; tempo, key and seed per track are in
 `LICENSE-MUSIC`. A pip install without the extra renders silent unless you pass a file. In a film with photos,
-the pick prefers a track whose beat lands within 0.2 beats of the photo cadence.
+the pick prefers a track whose beat lands within 0.2 beats of the photo cadence. A film longer than one
+track gets a playlist from one mood folder only: the mood's own, or, with no mood, the folder of the
+track that fits the cadence or one picked at random, so the music never jumps from happy to nostalgic mid-film.
 
 Ducking is a sidechain compressor keyed on the clips' audio, so speech, laughter and wind all lower the music.
 `--music-volume` (0.0 to 1.0, default 0.5) maps onto -20 dB to 0 dB before ducking. When a generator gave four

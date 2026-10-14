@@ -10,7 +10,7 @@ If something is broken, start with [Troubleshooting](./troubleshooting.md).
 
 **Does it change my Immich library?**
 
-Ordinary selection reads your library. When delivery is enabled (`--upload-to-immich`, `upload.enabled`, or the web UI's upload switch), it uploads the finished film, creates the `immich-memories/generated` tag if needed and tags the asset. It can also create the requested album and add the film to it. A re-render into the same album moves the app's superseded copy to Immich's trash; it does not hard-delete it. [What Immich sees](../run/privacy.md#what-immich-sees) lists these writes.
+Ordinary selection reads your library. When delivery is enabled (`--upload-to-immich`, `upload.enabled`, or the web UI's upload switch), it uploads the finished film, creates the `immich-memories/generated` tag if needed, tags the asset and writes the film's title and story summary into its Immich description. With `upload.film_tags: true` it also tags the film by memory type, year and story (`immich-memories/type/...`, `/year/...`, `/story/...`). It can also create the requested album and add the film to it. A re-render into the same album moves the app's superseded copy to Immich's trash; it does not hard-delete it. [What Immich sees](../run/privacy.md#what-immich-sees) lists these writes.
 
 **What leaves my network?**
 
@@ -37,7 +37,9 @@ Anything FFmpeg decodes. Live Photos are tested on iPhones; Samsung and Pixel mo
 
 **Why is this picture in (or not)?**
 
-`immich-memories runs why <asset id>` says where it passed or was dropped and why. The rules are on
+`immich-memories runs why <asset id>` says where it passed or was dropped and why.
+`immich-memories runs story` prints the whole cut in play order, each shot with its story and the
+reason it is there. The rules are on
 [How it chooses](../how-it-chooses/overview.md).
 
 **Can I pick pictures myself?**
@@ -49,13 +51,15 @@ A tick outranks the editor. See [Edit the cut](../how-it-chooses/overrule-it.md)
 
 The first cut prepares picture facts and saves them. Later cuts over the same pictures reuse
 compatible facts, but still choose their shots. Rendering is a separate step: it downloads originals,
-processes the selected media and encodes a film. [`prepare`](../make/cli/prepare.md) can do a period's
+processes the selected media and encodes a film. A re-render of the same selection reuses the sources
+an earlier run already prepared instead of downloading and cutting them again. [`prepare`](../make/cli/prepare.md) can do a period's
 preparation ahead of time, overnight if you like.
 
 **How much disk?**
 
-The default retention budgets are 10 GB of downloaded video (kept up to 7 days) and 10 GB of
-Immich previews. An active preparation keeps the previews it is using and can exceed that budget.
+The default retention budgets are 10 GB of downloaded video (kept up to 7 days), 10 GB of
+Immich previews and 10 GB of prepared sources that re-renders reuse
+(`advanced.analysis.prepared_source_cache_max_size_gb`). An active preparation keeps the previews it is using and can exceed that budget.
 Models, the store, temporary render files and finished films need space too. See
 [storage and cache sizing](../run/maintenance/storage-backups.md#caches).
 

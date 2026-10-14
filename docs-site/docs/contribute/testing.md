@@ -74,8 +74,8 @@ sits in a file no CI target runs, or when the gap rows outnumber `gap_ceiling`. 
 comes down: flip a gap by writing its test, listing it on the row and lowering the number.
 
 Fast feature tests live in `tests/features/` and run with `make test`; the rendering ones live in
-`tests/integration/features/` and run with `make test-features` in the launch check job, spread
-over four pytest-xdist workers (`FEATURE_WORKERS=0` runs them in one process). Each worker starts
+`tests/integration/features/` and run with `make test-features` in CI's Feature Tests job (three
+shards), each spread over four pytest-xdist workers (`FEATURE_WORKERS=0` runs them in one process). Each worker starts
 its own fake Immich and throwaway homes, so a feature test never relies on another one's run. Fakes of the Immich client come from `tests/immich_fakes.py`: `fake_immich_client()`
 is a `create_autospec` of the real client, and `ImmichWire` answers a MockTransport request with
 the 400 the real Immich would send for a string page, a non-UUID id or a missing field. It
@@ -108,7 +108,7 @@ the difference in the fake, unless the real answer shows a product bug.
 
 Unit tests talk to a patched HTTP client and the integration suites skip when no Immich is
 configured, so neither proves the product still speaks to a real server. The `Immich Gate` check
-does, for both majors when the change scope calls for it (see [CI](./ci.md)):
+does, on Immich 2.7, 3.2 and 3.3 when the change scope calls for it (see [CI](./ci.md)):
 
 1. `make immich-gate-up` starts Immich 3.3.0, Postgres and Valkey from
    `tests/integration/immich_gate/docker-compose.yml`. Every image is pinned by digest, there is no
@@ -131,8 +131,9 @@ does, for both majors when the change scope calls for it (see [CI](./ci.md)):
 | paging | a year and an album of 1,010 pictures read whole |
 | people | hand-tagged faces scope the videos per person |
 | albums | story albums list and resolve by name with their counts |
-| upload | a re-rendered film lands in its album and trashes the earlier copy (v2 by device identity, v3 by the provenance tag) |
-| generate | `generate --memory-type monthly_highlights --no-render` on the rules tier picks a cut from the fixture month |
+| upload | a re-rendered film lands in its album and trashes the earlier copy (v2 by device identity, v3 by the provenance tag); a film's description and its type, year and story tags survive Immich reading the file |
+| scoped key | a key with the documented minimum permissions reads the library and files and tags a film; a key missing a read permission refuses the cut; a read-only key keeps the finished film when upload is asked for |
+| generate | on the rules tier, `--no-render`: a monthly cut from the fixture month, an on-this-day cut one year back, a holiday cut across two years, and a trip year with no trips exits 1 |
 | store | a `people scan` and a `pictures never-use` read back from the store, a second `prepare` of the month changes no banked fact, and a rendered film is in the run history with its phases |
 
 Choose the server with `IMMICH_GATE_VERSION=v2` (2.7.5), `v32` (3.2.2) or `v3` (3.3.0, the
@@ -274,7 +275,7 @@ make test-native-sharing NATIVE_GATE_VERSION=v33-sharing
 ```
 
 Each starts an isolated Immich, seeds the CC0 household library, runs the checks and removes
-its containers. `NATIVE_GATE_PORT` defaults to `2304`. Disposable keys stay under the ignored
+its containers. CI runs the 3.3 one inside the real-Immich gate's 3.3 job. `NATIVE_GATE_PORT` defaults to `2304`. Disposable keys stay under the ignored
 `.immich-gate` directory. Never publish its state file.
 
 The gates cover the partner-only person episode, selected-owner scope, timeline changes,

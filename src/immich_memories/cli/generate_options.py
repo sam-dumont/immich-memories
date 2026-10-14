@@ -364,9 +364,10 @@ def run_options(command: FC) -> FC:
             "--llm-title/--no-llm-title",
             default=None,
             help=(
-                "People and occasion memories are named by the model whenever a reader "
-                "is configured. --llm-title adds trips, --no-llm-title pins the template "
-                "everywhere (--title still wins)"
+                "Special days are named by the model whenever a reader is configured; "
+                "period, people, birthday, holiday and on-this-day films always "
+                "get the app's own title. --llm-title adds trips, --no-llm-title pins the "
+                "template everywhere (--title still wins)"
             ),
         ),
         click.option(
@@ -387,7 +388,7 @@ def selection_options(command: FC) -> FC:
             "--include-live-photos/--no-live-photos",
             "include_live_photos",
             default=None,
-            help="Include Live Photo video clips (3s iPhone clips, merged when burst-captured)",
+            help="Include Live Photo clips: one plays as motion when its clip (merged when burst-captured) lasts at least 2.5 s and moves",
         ),
         click.option(
             "--include-photos/--no-photos",
