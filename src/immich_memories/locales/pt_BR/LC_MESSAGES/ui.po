@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-14 13:27+0200\n"
+"POT-Creation-Date: 2026-10-14 16:29+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pt_BR\n"
@@ -1714,6 +1714,10 @@ msgstr "A reprodução do filme ainda precisa ser verificada antes de ele ficar 
 #: web/routes/create/+page.svelte:36
 msgid "The household. Private moments a caption names, like a bath, play too."
 msgstr "As pessoas de casa. Inclui também momentos privados citados por uma descrição, como um banho."
+
+#: web/lib/UploadFilm.svelte:58
+msgid "The local film was removed: Immich holds it now."
+msgstr "O filme local foi removido: agora ele está no Immich."
 
 #: web/lib/ShotInspector.svelte:153
 msgid "The model had nothing to say about this picture."

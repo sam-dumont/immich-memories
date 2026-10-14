@@ -130,7 +130,12 @@ def runtime_scratch(directory: Path) -> Iterator[Path]:
     environment alone misses Python's cached tempdir; setting tempdir alone misses
     model and media subprocesses. An unusable mount must never fall back to /tmp.
     Nested CLI/web lifetimes restore the outer choice when they close.
+
+    The process works in a folder of its own inside `<directory>/scratch`, and each start
+    first sweeps the folders that processes killed mid-run left behind (`process_scratch`).
     """
+    from immich_memories.process_scratch import owned_scratch, sweep_stale_scratch
+
     scratch = directory.expanduser().absolute() / "scratch"
     try:
         create_private_directory(scratch)
@@ -145,12 +150,14 @@ def runtime_scratch(directory: Path) -> Iterator[Path]:
         ) from None
     except RuntimeError:
         raise RuntimeError("Runtime scratch storage must be a private directory.") from None
+    sweep_stale_scratch(scratch, directory.expanduser().absolute())
     previous = tempfile.tempdir
     environment = {key: os.environ.get(key) for key in ("TMPDIR", "TEMP", "TMP")}
-    tempfile.tempdir = str(scratch)
-    os.environ.update(dict.fromkeys(environment, str(scratch)))
     try:
-        yield scratch
+        with owned_scratch(scratch) as own:
+            tempfile.tempdir = str(own)
+            os.environ.update(dict.fromkeys(environment, str(own)))
+            yield scratch
     finally:
         tempfile.tempdir = previous
         for key, value in environment.items():

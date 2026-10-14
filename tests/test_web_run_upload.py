@@ -56,6 +56,9 @@ def test_a_finished_film_is_uploaded_to_the_named_album_and_recorded_on_the_run(
     assert response.status_code == 200
     assert response.json()["asset_id"] == "asset-42"
     assert fake.uploads == [(path, "Summer")]
+    # #2528: Immich holds the film now, so the local copy goes, and the answer says so.
+    assert response.json()["local_film_removed"] is True
+    assert not path.exists()
     saved = RunDatabase(open_store(config)).get_run(RUN)
     assert (saved.delivery_status.value, saved.immich_asset_id) == ("delivered", "asset-42")
     assert saved.delivery_album == "Summer"
@@ -89,7 +92,7 @@ def test_an_unknown_run_is_not_found(tmp_path):
 
 
 def test_an_incomplete_delivery_is_reported_and_not_recorded_as_delivered(tmp_path):
-    config, client, _, _ = _setup(
+    config, client, _, path = _setup(
         tmp_path,
         immich=FakeImmich(
             {
@@ -106,6 +109,7 @@ def test_an_incomplete_delivery_is_reported_and_not_recorded_as_delivered(tmp_pa
 
     assert response.status_code == 502
     assert "album.create" in response.json()["detail"]
+    assert path.read_bytes() == b"synthetic finished film"
     saved = RunDatabase(open_store(config)).get_run(RUN)
     assert saved.delivery_status.value == "not_requested"
 

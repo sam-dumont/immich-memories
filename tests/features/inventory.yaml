@@ -1564,6 +1564,17 @@ features:
     tests:
       - tests/test_runtime_scratch.py::test_scratch_owned_by_someone_else_is_still_refused_and_left_alone
       - tests/test_runtime_scratch.py::test_scratch_widened_by_a_remount_is_tightened_and_startup_goes_on
+  - id: storage.scratch-swept
+    promise: "A run killed mid-way leaves scratch that the next start removes, without touching a live run's."
+    doc: run/maintenance/storage-backups.md#temporary-working-files
+    tests:
+      - tests/test_scratch_sweep.py::test_a_killed_runs_scratch_is_swept_at_the_next_start
+      - tests/test_scratch_sweep.py::test_a_live_runs_scratch_survives_another_start
+  - id: storage.editorial-runs-capped
+    promise: "editorial-runs stays under cache.editorial_runs_max_size_gb, keeping what listed runs read."
+    doc: reference/config-reference.md#cache
+    tests:
+      - tests/test_editorial_runs_budget.py::test_unread_attempts_go_first_and_a_listed_runs_attempt_stays
   - id: preflight.shows-fixes
     promise: "preflight shows how to fix each problem without -v."
     doc: run/maintenance/health-logs-cache.md#preflight

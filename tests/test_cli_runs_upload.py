@@ -18,9 +18,10 @@ RUN = "20261007_090000_aaaa"
 
 
 class FakeImmich:
-    def __init__(self, missing=(), warnings=()):
+    def __init__(self, missing=(), warnings=(), complete=True):
         self.missing = tuple(missing)
         self.warnings = list(warnings)
+        self.complete = complete
         self.uploads: list = []
 
     def get_key_capabilities(self):
@@ -28,7 +29,11 @@ class FakeImmich:
 
     def upload_memory(self, video_path, album_name=None, *, captured_at=None, label=None):
         self.uploads.append((video_path, album_name))
-        return {"asset_id": "asset-9", "delivery_complete": True, "warnings": self.warnings}
+        return {
+            "asset_id": "asset-9",
+            "delivery_complete": self.complete,
+            "warnings": self.warnings,
+        }
 
 
 def _run(tmp_path, *, film=True) -> Config:
@@ -131,3 +136,25 @@ def test_upload_of_a_cut_that_was_never_rendered_says_to_render_it(tmp_path):
     assert "never rendered" in result.output
     assert f"runs render {RUN}" in result.output
     assert "gone" not in result.output
+
+
+def test_a_confirmed_upload_removes_the_local_film_and_says_so(tmp_path):
+    """#2528: hand-uploaded films stayed on disk and filled the output volume."""
+    config = _run(tmp_path)
+
+    result = _invoke(config, FakeImmich(), RUN)
+
+    assert result.exit_code == 0
+    assert not (tmp_path / "film.mp4").exists()
+    assert "Removed the local film" in result.output
+
+
+def test_an_unconfirmed_upload_keeps_the_local_film(tmp_path):
+    config = _run(tmp_path)
+    fake = FakeImmich(complete=False, warnings=["uploaded film's description did not stay"])
+
+    result = _invoke(config, fake, RUN)
+
+    assert result.exit_code == 1
+    assert (tmp_path / "film.mp4").read_bytes() == b"film"
+    assert "Removed the local film" not in result.output

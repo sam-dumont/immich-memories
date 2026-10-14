@@ -14,6 +14,7 @@ from immich_memories.api.immich import ImmichAPIError
 from immich_memories.config_loader import Config
 from immich_memories.db import open_store
 from immich_memories.operations.film_labelling import label_for_run
+from immich_memories.operations.local_output_cleanup import remove_after_confirmed_upload
 from immich_memories.tracking import RunDatabase
 from immich_memories.web.dependencies import current_config
 from immich_memories.web.film_files import local_film
@@ -39,6 +40,8 @@ class UploadedFilm(BaseModel):
     asset_url: str | None
     album: str | None
     warnings: list[str]
+    # Immich confirmed the film, so the local copy was removed, as automation does.
+    local_film_removed: bool = False
 
 
 def upload_finished_film(
@@ -49,7 +52,10 @@ def upload_finished_film(
     missing_upload: tuple[str, ...],
     client: Any,
 ) -> UploadedFilm:
-    """Upload the run's film on disk and record the asset on the run.
+    """Upload the run's film on disk, record the asset on the run, then remove the local film.
+
+    The local film goes only once Immich confirms the upload (an asset id and a complete
+    delivery); anything less keeps it.
 
     Refuses, with the reason, an unknown run, a cut never rendered, a film that is gone, or a key without upload scope.
     """
@@ -89,6 +95,7 @@ def upload_finished_film(
         asset_url=config.immich.asset_url(saved.immich_asset_id),
         album=album_name,
         warnings=warnings,
+        local_film_removed=remove_after_confirmed_upload(saved),
     )
 
 

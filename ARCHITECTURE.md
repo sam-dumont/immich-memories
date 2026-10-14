@@ -1221,6 +1221,7 @@ src/immich_memories/
 │   ├── cut_progress.py         # Stage counts, pass identity, freshness and measured estimates shared by UI/CLI;
 │   ├── phase_heartbeat.py      # Repeats the last phase event every 30 s so a long step never goes silent
 │   │                           #   read_latest_attempt/live_progress_of: any process reads a cut's progress
+│   ├── editorial_runs_budget.py # editorial-runs held to cache.editorial_runs_max_size_gb, unread attempts first
 │   ├── run_index.py            # A run id resolved to its attempt directory (store table run_attempts);
 │   │                           #   record_cut_run: `generate --no-render` keeps its cut as a run
 │   ├── store_import.py         # import_legacy(): cache.db run/automation/score tables, the by-run
@@ -1281,6 +1282,7 @@ src/immich_memories/
 ├── filename_builder.py         # Output filename generation
 ├── timeperiod.py               # Date range utilities
 ├── security.py                 # Input sanitization, secret files, credential fingerprints
+├── process_scratch.py          # Each process's own locked scratch folder; the start-up sweep of dead ones
 ├── locked_file.py              # file_lock(): one writer at a time on a file several processes rewrite
 │                               # (the SQLite migration lock, the place-name cache)
 ├── i18n.py                     # Internationalization

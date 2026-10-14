@@ -55,5 +55,6 @@
       {done.album ? t('Uploaded to Immich, album {album}.', { album: done.album }) : t('Uploaded to Immich.')}
       {#if link}<a href={link} target="_blank" rel="noreferrer" class="underline">{t('View in Immich')}</a>{:else}<span class="tabular-nums">{done.asset_id}</span>{/if}
     </p>
+    {#if done.local_film_removed}<p class="text-sm text-gray-600 dark:text-gray-400">{t('The local film was removed: Immich holds it now.')}</p>{/if}
   {/if}
 </div>

@@ -90,7 +90,8 @@ def test_render_worker_reopens_its_private_scratch_after_restart(tmp_path, monke
             response = client.get("/health", headers={"Authorization": f"Bearer {token}"})
             assert response.status_code == 200
             assert response.json()["ready"] is True
-            assert Path(tempfile.gettempdir()) == mounted / "scratch"
+            # Its own folder in the scratch, which a later start sweeps if it is killed.
+            assert Path(tempfile.gettempdir()).parent == mounted / "scratch"
             with tempfile.TemporaryDirectory() as directory:
                 assert Path(directory).is_relative_to(mounted)
         assert tempfile.gettempdir() == previous

@@ -1,7 +1,8 @@
 """Remove a run's local film once Immich holds the durable copy.
 
 `deliver_completed_artifact` calls this right after `run_tracker.mark_delivered`
-persists a confirmed upload. From that point the local render exists only to
+persists a confirmed upload, and `runs upload` (CLI and web) after it records one.
+From that point the local render exists only to
 grow the output volume for no further use: the run record (and the Immich
 asset it names) already survive it. `runs delete` shares the same directory
 rule for an explicit, user-requested clear.
@@ -56,3 +57,20 @@ def delete_local_output(run: RunMetadata) -> bool:
         return False
     output_path.unlink()
     return True
+
+
+def remove_after_confirmed_upload(run: RunMetadata) -> bool:
+    """Reclaim the local film once Immich confirms it; True when something was removed.
+
+    The durable copy is already in Immich, so this is strictly best-effort: any
+    failure leaves the file on disk for the next `runs delete`, rather than turning
+    a confirmed upload into a reported failure.
+    """
+    try:
+        removed = delete_local_output(run)
+    except Exception:  # WHY: cleanup must never downgrade a confirmed delivery
+        logger.warning("Could not remove local output after delivery", exc_info=True)
+        return False
+    if removed:
+        logger.info("Removed local output for delivered run %s", run.run_id)
+    return removed

@@ -304,6 +304,16 @@ class CacheConfig(BaseModel):
         default=30_000.0, ge=50, le=100_000, description="Maximum thumbnail cache size in MB"
     )
 
+    # Each cut's attempt folder (plan, frames, records) had no limit: 10 GB on one install.
+    # Unread attempts go first, then the oldest a listed run points at; live, newest-per-cut
+    # and day-old attempts always stay (`operations/editorial_runs_budget.py`).
+    editorial_runs_max_size_gb: float = Field(
+        default=5.0,
+        ge=0.5,
+        le=500,
+        description="Maximum disk for past cut attempts in editorial-runs, in GB",
+    )
+
     @property
     def cache_path(self) -> Path:
         """Get the expanded cache directory path."""

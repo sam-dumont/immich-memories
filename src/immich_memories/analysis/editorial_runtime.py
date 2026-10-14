@@ -345,6 +345,13 @@ class RuntimeEditorialPlanner:
             "include_live_photos": include_live_photos,
             "hdr_only": hdr_only,
         } | ({"window_origin": context.window_origin} if context.window_origin else {})
+        if self._config is not None:
+            from immich_memories.operations.editorial_runs_budget import (
+                keep_editorial_runs_in_budget,
+            )
+
+            # Before this attempt exists, so the budget never weighs the run that is starting.
+            keep_editorial_runs_in_budget(self._config)
         with EditorialAttempt(context.artifact_dir, request=request) as attempt:
             self.last_attempt_directory = attempt.directory
             self._backend._context = replace(context, artifact_dir=attempt.directory)

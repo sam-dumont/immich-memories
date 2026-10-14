@@ -9,7 +9,7 @@ from typing import Any
 
 import click
 
-from immich_memories.cli._helpers import print_error, print_success, print_warning
+from immich_memories.cli._helpers import print_error, print_info, print_success, print_warning
 from immich_memories.config_loader import Config
 
 
@@ -37,7 +37,8 @@ def register_upload_command(runs: click.Group) -> None:
         RUN_ID is the render run's id (`runs list` shows it; it ends the film's folder name):
         the run that holds the film, not the cut it was rendered from. Nothing is rendered again. The key
         needs the same upload scope the render-time option checks, and a cut never rendered
-        or a film removed from disk is refused.
+        or a film removed from disk is refused. Once Immich confirms the upload, the local film
+        is removed, as automation does; a failed or incomplete upload keeps it.
         """
         import httpx
 
@@ -67,3 +68,5 @@ def register_upload_command(runs: click.Group) -> None:
             click.echo(uploaded.asset_url)
         for warning in uploaded.warnings:
             print_warning(warning)
+        if uploaded.local_film_removed:
+            print_info("Removed the local film: Immich holds it now.")
