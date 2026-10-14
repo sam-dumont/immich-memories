@@ -49,7 +49,8 @@ modes, and the SQL for a dedicated schema in Immich's own database, are on
 
 ## Variables
 
-`immich_url` and `immich_api_key` are required. Everything else has a default:
+`immich_url` and `immich_api_key` are required, unless `existing_secret_name` names a Secret that
+holds them. Everything else has a default:
 
 | Name | Description | Default |
 |------|-------------|---------|
@@ -104,6 +105,7 @@ meet, or `gpu_enabled = true` without GPU nodes.
 
 | Input | What it controls |
 |---|---|
+| `existing_secret_name` | A Secret you already manage in the namespace. The module creates none and ignores `secret_env` and the credential inputs, so that Secret must hold every key the app needs |
 | `config_yaml` | Optional ConfigMap and init container to install a declarative config file |
 | `render_worker_sidecar_enabled`, `render_worker_token` | Worker sidecar; a token is required when enabled (32+ random characters, no placeholder words). Generate with `openssl rand -hex 32`; empty is accepted only with the sidecar off |
 | `captioner_enabled`, `captioner_cuda`, `captioner_storage_size` | Caption service deployment |

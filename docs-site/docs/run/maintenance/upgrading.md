@@ -11,6 +11,116 @@ Read the [release notes](https://github.com/sam-dumont/immich-memories/releases)
 back up the store, then upgrade. Keep the backup for rollback: a newer release can migrate the
 store to a revision older code will refuse.
 
+## From 1.0.0-rc.9 to 1.0.0-rc.10
+
+Nothing to migrate by hand. These are the changes you will notice, and the keys that control
+them.
+
+### Docker host port
+
+New Docker installs publish host port **22830**; rc.9 and earlier used **8080**. This covers the
+release Compose files, the offline Compose example and the Unraid template. An existing install
+keeps whatever mapping it has: pulling the new image changes nothing, and an existing Unraid
+container keeps its **Extra Parameters**. Only when you replace or regenerate the Compose file do
+you need to carry your old `ports:` line over, as [Docker](#docker) below describes. The
+container port, native installs and Kubernetes stay on 8080.
+
+### Films in Immich
+
+An uploaded film now gets a description: its title (and subtitle, if it has one) and its
+one-line story summary, joined with ` · `. Writing it needs `asset.update` on the key. A key
+without it still uploads the film and replaces the earlier render; the run warns and the film has
+no description. Add `asset.update`
+to the [upload set](../docker.md#the-api-key) if you want descriptions.
+
+Tags for the film's memory type, its years and its named stories (birthdays, visits, trips) are
+opt-in. They go under `immich-memories/type/`, `immich-memories/year/` and
+`immich-memories/story/`, and need `tag.create` and `tag.asset`:
+
+```yaml
+upload:
+  film_tags: true
+```
+
+Both apply to new uploads and re-renders. Films already in Immich are left as they are.
+
+### Titles
+
+Year, month, season, person, people, birthday, holiday and on-this-day films are titled by
+the app, in the film's language: `Kit's birthday · 2026`, `Kit · July 2025`,
+`Kit & Pat · 2025`, `Christmas · 2019–2025`. A reader is no longer asked for these, and they get
+no subtitle unless you type one. Special days still get the reader's title when one is enabled,
+trips do with `--llm-title`, and an album film keeps its album's name. A film for either of two
+people now joins their names with `&`, like a film for both.
+
+### Holiday films read every year
+
+A holiday film used to read the five years before it. It now reads every year your library has
+around the day, so `generate --holiday` without `--years-back` covers your whole library. Pass
+`--years-back 5` to keep the old span. The day itself leads each year, each year gets an even
+share of the film, and the title is the holiday's name with the years the cut shows. The timer
+only proposes a holiday when the day stands out in your pictures in at least three years.
+
+### Live Photo motion has one floor
+
+`advanced.analysis.live_photo_min_clip_seconds` now applies to every Live Photo clip, a stitch
+of nearby Live Photos or one Live Photo's own clip, and its default drops from 3.5 to 2.5
+seconds. A clip shorter than that plays as its still: a 1.2-second clip used to slip through as
+a burst's fallback and read as half a sentence. A lone Live Photo whose clip lasts 2.5 seconds
+and moves still plays. If you set the key yourself, the same value now also gates lone clips;
+remove it to take the new default.
+
+### Another 10 GB of cache for re-renders
+
+A re-render now reuses the sources an earlier run prepared (cut segments, photo clips, Live
+Photo merges) from `<cache>/prepared-sources`. That cache can grow to 10 GB on the cache volume,
+next to the preview and video caches. On a tight volume, lower it or turn it off with `0`:
+
+```yaml
+advanced:
+  analysis:
+    prepared_source_cache_max_size_gb: 5
+```
+
+It is also off when `cache.video_cache_enabled` is false.
+
+### The preview cache holds a whole library
+
+`cache.thumbnail_cache_max_size_mb` now defaults to 30 GB (was 10 GB). A year, a lifetime or a
+captioning pass reads a preview of every picture in scope, about 0.32 MB each, so 10 GB evicted
+previews a library over about 30,000 pictures still needed, and the next film downloaded and
+captioned them again. If you set the key yourself, your value still wins. Plan disk as about
+25 GB plus 0.35 GB per 1,000 pictures and videos.
+
+On Kubernetes the base cache claim (and Terraform's `cache_storage_size`) goes from 30Gi to
+60Gi. Applying the new manifests asks the existing claim to grow: that works only when its
+StorageClass allows volume expansion. If yours doesn't, keep 30Gi with a patch in your overlay
+and lower the caps to fit, for example `thumbnail_cache_max_size_mb: 15000`.
+
+### Generated music
+
+`audio.music_block_seconds` now defaults to 240 (was 120), so a film up to four minutes gets one
+ACE-Step take instead of several joined ones. Longer films get takes that share one style, tempo
+and key, joined on a bar line. When the app picks the style itself, it picks acoustic,
+electronic or piano; jazz, rock, orchestral and metal play only when you ask for them. If you set
+`music_block_seconds` yourself, your value still wins.
+
+### Settings the web UI no longer changes
+
+The render worker's address and token, the local model server and the paths to programs and
+model files (`render.worker_base_url`, `render.worker_token`, `llm.local_server`,
+`triage.encoder`, `free_text.wordnet`, `editorial.laya_checkpoint` and the three
+`editorial.preparation` paths) are now read only from `config.yaml` or the environment. If you
+saved one of them from the Settings page on an earlier release, the app ignores it at startup and
+logs a warning naming the key: move the value into `config.yaml` or the environment and restart.
+[Network security](../network-security.md#settings-only-the-operator-sets) says why.
+
+### New opt-in key
+
+`advanced.analysis.forwarded_copies_when_short` (default `false`) lets forwarded copies and saved
+images fill a week, month or year that has no camera picture. A copy is dated when it was
+received, so an old photo shared again can land in the wrong year.
+
 ## Security changes in 1.0
 
 Five behaviours changed for security, without a deprecation period. Each one has a fix.
@@ -75,23 +185,6 @@ advanced:
 ```
 
 See [automation](../../make/automate.md) for what each one proposes.
-
-## Holiday films read every year
-
-A holiday film used to read the five years before it. It now reads every year your library has
-around the day, so `generate --holiday` without `--years-back` covers your whole library. Pass
-`--years-back 5` to keep the old span. The film is titled with the holiday's name and the years it
-shows, and the timer only proposes a holiday when the day stands out in your pictures in at least
-three years.
-
-## Live Photo motion has one floor
-
-`advanced.analysis.live_photo_min_clip_seconds` now applies to every Live Photo clip, a stitch
-of nearby Live Photos or one Live Photo's own clip, and its default drops from 3.5 to 2.5
-seconds. A clip shorter than that plays as its still: a 1.2-second clip used to slip through as
-a burst's fallback and read as half a sentence. A lone Live Photo whose clip lasts 2.5 seconds
-and moves still plays. If you set the key yourself, the same value now also gates lone clips;
-remove it to take the new default.
 
 ## Temporary working files
 

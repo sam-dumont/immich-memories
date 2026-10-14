@@ -77,6 +77,7 @@ names every port and the file it lives in, with the full module map.
 3. Add date builder logic if the type needs its own, in `memory_types/date_builders.py`
 4. Add it to `OFFERED_MEMORY_TYPES` in `memory_types/registry.py` for `--memory-type`. Add its fields to `FIELDS` in `web/src/routes/create/+page.svelte` too: the Memory page has its own map and does not discover presets from the Python tuple
 5. Document it in [`docs-site/docs/make/memory-types.mdx`](../make/memory-types.mdx)
+6. Give it a row in `tests/features/inventory.yaml` with its feature test: `make feature-check` fails while a memory type has none ([Feature tests](./testing.md#feature-tests))
 
 ### A new CLI command
 
@@ -84,6 +85,7 @@ names every port and the file it lives in, with the full module map.
 2. Import it and call it with the others at the bottom of `cli/__init__.py`
 3. Run `make docs-cli` to regenerate the [CLI reference](../reference/cli-reference.md): `make docs-cli-check` fails CI until you do
 4. Add the docs page under `docs-site/docs/make/cli/`, add its ID to `docs-site/sidebars.ts`, and run `make docs-build`
+5. Give the command and each flag a row in `tests/features/inventory.yaml`: `make feature-check` fails while one has none
 
 ## File naming conventions
 

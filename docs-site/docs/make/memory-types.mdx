@@ -16,7 +16,7 @@ Pick the subject in **Memory type**. Start with **Monthly Highlights** if you ar
 | One person | Person Spotlight | Name their face in Immich |
 | Several people | Multi-person | Name the faces; choose all together or any of them |
 | This date across the years | On This Day | Have pictures from several years |
-| Christmas or another recurring occasion | Holiday | Pick a holiday and the years to include |
+| Christmas or another recurring occasion | Holiday | Pick a holiday; it covers every year you photographed it |
 | A holiday away | Trip | Set home coordinates and have GPS-tagged pictures |
 | Your own collection | Album | Create the album in Immich |
 | One memorable day | Special Day | Pick the day, or use a discovered suggestion |
@@ -54,6 +54,10 @@ Maps are optional and use outside satellite tiles. A trip works with ordinary ti
 ## Album
 
 Use an Immich album when you already know what belongs together. Choose **Album** and pick it; the app still makes an edit from the collection. On the CLI, a [reader](../better/reader.md) can use a declared subject for collections such as cars or baking: `--from-album "Cars" --subject "cars"`. The web album chooser has no subject field.
+
+## Holiday
+
+Pick the holiday. The film reads every year your library has around the day, up to 30 years back, and **Years to span** (`--years-back` on the CLI) narrows it to the most recent ones. The day itself leads each year; the two days either side only join when the day holds fewer than 5 pictures. Every year gets an even share, so one busy Christmas can't take over twenty. The title is the holiday's name and the years the cut shows: "Christmas · 2019–2025". [Holiday rules and calendars](../reference/film-types.mdx#holiday).
 
 ## Special day
 

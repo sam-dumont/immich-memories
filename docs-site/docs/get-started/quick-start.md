@@ -20,10 +20,10 @@ You can change tiers later.
 |---|---|---|
 | **Basic** | A complete film with titles and bundled music, up to 1080p | 2 CPU cores, 4 GiB RAM for the app |
 | **GPU** | Basic plus picture descriptions and extra selection and sharing checks | NVIDIA GPU, driver and Container Toolkit; room for the app and model services |
-| **Full** | GPU plus a text reader that refines the draft and writes titles | The GPU setup and a reader server with 32k context |
+| **Full** | GPU plus a text reader that refines the draft and writes the film's summary | The GPU setup and a reader server with 32k context |
 
 All three need Docker Compose v2, an Immich v2 or v3 library and an API key. Allow at least
-25 GB for app data, plus images, model-service caches and finished films. GPU and Full give the
+About 25 GB for app data plus 0.35 GB per 1,000 pictures and videos, plus images, model-service caches and finished films. GPU and Full give the
 app an 8 GiB limit; model services need memory too. Check the [tier requirements](../run/requirements.md)
 if you are choosing hardware.
 

@@ -190,9 +190,9 @@ ARM64 Docker uses software encoding. Non-AVX Celerons use the simpler title rend
 
 ## Memory and disk
 
-Allow 25 GB for persistent data, plus the image and finished films. Keep the persistent store.
-Size the preview cache for the pictures your films can reach:
-roughly 0.35 MB per picture. The default preview/video budgets total 20 GB.
+Allow about 25 GB plus 0.35 GB per 1,000 pictures and videos for persistent data, plus the image and finished films. Keep the persistent
+store. The preview cache grows with the pictures your films can reach, roughly 0.35 MB each, up to
+its 30 GB default; video clips and prepared sources take up to 10 GB each.
 [Storage and caches](./maintenance/health-logs-cache.md#caches) covers caps and cleanup.
 Uploaded films are removed locally after confirmed delivery; local-only films keep growing.
 
@@ -210,7 +210,7 @@ Stay at 1080p on NAS. For rendering on a stronger machine, use a
 ## What a NAS can't do
 
 GPU selection and local generated music need their respective GPU services. A reader alone still
-helps with titles and music mood. Use the [add-on guide](../get-started/choose-your-setup.md)
+names special days (trips too with `--llm-title`) and helps with the music mood. Use the [add-on guide](../get-started/choose-your-setup.md)
 to choose the next useful piece.
 
 ## Everything else

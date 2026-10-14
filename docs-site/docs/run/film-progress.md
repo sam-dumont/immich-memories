@@ -75,6 +75,8 @@ and run files.
 |---|---|
 | Immich unreachable or key rejected | Run preflight; correct the container-reachable URL and [read permissions](./docker.md#the-api-key) in `.env`, then `docker compose up -d` |
 | Missing or wrong model pin | Run `models fetch` again, then preflight; see [offline preparation](./offline.md) if downloads are blocked |
+| “Storage is full or its quota is exhausted” | The job panel and the CLI say this when the cache, output or database volume is full. Expand that volume or [clear disposable caches](./maintenance/storage-backups.md#clearing) while the app is idle, then retry. Don't delete the store or the whole data volume |
+| A render stops and names the shots it lost | A prepared clip vanished before assembly, so the run stops instead of rendering a shorter film. Render the saved cut again |
 | Output not writable | Fix UID/GID ownership of this project's `output` using [the NAS permissions recipe](./nas.md#the-output-folder), then preflight |
 | Memory pressure or exit 137 | Check `docker stats --no-stream` and container state; keep Basic/1080p and give this app its own 4 GiB budget; see [render budgets](./reference/rendering.md) |
 | The cut hangs on thumbnails while preflight is green | The host's network MTU is below Docker's: [set a lower Compose network MTU](../reference/troubleshooting.md#preflight-says-immich-is-connected-but-cuts-hang-on-thumbnails) |

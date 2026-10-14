@@ -28,9 +28,13 @@ or trip legs, recognise distinct events, weigh the stories.
 | Story | a run of consecutive photographed days: at home, cut on the ISO week; away, kept whole unless it changes where it stays (below); a day back home ends it | `RuleStructureReader._runs` |
 | Trip leg | days stay in one area while each day's median position is within 25 km of the area's; an area of 3 days or more is a leg, a shorter one joins a neighbour; a trip splits only when every adjacent pair of legs is more than 50 km apart | `trip_legs.legs_of_days` |
 
-"Away" is more than 10 km from `trips.homebase_latitude` / `homebase_longitude`. Without a home base
-nothing is away, so a three-week holiday arrives as three weekly stories. Setting it is step one of
-[Home and people](../../get-started/who-is-who.md).
+Every day here is the picture's own day: its local time, the clock Immich's timeline shows, not
+UTC. A New Year's Eve party in Los Angeles stays in its year. A picture with no local time falls
+back to UTC.
+
+"Away" is more than 10 km from `trips.homebase_latitude` / `homebase_longitude`
+(`editorial_home_radius.py`). Without a home base nothing is away, so a three-week holiday arrives
+as three weekly stories. Setting it is step one of [Home and people](../../get-started/who-is-who.md).
 
 **A trip that changes where it stays is two stories.** A week hiking village to village and then four
 days in a city are two chapters. As one story, the hike's favourites took every slot and the city got
@@ -71,6 +75,46 @@ and whether a screen backed them up.
 Known limit: a dinner out photographed like an occasion (40 pictures in 3 bursts across town) is
 an event too. From counts, places and labels alone it looks exactly like one.
 
+**A birthday or a visit is its own story.** Two facts your household recorded take a day at home
+out of its week (`editorial_occasions.py`, `take_out_occasions` in
+`editorial_rule_story_names.py`):
+
+- **a birthday**: someone of the household or close family is on any picture that day, and their
+  Immich birth date comes round on it. One picture is enough, since the birth date is the evidence.
+  A birthday film counts the birthday it was asked for (`--birthday`), whoever the subject is;
+- **a visit**: close family who don't live with you (your parents, say) are on at least 2 of the
+  day's pictures and on at most 3 photographed days of the period. A household member never visits.
+  Visitors on as many pictures each are listed by name, so the same visit reads the same in every
+  film.
+
+The household is whoever the people registry calls the owner, partner, spouse or child; close
+family is what it confirms ([Home and people](../../get-started/who-is-who.md)). Only days at
+home are read: a trip names itself.
+
+## What a story is called
+
+Every story is named from its facts, in the film's language, never from an activity label
+(`editorial_rule_story_names.py`, `editorial_story_names.py`):
+
+| Story | Name |
+|---|---|
+| Birthday | "Kit's birthday", with "Kit turns five" as its purpose |
+| Visit | "Lou and Pat's visit" |
+| Trip | the album most of its pictures sit in, else the farthest place it reached ("Trip to Nordkapp") |
+| Trip leg | from its first place to its last ("Copenhagen to Nordkapp") |
+| Day out | its place and date ("Lisbon, Sunday 6 July") |
+| Days at home | their span ("Days at home, 1–4 July") |
+
+A stretch away is a trip only by the install's own rule: at least `trips.min_distance_km` from home
+(50 km by default) over at least `trips.min_duration_days` (2). Shorter or nearer, it is a day out,
+so an evening concert 11 km away is never "Trip to" anywhere. Without a home base, a stay away long
+enough is a trip. Legs are joined into one trip by the calendar, not by their order in the story
+list. In a film over several years, days are named with their year.
+
+Every story carries its `occasion`, `people`, `days`, `places` and `trip` in the plan. The film
+summary, the titles and `runs story` read them. The Full tier's rules draft reads the run's albums
+too, so a trip carries the same name on Basic and Full.
+
 ## How much a story weighs
 
 Each happening is first read for whether it is worth remembering, from facts alone.
@@ -94,6 +138,8 @@ remarkable seeds `minor`, maybe seeds `glimpse`, background gets `none`. Then th
   `big_story_family_share`, 0.3, of its pictures show a partner, child or parent). Density alone
   never does it: a race day with no confirmed close-family members does not meet the people condition.
 - **Present** stories (remarkable, or holding a favourite, or close family) are floored at `minor`.
+- **A birthday, a visit or a one-leg trip** weighs at least `major` (`raise_kept_days`): what the
+  household keeps outweighs the days around it.
 - **No recognised people**: when the film knows people at all, a story with no recognised person in it, no
   favourite and nothing remarkable is capped at `glimpse`. This cap does not apply to a trip or journey film.
 - **One moment** and nothing that makes it present: capped at `minor`.
@@ -160,6 +206,13 @@ shots) is named in the story record with the reason, and the finished-cut check 
 it as a broken promise. Once every year has its shot, a film
 that is still short takes further distinct shots from those same years, round-robin, and only goes
 short when they run out.
+
+A holiday film is built the same way, one partition per year, across every year the library has
+around the day unless `--years-back` narrows it. Both films are about the date, so every year takes
+its turn one picture at a time and none gets more than an even share: one year's starred afternoon
+can't take half the film (`even_eras` in `editorial_story_slots.py`). In a holiday film the day
+itself leads each year, on the picture's local clock, and the days around it only fill in when the
+day is thin ([Film types](../film-types.mdx)).
 
 ## When the model plans the whole film
 

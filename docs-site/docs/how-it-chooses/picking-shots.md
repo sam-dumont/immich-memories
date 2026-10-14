@@ -34,9 +34,12 @@ so review the cut before sharing. A favourite star does not override this check.
 [Document checks and explicit choices](../reference/selection-internals/picking-shots.md#personal-documents)
 has the exact rules.
 
+Every shot in the cut carries a one-line reason built from its own facts: who is on it, what it shows or where it was taken, and what made it beat the rest of its moment (a star, a video, the only frame with Kit in it, the sharpest of its run). The review page shows it, and `runs story` prints it for the whole cut.
+
 If the wrong frame won, [swap or add it in the review](./overrule-it.md). The pool explains why each picture was kept or left out; the CLI has the same answer:
 
 ```bash
+immich-memories runs story
 immich-memories runs why ASSET_ID
 ```
 

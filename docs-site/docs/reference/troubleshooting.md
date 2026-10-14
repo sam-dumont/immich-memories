@@ -44,7 +44,7 @@ automatically. Review it before attaching it to an issue. [Report details](../ma
 | `tier: full needs an enabled LLM …` | Enable `advanced.llm.enabled`. For a native install, leave `base_url` empty for the owned local model and install its weights/server. Docker and Kubernetes need an external reader endpoint; `tier: gpu` uses the rules reader |
 | `Waiting for the reader at host:port` | A configured model server stopped answering. This is a message prefix; retry details follow. See [below](#waiting-for-a-model-server) |
 | `caption endpoint must advertise smolvlm2-500m-base-public` | Right weights, wrong name: alias it. See [Add captions](../better/captions.md) |
-| `caption endpoint failed the compact-v3 schema control` | A captioner that has only just started can take minutes to answer its first request (a cold GPU model ran at 1 token/s, then 178). Newer builds retry once with more time; on older ones, run `generate` again. If it still fails a minute later, the server ignores the JSON schema, or it is the wrong model |
+| `caption endpoint failed the compact-v3 schema control` | A captioner that has only just started can take minutes to answer its first request (a cold GPU model ran at 1 token/s, then 178). The app retries once with more time. If it still fails a minute later, the server ignores the JSON schema, or it is the wrong model |
 | Settings: `Secrets cannot be saved here until IMMICH_MEMORIES_SECRET_KEY is set` | Nothing is broken: keys in `.env` or `config.yaml` work without it. To save them from the page, set the key ([The secret key](../run/environment-variables.md#the-secret-key)) |
 | `IMMICH_MEMORIES_SECRET_KEY must be at least 32 characters` | Use `openssl rand -base64 32`, which prints 44 |
 | `This server does not answer to the host '…'` (HTTP 421) | The requested hostname is not admitted. Add the intended name to `server.allowed_hosts` and check your public URL. See [Allowed hosts](../run/network-security.md#allowed-hosts) |
@@ -53,6 +53,9 @@ automatically. Review it before attaching it to an issue. [Report details](../ma
 | `Request failed: cannot reach <host> (<Exception>)`, then `retrying (n/N)` | Immich is unreachable from this process. Check the host/port in the error and Immich's own status; the run retries automatically before giving up |
 | Web create page shows "Immich unreachable" | The web server's own health check to Immich failed. Fix the connection (see [Cannot connect to Immich](#cannot-connect-to-immich)) and reload the page |
 | `Reader unreachable at <endpoint> (…); falling back to rules and default wording` | A configured text reader stopped answering mid-run. The run continues with rules and template wording; this warning is logged once per endpoint, not repeated every call |
+| `Storage is full or its quota is exhausted` | The cache or output volume, or the database, ran out of space. Expand it, or clear disposable caches while the app is idle, then retry. Don't delete the store. See [full disk](../run/maintenance/storage-backups.md#full-disk-during-preparation) |
+| `A prepared clip disappeared before assembly (…)` | Something removed a prepared clip while the film rendered. The run stops rather than ship a shorter film; render it again |
+| `uploaded without description: the key lacks asset.update`, or `uploaded without story tags: the key lacks …` | The film is in Immich; only its label is missing. Add the named permission to the API key ([the API key](../run/docker.md#the-api-key)); the next upload gets it |
 
 ## Cannot connect to Immich
 

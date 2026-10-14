@@ -6,7 +6,7 @@ description: Tested installs on Linux, Synology, Kubernetes and Apple Silicon, w
 # Can I run this?
 
 Start with **Basic, one prebuilt Docker container**. Budget two CPU cores, 4 GiB for the app
-on top of Immich's own needs, and 25 GB of app data plus images and output. GPU and Full need
+on top of Immich's own needs, and about 25 GB of app data plus 0.35 GB per 1,000 pictures, plus images and output. GPU and Full need
 [additional services](./requirements.md#the-preparation-tier). Hardware encoding alone does not
 turn on GPU; a text reader alone does not turn on Full.
 
@@ -59,7 +59,7 @@ rows below a verified route describe different setups, not a lower status for th
 
 | Route | Infrastructure and budgets | Reader |
 |---|---|---|
-| Basic Compose or vendor GUI | Docker/Compose or a vendor manager, 2 cores, 4 GiB app, 25 GB app data plus image/output | None required by default; Immich access only |
+| Basic Compose or vendor GUI | Docker/Compose or a vendor manager, 2 cores, 4 GiB app, 25 GB + 0.35 GB per 1,000 pictures of app data, plus image/output | None required by default; Immich access only |
 | Generated Kubernetes GPU | Cluster with NVIDIA device access, a storage class and configured GPU sharing: inference reserves one allocation; captions share the device without a reservation. App: 8 GiB/4 CPUs plus [service budgets](./local-models.md#kubernetes-services) | External reader for Full |
 | Independent Kubernetes | Operator-supplied model/worker endpoints and their own RAM/VRAM/storage | External reader; operator controls GPU sharing and egress |
 | Native Apple Silicon | Python, FFmpeg, app/model memory | App-owned `llama-server`, or an external server |

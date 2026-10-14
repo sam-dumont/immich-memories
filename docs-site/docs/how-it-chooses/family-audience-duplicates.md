@@ -41,4 +41,6 @@ Copies and bursts normally become one shot. When Immich holds the same picture m
 
 Later checks remove repeated scenes, favouring your stars and useful motion. A shorter film is preferable to the same sunset twice.
 
+A photo with no camera behind it (forwarded through a chat app, saved from a website) stays out by default. When a film has a gap with no camera picture at all, a week, a month, a year or an earlier birthday, you can let those copies fill it: set `advanced.analysis.forwarded_copies_when_short: true`. They pass the same checks as camera pictures, collages stay out, and a copy of a picture your library already holds is dropped. A copy is dated when you received it, so an old photo shared again can land in the wrong year.
+
 For detector coverage, hold precedence, family-seat thresholds and duplicate comparisons, read the [sharing and duplicate reference](../reference/selection-internals/family-audience-duplicates.md).

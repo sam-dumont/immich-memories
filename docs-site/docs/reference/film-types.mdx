@@ -23,6 +23,10 @@ install uses Immich metadata and the locally prepared picture facts (dates, plac
 | `album` | one Immich album | 30 s + 10 s an active day | an album |
 | `special_day` | one day the library says something happened on | 30 s + 6 s an active hour | nothing, or the `discover-days` catalogue |
 
+Every type except a trip, an album and a special day opens on a title the app writes from what
+the film is and when: "Kit · July 2025", "Christmas · 2019–2025", "October 14 · 2012–2025". See
+[where the title came from](output-rendering.md#where-the-title-came-from).
+
 Two setup steps make every type better, not only trips: a home base, so the editor can tell a week
 away from a week at home, and who's who, so it knows which people to prioritise. Set them in [Home and people](../get-started/who-is-who.md).
 
@@ -103,8 +107,9 @@ February.
 Person spotlight needs the person named in Immich's face recognition. What makes it a spotlight is
 the filter: the editor is the same one. Multi-person defaults to AND, so two people never in the
 same frame give an empty memory rather than two solo reels. Each window is read once for videos
-and once for photos, however many people are named. Titles and default filenames say AND or OR, so
-two runs never overwrite each other.
+and once for photos, however many people are named. The title names everyone with "&" either way
+("Kit & Pat · 2025"); the default filename says OR (`multi_person_or`), so the two runs never
+overwrite each other.
 
 ### A people memory with no dates
 
@@ -131,9 +136,9 @@ recent years cannot take the whole film. Years with no picture of them take no p
 `--birthday` turns a person spotlight into the year of someone's life that **ends** on the birthday,
 plus that birthday in earlier years. For a 21 July birthday and `--year 2025` it runs 22 July 2024 to
 21 July 2025, so this year's party is in this year's film. Target: 10 minutes.
-The opening title is the year of the birthday being celebrated and the subtitle names it ("Emma's
-birthday"), including when earlier birthdays are selected. A reader title that doesn't say birthday
-falls back to that. An explicit `--title` keeps your own wording.
+The opening title names the birthday being celebrated and its year ("Emma's birthday · 2025"),
+including when earlier birthdays are selected. The app writes it; no model is asked. An explicit
+`--title` keeps your own wording.
 
 ```bash
 immich-memories generate --person "Emma" --year 2025 --birthday
@@ -380,7 +385,8 @@ than 48 hours is not one occasion. `window_origin` in the run record says what b
 Three routes bring a day back: `auto run` offers anniversaries within 3 days (round ones first, a
 decade before a seventh), the **Special day** type on the Memory page offers the whole catalogue, and
 `generate --day` takes any day, catalogued or not. An uncatalogued day is scoped to itself and named
-by `--title`, else by its date.
+by `--title`, else by a model from the day's facts, else after its place ("A day in Lisbon") with
+the date under it.
 
 Catalogue titles name real people and places, so they never reach the command line: automation
 passes `--day` alone and `generate` re-reads the title. What automation prints is the evidence:
@@ -399,9 +405,9 @@ A text model adds three things here, and changes nothing else about the types:
   a title alone does not qualify it. No picture is sent. Confirmed occasions need enough varied
   material for a film, with no six-per-year cap. Unread days remain marked for retry. Use
   `discover-days --rescan` to recheck catalogue entries.
-- An uncatalogued special day, and people and occasion films, get a title written from their facts.
-  The reader invents no event name the facts do not carry. A season, month or year keeps its
-  period as the title ("Summer 2025"); the reader's story goes in the subtitle.
+- A special day gets a title written from its facts, catalogued or not. The reader invents no
+  event name the facts do not carry. Years, months, seasons, people, birthdays, holidays and "on
+  this day" keep the app's own title ("Summer 2025", "Kit & Pat · 2025"); no model writes those.
 - A month or year gets a light polish on top of the Basic draft. What that polish does and costs
   is on [What a model adds](../how-it-chooses/what-a-model-adds.md) and
   [Make it better](../better/overview.md).

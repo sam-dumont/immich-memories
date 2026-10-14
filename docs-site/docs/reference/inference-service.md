@@ -41,8 +41,8 @@ child when leaving captions. Demucs releases after its response. The next captio
 restarts the child, which listens only on loopback inside the container. Render authentication
 headers are not forwarded to it.
 
-The bundled caption command sets context to 8192 tokens but does not explicitly set a RAM
-prompt-cache limit or processing-slot count. Phase changes reduce overlapping model residency;
+The bundled caption command sets context to 8192 tokens and caps the RAM prompt cache at
+128 MiB (`LLAMA_ARG_CACHE_RAM` overrides it); it sets no processing-slot count. Phase changes reduce overlapping model residency;
 they do not impose a hard host-RAM or VRAM budget. The Compose recipe has no RAM limit. Other
 containers and external readers/music backends can still consume the same card.
 

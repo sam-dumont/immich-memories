@@ -55,7 +55,9 @@ derived settings and keeps automatic resolution automatic when the file moves to
 An explicit `basic`, `gpu` or `full` pins a tier for a controlled comparison; it does not install or
 start its services. `full` requires an enabled reader: the app-owned local model or a configured API.
 
-Configured LLM titles and music mood work on every tier. Basic and GPU still select with rules,
+Configured LLM titles and music mood work on every tier. A title from the LLM is for a special day,
+or a trip with `--llm-title`; year, month, season, person, birthday, couple, holiday and "on this
+day" films always take the app's own title. Basic and GPU still select with rules,
 and sharing never asks the prose LLM. Captions use their own configured service; a text LLM is
 not an automatic caption fallback. A missing Laya checkpoint or runtime is reported and uses
 the conservative rules fallback; that is a degraded run, not a verified GPU/full comparison.
@@ -153,7 +155,7 @@ render:
   worker_base_url: ""
   worker_token: ""             # Or ${RENDER_WORKER_TOKEN}
   allow_insecure_http: false   # Explicitly accept a non-loopback cleartext HTTP worker
-  timeout_seconds: 3600        # Wait for rendering and download; maximum 86400; greater than 0, at most 86400 seconds
+  timeout_seconds: 3600        # Wait for rendering and download (more than 0, at most 86400 s)
   fallback_to_local: false     # Set true to allow local rendering after a worker failure
 ```
 

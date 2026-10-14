@@ -34,8 +34,9 @@ class AnalysisConfig(BaseModel):
     source_prepare_workers: Annotated[int, Field(ge=1, le=4)] | Literal["auto"] = Field(
         default="auto",
         description="Concurrent selected-source download and preparation workers. "
-        "'auto' prepares one source per 2 GB this process may use (the container's "
-        "memory limit, else the machine's RAM), at least 1 and at most 2",
+        "'auto' keeps 1 GB for the app, then prepares one source per 3 GB left of what "
+        "this process may use (the container's memory limit, else the machine's RAM), "
+        "at least 1 and at most 2",
     )
     prepared_source_cache_max_size_gb: float = Field(
         default=10.0,
@@ -92,7 +93,7 @@ class AnalysisConfig(BaseModel):
     # Live Photo settings
     include_live_photos: bool = Field(
         default=True,
-        description="Include Live Photo video clips (3s clips from iPhone Live Photos)",
+        description="Include Live Photo video clips; one plays as motion when its clip lasts at least 2.5 s and moves",
     )
     live_photo_merge_window_seconds: float = Field(
         default=10.0,

@@ -166,6 +166,8 @@ Home coordinates enable trips and local public holidays. Then
 
 The web Render panel can upload to Immich. To default CLI/daily films to upload, set
 `IMMICH_MEMORIES_UPLOAD__ENABLED=true` and optionally `IMMICH_MEMORIES_UPLOAD__ALBUM_NAME`.
+`IMMICH_MEMORIES_UPLOAD__FILM_TAGS=true` also tags each film with its type, years and stories
+([Upload to Immich](../../reference/config-reference.md#upload-to-immich)).
 The key needs [upload permissions](.././docker.md#the-api-key).
 
 For local films, copy from the output PVC. Each film sits in its own run folder, so copy the
@@ -236,7 +238,8 @@ container requests 512Mi/250m and is capped at 2Gi/two CPUs. Compose's app limit
 these are different budgets. The 60Gi data claim holds the default caches (30 GB of previews,
 10 GB of video clips, 10 GB of prepared sources) plus the store, models and backups. Previews
 scale with the library, about 0.35 GB per 1,000 pictures and videos: past 90,000, raise
-`cache.thumbnail_cache_max_size_mb` and grow the claim with it.
+`cache.thumbnail_cache_max_size_mb` and grow the claim with it. On a smaller claim, lower a cap
+(`IMMICH_MEMORIES_ANALYSIS__PREPARED_SOURCE_CACHE_MAX_SIZE_GB=5`, say).
 [Cache sizing and recovery](.././maintenance/storage-backups.md#caches) explains the headroom.
 
 Existing claims do not automatically grow when you raise a cache budget. Your StorageClass must

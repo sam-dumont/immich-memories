@@ -27,7 +27,7 @@ GPU adds descriptions and extra checks, and Full adds a text reader to refine th
     </picture>
   </a>
   <br/>
-  <sub><a href="https://sam-dumont.github.io/immich-memories/demo/demo.mp4">▶ Play the demo with music</a> · <a href="https://sam-dumont.github.io/immich-memories/demo/trip-preview.mp4">Watch a finished trip film</a> · CC0 stock pictures, <a href="tests/e2e/fixtures/library/CREDITS.md">credited here</a> · <a href="https://sam-dumont.github.io/immich-memories/docs/">Documentation</a></sub>
+  <sub><a href="https://sam-dumont.github.io/immich-memories/demo/demo.mp4">▶ Play the demo with music</a> · <a href="https://sam-dumont.github.io/immich-memories/demo/trip-preview.mp4">Watch a finished trip film</a> · Wikimedia Commons photographs under CC0 or CC BY, <a href="tests/e2e/fixtures/library/CREDITS.md">credited here</a> · <a href="https://sam-dumont.github.io/immich-memories/docs/">Documentation</a></sub>
 </p>
 
 ## Make your first film
@@ -39,10 +39,10 @@ makes a complete film, and you can change tiers later.
 |---|---|---|---|
 | **Basic** | Dates, favourites, people, places and small picture classifiers guide the cut; up to 1080p. | 2 CPU cores and 4 GiB RAM for the app, in addition to Immich. | Follow the steps below. |
 | **GPU** | Picture descriptions, document/sensitive-content checks and a family-viewing pre-screen. | NVIDIA services with the Container Toolkit, or native Apple Silicon. Allow 8 GiB for the Compose app plus its model services. | Select **GPU** in [Quick start](https://sam-dumont.github.io/immich-memories/docs/get-started/quick-start), or use [native Mac](https://sam-dumont.github.io/immich-memories/docs/run/uv-pip#apple-silicon). |
-| **Full** | A text reader refines the cut and writes titles. | The GPU setup plus an enabled reader with a 32k context window. | Select **Full** in [Quick start](https://sam-dumont.github.io/immich-memories/docs/get-started/quick-start). |
+| **Full** | A text reader refines the cut, writes the film's summary and names special days. | The GPU setup plus an enabled reader with a 32k context window. | Select **Full** in [Quick start](https://sam-dumont.github.io/immich-memories/docs/get-started/quick-start). |
 
-You need an existing Immich server, Docker Compose v2 and **25 GB for app data, plus images and
-finished films**. Immich v2 and v3 both work; the [deployment matrix](https://sam-dumont.github.io/immich-memories/docs/run/tested-deployments)
+You need an existing Immich server, Docker Compose v2 and **about 25 GB of app data plus 0.35 GB per 1,000
+pictures and videos in your library, plus images and finished films**. Immich v2 and v3 both work; the [deployment matrix](https://sam-dumont.github.io/immich-memories/docs/run/tested-deployments)
 records tested versions. GPU services can run on another machine.
 For a NAS container manager, [use its platform guide](https://sam-dumont.github.io/immich-memories/docs/run/nas).
 
@@ -111,15 +111,18 @@ covers home, people, language, backups and automation.
 ## What you can do
 
 - **Photos and videos in one film.** Stills get animated, videos give their best few seconds,
-  Live Photos keep their motion. Favourites and named people win close calls, and you can see
-  everything that was left in the pool.
+  and a Live Photo plays as motion when its clip lasts 2.5 s and actually moves. Favourites and
+  named people win close calls. Every shot says why it's in the cut, and the pool shows
+  everything that was left out.
 - **Change the cut before rendering.** Remove a shot, trim a video, swap a picture or pull one
   in from the pool, then render that revision. "Never use" is a lasting decision, separate from
   dropping a shot from one film.
-- **Titles and music out of the box.** Bundled tracks and template titles work on day one.
-  Maps and generated music are optional extras with their own setup.
+- **Titles and music out of the box.** A film is titled by what it is and when ("Summer 2025",
+  "Kit's birthday · 2026") and gets a bundled track. Maps and generated music are optional
+  extras with their own setup.
 - **Automate it later.** A daily timer picks one memory worth making (a trip, a birthday, last
-  month) and can upload it to Immich or keep it on disk. Make a few films by hand first.
+  month) and can upload it to Immich, with its title and story summary as the description, or
+  keep it on disk. Make a few films by hand first.
 - **Ask in your own words.** "our cat through the years" can become a film. Highly
   experimental: tuned on one real library, so preview before you trust it.
 - **Add a GPU or a model when you want.** Basic makes complete films on a CPU. A GPU adds

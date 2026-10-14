@@ -139,11 +139,11 @@ the password. Sign in over `/auth/login`, keep the cookie, and ask again:
 
 Set `memories_url` to the URL you use in the browser. For the proxy route, use
 `https://memories.example.com`: its secure session cookie is not sent over plain HTTP.
-Replace the sample credentials with your app login. The example below uses a chosen host port
-of 8080; use your installation's URL.
+Replace the sample credentials with your app login. The example below uses the default host port,
+<ComposePort />; use your installation's URL.
 
 ```bash
-memories_url=http://nas-address:8080
+memories_url=http://nas-address:22830
 umask 077
 curl -fsS -c jar.txt -H 'Content-Type: application/json' \
   -d '{"username":"admin","password":"your-password"}' "$memories_url/auth/login"

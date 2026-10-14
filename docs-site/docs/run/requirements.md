@@ -17,13 +17,16 @@ Allow this **in addition to what Immich uses**:
 |---|---|
 | RAM | 4 GiB free for the app; the Compose file limits it to 4 GiB |
 | CPU | 2 cores, x86-64 or ARM64; 4 cores make rendering less painful |
-| Disk | 25 GB for the persistent data volume, plus the image and finished films |
+| Disk | about 25 GB plus 0.35 GB per 1,000 pictures and videos in your library for the persistent data volume (about 45 GB for 56,000), plus the image and finished films |
 | Immich | v2 or v3, reachable from the app, with an API key |
 | Docker | Engine with Compose v2; Docker Desktop also works |
 | Python install | Python 3.11 to 3.13 and FFmpeg; see [uv / pip](./uv-pip.md) |
 
-The 25 GB allows for the default preview and video caches: 10 GB each, plus the store and model
-files. An SSD helps. Finished films need their own space unless you upload them to Immich.
+Previews are the part that grows with the library: a year, a lifetime or a captioning pass reads
+every picture in scope, at about 0.32 MB each (two real installs: 16 GB for 50,600 previews, 19 GB
+for 57,116). The rest is the video and prepared-source caches, 10 GB each, plus the store, models
+and backups. The preview cache is capped at 30 GB by default, about 90,000 pictures; past that the
+run warns and names `cache.thumbnail_cache_max_size_mb`. An SSD helps. Finished films need their own space unless you upload them to Immich.
 
 A 30-minute film fits inside the default 4 GiB container limit on a NAS, with some swap. Your
 library and output settings still affect memory use. See the
@@ -48,7 +51,7 @@ Ready? [Install with Docker Compose](./docker.md), or read the [NAS notes](./nas
 The NVIDIA Compose files limit the app to 8 GiB, inference to 4 GiB and captions to 3 GiB, plus
 512 MiB for the one-time caption downloader. These are separate container limits, not a total
 host budget. Leave room for Immich, the host and any reader too. Model images and service caches
-need disk space beyond the app's 25 GB. GPU and Full also require the NVIDIA driver and
+need disk space beyond the app's own. GPU and Full also require the NVIDIA driver and
 [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html).
 A native Apple Silicon install uses Metal instead.
 
@@ -74,7 +77,8 @@ benefits before you set up extra services.
 With one of those it chooses GPU; an explicitly enabled reader makes that Full. It does **not** check
 whether the caption server or Laya files are ready: run `preflight` after adding services.
 
-A reader on Basic still writes titles and chooses the music mood. Selection stays on Basic.
+A reader on Basic still names special days (trips too with `--llm-title`) and helps pick the music mood.
+Selection stays on Basic.
 On Apple Silicon, install the `all-mac` extra for GPU discovery. Captions need their own server;
 an enabled `openai-compatible` or `ollama` reader with blank `base_url` starts locally when
 `llama-server` is installed. Hosted provider presets use their vendor URL instead. The shipped

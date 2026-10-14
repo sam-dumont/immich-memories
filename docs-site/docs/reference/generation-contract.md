@@ -115,7 +115,9 @@ Seven things the examples hide:
   With no birth date on record anywhere it still asks for `--year`, and says why.
 - Holidays follow your home base's country, and moving ones are computed for each year (Easter,
   Thanksgiving, Mother's and Father's Day), with a window of two days either side
-  ([Holiday](film-types.mdx#holiday)). A holiday cut runs 60 seconds unless you pass `--duration`.
+  ([Holiday](film-types.mdx#holiday)). Without `--years-back` a holiday film reads every year the
+  library has, and the day itself leads each year. A holiday cut runs 60 seconds unless you pass
+  `--duration`.
 - `special_day` works on any day, catalogued or not, and requires `--day`. Several catalogued events
   on that day require `--event-id` as well; an ID with no match on the chosen day is refused. Use
   `days-export` to read the event IDs. A day with one catalogue row is scoped and named by it;
@@ -158,8 +160,11 @@ Trip detection, naming and its CLI flags are on [Film types: Trip](film-types.md
 ## What it reads from Immich
 
 Every read goes to the accounts the run names, each with its own key. Writes happen only when upload is
-on: the finished film, its tag and its album, plus moving an earlier render of the same recipe to
-Immich's trash when the key has `asset.delete`.
+on: the finished film, its `immich-memories/generated` tag, its description (the title, then the
+one-line story summary) and its album, plus moving an earlier render of the same recipe to Immich's
+trash when the key has `asset.delete`. With `upload.film_tags: true` the film also gets type, year
+and story tags. A description or tag the key isn't allowed to write is a warning; the film still
+uploads. [What Immich sees](../run/privacy.md#what-immich-sees) lists what each tag holds.
 
 | Read | What the run uses it for |
 |---|---|
@@ -182,12 +187,21 @@ read needs is in [the API key](../run/docker.md#the-api-key).
 ## What the terminal shows while it runs
 
 One line per stage, the same record the web UI draws its rows from. A stage that counts its work
-gets a bar with an estimate for that stage, not for the whole cut:
+gets a bar with an estimate for that stage. Under it, the whole run: an estimate for the film, then
+every phase with its state, its time so far and its time left:
 
 ```text
 ⠿ Preparing previews: 352/9814 · ~19m left in this stage ━━━━━━━━━━━   3%
   ⏱ 0:41 elapsed
+About 34 min until the film is ready (measured estimate)
+Prepare pictures: running · 1 min elapsed · ~19 min left
+Select pictures: pending · ~3 min left
+Render film: pending · time not known yet
 ```
+
+The estimate comes from this run's own rate and from earlier runs with the same tier and output
+settings. A phase nothing has measured yet says so instead of guessing. More on
+[film progress](../run/film-progress.md).
 
 With a reader configured, a reader that stops answering is named on the line rather than going quiet. Three
 drops, two then four seconds apart, and the run fails naming the endpoint.
@@ -206,13 +220,16 @@ Memory generated in 42s
 
   the cut, in order (6 shots, 0:24)
   June 2024
-   0:00  2024-06-08  video     4 s  Lunch in the garden: the table and chairs still out on the lawn
-   0:04  2024-06-09  photo     4 s  Lunch in the garden: the cake with the candles still in it
+   0:00  2024-06-08  video     4 s  Lunch in the garden: Kit · the table and chairs out on the lawn · a video
+   0:04  2024-06-09  photo     4 s  Lunch in the garden: Kit and Pat · the cake with the candles · starred
    ...
   why any picture is in or out: immich-memories runs why <asset id> --run 20260913_083421_9dcb
 ```
 
-The two timings are wall-clock around the calls as they happen. [`runs`](../make/cli/runs.md) reads all of it
+Each shot says why it is there, from its own facts: who is on it, what its caption shows or where
+it was taken, and what beat the rest of its moment (a star, a video or Live Photo, the only frame
+with its people, the sharpest of its run). The two timings are wall-clock around the calls as they
+happen. [`runs`](../make/cli/runs.md) reads all of it
 back later. The reasons are written for every run; `--trace-selection` only adds a copy of the
 funnel at a path you choose.
 

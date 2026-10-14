@@ -29,7 +29,8 @@ weights and runtime caches; render-scratch holds the worker's downloaded origina
 render files. It is separate from the app's finished-output volume. The service reserves one
 NVIDIA GPU and does not set a RAM limit.
 
-Configure the app:
+Configure the app in `config.yaml` or the environment. The worker URL and token can't be set
+from Settings, since the worker receives your Immich key:
 
 ```yaml
 advanced:
@@ -74,7 +75,7 @@ or Mac checkout. The external music server owns its model lifetime. Configure it
 planner on that server; the app's local `model_variant`, `use_lm` and `cpu_offload` settings do not
 change the remote service. Sharing one card still requires room for every resident service.
 The [tested ACE-Step build and single-GPU limits](../better/music.md#sharing-one-gpu-with-the-worker)
-record the service used for the June cold runs. Kubernetes time-slicing does not unload models.
+record the service used for the measured cold runs. Kubernetes time-slicing does not unload models.
 
 ## Memory and scheduling
 
@@ -90,9 +91,9 @@ not a combined queue for all phases.
 
 One container saves duplicate services and image layers. It still needs enough host RAM and
 VRAM for the largest active phase, scratch space for originals and output, and headroom for other
-GPU users. The bundled caption command sets an 8192-token context; it does not explicitly bound
-llama.cpp's RAM prompt cache or processing slots. Separate-reader or music services can still
-compete for the card. Measure your workload before raising concurrency.
+GPU users. The bundled caption command sets an 8192-token context and a 128 MiB host prompt cache
+(`LLAMA_ARG_CACHE_RAM`, override it in the worker's environment); it keeps llama.cpp's automatic
+slot count. Separate-reader or music services can still compete for the card. Measure your workload before raising concurrency.
 
 ## Scratch space for 4K
 

@@ -14,8 +14,9 @@ restarts it on demand. The standalone Compose/Kubernetes recipes below run their
 do not add one just to use unified captions.
 
 The unified caption route has no authentication, even though `/render` on the same listener
-requires a token. Keep it private. The standalone recipes explicitly set `--cache-ram 128` and
-`--parallel 1`; the unified bundled command does not set those bounds. Context size is 8192
+requires a token. Keep it private. The standalone recipes set `--cache-ram 128` and
+`--parallel 1`. The unified worker's bundled command keeps the 128 MiB prompt cache
+(`LLAMA_ARG_CACHE_RAM` overrides it) and sets no slot count. Context size is 8192
 in both recipes. The prompt cache holds reusable model state in RAM, not saved picture
 descriptions. These settings do not cap the worker's total RAM or VRAM.
 

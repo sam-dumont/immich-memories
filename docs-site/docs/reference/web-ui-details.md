@@ -7,12 +7,13 @@ title: Web UI configuration and job behavior
 Operator details for the browser client. The task guide is [Use the web UI](../make/web-ui.mdx).
 
 <Diagram name="seq-web-job" headline="Cut first, look at it, then render. Nothing renders until you press the button." />
-**Cut** runs `generate --no-render` on the server. The panel shows the stage, its count and the last
-pictures it read. With a previous completed run, the bar and time left cover the whole cut: saved
-stage times scale to this picture count, and the current stage uses its measured speed. Without
-history, the total time stays unknown, so the bar follows the current stage and the panel shows the
-time left in that stage. On a library that has never been read, *Reading dates, places
-and people* is the long one; a later cut over the same pictures reuses what it banked. The stages:
+**Cut** runs `generate --no-render` on the server. The panel lists the job's phases (done, current,
+pending, skipped) with the elapsed time and time left for each, the current stage's count and the last
+pictures it read. The overall estimate covers every phase left in the job, from this run's measured
+rate and earlier runs with the same tier and output settings; until it has one, the panel shows the
+time left in the current stage. On a library that has never been read, *Reading dates, places
+and people* is the long one; a later cut over the same pictures reuses what it banked. How the
+estimates are made: [Film progress and recovery](../run/film-progress.md). The stages:
 [From library to film](../how-it-chooses/overview.md).
 
 **Copy as CLI command** copies an equivalent command for the cut or render. It omits the server's
@@ -34,8 +35,9 @@ unpaired Unicode surrogates and nesting beyond 64 levels return a client error b
 starts. Music uploads must contain an audio stream with a positive duration; truncated files
 are refused, and an unavailable audio probe asks you to install FFmpeg.
 
-If the cache or output disk fills up, the API returns a storage-full message (HTTP 507).
-Free space before retrying. A failed revision save keeps earlier revisions and removes its
+If the cache, output or database storage fills up, the API returns a storage-full message (HTTP 507),
+and a job that fails for that reason shows the same advice under its status, even when the disk could
+not save a complete log. Free space or expand the volume before retrying; do not delete the store. A failed revision save keeps earlier revisions and removes its
 temporary file. A job whose initial record cannot be saved is stopped before returning the
 error, so it cannot keep working without a job the page can follow or cancel.
 
