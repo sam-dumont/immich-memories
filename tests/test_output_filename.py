@@ -129,14 +129,15 @@ class TestBuildTitlePersonName:
         )
         assert result == "Riley, Bob & Carol"
 
-    def test_multi_person_or_names_the_union(self):
+    def test_multi_person_or_names_everyone_in_no_one_language(self):
+        """A title card is in the film's language; an English "or" is not."""
         result = build_title_person_name(
             "multi_person",
             {"person_names": ["Riley D", "Bob S", "Carol T"], "person_match": "or"},
             None,
         )
 
-        assert result == "Riley or Bob or Carol"
+        assert result == "Riley, Bob & Carol"
 
     def test_multi_person_full_names(self):
         result = build_title_person_name(

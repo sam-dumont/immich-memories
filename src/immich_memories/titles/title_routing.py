@@ -22,6 +22,9 @@ OCCASION_MEMORY_TYPES = frozenset(
 # Films of a calendar period: their title is the period ("Summer 2025", "2025",
 # "July 2025"); the stories that ran through it may only fill the subtitle.
 PERIOD_MEMORY_TYPES = frozenset({"monthly_highlights", "season", "year", "year_in_review"})
+# Films the app titles itself, by what they are and when ("Kit's birthday · 2026",
+# "Christmas · 2019–2025"); no model writes it.
+STATIC_TITLE_MEMORY_TYPES = PERIOD_MEMORY_TYPES | PEOPLE_MEMORY_TYPES | {"holiday", "on_this_day"}
 
 
 def is_trip(memory_type: str) -> bool:

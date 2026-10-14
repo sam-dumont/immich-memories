@@ -197,15 +197,9 @@ def test_hosted_title_uses_display_names_without_changing_nested_scope(anonymous
     }
     if anonymous:
         params = anonymize_preset_params(params)
-    seen = []
-
-    # WHY: ask is the external hosted title-provider boundary; no network call is made.
-    def ask(**kwargs):
-        seen.append(kwargs)
-        return None
-
+    asked = []
     config = Config(llm={"enabled": True, "provider": "openai-compatible", "model": "example"})
-    resolve_film_title(
+    title, _subtitle, _source = resolve_film_title(
         enabled=True,
         title_override=None,
         clips=[],
@@ -214,14 +208,17 @@ def test_hosted_title_uses_display_names_without_changing_nested_scope(anonymous
         date_range=DateRange(datetime(2024, 1, 1), datetime(2024, 12, 31)),
         person_names=list(expression.leaf_values),
         memory_preset_params=params,
-        ask=ask,
+        # WHY: ask is the external hosted title-provider boundary; a typed film never reaches it.
+        ask=lambda **kwargs: asked.append(kwargs),
     )
-    assert seen[0]["person_names"] == list(params["person_display_names"].values())
-    assert "id-" not in seen[0]["facts"].people_condition
+    assert asked == []
+    assert "id-" not in title
     assert params["person_expression"] == expression.to_dict()
     assert params["person_names"] == list(expression.leaf_values)
+    shown = [name for name in params["person_display_names"].values() if name]
+    assert all(name.split()[0] in title for name in shown)
     if anonymous:
-        assert not {"Adult A", "Adult B", "Child"} & set(seen[0]["person_names"])
+        assert not {"Adult", "Child"} & set(title.split())
 
 
 def test_duplicate_display_names_do_not_borrow_another_persons_birth_date():

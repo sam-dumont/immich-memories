@@ -33,9 +33,10 @@ mapped onto each hardware encoder's own scale.
 Use `landscape`, `portrait` or `square` to set the canvas yourself. Orientation changes rendering
 only; it does not change which pictures or video intervals are selected.
 
-Opening titles name the people or the occasion, never the query that produced them. With a reader
-configured, the model names a people or occasion film; `--llm-title` extends that to trips,
-`--no-llm-title` pins the template, and `--title` and `--subtitle` override all of it. `runs show` says which
+Opening titles name the people or the occasion, never the query that produced them. A period, people,
+birthday, holiday or "on this day" film is titled by the app ("Kit's birthday · 2026"), with no subtitle
+unless you give one. With a reader configured, the model names a special day; `--llm-title` extends that to
+trips, `--no-llm-title` pins the template, and `--title` and `--subtitle` override all of it. `runs show` says which
 source the title came from. See [titles](output-rendering.md#where-the-title-came-from).
 
 `--sharing` says who the film is for, and defaults to `defaults.sharing` (`family`):

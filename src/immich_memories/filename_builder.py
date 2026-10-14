@@ -124,7 +124,7 @@ def build_title_person_name(
     if preset_params.get("person_expression") is not None:
         return " · ".join(names) or None
     if memory_type == "multi_person" and len(names) >= 2:
-        return _multi_person_label(names, preset_params.get("person_match", "and"))
+        return _multi_person_label(names)
     if names:
         return names[0]
     if "person_display_names" in preset_params or not person_name:
@@ -143,9 +143,11 @@ def _title_cast_names(preset_params: dict, use_first_name_only: bool) -> list[st
     return [name.split()[0] for name in names] if use_first_name_only else names
 
 
-def _multi_person_label(names: list[str], person_match: str) -> str:
-    if person_match == "or":
-        return " or ".join(names)
+def _multi_person_label(names: list[str]) -> str:
+    """Everyone the film is about, for a title card: "&" reads the same in every language.
+
+    A film of pictures with either person is still about both of them.
+    """
     if len(names) == 2:
         return f"{names[0]} & {names[1]}"
     return f"{', '.join(names[:-1])} & {names[-1]}"

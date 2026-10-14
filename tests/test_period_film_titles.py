@@ -1,4 +1,4 @@
-"""A film's title names its own subject: a period by the period, everything else by its stories.
+"""A film's title names its own subject: a period by the period, a special day by its stories.
 
 The demo library's month (tests/e2e/fake_library.py) is the answer key: a summer that turns
 around Kit's birthday and then drives north. Its season film was titled "The road north,
@@ -126,61 +126,6 @@ def _titled(
     return result, prompt
 
 
-@pytest.mark.parametrize("memory_type", list(PERIODS))
-def test_a_period_film_named_after_its_album_is_titled_by_its_period(memory_type):
-    (title, subtitle, source), _prompt = _titled(
-        '{"title": "The road north, 2025", "subtitle": null}', memory_type
-    )
-
-    assert title == PERIODS[memory_type][3]
-    assert subtitle == "The road north"
-    assert source == "model"
-
-
-@pytest.mark.parametrize("memory_type", list(PERIODS))
-def test_a_story_title_over_a_period_subtitle_swaps_places(memory_type):
-    period = PERIODS[memory_type][3]
-    (title, subtitle, _source), _prompt = _titled(
-        f'{{"title": "Kit\'s birthday", "subtitle": "{period}"}}', memory_type, stories=_stories()
-    )
-
-    assert (title, subtitle) == (period, "Kit's birthday")
-
-
-@pytest.mark.parametrize("memory_type", list(PERIODS))
-def test_a_title_that_already_is_the_period_passes_untouched(memory_type):
-    period = PERIODS[memory_type][3]
-    reply = f'{{"title": "{period}", "subtitle": "Kit\'s birthday, then Lofoten"}}'
-
-    (title, subtitle, _source), _prompt = _titled(reply, memory_type, stories=_stories())
-
-    assert (title, subtitle) == (period, "Kit's birthday, then Lofoten")
-
-
-def test_a_season_title_that_drops_the_season_gets_it_back():
-    (title, subtitle, _source), _prompt = _titled(
-        '{"title": "2025", "subtitle": "The road north"}', "season"
-    )
-
-    assert (title, subtitle) == ("Summer 2025", "The road north")
-
-
-def test_a_season_titled_by_the_wrong_season_falls_back_to_the_rules_title():
-    (title, _subtitle, source), _prompt = _titled(
-        '{"title": "Winter 2025", "subtitle": null}', "season"
-    )
-
-    assert (title, source) == (None, None)
-
-
-def test_the_period_and_its_story_in_one_title_are_split():
-    (title, subtitle, _source), _prompt = _titled(
-        '{"title": "Summer 2025: the road north", "subtitle": null}', "season"
-    )
-
-    assert (title, subtitle) == ("Summer 2025", "The road north")
-
-
 def _season_name(locale: str) -> str:
     return generate_title(
         SelectionType.SEASON, season="summer", year=2025, locale=locale
@@ -189,32 +134,24 @@ def _season_name(locale: str) -> str:
 
 @pytest.mark.parametrize("locale", SUPPORTED_LOCALES)
 def test_a_season_is_titled_by_its_season_in_every_film_language(locale):
-    (title, subtitle, _source), _prompt = _titled(
-        '{"title": "The road north, 2025", "subtitle": null}', "season", locale=locale
+    (title, subtitle, _source), prompt = _titled(
+        '{"title": "The road north, 2025", "subtitle": null}',
+        "season",
+        locale=locale,
+        stories=_stories(),
     )
 
-    assert title == _season_name(locale)
-    assert subtitle == "The road north"
-
-
-@pytest.mark.parametrize("locale", SUPPORTED_LOCALES)
-def test_a_season_already_named_in_its_language_stands(locale):
-    season = _season_name(locale)
-    (title, subtitle, _source), _prompt = _titled(
-        f'{{"title": "{season}", "subtitle": "The road north"}}', "season", locale=locale
-    )
-
-    assert (title, subtitle) == (season, "The road north")
+    assert (title, subtitle, prompt) == (_season_name(locale), None, "")
 
 
 @pytest.mark.parametrize("memory_type", list(PERIODS))
-def test_with_no_model_the_rules_title_is_the_period(memory_type):
+def test_with_no_model_the_title_is_the_period_and_nothing_is_asked(memory_type):
     start, end, params, period = PERIODS[memory_type]
-    (title, _subtitle, source), _prompt = _titled(
+    (title, subtitle, source), prompt = _titled(
         '{"title": "unused", "subtitle": null}', memory_type, model=False
     )
 
-    assert (title, source) == (None, None)
+    assert (title, subtitle, source, prompt) == (period, None, "fallback", "")
     rules = template_title(
         _config(model=False),
         memory_type=memory_type,
@@ -243,22 +180,6 @@ def test_a_season_with_no_home_base_still_names_its_season_on_the_title_card(tmp
 
     assert settings is not None
     assert settings.hemisphere == "south"
-
-
-def test_a_period_prompt_says_the_title_is_the_period_and_lists_the_stories():
-    _result, prompt = _titled(
-        '{"title": "Summer 2025", "subtitle": "Kit\'s birthday"}', "season", stories=_stories()
-    )
-
-    assert "The period, as the calendar names it: Summer 2025" in prompt
-    assert "The title is the period itself" in prompt
-    assert "use that name rather than describing the day" not in prompt
-    assert f"Album name in Immich: {ALBUM}" in prompt
-    assert "What the film is about: " + THESIS[:40] in prompt
-    lines = prompt.splitlines()
-    first = next(i for i, line in enumerate(lines) if "Kit's birthday (dominant" in line)
-    second = next(i for i, line in enumerate(lines) if "The road north (major" in line)
-    assert first < second
 
 
 def test_the_stories_are_read_heaviest_first_and_a_trips_legs_fold_into_it():
@@ -329,28 +250,3 @@ def test_an_uncatalogued_special_day_with_no_model_is_named_after_its_place():
     )
 
     assert (title, subtitle, source) == ("A day in Ixelles", "5 July 2025", "fallback")
-
-
-def test_a_person_film_is_named_for_its_person_with_the_heaviest_story_beside_it():
-    (title, subtitle, _source), prompt = _titled(
-        '{"title": "Kit in 2025", "subtitle": "Kit\'s birthday"}',
-        "person_spotlight",
-        person_names=("Kit",),
-        stories=_stories(),
-        window=(date(2025, 1, 1), date(2025, 12, 31)),
-    )
-
-    assert (title, subtitle) == ("Kit in 2025", "Kit's birthday")
-    assert "Stories in the film, heaviest first:" in prompt
-
-
-def test_a_film_of_two_people_is_named_for_them():
-    (title, subtitle, _source), _prompt = _titled(
-        '{"title": "Robin and Kit, 2025", "subtitle": "The road north"}',
-        "multi_person",
-        person_names=("Robin", "Kit"),
-        stories=_stories(),
-        window=(date(2025, 1, 1), date(2025, 12, 31)),
-    )
-
-    assert (title, subtitle) == ("Robin and Kit, 2025", "The road north")

@@ -24,7 +24,7 @@ of your camera roll:
 - **Ending**: a fade to `title_screens.fade_color` (`white` by default, or `black`), no text. Every film keeps it; a short film squeezes it to 2 s rather than dropping it.
 
 All of this works on a plain NAS. Titles come from templates, the special-day catalogue and your album names; a
-reader only rewrites people and occasion titles (see [When a model names the film](#when-a-model-names-the-film)).
+reader only names special days and, when asked, trips (see [When a model names the film](#when-a-model-names-the-film)).
 
 A configured LLM can write titles and choose music mood from the cut's text on every selection
 tier, including Basic. These requests send no pictures and need no local GPU. If the model is
@@ -283,9 +283,11 @@ Final timeline: 163.5s content + 16.5s titles + 21.0s map extra
 
 ## When a model names the film
 
-Make it better (optional): with a [reader](../better/reader.md) configured, the model names people and
-occasion films ("Ada and her grandparents" instead of three stacked full names). `--llm-title` adds trips,
-`--no-llm-title` pins the template everywhere, and `--title` always wins.
+Make it better (optional): with a [reader](../better/reader.md) configured, the model names a special day
+from what the catalogue saw. `--llm-title` adds trips, `--no-llm-title` pins the template everywhere, and
+`--title` always wins. Years, months, seasons, people, birthdays, holidays and "on this day" films are
+titled by the app, never the model, by what they are and when ("Kit's birthday · 2026",
+"Christmas · 2019–2025"), with no subtitle unless you type one.
 
 The title reader gets facts, never pictures and never coordinates: first names, birth dates and ages, the
 relations your [people registry](../get-started/who-is-who.md) confirms, the special-day catalogue's words, the
@@ -308,15 +310,15 @@ as **Title From**:
 | `occasion` | a holiday's name, or the special-day catalogue's title in an English film |
 | `model` | what the title reader wrote |
 | `place` | a trip title, built from where it went |
-| `fallback` | the template: the year, the dates, the people |
+| `fallback` | the app's own: the period, the people, the birthday, the day across the years |
 
 The special-day catalogue is stored in English. An English film shows the catalogue title verbatim
 (`occasion`); any other film routes that English title through the reader instead (`model`), or, with no
 reader, through a localized `"A day in {place}"` template (`fallback`). Editing a catalogue title changes the
 film's title verbatim only in English films.
 
-`fallback` on a film you expected the model to name means the reader was not asked, failed, or had its title
-refused.
+`fallback` on a special day or a trip you expected the model to name means the reader was not asked, failed,
+or had its title refused.
 
 ## Music
 
