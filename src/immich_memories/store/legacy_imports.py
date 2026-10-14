@@ -211,7 +211,13 @@ def import_on_first_open(store: Store) -> None:
                 run_import(store, home, report=_log_outcome)
         finally:
             lease.release()
-    except Exception:  # WHY: the app must still start; the import retries on the next start
+    except Exception as error:  # WHY: the app must still start; the import retries next start
+        from immich_memories.storage_errors import storage_failure_message
+
+        # A full disk is the operator's to fix, not a bug: say so without a traceback.
+        if full := storage_failure_message(error):
+            logger.warning("The legacy import could not run and will retry next start. %s", full)
+            return
         logger.exception(
             "The legacy import failed; it runs again at the next start, "
             "or by hand with `immich-memories store import`"

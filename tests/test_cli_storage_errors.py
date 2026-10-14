@@ -67,3 +67,20 @@ def test_database_cleanup_failure_does_not_replace_the_original_failure(caplog):
     finally:
         sa.event.remove(store.engine, "before_cursor_execute", _full_database)
     assert "Could not save" in caplog.text
+
+
+def test_a_full_store_at_first_open_says_so_without_a_traceback(caplog):
+    from immich_memories.store.legacy_imports import import_on_first_open
+
+    store = open_store()
+    # WHY: fail actual database access without filling the developer's filesystem.
+    sa.event.listen(store.engine, "before_cursor_execute", _full_database)
+    try:
+        import_on_first_open(store)
+    finally:
+        sa.event.remove(store.engine, "before_cursor_execute", _full_database)
+
+    records = [r for r in caplog.records if "legacy import" in r.getMessage()]
+    assert records
+    assert all(r.exc_info is None for r in records)
+    assert "Storage is full" in records[0].getMessage()
