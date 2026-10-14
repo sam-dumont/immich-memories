@@ -214,7 +214,7 @@ async def test_a_label_with_nothing_to_say_asks_immich_for_nothing(film):
 
 
 @pytest.mark.asyncio
-async def test_a_failing_label_step_warns_and_keeps_the_upload(film):
+async def test_a_failing_label_step_keeps_the_upload_and_leaves_the_delivery_pending(film):
     immich = FakeImmich()
     plain = immich.__call__
 
@@ -231,5 +231,58 @@ async def test_a_failing_label_step_warns_and_keeps_the_upload(film):
     result = await service.upload_memory(film, label=LABEL)
 
     assert result["asset_id"] == "film"
-    assert result["delivery_complete"] is True
+    # Pending, so the delivery retry labels it again (#2540).
+    assert result["delivery_complete"] is False
+    assert not result["missing_permissions"]
     assert any("boom" in w for w in result["warnings"])
+
+
+# --- A long film's late metadata read (#2540) ------------------------------------------------
+
+
+@pytest.fixture
+def year_film(tmp_path: Path) -> Path:
+    """A 1 GB film, as a ten-minute year film is; sparse, so it costs no disk."""
+    path = tmp_path / "year.mp4"
+    with path.open("wb") as handle:
+        handle.truncate(1_000_000_000)
+    return path
+
+
+@pytest.mark.asyncio
+async def test_a_long_film_keeps_its_description_when_immich_reads_it_late(year_film):
+    # WHY: a 1 GB film was read after the fixed minute's wait (120 polls); the read wiped the
+    # description written before it, and the upload counted as complete.
+    immich = FakeImmich(reads_after=400)
+
+    result = await _service(immich).upload_memory(year_film, label=LABEL)
+    # Immich's read has landed by now, whenever it was queued.
+    immich.reads_after = min(immich.reads_after, immich.gets)
+    await immich("GET", "/assets/film")
+
+    assert result["warnings"] == []
+    assert result["delivery_complete"] is True
+    assert immich.read
+    assert immich.description == LABEL.description
+    assert immich.tags == {PROVENANCE, *LABEL.tags}
+
+
+@pytest.mark.asyncio
+async def test_a_read_later_still_leaves_the_delivery_pending_and_the_retry_labels_it(film):
+    immich = FakeImmich(reads_after=10_000)
+
+    first = await _service(immich).upload_memory(film, label=LABEL)
+
+    assert first["delivery_complete"] is False
+    assert not first["missing_permissions"]
+    assert any("description" in w and "did not stay" in w for w in first["warnings"])
+
+    immich.reads_after = immich.gets  # Immich reads the film at last, wiping the label
+    await immich("GET", "/assets/film")
+    assert immich.description == ""
+
+    retry = await _service(immich).upload_memory(film, label=LABEL)
+
+    assert retry["delivery_complete"] is True
+    assert immich.description == LABEL.description
+    assert immich.tags == {PROVENANCE, *LABEL.tags}

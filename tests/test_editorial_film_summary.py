@@ -530,3 +530,57 @@ def test_a_refined_film_asks_the_model_for_its_summary_not_the_drafts_basic_line
 
     assert refined.story.thesis == FULL_REPLY
     assert records["film-summary"]["tier"] == "full"
+
+
+# --- A place said once, and the language the summary was written in (#2535) ------------------
+
+
+def test_a_model_summary_listing_a_place_twice_says_it_once():
+    stories = [
+        _story("S1", "Les Alpes", "major", days=["2025-07-02"] * 2, places=["Lyon", "Annecy"]),
+        _story("S2", "Retour", "major", days=["2025-07-20"] * 2, places=["Lyon", "Chambéry"]),
+    ]
+    judge = ScriptedJudge(_reply("Juillet à Lyon, Annecy, Lyon et Chambéry, puis à Lyon."))
+
+    text = read_summary(judge, stories, scope="a month film, 2025-07", locale="fr")
+
+    assert text == "Juillet à Lyon, Annecy et Chambéry, puis à Lyon."
+
+
+def test_a_summary_records_the_language_it_was_written_in():
+    source = _source()
+    source.config.title_screens.locale = "fr"
+
+    story, _records = _summarise(source, thin=False)
+
+    assert story.thesis_locale == "fr"
+
+
+def test_a_kept_synthesis_thesis_claims_no_language():
+    story, _records = _summarise(_source(), thin=False, story=_period(demo_stories(), "Kept."))
+
+    assert story.thesis_locale == ""
+
+
+def test_the_plan_keeps_the_summarys_language_for_a_later_render():
+    from immich_memories.analysis.editorial_story_planner import StorySelection
+
+    stories = demo_stories()
+    selection = StorySelection(
+        carriers=_carriers(stories),
+        story=_period(stories),
+        episodes=[],
+        alternatives_of={},
+        slots=len(stories),
+        calls={},
+        lines={},
+    )
+    summarise_the_film(
+        _source(),
+        SimpleNamespace(thin=None, judge=None),
+        selection,
+        _carriers(stories),
+        record=lambda *_args: None,
+    )
+
+    assert selection.record()["thesis_locale"] == "en"

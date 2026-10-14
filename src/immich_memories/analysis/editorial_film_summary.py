@@ -23,6 +23,7 @@ from datetime import date, timedelta
 from typing import Any
 
 from babel import Locale
+from babel.lists import format_list
 
 from immich_memories.analysis.editorial_story_names import span_label, story_text
 from immich_memories.analysis.editorial_story_replies import WEIGHTS
@@ -89,6 +90,8 @@ def read_summary(judge, stories: Sequence[Mapping[str, Any]], *, scope: str, loc
     )
     answer = final_json_object(raw)
     text = bounded_model_text(_quoted((answer or {}).get("summary"), locale), max_chars=_MAX_CHARS)
+    if isinstance(text, str):
+        text = one_place_once(text, [p for card in cards for p in card.get("places") or ()], locale)
     if text is None or len(text.split()) > _MAX_WORDS or _repeats_a_name(text, cards):
         raise ValueError("the model gave no usable film summary")
     return text
@@ -107,6 +110,50 @@ def _repeats_a_name(text: str, cards: Sequence[Mapping[str, Any]]) -> bool:
             return True
         rest = rest.replace(name, " ")
     return False
+
+
+def one_place_once(text: str, places: Sequence[str], locale: str) -> str:
+    """`text` with every list of places naming each place once (#2535).
+
+    Fed two stories that went to the same towns, the model listed them all in one run
+    ("in Lyon, Annecy, Grenoble, Lyon, Annecy and Chambéry"). A run of the stories' own
+    places, joined the way the language lists them, is said again with its repeats left
+    out; a place named again in another sentence is left alone.
+    """
+    names = sorted({p.strip() for p in places if p and p.strip()}, key=len, reverse=True)
+    if len(names) < 2:
+        return text
+    place = "|".join(re.escape(name) for name in names)
+    joiner = "|".join(re.escape(j) for j in _list_joiners(locale))
+    run = re.compile(rf"(?<!\w)(?:{place})(?:(?:{joiner})(?:{place}))+(?!\w)")
+    one = re.compile(rf"(?<!\w)(?:{place})(?!\w)")
+
+    def once(found: re.Match[str]) -> str:
+        listed = one.findall(found.group(0))
+        unique = list(dict.fromkeys(listed))
+        if len(unique) == len(listed):
+            return found.group(0)
+        return format_list(unique, locale=_list_locale(locale))
+
+    return run.sub(once, text)
+
+
+def _list_locale(locale: str) -> Locale:
+    # British English, as the film text writes it: no comma before the last "and".
+    return babel_locale("en_GB" if locale == "en" else locale)
+
+
+def _list_joiners(locale: str) -> list[str]:
+    """What stands between two items of a list in this language: ", ", " and ", ", and "."""
+    marks = ("\x00", "\x01", "\x02")
+    found = {", "}
+    for count in (2, 3):
+        written = format_list(list(marks[:count]), locale=_list_locale(locale))
+        for left, right in zip(marks, marks[1:count], strict=False):
+            found.add(written.split(left, 1)[1].split(right, 1)[0])
+    # A model writing English may put the serial comma Babel's British list leaves out.
+    found |= {", " + j.strip() + " " for j in list(found) if j.strip() and j.strip() != ","}
+    return sorted(found - {""}, key=len, reverse=True)
 
 
 def _quoted(text: object, locale: str) -> object:
@@ -152,6 +199,8 @@ def summarise_the_film(
     tier = "full" if story.thesis else "basic"
     if not story.thesis:
         story.thesis = plain_summary(stories, locale)
+    # A later render in another language reads this and leaves the summary out (#2535).
+    story.thesis_locale = locale
     record(
         "film-summary",
         {

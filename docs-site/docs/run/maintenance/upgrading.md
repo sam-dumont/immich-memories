@@ -51,6 +51,23 @@ the sign-in refusals are translated too. A date caption reads "Sonntag, 10." in 
 "Sonntag 10", and a Japanese or Chinese title card separates three or more names with its own
 comma. Film file names don't change.
 
+### Films in Immich speak the film's language
+
+A film's type tag is in the film's language now, like its story tags: a French month film is
+`immich-memories/type/Moments du mois`, not `.../Monthly highlights`. An English film's tags don't
+change. A trip film's description starts with its title in ordinary case instead of the title
+card's capitals, and a summary names each place once.
+
+`runs render` in another language than the cut was made in, or of a cut made before 1.0.0, uploads
+the film with its title as the description and no summary, so the description never mixes two
+languages. Cut again to get the summary back.
+
+A long film can wait a while in Immich's queue before Immich reads it, and that read wipes a
+description written before it. The upload now waits longer for big files (about four minutes for
+a 1 GB film). If the description or tags still didn't stay, the run says so and the delivery
+stays pending and the local film is kept. Uploading again (the automatic retry does it for
+automatic films) sends the same file, which Immich recognises, and writes the label once more.
+
 ## From 1.0.0-rc.9 to 1.0.0-rc.10
 
 Nothing to migrate by hand. These are the changes you will notice, and the keys that control
