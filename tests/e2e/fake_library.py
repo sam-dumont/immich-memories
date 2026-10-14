@@ -318,6 +318,8 @@ class Picture:
     size: tuple[int, int] | None = None
     # The text Immich's OCR job reads on it, one printed line per line.
     ocr: str = ""
+    # A copy somebody sent rather than shot: no camera EXIF, a messaging app's file name and frame.
+    forwarded: bool = False
 
     @property
     def is_video(self) -> bool:
@@ -686,4 +688,59 @@ HELD_PICTURES: tuple[Picture, ...] = (
         _BY_STEM["north-0723-0450"].place or HOME,
         ocr="CAMPSITE REGISTRATION\nName\nDate of birth\nNationality\nSignature",
     ),
+)
+
+
+def _forwarded(stem: str, local: str, key: str) -> Picture:
+    """A copy of a library photo as a messaging app saves it: no camera make or model, a UUID
+    file name, a 576x1024 frame and no place, dated when it was received."""
+    return _like(
+        stem,
+        asset_id=f"forwarded-{key}",
+        filename=f"{key}0000-1111-2222-3333-444444444444.jpg",
+        taken_at=_utc(local),
+        place=None,
+        people=("Kit",),
+        forwarded=True,
+        size=(576, 1024),
+        portrait=True,
+    )
+
+
+# Copies of Kit somebody forwarded: three received around Kit's birthday the year before the
+# library starts, when no camera picture was taken, and one received on the birthday the
+# camera already holds. Each is made from a photo of another day, so none is a copy of the
+# birthday's own pictures. Outside LIBRARY: only a fake Immich started with
+# `held=FORWARDED_COPIES` serves them, served as the photo they were made from.
+FORWARDED_COPIES: tuple[Picture, ...] = (
+    _forwarded("cast-0710-kit-waving-in-the-yellow-dre", "2024-07-05T10:12:00", "a1b2c3d4"),
+    _forwarded("cast-0711-kit-and-the-lollipop", "2024-07-05T16:40:00", "b2c3d4e5"),
+    _forwarded("cast-0710-kit-reading-on-the-rug", "2024-07-06T09:05:00", "c3d4e5f6"),
+    _forwarded("cast-0711-sparklers-in-the-garden", "2025-07-05T18:30:00", "d4e5f6a7"),
+)
+
+
+def _earlier(stem: str, local: str, key: str) -> Picture:
+    """A camera picture of an earlier year, made from a library photo of another day."""
+    return _like(
+        stem,
+        asset_id=f"earlier-{key}",
+        filename=f"IMG_{key}.jpg",
+        taken_at=_utc(local),
+        is_favorite=True,
+    )
+
+
+# The fourth of July of the two years before the library starts, two starred camera pictures
+# each, at home: what a holiday film over three years finds besides this year's. Outside LIBRARY: only a
+# fake Immich started with `held=EARLIER_HOLIDAYS` serves them, as the photos they were made from.
+EARLIER_HOLIDAYS: tuple[Picture, ...] = (
+    _earlier("home-0701-laeken-park", "2023-07-04T11:00:00", "1101"),
+    _earlier(
+        "cast-0701-kit-lining-up-the-chocolate",
+        "2023-07-04T15:30:00",
+        "1102",
+    ),
+    _earlier("home-0702-kit-stuffie", "2024-07-04T10:20:00", "1201"),
+    _earlier("cast-0701-remy-in-the-grass", "2024-07-04T17:45:00", "1202"),
 )

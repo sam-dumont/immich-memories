@@ -188,13 +188,16 @@ def _store_matches(store: Sequence[StorePerson], leaf: str) -> list[StorePerson]
     Two people sharing a name are both meant, as two Immich clusters with one name always
     were: the store never merges them, but asking by the name asks for either.
     """
-    if is_person_id(leaf):
-        wanted_id = leaf.casefold()
-        return [
-            person
-            for person in store
-            if person.person_id.casefold() == wanted_id
-            or any(alias.face_id.casefold() == wanted_id for alias in person.aliases)
-        ][:1]
     wanted = leaf.casefold()
-    return [person for person in store if person.name and person.name.casefold() == wanted]
+    by_id = [
+        person
+        for person in store
+        if person.person_id.casefold() == wanted
+        or any(alias.face_id.casefold() == wanted for alias in person.aliases)
+    ][:1]
+    if is_person_id(leaf):
+        return by_id
+    named = [person for person in store if person.name and person.name.casefold() == wanted]
+    # An id `people show` lists names one person whatever its shape: Immich's ids are UUIDs,
+    # but a store id is whatever the registry holds, and the CLI tells users to pass it.
+    return named or by_id

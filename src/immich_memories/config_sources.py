@@ -78,13 +78,17 @@ def _env_override(key: str, env_names: Mapping[str, str], aliases: Mapping[str, 
         name = "IMMICH_MEMORIES_" + key.upper().replace(".", "_")
         if os.environ.get(name):
             return name
+    # A shortcut (IMMICH_URL, the auth pair) is applied after the nested variables, so when
+    # it is set it is the value in use and the name to report.
+    if key in aliases:
+        return aliases[key]
     parts = key.upper().split(".")
     # The most specific name wins the report; a whole-section variable covers its keys too.
     for depth in range(len(parts), 0, -1):
         name = "IMMICH_MEMORIES_" + "__".join(parts[:depth])
         if name in env_names:
             return env_names[name]
-    return aliases.get(key)
+    return None
 
 
 def _holds(data: Any, parts: list[str]) -> bool:

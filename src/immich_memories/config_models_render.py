@@ -136,6 +136,15 @@ class OutputConfig(BaseModel):
         """
         return {"medium": "balanced", "low": "fast"}.get(v, v)
 
+    def with_quality(self, quality: str) -> OutputConfig:
+        """This output with a `--quality` word applied, the preset deciding the CRF again.
+
+        Validated, so the CLI's `medium` and `low` land on the tier they mean
+        (`balanced`, `fast`); a plain assignment would keep the raw word, and
+        `low` would then encode at the balanced effort instead of the fast one.
+        """
+        return self.model_validate(self.model_dump() | {"quality": quality, "crf": None})
+
     @property
     def effective_crf(self) -> int:
         """CRF derived from quality preset, or explicit override if set."""

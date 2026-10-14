@@ -1,6 +1,7 @@
 """An owned local reader uses the same public transport as a hosted reader."""
 
 import asyncio
+import contextlib
 import json
 import os
 import signal
@@ -462,6 +463,53 @@ def test_supervisor_releases_native_model_when_owner_pipe_closes(tmp_path, monke
             closer.join(timeout=2)
             for kind, handler in handlers.items():
                 signal.signal(kind, handler)
+
+
+@pytest.mark.skipif(not hasattr(os, "killpg"), reason="Owned readers support POSIX hosts")
+def test_a_stop_signal_landing_inside_the_supervisors_wait_still_frees_the_server(tmp_path):
+    # #2550: the stop signal's handler ran on the supervisor's main thread while that thread
+    # held its Event's lock inside wait(); the handler's Event.set() then deadlocked, the
+    # application killed the supervisor after its grace, and the server in its own session
+    # lived on. The child forces that interleaving on every run instead of 1 in 100.
+    native_pid = tmp_path / "native.pid"
+    supervisor = (
+        "import os, signal, sys, threading, time, types\n"
+        "from immich_memories import local_reader_process\n"
+        "class SignalledWhileLocked(threading.Event):\n"
+        " def wait(self, timeout=None):\n"
+        "  while not os.path.exists(sys.argv[1]): time.sleep(0.01)\n"
+        "  with self._cond:\n"
+        "   os.kill(os.getpid(), signal.SIGTERM)\n"
+        "   len(())  # a bytecode boundary, where the handler runs, with the lock held\n"
+        "  return super().wait(timeout)\n"
+        "# WHY: the stand-in Event only pins when the signal lands; the handler is real.\n"
+        "local_reader_process.threading = types.SimpleNamespace(\n"
+        " Event=SignalledWhileLocked, Thread=threading.Thread)\n"
+        'native = \'import os, sys, time; open(sys.argv[1] + ".tmp", "w").write(str(os.getpid()));'
+        ' os.rename(sys.argv[1] + ".tmp", sys.argv[1]); time.sleep(60)\'\n'
+        "sys.exit(local_reader_process.supervise([sys.executable, '-c', native, sys.argv[1]]))\n"
+    )
+    child = subprocess.Popen(  # noqa: S603 -- our own interpreter and module
+        [sys.executable, "-c", supervisor, str(native_pid)],
+        stdin=subprocess.PIPE,
+        start_new_session=True,
+    )
+    try:
+        try:
+            child.wait(timeout=20)
+        except subprocess.TimeoutExpired:
+            os.killpg(child.pid, signal.SIGKILL)
+            child.wait()
+            pytest.fail("the supervisor deadlocked in its own stop-signal handler")
+        with pytest.raises(ProcessLookupError):
+            os.kill(int(native_pid.read_text()), 0)
+    finally:
+        assert child.stdin is not None
+        child.stdin.close()
+        if native_pid.exists():
+            # macOS answers EPERM for a group that is gone.
+            with contextlib.suppress(ProcessLookupError, PermissionError):
+                os.killpg(int(native_pid.read_text()), signal.SIGKILL)
 
 
 async def test_render_handoff_reaps_reader_then_music_prompt_reloads(local_reader, monkeypatch):

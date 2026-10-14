@@ -206,11 +206,8 @@ def _apply_request(
     params.scale_mode = request.scale_mode
     params.output_format = request.output_format
     if request.quality:
-        # As generate does: the flag overrides the config, and the preset decides the CRF. Validated,
-        # so a retired word (`medium`, `low`) lands on the preset it now means.
-        config.output = config.output.model_validate(
-            config.output.model_dump() | {"quality": request.quality, "crf": None}
-        )
+        # As generate does: the flag overrides the config, and the preset decides the CRF.
+        config.output = config.output.with_quality(request.quality)
     params.add_date_overlay = request.add_date_overlay
     params.add_place_overlay = request.add_place_overlay
     params.privacy_mode = request.privacy_mode

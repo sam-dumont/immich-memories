@@ -341,13 +341,17 @@ def test_release_publisher_supports_core_metadata_2_5() -> None:
 
 
 def test_gpu_integration_uses_ci_dependency_set() -> None:
-    """GPU integration needs the kernel library, not the full Torch and audio-ML stack."""
+    """GPU integration needs the kernel library and the speech detector, not the full stack.
+
+    Its assembly suite runs the real speech detector (the editorial extra); without it the
+    speech-aware cut quietly keeps its planned length and those tests fail (#2549).
+    """
     workflow = yaml.safe_load((REPO_ROOT / ".github" / "workflows" / "integration.yml").read_text())
     run_commands = [
         step.get("run") for step in workflow["jobs"]["integration"]["steps"] if "run" in step
     ]
 
-    assert "make dev-test" in run_commands
+    assert "make dev-test-integration" in run_commands
     assert "make dev" not in run_commands
 
 

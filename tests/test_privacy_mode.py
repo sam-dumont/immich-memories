@@ -170,37 +170,67 @@ class TestPrivacyGpsAnonymization:
 class TestPrivacyNameAnonymization:
     """Person names must be replaced with fake names in privacy mode."""
 
-    def test_person_name_anonymized(self):
-        from immich_memories.generate_privacy import anonymize_name
+    def test_a_name_gets_a_consistent_fake(self):
+        from immich_memories.generate_privacy import fake_names
 
-        assert anonymize_name("TestPerson") != "TestPerson"
-        # Should return a consistent fake name
-        assert anonymize_name("TestPerson") == anonymize_name("TestPerson")
+        fake = fake_names(["TestPerson"])["TestPerson"]
 
-    def test_deterministic_across_calls(self):
-        """Same name always maps to the same fake (even across processes)."""
-        from immich_memories.generate_privacy import anonymize_name
+        assert fake != "TestPerson"
+        assert fake_names(["TestPerson"]) == {"TestPerson": fake}
 
-        # Determinism: same input → same output every time
-        assert anonymize_name("PersonA") == anonymize_name("PersonA")
-        assert anonymize_name("PersonB") == anonymize_name("PersonB")
-        # Known SHA256-based values (won't change across processes)
-        assert anonymize_name("PersonA") in [
-            "Ada",
-            "Bob",
-            "Charlie",
-            "Diana",
-            "Eve",
-            "Frank",
-            "Grace",
-            "Hank",
-            "Iris",
-            "Jack",
-            "Kim",
-            "Leo",
-        ]
+    def test_a_name_on_the_fake_list_never_gets_itself_back(self):
+        from immich_memories.generate_privacy import _PRIVACY_FAKE_NAMES, fake_names
 
-    def test_none_name_stays_none(self):
-        from immich_memories.generate_privacy import anonymize_name
+        for name in _PRIVACY_FAKE_NAMES:
+            assert fake_names([name])[name] != name
+            assert fake_names([f"{name} Example"])[f"{name} Example"] != name
 
-        assert anonymize_name(None) is None
+    def test_two_people_never_share_a_fake_nor_take_each_others_name(self):
+        from immich_memories.generate_privacy import _PRIVACY_FAKE_NAMES, fake_names
+
+        names = list(_PRIVACY_FAKE_NAMES[:6])
+        fakes = fake_names(names)
+
+        assert len(set(fakes.values())) == len(names)
+        assert not set(fakes.values()) & set(names)
+
+    def test_no_name_stays_no_name(self):
+        from immich_memories.generate_privacy import fake_names
+
+        assert fake_names([None, ""]) == {}
+
+    def test_the_names_a_person_film_asks_for_are_swapped_in_its_preset(self):
+        from immich_memories.api.person_expression import PersonExpression
+        from immich_memories.generate_privacy import anonymize_preset_params
+
+        expression = PersonExpression.parse('"Kit" AND "Pat"')
+        preset = {"person_names": ["Kit", "Pat"], "person_expression": expression.to_dict()}
+
+        result = anonymize_preset_params(preset)
+
+        shown = set(result["person_names"])
+        leaves = set(PersonExpression.from_dict(result["person_expression"]).leaf_values)
+        assert not shown & {"Kit", "Pat"}
+        assert leaves == shown and len(shown) == 2
+        assert preset["person_names"] == ["Kit", "Pat"]
+
+
+class TestPrivacyTitleNames:
+    """A title settled before the render carries the names; privacy mode swaps them there."""
+
+    def test_full_and_first_names_in_a_title_become_their_fakes(self):
+        from immich_memories.generate_privacy import fake_names, swap_names
+
+        fakes = fake_names(["Kit Example", "Pat"])
+
+        swapped = swap_names("Kit & Pat · July 2025, Kit Example's summer", fakes)
+
+        assert swapped == (
+            f"{fakes['Kit Example']} & {fakes['Pat']} · July 2025, {fakes['Kit Example']}'s summer"
+        )
+
+    def test_a_name_inside_a_longer_word_is_left_alone(self):
+        from immich_memories.generate_privacy import swap_names
+
+        assert swap_names("Kitchen days", {"Kit": "Ada"}) == "Kitchen days"
+        assert swap_names(None, {"Kit": "Ada"}) is None

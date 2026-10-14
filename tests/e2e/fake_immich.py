@@ -159,7 +159,8 @@ def _asset_payload(picture: Picture, owner: str = "fake-user") -> dict[str, Any]
         "width": width,
         "height": height,
         "exifInfo": {
-            **_CAMERA_EXIF,
+            # A forwarded copy carries no camera make or model.
+            **({} if picture.forwarded else _CAMERA_EXIF),
             "dateTimeOriginal": picture.taken_at,
             "fileSizeInByte": _file_size(picture),
             # A file without GPS has no place in Immich either.
@@ -802,14 +803,25 @@ def _generate_photos(media_dir: Path) -> dict[str, Path]:
 
 
 def _draw_held(media_dir: Path, held: tuple[Picture, ...]) -> dict[str, Path]:
-    """Draw each held picture at the size its record advertises; nobody is in any of them.
+    """Draw each held picture at the size its record advertises.
 
-    One with recognised text is a printed form photographed on a table: grey lines on a
-    white page. Any other is a phone screenshot: message bubbles on a light screen.
+    One made from a library photo (a forwarded copy, an earlier year's) is that photo, reframed.
+    Nobody is in any other:
+    one with recognised text is a printed form photographed on a table, grey lines on a white
+    page, and the rest are phone screenshots, message bubbles on a light screen.
     """
     drawn: dict[str, Path] = {}
     for picture in held:
         width, height = _photo_size(picture)
+        if picture.source_id:
+            # A picture made from a library photo is that photo, framed as its record says.
+            path = media_dir / f"{picture.asset_id}.jpg"
+            frame = (
+                f"scale={width}:{height}:force_original_aspect_ratio=increase,crop={width}:{height}"
+            )
+            _ffmpeg("-i", str(picture.source), "-vf", frame, "-q:v", "4", str(path))
+            drawn[picture.asset_id] = path
+            continue
         if picture.ocr:
             page_w, page_h = width * 2 // 5, height * 4 // 5
             left, top = (width - page_w) // 2, (height - page_h) // 2
@@ -1216,6 +1228,11 @@ def _handler_type(
             path = urlsplit(self.path).path
             payload = self._read_json()
             if self._refused(path, {}, payload):
+                return
+            if path == f"/api/albums/{ALBUM_ID}/assets":
+                # A film added to the library's album: answered per id, as Immich does.
+                ids = list(payload.get("ids") or ())
+                self._send_json(200, [{"id": asset_id, "success": True} for asset_id in ids])
                 return
             if path == "/api/tags":
                 # Upsert by value, answered with the tags as Immich returns them.

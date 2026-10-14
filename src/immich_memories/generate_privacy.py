@@ -9,9 +9,12 @@ from __future__ import annotations
 import hashlib
 import logging
 import random
+import re
+from collections.abc import Iterable
 from dataclasses import replace
 from math import fsum, hypot
 
+from immich_memories.api.person_expression import PersonExpression
 from immich_memories.i18n_places import localise_place, place_label
 from immich_memories.processing.assembly_config import AssemblyClip
 
@@ -49,13 +52,25 @@ _PRIVACY_FAKE_CITIES = [
 _PRIVACY_SPREAD_LIMIT_DEGREES = 0.25
 
 
-def anonymize_name(name: str | None) -> str | None:
-    """Replace a real name with a consistent fake name."""
-    if name is None:
-        return None
-    # WHY: hashlib is deterministic across processes (hash() is not — PYTHONHASHSEED)
-    idx = int(hashlib.sha256(name.encode()).hexdigest(), 16) % len(_PRIVACY_FAKE_NAMES)
-    return _PRIVACY_FAKE_NAMES[idx]
+def fake_names(names: Iterable[str | None]) -> dict[str, str]:
+    """A consistent fake for each real name: distinct, and never one of the real names.
+
+    The fakes come from a short list that holds common first names, so a hash alone can
+    give a person their own name back, or two people the same one.
+    """
+    real = [name for name in dict.fromkeys(names) if name]
+    taken = {part for name in real for part in (name, name.split()[0])}
+    chosen: dict[str, str] = {}
+    for name in real:
+        # WHY: hashlib is deterministic across processes (hash() is not — PYTHONHASHSEED)
+        start = int(hashlib.sha256(name.encode()).hexdigest(), 16) % len(_PRIVACY_FAKE_NAMES)
+        for step in range(len(_PRIVACY_FAKE_NAMES)):
+            fake = _PRIVACY_FAKE_NAMES[(start + step) % len(_PRIVACY_FAKE_NAMES)]
+            if fake not in taken:
+                break
+        chosen[name] = fake
+        taken.add(fake)
+    return chosen
 
 
 def pick_fake_city() -> tuple[str, float, float]:
@@ -64,14 +79,52 @@ def pick_fake_city() -> tuple[str, float, float]:
     return _PRIVACY_FAKE_CITIES[rng.randint(0, len(_PRIVACY_FAKE_CITIES) - 1)]
 
 
-def anonymize_preset_params(preset_params: dict) -> dict:
-    """Move both ends of the trip: the home base and the named destination."""
+def swap_names(text: str | None, fakes: dict[str, str]) -> str | None:
+    """`text` with each real name, whole or by first name, replaced by its fake.
+
+    A film's title is settled before it renders ("Kit · July 2025"), so swapping the
+    names it was built from is not enough: the finished text carries them too.
+    """
+    if not text:
+        return text
+    spellings = fakes.copy()
+    spellings |= {name.split()[0]: fake for name, fake in fakes.items() if " " in name}
+    for real in sorted(spellings, key=len, reverse=True):
+        text = re.sub(rf"(?<!\w){re.escape(real)}(?!\w)", spellings[real], text)
+    return text
+
+
+def preset_person_names(preset_params: dict) -> list[str]:
+    """The names a title can read from the preset: display names, else the names asked for.
+
+    With display names the other two hold person ids, which are scope, not text on screen.
+    """
+    display = preset_params.get("person_display_names")
+    if display is not None:
+        return [name for name in display.values() if name]
+    names = list(preset_params.get("person_names", []))
+    if preset_params.get("person_expression") is not None:
+        names += PersonExpression.from_dict(preset_params["person_expression"]).leaf_values
+    return names
+
+
+def anonymize_preset_params(preset_params: dict, fakes: dict[str, str] | None = None) -> dict:
+    """Swap every name a title can show, and move both ends of the trip."""
+    fakes = fakes if fakes is not None else fake_names(preset_person_names(preset_params))
     result = preset_params.copy()
     if "person_display_names" in result:
         result["person_display_names"] = {
-            identity: anonymize_name(name) if name else ""
+            identity: fakes.get(name, name) if name else ""
             for identity, name in result["person_display_names"].items()
         }
+    else:
+        if "person_names" in result:
+            result["person_names"] = [fakes.get(name, name) for name in result["person_names"]]
+        if result.get("person_expression") is not None:
+            expression = PersonExpression.from_dict(result["person_expression"])
+            result["person_expression"] = expression.map_leaves(
+                lambda name: fakes.get(name, name)
+            ).to_dict()
     fake_name, fake_lat, fake_lon = pick_fake_city()
 
     if result.get("home_lat") is not None:

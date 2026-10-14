@@ -793,13 +793,14 @@ class TestGenerateMemoryRun:
                 patch("immich_memories.generate_render.anonymize_preset_params", return_value={})
             )
             name_mock = stack.enter_context(
-                patch("immich_memories.generate_render.anonymize_name", return_value="Anon")
+                patch("immich_memories.generate_render.fake_names", return_value={"Riley": "Anon"})
             )
             generate_memory(params)
 
         anon_mock.assert_called_once()
         preset_mock.assert_called_once()
-        name_mock.assert_called_once_with("Riley")
+        name_mock.assert_called_once()
+        assert "Riley" in name_mock.call_args.args[0]
 
     def test_upload_called_when_enabled(self, tmp_path):
         mock_client = MagicMock()
