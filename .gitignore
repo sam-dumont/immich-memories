@@ -156,6 +156,8 @@ docs-site/static/demo/music-candidates/
 !docs-site/static/demo/trip-preview.mp4
 # The CLI recording the docs homepage plays (make demo-cli copies it here, tracked in LFS)
 !docs-site/static/demo/cli-demo.mp4
+# The one month on three tiers page plays (scripts/record_tier_example.py, tracked in LFS)
+!docs-site/static/demo/tiers/*.mp4
 # The demo library's real phone clips (make fixture-library, credited in the library's
 # CREDITS.md). Plain git, not LFS: the container and real-Immich jobs read them unpulled.
 !tests/e2e/fixtures/library/clips/*.mp4
