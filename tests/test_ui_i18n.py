@@ -79,7 +79,9 @@ def test_catalogue_extraction_finishes_on_an_unterminated_escaped_label(tmp_path
         f"module['_web_labels'].__globals__['WEB_ROOT'] = Path({str(root)!r}); "
         "assert list(module['_web_labels']()) == []"
     )
-    subprocess.run([sys.executable, "-c", code], check=True, timeout=3)
+    # A backtracking pattern on 40 escaped pairs runs for hours, so a minute still catches it;
+    # the budget also covers a cold interpreter and the script's imports on a slow runner.
+    subprocess.run([sys.executable, "-c", code], check=True, timeout=60)
 
 
 def test_every_memory_type_a_detector_proposes_has_a_web_label():
