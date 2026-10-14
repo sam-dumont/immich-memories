@@ -144,6 +144,13 @@ jobs:
             echo "image_tag=$NIGHTLY_TAG"
           } >> "$GITHUB_OUTPUT"
 
+      # The files people copy from main (README, Compose, example.env, Unraid, Kubernetes,
+      # Terraform) pin the last release. A new one waits until that pin has landed, so a
+      # missed `pin-refs` branch can never leave main more than one release behind.
+      - name: Check main pins the latest release
+        if: inputs.channel != 'nightly' && !inputs.app_only && !inputs.inference_only
+        run: python3 scripts/release_pin.py --check
+
       - name: Analyze commits and merged branches
         id: analyze
         if: inputs.channel != 'nightly'
@@ -489,6 +496,53 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Published packages:" >> $GITHUB_STEP_SUMMARY
           ls -la dist/ >> $GITHUB_STEP_SUMMARY
+
+  # Moves every file people copy from main to the release just published, on a branch,
+  # with a link to open its PR: the repository lets no workflow open one, and a PR opened
+  # by this token would never start the required checks. The next release refuses to
+  # start until it has merged (analyze, `release_pin.py --check`).
+  pin-refs:
+    name: Pin the setup files to the release
+    needs: [analyze, release]
+    if: >-
+      github.repository_id == '1174219883' && !cancelled() &&
+      needs.release.result == 'success' && inputs.channel != 'nightly' && !inputs.dry_run
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Audit runner egress
+        uses: step-security/harden-runner@351661ca32ac09a36dc5ee2d536e3128f2a3c8ed # v2
+        with:
+          egress-policy: audit
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Push the pin branch
+        env:
+          NEXT_VERSION: ${{ needs.analyze.outputs.next_version }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          python3 scripts/release_pin.py "$NEXT_VERSION"
+          if git diff --quiet; then
+            echo "main already pins v$NEXT_VERSION" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          branch="build/pin-v$NEXT_VERSION"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git commit -qam "build(release): pin the setup files to v$NEXT_VERSION"
+          git push --force origin "$branch"
+          url="https://github.com/$REPO/compare/main...$branch?expand=1"
+          echo "::notice::Open the pin PR for v$NEXT_VERSION: $url"
+          {
+            echo "## Pin the setup files to v$NEXT_VERSION"
+            echo ""
+            echo "[Open the PR]($url). The next release waits until it has merged."
+          } >> "$GITHUB_STEP_SUMMARY"
 
   # Publish to PyPI using Trusted Publishers (OIDC — no API tokens needed)
   pypi-publish:

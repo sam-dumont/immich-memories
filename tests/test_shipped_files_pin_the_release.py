@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 from scripts.package_compose import package_compose_assets
-from scripts.release_pin import PINNED_FILES, pin_repository
+from scripts.release_pin import PINNED_FILES, newer_release_than_pin, pin_repository
 
 ROOT = Path(__file__).resolve().parents[1]
 IMAGE_LINES = (
@@ -122,3 +122,21 @@ def test_pinning_moves_the_readme_browser_urls_to_the_shipped_host_port(tmp_path
     assert "http://localhost:18081" in readme
     assert "http://your-server-address:18081" in readme
     assert not re.search(r"http://(?:localhost|your-server-address):(?!18081)\d+", readme)
+
+
+TAGS = ["v0.103.0", "v1.0.0-rc.2", "v1.0.0-rc.9", "v1.0.0-rc.10", "nightly", "nightly-20261014"]
+
+
+@pytest.mark.parametrize(
+    ("pinned", "tags", "behind"),
+    [
+        ("1.0.0-rc.9", TAGS, "1.0.0-rc.10"),
+        ("1.0.0-rc.10", TAGS, None),
+        ("1.0.0-rc.10", [*TAGS, "v1.0.0"], "1.0.0"),
+        ("1.0.0", [*TAGS, "v1.0.0"], None),
+    ],
+)
+def test_a_release_refuses_to_start_while_main_pins_an_older_release(pinned, tags, behind):
+    readme = f"   VERSION={pinned}\n"
+
+    assert newer_release_than_pin(readme, tags) == behind

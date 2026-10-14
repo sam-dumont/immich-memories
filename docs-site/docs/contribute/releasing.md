@@ -127,10 +127,15 @@ file that differs keeps its own copy. Media components resolve paths with `useMe
 whole site passes 900 MB, under the 1 GB Pages limit.
 
 The files people copy from `main` (the Unraid template, the Compose files, `example.env`, the
-README download recipe) name the last published release, never `latest`. After each release, run
-`make pin-release VERSION=X.Y.Z` and commit the result; a test fails if any of them says `latest`
-or the pins disagree. The same run points the README's browser URLs at the host port of the
-Compose file that release ships. The release assets are stamped with their own version regardless.
+README download recipe, the Kubernetes and Terraform image tags) name the last published release,
+never `latest`. After a stable or rc release, the `pin-refs` job runs
+`make pin-release VERSION=X.Y.Z` on a `build/pin-vX.Y.Z` branch and puts an "open the PR" link in
+the run summary; open it and let it merge. Nothing opens that PR for you: the repository lets no
+workflow open one, and a PR opened by the workflow token wouldn't start the required checks. The
+next release refuses to start until main pins the latest tag (`release_pin.py --check`). A test
+fails if any pinned file says `latest` or the pins disagree. The pin also points the README's
+browser URLs at the host port of the Compose file that release ships. The release assets are
+stamped with their own version regardless.
 
 CI uses `make secret-scan` for both PRs and release runs: all commits since the latest version
 tag, or all history for the first release. It also catches secrets removed by a later commit in
