@@ -83,6 +83,7 @@ def _ken_burns_params(
     duration: float,
     *,
     subjects: Collection[str | None] = (),
+    portrait: bool = False,
 ) -> KenBurnsParams:
     """Reproducible per-asset move between the whole picture and its closest frame.
 
@@ -95,6 +96,7 @@ def _ken_burns_params(
         film_subject(subjects),
         fps=fps,
         duration=duration,
+        portrait=portrait,
     )
 
 
@@ -144,7 +146,10 @@ def render_single_photo(
         if loaded is None:
             return None
         prepared, img = loaded
-        params = _ken_burns_params(asset, fps, config.duration, subjects=subjects)
+        # The prepared pixels are upright (EXIF applied), so their shape is the picture's own.
+        params = _ken_burns_params(
+            asset, fps, config.duration, subjects=subjects, portrait=img.shape[0] > img.shape[1]
+        )
 
         # Stream-render to mp4 (O(1) memory — one frame at a time)
         output_path = work_dir / f"{asset.id}_photo.mp4"

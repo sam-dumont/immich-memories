@@ -68,6 +68,13 @@ a 1 GB film). If the description or tags still didn't stay, the run says so and 
 stays pending and the local film is kept. Uploading again (the automatic retry does it for
 automatic films) sends the same file, which Immich recognises, and writes the label once more.
 
+### Landscapes drift instead of zooming
+
+A still with nobody in it (a landscape, a building, a plate) used to push 25-35 % into its
+centre, the same move a person gets. It now mostly pans gently along its long side at a 12-15 %
+zoom, and now and then zooms softly by the same amount. Stills with people move as before.
+Re-render a cut to get the new moves.
+
 ## From 1.0.0-rc.9 to 1.0.0-rc.10
 
 Nothing to migrate by hand. These are the changes you will notice, and the keys that control

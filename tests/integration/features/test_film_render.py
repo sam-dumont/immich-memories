@@ -379,6 +379,14 @@ def _corners_shown(frame: bytes) -> int:
     return sum(1 for x, y in corners if frame[y * 160 + x] < 40)
 
 
+def _corner_sides(frame: bytes) -> set[str]:
+    """Which sides' black corners a 160x90 grey frame shows: both corners of a side, or none."""
+    sides = {"left": ((2, 2), (2, 87)), "right": ((157, 2), (157, 87))}
+    return {
+        side for side, corners in sides.items() if all(frame[y * 160 + x] < 40 for x, y in corners)
+    }
+
+
 def _white(frame: bytes) -> list[int]:
     return [n for n, value in enumerate(frame) if value > 200]
 
@@ -403,6 +411,11 @@ def test_a_still_moves_between_the_whole_picture_and_what_the_film_is_about(tmp_
     runs = 1 + sum(1 for a, b in zip(columns, columns[1:], strict=False) if b > a + 1)
     assert runs == 3, columns
 
-    # A film about nobody, a picture with no face: the whole picture at one end only.
+    # A picture with nobody in it drifts: this one pans across its long side at a gentle
+    # zoom, so each end shows the two corners of its own side, and the sides are opposite.
     first, last = _still_clip(tmp_path, "no-face", [])
-    assert sorted((_corners_shown(first), _corners_shown(last))) == [0, 4]
+    assert (
+        _corner_sides(first) == {"left"}
+        and _corner_sides(last) == {"right"}
+        or (_corner_sides(first) == {"right"} and _corner_sides(last) == {"left"})
+    ), (_corner_sides(first), _corner_sides(last))

@@ -603,7 +603,7 @@ features:
     covers: ["cli:music search", "cli:music search --mood", "cli:music search --genre", "cli:music search --tempo", "cli:music search --min-duration", "cli:music search --limit"]
     status: "gap: #2394"
   - id: photos.ken-burns
-    promise: "A selected still moves between the whole picture and a close-up: on the person a film is about, on every face of a group (or a pan across a wide one), else the lone face or the centre."
+    promise: "A selected still with people in it moves between the whole picture and a close-up: on the person a film is about, on every face of a group (or a pan across a wide one), else the lone face; a still with nobody in it mostly pans gently along its long side."
     doc: make/photos-and-live-photos.md#ken-burns-and-where-the-pan-lands
     tests:
       - tests/integration/features/test_film_render.py::test_a_still_moves_while_it_is_on_screen

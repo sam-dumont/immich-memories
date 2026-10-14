@@ -11,11 +11,12 @@ Photos and videos share one cut. A selected still gets a gentle zoom and pan; a 
 
 ## Ken Burns, and where the pan lands
 
-Every still moves between the whole picture and a close-up, so you see the full photo at one end and the point of it at the other.
+A still with people in it moves between the whole picture and a close-up, so you see the full photo at one end and the point of it at the other. A still with nobody in it drifts instead.
 
 - **A film about one person** opens on the whole picture and pushes in on that person, 25 to 35 %. Other faces stay if they still fit; the person always does.
 - **A film about several people, or several faces in any other film**, closes on the tightest crop that keeps every face, with some air around each head, up to 50 %. When the faces already span the picture, it pans across them at a 20 % zoom instead, so everyone is on screen at some point.
-- **Any other film** zooms in or out (each photo always the same way) toward its one face, or toward the centre when there is none.
+- **Any other film** zooms in or out (each photo always the same way) toward its one face.
+- **A picture with nobody in it** (a landscape, a building, a plate), in any film, mostly pans gently along its long side at a 12 to 15 % zoom: sideways for a wide picture, up or down for a tall one. Now and then it zooms softly instead, by the same small amount.
 
 The face boxes come from Immich. Rendering does not run another face detector.
 
