@@ -180,7 +180,7 @@ def test_same_smart_cut_renders_to_the_same_measured_length(spoken_video, tmp_pa
         normalize_clip_audio=False,
     )
     prober = FFmpegProber(settings)
-    engine = AssemblyEngine(settings, prober, ClipEncoder(settings, prober, lambda _: None))
+    engine = AssemblyEngine(settings, prober, ClipEncoder(settings, prober))
     clips = [AssemblyClip(path=spoken_video, duration=3, asset_id=str(i)) for i in range(5)]
     expected = 15 - engine.get_transition_types(clips).count("fade") * 0.3
     durations = []

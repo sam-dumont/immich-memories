@@ -1,51 +1,15 @@
 """Real FFmpeg integration tests for scaling utilities.
 
-Tests _get_video_duration, detect_faces_in_video, and
-aggregate_mood_from_clips against actual FFmpeg on synthetic clips.
+Tests aggregate_mood_from_clips.
 """
 
 from __future__ import annotations
 
-from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 
 pytestmark = [pytest.mark.integration, pytest.mark.xdist_group("ffmpeg")]
-
-
-# ---------------------------------------------------------------------------
-# _get_video_duration (scaling_utilities)
-# ---------------------------------------------------------------------------
-
-
-class TestGetVideoDuration:
-    def test_returns_approx_3s(self, test_clip_720p: Path):
-        from immich_memories.processing.scaling_utilities import _get_video_duration
-
-        duration = _get_video_duration(test_clip_720p)
-        assert 2.5 <= duration <= 3.5
-
-    def test_short_clip(self, short_clip: Path):
-        from immich_memories.processing.scaling_utilities import _get_video_duration
-
-        duration = _get_video_duration(short_clip)
-        assert 0.5 <= duration <= 1.5
-
-
-# ---------------------------------------------------------------------------
-# detect_faces_in_video
-# ---------------------------------------------------------------------------
-
-
-class TestDetectFacesInVideo:
-    def test_no_faces_in_test_pattern(self, test_clip_720p: Path):
-        """Test pattern has no real faces -- expect none, or boxes inside the frame."""
-        from immich_memories.processing.scaling_utilities import detect_faces_in_video
-
-        for box in detect_faces_in_video(test_clip_720p):
-            assert 0.0 <= box.x1 <= box.x2 <= 1.0
-            assert 0.0 <= box.y1 <= box.y2 <= 1.0
 
 
 # ---------------------------------------------------------------------------

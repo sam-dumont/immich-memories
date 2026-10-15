@@ -137,6 +137,24 @@ def test_api_uses_the_same_builder_and_keeps_logs_private():
     assert "Run logs (redacted)" in response.json()["markdown"]
 
 
+def test_the_report_redacts_every_person_a_run_was_about():
+    from immich_memories.config_loader import Config
+    from immich_memories.tracking import RunTracker
+    from immich_memories.tracking.report_service import report_for_run
+    from immich_memories.tracking.span_store import SpanStore
+
+    tracker = RunTracker(capture_system=False)
+    tracker.start_run(person_name="Marigold", person_names=("Marigold", "Bartholomew"))
+    tracker.fail_run("Bartholomew has no pictures with Marigold")
+    SpanStore(tracker.db.store).save(tracker.run_id, Collector(logs=["Bartholomew missing"]))
+
+    report = report_for_run(tracker.db.store, Config(), tracker.run_id)
+
+    for text in (report.json(), report.markdown()):
+        assert "Bartholomew" not in text
+        assert "Marigold" not in text
+
+
 def test_cli_json_stdout_excludes_startup_logs(monkeypatch):
     import json
     import logging

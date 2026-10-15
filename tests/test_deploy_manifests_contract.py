@@ -13,6 +13,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -537,6 +538,36 @@ def test_kustomize_renders_with_a_secret_created_from_the_example(
     assert has_gpu == (target == "overlays/gpu")
 
 
+@pytest.mark.parametrize(
+    "overlay", sorted(p.name for p in (K8S_ROOT / "overlays").iterdir() if p.is_dir())
+)
+def test_every_overlay_builds_from_a_checkout_and_its_own_examples(
+    tmp_path: Path, overlay: str
+) -> None:
+    """An overlay builds from what the repository ships plus its own `*.example` files.
+
+    It never needs a file another overlay's guide asks for: the maximalist overlay did,
+    through the render-sidecar overlay's gitignored Secret.
+    """
+    if shutil.which("kubectl") is None:
+        if os.environ.get("CI") and sys.platform == "linux":
+            pytest.fail("the Linux CI runner image ships kubectl; this check must not skip there")
+        pytest.skip("kubectl not installed")
+    workdir = tmp_path / "kubernetes"
+    shutil.copytree(K8S_ROOT, workdir)
+    for example in (workdir / "overlays" / overlay).glob("*.yaml.example"):
+        shutil.copy(example, example.with_suffix(""))
+
+    result = subprocess.run(
+        ["kubectl", "kustomize", str(workdir / "overlays" / overlay)],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+
+
 def _kustomize(path: Path) -> list[dict]:
     result = subprocess.run(
         ["kubectl", "kustomize", str(path)], check=False, capture_output=True, text=True
@@ -852,23 +883,13 @@ def test_the_render_sidecar_worker_probes_run_inside_the_container(tmp_path: Pat
 
 
 def _maximalist_rendered(tmp_path: Path) -> list[dict]:
-    """Build overlays/maximalist with all three secret examples copied in.
+    """Build overlays/maximalist straight from a checkout.
 
-    The overlay composes overlays/render-sidecar (base + render-worker-secret)
-    and overlays/captioner-cuda, and adds its own maximalist-secret for the
-    OIDC/LLM/ACE-Step values config-map.yaml's config.yaml expands with ${VAR}.
+    The overlay composes the base, the render-sidecar component, overlays/captioner-cuda
+    and overlays/inference-cuda. Its Secrets are created separately, like the base's.
     """
     workdir = tmp_path / "kubernetes"
     shutil.copytree(K8S_ROOT, workdir)
-    shutil.copy(workdir / "base" / "secret.yaml.example", workdir / "base" / "secret.yaml")
-    shutil.copy(
-        workdir / "overlays" / "render-sidecar" / "render-worker-secret.yaml.example",
-        workdir / "overlays" / "render-sidecar" / "render-worker-secret.yaml",
-    )
-    shutil.copy(
-        workdir / "overlays" / "maximalist" / "maximalist-secret.yaml.example",
-        workdir / "overlays" / "maximalist" / "maximalist-secret.yaml",
-    )
     result = subprocess.run(
         ["kubectl", "kustomize", str(workdir / "overlays" / "maximalist")],
         check=False,
@@ -877,6 +898,19 @@ def _maximalist_rendered(tmp_path: Path) -> list[dict]:
     )
     assert result.returncode == 0, result.stderr
     return list(yaml.safe_load_all(result.stdout))
+
+
+def _secret_names(node: object):
+    """Every Secret a rendered manifest reads through `secretRef` or `secretKeyRef`."""
+    if isinstance(node, dict):
+        for key, value in node.items():
+            if key in ("secretRef", "secretKeyRef"):
+                yield value["name"]
+            else:
+                yield from _secret_names(value)
+    elif isinstance(node, list):
+        for item in node:
+            yield from _secret_names(item)
 
 
 def _maximalist_pod(tmp_path: Path) -> dict:
@@ -890,10 +924,19 @@ def _maximalist_pod(tmp_path: Path) -> dict:
 
 @pytest.mark.skipif(shutil.which("kubectl") is None, reason="kubectl not installed")
 def test_the_maximalist_overlay_builds(tmp_path: Path) -> None:
-    """The documented quick start: three secret examples copied in, then apply -k."""
+    """It builds from a checkout, and every Secret its pods read is one the guide creates."""
     rendered = _maximalist_rendered(tmp_path)
     kinds = {doc["kind"] for doc in rendered}
-    assert {"Deployment", "ConfigMap", "Secret", "PersistentVolumeClaim", "Service"} <= kinds
+    assert {"Deployment", "ConfigMap", "PersistentVolumeClaim", "Service"} <= kinds
+    assert "Secret" not in kinds, "credentials stay out of the kustomize tree"
+    referenced = set(_secret_names(rendered))
+    guide = (REPO_ROOT / "docs-site/docs/run/reference/cluster-example.md").read_text()
+    created = {
+        yaml.safe_load((K8S_ROOT / example).read_text())["metadata"]["name"]
+        for example in re.findall(r"(\S+/[\w-]*secret\.yaml\.example)", guide)
+    }
+    assert referenced
+    assert referenced <= created, sorted(referenced - created)
 
 
 @pytest.mark.skipif(shutil.which("kubectl") is None, reason="kubectl not installed")

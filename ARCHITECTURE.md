@@ -608,7 +608,7 @@ src/immich_memories/
 │   ├── person_presence.py      # Who a person film may select: strictly the pictures whose own recognised faces satisfy the condition
 │   ├── person_resolution.py    # A name or UUID -> faces: the store's aliases per read account, else the roster
 │   ├── framing_target.py       # Where a zoomed view sits: on the film's subjects' faces (else the largest),
-│   │                           # keeping every other face that fits; photo Ken Burns and smart-zoom crop
+│   │                           # keeping every other face that fits; the photo Ken Burns move
 │   ├── editorial_orchestration.py  # TextEditorialPlanner: episodes -> cards -> edit
 │   ├── editorial_rule_episodes.py  # Factual episode cards / omitted thesis; no semantic-bank writes
 │   ├── editorial_rule_reader.py    # Rules for worthiness, grouping and standing; shared allocation
@@ -747,8 +747,7 @@ src/immich_memories/
 │   ├── request_heartbeat.py    # RequestHeartbeat: periodic log line for long-outstanding HTTP calls
 │   ├── duplicate_hashing.py    # Perceptual hashing for duplicates
 │   ├── thumbnail_prefetch.py   # cached_preview_bytes(): the one preview reader the editorial modules share
-│   ├── apple_vision.py         # macOS Vision framework face detection (smart crops)
-│   ├── apple_vision_image.py   # Vision image conversion helpers
+│   ├── apple_vision.py         # Whether the macOS Vision framework loads (hardware report only)
 │   ├── llm_query.py            # The live transport: one prompt, one connection, one answer
 │   ├── llm_adaptations.py      # Capability refusals: remembered request changes, schema/object fallback
 │   ├── llm_wire.py             # The two request dialects, what a reply says, and the reasoning budget
@@ -801,7 +800,7 @@ src/immich_memories/
 │   │                           # `PlaybackIndex`: frame sizes off the index, and a span's sound by byte range
 │   ├── frame_preview.py        # Frame extraction for previews
 │   ├── hdr_utilities.py        # HDR detection & conversion filters
-│   ├── scaling_utilities.py    # Resolution, aspect ratio, smart crop
+│   ├── scaling_utilities.py    # Aspect-ratio filter strings, mood aggregation
 │   ├── ffmpeg_runner.py        # FFmpeg execution with progress
 │   ├── hardware.py             # Hardware detection (GPU, encoders)
 │   ├── hardware_detection.py   # Hardware detection backends
@@ -1015,7 +1014,8 @@ src/immich_memories/
 │   │                           # model_answers.py (judgments, Cull verdicts, episode readings/refusals,
 │   │                           # library overviews; 0004_annotations); operations.py (pipeline_runs,
 │   │                           # phase_stats, automation_attempts, notification_health, asset_scores,
-│   │                           # run_attempts, special_days; 0005_operations); banks.py (audience answers
+│   │                           # run_attempts, special_days; 0005_operations; pipeline_runs.person_names,
+│   │                           # every person a run was about, 0014_run_person_names); banks.py (audience answers
 │   │                           # and holds, block vote entries, owner review edits; 0006_banks); places.py
 │   │                           # (geocoded_places: opt-in reverse-geocode answers per cell;
 │   │                           # 0007_geocoded_places); timing.py (run_spans, run_diagnostics;
@@ -1239,6 +1239,7 @@ src/immich_memories/
 │   ├── cut_revisions.py        # Owner edits to a saved cut (incl. pool additions) as numbered revisions
 │   ├── revision_render.py      # A revision projected onto the cut's render inputs, as the render reads it
 │   ├── storyboard.py           # A saved cut as shots in playback order, their intervals and moment siblings
+│   ├── film_storyboard.py      # A rendered film's storyboard: its cut with the review edits it was rendered with
 │   ├── story_view.py           # The stories a cut tells, heaviest first, from plan.private.json
 │   ├── picture_holds.py         # What holds a picture + the owner's decision, for the pool, storyboard and CLI
 │   ├── caption_origins.py      # One picture's caption origin, and the run's distinct-origin line

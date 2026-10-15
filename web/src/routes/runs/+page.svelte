@@ -108,6 +108,7 @@
             <div class="flex items-start justify-between gap-2 px-1">
               <div class="min-w-0">
                 <p class="truncate font-medium">{memoryTypeLabel(run.memory_type)}</p>
+                {#if run.people.length}<p class="truncate text-sm">{run.people.join(', ')}</p>{/if}
                 <p class="truncate text-sm text-gray-600 dark:text-gray-400">{span(run) || run.run_id}</p>
               </div>
               <Badge size="tiny" class="shrink-0" color={STATUS_COLOR[run.status] ?? 'secondary'}>{statusLabel(run.status)}</Badge>

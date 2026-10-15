@@ -98,3 +98,19 @@ def test_a_shareable_film_plays_no_live_clip_that_no_detector_read(home: UserHom
     assert lives, family.carriers
     assert lives <= {row["asset_id"] for row in shared.carriers}
     assert any(row["kind"] == "live-motion" for row in family.carriers), family.carriers
+
+
+@pytest.mark.feature("live-photos.motion")
+def test_a_live_photo_reads_its_people_off_its_still(home: UserHome, tmp_path: Path):
+    """Immich puts faces on a Live Photo's still, never on its clip, so the people head is read
+    on the still alone: no clip owes it, and the Live Photo's shot carries the still's answer."""
+    log = tmp_path / "producers.jsonl"
+    # The still reads as a crowd, which the fixture's faces alone would never give.
+    family = _day(home, LIVE_DAY, "family", log, {"live-fountain": {"people": "crowd"}})
+
+    clips = {p.live_video_id for p in ALL_PICTURES if p.day == LIVE_DAY and p.live_video_id}
+    assert clips
+    assert not clips & _asked(log)["public_heads"]
+    fountain = next(row for row in family.carriers if row["asset_id"] == "live-fountain")
+    assert fountain["kind"].startswith("live"), fountain
+    assert "people=crowd" in fountain["line"], fountain["line"]

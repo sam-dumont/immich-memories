@@ -182,6 +182,35 @@ centre, the same move a person gets. It now mostly pans gently along its long si
 zoom, and now and then zooms softly by the same amount. Stills with people move as before.
 Re-render a cut to get the new moves.
 
+### Runs remember everyone they were about
+
+A run with several `--person` names used to keep only the first. Runs now keep every name:
+`runs list --person Pat` finds a film about Kit and Pat, `runs list` and `runs show` print
+`Kit, Pat`, and the web run list names them. The match ignores case. Runs from before the upgrade
+keep their one name and are still found under it.
+
+### Three commands exit 1 when they fail
+
+`auto test-notification` exits 1 when nothing was sent, including when notifications are off or
+have no URL. `music search` exits 1 when no track matches, `music add` when the mix fails. A
+script that ran them and ignored the outcome now sees it.
+
+### Settings shows your config warnings
+
+Settings has a **Checks** section: what loading the config warned about (removed, unknown and
+no-longer-supported keys) and the preflight results, the same lines the server log carries.
+**Caches** also lists the prepared-source cache, so it can be cleared from there instead of by
+deleting `<cache.directory>/prepared-sources` by hand.
+
+### The maximalist Kubernetes overlay holds no Secrets
+
+`deploy/kubernetes/overlays/maximalist` no longer lists `render-worker-secret.yaml` or
+`maximalist-secret.yaml`: it builds straight from the checkout, like the base. Create its three
+Secrets with `kubectl apply -f`, each from its example, before applying the overlay
+([the walkthrough](../reference/cluster-example.md#configure-your-endpoints-and-access)).
+Secrets already in the cluster stay where they are. If you apply with `--prune`, create them
+separately first, or the prune removes them.
+
 ## From 1.0.0-rc.9 to 1.0.0-rc.10
 
 Nothing to migrate by hand. These are the changes you will notice, and the keys that control

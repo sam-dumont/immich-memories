@@ -85,6 +85,8 @@ class GenerationParams:
     memory_type: str | None = None
     memory_preset_params: dict = field(default_factory=dict)
     person_name: str | None = None
+    # Every person the film is about, as given; recorded on the run.
+    person_names: tuple[str, ...] = ()
     date_start: date | None = None
     date_end: date | None = None
     source: str = "manual"
@@ -468,6 +470,7 @@ def _record_run(
     if observed_run is None:
         run_tracker.start_run(
             person_name=params.person_name,
+            person_names=params.person_names,
             date_range=date_range,
             target_duration_seconds=estimated_duration_seconds,
             memory_type=params.memory_type,
@@ -482,6 +485,7 @@ def _record_run(
         replace(
             observed_run,
             person_name=params.person_name,
+            person_names=params.person_names,
             date_range_start=(
                 date_range.start.date() if date_range else observed_run.date_range_start
             ),

@@ -32,7 +32,6 @@ import io
 import json
 import re
 import subprocess
-import sys
 import time
 import urllib.error
 import urllib.parse
@@ -44,6 +43,8 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
+# The face detector the build pins faces with; provenance and licence sit next to it.
+_YUNET_MODEL = Path(__file__).parent / "fixture_models" / "face_detection_yunet_2023mar.onnx"
 LIBRARY_DIR = ROOT / "tests" / "e2e" / "fixtures" / "library"
 API = "https://commons.wikimedia.org/w/api.php"
 NOMINATIM = "https://nominatim.openstreetmap.org/reverse"
@@ -404,13 +405,10 @@ def faces_for(path: Path, people: list[str]) -> list[dict[str, Any]]:
     """
     import cv2
 
-    sys.path.insert(0, str(ROOT / "src"))
-    from immich_memories.processing.scaling_utilities import _yunet_detector
-
     image = cv2.imread(str(path))
     height, width = image.shape[:2]
-    detector = _yunet_detector()
-    detector.setInputSize((width, height))
+    # OpenCV's own FaceDetectorYN documentation and sample use these thresholds.
+    detector = cv2.FaceDetectorYN.create(str(_YUNET_MODEL), "", (width, height), 0.9, 0.3, 5000)
     _, found = detector.detect(image)
     boxes = sorted(
         (tuple(float(v) for v in row[:4]) for row in (found if found is not None else [])),

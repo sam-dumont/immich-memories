@@ -21,6 +21,7 @@ from immich_memories.db import open_store
 from immich_memories.operations.candidate_fates import read_trace
 from immich_memories.operations.caption_origins import caption_origin_note
 from immich_memories.operations.editorial_attempt import window_origin_note
+from immich_memories.operations.film_storyboard import film_storyboard
 from immich_memories.operations.reader_words import stage_words
 from immich_memories.operations.run_index import attempt_dir_for_run, sharing_line
 from immich_memories.operations.storyboard import (
@@ -146,6 +147,16 @@ def _review_edit_note(config, attempt: Path, asset_id: str) -> str:
     return f"Your review: {'; '.join(notes)}." if notes else ""
 
 
+def _film_edits(db, run_id: str, attempt: Path) -> dict | None:
+    """The review edits a film run was rendered with; None for a cut or a film of the cut."""
+    from immich_memories.store.owner_edits import owner_edits_of_film
+
+    run = db.get_run(run_id)
+    if run is None or not run.output_path:
+        return None
+    return owner_edits_of_film(db.store, attempt.name, Path(run.output_path).stem)
+
+
 def _wrapped(text: str, columns: int) -> str:
     return textwrap.fill(
         text, width=max(columns, 20), initial_indent="  ", subsequent_indent="    "
@@ -174,7 +185,8 @@ def register_reading_commands(runs: click.Group) -> None:
             print_error(str(exc))
             sys.exit(1)
         console.print(sharing_line(attempt), highlight=False)
-        console.print(storyboard_text(resolved, read_storyboard(attempt)), highlight=False)
+        board = film_storyboard(attempt, _film_edits(db, resolved, attempt))
+        console.print(storyboard_text(resolved, board), highlight=False)
 
     @runs.command("why")
     @click.argument("asset_id")

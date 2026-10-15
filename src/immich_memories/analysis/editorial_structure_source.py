@@ -16,11 +16,7 @@ from immich_memories.analysis.editorial_intent import build_editorial_intent
 from immich_memories.analysis.editorial_moment_wall import ProductionMomentWallRenderer
 from immich_memories.analysis.editorial_motion_outcomes import MotionOutcomeReplay
 from immich_memories.analysis.editorial_preparation_motion import read_motion_residuals
-from immich_memories.analysis.editorial_shareability import (
-    load_detector_heads,
-    load_flags,
-    named_now_of,
-)
+from immich_memories.analysis.editorial_shareability import load_detector_heads, load_flags
 from immich_memories.analysis.editorial_structure_contract import (
     EpisodeReadingCard,
     StructurePlanningInput,
@@ -161,10 +157,7 @@ def capture_structure_input(
         pixel_facts=read_pixel_facts(store, config.editorial.pixel_producer_key),
         shareability_flags=load_flags(store, {*assets, *companions}),
         companion_detectors=load_detector_heads(
-            store,
-            companions,
-            config.editorial.active_head_versions,
-            named_now=named_now_of(assets.values()),
+            store, companions, config.editorial.active_head_versions
         ),
         clip_frames=load_clip_frames(
             store,

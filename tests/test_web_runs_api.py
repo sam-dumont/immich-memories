@@ -47,6 +47,27 @@ def test_runs_come_newest_first_with_the_pictures_their_cut_plays(client, config
     assert page["runs"][0]["created_at"] == "2026-09-13T08:00:00Z"
 
 
+def test_each_run_names_every_person_it_was_about(client, config):
+    save_run(
+        config,
+        "20260913_080000_pair",
+        cut=False,
+        person_name="Kit",
+        person_names=("Kit", "Pat"),
+    )
+    # Recorded before runs kept every name: its one person still shows.
+    save_run(config, "20260901_080000_kit1", cut=False, person_name="Kit")
+    save_run(config, "20260801_080000_none", cut=False)
+
+    runs = {run["run_id"]: run["people"] for run in client.get("/api/v1/runs").json()["runs"]}
+
+    assert runs == {
+        "20260913_080000_pair": ["Kit", "Pat"],
+        "20260901_080000_kit1": ["Kit"],
+        "20260801_080000_none": [],
+    }
+
+
 def _jpeg(px: int) -> bytes:
     from io import BytesIO
 

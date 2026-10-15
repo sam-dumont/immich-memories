@@ -62,13 +62,6 @@ def _assert_no_buffer_retention(convert) -> None:
     assert growth < 60, f"{growth:.0f} MB retained after 30 conversions of one 1080p frame"
 
 
-def test_cg_image_conversion_does_not_accumulate_frame_buffers() -> None:
-    pytest.importorskip("Quartz")
-    from immich_memories.analysis.apple_vision_image import create_cg_image_from_numpy
-
-    _assert_no_buffer_retention(create_cg_image_from_numpy)
-
-
 def test_vision_availability_is_quiet_until_verbose(caplog, monkeypatch):
     import logging
 

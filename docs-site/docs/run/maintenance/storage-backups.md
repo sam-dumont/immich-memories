@@ -225,8 +225,6 @@ rm -rf ~/.immich-memories/cache/thumbnails
 rm -rf ~/.immich-memories/cache/prepared-sources
 ```
 
-Settings > Caches does not list prepared sources yet; delete that folder while the app is idle.
-
 In Docker, clear through Settings rather than deleting a similarly named host directory.
 Do not delete `store.db` or the whole data volume. Attempt directories also contain review/render
 inputs; removing the whole cache loses those artifacts even though banked facts remain in the store.

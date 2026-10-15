@@ -201,8 +201,9 @@ kept, and banked per picture so the next cut reads it instead (`store/cut_measur
 Photo you add in review is stitched with its neighbours and decided the same way, and `runs story`
 says why one played as its still.
 
-Immich reads faces on a Live Photo's still, never on its clip, so a clip takes its still's faces
-as its own: a person film keeps the Live Photo whose still shows them.
+Immich reads faces on a Live Photo's still, never on its clip, so a Live Photo's people are its
+still's: a person film keeps the Live Photo whose still shows them. The clip is only read for the
+exposure check.
 
 The residual is the optical flow left after the camera's own movement is taken out, over 12 frames
 at 320x240. A clip only ever costs a Live Photo its motion, never its place: a starred Live Photo

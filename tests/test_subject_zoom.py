@@ -9,12 +9,10 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from pathlib import Path
-from types import SimpleNamespace
 
 import pytest
 
 from immich_memories.analysis.framing_target import (
-    PictureFaces,
     framing_centre,
     picture_faces,
 )
@@ -179,62 +177,6 @@ class TestPictureFaces:
         kid = Person(id="kid-id", name="Kid", faces=[_face("f1", 10, 10, 50)])
 
         assert picture_faces(_photo(kid), ()).subject_ids == frozenset()
-
-
-# ---- videos: the smart-zoom crop ------------------------------------------------
-
-
-def _clip_with(faces: PictureFaces):
-    from immich_memories.processing.assembly_config import AssemblyClip
-
-    return AssemblyClip(path=Path("clip.mp4"), duration=3.0, asset_id="clip", known_faces=faces)
-
-
-def _encoder(detected: tuple[FaceBox, ...]):
-    from immich_memories.processing.assembly_config import (
-        AssemblySettings,
-        standalone_assembly_encoding_plan,
-    )
-    from immich_memories.processing.clip_encoder import ClipEncoder
-
-    # WHY: the prober reads the clip file with ffprobe; the crop only needs its size.
-    prober = SimpleNamespace(get_video_resolution=lambda _path: (1920, 1080))
-    settings = AssemblySettings(
-        encoding_plan=standalone_assembly_encoding_plan(23), scale_mode="smart_zoom"
-    )
-    # WHY: the detector decodes frames off disk; these tests hand it its answer.
-    return ClipEncoder(settings, prober, lambda _path: detected)
-
-
-def _crop_x(filter_text: str) -> int:
-    crop = filter_text.split("crop=")[1].split(",")[0]
-    return int(crop.split(":")[2])
-
-
-class TestSmartZoomCrop:
-    def test_the_crop_follows_the_subject_immich_names(self):
-        subject = _box(0.05, 0.40, 0.10, 0.50, "kid")
-        stranger = _box(0.80, 0.30, 0.95, 0.60, "x")
-        clip = _clip_with(PictureFaces((subject, stranger), frozenset({"kid"})))
-        # The anonymous detector would see only the big stranger.
-        encoder = _encoder((_box(0.80, 0.30, 0.95, 0.60),))
-
-        crop = encoder.smart_zoom_crop(clip, 1080, 1920)
-
-        assert crop is not None
-        assert _crop_x(crop) <= 5
-
-    def test_without_a_subject_the_detector_decides(self):
-        clip = _clip_with(PictureFaces((_box(0.05, 0.40, 0.10, 0.50, "kid"),), frozenset()))
-        encoder = _encoder((_box(0.80, 0.30, 0.95, 0.60),))
-
-        crop = encoder.smart_zoom_crop(clip, 1080, 1920)
-
-        assert crop is not None
-        assert _crop_x(crop) >= 1920 - 607 - 5
-
-    def test_no_face_anywhere_means_no_crop(self):
-        assert _encoder(()).smart_zoom_crop(_clip_with(PictureFaces()), 1080, 1920) is None
 
 
 # ---- the memory's people reach the renderers ------------------------------------

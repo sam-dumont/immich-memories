@@ -171,6 +171,7 @@ def _params(
         transition_duration=policy["transition_duration"],
         memory_type=run.memory_type,
         person_name=run.person_name,
+        person_names=run.people,
         date_start=run.date_range_start,
         date_end=run.date_range_end,
         memory_key_override=run.memory_key,

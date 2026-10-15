@@ -78,6 +78,10 @@ def _link_or_copy(source: Path, target: Path) -> None:
         shutil.copyfile(source, target)
 
 
+def _is_media(path: Path) -> bool:
+    return not path.name.startswith(".") and path.suffix in _MEDIA_SUFFIXES
+
+
 def _temporary_sibling(path: Path) -> Path:
     return path.with_name(f".{path.name}.{uuid.uuid4().hex}.tmp")
 
@@ -213,6 +217,28 @@ class PreparedSourceBank:
             logger.debug("Could not bank a prepared source: %s", exc)
             if staged is not None:
                 staged.unlink(missing_ok=True)
+
+    def usage(self) -> tuple[int, int]:
+        """How many prepared sources the bank holds, and the bytes its files take on disk."""
+        entries = size = 0
+        for path in self._entries.rglob("*"):
+            with contextlib.suppress(OSError):
+                if path.is_file():
+                    size += path.stat().st_size
+                    entries += _is_media(path)
+        return entries, size
+
+    def clear(self) -> int:
+        """Remove every entry and return how many there were.
+
+        A render that already took an entry keeps its own link or copy; one that asks after
+        this gets a miss and prepares the source again.
+        """
+        removed = 0
+        for shard in [path for path in self._entries.iterdir() if path.is_dir()]:
+            removed += sum(1 for path in shard.iterdir() if _is_media(path))
+            shutil.rmtree(shard, ignore_errors=True)
+        return removed
 
     def enforce_budget(self) -> Eviction:
         """Evict least recently used entries until the bank fits its cap."""

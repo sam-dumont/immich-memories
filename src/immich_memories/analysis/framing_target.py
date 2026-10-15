@@ -6,8 +6,7 @@ in the picture stay in the window when it can hold them, nearest first, and the
 subject's face is the one that stays when it cannot. With no face at all the
 window sits in the middle.
 
-The same rule places the photo Ken Burns move and the smart-zoom crop on a
-video, so a person reads the same way whichever medium they were caught in.
+The photo Ken Burns move places its window by this rule.
 Coordinates are shares of the picture's own width and height (0 to 1).
 """
 
@@ -103,34 +102,6 @@ def faces_extent(faces: Sequence[FaceBox]) -> tuple[float, float]:
         return (0.0, 0.0)
     extent = _Extent.of(usable)
     return (extent.x2 - extent.x1, extent.y2 - extent.y1)
-
-
-def _turned(face: FaceBox, rotation: int) -> FaceBox:
-    x1, y1, x2, y2 = face.x1, face.y1, face.x2, face.y2
-    if rotation == 90:
-        x1, y1, x2, y2 = 1 - y2, x1, 1 - y1, x2
-    elif rotation == 180:
-        x1, y1, x2, y2 = 1 - x2, 1 - y2, 1 - x1, 1 - y1
-    elif rotation == 270:
-        x1, y1, x2, y2 = y1, 1 - x2, y2, 1 - x1
-    return FaceBox(x1, y1, x2, y2, named=face.named, person_id=face.person_id)
-
-
-def rotated_faces(faces: Sequence[FaceBox], rotation: int | None) -> tuple[FaceBox, ...]:
-    """The faces where they sit once the picture is turned ``rotation`` degrees clockwise.
-
-    A manual rotation override turns the pixels (``assembly_config._get_rotation_filter``)
-    after the faces were read on the unturned picture, so the boxes must turn with it
-    before anything frames them. None, 0 or any other angle leaves them as they are.
-    """
-    if rotation not in (90, 180, 270):
-        return tuple(faces)
-    return tuple(_turned(face, rotation) for face in faces)
-
-
-def rotated_size(width: int, height: int, rotation: int | None) -> tuple[int, int]:
-    """A picture's size once turned ``rotation`` degrees: a quarter turn swaps the sides."""
-    return (height, width) if rotation in (90, 270) else (width, height)
 
 
 def framing_centre(

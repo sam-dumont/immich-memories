@@ -7,6 +7,7 @@
   import { fileSize } from '$lib/format';
   import { N_, t } from '$lib/i18n.svelte';
   import ModelSetup from '$lib/ModelSetup.svelte';
+  import SettingsChecks from '$lib/SettingsChecks.svelte';
   import SettingsEditor from '$lib/SettingsEditor.svelte';
 
   type CacheStats = components['schemas']['CacheStats'];
@@ -28,6 +29,7 @@
   const CACHE_LABELS: Record<string, string> = {
     video: N_('Video cache'),
     thumbnail: N_('Thumbnail cache'),
+    prepared_source: N_('Prepared-source cache'),
   };
 
   onMount(() => {
@@ -105,6 +107,7 @@
     <span><span class="block font-medium">{t('People')}</span><span class="text-sm text-gray-600 dark:text-gray-400">{t('Who is who, their roles and relationships.')}</span></span>
   </a>
 
+  <SettingsChecks reloads={reloads + modelReloads} />
   <ModelSetup reloads={reloads + modelReloads} />
   <SettingsEditor {reloads} onSaved={() => modelReloads++} />
 

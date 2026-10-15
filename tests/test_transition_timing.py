@@ -20,9 +20,9 @@ from immich_memories.processing.title_inserter import TitleInserter
 def assembly(mode):
     settings = AssemblySettings(encoding_plan=standalone_assembly_encoding_plan(), transition=mode)
     prober = FFmpegProber(settings)
-    return AssemblyEngine(
-        settings, prober, ClipEncoder(settings, prober, lambda _: None)
-    ), TitleInserter(settings, prober)
+    return AssemblyEngine(settings, prober, ClipEncoder(settings, prober)), TitleInserter(
+        settings, prober
+    )
 
 
 def clips():

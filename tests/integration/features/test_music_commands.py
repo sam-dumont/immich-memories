@@ -69,6 +69,20 @@ def test_music_search_finds_local_tracks_by_mood_genre_tempo_and_length(home: Us
     assert len(_titles(home, "--min-duration", "20", "--limit", "2")) == 2
 
 
+@pytest.mark.feature("music.search")
+def test_music_search_exits_non_zero_when_nothing_matches(home: UserHome, tmp_path: Path):
+    _track(home.root / "Music" / "Memories" / "calm" / "track-harbour-morning.flac", 90)
+    nothing = home.run("music", "search", "--mood", "energetic")
+    config = basic_config(UNREACHABLE, "a-key", home)
+    config.setdefault("audio", {})["local_music_dir"] = str(tmp_path / "no-such-folder")
+    home.write_config(config)
+    no_library = home.run("music", "search")
+
+    for result in (nothing, no_library):
+        assert "No tracks found" in result.output, result.explain()
+        assert result.returncode == 1, result.explain()
+
+
 # ── music add ────────────────────────────────────────────────────────────────
 
 # The video's own sound plays from 4 s to 6 s of a 12-second clip; elsewhere it is silent.
@@ -174,3 +188,17 @@ def test_music_add_mixes_a_track_under_a_video_ducked_faded_and_at_the_given_vol
     assert _music_db(loud, 9.0, 0.8) > steady - 2
     # --volume sets the music's level: 12 dB down is 12 dB down.
     assert _music_db(quiet, 2.5, 1.2) == pytest.approx(steady - 12, abs=2)
+
+
+@pytest.mark.feature("music.add")
+def test_music_add_exits_non_zero_when_the_mix_fails(home: UserHome, tmp_path: Path):
+    video = _video_with_a_voice(tmp_path / "clip.mp4")
+    not_audio = tmp_path / "song.wav"
+    not_audio.write_text("not a sound file")
+    out = tmp_path / "out.mp4"
+
+    result = home.run("music", "add", str(video), str(out), "--music", str(not_audio))
+
+    assert "Failed:" in result.output, result.explain()
+    assert result.returncode == 1, result.explain()
+    assert "Video saved to" not in result.output

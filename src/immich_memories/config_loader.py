@@ -11,6 +11,7 @@ import contextlib
 import logging
 import os
 import stat
+import threading
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -273,6 +274,7 @@ def _load_yaml_data(path: Path) -> dict:
 
 
 _yaml_source_data: dict = {}
+_LOADING = threading.RLock()
 _database_source_data: dict = {}
 
 
@@ -511,6 +513,15 @@ class Config(BaseSettings):
             stored: Saved settings as runtime key paths, used instead of reading the
                 database (to check a save before it is written).
         """
+        # The layers below are module state the settings sources read, so one load at a time:
+        # the web server loads on several request threads, and a load that read another's
+        # half-restored layers built a config with no file at all. Reentrant, because a load
+        # can open a store whose first-open import loads another config.yaml.
+        with _LOADING:
+            return cls._from_yaml_layers(path, stored)
+
+    @classmethod
+    def _from_yaml_layers(cls, path: Path, stored: dict[str, Any] | None) -> Config:
         global _yaml_source_data, _database_source_data
         # Restored, not cleared, on the way out: reading the stored settings can open a store
         # whose first-open import loads another config.yaml, and clearing here would leave this

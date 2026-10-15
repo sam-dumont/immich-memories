@@ -101,7 +101,7 @@ def _print_run_details_table(run, format_duration, immich: ImmichConfig) -> None
     table.add_row("Created", run.created_at.strftime("%Y-%m-%d %H:%M:%S"))
     if run.completed_at:
         table.add_row("Completed", run.completed_at.strftime("%Y-%m-%d %H:%M:%S"))
-    table.add_row("Person", run.person_name or "All")
+    table.add_row("Person", ", ".join(run.people) or "All")
 
     if run.date_range_start and run.date_range_end:
         table.add_row(
@@ -366,7 +366,7 @@ def register_runs_commands(main: click.Group) -> None:
             table.add_row(
                 run.run_id[:20],
                 run.created_at.strftime("%Y-%m-%d %H:%M"),
-                run.person_name or "All",
+                ", ".join(run.people) or "All",
                 status_display,
                 duration,
                 output_name,

@@ -380,3 +380,6 @@ def test_auto_test_notification_says_so_when_off_or_when_the_target_fails(home: 
     assert "Notifications are disabled" in off.output, off.explain()
     assert "Test notification failed" in failed.output, failed.explain()
     assert "sent successfully" not in failed.output
+    # A script reads the exit code: nothing sent is a failure, whatever the reason.
+    assert off.returncode == 1, off.explain()
+    assert failed.returncode == 1, failed.explain()

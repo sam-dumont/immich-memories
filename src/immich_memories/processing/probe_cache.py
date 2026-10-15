@@ -54,7 +54,6 @@ class VideoProbe:
     codec: str
     bitrate: int
     size_bytes: int
-    color_space: str | None
     color_transfer: str | None
     color_primaries: str | None
     bit_depth: int | None
@@ -155,7 +154,6 @@ def _parse_video_probe(data: dict[str, Any]) -> VideoProbe:
         codec=str(video.get("codec_name") or ""),
         bitrate=_integer(format_data.get("bit_rate")),
         size_bytes=_integer(format_data.get("size")),
-        color_space=video.get("color_space"),
         color_transfer=video.get("color_transfer"),
         color_primaries=video.get("color_primaries"),
         bit_depth=None if bit_depth < 0 else bit_depth,

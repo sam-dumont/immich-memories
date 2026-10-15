@@ -5,9 +5,6 @@
   "src/immich_memories/cli/generate.py": {
     "register_generate_commands": [115]
   },
-  "src/immich_memories/cli/music_cmd.py": {
-    "register_music_commands": [17]
-  },
   "src/immich_memories/cli/runs.py": {
     "register_runs_commands": [26]
   },

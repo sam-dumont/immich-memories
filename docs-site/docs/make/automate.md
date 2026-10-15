@@ -125,7 +125,7 @@ advanced:
 immich-memories auto test-notification
 ```
 
-The test sends a message to each configured target. Successful films made by `generate`, `auto run`, the built-in timer, **Render** in the app or `runs render` send a completion message. Saving a cut without rendering sends none. The failure message comes only from the automation runner, and only once it has picked a candidate to run for the day. A day skipped before that (cooldown, no eligible candidate) sends nothing. Thumbnails remain off unless you enable them. Use a private, authenticated ntfy topic: public ones can be read by others. [What each message carries](../reference/automation-contract.md#get-told-when-it-runs) covers the full payload.
+The test sends a message to each configured target, and exits 1 when nothing was sent (notifications off, no URL, or a target that refused). Successful films made by `generate`, `auto run`, the built-in timer, **Render** in the app or `runs render` send a completion message. Saving a cut without rendering sends none. The failure message comes only from the automation runner, and only once it has picked a candidate to run for the day. A day skipped before that (cooldown, no eligible candidate) sends nothing. Thumbnails remain off unless you enable them. Use a private, authenticated ntfy topic: public ones can be read by others. [What each message carries](../reference/automation-contract.md#get-told-when-it-runs) covers the full payload.
 
 After an upload, the success message includes a direct link to the film in Immich. If the app talks to
 Immich through a container or cluster address, set `immich.public_url` to the address your browser opens:

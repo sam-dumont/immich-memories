@@ -95,12 +95,19 @@ IMMICH_MEMORIES_SECRET_KEY cannot decrypt it" was saved under a different key: t
 until you save it again. Every key:
 [configuration reference](../reference/config-reference.md).
 
-**Caches** lists the two caches a run fills, with their size and a **Clear** button each.
+**Checks** shows what loading your config warned about (removed, unknown or no-longer-supported
+keys, a reader set up but switched off) and the rows `immich-memories preflight` prints. These are
+the same lines the server log carries, so a Docker or NAS install sees them without reading the
+container log. They name keys, never values. The preflight rows wait for **Run the preflight
+checks**: they ask Immich and the reader and probe the encoder, which takes a few seconds.
+
+**Caches** lists the three caches a run fills, with their size and a **Clear** button each.
 
 | Cache | Holds | Cost of clearing |
 |-------|-------|------------------|
 | **Video cache** | downloaded source videos | re-download from Immich; evicted on its own anyway |
 | **Thumbnail cache** | Immich previews, read back for pixel facts, heads, contact sheets and the grid | re-fetched on demand |
+| **Prepared-source cache** | cut segments, merged Live Photos and animated photos a re-render reuses (`<cache.directory>/prepared-sources`, capped by `advanced.analysis.prepared_source_cache_max_size_gb`) | the next render prepares them again |
 
 The expensive thing on disk is not behind those buttons. The editor's bank lives in the store
 (`store.db`), not under the cache directory, and holds every fact it read about your pictures.

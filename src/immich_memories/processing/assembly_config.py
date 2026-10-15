@@ -22,15 +22,11 @@ if TYPE_CHECKING:
 __all__ = [
     "AssemblyClip",
     "AssemblySettings",
-    "MAX_FACE_CACHE_SIZE",
     "TitleScreenSettings",
     "TransitionType",
     "_get_rotation_filter",
     "standalone_assembly_encoding_plan",
 ]
-
-
-MAX_FACE_CACHE_SIZE = 50  # Max entries in face detection cache to prevent unbounded growth
 
 
 def standalone_assembly_encoding_plan(crf: int = 23) -> EncodingPlan:
@@ -163,7 +159,7 @@ class AssemblySettings:
     normalize_clip_audio: bool = True
     # Debug mode: preserve intermediate batch files for troubleshooting
     debug_preserve_intermediates: bool = False
-    # Aspect ratio handling mode: "blur", "smart_zoom", "black_bars", "exclude"
+    # Aspect ratio handling mode: "blur", "black_bars", "exclude"
     scale_mode: str = "blur"
     # Privacy/demo mode: blur video + mute speech for showcase videos
     privacy_mode: bool = False
@@ -221,7 +217,7 @@ class AssemblyClip:
     # Kept separate so maps retain their real location names and coordinates.
     caption_location_name: str | None = None
     # Immich's faces on the source and which belong to the film's subjects; the
-    # smart-zoom crop centres on those people instead of whoever a detector finds.
+    # music reads a crowded film off them.
     known_faces: PictureFaces = PictureFaces()
 
 

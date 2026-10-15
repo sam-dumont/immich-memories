@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-15 06:04+0200\n"
+"POT-Creation-Date: 2026-10-15 08:22+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: nl\n"
@@ -33,7 +33,7 @@ msgstr ""
 msgid "A monthly review already finished this month."
 msgstr "Er is deze maand al een maandoverzicht gemaakt."
 
-#: web/routes/settings/+page.svelte:90
+#: web/routes/settings/+page.svelte:92
 msgid "API Key"
 msgstr "API-sleutel"
 
@@ -238,7 +238,7 @@ msgstr "Wazige achtergrond"
 msgid "Browse the whole pool"
 msgstr "Alle beschikbare media bekijken"
 
-#: web/routes/settings/+page.svelte:111 web/routes/settings/+page.svelte:112
+#: web/routes/settings/+page.svelte:114 web/routes/settings/+page.svelte:115
 msgid "Caches"
 msgstr "Caches"
 
@@ -311,6 +311,10 @@ msgstr "Videoclips controleren op een bedekte lens"
 msgid "Checking video frames for the family audience"
 msgstr "Videobeelden controleren op geschiktheid voor het gezin"
 
+#: web/lib/SettingsChecks.svelte:41 web/lib/SettingsChecks.svelte:43
+msgid "Checks"
+msgstr "Controles"
+
 #: web/routes/create/+page.svelte:364
 msgid "Choose an album"
 msgstr "Kies een album"
@@ -327,7 +331,7 @@ msgstr ""
 "Kies waar de film over gaat. De opdracht hieronder stelt de montage samen; je kunt die "
 "bekijken voordat het renderen begint."
 
-#: web/routes/settings/+page.svelte:117
+#: web/routes/settings/+page.svelte:120
 msgid "Clear"
 msgstr "Wissen"
 
@@ -339,7 +343,7 @@ msgstr "Beperking opheffen"
 msgid "Clear this hold?"
 msgstr "Deze beperking opheffen?"
 
-#: web/routes/settings/+page.svelte:70
+#: web/routes/settings/+page.svelte:72
 #, python-brace-format
 msgid "Cleared {count} entries from the {cache}."
 msgstr "{count} items verwijderd uit {cache}."
@@ -361,11 +365,15 @@ msgstr "Voltooid"
 msgid "Config file: {config_path}"
 msgstr "Configuratiebestand: {config_path}"
 
+#: web/lib/SettingsChecks.svelte:47
+msgid "Config warnings"
+msgstr "Configuratiewaarschuwingen"
+
 #: web/lib/SettingsEditor.svelte:64 web/lib/SettingsEditor.svelte:66
 msgid "Configuration"
 msgstr "Configuratie"
 
-#: web/routes/settings/+page.svelte:59
+#: web/routes/settings/+page.svelte:61
 #, python-brace-format
 msgid "Connected as: {name}"
 msgstr "Verbonden als: {name}"
@@ -538,10 +546,14 @@ msgstr "Hier eindigen"
 msgid "Ends"
 msgstr "Eindigt"
 
-#: web/routes/settings/+page.svelte:116
+#: web/routes/settings/+page.svelte:119
 #, python-brace-format
 msgid "Entries: {count}"
 msgstr "Items: {count}"
+
+#: web/lib/SettingsChecks.svelte:21
+msgid "Error"
+msgstr "Fout"
 
 #: web/lib/PhaseTimeline.svelte:22
 msgid "Estimate based on available measurements. It can change as work progresses."
@@ -557,7 +569,7 @@ msgstr ""
 "uit en bekijk het voorbeeld: je selectie wordt precies zo in de film opgenomen. De keuzes "
 "‘Nooit gebruiken’ en ‘Beperking opheffen’ blijven ook bij volgende uitvoeringen gelden."
 
-#: web/routes/settings/+page.svelte:81
+#: web/routes/settings/+page.svelte:83
 msgid ""
 "Every setting and where its value comes from. What you save here goes to the database; "
 "config.yaml and the environment are never written, and they win over it."
@@ -677,11 +689,11 @@ msgstr "Hoe de regels tot deze keuze kwamen"
 msgid "How the sentence was read"
 msgstr "Hoe de zin is begrepen"
 
-#: web/routes/settings/+page.svelte:84 web/routes/settings/+page.svelte:85
+#: web/routes/settings/+page.svelte:86 web/routes/settings/+page.svelte:87
 msgid "Immich Connection"
 msgstr "Immich-verbinding"
 
-#: web/routes/settings/+page.svelte:87
+#: web/routes/settings/+page.svelte:89
 msgid "Immich Server URL"
 msgstr "Immich-server-URL"
 
@@ -805,6 +817,10 @@ msgstr "Live"
 #: web/lib/JobPanel.svelte:95
 msgid "Live updates disconnected. Checking the saved job status."
 msgstr "Live-updates verbroken. Opgeslagen taakstatus controleren."
+
+#: web/lib/SettingsChecks.svelte:48
+msgid "Loading your config warned about these keys:"
+msgstr "Bij het laden van je configuratie kwamen waarschuwingen over deze sleutels:"
 
 #: web/routes/suggestions/+page.svelte:98
 msgid "Looking through your library for memories to suggest..."
@@ -1001,7 +1017,7 @@ msgstr "Geen reden vastgelegd voor dit beeld."
 msgid "No rule the preview can check would drop a picture."
 msgstr "Geen van de regels die in dit voorbeeld worden gecontroleerd, zou een beeld weglaten."
 
-#: web/routes/runs/+page.svelte:121
+#: web/routes/runs/+page.svelte:122
 msgid "No runs match this view. Make a memory from Memory or Suggestions."
 msgstr "Geen uitvoeringen voor deze weergave. Maak een herinnering via Herinnering of Suggesties."
 
@@ -1070,6 +1086,10 @@ msgstr "Notities"
 #: web/lib/people/RelationshipRows.svelte:62
 msgid "Nothing recorded yet."
 msgstr "Nog niets vastgelegd."
+
+#: web/lib/SettingsChecks.svelte:19
+msgid "OK"
+msgstr "OK"
 
 #: web/lib/labels.ts:10
 msgid "On This Day"
@@ -1159,7 +1179,7 @@ msgid "Pending"
 msgstr "In afwachting"
 
 #: web/routes/+layout.svelte:24 web/routes/create/+page.svelte:431
-#: web/routes/settings/+page.svelte:105 web/routes/settings/people/+page.svelte:113
+#: web/routes/settings/+page.svelte:107 web/routes/settings/people/+page.svelte:113
 #: web/routes/settings/people/+page.svelte:119
 msgid "People"
 msgstr "Personen"
@@ -1245,6 +1265,10 @@ msgstr "Staand"
 msgid "Possible"
 msgstr "Mogelijk"
 
+#: web/lib/SettingsChecks.svelte:55
+msgid "Preflight checks"
+msgstr "Voorafcontroles"
+
 #: web/lib/PhaseTimeline.svelte:8
 msgid "Prepare pictures"
 msgstr "Beelden voorbereiden"
@@ -1252,6 +1276,10 @@ msgstr "Beelden voorbereiden"
 #: web/lib/PhaseTimeline.svelte:8
 msgid "Prepare selected clips"
 msgstr "Geselecteerde clips voorbereiden"
+
+#: web/routes/settings/+page.svelte:32
+msgid "Prepared-source cache"
+msgstr "Cache van voorbereide bronnen"
 
 #: web/lib/AskPanel.svelte:145 web/lib/AskPanel.svelte:155
 msgid "Preview"
@@ -1414,6 +1442,14 @@ msgstr "Details van de uitvoering"
 msgid "Run not found. It may have been removed."
 msgstr "Uitvoering niet gevonden. Misschien is ze verwijderd."
 
+#: web/lib/SettingsChecks.svelte:44
+msgid "Run the checks again"
+msgstr "Controles opnieuw uitvoeren"
+
+#: web/lib/SettingsChecks.svelte:44
+msgid "Run the preflight checks"
+msgstr "Voorafcontroles uitvoeren"
+
 #: web/routes/suggestions/+page.svelte:111
 msgid "Run this suggestion"
 msgstr "Deze suggestie uitvoeren"
@@ -1426,6 +1462,10 @@ msgstr "Bezig"
 #, python-brace-format
 msgid "Running on the server: {phase}. It continues if you leave this page."
 msgstr "Actief op de server: {phase}. Dit gaat door als je deze pagina verlaat."
+
+#: web/lib/SettingsChecks.svelte:68
+msgid "Running the preflight checks..."
+msgstr "Voorafcontroles worden uitgevoerd..."
 
 #: web/routes/+layout.svelte:23 web/routes/runs/+page.svelte:76 web/routes/runs/+page.svelte:80
 #: web/routes/runs/+page.svelte:93 web/routes/runs/[run_id]/+page.svelte:128
@@ -1449,7 +1489,7 @@ msgstr "Videoframes bemonsteren"
 msgid "Save"
 msgstr "Opslaan"
 
-#: web/routes/settings/+page.svelte:96
+#: web/routes/settings/+page.svelte:98
 msgid "Save Config"
 msgstr "Configuratie opslaan"
 
@@ -1461,7 +1501,7 @@ msgstr "Groep opslaan"
 msgid "Save revision"
 msgstr "Revisie opslaan"
 
-#: web/lib/SettingsEditor.svelte:110 web/routes/settings/+page.svelte:92
+#: web/lib/SettingsEditor.svelte:110 web/routes/settings/+page.svelte:94
 msgid "Saved - type a new key to replace it"
 msgstr "Opgeslagen. Typ een nieuwe sleutel om deze te vervangen"
 
@@ -1484,7 +1524,7 @@ msgstr "Hier opgeslagen"
 msgid "Saved here, but {name} cannot decrypt it: the default is in use"
 msgstr "Hier opgeslagen, maar {name} kan het niet ontsleutelen: de standaardwaarde geldt"
 
-#: web/lib/SettingsEditor.svelte:57 web/routes/settings/+page.svelte:64
+#: web/lib/SettingsEditor.svelte:57 web/routes/settings/+page.svelte:66
 msgid "Saved to the database"
 msgstr "Opgeslagen in de database"
 
@@ -1532,8 +1572,8 @@ msgstr "Ingesteld door {name} (omgeving)"
 msgid "Set in config.yaml as {key}"
 msgstr "Ingesteld in config.yaml als {key}"
 
-#: web/routes/+layout.svelte:25 web/routes/settings/+page.svelte:76
-#: web/routes/settings/+page.svelte:80 web/routes/settings/people/+page.svelte:118
+#: web/routes/+layout.svelte:25 web/routes/settings/+page.svelte:78
+#: web/routes/settings/+page.svelte:82 web/routes/settings/people/+page.svelte:118
 msgid "Settings"
 msgstr "Instellingen"
 
@@ -1566,7 +1606,7 @@ msgstr "Afmelden"
 msgid "Sign-in expired. Try again."
 msgstr "De aanmelding is verlopen. Probeer het opnieuw."
 
-#: web/lib/PhaseTimeline.svelte:12 web/lib/labels.ts:34
+#: web/lib/PhaseTimeline.svelte:12 web/lib/SettingsChecks.svelte:22 web/lib/labels.ts:34
 msgid "Skipped"
 msgstr "Overgeslagen"
 
@@ -1675,7 +1715,7 @@ msgstr "Gewisseld"
 msgid "Take out"
 msgstr "Verwijderen"
 
-#: web/routes/settings/+page.svelte:95
+#: web/routes/settings/+page.svelte:97
 msgid "Test Connection"
 msgstr "Verbinding testen"
 
@@ -1707,7 +1747,11 @@ msgstr ""
 "De accountnaam van de API-sleutel is niet gekoppeld aan een persoon met een naam. Kies de "
 "eigenaar, of geef personen in Immich een naam en scan opnieuw."
 
-#: web/routes/settings/+page.svelte:55
+#: web/lib/SettingsChecks.svelte:70
+msgid "The checks could not be run."
+msgstr "De controles konden niet worden uitgevoerd."
+
+#: web/routes/settings/+page.svelte:57
 msgid "The connection could not be checked."
 msgstr "De verbinding kon niet worden gecontroleerd."
 
@@ -1828,7 +1872,7 @@ msgstr "Het rapport kon niet worden geladen."
 msgid "The revision could not be saved."
 msgstr "De revisie kon niet worden opgeslagen."
 
-#: web/routes/runs/+page.svelte:126
+#: web/routes/runs/+page.svelte:127
 msgid "The runs could not be loaded."
 msgstr "De uitvoeringen konden niet worden geladen."
 
@@ -1881,7 +1925,7 @@ msgstr ""
 "compose logs immich-memories). Voer immich-memories auth reset-password uit voor een nieuw "
 "wachtwoord."
 
-#: web/routes/settings/+page.svelte:30
+#: web/routes/settings/+page.svelte:31
 msgid "Thumbnail cache"
 msgstr "Miniaturencache"
 
@@ -1929,7 +1973,7 @@ msgstr "Reisdetectie is mislukt."
 msgid "Trips"
 msgstr "Reizen"
 
-#: web/routes/runs/+page.svelte:127 web/routes/settings/people/+page.svelte:130
+#: web/routes/runs/+page.svelte:128 web/routes/settings/people/+page.svelte:130
 msgid "Try again"
 msgstr "Opnieuw proberen"
 
@@ -2002,7 +2046,7 @@ msgstr "Oordeel"
 msgid "Video"
 msgstr "Video"
 
-#: web/routes/settings/+page.svelte:29
+#: web/routes/settings/+page.svelte:30
 msgid "Video cache"
 msgstr "Videocache"
 
@@ -2026,6 +2070,10 @@ msgstr "Bekijken in Immich"
 #: web/lib/RenderPanel.svelte:187
 msgid "Vintage charm"
 msgstr "Retrocharme"
+
+#: web/lib/SettingsChecks.svelte:20
+msgid "Warning"
+msgstr "Waarschuwing"
 
 #: web/routes/login/+page.svelte:53
 msgid "Watch your memories again, in films you can make your own."
@@ -2076,7 +2124,7 @@ msgstr "Wit"
 msgid "Who"
 msgstr "Wie"
 
-#: web/routes/settings/+page.svelte:105
+#: web/routes/settings/+page.svelte:107
 msgid "Who is who, their roles and relationships."
 msgstr "Wie wie is, hun rollen en relaties."
 

@@ -604,6 +604,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/preflight": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Preflight
+         * @description The checks `immich-memories preflight` runs, one row each; this can take a few seconds.
+         */
+        get: operations["read_preflight_api_v1_preflight_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/render/capabilities": {
         parameters: {
             query?: never;
@@ -1200,6 +1220,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/settings/warnings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Config Warnings
+         * @description What loading the config warns about, as the server log says it; keys, never values.
+         */
+        get: operations["read_config_warnings_api_v1_settings_warnings_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/special-days": {
         parameters: {
             query?: never;
@@ -1465,7 +1505,7 @@ export interface components {
              * Name
              * @enum {string}
              */
-            name: "video" | "thumbnail";
+            name: "video" | "thumbnail" | "prepared_source";
         };
         /**
          * CaptionDefaults
@@ -1496,9 +1536,19 @@ export interface components {
              * Name
              * @enum {string}
              */
-            name: "video" | "thumbnail";
+            name: "video" | "thumbnail" | "prepared_source";
             /** Removed */
             removed: number;
+        };
+        /**
+         * ConfigWarnings
+         * @description What loading the config warns about: removed, unknown or unsupported keys, a reader left off.
+         *
+         *     Each line names keys, never their values: the same lines the server log carries.
+         */
+        ConfigWarnings: {
+            /** Warnings */
+            warnings: string[];
         };
         /** Connection */
         Connection: {
@@ -2107,6 +2157,23 @@ export interface components {
             /** Taken */
             taken: string;
         };
+        /**
+         * PreflightCheck
+         * @description One `immich-memories preflight` row.
+         */
+        PreflightCheck: {
+            /** Details */
+            details: string | null;
+            /** Message */
+            message: string;
+            /** Name */
+            name: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "ok" | "warning" | "error" | "skipped";
+        };
         /** Relationship */
         Relationship: {
             /** Kind */
@@ -2397,6 +2464,8 @@ export interface components {
             memory_type: string | null;
             /** Output Path */
             output_path: string | null;
+            /** People */
+            people: string[];
             /** Phases */
             phases: components["schemas"]["PhaseTiming"][];
             /** Preview Asset Ids */
@@ -2441,6 +2510,8 @@ export interface components {
             film_available: boolean;
             /** Memory Type */
             memory_type: string | null;
+            /** People */
+            people: string[];
             /** Preview Asset Ids */
             preview_asset_ids: string[];
             /** Run Id */
@@ -3085,7 +3156,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                name: "video" | "thumbnail";
+                name: "video" | "thumbnail" | "prepared_source";
             };
             cookie?: never;
         };
@@ -3680,6 +3751,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_preflight_api_v1_preflight_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PreflightCheck"][];
                 };
             };
         };
@@ -4732,6 +4823,26 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    read_config_warnings_api_v1_settings_warnings_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfigWarnings"];
+                };
             };
         };
     };

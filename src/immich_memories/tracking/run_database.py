@@ -120,6 +120,7 @@ class RunDatabase:
         row = run_to_row(run)
         names = (
             "person_name",
+            "person_names",
             "person_id",
             "date_range_start",
             "date_range_end",
@@ -472,14 +473,40 @@ class RunDatabase:
             msg = "order_by_completion requires status='completed'"
             raise ValueError(msg)
         query = sa.select(pipeline_runs)
-        if person_name:
-            query = query.where(_RUNS.person_name == person_name)
         if status:
             query = query.where(_RUNS.status == status)
         if source is not None:
             query = query.where(_RUNS.source == source)
         order = _COMPLETION_ORDER if order_by_completion else (_RUNS.created_at.desc(),)
+        if person_name:
+            return self._runs_about(person_name, query.order_by(*order), limit, offset)
         return self._select_runs(query.order_by(*order).limit(limit).offset(offset))
+
+    def _runs_about(
+        self, name: str, ordered: sa.Select, limit: int, offset: int
+    ) -> list[RunMetadata]:
+        """One page of the runs `name` is one of the people of, in `ordered`'s order.
+
+        The names live in a JSON list, which SQLite and PostgreSQL search differently, so
+        the match runs here over the two name columns and only the page is loaded whole.
+        """
+        names = ordered.with_only_columns(_RUNS.run_id, _RUNS.person_name, _RUNS.person_names)
+        with self.store.connect() as conn:
+            matching = [
+                row.run_id
+                for row in conn.execute(names)
+                if RunMetadata(
+                    run_id=row.run_id,
+                    created_at=datetime.min,
+                    person_name=row.person_name,
+                    person_names=tuple(row.person_names or ()),
+                ).is_about(name)
+            ]
+        page = matching[offset : offset + limit]
+        if not page:
+            return []
+        runs = {run.run_id: run for run in self._select_runs(ordered.where(_RUNS.run_id.in_(page)))}
+        return [runs[run_id] for run_id in page]
 
     def get_aggregate_stats(self) -> dict:
         """Get aggregate statistics across all runs."""
