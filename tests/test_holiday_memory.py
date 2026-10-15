@@ -14,7 +14,11 @@ from datetime import date
 
 import pytest
 
-from immich_memories.memory_types.date_builders import build_holiday, resolve_holiday
+from immich_memories.memory_types.date_builders import (
+    build_holiday,
+    holiday_of_window,
+    resolve_holiday,
+)
 
 
 def test_a_fixed_holiday_resolves_to_its_date() -> None:
@@ -121,3 +125,33 @@ def test_generate_holiday_by_hand_reads_the_same_years_as_the_default() -> None:
 
 def test_years_back_still_narrows_a_holiday_on_request() -> None:
     assert len(build_holiday("christmas", 2025, years_back=3)) == 3
+
+
+@pytest.mark.parametrize(
+    ("holiday", "country"),
+    [
+        ("christmas", "US"),
+        ("new_year", "US"),
+        ("easter", "US"),
+        ("thanksgiving", "US"),
+        ("Ascension Day", "BE"),
+        ("06-07", "US"),
+    ],
+)
+def test_a_holiday_films_window_says_which_holiday_it_was_built_around(holiday, country) -> None:
+    """A cut made before cuts kept their holiday stores only its window (#2573)."""
+    windows = build_holiday(holiday, 2025, years_back=5, country=country)
+    start = min(w.start for w in windows).date()
+    end = max(w.end for w in windows).date()
+
+    found = holiday_of_window(start, end, country=country)
+
+    assert found is not None
+    for year in (2021, 2025):
+        assert resolve_holiday(found, year, country=country) == resolve_holiday(
+            holiday, year, country=country
+        )
+
+
+def test_a_window_built_around_no_holiday_names_none() -> None:
+    assert holiday_of_window(date(2021, 3, 3), date(2025, 7, 9), country="US") is None

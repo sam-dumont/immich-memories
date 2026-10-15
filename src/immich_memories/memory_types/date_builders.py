@@ -585,13 +585,15 @@ def resolve_holiday(holiday: str, year: int, *, country: str = "US") -> date:
 # How far back a holiday film reads when nobody says: every year a library can hold, the same
 # reach On This Day has. A year with no picture costs one empty read and adds nothing to the film.
 HOLIDAY_REACH_YEARS = 30
+# The days either side of a holiday its film reads, every year.
+HOLIDAY_WINDOW_DAYS = 2
 
 
 def build_holiday(
     holiday: str,
     year: int,
     years_back: int | None = None,
-    window_days: int = 2,
+    window_days: int = HOLIDAY_WINDOW_DAYS,
     today: date | None = None,
     country: str = "US",
 ) -> list[DateRange]:
@@ -626,3 +628,33 @@ def build_holiday(
             )
         )
     return ranges
+
+
+def holiday_of_window(start: date, end: date, *, country: str = "US") -> str | None:
+    """The holiday a holiday film's span was built around (`build_holiday` read backwards).
+
+    A holiday film keeps one span, from its first year's window to its last; each window is
+    the holiday and the days either side, so the span's first and last days give the
+    holiday's date in those two years. A known holiday, then one of the country's public
+    holidays, then a household's own fixed date (``MM-DD``); None when nothing falls there.
+    """
+    first = start + timedelta(days=HOLIDAY_WINDOW_DAYS)
+    last = end - timedelta(days=HOLIDAY_WINDOW_DAYS)
+    if first > last:
+        return None
+
+    def falls_there(holiday: str) -> bool:
+        try:
+            return (
+                resolve_holiday(holiday, first.year, country=country) == first
+                and resolve_holiday(holiday, last.year, country=country) == last
+            )
+        except ValueError:
+            return False
+
+    if found := next((known for known in KNOWN_HOLIDAYS if falls_there(known)), None):
+        return found
+    public = _public_holidays(last.year, country).get(last, "").split("; ")[0]
+    if public and falls_there(public):
+        return public
+    return f"{last:%m-%d}" if (first.month, first.day) == (last.month, last.day) else None

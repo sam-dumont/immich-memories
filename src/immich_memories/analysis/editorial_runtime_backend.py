@@ -248,6 +248,7 @@ class ProductionPostCardBackend:
             resolved_person_condition=context.resolved_person_condition,
             face_accounts=context.face_accounts,
             celebrated_birthday=context.celebrated_birthday,
+            occasion=context.occasion,
         )
         source = capture_structure_input(
             workprint,

@@ -21,7 +21,11 @@ JUNK = "2030-05-06T11"
 class PolishJudge(FilmJudge):
     """The rules reader answers everything else; only the polish's own questions come here."""
 
+    summary_prompt = ""
+
     def answer(self, stage, prompt):
+        if stage == "film-summary":
+            self.summary_prompt = prompt
         if stage.startswith("thesis-fit-"):
             named = re.findall(rf"^(P\d+): .*{JUNK}", prompt, re.MULTILINE)
             return json.dumps({"weak": dict.fromkeys(named, "adds nothing")})
@@ -77,14 +81,14 @@ def test_a_catalogued_period_has_its_cut_voted_on_once(tmp_path):
     assert sum(c["seconds"] for c in plan["carriers"]) <= source.case.target_seconds
 
 
-def test_a_polished_film_says_what_its_own_stories_were_never_the_period_account(tmp_path):
+def test_a_polished_film_is_summarised_from_the_account_and_its_own_stories(tmp_path):
     source = film(tmp_path)
-    plan = run(source, PolishJudge(), account=ACCOUNT)
+    judge = PolishJudge()
+    plan = run(source, judge, account=ACCOUNT)
 
-    names = [row["title"] for row in plan["story"]["episodes"] if row["chosen"]]
     assert plan["story"]["thesis"].startswith("A film of ")
-    assert all(name in plan["story"]["thesis"] for name in names)
     assert ACCOUNT not in plan["story"]["thesis"]
+    assert ACCOUNT in judge.summary_prompt
 
 
 def test_a_period_with_no_account_falls_back_to_the_planner_and_asks_no_vote(tmp_path):

@@ -199,18 +199,23 @@ the code named beside it; if the two disagree, the code wins and this entry is s
 - **Thesis**: the up-to-150-word statement of what a period was about. The story synthesis writes
   it (`editorial_story_grouping.py`) and the account carries it to the thin layer
   (`editorial_thin_catalogue.py`), where it sits above every block the model votes on. The
-  account is shared by every film of its period, so it is never a film's summary.
+  polish keeps the account it read on the run (`PlanRun.period_account`) for the summary.
 - **Summary**: what one film was about, stored as the plan's `story.thesis` (the storyboard, the
-  film page, `runs story`, the music mood and the title read it). When no synthesis wrote one,
-  `editorial_film_summary.py` writes it once the cut is settled, from the stories the cut shows:
-  on Full one question fed their names, days, people, occasions, places and trip, with the
-  film's kind, dates and subject in the prompt so the judgment bank never answers another
-  scope's film; on Basic, or when that answer is unusable, a line of the story names in the
-  film's language (`summary.then` in the film-text catalogues). A Full film refines its rules
-  draft, and the refinement clears the draft's Basic line so the model writes the summary.
-  A list of places the model repeats is said once (`one_place_once`), and the plan records the
-  summary's language as `story.thesis_locale`: the Immich label (`operations/film_labelling.py`)
-  uses the summary only when the render is in that language.
+  film page, `runs story`, the music mood, the title and the Immich description read it). When
+  no synthesis wrote one, `editorial_film_summary.py` writes it once the cut is settled: on Full
+  one question fed the period's account (ids taken out) and the stories the cut shows (what
+  each was, first names, occasion, trip, and what its shots show people doing from the
+  activity heads), with the film's kind, dates and subject in the prompt so the judgment bank
+  never answers another scope's film. The answer says what happened and with whom, after the
+  film's occasion (`Case.occasion`: a holiday with the years its cut shows, a trip's
+  destination, whose birthday), which the code puts in front; one naming more than two of the
+  stories' places, a year, an id or the prompt's own labels is refused. On Basic, or when that
+  answer is unusable, a line of the story names in the film's language (`summary.then` in the
+  film-text catalogues). A Full film refines its rules draft, and the refinement clears the
+  draft's Basic line so the model writes the summary. A list of places the model repeats is
+  said once (`one_place_once`), and the plan records the summary's language as
+  `story.thesis_locale`: the Immich label (`operations/film_labelling.py`) uses the summary
+  only when the render is in that language.
 - **Notable record**: a picture an episode reading named as a moment worth a place of its own,
   with the reason (`banked_notable_records` in `catalogue_runtime.py`). Only a story holding one
   can earn an N seat.
@@ -596,6 +601,7 @@ src/immich_memories/
 │   ├── presets.py              # PersonFilter, MemoryPreset
 │   ├── date_builders.py        # build_season(), build_month(), build_on_this_day()
 │   ├── holiday_pool.py         # A holiday film keeps each year's day; its window fills in only when thin
+│   ├── holiday_params.py       # What a holiday film is about; an old cut's holiday read back from its window
 │   └── factory.py              # Registry + preset factories; Album is handled by cli/_album_generation.py
 │
 ├── analysis/                   # Selection: the story-first editorial route (words: see Editorial glossary)
@@ -632,7 +638,7 @@ src/immich_memories/
 │   ├── editorial_thin_layer.py     # ThinPolish: the model reads a rules cut once instead of planning the film;
 │   │                               # held to 4 calls per 12 draft shots + 4 per seat (thin_budget)
 │   ├── editorial_thin_step.py      # The planner's polish step; an unpolished draft (unread period) gets the no-model passes
-│   ├── editorial_film_summary.py   # The film's summary from its own stories: a model question on Full, story names on Basic
+│   ├── editorial_film_summary.py   # The film's summary: the period's account and the cut's stories on Full, story names on Basic
 │   ├── editorial_thin_catalogue.py # What a polish may read of a catalogued period: account, stories, hints
 │   ├── editorial_picture_admission.py # Shared candidate preparation and standing, audience, spacing and repetition checks
 │   ├── editorial_carrier.py        # A playable picture bound to its own story context

@@ -364,10 +364,11 @@ def run_options(command: FC) -> FC:
             "--llm-title/--no-llm-title",
             default=None,
             help=(
-                "Special days are named by the model whenever a reader is configured; "
-                "period, people, birthday, holiday and on-this-day films always "
-                "get the app's own title. --llm-title adds trips, --no-llm-title pins the "
-                "template everywhere (--title still wins)"
+                "Period, people, birthday, holiday and on-this-day films get a title the "
+                "app writes from their facts, never the model's, and an album film takes "
+                "its album's name. Special days are named by the model when a reader is "
+                "configured; --llm-title adds trips, --no-llm-title keeps the app's own "
+                "title everywhere (--title still wins)"
             ),
         ),
         click.option(

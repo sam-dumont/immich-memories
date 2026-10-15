@@ -104,6 +104,8 @@ class PlanRun:
     bind_stitch: Callable[[dict], dict] | None = None
     # The shortest the fit may cut a still to; a longer photo duration raises it (#2131).
     still_floor: float = MIN_CARRIER_SECONDS
+    # The banked account of the film's period the model polish read; the summary tells it.
+    period_account: str = ""
 
 
 def resolve_motion_and_timing(

@@ -175,6 +175,23 @@ a 1 GB film). If the description or tags still didn't stay, the run says so and 
 stays pending and the local film is kept. Uploading again (the automatic retry does it for
 automatic films) sends the same file, which Immich recognises, and writes the label once more.
 
+### Old holiday cuts keep their holiday
+
+A holiday cut made before cuts saved their holiday used to come back from `runs render` (or an
+upload from the run page) titled by its dates: "December 2021 to December 2025". The holiday is
+now read back from the days the cut covers, so it renders as "Christmas · 2022–2025" again. Holiday
+cuts made today aren't affected.
+
+### The film summary says what happened
+
+On Full, the summary (also the film's description in Immich) read like an inventory: every
+place the stories went, sometimes twice, then the story names with their dates. It now says
+what happened and who it was with in a sentence or three, from what the library's readings
+say about the period and what the film's shots show people doing. A holiday, trip or birthday
+film starts with its occasion ("Assumption, 2004–2026."). No list of places, no
+dates: the title already has those. Without a reader the summary is still the story names.
+Stored cuts keep the summary they have: cut again to get a new one.
+
 ### Landscapes drift instead of zooming
 
 A still with nobody in it (a landscape, a building, a plate) used to push 25-35 % into its

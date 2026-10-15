@@ -15,7 +15,6 @@ from immich_memories.api.person_scope import window_condition
 from immich_memories.cli._asset_fetch import fetch_media, holiday_pool
 from immich_memories.cli._date_resolution import (
     BIRTHDAY_FLAG_FORMAT,
-    holiday_params_for,
     infer_memory_type,
     resolve_date_range,
 )
@@ -69,6 +68,7 @@ from immich_memories.memory_types.date_builders import (
     birthday_anchor,
     birthdays_params,
 )
+from immich_memories.memory_types.holiday_params import holiday_params_for
 from immich_memories.planning.auto_duration import (
     DURATION_FROM_DURATION_FLAG,
     DURATION_FROM_MATERIAL,

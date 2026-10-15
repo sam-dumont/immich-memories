@@ -512,7 +512,9 @@ def _select(
     record_story("picture-admission", {"checks": gates.decisions})
     admit_retained_originals(run, source, material.builder)
     check_finished_cut(source, selection, material, run, gate, banked, share_log, record_story)
-    summarise_the_film(source, ports, selection, run.carriers, record=record_story)
+    summarise_the_film(
+        source, ports, selection, run.carriers, record=record_story, account=run.period_account
+    )
     return PlanOutcome(
         contract=contract,
         carriers=run.carriers,

@@ -56,6 +56,9 @@ class Case:
     face_accounts: Mapping[str, str] = field(default_factory=dict)
     # The birthday a birthday film celebrates ("MM-DD"); None for every other film.
     celebrated_birthday: str | None = None
+    # What the film is the occasion of, in the film's language: a holiday's name, a trip's
+    # destination, whose birthday. The summary leads with it; empty for a period film.
+    occasion: str = ""
 
     def __post_init__(self) -> None:
         from immich_memories.analysis.special_event_scope import validate_special_event_scope

@@ -318,9 +318,9 @@ class FilmJudge(StoryJudge):
                 }
             )
         if stage == "film-summary":
-            # The film's summary, told from the stories the prompt was fed (#2488).
+            # The film's summary, told from what the stories the prompt was fed were (#2575).
             names = [
-                json.loads(line)["name"] for line in prompt.split("STORIES\n", 1)[1].splitlines()
+                json.loads(line)["what"] for line in prompt.split("STORIES\n", 1)[1].splitlines()
             ]
             return json.dumps({"summary": "A film of " + "; ".join(names) + "."})
         if stage.startswith("story-threads") and self.threads is not None:

@@ -138,6 +138,8 @@ class EditorialRunContext:
     # The birthday a birthday film celebrates ("MM-DD"), from `--birthday`: its subject's
     # birthday is a story of its own on every photographed occurrence of it.
     celebrated_birthday: str | None = None
+    # What the film is the occasion of, in the film's language (`Case.occasion`).
+    occasion: str = ""
     # The forwarded copies that fill gaps in the film's camera timeline (`forwarded_fallback`),
     # by asset id, chosen by the CLI; empty while `analysis.forwarded_copies_when_short` is off.
     forwarded_stand_ins: tuple[str, ...] = ()
