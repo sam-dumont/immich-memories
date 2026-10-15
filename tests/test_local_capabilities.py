@@ -314,3 +314,41 @@ async def test_weights_a_render_already_fetched_pass_the_asset_check(monkeypatch
 
     music = next(row for row in rows if row.name == "Local music")
     assert music.message == "generation reached"
+
+
+def _installed_local_music(monkeypatch, *, unified_gib: float, available_gib: float) -> Config:
+    # WHY: the installed audio runtime and the host's memory are external state.
+    monkeypatch.setattr(
+        "immich_memories.audio.generators.ace_step_isolated.isolated_python", lambda: None
+    )
+    monkeypatch.setattr(
+        "immich_memories.audio.generators.ace_step_runtime.is_ace_step_importable", lambda: True
+    )
+    monkeypatch.setattr("platform.system", lambda: "Darwin")
+    monkeypatch.setattr(
+        "immich_memories.audio.generators.ace_step_model_choice._unified_memory_gib",
+        lambda: unified_gib,
+    )
+    monkeypatch.setattr(
+        "immich_memories.audio.generators.memory_budget.available_memory_bytes",
+        lambda: int(available_gib * 2**30),
+    )
+    return Config(ace_step={"enabled": True, "mode": "lib"})
+
+
+def test_auto_music_is_judged_on_the_model_it_would_load(monkeypatch):
+    config = _installed_local_music(monkeypatch, unified_gib=128, available_gib=12)
+
+    music = next(row for row in local_capabilities(config) if row.name == "Local music")
+
+    # XL does not fit in 12 GB free, but a render falls back to 2B, which does.
+    assert music.status == "unverified"
+
+
+def test_auto_music_is_blocked_when_not_even_2b_fits(monkeypatch):
+    config = _installed_local_music(monkeypatch, unified_gib=128, available_gib=4)
+
+    music = next(row for row in local_capabilities(config) if row.name == "Local music")
+
+    assert music.status == "blocked"
+    assert "acestep-v15-turbo" in music.message

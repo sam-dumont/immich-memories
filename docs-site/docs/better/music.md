@@ -10,7 +10,7 @@ The music reads the season in your home base's hemisphere, the same way titles d
 
 The generator plays one of three styles: acoustic folk, electronic, or solo piano. Those are the ones that held up in listening tests on real films. Jazz trio, indie rock, orchestral, ambient and metal exist in the caption matrix but the app never picks them by itself.
 
-A generated soundtrack plays as one piece. With ACE-Step, a film up to 4 minutes gets a single take; a longer one joins takes that share one style, tempo and key, on a bar line.
+A generated soundtrack plays as one piece. With ACE-Step, a film up to 4 minutes gets a single take, in whatever key and time signature ACE-Step picks; a longer one joins takes that share one style, tempo and key, on a bar line.
 
 Without a generator, a film longer than one bundled track plays a varied, crossfaded playlist from the mood's folder instead of looping a single track, and the bundled mix is mastered to the same loudness as a generated one.
 
@@ -37,18 +37,19 @@ Every checkout and worktree needs its own `make install-acestep`. The audio stac
 It uses the 2B model with a 0.6B planner, requiring about **9 GB for resident weights** and
 **7 GB on disk**. That test profile is larger than the planner-free configuration below.
 
-Start with the smaller default model:
+Then turn it on:
 
 ```yaml
 advanced:
   ace_step:
     enabled: true
     mode: lib
-    model_variant: turbo
     use_lm: false
 ```
 
-The 2B profile without its planner needs about **7 GB free for resident weights** and **6 GB on disk**. An app-owned local reader releases its model memory before local music or stem separation. An external reader server owns its own memory and must leave enough free for audio. Larger profiles, supported platform versions and audio-environment repairs are in the [audio runtime reference](../reference/local-audio.md#memory-and-disk).
+The model is picked from the machine: the 4B XL model on a Mac with 64 GB or more of unified memory, the 2B model below that. XL sounds brighter; if it doesn't fit when the render starts, the render uses 2B and says so in the log. Set `model_variant: turbo` to always use 2B, or `xl-turbo` to always use XL.
+
+The 2B profile without its planner needs about **7 GB free for resident weights** and **6 GB on disk**; XL needs about **21 GB** and **20 GB**. An app-owned local reader releases its model memory before local music or stem separation. An external reader server owns its own memory and must leave enough free for audio. Larger profiles, supported platform versions and audio-environment repairs are in the [audio runtime reference](../reference/local-audio.md#memory-and-disk).
 
 ## Local on NVIDIA
 
@@ -73,7 +74,9 @@ advanced:
     api_url: http://music.example.lan:8000
 ```
 
-The server owns its weights and GPU. An app in Docker Desktop can reach a native Mac server through `host.docker.internal`. A Mac container cannot use Metal.
+The server owns its weights and GPU, so it picks the model: `model_variant` only applies to `lib` mode. The app asks the server not to run its 5Hz planner (`thinking`, `use_cot_caption` and `use_cot_metas` all false), because a server with a planner loaded would otherwise rewrite the app's caption before generating. Set `use_lm: true` to let it. Mastering stays in the app either way.
+
+An app in Docker Desktop can reach a native Mac server through `host.docker.internal`. A Mac container cannot use Metal.
 
 ### Sharing one GPU with the worker
 

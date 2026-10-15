@@ -105,12 +105,12 @@ advanced:
   ace_step:
     enabled: true
     mode: lib
-    model_variant: turbo
     use_lm: false
 ```
 
-Restart the app. This smaller profile needs about 7 GB free for resident weights and 6 GB on disk;
-generation needs working memory too. [Generated music](../../better/music.md#local-on-a-mac)
+Restart the app. A Mac with 64 GB or more loads the 4B XL model (about 21 GB free for resident
+weights, 20 GB on disk); a smaller one loads the 2B model (about 7 GB and 6 GB).
+Generation needs working memory too. [Generated music](../../better/music.md#local-on-a-mac)
 and the [audio runtime](../../reference/local-audio.md#memory-and-disk) cover larger profiles,
 checks and fallback reporting. Each checkout or worktree needs its own audio installation.
 

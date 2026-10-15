@@ -87,8 +87,6 @@ class TestACEStepAPIPayload:
 
         assert captured_payload.get("instrumental")
         assert "bpm" in captured_payload
-        assert "keyscale" in captured_payload
-        assert "timesignature" in captured_payload
 
 
 class TestMoodVariety:

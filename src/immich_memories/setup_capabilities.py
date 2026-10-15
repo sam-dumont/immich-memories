@@ -22,6 +22,7 @@ class Capability:
 def music_capabilities(config: Config, *, test_music: bool = False) -> list[Capability]:
     """Offer smaller local profiles without calling a weight budget a successful test."""
     from immich_memories.audio.generators.ace_step_isolated import install_hint, isolated_python
+    from immich_memories.audio.generators.ace_step_model_choice import resolve_model_variant
     from immich_memories.audio.generators.ace_step_runtime import is_ace_step_importable
     from immich_memories.audio.generators.memory_budget import (
         available_memory_bytes,
@@ -33,7 +34,7 @@ def music_capabilities(config: Config, *, test_music: bool = False) -> list[Capa
     profiles = dict.fromkeys(
         [
             (
-                configured.model_variant.removeprefix("acestep-v15-"),
+                resolve_model_variant(configured.model_variant).removeprefix("acestep-v15-"),
                 configured.lm_model_size if configured.use_lm else None,
             ),
             ("turbo", None),

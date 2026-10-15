@@ -123,10 +123,12 @@ class ACEStepConfig(BaseModel):
         description="API key for ACE-Step server authentication (optional)",
     )
     model_variant: str = Field(
-        default="turbo",
+        default="auto",
         description=(
-            "ACE-Step DiT model: 'turbo'/'base' use the 2B family; "
-            "'acestep-v15-xl-turbo' is the recommended 4B XL production model"
+            "ACE-Step DiT model. 'auto' loads the 4B XL turbo model on a Mac with 64 GB "
+            "or more of unified memory or a GPU with 16 GB or more, and the 2B 'turbo' "
+            "below that, falling back to 2B if XL fails to load. 'turbo'/'base' pin the "
+            "2B family; 'xl-turbo' pins the 4B XL model"
         ),
     )
     lm_model_size: str = Field(
@@ -139,7 +141,8 @@ class ACEStepConfig(BaseModel):
             "Use the 5Hz language model's 'thinking mode'. Off by default: it rewrites "
             "the caption and invents its own genre metadata, which drifts instrumental "
             "prompts off-brief, and it dominates generation time (~45s -> ~17s per "
-            "60s track when disabled). Enable for prompt-following on complex briefs."
+            "60s track when disabled). Enable for prompt-following on complex briefs. In API "
+            "mode, off also tells the server to skip its planner and keep the caption."
         ),
     )
     cpu_offload: bool = Field(

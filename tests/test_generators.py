@@ -735,7 +735,7 @@ class TestACEStepConfig:
     def test_defaults(self):
         config = ACEStepConfig()
         assert config.mode == "api"
-        assert config.model_variant == "turbo"
+        assert config.model_variant == "auto"
         assert config.lm_model_size == "1.7B"
         assert not config.use_lm
         assert config.num_versions == 3
@@ -946,7 +946,7 @@ class TestConfigIntegration:
         assert hasattr(config, "ace_step")
         assert not config.ace_step.enabled
         assert config.ace_step.mode == "api"
-        assert config.ace_step.model_variant == "turbo"
+        assert config.ace_step.model_variant == "auto"
 
     def test_old_music_source_key_is_ignored(self):
         """Pre-0.41 YAML still loads: `audio.music_source` was removed, not renamed."""
