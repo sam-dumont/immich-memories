@@ -144,6 +144,6 @@ A new check goes into the Makefile first; CI and the hook call the target.
 ## Key entry points
 
 - CLI: `src/immich_memories/cli/__init__.py` → `main()`
-- Pipeline: `src/immich_memories/analysis/smart_pipeline.py` → `SmartPipeline.run()`
+- Pipeline: `src/immich_memories/analysis/runtime/smart_pipeline.py` → `SmartPipeline.run()`
 - Assembly: `src/immich_memories/processing/video_assembler.py` → `VideoAssembler.assemble()`
 - Web: `src/immich_memories/web/server.py` → `create_app()` (FastAPI); the client is `web/` (SvelteKit)

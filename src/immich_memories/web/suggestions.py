@@ -15,7 +15,7 @@ from immich_memories.automation.failure_backoff import backoff_label
 from immich_memories.automation.models import AutoOutcome
 from immich_memories.automation.runner import AutomationAlreadyRunningError, AutoRunner
 from immich_memories.automation.state_store import AutomationStateStore
-from immich_memories.config_loader import Config, loaded_config_file
+from immich_memories.config.loader import Config, loaded_config_file
 from immich_memories.db import open_store
 from immich_memories.tracking import RunDatabase
 from immich_memories.web.answer_cache import AnswerCache, Cached

@@ -37,7 +37,7 @@ def test_the_run_context_carries_the_derived_origin_to_the_record():
 
     from immich_memories.cli._editorial_context import build_editorial_context
     from immich_memories.cli._run_inputs import ResolvedRunInputs
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.timeperiod import DateRange
 
     config = Config()

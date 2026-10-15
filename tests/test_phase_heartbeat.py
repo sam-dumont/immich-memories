@@ -107,7 +107,7 @@ def test_a_scheduled_attempt_keeps_getting_phase_events_while_its_phase_works(tm
 
     from immich_memories.automation.state_store import AutomationStateStore
     from immich_memories.cli.attempt_phase_reporter import AttemptPhaseReporter
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
 
     config = Config(
         cache={"database": str(tmp_path / "a.db"), "directory": str(tmp_path / "cache")}

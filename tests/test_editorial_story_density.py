@@ -5,8 +5,8 @@ import re
 
 import pytest
 
-from immich_memories.analysis.editorial_story_shortlist import DepictedChoice
-from immich_memories.analysis.editorial_story_vote import pick_story_moments
+from immich_memories.analysis.selection.vote import pick_story_moments
+from immich_memories.analysis.stories.shortlist import DepictedChoice
 
 
 class DensityJudge:

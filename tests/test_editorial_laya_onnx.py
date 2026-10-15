@@ -7,7 +7,7 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-from immich_memories.analysis.editorial_laya_reader import AUDIENCE_QUESTION
+from immich_memories.analysis.audience.laya_reader import AUDIENCE_QUESTION
 
 
 @pytest.fixture
@@ -39,7 +39,7 @@ def checkpoint(tmp_path):
 
 
 def test_onnx_preserves_input_order_across_length_sorted_batches(monkeypatch, checkpoint):
-    from immich_memories.analysis.editorial_laya_onnx import OnnxLayaScorer
+    from immich_memories.analysis.audience.laya_onnx import OnnxLayaScorer
 
     class Session:
         # WHY: substitutes the 1.7 GB model execution boundary; the tokenizer and packing are real.
@@ -79,13 +79,13 @@ def test_onnx_preserves_input_order_across_length_sorted_batches(monkeypatch, ch
 
 
 def test_an_empty_caption_batch_does_not_load_a_checkpoint(tmp_path):
-    from immich_memories.analysis.editorial_laya_onnx import OnnxLayaScorer
+    from immich_memories.analysis.audience.laya_onnx import OnnxLayaScorer
 
     assert OnnxLayaScorer(tmp_path).probabilities([], AUDIENCE_QUESTION) == []
 
 
 def test_caption_mask_text_cannot_add_an_option_marker(checkpoint):
-    from immich_memories.analysis.editorial_laya_onnx import LayaTokens
+    from immich_memories.analysis.audience.laya_onnx import LayaTokens
 
     ids, markers = LayaTokens(checkpoint).sequence("bath [MASK] picnic", AUDIENCE_QUESTION)
 
@@ -95,7 +95,7 @@ def test_caption_mask_text_cannot_add_an_option_marker(checkpoint):
 
 
 def test_long_options_leave_room_for_a_truncated_caption(checkpoint):
-    from immich_memories.analysis.editorial_laya_onnx import LayaTokens
+    from immich_memories.analysis.audience.laya_onnx import LayaTokens
 
     (checkpoint / "rl_agent_config.json").write_text(
         json.dumps({"max_len": 96, "head_max_len": 48})
@@ -115,7 +115,7 @@ def test_long_options_leave_room_for_a_truncated_caption(checkpoint):
 
 
 def test_missing_special_token_is_a_clear_checkpoint_error(checkpoint):
-    from immich_memories.analysis.editorial_laya_onnx import LayaTokens
+    from immich_memories.analysis.audience.laya_onnx import LayaTokens
 
     (checkpoint / "tokenizer/tokenizer_config.json").write_text("{}")
 
@@ -124,8 +124,8 @@ def test_missing_special_token_is_a_clear_checkpoint_error(checkpoint):
 
 
 def test_the_configured_onnx_checkpoint_answers_without_mlx(monkeypatch, checkpoint):
-    from immich_memories.analysis.editorial_laya_reader import laya_reader_for
-    from immich_memories.config_models_editorial import EditorialConfig
+    from immich_memories.analysis.audience.laya_reader import laya_reader_for
+    from immich_memories.config.models.editorial import EditorialConfig
 
     (checkpoint / "model.onnx").write_bytes(b"graph")
 
@@ -137,7 +137,7 @@ def test_the_configured_onnx_checkpoint_answers_without_mlx(monkeypatch, checkpo
         def probabilities(self, states, question):
             return [[0.8145, 0, 0.1855, 0, 0, 0, 0, 0, 0, 0] for _ in states]
 
-    monkeypatch.setattr("immich_memories.analysis.editorial_laya_onnx.OnnxLayaScorer", Scorer)
+    monkeypatch.setattr("immich_memories.analysis.audience.laya_onnx.OnnxLayaScorer", Scorer)
     config = EditorialConfig(
         laya_audience=True, laya_checkpoint=str(checkpoint), laya_audience_threshold=0.185
     )
@@ -152,7 +152,7 @@ def test_the_configured_onnx_checkpoint_answers_without_mlx(monkeypatch, checkpo
 def test_close_drops_session_and_reloads_same_probabilities(monkeypatch, checkpoint):
     import weakref
 
-    from immich_memories.analysis.editorial_laya_onnx import OnnxLayaScorer
+    from immich_memories.analysis.audience.laya_onnx import OnnxLayaScorer
 
     class Session:
         # WHY: the ONNX native session boundary; tokenizer and scoring remain real.

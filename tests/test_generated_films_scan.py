@@ -15,11 +15,11 @@ from unittest.mock import AsyncMock
 import httpx
 import pytest
 
-from immich_memories.analysis.editorial_source import library_source_scope
+from immich_memories.analysis.sources.window_context import library_source_scope
 from immich_memories.api.generated_asset_tags import GENERATED_MEMORY_TAG
 from immich_memories.api.permissions import READ_PERMISSIONS
 from immich_memories.api.sync_client import SyncImmichClient
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.db import open_store
 from immich_memories.timeperiod import DateRange
 from immich_memories.tracking.models import RunMetadata

@@ -11,7 +11,7 @@ import subprocess
 from pathlib import Path
 from unittest.mock import MagicMock
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.generate import GenerationParams
 from immich_memories.generate_music import MusicSelection
 from immich_memories.generate_settings import run_music_phase

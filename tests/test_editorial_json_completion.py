@@ -9,13 +9,13 @@ from unittest.mock import patch
 
 import pytest
 
-from immich_memories.analysis.editorial_case import TextRequest
-from immich_memories.analysis.editorial_json_completion import (
+from immich_memories.analysis.judgments.json_completion import (
     complete_final_json,
     json_format_repair_prompt,
 )
-from immich_memories.analysis.editorial_text_gateway import QueryTextRequester
-from immich_memories.config_models_llm import LLMConfig
+from immich_memories.analysis.judgments.text_gateway import QueryTextRequester
+from immich_memories.analysis.judgments.text_request import TextRequest
+from immich_memories.config.models.llm import LLMConfig
 from tests.annotation_rows import annotation_store
 
 
@@ -69,7 +69,7 @@ def test_failed_field_repair_never_banks_partial_result(tmp_path):
     # WHY: the model provider is the external boundary; the scripted reply drives the parser under test
     with (
         # WHY: the model provider is the external boundary; the scripted reply drives the parser under test
-        patch("immich_memories.analysis.editorial_text_gateway.query_llm", query),
+        patch("immich_memories.analysis.judgments.text_gateway.query_llm", query),
         pytest.raises(ValueError, match="exactly the requested fields"),
     ):
         asyncio.run(QueryTextRequester().request(request))
@@ -115,7 +115,7 @@ def test_complete_disjoint_field_sequence_preserves_values_without_model_retry(t
         json_fields=("claim", "anchors", "extra"),
     )
     # WHY: the model provider is the external boundary; the scripted reply drives the parser under test
-    with patch("immich_memories.analysis.editorial_text_gateway.query_llm", query):
+    with patch("immich_memories.analysis.judgments.text_gateway.query_llm", query):
         requester = QueryTextRequester(json_decoding_observer=decoded.append)
         first = asyncio.run(requester.request(request))
         warm = asyncio.run(requester.request(request))
@@ -153,7 +153,7 @@ def test_field_sequences_reject_overwrite_incomplete_or_ambiguous_content(raw):
 def test_field_sequence_encoding_policy_is_part_of_only_field_request_identity(
     tmp_path, monkeypatch
 ):
-    from immich_memories.analysis import editorial_json_completion
+    from immich_memories.analysis.judgments import json_completion as editorial_json_completion
 
     request = TextRequest(
         "evidence",
@@ -188,7 +188,7 @@ def test_json_contract_retries_only_incomplete_decision_then_warm_is_exact(tmp_p
     )
     assert request.judgment_key != replace(request, json_object=False).judgment_key
     # WHY: the model provider is the external boundary; the scripted reply drives the parser under test
-    with patch("immich_memories.analysis.editorial_text_gateway.query_llm", query):
+    with patch("immich_memories.analysis.judgments.text_gateway.query_llm", query):
         first = asyncio.run(QueryTextRequester().request(request))
         warm = asyncio.run(QueryTextRequester().request(request))
     assert first.raw == warm.raw == '{"threads":[]}'
@@ -215,7 +215,7 @@ def test_short_malformed_fields_get_one_format_correction_and_only_valid_result_
         json_object=True,
     )
     # WHY: the model provider is the external boundary; the scripted reply drives the parser under test
-    with patch("immich_memories.analysis.editorial_text_gateway.query_llm", query):
+    with patch("immich_memories.analysis.judgments.text_gateway.query_llm", query):
         requester = QueryTextRequester(json_failure_observer=failures.append)
         first = asyncio.run(requester.request(request))
         warm = asyncio.run(requester.request(request))
@@ -250,7 +250,7 @@ def test_failed_format_repair_is_preserved_and_never_banked_as_a_decision(tmp_pa
     # WHY: the model provider is the external boundary; the scripted reply drives the parser under test
     with (
         # WHY: the model provider is the external boundary; the scripted reply drives the parser under test
-        patch("immich_memories.analysis.editorial_text_gateway.query_llm", query),
+        patch("immich_memories.analysis.judgments.text_gateway.query_llm", query),
         pytest.raises(ValueError, match="no complete final JSON"),
     ):
         asyncio.run(QueryTextRequester(json_failure_observer=failures.append).request(request))
@@ -261,7 +261,7 @@ def test_failed_format_repair_is_preserved_and_never_banked_as_a_decision(tmp_pa
 
 
 def test_json_recovery_policy_splits_only_json_request_identity(tmp_path, monkeypatch):
-    from immich_memories.analysis import editorial_json_completion
+    from immich_memories.analysis.judgments import json_completion as editorial_json_completion
 
     request = TextRequest(
         "evidence",
@@ -295,7 +295,7 @@ def test_the_repair_request_names_the_field_the_reply_left_out(tmp_path):
         json_fields=("first", "last"),
     )
     # WHY: the model provider is the external boundary; the scripted reply drives the parser under test
-    with patch("immich_memories.analysis.editorial_text_gateway.query_llm", query):
+    with patch("immich_memories.analysis.judgments.text_gateway.query_llm", query):
         answer = asyncio.run(QueryTextRequester().request(request))
     assert answer.raw == '{"first":1,"last":true}'
     repair = prompts[1].removeprefix(request.prompt)

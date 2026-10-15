@@ -4,15 +4,15 @@ from pathlib import Path
 
 from pydantic_settings import EnvSettingsSource
 
-from immich_memories.config_loader import Config, _load_yaml_data
-from immich_memories.config_models import CacheConfig, expand_file_references
-from immich_memories.config_models_editorial import EditorialConfig
-from immich_memories.config_models_render import OutputConfig
+from immich_memories.config.loader import Config, load_yaml_data
+from immich_memories.config.models.editorial import EditorialConfig
+from immich_memories.config.models.render import OutputConfig
+from immich_memories.config.models.resources import CacheConfig, expand_file_references
 
 
 def legacy_path_settings(home: Path) -> tuple[CacheConfig, EditorialConfig, OutputConfig]:
     """Resolve path sections from YAML and environment without constructing runtime Config."""
-    loaded = expand_file_references(Config, _load_yaml_data(home / "config.yaml"))
+    loaded = expand_file_references(Config, load_yaml_data(home / "config.yaml"))
     environment = EnvSettingsSource(Config)()
     cache = (loaded.get("cache") or {}) | (environment.get("cache") or {})
     editorial = (loaded.get("editorial") or {}) | (environment.get("editorial") or {})

@@ -477,3 +477,8 @@ class VideoClipInfo(BaseModel):
         """Check if video is HDR based on color transfer function."""
         hdr_transfers = {"smpte2084", "arib-std-b67", "smpte428"}  # HDR10, HLG, DCI-P3
         return self.color_transfer in hdr_transfers if self.color_transfer else False
+
+
+def asset_of(source: Asset | VideoClipInfo) -> Asset:
+    """The Asset inside a source, whichever representation the pool carries."""
+    return source.asset if isinstance(source, VideoClipInfo) else source

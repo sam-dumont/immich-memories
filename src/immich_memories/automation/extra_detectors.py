@@ -11,7 +11,7 @@ from immich_memories.automation.candidates import Detection, MemoryCandidate, gu
 from immich_memories.automation.discovery_extras import ExtraReads
 from immich_memories.automation.person_detectors import PersonMonthlyDetector
 from immich_memories.automation.season_holiday_detectors import HolidayDetector, SeasonDetector
-from immich_memories.config_models_automation import AutomationConfig
+from immich_memories.config.models.automation import AutomationConfig
 
 
 def run_extra_detectors(

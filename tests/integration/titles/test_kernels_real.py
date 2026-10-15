@@ -24,7 +24,7 @@ from immich_memories.titles import kernels  # noqa: E402
 from immich_memories.titles.kernels import (  # noqa: E402
     KERNELS_AVAILABLE,
     GPUBuffers,
-    _create_gaussian_kernel,
+    create_gaussian_kernel,
     init_kernels,
 )
 
@@ -48,7 +48,7 @@ class TestLinearGradientKernel:
     def test_fills_frame_with_non_uniform_color(self, _kernels_on_cpu):
         """Linear gradient should produce smoothly varying pixels, not a flat fill."""
         frame = np.zeros((H, W, 3), dtype=np.float32)
-        kernels._generate_linear_gradient(
+        kernels.compiled_generate_linear_gradient(
             frame,
             0.1,
             0.1,
@@ -69,7 +69,7 @@ class TestLinearGradientKernel:
         """Two gradients with different angles should differ."""
         frame_a = np.zeros((H, W, 3), dtype=np.float32)
         frame_b = np.zeros((H, W, 3), dtype=np.float32)
-        kernels._generate_linear_gradient(
+        kernels.compiled_generate_linear_gradient(
             frame_a,
             0.1,
             0.1,
@@ -81,7 +81,7 @@ class TestLinearGradientKernel:
             W,
             H,
         )
-        kernels._generate_linear_gradient(
+        kernels.compiled_generate_linear_gradient(
             frame_b,
             0.1,
             0.1,
@@ -104,12 +104,12 @@ class TestGaussianBlurKernel:
         noisy = rng.uniform(0.2, 0.8, (H, W, 3)).astype(np.float32)
         original_std = noisy.std()
 
-        kernel = _create_gaussian_kernel(radius=5, sigma=2.0)
+        kernel = create_gaussian_kernel(radius=5, sigma=2.0)
         temp = np.zeros_like(noisy)
         output = np.zeros_like(noisy)
 
-        kernels._gaussian_blur_h(noisy, temp, kernel, 5)
-        kernels._gaussian_blur_v(temp, output, kernel, 5)
+        kernels.compiled_gaussian_blur_h(noisy, temp, kernel, 5)
+        kernels.compiled_gaussian_blur_v(temp, output, kernel, 5)
 
         blurred_std = output.std()
         assert blurred_std < original_std * 0.8, (
@@ -121,12 +121,12 @@ class TestGaussianBlurKernel:
         frame = np.full((H, W, 3), 0.5, dtype=np.float32)
         frame[H // 2, W // 2, :] = 1.0
 
-        kernel = _create_gaussian_kernel(radius=3)
+        kernel = create_gaussian_kernel(radius=3)
         temp = np.zeros_like(frame)
         output = np.zeros_like(frame)
 
-        kernels._gaussian_blur_h(frame, temp, kernel, 3)
-        kernels._gaussian_blur_v(temp, output, kernel, 3)
+        kernels.compiled_gaussian_blur_h(frame, temp, kernel, 3)
+        kernels.compiled_gaussian_blur_v(temp, output, kernel, 3)
 
         assert output.min() >= 0.0
         assert output.max() <= 1.0
@@ -141,7 +141,7 @@ class TestFinalizeToU8:
         frame[0, 2, :] = 1.0
 
         output = np.zeros((H, W, 3), dtype=np.uint8)
-        kernels._finalize_to_output(frame, output, 255.0)
+        kernels.finalize_to_output(frame, output, 255.0)
 
         assert output[0, 0, 0] == 0, "Black should map to 0"
         assert 126 <= output[0, 1, 0] <= 128, f"Mid-gray mapped to {output[0, 1, 0]}"
@@ -154,7 +154,7 @@ class TestFinalizeToU8:
         frame[0, 1, :] = 1.5
 
         output = np.zeros((H, W, 3), dtype=np.uint8)
-        kernels._finalize_to_output(frame, output, 255.0)
+        kernels.finalize_to_output(frame, output, 255.0)
 
         assert output[0, 0, 0] == 0, "Negative should clamp to 0"
         assert output[0, 1, 0] == 255, "Over-1.0 should clamp to 255"
@@ -175,7 +175,7 @@ class TestGPUBuffers:
         bg = np.full((H, W, 3), 0.6, dtype=np.float32)
         gpu.load_background(bg)
 
-        kernels._finalize_to_output(gpu.frame, gpu.output, 255.0)
+        kernels.finalize_to_output(gpu.frame, gpu.output, 255.0)
         result = gpu.read_output()
 
         assert result.shape == (H, W, 3)

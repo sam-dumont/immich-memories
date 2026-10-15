@@ -1,6 +1,6 @@
 """Shared identity keeps a selected partner's picture without widening the library."""
 
-from immich_memories.analysis.person_presence import present_on_assets
+from immich_memories.analysis.sources.person_presence import present_on_assets
 from immich_memories.api.models import Asset
 from immich_memories.api.person_expression import PersonExpression
 from tests.household_fake import picture

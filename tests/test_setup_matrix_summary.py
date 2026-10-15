@@ -7,8 +7,8 @@ from pathlib import Path
 
 import pytest
 
-from immich_memories.analysis.llm_metrics import collecting, record_reply
-from immich_memories.analysis.llm_usage_record import write_llm_usage
+from immich_memories.analysis.llm.metrics import collecting, record_reply
+from immich_memories.analysis.llm.usage_record import write_llm_usage
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 

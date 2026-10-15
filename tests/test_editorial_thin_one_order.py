@@ -11,7 +11,7 @@ from datetime import timedelta
 
 import pytest
 
-from immich_memories.analysis.editorial_story_standing import StandingGate
+from immich_memories.analysis.selection.standing import StandingGate
 from tests.editorial_thin_fixtures import (
     DOUBTFUL,
     START,

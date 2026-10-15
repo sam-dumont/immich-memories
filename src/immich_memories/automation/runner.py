@@ -47,7 +47,7 @@ from immich_memories.automation.status import (
     resolve_cooldown_hours,
 )
 from immich_memories.automation.variety import VarietyDecision
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.db import Store, open_store
 from immich_memories.db.leases import Lease, LeaseHeldError
 from immich_memories.operations.auto_output import NOTHING_WORTH_A_FILM, retain_output

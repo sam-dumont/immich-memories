@@ -48,7 +48,7 @@ At this rate 10,000 pictures would take 2 h 38 min.
 The last line projects the measured rate onto `--library-size` pictures (1,000 unless you pass one; the
 example used `--library-size 10000`). `s/picture` is the number to compare between machines; `share`
 says which producer to move to a faster box. With [the inference service](../better/inference.md) the heads
-and detectors run elsewhere, and a `remote_facts` row appears. On GPU and Full a `captions` row is always
+and detectors run elsewhere, and a `preparation.remote_facts` row appears. On GPU and Full a `captions` row is always
 there: `0` pending means every picture in the scope already had its caption.
 
 The count is pictures, not files. A Live Photo is one picture, so a month shot mostly in Live Photos

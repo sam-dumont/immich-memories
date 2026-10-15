@@ -6,7 +6,7 @@ from dataclasses import FrozenInstanceError
 
 import pytest
 
-from immich_memories.analysis.editorial_contracts import (
+from immich_memories.analysis.corpus.records import (
     ConservationCheck,
     DecisionProvenance,
     InsightEvidence,

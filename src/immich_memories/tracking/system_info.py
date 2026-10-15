@@ -30,10 +30,10 @@ def capture_system_info() -> SystemInfo:
         machine_arch=platform.machine(),
         cpu_brand=_get_cpu_brand(),
         cpu_cores=os.cpu_count() or 0,
-        ram_gb=_get_ram_gb(),
+        ram_gb=get_ram_gb(),
         hw_accel_backend=_get_hw_accel_backend(),
         gpu_name=_get_gpu_name(),
-        vram_mb=_get_vram_mb(),
+        vram_mb=get_vram_mb(),
         ffmpeg_version=_get_ffmpeg_version(),
         opencv_version=_get_opencv_version(),
         gpu_kernels_available=False,
@@ -134,7 +134,7 @@ def _get_ram_gb_windows() -> float:
     return 0.0
 
 
-def _get_ram_gb() -> float:
+def get_ram_gb() -> float:
     """Get total RAM in GB."""
     _ram_funcs = {
         "darwin": _get_ram_gb_macos,
@@ -226,7 +226,7 @@ def _get_gpu_name() -> str | None:
     return None
 
 
-def _get_vram_mb() -> int:
+def get_vram_mb() -> int:
     """Get GPU VRAM in MB if available."""
     try:
         system = platform.system().lower()

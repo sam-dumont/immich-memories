@@ -7,7 +7,7 @@ from unittest.mock import patch
 from immich_memories.automation.candidates import CandidateCategory, MemoryCandidate
 from immich_memories.automation.models import AutoOutcome
 from immich_memories.automation.runner import AutoRunner
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 
 
 def test_explicit_candidate_can_choose_the_second_suggestion(tmp_path):

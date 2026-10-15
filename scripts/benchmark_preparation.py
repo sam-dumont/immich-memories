@@ -176,7 +176,7 @@ def run_jpeg_decode(stage: Stage, previews: Sequence[Preview], _: Any) -> None:
 
 
 def run_pixel_facts(stage: Stage, previews: Sequence[Preview], _: Any) -> None:
-    from immich_memories.analysis.editorial_preparation_pixels import pixel_facts
+    from immich_memories.analysis.preparation.pixels import pixel_facts
 
     for _name, payload in previews:
         with timed(stage.samples):
@@ -185,7 +185,7 @@ def run_pixel_facts(stage: Stage, previews: Sequence[Preview], _: Any) -> None:
 
 def run_thumbnail_hash(stage: Stage, previews: Sequence[Preview], _: Any) -> None:
     try:
-        from immich_memories.analysis.duplicate_hashing import compute_thumbnail_hash
+        from immich_memories.analysis.corpus.duplicate_hashing import compute_thumbnail_hash
     except ImportError as exc:
         raise Unavailable(f"opencv missing: {exc}")
     for _name, payload in previews:
@@ -195,7 +195,7 @@ def run_thumbnail_hash(stage: Stage, previews: Sequence[Preview], _: Any) -> Non
 
 def run_caption_tile(stage: Stage, previews: Sequence[Preview], _: Any) -> None:
     """The 400 px q90 tile the caption wire sends; the captioner never sees the preview."""
-    from immich_memories.analysis.editorial_description_wire import tile_preview
+    from immich_memories.analysis.captions.wire import tile_preview
 
     sizes = []
     for _name, payload in previews:
@@ -260,7 +260,7 @@ def run_heads(stage: Stage, previews: Sequence[Preview], options: argparse.Names
 
 def run_nsfw_marqo(stage: Stage, previews: Sequence[Preview], options: argparse.Namespace) -> None:
     try:
-        from immich_memories.analysis.editorial_preparation_detectors import Marqo
+        from immich_memories.analysis.preparation.detectors import Marqo
     except ImportError as exc:
         raise Unavailable(f"detector dependencies missing: {exc}")
     if not options.marqo_onnx:
@@ -310,7 +310,7 @@ def run_nsfw_marqo_onnx(
 
 def run_doc_docling(stage: Stage, previews: Sequence[Preview], options: argparse.Namespace) -> None:
     try:
-        from immich_memories.analysis.editorial_preparation_detectors import Docling
+        from immich_memories.analysis.preparation.detectors import Docling
     except ImportError as exc:
         raise Unavailable(f"detector dependencies missing: {exc}")
     try:
@@ -329,8 +329,8 @@ def run_doc_docling(stage: Stage, previews: Sequence[Preview], options: argparse
 
 
 def caption_once(base_url: str, tile: bytes, timeout: float) -> dict[str, Any]:
-    from immich_memories.analysis.editorial_description_contract import validate_envelope
-    from immich_memories.analysis.editorial_description_wire import request_bytes
+    from immich_memories.analysis.captions.contract import validate_envelope
+    from immich_memories.analysis.captions.wire import request_bytes
 
     wire = request_bytes(tile)
     request = urllib.request.Request(  # noqa: S310 — operator-supplied benchmark endpoint
@@ -361,7 +361,7 @@ def caption_once(base_url: str, tile: bytes, timeout: float) -> dict[str, Any]:
 
 
 def run_caption(stage: Stage, previews: Sequence[Preview], options: argparse.Namespace) -> None:
-    from immich_memories.analysis.editorial_description_wire import tile_preview
+    from immich_memories.analysis.captions.wire import tile_preview
 
     if not options.caption_base_url:
         raise Unavailable("no --caption-base-url given")

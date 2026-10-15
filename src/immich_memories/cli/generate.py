@@ -9,8 +9,8 @@ from pathlib import Path
 
 import click
 
-from immich_memories.analysis.editorial_shareability_tiers import sharing_refusal
-from immich_memories.analysis.live_photo_pipeline import drop_live_photo_components
+from immich_memories.analysis.audience.tiers import sharing_refusal
+from immich_memories.analysis.sources.live_photos import drop_live_photo_components
 from immich_memories.api.person_scope import window_condition
 from immich_memories.cli._asset_fetch import fetch_media, holiday_pool
 from immich_memories.cli._date_resolution import (
@@ -19,8 +19,8 @@ from immich_memories.cli._date_resolution import (
     resolve_date_range,
 )
 from immich_memories.cli._generate_display import (
-    _build_params_table,
-    _print_generation_result,
+    build_params_table,
+    print_generation_result,
 )
 from immich_memories.cli._helpers import (
     console,
@@ -41,18 +41,18 @@ from immich_memories.cli.generate_options import (
     selection_options,
 )
 from immich_memories.cli.generate_resolution import (
-    _apply_photo_duration_override,
-    _arm_selection_trace,
-    _resolve_generation_scope,
-    _validate_album_scope,
     announce_people_window,
+    apply_photo_duration_override,
+    arm_selection_trace,
     name_from_catalogue,
     refuse_unfinishable_run,
+    resolve_generation_scope,
     resolve_inclusion,
     resolve_people_condition,
     resolve_people_memory_window,
     resolve_short_form,
     resolve_special_day,
+    validate_album_scope,
 )
 from immich_memories.cli.run_people import (
     accounts_record,
@@ -241,7 +241,7 @@ def register_generate_commands(main: click.Group) -> None:
           --start 2024-01-01 --end 2024-06-30   Custom range
           --start 2024-01-01 --period 6m        Period from start
         """
-        _arm_selection_trace(trace_selection)
+        arm_selection_trace(trace_selection)
 
         from immich_memories.cli._live_display import LiveDisplay, ProgressDisplay, QuietDisplay
 
@@ -289,7 +289,7 @@ def register_generate_commands(main: click.Group) -> None:
         if automation_attempt_id is not None and source != "auto":
             raise click.UsageError("--automation-attempt-id requires --source=auto")
 
-        _validate_album_scope(
+        validate_album_scope(
             from_album=from_album,
             subject=subject,
             year=year,
@@ -397,7 +397,7 @@ def register_generate_commands(main: click.Group) -> None:
         )
 
         holiday_params = holiday_params_for(memory_type, holiday, config)
-        date_range, date_ranges = _resolve_generation_scope(
+        date_range, date_ranges = resolve_generation_scope(
             from_album=from_album,
             year=year,
             start=start,
@@ -444,7 +444,7 @@ def register_generate_commands(main: click.Group) -> None:
             include_live_photos, config_enabled=config.analysis.include_live_photos
         )
         use_photos = resolve_inclusion(include_photos, config_enabled=config.photos.enabled)
-        _apply_photo_duration_override(config, photo_duration=photo_duration)
+        apply_photo_duration_override(config, photo_duration=photo_duration)
 
         # Infer memory type from context when not explicitly set
         if memory_type is None and person_names:
@@ -483,7 +483,7 @@ def register_generate_commands(main: click.Group) -> None:
             primary_window=next(iter(date_ranges), None),
         ) or duration_from_date_range(date_range)
 
-        table = _build_params_table(
+        table = build_params_table(
             config=config,
             memory_type="album" if from_album else memory_type,
             album_ref=from_album,
@@ -699,7 +699,7 @@ def register_generate_commands(main: click.Group) -> None:
                     # A birthdays film's earlier birthdays are single days years
                     # apart, so most of them are empty and #661's per-window
                     # warning would bury the one that matters — the party itself.
-                    from immich_memories.analysis.selection_source_validation import (
+                    from immich_memories.analysis.corpus.validation import (
                         film_may_use,
                     )
 
@@ -821,7 +821,7 @@ def register_generate_commands(main: click.Group) -> None:
                         owner_excluded_asset_ids=exclude_asset,
                     )
 
-                _print_generation_result(
+                print_generation_result(
                     dry_run=dry_run,
                     no_render=no_render,
                     result_path=result_path,

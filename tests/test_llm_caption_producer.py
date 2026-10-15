@@ -6,12 +6,12 @@ from contextlib import nullcontext
 import httpx
 import pytest
 
-from immich_memories.analysis.editorial_preparation_captions import prepare_captions
-from immich_memories.analysis.llm_caption_identity import llm_caption_identity
-from immich_memories.analysis.llm_metrics import collecting
-from immich_memories.analysis.prepared_captions import prepared_captions
-from immich_memories.config_loader import Config
-from immich_memories.config_models_llm import LLMConfig
+from immich_memories.analysis.captions.identity import llm_caption_identity
+from immich_memories.analysis.captions.requests import prepare_captions
+from immich_memories.analysis.llm.metrics import collecting
+from immich_memories.analysis.preparation.prepared_captions import prepared_captions
+from immich_memories.config.loader import Config
+from immich_memories.config.models.llm import LLMConfig
 from tests.annotation_rows import annotation_store
 from tests.test_editorial_preparation import preview
 

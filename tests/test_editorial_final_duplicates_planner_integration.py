@@ -12,9 +12,9 @@ from dataclasses import replace
 import numpy as np
 import pytest
 
-from immich_memories.analysis.annotation_lines import AssetAnnotationLine
-from immich_memories.analysis.editorial_structure_contract import StructurePlannerPorts
-from immich_memories.analysis.editorial_structure_planner import plan_structure
+from immich_memories.analysis.film.contract import StructurePlannerPorts
+from immich_memories.analysis.reading.annotation_lines import AssetAnnotationLine
+from immich_memories.analysis.structure.planner import plan_structure
 from immich_memories.operations.cut_progress import announcing_stages
 from tests.editorial_story_fixtures import ControlledStoryJudge
 from tests.test_editorial_duration_planner_integration import source
@@ -210,7 +210,7 @@ def _six_days_away(tmp_path, *, starred_days: int, seconds: float = 60, refine: 
     scene, every other day its own."""
     from datetime import date
 
-    from immich_memories.analysis.editorial_rule_reader import NoModelJudge, RuleStructureReader
+    from immich_memories.analysis.stories.rule_reader import NoModelJudge, RuleStructureReader
     from tests.editorial_film_fixtures import SEASIDE, Day, film_source
 
     days = [Day(date(2030, 7, 1 + n), f"A day by the sea {n + 1}", SEASIDE) for n in range(6)]

@@ -5,8 +5,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from immich_memories.analysis.editorial_runtime_ports import production_cut_resolvers
-from immich_memories.config_loader import Config
+from immich_memories.analysis.runtime.ports import production_cut_resolvers
+from immich_memories.config.loader import Config
 from immich_memories.db import open_store
 from immich_memories.processing.assembly_config import (
     AssemblyClip,

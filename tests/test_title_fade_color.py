@@ -3,7 +3,7 @@
 import pytest
 from pydantic import ValidationError
 
-from immich_memories.config_models_render import TitleScreenConfig
+from immich_memories.config.models.render import TitleScreenConfig
 
 
 def test_title_config_rejects_unsupported_edge_color():
@@ -15,7 +15,7 @@ def test_title_config_rejects_unsupported_edge_color():
 def test_configured_fade_survives_generation_settings(color, tmp_path):
     from datetime import date
 
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.generate import GenerationParams
     from immich_memories.generate_settings import build_title_settings
 

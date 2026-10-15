@@ -29,7 +29,7 @@ _LAUNCHER = '''\
 import sys
 from pathlib import Path
 
-import immich_memories.config_loader as config_loader
+import immich_memories.config.loader as config_loader
 
 _config_path = Path(sys.argv[1])
 config_loader.Config.get_default_path = classmethod(lambda cls: _config_path)

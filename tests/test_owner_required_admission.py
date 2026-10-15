@@ -2,15 +2,15 @@
 
 from __future__ import annotations
 
-from immich_memories.analysis.cull_answer import CullDecision
-from immich_memories.analysis.editorial_contracts import DecisionProvenance
-from immich_memories.analysis.selection_cull import run_cull_decisions
-from immich_memories.analysis.selection_source import (
+from immich_memories.analysis.corpus.admission import (
     EditorialDependencies,
     EditorialSelectionRequest,
     SourceScope,
     prepare_editorial_source,
 )
+from immich_memories.analysis.corpus.records import DecisionProvenance
+from immich_memories.analysis.reading.cull_answer import CullDecision
+from immich_memories.analysis.runtime.cull_pass import run_cull_decisions
 from tests.conftest import make_asset
 
 
@@ -62,7 +62,7 @@ def test_the_cull_cannot_remove_a_required_picture() -> None:
 
 
 def test_the_timing_trim_never_drops_a_required_picture() -> None:
-    from immich_memories.analysis.editorial_story_trim import trim_to_timing_budget
+    from immich_memories.analysis.selection.trim import trim_to_timing_budget
 
     carriers = [
         {
@@ -94,7 +94,7 @@ def test_the_timing_trim_never_drops_a_required_picture() -> None:
 
 
 def _episode(key: str, moments: list[str]):
-    from immich_memories.analysis.editorial_story_reading import StoryEpisode
+    from immich_memories.analysis.stories.period_account import StoryEpisode
 
     return StoryEpisode(
         key=key, title=key, account="", significance="", role="", uncertainty="", moments=moments
@@ -102,7 +102,7 @@ def _episode(key: str, moments: list[str]):
 
 
 def test_a_required_picture_the_read_dropped_joins_the_cut_in_its_own_story() -> None:
-    from immich_memories.analysis.editorial_owner_required import admit_owner_required
+    from immich_memories.analysis.structure.owner_required import admit_owner_required
 
     units = {
         "F1": [
@@ -158,7 +158,7 @@ def test_a_required_picture_the_read_dropped_joins_the_cut_in_its_own_story() ->
 
 
 def test_a_required_picture_already_in_the_cut_is_left_alone() -> None:
-    from immich_memories.analysis.editorial_owner_required import admit_owner_required
+    from immich_memories.analysis.structure.owner_required import admit_owner_required
 
     units = {"F1": [{"asset_id": "a", "moment": "M1", "taken": "2025-06-01T10:00"}]}
     carried = [units["F1"][0] | {"story_episode": "S1", "story_weight": "dominant", "event": "F1"}]
@@ -172,7 +172,7 @@ def test_a_required_picture_already_in_the_cut_is_left_alone() -> None:
 
 
 def test_a_required_picture_outside_every_story_borrows_the_nearest_carrier_story() -> None:
-    from immich_memories.analysis.editorial_owner_required import admit_owner_required
+    from immich_memories.analysis.structure.owner_required import admit_owner_required
 
     units = {
         "F1": [
@@ -206,7 +206,7 @@ def test_a_required_picture_outside_every_story_borrows_the_nearest_carrier_stor
 
 
 def test_a_required_picture_with_no_stories_at_all_still_joins_the_cut() -> None:
-    from immich_memories.analysis.editorial_owner_required import admit_owner_required
+    from immich_memories.analysis.structure.owner_required import admit_owner_required
 
     units = {"F1": [{"asset_id": "only", "moment": "M1", "taken": "2025-06-01T10:00"}]}
 
@@ -219,7 +219,7 @@ def test_a_required_picture_with_no_stories_at_all_still_joins_the_cut() -> None
 
 
 def test_nothing_required_leaves_the_carriers_untouched() -> None:
-    from immich_memories.analysis.editorial_owner_required import admit_owner_required
+    from immich_memories.analysis.structure.owner_required import admit_owner_required
 
     carried = [{"asset_id": "a", "taken": "2025-06-01T10:00"}]
 
@@ -232,7 +232,7 @@ def test_nothing_required_leaves_the_carriers_untouched() -> None:
 
 
 def test_the_timing_trim_stops_when_only_required_pictures_remain() -> None:
-    from immich_memories.analysis.editorial_story_trim import trim_to_timing_budget
+    from immich_memories.analysis.selection.trim import trim_to_timing_budget
 
     carriers = [
         {

@@ -10,8 +10,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from immich_memories.analysis.editorial_laya_reader import LayaReader, MlxLayaScorer
-from immich_memories.analysis.selection_trace import Trace
+from immich_memories.analysis.audience.laya_reader import LayaReader, MlxLayaScorer
+from immich_memories.analysis.corpus.trace import Trace
 from immich_memories.generate import GenerationError, generate_memory
 from immich_memories.local_inference import LocalModels
 from tests.annotation_rows import annotation_store
@@ -69,7 +69,7 @@ def test_production_selection_closes_each_laya_effect_on_success_or_failure(
         readers.append((reader, scorer))
         return reader
 
-    monkeypatch.setattr("immich_memories.analysis.editorial_laya_reader.laya_reader_for", load)
+    monkeypatch.setattr("immich_memories.analysis.audience.laya_reader.laya_reader_for", load)
     backend._ports = replace(backend._ports, structure_ports_factory=None)
     # Keep the effects referenced across cleanup, as refinement closures can do.
     effects = []

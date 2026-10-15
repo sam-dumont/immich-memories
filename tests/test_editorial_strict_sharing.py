@@ -3,9 +3,9 @@ film shared outside the family, whatever the reader's text says. Family films ar
 
 from __future__ import annotations
 
-from immich_memories.analysis import editorial_shareability as share
-from immich_memories.analysis.editorial_structure_audience import AudienceBank, AudienceGate
-from immich_memories.config_models_editorial import EditorialConfig
+from immich_memories.analysis.audience import shareability as share
+from immich_memories.analysis.audience.verdicts import AudienceBank, AudienceGate
+from immich_memories.config.models.editorial import EditorialConfig
 from immich_memories.db import open_store
 from tests.test_editorial_shareability_tiers import Annotation, ClearingReader
 
@@ -67,8 +67,8 @@ def test_an_unflagged_picture_is_shared(tmp_path):
 def _film(tmp_path, *, strict):
     from dataclasses import replace
 
-    from immich_memories.analysis.editorial_structure_contract import StructurePlannerPorts
-    from immich_memories.analysis.editorial_structure_planner import plan_structure
+    from immich_memories.analysis.film.contract import StructurePlannerPorts
+    from immich_memories.analysis.structure.planner import plan_structure
     from tests.editorial_story_fixtures import ControlledStoryJudge
     from tests.editorial_thin_fixtures import caption_laya
     from tests.test_editorial_duration_planner_integration import source

@@ -5,9 +5,9 @@ from copy import deepcopy
 
 import pytest
 
-from immich_memories.analysis.editorial_story_reading import read_period_story
-from immich_memories.analysis.editorial_story_weighing import _weigh_stories
-from immich_memories.analysis.editorial_story_weight_contract import StoryWeightDecisionError
+from immich_memories.analysis.stories.period_account import read_period_story
+from immich_memories.analysis.stories.weighing import weigh_stories
+from immich_memories.analysis.stories.weight_contract import StoryWeightDecisionError
 from tests.test_editorial_story_reading import ScriptedJudge, episode_row, opened, place
 
 
@@ -18,7 +18,7 @@ def story_rows():
 
 
 def weigh(judge, *, candidates=("K03",), stories=None, records=None):
-    return _weigh_stories(
+    return weigh_stories(
         judge,
         story_rows() if stories is None else stories,
         thesis="Several occasions.",

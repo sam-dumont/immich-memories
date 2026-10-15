@@ -1,7 +1,7 @@
 """Empty Live slices retain source lineage without becoming displayed footage.
 
 The two source-projection cases arrive with the slice that ports
-`selection_source`, `editorial_source_route` and `editorial_live_render`.
+`corpus.admission`, `runtime.source_route` and `editorial_live_render`.
 """
 
 from __future__ import annotations

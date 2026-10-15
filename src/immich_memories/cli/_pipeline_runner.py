@@ -12,10 +12,10 @@ from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from immich_memories.analysis import llm_metrics
-from immich_memories.analysis.editorial_duration_advisory import editorial_duration_warning
-from immich_memories.analysis.editorial_review_list import review_count
-from immich_memories.analysis.llm_usage_record import write_llm_usage
+from immich_memories.analysis.audience.review_list import review_count
+from immich_memories.analysis.llm import metrics as llm_metrics
+from immich_memories.analysis.llm.usage_record import write_llm_usage
+from immich_memories.analysis.runtime.duration_advisory import editorial_duration_warning
 from immich_memories.cli._editorial_context import (
     build_editorial_context,
     narrow_to_special_event,
@@ -44,10 +44,10 @@ from immich_memories.tracking.timed import timed
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    from immich_memories.analysis.smart_pipeline import PipelineResult
+    from immich_memories.analysis.runtime.smart_pipeline import PipelineResult
     from immich_memories.api.immich import SyncImmichClient
     from immich_memories.cli._live_display import ProgressDisplay
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.processing.output_canvas import OutputCanvas
     from immich_memories.processing.timeline_budget import TimelinePlan
 
@@ -305,8 +305,8 @@ def run_pipeline_and_generate(
     from immich_memories.tracking.report_context import record_assets
 
     record_assets([*assets, *(photo_assets or [])])
-    from immich_memories.analysis.editorial_runtime import build_smart_pipeline
-    from immich_memories.analysis.smart_pipeline import PipelineConfig
+    from immich_memories.analysis.runtime.composition import build_smart_pipeline
+    from immich_memories.analysis.runtime.smart_pipeline import PipelineConfig
     from immich_memories.cache.thumbnail_cache import ThumbnailCache
     from immich_memories.generate import GenerationParams, generate_memory
     from immich_memories.generate_clips import assets_to_clips

@@ -16,7 +16,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
@@ -1262,8 +1262,8 @@ def test_the_copy_out_leaves_the_mastered_audio_on_the_volume(
 
 
 # Every lane has to plan against the same home. `near_home_test` in
-# `analysis/editorial_structure_framing` measures each happening against
-# `trips.homebase_*` and `worthiness` in `analysis/editorial_rule_reader` grades
+# `analysis/structure/framing` measures each happening against
+# `trips.homebase_*` and `worthiness` in `analysis/stories/rule_reader` grades
 # anything over 10 km "away". The schema's default for both is 0.0: Mac and NAS
 # cells copy the operator's config and inherit a real home, and a cluster cell's
 # ConfigMap is built from the pins alone and inherited Null Island. Run 1's eight

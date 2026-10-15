@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from immich_memories.analysis import editorial_shareability as share
+from immich_memories.analysis.audience import shareability as share
 from immich_memories.db import open_store
 from tests.annotation_rows import annotation_store
 
@@ -29,7 +29,7 @@ def test_the_strictest_verdict_still_wins():
 
 # The caption reading, on the model tier.
 
-from immich_memories.analysis.editorial_structure_audience import (  # noqa: E402
+from immich_memories.analysis.audience.verdicts import (  # noqa: E402
     AudienceBank,
     AudienceGate,
 )
@@ -118,7 +118,7 @@ def test_an_older_refusal_the_current_reading_cannot_place_stays_refused(tmp_pat
 
 # Shareable on a NAS: clean evidence is a clearance when strict sharing is on.
 
-from immich_memories.analysis.editorial_shareability_tiers import audience_check_for  # noqa: E402
+from immich_memories.analysis.audience.tiers import audience_check_for  # noqa: E402
 from tests.test_editorial_shareability_tiers import RefusingJudge  # noqa: E402
 
 CLEAN = (("nsfw_marqo", "no"), ("uncovered_person", "no"), ("doc_docling", "photograph"))
@@ -212,18 +212,18 @@ def test_without_strict_sharing_a_nas_clears_nothing():
 
 from dataclasses import replace  # noqa: E402
 
-from immich_memories.analysis.editorial_structure_contract import (  # noqa: E402
+from immich_memories.analysis.film.contract import (  # noqa: E402
     StructurePlannerPorts,
 )
-from immich_memories.analysis.editorial_structure_planner import plan_structure  # noqa: E402
-from immich_memories.config_loader import Config  # noqa: E402
+from immich_memories.analysis.structure.planner import plan_structure  # noqa: E402
+from immich_memories.config.loader import Config  # noqa: E402
 from tests.editorial_story_fixtures import ControlledStoryJudge  # noqa: E402
 from tests.editorial_thin_fixtures import caption_laya  # noqa: E402
 from tests.test_editorial_duration_planner_integration import source  # noqa: E402
 
 
 def nas_cut(captured, level, name="cut"):
-    from immich_memories.analysis.editorial_rule_reader import NoModelJudge, RuleStructureReader
+    from immich_memories.analysis.stories.rule_reader import NoModelJudge, RuleStructureReader
 
     nas = replace(
         captured,
@@ -283,7 +283,7 @@ def test_a_just_us_film_plays_the_bath_a_family_film_leaves_out(tmp_path):
 
 def test_the_gpu_tier_holds_the_bath_with_laya_and_asks_no_llm(tmp_path):
     """The rules reader with captions and Laya: the light models do the job, no LLM is asked."""
-    from immich_memories.analysis.editorial_rule_reader import NoModelJudge, RuleStructureReader
+    from immich_memories.analysis.stories.rule_reader import NoModelJudge, RuleStructureReader
 
     gpu = replace(
         source(tmp_path, seconds=12, pictures=2, private_opening=True),
@@ -329,7 +329,7 @@ def test_the_config_default_is_family_and_the_flag_values_name_the_levels():
 
 
 def test_a_shareable_film_is_refused_before_the_cut_only_where_no_detector_ran():
-    from immich_memories.analysis.editorial_shareability_tiers import sharing_refusal
+    from immich_memories.analysis.audience.tiers import sharing_refusal
 
     def refusal(tier, level):
         config = Config(defaults={"sharing": level})
@@ -439,7 +439,7 @@ def test_a_burst_the_owner_cleared_at_two_levels_takes_the_stricter(tmp_path):
 
 
 def test_the_no_model_draft_lifts_a_banked_refusal_only_where_the_clearance_reaches(tmp_path):
-    from immich_memories.analysis.editorial_rule_banked_facts import open_banked_facts
+    from immich_memories.analysis.stories.banked_facts import open_banked_facts
 
     store = annotation_store()
     banked = AudienceBank(store, answerer="full|reader")

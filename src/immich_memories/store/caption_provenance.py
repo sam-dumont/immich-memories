@@ -11,8 +11,8 @@ from urllib.parse import urlsplit
 import sqlalchemy as sa
 from sqlalchemy.engine import Connection
 
-from immich_memories.analysis.editorial_description_contract import DESCRIPTION_MODEL
-from immich_memories.analysis.llm_caption_identity import LLM_CAPTION_PREFIX
+from immich_memories.analysis.captions.contract import DESCRIPTION_MODEL
+from immich_memories.analysis.captions.identity import LLM_CAPTION_PREFIX
 from immich_memories.db import Store
 from immich_memories.db.tables import caption_provenance, descriptions
 from immich_memories.store.batches import id_in, in_chunks, insert_rows

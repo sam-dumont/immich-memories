@@ -40,7 +40,7 @@ class MapMoveTiming:
 
     def seconds_between(self, came_from: tuple[float, float], to: tuple[float, float]) -> float:
         """Total seconds for the move between two places (see `seconds_for`)."""
-        from immich_memories.analysis.trip_detection import haversine_km
+        from immich_memories.analysis.places.trip_detection import haversine_km
 
         return self.seconds_for(haversine_km(*came_from, *to))
 

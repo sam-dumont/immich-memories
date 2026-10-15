@@ -15,8 +15,8 @@ import logging
 from dataclasses import dataclass
 from datetime import datetime
 
-from immich_memories.analysis.asset_merit import ranking_key
-from immich_memories.analysis.duplicate_hashing import hamming_distance
+from immich_memories.analysis.corpus.asset_merit import ranking_key
+from immich_memories.analysis.corpus.duplicate_hashing import hamming_distance
 
 logger = logging.getLogger(__name__)
 

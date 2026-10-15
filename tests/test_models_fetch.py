@@ -16,13 +16,13 @@ import pytest
 from click.testing import CliRunner, Result
 
 from immich_memories import model_acquisition
-from immich_memories.analysis.editorial_preparation_detectors import (
+from immich_memories.analysis.preparation.detectors import (
     DOCLING_REPO,
     DOCLING_REVISION,
 )
 from immich_memories.cli import main
 from immich_memories.cli import models_cmd as cli_models
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.pinned_models import fetch_pinned_model
 
 

@@ -218,7 +218,7 @@ def test_single_clip_encode_runs_on_the_device(tmp_path, plan_factory, backend) 
 
     # WHY: HDR detection and the encode both shell out to FFmpeg; the command is under test.
     with (
-        patch("immich_memories.processing.clip_encoder._detect_hdr_type", return_value=None),
+        patch("immich_memories.processing.clip_encoder.detect_hdr_type", return_value=None),
         patch("immich_memories.processing.clip_encoder.subprocess.run") as run,
     ):
         run.return_value = MagicMock(returncode=0, stderr="")
@@ -247,7 +247,7 @@ def test_final_assembly_runs_on_the_device(tmp_path) -> None:
     )  # fmt: skip
 
     # WHY: FFmpeg runs the assembly; the command handed to it is under test.
-    with patch("immich_memories.processing.clip_encoder._run_ffmpeg_with_progress") as run:
+    with patch("immich_memories.processing.clip_encoder.run_ffmpeg_with_progress") as run:
         encoder.run_ffmpeg_assembly(
             ["-i", str(clip.path)],
             "[0:v]null[vout];[0:a]anull[aout]",
@@ -286,7 +286,7 @@ def test_the_probe_sets_up_what_a_render_sets_up() -> None:
 
     # WHY: the probe shells out to FFmpeg; its command is what is under test.
     with patch.object(hardware, "_run_ffmpeg_check", return_value=(True, "")) as check:
-        hardware._probe_ffmpeg_encode(["-c:v", "h264_vaapi"], upload="vaapi")
+        hardware.probe_ffmpeg_encode(["-c:v", "h264_vaapi"], upload="vaapi")
 
     assert_uploads_to_device(["ffmpeg", *check.call_args.args[0]], "vaapi")
 
@@ -318,7 +318,7 @@ def test_burst_merge_runs_on_the_device(tmp_path) -> None:
 def test_clip_extraction_runs_on_the_device(tmp_path) -> None:
     from unittest.mock import patch
 
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.processing.clips import ClipExtractor, ClipSegment
     from immich_memories.processing.hardware import HWAccelBackend, HWAccelCapabilities
 

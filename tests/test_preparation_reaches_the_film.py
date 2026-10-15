@@ -2,7 +2,7 @@
 
 A person film over a lifetime window once prepared every picture in that window: 90k for a
 7.5k-picture pool. What the film can select is the person's pictures. What its exposure rule
-reads around them is their capture runs (``editorial_exposure_chains``), and a Live Photo
+reads around them is their capture runs (``audience.exposure_chains``), and a Live Photo
 family is rendered whole. Everything else in the window is read as metadata for the
 grouping, and never prepared.
 """
@@ -12,13 +12,16 @@ from __future__ import annotations
 import json
 from datetime import UTC, datetime, timedelta
 
-from immich_memories.analysis.editorial_pool import EditorialSourcePool
-from immich_memories.analysis.editorial_preparation import prepare_editorial_annotations
-from immich_memories.analysis.editorial_runtime import EditorialRunContext, build_editorial_planner
-from immich_memories.analysis.editorial_runtime_ports import EditorialRuntimePorts
-from immich_memories.analysis.smart_pipeline import SmartPipeline
+from immich_memories.analysis.preparation.acquire import prepare_editorial_annotations
+from immich_memories.analysis.runtime.composition import (
+    EditorialRunContext,
+    build_editorial_planner,
+)
+from immich_memories.analysis.runtime.ports import EditorialRuntimePorts
+from immich_memories.analysis.runtime.smart_pipeline import SmartPipeline
+from immich_memories.analysis.sources.pool import EditorialSourcePool
 from immich_memories.cache.thumbnail_cache import ThumbnailCache
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.timeperiod import DateRange
 from tests.test_editorial_rule_reader import _distinct_preview
 from tests.test_editorial_source_route import photo

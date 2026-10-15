@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 
 INTERNAL = "http://immich.immich.svc.cluster.local:2283"
 PUBLIC = "https://photos.example.org/"

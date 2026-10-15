@@ -10,7 +10,7 @@ from typing import Any
 import click
 
 from immich_memories.cli._helpers import print_error, print_info, print_success, print_warning
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 
 
 @contextmanager

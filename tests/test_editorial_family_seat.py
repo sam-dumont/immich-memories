@@ -8,12 +8,12 @@ from __future__ import annotations
 
 import pytest
 
-from immich_memories.analysis.editorial_family_seat import (
+from immich_memories.analysis.stories.replies import close_family_on
+from immich_memories.analysis.structure.family_seat import (
     FamilySeatInputs,
     FamilySeatPolicy,
     seat_close_family,
 )
-from immich_memories.analysis.editorial_story_replies import close_family_on
 
 PARTNER = "Person A (partner; inner circle)"
 CHILD = "Person B (son; 3 months old; recurring circle)"
@@ -102,7 +102,7 @@ def test_a_family_seat_prefers_the_favourite_when_the_same_moment_has_equal_stan
 ):
     from dataclasses import replace
 
-    from immich_memories.analysis.editorial_cut_invariants import FinishedCut, cut_violations
+    from immich_memories.analysis.structure.cut_invariants import FinishedCut, cut_violations
 
     lines, rows, film = _month()
     for group in rows.values():
@@ -202,10 +202,10 @@ def _planned_month(tmp_path, *, seat: bool, seconds: float = 60, scene_print=Non
     from dataclasses import replace
     from datetime import date
 
-    from immich_memories.analysis.editorial_rule_reader import NoModelJudge, RuleStructureReader
-    from immich_memories.analysis.editorial_structure_contract import StructurePlannerPorts
-    from immich_memories.analysis.editorial_structure_planner import plan_structure
-    from immich_memories.config_models_editorial import EditorialPeopleConfig
+    from immich_memories.analysis.film.contract import StructurePlannerPorts
+    from immich_memories.analysis.stories.rule_reader import NoModelJudge, RuleStructureReader
+    from immich_memories.analysis.structure.planner import plan_structure
+    from immich_memories.config.models.editorial import EditorialPeopleConfig
     from tests.editorial_film_fixtures import film_source, home_days
 
     days = [*home_days(date(2030, 2, 3), 5), *home_days(date(2030, 2, 12), 5)]
@@ -267,7 +267,7 @@ def test_a_partner_who_lost_her_only_shot_after_the_draft_is_seated_again():
     finished film is checked again and the frame that gives up its place is on the cut record."""
     from types import SimpleNamespace
 
-    from immich_memories.analysis.editorial_structure_finishing import (
+    from immich_memories.analysis.structure.finishing import (
         PlanRun,
         seat_again_after_review,
     )
@@ -346,9 +346,9 @@ def _planned_person_film(tmp_path, *, product: str, scene_print=None, full=False
     from dataclasses import replace
     from datetime import date
 
-    from immich_memories.analysis.editorial_rule_reader import NoModelJudge, RuleStructureReader
-    from immich_memories.analysis.editorial_structure_contract import StructurePlannerPorts
-    from immich_memories.analysis.editorial_structure_planner import plan_structure
+    from immich_memories.analysis.film.contract import StructurePlannerPorts
+    from immich_memories.analysis.stories.rule_reader import NoModelJudge, RuleStructureReader
+    from immich_memories.analysis.structure.planner import plan_structure
     from tests.editorial_film_fixtures import film_source, home_days
     from tests.editorial_subject_family import subject_people
 
@@ -422,7 +422,7 @@ def test_a_month_film_keeps_close_family_relative_to_the_owner(tmp_path):
 
 
 def test_the_owner_whose_note_nests_a_parenthesis_is_read_as_a_person():
-    from immich_memories.analysis.editorial_story_replies import people_on
+    from immich_memories.analysis.stories.replies import people_on
 
     line = (
         "2030-02-03 | with Owner (library owner (inferred); aged 38; inner circle); "

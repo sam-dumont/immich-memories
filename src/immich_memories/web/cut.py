@@ -8,8 +8,8 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from immich_memories.analysis.selection_trace import Trace
-from immich_memories.config_loader import Config
+from immich_memories.analysis.corpus.trace import Trace
+from immich_memories.config.loader import Config
 from immich_memories.db import open_store
 from immich_memories.operations.candidate_fates import CandidateFates
 from immich_memories.operations.caption_origins import read_captions

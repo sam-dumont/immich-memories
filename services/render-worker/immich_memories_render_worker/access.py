@@ -2,7 +2,7 @@
 
 from immich_memories.api.access_clients import AccessBoundClient, AccessRoutes
 from immich_memories.api.sync_client import SyncImmichClient
-from immich_memories.config_models import ImmichConfig, ImmichConnection
+from immich_memories.config.models.resources import ImmichConfig, ImmichConnection
 
 
 def immich_config(request) -> ImmichConfig:

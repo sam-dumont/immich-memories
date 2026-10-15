@@ -5,12 +5,12 @@ from datetime import timedelta
 
 import numpy as np
 
-from immich_memories.analysis.editorial_source_route import project_source_rendering
-from immich_memories.analysis.editorial_structure_contract import StructurePlannerPorts
-from immich_memories.analysis.editorial_structure_material import build_material, read_wall
-from immich_memories.analysis.editorial_structure_planner import plan_structure
-from immich_memories.analysis.live_clock_offsets import BankedClockOffsets
-from immich_memories.analysis.motion_rendering import motion_renderings
+from immich_memories.analysis.clips.live_clock_offsets import BankedClockOffsets
+from immich_memories.analysis.clips.motion_rendering import motion_renderings
+from immich_memories.analysis.film.contract import StructurePlannerPorts
+from immich_memories.analysis.film.material import build_material, read_wall
+from immich_memories.analysis.runtime.source_route import project_source_rendering
+from immich_memories.analysis.structure.planner import plan_structure
 from tests.annotation_rows import annotation_store
 from tests.conftest import make_asset
 from tests.editorial_story_fixtures import ControlledStoryJudge

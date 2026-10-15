@@ -15,7 +15,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from itertools import starmap
 
-from immich_memories.analysis.place_scope import place_groups, shared_place_name
+from immich_memories.analysis.places.scope import place_groups, shared_place_name
 from immich_memories.place_names import degraded_locality_name, locality_name
 
 AddressOf = Callable[[float, float], Mapping[str, str]]

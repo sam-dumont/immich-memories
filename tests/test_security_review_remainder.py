@@ -9,7 +9,7 @@ from __future__ import annotations
 
 
 def _described(config, tmp_path) -> dict:
-    from immich_memories.config_sources import describe_settings
+    from immich_memories.config.sources import describe_settings
 
     entries = describe_settings(config, path=tmp_path / "absent.yaml", stored_keys=set())
     return {entry.key: entry.value for entry in entries}
@@ -19,20 +19,20 @@ class TestS16SecretsAreFullyMasked:
     """abc***yz leaks five characters of every secret, auth.password included."""
 
     def test_no_characters_of_the_secret_survive(self, tmp_path):
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
 
         values = _described(Config(immich={"api_key": "abcdefghijklmnop"}), tmp_path)
 
         assert values["immich.api_key"] == "***"
 
     def test_an_empty_secret_stays_empty(self, tmp_path):
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
 
         assert _described(Config(immich={"api_key": ""}), tmp_path)["immich.api_key"] == ""
 
     def test_no_configured_secret_reaches_the_settings_page(self, tmp_path):
         """The page describes the whole model, so a new secret field is masked by name."""
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
 
         config = Config(editorial={"preparation": {"caption_api_key": "caption-credential"}})
 

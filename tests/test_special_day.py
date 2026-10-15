@@ -11,7 +11,7 @@ from datetime import UTC, date, datetime
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from immich_memories.analysis.special_day import (  # noqa: F401
+from immich_memories.analysis.special_days.detection import (  # noqa: F401
     ask_if_special,
     candidate_days,
     sample_across_day,
@@ -87,7 +87,7 @@ def test_an_unreachable_model_is_not_a_verdict() -> None:
     """A failed question must not silently mark every day special."""
     # WHY: the LLM is the external boundary; here it is simply down.
     with patch(
-        "immich_memories.analysis.llm_query.query_llm", side_effect=OSError("no route to host")
+        "immich_memories.analysis.llm.query.query_llm", side_effect=OSError("no route to host")
     ):
         verdict = ask_if_special([_asset(10)], llm_config=SimpleNamespace())
 
@@ -102,7 +102,7 @@ def test_a_model_that_answers_with_nothing_is_not_a_verdict() -> None:
     TypeError that travelled all the way out of a multi-hour scan.
     """
     # WHY: the LLM is the external boundary; here it answered with nothing.
-    with patch("immich_memories.analysis.special_day._ask", return_value=None):
+    with patch("immich_memories.analysis.special_days.detection._ask", return_value=None):
         verdict = ask_if_special([_asset(10)], llm_config=SimpleNamespace())
 
     assert verdict.special is False
@@ -141,7 +141,7 @@ class TestTitlesStayGrounded:
 
     def _answer(self, day: list, payload: str) -> object:
         # WHY: the model is the boundary; this pins what we do with its answer.
-        with patch("immich_memories.analysis.special_day._ask", return_value=payload):
+        with patch("immich_memories.analysis.special_days.detection._ask", return_value=payload):
             return ask_if_special(day, llm_config=SimpleNamespace())
 
     def test_a_place_nobody_mentioned_is_dropped(self) -> None:
@@ -248,7 +248,7 @@ class TestATitleHasToBeATitle:
     def _answer(self, day: list, title: str) -> object:
         # WHY: the model is the boundary; this pins what we accept from it.
         with patch(
-            "immich_memories.analysis.special_day._ask",
+            "immich_memories.analysis.special_days.detection._ask",
             return_value=f'{{"special": true, "title": "{title}", "what": "something"}}',
         ):
             return ask_if_special(day, llm_config=SimpleNamespace())
@@ -303,7 +303,7 @@ class TestAPlaceHasToBeSomewhereTheDayWas:
     def _answer(self, day: list, title: str) -> object:
         # WHY: the model is the boundary; this pins what we accept back.
         with patch(
-            "immich_memories.analysis.special_day._ask",
+            "immich_memories.analysis.special_days.detection._ask",
             return_value=f'{{"special": true, "title": "{title}", "subtitle": ""}}',
         ):
             return ask_if_special(day, llm_config=SimpleNamespace())
@@ -358,7 +358,7 @@ class TestTheGroundingFilterKeepsWhatItPromised:
     def _answer(self, day: list, title: str) -> object:
         # WHY: the model is the boundary; this pins what we accept back.
         with patch(
-            "immich_memories.analysis.special_day._ask",
+            "immich_memories.analysis.special_days.detection._ask",
             return_value=f'{{"special": true, "title": "{title}", "subtitle": ""}}',
         ):
             return ask_if_special(day, llm_config=SimpleNamespace())
@@ -505,7 +505,7 @@ class TestANumberIsAClaimLikeAnyOther:
     def _answer(self, described: str, title: str, subtitle: str = "") -> object:
         # WHY: the model is the boundary; this pins what we accept back from it.
         with patch(
-            "immich_memories.analysis.special_day._ask",
+            "immich_memories.analysis.special_days.detection._ask",
             return_value=f'{{"special": true, "title": "{title}", "subtitle": "{subtitle}"}}',
         ):
             return ask_if_special(self._day(described), llm_config=SimpleNamespace())
@@ -550,7 +550,7 @@ def test_the_prompt_grounds_every_specific_and_not_only_places() -> None:
     never addressed by it at all — and answering that by appending another
     prohibition is a game with no end.
     """
-    from immich_memories.analysis.special_day import _PROMPT
+    from immich_memories.analysis.special_days.detection import _PROMPT
 
     guidance = _PROMPT.split("{lines}")[0]
 
@@ -558,7 +558,7 @@ def test_the_prompt_grounds_every_specific_and_not_only_places() -> None:
 
 
 def _answers(monkeypatch, *replies):
-    from immich_memories.analysis import special_day
+    from immich_memories.analysis.special_days import detection as special_day
 
     asked = []
 
@@ -597,7 +597,7 @@ def test_a_day_left_unjudged_says_why(monkeypatch) -> None:
 
 
 def test_the_day_question_hears_what_was_sent_from_the_day_marked_as_sent(monkeypatch) -> None:
-    from immich_memories.analysis import special_day
+    from immich_memories.analysis.special_days import detection as special_day
 
     seen = {}
 

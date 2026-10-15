@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from click.testing import CliRunner
 
-from immich_memories.analysis.llm_wire import TRANSPORT_RETRIES, LLMTransportAttempt
-from immich_memories.analysis.provider_status import watch_provider
+from immich_memories.analysis.llm.provider_status import watch_provider
+from immich_memories.analysis.llm.wire import TRANSPORT_RETRIES, LLMTransportAttempt
 from immich_memories.cli import main
 from immich_memories.cli._generate_display import saved_path_line
-from immich_memories.config_models_llm import LLMConfig
+from immich_memories.config.models.llm import LLMConfig
 from immich_memories.operations.cut_progress import announcing_stages
 from immich_memories.operations.storyboard import Shot, Storyboard
 

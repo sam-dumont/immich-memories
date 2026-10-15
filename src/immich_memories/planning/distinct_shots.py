@@ -1,6 +1,6 @@
 """The one rule for counting a further frame as its own shot (#2083).
 
-Shared by the depth fill (`editorial_story_depth_fill`), which spends a film's free
+Shared by the depth fill (`selection.depth_fill`), which spends a film's free
 content seconds on further frames of the moments it already shows, and the duration
 decision (`auto_duration`), which sizes a day's share of a film's length from how much
 distinct material the day actually holds. Both must agree on what counts: a video is its
@@ -17,7 +17,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 # The five-minute capture-group spacing the story planner's own pass 1 already uses
-# (`editorial_story_shortlist.MIN_GAP_IN_CAPTURE_GROUP_SECONDS`): reused here so a day's
+# (`corpus.moment_grouping.MIN_GAP_IN_CAPTURE_GROUP_SECONDS`): reused here so a day's
 # capacity and the moments it later funds can never disagree about what is distinct.
 MOMENT_SPACING_SECONDS = 300.0
 

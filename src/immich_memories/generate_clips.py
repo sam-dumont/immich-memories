@@ -18,10 +18,10 @@ from immich_memories.processing.preparation_fallbacks import note_fallback
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
 
-    from immich_memories.analysis.editorial_planner import EditorialSelection
+    from immich_memories.analysis.runtime.plan import EditorialSelection
     from immich_memories.cache.prepared_source_bank import PreparedSourceBank
     from immich_memories.cache.video_cache import CacheBatch
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.generate import GenerationParams
     from immich_memories.processing.download_coordinator import (
         DownloadCoordinator,
@@ -88,7 +88,7 @@ def _validate_certified_directive(
         raise ValueError("Editorial Live segment overrides its certified interval")
 
 
-def _validated_render_directives(params: GenerationParams) -> dict[str, EditorialSelection]:
+def validated_render_directives(params: GenerationParams) -> dict[str, EditorialSelection]:
     """Validate the run-level rendering contract before any source work starts."""
     from collections import Counter
 
@@ -308,7 +308,7 @@ def _extracted_segment(extraction: _Extraction, clip, video_path: Path, progress
 
 def _segment_clip(extraction: _Extraction, clip, segment_path: Path, duration: float):
     """Label a prepared segment with this run's view of it: date, place, rotation, mood."""
-    from immich_memories.analysis.framing_target import picture_faces
+    from immich_memories.analysis.facts.framing_target import picture_faces
     from immich_memories.generate_photos import memory_subjects
 
     params = extraction.params
@@ -387,10 +387,10 @@ def _prepared_clip(extraction: _Extraction, clip, progress: float, name: str):
         return None
 
     if route == "still":
-        from immich_memories.generate_photos import _render_video_frame_as_clip
+        from immich_memories.generate_photos import render_video_frame_as_clip
 
         assert directive is not None and directive.render_frame_seconds is not None
-        return _render_video_frame_as_clip(
+        return render_video_frame_as_clip(
             clip,
             params,
             extraction.output_dir,
@@ -519,7 +519,7 @@ def _extract_clips_into(
     from immich_memories.processing.ffmpeg_prober import film_frame_rate, probe_rate
     from immich_memories.processing.probe_cache import ProbeCache
 
-    directives = _validated_render_directives(params)
+    directives = validated_render_directives(params)
     still = [
         preparation_route(clip, directives.get(clip.asset.id), params.config) == "photo"
         for clip in params.clips

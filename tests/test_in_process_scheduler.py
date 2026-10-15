@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from immich_memories.config_models_automation import AutomationConfig
+from immich_memories.config.models.automation import AutomationConfig
 
 
 class TestDailyAtConfig:
@@ -34,7 +34,7 @@ from pathlib import Path  # noqa: E402
 
 from immich_memories.automation.in_process_scheduler import InProcessScheduler  # noqa: E402
 from immich_memories.automation.models import AutoOutcome, AutoRunResult  # noqa: E402
-from immich_memories.config_loader import Config  # noqa: E402
+from immich_memories.config.loader import Config  # noqa: E402
 
 LOCAL = datetime.now().astimezone().tzinfo
 

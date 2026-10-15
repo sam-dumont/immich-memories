@@ -24,8 +24,8 @@ from immich_memories.generate_privacy import (
     swap_names,
 )
 from immich_memories.generate_progress import (
-    _OperationalProgress,
-    _PipelineProgress,
+    OperationalProgress,
+    PipelineProgress,
     clip_preparation_events,
     render_progress_events,
 )
@@ -49,7 +49,7 @@ from immich_memories.tracking.timing import span
 
 if TYPE_CHECKING:
     from immich_memories.cache.prepared_source_bank import PreparedSourceBank
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.generate import GenerationParams, PreparedGeneration
     from immich_memories.tracking import RunTracker
 
@@ -68,7 +68,7 @@ def _build_download_coordinator(
     if params.client is None:
         return None
 
-    from immich_memories.generate_downloads import _download_temporary_asset
+    from immich_memories.generate_downloads import fetch_temporary_asset
     from immich_memories.processing.download_coordinator import (
         DownloadCoordinator,
         build_sync_client_factory,
@@ -83,7 +83,7 @@ def _build_download_coordinator(
     if cache_batch is None:
 
         def download_temporary_asset(client, asset):
-            return _download_temporary_asset(client, asset, output_dir)
+            return fetch_temporary_asset(client, asset, output_dir)
 
         download_operation = download_temporary_asset
     return DownloadCoordinator(
@@ -218,7 +218,7 @@ def _close_prepared_source_bank(bank: PreparedSourceBank | None, sources: int) -
 
 
 def _emit_download_phase(
-    operational: _OperationalProgress,
+    operational: OperationalProgress,
     params: GenerationParams,
     current: int,
     total: int,
@@ -230,7 +230,7 @@ def _emit_download_phase(
 
 
 def _with_clip_preparation_events(
-    params: GenerationParams, operational: _OperationalProgress
+    params: GenerationParams, operational: OperationalProgress
 ) -> GenerationParams:
     """Report "Preparing clips (n/N)" while sources download and cut (#2243)."""
     total = len(params.clips)
@@ -282,7 +282,7 @@ def _extracted_sources(
         _close_prepared_source_bank(bank, len(params.clips))
 
 
-def _anonymized_params(params: GenerationParams) -> GenerationParams:
+def anonymized_params(params: GenerationParams) -> GenerationParams:
     # One mapping for the selected person and the preset's cast, so a film names each
     # person by the same fake wherever the name shows.
     fakes = fake_names([params.person_name, *preset_person_names(params.memory_preset_params)])
@@ -336,8 +336,8 @@ def render_local(
     requested_output_path: Path,
     run_output_dir: Path,
     run_tracker: RunTracker,
-    operational: _OperationalProgress,
-    pp: _PipelineProgress,
+    operational: OperationalProgress,
+    pp: PipelineProgress,
     phase_times: dict[str, float],
 ) -> PreparedGeneration:
     """Own source preparation and assembly; return metadata for the common music phase."""
@@ -389,7 +389,7 @@ def render_local(
         # Privacy mode: anonymize GPS + names before title/assembly
         if params.privacy_mode:
             assembly_clips = anonymize_clips_for_privacy(assembly_clips)
-            params = _anonymized_params(params)
+            params = anonymized_params(params)
 
         assembly_clips = _apply_final_content_budget(params, assembly_clips)
         validate_certified_content(params, assembly_clips)

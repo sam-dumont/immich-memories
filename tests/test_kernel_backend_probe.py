@@ -225,7 +225,7 @@ def test_non_apple_hosts_try_cuda_then_vulkan_then_cpu(monkeypatch: pytest.Monke
     # init_kernels passes through to ti.init().
     monkeypatch.setattr(kernel_backend_probe, "ti", fake_ti)
 
-    candidates = kernel_backend_probe._candidate_backends(force_cpu=False, operating_system="Linux")
+    candidates = kernel_backend_probe.candidate_backends(force_cpu=False, operating_system="Linux")
 
     assert candidates == [
         (fake_ti.cuda, "CUDA", "cuda"),
@@ -490,7 +490,7 @@ def test_successful_gpu_probe_initializes_parent_once(monkeypatch: pytest.Monkey
         "_probe_backend",
         lambda backend: probes.append(backend) or KernelProbeResult(KernelProbeOutcome.SUCCESS),
     )
-    monkeypatch.setattr(kernels, "_silent_init", lambda **kwargs: parent_inits.append(kwargs))
+    monkeypatch.setattr(kernels, "silent_init", lambda **kwargs: parent_inits.append(kwargs))
     monkeypatch.setattr(kernels, "_compile_kernels", lambda: compile_calls.append(True))
 
     assert kernels.init_kernels() == "Metal"
@@ -526,7 +526,7 @@ def test_failed_gpu_probe_skips_parent_gpu_init(
             KernelProbeOutcome.SUCCESS if backend == "cpu" else KernelProbeOutcome(outcome)
         ),
     )
-    monkeypatch.setattr(kernels, "_silent_init", lambda **kwargs: parent_inits.append(kwargs))
+    monkeypatch.setattr(kernels, "silent_init", lambda **kwargs: parent_inits.append(kwargs))
     monkeypatch.setattr(kernels, "_compile_kernels", lambda: None)
 
     assert kernels.init_kernels() == "CPU"
@@ -549,7 +549,7 @@ def test_forced_cpu_still_proves_the_cpu_can_dispatch(monkeypatch: pytest.Monkey
         "_probe_backend",
         lambda backend: probes.append(backend) or KernelProbeResult(KernelProbeOutcome.SUCCESS),
     )
-    monkeypatch.setattr(kernels, "_silent_init", lambda **kwargs: parent_inits.append(kwargs))
+    monkeypatch.setattr(kernels, "silent_init", lambda **kwargs: parent_inits.append(kwargs))
     monkeypatch.setattr(kernels, "_compile_kernels", lambda: None)
 
     assert kernels.init_kernels() == "CPU"
@@ -600,7 +600,7 @@ def test_a_cpu_that_kills_the_probe_child_leaves_no_backend_at_all(
         "_probe_backend",
         lambda _backend: KernelProbeResult(KernelProbeOutcome.CHILD_SIGNALLED, "SIGILL"),
     )
-    monkeypatch.setattr(kernels, "_silent_init", lambda **kwargs: parent_inits.append(kwargs))
+    monkeypatch.setattr(kernels, "silent_init", lambda **kwargs: parent_inits.append(kwargs))
     monkeypatch.setattr(kernels, "_compile_kernels", lambda: None)
 
     assert kernels.init_kernels() is None

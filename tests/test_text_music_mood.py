@@ -6,8 +6,8 @@ from unittest.mock import patch
 import httpx
 import pytest
 
-from immich_memories.config_loader import Config
-from immich_memories.config_models_llm import LLMConfig
+from immich_memories.config.loader import Config
+from immich_memories.config.models.llm import LLMConfig
 from tests.annotation_rows import add_rows, annotation_store
 
 

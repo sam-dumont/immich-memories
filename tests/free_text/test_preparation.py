@@ -12,8 +12,8 @@ from datetime import date
 import pytest
 
 from immich_memories.api.access_clients import AccessBoundClient
-from immich_memories.config_loader import Config
-from immich_memories.config_models import ImmichConfig
+from immich_memories.config.loader import Config
+from immich_memories.config.models.resources import ImmichConfig
 from immich_memories.db import open_store
 from immich_memories.free_text import preparation as prep
 from immich_memories.free_text.library import LibraryView
@@ -170,7 +170,7 @@ def test_live_progress_reaches_the_watcher_through_the_public_seam(
     )
 
     def fake_prepare(**kwargs):
-        from immich_memories.analysis.editorial_preparation import PreparationResult
+        from immich_memories.analysis.preparation.acquire import PreparationResult
 
         total = len(kwargs["assets"])
         for done in range(1, total + 1):
@@ -179,7 +179,7 @@ def test_live_progress_reaches_the_watcher_through_the_public_seam(
 
     # WHY: replaces the real captioning model.
     monkeypatch.setattr(
-        "immich_memories.analysis.editorial_preparation.prepare_editorial_annotations",
+        "immich_memories.analysis.preparation.acquire.prepare_editorial_annotations",
         fake_prepare,
     )
     store = open_store()
@@ -232,7 +232,7 @@ def test_an_unreachable_caption_service_fails_clearly_before_touching_a_picture(
 
     # WHY: replaces the real captioning model; it must never be reached.
     monkeypatch.setattr(
-        "immich_memories.analysis.editorial_preparation.prepare_editorial_annotations", _never
+        "immich_memories.analysis.preparation.acquire.prepare_editorial_annotations", _never
     )
     store = open_store()
     config = Config()
@@ -316,7 +316,7 @@ def test_the_terminal_gets_a_few_lines_per_stage_not_one_per_picture(
     )
 
     def fake_prepare(**kwargs):
-        from immich_memories.analysis.editorial_preparation import PreparationResult
+        from immich_memories.analysis.preparation.acquire import PreparationResult
 
         total = len(kwargs["assets"])
         for done in range(1, total + 1):
@@ -325,7 +325,7 @@ def test_the_terminal_gets_a_few_lines_per_stage_not_one_per_picture(
 
     # WHY: replaces the real captioning model.
     monkeypatch.setattr(
-        "immich_memories.analysis.editorial_preparation.prepare_editorial_annotations",
+        "immich_memories.analysis.preparation.acquire.prepare_editorial_annotations",
         fake_prepare,
     )
     config = Config()

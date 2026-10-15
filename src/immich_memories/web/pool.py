@@ -8,10 +8,10 @@ from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from immich_memories.analysis.editorial_source_snapshot import SNAPSHOT_NAME, sources_from_payload
-from immich_memories.analysis.picture_copies import picture_copies
+from immich_memories.analysis.corpus.picture_copies import picture_copies
+from immich_memories.analysis.sources.snapshot import SNAPSHOT_NAME, sources_from_payload
 from immich_memories.api.models import Asset, AssetType, VideoClipInfo
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.db import open_store
 from immich_memories.operations import picture_holds
 from immich_memories.operations.candidate_fates import CandidateFates

@@ -6,7 +6,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from immich_memories.analysis.selection_source_groups import (
+from immich_memories.analysis.corpus.groups import (
     EditorialGroup,
     EpisodeMembershipIndex,
 )

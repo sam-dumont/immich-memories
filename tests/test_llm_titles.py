@@ -198,7 +198,7 @@ class TestGenerateTitleWithLlm:
     async def test_returns_title_suggestion_on_success(self):
         from unittest.mock import AsyncMock, patch
 
-        from immich_memories.config_models_llm import LLMConfig
+        from immich_memories.config.models.llm import LLMConfig
         from immich_memories.titles.llm_titles import generate_title_with_llm
         from immich_memories.titles.title_suggestion import TitleSuggestion
 
@@ -239,7 +239,7 @@ class TestGenerateTitleWithLlm:
 
         import httpx
 
-        from immich_memories.config_models_llm import LLMConfig
+        from immich_memories.config.models.llm import LLMConfig
         from immich_memories.titles.llm_titles import generate_title_with_llm
 
         config = LLMConfig(
@@ -287,7 +287,7 @@ class TestTitleGenerationThinks:
         the query layer then honors it only when llm.thinking says the server can."""
         from unittest.mock import AsyncMock, patch
 
-        from immich_memories.config_models_llm import LLMConfig
+        from immich_memories.config.models.llm import LLMConfig
         from immich_memories.titles.llm_titles import generate_title_with_llm
 
         config = LLMConfig(
@@ -321,7 +321,7 @@ class TestATitleMayOnlyNameWhatTheFactsName:
 
     @staticmethod
     def _config():
-        from immich_memories.config_models_llm import LLMConfig
+        from immich_memories.config.models.llm import LLMConfig
 
         return LLMConfig(
             enabled=True,
@@ -479,7 +479,7 @@ class TestATitleKeepsTheYearTheTemplateWouldShow:
 
     @staticmethod
     def _config():
-        from immich_memories.config_models_llm import LLMConfig
+        from immich_memories.config.models.llm import LLMConfig
 
         return LLMConfig(
             enabled=True,
@@ -665,7 +665,7 @@ class TestTheYearGuardReadsEveryFilmLanguage:
 
     @staticmethod
     def _config():
-        from immich_memories.config_models_llm import LLMConfig
+        from immich_memories.config.models.llm import LLMConfig
 
         return LLMConfig(
             enabled=True,
@@ -727,7 +727,7 @@ class TestTheCrossYearShortFormAcceptsEveryFilmSeparator:
 
     @staticmethod
     def _config():
-        from immich_memories.config_models_llm import LLMConfig
+        from immich_memories.config.models.llm import LLMConfig
 
         return LLMConfig(
             enabled=True,
@@ -806,7 +806,7 @@ class TestTheRequiredYearIsAFactNotARuleOfItsOwn:
     async def test_a_titled_suggestion_naming_that_year_is_kept(self):
         from unittest.mock import AsyncMock, patch
 
-        from immich_memories.config_models_llm import LLMConfig
+        from immich_memories.config.models.llm import LLMConfig
         from immich_memories.titles.llm_titles import MemoryTitleFacts, generate_title_with_llm
 
         today = date(2026, 9, 17)

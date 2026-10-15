@@ -15,28 +15,28 @@ import pytest
 import sqlalchemy as sa
 from PIL import Image
 
-from immich_memories.analysis.editorial_description_contract import (
+from immich_memories.analysis.captions.contract import (
     DESCRIPTION_MODEL,
     DESCRIPTION_SOURCE,
     validate_envelope,
 )
-from immich_memories.analysis.editorial_preparation import (
+from immich_memories.analysis.captions.requests import _remember_captions
+from immich_memories.analysis.facts.subject_framing import FaceBox
+from immich_memories.analysis.preparation.acquire import (
     PreparationPorts,
     prepare_editorial_annotations,
 )
-from immich_memories.analysis.editorial_preparation_captions import _remember_captions
-from immich_memories.analysis.editorial_preparation_detectors import (
+from immich_memories.analysis.preparation.detectors import (
     DETECTOR_VERSIONS,
     decide,
     docling_pixels,
 )
-from immich_memories.analysis.editorial_preparation_pixels import pixel_facts
-from immich_memories.analysis.subject_framing import FaceBox
+from immich_memories.analysis.preparation.pixels import pixel_facts
 from immich_memories.api.models import Asset, Person
 from immich_memories.cache.thumbnail_cache import ThumbnailCache
-from immich_memories.config_models_editorial import EditorialConfig
-from immich_memories.config_models_editorial_preparation import EditorialPreparationConfig
-from immich_memories.config_models_triage import TriageConfig
+from immich_memories.config.models.editorial import EditorialConfig
+from immich_memories.config.models.editorial_preparation import EditorialPreparationConfig
+from immich_memories.config.models.triage import TriageConfig
 from immich_memories.db.tables import face_boxes, head_facts
 from immich_memories.operations.cancellation import PipelineCancelled, cancellation_scope
 from immich_memories.store.editorial_preparation import (
@@ -243,7 +243,7 @@ def test_changing_caption_server_preserves_rows_and_marks_legacy_origins_unknown
 def test_warm_preparation_keeps_the_original_server_and_build(tmp_path):
     from dataclasses import replace
 
-    from immich_memories.analysis.editorial_preparation_captions import prepare_captions
+    from immich_memories.analysis.captions.requests import prepare_captions
     from tests.test_editorial_preparation_captions import _CaptionServer
 
     server = _CaptionServer(None)
@@ -357,8 +357,8 @@ def test_database_and_existing_sidecars_are_private(tmp_path):
 
 
 def test_fresh_prepared_store_is_readable_by_the_real_annotation_reader(tmp_path):
-    from immich_memories.analysis.annotation_lines import StoredAnnotationLineReader
-    from immich_memories.analysis.editorial_contracts import EditorialCandidate
+    from immich_memories.analysis.corpus.records import EditorialCandidate
+    from immich_memories.analysis.reading.annotation_lines import StoredAnnotationLineReader
     from immich_memories.store.asset_annotations import AssetAnnotationFactRepository
 
     calls = []

@@ -11,8 +11,8 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 
 from immich_memories.config import get_config
-from immich_memories.config_loader import Config
-from immich_memories.config_sources import SettingSource, describe_settings
+from immich_memories.config.loader import Config
+from immich_memories.config.sources import SettingSource, describe_settings
 from immich_memories.settings_edit import SettingRefused, save_settings
 from immich_memories.settings_store import is_bootstrap_key, secret_key_from_env
 from immich_memories.web.dependencies import config_file, current_config
@@ -149,7 +149,7 @@ def save_settings_form(
 @router.get("/settings/warnings", response_model=ConfigWarnings)
 def read_config_warnings(path: Annotated[Path, Depends(config_file)]) -> ConfigWarnings:
     """What loading the config warns about, as the server log says it; keys, never values."""
-    from immich_memories.config_warnings import config_warnings
+    from immich_memories.config.load_warnings import config_warnings
 
     return ConfigWarnings(warnings=config_warnings(path))
 

@@ -9,7 +9,7 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, Query, Request
 from pydantic import BaseModel
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.db import Store
 from immich_memories.web.answer_cache import AnswerCache, Cached
 from immich_memories.web.dependencies import answers, current_config
@@ -117,7 +117,7 @@ def accounts(config: Annotated[Config, Depends(current_config)]) -> list[Account
     Configuring an extra account here does not add it to a film — `--accounts` (or this
     list, for the brief) is what a run selects to read.
     """
-    from immich_memories.config_models import PRIMARY_ACCOUNT
+    from immich_memories.config.models.resources import PRIMARY_ACCOUNT
 
     return [AccountChoice(name=PRIMARY_ACCOUNT, primary=True)] + [
         AccountChoice(name=name, primary=False) for name in sorted(config.immich.accounts)
@@ -133,8 +133,8 @@ def trip_finder(config: Annotated[Config, Depends(current_config)]) -> TripFinde
     It opens its own Immich client: the answer is worked out behind the page, after the request
     that asked for it has finished.
     """
-    from immich_memories.analysis.trip_detection import geocoder_for
-    from immich_memories.analysis.trip_discovery import discover_year_trips
+    from immich_memories.analysis.places.trip_detection import geocoder_for
+    from immich_memories.analysis.sources.trip_discovery import discover_year_trips
     from immich_memories.api.sync_client import SyncImmichClient
 
     geocoder = geocoder_for(config)

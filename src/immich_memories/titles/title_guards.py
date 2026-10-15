@@ -32,8 +32,6 @@ logger = logging.getLogger(__name__)
 # same name when they are this close, and different names below it.
 _SAME_NAME_RATIO = 0.6
 
-_name_words = name_words
-
 
 def _is_a_known_name(word: str, known: set[str]) -> bool:
     lowered = word.casefold()
@@ -61,7 +59,7 @@ def _calendar_words() -> frozenset[str]:
                 get_day_names("wide", context, where),
             ):
                 for name in names.values():
-                    words.update(word.casefold() for word in _name_words(name))
+                    words.update(word.casefold() for word in name_words(name))
     return frozenset(words)
 
 
@@ -83,7 +81,7 @@ def _one_word_places() -> dict[str, frozenset[str]]:
     places: dict[str, set[str]] = {}
     for key, names in groups.items():
         for name in names:
-            if len(words := _name_words(name)) == 1:
+            if len(words := name_words(name)) == 1:
                 places.setdefault(words[0].casefold(), set()).add(key)
     return {word: frozenset(keys) for word, keys in places.items()}
 
@@ -108,8 +106,8 @@ def invented_name(line: str, facts: str, locale: str = "en") -> str | None:
     there a common noun ("im Jahr 2025") is not a name (`common_nouns`). Nor is a word the app
     writes itself in the film's language: the facts say "birthday", the title "Anniversaire".
     """
-    known = {word.casefold() for word in _name_words(facts)}
-    words = _name_words(line)
+    known = {word.casefold() for word in name_words(facts)}
+    words = name_words(line)
     own = own_words(locale)
     named = [
         w
@@ -139,13 +137,13 @@ def restore_fact_casing(suggestion: TitleSuggestion, facts: str, locale: str) ->
     # An all-capitals word is the condition's own AND/OR, never a name to capitalise.
     names = {
         word.casefold()
-        for word in _name_words(facts)
+        for word in name_words(facts)
         if word[:1].isupper() and len(word) > 2 and not word.isupper()
     } - own_words(locale)
 
     def capital(match: re.Match[str]) -> str:
         word = match.group(0)
-        flat = _name_words(word)
+        flat = name_words(word)
         if word[:1].islower() and flat and flat[0].casefold() in names:
             return word[:1].upper() + word[1:]
         return word
@@ -186,7 +184,7 @@ _MIN_CHECKED_WORD = 4
 
 def _unbacked_word(line: str, backing: set[str]) -> str | None:
     """The first word of `line` that is neither a date, a place, a name nor backed by a fact."""
-    for word in _name_words(line):
+    for word in name_words(line):
         folded = word.casefold()
         if (
             len(folded) < _MIN_CHECKED_WORD
@@ -231,7 +229,7 @@ def refusing_unbacked_subtitle(
         person_names,
         locale,
     )
-    backing = {word.casefold() for word in _name_words(f"{facts} {template}")}
+    backing = {word.casefold() for word in name_words(f"{facts} {template}")}
     backing |= own_words(locale)
     if unbacked := _unbacked_word(suggestion.subtitle, backing):
         logger.info(
@@ -249,8 +247,8 @@ _YEAR_SEPARATOR = " \u00b7 "
 
 
 def _ends_on_a_name(text: str, person_names: Sequence[str]) -> bool:
-    words = _name_words(text)
-    named = {word.casefold() for name in person_names for word in _name_words(name)}
+    words = name_words(text)
+    named = {word.casefold() for name in person_names for word in name_words(name)}
     return bool(words) and words[-1].casefold() in named
 
 
@@ -284,13 +282,13 @@ def names_the_place(title: str, place: str, locale: str) -> bool:
     from immich_memories.i18n_places import localise_place
 
     spellings = f"{place} {localise_place(place, locale) or ''}".replace(" and ", " ")
-    known = {word.casefold() for word in _name_words(spellings) if len(word) > 2}
+    known = {word.casefold() for word in name_words(spellings) if len(word) > 2}
     if not known:
         return True
     # WHY exact under four letters: "été" is as close to "Crete" as "Crète" is.
     return any(
         w.casefold() in known or (len(w) > 3 and _is_a_known_name(w, known))
-        for w in _name_words(title)
+        for w in name_words(title)
     )
 
 
@@ -522,7 +520,7 @@ def _template_title_text(
 # prose -- only what a title's filler commonly is, across the film's
 # locales. No "l'année" entry: an apostrophe splits it into "l" and "année"
 # before this set is ever consulted, so the fragment list below covers it.
-# `_name_words` strips accents (NFKD) before this set is ever consulted, so
+# `name_words` strips accents (NFKD) before this set is ever consulted, so
 # every entry here is written accent-stripped ("annee", not "année") -- an
 # accented entry would simply never match anything.
 _FILLER_WORDS = frozenset(
@@ -561,7 +559,7 @@ def _content_words(text: str) -> set[str]:
     stripped = text
     for substring in _CJK_FILLER_SUBSTRINGS:
         stripped = stripped.replace(substring, " ")
-    return {w.casefold() for w in _name_words(stripped) if w.casefold() not in _FILLER_WORDS}
+    return {w.casefold() for w in name_words(stripped) if w.casefold() not in _FILLER_WORDS}
 
 
 # The generic album-copy shape ("Mon voyage en images - Paris", "Our trip in

@@ -8,7 +8,7 @@ from typing import Annotated, Literal
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import FileResponse
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.db import open_store
 from immich_memories.operations.auto_output import output_log_path
 from immich_memories.operations.run_index import attempt_dir_for_run

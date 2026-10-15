@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from immich_memories.place_phrases.compose import Rules, compose
 from immich_memories.place_phrases.place import Place
-from immich_memories.place_phrases.pt_br import _NO_ARTICLE, city_phrase, country_phrase
+from immich_memories.place_phrases.pt_br import NO_ARTICLE, city_phrase, country_phrase
 
-_NO_ARTICLE_PT = _NO_ARTICLE | {"FR", "ES", "IT", "CY", "MA"}
+_NO_ARTICLE_PT = NO_ARTICLE | {"FR", "ES", "IT", "CY", "MA"}
 
 _HEADS = {
     "Crete": "em Creta",

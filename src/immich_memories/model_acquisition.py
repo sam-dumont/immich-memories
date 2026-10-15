@@ -3,8 +3,8 @@
 from dataclasses import dataclass
 from pathlib import Path
 
-from immich_memories.config_loader import Config
-from immich_memories.config_models_llm import DEFAULT_LOCAL_MODEL
+from immich_memories.config.loader import Config
+from immich_memories.config.models.llm import DEFAULT_LOCAL_MODEL
 from immich_memories.laya_checkpoints import LAYA_ONNX_NAME
 from immich_memories.local_inference import local_reader_paths
 from immich_memories.pinned_models import (

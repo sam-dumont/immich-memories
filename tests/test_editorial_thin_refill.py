@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from immich_memories.analysis.editorial_picture_admission import GateRefusal
-from immich_memories.analysis.editorial_thin_catalogue import BankedCatalogue, ThinStory
-from immich_memories.analysis.editorial_thin_refill import openable_slots, plan_slots, seat
+from immich_memories.analysis.polish.catalogue import BankedCatalogue, ThinStory
+from immich_memories.analysis.polish.refill import openable_slots, plan_slots, seat
+from immich_memories.analysis.selection.picture_admission import GateRefusal
 
 
 def shot(asset, story, *, day="01", seconds=4.0, moment=None, kind="still"):
@@ -19,9 +19,9 @@ def shot(asset, story, *, day="01", seconds=4.0, moment=None, kind="still"):
 
 
 def test_the_picker_reads_fresh_captions_only_for_its_bounded_candidate_page():
-    from immich_memories.analysis.editorial_picture_admission import PictureAdmission
-    from immich_memories.analysis.editorial_story_standing import StandingGate
-    from immich_memories.analysis.editorial_thin_refill import PAGE_ROWS, ThinRefill, ThinSlot
+    from immich_memories.analysis.polish.refill import PAGE_ROWS, ThinRefill, ThinSlot
+    from immich_memories.analysis.selection.picture_admission import PictureAdmission
+    from immich_memories.analysis.selection.standing import StandingGate
     from tests.test_editorial_thin_polish_end_to_end import Audience, PolishJudge
 
     rows = [shot(f"candidate-{n:02}", "S1", day=f"{n + 1:02}") for n in range(24)]

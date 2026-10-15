@@ -14,7 +14,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from immich_memories import generate_render as generate_render_module
-from immich_memories.config_loader import Config, set_config
+from immich_memories.config.loader import Config, set_config
 from immich_memories.db import open_store
 from immich_memories.operations.store_import import import_legacy
 from immich_memories.processing.output_contract import OutputProbe
@@ -917,7 +917,7 @@ def _prepare_generation(
     source = tmp_path / "source.mp4"
     source.write_bytes(b"source")
     assembly_clip = AssemblyClip(path=source, duration=5.0, asset_id="clip-1")
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
 
     config = Config(
         cache={"directory": str(tmp_path / "cache"), "database": str(tmp_path / "runs.db")},
@@ -1344,7 +1344,7 @@ def test_delivery_transition_failure_cannot_count_or_downgrade_a_second_attempt(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """A post-upload persistence failure never enters the API-failure transition."""
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.generate import DeliveryError, GenerationParams
     from immich_memories.generate_delivery import _deliver_completed_artifact
 

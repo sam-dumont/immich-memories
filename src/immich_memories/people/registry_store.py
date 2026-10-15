@@ -21,7 +21,7 @@ from typing import Any
 import sqlalchemy as sa
 from sqlalchemy.engine import Connection
 
-from immich_memories.config_models import PRIMARY_ACCOUNT
+from immich_memories.config.models.resources import PRIMARY_ACCOUNT
 from immich_memories.db import now_db, upsert
 from immich_memories.db.tables import (
     people,

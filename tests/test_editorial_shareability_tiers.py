@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from immich_memories.analysis import editorial_shareability as share
-from immich_memories.analysis.editorial_shareability_tiers import (
+from immich_memories.analysis.audience import shareability as share
+from immich_memories.analysis.audience.tiers import (
     audience_check_for,
     rule_audience,
     withheld_audience,
@@ -170,7 +170,7 @@ def test_a_shareable_export_is_refused_outright_when_nothing_looked_at_the_pictu
     """Not "share, because nothing objected" -- the tier has no evidence to clear anything with."""
     from dataclasses import replace
 
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from tests.test_editorial_story_first_planner import make_source
 
     source = make_source(tmp_path)
@@ -186,7 +186,7 @@ def test_a_shareable_export_is_refused_outright_when_nothing_looked_at_the_pictu
 def _plan_at_tier(tmp_path, tier):
     from dataclasses import replace
 
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from tests.test_editorial_duration_planner_integration import run
     from tests.test_editorial_story_first_planner import StoryJudge, make_source
 
@@ -222,7 +222,7 @@ def test_a_cut_without_captions_keeps_the_verdicts_the_gate_still_has_evidence_f
 
 
 def _chain_evidence(heads=(("nsfw_marqo", "no"),), description="", size=6, flagged=3):
-    from immich_memories.analysis.editorial_exposure_chains import ChainHold
+    from immich_memories.analysis.audience.exposure_chains import ChainHold
 
     return share.evidence_for_unit(
         {"asset_id": "solo", "members": ["solo"]},

@@ -12,8 +12,8 @@ import json
 import sys
 from typing import Any, get_args
 
-from immich_memories.config_loader import Config
-from immich_memories.config_tiers import ProductTier
+from immich_memories.config.loader import Config
+from immich_memories.config.tiers import ProductTier
 
 
 def tier_settings(tier: str) -> dict[str, Any]:

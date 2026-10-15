@@ -15,7 +15,7 @@ from subprocess import SubprocessError
 from immich_memories.audio.mixer import (
     DuckingConfig,
     MixConfig,
-    _db_to_linear,
+    db_to_linear,
     final_mix_safety_filter,
     get_audio_duration,
     get_video_duration,
@@ -125,7 +125,7 @@ def mix_audio_with_stem_ducking(
         f"ratio={ducking.ratio}:"
         f"attack={ducking.attack_ms}:"
         f"release={ducking.release_ms}:"
-        f"makeup={_db_to_linear(duck_vocals_db):.2f}"
+        f"makeup={db_to_linear(duck_vocals_db):.2f}"
         f"[ducked_vocals]"
     )
     filter_parts.extend(

@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from immich_memories.config_loader import Config, load_config
+from immich_memories.config.loader import Config, load_config
 from immich_memories.db import StoreLocation, redact_url, resolve_location
 from immich_memories.db.bootstrap import store_relocation_warning
 
@@ -200,6 +200,6 @@ def test_a_sqlite_url_in_the_environment_needs_no_config_file(monkeypatch, tmp_p
         raise AssertionError("the environment names the store; config.yaml is not read")
 
     # WHY: get_config reads config.yaml from the home directory; the environment decides here.
-    monkeypatch.setattr("immich_memories.config_loader.get_config", unreadable)
+    monkeypatch.setattr("immich_memories.config.loader.get_config", unreadable)
 
     assert resolve_location().url == f"sqlite:///{tmp_path / 'store.db'}"

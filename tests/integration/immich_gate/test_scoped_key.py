@@ -9,7 +9,7 @@ import httpx
 import pytest
 
 from immich_memories.api.sync_client import SyncImmichClient
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.tracking import RunDatabase
 from immich_memories.tracking.models import DeliveryStatus
 from tests.e2e.fake_library import CAST, LIBRARY

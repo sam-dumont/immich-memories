@@ -11,13 +11,13 @@ import base64
 import hashlib
 from datetime import UTC, datetime
 
-from immich_memories.analysis.editorial_source_route import metadata_demand
-from immich_memories.analysis.selection_source import (
+from immich_memories.analysis.corpus.admission import (
     EditorialDependencies,
     EditorialSelectionRequest,
     SourceScope,
     prepare_editorial_source,
 )
+from immich_memories.analysis.runtime.source_route import metadata_demand
 from immich_memories.api.models import AssetType
 from tests.conftest import make_asset
 

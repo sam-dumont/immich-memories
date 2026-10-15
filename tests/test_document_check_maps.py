@@ -14,10 +14,10 @@ from uuid import NAMESPACE_URL, uuid5
 
 import pytest
 
-from immich_memories.analysis.annotation_lines import StoredAnnotationLineReader
-from immich_memories.analysis.editorial_carrier_eligibility import excluded_carrier_sources
-from immich_memories.analysis.editorial_contracts import EditorialCandidate
-from immich_memories.analysis.editorial_shareability import load_detector_heads
+from immich_memories.analysis.audience.shareability import load_detector_heads
+from immich_memories.analysis.corpus.records import EditorialCandidate
+from immich_memories.analysis.facts.carrier_eligibility import excluded_carrier_sources
+from immich_memories.analysis.reading.annotation_lines import StoredAnnotationLineReader
 from immich_memories.store.asset_annotations import AssetAnnotationFactRepository
 from tests.annotation_rows import add_rows, annotation_store
 from tests.conftest import make_asset

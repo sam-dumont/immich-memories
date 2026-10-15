@@ -10,21 +10,21 @@ from urllib.parse import urlsplit
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 
-from immich_memories.analysis.editorial_preparation_detectors import (
+from immich_memories.analysis.preparation.detectors import (
     DETECTOR_SNAPSHOTS,
     DOCLING_REVISION,
 )
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.model_acquisition import acquisition_plan
 from immich_memories.security import credential_fingerprint
 from immich_memories.web.dependencies import current_config
 from immich_memories.web.job_routes import (
     JobView,
-    _busy,
-    _config_flag,
-    _view,
+    busy_response,
     cli_executable,
+    config_flag_path,
     job_runner,
+    job_view,
 )
 from immich_memories.web.jobs import JobBusy, JobRunner
 from immich_memories.web.schemas import ModelAcquisitionStatus, ModelArtifactView, ModelFetchRequest
@@ -110,10 +110,10 @@ def fetch_models(
         raise HTTPException(
             409, "Model list changed. Review the refreshed list before downloading."
         )
-    config_flag = _config_flag()
+    config_flag = config_flag_path()
     argv = [executable, *(["--config", str(config_flag)] if config_flag else []), "models", "fetch"]
     try:
         job = runner.start("models", argv, meta={"shown": "immich-memories models fetch"})
     except JobBusy as busy:
-        return _busy(busy, config)
-    return _view(config, job)
+        return busy_response(busy, config)
+    return job_view(config, job)

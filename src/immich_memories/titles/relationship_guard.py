@@ -23,9 +23,9 @@ from immich_memories.titles.relationship_words import (
     TYPE_ALIASES,
     UNCONDITIONAL_TYPES,
     RelationWord,
+    name_words,
     relationship_words,
 )
-from immich_memories.titles.title_guards import _name_words
 from immich_memories.titles.title_suggestion import TitleSuggestion
 
 if TYPE_CHECKING:
@@ -117,7 +117,7 @@ def _word_is_unfounded(relation_type: str, plural: bool, holders: dict[str, set[
 
 
 def _name_tokens(person_names: Sequence[str]) -> frozenset[str]:
-    return frozenset(w.casefold() for name in person_names for w in _name_words(name))
+    return frozenset(w.casefold() for name in person_names for w in name_words(name))
 
 
 # How many of the words right before a relationship word are checked for a
@@ -154,7 +154,7 @@ def _matches_cjk_marker(window: str, marker: str) -> bool:
 def _preceded_by_maker_possessive(lowered: str, start: int, locale: str) -> bool:
     """Whether a nearby word before `start` speaks as the film's maker ("our", "notre").
 
-    Split on whitespace only, never through `_name_words`: that helper
+    Split on whitespace only, never through `name_words`: that helper
     folds away accents for name matching, which would silently stop "mój"
     or "vår" from ever being recognised as themselves.
     """

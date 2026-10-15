@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from immich_memories.cli._live_display import LiveDisplay
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
 
 console = Console()
 

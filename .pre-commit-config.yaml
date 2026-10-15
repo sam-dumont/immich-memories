@@ -137,6 +137,13 @@ repos:
         pass_filenames: false
         files: *python_gates
 
+      - id: private-imports
+        name: No reach into another module's private names
+        entry: make private-imports
+        language: system
+        pass_filenames: false
+        files: ^((src|services|scripts)/.*\.py|Makefile|\.pre-commit-config\.yaml)$
+
       - id: duplication
         name: Code duplication (jscpd ≤5%)
         entry: make duplication

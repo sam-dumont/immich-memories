@@ -5,7 +5,7 @@ from unittest.mock import patch
 from click.testing import CliRunner
 
 from immich_memories.cli import main
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 
 
 def test_generate_applies_fade_before_planning_without_mutating_defaults():

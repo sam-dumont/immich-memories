@@ -4,10 +4,10 @@ from datetime import timedelta
 from functools import partial
 from types import SimpleNamespace
 
-from immich_memories.analysis.special_day import ask_if_special
-from immich_memories.analysis.special_day_holiday import was_the_holiday
-from immich_memories.analysis.special_day_sequence import read_in_sequence
-from immich_memories.config_models_llm import LLMConfig
+from immich_memories.analysis.special_days.detection import ask_if_special
+from immich_memories.analysis.special_days.holiday import was_the_holiday
+from immich_memories.analysis.special_days.sequence import read_in_sequence
+from immich_memories.config.models.llm import LLMConfig
 from immich_memories.conformance.fixtures import race_assets, scratch_store
 from immich_memories.conformance.runtime import Case
 
@@ -65,26 +65,26 @@ def occasion_cases(llm: LLMConfig) -> tuple[Case, ...]:
         Case(
             "occasion sequence",
             partial(sequence, llm),
-            frozenset({"analysis.special_day_sequence:_read"}),
+            frozenset({"analysis.special_days.sequence:_read"}),
         ),
         Case(
             "captioned occasion",
             partial(occasion, llm, captioned=True),
             frozenset(
                 {
-                    "analysis.special_day:_ask_from_captions",
-                    "analysis.editorial_text_gateway:QueryTextRequester._transported",
+                    "analysis.special_days.detection:_ask_from_captions",
+                    "analysis.judgments.text_gateway:QueryTextRequester._transported",
                 }
             ),
         ),
         Case(
             "recorded occasion",
             partial(occasion, llm, captioned=False),
-            frozenset({"analysis.special_day:_ask"}),
+            frozenset({"analysis.special_days.detection:_ask"}),
         ),
         Case(
             "holiday distinction",
             partial(holiday, llm),
-            frozenset({"analysis.special_day_holiday:_ask"}),
+            frozenset({"analysis.special_days.holiday:_ask"}),
         ),
     )

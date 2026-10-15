@@ -6,12 +6,12 @@ import logging
 
 import httpx
 
-from immich_memories.analysis.llm_providers import ANTHROPIC_VERSION, resolved_llm_config
-from immich_memories.analysis.provider_health import (
+from immich_memories.analysis.llm.provider_health import (
     ProviderHealth,
     ProviderState,
     classify_provider_response,
 )
+from immich_memories.analysis.llm.providers import ANTHROPIC_VERSION, resolved_llm_config
 from immich_memories.config import Config
 from immich_memories.preflight import CheckResult, CheckStatus
 
@@ -253,7 +253,7 @@ def _reader_settings_chosen(config: Config) -> list[str]:
 
     `OPENAI_API_KEY` is exported for many tools; finding it is not choosing a reader.
     """
-    from immich_memories.config_loader import env_alias_overrides
+    from immich_memories.config.loader import env_alias_overrides
 
     from_shell = "llm.api_key" in env_alias_overrides(config)
     return [name for name in config.llm.configured_fields if not (from_shell and name == "api_key")]

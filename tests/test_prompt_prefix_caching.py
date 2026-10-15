@@ -20,7 +20,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from immich_memories.config_models_llm import LLMConfig
+from immich_memories.config.models.llm import LLMConfig
 
 CONTRACT = "A month of one family's pictures. " * 6
 
@@ -60,7 +60,7 @@ class RecordingJudge:
 
 
 def _worth_prompts() -> tuple[str, str]:
-    from immich_memories.analysis.editorial_block_votes import judge_worthiness
+    from immich_memories.analysis.polish.block_votes import judge_worthiness
 
     judge = RecordingJudge()
     happenings = [f"f{i}" for i in range(24)]
@@ -88,7 +88,7 @@ def _audience_evidence(members: int, word: str) -> dict:
 
 
 def _activity_prompts() -> tuple[str, str]:
-    from immich_memories.analysis.editorial_shareability_audience import audience_check_prompt
+    from immich_memories.analysis.audience.questions import audience_check_prompt
 
     return (
         audience_check_prompt(_audience_evidence(2, "a kitchen")),
@@ -97,7 +97,7 @@ def _activity_prompts() -> tuple[str, str]:
 
 
 def _exposure_prompts() -> tuple[str, str]:
-    from immich_memories.analysis.editorial_shareability_audience import audience_exposure_prompt
+    from immich_memories.analysis.audience.questions import audience_exposure_prompt
 
     return (
         audience_exposure_prompt(_audience_evidence(2, "a kitchen"), ["p1", "p2"]),
@@ -106,7 +106,7 @@ def _exposure_prompts() -> tuple[str, str]:
 
 
 def _episode_page_prompts() -> tuple[str, str]:
-    from immich_memories.analysis.editorial_story_reading import _episode_page_prompt
+    from immich_memories.analysis.stories.period_account import _episode_page_prompt
 
     first = [{"reading": "r1", "what_happened": "a walk"}]
     second = [
@@ -120,7 +120,7 @@ def _episode_page_prompts() -> tuple[str, str]:
 
 
 def _grouping_prompts() -> tuple[str, str]:
-    from immich_memories.analysis.editorial_story_grouping import _grouping_prompt
+    from immich_memories.analysis.stories.grouping import _grouping_prompt
 
     return (
         _grouping_prompt([{"id": "S0001"}], contract=CONTRACT, prior={"thesis": "a quiet month"}),
@@ -131,7 +131,7 @@ def _grouping_prompts() -> tuple[str, str]:
 
 
 def _weighing_prompts() -> tuple[str, str]:
-    from immich_memories.analysis.editorial_story_weighing import _weighing_prompt
+    from immich_memories.analysis.stories.weighing import _weighing_prompt
 
     return (
         _weighing_prompt(
@@ -147,7 +147,7 @@ def _weighing_prompts() -> tuple[str, str]:
 
 
 def _pick_prompts() -> tuple[str, str]:
-    from immich_memories.analysis.editorial_story_vote import _pick_prompt
+    from immich_memories.analysis.selection.vote import _pick_prompt
 
     return (
         _pick_prompt(
@@ -170,12 +170,12 @@ def _pick_prompts() -> tuple[str, str]:
 
 
 def _episode_read_prompts() -> tuple[str, str]:
-    from immich_memories.analysis.text_episode_answers import _EpisodeRequestScope
-    from immich_memories.analysis.text_episode_prompt import EpisodePromptFacts, episode_prompt
+    from immich_memories.analysis.reading.episode_answers import EpisodeRequestScope
+    from immich_memories.analysis.reading.episode_prompt import EpisodePromptFacts, episode_prompt
     from immich_memories.store.episode_readings import EpisodeReadingIdentity
 
-    def scope(episode_id: str, assets: tuple[str, ...]) -> _EpisodeRequestScope:
-        return _EpisodeRequestScope(
+    def scope(episode_id: str, assets: tuple[str, ...]) -> EpisodeRequestScope:
+        return EpisodeRequestScope(
             identity=EpisodeReadingIdentity(
                 group_id=episode_id, producer_key="p", evidence_key="e"
             ),
@@ -222,7 +222,7 @@ def _title_prompts() -> tuple[str, str]:
 
 
 def _special_day_prompts() -> tuple[str, str]:
-    from immich_memories.analysis.special_day import _PROMPT
+    from immich_memories.analysis.special_days.detection import _PROMPT
 
     return (
         _PROMPT.format(lines="09:00 a river"),
@@ -260,7 +260,7 @@ def test_two_calls_in_a_stage_share_a_byte_identical_head(stage, build, floor):
 
 def test_a_repair_round_keeps_the_head_it_was_asked_with():
     """Recovery appends; it must never rewrite the front of the prompt."""
-    from immich_memories.analysis.editorial_json_completion import json_format_repair_prompt
+    from immich_memories.analysis.judgments.json_completion import json_format_repair_prompt
 
     original = _grouping_prompts()[0]
     assert json_format_repair_prompt(original, "unreadable").startswith(original)

@@ -42,8 +42,8 @@ from setup_matrix_capture import (  # noqa: E402
     reconstruct_usage,
 )
 
-from immich_memories.analysis.llm_metrics import LLMCounters  # noqa: E402
-from immich_memories.analysis.llm_usage_record import (  # noqa: E402
+from immich_memories.analysis.llm.metrics import LLMCounters  # noqa: E402
+from immich_memories.analysis.llm.usage_record import (  # noqa: E402
     USAGE_FILE,
     write_llm_usage,
 )
@@ -215,7 +215,7 @@ def _finished_attempt(
 ) -> None:
     """An attempt directory shaped like one a run under the old counting left behind.
 
-    `planner` is the `llm_metrics` block `plan_structure` wrote, `pre` is one
+    `planner` is the `llm.metrics` block `plan_structure` wrote, `pre` is one
     tuple per pre-planner call: stage, request bytes, completion, reasoning.
     """
     attempt.mkdir(parents=True, exist_ok=True)
@@ -340,7 +340,7 @@ def test_picture_facts_are_not_added_to_the_planner_block(tmp_path: Path) -> Non
     """They are inside it. Adding them bills the glm demo cell for 125 calls, not 93.
 
     `PictureFactsProvider` reads inside the scope `plan_structure` opens, so
-    `picture_facts_metrics` is a view of part of `llm_metrics`, not a second
+    `picture_facts_metrics` is a view of part of `llm.metrics`, not a second
     bill. `images_sent` is the one number it adds, and `read_images_sent`
     already carries that.
     """
@@ -516,7 +516,7 @@ def test_anonymising_keeps_overlap_computable_and_drops_the_words() -> None:
 
 def test_prepare_seconds_come_from_the_table_prepare_actually_prints() -> None:
     """`prepare` has no --json; the total row of its rate table is the whole contract."""
-    from immich_memories.analysis.preparation_report import ProducerCost, rate_report
+    from immich_memories.analysis.preparation.report import ProducerCost, rate_report
 
     for elapsed, expected in ((64.0, 64.0), (720.0, 720.0), (3840.0, 3840.0)):
         costs = [ProducerCost(producer="heads", pending=133, seconds=elapsed)]

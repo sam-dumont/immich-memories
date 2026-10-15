@@ -21,7 +21,7 @@ pytestmark = [pytest.mark.integration, requires_ffmpeg]
 
 def _has_immich() -> bool:
     try:
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
 
         config = Config.from_yaml(Config.get_default_path())
         if not config.immich.url or not config.immich.api_key:
@@ -45,7 +45,7 @@ requires_immich = pytest.mark.skipif(not _has_immich(), reason="Immich not reach
 def live_photo_burst():
     """Find a real overlapping burst (3+ clips) from Immich. Module-scoped."""
     from immich_memories.api.immich import SyncImmichClient
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.processing.live_photo_merger import cluster_live_photos
     from immich_memories.timeperiod import DateRange
 
@@ -195,7 +195,7 @@ class TestLivePhotoSpectrogram:
 
     def test_generate_memory_with_live_burst(self, live_photo_burst, tmp_path):
         """generate_memory() handles live photo bursts end-to-end."""
-        from immich_memories.analysis.motion_rendering import motion_renderings
+        from immich_memories.analysis.clips.motion_rendering import motion_renderings
         from immich_memories.api.models import VideoClipInfo
         from immich_memories.generate import GenerationParams, generate_memory
 

@@ -8,13 +8,13 @@ from unittest.mock import MagicMock, patch
 import pytest
 from click.testing import CliRunner
 
-from immich_memories.analysis.trip_detection import DetectedTrip
+from immich_memories.analysis.places.trip_detection import DetectedTrip
 from immich_memories.api.models import Asset
 from immich_memories.cli import main
 from immich_memories.cli._pipeline_runner import run_pipeline_and_generate
 from immich_memories.cli._trip_generation import _print_trip_result
 from immich_memories.cli.film_length import decide_duration
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 
 
 class _ResolvedBeforePlanning(BaseException):
@@ -157,7 +157,7 @@ def test_only_a_pinned_length_is_settled_before_discovery(cli_config, monkeypatc
         observed["duration"] = kwargs["duration"]
         raise _ResolvedBeforePlanning()
 
-    monkeypatch.setattr("immich_memories.cli.generate._build_params_table", before_client)
+    monkeypatch.setattr("immich_memories.cli.generate.build_params_table", before_client)
     with pytest.raises(_ResolvedBeforePlanning):
         CliRunner().invoke(main, ["generate", *args, "--no-render"], catch_exceptions=False)
     assert observed["duration"] == expected

@@ -139,7 +139,7 @@ def test_native_sharing_widens_a_face_accounts_entry_beyond_its_saved_binding(mo
     scope must hold the face to every account the cluster actually verifies, not just the
     account the people store happened to save."""
     from immich_memories.api.access_clients import AccessBoundClient
-    from immich_memories.config_models import ImmichConfig
+    from immich_memories.config.models.resources import ImmichConfig
     from immich_memories.people.transfer import import_document
     from tests.household_fake import PARTNER_KEY, PRIMARY_KEY, FakeHousehold, immich_config, picture
 

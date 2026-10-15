@@ -8,17 +8,17 @@ from types import SimpleNamespace
 
 import pytest
 
-from immich_memories.analysis import editorial_runtime as runtime
-from immich_memories.analysis import editorial_text_gateway as gateway
-from immich_memories.analysis.editorial_pool import EditorialSourcePool
-from immich_memories.analysis.selection_trace import Trace
-from immich_memories.config_loader import Config
-from immich_memories.config_models_llm import LLMConfig
+from immich_memories.analysis.corpus.trace import Trace
+from immich_memories.analysis.judgments import text_gateway as gateway
+from immich_memories.analysis.runtime import composition as runtime
+from immich_memories.analysis.sources.pool import EditorialSourcePool
+from immich_memories.config.loader import Config
+from immich_memories.config.models.llm import LLMConfig
 from tests.test_editorial_runtime import _window
 
 
 def requester(directory: Path):
-    from immich_memories.analysis.editorial_text_artifacts import TextPromptArtifacts
+    from immich_memories.analysis.judgments.text_artifacts import TextPromptArtifacts
 
     return gateway.SyncTextPromptRequester(
         LLMConfig(
@@ -45,7 +45,7 @@ def records(directory):
 
 
 def test_exact_complete_reply_is_retained_before_episode_parser_rejects_it(tmp_path, monkeypatch):
-    from immich_memories.analysis.text_episode_answers import _read_response_result
+    from immich_memories.analysis.reading.episode_answers import read_response_result
 
     seen = []
     raw = '  {"schema_version":"period-insight-text-v1","thesis":"A day","evidence":[]}\n'
@@ -61,7 +61,7 @@ def test_exact_complete_reply_is_retained_before_episode_parser_rejects_it(tmp_p
     monkeypatch.setattr(gateway, "query_llm", query)
     answer = requester(tmp_path)("Read every source.\n")
     assert answer == raw
-    assert not _read_response_result(answer, ()).readings
+    assert not read_response_result(answer, ()).readings
     assert callable(seen[0][2].pop("transport_observer"))
     assert seen == [
         (
@@ -155,7 +155,7 @@ def test_cancellation_identity_is_preserved_without_retry(tmp_path, monkeypatch)
 def test_artifact_write_failure_does_not_change_reply_or_trigger_a_retry(
     tmp_path, monkeypatch, caplog
 ):
-    from immich_memories.analysis import editorial_text_artifacts as artifacts
+    from immich_memories.analysis.judgments import text_artifacts as artifacts
 
     calls = []
 
@@ -177,7 +177,7 @@ def test_artifact_write_failure_does_not_change_reply_or_trigger_a_retry(
 def test_finish_write_failure_preserves_original_reply_or_exception(
     tmp_path, monkeypatch, caplog, provider_fails
 ):
-    from immich_memories.analysis import editorial_text_artifacts as artifacts
+    from immich_memories.analysis.judgments import text_artifacts as artifacts
 
     failure = RuntimeError("original failure")
     calls = []
@@ -302,7 +302,7 @@ def test_the_episode_stage_keeps_its_own_prompt_transcript(tmp_path, monkeypatch
 
 
 def _billing(finish_reason, completion_tokens, reasoning_tokens):
-    from immich_memories.analysis.llm_wire import LLMTransportAttempt
+    from immich_memories.analysis.llm.wire import LLMTransportAttempt
 
     return LLMTransportAttempt(
         1,
@@ -332,7 +332,7 @@ def test_the_outcome_record_names_what_the_provider_billed(tmp_path, monkeypatch
 
 
 def test_a_starved_outcome_record_names_the_reasoning_that_took_the_budget(tmp_path, monkeypatch):
-    from immich_memories.analysis.llm_wire import LLMIncompleteResponse
+    from immich_memories.analysis.llm.wire import LLMIncompleteResponse
 
     async def query(_prompt, _config, **kwargs):
         kwargs["transport_observer"](_billing("length", 8492, 8492))

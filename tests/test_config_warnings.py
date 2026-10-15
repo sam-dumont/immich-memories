@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from immich_memories.config_warnings import config_warnings
+from immich_memories.config.load_warnings import config_warnings
 
 _CONFIG = """\
 immich:
@@ -70,7 +70,7 @@ def test_config_loads_on_several_threads_each_read_their_own_file(tmp_path: Path
     back without the file, and became the server's config without an Immich URL."""
     from concurrent.futures import ThreadPoolExecutor
 
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
 
     paths = []
     for index in range(4):

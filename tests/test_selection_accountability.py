@@ -10,8 +10,8 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from immich_memories.analysis.selection_trace import Trace
-from immich_memories.analysis.smart_pipeline import ClipWithSegment
+from immich_memories.analysis.corpus.trace import Trace
+from immich_memories.analysis.runtime.smart_pipeline import ClipWithSegment
 from immich_memories.api.models import Asset, AssetType, VideoClipInfo
 
 WHEN = datetime(2023, 6, 14, 15, 7, tzinfo=UTC)

@@ -5,9 +5,9 @@ from dataclasses import asdict, replace
 
 import pytest
 
-from immich_memories.analysis.editorial_contracts import InsightEvidence
-from immich_memories.analysis.editorial_structure_contract import StructurePlannerPorts
-from immich_memories.analysis.editorial_structure_planner import plan_structure
+from immich_memories.analysis.corpus.records import InsightEvidence
+from immich_memories.analysis.film.contract import StructurePlannerPorts
+from immich_memories.analysis.structure.planner import plan_structure
 from tests.editorial_story_fixtures import ControlledStoryJudge
 from tests.editorial_thin_fixtures import caption_laya
 from tests.test_editorial_duration_planner_integration import (

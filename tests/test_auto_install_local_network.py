@@ -10,7 +10,7 @@ from click.testing import CliRunner
 from immich_memories.automation.local_network_check import CheckOutcome
 from immich_memories.automation.system_scheduler import SchedulerInstallResult
 from immich_memories.cli import main
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 
 PYTHON = "/Users/me/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/bin/python3.12"
 
@@ -34,7 +34,7 @@ def _install(url: str, outcome: CheckOutcome, tmp_path: Path, platform: str = "l
         patch(
             "immich_memories.automation.local_network_check.run_check", return_value=outcome
         ) as ran,
-        patch("immich_memories.config_loader.config_state_dir", return_value=tmp_path),
+        patch("immich_memories.config.loader.config_state_dir", return_value=tmp_path),
     ):
         result = CliRunner().invoke(main, ["auto", "install"], catch_exceptions=False)
     return result, ran

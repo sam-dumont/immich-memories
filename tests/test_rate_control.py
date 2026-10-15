@@ -172,7 +172,7 @@ def test_the_families_do_not_share_one_offset() -> None:
 
 def test_balanced_is_the_default_and_fast_does_not_lower_it() -> None:
     """~0.980 bands on gradients, so `fast` buys speed from the preset instead."""
-    from immich_memories.config_models_render import OutputConfig
+    from immich_memories.config.models.render import OutputConfig
     from immich_memories.processing.hdr_utilities import quality_encoder_preset, quality_to_crf
 
     assert OutputConfig().quality == "balanced"
@@ -190,7 +190,7 @@ def test_high_no_longer_asks_for_quality_nobody_can_see() -> None:
 
 
 def test_the_retired_names_still_load() -> None:
-    from immich_memories.config_models_render import OutputConfig
+    from immich_memories.config.models.render import OutputConfig
 
     assert OutputConfig(quality="medium").quality == "balanced"
     assert OutputConfig(quality="low").quality == "fast"

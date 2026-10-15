@@ -5,25 +5,25 @@ from dataclasses import replace
 from datetime import timedelta
 from types import SimpleNamespace
 
-from immich_memories.analysis.editorial_case import _adapt_production_cards
-from immich_memories.analysis.editorial_contracts import EditorialCandidate
-from immich_memories.analysis.editorial_episode_documents import (
+from immich_memories.analysis.corpus.groups import EditorialGroup
+from immich_memories.analysis.corpus.records import EditorialCandidate
+from immich_memories.analysis.reading.case import adapt_production_cards
+from immich_memories.analysis.reading.episode_documents import (
     anchor_observations,
     factual_moment_rows,
 )
-from immich_memories.analysis.editorial_moment_wall import (
+from immich_memories.analysis.reading.moment_cards import MomentCard
+from immich_memories.analysis.reading.moment_wall import (
     MomentCardEvidence,
     ProductionMomentWallRenderer,
     RepresentativeEvidence,
 )
-from immich_memories.analysis.editorial_people import adapt_editorial_people
-from immich_memories.analysis.editorial_person_period_facts import (
-    person_period_facts,
+from immich_memories.analysis.reading.people_identities import adapt_editorial_people
+from immich_memories.analysis.reading.person_period_facts import (
+    PersonPeriodProjection,
     render_person_period_facts,
 )
-from immich_memories.analysis.editorial_wall_rows import _table_rows
-from immich_memories.analysis.moment_cards import MomentCard
-from immich_memories.analysis.selection_source_groups import EditorialGroup
+from immich_memories.analysis.reading.wall_rows import table_rows
 from immich_memories.api.models import Person
 from immich_memories.people.context import PersonPromptContext
 from tests.editorial_story_fixtures import ControlledStoryJudge
@@ -103,7 +103,7 @@ def period_source(tmp_path):
         episode_groups=episodes,
         candidates=tuple(candidates),
     )
-    adapted, _ = _adapt_production_cards(prepared, cards)
+    adapted, _ = adapt_production_cards(prepared, cards)
     wall = ProductionMomentWallRenderer(
         prepared,
         cards,
@@ -152,14 +152,14 @@ class PeriodJudge(ControlledStoryJudge):
 
 def test_unsampled_person_period_facts_reach_editorial_stages_but_not_picture_evidence(tmp_path):
     captured, aliases = period_source(tmp_path)
-    tables = _table_rows(captured.wall_bytes.decode().splitlines())
+    tables = table_rows(captured.wall_bytes.decode().splitlines())
     rows = {row["moment_id"]: row for row in factual_moment_rows(tables, aliases)}
     sampled = anchor_observations(aliases[:5], rows)
     assert "Scene 1:" not in sampled and "Rowan (partner)" in sampled
     assert len(sampled) > 170  # Global synthesis used to retain only this scene prefix.
-    expected = render_person_period_facts(person_period_facts(tables, aliases[:5]))
+    expected = render_person_period_facts(PersonPeriodProjection(tables).facts(aliases[:5]))
     assert "Rowan" in expected and "2020-05" in expected and "confirmed" in expected
-    assert not person_period_facts(tables, aliases[5:])
+    assert not PersonPeriodProjection(tables).facts(aliases[5:])
 
     judge = PeriodJudge()
     plan = run(captured, judge)

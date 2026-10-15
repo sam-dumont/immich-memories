@@ -8,9 +8,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from immich_memories.analysis.editorial_planner import EditorialSelection
-from immich_memories.analysis.smart_pipeline import PipelineResult
-from immich_memories.config_loader import Config
+from immich_memories.analysis.runtime.plan import EditorialSelection
+from immich_memories.analysis.runtime.smart_pipeline import PipelineResult
+from immich_memories.config.loader import Config
 from immich_memories.timeperiod import DateRange
 from tests.conftest import make_clip
 
@@ -44,7 +44,7 @@ def test_cli_passes_exact_selected_carriers_and_editorial_decisions_to_generatio
         # WHY: forces the exact `clip` object through so identity checks on params.clips hold.
         patch("immich_memories.generate_clips.assets_to_clips", return_value=[clip]),
         # WHY: the pipeline is a stand-in configured to hand back the pre-built result.
-        patch("immich_memories.analysis.editorial_runtime.build_smart_pipeline") as pipeline_type,
+        patch("immich_memories.analysis.runtime.composition.build_smart_pipeline") as pipeline_type,
         # WHY: replaces the FFmpeg render; the test inspects the params it was called with.
         patch("immich_memories.generate.generate_memory", return_value=output_path) as generate,
     ):

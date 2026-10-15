@@ -4,8 +4,8 @@ from dataclasses import replace
 
 import pytest
 
-from immich_memories.analysis.editorial_case import TextRequest
-from immich_memories.config_models_llm import LLMConfig
+from immich_memories.analysis.judgments.text_request import TextRequest
+from immich_memories.config.models.llm import LLMConfig
 from tests.annotation_rows import annotation_store
 
 

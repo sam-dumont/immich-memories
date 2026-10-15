@@ -493,4 +493,4 @@ Each positive is one of the Commons negatives below with a defocused, skin-toned
 
 Source: the CC-licensed Wikimedia Commons pull `scripts/triage_heads/public_corpus.py` produces; licenses and attribution pages are recorded above. Images are not redistributed with this bundle; the repository's license applies to the training and serving code.
 
-This head is shipped as a rank-only warning (`OBSTRUCTED (edge)`): a flagged picture loses to a clean sibling of the same moment and is never dropped on its own. See `docs-site/docs/how-it-chooses/` and `src/immich_memories/analysis/editorial_obstruction.py`.
+This head is shipped as a rank-only warning (`OBSTRUCTED (edge)`): a flagged picture loses to a clean sibling of the same moment and is never dropped on its own. See `docs-site/docs/how-it-chooses/` and `src/immich_memories/analysis/facts/obstruction.py`.

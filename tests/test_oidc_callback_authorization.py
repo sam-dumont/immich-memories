@@ -8,8 +8,8 @@ from fastapi import FastAPI, Request
 from fastapi.testclient import TestClient
 from starlette.middleware.sessions import SessionMiddleware
 
-from immich_memories.config_loader import Config
-from immich_memories.config_models_auth import AuthConfig
+from immich_memories.config.loader import Config
+from immich_memories.config.models.auth import AuthConfig
 from tests.web_server_fixtures import SESSION_SECRET
 
 

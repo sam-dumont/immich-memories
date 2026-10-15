@@ -36,7 +36,7 @@ def _printed_output_row(
             side_effect=lambda path: 1 if str(path) == "/" else (2 if own_mount else 1),
         ),
         # WHY: the config path is a host file; the origin reads it to see what the env var shadows.
-        patch("immich_memories.config_loader.get_config_path", return_value=config_path),
+        patch("immich_memories.config.loader.get_config_path", return_value=config_path),
     ):
         result = CliRunner().invoke(
             main, ["-c", str(config_path), "preflight"], env={"COLUMNS": "1000"}

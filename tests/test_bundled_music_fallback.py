@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 
 from immich_memories.audio.bundled_music import bundled_track_for_mood
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 
 
 @pytest.fixture

@@ -2,7 +2,7 @@
 
 import pytest
 
-from immich_memories.analysis.editorial_story_lookalike import (
+from immich_memories.analysis.selection.lookalike import (
     LOOK_ALIKE_HASH_DISTANCE,
     LookAlikeCheck,
     hash_pair_relation,

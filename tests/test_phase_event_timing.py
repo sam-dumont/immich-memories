@@ -3,7 +3,7 @@
 import sqlite3
 
 from immich_memories.automation.state_store import AutomationStateStore
-from immich_memories.config_loader import Config, set_config
+from immich_memories.config.loader import Config, set_config
 from immich_memories.db import close_stores, open_store
 from immich_memories.operations.phases import OperationalPhase, PhaseEvent
 from immich_memories.operations.store_import import import_legacy

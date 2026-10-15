@@ -19,7 +19,7 @@ from immich_memories.api.compatibility import (
 )
 from immich_memories.api.immich import ImmichAPIError, ImmichClient
 from immich_memories.api.permissions import READ_PERMISSIONS, UPLOAD_PERMISSIONS, ApiKeyCapabilities
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.preflight import CheckStatus
 from immich_memories.preflight_immich import check_immich
 

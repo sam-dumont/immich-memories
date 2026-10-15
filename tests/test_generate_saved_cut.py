@@ -147,7 +147,7 @@ def test_fade_override_affects_this_render_without_changing_the_saved_default(
     "style", ["modern_warm", "elegant_minimal", "vintage_charm", "playful_bright", "soft_romantic"]
 )
 def test_named_title_style_loads_and_overrides_only_this_render(cut, monkeypatch, style):  # noqa: F811
-    from immich_memories.config_models_render import TitleScreenConfig
+    from immich_memories.config.models.render import TitleScreenConfig
 
     assert TitleScreenConfig(style_mode=style).style_mode == style
     params, attempt = cut

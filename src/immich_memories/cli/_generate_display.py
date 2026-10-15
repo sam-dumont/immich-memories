@@ -16,7 +16,7 @@ from rich.table import Table
 from immich_memories.cli._helpers import print_success
 
 if TYPE_CHECKING:
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.timeperiod import DateRange
 
 
@@ -89,7 +89,7 @@ def _add_music_rows(
     table.add_row("Music Volume", f"{int(music_volume * 100)}%")
 
 
-def _build_params_table(
+def build_params_table(
     *,
     config: Config,
     memory_type: str | None,
@@ -155,7 +155,7 @@ def _build_params_table(
     return table
 
 
-def _print_generation_result(
+def print_generation_result(
     *,
     dry_run: bool,
     result_path: Path,

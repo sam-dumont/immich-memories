@@ -8,9 +8,9 @@ from pathlib import Path
 import pytest
 from sqlalchemy.exc import OperationalError
 
-from immich_memories.analysis.smart_pipeline import ClipWithSegment, PipelineResult
+from immich_memories.analysis.runtime.smart_pipeline import ClipWithSegment, PipelineResult
 from immich_memories.automation.state_store import AutomationStateStore
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.operations.phases import OperationalPhase, PhaseEvent
 from immich_memories.tracking.run_tracker import RunTracker
 from tests.conftest import make_clip
@@ -93,7 +93,9 @@ def test_editorial_failure_retains_attempt_phase_without_creating_run(tmp_path: 
 
     # WHY: runtime construction owns annotation stores and model clients; fake the outer route.
     with (
-        patch("immich_memories.analysis.editorial_runtime.build_smart_pipeline") as build_pipeline,
+        patch(
+            "immich_memories.analysis.runtime.composition.build_smart_pipeline"
+        ) as build_pipeline,
         pytest.raises(RuntimeError, match="editorial selection exploded"),
     ):
         build_pipeline.return_value.run_editorial_source.side_effect = RuntimeError(
@@ -165,7 +167,9 @@ def test_editorial_continues_when_attempt_phase_write_fails(tmp_path: Path) -> N
 
     # WHY: runtime construction owns annotation stores and model clients; fake the outer route.
     with (
-        patch("immich_memories.analysis.editorial_runtime.build_smart_pipeline") as build_pipeline,
+        patch(
+            "immich_memories.analysis.runtime.composition.build_smart_pipeline"
+        ) as build_pipeline,
         # WHY: generation downloads media and invokes FFmpeg; inspect the handoff only.
         patch("immich_memories.generate.generate_memory", return_value=output) as generate,
         # WHY: force the durable telemetry write to fail without changing selection or rendering.

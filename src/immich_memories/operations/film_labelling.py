@@ -21,7 +21,7 @@ from immich_memories.memory_types.holiday_params import with_the_cuts_holiday
 from immich_memories.operations.storyboard import PLAN_FILE
 
 if TYPE_CHECKING:
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.db import Store
     from immich_memories.tracking.models import RunMetadata
 
@@ -80,7 +80,7 @@ def _summary_in(story: Mapping[str, Any], locale: str) -> str:
     """
     if story.get("thesis_locale") != locale:
         return ""
-    from immich_memories.analysis.editorial_film_summary import one_place_once
+    from immich_memories.analysis.structure.film_summary import one_place_once
 
     places = [
         p

@@ -4,9 +4,8 @@ import json
 
 import pytest
 
-from immich_memories.analysis.editorial_person_period_facts import (
+from immich_memories.analysis.reading.person_period_facts import (
     PersonPeriodProjection,
-    person_period_facts,
     render_person_period_facts,
 )
 
@@ -28,7 +27,7 @@ def _tables(*, first="2007-08", onset="2007-08", source="confirmed"):
 def test_tagged_nonsampled_moment_preserves_dated_facts_without_scene_text():
     tables = _tables()
     # Existing three-scene sampling would choose M01, M04 and M07.
-    facts = person_period_facts(tables, [f"M{i:02d}" for i in range(1, 8)])
+    facts = PersonPeriodProjection(tables).facts([f"M{i:02d}" for i in range(1, 8)])
     assert len(facts) == 1
     fact = facts[0]
     assert fact.grounding_moment_ids == ("M02",)
@@ -36,7 +35,7 @@ def test_tagged_nonsampled_moment_preserves_dated_facts_without_scene_text():
     assert fact.current_relationship == "partner"
     assert fact.relationship_source == "confirmed"
     assert fact.tier == "inner"
-    assert person_period_facts(tables, ["M01", "M04", "M07"]) == ()
+    assert PersonPeriodProjection(tables).facts(["M01", "M04", "M07"]) == ()
 
 
 def test_first_and_sustained_onset_remain_distinct_and_scope_to_tagged_dates():
@@ -48,19 +47,19 @@ def test_first_and_sustained_onset_remain_distinct_and_scope_to_tagged_dates():
         ]
     )
     tables["moment_people"][1].extend([["M08", "P02", "18y"], ["M09", "P02", "18y"]])
-    first = person_period_facts(tables, ["M02"])[0]
+    first = PersonPeriodProjection(tables).facts(["M02"])[0]
     assert (first.first_library_month, first.sustained_onset_month) == ("2007-08", None)
-    onset = person_period_facts(tables, ["M08"])[0]
+    onset = PersonPeriodProjection(tables).facts(["M08"])[0]
     assert (onset.first_library_month, onset.sustained_onset_month) == (None, "2008-02")
-    assert person_period_facts(tables, ["M09"]) == ()
-    both = person_period_facts(tables, ["M08", "M02", "M09"])[0]
+    assert PersonPeriodProjection(tables).facts(["M09"]) == ()
+    both = PersonPeriodProjection(tables).facts(["M08", "M02", "M09"])[0]
     assert (both.first_library_month, both.sustained_onset_month) == ("2007-08", "2008-02")
     assert both.grounding_moment_ids == ("M02", "M08")
 
 
 @pytest.mark.parametrize("source", ["confirmed", "derived", "unconfirmed"])
 def test_relationship_provenance_is_preserved_without_promoting_authority(source):
-    fact = person_period_facts(_tables(source=source), ["M02"])[0]
+    fact = PersonPeriodProjection(_tables(source=source)).facts(["M02"])[0]
     assert fact.relationship_source == source
     assert fact.current_relationship == "partner"
 
@@ -77,10 +76,10 @@ def test_duplicates_and_input_order_do_not_change_facts_or_rendering():
             ["M02", "P01", "?"],
         ]
     )
-    expected = person_period_facts(tables, ["M03", "M02", "M02"])
+    expected = PersonPeriodProjection(tables).facts(["M03", "M02", "M02"])
     tables["moment_people"][1].reverse()
     tables["people"][1].reverse()
-    actual = person_period_facts(tables, ["M02", "M03"])
+    actual = PersonPeriodProjection(tables).facts(["M02", "M03"])
     assert actual == expected
     assert [fact.person_token for fact in actual] == ["P01", "P02"]
     assert actual[1].grounding_moment_ids == ("M02", "M03")
@@ -93,47 +92,49 @@ def test_duplicates_and_input_order_do_not_change_facts_or_rendering():
 
 @pytest.mark.parametrize("bad", ["?", "null", "", "2007-13", "2007-8", "2007-08-05", "0000-08"])
 def test_invalid_people_months_create_no_temporal_claim(bad):
-    assert person_period_facts(_tables(first=bad, onset=bad), ["M02"]) == ()
+    assert PersonPeriodProjection(_tables(first=bad, onset=bad)).facts(["M02"]) == ()
 
 
 def test_invalid_taken_date_does_not_match_a_valid_people_month():
     tables = _tables()
     tables["moments"][1][1][1] = "2007-08-impossible"
-    assert person_period_facts(tables, ["M02"]) == ()
+    assert PersonPeriodProjection(tables).facts(["M02"]) == ()
 
 
 def test_unnamed_associations_are_omitted_but_unknown_known_identity_is_rejected():
     tables = _tables()
     tables["moment_people"][1].append(["M02", "U01", "?"])
-    assert len(person_period_facts(tables, ["M02"])) == 1
+    assert len(PersonPeriodProjection(tables).facts(["M02"])) == 1
     tables["moment_people"][1].append(["M02", "P99", "?"])
     with pytest.raises(ValueError, match="ungrounded"):
-        person_period_facts(tables, ["M02"])
+        PersonPeriodProjection(tables).facts(["M02"])
 
 
 def test_unknown_moment_cannot_ground_a_claim():
     with pytest.raises(ValueError, match="unknown moment"):
-        person_period_facts(_tables(), ["M99"])
+        PersonPeriodProjection(_tables()).facts(["M99"])
     tables = _tables()
     tables["moment_people"][1].append(["M99", "P02", "17y"])
     with pytest.raises(ValueError, match="unknown moment"):
-        person_period_facts(tables, ["M02"])
+        PersonPeriodProjection(tables).facts(["M02"])
 
 
 def test_request_projection_reuses_rows_and_keeps_fact_bytes(monkeypatch):
-    from immich_memories.analysis import editorial_wall_rows as wall
+    from immich_memories.analysis.reading import wall_rows as wall
 
     tables = _tables(first="2007-08", onset="2008-02")
     requests = [("M02",), ("M01", "M02", "M02"), ("M07",), ()]
-    expected = [render_person_period_facts(person_period_facts(tables, ids)) for ids in requests]
+    expected = [
+        render_person_period_facts(PersonPeriodProjection(tables).facts(ids)) for ids in requests
+    ]
     calls = []
-    original = wall._records
+    original = wall.table_records
 
     def records(tables, name):
         calls.append(name)
         return original(tables, name)
 
-    monkeypatch.setattr(wall, "_records", records)
+    monkeypatch.setattr(wall, "table_records", records)
     projection = PersonPeriodProjection(tables)
     assert calls == []
     assert [render_person_period_facts(projection.facts(ids)) for ids in requests] == expected

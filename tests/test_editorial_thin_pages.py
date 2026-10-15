@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from immich_memories.analysis.editorial_thin_catalogue import BankedCatalogue, ThinStory
-from immich_memories.analysis.editorial_thin_pages import (
+from immich_memories.analysis.polish.catalogue import BankedCatalogue, ThinStory
+from immich_memories.analysis.polish.pages import (
     gate_refill_page,
     motion_first,
     newcomer_stories,

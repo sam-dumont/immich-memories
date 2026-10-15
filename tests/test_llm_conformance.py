@@ -6,7 +6,7 @@ from immich_memories.conformance.inventory import discover_sites
 def test_new_llm_call_sites_are_discovered_even_through_an_import_alias(tmp_path):
     source = tmp_path / "new_feature.py"
     source.write_text(
-        "from immich_memories.analysis.llm_query import query_llm as ask_model\n"
+        "from immich_memories.analysis.llm.query import query_llm as ask_model\n"
         "async def new_feature(config):\n"
         "    return await ask_model('synthetic prompt', config)\n"
     )
@@ -26,7 +26,7 @@ def test_a_valid_fallback_is_not_reported_as_a_provider_success():
 def test_title_probe_measures_the_real_feature_transport_and_parse(monkeypatch):
     import httpx
 
-    from immich_memories.config_models_llm import LLMConfig
+    from immich_memories.config.models.llm import LLMConfig
     from immich_memories.conformance.cases import cases
     from immich_memories.conformance.runtime import run_case
 
@@ -77,7 +77,7 @@ def test_command_lists_uncovered_sites_without_using_a_library(tmp_path, monkeyp
 def test_every_model_call_site_has_a_conformance_case():
     from pathlib import Path
 
-    from immich_memories.config_models_llm import LLMConfig
+    from immich_memories.config.models.llm import LLMConfig
     from immich_memories.conformance.cases import cases
 
     root = Path(__file__).parents[1] / "src" / "immich_memories"
@@ -115,8 +115,8 @@ def test_probe_preserves_private_wire_evidence_without_headers(tmp_path, monkeyp
 
     import httpx
 
-    from immich_memories.analysis.llm_query import query_llm
-    from immich_memories.config_models_llm import LLMConfig
+    from immich_memories.analysis.llm.query import query_llm
+    from immich_memories.config.models.llm import LLMConfig
     from immich_memories.conformance.runtime import Case, run_case
 
     config = LLMConfig(
@@ -179,7 +179,7 @@ def test_command_saves_incremental_results_without_provider_configuration(
 def test_trip_title_probe_requires_route_classification(monkeypatch):
     import httpx
 
-    from immich_memories.config_models_llm import LLMConfig
+    from immich_memories.config.models.llm import LLMConfig
     from immich_memories.conformance.cases import cases
     from immich_memories.conformance.runtime import run_case
 
@@ -215,8 +215,8 @@ def test_failed_http_attempt_does_not_claim_zero_billed_tokens(monkeypatch):
 
     import httpx
 
-    from immich_memories.analysis.llm_query import query_llm
-    from immich_memories.config_models_llm import LLMConfig
+    from immich_memories.analysis.llm.query import query_llm
+    from immich_memories.config.models.llm import LLMConfig
     from immich_memories.conformance.runtime import Case, run_case
 
     # WHY: an authorization response has no usage report; only provider HTTP is substituted.

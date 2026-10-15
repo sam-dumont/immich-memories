@@ -180,7 +180,7 @@ def test_the_run_says_once_that_no_divider_fit_and_its_plan_line_agrees(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     from immich_memories.cli._run_timeline import final_timeline
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.processing.timeline_budget import plan_timeline
 
     clips = [_clip(str(month), f"2026-{month:02d}-05") for month in range(2, 8)]
@@ -209,7 +209,7 @@ def test_a_trial_cut_that_drops_every_divider_does_not_contradict_the_final_plan
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     from immich_memories.cli._run_timeline import final_timeline
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.processing.timeline_budget import (
         finalize_selected_timeline,
         plan_timeline,

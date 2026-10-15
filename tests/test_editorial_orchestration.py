@@ -7,33 +7,28 @@ import re
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from types import SimpleNamespace
 
-import pytest
-
-from immich_memories.analysis.annotation_lines import (
-    AnnotationContract,
-    AnnotationLineBatch,
-    AssetAnnotationLine,
-)
-from immich_memories.analysis.editorial_orchestration import (
-    TextEditorialPlanner,
-    TextEditorialWorkprint,
-)
-from immich_memories.analysis.editorial_planner import EditorialPlan, EditorialSelection
-from immich_memories.analysis.editorial_rule_episodes import RuleEpisodeReader
-from immich_memories.analysis.selection_source import (
+from immich_memories.analysis.corpus.admission import (
     EditorialDependencies,
     EditorialSelectionRequest,
     SourceScope,
 )
-from immich_memories.analysis.selection_trace import Trace
-from immich_memories.analysis.smart_pipeline import ClipWithSegment
-from immich_memories.analysis.text_episode_answers import TEXT_EPISODE_SCHEMA_VERSION
-from immich_memories.analysis.text_episode_reader import (
-    CachedTextEpisodeReader,
-    TextEpisodeReadDiagnostics,
+from immich_memories.analysis.corpus.trace import Trace
+from immich_memories.analysis.reading.annotation_lines import (
+    AnnotationContract,
+    AnnotationLineBatch,
+    AssetAnnotationLine,
 )
+from immich_memories.analysis.reading.episode_answers import TEXT_EPISODE_SCHEMA_VERSION
+from immich_memories.analysis.reading.episode_reader import (
+    CachedTextEpisodeReader,
+)
+from immich_memories.analysis.runtime.orchestration import (
+    TextEditorialPlanner,
+    TextEditorialWorkprint,
+)
+from immich_memories.analysis.runtime.plan import EditorialPlan, EditorialSelection
+from immich_memories.analysis.runtime.smart_pipeline import ClipWithSegment
 from immich_memories.store.episode_readings import (
     EpisodeReadingProducer,
     EpisodeReadingStore,
@@ -76,33 +71,6 @@ class _RecordingBackend:
         self.workprints.append(workprint)
         self.traces.append(trace)
         return EditorialPlan(selections=(EditorialSelection("demanded-favourite"),))
-
-
-def test_episode_diagnostics_are_observed_before_a_later_stage_failure() -> None:
-    source = make_asset("observed")
-    demanded = (
-        ClipWithSegment(make_clip("observed", file_created_at=source.file_created_at), 0, 1, 1),
-    )
-    diagnostics = TextEpisodeReadDiagnostics()
-    observed: list[TextEpisodeReadDiagnostics] = []
-
-    def fail_after_episode_read(*args, **kwargs):
-        raise RuntimeError("editor failed after episode parsing")
-
-    planner = TextEditorialPlanner(
-        selection_request=EditorialSelectionRequest(scope=SourceScope()),
-        source_dependencies=EditorialDependencies(source_fetcher=lambda _scope: (source,)),
-        episode_reader_factory=lambda _prepared: RuleEpisodeReader(
-            _AnnotationLines({"observed": AssetAnnotationLine("observed", "A family outside.")})
-        ),
-        backend=SimpleNamespace(edit=fail_after_episode_read),
-        episode_diagnostics_sink=observed.append,
-    )
-
-    with pytest.raises(RuntimeError, match="editor failed"):
-        planner.plan(demanded, trace=Trace())
-
-    assert observed == [diagnostics]
 
 
 def test_text_editorial_planner_runs_the_real_banked_lane_with_full_context(

@@ -23,7 +23,7 @@ from typing import TypeVar
 
 import httpx
 
-from immich_memories.config_models_llm import DEFAULT_LOCAL_MODEL, LLMConfig
+from immich_memories.config.models.llm import DEFAULT_LOCAL_MODEL, LLMConfig
 from immich_memories.operations.bounded_process import stop_process_group
 
 _Result = TypeVar("_Result")

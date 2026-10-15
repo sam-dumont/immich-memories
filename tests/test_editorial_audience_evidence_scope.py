@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from immich_memories.analysis import editorial_shareability as share
+from immich_memories.analysis.audience import shareability as share
 from tests.test_editorial_audience_check import Annotation, Judge, evidence_of, finding
 
 

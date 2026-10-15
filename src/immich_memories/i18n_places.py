@@ -37,7 +37,7 @@ _FR_MUTE_H = frozenset({"HT"})
 
 
 @lru_cache(maxsize=1)
-def _codes_by_english_name() -> dict[str, str]:
+def codes_by_english_name() -> dict[str, str]:
     """CLDR territory name -> code, folded for lookup ("Cyprus" -> "CY")."""
     codes = {name.casefold(): code for code, name in Locale(SOURCE_LOCALE).territories.items()}
     # GeoNames/Immich uses these official names where CLDR uses shorter display names.
@@ -99,7 +99,7 @@ def _codes_by_english_name() -> dict[str, str]:
 
 def country_code(english_name: str) -> str | None:
     """The territory identity shared by Immich's names and translated display names."""
-    return _codes_by_english_name().get(english_name.strip().casefold())
+    return codes_by_english_name().get(english_name.strip().casefold())
 
 
 @lru_cache(maxsize=32)
@@ -118,7 +118,7 @@ def localise_country(english_name: str, locale: str) -> str:
     """
     if not english_name:
         return english_name
-    code = _codes_by_english_name().get(english_name.strip().casefold())
+    code = codes_by_english_name().get(english_name.strip().casefold())
     if code is None:
         return english_name
     return _territories(locale).get(code, english_name)
@@ -130,7 +130,7 @@ def french_preposition(english_place: str) -> str:
     A "City, Country" label and a place CLDR does not know as a country take
     "à", which is right for a city and the least wrong guess for anything else.
     """
-    code = _codes_by_english_name().get(english_place.strip().casefold())
+    code = codes_by_english_name().get(english_place.strip().casefold())
     if code is None or code in _FR_NO_ARTICLE:
         return "à"
     if code in _FR_PLURAL:
@@ -184,7 +184,7 @@ def localise_place(name: str | None, locale: str) -> str | None:
 def localise_trip_place(english: str, kind: str, locale: str) -> str:
     """A trip's name, in the film's language, at the scale trip naming chose.
 
-    `english` and `kind` are what `trip_place`/`_derive_location_name` produce: a
+    `english` and `kind` are what `places.trip_place`/`_derive_location_name` produce: a
     "Place, Country" label (or "A and B, Country", or a bare country) for every
     `kind` except "countries", which is "A → B" and has no country tail to split
     off. Every surface that names a trip -- the film's own title, the trip
@@ -207,4 +207,4 @@ def place_label(city: str | None, country: str | None, locale: str) -> str | Non
 
 def is_country(english_name: str) -> bool:
     """Whether CLDR knows this English name as a country."""
-    return english_name.strip().casefold() in _codes_by_english_name()
+    return english_name.strip().casefold() in codes_by_english_name()

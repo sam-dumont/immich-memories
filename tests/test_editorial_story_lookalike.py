@@ -10,8 +10,8 @@ from datetime import date, timedelta
 
 import numpy as np
 
-from immich_memories.analysis.editorial_structure_contract import StructurePlannerPorts
-from immich_memories.analysis.editorial_structure_planner import plan_structure
+from immich_memories.analysis.film.contract import StructurePlannerPorts
+from immich_memories.analysis.structure.planner import plan_structure
 from tests.editorial_film_fixtures import Day, FilmJudge, film_source, home_days, trip_days
 
 MAY = (date(2030, 5, 1), date(2030, 5, 31))

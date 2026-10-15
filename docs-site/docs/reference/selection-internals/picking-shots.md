@@ -26,7 +26,7 @@ wins outright and where it still has to clear a gate is marked as it comes up.
 <Diagram name="decide-keep-drop" headline="Favourites help pictures stay. Source, sharing and repeated-scene checks still apply." />
 ## Which frame carries a moment
 
-`rule_representative_rank` (`editorial_rule_quality.py`) sorts a moment's frames by these keys, in
+`rule_representative_rank` (`stories/rule_quality.py`) sorts a moment's frames by these keys, in
 order. Each key only breaks the ties of the one before it.
 
 1. **Your favourite.**
@@ -36,7 +36,7 @@ order. Each key only breaks the ties of the one before it.
 4. **More people Immich knows** in it, or more faces.
 5. **The frame shows the person**: a subject rung from 1 to 3, one point for having a face's width
    of air to every border and one for being the largest face in the picture
-   (`subject_framing.py`). In a person film only that person's face counts, and a bigger face of
+   (`facts/subject_framing.py`). In a person film only that person's face counts, and a bigger face of
    someone else costs the rung.
 6. **More of the frame** is that person.
 7. **No pixel warning**: `SOFT (blurry)`, `DARK`, `BLOWN OUT` or `OBSTRUCTED (edge)` lose.
@@ -92,7 +92,7 @@ facts, and `StandingGate` refuses a score under 1.
 - An album picture scores 2 after the zero rules, with or without a written subject. Otherwise the heads decide: people, an activity, or an outdoor or public place scores 2; nobody,
   no activity and a private interior scores 0; an indoor scene with nobody in it scores 1.
 
-The points table (`editorial_standing_facts.py`) comes in two versions, and the caption version in
+The points table (`facts/standing_facts.py`) comes in two versions, and the caption version in
 two fits: one for a library where Immich reads faces, one for a library where it recognised nobody
 at all (face recognition off, or only pets and places). Weights were fitted on a public CC BY corpus
 against a hosted reader's answers and rounded to half points; nothing in it came from anyone's
@@ -114,7 +114,7 @@ the frame, the moment goes unfunded. A starred one still ships.
 (`public-obstruction-v1`, trained on public pictures and synthetic finger composites) flags a frame
 when its largest above-threshold blob touches a border, covers at least 15 % of the frame, is at
 least half skin tone and is not a shadow; a blob mostly covered by a face box is a face, not a
-finger (`editorial_obstruction.py`). The warning only sorts frames at key 7: it is never a refusal,
+finger (`facts/obstruction.py`). The warning only sorts frames at key 7: it is never a refusal,
 never part of the standing table, and a moment whose only frame is flagged still ships it. A picture
 never measured for it reads as clean. Detection rates are on
 [Measure your setup](../../better/measured.md#finger-over-the-lens).
@@ -226,7 +226,7 @@ reuses its rules draft without consuming them, so that pass does not report them
 
 ## Why each shot is there
 
-Every shot in a cut carries a reason, written from its own facts (`analysis/shot_reason.py`): who is
+Every shot in a cut carries a reason, written from its own facts (`analysis/facts/shot_reason.py`): who is
 on it, what its caption shows or else where it was taken, and what made it beat the rest of its
 moment. That last part is at most two of: a star, you kept it, it moves (a video or a Live Photo),
 the only frame with its people, the clearest view of them, the sharpest of its run. A reason stays

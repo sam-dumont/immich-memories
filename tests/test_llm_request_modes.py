@@ -5,7 +5,7 @@ from unittest.mock import patch
 import httpx
 import pytest
 
-from immich_memories.config_models_llm import LLMConfig
+from immich_memories.config.models.llm import LLMConfig
 from immich_memories.free_text.reading import WireAsker, object_schema
 
 
@@ -43,7 +43,7 @@ def test_local_free_text_keeps_its_required_json_contract():
 
 
 def test_request_specific_policy_cannot_reuse_a_force_all_schemas_producer():
-    from immich_memories.analysis.editorial_text_gateway import semantic_text_model_identity
+    from immich_memories.analysis.judgments.text_gateway import semantic_text_model_identity
 
     config = LLMConfig(
         enabled=True,
@@ -63,8 +63,8 @@ def test_request_specific_policy_cannot_reuse_a_force_all_schemas_producer():
 @pytest.mark.parametrize("override", [None, True, False])
 @pytest.mark.asyncio
 async def test_one_endpoint_switches_modes_by_request_kind(provider, override):
-    from immich_memories.analysis.llm_query import query_llm
-    from immich_memories.analysis.prose_shapes import episode_reading_shape, title_shape
+    from immich_memories.analysis.llm.query import query_llm
+    from immich_memories.analysis.reading.prose_shapes import episode_reading_shape, title_shape
 
     config = LLMConfig(
         enabled=True,
@@ -102,8 +102,8 @@ async def test_one_endpoint_switches_modes_by_request_kind(provider, override):
 
 @pytest.mark.asyncio
 async def test_cached_answers_stay_with_their_request_mode():
-    from immich_memories.analysis.llm_query import query_llm
-    from immich_memories.analysis.prose_shapes import episode_reading_shape, title_shape
+    from immich_memories.analysis.llm.query import query_llm
+    from immich_memories.analysis.reading.prose_shapes import episode_reading_shape, title_shape
     from tests.annotation_rows import annotation_store
 
     config = LLMConfig(
@@ -163,7 +163,7 @@ async def test_cached_answers_stay_with_their_request_mode():
 def test_unchanged_modes_keep_their_existing_banked_answers(
     provider, endpoint, model, override, banked_identity
 ):
-    from immich_memories.analysis.editorial_text_gateway import semantic_text_model_identity
+    from immich_memories.analysis.judgments.text_gateway import semantic_text_model_identity
 
     config = LLMConfig(
         enabled=True, provider=provider, base_url=endpoint, model=model, structured_output=override
@@ -176,7 +176,7 @@ def test_unchanged_modes_keep_their_existing_banked_answers(
 @pytest.mark.parametrize("override", [None, True, False])
 @pytest.mark.asyncio
 async def test_json_object_mode_does_not_leak_into_a_prose_request(provider, override):
-    from immich_memories.analysis.llm_query import query_llm
+    from immich_memories.analysis.llm.query import query_llm
 
     config = LLMConfig(
         enabled=True,

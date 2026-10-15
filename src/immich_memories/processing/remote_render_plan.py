@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 def build_render_request(params: GenerationParams) -> dict:
     """Freeze the kept intervals without running selection or reading any media."""
     from immich_memories.generate import build_memory_key
-    from immich_memories.generate_clips import _validated_render_directives
+    from immich_memories.generate_clips import validated_render_directives
     from immich_memories.processing.encoding_plan import resolve_output_selection
     from immich_memories.processing.remote_render_access import render_access
 
@@ -35,7 +35,7 @@ def build_render_request(params: GenerationParams) -> dict:
     if output.container != "mp4":
         raise ValueError("Render workers support H.264 or H.265 MP4; use local rendering for MOV")
     prepare_certified_timeline(params)
-    directives = _validated_render_directives(params)
+    directives = validated_render_directives(params)
     clips = [_clip_request(clip, params, directives.get(clip.asset.id)) for clip in params.clips]
     params, binding = _timing_binding(params, clips)
     canvas = resolve_generation_canvas(params)

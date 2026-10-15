@@ -6,8 +6,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from immich_memories.analysis.editorial_block_votes import judge_worthiness
-from immich_memories.config_models_llm import LLMConfig
+from immich_memories.analysis.polish.block_votes import judge_worthiness
+from immich_memories.config.models.llm import LLMConfig
 
 
 class VoteJudge:

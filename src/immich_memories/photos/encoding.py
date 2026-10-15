@@ -17,7 +17,7 @@ from immich_memories.processing.encoding_plan import (
 )
 
 if TYPE_CHECKING:
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.processing.hardware import HWAccelCapabilities
 
 logger = logging.getLogger(__name__)

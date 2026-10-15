@@ -5,10 +5,10 @@ from __future__ import annotations
 from dataclasses import replace
 from datetime import UTC, datetime
 
-from immich_memories.analysis.editorial_people import adapt_editorial_people
-from immich_memories.analysis.editorial_runtime import EditorialRunContext
-from immich_memories.analysis.editorial_runtime_backend import ProductionPostCardBackend
-from immich_memories.analysis.editorial_runtime_ports import EditorialRuntimePorts
+from immich_memories.analysis.reading.people_identities import adapt_editorial_people
+from immich_memories.analysis.runtime.backend import ProductionPostCardBackend
+from immich_memories.analysis.runtime.composition import EditorialRunContext
+from immich_memories.analysis.runtime.ports import EditorialRuntimePorts
 from immich_memories.store.episode_readings import (
     BankedEpisodeReading,
     EpisodeReadingIdentity,
@@ -231,7 +231,7 @@ def test_a_year_with_no_account_is_catalogued_when_the_draft_asks_for_it(tmp_pat
 
 def test_the_episodes_nobody_read_reach_the_account_as_their_facts(tmp_path):
     """The draft's own cards say what the rest of the month was, and cost nothing to pass on."""
-    from immich_memories.analysis.editorial_structure_contract import EpisodeReadingCard
+    from immich_memories.analysis.film.contract import EpisodeReadingCard
 
     bank = annotation_store()
     captured = whole_month(source(tmp_path, seconds=60, pictures=3), bank)
@@ -256,8 +256,8 @@ def test_the_episodes_nobody_read_reach_the_account_as_their_facts(tmp_path):
 
 def test_a_person_film_over_twenty_years_is_polished_over_one_account_a_year(tmp_path):
     """A birth-date-to-today window reads on demand and asks no account per month."""
-    from immich_memories.analysis.editorial_structure_contract import EpisodeReadingCard
-    from immich_memories.analysis.editorial_thin_layer import catalogued_period
+    from immich_memories.analysis.film.contract import EpisodeReadingCard
+    from immich_memories.analysis.polish.layer import catalogued_period
     from tests.conftest import make_asset
 
     bank = annotation_store()
@@ -302,8 +302,8 @@ def test_a_person_film_over_twenty_years_is_polished_over_one_account_a_year(tmp
 
 def test_a_season_is_polished_over_one_account_of_its_own_window(tmp_path):
     """A spring film reads one account for March to May, not a year's and a window's."""
-    from immich_memories.analysis.editorial_structure_contract import EpisodeReadingCard
-    from immich_memories.analysis.editorial_thin_layer import catalogued_period
+    from immich_memories.analysis.film.contract import EpisodeReadingCard
+    from immich_memories.analysis.polish.layer import catalogued_period
     from tests.conftest import make_asset
 
     bank = annotation_store()

@@ -15,7 +15,7 @@ from starlette.routing import Route
 from starlette.testclient import TestClient
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.web.auth import record_failed_login, reset_rate_limiter
 from immich_memories.web.reverse_proxy import reverse_proxy_run_kwargs
 

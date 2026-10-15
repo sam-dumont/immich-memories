@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from datetime import UTC, datetime
 
-from immich_memories.analysis.editorial_source_snapshot import SNAPSHOT_NAME, source_payload
+from immich_memories.analysis.sources.snapshot import SNAPSHOT_NAME, source_payload
 from tests.conftest import make_asset
 from tests.web_api_fixtures import api_client, config_in, save_run, selection_trace
 

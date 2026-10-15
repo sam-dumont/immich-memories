@@ -9,7 +9,7 @@ from immich_memories.i18n_places import cast_list
 from immich_memories.titles.text_builder import (
     SelectionType,
     TitleInfo,
-    _generate_date_range_title,
+    generate_date_range_title,
     get_season_name,
     title_pattern,
 )
@@ -60,7 +60,7 @@ def generate_person_spotlight_title(
     """
     if year is None and start_date is not None and end_date is not None:
         if not person_name:
-            return _generate_date_range_title(start_date, end_date, None, locale)
+            return generate_date_range_title(start_date, end_date, None, locale)
         return TitleInfo(
             main_title=person_name, subtitle=None, selection_type=SelectionType.PERSON_SPOTLIGHT
         )

@@ -7,10 +7,10 @@ from datetime import UTC, date, datetime
 
 import pytest
 
-from immich_memories.analysis.editorial_carrier_eligibility import excluded_carrier_sources
-from immich_memories.analysis.editorial_intent import build_editorial_intent
-from immich_memories.analysis.editorial_intent_validation import CarrierView, validate_intent
-from immich_memories.analysis.editorial_shareability import partition_units
+from immich_memories.analysis.audience.shareability import partition_units
+from immich_memories.analysis.facts.carrier_eligibility import excluded_carrier_sources
+from immich_memories.analysis.film.intent import build_editorial_intent
+from immich_memories.analysis.film.intent_validation import CarrierView, validate_intent
 from immich_memories.timeperiod import DateRange
 
 

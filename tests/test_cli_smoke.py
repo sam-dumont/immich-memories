@@ -24,7 +24,7 @@ from immich_memories.automation.system_scheduler import (
     WorktreePinnedBinaryError,
 )
 from immich_memories.cli import main
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.memory_types.registry import MemoryType
 
 

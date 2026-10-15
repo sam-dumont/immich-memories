@@ -11,7 +11,7 @@ def test_title_and_particles_need_no_full_frame_copy_or_clear(monkeypatch):
     if not kernels.init_kernels():
         pytest.skip("no working kernel backend")
     calls = []
-    original = kernels._copy_field_3
+    original = kernels.compiled_copy_field_3
 
     def counted(*args):
         calls.append(True)
@@ -19,7 +19,7 @@ def test_title_and_particles_need_no_full_frame_copy_or_clear(monkeypatch):
 
     # WHY: count real device launches; pixel equality alone cannot detect
     # a redundant full-frame copy, the performance bug here.
-    monkeypatch.setattr(kernels, "_copy_field_3", counted)
+    monkeypatch.setattr(kernels, "compiled_copy_field_3", counted)
     renderer = KernelTitleRenderer(KernelTitleConfig(width=160, height=96, blur_radius=0))
     blank = renderer.render_frame(30, "", None)
     renderer.gpu.bokeh.fill(float("nan"))

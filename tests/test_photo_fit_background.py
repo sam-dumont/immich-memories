@@ -43,7 +43,7 @@ def _rendered_scale_mode(tmp_path, monkeypatch, *, requested: str | None, config
     from unittest.mock import MagicMock
 
     from immich_memories.api.models import AssetType
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.generate import GenerationParams
     from immich_memories.generate_clips import extract_clips
     from tests.conftest import make_clip

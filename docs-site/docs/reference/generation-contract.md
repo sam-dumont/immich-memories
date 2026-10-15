@@ -118,7 +118,7 @@ Seven things the examples hide:
   ([Holiday](film-types.mdx#holiday)). Without `--years-back` a holiday film reads every year the
   library has, and the day itself leads each year. A holiday cut runs 60 seconds unless you pass
   `--duration`.
-- `special_day` works on any day, catalogued or not, and requires `--day`. Several catalogued events
+- `special_days.detection` works on any day, catalogued or not, and requires `--day`. Several catalogued events
   on that day require `--event-id` as well; an ID with no match on the chosen day is refused. Use
   `days-export` to read the event IDs. A day with one catalogue row is scoped and named by it;
   a day without one is scoped to itself, named by `--title`

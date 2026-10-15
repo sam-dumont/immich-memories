@@ -15,7 +15,7 @@ from conftest import AUTH, render_request_body, worker_app
 
 def household_params(tmp_path):
     from immich_memories.api.compatibility import ApiVersionPolicy
-    from immich_memories.config_models import ImmichConnection
+    from immich_memories.config.models.resources import ImmichConnection
 
     params = manual_params(tmp_path)
     params.config.immich.api_version = ApiVersionPolicy.V2

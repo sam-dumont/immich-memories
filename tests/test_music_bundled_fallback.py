@@ -17,7 +17,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.generate import GenerationParams
 from immich_memories.generate_music import resolve_music
 from immich_memories.processing.encoding_plan import EncodingPlan, HdrTransfer, OutputCodec

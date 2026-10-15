@@ -22,7 +22,7 @@ over the selected shots' captions. No tier asks the prose LLM to decide sharing.
 
 ## After the draft
 
-The order, as `_select` in `editorial_structure_planner.py` runs it: draft and optional
+The order, as `_select` in `structure/planner.py` runs it: draft and optional
 refinement, family seats and owner includes, fit timing, sharing and duplicate review, finished-
 cut check.
 
@@ -31,7 +31,7 @@ Each pass writes what it did to the run's attempt record, and `runs why <asset-i
 ## The family seat
 
 Shots follow favourites and stories, so someone photographed all month and starred in none of it can
-end up in no shot. The seat fixes that on every tier (`editorial_family_seat.py`).
+end up in no shot. The seat fixes that on every tier (`structure/family_seat.py`).
 
 - **Who is owed one.** A close family member (partner, child or parent, as confirmed in
   the people registry) on at least 20 of the period's pictures, or 5 % of them, and in none of its shots.
@@ -108,7 +108,7 @@ replaces the shot at the sharing level you chose.
 **On GPU and Full**, the `nsfw_marqo` detector on the still, on up to eight frames spread
 across a video, and on a Live Photo's clip; the `uncovered_person` head as a second opinion; and the
 exposure chain: a five-minute capture run is held whole when at least half of it and at least three
-of its captures are flagged (`editorial_exposure_chains.py`). All of these give `family_only`.
+of its captures are flagged (`audience/exposure_chains.py`). All of these give `family_only`.
 Nothing a later reading says lifts a detector's hold. The holds live in the store's audience bank
 (`audience_holds`), one per picture and per source: a detector's or a rule's is permanent, a text
 reading's lasts as long as the audience prompt it answered. Only you lift one, one picture at a time, after
@@ -130,7 +130,7 @@ default): a shot is `share` when its evidence is clean, which means all of these
 For the cheap-head route, `uncovered_person` and `screen` must both say no, and `frame_kind` must name a people moment, scenery, a meaningful record or an everyday object.
 
 Anything else stays `family_only` and leaves the shareable film (`clean_evidence` in
-`editorial_shareability_tiers.py`). A private moment that no detector sees and no caption names can
+`audience/tiers.py`). A private moment that no detector sees and no caption names can
 still pass. Captions and Laya add an activity check, but cannot guarantee that every private
 moment is recognised.
 
@@ -196,13 +196,13 @@ Sameness is decided in four places, from Immich's own metadata (checksums, file 
 No tier asks a model to compare two pictures.
 
 1. **Copies, at the source.** Three folds run before the editor sees the pool, in this order.
-   - *Same bytes* (`exact_copies.py`). Files with an equal SHA-1 and the same kind are one picture:
+   - *Same bytes* (`corpus/exact_copies.py`). Files with an equal SHA-1 and the same kind are one picture:
      your partner's phone uploaded it as well, or a second account of a `generate --accounts` run
      holds it. A Live Photo copy stands for it before a plain one, then a starred copy, then the
      primary account's, then the smallest (owner id, asset id). A video whose bytes are a Live
      Photo's own motion folds into that Live Photo. A star on any copy stars the kept one, and an
      `--include` or `--exclude` naming a folded copy names the kept one.
-   - *Same picture, other file* (`picture_copies.py`). A shared album carries no originals, so a
+   - *Same picture, other file* (`corpus/picture_copies.py`). A shared album carries no originals, so a
      curated shot arrives twice: the camera's file and a ~2048 px downscale. An iOS edit arrives
      twice too: Immich has no replace endpoint, so the edit lands next to the original. Files with
      the same file-name stem, kind and capture instant (EXIF's own, to the millisecond) are one
@@ -214,7 +214,7 @@ No tier asks a model to compare two pictures.
      `fileModifiedAt` plays, then the higher asset id on an exact tie. A star, the people
      recognised on any file, and an `--include` or `--exclude` naming any file carry to the kept
      one. The others are left out as "another file of the same picture".
-   - *Immich stacks* (`stacks.py`). `GET /stacks` is read once per account per run. Every member
+   - *Immich stacks* (`corpus/stacks.py`). `GET /stacks` is read once per account per run. Every member
      of a stack is left out as "another file of the same stack" and the stack's primary (the top
      picture) plays; a star on any member stars the primary. Only the star moves: people stay on
      the file they were tagged on, and an `--include` naming a member does not carry to the
@@ -253,7 +253,7 @@ removal, the distance or cosine behind it, and who kept the slot.
 ## The finished-cut check
 
 Each pass keeps its promise when it runs, and a later pass can undo it without knowing. So after
-the last pass the cut is read once against all of them (`editorial_cut_invariants.py`):
+the last pass the cut is read once against all of them (`structure/cut_invariants.py`):
 
 1. every close family member the seat owes a shot has one, or the seat recorded why not;
 2. no non-favourite carries a moment whose favourite could have carried it (a favourite folded into

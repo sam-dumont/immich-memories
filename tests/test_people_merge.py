@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date, datetime
 
-from immich_memories.analysis.person_resolution import PersonAlias, StorePerson
+from immich_memories.analysis.sources.person_resolution import PersonAlias, StorePerson
 from immich_memories.automation.people_merge import (
     canonical_person_map,
     merge_counts,

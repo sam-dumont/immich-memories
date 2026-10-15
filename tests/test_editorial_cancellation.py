@@ -5,12 +5,12 @@ from unittest.mock import patch
 
 import pytest
 
-from immich_memories.analysis.editorial_async_bridge import _run_sync
-from immich_memories.analysis.editorial_case import TextRequest
-from immich_memories.analysis.editorial_text_gateway import QueryTextRequester
-from immich_memories.analysis.llm_query import query_llm
+from immich_memories.analysis.judgments.text_gateway import QueryTextRequester
+from immich_memories.analysis.judgments.text_request import TextRequest
+from immich_memories.analysis.llm.async_bridge import run_sync
+from immich_memories.analysis.llm.query import query_llm
 from immich_memories.cache.judgment_cache import JudgmentCache
-from immich_memories.config_models_llm import LLMConfig
+from immich_memories.config.models.llm import LLMConfig
 from immich_memories.operations.cancellation import (
     PipelineCancelled,
     cancellation_scope,
@@ -59,7 +59,7 @@ async def test_cancel_from_running_ui_reaches_sync_bridge_thread():
         pytest.fail("Cancellation was lost across the async bridge")
 
     with cancellation_scope(check), pytest.raises(PipelineCancelled):
-        _run_sync(request())
+        run_sync(request())
     check_cancelled()  # No stopped scope leaks into the next run.
 
 
@@ -79,7 +79,7 @@ async def test_completed_request_is_banked_but_cancel_prevents_next_request(tmp_
         return '{"decision":"complete"}'
 
     # Provider transport is the boundary; real gateway validation/cache are retained.
-    monkeypatch.setattr("immich_memories.analysis.llm_query._dispatch", dispatch)
+    monkeypatch.setattr("immich_memories.analysis.llm.query._dispatch", dispatch)
     config = LLMConfig(
         enabled=True,
         base_url="http://localhost:8080/v1",

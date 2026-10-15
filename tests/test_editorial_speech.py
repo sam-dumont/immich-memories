@@ -6,7 +6,7 @@ from contextlib import contextmanager
 
 import pytest
 
-from immich_memories.analysis.editorial_structure_record import shave_content_duration
+from immich_memories.analysis.structure.record import shave_content_duration
 from tests.annotation_rows import annotation_store
 
 
@@ -69,7 +69,7 @@ def test_shaving_terminates_when_speech_holds_every_cut_point():
 
 
 def test_speech_spanning_a_live_stitch_join_uses_the_stitched_clock():
-    from immich_memories.analysis.editorial_speech import resolve_speech_cuts
+    from immich_memories.analysis.clips.speech import resolve_speech_cuts
     from immich_memories.processing.live_material import LiveRenderMaterial, LiveSourceEntry
 
     material = LiveRenderMaterial(
@@ -94,7 +94,7 @@ def test_speech_spanning_a_live_stitch_join_uses_the_stitched_clock():
 
 
 def test_fitting_drops_an_indivisible_utterance_instead_of_cutting_it():
-    from immich_memories.analysis.editorial_story_trim import trim_to_timing_budget
+    from immich_memories.analysis.selection.trim import trim_to_timing_budget
 
     carriers = [
         {"asset_id": "speech", "seconds": 8, "speech_regions": [[0, 8]], "story_weight": "minor"},
@@ -106,7 +106,7 @@ def test_fitting_drops_an_indivisible_utterance_instead_of_cutting_it():
 
 
 def test_short_video_contributes_its_actual_duration_to_minimum_fit():
-    from immich_memories.analysis.editorial_story_trim import trim_to_timing_budget
+    from immich_memories.analysis.selection.trim import trim_to_timing_budget
 
     carriers = [{"asset_id": str(i), "seconds": 2.0} for i in range(3)]
     kept, dropped = trim_to_timing_budget(carriers, lambda _: 6, 3.5)
@@ -118,7 +118,7 @@ def test_a_source_that_cannot_be_measured_keeps_its_interval_and_does_not_poison
     caplog,
 ):
     """Speech protection is a refinement: one unmeasurable source degrades alone."""
-    from immich_memories.analysis.editorial_speech import resolve_speech_cuts
+    from immich_memories.analysis.clips.speech import resolve_speech_cuts
     from immich_memories.speech.facts import SpeechMeasurementUnavailable
 
     def regions_for(asset_id):
@@ -130,7 +130,7 @@ def test_a_source_that_cannot_be_measured_keeps_its_interval_and_does_not_poison
         {"asset_id": "broken", "kind": "video", "seconds": 6.0, "raw_seconds": 10.0},
         {"asset_id": "fine", "kind": "video", "seconds": 6.0, "raw_seconds": 10.0},
     ]
-    with caplog.at_level(logging.WARNING, logger="immich_memories.analysis.editorial_speech"):
+    with caplog.at_level(logging.WARNING, logger="immich_memories.analysis.clips.speech"):
         resolved = resolve_speech_cuts(carriers, regions_for, buffer=0.08)
 
     assert any("broken" in record.message for record in caplog.records), (
@@ -146,7 +146,7 @@ def test_a_source_that_cannot_be_measured_keeps_its_interval_and_does_not_poison
 
 
 def test_an_unmeasurable_live_motion_member_keeps_the_carrier_unchanged():
-    from immich_memories.analysis.editorial_speech import resolve_speech_cuts
+    from immich_memories.analysis.clips.speech import resolve_speech_cuts
     from immich_memories.processing.live_material import LiveRenderMaterial, LiveSourceEntry
     from immich_memories.speech.facts import SpeechMeasurementUnavailable
 
@@ -178,7 +178,7 @@ def test_speech_facts_transport_and_decode_failures_are_unavailable(tmp_path):
     """Playback transport and audio-extraction failures degrade, not abort."""
     import httpx
 
-    from immich_memories.config_models_analysis import SpeechConfig
+    from immich_memories.config.models.analysis import SpeechConfig
     from immich_memories.speech.facts import SpeechFacts, SpeechMeasurementUnavailable
     from tests.conftest import make_asset
 
@@ -208,7 +208,7 @@ def test_a_changed_source_retires_its_banked_speech_and_is_measured_again(tmp_pa
     """The bank answers for the source it measured, and only for that exact source."""
     import subprocess
 
-    from immich_memories.config_models_analysis import SpeechConfig
+    from immich_memories.config.models.analysis import SpeechConfig
     from immich_memories.speech.facts import SpeechFacts
     from tests.conftest import make_asset
 
@@ -273,7 +273,7 @@ def test_a_changed_source_retires_its_banked_speech_and_is_measured_again(tmp_pa
 
 def test_music_fraction_is_measured_beside_speech_and_then_banked():
     """#1951: the fallback route measures and banks a music/singing share too."""
-    from immich_memories.config_models_analysis import SpeechConfig
+    from immich_memories.config.models.analysis import SpeechConfig
     from immich_memories.speech.facts import SpeechFacts
     from tests.conftest import make_asset
 
@@ -314,8 +314,8 @@ def test_music_fraction_is_measured_beside_speech_and_then_banked():
 def test_real_planner_budgets_video_lengths_and_fits_after_speech_detection(tmp_path):
     from dataclasses import replace
 
-    from immich_memories.analysis.editorial_speech import resolve_speech_cuts
-    from immich_memories.analysis.editorial_structure_planner import plan_structure
+    from immich_memories.analysis.clips.speech import resolve_speech_cuts
+    from immich_memories.analysis.structure.planner import plan_structure
     from immich_memories.api.models import AssetType
     from immich_memories.processing.editorial_timing import build_editorial_timing_policy
     from tests.test_editorial_duration_planner_integration import source
@@ -354,7 +354,7 @@ def test_real_planner_budgets_video_lengths_and_fits_after_speech_detection(tmp_
 
 def test_speech_expanding_to_the_end_of_a_measured_live_burst_stays_inside_it():
     """A measured stitch has no round duration; the cut it keeps must still certify."""
-    from immich_memories.analysis.editorial_speech import resolve_speech_cuts
+    from immich_memories.analysis.clips.speech import resolve_speech_cuts
     from immich_memories.processing.live_material import LiveRenderMaterial, LiveSourceEntry
 
     # Content-aligned joins (#1023) leave a repeating tail: 5.733666666666667s stitched.
@@ -390,7 +390,7 @@ def test_speech_expanding_to_the_end_of_a_measured_live_burst_stays_inside_it():
 
 def test_a_breath_between_two_speakers_is_not_a_cut_point():
     """A conversation runs to its end: the 0.2 s turn between lines is not a pause (#1950)."""
-    from immich_memories.analysis.editorial_speech import resolve_speech_cuts
+    from immich_memories.analysis.clips.speech import resolve_speech_cuts
 
     exchange = [(0.83, 2.07), (2.28, 3.7), (3.92, 6.76)]
     talk = {"kind": "video", "asset_id": "talk", "seconds": 6.0, "raw_seconds": 6.76}
@@ -404,7 +404,7 @@ def test_a_breath_between_two_speakers_is_not_a_cut_point():
 
 def test_live_motion_music_fraction_weights_by_segment_duration():
     """#1951: the stitch's own companions carry the music signal, not the kept still."""
-    from immich_memories.analysis.editorial_runtime_ports import _live_motion_music_fraction
+    from immich_memories.analysis.runtime.ports import _live_motion_music_fraction
     from immich_memories.processing.live_material import LiveRenderMaterial, LiveSourceEntry
 
     material = LiveRenderMaterial(
@@ -423,7 +423,7 @@ def test_live_motion_music_fraction_weights_by_segment_duration():
 
 def test_tag_has_music_sets_the_flag_by_kind_and_threshold():
     """#1951: only video/live-motion carriers are tagged; everything else passes through."""
-    from immich_memories.analysis.editorial_runtime_ports import _tag_has_music
+    from immich_memories.analysis.runtime.ports import _tag_has_music
     from immich_memories.processing.live_material import LiveRenderMaterial, LiveSourceEntry
 
     material = LiveRenderMaterial((LiveSourceEntry("a", "va", 0, 0, 1),))
@@ -443,7 +443,7 @@ def test_tag_has_music_sets_the_flag_by_kind_and_threshold():
 def test_a_crowd_heard_all_along_does_not_hold_the_cut_to_its_longest():
     """Measured on a finish-line clip: the PA and the crowd read as speech for 17 s. That is
     not one exchange to keep whole; the window stays where it was and the shave still works."""
-    from immich_memories.analysis.editorial_speech import resolve_speech_cuts
+    from immich_memories.analysis.clips.speech import resolve_speech_cuts
 
     crowd = [(0.0, 1.7), (3.5, 3.8), (4.0, 9.4), (9.9, 12.1), (12.4, 17.3)]
     clip = {
@@ -464,7 +464,7 @@ def test_a_crowd_heard_all_along_does_not_hold_the_cut_to_its_longest():
 def test_a_sound_heard_as_one_endless_line_does_not_drag_the_window_back():
     """Measured on a 49 s clip: the detector heard one unbroken 'utterance' from 9 s to 32 s.
     No sentence runs 23 s; the window chosen at 30.5 s stays there."""
-    from immich_memories.analysis.editorial_speech import resolve_speech_cuts
+    from immich_memories.analysis.clips.speech import resolve_speech_cuts
 
     clip = {
         "kind": "video",

@@ -7,10 +7,10 @@ never force a picture the standing gate has refused into the primary slot just b
 `read_story`'s own hard filters did not see that refusal coming (#2048 review, point B).
 """
 
-from immich_memories.analysis.editorial_story_carriers import CarrierAdmission
-from immich_memories.analysis.editorial_story_shortlist import DepictedChoice
-from immich_memories.analysis.editorial_story_slots import PartitionedSlots
-from immich_memories.analysis.editorial_story_standing import StandingGate
+from immich_memories.analysis.selection.carriers import CarrierAdmission
+from immich_memories.analysis.selection.standing import StandingGate
+from immich_memories.analysis.stories.shortlist import DepictedChoice
+from immich_memories.analysis.stories.slots import PartitionedSlots
 
 
 def _unit(asset, *, taken, favourite=False):

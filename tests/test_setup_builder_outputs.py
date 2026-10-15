@@ -51,7 +51,7 @@ OUTPUTS = builder_outputs()
 
 @pytest.mark.parametrize(("platform", "tier"), COMBOS)
 def test_every_builder_output_is_accepted_by_the_app(platform, tier, tmp_path, monkeypatch):
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
 
     result = OUTPUTS[f"{platform}/{tier}"]
     assert result["error"] is None

@@ -43,7 +43,7 @@ def final_mix_safety_filter(ceiling_db: float = _FINAL_MIX_CEILING_DB) -> str:
     )
 
 
-def _db_to_linear(db: float, min_val: float = 1.0, max_val: float = 64.0) -> float:
+def db_to_linear(db: float, min_val: float = 1.0, max_val: float = 64.0) -> float:
     """Convert dB to linear scale for FFmpeg parameters.
 
     FFmpeg's sidechaincompress 'makeup' parameter expects linear scale (1-64).
@@ -479,7 +479,7 @@ def _build_ducking_filter(
         f"ratio={ducking.ratio}:"
         f"attack={ducking.attack_ms}:"
         f"release={ducking.release_ms}:"
-        f"makeup={_db_to_linear(ducking.makeup_db):.2f}"
+        f"makeup={db_to_linear(ducking.makeup_db):.2f}"
         f"[ducked_music]"
     )
     filter_parts.extend(

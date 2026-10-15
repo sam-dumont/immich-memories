@@ -10,9 +10,9 @@ from dataclasses import replace
 from datetime import timedelta
 from itertools import pairwise
 
-from immich_memories.analysis.editorial_source_route import project_source_rendering
-from immich_memories.analysis.editorial_structure_planner import plan_structure
-from immich_memories.analysis.motion_rendering import motion_renderings
+from immich_memories.analysis.clips.motion_rendering import motion_renderings
+from immich_memories.analysis.runtime.source_route import project_source_rendering
+from immich_memories.analysis.structure.planner import plan_structure
 from tests.annotation_rows import annotation_store
 from tests.conftest import make_asset
 from tests.test_editorial_duration_planner_integration import source

@@ -13,7 +13,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from immich_memories.analysis.special_day import SpecialDay
+from immich_memories.analysis.special_days.detection import SpecialDay
 from immich_memories.automation.special_day_scan import scan_year
 from tests.picture_fake import PictureFake
 
@@ -77,7 +77,7 @@ class Reader:
 @pytest.fixture
 def reader(monkeypatch):
     read = Reader()
-    monkeypatch.setattr("immich_memories.analysis.special_day_sequence._read", read)
+    monkeypatch.setattr("immich_memories.analysis.special_days.sequence._read", read)
     # WHY: the day-level model confirms the camp; which days reach it is the subject.
     monkeypatch.setattr(
         "immich_memories.automation.special_day_scan.ask_if_special",
@@ -149,7 +149,7 @@ def test_a_month_the_reader_could_not_read_leaves_the_year_unscanned(monkeypatch
     assets, captions = _library()
     # WHY: the text model, down for this call.
     monkeypatch.setattr(
-        "immich_memories.analysis.special_day_sequence._read",
+        "immich_memories.analysis.special_days.sequence._read",
         lambda *_a, **_k: (_ for _ in ()).throw(OSError("no route to host")),
     )
 
@@ -161,7 +161,7 @@ def test_a_run_the_reader_invents_is_ignored(monkeypatch, reader):
     assets, captions = _library()
     # WHY: the text model, naming a run nobody offered it.
     monkeypatch.setattr(
-        "immich_memories.analysis.special_day_sequence._read",
+        "immich_memories.analysis.special_days.sequence._read",
         lambda *_a, **_k: json.dumps({"occasions": [{"run": "R9", "what": "a wedding"}]}),
     )
 
@@ -174,7 +174,7 @@ def no_model(monkeypatch):
     def refuse(*_a, **_k):
         pytest.fail("the no-model tier asked a model")
 
-    monkeypatch.setattr("immich_memories.analysis.special_day_sequence._read", refuse)
+    monkeypatch.setattr("immich_memories.analysis.special_days.sequence._read", refuse)
     monkeypatch.setattr("immich_memories.automation.special_day_scan.ask_if_special", refuse)
 
 
@@ -318,7 +318,7 @@ def test_a_run_is_described_by_where_its_pictures_are_not_by_its_first_hour():
     """A race day (09-28): three cat pictures at home before leaving, a hundred at the circuit,
     two more at home at night. The line quoted the cat twice and never the circuit, so the
     reader called it an ordinary day."""
-    from immich_memories.analysis.special_day_sequence import run_line
+    from immich_memories.analysis.special_days.sequence import run_line
 
     start = datetime(2030, 4, 7, 7, tzinfo=UTC)
     home = [_picture(start + timedelta(minutes=n), n, city="Home") for n in range(3)]
@@ -347,7 +347,7 @@ def test_a_day_that_contains_an_occasion_is_judged_on_the_occasion(monkeypatch):
     captions = {p.id: "a tabby cat on the stairs" for p in morning + evening}
     captions |= {p.id: "a race car on the track" for p in circuit}
     monkeypatch.setattr(
-        "immich_memories.analysis.special_day_sequence._read",
+        "immich_memories.analysis.special_days.sequence._read",
         lambda *_a, **_k: json.dumps({"occasions": [{"run": "R1", "what": "race track"}]}),
     )
     asked = []
@@ -405,7 +405,7 @@ def test_a_day_whose_words_stand_out_reaches_the_day_check_the_month_reading_mis
     """An obstacle race (09-28): the owner's camera wrote "a runner on a path", as on every other
     run of the year, and the 123 pictures saved from the race's photographers wrote "obstacle
     race". The month reading proposed nothing; the words the year never uses propose the day."""
-    from immich_memories.config_models_analysis import AnalysisConfig
+    from immich_memories.config.models.analysis import AnalysisConfig
 
     race = datetime(2021, 10, 17, 9, tzinfo=UTC)
     own = _from_the_camera(_day(race, pictures=25, hours=5, city="Somewhere"))
@@ -447,7 +447,7 @@ def test_a_day_whose_words_stand_out_reaches_the_day_check_the_month_reading_mis
         for p in batch + late
     }
     monkeypatch.setattr(
-        "immich_memories.analysis.special_day_sequence._read",
+        "immich_memories.analysis.special_days.sequence._read",
         lambda *_a, **_k: json.dumps({"occasions": []}),
     )
     asked = {}
@@ -482,7 +482,7 @@ def test_a_day_on_a_holiday_is_kept_unless_its_occasion_was_the_holiday(monkeypa
     captions = {p.id: "cyclists racing through the city" for p in race}
     captions |= {p.id: "a family opening presents by the christmas tree" for p in christmas}
     monkeypatch.setattr(
-        "immich_memories.analysis.special_day_sequence._read",
+        "immich_memories.analysis.special_days.sequence._read",
         lambda *_a, **_k: json.dumps({"occasions": []}),
     )
 
@@ -529,7 +529,7 @@ def test_a_day_counts_its_pictures_not_the_files_they_are_stored_in(monkeypatch)
     copies[0].is_favorite = True
     captions = {p.id: "children around a campfire at a summer camp" for p in pictures + copies}
     monkeypatch.setattr(
-        "immich_memories.analysis.special_day_sequence._read",
+        "immich_memories.analysis.special_days.sequence._read",
         lambda *_a, **_k: json.dumps({"occasions": [{"run": "R1", "what": "a camp"}]}),
     )
     judged = []
@@ -565,7 +565,7 @@ def test_a_day_is_named_by_its_moment_not_by_everything_it_held(monkeypatch):
     captions = {p.id: "a baby lying on a blanket" for p in everyday + morning}
     captions |= {p.id: "a singer performing on stage under bright lights" for p in evening}
     monkeypatch.setattr(
-        "immich_memories.analysis.special_day_sequence._read",
+        "immich_memories.analysis.special_days.sequence._read",
         lambda *_a, **_k: json.dumps({"occasions": [{"run": "R3", "what": "a concert"}]}),
     )
     asked = []
@@ -602,7 +602,7 @@ def test_a_moment_never_makes_an_ordinary_day_an_occasion(monkeypatch):
     captions = {p.id: "a baby lying on a blanket" for p in everyday + morning}
     captions |= {p.id: "a singer performing on stage under bright lights" for p in evening}
     monkeypatch.setattr(
-        "immich_memories.analysis.special_day_sequence._read",
+        "immich_memories.analysis.special_days.sequence._read",
         lambda *_a, **_k: json.dumps({"occasions": [{"run": "R3", "what": "a concert"}]}),
     )
     asked = []
@@ -639,7 +639,7 @@ def test_a_day_whose_title_already_names_what_stood_out_keeps_it(monkeypatch):
     captions = {p.id: "a baby lying on a blanket" for p in everyday + morning}
     captions |= {p.id: "a singer performing on stage under bright lights" for p in evening}
     monkeypatch.setattr(
-        "immich_memories.analysis.special_day_sequence._read",
+        "immich_memories.analysis.special_days.sequence._read",
         lambda *_a, **_k: json.dumps({"occasions": [{"run": "R3", "what": "a concert"}]}),
     )
     asked = []

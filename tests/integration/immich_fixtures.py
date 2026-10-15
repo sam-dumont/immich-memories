@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 def has_immich() -> bool:
     """Check if Immich is reachable using the real config."""
     try:
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
 
         config = Config.from_yaml(Config.get_default_path())
         if not config.immich.url or not config.immich.api_key:
@@ -176,7 +176,7 @@ def _find_densest_cluster(clips, max_days: int):
 def make_immich_client():
     """Create a SyncImmichClient + config from user's config, or skip."""
     from immich_memories.api.immich import SyncImmichClient
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
 
     config = Config.from_yaml(Config.get_default_path())
     if not config.immich.url or not config.immich.api_key:

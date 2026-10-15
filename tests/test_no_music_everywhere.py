@@ -17,7 +17,7 @@ from click.testing import CliRunner
 from immich_memories.automation.candidates import CandidateCategory, MemoryCandidate
 from immich_memories.automation.generation_request import GenerationRequest
 from immich_memories.cli import main
-from immich_memories.config_loader import Config, set_config
+from immich_memories.config.loader import Config, set_config
 from immich_memories.generate_music import music_turned_off
 from immich_memories.web.job_routes import RenderOptions
 from tests.web_api_fixtures import api_client, config_in

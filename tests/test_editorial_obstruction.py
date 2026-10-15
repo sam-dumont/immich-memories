@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import numpy as np
 
-from immich_memories.analysis.editorial_obstruction import (
+from immich_memories.analysis.facts.obstruction import (
     PATCH_GRID,
     decide,
     denormalized_crop_bgr,
     obstructed_seconds,
 )
-from immich_memories.analysis.subject_framing import FaceBox
+from immich_memories.analysis.facts.subject_framing import FaceBox
 from immich_memories.triage.preprocess import IMAGENET_MEAN, IMAGENET_STD
 
 

@@ -26,7 +26,7 @@ from immich_memories.timeperiod import DateRange
 
 if TYPE_CHECKING:
     from immich_memories.automation.special_day_scan import DiscoveredDay
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
 
 logger = logging.getLogger(__name__)
 
@@ -214,7 +214,7 @@ def name_from_catalogue(
     )
 
 
-def _resolve_generation_scope(
+def resolve_generation_scope(
     *,
     from_album: str | None,
     year: int | None,
@@ -274,7 +274,7 @@ def _resolve_generation_scope(
     return DateRange(start=date_result[-1].start, end=date_result[0].end), date_result
 
 
-def _validate_album_scope(
+def validate_album_scope(
     *,
     from_album: str | None,
     year: int | None,
@@ -351,7 +351,7 @@ def resolve_short_form(
     )
 
 
-def _apply_photo_duration_override(config: Config, *, photo_duration: float | None) -> None:
+def apply_photo_duration_override(config: Config, *, photo_duration: float | None) -> None:
     """Let --photo-duration outrank the configured photos.duration."""
     if photo_duration is not None:
         config.photos.duration = photo_duration
@@ -369,8 +369,8 @@ def resolve_inclusion(flag: bool | None, *, config_enabled: bool) -> bool:
     return flag
 
 
-def _arm_selection_trace(path: Path | None) -> None:
-    """Tell the selection run where to write its stage-by-stage report (`selection_trace`)."""
+def arm_selection_trace(path: Path | None) -> None:
+    """Tell the selection run where to write its stage-by-stage report (`corpus.trace`)."""
     if path:
         os.environ["IMMICH_MEMORIES_SELECTION_TRACE"] = str(path)
 

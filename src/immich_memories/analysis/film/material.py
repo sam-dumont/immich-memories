@@ -1,0 +1,769 @@
+"""The captured production wall, read into the happenings and playable units of the period.
+
+Nothing here decides what the film shows. It turns the conserved wall bytes and source assets
+into anchors (time-and-place families of moments), the playable units of each anchor — live
+bursts, videos and stills, deduplicated — and the anchor row the memory-worthy gate reads.
+"""
+
+from __future__ import annotations
+
+from collections.abc import Callable, Mapping, Sequence
+from dataclasses import dataclass
+from datetime import datetime
+from typing import Any
+
+from immich_memories.analysis.audience import shareability as _share
+from immich_memories.analysis.audience.exposure_chains import chain_holds_for
+from immich_memories.analysis.clips.budget import (
+    MIN_CARRIER_SECONDS,
+    MIN_MOTION_SECONDS,
+    MOTION_CAP_SECONDS,
+    NOMINAL_STILL_SECONDS,
+    RESIDUAL_MIN,
+    raw_centiseconds,
+)
+from immich_memories.analysis.clips.motion_rendering import (
+    MotionRendering,
+    motion_renderings,
+    plan_before_measuring,
+)
+from immich_memories.analysis.clips.speech import banked_unit_regions, speech_buffer
+from immich_memories.analysis.corpus.forwarded_fallback import is_forwarded_copy, refused_in_words
+from immich_memories.analysis.facts.carrier_eligibility import excluded_carrier_sources
+from immich_memories.analysis.facts.clip_frames import clips_miss_subject
+from immich_memories.analysis.facts.standing_facts import face_evidence
+from immich_memories.analysis.film.contract import (
+    StructurePlannerPorts,
+    StructurePlanningInput,
+)
+from immich_memories.analysis.film.lines import (
+    AnchorRows,
+    UnitLines,
+    metadata_life,
+)
+from immich_memories.analysis.reading import wall_rows
+from immich_memories.analysis.reading.episode_documents import (
+    anchor_observations,
+    episode_candidates_any_order,
+    factual_moment_rows,
+)
+from immich_memories.analysis.reading.event_families import merge_event_families
+from immich_memories.analysis.reading.person_period_facts import (
+    PersonPeriodProjection,
+    render_person_period_facts,
+)
+from immich_memories.api.models import AssetType
+from immich_memories.photos.burst_dedup import PhotoCandidate, drop_burst_duplicates
+from immich_memories.speech.cuts import set_duration
+
+STILL_SECONDS = NOMINAL_STILL_SECONDS
+# The longest a still is ever held. Everything between it and MIN_CARRIER_SECONDS is a hold
+# the existing fit and shave can move, so a varied film still lands on its target.
+LONGEST_STILL_SECONDS = NOMINAL_STILL_SECONDS + 1.0
+STILL_KINDS = ("still", "live-still")
+EMPTY_SCENE_GIVES_BACK = NOMINAL_STILL_SECONDS - MIN_CARRIER_SECONDS
+
+
+def rules_still_seconds(
+    *, favourite: bool, known_people: bool, nominal: float = STILL_SECONDS
+) -> float:
+    """How long the no-model reader holds one still.
+
+    Every still was held for exactly four seconds, so 82 % of a CPU-only film's shots were the
+    same length and the cut had no rhythm at all. A picture the owner starred, or one with
+    somebody Immich knows in it, keeps the nominal hold; an empty scene gives half a second
+    back. The long hold is the nominal one rather than a longer one on purpose: on a library
+    where seven pictures in eight are starred, lengthening the common case spends the film's
+    seconds on fewer days, and a day lost is worse than a beat gained.
+    """
+    return nominal if favourite or known_people else nominal - EMPTY_SCENE_GIVES_BACK
+
+
+def hold_the_ends(carriers: Sequence[dict], *, nominal: float = STILL_SECONDS) -> None:
+    """Hold the film's first and last still half a second longer, in place.
+
+    An opening and a closing frame are read rather than glanced at. A clip keeps the length its
+    own material gave it. A still is never held more than a second past the nominal hold.
+    This runs once the film is settled, so the shave that follows can take
+    the half second back if the target leaves no room for it.
+    """
+    for carrier in {id(c): c for c in (list(carriers[:1]) + list(carriers[-1:]))}.values():
+        if carrier["kind"] in STILL_KINDS:
+            longest = nominal + LONGEST_STILL_SECONDS - NOMINAL_STILL_SECONDS
+            set_duration(carrier, min(carrier["seconds"] + 0.5, longest))
+
+
+@dataclass
+class Wall:
+    """The captured production wall, read into the happenings the planner decides over."""
+
+    aliases: tuple[str, ...]
+    tables: dict
+    moments: dict[str, dict]
+    place_names: dict[str, str]
+    moment_places: dict[str, list]
+    family_of_moment: dict[str, str]
+    merge_log: dict
+    families: dict[str, list[str]]
+    fam_ids: list[str]
+    anchor_label: dict[str, str]
+    observed: dict[str, str]
+    period_people: dict[str, Any]
+    person_context: dict[str, str]
+    meaning_of: dict[str, str]
+    event_assets: dict[str, list[str]]
+    moment_of_asset: dict[str, str]
+
+
+def _moments_on_their_clock(tables, source: StructurePlanningInput) -> dict[str, dict]:
+    """The wall's moment rows, each `taken` told on its first picture's own clock.
+
+    The wall's text keeps the instant its banked readings were asked with; the day a moment
+    falls on is the one its pictures showed, like every unit's (#2355).
+    """
+    fields = tables["moments"][0]
+    moments = {r[0]: dict(zip(fields, r, strict=True)) for r in tables["moments"][1]}
+    for alias, row in moments.items():
+        members = [
+            source.assets[a] for a in source.moment_asset_ids.get(alias, ()) if a in source.assets
+        ]
+        if members:
+            first = min(members, key=lambda asset: (asset.file_created_at, asset.id))
+            row["taken"] = first.local_taken_at.isoformat()
+    return moments
+
+
+def read_wall(source: StructurePlanningInput) -> Wall:
+    wall_bytes = source.wall_bytes
+    aliases, _ = wall_rows.read_wall_index(wall_bytes)
+    tables = wall_rows.table_rows(wall_bytes.decode("utf-8").splitlines())
+    episode_meaning = {r[0]: r[1] for r in tables["episodes"][1]}
+    moments = _moments_on_their_clock(tables, source)
+    moment_places: dict[str, list] = {}
+    for m, p in tables["moment_places"][1]:
+        moment_places.setdefault(m, []).append(p)
+    wall_candidates = episode_candidates_any_order(tables, aliases)
+    factual_rows = {row["moment_id"]: row for row in factual_moment_rows(tables, aliases)}
+    mapping = {m: c.episode_id for c in wall_candidates for m in c.moment_ids}
+    family_of_moment, merge_log = merge_event_families(
+        tables, aliases, mapping, assets_of=source.moment_asset_ids, gps=source.gps
+    )
+    families: dict[str, list[str]] = {}
+    for m in aliases:
+        families.setdefault(family_of_moment[m], []).append(m)
+    fam_ids = list(families)  # chronological by construction
+    people_projection = PersonPeriodProjection(tables)
+    period_people = {f: people_projection.facts(families[f]) for f in fam_ids}
+    event_assets: dict[str, list[str]] = {}
+    moment_of_asset: dict[str, str] = {}
+    for moment_alias, asset_ids in source.moment_asset_ids.items():
+        f = family_of_moment.get(moment_alias)
+        if f is None:
+            continue
+        ids = list(asset_ids)
+        event_assets.setdefault(f, []).extend(ids)
+        for a in ids:
+            moment_of_asset[a] = moment_alias
+    return Wall(
+        aliases=aliases,
+        tables=tables,
+        moments=moments,
+        place_names={r[0]: r[1] for r in tables["places"][1]},
+        moment_places=moment_places,
+        family_of_moment=family_of_moment,
+        merge_log=merge_log,
+        families=families,
+        fam_ids=fam_ids,
+        anchor_label={f: f"F{i + 1:02d}" for i, f in enumerate(fam_ids)},
+        observed={f: anchor_observations(families[f], factual_rows) for f in fam_ids},
+        period_people=period_people,
+        person_context={f: render_person_period_facts(period_people[f]) for f in fam_ids},
+        meaning_of={f: _fam_meaning(families[f], mapping, episode_meaning) for f in fam_ids},
+        event_assets=event_assets,
+        moment_of_asset=moment_of_asset,
+    )
+
+
+def _fam_meaning(moment_aliases, mapping, episode_meaning) -> str:
+    eps = list(dict.fromkeys(mapping[m] for m in moment_aliases))
+    return " / ".join(dict.fromkeys(episode_meaning[e] for e in eps))
+
+
+class UnitBuilder:
+    """The playable units of one happening: live bursts, videos and stills, deduplicated.
+
+    D26: a never_auto picture (or a burst holding one) is evidence of the happening but never a
+    carrier; it leaves before the favourite rule so a flagged star cannot silence its shareable
+    siblings.
+    """
+
+    def __init__(
+        self,
+        source: StructurePlanningInput,
+        ports: StructurePlannerPorts,
+        wall: Wall,
+        *,
+        renderings: dict,
+        never_auto,
+        document_sources,
+        measure: Callable[[list[str]], Mapping[str, MotionRendering]] | None = None,
+        plan: Callable[[list[str]], Mapping[str, MotionRendering]] | None = None,
+    ) -> None:
+        self._assets = source.assets
+        self._config = source.config
+        self._residuals = source.motion_residuals
+        self._clip_frames = source.clip_frames
+        self._audience = source.audience
+        self._clip_heads = source.companion_detectors
+        self._live_source_integrity = ports.live_source_integrity
+        self._speech = source.speech_regions
+        self._speech_buffer = speech_buffer(source.config)
+        self._pixel_facts = source.pixel_facts
+        self._event_assets = wall.event_assets
+        self._moment_of_asset = wall.moment_of_asset
+        self._renderings = renderings
+        self._measure = measure
+        self._plan = plan
+        self._bound: dict[tuple, dict] = {}
+        self._resolve_motion = ports.resolve_motion
+        self._thumbnail_hash = ports.thumbnail_hash
+        bursts = getattr(ports, "burst_deduplicator", None)
+        self._deduplicate_photos = bursts.keep if bursts is not None else drop_burst_duplicates
+        self._window = source.config.photos.burst_window_seconds
+        self._nominal_still = source.config.photos.duration
+        self._threshold = source.config.photos.burst_hash_threshold
+        self._never_auto = never_auto
+        self._document_sources = document_sources
+        self._rules_reader = ports.rules is not None
+        self._hashes: dict[str, str | None] = {}
+        self.evidence_pictures: dict[str, int] = {}
+        self.never_auto_excluded: dict[str, list] = {}
+        self.document_excluded: dict[str, list] = {}
+
+    def quality(self, asset_id: str) -> float:
+        sharp, bright = self._pixel_facts.get(asset_id, (0.0, 118.0))
+        return sharp * max(0.0, 1.0 - abs(bright - 118.0) / 92.0)
+
+    def _still_hold(self, asset_ids: Sequence[str]) -> float:
+        """A model film holds every still for the configured photo duration; a rules film varies it."""
+        if not self._rules_reader:
+            return self._nominal_still
+        assets = [self._assets[a] for a in asset_ids if a in self._assets]
+        return rules_still_seconds(
+            favourite=any(a.is_favorite for a in assets),
+            known_people=any(a.people or a.faces for a in assets),
+            nominal=self._nominal_still,
+        )
+
+    def _thumb_hash(self, asset_id: str):
+        if asset_id not in self._hashes:
+            try:
+                self._hashes[asset_id] = self._thumbnail_hash(asset_id) or None
+            except (OSError, ValueError, TypeError):
+                self._hashes[asset_id] = None
+        return self._hashes[asset_id]
+
+    def _family_residual(self, still_ids):
+        vals = [
+            self._residuals[s]["residual"]
+            for s in still_ids
+            if s in self._residuals and "residual" in self._residuals[s]
+        ]
+        return max(vals) if vals else None
+
+    def _clip_withheld(self, clip_ids: Sequence[str]) -> bool:
+        """Whether a Live Photo plays as its still: its clip misses the subject, or was never read.
+
+        The still of a shareable film was checked; a clip no detector read was not, so it
+        keeps the picture without the motion. A household film plays the clip it has.
+        """
+        unread = self._audience == "shareable" and any(
+            not self._clip_heads.get(clip) for clip in clip_ids
+        )
+        return unread or clips_miss_subject(self._clip_frames, clip_ids)
+
+    def _live_unit(self, r: MotionRendering, asset_id: str, base: dict, ids: list[str]) -> dict:
+        if r.material is None:
+            raise ValueError("Live rendering lacks canonical source material")
+        members = [s for s in r.still_ids if s in ids] or [asset_id]
+        if not r.may_play and (own := self._keepers_own_clip(members)) is not None:
+            return self._live_unit(own, own.still_ids[0], base, list(own.still_ids))
+        residual = self._family_residual(members)
+        # Motion is used only when the clip is interesting: measured motion with the subject
+        # in frame. A clip of wall keeps the picture, as its still.
+        may_play = r.may_play and not self._clip_withheld(r.video_ids)
+        motion = may_play and (
+            (residual is not None and residual >= RESIDUAL_MIN)
+            or (residual is None and self._resolve_motion is not None)
+        )
+        stars = [s for s in members if self._assets[s].is_favorite]
+        held = {} if r.may_play else {"live_note": r.still_reason}
+        return (
+            base
+            | held
+            | {
+                "favourite": bool(stars),
+                "kind": "live-motion" if motion else "live-still",
+                "motion_candidate": may_play,
+                "motion_assessed": residual is not None,
+                "asset_id": max(stars or members, key=self.quality),
+                "members": members,
+                "video_ids": list(r.video_ids),
+                "trim_points": [list(p) for p in r.trim_points],
+                "live_material": r.material.as_dict(),
+                "seconds": raw_centiseconds(min(r.duration_seconds, MOTION_CAP_SECONDS))
+                if motion
+                else self._still_hold(members),
+                "raw_seconds": raw_centiseconds(r.duration_seconds),
+                "residual": residual,
+            }
+        )
+
+    def _video_unit(self, asset_id: str, base: dict) -> dict | None:
+        """None for a clip too short to read as a shot rather than a stub.
+
+        A video always plays. Its residual over its sampled frames, where one was measured,
+        says whether anything moves in it (#1166); None means nobody measured it.
+        """
+        dur = float(self._assets[asset_id].duration_seconds or 0.0)
+        if dur < MIN_MOTION_SECONDS:
+            return None
+        measured = self._residuals.get(asset_id, {}).get("residual")
+        return base | {
+            "kind": "video",
+            "asset_id": asset_id,
+            "members": [asset_id],
+            "video_ids": [asset_id],
+            "trim_points": [],
+            "seconds": raw_centiseconds(min(dur, MOTION_CAP_SECONDS)),
+            "raw_seconds": raw_centiseconds(dur),
+            "residual": measured,
+            "motion_assessed": measured is not None,
+        }
+
+    def _still_unit(self, asset_id: str, base: dict) -> dict:
+        return base | {
+            "kind": "still",
+            "asset_id": asset_id,
+            "members": [asset_id],
+            "video_ids": [],
+            "trim_points": [],
+            "seconds": self._still_hold([asset_id]),
+            "raw_seconds": None,
+            "residual": None,
+        }
+
+    def _raw_units(self, ids: list[str]) -> list[dict]:
+        seen_families: set = set()
+        units: list[dict] = []
+        for a in ids:
+            asset = self._assets[a]
+            base = {
+                "favourite": asset.is_favorite,
+                "moment": self._moment_of_asset.get(a),
+                "taken": asset.local_taken_at.isoformat(),
+            }
+            # A forwarded copy standing in where the film was short says so in its reason.
+            if is_forwarded_copy(asset, self._config):
+                base["forwarded"] = True
+            # A rendering belongs to a photograph. A video-typed id here falls through to
+            # the ordinary video branch, so borrowed rendering state can never make a
+            # video pretend to be Live material.
+            if a in self._renderings and asset.type is AssetType.IMAGE:
+                r = self._renderings[a]
+                if r.still_ids in seen_families:
+                    continue
+                seen_families.add(r.still_ids)
+                units.append(self._live_unit(r, a, base, ids))
+                continue
+            unit = (
+                self._video_unit(a, base)
+                if asset.type.value.lower() == "video"
+                else self._still_unit(a, base)
+            )
+            if unit is not None:
+                units.append(unit)
+        return [self._with_banked_speech(unit) for unit in units]
+
+    def refresh_clip_facts(self, carrier: dict) -> dict:
+        """Keep the selected photograph when newly inspected clip frames refuse playback."""
+        if (
+            not str(carrier.get("kind", "")).startswith("live")
+            or not (carrier.get("motion_candidate") or carrier["kind"] == "live-motion")
+            or not self._clip_withheld(carrier.get("video_ids", ()))
+        ):
+            return carrier
+        return carrier | {
+            "kind": "live-still",
+            "motion_candidate": False,
+            "seconds": self._still_hold(carrier["members"]),
+        }
+
+    def admit_original_motion(self, carrier: dict) -> dict:
+        """Check only final measured motion, before its cut is certified."""
+        if self._live_source_integrity is not None and carrier.get("kind") == "live-motion":
+            from immich_memories.processing.live_material import LiveRenderMaterial
+
+            video_ids = LiveRenderMaterial.from_dict(carrier["live_material"]).video_ids
+            proofs = self._live_source_integrity(video_ids)
+            if set(proofs) != set(video_ids):
+                raise ValueError("Presentation proof required for every declared Live original")
+            carrier = carrier | {"source_integrity": proofs}
+            if any(not proof["valid"] for proof in proofs.values()):
+                carrier = carrier.copy()
+                for field in (
+                    "start_time",
+                    "end_time",
+                    "render_frame_seconds",
+                    "speech_regions",
+                    "has_music",
+                ):
+                    carrier.pop(field, None)
+                return carrier | {
+                    "kind": "live-still",
+                    "motion_candidate": False,
+                    "seconds": self._still_hold(carrier["members"]),
+                    "live_note": "Shown as a still: its Live Photo clip does not play correctly",
+                }
+        return carrier
+
+    def measured_stitch(self, carrier: dict) -> dict:
+        """A carrier the draft planned on an unmeasured stitch, bound to its measured one.
+
+        The draft plans every burst on its metadata windows so that no companion is
+        downloaded for a burst the film never keeps. A kept burst is measured here, with
+        the probe the render projection re-derives it with, so the film ships exactly the
+        trims measuring every burst up front gave it. A burst the measurement refuses
+        is never stitched: the kept picture plays its own clip when that moves, and is its
+        photograph otherwise.
+        """
+        carrier = self.refresh_clip_facts(carrier)
+        rendering = self._renderings.get(carrier["asset_id"])
+        if (
+            self._measure is None
+            or rendering is None
+            or rendering.measured
+            or not str(carrier.get("kind", "")).startswith("live")
+        ):
+            return carrier
+        key = (carrier["asset_id"], tuple(carrier["members"]))
+        if key not in self._bound:
+            measured = self._measure(carrier["members"]).get(carrier["asset_id"])
+            self._bound[key] = self._measured_unit(
+                measured, carrier["asset_id"], carrier["members"]
+            )
+        stale = _RENDERED_FIELDS - self._bound[key].keys() - {"source_integrity"}
+        return {k: v for k, v in carrier.items() if k not in stale} | self._bound[key]
+
+    def _measured_unit(
+        self, measured: MotionRendering | None, asset_id: str, members: list[str]
+    ) -> dict:
+        if measured is not None and set(measured.still_ids) == set(members):
+            unit = self._live_unit(measured, asset_id, {}, members)
+        elif (own := self._own_clip(asset_id, members)) is not None:
+            unit = self._live_unit(own, asset_id, {}, [asset_id])
+        else:
+            unit = self._still_unit(asset_id, {}) | {
+                "kind": "live-still",
+                "motion_candidate": False,
+                "live_note": "Shown as a still: its Live Photos could not be stitched",
+            }
+        return {k: v for k, v in self._with_banked_speech(unit).items() if k in _RENDERED_FIELDS}
+
+    def _keepers_own_clip(self, members: list[str]) -> MotionRendering | None:
+        """The kept picture's own clip, for a burst whose stitch is too short to play.
+
+        Shutters a fraction of a second apart overlap so much that their join can come out
+        shorter than one of their clips (#1547). The kept picture's own recording is held to
+        the same rule as any Live clip: it plays only when it lasts the motion floor and
+        moves. A 1.2 s clip is half a sentence, so it is the photograph (#2453).
+        """
+        if len(members) < 2:
+            return None
+        stars = [s for s in members if self._assets[s].is_favorite]
+        return self._lone_clip(max(stars or members, key=self.quality))
+
+    def _lone_clip(self, asset_id: str) -> MotionRendering | None:
+        rendering_of = self._measure or self._plan
+        if rendering_of is None:
+            return None
+        own = rendering_of([asset_id]).get(asset_id)
+        return own if own is not None and set(own.still_ids) == {asset_id} else None
+
+    def _own_clip(self, asset_id: str, members: list[str]) -> MotionRendering | None:
+        """The kept picture's own clip, when the burst it belongs to cannot be stitched.
+
+        A refused join is refused because its offset could not be measured; one picture's own
+        recording has no join to measure, so it can still play when it lasts the motion floor
+        and moves (#2453) instead of the whole burst falling back to a photograph.
+        """
+        if len(members) < 2 or self._measure is None:
+            return None
+        return self._lone_clip(asset_id)
+
+    def _with_banked_speech(self, unit: dict) -> dict:
+        """A unit whose speech a cut has already measured knows where its sentences end."""
+        regions = banked_unit_regions(unit, self._speech, buffer=self._speech_buffer)
+        return unit if regions is None else unit | {"speech_regions": regions}
+
+    def _distinct(self, units: list[dict], *, report: bool = True) -> list[dict]:
+        # The favourite wins its moment. A reader with no model behind it cannot come back
+        # to a moment whose favourite is refused as a carrier, so it keeps the moment's
+        # other frames: the capture-group order still puts the favourite in front of them.
+        if not self._rules_reader:
+            starred_moments = {u["moment"] for u in units if u["favourite"]}
+            units = [u for u in units if u["moment"] not in starred_moments or u["favourite"]]
+        cands = [
+            PhotoCandidate(
+                key=u["asset_id"],
+                taken_at=datetime.fromisoformat(u["taken"]),
+                thumbnail_hash=None if u["kind"] == "video" else self._thumb_hash(u["asset_id"]),
+                score=self.quality(u["asset_id"]),
+                is_favorite=bool(u["favourite"]),
+            )
+            for u in units
+        ]
+        kept = set(
+            self._deduplicate_photos(
+                cands, window_seconds=self._window, hash_threshold=self._threshold, report=report
+            )
+        )
+        # A real duplicate has already been removed. Time alone cannot distinguish
+        # an echo from the next action or relationship within the same occasion.
+        return [u for u in units if u["asset_id"] in kept]
+
+    def units_of(self, f: str) -> list[dict]:
+        ids = [a for a in self._event_assets.get(f, []) if a in self._assets]
+        ids.sort(key=lambda a: self._assets[a].file_created_at)
+        units = self._raw_units(ids)
+        shareable, excluded = _share.partition_units(units, self._never_auto)
+        if excluded:
+            self.never_auto_excluded[f] = [
+                {"asset_id": u["asset_id"], "members": u["members"], "kind": u["kind"]}
+                for u in excluded
+            ]
+        scene_units, documents = _share.partition_units(shareable, set(self._document_sources))
+        if documents:
+            self.document_excluded[f] = [u["asset_id"] for u in documents]
+        distinct = self._distinct(scene_units)
+        self.evidence_pictures[f] = (
+            len(self._distinct(units, report=False)) if excluded or documents else len(distinct)
+        )
+        return distinct
+
+
+# What a unit's rendering decides, as opposed to where the story put it.
+_RENDERED_FIELDS = frozenset(
+    {
+        "kind",
+        "motion_candidate",
+        "motion_assessed",
+        "members",
+        "video_ids",
+        "trim_points",
+        "live_material",
+        "seconds",
+        "raw_seconds",
+        "residual",
+        "speech_regions",
+        "has_music",
+        "source_integrity",
+        "live_note",
+    }
+)
+
+
+@dataclass
+class Material:
+    """Everything the selection reads about the period's pictures."""
+
+    units: dict[str, list[dict]]
+    text: UnitLines
+    rows: AnchorRows
+    builder: UnitBuilder
+    document_sources: dict[str, str]
+    ineligible: dict[str, str]
+    moment_assets: dict[str, list[str]]
+    story_lines: dict[str, str]
+
+
+def _live_renderings(
+    source: StructurePlanningInput, wall: Wall, ports: StructurePlannerPorts
+) -> dict:
+    renderings: dict = {}
+    if not source.allow_live_motion:
+        return renderings
+    # A measuring engine is asked only about the bursts the cut keeps (`measured_stitch`).
+    probe = None if ports.clock_offsets is None else plan_before_measuring
+    for ids in wall.event_assets.values():
+        # The motion manifest must use the same material the event can select
+        # and review, rather than borrow nearby footage from source context.
+        material = [source.assets[a] for a in dict.fromkeys(ids) if a in source.assets]
+        renderings.update(
+            motion_renderings(
+                material,
+                source.config,
+                companion_assets=source.companion_assets,
+                clock_offsets=probe,
+            )
+        )
+    return renderings
+
+
+def _stitch_measurer(source: StructurePlanningInput, ports: StructurePlannerPorts):
+    """Re-derive one kept burst with the measuring probe, as the render projection will."""
+    if ports.clock_offsets is None:
+        return None
+    return _renderer(source, ports.clock_offsets)
+
+
+def _draft_renderer(source: StructurePlanningInput, ports: StructurePlannerPorts):
+    """Derive a burst the way the draft plans every burst: on metadata, measuring nothing."""
+    return _renderer(source, None if ports.clock_offsets is None else plan_before_measuring)
+
+
+def _renderer(source: StructurePlanningInput, probe):
+    if not source.allow_live_motion:
+        return None
+
+    def measure(members: list[str]) -> Mapping[str, MotionRendering]:
+        return motion_renderings(
+            [source.assets[m] for m in members],
+            source.config,
+            companion_assets=source.companion_assets,
+            clock_offsets=probe,
+        )
+
+    return measure
+
+
+def source_exclusions(
+    source: StructurePlanningInput, ports: StructurePlannerPorts, lines: Mapping[str, str]
+) -> dict[str, str]:
+    """The source refusals for these lines, with the heads and OCR evidence that
+    corroborates a personal document (#2062).
+
+    Only an explicit owner pin (`owner_required_asset_ids`) is exempt from the
+    personal-document check: a favourite star is not the owner choosing to ship a readable
+    document.
+    """
+    heads_of = {
+        asset_id: dict(record.heads)
+        for asset_id, record in source.audience_annotations.items()
+        if asset_id in lines
+    }
+    excluded = excluded_carrier_sources(
+        lines,
+        heads_of=heads_of,
+        ocr_text_of=ports.document_ocr_text,
+        protected=source.owner_required_asset_ids,
+    )
+    # A forwarded copy standing in for a gap whose caption says it was made, not taken (a
+    # collage, a composite): no picture of this life, whoever is on it.
+    for asset_id, line in lines.items():
+        asset = source.assets.get(asset_id)
+        copy = asset is not None and is_forwarded_copy(asset, source.config)
+        if copy and (reason := refused_in_words(line)):
+            excluded.setdefault(asset_id, reason)
+    return excluded
+
+
+def refresh_candidates(source, ports, material: Material, chains, carriers) -> None:
+    """Re-read a replacement's facts, including its source exclusions, before it is judged."""
+    if not ports.prepare_candidates(carriers):
+        return
+    # Gates and prose readers share the refreshed facts, but these derived views
+    # must follow them before any candidate is judged.
+    chains.update(
+        chain_holds_for(source.assets, source.audience_annotations, source.companion_detectors)
+    )
+    members = {member for carrier in carriers for member in _share.unit_members(carrier)}
+    for member in members:
+        material.document_sources.pop(member, None)
+    material.document_sources.update(
+        source_exclusions(
+            source, ports, {member: source.annotations.get(member, "") for member in members}
+        )
+    )
+    for carrier in carriers:
+        carrier.update(material.builder.refresh_clip_facts(carrier))
+        asset_id = carrier["asset_id"]
+        material.story_lines[asset_id] = material.text.description(
+            carrier
+        ) or source.annotations.get(asset_id, "")
+
+
+def build_material(
+    source: StructurePlanningInput, ports: StructurePlannerPorts, wall: Wall
+) -> Material:
+    lines = source.annotations
+    document_sources = source_exclusions(source, ports, lines)
+    builder = UnitBuilder(
+        source,
+        ports,
+        wall,
+        renderings=_live_renderings(source, wall, ports),
+        never_auto=_share.never_auto_ids(source.shareability_flags),
+        document_sources=document_sources,
+        measure=_stitch_measurer(source, ports),
+        plan=_draft_renderer(source, ports),
+    )
+    units = {f: builder.units_of(f) for f in wall.fam_ids}
+    text = UnitLines(
+        lines,
+        # Only a picture whose line carries no prose at all reaches this, so on a captioned
+        # tier it answers for the pictures the captioner could not describe and for nothing
+        # else. Reading "nobody is in it" off a blank line was never the right answer.
+        life_without_prose=metadata_life(source.assets, source.audience_annotations),
+        face=face_evidence(source.assets),
+    )
+    # The story reader reads what the pictures show, not the flag/people tail of the line.
+    story_lines = dict(lines)
+    for family_units in units.values():
+        for u in family_units:
+            story_lines[u["asset_id"]] = text.description(u) or lines.get(u["asset_id"], "")
+    moment_assets: dict[str, list[str]] = {}
+    for asset_id, moment_alias in wall.moment_of_asset.items():
+        if asset_id in source.assets:
+            moment_assets.setdefault(moment_alias, []).append(asset_id)
+    return Material(
+        units=units,
+        text=text,
+        rows=AnchorRows(
+            anchor_label=wall.anchor_label,
+            families=wall.families,
+            moments=wall.moments,
+            place_names=wall.place_names,
+            moment_places=wall.moment_places,
+            event_assets=wall.event_assets,
+            assets=source.assets,
+            observed=wall.observed,
+            person_context=wall.person_context,
+            meaning_of=wall.meaning_of,
+        ),
+        builder=builder,
+        document_sources=document_sources,
+        ineligible=_ineligible_anchors(wall.fam_ids, units, builder),
+        moment_assets=moment_assets,
+        story_lines=story_lines,
+    )
+
+
+def _ineligible_anchors(fam_ids, units, builder: UnitBuilder) -> dict[str, str]:
+    """An anchor with no distinct shareable scene picture cannot be selected at all."""
+    return {
+        f: (
+            "no shareable picture: every distinct picture carries never_auto"
+            if builder.never_auto_excluded.get(f)
+            else "no scene picture: screen or document evidence only"
+            if builder.document_excluded.get(f)
+            else "no distinct picture"
+        )
+        for f in fam_ids
+        if not units[f]
+    }
+
+
+def anchor_line(wall: Wall, material: Material, f: str) -> str:
+    units = material.units[f]
+    return material.rows.line(f, units, material.builder.evidence_pictures.get(f, len(units)))

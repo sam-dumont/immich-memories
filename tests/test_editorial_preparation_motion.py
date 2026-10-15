@@ -11,9 +11,11 @@ import httpx
 import pytest
 from PIL import Image
 
-from immich_memories.analysis.editorial_bound_sample import source_metadata_digest
-from immich_memories.analysis.editorial_motion_facts import RESIDUAL_PRODUCER
-from immich_memories.analysis.editorial_preparation_motion import (
+from immich_memories.analysis.clips.bound_sample import source_metadata_digest
+from immich_memories.analysis.clips.motion_facts import RESIDUAL_PRODUCER
+from immich_memories.analysis.llm.metrics import collecting
+from immich_memories.analysis.llm.usage_record import USAGE_FILE, write_llm_usage
+from immich_memories.analysis.preparation.motion_lines import (
     BankedMotionLines,
     banked_residuals,
     missing_motion,
@@ -21,10 +23,8 @@ from immich_memories.analysis.editorial_preparation_motion import (
     prepare_motion_lines,
     seat_asker,
 )
-from immich_memories.analysis.llm_metrics import collecting
-from immich_memories.analysis.llm_usage_record import USAGE_FILE, write_llm_usage
 from immich_memories.api.models import Asset, AssetType
-from immich_memories.config_models_editorial_preparation import EditorialPreparationConfig
+from immich_memories.config.models.editorial_preparation import EditorialPreparationConfig
 from immich_memories.processing.playback_keyframes import SampledKeyframes
 from immich_memories.store.cut_measurements import PendingMeasurements
 from tests.annotation_rows import annotation_store
@@ -312,7 +312,7 @@ def banking_motion(calls, *, fail=False):
     """The motion stage's seam: records what it was asked and banks a line unless told to fail."""
 
     def motion(**kwargs):
-        from immich_memories.analysis.editorial_preparation_motion import (
+        from immich_memories.analysis.preparation.motion_lines import (
             MOTION_PRODUCER,
             MotionPreparation,
         )
@@ -387,7 +387,7 @@ def test_a_full_pass_describes_each_video_once_and_a_warm_pass_asks_nothing(tmp_
 
 
 def test_an_unfinished_motion_line_is_reported_without_blocking_the_cut(tmp_path):
-    from immich_memories.analysis.editorial_preparation_motion import MOTION_PRODUCER
+    from immich_memories.analysis.preparation.motion_lines import MOTION_PRODUCER
 
     result = prepare(tmp_path, banking_motion([], fail=True))
 
@@ -413,7 +413,7 @@ def test_a_tier_without_a_caption_seat_never_asks_for_motion(tmp_path, tier):
 
 @pytest.mark.skipif(__import__("shutil").which("ffmpeg") is None, reason="needs ffmpeg")
 def test_playback_reads_never_overlap_because_the_immich_client_drives_one_loop(store, tmp_path):
-    from immich_memories.analysis.editorial_preparation_motion import playback_sampler
+    from immich_memories.analysis.preparation.motion_lines import playback_sampler
     from tests.test_playback_keyframes import encode
 
     data = encode(tmp_path / "clip.mp4", gop=30)
@@ -445,7 +445,7 @@ def test_playback_reads_never_overlap_because_the_immich_client_drives_one_loop(
     ],
 )
 def test_a_motion_stage_that_breaks_is_named_and_leaves_the_videos_owed(tmp_path, error, reason):
-    from immich_memories.analysis.editorial_preparation_motion import MOTION_PRODUCER
+    from immich_memories.analysis.preparation.motion_lines import MOTION_PRODUCER
 
     def broken(**_):
         raise error

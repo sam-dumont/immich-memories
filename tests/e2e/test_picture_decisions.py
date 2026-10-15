@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 from playwright.sync_api import Page, expect
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.db import Store, upsert
 from immich_memories.db.tables import head_facts
 from immich_memories.store import owner_decisions

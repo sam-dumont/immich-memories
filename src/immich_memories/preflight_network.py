@@ -1,7 +1,7 @@
 """What this install is allowed to contact outside the network it runs on."""
 
 from immich_memories.config import Config
-from immich_memories.config_models_network import GEOCODING_HOST, MAP_TILE_HOST
+from immich_memories.config.models.network import GEOCODING_HOST, MAP_TILE_HOST
 from immich_memories.preflight import CheckResult, CheckStatus
 
 _OUTSIDE_CALLS = (

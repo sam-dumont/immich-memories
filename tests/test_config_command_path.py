@@ -17,7 +17,7 @@ import pytest
 from click.testing import CliRunner
 
 from immich_memories.cli import main
-from immich_memories.config_loader import set_config
+from immich_memories.config.loader import set_config
 from immich_memories.db import close_stores
 
 

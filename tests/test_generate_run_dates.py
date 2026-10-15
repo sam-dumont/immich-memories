@@ -5,7 +5,7 @@ from datetime import date, datetime
 
 import pytest
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.db import open_store
 from immich_memories.generate import GenerationError, GenerationParams, generate_memory
 from immich_memories.tracking.run_database import RunDatabase

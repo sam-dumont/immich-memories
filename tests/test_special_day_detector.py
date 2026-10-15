@@ -22,7 +22,7 @@ from immich_memories.automation.generation_request import GenerationRequest
 from immich_memories.automation.special_day_detector import SpecialDayDetector
 from immich_memories.automation.special_day_scan import DiscoveredDay
 from immich_memories.cli.auto_cmd import _candidates_to_json, _print_candidates_table
-from immich_memories.config_models_automation import AutomationConfig
+from immich_memories.config.models.automation import AutomationConfig
 
 
 def _a_day(

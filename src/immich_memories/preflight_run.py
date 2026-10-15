@@ -27,7 +27,7 @@ def check_encoder(config: Config) -> CheckResult:
         return CheckResult(
             name="Encoder", status=CheckStatus.SKIPPED, message="Not required by metadata_only"
         )
-    from immich_memories.analysis.editorial_preparation_heads import missing_encoder_message
+    from immich_memories.analysis.preparation.heads import missing_encoder_message
     from immich_memories.triage.encoder import DINOV2_SMALL_ONNX_SHA256
 
     path = config.triage.encoder_path
@@ -67,7 +67,7 @@ def check_detector_export(config: Config) -> CheckResult:
             status=CheckStatus.SKIPPED,
             message="Detector models are not required by this tier",
         )
-    from immich_memories.analysis.editorial_preparation_detectors import (
+    from immich_memories.analysis.preparation.detectors import (
         MARQO_ONNX_ID,
         MARQO_ONNX_SHA256,
         missing_marqo_message,

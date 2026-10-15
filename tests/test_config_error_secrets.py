@@ -15,7 +15,7 @@ import yaml
 from click.testing import CliRunner
 
 from immich_memories.cli import main
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 
 SENTINELS = {
     "immich": "SENTINEL-IMMICH-KEY-0001",

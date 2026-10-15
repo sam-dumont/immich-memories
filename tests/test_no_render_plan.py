@@ -12,7 +12,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from immich_memories.cli import _pipeline_runner
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.filename_builder import apply_recipe_hash
 from immich_memories.processing.output_canvas import OutputCanvas
 from immich_memories.processing.timeline_budget import TimelinePlan

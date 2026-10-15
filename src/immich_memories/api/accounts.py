@@ -17,7 +17,7 @@ from immich_memories.api.immich import ImmichAPIError, ImmichAuthError
 from immich_memories.api.models import UserInfo
 from immich_memories.api.permissions import MissingReadPermissions
 from immich_memories.api.sync_client import SyncImmichClient
-from immich_memories.config_models import PRIMARY_ACCOUNT, ImmichConfig, ImmichConnection
+from immich_memories.config.models.resources import PRIMARY_ACCOUNT, ImmichConfig, ImmichConnection
 from immich_memories.security import sanitize_error_message
 
 

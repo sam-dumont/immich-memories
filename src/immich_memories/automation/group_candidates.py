@@ -20,7 +20,7 @@ from immich_memories.automation.candidates import (
     make_memory_key,
 )
 from immich_memories.automation.closeness import group_weight
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.people.groups import SavedGroup
 
 

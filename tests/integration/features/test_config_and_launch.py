@@ -12,8 +12,8 @@ import httpx
 import pytest
 import yaml
 
-from immich_memories.config_loader import _REMOVED_CONFIG_KEYS, _REMOVED_TOP_LEVEL_SECTIONS
-from immich_memories.config_models_render import _LEGACY_SCALE_MODES
+from immich_memories.config.loader import _REMOVED_CONFIG_KEYS, _REMOVED_TOP_LEVEL_SECTIONS
+from immich_memories.config.models.render import _LEGACY_SCALE_MODES
 from tests.features.cli_harness import UserHome, basic_config
 from tests.integration.features.immich_server import LibraryServer
 from tests.integration.features.served_ui import free_port, serve_ui

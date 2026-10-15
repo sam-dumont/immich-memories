@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from immich_memories.analysis.editorial_description_contract import (
+from immich_memories.analysis.captions.contract import (
     DESCRIPTION_MAX_CHARS,
     SETTING_HEDGE,
     SETTING_MAX_CHARS,

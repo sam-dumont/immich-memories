@@ -14,7 +14,7 @@ from unittest.mock import patch
 
 import pytest
 
-from immich_memories.analysis.special_day import SpecialDay
+from immich_memories.analysis.special_days.detection import SpecialDay
 from immich_memories.api.models import AssetType
 from immich_memories.automation.catalogue import entries_from, load_catalogue, save_catalogue
 from immich_memories.automation.special_day_scan import (
@@ -28,8 +28,8 @@ from immich_memories.cli.special_days_cmd import (
     _year_of_assets,
     _years_in,
 )
-from immich_memories.config_models_analysis import AnalysisConfig
-from immich_memories.config_models_automation import TripsConfig
+from immich_memories.config.models.analysis import AnalysisConfig
+from immich_memories.config.models.automation import TripsConfig
 from tests.picture_fake import PictureFake
 
 
@@ -221,8 +221,8 @@ def test_the_prompt_lines_are_the_day_sampled_once(monkeypatch) -> None:
     picture's time, place and names against another's, and the grounding filter
     then judged a title built on that.
     """
-    from immich_memories.analysis import special_day
-    from immich_memories.analysis.special_day import ask_if_special, sample_across_day
+    from immich_memories.analysis.special_days import detection as special_day
+    from immich_memories.analysis.special_days.detection import ask_if_special, sample_across_day
 
     day = [_asset(h, m) for h in range(9, 15) for m in (0, 30)]
     seen: dict = {}
@@ -294,7 +294,7 @@ def _days_due(on: str) -> str:
     from click.testing import CliRunner
 
     from immich_memories.cli import main
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
 
     # WHY: the CLI group loads the user's real config directory on startup.
     with (

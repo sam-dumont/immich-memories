@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def _report(params: GenerationParams, phase: str, progress: float, msg: str) -> None:
+def report_progress(params: GenerationParams, phase: str, progress: float, msg: str) -> None:
     if params.progress_callback:
         params.progress_callback(phase, progress, msg)
 
@@ -57,7 +57,7 @@ def _notify_phase(params: GenerationParams, event: PhaseEvent) -> None:
 
 def render_progress_events(
     inner: Callable[[float, str], None] | None,
-    operational: _OperationalProgress,
+    operational: OperationalProgress,
     total: int,
     *,
     clock: Callable[[], float] = time.monotonic,
@@ -91,7 +91,7 @@ _EXTRACT_SHARE = 0.7
 
 def clip_preparation_events(
     inner: Callable[[str, float, str], None] | None,
-    operational: _OperationalProgress,
+    operational: OperationalProgress,
     phase: OperationalPhase,
     total: int,
     *,
@@ -123,7 +123,7 @@ def clip_preparation_events(
     return report
 
 
-class _OperationalProgress:
+class OperationalProgress:
     """Emit one monotonic outer lifecycle around generation internals."""
 
     def __init__(self, params: GenerationParams, run_tracker: RunTracker) -> None:
@@ -179,7 +179,7 @@ class _OperationalProgress:
         return completed is None or phase.order > completed.order
 
 
-class _PipelineProgress:
+class PipelineProgress:
     """Maps per-phase 0.0-1.0 progress into the overall pipeline range.
 
     Each phase gets a proportional slice of 0.0-1.0 based on estimated

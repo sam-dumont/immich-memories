@@ -7,12 +7,12 @@ import httpx
 import pytest
 from PIL import Image
 
-from immich_memories.analysis.editorial_preparation import prepare_editorial_annotations
-from immich_memories.analysis.llm_metrics import collecting
-from immich_memories.analysis.prepared_captions import prepared_captions
+from immich_memories.analysis.llm.metrics import collecting
+from immich_memories.analysis.preparation.acquire import prepare_editorial_annotations
+from immich_memories.analysis.preparation.prepared_captions import prepared_captions
 from immich_memories.api.models import AssetType
-from immich_memories.config_loader import Config
-from immich_memories.config_tiers import nas_draft_config
+from immich_memories.config.loader import Config
+from immich_memories.config.tiers import nas_draft_config
 from immich_memories.preflight import CheckStatus, check_caption_endpoint
 from tests.annotation_rows import annotation_store
 from tests.conftest import make_asset

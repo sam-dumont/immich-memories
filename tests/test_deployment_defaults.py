@@ -5,7 +5,7 @@ import os
 
 import pytest
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 
 
 def test_gpu_compose_defaults_wire_services_below_saved_settings(monkeypatch, tmp_path):
@@ -39,7 +39,7 @@ def test_the_deployment_tier_beats_the_file_and_saved_settings(monkeypatch, tmp_
 
 
 def test_the_deployment_tier_locks_the_settings_page(monkeypatch):
-    from immich_memories.config_loader import env_alias_overrides
+    from immich_memories.config.loader import env_alias_overrides
 
     monkeypatch.setenv("IMMICH_MEMORIES_DEPLOYMENT_TIER", "basic")
 

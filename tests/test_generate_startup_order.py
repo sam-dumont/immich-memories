@@ -6,7 +6,7 @@ from click.testing import CliRunner
 
 from immich_memories.api.immich import ImmichAPIError, SyncImmichClient
 from immich_memories.cli import main
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.db import open_store
 from immich_memories.tracking.run_database import RunDatabase
 

@@ -18,7 +18,7 @@ import httpx
 
 from immich_memories import __version__
 from immich_memories.generate import GenerationError, PreparedGeneration
-from immich_memories.generate_delivery import _safe_delivery_message
+from immich_memories.generate_delivery import safe_delivery_message
 from immich_memories.processing.assembly_config import AssemblyClip
 from immich_memories.processing.encoding_plan import EncodingPlan, HdrTransfer, OutputCodec
 from immich_memories.processing.output_contract import (
@@ -30,7 +30,7 @@ from immich_memories.processing.output_contract import (
 from immich_memories.processing.remote_render_plan import build_render_request
 
 if TYPE_CHECKING:
-    from immich_memories.config_models_render import RenderWorkerConfig
+    from immich_memories.config.models.render import RenderWorkerConfig
     from immich_memories.generate import GenerationParams
 
 logger = logging.getLogger(__name__)
@@ -73,7 +73,7 @@ class RemoteRenderClient:
         return response.json()
 
     def _safe_message(self, message: Exception | str, params: GenerationParams) -> str:
-        result = _safe_delivery_message(message, params.config)
+        result = safe_delivery_message(message, params.config)
         token = self.settings.worker_token
         return result.replace(token, "***") if token else result
 
@@ -302,10 +302,10 @@ def _preview_inputs(params, request, clips):
     timeline = read_editorial_timeline(request["timing"])
     frozen = replace(params, timeline_plan=timeline)
     if frozen.privacy_mode:
-        from immich_memories.generate_render import _anonymized_params
+        from immich_memories.generate_render import anonymized_params
 
         # Returned clips already carry relocated coordinates; transform only the title inputs.
-        frozen = _anonymized_params(frozen)
+        frozen = anonymized_params(frozen)
     titles = build_title_settings(frozen, frozen.config, list(clips)) or TitleScreenSettings(
         enabled=False,
         divider_mode="none",

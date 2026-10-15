@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from immich_memories.analysis.editorial_structure_budget import LONGEST_EXCHANGE_SECONDS
+from immich_memories.analysis.clips.budget import LONGEST_EXCHANGE_SECONDS
 
 
 def safe_end(carrier: dict, seconds: float, *, expand: bool = False) -> float:

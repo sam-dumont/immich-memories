@@ -7,12 +7,12 @@ import tracemalloc
 import pytest
 from PIL import Image
 
-from immich_memories.analysis.editorial_demanded_previews import DemandedPreviewReader
-from immich_memories.analysis.editorial_structure_contract import (
+from immich_memories.analysis.corpus.trace import Trace
+from immich_memories.analysis.film.contract import (
     StructurePlannerPorts,
     StructurePlanningResult,
 )
-from immich_memories.analysis.selection_trace import Trace
+from immich_memories.analysis.preparation.demanded_previews import DemandedPreviewReader
 from immich_memories.cache.thumbnail_cache import ThumbnailCache
 from tests.test_editorial_source_route_integration import setup_runtime
 
@@ -160,7 +160,7 @@ def test_a_model_film_sends_no_picture_to_any_model_cold_or_warm(tmp_path, monke
     reaches the wire is checked, and none carries a picture."""
     import random
 
-    from immich_memories.analysis.editorial_structure_planner import plan_structure
+    from immich_memories.analysis.structure.planner import plan_structure
     from tests.editorial_story_fixtures import ControlledStoryJudge
     from tests.test_editorial_duration_planner_integration import semantic_plan
 
@@ -181,7 +181,7 @@ def test_a_model_film_sends_no_picture_to_any_model_cold_or_warm(tmp_path, monke
 
     # WHY: the text reader's provider; it answers from a script and is text by construction.
     monkeypatch.setattr(
-        "immich_memories.analysis.editorial_runtime_backend.StructureTextJudge",
+        "immich_memories.analysis.runtime.backend.StructureTextJudge",
         lambda *_args, **_kwargs: ControlledStoryJudge(judgments, require_hits=replay[0]),
     )
 

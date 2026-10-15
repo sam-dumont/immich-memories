@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from immich_memories.analysis.editorial_thin_catalogue import (
+from immich_memories.analysis.polish.catalogue import (
     BankedCatalogue,
     ThinCatalogue,
     banked_catalogue,

@@ -11,11 +11,11 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 from types import SimpleNamespace
 
-from immich_memories.analysis.editorial_rule_reader import RuleStructureReader
-from immich_memories.analysis.editorial_story_planner import funding_order
-from immich_memories.analysis.editorial_story_slots import allocate_slots
-from immich_memories.config_models_automation import TripsConfig
-from immich_memories.config_models_editorial import EditorialPeopleConfig
+from immich_memories.analysis.selection.story_planner import funding_order
+from immich_memories.analysis.stories.rule_reader import RuleStructureReader
+from immich_memories.analysis.stories.slots import allocate_slots
+from immich_memories.config.models.automation import TripsConfig
+from immich_memories.config.models.editorial import EditorialPeopleConfig
 from tests.e2e.fake_library import HOME as FIXTURE_HOME
 from tests.e2e.fake_library import LIBRARY
 from tests.picture_fake import PictureFake

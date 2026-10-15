@@ -16,8 +16,8 @@ import sqlalchemy as sa
 import yaml
 from click.testing import CliRunner
 
-from immich_memories.analysis.editorial_shareability import OWNER_SOURCE
-from immich_memories.config_loader import Config, set_config
+from immich_memories.analysis.audience.shareability import OWNER_SOURCE
+from immich_memories.config.loader import Config, set_config
 from immich_memories.db import StoreLocation, close_stores, open_store
 from immich_memories.db.inventory import digests
 from immich_memories.db.legacy_import import read_import_record
@@ -283,7 +283,7 @@ def test_legacy_files_beside_a_custom_config_are_flagged_as_skipped(tmp_path, mo
     # legacy_home() still only reads $HOME unless import_from says otherwise (#2076); a
     # --config user whose pre-store files sit beside their own config must be told they are
     # skipped, not left to wonder why nothing imported.
-    from immich_memories.config_loader import load_config
+    from immich_memories.config.loader import load_config
     from immich_memories.store.legacy_imports import legacy_import_skip_warning
 
     monkeypatch.delenv(IMPORT_FROM_ENV, raising=False)
@@ -301,7 +301,7 @@ def test_legacy_files_beside_a_custom_config_are_flagged_as_skipped(tmp_path, mo
 
 
 def test_no_skip_warning_once_import_from_is_set(tmp_path, monkeypatch):
-    from immich_memories.config_loader import load_config
+    from immich_memories.config.loader import load_config
     from immich_memories.store.legacy_imports import legacy_import_skip_warning
 
     monkeypatch.delenv(IMPORT_FROM_ENV, raising=False)
@@ -316,7 +316,7 @@ def test_no_skip_warning_once_import_from_is_set(tmp_path, monkeypatch):
 
 
 def test_no_skip_warning_without_legacy_files(tmp_path, monkeypatch):
-    from immich_memories.config_loader import load_config
+    from immich_memories.config.loader import load_config
     from immich_memories.store.legacy_imports import legacy_import_skip_warning
 
     monkeypatch.delenv(IMPORT_FROM_ENV, raising=False)

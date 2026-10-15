@@ -47,7 +47,7 @@ def test_the_scheduled_command_honours_the_configured_cooldown(tmp_path: Path) -
     import json
     from datetime import UTC, datetime, timedelta
 
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.db import open_store
     from immich_memories.tracking.models import RunMetadata
     from immich_memories.tracking.run_database import RunDatabase

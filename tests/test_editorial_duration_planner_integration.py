@@ -7,26 +7,26 @@ from types import SimpleNamespace
 
 import pytest
 
-from immich_memories.analysis.annotation_lines import AssetAnnotationLine
-from immich_memories.analysis.editorial_case import Case, _adapt_production_cards
-from immich_memories.analysis.editorial_contracts import EditorialCandidate
-from immich_memories.analysis.editorial_intent import build_editorial_intent
-from immich_memories.analysis.editorial_moment_wall import (
-    MomentCardEvidence,
-    ProductionMomentWallRenderer,
-    RepresentativeEvidence,
-)
-from immich_memories.analysis.editorial_people import adapt_editorial_people
-from immich_memories.analysis.editorial_structure_contract import (
+from immich_memories.analysis.corpus.groups import EditorialGroup
+from immich_memories.analysis.corpus.records import EditorialCandidate
+from immich_memories.analysis.film.contract import (
     EpisodeReadingCard,
     StructurePlannerPorts,
     StructurePlanningInput,
 )
-from immich_memories.analysis.editorial_structure_planner import plan_structure
-from immich_memories.analysis.moment_cards import MomentCard
-from immich_memories.analysis.selection_source_groups import EditorialGroup
+from immich_memories.analysis.film.intent import build_editorial_intent
+from immich_memories.analysis.reading.annotation_lines import AssetAnnotationLine
+from immich_memories.analysis.reading.case import Case, adapt_production_cards
+from immich_memories.analysis.reading.moment_cards import MomentCard
+from immich_memories.analysis.reading.moment_wall import (
+    MomentCardEvidence,
+    ProductionMomentWallRenderer,
+    RepresentativeEvidence,
+)
+from immich_memories.analysis.reading.people_identities import adapt_editorial_people
+from immich_memories.analysis.structure.planner import plan_structure
 from immich_memories.api.models import AssetType
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.timeperiod import DateRange
 from tests.conftest import make_asset
 
@@ -103,7 +103,7 @@ def source(tmp_path, *, seconds, pictures=50, private_opening=False):
         episode_groups=(episode,),
         candidates=tuple(candidates),
     )
-    adapted, _ = _adapt_production_cards(prepared, (card,))
+    adapted, _ = adapt_production_cards(prepared, (card,))
     wall = ProductionMomentWallRenderer(prepared, (card,), adapt_editorial_people({})).render(
         adapted
     )

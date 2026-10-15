@@ -8,7 +8,7 @@ from urllib.parse import parse_qsl, unquote, urlsplit
 
 import click
 
-from immich_memories.analysis.editorial_preparation_detectors import DETECTOR_SNAPSHOTS
+from immich_memories.analysis.preparation.detectors import DETECTOR_SNAPSHOTS
 from immich_memories.model_acquisition import acquisition_plan
 from immich_memories.pinned_models import fetch_pinned_model
 from immich_memories.security import sanitize_error_message

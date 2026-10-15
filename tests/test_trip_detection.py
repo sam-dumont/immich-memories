@@ -43,13 +43,13 @@ class TestHaversineDistance:
     """Haversine distance calculation between GPS coordinates."""
 
     def test_same_point_is_zero(self):
-        from immich_memories.analysis.trip_detection import haversine_km
+        from immich_memories.analysis.places.trip_detection import haversine_km
 
         assert haversine_km(50.8468, 4.3525, 50.8468, 4.3525) == 0.0
 
     def test_brussels_to_paris(self):
         """Brussels to Paris is ~264 km."""
-        from immich_memories.analysis.trip_detection import haversine_km
+        from immich_memories.analysis.places.trip_detection import haversine_km
 
         dist = haversine_km(50.8468, 4.3525, 48.8566, 2.3522)
         assert 260 < dist < 270
@@ -59,7 +59,7 @@ class TestTripsConfig:
     """Config model for trip detection parameters."""
 
     def test_defaults(self):
-        from immich_memories.config_models_automation import TripsConfig
+        from immich_memories.config.models.automation import TripsConfig
 
         config = TripsConfig()
         assert config.homebase_latitude == 0.0
@@ -70,21 +70,21 @@ class TestTripsConfig:
 
     def test_null_island_validation(self):
         """Should raise when homebase is still at Null Island (0,0)."""
-        from immich_memories.config_models_automation import TripsConfig
+        from immich_memories.config.models.automation import TripsConfig
 
         config = TripsConfig()
         with pytest.raises(ValueError, match="home coordinates"):
             config.validate_homebase()
 
     def test_valid_homebase_passes(self):
-        from immich_memories.config_models_automation import TripsConfig
+        from immich_memories.config.models.automation import TripsConfig
 
         config = TripsConfig(homebase_latitude=50.8468, homebase_longitude=4.3525)
         config.validate_homebase()  # should not raise
 
     def test_trips_config_on_main_config(self):
         """TripsConfig should be accessible from the main Config object."""
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
 
         config = Config()
         assert hasattr(config, "trips")
@@ -101,7 +101,7 @@ class TestDetectTrips:
 
     def test_filters_assets_near_home(self):
         """Assets within min_distance_km should be excluded."""
-        from immich_memories.analysis.trip_detection import detect_trips
+        from immich_memories.analysis.places.trip_detection import detect_trips
 
         # Antwerp is ~45km from Brussels: within default 50km threshold
         assets = [
@@ -114,7 +114,7 @@ class TestDetectTrips:
 
     def test_detects_single_trip(self):
         """Videos in Barcelona (>1000km from Brussels) over 3 days = one trip."""
-        from immich_memories.analysis.trip_detection import detect_trips
+        from immich_memories.analysis.places.trip_detection import detect_trips
 
         assets = [
             _make_asset(41.3851, 2.1734, "2024-06-12T10:00:00", city="Barcelona", country="Spain"),
@@ -128,7 +128,7 @@ class TestDetectTrips:
 
     def test_splits_by_gap(self):
         """Two clusters separated by > max_gap_days = two trips."""
-        from immich_memories.analysis.trip_detection import detect_trips
+        from immich_memories.analysis.places.trip_detection import detect_trips
 
         assets = [
             # Trip 1: Barcelona, Jun 12-14
@@ -147,7 +147,7 @@ class TestDetectTrips:
 
     def test_filters_short_trips(self):
         """Trip spanning < min_duration_days should be excluded."""
-        from immich_memories.analysis.trip_detection import detect_trips
+        from immich_memories.analysis.places.trip_detection import detect_trips
 
         # Only 1 day in Paris: doesn't meet default min_duration_days=2
         assets = [
@@ -159,7 +159,7 @@ class TestDetectTrips:
 
     def test_skips_assets_without_gps(self):
         """Assets with no EXIF GPS should be silently ignored."""
-        from immich_memories.analysis.trip_detection import detect_trips
+        from immich_memories.analysis.places.trip_detection import detect_trips
 
         assets = [
             _make_asset(None, None, "2024-06-12T10:00:00"),
@@ -173,7 +173,7 @@ class TestDetectTrips:
 
     def test_location_falls_back_to_country(self):
         """If no city in EXIF, use country only."""
-        from immich_memories.analysis.trip_detection import detect_trips
+        from immich_memories.analysis.places.trip_detection import detect_trips
 
         assets = [
             _make_asset(41.39, 2.17, "2024-06-12T10:00:00", country="Spain"),
@@ -186,7 +186,7 @@ class TestDetectTrips:
 
     def test_location_unknown_when_no_exif_location(self):
         """If assets have GPS but no city/country, fall back to Unknown Location."""
-        from immich_memories.analysis.trip_detection import detect_trips
+        from immich_memories.analysis.places.trip_detection import detect_trips
 
         assets = [
             _make_asset(41.39, 2.17, "2024-06-12T10:00:00"),
@@ -199,7 +199,7 @@ class TestDetectTrips:
 
     def test_custom_thresholds(self):
         """Should respect custom min_distance, min_duration, max_gap."""
-        from immich_memories.analysis.trip_detection import detect_trips
+        from immich_memories.analysis.places.trip_detection import detect_trips
 
         # Antwerp is ~45km: too close for default 50km, but within 30km threshold
         assets = [
@@ -214,7 +214,7 @@ class TestDetectTrips:
 
     def test_sorted_by_start_date(self):
         """Trips should be sorted chronologically."""
-        from immich_memories.analysis.trip_detection import detect_trips
+        from immich_memories.analysis.places.trip_detection import detect_trips
 
         assets = [
             # Trip 2 first in input order (August)
@@ -233,7 +233,7 @@ class TestDetectTrips:
 
     def test_trip_across_year_boundary(self):
         """A trip spanning Dec 28 to Jan 3 should be one trip, not two."""
-        from immich_memories.analysis.trip_detection import detect_trips
+        from immich_memories.analysis.places.trip_detection import detect_trips
 
         assets = [
             _make_asset(41.39, 2.17, "2024-12-28T10:00:00", city="Barcelona", country="Spain"),
@@ -249,7 +249,7 @@ class TestDetectTrips:
 
     def test_detects_trips_from_photos_and_videos(self):
         """Trip detection should work with mixed asset types (photos + videos)."""
-        from immich_memories.analysis.trip_detection import detect_trips
+        from immich_memories.analysis.places.trip_detection import detect_trips
 
         assets = [
             # Pre-2018 trip: only photos
@@ -352,7 +352,7 @@ class TestFormatTripsTable:
 
     def test_formats_trips_as_table(self):
         """format_trips_table returns a Rich Table with trip info."""
-        from immich_memories.analysis.trip_detection import DetectedTrip
+        from immich_memories.analysis.places.trip_detection import DetectedTrip
         from immich_memories.cli._trip_display import format_trips_table
 
         trips = [
@@ -388,7 +388,7 @@ class TestFormatTripsTable:
 
     def test_select_by_index(self):
         """select_trips with trip_index returns the selected trip."""
-        from immich_memories.analysis.trip_detection import DetectedTrip
+        from immich_memories.analysis.places.trip_detection import DetectedTrip
         from immich_memories.cli._trip_display import select_trips
 
         trips = [
@@ -415,7 +415,7 @@ class TestFormatTripsTable:
 
     def test_select_all_trips(self):
         """select_trips with all_trips returns all trips."""
-        from immich_memories.analysis.trip_detection import DetectedTrip
+        from immich_memories.analysis.places.trip_detection import DetectedTrip
         from immich_memories.cli._trip_display import select_trips
 
         trips = [
@@ -433,7 +433,7 @@ class TestFormatTripsTable:
 
     def test_select_invalid_index_raises(self):
         """select_trips with out-of-range index raises ValueError."""
-        from immich_memories.analysis.trip_detection import DetectedTrip
+        from immich_memories.analysis.places.trip_detection import DetectedTrip
         from immich_memories.cli._trip_display import select_trips
 
         trips = [
@@ -451,7 +451,7 @@ class TestFormatTripsTable:
 
     def test_select_no_option_returns_empty(self):
         """select_trips with no option returns empty (discovery mode)."""
-        from immich_memories.analysis.trip_detection import DetectedTrip
+        from immich_memories.analysis.places.trip_detection import DetectedTrip
         from immich_memories.cli._trip_display import select_trips
 
         trips = [
@@ -472,20 +472,20 @@ class TestTripPlaceName:
     """The name a reverse-geocoded address gives a trip, at the trip's scale."""
 
     def test_a_trip_without_a_spread_takes_the_region(self):
-        from immich_memories.analysis.trip_detection import trip_place_name
+        from immich_memories.analysis.places.trip_detection import trip_place_name
 
         address = {"state": "Charente-Maritime", "country": "France"}
 
         assert trip_place_name(address) == "Charente-Maritime, France"
 
     def test_an_address_without_a_country_names_nothing(self):
-        from immich_memories.analysis.trip_detection import trip_place_name
+        from immich_memories.analysis.places.trip_detection import trip_place_name
 
         assert trip_place_name({}) is None
         assert trip_place_name({"town": "Dolus"}, spread_km=3.0) is None
 
     def test_naming_prefers_geocode_over_exif(self):
-        from immich_memories.analysis.trip_detection import _derive_location_name
+        from immich_memories.analysis.places.trip_detection import _derive_location_name
 
         assets = [
             _make_asset(45.95, -1.15, "2024-07-12T10:00:00", city="Dolus", country="France"),
@@ -499,7 +499,7 @@ class TestTripPlaceName:
         assert result.name == "Île d'Oléron, France"
 
     def test_naming_falls_back_to_exif_when_geocode_fails(self):
-        from immich_memories.analysis.trip_detection import _derive_location_name
+        from immich_memories.analysis.places.trip_detection import _derive_location_name
 
         assets = [
             _make_asset(41.39, 2.17, "2024-06-12T10:00:00", city="Barcelona", country="Spain"),
@@ -511,7 +511,7 @@ class TestTripPlaceName:
         assert result.name == "Barcelona, Spain"
 
     def test_prefers_island_over_state(self):
-        from immich_memories.analysis.trip_detection import trip_place_name
+        from immich_memories.analysis.places.trip_detection import trip_place_name
 
         address = {"island": "Tenerife", "state": "Canary Islands", "country": "Spain"}
 
@@ -519,7 +519,7 @@ class TestTripPlaceName:
 
     def test_a_region_scale_trip_takes_the_state_not_the_province(self):
         """A province is an administrative unit under the name people use."""
-        from immich_memories.analysis.trip_detection import trip_place_name
+        from immich_memories.analysis.places.trip_detection import trip_place_name
 
         address = {
             "province": "Santa Cruz de Tenerife",
@@ -531,7 +531,7 @@ class TestTripPlaceName:
 
     def test_a_county_is_never_the_trip_name(self):
         """Nominatim's county is a regional unit in some countries, in the local script."""
-        from immich_memories.analysis.trip_detection import trip_place_name
+        from immich_memories.analysis.places.trip_detection import trip_place_name
 
         address = {
             "municipality": "Δήμος Ανωγείων",
@@ -543,7 +543,7 @@ class TestTripPlaceName:
         assert trip_place_name(address, spread_km=150.0) == "Crete, Grèce"
 
     def test_a_region_label_loses_its_administrative_wording(self):
-        from immich_memories.analysis.trip_detection import trip_place_name
+        from immich_memories.analysis.places.trip_detection import trip_place_name
 
         address = {"state": "Région Crète", "country": "Grèce"}
 
@@ -551,7 +551,7 @@ class TestTripPlaceName:
 
     def test_deduplicates_region_and_country(self):
         """When state == country (e.g., Cyprus), return just country name."""
-        from immich_memories.analysis.trip_detection import trip_place_name
+        from immich_memories.analysis.places.trip_detection import trip_place_name
 
         assert trip_place_name({"state": "Cyprus", "country": "Cyprus"}) == "Cyprus"
 
@@ -583,7 +583,7 @@ class TestTripPlaceName:
 
     @pytest.mark.parametrize("locale", _PLATANIAS_LOCALES)
     def test_a_trip_name_never_hand_declines_a_genitive_region(self, locale):
-        from immich_memories.analysis.trip_detection import trip_place_name
+        from immich_memories.analysis.places.trip_detection import trip_place_name
 
         path = Path(__file__).parent / "fixtures" / "places" / f"greece_platanias_{locale}.json"
         address = json.loads(path.read_text())["address"]
@@ -593,7 +593,7 @@ class TestTripPlaceName:
         assert name == self._EXPECTED_REGION_TRIP_NAME[locale]
 
     def test_a_city_scale_trip_takes_the_town(self):
-        from immich_memories.analysis.trip_detection import trip_place_name
+        from immich_memories.analysis.places.trip_detection import trip_place_name
 
         address = {
             "town": "Charleville-Mézières",
@@ -606,7 +606,7 @@ class TestTripPlaceName:
 
     def test_a_village_is_named_before_the_municipality_it_belongs_to(self):
         """A merged municipality's village is where the trip went, not the merged town."""
-        from immich_memories.analysis.trip_detection import trip_place_name
+        from immich_memories.analysis.places.trip_detection import trip_place_name
 
         address = {
             "village": "Wenduine",
@@ -618,7 +618,7 @@ class TestTripPlaceName:
         assert trip_place_name(address, spread_km=4.0) == "Wenduine, Belgique"
 
     def test_a_city_trip_is_named_after_the_city_not_a_district(self):
-        from immich_memories.analysis.trip_detection import trip_place_name
+        from immich_memories.analysis.places.trip_detection import trip_place_name
 
         address = {"suburb": "Gràcia", "city": "Barcelona", "country": "Spain"}
 
@@ -626,7 +626,7 @@ class TestTripPlaceName:
 
     def test_multi_country_trip_lists_countries(self):
         """A cross-country trip (>300km, multiple countries) lists countries."""
-        from immich_memories.analysis.trip_detection import _derive_location_name
+        from immich_memories.analysis.places.trip_detection import _derive_location_name
 
         # European road trip: Belgium → France → Spain (spread >> 300km)
         assets = [
@@ -642,7 +642,7 @@ class TestTripPlaceName:
 
     def test_dominant_country_ignores_layovers(self):
         """If 90%+ assets are in one country, use that country (ignore layovers)."""
-        from immich_memories.analysis.trip_detection import _derive_location_name
+        from immich_memories.analysis.places.trip_detection import _derive_location_name
 
         # 9 assets in Cyprus, 1 in Greece (Athens layover) — 90%+ in Cyprus
         # Athens (37.97, 23.72) to Paphos (34.78, 32.42) is ~850km
@@ -660,7 +660,7 @@ class TestTripPlaceName:
         assert result.name == "Cyprus"
 
     def test_falls_back_to_state_when_no_finer_detail(self):
-        from immich_memories.analysis.trip_detection import trip_place_name
+        from immich_memories.analysis.places.trip_detection import trip_place_name
 
         address = {"state": "California", "country": "United States"}
 
@@ -676,7 +676,7 @@ class TestCrossYearBoundary:
         from unittest.mock import MagicMock, patch
 
         from immich_memories.cli._trip_display import run_trip_detection
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
 
         config = Config()
         config.trips.homebase_latitude = 50.8468
@@ -687,7 +687,7 @@ class TestCrossYearBoundary:
         mock_progress = MagicMock()
 
         with patch(
-            "immich_memories.analysis.trip_discovery.detect_trips",
+            "immich_memories.analysis.sources.trip_discovery.detect_trips",
             return_value=[],
         ):
             run_trip_detection(mock_client, config, 2015, mock_progress)
@@ -705,9 +705,9 @@ class TestCrossYearBoundary:
         from datetime import date
         from unittest.mock import MagicMock, patch
 
-        from immich_memories.analysis.trip_detection import DetectedTrip
+        from immich_memories.analysis.places.trip_detection import DetectedTrip
         from immich_memories.cli._trip_display import run_trip_detection
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
 
         config = Config()
         config.trips.homebase_latitude = 50.8468
@@ -746,7 +746,7 @@ class TestCrossYearBoundary:
         )
 
         with patch(
-            "immich_memories.analysis.trip_discovery.detect_trips",
+            "immich_memories.analysis.sources.trip_discovery.detect_trips",
             return_value=[trip_2014, trip_boundary, trip_2015],
         ):
             trips = run_trip_detection(mock_client, config, 2015, mock_progress)
@@ -782,7 +782,7 @@ class TestGeocodingIsNotAlwaysWanted:
     """
 
     def test_a_caller_can_ask_for_dates_without_names(self, monkeypatch):
-        from immich_memories.analysis.trip_detection import detect_trips
+        from immich_memories.analysis.places.trip_detection import detect_trips
 
         assets = [
             _make_asset(41.3851, 2.1734, "2024-06-12T10:00:00", city="Barcelona", country="Spain"),
@@ -806,15 +806,15 @@ class TestGeocodingIsNotAlwaysWanted:
         """geopy's own base error is not an OSError, so it went straight up."""
         from geopy.exc import GeocoderInsufficientPrivileges
 
-        from immich_memories.analysis.trip_detection import geocoder_for
-        from immich_memories.config_loader import Config
+        from immich_memories.analysis.places.trip_detection import geocoder_for
+        from immich_memories.config.loader import Config
 
         def refuse(*_a, **_k):
             raise GeocoderInsufficientPrivileges(403)
 
         # WHY: Nominatim is the network boundary; here it refuses the request.
         monkeypatch.setattr(
-            "immich_memories.analysis.place_geocoder.nominatim_fetch", lambda *_a, **_k: refuse
+            "immich_memories.analysis.places.geocoder.nominatim_fetch", lambda *_a, **_k: refuse
         )
         config = Config()
         config.network.geocoding = True

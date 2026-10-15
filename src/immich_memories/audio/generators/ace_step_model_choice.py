@@ -49,15 +49,15 @@ def is_auto(configured: str) -> bool:
 
 
 def _unified_memory_gib() -> float:
-    from immich_memories.tracking.system_info import _get_ram_gb
+    from immich_memories.tracking.system_info import get_ram_gb
 
-    return _get_ram_gb()
+    return get_ram_gb()
 
 
 def _gpu_memory_mb() -> int:
-    from immich_memories.tracking.system_info import _get_vram_mb
+    from immich_memories.tracking.system_info import get_vram_mb
 
-    return _get_vram_mb()
+    return get_vram_mb()
 
 
 def measure_host() -> HostMemory:

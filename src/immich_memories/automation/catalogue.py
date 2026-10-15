@@ -118,7 +118,7 @@ def scope_window(entry: DiscoveredDay) -> tuple[datetime, datetime] | None:
     #1067 have none and are taken as written rather than second-guessed;
     `discover-days --replace` is what repairs those.
     """
-    from immich_memories.analysis.special_day import window_holds_enough
+    from immich_memories.analysis.special_days.detection import window_holds_enough
 
     if entry.window is None or not entry.window_photos or not entry.photos:
         return entry.window
@@ -212,7 +212,7 @@ def judged_by_this_build(entry: DiscoveredDay) -> bool:
     judged against let a pleasant afternoon at home into one real catalogue.
     They read as stale, which is the only honest reading of an unstamped row.
     """
-    from immich_memories.analysis.special_day_sequence import SCAN_VERSION
+    from immich_memories.analysis.special_days.sequence import SCAN_VERSION
 
     return entry.prompt_version == SCAN_VERSION
 
@@ -256,7 +256,7 @@ def _event_run(
 
 def _entry_from_record(raw: dict) -> DiscoveredDay | None:
     """One catalogue record; a legacy day without any date is skipped, not an error."""
-    from immich_memories.analysis.special_event_scope import (
+    from immich_memories.analysis.sources.event_scope import (
         SpecialEventAdmission,
         validate_special_event_scope,
     )

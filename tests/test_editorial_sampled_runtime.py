@@ -15,9 +15,9 @@ from types import SimpleNamespace
 
 import pytest
 
-from immich_memories.analysis import editorial_runtime as runtime
-from immich_memories.analysis.selection_trace import Trace
-from immich_memories.config_loader import Config
+from immich_memories.analysis.corpus.trace import Trace
+from immich_memories.analysis.runtime import composition as runtime
+from immich_memories.config.loader import Config
 from tests.test_editorial_duration_planner_integration import source
 
 

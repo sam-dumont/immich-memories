@@ -8,7 +8,7 @@ the PIL renderer instead. Only the probe child pays that price; `ti` is filled
 in by `_kernel_library()` once something past the gate needs the real thing.
 
 Nothing here knows about title kernels: kernels.py drives the selection loop
-with `_candidate_backends` and `_backend_dispatches`.
+with `candidate_backends` and `backend_dispatches`.
 
 Note: This module does NOT use 'from __future__ import annotations'
 because kernel signatures need actual type objects, not string annotations.
@@ -190,7 +190,7 @@ def _silence_output_fds():
         os.close(devnull_fd)
 
 
-def _silent_init(*, arch: object, **kwargs) -> None:
+def silent_init(*, arch: object, **kwargs) -> None:
     """Call ti.init() with stdout/stderr silenced at the OS file descriptor level.
 
     WHY: the C++ runtime prints "Starting on arch=metal" directly to file
@@ -413,7 +413,7 @@ def _gpu_probes(operating_system: str) -> tuple[tuple[str, str], ...]:
     return (("CUDA", "cuda"), ("Vulkan", "vulkan"))
 
 
-def _candidate_backends(*, force_cpu: bool, operating_system: str) -> list[tuple[object, str, str]]:
+def candidate_backends(*, force_cpu: bool, operating_system: str) -> list[tuple[object, str, str]]:
     """Return parent architecture objects and child-safe probe names in priority order."""
     library = _kernel_library()
     gpus = () if force_cpu else _gpu_probes(operating_system)
@@ -449,7 +449,7 @@ def probe_failure_wording(probe: KernelProbeResult) -> str:
     return wording or f"could not dispatch a kernel ({probe.detail or probe.outcome.value})"
 
 
-def _backend_dispatches(name: str, probe_name: str) -> bool:
+def backend_dispatches(name: str, probe_name: str) -> bool:
     """Prove a backend can dispatch a kernel, CPU included.
 
     CPU used to be waved through on the grounds that a processor is always

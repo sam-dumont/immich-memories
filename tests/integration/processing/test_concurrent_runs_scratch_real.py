@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.generate import GenerationParams
 from immich_memories.generate_clips import cleanup_temp_clips, extract_clips
 from immich_memories.processing.clip_validation import validate_clips

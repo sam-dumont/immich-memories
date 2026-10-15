@@ -11,7 +11,7 @@ from unittest.mock import patch
 
 import pytest
 
-from immich_memories.config_loader import Config, set_config
+from immich_memories.config.loader import Config, set_config
 from immich_memories.db import open_store
 from immich_memories.operations.store_import import import_legacy
 from immich_memories.tracking.models import PhaseStats, RunMetadata

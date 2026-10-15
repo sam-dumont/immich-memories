@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import pytest
 
-from immich_memories.config_models_auth import AuthConfig
+from immich_memories.config.models.auth import AuthConfig
 from immich_memories.web.auth_oidc import is_user_allowed
 
 _BASE = {"enabled": True, "provider": "oidc", "issuer_url": "https://idp", "client_id": "app"}

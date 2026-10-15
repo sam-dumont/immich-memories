@@ -7,7 +7,7 @@ line holds a key or a server address: the account name is enough to find it in t
 from __future__ import annotations
 
 from immich_memories.api.accounts import AccountUnavailable, open_accounts
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.preflight import CheckResult, CheckStatus
 
 

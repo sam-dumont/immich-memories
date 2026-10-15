@@ -480,7 +480,7 @@ def _cleanup_temp_files(paths: list[Path]) -> None:
         p.unlink(missing_ok=True)
 
 
-def _probe_duration(path: Path, *, probe_cache: ProbeCache | None = None) -> float:
+def probe_duration(path: Path, *, probe_cache: ProbeCache | None = None) -> float:
     """Get actual duration of a media file via ffprobe."""
     if probe_cache is not None:
         from immich_memories.processing.probe_cache import ProbeError

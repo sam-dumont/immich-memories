@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from immich_memories.analysis.editorial_event_families import (
+from immich_memories.analysis.reading.event_families import (
     MERGE_GAP_SECONDS,
     merge_event_families,
 )

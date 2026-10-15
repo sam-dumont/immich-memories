@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import httpx
 
-from immich_memories.config_models_llm import LLMConfig
+from immich_memories.config.models.llm import LLMConfig
 
 
 class TestLLMConfigDefaults:

@@ -383,7 +383,7 @@ plugins = ["pydantic.mypy"]
 module = [
     "immich_memories.audio.generators.ace_step_runtime",
     "immich_memories.audio.generators.demucs_local",
-    "immich_memories.analysis.editorial_laya_reader",
+    "immich_memories.analysis.audience.laya_reader",
 ]
 warn_unused_ignores = false
 
@@ -509,7 +509,7 @@ module = [
     "immich_memories.analysis.clip_refiner",
     "immich_memories.analysis.preview_builder",
     "immich_memories.analysis.analyzer_factory",
-    "immich_memories.analysis.smart_pipeline",
+    "immich_memories.analysis.runtime.smart_pipeline",
 ]
 disable_error_code = ["attr-defined", "arg-type", "return-value", "operator"]
 
@@ -579,6 +579,7 @@ DEP003 = ["starlette"]  # Known transitive import
 [tool.importlinter]
 root_packages = ["immich_memories", "immich_memories_inference"]
 include_external_packages = true
+exclude_type_checking_imports = true
 
 [[tool.importlinter.contracts]]
 id = "inference-service-is-headless"
@@ -600,6 +601,7 @@ name = "Core must not import CLI"
 type = "forbidden"
 source_modules = [
     "immich_memories.analysis",
+    "immich_memories.config",
     "immich_memories.processing",
     "immich_memories.titles",
     "immich_memories.audio",
@@ -624,6 +626,7 @@ name = "Core must not import the web server"
 type = "forbidden"
 source_modules = [
     "immich_memories.analysis",
+    "immich_memories.config",
     "immich_memories.processing",
     "immich_memories.titles",
     "immich_memories.people",
@@ -635,6 +638,43 @@ source_modules = [
     "immich_memories.free_text",
 ]
 forbidden_modules = ["immich_memories.web"]
+
+[[tool.importlinter.contracts]]
+id = "analysis-stages-are-layered"
+name = "Each analysis stage imports only the stages below it"
+type = "layers"
+containers = ["immich_memories.analysis"]
+# Top to bottom: composition, then the film's structure down to the model transport.
+layers = [
+    "runtime",
+    "structure",
+    "polish",
+    "selection",
+    "stories",
+    "film",
+    "audience",
+    "special_days",
+    "reading",
+    "preparation",
+    "captions",
+    "clips",
+    "facts",
+    "sources",
+    "corpus",
+    "places",
+    "judgments",
+    "llm",
+]
+ignore_imports = [
+    # Loading a config derives the caption identity from the caption contract, so config (which
+    # every stage imports) reads two caption modules; that is not a stage depending on captions.
+    "immich_memories.config.tiers -> immich_memories.analysis.captions.identity",
+    "immich_memories.config.models.editorial -> immich_memories.analysis.captions.contract",
+    # The shared timing policy is built from the run's GenerationParams and title settings,
+    # imported lazily from the orchestrator modules above every stage.
+    "immich_memories.processing.editorial_timing -> immich_memories.generate",
+    "immich_memories.processing.editorial_timing -> immich_memories.generate_settings",
+]
 
 [tool.refurb]
 # FURB184 (chained assignments) is a style preference — config + result = func(config)

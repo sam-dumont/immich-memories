@@ -11,15 +11,15 @@ from datetime import UTC, datetime
 
 import pytest
 
-from immich_memories.analysis.editorial_source import resolve_named_expression
-from immich_memories.analysis.household_source import HouseholdWindows
+from immich_memories.analysis.sources.household import HouseholdWindows
+from immich_memories.analysis.sources.window_context import resolve_named_expression
 from immich_memories.api.access_clients import AccessBoundClient
 from immich_memories.api.person_expression import PersonExpression
 from immich_memories.api.sync_client import SyncImmichClient
 from immich_memories.cli._asset_fetch import fetch_media
 from immich_memories.cli._live_display import QuietDisplay
 from immich_memories.cli.run_people import resolve_run_people
-from immich_memories.config_models import ImmichConfig
+from immich_memories.config.models.resources import ImmichConfig
 from immich_memories.people.transfer import import_document
 from immich_memories.timeperiod import DateRange
 from tests.household_fake import (

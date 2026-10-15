@@ -14,7 +14,7 @@ from pathlib import Path
 
 import yaml
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 
 
 def _write(tmp_path: Path, data: dict) -> Path:

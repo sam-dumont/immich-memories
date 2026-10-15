@@ -9,8 +9,8 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from immich_memories.analysis.editorial_home_radius import HOME_RADIUS_KM
-from immich_memories.analysis.trip_detection import haversine_km
+from immich_memories.analysis.places.home_radius import HOME_RADIUS_KM
+from immich_memories.analysis.places.trip_detection import haversine_km
 from immich_memories.free_text.facts import TripRules, home_trips
 from immich_memories.free_text.homes import Home
 from immich_memories.free_text.library import LibraryPicture

@@ -25,7 +25,7 @@ class TestQualityToCrf:
         assert quality_to_crf("medium") == quality_to_crf("balanced")
 
     def test_a_quality_flag_word_lands_on_the_tier_it_names_and_drops_a_pinned_crf(self):
-        from immich_memories.config_models_render import OutputConfig
+        from immich_memories.config.models.render import OutputConfig
 
         pinned = OutputConfig(quality="high", crf=12)
 
@@ -34,7 +34,7 @@ class TestQualityToCrf:
         assert pinned.with_quality("low").effective_crf == quality_to_crf("fast")
 
     def test_default_is_balanced(self):
-        from immich_memories.config_models_render import OutputConfig
+        from immich_memories.config.models.render import OutputConfig
 
         config = OutputConfig()
         assert config.quality == "balanced"

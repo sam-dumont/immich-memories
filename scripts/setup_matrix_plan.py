@@ -114,8 +114,8 @@ OWN_CLAIMS = "own"
 CLAIM_MODES = frozenset({SHARED_CLAIMS, OWN_CLAIMS})
 
 # The two pins every lane has to agree on before a single cell is comparable.
-# `analysis/editorial_structure_planner._near_home_test` measures each happening
-# against `trips.homebase_*` and `analysis/editorial_rule_reader.worthiness`
+# `analysis/structure/planner._near_home_test` measures each happening
+# against `trips.homebase_*` and `analysis/stories/rule_reader.worthiness`
 # grades anything further than 10 km "away"; the schema's default for both is
 # 0.0. Mac and NAS cells copy the operator's config and inherit a real home, and
 # a cluster cell's ConfigMap is built from the pins alone and inherited Null
@@ -189,7 +189,7 @@ COPY_OUT = "copy-out"
 # broke on, and everything archived behind it went with it.
 MASTER_EXCLUDE = "--exclude=*.wav"
 
-# The env var `config_loader` maps to `immich.api_key`, which is how a cluster
+# The env var `config.loader` maps to `immich.api_key`, which is how a cluster
 # cell is handed the operator's key without a ConfigMap ever holding one.
 IMMICH_KEY_ENV = "IMMICH_MEMORIES_IMMICH__API_KEY"
 # What a rendered plan prints where a value out of the operator's own config

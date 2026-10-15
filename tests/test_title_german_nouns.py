@@ -13,7 +13,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from immich_memories.config_models_llm import LLMConfig
+from immich_memories.config.models.llm import LLMConfig
 from immich_memories.titles.llm_titles import MemoryTitleFacts, generate_title_with_llm
 from immich_memories.titles.title_guards import invented_name
 

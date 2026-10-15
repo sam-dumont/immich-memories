@@ -10,7 +10,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from immich_memories.analysis.album_source import AlbumMedia
+from immich_memories.analysis.sources.album import AlbumMedia
 from immich_memories.api.album_service import AlbumService
 
 

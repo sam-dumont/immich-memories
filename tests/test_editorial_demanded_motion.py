@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 
 import pytest
 
-from immich_memories.analysis.editorial_motion_facts import DemandedMotionResolver, measure_motion
+from immich_memories.analysis.clips.motion_facts import DemandedMotionResolver, measure_motion
 from immich_memories.api.models import AssetType
 from tests.annotation_rows import annotation_store
 from tests.conftest import make_asset

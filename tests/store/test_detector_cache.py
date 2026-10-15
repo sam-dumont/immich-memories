@@ -7,7 +7,7 @@ from click.testing import CliRunner
 
 from immich_memories.cache.embedding_cache import HeadFactStore
 from immich_memories.cli.store_cmd import register_store_commands
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.triage.heads import HeadFact
 
 
@@ -59,7 +59,7 @@ def test_status_preserves_old_and_current_facts_and_names_refreshes(store):
 
 
 def test_migration_is_previewed_then_carries_only_verified_stills(store):
-    from immich_memories.analysis.editorial_preparation_detectors import MARQO_ONNX_ID
+    from immich_memories.analysis.preparation.detectors import MARQO_ONNX_ID
     from immich_memories.store.editorial_preparation import remember_assets
     from tests.test_editorial_preparation import asset
 

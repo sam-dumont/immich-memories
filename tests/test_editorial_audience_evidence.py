@@ -6,8 +6,8 @@ from types import SimpleNamespace
 import httpx
 import pytest
 
-from immich_memories.analysis import editorial_shareability as share
-from immich_memories.analysis.editorial_text_failures import TextCompletionFailure
+from immich_memories.analysis.audience import shareability as share
+from immich_memories.analysis.judgments.text_failures import TextCompletionFailure
 from tests.annotation_rows import annotation_store
 
 
@@ -484,9 +484,9 @@ def test_unrelated_network_and_programming_errors_propagate(failed_step, error):
 def test_real_gateway_cold_and_cached_failure_have_identical_audience_semantics(
     tmp_path, monkeypatch, failed_step
 ):
-    from immich_memories.analysis import editorial_text_gateway as gateway
-    from immich_memories.analysis.editorial_structure_io import StructureTextJudge
-    from immich_memories.config_models_llm import LLMConfig
+    from immich_memories.analysis.judgments import text_gateway as gateway
+    from immich_memories.analysis.judgments.text_judge import StructureTextJudge
+    from immich_memories.config.models.llm import LLMConfig
 
     item = evidence("A person smiles.", nsfw_marqo="yes")
     activity_prompt = share.audience_check_prompt(item)

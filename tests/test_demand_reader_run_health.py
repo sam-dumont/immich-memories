@@ -4,19 +4,19 @@ import json
 
 import pytest
 
-from immich_memories.analysis.editorial_people import adapt_editorial_people
-from immich_memories.analysis.editorial_runtime import EditorialRunContext
-from immich_memories.analysis.editorial_runtime_backend import ProductionPostCardBackend
-from immich_memories.analysis.editorial_runtime_ports import EditorialRuntimePorts
-from immich_memories.analysis.editorial_structure_contract import StructurePlannerPorts
-from immich_memories.analysis.llm_wire import LLMIncompleteResponse
-from immich_memories.analysis.selection_source import (
+from immich_memories.analysis.corpus.admission import (
     EditorialDependencies,
     EditorialSelectionRequest,
     SourceScope,
     prepare_editorial_source,
 )
-from immich_memories.analysis.selection_trace import Trace
+from immich_memories.analysis.corpus.trace import Trace
+from immich_memories.analysis.film.contract import StructurePlannerPorts
+from immich_memories.analysis.llm.wire import LLMIncompleteResponse
+from immich_memories.analysis.reading.people_identities import adapt_editorial_people
+from immich_memories.analysis.runtime.backend import ProductionPostCardBackend
+from immich_memories.analysis.runtime.composition import EditorialRunContext
+from immich_memories.analysis.runtime.ports import EditorialRuntimePorts
 from tests.annotation_rows import annotation_store
 from tests.test_editorial_story_first_planner import StoryJudge, make_source
 from tests.test_episode_demand import answer, demand_for

@@ -9,19 +9,19 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from immich_memories.analysis.editorial_source_route import (
-    metadata_demand,
-    project_source_rendering,
-)
-from immich_memories.analysis.motion_rendering import motion_renderings
-from immich_memories.analysis.selection_source import (
+from immich_memories.analysis.clips.motion_rendering import motion_renderings
+from immich_memories.analysis.corpus.admission import (
     EditorialDependencies,
     EditorialSelectionRequest,
     SourceScope,
     prepare_editorial_source,
 )
+from immich_memories.analysis.runtime.source_route import (
+    metadata_demand,
+    project_source_rendering,
+)
 from immich_memories.api.models import AssetType
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from tests.conftest import make_asset, make_clip
 
 

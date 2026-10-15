@@ -16,7 +16,7 @@ from immich_memories.automation.candidates import (
     make_memory_key,
 )
 from immich_memories.automation.closeness import UNKNOWN_WEIGHT
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.i18n import get_ordinal
 from immich_memories.memory_types.date_builders import build_birthday_windows
 from immich_memories.timeperiod import DateRange, birthday_year, same_day_in_year

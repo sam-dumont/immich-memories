@@ -197,7 +197,7 @@ def _provenance(corpus_dir: Path, used_files: list[str], bundle_path: Path, seed
         "",
         "This head is shipped as a rank-only warning (`OBSTRUCTED (edge)`): a flagged picture "
         "loses to a clean sibling of the same moment and is never dropped on its own. See "
-        "`docs-site/docs/how-it-chooses/` and `src/immich_memories/analysis/editorial_obstruction.py`.",
+        "`docs-site/docs/how-it-chooses/` and `src/immich_memories/analysis/facts/obstruction.py`.",
         "",
     ]
     return "\n".join(lines)

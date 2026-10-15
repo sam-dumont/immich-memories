@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Any, Protocol
 from immich_memories.tracking.models import DeliveryStatus, RunMetadata
 
 if TYPE_CHECKING:
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
 
 
 class RunReader(Protocol):

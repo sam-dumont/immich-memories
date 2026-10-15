@@ -1,4 +1,4 @@
-from immich_memories.analysis.editorial_carrier_eligibility import excluded_carrier_sources
+from immich_memories.analysis.facts.carrier_eligibility import excluded_carrier_sources
 
 
 def test_phone_screen_resolution_is_a_screenshot_either_orientation():

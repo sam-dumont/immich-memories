@@ -129,7 +129,7 @@ async def test_reader_smoke_uses_text_json_vision_and_releases_owned_runtime(mon
     )
     query = AsyncMock(side_effect=["yellow", '{"color":"yellow"}', "red"])
     release = AsyncMock()
-    monkeypatch.setattr("immich_memories.analysis.llm_query.query_llm", query)
+    monkeypatch.setattr("immich_memories.analysis.llm.query.query_llm", query)
     monkeypatch.setattr("immich_memories.local_inference.local_models.release", release)
     rows = await verify_local_capabilities(config)
     assert rows[0].status == "verified"
@@ -153,7 +153,7 @@ async def test_reader_refusal_still_releases_owned_runtime(monkeypatch):
         "immich_memories.local_inference.local_reader_files", lambda _: ("server", [])
     )
     monkeypatch.setattr(
-        "immich_memories.analysis.llm_query.query_llm",
+        "immich_memories.analysis.llm.query.query_llm",
         AsyncMock(side_effect=RuntimeError("local refusal")),
     )
     release = AsyncMock()
@@ -241,7 +241,7 @@ async def test_reader_connection_failure_is_reported_and_owned_runtime_released(
         "immich_memories.local_inference.local_reader_files", lambda _: ("server", [])
     )
     monkeypatch.setattr(
-        "immich_memories.analysis.llm_query.query_llm",
+        "immich_memories.analysis.llm.query.query_llm",
         AsyncMock(side_effect=httpx.ConnectError("owned reader refused connection")),
     )
     release = AsyncMock()

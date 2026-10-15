@@ -4,7 +4,7 @@ A caption-only subject has no shortlist to fill on demand, so free text is the o
 request that has to pay for its own window. Before the pool is built, this measures
 caption coverage over the request's own dates (the whole library for "along the
 years") and prepares whatever is missing, through the same pipeline `prepare` uses
-(`analysis.prepare_scope`). The owner's ruling (2026-10-04): warn with the count and
+(`analysis.preparation.scope`). The owner's ruling (2026-10-04): warn with the count and
 an estimate first, then prepare with the usual progress lines, then answer -- never
 a silent wait, and never "not possible" on a window nobody has read yet. A dry run
 (the CLI's `--dry-run`, and the web preview that runs it) shows the same warning but
@@ -20,9 +20,13 @@ from datetime import date
 
 import sqlalchemy as sa
 
-from immich_memories.analysis.editorial_preparation import PreparationResult
-from immich_memories.analysis.preparation_report import human_duration, rate_report
-from immich_memories.analysis.prepare_scope import admit_source, eligible_source, run_preparation
+from immich_memories.analysis.preparation.acquire import PreparationResult
+from immich_memories.analysis.preparation.report import human_duration, rate_report
+from immich_memories.analysis.preparation.scope import (
+    admit_source,
+    eligible_source,
+    run_preparation,
+)
 from immich_memories.api.models import Asset, VideoClipInfo
 from immich_memories.db.tables import pipeline_runs
 from immich_memories.free_text.library import LibraryView, read_library
@@ -39,7 +43,7 @@ DEFAULT_SECONDS_PER_PICTURE = 0.3
 # How many of the most recently completed runs' caption spans feed the median rate.
 _RATE_HISTORY = 5
 
-# The producer name the caption stage reports under (`editorial_preparation_captions.py`).
+# The producer name the caption stage reports under (`captions/requests.py`).
 _CAPTION_SPAN = "preparation.captions"
 
 
@@ -90,8 +94,8 @@ def window_of(when: WhenLink, client, *, today: date) -> DateRange:
 def _household_source(client, config, accounts: Sequence[str], window: DateRange):
     """`eligible_source`'s household twin: each chosen account's own window, not just the
     primary's (#2044) -- `AccessBoundClient`'s plain search stays on the primary alone."""
-    from immich_memories.analysis.editorial_source import library_source_scope
-    from immich_memories.analysis.household_source import HouseholdWindows
+    from immich_memories.analysis.sources.household import HouseholdWindows
+    from immich_memories.analysis.sources.window_context import library_source_scope
 
     scope = library_source_scope(client, config, [window])
     windows = HouseholdWindows(client, accounts)

@@ -14,7 +14,7 @@ from immich_memories.cli._album_generation import (
     album_output_path,
     handle_album_generation,
 )
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.timeperiod import DateRange
 
 

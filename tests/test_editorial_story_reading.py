@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import re
 
-from immich_memories.analysis.editorial_story_reading import read_period_story
+from immich_memories.analysis.stories.period_account import read_period_story
 
 
 class ScriptedJudge:
@@ -522,7 +522,7 @@ def test_gaps_are_kept_for_a_subject_memory_and_split_elsewhere():
 
 
 def _card(episode, *, what_happened="", representatives=(), evidence_key="k"):
-    from immich_memories.analysis.editorial_structure_contract import EpisodeReadingCard
+    from immich_memories.analysis.film.contract import EpisodeReadingCard
 
     return EpisodeReadingCard(episode, evidence_key, what_happened, tuple(representatives), False)
 
@@ -558,7 +558,7 @@ def _place_all(stage, prompt):
 
 def test_every_wall_episode_becomes_one_row_with_its_moments_places_and_people():
     """One row per canonical episode: its moments, its place names, its people, its numbers."""
-    from immich_memories.analysis.editorial_story_reading import story_episode_rows
+    from immich_memories.analysis.stories.period_account import story_episode_rows
 
     moments = [
         _moment(
@@ -618,7 +618,7 @@ def test_every_wall_episode_becomes_one_row_with_its_moments_places_and_people()
 
 
 def test_a_row_shows_place_names_and_never_a_wall_alias():
-    from immich_memories.analysis.editorial_story_reading import _prompt_row, story_episode_rows
+    from immich_memories.analysis.stories.period_account import _prompt_row, story_episode_rows
 
     rows = story_episode_rows(
         [_moment("M017", "2030-05-02T08:00:00", places="L03:Jette", episode_context="At home.")],
@@ -635,7 +635,7 @@ def test_a_row_shows_place_names_and_never_a_wall_alias():
 
 
 def test_observations_stop_at_three_representatives_and_two_favourites():
-    from immich_memories.analysis.editorial_story_reading import story_episode_rows
+    from immich_memories.analysis.stories.period_account import story_episode_rows
 
     lines = {f"a{index}": f"description number {index} " + "x" * 200 for index in range(9)}
     rows = story_episode_rows(
@@ -661,7 +661,7 @@ def test_observations_stop_at_three_representatives_and_two_favourites():
 
 def test_a_month_is_one_page_and_never_splits_a_day():
     """A calendar month is the page. A day too big for one keeps its rows and drops lines."""
-    from immich_memories.analysis.editorial_story_reading import month_pages
+    from immich_memories.analysis.stories.period_account import month_pages
 
     january = [episode_row(index, day=f"2030-01-{index + 1:02d}") for index in range(6)]
     crowded = [
@@ -684,7 +684,7 @@ def test_a_month_is_one_page_and_never_splits_a_day():
 
 
 def test_a_month_too_large_for_one_request_is_cut_between_days():
-    from immich_memories.analysis.editorial_story_reading import month_pages
+    from immich_memories.analysis.stories.period_account import month_pages
 
     busy = [
         episode_row(index, day=f"2030-03-{index // 2 + 1:02d}", minute=index) for index in range(40)
@@ -795,19 +795,19 @@ def test_the_record_reports_pages_with_month_key_and_cache_hit():
 
 
 def test_lenient_object_closes_an_object_the_model_left_open_before_a_closing_bracket():
-    from immich_memories.analysis.editorial_story_replies import _lenient_object
+    from immich_memories.analysis.stories.replies import lenient_json_object
 
     raw = (
         '{"thesis":"t","stories":[{"title":"A","episodes":["S0001"],"purpose":"p"},'
         '{"title":"B","episodes":["S0002"],"purpose":"q"],"uncertainties":[]}'
     )
-    obj = _lenient_object(raw)
+    obj = lenient_json_object(raw)
     assert [s["title"] for s in obj["stories"]] == ["A", "B"]
     assert obj["uncertainties"] == []
 
 
 def test_relations_on_a_line_are_the_people_files_words_without_names():
-    from immich_memories.analysis.editorial_story_replies import relations_on
+    from immich_memories.analysis.stories.replies import relations_on
 
     line = (
         "2024-02-18 17:15+00:00 | A woman holds a baby | at Somewhere | with Riley Example (partner; aged 33; inner circle); "
@@ -819,7 +819,7 @@ def test_relations_on_a_line_are_the_people_files_words_without_names():
 
 def test_one_uncertainty_where_a_list_belongs_is_one_row_not_its_letters():
     """A bare string is iterable, so the old shape check turned one sentence into 44 rows."""
-    from immich_memories.analysis.editorial_story_replies import _read_synthesis
+    from immich_memories.analysis.stories.replies import read_synthesis
 
     reply = json.dumps(
         {
@@ -832,6 +832,6 @@ def test_one_uncertainty_where_a_list_belongs_is_one_row_not_its_letters():
         }
     )
 
-    read = _read_synthesis(reply, {"S0001": "Arrival at the coast"})
+    read = read_synthesis(reply, {"S0001": "Arrival at the coast"})
 
     assert read["uncertainties"] == ["The cafe visit may belong to the coast week."]

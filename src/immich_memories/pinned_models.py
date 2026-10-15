@@ -14,10 +14,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import urlparse
 
-from immich_memories.analysis.editorial_preparation_detectors import MARQO_ONNX_SHA256
-from immich_memories.config_models_editorial_preparation import MARQO_ONNX_URL
-from immich_memories.config_models_free_text import WORDNET_URL
-from immich_memories.config_models_triage import DINOV2_SMALL_ONNX_URL
+from immich_memories.analysis.preparation.detectors import MARQO_ONNX_SHA256
+from immich_memories.config.models.editorial_preparation import MARQO_ONNX_URL
+from immich_memories.config.models.free_text import WORDNET_URL
+from immich_memories.config.models.triage import DINOV2_SMALL_ONNX_URL
 from immich_memories.free_text.lexicon import WORDNET_SHA256
 from immich_memories.laya_checkpoints import LAYA_MLX_URL, LAYA_ONNX_URL
 from immich_memories.triage.encoder import DINOV2_SMALL_ONNX_SHA256

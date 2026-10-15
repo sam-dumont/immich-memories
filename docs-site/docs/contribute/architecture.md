@@ -30,11 +30,18 @@ The four main orchestrators compose smaller service objects through constructor 
 lifecycle a run reports is the `OperationalPhase` enum in `operations/phases.py` (discovery →
 download → analysis → selection → render → music → delivery → complete), and it spans two entry
 points. Selection runs first: `generate` (the web UI's Cut runs the same command) →
-`build_smart_pipeline(editorial_context)` in `analysis/editorial_runtime.py` →
+`build_smart_pipeline(editorial_context)` in `analysis/runtime/composition.py` →
 `SmartPipeline.run_editorial_source()` → `RuntimeEditorialPlanner.plan_source()`, which runs
 preparation, the two readings, the structure and story planners, and certifies the timing.
 `generate_memory()` in `generate.py` then does extract → assemble → music → upload. Hand it no
 clips and it raises rather than going to find some.
+
+`analysis/` is one package per stage of that selection, from `runtime` (the composition the CLI
+drives) down through `structure`, `selection`, `stories`, `reading`, `preparation` and `corpus` to
+`llm` (the model transport). A stage imports only the stages below it, and only the modules a
+stage lists in its `__all__`; `make arch-check` and `make private-imports` fail a change that
+breaks either rule. No module imports another module's `_private` names. The full map is in
+`ARCHITECTURE.md`.
 
 | Orchestrator | Services | What it does |
 |---|---|---|

@@ -76,15 +76,15 @@ def _music_shortfall(config: Config):
         is_auto,
         resolve_model_variant,
     )
-    from immich_memories.audio.generators.ace_step_runtime import _dit_model_name
+    from immich_memories.audio.generators.ace_step_runtime import dit_model_name
     from immich_memories.audio.generators.memory_budget import memory_shortfall
 
     settings = config.ace_step
     planner = settings.lm_model_size if settings.use_lm else None
     variant = resolve_model_variant(settings.model_variant)
-    shortfall = memory_shortfall(_dit_model_name(variant), planner)
+    shortfall = memory_shortfall(dit_model_name(variant), planner)
     if shortfall and is_auto(settings.model_variant) and variant != BASE_VARIANT:
-        return memory_shortfall(_dit_model_name(BASE_VARIANT), planner)
+        return memory_shortfall(dit_model_name(BASE_VARIANT), planner)
     return shortfall
 
 
@@ -179,14 +179,14 @@ def _check_audio_assets(config: Config) -> None:
 
     from immich_memories.audio.generators.ace_step_checkpoints import missing_pinned_components
     from immich_memories.audio.generators.ace_step_model_choice import resolve_model_variant
-    from immich_memories.audio.generators.ace_step_runtime import _dit_model_name, _lm_model_name
+    from immich_memories.audio.generators.ace_step_runtime import dit_model_name, lm_model_name
 
     root = Path(
         os.environ.get("ACESTEP_CHECKPOINTS_DIR", str(Path.home() / ".cache/ace-step/checkpoints"))
     ).expanduser()
-    planner = _lm_model_name(config.ace_step.lm_model_size) if config.ace_step.use_lm else None
+    planner = lm_model_name(config.ace_step.lm_model_size) if config.ace_step.use_lm else None
     variant = resolve_model_variant(config.ace_step.model_variant)
-    missing = missing_pinned_components(root, _dit_model_name(variant), planner)
+    missing = missing_pinned_components(root, dit_model_name(variant), planner)
     if missing:
         raise RuntimeError(
             f"Local ACE weights missing ({', '.join(missing)}); generate one film with music "
@@ -202,7 +202,7 @@ async def _verify_audio(config: Config, directory: Path) -> list[Capability]:
     from immich_memories.audio.generated_audio import validate_generated_audio
     from immich_memories.audio.generators.ace_step_backend import ACEStepBackend
     from immich_memories.audio.generators.base import GenerationRequest
-    from immich_memories.audio.generators.factory import _app_config_to_ace_step
+    from immich_memories.audio.generators.factory import app_config_to_ace_step
     from immich_memories.local_inference import local_models
 
     rows = []
@@ -210,7 +210,7 @@ async def _verify_audio(config: Config, directory: Path) -> list[Capability]:
         _check_audio_assets(config)
         await local_models.release()
         settings = config.ace_step
-        profile = _app_config_to_ace_step(settings)
+        profile = app_config_to_ace_step(settings)
         profile.mode = "lib"
         profile.timeout_seconds = min(settings.timeout_seconds, 1800)
         profile.num_versions = 1

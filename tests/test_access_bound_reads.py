@@ -18,18 +18,21 @@ from pathlib import Path
 import httpx
 import pytest
 
-from immich_memories.analysis.editorial_pool import discover_source_context, resolve_source_pool
-from immich_memories.analysis.editorial_runtime import EditorialRunContext, build_editorial_planner
-from immich_memories.analysis.editorial_runtime_ports import EditorialRuntimePorts
-from immich_memories.analysis.editorial_source import library_source_scope
-from immich_memories.analysis.editorial_source_snapshot import SNAPSHOT_NAME
-from immich_memories.analysis.selection_source import prepare_editorial_source
+from immich_memories.analysis.corpus.admission import prepare_editorial_source
+from immich_memories.analysis.runtime.composition import (
+    EditorialRunContext,
+    build_editorial_planner,
+)
+from immich_memories.analysis.runtime.ports import EditorialRuntimePorts
+from immich_memories.analysis.sources.pool import discover_source_context, resolve_source_pool
+from immich_memories.analysis.sources.snapshot import SNAPSHOT_NAME
+from immich_memories.analysis.sources.window_context import library_source_scope
 from immich_memories.api.access_clients import AccessBoundClient, AccountReadFailed, reads_for
 from immich_memories.api.compatibility import ApiVersionPolicy
 from immich_memories.api.models import Asset
 from immich_memories.api.sync_client import SyncImmichClient
 from immich_memories.config import Config
-from immich_memories.generate_downloads import _download_temporary_asset
+from immich_memories.generate_downloads import fetch_temporary_asset
 from immich_memories.processing.download_coordinator import (
     DownloadCoordinator,
     build_sync_client_factory,
@@ -186,9 +189,7 @@ def _render_downloads(client: SyncImmichClient, assets, output_dir: Path) -> dic
         build_sync_client_factory(client, ApiVersionPolicy.V2),
         None,
         2,
-        download_operation=lambda worker, asset: _download_temporary_asset(
-            worker, asset, output_dir
-        ),
+        download_operation=lambda worker, asset: fetch_temporary_asset(worker, asset, output_dir),
     )
     return coordinator.prefetch(assets)
 
@@ -366,7 +367,7 @@ def test_the_attempt_names_its_pictures_once_and_the_snapshot_keeps_the_name(
         )
 
     # WHY: Nominatim is the outside host the run would ask.
-    monkeypatch.setattr("immich_memories.analysis.place_geocoder.nominatim_fetch", nominatim)
+    monkeypatch.setattr("immich_memories.analysis.places.geocoder.nominatim_fetch", nominatim)
     plain = this._config
 
     def geocoding(path):
@@ -414,8 +415,8 @@ def test_a_household_clip_immich_keeps_no_playback_for_is_dropped_and_the_run_go
     Playback and downloads stream, so their 404 arrives as httpx's status error rather
     than an `ImmichAPIError`; it used to become `AccountReadFailed` and end the run.
     """
-    from immich_memories.analysis.editorial_clip_facts import ClipWindowFacts
-    from immich_memories.analysis.editorial_video_windows import place_windows
+    from immich_memories.analysis.clips.clip_facts import ClipWindowFacts
+    from immich_memories.analysis.clips.video_windows import place_windows
     from tests.annotation_rows import annotation_store
 
     immich.hold(PRIMARY_KEY, _asset("own-video", "user-primary", bytes_of="park"))

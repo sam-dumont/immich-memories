@@ -25,7 +25,7 @@ from immich_memories.automation.runner import (
 )
 from immich_memories.automation.state_store import AutomationStateStore
 from immich_memories.config import get_config
-from immich_memories.config_loader import loaded_config_file
+from immich_memories.config.loader import loaded_config_file
 from immich_memories.db import open_store
 from immich_memories.tracking.run_database import RunDatabase
 from immich_memories.web.auth import (
@@ -35,7 +35,7 @@ from immich_memories.web.auth import (
 )
 
 if TYPE_CHECKING:
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
 
 logger = logging.getLogger(__name__)
 

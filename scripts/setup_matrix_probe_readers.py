@@ -40,23 +40,23 @@ from setup_matrix_plan import (  # noqa: E402
     reads_with_a_model,
 )
 
-from immich_memories.analysis.editorial_json_completion import complete_final_json  # noqa: E402
-from immich_memories.analysis.editorial_story_pick_contract import _read_pick  # noqa: E402
-from immich_memories.analysis.llm_providers import (  # noqa: E402
+from immich_memories.analysis.judgments.json_completion import complete_final_json  # noqa: E402
+from immich_memories.analysis.llm.provider_status import watch_provider  # noqa: E402
+from immich_memories.analysis.llm.providers import (  # noqa: E402
     reader_concurrency,
     resolved_llm_config,
 )
-from immich_memories.analysis.llm_query import query_llm  # noqa: E402
-from immich_memories.analysis.llm_wire import LLMTransportAttempt  # noqa: E402
-from immich_memories.analysis.provider_status import watch_provider  # noqa: E402
-from immich_memories.analysis.text_episode_answers import (  # noqa: E402
-    _EpisodeRequestScope,
-    _read_response_result,
+from immich_memories.analysis.llm.query import query_llm  # noqa: E402
+from immich_memories.analysis.llm.wire import LLMTransportAttempt  # noqa: E402
+from immich_memories.analysis.reading.episode_answers import (  # noqa: E402
+    EpisodeRequestScope,
+    read_response_result,
 )
-from immich_memories.analysis.text_episode_paging import (  # noqa: E402
+from immich_memories.analysis.reading.episode_paging import (  # noqa: E402
     TEXT_EPISODE_MAX_OUTPUT_TOKENS,
 )
-from immich_memories.config_loader import Config  # noqa: E402
+from immich_memories.analysis.selection.pick_contract import read_pick  # noqa: E402
+from immich_memories.config.loader import Config  # noqa: E402
 from immich_memories.store.episode_readings import EpisodeReadingIdentity  # noqa: E402
 
 PROMPTS = Path(__file__).resolve().parent / "reader_probe_prompts"
@@ -102,7 +102,7 @@ HEADER = (
 )
 
 
-def _episode_scopes(prompt: str) -> tuple[_EpisodeRequestScope, ...]:
+def _episode_scopes(prompt: str) -> tuple[EpisodeRequestScope, ...]:
     """The request the recorded episode prompt describes, as the parser is handed it.
 
     The aliases the answer cites are positional -- "episode 3", "asset 2" -- so
@@ -119,7 +119,7 @@ def _episode_scopes(prompt: str) -> tuple[_EpisodeRequestScope, ...]:
     for number, assets in enumerate(counts, start=1):
         ids = tuple(f"episode-{number}-asset-{index}" for index in range(1, assets + 1))
         scopes.append(
-            _EpisodeRequestScope(
+            EpisodeRequestScope(
                 identity=EpisodeReadingIdentity(
                     group_id=f"probe-episode-{number}",
                     producer_key="reader-probe",
@@ -140,7 +140,7 @@ def _story_pick_labels(prompt: str) -> set[str]:
 
 def _episode_verdict(raw: str, prompt: str) -> str:
     scopes = _episode_scopes(prompt)
-    result = _read_response_result(raw, scopes)
+    result = read_response_result(raw, scopes)
     if not result.readings:
         return "parser: no episode read from the answer"
     return f"ok ({len(result.readings)}/{len(scopes)} episodes read)"
@@ -149,7 +149,7 @@ def _episode_verdict(raw: str, prompt: str) -> str:
 def _story_pick_verdict(raw: str, prompt: str) -> str:
     try:
         decoded = complete_final_json(raw)
-        kept, unused, _why = _read_pick(
+        kept, unused, _why = read_pick(
             decoded, labels=_story_pick_labels(prompt), count=STORY_PICK_SLOTS, allow_fewer=True
         )
     except ValueError as exc:

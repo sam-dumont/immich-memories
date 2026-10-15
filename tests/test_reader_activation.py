@@ -2,13 +2,13 @@
 
 import pytest
 
-from immich_memories.analysis.llm_providers import (
+from immich_memories.analysis.llm.providers import (
     batch_route_for,
     reader_concurrency,
     resolved_llm_config,
 )
 from immich_memories.config import Config
-from immich_memories.config_models_llm import LLMConfig
+from immich_memories.config.models.llm import LLMConfig
 from immich_memories.preflight import CheckStatus
 from immich_memories.preflight_llm import check_llm
 
@@ -88,7 +88,7 @@ async def test_named_provider_reaches_its_real_adapter_without_an_explicit_url(
 
     import httpx
 
-    from immich_memories.analysis.llm_query import query_llm
+    from immich_memories.analysis.llm.query import query_llm
 
     seen = []
 

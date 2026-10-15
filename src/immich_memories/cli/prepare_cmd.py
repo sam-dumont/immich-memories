@@ -12,12 +12,12 @@ from typing import TYPE_CHECKING
 
 import click
 
-from immich_memories.analysis.preparation_report import (
+from immich_memories.analysis.preparation.report import (
     ProducerClock,
     rate_report,
     total_seconds_per_picture,
 )
-from immich_memories.analysis.prepare_scope import eligible_source, run_preparation
+from immich_memories.analysis.preparation.scope import eligible_source, run_preparation
 from immich_memories.cli._helpers import (
     console,
     print_error,
@@ -25,12 +25,12 @@ from immich_memories.cli._helpers import (
     print_success,
     refuse_blocked_host,
 )
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.timeperiod import DateRange
 from immich_memories.tracking.run_observations import observed_command
 
 if TYPE_CHECKING:
-    from immich_memories.analysis.editorial_preparation import PreparationResult
+    from immich_memories.analysis.preparation.acquire import PreparationResult
 
 
 def _windows(
@@ -86,8 +86,8 @@ def _print_outcome(
 
 def _bank_overviews(client, config: Config, scope, sources, unservable) -> None:
     """Bank the period accounts a later cut reads instead of paying for its own thesis."""
-    from immich_memories.analysis.catalogue_runtime import catalogue_prepared_window
-    from immich_memories.analysis.editorial_album_index import RunAlbumNames
+    from immich_memories.analysis.runtime.period_accounts import catalogue_prepared_window
+    from immich_memories.analysis.sources.album_index import RunAlbumNames
 
     catalogue, unread = catalogue_prepared_window(
         sources,

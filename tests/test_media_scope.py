@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from immich_memories.api.immich import ImmichNotFoundError
-from immich_memories.config_models import ImmichConfig, ImmichConnection
+from immich_memories.config.models.resources import ImmichConfig, ImmichConnection
 from immich_memories.web.media_scope import account_for_asset, account_for_person, connection_for
 
 

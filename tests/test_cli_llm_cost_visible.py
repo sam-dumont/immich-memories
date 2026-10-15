@@ -17,8 +17,8 @@ from __future__ import annotations
 import json
 from unittest.mock import MagicMock, patch
 
-from immich_memories.analysis.llm_usage_record import USAGE_FILE
-from immich_memories.config_models_llm import LLMConfig
+from immich_memories.analysis.llm.usage_record import USAGE_FILE
+from immich_memories.config.models.llm import LLMConfig
 from tests.test_editorial_source_route_surfaces import (
     _WINDOW,
     _config,
@@ -53,15 +53,15 @@ def _reply(prompt_tokens: int, completion_tokens: int, reasoning_tokens: int = 0
 
 def _ask(question: str) -> None:
     """One reader question, resolved the way every editorial stage resolves one."""
-    from immich_memories.analysis.editorial_async_bridge import _run_sync
-    from immich_memories.analysis.llm_query import query_llm
+    from immich_memories.analysis.llm.async_bridge import run_sync
+    from immich_memories.analysis.llm.query import query_llm
 
-    _run_sync(query_llm(question, _READER))
+    run_sync(query_llm(question, _READER))
 
 
 def _run_the_cli(tmp_path, attempt_dir, capsys):
     """Drive the real CLI runner over a reader that answers like a hosted one."""
-    from immich_memories.analysis import llm_metrics
+    from immich_memories.analysis.llm import metrics as llm_metrics
     from immich_memories.cli._pipeline_runner import run_pipeline_and_generate
 
     result = _finished_selection()
@@ -91,7 +91,8 @@ def _run_the_cli(tmp_path, attempt_dir, capsys):
         # WHY: stands in for the editorial pipeline so the reader path is the only
         # thing under test; its side effect drives the real query/record path.
         patch(
-            "immich_memories.analysis.editorial_runtime.build_smart_pipeline", return_value=pipeline
+            "immich_memories.analysis.runtime.composition.build_smart_pipeline",
+            return_value=pipeline,
         ),
         # WHY: replaces the FFmpeg render, which has nothing to do with the bill.
         patch("immich_memories.generate.generate_memory", side_effect=render),

@@ -7,16 +7,16 @@ from types import SimpleNamespace
 import httpx
 import pytest
 
-from immich_memories import config_tiers
-from immich_memories.config_compute import local_inference_acceleration
-from immich_memories.config_loader import Config
+from immich_memories.config import tiers as config_tiers
+from immich_memories.config.compute import local_inference_acceleration
+from immich_memories.config.loader import Config
 
 
 @pytest.fixture
 def local_runtime_probe(monkeypatch, isolated_inference_compute):
     # WHY: these tests inspect simulated runtime APIs instead of the suite's CPU-only fixture.
     monkeypatch.setattr(
-        "immich_memories.config_compute.local_inference_acceleration", local_inference_acceleration
+        "immich_memories.config.compute.local_inference_acceleration", local_inference_acceleration
     )
 
 
@@ -250,7 +250,7 @@ def test_the_automatic_choice_is_logged_as_this_machine_s_answer(caplog, monkeyp
     # WHY: the line is said once per process; a fresh process has said nothing yet, and an
     # earlier test in this one may have said the same answer already.
     monkeypatch.setattr(config_tiers, "_last_resolution", [None])
-    with caplog.at_level("INFO", logger="immich_memories.config_tiers"):
+    with caplog.at_level("INFO", logger="immich_memories.config.tiers"):
         config = Config()
 
     assert config.tier == "basic"

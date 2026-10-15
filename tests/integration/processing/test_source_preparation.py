@@ -7,7 +7,7 @@ import pytest
 from PIL import Image
 
 from immich_memories.api.models import AssetType
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.generate import GenerationParams
 from immich_memories.generate_clips import extract_clips
 from immich_memories.processing.download_coordinator import DownloadCoordinator

@@ -17,8 +17,8 @@ import click
 
 from immich_memories.cli import main
 from immich_memories.cli.generate_resolution import (
-    _resolve_generation_scope,
-    _validate_album_scope,
+    resolve_generation_scope,
+    validate_album_scope,
 )
 from immich_memories.self_command import self_command
 from immich_memories.timeperiod import DateRange
@@ -76,7 +76,7 @@ def memory_scope(params: dict[str, Any]) -> tuple[DateRange, list[DateRange]]:
     parse cleanly and still name nothing that could be rendered. These are the
     command's own resolvers, called the way the command calls them.
     """
-    _validate_album_scope(
+    validate_album_scope(
         from_album=params["from_album"],
         year=params["year"],
         start=params["start"],
@@ -88,7 +88,7 @@ def memory_scope(params: dict[str, Any]) -> tuple[DateRange, list[DateRange]]:
         memory_type=params["memory_type"],
         person_names=list(params["person"]),
     )
-    return _resolve_generation_scope(
+    return resolve_generation_scope(
         from_album=params["from_album"],
         year=params["year"],
         start=params["start"],

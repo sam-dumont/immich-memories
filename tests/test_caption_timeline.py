@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from immich_memories.config_models_automation import TripsConfig
+from immich_memories.config.models.automation import TripsConfig
 from immich_memories.processing.assembly_config import AssemblyClip
 from immich_memories.processing.clip_caption import captions_for_timeline
 
@@ -81,7 +81,7 @@ class TestPlaceShowsOnChange:
     ):
         from datetime import date
 
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
         from immich_memories.generate import GenerationParams
         from immich_memories.generate_captions import prepare_location_captions
         from immich_memories.generate_settings import build_title_settings

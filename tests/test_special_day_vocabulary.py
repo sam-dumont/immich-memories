@@ -3,7 +3,7 @@
 from datetime import date
 from types import SimpleNamespace
 
-from immich_memories.analysis.special_day_vocabulary import crowded_out, distinctive_days, telling
+from immich_memories.analysis.special_days.vocabulary import crowded_out, distinctive_days, telling
 
 RACE = date(2021, 4, 4)
 

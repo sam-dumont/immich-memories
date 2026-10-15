@@ -7,7 +7,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING
 
-from immich_memories.analysis.editorial_planner import EditorialSelection
+from immich_memories.analysis.runtime.plan import EditorialSelection
 from immich_memories.api.models import AssetType
 from immich_memories.processing.editorial_live_render import validate_editorial_live_clip
 from immich_memories.processing.editorial_timing import (

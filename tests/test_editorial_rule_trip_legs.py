@@ -5,9 +5,9 @@ from __future__ import annotations
 from datetime import date, datetime, timedelta
 from types import SimpleNamespace
 
-from immich_memories.analysis.editorial_rule_reader import RuleStructureReader
-from immich_memories.config_models_automation import TripsConfig
-from immich_memories.config_models_editorial import EditorialPeopleConfig
+from immich_memories.analysis.stories.rule_reader import RuleStructureReader
+from immich_memories.config.models.automation import TripsConfig
+from immich_memories.config.models.editorial import EditorialPeopleConfig
 from tests.picture_fake import PictureFake
 
 HOME = (48.0, 11.0)

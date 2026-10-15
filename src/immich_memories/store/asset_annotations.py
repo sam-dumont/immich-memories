@@ -13,11 +13,11 @@ import sqlalchemy as sa
 from sqlalchemy.engine import Connection
 from sqlalchemy.exc import SQLAlchemyError
 
-from immich_memories.analysis.editorial_carrier_eligibility import corroborated_document
-from immich_memories.analysis.editorial_preparation_heads import PUBLIC_HEAD_VERSIONS
-from immich_memories.analysis.editorial_standing_facts import names_a_person
-from immich_memories.analysis.llm_caption_identity import LLM_CAPTION_PREFIX
-from immich_memories.analysis.subject_framing import FaceBox
+from immich_memories.analysis.captions.identity import LLM_CAPTION_PREFIX
+from immich_memories.analysis.facts.carrier_eligibility import corroborated_document
+from immich_memories.analysis.facts.standing_facts import names_a_person
+from immich_memories.analysis.facts.subject_framing import FaceBox
+from immich_memories.analysis.preparation.heads import PUBLIC_HEAD_VERSIONS
 from immich_memories.db import Store
 from immich_memories.db.tables import (
     asset_flags,
@@ -124,7 +124,7 @@ def corroborated_people(
     """The public people head's label after it is checked against a face and the caption (#2069).
 
     The one rule every reader of the head shares, the annotation read and the clip rows a Live
-    Photo's shareability reads (`editorial_shareability.load_detector_heads`). A library with no
+    Photo's shareability reads (`audience.shareability.load_detector_heads`). A library with no
     face data at all leaves the head its own word (#2079).
     """
     if not library_has_faces or label == "none" or has_face:

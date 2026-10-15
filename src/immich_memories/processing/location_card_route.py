@@ -16,7 +16,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date
 
-from immich_memories.analysis.trip_detection import haversine_km
+from immich_memories.analysis.places.trip_detection import haversine_km
 
 # A hop this long between different places gets a card even on the same day.
 _LONG_HOP_KM = 30.0

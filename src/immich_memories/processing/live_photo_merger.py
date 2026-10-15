@@ -21,7 +21,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     import numpy as np
 
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
 
 from immich_memories.api.models import Asset
 from immich_memories.processing.encoding_plan import (
@@ -93,7 +93,7 @@ class LivePhotoCluster:
         Absolute-to-local conversion: clip i's absolute start is
         shutter_i - half_dur, so absolute time T → local = T - shutter_i + half_dur.
 
-        Content-aligned joins are applied by the caller (`motion_rendering`),
+        Content-aligned joins are applied by the caller (`clips.motion_rendering`),
         which replaces this midpoint estimate with measured clock offsets.
         """
         if not self.assets:
@@ -402,9 +402,9 @@ def burst_fps(clip_paths: list[Path]) -> float:
 
 
 def _detect_clip_hdr(clip_path: Path) -> bool:
-    from immich_memories.processing.hdr_utilities import _detect_hdr_type
+    from immich_memories.processing.hdr_utilities import detect_hdr_type
 
-    return _detect_hdr_type(clip_path) is not None
+    return detect_hdr_type(clip_path) is not None
 
 
 def align_clips_spectrogram(
@@ -431,7 +431,7 @@ def align_clips_spectrogram(
         return [(0.0, durations[0])], [(0.0, durations[0])]
 
     shutter_abs = [s - shutter_timestamps[0] for s in shutter_timestamps]
-    audio_starts = _find_audio_offsets(clip_paths, durations, shutter_abs)
+    audio_starts = find_audio_offsets(clip_paths, durations, shutter_abs)
 
     return (
         _gap_aware_trims(audio_starts, shutter_abs, durations),
@@ -478,7 +478,7 @@ def _extract_audio_raw(clip_paths: list[Path], durations: list[float]) -> list[n
     return audios
 
 
-def _find_audio_offsets(
+def find_audio_offsets(
     clip_paths: list[Path], durations: list[float], shutter_abs: list[float] | None = None
 ) -> list[float]:
     """Find when each clip's audio starts using spectrogram cross-correlation.
@@ -599,12 +599,12 @@ def build_merge_command(
             max(Fraction(probes.render_frame_rate(path)["rate"]) for path in clip_paths)
         )
     from immich_memories.processing.hdr_utilities import (
-        _detect_hdr_type,
+        detect_hdr_type,
         get_hdr_conversion_filter,
     )
 
     source_types = (
-        [_detect_hdr_type(path) for path in clip_paths]
+        [detect_hdr_type(path) for path in clip_paths]
         if config is not None
         else ["hlg" if clip_paths and _detect_clip_hdr(clip_paths[0]) else None] * len(clip_paths)
     )
@@ -643,7 +643,7 @@ def build_merge_command(
     )
     video_label = _build_concat_and_map(cmd, parts, v_labels, a_labels, n, has_audio)
 
-    _append_encoding_args(cmd, plan, has_audio, output)
+    append_encoding_args(cmd, plan, has_audio, output)
     return apply_hardware_encode(cmd, pixel_format=plan.pixel_format, video_label=video_label)
 
 
@@ -779,9 +779,7 @@ def burst_encoding_plan(
     )
 
 
-def _append_encoding_args(
-    cmd: list[str], plan: EncodingPlan, has_audio: bool, output: Path
-) -> None:
+def append_encoding_args(cmd: list[str], plan: EncodingPlan, has_audio: bool, output: Path) -> None:
     """Append video/audio codec arguments to the FFmpeg command.
 
     Shares ``encoder_args_for_plan`` with the assembler rather than restating

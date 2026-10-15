@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from immich_memories.analysis.forwarded_copy_checks import composed_in_words, looks_composed
+from immich_memories.analysis.corpus.forwarded_checks import composed_in_words, looks_composed
 from tests.test_forwarded_fallback import _collage_jpeg
 
 LIBRARY = Path(__file__).parent / "e2e" / "fixtures" / "library"

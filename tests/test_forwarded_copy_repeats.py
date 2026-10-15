@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from immich_memories.analysis.editorial_final_hash_review import scene_pair_relation
+from immich_memories.analysis.selection.final_hash_review import scene_pair_relation
 
 ONE_SCENE = {"a": np.array([1.0, 0.0]), "b": np.array([0.89, 0.456])}
 

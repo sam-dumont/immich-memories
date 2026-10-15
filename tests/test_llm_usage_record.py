@@ -9,8 +9,8 @@ from __future__ import annotations
 
 import json
 
-from immich_memories.analysis.llm_metrics import LLMCounters, ModelSpend
-from immich_memories.analysis.llm_usage_record import USAGE_FILE, write_llm_usage
+from immich_memories.analysis.llm.metrics import LLMCounters, ModelSpend
+from immich_memories.analysis.llm.usage_record import USAGE_FILE, write_llm_usage
 
 
 def _counters() -> LLMCounters:

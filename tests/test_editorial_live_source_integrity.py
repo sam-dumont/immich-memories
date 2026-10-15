@@ -2,8 +2,8 @@
 
 from dataclasses import replace
 
-from immich_memories.analysis.editorial_structure_contract import StructurePlannerPorts
-from immich_memories.analysis.editorial_structure_planner import plan_structure
+from immich_memories.analysis.film.contract import StructurePlannerPorts
+from immich_memories.analysis.structure.planner import plan_structure
 from immich_memories.processing.editorial_timing import build_editorial_timing_policy
 from tests.editorial_story_fixtures import ControlledStoryJudge
 from tests.test_editorial_event_motion_material import live_source
@@ -55,8 +55,8 @@ def test_invalid_original_keeps_the_same_selected_still_with_explicit_provenance
 
     from types import SimpleNamespace
 
-    from immich_memories.analysis.editorial_source_route import project_source_rendering
-    from immich_memories.generate_clips import _prefetch_assets, _validated_render_directives
+    from immich_memories.analysis.runtime.source_route import project_source_rendering
+    from immich_memories.generate_clips import _prefetch_assets, validated_render_directives
     from tests.test_editorial_source_route import demand
 
     _, candidates = demand(list(source.assets.values()))
@@ -68,7 +68,7 @@ def test_invalid_original_keeps_the_same_selected_still_with_explicit_provenance
         companion_assets=source.companion_assets,
     )
     clips = [row.clip for row in projected.candidates if row.clip.asset.id == still_id]
-    directives = _validated_render_directives(
+    directives = validated_render_directives(
         SimpleNamespace(clips=clips, editorial_selections=projected.plan.selections)
     )
     assert directives[still_id].render_mode == "still"
@@ -194,11 +194,11 @@ def test_preliminary_rules_draft_does_not_read_originals(tmp_path):
 def test_final_still_disposition_fails_if_the_same_pictures_cannot_fit(tmp_path):
     import pytest
 
-    from immich_memories.analysis.editorial_structure_finishing import (
+    from immich_memories.analysis.film.material import build_material, read_wall
+    from immich_memories.analysis.structure.finishing import (
         PlanRun,
         admit_retained_originals,
     )
-    from immich_memories.analysis.editorial_structure_material import build_material, read_wall
 
     source = live_source(tmp_path, pictures=1, add_context=False)
     material = build_material(
@@ -255,12 +255,12 @@ def test_title_enabled_still_admission_keeps_budget_and_sealed_timing_consistent
 
 
 def test_pending_month_dividers_refit_after_final_still_admission(tmp_path):
-    from immich_memories.analysis.editorial_structure_finishing import (
+    from immich_memories.analysis.film.material import build_material, read_wall
+    from immich_memories.analysis.structure.finishing import (
         PlanRun,
         admit_retained_originals,
         resolve_motion_and_timing,
     )
-    from immich_memories.analysis.editorial_structure_material import build_material, read_wall
 
     source = live_source(tmp_path, pictures=5, add_context=False)
     source = replace(

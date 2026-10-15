@@ -51,8 +51,8 @@ def race_assets():
 @contextmanager
 def scratch_judge(llm):
     """The production editorial judge with fresh evidence and answer artifacts."""
-    from immich_memories.analysis.editorial_structure_io import StructureTextJudge
-    from immich_memories.config_loader import Config
+    from immich_memories.analysis.judgments.text_judge import StructureTextJudge
+    from immich_memories.config.loader import Config
 
     with scratch_store() as (root, store):
         yield StructureTextJudge(Config(tier="full", llm=llm), root, judgments=store)

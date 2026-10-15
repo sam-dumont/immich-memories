@@ -9,13 +9,13 @@ from pathlib import Path
 
 from PIL import Image
 
-from immich_memories.analysis.selection_source import (
+from immich_memories.analysis.corpus.admission import (
     EditorialDependencies,
     EditorialSelectionRequest,
     SourceScope,
     prepare_editorial_source,
 )
-from immich_memories.analysis.visual_atlas import AtlasTile, VisualAtlas
+from immich_memories.analysis.corpus.visual_atlas import AtlasTile, VisualAtlas
 from tests.conftest import make_asset
 
 WHEN = datetime(2024, 6, 1, 12, tzinfo=UTC)
@@ -58,7 +58,7 @@ def test_workprint_conserves_cull_survivors_behind_one_proxy_per_moment(
     tmp_path: Path,
 ) -> None:
     """A representative changes the view, never the membership reaching Structure."""
-    from immich_memories.analysis.selection_structure import build_structure_workprint
+    from immich_memories.analysis.runtime.workprint import build_structure_workprint
 
     pixels = {"first": _jpeg("red"), "culled": _jpeg("green"), "later": _jpeg("blue")}
     prepared = prepare_editorial_source(
@@ -98,7 +98,7 @@ def test_workprint_conserves_cull_survivors_behind_one_proxy_per_moment(
 
 def test_workprint_uses_the_visual_medoid_as_a_moments_proxy() -> None:
     """The proxy covers its moment; it does not claim to be that moment's best frame."""
-    from immich_memories.analysis.selection_structure import build_structure_workprint
+    from immich_memories.analysis.runtime.workprint import build_structure_workprint
 
     pixels = {
         "left": _stripe(1),
@@ -125,7 +125,7 @@ def test_workprint_uses_the_visual_medoid_as_a_moments_proxy() -> None:
 
 def test_a_viewable_favourite_overrides_the_visual_medoid() -> None:
     """The owner's mark decides which member stands for the moment on the workprint."""
-    from immich_memories.analysis.selection_structure import build_structure_workprint
+    from immich_memories.analysis.runtime.workprint import build_structure_workprint
 
     pixels = {
         "left": _stripe(1),

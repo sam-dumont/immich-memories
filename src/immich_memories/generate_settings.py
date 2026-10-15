@@ -7,7 +7,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING
 
-from immich_memories.config_models_render import normalize_scale_mode
+from immich_memories.config.models.render import normalize_scale_mode
 from immich_memories.delivery_timestamp import film_capture_instant
 from immich_memories.generate_music import MusicSource
 from immich_memories.generate_privacy import (
@@ -45,7 +45,7 @@ if TYPE_CHECKING:
 
     from immich_memories.api.film_label import FilmLabel
     from immich_memories.api.immich import SyncImmichClient
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.generate import GenerationParams
     from immich_memories.generate_music import MusicPhaseResult
     from immich_memories.processing.encoding_plan import EncodingPlan
@@ -326,7 +326,7 @@ def _trip_stops(
     pins, names = extract_trip_pins(assembly_clips, locale)
     address_of = None
     if config.network.geocoding and not params.privacy_mode:
-        from immich_memories.analysis.place_geocoder import place_geocoder_for
+        from immich_memories.analysis.places.geocoder import place_geocoder_for
 
         geocoder = place_geocoder_for(config)
         address_of = geocoder.address if geocoder is not None else None

@@ -5,8 +5,8 @@ import shutil
 import numpy as np
 import pytest
 
-from immich_memories.analysis.editorial_clip_facts import ClipWindowFacts
-from immich_memories.analysis.editorial_video_windows import place_windows
+from immich_memories.analysis.clips.clip_facts import ClipWindowFacts
+from immich_memories.analysis.clips.video_windows import place_windows
 from immich_memories.speech.models import SpeechRegion
 from tests.annotation_rows import annotation_store
 from tests.conftest import make_asset

@@ -6,8 +6,8 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
-from immich_memories.analysis.editorial_left_out import NOT_IN_PLAN
-from immich_memories.analysis.selection_trace import Trace
+from immich_memories.analysis.corpus.trace import Trace
+from immich_memories.analysis.runtime.left_out import NOT_IN_PLAN
 from immich_memories.operations.reader_words import stage_words
 from immich_memories.operations.storyboard import TRACE_FILE, Storyboard, read_storyboard
 

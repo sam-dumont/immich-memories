@@ -6,7 +6,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.web.auth import reset_rate_limiter
 from tests.web_server_fixtures import basic_auth_config, server_client, signed_session
 

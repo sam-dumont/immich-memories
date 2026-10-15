@@ -131,7 +131,7 @@ def output_directory_warnings(
 
 def output_directory_rows(config: Config) -> list[CheckResult]:
     """The output directory's writability row, naming its source, then any warnings."""
-    from immich_memories.config_loader import get_config_path
+    from immich_memories.config.loader import get_config_path
     from immich_memories.preflight_run import check_output_directory
 
     directory = config.output.output_path

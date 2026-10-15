@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 
 
 def test_default_config_uses_pytest_paths(isolated_user_paths: Path) -> None:

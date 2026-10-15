@@ -2,11 +2,11 @@
 
 from dataclasses import replace
 
-from immich_memories.analysis.editorial_rule_reader import NoModelJudge, RuleStructureReader
-from immich_memories.analysis.editorial_shareability import SHAREABLE
-from immich_memories.analysis.editorial_structure_contract import StructurePlannerPorts
-from immich_memories.analysis.editorial_structure_planner import plan_structure
-from immich_memories.config_loader import Config
+from immich_memories.analysis.audience.shareability import SHAREABLE
+from immich_memories.analysis.film.contract import StructurePlannerPorts
+from immich_memories.analysis.stories.rule_reader import NoModelJudge, RuleStructureReader
+from immich_memories.analysis.structure.planner import plan_structure
+from immich_memories.config.loader import Config
 from tests.test_editorial_duration_planner_integration import source
 
 

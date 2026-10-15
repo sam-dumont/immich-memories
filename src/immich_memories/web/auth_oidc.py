@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from authlib.integrations.starlette_client import OAuth  # type: ignore[import-untyped]
     from starlette.requests import Request
 
-    from immich_memories.config_models_auth import AuthConfig
+    from immich_memories.config.models.auth import AuthConfig
 
 logger = logging.getLogger(__name__)
 

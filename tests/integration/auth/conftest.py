@@ -15,7 +15,7 @@ from starlette.responses import JSONResponse, PlainTextResponse, RedirectRespons
 from starlette.routing import Route
 from starlette.testclient import TestClient
 
-from immich_memories.config_models_auth import AuthConfig
+from immich_memories.config.models.auth import AuthConfig
 from immich_memories.web.auth import (
     is_bypass_path,
     set_session,

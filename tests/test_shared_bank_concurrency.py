@@ -8,7 +8,7 @@ banks' cases run on every store backend in `tests/store/test_banks.py`.
 
 from concurrent.futures import ThreadPoolExecutor
 
-from immich_memories.analysis.place_geocoder import PlaceGeocoder
+from immich_memories.analysis.places.geocoder import PlaceGeocoder
 from immich_memories.db import open_store
 from immich_memories.people.companion import add_confirmed_person, load_document, people_entries
 

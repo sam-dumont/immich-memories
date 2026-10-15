@@ -6,7 +6,7 @@ import weakref
 import numpy as np
 from PIL import Image
 
-from immich_memories.analysis.editorial_scene_prints import CachedScenePrints
+from immich_memories.analysis.preparation.scene_prints import CachedScenePrints
 
 
 def _jpeg(colour) -> bytes:

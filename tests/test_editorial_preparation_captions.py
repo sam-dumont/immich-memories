@@ -11,16 +11,16 @@ from dataclasses import asdict
 import pytest
 from PIL import Image
 
-from immich_memories.analysis import editorial_preparation_captions as captions
-from immich_memories.analysis.editorial_description_contract import (
+from immich_memories.analysis.captions import requests as captions
+from immich_memories.analysis.captions.contract import (
     API_MODEL,
     DESCRIPTION_MODEL,
     validate_envelope,
 )
-from immich_memories.analysis.editorial_description_outcomes import digest, unavailable_for
-from immich_memories.analysis.editorial_description_wire import request_bytes, tile_preview
-from immich_memories.analysis.llm_metrics import collecting
-from immich_memories.analysis.llm_usage_record import USAGE_FILE, write_llm_usage
+from immich_memories.analysis.captions.outcomes import digest, unavailable_for
+from immich_memories.analysis.captions.wire import request_bytes, tile_preview
+from immich_memories.analysis.llm.metrics import collecting
+from immich_memories.analysis.llm.usage_record import USAGE_FILE, write_llm_usage
 from immich_memories.operations.cancellation import (
     PipelineCancelled,
     cancellation_scope,
@@ -509,11 +509,11 @@ def test_the_caption_key_does_not_follow_a_redirect_to_another_host(open_endpoin
 
 
 def test_a_caption_banked_without_an_origin_still_names_its_caption_contract():
-    from immich_memories.analysis.editorial_description_contract import (
+    from immich_memories.analysis.captions.contract import (
         DESCRIPTION_SOURCE,
         DescriptionEnvelope,
     )
-    from immich_memories.analysis.editorial_preparation_captions import _remember_captions
+    from immich_memories.analysis.captions.requests import _remember_captions
 
     store = annotation_store()
     # The bank of an earlier build: the row exists, the origin was never recorded.

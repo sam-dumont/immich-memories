@@ -2,7 +2,7 @@
 frees goes to another story's unfunded moments, through the real planner (`plan_structure`).
 
 The burst day's two moments are each a near-identical set of frames (the depth a short film
-spends its free slots on, `editorial_story_depth`): once the scene print says a further frame
+spends its free slots on, `selection.depth`): once the scene print says a further frame
 of either moment is a repeat, that is all the burst day can distinctly show. The scavenger
 hunt's moments are each their own scene, with room for every slot the burst day cannot use.
 """
@@ -13,8 +13,8 @@ from datetime import date, timedelta
 
 import numpy as np
 
-from immich_memories.analysis.editorial_structure_contract import StructurePlannerPorts
-from immich_memories.analysis.editorial_structure_planner import plan_structure
+from immich_memories.analysis.film.contract import StructurePlannerPorts
+from immich_memories.analysis.structure.planner import plan_structure
 from tests.editorial_film_fixtures import Day, FilmJudge, film_source
 
 MAY = (date(2030, 5, 1), date(2030, 5, 31))

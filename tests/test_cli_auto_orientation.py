@@ -5,10 +5,10 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from immich_memories.analysis.smart_pipeline import PipelineResult
+from immich_memories.analysis.runtime.smart_pipeline import PipelineResult
 from immich_memories.cli import main
 from immich_memories.cli._pipeline_runner import run_pipeline_and_generate
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.timeperiod import DateRange
 from tests.conftest import make_clip
 
@@ -46,7 +46,7 @@ def test_canvas_uses_selected_portrait_in_a_landscape_pool(
     destination = tmp_path / "memory.mp4"
     # WHY: the selector and renderer are the two external-work boundaries under inspection.
     with (
-        patch("immich_memories.analysis.editorial_runtime.build_smart_pipeline") as pipeline,
+        patch("immich_memories.analysis.runtime.composition.build_smart_pipeline") as pipeline,
         patch("immich_memories.generate.generate_memory", return_value=destination) as generate,
         patch("immich_memories.cli._generation_preview.print_generation_preview") as preview,
     ):

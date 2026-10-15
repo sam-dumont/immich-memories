@@ -12,7 +12,7 @@ import pytest
 from pydantic import ValidationError
 
 from immich_memories.config import Config
-from immich_memories.config_models_llm import LLMConfig
+from immich_memories.config.models.llm import LLMConfig
 from immich_memories.preflight import CheckStatus
 from immich_memories.preflight_llm import check_llm
 

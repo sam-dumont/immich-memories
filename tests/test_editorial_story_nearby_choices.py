@@ -113,7 +113,7 @@ def test_dense_early_favourites_cannot_crowd_later_favourites_out_of_actual_shor
 
 
 def test_nearby_nomination_is_bounded_and_respects_the_owners_representative():
-    from immich_memories.analysis.editorial_story_shortlist import (
+    from immich_memories.analysis.stories.shortlist import (
         DepictedChoice,
         nearby_picture_alternatives,
     )

@@ -220,7 +220,7 @@ def test_source_probe_helpers_share_one_caller_owned_cache(tmp_path: Path, monke
 
 
 def test_assembler_uses_the_caller_owned_run_cache() -> None:
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.generate_settings import create_assembler
     from immich_memories.processing.assembly_config import (
         AssemblySettings,

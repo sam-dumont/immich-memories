@@ -9,7 +9,7 @@ import unittest
 import numpy as np
 from PIL import Image
 
-from immich_memories.analysis.editorial_preparation_detectors import (
+from immich_memories.analysis.preparation.detectors import (
     DetectorModelUnavailable,
     Docling,
 )

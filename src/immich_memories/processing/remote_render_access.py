@@ -1,7 +1,7 @@
 """Transport only the account routes and credentials needed by the selected cut."""
 
 from immich_memories.api.access_clients import AccessBoundClient
-from immich_memories.config_models import PRIMARY_ACCOUNT
+from immich_memories.config.models.resources import PRIMARY_ACCOUNT
 from immich_memories.processing.live_material import LiveRenderMaterial
 
 

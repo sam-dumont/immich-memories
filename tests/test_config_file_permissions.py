@@ -19,7 +19,7 @@ from pathlib import Path
 
 import pytest
 
-from immich_memories.config_loader import Config, load_config, set_config
+from immich_memories.config.loader import Config, load_config, set_config
 from immich_memories.db import close_stores
 from immich_memories.settings_edit import move_to_database
 

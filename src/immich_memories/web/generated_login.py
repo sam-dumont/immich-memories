@@ -17,7 +17,7 @@ import logging
 import secrets
 from pathlib import Path
 
-from immich_memories.config_models_auth import AuthConfig
+from immich_memories.config.models.auth import AuthConfig
 from immich_memories.logging_config import install_secret_redaction
 from immich_memories.security import write_secret_file
 

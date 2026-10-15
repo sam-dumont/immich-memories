@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from immich_memories.analysis.preparation_report import (
+from immich_memories.analysis.preparation.report import (
     ProducerClock,
     human_duration,
     rate_report,

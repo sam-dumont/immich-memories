@@ -13,7 +13,10 @@ from immich_memories.onnx_session import open_inference_session
 REPO = Path(__file__).resolve().parents[1]
 # The helper, and the detector worker that cannot import it (it runs in an interpreter
 # without immich_memories), which carries its own disabling call.
-OPENERS = ("onnx_session.py", "editorial_preparation_detectors.py")
+OPENERS = (
+    "src/immich_memories/onnx_session.py",
+    "src/immich_memories/analysis/preparation/detectors.py",
+)
 
 
 def test_telemetry_is_disabled_before_the_session_is_constructed():
@@ -35,7 +38,7 @@ def test_no_module_opens_an_inference_session_without_the_helper():
         str(path.relative_to(REPO))
         for root in ("src", "services")
         for path in (REPO / root).rglob("*.py")
-        if path.name not in OPENERS
+        if str(path.relative_to(REPO)) not in OPENERS
         and re.search(r"\bInferenceSession\(", path.read_text(encoding="utf-8"))
     ]
 
@@ -43,10 +46,9 @@ def test_no_module_opens_an_inference_session_without_the_helper():
 
 
 def test_the_files_that_open_sessions_themselves_disable_telemetry_first():
-    for path in (REPO / "src").rglob("*.py"):
-        if path.name in OPENERS:
-            text = path.read_text(encoding="utf-8")
-            assert text.index("disable_telemetry_events()") < text.index("InferenceSession(")
+    for opener in OPENERS:
+        text = (REPO / opener).read_text(encoding="utf-8")
+        assert text.index("disable_telemetry_events()") < text.index("InferenceSession(")
 
 
 def test_importing_the_cli_switches_the_runtime_telemetry_off_process_wide():
@@ -68,6 +70,6 @@ def test_importing_the_cli_switches_the_runtime_telemetry_off_process_wide():
 
 
 def test_the_detector_worker_inherits_the_telemetry_switch():
-    from immich_memories.analysis.editorial_preparation_detectors import _worker_env
+    from immich_memories.analysis.preparation.detectors import _worker_env
 
     assert _worker_env("", allow_downloads=False)["ORT_DISABLE_TELEMETRY"] == "1"

@@ -14,7 +14,10 @@ from typing import Any
 import httpx
 import pytest
 
-from immich_memories.analysis.duplicate_hashing import compute_thumbnail_hash, hamming_distance
+from immich_memories.analysis.corpus.duplicate_hashing import (
+    compute_thumbnail_hash,
+    hamming_distance,
+)
 from immich_memories.api.compatibility import ResolvedApiVersion
 from immich_memories.api.generated_asset_tags import GENERATED_MEMORY_TAG
 from immich_memories.api.immich import ImmichAuthError, SyncImmichClient

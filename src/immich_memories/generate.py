@@ -18,8 +18,8 @@ from immich_memories.db import Store, open_store
 from immich_memories.db.leases import Lease, LeaseHeldError
 from immich_memories.generate_clips import cleanup_temp_clips, cleanup_temp_dirs, keep_temp_clips
 from immich_memories.generate_delivery import (
-    _deliver_with_operational_progress,
-    _safe_delivery_message,
+    deliver_with_operational_progress,
+    safe_delivery_message,
 )
 from immich_memories.generate_settings import run_music_phase
 from immich_memories.operations.cancellation import PipelineCancelled
@@ -36,10 +36,10 @@ from immich_memories.timeperiod import DateRange
 from immich_memories.tracking.timed import timed
 
 if TYPE_CHECKING:
-    from immich_memories.analysis.editorial_planner import EditorialSelection
+    from immich_memories.analysis.runtime.plan import EditorialSelection
     from immich_memories.api.immich import SyncImmichClient
     from immich_memories.api.models import VideoClipInfo
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.processing.assembly_config import AssemblyClip
     from immich_memories.processing.encoding_plan import EncodingPlan
     from immich_memories.processing.timeline_budget import TimelinePlan
@@ -47,9 +47,9 @@ if TYPE_CHECKING:
     from immich_memories.tracking.models import RunMetadata
 
 from immich_memories.generate_progress import (  # noqa: E402
-    _OperationalProgress,
-    _PipelineProgress,
-    _report,
+    OperationalProgress,
+    PipelineProgress,
+    report_progress,
 )
 
 logger = logging.getLogger(__name__)
@@ -355,8 +355,8 @@ def _complete_music_phase(
     run_output_dir: Path,
     run_tracker: RunTracker,
     encoding_plan: EncodingPlan,
-    operational: _OperationalProgress,
-    progress: _PipelineProgress,
+    operational: OperationalProgress,
+    progress: PipelineProgress,
     mute_windows: list[tuple[float, float]] | None = None,
 ):
     """Run or explicitly skip music while emitting the shared outer phase."""
@@ -423,7 +423,7 @@ def _artifact_warnings(
     music_warning: str | None,
     disk_warnings: list[str] | None = None,
 ) -> list[str]:
-    from immich_memories.analysis.editorial_duration_advisory import editorial_duration_warning
+    from immich_memories.analysis.runtime.duration_advisory import editorial_duration_warning
 
     warnings = [
         warning
@@ -569,7 +569,7 @@ def _generate_memory_inner(
     if run_tracker.run_id != run_id:
         run_id, run_output_dir = _follow_redrawn_id(run_tracker.run_id, run_output_dir, dir_slug)
         requested_output_path = run_output_dir / requested_output_path.name
-    operational = _OperationalProgress(params, run_tracker)
+    operational = OperationalProgress(params, run_tracker)
     operational.emit_unperformed_prerequisites(OperationalPhase.DISCOVERY)
 
     assembly_clips: list = []  # WHY: populated in try, needed in finally for cleanup
@@ -580,16 +580,16 @@ def _generate_memory_inner(
 
         _phase_times: dict[str, float] = {}
         _phase_start = timing.clock()
-        pp = _PipelineProgress(params, len(params.clips))
+        pp = PipelineProgress(params, len(params.clips))
         params = replace(params, progress_callback=pp.report)
 
-        from immich_memories.analysis.editorial_async_bridge import _run_sync
+        from immich_memories.analysis.llm.async_bridge import run_sync
         from immich_memories.generate_render import render_base
         from immich_memories.local_inference import local_models
 
         # Selection has closed its scorers. Reap the warm reader and idle native buffers
         # before source preparation and titles compete for the same device memory.
-        _run_sync(local_models.release(unused_buffers=True))
+        run_sync(local_models.release(unused_buffers=True))
         prepared = render_base(
             params,
             requested_output_path,
@@ -644,7 +644,7 @@ def _generate_memory_inner(
         )
 
         # Phase 4: Upload (if requested)
-        _deliver_with_operational_progress(
+        deliver_with_operational_progress(
             params,
             result_path,
             run_tracker,
@@ -657,7 +657,7 @@ def _generate_memory_inner(
             collected.interval("generation", _phase_start, _phase_times["total"], len(params.clips))
         _log_phase_timing(_phase_times, len(assembly_clips))
 
-        _report(params, "done", 1.0, "Complete!")
+        report_progress(params, "done", 1.0, "Complete!")
         operational.emit(OperationalPhase.COMPLETE, 1, 1, "Complete")
 
         return result_path
@@ -666,13 +666,13 @@ def _generate_memory_inner(
         _cancel_run_on_stop(stop, run_tracker)
         raise
     except GenerationError as e:
-        safe_msg = _safe_delivery_message(e, params.config)
+        safe_msg = safe_delivery_message(e, params.config)
         _fail_run_if_running(run_tracker, safe_msg)
         pending_error = GenerationError(safe_msg)
     except (
         Exception
     ) as e:  # WHY: top-level generation boundary — converts unknown errors to GenerationError
-        safe_msg = _safe_delivery_message(e, params.config)
+        safe_msg = safe_delivery_message(e, params.config)
         logger.error("Video generation failed: %s", safe_msg)
         _fail_run_if_running(run_tracker, safe_msg)
         pending_error = GenerationError(f"Generation failed: {safe_msg}")

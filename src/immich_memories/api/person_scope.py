@@ -2,7 +2,7 @@
 
 Naming nobody takes the window whole. Naming people reads the window whole too, once,
 and keeps exactly the pictures whose own recognised faces satisfy the condition
-(`analysis/person_presence.py`): a people condition is strict per picture (#1954), never
+(`analysis/sources/person_presence.py`): a people condition is strict per picture (#1954), never
 widened to the gathering around it. Several people are an intersection (``and``:
 everybody recognised on that one picture) or a union (``or``: anybody). Both the CLI and
 wizard ask through here so the choice is made before Cull, and the pool the owner reviews
@@ -14,7 +14,7 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping, Sequence
 from typing import TYPE_CHECKING, Any, Literal, Protocol
 
-from immich_memories.analysis.person_presence import people_condition, present_on_assets
+from immich_memories.analysis.sources.person_presence import people_condition, present_on_assets
 from immich_memories.api.person_expression import PersonExpression
 
 if TYPE_CHECKING:

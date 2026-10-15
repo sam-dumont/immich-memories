@@ -2,8 +2,8 @@
 
 import pytest
 
-from immich_memories.analysis import editorial_shareability as share
-from immich_memories.analysis.editorial_shareability_tiers import audience_check_for
+from immich_memories.analysis.audience import shareability as share
+from immich_memories.analysis.audience.tiers import audience_check_for
 from tests.test_editorial_shareability_tiers import RefusingJudge, evidence_of
 
 
@@ -51,7 +51,7 @@ def test_other_clothing_and_negated_descriptions_do_not_create_an_underwear_hold
 
 
 def test_the_owner_can_explicitly_clear_the_underwear_hold_for_family(tmp_path):
-    from immich_memories.analysis.editorial_structure_audience import AudienceBank, AudienceGate
+    from immich_memories.analysis.audience.verdicts import AudienceBank, AudienceGate
     from tests.test_editorial_shareability_tiers import Annotation, flag
 
     caption = "A man wearing only boxers stands in a room."

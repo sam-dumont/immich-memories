@@ -8,7 +8,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import pytest
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.preflight import CheckStatus
 from immich_memories.preflight_compute import check_inference_compute
 
@@ -40,7 +40,7 @@ def test_preflight_reports_service_compute_without_downgrading_requested_tier(
     thread.start()
     # WHY: this test host may have Metal/CUDA; the fixture describes a CPU-only app host.
     monkeypatch.setattr(
-        "immich_memories.config_compute.local_inference_acceleration",
+        "immich_memories.config.compute.local_inference_acceleration",
         lambda: (False, "No local GPU"),
     )
     config = Config(

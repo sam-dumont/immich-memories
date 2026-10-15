@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 import pytest
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.generate import GenerationParams
 from immich_memories.generate_settings import build_assembly_settings
 from immich_memories.processing.assembly_config import AssemblyClip
@@ -28,7 +28,7 @@ def _settings(tmp_path, clips, caplog, hdr_type="pq"):
     params = GenerationParams(clips=[], output_path=tmp_path / "m.mp4", config=config)
     with (
         # WHY: ffprobe is the external boundary; the tag it would report is the input.
-        patch("immich_memories.processing.hdr_utilities._detect_hdr_type", return_value=hdr_type),
+        patch("immich_memories.processing.hdr_utilities.detect_hdr_type", return_value=hdr_type),
         caplog.at_level("WARNING"),
     ):
         return build_assembly_settings(params, clips)
@@ -69,7 +69,7 @@ def test_photo_intermediates_do_not_claim_hdr_videos(tmp_path, caplog, transfer)
     clips = [_clip(tmp_path, "photo", is_photo=True)]
     # WHY: ffprobe is the media boundary; the intermediate's transfer is known.
     with (
-        patch("immich_memories.processing.hdr_utilities._detect_hdr_type", return_value=transfer),
+        patch("immich_memories.processing.hdr_utilities.detect_hdr_type", return_value=transfer),
         caplog.at_level("INFO"),
     ):
         assert detect_dominant_hdr_transfer(clips).value == transfer

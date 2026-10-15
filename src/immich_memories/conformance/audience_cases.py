@@ -2,9 +2,9 @@
 
 from functools import partial
 
-from immich_memories.analysis.annotation_lines import AssetAnnotationLine
-from immich_memories.analysis.editorial_shareability import check_audience, evidence_for_unit
-from immich_memories.config_models_llm import LLMConfig
+from immich_memories.analysis.audience.shareability import check_audience, evidence_for_unit
+from immich_memories.analysis.reading.annotation_lines import AssetAnnotationLine
+from immich_memories.config.models.llm import LLMConfig
 from immich_memories.conformance.fixtures import scratch_judge
 from immich_memories.conformance.runtime import Case
 
@@ -44,11 +44,11 @@ def audience_cases(llm: LLMConfig) -> tuple[Case, ...]:
         Case(
             "audience activity",
             partial(audience, llm, exposure=False),
-            frozenset({"analysis.editorial_shareability:_read_audience"}),
+            frozenset({"analysis.audience.shareability:_read_audience"}),
         ),
         Case(
             "audience exposure",
             partial(audience, llm, exposure=True),
-            frozenset({"analysis.editorial_shareability:_review_exposure"}),
+            frozenset({"analysis.audience.shareability:_review_exposure"}),
         ),
     )

@@ -6,9 +6,9 @@ import json
 import re
 from types import SimpleNamespace
 
-from immich_memories.analysis.editorial_block_votes import balanced_groups
-from immich_memories.analysis.editorial_thin_vote import classify_fit, vote_thesis_fit
-from immich_memories.config_models_llm import LLMConfig
+from immich_memories.analysis.polish.block_votes import balanced_groups
+from immich_memories.analysis.polish.vote import classify_fit, vote_thesis_fit
+from immich_memories.config.models.llm import LLMConfig
 
 
 class FitJudge:

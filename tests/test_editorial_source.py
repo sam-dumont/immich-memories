@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from immich_memories.analysis.editorial_source import fetch_full_window_source
-from immich_memories.analysis.selection_source import SourceScope
+from immich_memories.analysis.corpus.admission import SourceScope
+from immich_memories.analysis.sources.window_context import fetch_full_window_source
 from immich_memories.timeperiod import DateRange
 from tests.conftest import make_asset
 

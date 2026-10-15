@@ -3,7 +3,7 @@
 import pytest
 import yaml
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 
 NAS_REFUSED = "tier 'nas' is now called 'basic': set tier: basic"
 

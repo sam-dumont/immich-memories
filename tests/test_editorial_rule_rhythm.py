@@ -5,16 +5,16 @@ from types import SimpleNamespace
 
 import pytest
 
-from immich_memories.analysis.editorial_structure_budget import (
+from immich_memories.analysis.clips.budget import (
     MIN_CARRIER_SECONDS,
     NOMINAL_STILL_SECONDS,
 )
-from immich_memories.analysis.editorial_structure_material import (
+from immich_memories.analysis.film.material import (
     UnitBuilder,
     hold_the_ends,
     rules_still_seconds,
 )
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from tests.picture_fake import PictureFake
 
 

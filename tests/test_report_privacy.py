@@ -36,7 +36,7 @@ def test_timestamps_rates_and_stack_frames_stay_readable():
     for line in (
         "12:30:45 INFO done",
         "0.5000 s/item (4)",
-        "analysis/editorial_story_reading.py:437:read_page",
+        "analysis/stories/period_account.py:437:read_page",
         "editorial_story_reading.py:437",
     ):
         assert privacy.text(line) == line
@@ -68,7 +68,7 @@ def test_trivial_terms_and_a_root_home_are_ignored(monkeypatch):
 
 
 def test_geocoder_and_tile_failures_log_no_coordinates(monkeypatch, caplog):
-    from immich_memories.analysis.place_geocoder import PlaceGeocoder
+    from immich_memories.analysis.places.geocoder import PlaceGeocoder
     from immich_memories.db import open_store
     from immich_memories.titles import map_animation
 

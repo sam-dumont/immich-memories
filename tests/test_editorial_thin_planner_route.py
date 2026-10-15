@@ -6,10 +6,10 @@ import json
 import re
 from datetime import date
 
-from immich_memories.analysis.editorial_rule_reader import RuleStructureReader
-from immich_memories.analysis.editorial_structure_contract import StructurePlannerPorts
-from immich_memories.analysis.editorial_structure_planner import plan_structure
-from immich_memories.analysis.editorial_thin_layer import ThinPolish
+from immich_memories.analysis.film.contract import StructurePlannerPorts
+from immich_memories.analysis.polish.layer import ThinPolish
+from immich_memories.analysis.stories.rule_reader import RuleStructureReader
+from immich_memories.analysis.structure.planner import plan_structure
 from tests.editorial_film_fixtures import FilmJudge, film_source, home_days, trip_days
 
 MAY = (date(2030, 5, 1), date(2030, 5, 31))
@@ -118,7 +118,7 @@ def test_the_polish_takes_out_what_the_vote_named_and_leaves_the_rest_standing(t
 
 def test_a_period_that_cannot_be_read_ships_the_no_model_cut_and_says_so(tmp_path, caplog):
     """The polish could not run, so the film is exactly the NAS cut, and the record says why."""
-    from immich_memories.analysis.editorial_thin_layer import PeriodUnread
+    from immich_memories.analysis.polish.layer import PeriodUnread
 
     def unreadable(_stories):
         # WHY: stands in for the reader boundary failing twice; the retry has its own test.
@@ -169,7 +169,7 @@ def test_a_film_that_promises_every_partition_a_voice_keeps_it_through_the_polis
     """Lifetime films (09-24): the vote took a year's only shot, and both shots of another."""
     from dataclasses import replace
 
-    from immich_memories.analysis.editorial_intent import IntentPartition
+    from immich_memories.analysis.film.intent import IntentPartition
 
     weeks = tuple(
         IntentPartition(f"week-{n}", date(2030, 5, 1 + 7 * n), date(2030, 5, 7 + 7 * n), True)

@@ -16,7 +16,7 @@ from click.testing import CliRunner
 
 from immich_memories.cli._editorial_context import build_editorial_context
 from immich_memories.cli._run_inputs import ResolvedRunInputs
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.timeperiod import DateRange
 from tests.household_fake import PARTNER_KEY, PRIMARY_KEY, FakeHousehold, immich_config, picture
 
@@ -107,7 +107,7 @@ class _EditorReached(Exception):
 
 
 def test_a_household_run_reaches_the_editor_and_reads_through_the_owner(tmp_path, immich):
-    from immich_memories.analysis import editorial_runtime
+    from immich_memories.analysis.runtime import composition as editorial_runtime
     from immich_memories.cli import main
 
     config = tmp_path / "config.yaml"
@@ -136,7 +136,10 @@ def test_a_household_run_reaches_the_editor_and_reads_through_the_owner(tmp_path
         patch.object(editorial_runtime, "build_smart_pipeline", build),
         # WHY: the editor reads models and renders; this stand-in stops once the run's
         # client and source exist, which is where the account wiring is decided.
-        patch("immich_memories.analysis.smart_pipeline.SmartPipeline.run_editorial_source", editor),
+        patch(
+            "immich_memories.analysis.runtime.smart_pipeline.SmartPipeline.run_editorial_source",
+            editor,
+        ),
     ):
         result = CliRunner().invoke(
             main,

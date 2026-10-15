@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from immich_memories.analysis.library_catalogue import bank_month_accounts
+from immich_memories.analysis.reading.library_catalogue import bank_month_accounts
 from immich_memories.store.library_catalogue import CatalogueStore
 from tests.annotation_rows import annotation_store
 from tests.test_library_catalogue import FEBRUARY, Reader
@@ -41,7 +41,7 @@ def test_an_account_request_asks_for_an_account_under_every_offered_key():
     ("memory_type", "fields"), [("trip", {"trip_type", "map_mode"}), ("year", {"reason"})]
 )
 async def test_a_title_request_asks_for_the_fields_its_prompt_names(memory_type, fields):
-    from immich_memories.config_models_llm import LLMConfig
+    from immich_memories.config.models.llm import LLMConfig
     from immich_memories.titles.llm_titles import generate_title_with_llm
 
     config = LLMConfig(
@@ -65,7 +65,7 @@ async def test_a_title_request_asks_for_the_fields_its_prompt_names(memory_type,
 
 
 def test_an_episode_request_asks_for_one_reading_per_offered_episode():
-    from immich_memories.analysis.prose_shapes import episode_reading_shape
+    from immich_memories.analysis.reading.prose_shapes import episode_reading_shape
 
     shape = episode_reading_shape(3, lean=True)["json_schema"]["schema"]
     episodes = shape["properties"]["episodes"]

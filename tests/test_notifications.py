@@ -356,7 +356,7 @@ class TestRunCompletionWarnings:
     def test_reads_the_finished_runs_own_warnings(self, tmp_path) -> None:
         """The CLI's end-of-run notice reads warnings off the same run row the Runs page does."""
         from immich_memories.automation.notifications import run_completion_details
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
         from immich_memories.db import open_store
         from immich_memories.operations.run_index import record_run_attempt
         from immich_memories.tracking import RunDatabase
@@ -384,7 +384,7 @@ class TestRunCompletionWarnings:
 
     def test_a_run_with_no_attempt_directory_has_no_warnings(self) -> None:
         from immich_memories.automation.notifications import run_completion_details
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
 
         assert run_completion_details(Config(), None) == ([], None)
 

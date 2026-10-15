@@ -5,7 +5,7 @@ import json
 import httpx
 import pytest
 
-from immich_memories.config_models_llm import LLMConfig
+from immich_memories.config.models.llm import LLMConfig
 from immich_memories.conformance.runtime import run_case
 
 
@@ -87,7 +87,7 @@ def test_motion_probe_requires_movement_across_frames(monkeypatch, object_name):
     ],
 )
 def test_motion_keeps_complete_fenced_answers(reply):
-    from immich_memories.analysis.editorial_preparation_motion import motion_text
+    from immich_memories.analysis.preparation.motion_lines import motion_text
 
     assert motion_text(reply) == "A disc moves upward."
 
@@ -97,7 +97,7 @@ def test_filmstrip_numbers_and_separates_frames_without_reordering_pixels():
 
     from PIL import Image, ImageDraw
 
-    from immich_memories.analysis.editorial_preparation_motion import TILE, filmstrip
+    from immich_memories.analysis.preparation.motion_lines import TILE, filmstrip
 
     frames = []
     for x in (40, 160, 280):

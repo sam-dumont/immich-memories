@@ -7,7 +7,7 @@ from typing import Any
 
 import pytest
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 
 EXPANDED_URL = "https://expanded.example"
 EXPANDED_VALUE = "expanded-value-0123456789abcdef0123456789"

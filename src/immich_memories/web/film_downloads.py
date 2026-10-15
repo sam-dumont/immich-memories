@@ -12,7 +12,7 @@ from fastapi.responses import FileResponse
 from starlette.background import BackgroundTask
 
 from immich_memories.api.immich import ImmichAPIError
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.tracking.models import DeliveryStatus, RunMetadata
 from immich_memories.web.dependencies import current_config
 from immich_memories.web.film_files import FILM_TYPES, local_film

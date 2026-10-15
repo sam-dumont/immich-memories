@@ -6,14 +6,14 @@ import json
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-from immich_memories.analysis.selection_source import (
+from immich_memories.analysis.corpus.admission import (
     EditorialDependencies,
     EditorialSelectionRequest,
     SourceScope,
     prepare_editorial_source,
 )
-from immich_memories.analysis.selection_source_groups import project_episode_groups
-from immich_memories.analysis.text_episode_answers import _EpisodeRequestScope
+from immich_memories.analysis.corpus.groups import project_episode_groups
+from immich_memories.analysis.reading.episode_answers import EpisodeRequestScope
 from immich_memories.api.album_service import AlbumRef
 from immich_memories.store.episode_readings import (
     BankedEpisodeReading,
@@ -26,8 +26,8 @@ from tests.annotation_rows import annotation_store
 from tests.conftest import make_asset
 
 
-def _scope(assets: tuple[str, ...]) -> _EpisodeRequestScope:
-    return _EpisodeRequestScope(
+def _scope(assets: tuple[str, ...]) -> EpisodeRequestScope:
+    return EpisodeRequestScope(
         identity=EpisodeReadingIdentity(group_id="e1", producer_key="p", evidence_key="e"),
         full_asset_ids=assets,
         page_asset_ids=assets,
@@ -37,7 +37,7 @@ def _scope(assets: tuple[str, ...]) -> _EpisodeRequestScope:
 
 
 def test_the_prompt_says_written_text_names_only_the_thing_it_is_written_on() -> None:
-    from immich_memories.analysis.text_episode_prompt import EpisodePromptFacts, episode_prompt
+    from immich_memories.analysis.reading.episode_prompt import EpisodePromptFacts, episode_prompt
 
     prompt = episode_prompt(
         (_scope(("a1",)),),
@@ -49,7 +49,7 @@ def test_the_prompt_says_written_text_names_only_the_thing_it_is_written_on() ->
 
 
 def test_the_prompt_carries_the_albums_that_hold_the_episode() -> None:
-    from immich_memories.analysis.text_episode_prompt import EpisodePromptFacts, episode_prompt
+    from immich_memories.analysis.reading.episode_prompt import EpisodePromptFacts, episode_prompt
 
     prompt = episode_prompt(
         (_scope(("a1", "a2")),),
@@ -63,7 +63,7 @@ def test_the_prompt_carries_the_albums_that_hold_the_episode() -> None:
 
 
 def test_an_episode_no_album_holds_carries_no_album_line() -> None:
-    from immich_memories.analysis.text_episode_prompt import EpisodePromptFacts, episode_prompt
+    from immich_memories.analysis.reading.episode_prompt import EpisodePromptFacts, episode_prompt
 
     prompt = episode_prompt(
         (_scope(("a1",)),),
@@ -84,7 +84,7 @@ def _producer(prompt_version: str) -> EpisodeReadingProducer:
 
 
 def test_a_reading_banked_under_the_previous_prompt_is_read_again(tmp_path: Path) -> None:
-    from immich_memories.analysis.text_episode_prompt import TEXT_EPISODE_PROMPT_VERSION
+    from immich_memories.analysis.reading.episode_prompt import TEXT_EPISODE_PROMPT_VERSION
 
     lines = {"a1": "a crowd outside a building with a stage and banners"}
     stale = _producer("episode-prompt-v1")
@@ -115,9 +115,9 @@ def test_a_reading_banked_under_the_previous_prompt_is_read_again(tmp_path: Path
 
 
 def test_the_reader_shows_the_album_that_holds_the_episode(tmp_path: Path) -> None:
-    from immich_memories.analysis.editorial_album_index import RunAlbumNames
-    from immich_memories.analysis.text_episode_prompt import TEXT_EPISODE_PROMPT_VERSION
-    from immich_memories.analysis.text_episode_reader import CachedTextEpisodeReader
+    from immich_memories.analysis.reading.episode_prompt import TEXT_EPISODE_PROMPT_VERSION
+    from immich_memories.analysis.reading.episode_reader import CachedTextEpisodeReader
+    from immich_memories.analysis.sources.album_index import RunAlbumNames
     from tests.test_editorial_album_index import _Albums
     from tests.test_text_episode_reader import _AnnotationLines
 

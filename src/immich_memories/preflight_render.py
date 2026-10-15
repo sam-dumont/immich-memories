@@ -4,7 +4,7 @@ import httpx
 
 from immich_memories.config import Config
 from immich_memories.generate import GenerationError
-from immich_memories.generate_delivery import _safe_delivery_message
+from immich_memories.generate_delivery import safe_delivery_message
 from immich_memories.preflight import CheckResult, CheckStatus
 from immich_memories.processing.remote_render import RemoteRenderClient
 
@@ -24,7 +24,7 @@ def check_render_worker(config: Config) -> CheckResult:
             "Worker unavailable; local fallback enabled"
             if settings.fallback_to_local
             else "Worker unavailable",
-            _safe_delivery_message(exc, config),
+            safe_delivery_message(exc, config),
         )
     details = (
         f"Titles: {health.get('titles', 'unknown')}; "
@@ -38,5 +38,5 @@ def check_render_worker(config: Config) -> CheckResult:
         "Connected; GPU rendering available"
         if health.get("accelerated")
         else "Connected; full GPU acceleration unavailable",
-        _safe_delivery_message(details, config),
+        safe_delivery_message(details, config),
     )

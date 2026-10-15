@@ -17,9 +17,13 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import date
 
-from immich_memories.analysis.special_day import MIN_ACTIVE_HOURS, MIN_PHOTOS, active_hours
-from immich_memories.analysis.special_day_sequence import close_family_on
-from immich_memories.analysis.trip_detection import haversine_km
+from immich_memories.analysis.places.trip_detection import haversine_km
+from immich_memories.analysis.special_days.detection import (
+    MIN_ACTIVE_HOURS,
+    MIN_PHOTOS,
+    active_hours,
+)
+from immich_memories.analysis.special_days.sequence import close_family_on
 
 _FAVOURITES_OF_AN_OCCASION = 3
 _VIDEOS_OF_AN_OCCASION = 3

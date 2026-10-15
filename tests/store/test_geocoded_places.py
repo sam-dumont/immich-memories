@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from immich_memories.analysis.place_geocoder import PlaceGeocoder
+from immich_memories.analysis.places.geocoder import PlaceGeocoder
 
 WILRIJK = {"suburb": "Wilrijk", "city": "Antwerpen", "country": "België"}
 
@@ -102,7 +102,7 @@ def test_an_outage_answers_nothing_keeps_nothing_and_stops_asking(store):
 def test_a_geopy_timeout_is_not_cached_as_an_empty_place(store, monkeypatch):
     from geopy.exc import GeocoderTimedOut
 
-    from immich_memories.analysis.place_geocoder import nominatim_fetch
+    from immich_memories.analysis.places.geocoder import nominatim_fetch
 
     class TimedOutNominatim:
         def __init__(self, **_kwargs):
@@ -129,7 +129,7 @@ def test_geocoding_prefers_the_users_language_before_any_fallback(
 ):
     from types import SimpleNamespace
 
-    from immich_memories.analysis.place_geocoder import nominatim_fetch
+    from immich_memories.analysis.places.geocoder import nominatim_fetch
 
     requests = []
 

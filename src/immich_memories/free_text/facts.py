@@ -22,7 +22,7 @@ from datetime import date
 from statistics import median
 from typing import Protocol
 
-from immich_memories.analysis.trip_detection import DetectedTrip, detect_trips, haversine_km
+from immich_memories.analysis.places.trip_detection import DetectedTrip, detect_trips, haversine_km
 from immich_memories.api.models import Asset, AssetType, ExifInfo
 from immich_memories.free_text.homes import Home
 from immich_memories.free_text.lexicon import Lexicon

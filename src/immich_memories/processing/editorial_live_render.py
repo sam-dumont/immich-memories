@@ -222,7 +222,7 @@ def _hold_last_frame(
     irregular source can grow to one source interval.
     """
     from immich_memories.processing.live_photo_merger import (
-        _append_encoding_args,
+        append_encoding_args,
         burst_encoding_plan,
     )
 
@@ -261,7 +261,7 @@ def _hold_last_frame(
     plan = burst_encoding_plan(
         is_hdr=bool(getattr(probe, "hdr_type", None)), hardware_enabled=hardware_enabled
     )
-    _append_encoding_args(command, plan, getattr(probe, "has_audio", False), target)
+    append_encoding_args(command, plan, getattr(probe, "has_audio", False), target)
     command = apply_hardware_encode(command, pixel_format=plan.pixel_format)
     result = subprocess.run(command, capture_output=True, text=True, timeout=60, check=False)
     write_secret_file(target.with_suffix(".stderr.log"), result.stderr)

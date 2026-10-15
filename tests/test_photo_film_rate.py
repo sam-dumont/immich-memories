@@ -15,7 +15,7 @@ import pytest
 
 from immich_memories import generate_clips, generate_photos
 from immich_memories.api.models import AssetType
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.generate import GenerationParams
 from immich_memories.processing.assembly_config import AssemblyClip
 from tests.conftest import make_clip

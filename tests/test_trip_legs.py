@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from immich_memories.analysis.trip_legs import legs_of_days
+from immich_memories.analysis.places.trip_legs import legs_of_days
 
 KM = 1 / 111.0  # degrees of latitude per kilometre
 

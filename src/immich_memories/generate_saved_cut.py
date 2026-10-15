@@ -20,7 +20,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from immich_memories.api.access_clients import AccessBoundClient
 from immich_memories.api.models import VideoClipInfo
-from immich_memories.config_models_render import TitleStyleMode
+from immich_memories.config.models.render import TitleStyleMode
 from immich_memories.filename_builder import (
     album_film_path,
     build_memory_output_path,
@@ -44,10 +44,10 @@ from immich_memories.titles.film_title import resolve_film_title
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from immich_memories.analysis.motion_rendering import MotionRendering
+    from immich_memories.analysis.clips.motion_rendering import MotionRendering
     from immich_memories.api.models import Asset
     from immich_memories.api.sync_client import SyncImmichClient
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.operations.cut_revisions import CutRevision
     from immich_memories.processing.added_material import LiveMotion
     from immich_memories.tracking.models import RunMetadata
@@ -98,14 +98,14 @@ def _live_motion(config: Config, client: SyncImmichClient | None) -> LiveMotion:
     """Stitch an added Live Photo with its neighbours the way a cut stitches its Live shots.
 
     It plays as motion only when the stitch, or failing that its own clip, lasts the motion
-    floor and moves (`added_live_motion`, #2453); otherwise it holds its still.
+    floor and moves (`clips.added_live_motion`, #2453); otherwise it holds its still.
     """
 
     def stitch(asset: Asset) -> MotionRendering | None:
         if client is None or not asset.live_photo_video_id:
             return None
-        from immich_memories.analysis.added_live_motion import added_live_motion
-        from immich_memories.analysis.live_clock_offsets import BankedClockOffsets
+        from immich_memories.analysis.clips.added_live_motion import added_live_motion
+        from immich_memories.analysis.clips.live_clock_offsets import BankedClockOffsets
 
         def offsets(companions):
             return BankedClockOffsets(
@@ -144,7 +144,7 @@ def _residual(client: SyncImmichClient, video_id: str) -> float | None:
     """How much one Live video moves, measured on its playback; None when unreadable."""
     import httpx
 
-    from immich_memories.analysis.editorial_motion_facts import measure_motion
+    from immich_memories.analysis.clips.motion_facts import measure_motion
     from immich_memories.api.immich import ImmichAPIError
 
     try:
@@ -290,7 +290,7 @@ def render_saved_cut(
             "This cut was made before a cut kept its render inputs. Cut again to render it."
         )
     if isinstance(client, AccessBoundClient):
-        from immich_memories.analysis.editorial_source_snapshot import frozen_access
+        from immich_memories.analysis.sources.snapshot import frozen_access
 
         # A household cut renders the copies it chose, each through the account that read it.
         client.routes.learn(clip.asset for clip in inputs.clips)

@@ -10,7 +10,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from immich_memories.analysis.editorial_rule_reader import RuleStructureReader
+from immich_memories.analysis.stories.rule_reader import RuleStructureReader
 
 FACE_ELSEWHERE = SimpleNamespace(is_favorite=False, people=[SimpleNamespace(id="p1", name="")])
 FEET = "A person is standing on a tiled floor with their feet bare and hands clasped together."

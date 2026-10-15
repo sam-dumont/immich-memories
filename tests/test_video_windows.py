@@ -2,7 +2,7 @@
 
 import pytest
 
-from immich_memories.analysis.editorial_video_windows import choose_window
+from immich_memories.analysis.clips.video_windows import choose_window
 
 
 def _probes(duration, busy):
@@ -106,9 +106,9 @@ def test_flagged_everywhere_keeps_todays_choice():
 def test_the_real_planner_starts_each_kept_video_on_its_action(tmp_path):
     from dataclasses import replace
 
-    from immich_memories.analysis.editorial_clip_facts import WindowFacts
-    from immich_memories.analysis.editorial_structure_planner import plan_structure
-    from immich_memories.analysis.editorial_video_windows import place_windows
+    from immich_memories.analysis.clips.clip_facts import WindowFacts
+    from immich_memories.analysis.clips.video_windows import place_windows
+    from immich_memories.analysis.structure.planner import plan_structure
     from immich_memories.api.models import AssetType
     from immich_memories.processing.editorial_timing import build_editorial_timing_policy
     from tests.test_editorial_duration_planner_integration import source
@@ -152,11 +152,11 @@ def test_a_window_whose_action_sits_at_the_end_still_projects_from_the_real_sour
     """#2039: a video whose activity peaks right at its own end gets a window that runs to
     the clip's last playable frame. That window must stay inside the source and must still
     project; it must not raise ``editorial interval exceeds actual source metadata``."""
-    from immich_memories.analysis.editorial_clip_facts import WindowFacts
-    from immich_memories.analysis.editorial_source_route import project_source_rendering
-    from immich_memories.analysis.editorial_structure_material import raw_centiseconds
-    from immich_memories.analysis.editorial_video_windows import place_windows
-    from immich_memories.config_loader import Config
+    from immich_memories.analysis.clips.budget import raw_centiseconds
+    from immich_memories.analysis.clips.clip_facts import WindowFacts
+    from immich_memories.analysis.clips.video_windows import place_windows
+    from immich_memories.analysis.runtime.source_route import project_source_rendering
+    from immich_memories.config.loader import Config
     from tests.conftest import make_clip
     from tests.test_editorial_source_route import demand
 
@@ -181,9 +181,9 @@ def _planned_videos(tmp_path, *, pictures, duration=13.0, action=(12.0, 13.0)):
     """The real planner over `pictures` videos of `duration` seconds, action at `action`."""
     from dataclasses import replace
 
-    from immich_memories.analysis.editorial_clip_facts import WindowFacts
-    from immich_memories.analysis.editorial_structure_planner import plan_structure
-    from immich_memories.analysis.editorial_video_windows import place_windows
+    from immich_memories.analysis.clips.clip_facts import WindowFacts
+    from immich_memories.analysis.clips.video_windows import place_windows
+    from immich_memories.analysis.structure.planner import plan_structure
     from immich_memories.api.models import AssetType
     from immich_memories.processing.editorial_timing import build_editorial_timing_policy
     from tests.test_editorial_duration_planner_integration import source
@@ -250,7 +250,7 @@ def test_a_region_longer_than_any_exchange_is_no_sentence_for_the_end_of_a_cut()
 def test_one_years_long_videos_grow_only_to_that_years_share_of_a_film_about_the_dates():
     """A holiday film short of time grew one year's two videos to 10 s each, about 30 s of a
     60 s film, while the other years had stills only. Each year grows within an even share."""
-    from immich_memories.analysis.editorial_video_windows import grow_holds
+    from immich_memories.analysis.clips.video_windows import grow_holds
 
     still = {"kind": "photo", "seconds": 4.0}
     video = {"kind": "video", "seconds": 6.0, "raw_seconds": 30.0}
@@ -275,7 +275,7 @@ def test_one_years_long_videos_grow_only_to_that_years_share_of_a_film_about_the
 
 def test_a_sentence_finished_on_one_years_video_gives_back_what_passes_that_years_share():
     """Speech grew a holiday's 6 s video to 11.5 s and the fit dropped another year's shot."""
-    from immich_memories.analysis.editorial_video_windows import within_era_shares
+    from immich_memories.analysis.clips.video_windows import within_era_shares
 
     carriers = [
         {"asset_id": "a", "kind": "photo", "seconds": 3.5, "taken": "2022-08-15T12:00:00"},

@@ -32,9 +32,9 @@ from immich_memories.processing.hdr_utilities import get_colorspace_filter
 from immich_memories.processing.memory_budget import assembly_frame_read_ahead
 from immich_memories.processing.probe_cache import ProbeCache
 from immich_memories.processing.streaming_audio import (
-    _probe_duration,
     extract_and_mix_audio,
     mux_video_audio,
+    probe_duration,
 )
 from immich_memories.processing.streaming_frame_blender import FrameBlender
 from immich_memories.processing.streaming_frame_decoder import make_decoder
@@ -536,7 +536,7 @@ def streaming_assemble_full(
         # WHY: Probe actual video duration so the audio filter graph can
         # clamp its output to match. This avoids re-encoding audio in the
         # mux step (which would cause double-AAC priming delay).
-        video_dur = _probe_duration(video_only, probe_cache=probe_cache)
+        video_dur = probe_duration(video_only, probe_cache=probe_cache)
 
         extract_and_mix_audio(
             clips=clips,

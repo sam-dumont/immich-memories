@@ -65,7 +65,7 @@ def _library_place(latitude: float, longitude: float, *_rest: object) -> dict[st
 
 def install_fake_automation(config_path: Path, state_dir: Path) -> None:
     """Use a fixed calendar and fixture geocoder; only the editorial model is scripted."""
-    from immich_memories.analysis import place_geocoder
+    from immich_memories.analysis.places import geocoder as place_geocoder
     from immich_memories.automation import candidate_discovery, runner
     from immich_memories.self_command import self_command
     from tests.e2e.cli_bootstrap import CLI_BOOTSTRAP

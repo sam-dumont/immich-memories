@@ -7,9 +7,9 @@ import re
 from datetime import UTC, datetime
 from types import SimpleNamespace
 
-from immich_memories.analysis.editorial_picture_admission import PictureAdmission
-from immich_memories.analysis.editorial_thin_layer import ThinPolish, catalogued_period
-from immich_memories.config_models_llm import LLMConfig
+from immich_memories.analysis.polish.layer import ThinPolish, catalogued_period
+from immich_memories.analysis.selection.picture_admission import PictureAdmission
+from immich_memories.config.models.llm import LLMConfig
 from immich_memories.db import open_store
 from immich_memories.timeperiod import DateRange
 

@@ -79,9 +79,9 @@ def test_clip_preparation_says_which_clip_n_of_total_instead_of_the_finished_sel
 def test_a_quiet_audio_mix_never_repeats_an_older_encoding_percentage(tmp_path) -> None:
     from unittest.mock import create_autospec
 
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.generate import GenerationParams
-    from immich_memories.generate_progress import _OperationalProgress
+    from immich_memories.generate_progress import OperationalProgress
     from immich_memories.operations.phase_heartbeat import PhaseHeartbeat
     from immich_memories.tracking.run_tracker import RunTracker
 
@@ -97,7 +97,7 @@ def test_a_quiet_audio_mix_never_repeats_an_older_encoding_percentage(tmp_path) 
     )
     # WHY: persistence is a boundary; the observer must update without another store write.
     tracker = create_autospec(RunTracker, instance=True)
-    callback = render_progress_events(None, _OperationalProgress(params, tracker), 15, clock=clock)
+    callback = render_progress_events(None, OperationalProgress(params, tracker), 15, clock=clock)
     callback(0.83, "Encoding: 83%")
     clock.now = 1
     callback(1.0, "Mixing audio...")

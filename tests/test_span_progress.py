@@ -79,7 +79,7 @@ def test_defaults_fill_stages_history_never_measured_and_skipped_stages_stay_out
 
 
 def test_two_runs_with_different_counts_share_one_stage_name():
-    from immich_memories.analysis.editorial_structure_finishing import announce_count
+    from immich_memories.analysis.structure.finishing import announce_count
     from immich_memories.operations.cut_progress import StageClock, announcing_stages
     from immich_memories.tracking.timing import collecting
 

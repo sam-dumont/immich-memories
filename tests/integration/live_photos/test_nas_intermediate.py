@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.processing.hardware import detect_hardware_acceleration
 from immich_memories.processing.live_photo_merger import build_merge_command
 

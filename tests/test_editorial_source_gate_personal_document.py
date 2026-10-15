@@ -5,12 +5,15 @@ The audience gate, the --ask preview and the --ask period accounts all call it (
 ID card is held consistently wherever a route checks for a screen or document source.
 """
 
-from immich_memories.analysis.annotation_lines import AnnotationLineBatch, AssetAnnotationLine
-from immich_memories.analysis.editorial_source_gate import screen_document_rejections
+from immich_memories.analysis.reading.annotation_lines import (
+    AnnotationLineBatch,
+    AssetAnnotationLine,
+)
+from immich_memories.analysis.reading.source_gate import screen_document_rejections
 
 
 def _batch(*lines: AssetAnnotationLine) -> AnnotationLineBatch:
-    from immich_memories.analysis.annotation_lines import AnnotationContract
+    from immich_memories.analysis.reading.annotation_lines import AnnotationContract
 
     return AnnotationLineBatch(
         requested_asset_ids=tuple(line.asset_id for line in lines),

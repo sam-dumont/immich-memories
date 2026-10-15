@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from immich_memories.config_loader import get_config, load_config, set_config
+from immich_memories.config.loader import get_config, load_config, set_config
 
 ENV_SECRET = "env-secret-value-that-must-never-be-shown"  # noqa: S105 — synthetic
 SIGNING_SECRET = "s" * 40

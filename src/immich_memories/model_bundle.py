@@ -5,8 +5,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-from immich_memories.analysis.editorial_laya_reader import unpack_checkpoint
-from immich_memories.analysis.editorial_preparation_detectors import DETECTOR_SNAPSHOTS
+from immich_memories.analysis.audience.laya_reader import unpack_checkpoint
+from immich_memories.analysis.preparation.detectors import DETECTOR_SNAPSHOTS
 from immich_memories.pinned_models import (
     CAPTION_MODEL,
     CAPTION_PROJECTOR,

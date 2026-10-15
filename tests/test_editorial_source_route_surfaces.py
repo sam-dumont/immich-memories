@@ -8,11 +8,11 @@ from unittest.mock import MagicMock, create_autospec, patch
 
 import pytest
 
-from immich_memories.analysis.editorial_planner import EditorialSelection
-from immich_memories.analysis.smart_pipeline import PipelineResult
+from immich_memories.analysis.runtime.plan import EditorialSelection
+from immich_memories.analysis.runtime.smart_pipeline import PipelineResult
 from immich_memories.api.models import Asset, AssetType, VideoClipInfo
 from immich_memories.api.sync_client import SyncImmichClient
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.timeperiod import DateRange
 from tests.conftest import make_asset, make_clip
 
@@ -109,7 +109,8 @@ def test_cli_source_route_uses_timed_clips_and_preserves_exact_render_handoff(tm
     with (
         # WHY: the collaborator under inspection; its context/dry_run kwargs are asserted.
         patch(
-            "immich_memories.analysis.editorial_runtime.build_smart_pipeline", return_value=pipeline
+            "immich_memories.analysis.runtime.composition.build_smart_pipeline",
+            return_value=pipeline,
         ) as build,
         patch("immich_memories.generate.generate_memory", return_value=output) as generate,
         patch(
@@ -186,7 +187,8 @@ def test_cli_short_and_unknown_videos_reach_editor_as_timed_clips(tmp_path, dura
     with (
         # WHY: the collaborator under inspection; its call args are asserted after the raise.
         patch(
-            "immich_memories.analysis.editorial_runtime.build_smart_pipeline", return_value=pipeline
+            "immich_memories.analysis.runtime.composition.build_smart_pipeline",
+            return_value=pipeline,
         ),
         pytest.raises(RuntimeError, match="source route reached"),
     ):

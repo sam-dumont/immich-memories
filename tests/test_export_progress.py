@@ -1,8 +1,8 @@
 """Export callbacks share one monotonic scale, including extraction and delivery."""
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.generate import GenerationParams
-from immich_memories.generate_progress import _PipelineProgress
+from immich_memories.generate_progress import PipelineProgress
 
 
 def test_extraction_and_upload_cannot_finish_or_rewind_the_export_bar(tmp_path):
@@ -14,7 +14,7 @@ def test_extraction_and_upload_cannot_finish_or_rewind_the_export_bar(tmp_path):
         upload_enabled=True,
         progress_callback=lambda _phase, pct, _msg: seen.append(pct),
     )
-    progress = _PipelineProgress(params, clip_count=10)
+    progress = PipelineProgress(params, clip_count=10)
     for phase, pct in [
         ("download", 0),
         ("extract", 0.5),
@@ -43,7 +43,7 @@ def test_first_render_moves_the_bar_without_inventing_an_eta(tmp_path):
         config=Config(),
         progress_callback=lambda _phase, pct, _msg: seen.append(pct),
     )
-    progress = _PipelineProgress(params, clip_count=10)
+    progress = PipelineProgress(params, clip_count=10)
     progress.report("download", 0.5, "Downloading")
     progress.report("assembly", 0.5, "Encoding")
     assert 0 < seen[0] < seen[1] < 1
@@ -64,7 +64,7 @@ def test_fixed_music_offsets_never_become_a_measured_eta(tmp_path):
         progress_callback=progress_writer(path),
     )
     with collecting():
-        progress = _PipelineProgress(params, clip_count=2)
+        progress = PipelineProgress(params, clip_count=2)
         progress.report("music", 0.85, "Starting music")
         saved = json.loads(path.read_text())
 
@@ -120,7 +120,7 @@ def test_render_forecast_includes_playback_check_and_survives_the_sidecar(tmp_pa
             target="film",
             skipped={"music", "upload"},
         )
-        progress = _PipelineProgress(params, clip_count=2)
+        progress = PipelineProgress(params, clip_count=2)
         progress.report("assembly", 0.5, "Encoding")
         saved = json.loads(path.read_text())
         assert 29 < saved["forecast"]["remaining_seconds"] <= 30
@@ -168,7 +168,7 @@ def test_repeating_a_wait_does_not_turn_forecast_age_into_new_progress(tmp_path)
     )
     now = [0.0]
     with collecting(now=lambda: now[0]):
-        progress = _PipelineProgress(params, clip_count=2)
+        progress = PipelineProgress(params, clip_count=2)
         progress.report("worker_queue", 0, "Waiting for the render worker")
         first = json.loads(path.read_text())
         now[0] = 45.0
@@ -212,7 +212,7 @@ def test_completed_render_timings_supply_the_next_films_whole_eta(tmp_path):
             no_music=True,
             progress_callback=progress_writer(path),
         )
-        progress = _PipelineProgress(params, clip_count=4)
+        progress = PipelineProgress(params, clip_count=4)
         progress.report("download", 0, "Preparing selected clips")
     saved = json.loads(path.read_text())
     assert saved["forecast"]["remaining_seconds"] == 65
@@ -233,7 +233,7 @@ def test_worker_transfer_rate_contributes_without_guessing_other_render_work(tmp
     with collecting(now=lambda: now[0]) as collected:
         collected.forecast = PhaseForecast({"assembly": None, "check": 20}, target="film")
         params = GenerationParams(clips=[], output_path=tmp_path / "film.mp4", config=Config())
-        progress = _PipelineProgress(params, clip_count=2)
+        progress = PipelineProgress(params, clip_count=2)
         progress.report("worker_download", 0, "Downloading the finished film")
         now[0] = 10
         progress.report("worker_download", 0.25, "Downloading the finished film")
@@ -261,7 +261,7 @@ def test_a_counting_down_history_estimate_is_not_new_worker_progress(tmp_path):
             config=Config(),
             progress_callback=progress_writer(path),
         )
-        progress = _PipelineProgress(params, clip_count=2)
+        progress = PipelineProgress(params, clip_count=2)
         progress.report("worker_queue", 0, "Waiting for the render worker")
         first = json.loads(path.read_text())
         now[0] = 45

@@ -40,7 +40,7 @@ _SAVED = re.compile(r"Video saved to:(?:[ \t]+(\S.*?))?[ \t]*$", re.MULTILINE)
 # "total  133  0.4812  100%  64 s" / "... 12 min" / "... 1 h 4 min".
 _ELAPSED = r"(?:(\d+) h )?(?:([\d.]+) min|([\d.]+) s)"
 # ...unless something else did the work, in which case `elapsed` is not the last
-# column. `preparation_report.rate_report` adds `service s/pic` to the right of
+# column. `preparation.report.rate_report` adds `service s/pic` to the right of
 # it as soon as any producer reports what another machine charged itself: a rate
 # for the rows that ran there, an em dash for the rows that ran here. A pattern
 # anchored to the end of `elapsed` stops matching the day that column appears,
@@ -526,7 +526,7 @@ def read_images_sent(attempt_dir: Path) -> int | None:
     return sum(counted) if counted else None
 
 
-# `analysis/llm_usage_record.USAGE_FILE`. Named here rather than imported so the
+# `analysis/llm/usage_record.USAGE_FILE`. Named here rather than imported so the
 # capture keeps running with nothing but the standard library on a remote host.
 LLM_USAGE_FILE = "llm-usage.json"
 
@@ -622,7 +622,7 @@ def _pre_planner_spend(attempt_dir: Path) -> _PrePlannerSpend:
     """Calls, completion, reasoning, request bytes and wall of the reads before the planner.
 
     Episode reads and the period account run before `plan_structure` opens the
-    scope that wrote `llm_metrics`, so nothing else in the attempt has them. An
+    scope that wrote `llm.metrics`, so nothing else in the attempt has them. An
     outcome whose transport never came back carries no reply and is not counted:
     the deepseek cell raised on one episode read, and its log shows 105 replies
     against 9 outcome files.
@@ -657,7 +657,7 @@ def reconstruct_usage(attempt_dir: Path) -> HostedUsage | None:
     their logs recorded, to the call.
 
     `picture_facts_metrics` is deliberately not added. The facts are read inside
-    the scope that wrote `llm_metrics`, so it is a view of part of that block
+    the scope that wrote `llm.metrics`, so it is a view of part of that block
     rather than a second bill: adding it would charge the glm demo cell for 125
     calls against the 93 it made. The one number it contributes is `images_sent`,
     which `read_images_sent` already carries.

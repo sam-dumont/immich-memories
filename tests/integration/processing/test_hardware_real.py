@@ -85,27 +85,27 @@ def test_software_fallback_h265_encoder():
 
 
 def test_check_ffmpeg_encoder_libx264_exists():
-    from immich_memories.processing.hardware import _check_ffmpeg_encoder
+    from immich_memories.processing.hardware import check_ffmpeg_encoder
 
-    assert _check_ffmpeg_encoder("libx264") is True
+    assert check_ffmpeg_encoder("libx264") is True
 
 
 def test_check_ffmpeg_encoder_fake_returns_false():
-    from immich_memories.processing.hardware import _check_ffmpeg_encoder
+    from immich_memories.processing.hardware import check_ffmpeg_encoder
 
-    assert _check_ffmpeg_encoder("fake_encoder_xyz_999") is False
+    assert check_ffmpeg_encoder("fake_encoder_xyz_999") is False
 
 
 def test_check_ffmpeg_decoder_h264_exists():
-    from immich_memories.processing.hardware import _check_ffmpeg_decoder
+    from immich_memories.processing.hardware import check_ffmpeg_decoder
 
-    assert _check_ffmpeg_decoder("h264") is True
+    assert check_ffmpeg_decoder("h264") is True
 
 
 def test_check_ffmpeg_decoder_fake_returns_false():
-    from immich_memories.processing.hardware import _check_ffmpeg_decoder
+    from immich_memories.processing.hardware import check_ffmpeg_decoder
 
-    assert _check_ffmpeg_decoder("fake_decoder_xyz_999") is False
+    assert check_ffmpeg_decoder("fake_decoder_xyz_999") is False
 
 
 # ---------------------------------------------------------------------------

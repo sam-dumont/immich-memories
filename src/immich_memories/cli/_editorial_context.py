@@ -10,19 +10,19 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Literal
 
-from immich_memories.analysis.editorial_runtime import EditorialRunContext
-from immich_memories.analysis.editorial_shareability import level_of
-from immich_memories.analysis.special_event_scope import read_special_event_admission
+from immich_memories.analysis.audience.shareability import level_of
+from immich_memories.analysis.runtime.composition import EditorialRunContext
+from immich_memories.analysis.sources.event_scope import read_special_event_admission
 from immich_memories.api.person_expression import PersonExpression
 from immich_memories.planning.auto_duration import DURATION_FROM_DURATION_FLAG
 from immich_memories.timeperiod import DateRange
 
 if TYPE_CHECKING:
-    from immich_memories.analysis.editorial_pool import EditorialSourcePool
+    from immich_memories.analysis.sources.pool import EditorialSourcePool
     from immich_memories.api.models import Asset, VideoClipInfo
     from immich_memories.api.sync_client import SyncImmichClient
     from immich_memories.cli._run_inputs import ResolvedRunInputs
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
 
 
 def narrow_to_special_event(
@@ -35,11 +35,11 @@ def narrow_to_special_event(
     """Keep only the catalogued members of a special event, components included."""
     if memory_type != "special_day":
         return assets, photo_assets
-    from immich_memories.analysis.live_photo_pipeline import drop_live_photo_components
-    from immich_memories.analysis.special_event_scope import (
+    from immich_memories.analysis.sources.event_scope import (
         select_source_members,
         validate_special_event_scope,
     )
+    from immich_memories.analysis.sources.live_photos import drop_live_photo_components
 
     params = memory_preset_params or {}
     members = validate_special_event_scope(params.get("event_id"), params.get("asset_ids", ()))
@@ -240,8 +240,8 @@ def resolve_editorial_pool(
     selected: Sequence[Asset | VideoClipInfo],
 ) -> EditorialSourcePool:
     """Finish discovery before editing, preserving the source's explicit membership."""
-    from immich_memories.analysis.editorial_pool import discover_source_context, resolve_source_pool
-    from immich_memories.analysis.editorial_source import library_source_scope
+    from immich_memories.analysis.sources.pool import discover_source_context, resolve_source_pool
+    from immich_memories.analysis.sources.window_context import library_source_scope
 
     # Albums already define their context. Window discovery reads surrounding
     # metadata for events and capture runs before entering the same source boundary.

@@ -8,7 +8,7 @@ picture never reads as the whole one.
 
 from __future__ import annotations
 
-from immich_memories.analysis.llm_metrics import LLMCounters
+from immich_memories.analysis.llm.metrics import LLMCounters
 from immich_memories.cli._run_summary import render_run_summary
 
 

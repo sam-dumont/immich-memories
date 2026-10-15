@@ -9,10 +9,10 @@ from unittest.mock import MagicMock, patch
 
 from click.testing import CliRunner, Result
 
-from immich_memories.analysis.editorial_preparation import PreparationResult
+from immich_memories.analysis.preparation.acquire import PreparationResult
 from immich_memories.api.models import Asset, AssetType, ExifInfo
 from immich_memories.cli import main
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 
 TAKEN = datetime(2024, 6, 14, 10, 30, tzinfo=UTC)
 
@@ -82,7 +82,7 @@ def _invoke(
         ),
         # WHY: the producers are ONNX, torch and a caption server, none present in a unit run.
         patch(
-            "immich_memories.analysis.editorial_preparation.prepare_editorial_annotations",
+            "immich_memories.analysis.preparation.acquire.prepare_editorial_annotations",
             side_effect=prepared,
         ),
     ):
@@ -198,7 +198,7 @@ def _model_config() -> Config:
 
 
 def test_overviews_says_how_much_of_the_library_it_banked(tmp_path, monkeypatch) -> None:
-    from immich_memories.analysis.library_catalogue import LibraryCatalogue
+    from immich_memories.analysis.reading.library_catalogue import LibraryCatalogue
 
     monkeypatch.setenv("HOME", str(tmp_path))
     banked = LibraryCatalogue(
@@ -208,7 +208,7 @@ def test_overviews_says_how_much_of_the_library_it_banked(tmp_path, monkeypatch)
     with patch(
         # WHY: the account writer asks the configured text model over HTTP; what it
         # writes and what it refuses to pay for twice is tested in test_library_catalogue.
-        "immich_memories.analysis.catalogue_runtime.catalogue_prepared_window",
+        "immich_memories.analysis.runtime.period_accounts.catalogue_prepared_window",
         return_value=(banked, ("e4",)),
     ) as writer:
         result = _invoke(

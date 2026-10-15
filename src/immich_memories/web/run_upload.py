@@ -11,7 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from immich_memories.api.immich import ImmichAPIError
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.db import open_store
 from immich_memories.operations.film_labelling import label_for_run
 from immich_memories.operations.local_output_cleanup import remove_after_confirmed_upload

@@ -29,7 +29,7 @@ def test_failed_span_keeps_parent_warning_and_elapsed_time():
 
 
 def test_preparation_costs_read_the_measured_spans():
-    from immich_memories.analysis.preparation_report import ProducerClock
+    from immich_memories.analysis.preparation.report import ProducerClock
 
     moments = iter([1.0, 5.0])
     with timing.collecting(now=lambda: next(moments)) as collected:
@@ -142,7 +142,7 @@ def test_only_the_first_cli_run_of_a_process_claims_its_startup(monkeypatch):
     from click.testing import CliRunner
 
     from immich_memories import process_start
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.tracking.run_observations import current_tracker, observed_command
 
     # WHY: this test process began long before; a fresh mark stands in for a CLI that just did.

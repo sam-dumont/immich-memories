@@ -16,7 +16,7 @@ from immich_memories.automation.candidates import (
     make_memory_key,
 )
 from immich_memories.automation.closeness import group_weight
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +45,7 @@ class TripDetector:
             return explain_empty([], notes, "No trip film: no location data was available")
 
         # Lazy import to avoid circular deps and keep module lightweight
-        from immich_memories.analysis.trip_detection import detect_trips, geocoder_for
+        from immich_memories.analysis.places.trip_detection import detect_trips, geocoder_for
 
         trips = detect_trips(
             assets=assets,

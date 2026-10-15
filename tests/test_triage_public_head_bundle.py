@@ -8,9 +8,9 @@ from pathlib import Path
 
 import numpy as np
 
-from immich_memories.analysis.editorial_preparation_heads import PUBLIC_HEAD_VERSIONS
-from immich_memories.config_models_editorial import EditorialConfig
-from immich_memories.config_models_editorial_preparation import EditorialPreparationConfig
+from immich_memories.analysis.preparation.heads import PUBLIC_HEAD_VERSIONS
+from immich_memories.config.models.editorial import EditorialConfig
+from immich_memories.config.models.editorial_preparation import EditorialPreparationConfig
 from immich_memories.triage.engine import TriageEngine
 from immich_memories.triage.heads import HeadBundle, HeadFact
 

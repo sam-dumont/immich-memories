@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from immich_memories.analysis.catalogue_runtime import catalogue_banked_episodes
-from immich_memories.analysis.library_catalogue import LibraryEpisode
+from immich_memories.analysis.reading.library_catalogue import LibraryEpisode
+from immich_memories.analysis.runtime.period_accounts import catalogue_banked_episodes
 from immich_memories.store.episode_readings import EpisodeReadingStore
 from immich_memories.store.library_catalogue import CatalogueStore, LibraryAccount
 from immich_memories.store.library_overviews import library_period_account

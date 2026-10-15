@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from immich_memories.config_loader import Config, _apply_env_overrides
+from immich_memories.config.loader import Config, _apply_env_overrides
 
 FROM_ENV = "sk-do-not-write-me-to-disk"
 
@@ -108,7 +108,7 @@ def test_an_unrelated_providers_key_never_reaches_the_request_header(
     actually leaves the machine: an explicit key the operator configured was
     being replaced by whichever alias happened to be exported.
     """
-    from immich_memories.analysis.llm_wire import anthropic_headers, openai_headers
+    from immich_memories.analysis.llm.wire import anthropic_headers, openai_headers
 
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
@@ -140,7 +140,7 @@ def test_the_full_load_does_not_borrow_another_providers_key(
     tmp_path: Path, monkeypatch, provider: str, unrelated_alias: str, configured_key: str
 ):
     """The whole load path, where `IMMICH_MEMORIES_LLM__API_KEY` is the explicit route."""
-    from immich_memories import config_loader
+    from immich_memories.config import loader as config_loader
 
     monkeypatch.setenv("HOME", str(tmp_path))
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)

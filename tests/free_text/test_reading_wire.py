@@ -6,8 +6,8 @@ from typing import Any
 
 import pytest
 
-from immich_memories.analysis.llm_wire import LLMIncompleteResponse
-from immich_memories.config_models_llm import LLMConfig
+from immich_memories.analysis.llm.wire import LLMIncompleteResponse
+from immich_memories.config.models.llm import LLMConfig
 from immich_memories.free_text import reading
 from immich_memories.free_text.reading import WireAsker
 

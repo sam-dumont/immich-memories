@@ -24,7 +24,7 @@ import numpy as np
 
 from immich_memories.api.models import Asset, AssetType
 from immich_memories.api.sync_client import SyncImmichClient
-from immich_memories.config_loader import get_config
+from immich_memories.config.loader import get_config
 from immich_memories.processing.live_photo_merger import LivePhotoCluster
 from immich_memories.processing.stitch_alignment import (
     PROBE_FPS,

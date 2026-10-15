@@ -7,7 +7,7 @@ is reported at run level, which is where it is stored and why.
 
 from __future__ import annotations
 
-from immich_memories.analysis.llm_metrics import LLMCounters
+from immich_memories.analysis.llm.metrics import LLMCounters
 from immich_memories.cli._run_summary import render_llm_totals, render_run_summary
 
 

@@ -26,7 +26,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from immich_memories.analysis.editorial_preparation_detectors import (
+from immich_memories.analysis.preparation.detectors import (
     MARQO_REPO,
     MARQO_REVISION,
     decide,

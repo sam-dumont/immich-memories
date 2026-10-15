@@ -26,7 +26,7 @@ from collections.abc import Callable
 from threading import Lock
 from typing import TYPE_CHECKING
 
-from immich_memories.config_models import PRIMARY_ACCOUNT, ImmichConfig, ImmichConnection
+from immich_memories.config.models.resources import PRIMARY_ACCOUNT, ImmichConfig, ImmichConnection
 from immich_memories.security import credential_fingerprint
 
 if TYPE_CHECKING:

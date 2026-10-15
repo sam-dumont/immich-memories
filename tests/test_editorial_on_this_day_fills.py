@@ -10,7 +10,7 @@ from __future__ import annotations
 from dataclasses import replace
 from datetime import UTC, date, datetime, timedelta
 
-from immich_memories.analysis.editorial_intent import build_editorial_intent
+from immich_memories.analysis.film.intent import build_editorial_intent
 from immich_memories.timeperiod import DateRange
 from tests.editorial_film_fixtures import Day, film_source
 from tests.test_editorial_depth_fill import _run

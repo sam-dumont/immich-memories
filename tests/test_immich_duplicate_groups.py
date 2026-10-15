@@ -1,4 +1,4 @@
-"""Immich's own duplicate groups, read for a forwarded copy's original (`forwarded_fallback`)."""
+"""Immich's own duplicate groups, read for a forwarded copy's original (`corpus.forwarded_fallback`)."""
 
 from __future__ import annotations
 

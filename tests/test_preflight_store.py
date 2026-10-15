@@ -1,4 +1,4 @@
-from immich_memories.config_loader import Config, load_config
+from immich_memories.config.loader import Config, load_config
 from immich_memories.preflight import CheckStatus
 from immich_memories.preflight_store import check_store_location
 

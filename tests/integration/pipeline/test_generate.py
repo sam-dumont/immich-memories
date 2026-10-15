@@ -26,7 +26,7 @@ class TestGenerateMemoryIntegration:
         """generate_memory() should produce a real video file from test clips."""
         from datetime import date
 
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
         from immich_memories.generate import GenerationParams, generate_memory
 
         output = tmp_path / "test_memory.mp4"
@@ -65,7 +65,7 @@ class TestGenerateMemoryIntegration:
 
     def test_single_clip_passthrough(self, test_clip_720p, tmp_path):
         """Single clip should produce valid output (no crossfade needed)."""
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
         from immich_memories.generate import GenerationParams, generate_memory
         from tests.conftest import make_clip
 

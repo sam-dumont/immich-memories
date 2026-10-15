@@ -8,20 +8,20 @@ from datetime import timedelta
 import pytest
 import sqlalchemy as sa
 
-from immich_memories.analysis.editorial_planner import EditorialPlan
-from immich_memories.analysis.editorial_pool import EditorialSourcePool
-from immich_memories.analysis.editorial_preparation import prepare_editorial_annotations
-from immich_memories.analysis.editorial_runtime import (
+from immich_memories.analysis.corpus.admission import SourceScope
+from immich_memories.analysis.corpus.trace import Trace
+from immich_memories.analysis.preparation.acquire import prepare_editorial_annotations
+from immich_memories.analysis.runtime.composition import (
     EditorialRunContext,
     build_editorial_planner,
 )
-from immich_memories.analysis.editorial_runtime_evidence import EditorialInputsRequired
-from immich_memories.analysis.editorial_runtime_ports import EditorialRuntimePorts
-from immich_memories.analysis.selection_source import SourceScope
-from immich_memories.analysis.selection_trace import Trace
+from immich_memories.analysis.runtime.evidence import EditorialInputsRequired
+from immich_memories.analysis.runtime.plan import EditorialPlan
+from immich_memories.analysis.runtime.ports import EditorialRuntimePorts
+from immich_memories.analysis.sources.pool import EditorialSourcePool
 from immich_memories.api.immich import ImmichAPIError, ImmichNotFoundError
 from immich_memories.cache.thumbnail_cache import ThumbnailCache
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.db.tables import head_facts
 from immich_memories.operations.cut_progress import read_stage_progress
 from immich_memories.operations.editorial_attempt import read_editorial_attempt
@@ -230,9 +230,7 @@ def test_a_source_immich_cannot_preview_leaves_the_film_by_name(tmp_path, monkey
         return EditorialPlan()
 
     monkeypatch.setattr(planner._planner, "plan_prepared", editor)
-    with caplog.at_level(
-        logging.WARNING, logger="immich_memories.analysis.editorial_runtime_evidence"
-    ):
+    with caplog.at_level(logging.WARNING, logger="immich_memories.analysis.runtime.evidence"):
         planner.plan_source(sources, trace=Trace())
 
     prepared, trace = observed[0]
@@ -247,7 +245,7 @@ def test_a_source_immich_cannot_preview_leaves_the_film_by_name(tmp_path, monkey
     assert [
         record.getMessage()
         for record in caplog.records
-        if record.name == "immich_memories.analysis.editorial_runtime_evidence"
+        if record.name == "immich_memories.analysis.runtime.evidence"
         and record.levelno == logging.WARNING
     ] == [f"2 of 10 sources leave the film: {PREVIEW_404}"]
     report = json.loads((planner.last_attempt_directory / "preparation.private.json").read_text())
@@ -310,7 +308,7 @@ def test_the_no_captions_tier_cuts_without_a_caption_server_and_says_so(
     planner, sources, _ = build(tmp_path, providers=providers, fetched=[], tier="no_captions")
     monkeypatch.setattr(planner._planner, "plan_prepared", lambda *_, **__: EditorialPlan())
 
-    with caplog.at_level("INFO", logger="immich_memories.analysis.editorial_runtime_evidence"):
+    with caplog.at_level("INFO", logger="immich_memories.analysis.runtime.evidence"):
         planner.plan_source(sources, trace=Trace())
 
     report = json.loads((planner.last_attempt_directory / "preparation.private.json").read_text())

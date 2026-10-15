@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from immich_memories.api.models import Asset, AssetType
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.timeperiod import DateRange
 from tests.conftest import make_clip
 
@@ -44,10 +44,12 @@ def test_cli_runtime_keeps_exact_windows_and_total_duration_for_story_selection(
         # WHY: avoids real ffprobe/file reads when turning the asset into a clip.
         patch("immich_memories.generate_clips.assets_to_clips", return_value=[clip]),
         # WHY: replaces the real selection engine class so no analysis actually runs.
-        patch("immich_memories.analysis.smart_pipeline.SmartPipeline", return_value=pipeline),
+        patch(
+            "immich_memories.analysis.runtime.smart_pipeline.SmartPipeline", return_value=pipeline
+        ),
         # WHY: captures the editorial_context and dry_run kwargs asserted on below.
         patch(
-            "immich_memories.analysis.editorial_runtime.build_smart_pipeline",
+            "immich_memories.analysis.runtime.composition.build_smart_pipeline",
             return_value=pipeline,
             create=True,
         ) as build_pipeline,
@@ -114,10 +116,12 @@ def test_cli_runtime_defaults_to_primary_range_without_treating_no_render_as_dry
         # WHY: skips real ffprobe/file reads for the single stub clip used here.
         patch("immich_memories.generate_clips.assets_to_clips", return_value=[clip]),
         # WHY: replaces the selection engine class; construction must not run real analysis.
-        patch("immich_memories.analysis.smart_pipeline.SmartPipeline", return_value=pipeline),
+        patch(
+            "immich_memories.analysis.runtime.smart_pipeline.SmartPipeline", return_value=pipeline
+        ),
         # WHY: the call under inspection; its kwargs are asserted after the raise.
         patch(
-            "immich_memories.analysis.editorial_runtime.build_smart_pipeline",
+            "immich_memories.analysis.runtime.composition.build_smart_pipeline",
             return_value=pipeline,
             create=True,
         ) as build_pipeline,
@@ -179,10 +183,12 @@ def test_cli_album_runtime_uses_the_immutable_captured_corpus_not_its_display_sp
         # WHY: avoids real ffprobe/file reads for the stub video clip in this album fixture.
         patch("immich_memories.generate_clips.assets_to_clips", return_value=[clip]),
         # WHY: replaces the selection engine class so construction never runs real analysis.
-        patch("immich_memories.analysis.smart_pipeline.SmartPipeline", return_value=pipeline),
+        patch(
+            "immich_memories.analysis.runtime.smart_pipeline.SmartPipeline", return_value=pipeline
+        ),
         # WHY: the collaborator whose editorial_context/album kwargs are asserted below.
         patch(
-            "immich_memories.analysis.editorial_runtime.build_smart_pipeline",
+            "immich_memories.analysis.runtime.composition.build_smart_pipeline",
             return_value=pipeline,
             create=True,
         ) as build_pipeline,

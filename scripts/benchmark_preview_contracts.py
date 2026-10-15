@@ -8,8 +8,8 @@ import cv2
 import numpy as np
 from PIL import Image
 
-from immich_memories.analysis.duplicate_hashing import compute_thumbnail_hash
-from immich_memories.analysis.editorial_preparation_pixels import pixel_facts
+from immich_memories.analysis.corpus.duplicate_hashing import compute_thumbnail_hash
+from immich_memories.analysis.preparation.pixels import pixel_facts
 from immich_memories.triage.preprocess import preprocess_image_bytes
 
 

@@ -157,7 +157,7 @@ def _title_month_range(**kwargs) -> TitleInfo:
 def _title_date_range(**kwargs) -> TitleInfo:
     if kwargs["start_date"] is None or kwargs["end_date"] is None:
         raise ValueError("Start and end date required for date range selection")
-    return _generate_date_range_title(
+    return generate_date_range_title(
         kwargs["start_date"],
         kwargs["end_date"],
         kwargs["person_name"],
@@ -265,7 +265,7 @@ def generate_title(
     )
 
 
-def _generate_date_range_title(
+def generate_date_range_title(
     start_date: date,
     end_date: date,
     person_name: str | None,

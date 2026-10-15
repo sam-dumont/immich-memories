@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection
 
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.timeperiod import DateRange
     from immich_memories.titles.film_stories import FilmStories
 
@@ -64,7 +64,7 @@ def _album_of_the_cut(lookup: Callable[[], str | None] | None) -> str | None:
 
 def _places_by_day(clips: list[Any]) -> list[str]:
     """Where the cut's pictures were taken, one line per day: "2025-07-05: Ixelles, Belgium"."""
-    from immich_memories.analysis.place_names import shown_city
+    from immich_memories.analysis.places.names import shown_city
 
     by_day: dict[str, dict[str, None]] = {}
     for clip in clips:
@@ -115,7 +115,7 @@ def _place_and_kind_from_clips(clips: list[Any]) -> tuple[str, str] | None:
     anything: the film already has these clips in hand, and a day's place does
     not change between the scan that found it and the film that shows it.
     """
-    from immich_memories.analysis.special_day_title import place_and_kind_from_assets
+    from immich_memories.analysis.special_days.title import place_and_kind_from_assets
 
     assets = [asset for c in clips if (asset := getattr(c, "asset", None))]
     return place_and_kind_from_assets(assets)

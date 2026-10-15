@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
 
 
 def reverse_proxy_run_kwargs(config: Config, environ: Mapping[str, str]) -> dict[str, Any]:

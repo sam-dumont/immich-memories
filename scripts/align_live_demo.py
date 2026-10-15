@@ -23,8 +23,8 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from immich_memories.processing.live_photo_merger import (  # noqa: E402
-    _find_audio_offsets,
     build_merge_command,
+    find_audio_offsets,
 )
 from immich_memories.processing.stitch_alignment import (  # noqa: E402
     companion_frames,
@@ -189,7 +189,7 @@ def main() -> int:
         return 1
     durations = [size["duration"] for size in sizes]
     try:
-        starts = _find_audio_offsets(sources, durations, None)
+        starts = find_audio_offsets(sources, durations, None)
     except ImportError:
         print("  refused: audio alignment needs SciPy (uv pip install scipy)")
         return 1

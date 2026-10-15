@@ -20,7 +20,11 @@ from collections.abc import Callable
 from datetime import date, datetime
 from typing import TYPE_CHECKING, Any, Concatenate, ParamSpec, TypeVar
 
-from immich_memories.config_models import ACCOUNT_NAME_RULE, PRIMARY_ACCOUNT, is_account_name
+from immich_memories.config.models.resources import (
+    ACCOUNT_NAME_RULE,
+    PRIMARY_ACCOUNT,
+    is_account_name,
+)
 from immich_memories.db import Store, open_store
 from immich_memories.people.account_ids import (
     PERSON_ID,

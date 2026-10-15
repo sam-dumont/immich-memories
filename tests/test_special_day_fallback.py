@@ -15,7 +15,7 @@ from unittest.mock import patch
 
 import pytest
 
-from immich_memories.analysis.special_day import SpecialDay, ask_if_special
+from immich_memories.analysis.special_days.detection import SpecialDay, ask_if_special
 
 # The entry #714 was reported for, at the width the catalogue stored it.
 _A_DESCRIPTION = "Six images captured between 07:32 and 16:06, tracing a route from weathered apar"
@@ -48,7 +48,7 @@ def _day(city: str | None = None) -> list[SimpleNamespace]:
 def _answers(*payloads: str):
     """The model, answering each question in turn."""
     # WHY: the LLM server is the external boundary; these are its answers.
-    return patch("immich_memories.analysis.special_day._ask", side_effect=list(payloads))
+    return patch("immich_memories.analysis.special_days.detection._ask", side_effect=list(payloads))
 
 
 def test_a_dropped_title_is_asked_for_once_more() -> None:

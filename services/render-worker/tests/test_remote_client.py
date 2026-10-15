@@ -8,7 +8,7 @@ from conftest import WORKER_TOKEN, stub_artifact, worker_app
 
 
 def test_remote_client_returns_a_validated_film_and_exact_cut_metadata(tmp_path):
-    from immich_memories.config_models_render import RenderWorkerConfig
+    from immich_memories.config.models.render import RenderWorkerConfig
     from immich_memories.processing.remote_render import RemoteRenderClient
 
     params = manual_params(tmp_path)
@@ -59,7 +59,7 @@ def test_remote_client_returns_a_validated_film_and_exact_cut_metadata(tmp_path)
 
 
 def test_normal_generation_uses_the_worker_and_completes_the_local_run(tmp_path, monkeypatch):
-    from immich_memories.config_models_render import RenderWorkerConfig
+    from immich_memories.config.models.render import RenderWorkerConfig
     from immich_memories.db import open_store
     from immich_memories.generate import generate_memory
     from immich_memories.processing import remote_render
@@ -105,7 +105,7 @@ def test_normal_generation_uses_the_worker_and_completes_the_local_run(tmp_path,
 
 @pytest.mark.parametrize("changed", ["film_duration", "clip_duration", "audio_window"])
 def test_a_changed_worker_result_cannot_replace_a_good_output(tmp_path, changed):
-    from immich_memories.config_models_render import RenderWorkerConfig
+    from immich_memories.config.models.render import RenderWorkerConfig
     from immich_memories.generate import GenerationError
     from immich_memories.processing.remote_render import RemoteRenderClient
 
@@ -186,7 +186,7 @@ def _receive(tmp_path, params, monkeypatch, tools, digest=None, on_response=None
 
     from immich_memories_render_worker import jobs
 
-    from immich_memories.config_models_render import RenderWorkerConfig
+    from immich_memories.config.models.render import RenderWorkerConfig
     from immich_memories.processing.remote_render import RemoteRenderClient
 
     settings = RenderWorkerConfig(worker_base_url="http://127.0.0.1", worker_token=WORKER_TOKEN)
@@ -285,7 +285,7 @@ def test_worker_failures_stop_without_publishing_or_leaking_tokens(tmp_path, fai
     import httpx
 
     from immich_memories import __version__
-    from immich_memories.config_models_render import RenderWorkerConfig
+    from immich_memories.config.models.render import RenderWorkerConfig
     from immich_memories.generate import GenerationError
     from immich_memories.processing.remote_render import RemoteRenderClient
 

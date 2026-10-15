@@ -8,9 +8,9 @@ from unittest.mock import patch
 import httpx
 import pytest
 
-from immich_memories.analysis.special_day import PROMPT_VERSION, ask_if_special
+from immich_memories.analysis.special_days.detection import PROMPT_VERSION, ask_if_special
 from immich_memories.automation.special_day_scan import scan_year
-from immich_memories.config_models_llm import LLMConfig
+from immich_memories.config.models.llm import LLMConfig
 from tests.annotation_rows import annotation_store
 
 
@@ -135,7 +135,7 @@ def test_a_day_the_bank_barely_touched_is_not_guessed_at(tmp_path):
 
 def test_the_caption_ask_leaves_reasoning_to_the_transport(tmp_path):
     """A declared reasoning host budgets thinking beside the answer, not inside it."""
-    from immich_memories.analysis.llm_wire import THINKING_MIN_MAX_TOKENS
+    from immich_memories.analysis.llm.wire import THINKING_MIN_MAX_TOKENS
 
     assets, captions = _a_real_day(captioned=30)
     config = LLMConfig(
@@ -170,7 +170,7 @@ def test_the_caption_ask_leaves_reasoning_to_the_transport(tmp_path):
 
 def test_the_caption_ask_is_given_a_reasoning_host_s_leash():
     """A hosted reasoning model bills thinking whether or not the call asked for it."""
-    from immich_memories.analysis.special_day import _THINKING_TIMEOUT_SECONDS
+    from immich_memories.analysis.special_days.detection import _THINKING_TIMEOUT_SECONDS
 
     assets, captions = _a_real_day(captioned=30)
     config = LLMConfig(
@@ -187,7 +187,7 @@ def test_the_caption_ask_is_given_a_reasoning_host_s_leash():
         return _VERDICT
 
     # WHY: replace the provider call itself; only the budget it is handed is under test.
-    with patch("immich_memories.analysis.llm_query.query_llm", record):
+    with patch("immich_memories.analysis.llm.query.query_llm", record):
         ask_if_special(assets, config, captions=captions)
     assert waited == [_THINKING_TIMEOUT_SECONDS]
 

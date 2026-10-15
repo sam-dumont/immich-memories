@@ -8,16 +8,16 @@ from datetime import UTC, datetime
 
 import pytest
 
-from immich_memories.analysis.catalogue_runtime import (
-    catalogue_banked_episodes,
-    catalogue_requester,
-)
-from immich_memories.analysis.library_catalogue import (
+from immich_memories.analysis.reading.library_catalogue import (
     LibraryEpisode,
     bank_month_accounts,
     build_catalogue,
 )
-from immich_memories.config_loader import Config
+from immich_memories.analysis.runtime.period_accounts import (
+    catalogue_banked_episodes,
+    catalogue_requester,
+)
+from immich_memories.config.loader import Config
 from immich_memories.store.episode_readings import (
     BankedEpisodeReading,
     EpisodeReadingIdentity,
@@ -73,13 +73,13 @@ FEBRUARY = (episode("e1", ("a1", "a2")), episode("e2", ("b1",)))
 
 def _two_episodes():
     """Two canonical episodes of February, with complete annotation lines for both."""
-    from immich_memories.analysis.selection_source import (
+    from immich_memories.analysis.corpus.admission import (
         EditorialDependencies,
         EditorialSelectionRequest,
         SourceScope,
         prepare_editorial_source,
     )
-    from immich_memories.analysis.selection_source_groups import project_episode_groups
+    from immich_memories.analysis.corpus.groups import project_episode_groups
     from tests.conftest import make_asset
     from tests.test_text_episode_reader import _AnnotationLines
 
@@ -346,7 +346,7 @@ def _assets_of(prompt: str, alias: str) -> str:
 
 def test_an_episode_the_reader_cannot_read_is_asked_once_across_two_runs(tmp_path) -> None:
     """And the month is still written, from the episodes that did read."""
-    from immich_memories.analysis.text_episode_reader import CachedTextEpisodeReader
+    from immich_memories.analysis.reading.episode_reader import CachedTextEpisodeReader
     from immich_memories.store.episode_readings import EpisodeReadingProducer
 
     bank = annotation_store()

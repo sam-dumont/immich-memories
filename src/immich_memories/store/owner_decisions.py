@@ -1,7 +1,7 @@
 """The owner's own word on a picture: clear its hold, or never use it.
 
 Kept as `source='owner'` rows in the store's `asset_flags` table, the rows the audience
-gate and the material builder already read (`editorial_shareability.load_flags`). This module
+gate and the material builder already read (`audience.shareability.load_flags`). This module
 is their only writer. A picture carries at most one owner decision: a new one replaces the old
 in the same transaction, so two writers (the web page and the CLI) can't leave a picture both
 cleared and never used. Each write is a single store transaction, which is why no file lock is
@@ -19,7 +19,7 @@ from collections.abc import Iterable
 import sqlalchemy as sa
 from sqlalchemy.engine import Connection
 
-from immich_memories.analysis.editorial_shareability import (
+from immich_memories.analysis.audience.shareability import (
     NEVER_AUTO,
     OWNER_CLEARANCES,
     OWNER_CLEARED,

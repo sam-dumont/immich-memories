@@ -247,7 +247,7 @@ def test_a_trigger_during_the_timers_housekeeping_still_starts(
     that moment was answered 409 "a run is already active" and made no film.
     """
     from immich_memories.automation import runner
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
 
     config = Config.from_yaml(shared_config)
     looking, answered = threading.Event(), threading.Event()

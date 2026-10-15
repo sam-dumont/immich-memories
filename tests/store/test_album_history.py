@@ -5,7 +5,7 @@ from datetime import UTC, date, datetime
 import pytest
 
 from immich_memories.automation.album_detector import AlbumDetector
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.generate import GenerationParams, build_memory_key
 from immich_memories.tracking.models import RunMetadata
 from immich_memories.tracking.run_database import RunDatabase

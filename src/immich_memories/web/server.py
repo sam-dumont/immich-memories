@@ -29,7 +29,7 @@ from starlette.concurrency import run_in_threadpool
 from starlette.middleware.sessions import SessionMiddleware
 
 from immich_memories.config import get_config, init_config_dir
-from immich_memories.config_loader import Config, config_state_dir, get_config_path
+from immich_memories.config.loader import Config, config_state_dir, get_config_path
 from immich_memories.security import write_secret_file
 from immich_memories.startup_checks import StartupRefused, check_startup
 from immich_memories.web import mount_web

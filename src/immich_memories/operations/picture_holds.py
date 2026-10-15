@@ -12,14 +12,14 @@ from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from typing import Any
 
-from immich_memories.analysis.editorial_shareability import (
+from immich_memories.analysis.audience.questions import exposure_flagged
+from immich_memories.analysis.audience.shareability import (
     NEVER_AUTO,
     OWNER_SOURCE,
     load_detector_heads,
     load_flags,
 )
-from immich_memories.analysis.editorial_shareability_audience import exposure_flagged
-from immich_memories.analysis.editorial_structure_audience import (
+from immich_memories.analysis.audience.verdicts import (
     CARRIER_RULE_SOURCE,
     AudienceBank,
 )

@@ -4,7 +4,7 @@ from unittest.mock import create_autospec
 
 import pytest
 
-from immich_memories.analysis.editorial_pool import resolve_source_pool
+from immich_memories.analysis.sources.pool import resolve_source_pool
 from immich_memories.api.access_clients import AccountReadFailed
 from immich_memories.api.immich import ImmichAPIError
 from immich_memories.api.sync_client import SyncImmichClient

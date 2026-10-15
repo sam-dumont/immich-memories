@@ -98,7 +98,7 @@ def _home(monkeypatch, tmp_path: Path) -> Path:
 
 def _run(args: list[str], client: object | None = None, *, exit_code: int = 0) -> str:
     from immich_memories.cli import main
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
 
     config = Config()
     config.immich.url = "https://immich.example.com"

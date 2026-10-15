@@ -8,9 +8,9 @@ from types import SimpleNamespace
 
 import pytest
 
-from immich_memories.analysis.editorial_structure_contract import StructurePlannerPorts
-from immich_memories.analysis.editorial_structure_planner import plan_structure
-from immich_memories.config_loader import Config
+from immich_memories.analysis.film.contract import StructurePlannerPorts
+from immich_memories.analysis.structure.planner import plan_structure
+from immich_memories.config.loader import Config
 from immich_memories.generate import GenerationParams
 from immich_memories.processing.editorial_timing import (
     EditorialTimingPolicy,

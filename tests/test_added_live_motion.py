@@ -9,9 +9,9 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from itertools import pairwise
 
-from immich_memories.analysis.added_live_motion import added_live_motion
+from immich_memories.analysis.clips.added_live_motion import added_live_motion
 from immich_memories.api.models import AssetType
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from tests.conftest import make_asset
 
 NOON = datetime(2026, 9, 24, 12, tzinfo=UTC)
@@ -130,7 +130,7 @@ class _Immich:
 
 
 def _saved_cut_stitch(monkeypatch, shots, residual):
-    from immich_memories.analysis import editorial_motion_facts
+    from immich_memories.analysis.clips import motion_facts as editorial_motion_facts
     from immich_memories.generate_saved_cut import _live_motion
 
     stills, companions = _pictures(shots)

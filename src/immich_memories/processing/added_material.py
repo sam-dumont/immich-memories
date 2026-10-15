@@ -9,11 +9,11 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import TYPE_CHECKING
 
-from immich_memories.analysis.editorial_planner import EditorialSelection
+from immich_memories.analysis.runtime.plan import EditorialSelection
 from immich_memories.api.models import Asset, AssetType, VideoClipInfo
 
 if TYPE_CHECKING:
-    from immich_memories.analysis.motion_rendering import MotionRendering
+    from immich_memories.analysis.clips.motion_rendering import MotionRendering
 
 LiveMotion = Callable[[Asset], "MotionRendering | None"]
 

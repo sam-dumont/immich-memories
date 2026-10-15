@@ -526,7 +526,7 @@ class TestBackwardCompatibility:
 
 def _make_trip(start: date, end: date, name: str = "Test") -> object:
     """Create a DetectedTrip for testing."""
-    from immich_memories.analysis.trip_detection import DetectedTrip
+    from immich_memories.analysis.places.trip_detection import DetectedTrip
 
     return DetectedTrip(
         start_date=start,

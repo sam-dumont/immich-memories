@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
 from typing import Any, Protocol
 
-from immich_memories.analysis.person_resolution import store_people
+from immich_memories.analysis.sources.person_resolution import store_people
 from immich_memories.api.accounts import AccountUnavailable, OpenAccount, open_accounts
 from immich_memories.automation.calendar_detectors import birthday_film_windows
 from immich_memories.automation.candidate_scorer import score_and_rank
@@ -35,9 +35,9 @@ from immich_memories.automation.people_merge import (
 from immich_memories.automation.state_store import FailureStreak
 from immich_memories.automation.trip_input_cache import load_or_fetch_trip_assets
 from immich_memories.automation.variety import VarietyDecision, apply_variety_rules
-from immich_memories.config_loader import Config
-from immich_memories.config_models import PRIMARY_ACCOUNT
-from immich_memories.config_models_automation import AutomationConfig
+from immich_memories.config.loader import Config
+from immich_memories.config.models.automation import AutomationConfig
+from immich_memories.config.models.resources import PRIMARY_ACCOUNT
 from immich_memories.db import open_store
 from immich_memories.home_country import known_home_country
 from immich_memories.people.companion import load_document
@@ -405,7 +405,7 @@ class CandidateDiscovery:
         """Collect every selected account's read in one session (#1500 slice 10).
 
         `automation.accounts` reads those accounts the way a household run does
-        (`analysis/household_source.py`): each is proven with `/users/me` first, and a
+        (`analysis/sources/household.py`): each is proven with `/users/me` first, and a
         read that fails on any of them fails discovery, naming the account. Empty reads
         the primary account alone, exactly as before this setting existed.
         """

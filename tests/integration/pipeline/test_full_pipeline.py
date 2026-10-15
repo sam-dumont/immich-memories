@@ -340,7 +340,7 @@ class TestFullPipelineSynthetic:
         Same code paths as real Immich but uses local synthetic clips.
         Exercises title generation, rendering, text layout, assembly engine.
         """
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
         from immich_memories.generate import GenerationParams, generate_memory
 
         clip_a = _make_test_clip(short_clip_a, "synth-a")
@@ -398,7 +398,7 @@ class TestTripMemoryPipeline:
         Exercises: build_title_settings trip branch, _extract_trip_locations,
         _generate_trip_title_text, TitleScreenGenerator trip_service path.
         """
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
         from immich_memories.generate import GenerationParams, generate_memory
 
         clip_a = _make_test_clip(short_clip_a, "trip-a")
@@ -455,7 +455,7 @@ class TestPipelineWithMusic:
         Exercises: generate_memory music path, _apply_music_file,
         AudioMixerService, DuckingConfig, mix_audio_with_ducking.
         """
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
         from immich_memories.generate import GenerationParams, generate_memory
 
         clip_a = _make_test_clip(short_clip_a, "music-a")
@@ -509,7 +509,7 @@ class TestResolutionVariations:
         Exercises: build_assembly_settings resolution_map path,
         auto_resolution=False, target_resolution override.
         """
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
         from immich_memories.generate import GenerationParams, generate_memory
 
         clip_a = _make_test_clip(test_clip_720p, "res-720a")
@@ -601,7 +601,7 @@ class TestLivePhotoFullPipeline:
         _download_and_merge_burst, live_photo_merger.
         """
         from immich_memories.api.immich import SyncImmichClient
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
         from immich_memories.processing.live_photo_merger import cluster_live_photos
         from immich_memories.timeperiod import DateRange
 
@@ -704,7 +704,7 @@ class TestTitleOverridePipeline:
         Exercises: GenerationParams.title/subtitle, build_title_settings
         title_override branch, TitleInserter with overrides.
         """
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
         from immich_memories.generate import GenerationParams, generate_memory
 
         clip_a = _make_test_clip(short_clip_a, "title-a")
@@ -756,7 +756,7 @@ class TestCutTransitionPipeline:
 
         Exercises: TransitionType.CUT path in AssemblyEngine.
         """
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
         from immich_memories.generate import GenerationParams, generate_memory
 
         clip_a = _make_test_clip(short_clip_a, "cut-a")
@@ -801,7 +801,7 @@ class TestPrivacyModePipeline:
 
         import numpy as np
 
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
         from immich_memories.generate import GenerationParams, generate_memory
 
         clip_a = _make_test_clip(short_clip_a, "priv-a")

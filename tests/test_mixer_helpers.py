@@ -6,37 +6,37 @@ from immich_memories.audio.mixer import (
     DuckingConfig,
     MixConfig,
     _build_ducking_filter,
-    _db_to_linear,
+    db_to_linear,
 )
 from immich_memories.audio.mixer_helpers import StemDuckingLevels
 
 # ---------------------------------------------------------------------------
-# _db_to_linear
+# db_to_linear
 # ---------------------------------------------------------------------------
 
 
 class TestDbToLinear:
     def test_zero_db_is_one(self):
-        assert abs(_db_to_linear(0.0) - 1.0) < 1e-9
+        assert abs(db_to_linear(0.0) - 1.0) < 1e-9
 
     def test_positive_db_increases(self):
-        assert _db_to_linear(6.0) > 1.0
+        assert db_to_linear(6.0) > 1.0
 
     def test_negative_db_clamped_to_min(self):
         # -60dB = 0.001, clamped to min_val=1.0
-        assert _db_to_linear(-60.0) == 1.0
+        assert db_to_linear(-60.0) == 1.0
 
     def test_large_positive_clamped_to_max(self):
         # 100dB = 100000, clamped to 64
-        assert _db_to_linear(100.0) == 64.0
+        assert db_to_linear(100.0) == 64.0
 
     def test_custom_min_max(self):
-        result = _db_to_linear(0.0, min_val=0.5, max_val=2.0)
+        result = db_to_linear(0.0, min_val=0.5, max_val=2.0)
         assert abs(result - 1.0) < 1e-9
 
     def test_20db_is_10(self):
         # 10^(20/20) = 10
-        result = _db_to_linear(20.0)
+        result = db_to_linear(20.0)
         assert abs(result - 10.0) < 1e-6
 
 

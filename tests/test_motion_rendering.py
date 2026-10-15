@@ -15,7 +15,7 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
-from immich_memories.analysis.motion_rendering import MotionRendering, motion_renderings
+from immich_memories.analysis.clips.motion_rendering import MotionRendering, motion_renderings
 from immich_memories.api.models import AssetType
 
 NOON = datetime(2024, 6, 4, 12, 0, tzinfo=UTC)

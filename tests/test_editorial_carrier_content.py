@@ -10,7 +10,7 @@ from datetime import UTC, datetime
 
 import pytest
 
-from immich_memories.analysis.editorial_carrier_eligibility import excluded_carrier_sources
+from immich_memories.analysis.facts.carrier_eligibility import excluded_carrier_sources
 from immich_memories.api.models import ExifInfo, Person
 from tests.test_annotation_lines import OwnerPersonContext, candidate, reader, store_with
 
@@ -92,7 +92,7 @@ def test_a_screen_or_a_face_close_up_is_still_read_off_the_caption() -> None:
 
 
 def test_an_uncaptioned_line_hands_the_audience_reader_no_tag_as_its_caption() -> None:
-    from immich_memories.analysis.editorial_shareability import evidence_for_unit
+    from immich_memories.analysis.audience.shareability import evidence_for_unit
 
     line = (
         "2024-01-01 10:00+00:00 | LIVE PHOTO BURST of 2 stills, stitches to a 2s clip | "
@@ -110,7 +110,7 @@ def test_an_uncaptioned_line_hands_the_audience_reader_no_tag_as_its_caption() -
 
 @pytest.mark.parametrize("tag", ["BLOWN OUT", "rotated", "reencode-suspected", "DARK"])
 def test_an_uncaptioned_picture_of_someone_is_not_a_lone_object_for_a_tag(tag: str) -> None:
-    from immich_memories.analysis.editorial_structure_lines import UnitLines
+    from immich_memories.analysis.film.lines import UnitLines
 
     line = f"2024-01-01 10:00+00:00 | with Person A (partner) | {tag} | resolution:4032x3024"
     text = UnitLines({ASSET: line}, life_without_prose=lambda _asset: True)
@@ -121,7 +121,7 @@ def test_an_uncaptioned_picture_of_someone_is_not_a_lone_object_for_a_tag(tag: s
 
 
 def test_a_framing_tag_is_not_prose_that_shows_a_face() -> None:
-    from immich_memories.analysis.editorial_structure_lines import UnitLines
+    from immich_memories.analysis.film.lines import UnitLines
 
     line = (
         "2024-01-01 10:00+00:00 | subject-framing:1 (9.72% of the frame, at the frame's edge, "

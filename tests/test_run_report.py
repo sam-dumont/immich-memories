@@ -118,7 +118,7 @@ def test_api_uses_the_same_builder_and_keeps_logs_private():
     from fastapi import FastAPI
     from fastapi.testclient import TestClient
 
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.tracking import RunTracker
     from immich_memories.tracking.report_api import report_config, router
     from immich_memories.tracking.span_store import SpanStore
@@ -138,7 +138,7 @@ def test_api_uses_the_same_builder_and_keeps_logs_private():
 
 
 def test_the_report_redacts_every_person_a_run_was_about():
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.tracking import RunTracker
     from immich_memories.tracking.report_service import report_for_run
     from immich_memories.tracking.span_store import SpanStore
@@ -162,7 +162,7 @@ def test_cli_json_stdout_excludes_startup_logs(monkeypatch):
     from click.testing import CliRunner
 
     from immich_memories.cli import main
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.tracking import RunTracker
 
     tracker = RunTracker(capture_system=False)
@@ -244,8 +244,8 @@ def test_flagged_reasons_and_captions_come_only_with_the_opt_in():
 
 
 def test_geocoded_names_are_private_even_when_read_from_cache():
-    from immich_memories.analysis.place_geocoder import PlaceGeocoder, locality_of
-    from immich_memories.analysis.trip_detection import trip_place_name
+    from immich_memories.analysis.places.geocoder import PlaceGeocoder, locality_of
+    from immich_memories.analysis.places.trip_detection import trip_place_name
     from immich_memories.db import open_store
     from immich_memories.tracking import timing
 

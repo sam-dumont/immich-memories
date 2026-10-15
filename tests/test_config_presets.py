@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 
 
 class TestFastPreset:

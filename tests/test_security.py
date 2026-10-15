@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from immich_memories import security
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.security import sanitize_filename, validate_path
 
 

@@ -55,10 +55,10 @@ from immich_memories.processing.preparation_fallbacks import watching_fallbacks
 from immich_memories.security import private_temp_dir
 
 if TYPE_CHECKING:
-    from immich_memories.analysis.editorial_planner import EditorialSelection
+    from immich_memories.analysis.runtime.plan import EditorialSelection
     from immich_memories.api.models import VideoClipInfo
     from immich_memories.cache.prepared_source_bank import BankedSource, PreparedSourceBank
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.generate import GenerationParams
 
 logger = logging.getLogger(__name__)

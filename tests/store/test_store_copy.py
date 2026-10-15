@@ -10,7 +10,7 @@ import pytest
 from click.testing import CliRunner
 
 from immich_memories.automation.state_store import AutomationStateStore
-from immich_memories.config_loader import Config, set_config
+from immich_memories.config.loader import Config, set_config
 from immich_memories.db import StoreLocation, close_stores, open_store
 from immich_memories.db.copy import TargetNotEmptyError, copy_store
 from immich_memories.db.inventory import digests

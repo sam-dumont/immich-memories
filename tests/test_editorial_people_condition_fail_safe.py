@@ -18,9 +18,9 @@ from datetime import date
 
 import pytest
 
-from immich_memories.analysis.editorial_rule_reader import NoModelJudge, RuleStructureReader
-from immich_memories.analysis.editorial_structure_contract import StructurePlannerPorts
-from immich_memories.analysis.editorial_structure_planner import plan_structure
+from immich_memories.analysis.film.contract import StructurePlannerPorts
+from immich_memories.analysis.stories.rule_reader import NoModelJudge, RuleStructureReader
+from immich_memories.analysis.structure.planner import plan_structure
 from immich_memories.api.models import Person
 from immich_memories.api.person_expression import PersonExpression
 from immich_memories.generate import GenerationParams
@@ -52,7 +52,7 @@ def _film(tmp_path, *, days=4):
         product="person_spotlight",
         pictures=2,
     )
-    # Engages the certified-timing path (editorial_structure_finishing.py), the same one a
+    # Engages the certified-timing path (structure/finishing.py), the same one a
     # real CLI run always has (cli/_editorial_context.py always sets render_timing).
     policy = build_editorial_timing_policy(
         config=source.config,
@@ -135,7 +135,7 @@ def test_a_clean_pool_returns_source_assets_unchanged_not_a_recomputed_copy(tmp_
     membership when nothing is excluded. A rebuild would silently drop any asset never
     referenced by a moment (companions, unselectable context) from `facts.source_assets`
     and from the selection budget, even with no people condition ever violated."""
-    from immich_memories.analysis.editorial_people_condition_pool import (
+    from immich_memories.analysis.structure.people_condition import (
         exclude_people_condition_violators,
     )
 
@@ -258,7 +258,7 @@ def test_a_carrier_missing_from_captured_evidence_fails_loud_not_silent(tmp_path
     """The invariant `_contract_check` enforces, through the public `build_result` seam."""
     from datetime import datetime
 
-    from immich_memories.analysis.editorial_structure_record import (
+    from immich_memories.analysis.structure.record import (
         PlanFacts,
         PlanOutcome,
         build_result,
@@ -324,10 +324,10 @@ def test_the_production_rules_reader_is_built_from_the_narrowed_pool(tmp_path):
     selected."""
     from contextlib import ExitStack
 
-    from immich_memories.analysis.editorial_people import adapt_editorial_people
-    from immich_memories.analysis.editorial_runtime import EditorialRunContext
-    from immich_memories.analysis.editorial_runtime_backend import ProductionPostCardBackend
-    from immich_memories.analysis.editorial_runtime_ports import EditorialRuntimePorts
+    from immich_memories.analysis.reading.people_identities import adapt_editorial_people
+    from immich_memories.analysis.runtime.backend import ProductionPostCardBackend
+    from immich_memories.analysis.runtime.composition import EditorialRunContext
+    from immich_memories.analysis.runtime.ports import EditorialRuntimePorts
     from tests.annotation_rows import annotation_store
 
     source = _film(tmp_path, days=1)

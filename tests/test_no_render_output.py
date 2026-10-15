@@ -14,7 +14,7 @@ from pathlib import Path
 
 import pytest
 
-from immich_memories.cli._generate_display import _print_generation_result
+from immich_memories.cli._generate_display import print_generation_result
 from immich_memories.cli._helpers import quiet_output
 
 
@@ -36,7 +36,7 @@ def _messages(caplog) -> str:
 
 def test_no_render_does_not_claim_a_file(caplog) -> None:
     with caplog.at_level(logging.INFO, logger="immich_memories.cli"):
-        _print_generation_result(
+        print_generation_result(
             dry_run=False,
             no_render=True,
             result_path=Path("/tmp/x.mp4"),
@@ -51,7 +51,7 @@ def test_no_render_does_not_claim_a_file(caplog) -> None:
 
 def test_a_real_run_still_reports_its_file(caplog) -> None:
     with caplog.at_level(logging.INFO, logger="immich_memories.cli"):
-        _print_generation_result(
+        print_generation_result(
             dry_run=False,
             no_render=False,
             result_path=Path("/tmp/x.mp4"),
@@ -64,7 +64,7 @@ def test_a_real_run_still_reports_its_file(caplog) -> None:
 
 def test_dry_run_is_unchanged(caplog) -> None:
     with caplog.at_level(logging.INFO, logger="immich_memories.cli"):
-        _print_generation_result(
+        print_generation_result(
             dry_run=True,
             no_render=False,
             result_path=Path("/tmp/x.mp4"),

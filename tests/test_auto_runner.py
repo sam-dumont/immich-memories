@@ -29,7 +29,7 @@ from immich_memories.automation.runner import (
     _execute_generate,
 )
 from immich_memories.cli.auto_cmd import _candidates_to_json, _print_candidates_table
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.self_command import self_command
 from immich_memories.tracking.models import DeliveryStatus, RunMetadata
 
@@ -145,7 +145,7 @@ class TestSuggestReturnsCandidates:
         self, config: Config
     ) -> None:
         """Current-year and New-Year-crossing trips must reach production detection."""
-        from immich_memories.analysis.trip_detection import DetectedTrip
+        from immich_memories.analysis.places.trip_detection import DetectedTrip
         from immich_memories.preflight import CheckStatus
 
         config.trips.homebase_latitude = 50.85
@@ -193,7 +193,7 @@ class TestSuggestReturnsCandidates:
                 return_value=asset_service,
             ),
             patch(
-                "immich_memories.analysis.trip_detection.detect_trips",
+                "immich_memories.analysis.places.trip_detection.detect_trips",
                 return_value=[trip],
             ),
             patch("immich_memories.automation.candidate_discovery.date") as clock,

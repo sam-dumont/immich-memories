@@ -21,8 +21,8 @@ from typing import Any
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql, sqlite
 
-from immich_memories.config_loader import Config, config_state_dir
-from immich_memories.config_models_auth import AuthConfig
+from immich_memories.config.loader import Config, config_state_dir
+from immich_memories.config.models.auth import AuthConfig
 from immich_memories.db import now_db, open_store
 from immich_memories.db.tables.session_generations import session_generations
 from immich_memories.web.auth import set_session

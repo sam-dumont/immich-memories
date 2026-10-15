@@ -2,11 +2,11 @@
 
 import pytest
 
-from immich_memories.analysis.household_source import HouseholdWindows
+from immich_memories.analysis.sources.household import HouseholdWindows
 from immich_memories.api.access_clients import AccessBoundClient
 from immich_memories.api.person_scope import people_in_window, window_condition
 from immich_memories.cli.run_people import resolve_run_people
-from immich_memories.config_models import ImmichConfig
+from immich_memories.config.models.resources import ImmichConfig
 from immich_memories.people.transfer import import_document
 from tests.household_fake import PARTNER_KEY, PRIMARY_KEY, FakeHousehold, immich_config, picture
 from tests.store.test_people_selection import HOUSEHOLD, WINDOW, _person

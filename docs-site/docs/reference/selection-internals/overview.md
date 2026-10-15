@@ -57,7 +57,7 @@ route. The quoted stage names are what the web UI and the terminal print: "Web C
 starts the runtime editorial planner, which prepares evidence and builds cards, selects and
 certifies timing, then projects the render inputs.
 
-`_select` in `analysis/editorial_structure_planner.py` is where the film gets decided. Everything the
+`_select` in `analysis/structure/planner.py` is where the film gets decided. Everything the
 other pages of this section describe happens inside it.
 
 ## Preparation: what gets read, and when

@@ -12,10 +12,10 @@ from functools import lru_cache
 from immich_memories.processing.hardware import (
     HWAccelBackend,
     HWAccelCapabilities,
-    _check_ffmpeg_decoder,
-    _check_ffmpeg_encoder,
-    _check_ffmpeg_hwaccel,
-    _probe_ffmpeg_encode,
+    check_ffmpeg_decoder,
+    check_ffmpeg_encoder,
+    check_ffmpeg_hwaccel,
+    probe_ffmpeg_encode,
 )
 
 logger = logging.getLogger(__name__)
@@ -23,12 +23,12 @@ logger = logging.getLogger(__name__)
 
 def _encoder_works(encoder: str, *, upload: str | None = None) -> bool:
     """Listed by ffmpeg AND able to encode one frame — listing alone proves nothing (#343)."""
-    return _check_ffmpeg_encoder(encoder) and _probe_ffmpeg_encode(["-c:v", encoder], upload=upload)
+    return check_ffmpeg_encoder(encoder) and probe_ffmpeg_encode(["-c:v", encoder], upload=upload)
 
 
 def _detect_nvidia() -> HWAccelCapabilities | None:
     """Detect NVIDIA GPU capabilities."""
-    if not _check_ffmpeg_hwaccel("cuda"):
+    if not check_ffmpeg_hwaccel("cuda"):
         return None
 
     caps = HWAccelCapabilities(
@@ -41,8 +41,8 @@ def _detect_nvidia() -> HWAccelCapabilities | None:
     caps.supports_h265_encode = _encoder_works("hevc_nvenc")
 
     # Check for NVDEC decoders
-    caps.supports_h264_decode = _check_ffmpeg_decoder("h264_cuvid")
-    caps.supports_h265_decode = _check_ffmpeg_decoder("hevc_cuvid")
+    caps.supports_h264_decode = check_ffmpeg_decoder("h264_cuvid")
+    caps.supports_h265_decode = check_ffmpeg_decoder("hevc_cuvid")
 
     # NVIDIA supports GPU scaling
     caps.supports_scaling = True
@@ -156,14 +156,14 @@ def _detect_apple() -> HWAccelCapabilities | None:
     if platform.system() != "Darwin":
         return None
 
-    if not _check_ffmpeg_hwaccel("videotoolbox"):
+    if not check_ffmpeg_hwaccel("videotoolbox"):
         return None
 
     caps = HWAccelCapabilities(backend=HWAccelBackend.APPLE)
 
     # Check for VideoToolbox encoders
-    caps.supports_h264_encode = _check_ffmpeg_encoder("h264_videotoolbox")
-    caps.supports_h265_encode = _check_ffmpeg_encoder("hevc_videotoolbox")
+    caps.supports_h264_encode = check_ffmpeg_encoder("h264_videotoolbox")
+    caps.supports_h265_encode = check_ffmpeg_encoder("hevc_videotoolbox")
 
     # VideoToolbox supports hardware decode for most formats
     caps.supports_h264_decode = True
@@ -207,7 +207,7 @@ def _detect_vaapi() -> HWAccelCapabilities | None:
     if platform.system() != "Linux":
         return None
 
-    if not _check_ffmpeg_hwaccel("vaapi"):
+    if not check_ffmpeg_hwaccel("vaapi"):
         return None
 
     caps = HWAccelCapabilities(backend=HWAccelBackend.VAAPI)
@@ -217,12 +217,8 @@ def _detect_vaapi() -> HWAccelCapabilities | None:
     caps.supports_h265_encode = _encoder_works("hevc_vaapi", upload="vaapi")
 
     # Check for VAAPI decoders
-    caps.supports_h264_decode = _check_ffmpeg_decoder("h264_vaapi") or _check_ffmpeg_hwaccel(
-        "vaapi"
-    )
-    caps.supports_h265_decode = _check_ffmpeg_decoder("hevc_vaapi") or _check_ffmpeg_hwaccel(
-        "vaapi"
-    )
+    caps.supports_h264_decode = check_ffmpeg_decoder("h264_vaapi") or check_ffmpeg_hwaccel("vaapi")
+    caps.supports_h265_decode = check_ffmpeg_decoder("hevc_vaapi") or check_ffmpeg_hwaccel("vaapi")
     caps.supports_scaling = True
 
     # Try to get device info
@@ -246,7 +242,7 @@ def _detect_vaapi() -> HWAccelCapabilities | None:
 
 def _detect_qsv() -> HWAccelCapabilities | None:
     """Detect Intel Quick Sync Video capabilities."""
-    if not _check_ffmpeg_hwaccel("qsv"):
+    if not check_ffmpeg_hwaccel("qsv"):
         return None
 
     caps = HWAccelCapabilities(backend=HWAccelBackend.QSV)
@@ -256,8 +252,8 @@ def _detect_qsv() -> HWAccelCapabilities | None:
     caps.supports_h265_encode = _encoder_works("hevc_qsv", upload="qsv")
 
     # Check for QSV decoders
-    caps.supports_h264_decode = _check_ffmpeg_decoder("h264_qsv")
-    caps.supports_h265_decode = _check_ffmpeg_decoder("hevc_qsv")
+    caps.supports_h264_decode = check_ffmpeg_decoder("h264_qsv")
+    caps.supports_h265_decode = check_ffmpeg_decoder("hevc_qsv")
     caps.supports_scaling = True
 
     caps.device_name = "Intel Quick Sync"

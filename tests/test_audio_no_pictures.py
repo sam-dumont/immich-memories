@@ -10,7 +10,7 @@ import httpx
 import pytest
 from click.testing import CliRunner
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from tests.no_pictures import refuse_pictures
 
 _PACKAGE = Path(__file__).resolve().parents[1] / "src" / "immich_memories"

@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 
 ROOT = Path(__file__).resolve().parents[1]
 VERSION = "1.2.3-rc.4"

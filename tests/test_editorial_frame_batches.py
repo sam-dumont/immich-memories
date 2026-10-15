@@ -4,7 +4,7 @@ from dataclasses import replace
 
 import pytest
 
-from immich_memories.config_models_editorial_preparation import EditorialPreparationConfig
+from immich_memories.config.models.editorial_preparation import EditorialPreparationConfig
 from tests.annotation_rows import annotation_store, read_rows
 from tests.test_editorial_detector_frames import _live_photo, requires_ffmpeg
 from tests.test_editorial_preparation import preview, run, successful_ports
@@ -14,7 +14,7 @@ from tests.test_playback_keyframes import encode
 
 def _bank_clip_frames(**kwargs):
     # WHY: replace the classifier weights with a completed answer, retaining real banking.
-    from immich_memories.analysis.editorial_clip_frames import CLIP_FRAMES_HEAD, CLIP_FRAMES_VERSION
+    from immich_memories.analysis.facts.clip_frames import CLIP_FRAMES_HEAD, CLIP_FRAMES_VERSION
     from immich_memories.store.editorial_preparation import remember_head_rows
 
     remember_head_rows(
@@ -137,7 +137,7 @@ def test_remote_frame_answers_are_committed_before_sampling_the_next_batch(tmp_p
 
     import httpx
 
-    from immich_memories.config_models_inference import InferenceConfig
+    from immich_memories.config.models.inference import InferenceConfig
     from tests.test_editorial_preparation import refusing_ports
     from tests.test_remote_facts_preparation import ENDPOINT, answer, transport
 
@@ -182,7 +182,7 @@ def test_sampling_announces_video_and_live_photo_work_before_fetching_each_batch
 
     import httpx
 
-    from immich_memories.config_models_inference import InferenceConfig
+    from immich_memories.config.models.inference import InferenceConfig
     from tests.test_editorial_preparation import refusing_ports
     from tests.test_remote_facts_preparation import ENDPOINT, answer, transport
 

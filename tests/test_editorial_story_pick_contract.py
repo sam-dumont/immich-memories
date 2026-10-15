@@ -5,12 +5,10 @@ from types import SimpleNamespace
 
 import pytest
 
-from immich_memories.analysis.editorial_story_pick_contract import (
-    ask_moment_pick,
-    source_kind_marker,
-)
-from immich_memories.analysis.editorial_story_shortlist import DepictedChoice
-from immich_memories.analysis.editorial_story_vote import pick_story_moments
+from immich_memories.analysis.clips.unit_motion import source_kind_marker
+from immich_memories.analysis.selection.pick_contract import ask_moment_pick
+from immich_memories.analysis.selection.vote import pick_story_moments
+from immich_memories.analysis.stories.shortlist import DepictedChoice
 from tests.annotation_rows import annotation_store
 
 
@@ -258,9 +256,9 @@ def test_the_repair_question_lists_the_labels_that_were_offered():
 def test_a_refused_pick_is_asked_again_on_the_next_run_instead_of_replayed(tmp_path, monkeypatch):
     from types import SimpleNamespace
 
-    from immich_memories.analysis import editorial_text_gateway as gateway
-    from immich_memories.analysis.editorial_structure_io import StructureTextJudge
-    from immich_memories.config_models_llm import LLMConfig
+    from immich_memories.analysis.judgments import text_gateway as gateway
+    from immich_memories.analysis.judgments.text_judge import StructureTextJudge
+    from immich_memories.config.models.llm import LLMConfig
 
     answers = iter(['{"keep":["M99"]}', '{"keep":["M99"]}', '{"keep":["M01"]}'])
     asked: list[str] = []

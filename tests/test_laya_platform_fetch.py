@@ -5,7 +5,7 @@ import sys
 
 import pytest
 
-from immich_memories.config_models_editorial import EditorialConfig
+from immich_memories.config.models.editorial import EditorialConfig
 from tests.test_editorial_laya_reader import _fetch_models
 
 

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from immich_memories.analysis.stacks import fold_stacks, stack_reason, starred_primaries
+from immich_memories.analysis.corpus.stacks import fold_stacks, stack_reason, starred_primaries
 from tests.conftest import make_asset
 
 

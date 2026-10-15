@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from immich_memories.config_models import ImmichConnection
+from immich_memories.config.models.resources import ImmichConnection
 from immich_memories.db import open_store
 from immich_memories.people.transfer import import_document
 from immich_memories.web.people_accounts import AccountPersonRecord, account_reads

@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import date
 from pathlib import Path
 
-from immich_memories.analysis.trip_detection import DetectedTrip
+from immich_memories.analysis.places.trip_detection import DetectedTrip
 from immich_memories.cli._trip_generation import trip_output_path
 
 LAKE = DetectedTrip(

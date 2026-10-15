@@ -6,7 +6,7 @@ from unittest.mock import patch
 import pytest
 
 from immich_memories.cli._pipeline_runner import _send_notification
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.db import open_store
 from immich_memories.operations.run_index import record_run_attempt
 from immich_memories.tracking import RunDatabase

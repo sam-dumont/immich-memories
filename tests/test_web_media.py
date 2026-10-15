@@ -15,7 +15,7 @@ from PIL import Image
 
 from immich_memories.cache.thumbnail_cache import ThumbnailCache
 from immich_memories.cache.thumbnail_sizes import AVATAR_PX, GRID_THUMBNAIL_PX
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.web.auth import is_bypass_path
 from immich_memories.web.dependencies import immich_face, immich_preview, thumbnail_cache
 from tests.web_api_fixtures import api_client, config_in
@@ -157,7 +157,7 @@ class _FakeAccountsImmich:
 
 @pytest.fixture
 def accounts_config(tmp_path: Path) -> Config:
-    from immich_memories.config_models import ImmichConnection
+    from immich_memories.config.models.resources import ImmichConnection
 
     config = config_in(tmp_path)
     config.immich.url = "http://primary.test"

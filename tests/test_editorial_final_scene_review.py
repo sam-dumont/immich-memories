@@ -7,7 +7,7 @@ framed differently and hash as strangers, yet a viewer sees the film say the sam
 
 import numpy as np
 
-from immich_memories.analysis.editorial_final_hash_review import review_cut_by_cached_hashes
+from immich_memories.analysis.selection.final_hash_review import review_cut_by_cached_hashes
 
 # Every frame hashes far from every other, so only the scene can call a pair a repeat.
 HASHES = {

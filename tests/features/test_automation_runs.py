@@ -163,7 +163,7 @@ def test_the_daily_timer_still_makes_the_film_after_a_dry_run(
     tmp_path: Path, child: FakeGenerateChild
 ) -> None:
     from immich_memories.automation.in_process_scheduler import InProcessScheduler
-    from immich_memories.config_loader import load_config
+    from immich_memories.config.loader import load_config
 
     config = write_config(tmp_path, automation={"enabled": True, "daily_at": "09:00"})
     _auto_run(config, _two_candidates(), "--dry-run")
@@ -570,7 +570,7 @@ def _thread_stacks() -> str:
 
 @pytest.fixture
 def trigger_server(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
-    from immich_memories.config_loader import load_config
+    from immich_memories.config.loader import load_config
     from tests.web_server_fixtures import server_client
 
     path = write_config(tmp_path, server={"trigger_token": TOKEN})
@@ -613,7 +613,7 @@ def test_a_trigger_inside_the_cooldown_is_skipped_like_the_daily_run(
 @pytest.mark.feature("automation.trigger-api")
 def test_a_wrong_token_starts_nothing(trigger_server, child: FakeGenerateChild) -> None:
     from immich_memories.automation.state_store import AutomationStateStore
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.db import open_store
 
     path, client = trigger_server
@@ -636,7 +636,7 @@ def _today_at(hour: int, minute: int = 0) -> datetime:
 
 def _timer(config: Path, clock: list[datetime]):
     from immich_memories.automation.in_process_scheduler import InProcessScheduler
-    from immich_memories.config_loader import load_config
+    from immich_memories.config.loader import load_config
 
     loaded = load_config(config)
     return InProcessScheduler(lambda: loaded, clock=lambda: clock[0])
@@ -728,7 +728,7 @@ def test_the_web_process_runs_the_daily_decision_when_it_starts(
     from starlette.testclient import TestClient
 
     from immich_memories.automation.state_store import AutomationStateStore
-    from immich_memories.config_loader import load_config
+    from immich_memories.config.loader import load_config
     from immich_memories.db import open_store
     from immich_memories.web.server import create_app
 

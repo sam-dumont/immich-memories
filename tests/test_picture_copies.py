@@ -4,7 +4,11 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
-from immich_memories.analysis.picture_copies import group_members, picture_copies, starred_keepers
+from immich_memories.analysis.corpus.picture_copies import (
+    group_members,
+    picture_copies,
+    starred_keepers,
+)
 from immich_memories.api.models import AssetType
 from tests.conftest import make_asset
 

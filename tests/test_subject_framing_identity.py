@@ -8,11 +8,11 @@ identity used to be dropped.
 from datetime import UTC, datetime
 from pathlib import Path
 
-from immich_memories.analysis.annotation_lines import StoredAnnotationLineReader
-from immich_memories.analysis.editorial_contracts import EditorialCandidate
-from immich_memories.analysis.editorial_pool import EditorialSourcePool
-from immich_memories.analysis.editorial_story_shortlist import _capture_group_moments
-from immich_memories.analysis.subject_framing import face_boxes_of, framing_visibility
+from immich_memories.analysis.corpus.records import EditorialCandidate
+from immich_memories.analysis.facts.subject_framing import face_boxes_of, framing_visibility
+from immich_memories.analysis.reading.annotation_lines import StoredAnnotationLineReader
+from immich_memories.analysis.sources.pool import EditorialSourcePool
+from immich_memories.analysis.stories.shortlist import capture_group_moments
 from immich_memories.api.models import AssetFace, Person
 from immich_memories.store.editorial_preparation import remember_faces
 from tests.annotation_rows import annotation_store
@@ -67,7 +67,7 @@ def _lines(tmp_path: Path, faces: dict[str, list[AssetFace]], **reader_options) 
 
 
 def _frame_that_carries(lines: dict[str, str], *, sharper: str) -> str:
-    [choice] = _capture_group_moments(
+    [choice] = capture_group_moments(
         [
             {"asset_id": asset, "taken": f"2030-05-01T10:00:0{i}", "moment": "m1", "kind": "still"}
             for i, asset in enumerate(lines)
@@ -125,13 +125,13 @@ def test_the_runtime_reads_lines_about_the_people_the_memory_is_about(tmp_path: 
     """The reader above only helps if the planner hands it the memory's people."""
     from types import SimpleNamespace
 
-    from immich_memories.analysis.editorial_runtime import (
+    from immich_memories.analysis.runtime.composition import (
         EditorialRunContext,
         build_editorial_planner,
     )
-    from immich_memories.analysis.editorial_runtime_ports import EditorialRuntimePorts
+    from immich_memories.analysis.runtime.ports import EditorialRuntimePorts
     from immich_memories.cache.thumbnail_cache import ThumbnailCache
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from tests.test_editorial_runtime import _window
 
     config = Config(

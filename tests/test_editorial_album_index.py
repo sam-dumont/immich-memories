@@ -43,7 +43,7 @@ def _source() -> _Albums:
 
 
 def test_the_index_costs_one_listing_and_one_read_per_album() -> None:
-    from immich_memories.analysis.editorial_album_index import build_album_index
+    from immich_memories.analysis.sources.album_index import build_album_index
 
     source = _source()
     index = build_album_index(source)
@@ -57,7 +57,7 @@ def test_the_index_costs_one_listing_and_one_read_per_album() -> None:
 
 
 def test_an_album_above_the_cap_is_never_read() -> None:
-    from immich_memories.analysis.editorial_album_index import build_album_index
+    from immich_memories.analysis.sources.album_index import build_album_index
 
     source = _Albums(
         (
@@ -74,13 +74,13 @@ def test_an_album_above_the_cap_is_never_read() -> None:
 
 
 def test_a_source_that_cannot_list_albums_names_nothing() -> None:
-    from immich_memories.analysis.editorial_album_index import NO_ALBUMS, build_album_index
+    from immich_memories.analysis.sources.album_index import NO_ALBUMS, build_album_index
 
     assert build_album_index(object()) is NO_ALBUMS
 
 
 def test_the_index_is_built_once_however_many_episodes_ask() -> None:
-    from immich_memories.analysis.editorial_album_index import RunAlbumNames
+    from immich_memories.analysis.sources.album_index import RunAlbumNames
 
     source = _source()
     recorded = []

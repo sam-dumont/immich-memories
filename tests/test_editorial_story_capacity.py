@@ -10,10 +10,10 @@ unfolded allocation untouched, so a clean film (nothing the final review would r
 changes.
 """
 
-from immich_memories.analysis.editorial_story_capacity import capacity_choices, distinct_choices
-from immich_memories.analysis.editorial_story_shortlist import DepictedChoice
-from immich_memories.analysis.editorial_story_slots import PartitionedSlots
-from immich_memories.analysis.subject_framing import SubjectVisibility
+from immich_memories.analysis.facts.subject_framing import SubjectVisibility
+from immich_memories.analysis.selection.capacity import capacity_choices, distinct_choices
+from immich_memories.analysis.stories.shortlist import DepictedChoice
+from immich_memories.analysis.stories.slots import PartitionedSlots
 
 
 def _choice(key: str, primary: str, *alternatives: str) -> DepictedChoice:
@@ -199,7 +199,7 @@ def test_a_fold_never_changes_a_neighbours_own_grant(monkeypatch):
     """S1 is over-granted (3 raw groups, 2 of them one scene) and gets folded. S2 is already
     granted its own full raw capacity (one group) and must keep exactly that; the freed slack
     goes to S3, a weighed story with real unused capacity, never to S2."""
-    import immich_memories.analysis.editorial_story_slots as slots_module
+    import immich_memories.analysis.stories.slots as slots_module
 
     stories = [
         {"key": "S1", "weight": "major"},

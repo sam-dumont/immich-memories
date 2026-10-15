@@ -6,9 +6,9 @@ from types import SimpleNamespace
 
 import pytest
 
-from immich_memories.analysis.editorial_source_route import project_source_rendering
-from immich_memories.analysis.motion_rendering import motion_renderings
-from immich_memories.generate_clips import _prefetch_assets, _validated_render_directives
+from immich_memories.analysis.clips.motion_rendering import motion_renderings
+from immich_memories.analysis.runtime.source_route import project_source_rendering
+from immich_memories.generate_clips import _prefetch_assets, validated_render_directives
 from tests.conftest import make_asset
 from tests.editorial_story_fixtures import ControlledStoryJudge
 from tests.test_editorial_duration_planner_integration import (
@@ -80,7 +80,7 @@ def test_planner_uses_exact_selectable_event_material_before_render_projection(t
         row.clip for row in projected.candidates if row.clip.asset.id == carrier["asset_id"]
     ]
     params = SimpleNamespace(clips=selected, editorial_selections=projected.plan.selections)
-    directives = _validated_render_directives(params)
+    directives = validated_render_directives(params)
     fetched = [asset.id for asset in _prefetch_assets(selected, directives)]
     assert fetched == list(manifest.video_ids)  # a Live Photo that plays fetches its own footage
     assert "extra-video" not in fetched
@@ -176,9 +176,9 @@ def test_projection_still_rejects_a_manifest_that_reintroduces_unreviewed_motion
 
 
 def test_a_video_typed_asset_with_a_rendering_is_an_ordinary_video_unit(tmp_path):
-    from immich_memories.analysis.editorial_structure_contract import StructurePlannerPorts
-    from immich_memories.analysis.editorial_structure_material import UnitBuilder, read_wall
-    from immich_memories.analysis.motion_rendering import MotionRendering
+    from immich_memories.analysis.clips.motion_rendering import MotionRendering
+    from immich_memories.analysis.film.contract import StructurePlannerPorts
+    from immich_memories.analysis.film.material import UnitBuilder, read_wall
     from immich_memories.api.models import AssetType
 
     captured = live_source(tmp_path, pictures=2, add_context=False)
@@ -222,8 +222,8 @@ def test_a_video_typed_asset_with_a_rendering_is_an_ordinary_video_unit(tmp_path
 
 
 def test_a_carrier_the_projection_would_refuse_retires_before_the_film_finalizes(tmp_path):
-    from immich_memories.analysis.editorial_structure_contract import StructurePlannerPorts
-    from immich_memories.analysis.editorial_structure_planner import plan_structure
+    from immich_memories.analysis.film.contract import StructurePlannerPorts
+    from immich_memories.analysis.structure.planner import plan_structure
     from tests.test_editorial_story_first_planner import make_source
 
     captured = make_source(tmp_path)

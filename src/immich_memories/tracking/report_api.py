@@ -5,7 +5,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import BaseModel
 
-from immich_memories.config_loader import Config, get_config
+from immich_memories.config.loader import Config, get_config
 from immich_memories.db import open_store
 from immich_memories.tracking.report import RunReport
 from immich_memories.tracking.report_service import report_for_run

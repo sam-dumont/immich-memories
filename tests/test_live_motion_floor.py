@@ -18,17 +18,17 @@ from pathlib import Path
 
 import pytest
 
-from immich_memories.analysis.editorial_structure_material import (
+from immich_memories.analysis.clips.motion_rendering import motion_renderings
+from immich_memories.analysis.corpus.trace import ClipStory
+from immich_memories.analysis.film.material import (
     build_material,
     read_wall,
     rules_still_seconds,
 )
-from immich_memories.analysis.editorial_structure_planner import plan_structure
-from immich_memories.analysis.motion_rendering import motion_renderings
-from immich_memories.analysis.selection_trace import ClipStory
+from immich_memories.analysis.structure.planner import plan_structure
 from immich_memories.api.models import AssetType
 from immich_memories.cli._runs_reading import why_text
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.generate_downloads import _try_merge_burst, download_clip
 from immich_memories.operations.storyboard import storyboard_from_plan, storyboard_lines
 from immich_memories.processing.download_coordinator import DownloadResult

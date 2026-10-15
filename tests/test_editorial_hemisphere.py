@@ -9,13 +9,13 @@ from unittest.mock import MagicMock, patch
 import pytest
 from click.testing import CliRunner
 
-from immich_memories.analysis.editorial_people import adapt_editorial_people
-from immich_memories.analysis.editorial_product_brief import build_editorial_brief
-from immich_memories.analysis.editorial_runtime import EditorialRunContext
-from immich_memories.analysis.editorial_runtime_backend import ProductionPostCardBackend
-from immich_memories.analysis.editorial_runtime_ports import EditorialRuntimePorts
-from immich_memories.analysis.selection_trace import Trace
-from immich_memories.config_loader import Config
+from immich_memories.analysis.corpus.trace import Trace
+from immich_memories.analysis.film.product_brief import build_editorial_brief
+from immich_memories.analysis.reading.people_identities import adapt_editorial_people
+from immich_memories.analysis.runtime.backend import ProductionPostCardBackend
+from immich_memories.analysis.runtime.composition import EditorialRunContext
+from immich_memories.analysis.runtime.ports import EditorialRuntimePorts
+from immich_memories.config.loader import Config
 from immich_memories.memory_types.date_builders import build_season
 from tests.annotation_rows import annotation_store
 from tests.conftest import make_clip
@@ -45,7 +45,7 @@ def _runtime_brief(context, config):
     with (
         # WHY: side_effect records the case kwarg then raises, skipping the real prompt/LLM call
         patch(
-            "immich_memories.analysis.editorial_runtime_backend.capture_structure_input",
+            "immich_memories.analysis.runtime.backend.capture_structure_input",
             side_effect=capture,
         ),
         pytest.raises(_Captured),
@@ -173,7 +173,8 @@ def test_the_cli_context_feeds_the_runtime_season_statement(tmp_path, hemisphere
     with (
         # WHY: build_smart_pipeline builds the real selection pipeline; stubbed to capture context
         patch(
-            "immich_memories.analysis.editorial_runtime.build_smart_pipeline", return_value=pipeline
+            "immich_memories.analysis.runtime.composition.build_smart_pipeline",
+            return_value=pipeline,
         ) as build,
         pytest.raises(_Captured),
     ):

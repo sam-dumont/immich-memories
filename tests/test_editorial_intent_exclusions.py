@@ -5,8 +5,8 @@ from __future__ import annotations
 
 from datetime import date, datetime
 
-from immich_memories.analysis.editorial_intent import build_editorial_intent
-from immich_memories.analysis.editorial_intent_validation import CarrierView, validate_intent
+from immich_memories.analysis.film.intent import build_editorial_intent
+from immich_memories.analysis.film.intent_validation import CarrierView, validate_intent
 from immich_memories.timeperiod import DateRange
 
 _WINDOW = (DateRange(datetime(2024, 3, 10), datetime(2024, 5, 20, 23, 59, 59)),)

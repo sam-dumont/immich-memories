@@ -57,7 +57,7 @@ def test_the_user_is_told_a_key_is_already_set(tmp_path: Path):
 
 def test_a_new_key_replaces_the_old_one_in_the_database(tmp_path: Path, monkeypatch):
     """The key is saved where the UI saves it; the file that held nothing is left alone."""
-    from immich_memories.config_loader import set_config
+    from immich_memories.config.loader import set_config
     from immich_memories.db import close_stores, open_store, resolve_location
     from immich_memories.settings_store import SettingsStore
 

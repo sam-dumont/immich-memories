@@ -16,7 +16,7 @@ from immich_memories.automation.models import AutoOutcome
 from immich_memories.automation.runner import AutoRunner
 from immich_memories.automation.state_store import AutomationStateStore
 from immich_memories.automation.status import cooldown_status
-from immich_memories.config_loader import Config, set_config
+from immich_memories.config.loader import Config, set_config
 from immich_memories.db import open_store
 from immich_memories.operations.store_import import import_legacy
 from immich_memories.tracking.run_database import RunDatabase

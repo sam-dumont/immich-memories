@@ -13,7 +13,7 @@ from immich_memories.api.models import Person, TimeBucket, UserInfo
 from immich_memories.automation import candidate_discovery as discovery_module
 from immich_memories.automation.candidate_discovery import CandidateDiscovery
 from immich_memories.automation.candidates import CandidateCategory
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.db import open_store
 from immich_memories.generate import GenerationParams, build_memory_key
 from immich_memories.people.companion import add_confirmed_person

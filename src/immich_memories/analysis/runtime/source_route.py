@@ -1,0 +1,399 @@
+"""Metadata demand and exact render projection for the production editorial route."""
+
+from __future__ import annotations
+
+from collections.abc import Callable, Mapping, Sequence
+from dataclasses import dataclass, field, replace
+from math import isfinite
+from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
+
+from immich_memories.analysis.clips.motion_rendering import (
+    ClockOffsetProbe,
+    MotionRendering,
+    motion_renderings,
+)
+from immich_memories.analysis.runtime.plan import EditorialPlan, EditorialSelection
+from immich_memories.analysis.structure.carrier_projection import (
+    Carrier,
+    carrier_from,
+    projection_problem,
+)
+from immich_memories.api.models import Asset, AssetType, VideoClipInfo
+from immich_memories.operations.cut_progress import StageUpdate
+from immich_memories.processing.live_material import LiveRenderMaterial
+
+if TYPE_CHECKING:
+    from immich_memories.analysis.corpus.admission import PreparedEditorialSource
+    from immich_memories.analysis.corpus.trace import Trace
+    from immich_memories.analysis.runtime.smart_pipeline import ClipWithSegment
+    from immich_memories.config.loader import Config
+
+
+@dataclass(frozen=True)
+class EditorialSourcePlan:
+    """Canonical evidence was checked; legacy visual scores remain explicitly absent."""
+
+    candidates: tuple[ClipWithSegment, ...]
+    plan: EditorialPlan
+    render_adjustments: tuple[dict, ...] = ()
+    render_timing: dict | None = None
+    duration_realization: dict | None = None
+    # Why an empty `plan.selections` is empty, when the contract declined the cut and said why
+    # (a people condition excluded the whole pool, #1954; one year of an on-this-day film,
+    # #2467) rather than the generic "nothing worth a film".
+    no_selection_reason: str | None = None
+    # The structure plan the cut came from, so the final-cut stage can say why each picture
+    # it did not use is out (`runtime.left_out.final_cut_notes`).
+    structure_plan: Mapping[str, Any] = field(default_factory=dict)
+
+
+@runtime_checkable
+class EditorialSourcePlanner(Protocol):
+    """An explicit production capability, separate from legacy score verification."""
+
+    def plan_source(
+        self,
+        sources: Sequence[Asset | VideoClipInfo],
+        *,
+        trace: Trace,
+        include_live_photos: bool = True,
+        hdr_only: bool = False,
+        on_stage: Callable[[StageUpdate], None] | None = None,
+    ) -> EditorialSourcePlan: ...
+
+
+def metadata_demand(
+    prepared: PreparedEditorialSource,
+    sources: Sequence[Asset | VideoClipInfo],
+    *,
+    photo_seconds: float,
+    hdr_only: bool = False,
+) -> tuple[ClipWithSegment, ...]:
+    """Keep every requested eligible primary, without ranking the captured context.
+
+    A requested copy the source folded into another stands for the kept one.
+    """
+    source_by_id = _by_kept_id(prepared, sources)
+    requested = set(source_by_id)
+    captured = set(prepared.candidate_ids) | set(prepared.excluded_ids)
+    if requested - captured:
+        raise ValueError("canonical source omitted captured requested assets")
+    demanded = tuple(row for row in prepared.candidates if row.asset_id in requested)
+    if any(not isfinite(row.shippable_duration) or row.shippable_duration < 0 for row in demanded):
+        raise ValueError("source metadata has invalid duration")
+    metadata_sources = tuple(
+        source_by_id[row.asset_id].model_copy(update={"asset": row.source})
+        if isinstance(source_by_id[row.asset_id], VideoClipInfo)
+        else row.source
+        for row in demanded
+    )
+    rows = _demand_candidates(
+        replace(prepared, candidates=demanded),
+        metadata_sources,
+        photo_seconds=photo_seconds,
+        strict_source_durations=True,
+    )
+    if any(
+        not isfinite(row.clip.duration_seconds) or row.clip.duration_seconds < 0 for row in rows
+    ):
+        raise ValueError("source metadata has invalid duration")
+    return tuple(
+        row
+        for row in rows
+        if not hdr_only or row.clip.asset.type != AssetType.VIDEO or row.clip.is_hdr
+    )
+
+
+def _by_kept_id(
+    prepared: PreparedEditorialSource, sources: Sequence[Asset | VideoClipInfo]
+) -> dict[str, Asset | VideoClipInfo]:
+    by_id: dict[str, Asset | VideoClipInfo] = {}
+    for source in sources:
+        asset_id = _asset(source).id
+        [kept] = prepared.kept_ids((asset_id,))
+        # The kept copy's own request wins over a copy standing in for it.
+        if kept == asset_id or kept not in by_id:
+            by_id[kept] = source
+    return by_id
+
+
+def project_source_rendering(
+    carriers: list[dict],
+    candidates: tuple[ClipWithSegment, ...],
+    *,
+    config: Config,
+    include_live_photos: bool,
+    clock_offsets: ClockOffsetProbe | None = None,
+    companion_assets: Mapping[str, Asset] | None = None,
+) -> EditorialSourcePlan:
+    """Bind native selected intervals to the exact sources/material that will render."""
+    from immich_memories.analysis.runtime.smart_pipeline import ClipWithSegment
+
+    by_id = {candidate.clip.asset.id: candidate for candidate in candidates}
+    if len(by_id) != len(candidates):
+        raise ValueError("editorial source candidates need unique IDs")
+    selected: list[EditorialSelection] = []
+    adjustments: list[dict] = []
+    replacements: dict[str, ClipWithSegment] = {}
+    for row in carriers:
+        asset_id = row["asset_id"]
+        if asset_id not in by_id or asset_id in replacements:
+            raise ValueError("editorial render carrier escaped or duplicated source demand")
+        carrier = carrier_from(row)
+        clip, end = _bound_carrier(
+            carrier,
+            row,
+            by_id,
+            adjustments,
+            config=config,
+            include_live_photos=include_live_photos,
+            companion_assets=companion_assets,
+            clock_offsets=clock_offsets,
+        )
+        selected.append(
+            EditorialSelection(
+                asset_id,
+                carrier.start,
+                end,
+                carrier.mode,
+                carrier.frame,
+                has_music=bool(row.get("has_music", False)),
+            )
+        )
+        replacements[asset_id] = ClipWithSegment(clip, carrier.start, end, 0.0, analyzed=False)
+    return EditorialSourcePlan(
+        candidates=tuple(replacements.get(row.clip.asset.id, row) for row in candidates),
+        plan=EditorialPlan(selections=tuple(selected)),
+        render_adjustments=tuple(adjustments),
+    )
+
+
+def _bound_carrier(
+    carrier: Carrier,
+    row: dict,
+    by_id: dict[str, ClipWithSegment],
+    adjustments: list[dict],
+    *,
+    config: Config,
+    include_live_photos: bool,
+    companion_assets: Mapping[str, Asset] | None,
+    clock_offsets: ClockOffsetProbe | None = None,
+) -> tuple[VideoClipInfo, float]:
+    """Return the exact clip and end time one carrier will actually render."""
+    asset = by_id[carrier.asset_id].clip.asset
+    clip = _projected_clip(
+        carrier,
+        row,
+        by_id,
+        config=config,
+        include_live_photos=include_live_photos,
+        companion_assets=companion_assets,
+        clock_offsets=clock_offsets,
+    )
+    end = _bounded_end(carrier, clip, row, adjustments)
+    if carrier.kind == "live-motion":
+        clip = _with_live_manifest(clip, row, carrier, end)
+    if (
+        asset.type == AssetType.VIDEO
+        and carrier.mode == "still"
+        and (
+            clip.duration_seconds <= 0
+            or carrier.frame is None
+            or carrier.frame >= clip.duration_seconds
+        )
+    ):
+        raise ValueError("editorial still frame exceeds actual video source")
+    return clip, end
+
+
+def _projected_clip(
+    carrier: Carrier,
+    row: dict,
+    by_id: dict[str, ClipWithSegment],
+    *,
+    config: Config,
+    include_live_photos: bool,
+    companion_assets: Mapping[str, Asset] | None,
+    clock_offsets: ClockOffsetProbe | None = None,
+) -> VideoClipInfo:
+    """Re-time the demanded clip against the rendering its carrier kind claims."""
+    clip = by_id[carrier.asset_id].clip
+    asset = clip.asset
+    problem = projection_problem(row, asset.type, include_live_photos=include_live_photos)
+    if problem is not None:
+        raise ValueError(problem)
+    if carrier.kind == "live-motion":
+        return _live_motion_clip(
+            carrier,
+            row,
+            by_id,
+            config=config,
+            companion_assets=companion_assets,
+            clock_offsets=clock_offsets,
+        )
+    if asset.type == AssetType.VIDEO:
+        return clip
+    return clip.model_copy(update={"duration_seconds": carrier.seconds})
+
+
+def _live_motion_clip(
+    carrier: Carrier,
+    row: dict,
+    by_id: dict[str, ClipWithSegment],
+    *,
+    config: Config,
+    companion_assets: Mapping[str, Asset] | None,
+    clock_offsets: ClockOffsetProbe | None = None,
+) -> VideoClipInfo:
+    members = _live_members(row, carrier.asset_id, by_id)
+    material = [by_id[key].clip.asset for key in members]
+    rendering = motion_renderings(
+        material,
+        config,
+        companion_assets=companion_assets,
+        clock_offsets=clock_offsets,
+    ).get(carrier.asset_id)
+    if rendering is None or set(rendering.still_ids) != set(members):
+        raise ValueError("editorial Live motion has no matching source manifest")
+    if rendering.material is None:
+        raise ValueError("editorial Live motion lacks canonical material lineage")
+    _check_declared_manifest(row, rendering, rendering.material)
+    return by_id[carrier.asset_id].clip.model_copy(
+        update={
+            "duration_seconds": rendering.duration_seconds,
+            "live_burst_video_ids": list(rendering.video_ids),
+            "live_burst_trim_points": list(rendering.trim_points),
+            "live_burst_shutter_timestamps": list(rendering.shutter_timestamps),
+            "live_burst_still_ids": list(rendering.still_ids),
+            "live_burst_material": rendering.material.as_dict(),
+            "local_path": None,
+        }
+    )
+
+
+def _live_members(row: dict, asset_id: str, by_id: Mapping[str, ClipWithSegment]) -> Sequence[str]:
+    members = row.get("members")
+    if not isinstance(members, (list, tuple)) or not members or len(set(members)) != len(members):
+        raise ValueError("editorial Live motion needs unique exact material members")
+    if asset_id not in members or not set(members).issubset(by_id):
+        raise ValueError("editorial Live motion escaped demanded material")
+    return members
+
+
+def _check_declared_manifest(
+    row: dict, rendering: MotionRendering, material: LiveRenderMaterial
+) -> None:
+    declared_videos = row.get("video_ids")
+    declared_trims = row.get("trim_points")
+    if declared_videos != list(rendering.video_ids) or declared_trims != [
+        list(pair) for pair in rendering.trim_points
+    ]:
+        raise ValueError("editorial Live motion companion manifest changed")
+    if row.get("live_material") is not None and row["live_material"] != material.as_dict():
+        raise ValueError("editorial Live source lineage changed")
+
+
+def _bounded_end(
+    carrier: Carrier, clip: VideoClipInfo, row: dict, adjustments: list[dict]
+) -> float:
+    end = carrier.end
+    if carrier.mode == "motion" and end > clip.duration_seconds:
+        end = _tightened_to_source(carrier, clip, row, adjustments)
+    if carrier.mode == "motion" and clip.duration_seconds <= 0:
+        raise ValueError("editorial interval exceeds actual source metadata")
+    return end
+
+
+def _tightened_to_source(
+    carrier: Carrier, clip: VideoClipInfo, row: dict, adjustments: list[dict]
+) -> float:
+    """Accept only the centisecond rounding boundary, and record both intervals.
+
+    Native units publish centiseconds, while source durations retain their full
+    precision. Any other overrun is a real disagreement with the source. The gap can land
+    on a window that starts anywhere in the clip, not just at its opening frame (#2039): a
+    window that runs to the clip's last frame hits the same rounding boundary regardless of
+    where it started.
+    """
+    if carrier.end == round(clip.duration_seconds, 2) == row.get("raw_seconds"):
+        adjustments.append(
+            {
+                "asset_id": carrier.asset_id,
+                "reason": "native-duration-rounded-to-centiseconds",
+                "native_interval": [carrier.start, carrier.end],
+                "source_interval": [carrier.start, clip.duration_seconds],
+            }
+        )
+        return clip.duration_seconds
+    raise ValueError("editorial interval exceeds actual source metadata")
+
+
+def _with_live_manifest(
+    clip: VideoClipInfo, row: dict, carrier: Carrier, end: float
+) -> VideoClipInfo:
+    # This is an explicit renderer contract, not a legacy cache/analysis flag.
+    canonical_material = LiveRenderMaterial.from_dict(clip.live_burst_material)
+    exact_interval = canonical_material.selected_interval(
+        carrier.seconds,
+        start=row.get("start_time", 0.0),
+        end=row.get("end_time"),
+        raw_seconds=row.get("raw_seconds"),
+    )
+    if exact_interval != (carrier.start, end):
+        raise ValueError("Editorial Live interval disagrees with source projection")
+    return clip.model_copy(
+        update={
+            "editorial_live_manifest": {
+                "version": "editorial-live-render-v1",
+                "material": clip.live_burst_material,
+                "selected_interval": [carrier.start, end],
+            }
+        }
+    )
+
+
+def _asset(source: Asset | VideoClipInfo) -> Asset:
+    return source.asset if isinstance(source, VideoClipInfo) else source
+
+
+def _demand_candidates(
+    prepared: PreparedEditorialSource,
+    sources: Sequence[Asset | VideoClipInfo],
+    *,
+    photo_seconds: float,
+    strict_source_durations: bool = False,
+) -> tuple[ClipWithSegment, ...]:
+    """One shippable clip per prepared candidate, timed from its own metadata."""
+    from immich_memories.analysis.runtime.smart_pipeline import ClipWithSegment
+
+    source_by_id = {_asset(source).id: source for source in sources}
+    demanded: list[ClipWithSegment] = []
+    for candidate in prepared.candidates:
+        source = source_by_id[candidate.asset_id]
+        seconds = candidate.shippable_duration
+        unknown_video = (
+            strict_source_durations and _asset(source).type.value == "VIDEO" and seconds == 0
+        )
+        if seconds <= 0 and not unknown_video:
+            seconds = photo_seconds
+        if seconds <= 0 and not unknown_video:
+            raise ValueError("text-only demand candidates need a positive duration")
+        if isinstance(source, VideoClipInfo):
+            clip = source.model_copy(update={"duration_seconds": seconds})
+        else:
+            clip = VideoClipInfo(
+                asset=source,
+                duration_seconds=seconds,
+                width=source.width,
+                height=source.height,
+            )
+        demanded.append(
+            ClipWithSegment(
+                clip=clip,
+                start_time=0.0,
+                end_time=seconds,
+                score=0.0,
+                analyzed=False,
+            )
+        )
+    return tuple(demanded)

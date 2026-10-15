@@ -16,7 +16,7 @@ def check_laya(config: Config) -> CheckResult:
     heads and rules answer the sharing question alone. A checkpoint that will not open is
     an error, because the cut would fail on it too.
     """
-    from immich_memories.analysis.editorial_laya_reader import laya_reader_for
+    from immich_memories.analysis.audience.laya_reader import laya_reader_for
 
     editorial = config.editorial
     if not editorial.laya_audience:

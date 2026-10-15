@@ -3,7 +3,7 @@
 from datetime import date
 from functools import partial
 
-from immich_memories.config_models_llm import LLMConfig
+from immich_memories.config.models.llm import LLMConfig
 from immich_memories.conformance.runtime import Case
 from immich_memories.free_text.facts import LibraryFacts
 from immich_memories.free_text.handoff import CatalogueEvent, film_for

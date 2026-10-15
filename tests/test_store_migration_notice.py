@@ -1,6 +1,6 @@
 import logging
 
-from immich_memories.config_loader import load_config
+from immich_memories.config.loader import load_config
 from immich_memories.store_migration_notice import log_store_migration_warnings
 
 

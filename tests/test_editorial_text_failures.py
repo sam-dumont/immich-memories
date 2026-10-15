@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from immich_memories.analysis.editorial_text_failures import (
+from immich_memories.analysis.judgments.text_failures import (
     FAILURE_SCHEMA,
     TextCompletionFailure,
 )

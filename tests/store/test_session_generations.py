@@ -13,7 +13,7 @@ import threading
 import pytest
 import sqlalchemy as sa
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.db import Store, now_db, open_store, upgrade
 from immich_memories.db.migrate import downgrade
 from immich_memories.db.tables.session_generations import session_generations

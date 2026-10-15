@@ -14,8 +14,8 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from immich_memories.config_loader import Config
-from immich_memories.config_models_llm import LLMConfig
+from immich_memories.config.loader import Config
+from immich_memories.config.models.llm import LLMConfig
 from immich_memories.timeperiod import DateRange
 from immich_memories.titles.film_title import resolve_film_title
 

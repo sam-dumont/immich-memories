@@ -9,19 +9,19 @@ from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-from immich_memories.analysis.annotation_lines import (
-    AnnotationContract,
-    AnnotationLineBatch,
-    AssetAnnotationLine,
-)
-from immich_memories.analysis.editorial_contracts import DecisionProvenance
-from immich_memories.analysis.selection_source import (
+from immich_memories.analysis.corpus.admission import (
     EditorialDependencies,
     EditorialSelectionRequest,
     SourceScope,
     prepare_editorial_source,
 )
-from immich_memories.analysis.selection_source_groups import project_episode_groups
+from immich_memories.analysis.corpus.groups import project_episode_groups
+from immich_memories.analysis.corpus.records import DecisionProvenance
+from immich_memories.analysis.reading.annotation_lines import (
+    AnnotationContract,
+    AnnotationLineBatch,
+    AssetAnnotationLine,
+)
 from immich_memories.operations.cut_progress import StageUpdate, announcing_stages
 from immich_memories.store.episode_readings import (
     BankedEpisodeReading,
@@ -63,7 +63,7 @@ class _AnnotationLines:
 def test_scoped_episode_reuses_full_membership_reading_without_a_model_call(
     tmp_path: Path,
 ) -> None:
-    from immich_memories.analysis.text_episode_reader import CachedTextEpisodeReader
+    from immich_memories.analysis.reading.episode_reader import CachedTextEpisodeReader
 
     noon = datetime(2026, 8, 25, 12, tzinfo=UTC)
     prepared = prepare_editorial_source(
@@ -126,7 +126,7 @@ def test_scoped_episode_reuses_full_membership_reading_without_a_model_call(
 
 
 def test_a_cold_episode_is_read_once_then_reused_from_the_bank(tmp_path: Path) -> None:
-    from immich_memories.analysis.text_episode_reader import CachedTextEpisodeReader
+    from immich_memories.analysis.reading.episode_reader import CachedTextEpisodeReader
 
     noon = datetime(2026, 8, 25, 12, tzinfo=UTC)
     prepared = prepare_editorial_source(
@@ -201,8 +201,8 @@ def test_a_cold_episode_is_read_once_then_reused_from_the_bank(tmp_path: Path) -
 def test_cold_episodes_are_packed_below_the_serialized_prompt_limit(
     tmp_path: Path,
 ) -> None:
-    from immich_memories.analysis.text_episode_paging import TextEpisodeRequestLimits
-    from immich_memories.analysis.text_episode_reader import CachedTextEpisodeReader
+    from immich_memories.analysis.reading.episode_paging import TextEpisodeRequestLimits
+    from immich_memories.analysis.reading.episode_reader import CachedTextEpisodeReader
 
     noon = datetime(2026, 8, 25, 12, tzinfo=UTC)
     prepared = prepare_editorial_source(
@@ -292,8 +292,8 @@ def test_cold_episodes_are_packed_below_the_serialized_prompt_limit(
 def test_an_oversized_episode_is_paged_then_banked_as_one_full_reading(
     tmp_path: Path,
 ) -> None:
-    from immich_memories.analysis.text_episode_paging import TextEpisodeRequestLimits
-    from immich_memories.analysis.text_episode_reader import CachedTextEpisodeReader
+    from immich_memories.analysis.reading.episode_paging import TextEpisodeRequestLimits
+    from immich_memories.analysis.reading.episode_reader import CachedTextEpisodeReader
 
     start = datetime(2026, 8, 25, 8, tzinfo=UTC)
     assets = tuple(
@@ -378,8 +378,8 @@ def test_an_oversized_episode_is_paged_then_banked_as_one_full_reading(
 
 
 def test_episode_pages_shrink_to_the_serialized_prompt_limit(tmp_path: Path) -> None:
-    from immich_memories.analysis.text_episode_paging import TextEpisodeRequestLimits
-    from immich_memories.analysis.text_episode_reader import CachedTextEpisodeReader
+    from immich_memories.analysis.reading.episode_paging import TextEpisodeRequestLimits
+    from immich_memories.analysis.reading.episode_reader import CachedTextEpisodeReader
 
     start = datetime(2026, 8, 25, 8, tzinfo=UTC)
     assets = tuple(
@@ -445,8 +445,8 @@ def test_episode_pages_shrink_to_the_serialized_prompt_limit(tmp_path: Path) -> 
 def test_an_episode_omitted_from_a_pack_is_reasked_alone(
     tmp_path: Path,
 ) -> None:
-    from immich_memories.analysis.text_episode_paging import TextEpisodeRequestLimits
-    from immich_memories.analysis.text_episode_reader import CachedTextEpisodeReader
+    from immich_memories.analysis.reading.episode_paging import TextEpisodeRequestLimits
+    from immich_memories.analysis.reading.episode_reader import CachedTextEpisodeReader
 
     start = datetime(2026, 8, 25, 8, tzinfo=UTC)
     prepared = prepare_editorial_source(
@@ -519,8 +519,8 @@ def test_a_truncated_reply_salvages_the_episode_it_finished_writing(
     a wasted 25s call into a partial win, and leaves only the genuinely unfinished
     episode for a retry.
     """
-    from immich_memories.analysis.text_episode_paging import TextEpisodeRequestLimits
-    from immich_memories.analysis.text_episode_reader import CachedTextEpisodeReader
+    from immich_memories.analysis.reading.episode_paging import TextEpisodeRequestLimits
+    from immich_memories.analysis.reading.episode_reader import CachedTextEpisodeReader
 
     start = datetime(2026, 8, 25, 8, tzinfo=UTC)
     prepared = prepare_editorial_source(
@@ -593,8 +593,8 @@ def test_a_truncated_answer_gets_a_larger_budget_on_retry(tmp_path: Path) -> Non
     is already down to one episode -- the smallest unit this reader ever asks about --
     so if that alone does not fit its own estimate, only the transport ceiling can tell.
     """
-    from immich_memories.analysis.text_episode_paging import TextEpisodeRequestLimits
-    from immich_memories.analysis.text_episode_reader import CachedTextEpisodeReader
+    from immich_memories.analysis.reading.episode_paging import TextEpisodeRequestLimits
+    from immich_memories.analysis.reading.episode_reader import CachedTextEpisodeReader
 
     prepared = prepare_editorial_source(
         EditorialSelectionRequest(scope=SourceScope()),
@@ -651,7 +651,7 @@ def test_a_truncated_answer_gets_a_larger_budget_on_retry(tmp_path: Path) -> Non
 def test_an_invalid_episode_answer_retains_full_membership_and_is_not_banked(
     tmp_path: Path,
 ) -> None:
-    from immich_memories.analysis.text_episode_reader import CachedTextEpisodeReader
+    from immich_memories.analysis.reading.episode_reader import CachedTextEpisodeReader
 
     noon = datetime(2026, 8, 25, 12, tzinfo=UTC)
     prepared = prepare_editorial_source(
@@ -731,7 +731,7 @@ def test_an_invalid_episode_answer_retains_full_membership_and_is_not_banked(
 def test_one_schema_envelope_remains_usable_when_followed_by_model_prose(
     tmp_path: Path,
 ) -> None:
-    from immich_memories.analysis.text_episode_reader import CachedTextEpisodeReader
+    from immich_memories.analysis.reading.episode_reader import CachedTextEpisodeReader
 
     source = make_asset("private-frame")
     prepared = prepare_editorial_source(
@@ -781,7 +781,7 @@ def test_one_schema_envelope_remains_usable_when_followed_by_model_prose(
 def test_invalid_or_conflicting_cull_rows_are_discarded_without_becoming_cuts(
     tmp_path: Path,
 ) -> None:
-    from immich_memories.analysis.text_episode_reader import CachedTextEpisodeReader
+    from immich_memories.analysis.reading.episode_reader import CachedTextEpisodeReader
 
     noon = datetime(2026, 8, 25, 12, tzinfo=UTC)
     prepared = prepare_editorial_source(
@@ -848,7 +848,7 @@ def test_invalid_or_conflicting_cull_rows_are_discarded_without_becoming_cuts(
 def test_invalid_representative_rows_are_discarded_when_one_grounded_row_survives(
     tmp_path: Path,
 ) -> None:
-    from immich_memories.analysis.text_episode_reader import CachedTextEpisodeReader
+    from immich_memories.analysis.reading.episode_reader import CachedTextEpisodeReader
 
     noon = datetime(2026, 8, 25, 12, tzinfo=UTC)
     prepared = prepare_editorial_source(
@@ -905,7 +905,7 @@ def test_invalid_representative_rows_are_discarded_when_one_grounded_row_survive
 
 
 def test_output_packing_and_transport_budget_share_one_bounded_estimate(tmp_path: Path) -> None:
-    from immich_memories.analysis.text_episode_reader import CachedTextEpisodeReader
+    from immich_memories.analysis.reading.episode_reader import CachedTextEpisodeReader
 
     noon = datetime(2026, 8, 25, 12, tzinfo=UTC)
     prepared = prepare_editorial_source(
@@ -975,7 +975,7 @@ def test_output_packing_and_transport_budget_share_one_bounded_estimate(tmp_path
 def test_a_provider_failure_retains_the_episode_and_leaves_the_bank_cold(
     tmp_path: Path,
 ) -> None:
-    from immich_memories.analysis.text_episode_reader import CachedTextEpisodeReader
+    from immich_memories.analysis.reading.episode_reader import CachedTextEpisodeReader
 
     noon = datetime(2026, 8, 25, 12, tzinfo=UTC)
     prepared = prepare_editorial_source(
@@ -1038,7 +1038,7 @@ def test_a_provider_failure_retains_the_episode_and_leaves_the_bank_cold(
 def test_an_episode_with_incomplete_annotations_is_retained_without_being_sent(
     tmp_path: Path,
 ) -> None:
-    from immich_memories.analysis.text_episode_reader import CachedTextEpisodeReader
+    from immich_memories.analysis.reading.episode_reader import CachedTextEpisodeReader
 
     noon = datetime(2026, 8, 25, 12, tzinfo=UTC)
     prepared = prepare_editorial_source(
@@ -1081,8 +1081,8 @@ def test_an_episode_with_incomplete_annotations_is_retained_without_being_sent(
 def test_text_cull_evidence_uses_the_existing_favourite_and_trace_policy(
     tmp_path: Path,
 ) -> None:
-    from immich_memories.analysis.selection_cull import run_cull_decisions
-    from immich_memories.analysis.text_episode_reader import CachedTextEpisodeReader
+    from immich_memories.analysis.reading.episode_reader import CachedTextEpisodeReader
+    from immich_memories.analysis.runtime.cull_pass import run_cull_decisions
 
     noon = datetime(2026, 8, 25, 12, tzinfo=UTC)
     prepared = prepare_editorial_source(
@@ -1162,8 +1162,8 @@ def test_text_cull_evidence_uses_the_existing_favourite_and_trace_policy(
 def test_text_representatives_drive_structure_without_reducing_the_reservoir(
     tmp_path: Path,
 ) -> None:
-    from immich_memories.analysis.selection_structure import build_structure_workprint
-    from immich_memories.analysis.text_episode_reader import CachedTextEpisodeReader
+    from immich_memories.analysis.reading.episode_reader import CachedTextEpisodeReader
+    from immich_memories.analysis.runtime.workprint import build_structure_workprint
 
     noon = datetime(2026, 8, 25, 12, tzinfo=UTC)
     prepared = prepare_editorial_source(
@@ -1225,8 +1225,8 @@ def test_a_swallowed_provider_failure_names_the_rejecting_check_once_in_the_log(
 ) -> None:
     import logging as _logging
 
-    from immich_memories.analysis.text_episode_paging import TextEpisodeRequestLimits
-    from immich_memories.analysis.text_episode_reader import CachedTextEpisodeReader
+    from immich_memories.analysis.reading.episode_paging import TextEpisodeRequestLimits
+    from immich_memories.analysis.reading.episode_reader import CachedTextEpisodeReader
 
     noon = datetime(2026, 8, 25, 12, tzinfo=UTC)
     later = noon + timedelta(days=3)
@@ -1251,7 +1251,9 @@ def test_a_swallowed_provider_failure_names_the_rejecting_check_once_in_the_log(
         annotation_versions=("description:student-v1",),
     )
 
-    with caplog.at_level(_logging.WARNING, logger="immich_memories.analysis.text_episode_reader"):
+    with caplog.at_level(
+        _logging.WARNING, logger="immich_memories.analysis.reading.episode_reader"
+    ):
         result = CachedTextEpisodeReader(
             store=EpisodeReadingStore(annotation_store()),
             producer=producer,
@@ -1274,11 +1276,11 @@ def test_a_cold_episode_can_be_read_from_a_provider_batch(tmp_path: Path) -> Non
     """The whole stage is offered at once, and what the queue answers is never asked live."""
     import httpx
 
-    from immich_memories.analysis.editorial_text_gateway import SyncTextPromptRequester
-    from immich_memories.analysis.llm_batch import BatchCoordinator, BatchPolicy
-    from immich_memories.analysis.text_episode_paging import TEXT_EPISODE_MAX_OUTPUT_TOKENS
-    from immich_memories.analysis.text_episode_reader import CachedTextEpisodeReader
-    from immich_memories.config_models_llm import LLMConfig
+    from immich_memories.analysis.judgments.text_gateway import SyncTextPromptRequester
+    from immich_memories.analysis.llm.batch import BatchCoordinator, BatchPolicy
+    from immich_memories.analysis.reading.episode_paging import TEXT_EPISODE_MAX_OUTPUT_TOKENS
+    from immich_memories.analysis.reading.episode_reader import CachedTextEpisodeReader
+    from immich_memories.config.models.llm import LLMConfig
 
     noon = datetime(2026, 8, 25, 12, tzinfo=UTC)
     prepared = prepare_editorial_source(
@@ -1385,7 +1387,7 @@ def test_a_reading_names_the_moment_worth_a_record_and_it_survives_the_cull(
     tmp_path: Path,
 ) -> None:
     """A picture the reading calls a record cannot also be thrown out as a Cull reject."""
-    from immich_memories.analysis.text_episode_reader import CachedTextEpisodeReader
+    from immich_memories.analysis.reading.episode_reader import CachedTextEpisodeReader
 
     noon = datetime(2026, 8, 25, 12, tzinfo=UTC)
     prepared = prepare_editorial_source(

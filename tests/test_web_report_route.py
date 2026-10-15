@@ -12,7 +12,7 @@ pytest.importorskip("immich_memories.tracking.report_api")
 
 @pytest.fixture
 def client() -> TestClient:
-    from immich_memories.config_loader import Config, get_config
+    from immich_memories.config.loader import Config, get_config
     from immich_memories.web import mount_web
 
     app = FastAPI()

@@ -13,7 +13,7 @@ from unittest.mock import patch
 
 import pytest
 
-from immich_memories.analysis.special_day import SpecialDay, ask_if_special, event_window
+from immich_memories.analysis.special_days.detection import SpecialDay, ask_if_special, event_window
 from immich_memories.automation.catalogue import save_catalogue
 
 # Two synthetic places, far enough apart to be different clusters.
@@ -118,7 +118,7 @@ class TestTheModelMaySayWhenTheEventRan:
 
     def _answer(self, payload: str) -> object:
         # WHY: the model is the boundary; this pins what we accept back from it.
-        with patch("immich_memories.analysis.special_day._ask", return_value=payload):
+        with patch("immich_memories.analysis.special_days.detection._ask", return_value=payload):
             return ask_if_special(self._day(), llm_config=SimpleNamespace())
 
     def test_clock_times_it_read_off_the_lines_become_the_window(self) -> None:
@@ -190,7 +190,7 @@ def _days_due(on: str) -> str:
     from click.testing import CliRunner
 
     from immich_memories.cli import main
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
 
     # WHY: the CLI group loads the user's real config directory on startup.
     with (

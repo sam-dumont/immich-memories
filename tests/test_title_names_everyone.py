@@ -11,7 +11,7 @@ from datetime import datetime
 
 import pytest
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.i18n import SUPPORTED_LOCALES
 from immich_memories.timeperiod import DateRange
 from immich_memories.titles.film_title import template_title

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from immich_memories.config_models import ImmichConnection
+from immich_memories.config.models.resources import ImmichConnection
 from tests.web_api_fixtures import api_client, config_in
 
 

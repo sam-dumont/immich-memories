@@ -16,12 +16,12 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Protocol
 
-from immich_memories.analysis.editorial_async_bridge import _run_sync
-from immich_memories.analysis.llm_metrics import recording_stage
-from immich_memories.analysis.llm_query import query_llm
-from immich_memories.analysis.llm_wire import LLMIncompleteResponse
-from immich_memories.analysis.strict_json import final_json_object
-from immich_memories.config_models_llm import LLMConfig
+from immich_memories.analysis.judgments.strict_json import final_json_object
+from immich_memories.analysis.llm.async_bridge import run_sync
+from immich_memories.analysis.llm.metrics import recording_stage
+from immich_memories.analysis.llm.query import query_llm
+from immich_memories.analysis.llm.wire import LLMIncompleteResponse
+from immich_memories.config.models.llm import LLMConfig
 from immich_memories.free_text.answer_contract import shape_hint, valid_answer
 
 if TYPE_CHECKING:
@@ -88,7 +88,7 @@ class WireAsker:
         try:
             with recording_stage("free_text"):
                 # A running loop (the web server) cannot run another: the bridge uses a thread.
-                raw = _run_sync(
+                raw = run_sync(
                     query_llm(
                         full_prompt,
                         self._config,

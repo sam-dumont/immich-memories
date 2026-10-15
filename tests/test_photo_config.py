@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from immich_memories.config_models_render import PhotoConfig
+from immich_memories.config.models.render import PhotoConfig
 
 
 class TestPhotoConfig:
@@ -41,14 +41,14 @@ class TestPhotoConfigInConfig:
 
     def test_default_config_has_photos(self):
         """Config() includes a photos field with PhotoConfig defaults."""
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
 
         config = Config()
         assert config.photos.enabled is True
 
     def test_photos_in_yaml_tier1(self, tmp_path):
         """Photos config loads from tier 1 (top-level YAML)."""
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
 
         config_path = tmp_path / "config.yaml"
         config_path.write_text("photos:\n  enabled: true\n  duration: 5.0\n")

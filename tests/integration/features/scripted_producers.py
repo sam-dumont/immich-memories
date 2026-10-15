@@ -12,9 +12,9 @@ from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
-from immich_memories.analysis.editorial_clip_frames import clip_frames_fact
-from immich_memories.analysis.editorial_obstruction import CLEAR_LABEL, HEAD_NAME, HEAD_VERSION
-from immich_memories.analysis.editorial_preparation_detectors import (
+from immich_memories.analysis.facts.clip_frames import clip_frames_fact
+from immich_memories.analysis.facts.obstruction import CLEAR_LABEL, HEAD_NAME, HEAD_VERSION
+from immich_memories.analysis.preparation.detectors import (
     DETECTOR_VERSIONS,
     MARQO_HEAD,
 )

@@ -20,7 +20,7 @@ from immich_memories.processing.ffmpeg_prober import FFmpegProber
 from immich_memories.processing.title_inserter import TitleInserter
 
 if TYPE_CHECKING:
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.processing.probe_cache import ProbeCache
 
 __all__ = [

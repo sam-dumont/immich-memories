@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
-from immich_memories.analysis.catalogue_runtime import _screen_documents
-from immich_memories.analysis.editorial_source import library_source_scope
+from immich_memories.analysis.runtime.period_accounts import _screen_documents
+from immich_memories.analysis.sources.window_context import library_source_scope
 from immich_memories.api.models import Asset, ServerInfo
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.db import open_store
 from immich_memories.timeperiod import DateRange
 from tests.annotation_rows import add_rows

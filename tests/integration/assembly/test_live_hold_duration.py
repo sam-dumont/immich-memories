@@ -8,8 +8,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from immich_memories.config_models import HardwareAccelConfig
-from immich_memories.config_models_render import OutputConfig
+from immich_memories.config.models.render import OutputConfig
+from immich_memories.config.models.resources import HardwareAccelConfig
 from immich_memories.processing.editorial_live_render import RENDER_VERSION, extract_certified_live
 from immich_memories.processing.live_material import LiveRenderMaterial, LiveSourceEntry
 

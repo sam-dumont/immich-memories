@@ -3,7 +3,7 @@ annotation store, one decision per picture, and read by every tier."""
 
 from __future__ import annotations
 
-from immich_memories.analysis import editorial_shareability as share
+from immich_memories.analysis.audience import shareability as share
 from immich_memories.db import open_store
 from immich_memories.store import owner_decisions as owner
 from tests.annotation_rows import add_rows, annotation_store
@@ -65,8 +65,8 @@ def test_a_library_with_no_store_yet_has_no_decisions():
 
 import pytest  # noqa: E402
 
-from immich_memories.analysis.editorial_shareability_tiers import audience_check_for  # noqa: E402
-from immich_memories.analysis.editorial_structure_audience import (  # noqa: E402
+from immich_memories.analysis.audience.tiers import audience_check_for  # noqa: E402
+from immich_memories.analysis.audience.verdicts import (  # noqa: E402
     AudienceBank,
     AudienceGate,
 )
@@ -112,10 +112,10 @@ def test_a_head_hold_stands_until_the_owner_clears_that_picture(tmp_path, tier):
 
 from dataclasses import replace  # noqa: E402
 
-from immich_memories.analysis.editorial_structure_contract import (  # noqa: E402
+from immich_memories.analysis.film.contract import (  # noqa: E402
     StructurePlannerPorts,
 )
-from immich_memories.analysis.editorial_structure_planner import plan_structure  # noqa: E402
+from immich_memories.analysis.structure.planner import plan_structure  # noqa: E402
 from tests.editorial_story_fixtures import ControlledStoryJudge  # noqa: E402
 from tests.test_editorial_duration_planner_integration import source  # noqa: E402
 
@@ -125,7 +125,7 @@ def with_owner(captured, store):
 
 
 def carried(captured, name, *, rules=False, laya=None):
-    from immich_memories.analysis.editorial_rule_reader import NoModelJudge, RuleStructureReader
+    from immich_memories.analysis.stories.rule_reader import NoModelJudge, RuleStructureReader
 
     ports = (
         StructurePlannerPorts(
@@ -170,7 +170,7 @@ def test_a_picture_the_owner_will_never_use_leaves_every_cut(tmp_path, rules):
 
 
 def test_the_no_model_draft_does_not_carry_a_banked_refusal_past_the_owner(tmp_path):
-    from immich_memories.analysis.editorial_rule_banked_facts import open_banked_facts
+    from immich_memories.analysis.stories.banked_facts import open_banked_facts
 
     store = empty_store(tmp_path)
     banked = AudienceBank(store, answerer="full|reader")
@@ -193,7 +193,7 @@ def test_the_no_model_draft_does_not_carry_a_banked_refusal_past_the_owner(tmp_p
 
 
 def test_a_cleared_picture_stands_in_a_film_shared_outside_the_family(tmp_path):
-    from immich_memories.analysis.editorial_rule_reader import RuleStructureReader
+    from immich_memories.analysis.stories.rule_reader import RuleStructureReader
 
     store = empty_store(tmp_path)
     captured = source(tmp_path, seconds=60)

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from immich_memories.analysis.editorial_planner import EditorialSelection
+from immich_memories.analysis.runtime.plan import EditorialSelection
 from immich_memories.api.models import AssetType
 from immich_memories.processing.render_inputs import read_render_inputs, write_render_inputs
 from tests.conftest import make_clip

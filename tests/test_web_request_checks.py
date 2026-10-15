@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from tests.web_server_fixtures import basic_auth_config, server_client
 
 

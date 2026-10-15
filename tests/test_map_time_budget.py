@@ -72,7 +72,7 @@ def test_a_three_minute_trip_keeps_its_content_and_puts_the_map_extra_on_top() -
 
 
 def test_a_render_longer_by_its_map_extra_is_on_budget(tmp_path) -> None:
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.generate import GenerationError, GenerationParams
     from immich_memories.generate_timeline import validate_final_duration
 

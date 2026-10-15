@@ -6,8 +6,8 @@ import json
 import httpx
 import pytest
 
-from immich_memories.analysis.editorial_clip_frames import CLIP_FRAMES_HEAD, CLIP_FRAMES_VERSION
-from immich_memories.config_models_inference import InferenceConfig
+from immich_memories.analysis.facts.clip_frames import CLIP_FRAMES_HEAD, CLIP_FRAMES_VERSION
+from immich_memories.config.models.inference import InferenceConfig
 from tests.annotation_rows import annotation_store, read_rows
 from tests.test_editorial_preparation import preview
 from tests.test_editorial_preparation_motion import prepared_video

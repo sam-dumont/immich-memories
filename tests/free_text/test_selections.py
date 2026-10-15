@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
-from immich_memories.config_models_automation import TripsConfig
+from immich_memories.config.models.automation import TripsConfig
 from immich_memories.free_text.facts import (
     farthest_trip,
     first_pictures,

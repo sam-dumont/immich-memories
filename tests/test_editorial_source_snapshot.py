@@ -13,20 +13,20 @@ from unittest.mock import patch
 
 import pytest
 
-from immich_memories.analysis.editorial_planner import EditorialPlan
-from immich_memories.analysis.editorial_pool import EditorialSourcePool
-from immich_memories.analysis.editorial_runtime import (
+from immich_memories.analysis.corpus.admission import SourceScope
+from immich_memories.analysis.corpus.trace import Trace
+from immich_memories.analysis.runtime.composition import (
     EditorialRunContext,
     build_editorial_planner,
 )
-from immich_memories.analysis.editorial_runtime_ports import EditorialRuntimePorts
-from immich_memories.analysis.editorial_source_snapshot import (
+from immich_memories.analysis.runtime.plan import EditorialPlan
+from immich_memories.analysis.runtime.ports import EditorialRuntimePorts
+from immich_memories.analysis.sources.pool import EditorialSourcePool
+from immich_memories.analysis.sources.snapshot import (
     SNAPSHOT_NAME,
     AttemptSourceSnapshots,
     load_sources,
 )
-from immich_memories.analysis.selection_source import SourceScope
-from immich_memories.analysis.selection_trace import Trace
 from immich_memories.api.models import AssetType, Person, VideoClipInfo
 from immich_memories.api.person_expression import PersonExpression
 from immich_memories.config import Config
@@ -156,7 +156,7 @@ def test_runtime_captures_once_per_attempt_without_refetch_or_mutation(tmp_path,
         # WHY: planning past the source would need the model provider; this test ends at the fetch.
         patch.object(planner, "_plan_source", side_effect=stop_after_source),
         patch(
-            "immich_memories.analysis.editorial_source_snapshot.write_secret_file",
+            "immich_memories.analysis.sources.snapshot.write_secret_file",
             side_effect=write,
         ),
     ):
@@ -178,7 +178,7 @@ def test_failed_atomic_write_does_not_mark_attempt_as_captured(tmp_path):
     with (
         # WHY: makes the real 0600 file write fail without needing an unwritable directory.
         patch(
-            "immich_memories.analysis.editorial_source_snapshot.write_secret_file",
+            "immich_memories.analysis.sources.snapshot.write_secret_file",
             side_effect=OSError,
         ),
         pytest.raises(OSError),

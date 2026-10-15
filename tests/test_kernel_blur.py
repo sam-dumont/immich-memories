@@ -35,7 +35,7 @@ def _blur_calls(monkeypatch) -> list[int]:
     from immich_memories.titles import kernels
 
     calls = [0]
-    original = kernels._gaussian_blur_h
+    original = kernels.compiled_gaussian_blur_h
 
     def counted(*args):
         calls[0] += 1
@@ -44,7 +44,7 @@ def _blur_calls(monkeypatch) -> list[int]:
     # WHY: the kernel library is the boundary here. The optimisation's whole
     # contract is "launch this fewer times", and nothing else in the output
     # says whether it did.
-    monkeypatch.setattr(kernels, "_gaussian_blur_h", counted)
+    monkeypatch.setattr(kernels, "compiled_gaussian_blur_h", counted)
     return calls
 
 
@@ -136,7 +136,7 @@ class TestDecimatedBlur:
         blur the renderer used to run, to the bit."""
         from immich_memories.titles import kernels
         from immich_memories.titles.kernel_blur import AnimatedBlur
-        from immich_memories.titles.kernels import _create_gaussian_kernel
+        from immich_memories.titles.kernels import create_gaussian_kernel
 
         frame = _picture(48, 64)
         through_the_class = frame.copy()
@@ -144,9 +144,9 @@ class TestDecimatedBlur:
 
         by_hand = frame.copy()
         scratch = np.zeros_like(by_hand)
-        kernel = _create_gaussian_kernel(6)
-        kernels._gaussian_blur_h(by_hand, scratch, kernel, 6)
-        kernels._gaussian_blur_v(scratch, by_hand, kernel, 6)
+        kernel = create_gaussian_kernel(6)
+        kernels.compiled_gaussian_blur_h(by_hand, scratch, kernel, 6)
+        kernels.compiled_gaussian_blur_v(scratch, by_hand, kernel, 6)
 
         np.testing.assert_array_equal(through_the_class, by_hand)
 

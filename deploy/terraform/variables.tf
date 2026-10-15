@@ -257,7 +257,7 @@ variable "labels" {
   default     = {}
 }
 
-# Third-party hosts (config_models_network.py). Off by default: a default run
+# Third-party hosts (config/models/network.py). Off by default: a default run
 # reaches Immich, the endpoints named in `env`, and nothing else.
 variable "network_geocoding" {
   description = "Reverse geocode through nominatim.openstreetmap.org: trip names, place names"
@@ -271,7 +271,7 @@ variable "network_map_tiles" {
   default     = false
 }
 
-# Cache caps (config_models.py CacheConfig). Both already default to 10 GB
+# Cache caps (config/models/resources.py CacheConfig). Both already default to 10 GB
 # inside the app; these only override that default. Raising them without
 # raising cache_storage_size just means the cache evicts what the higher cap
 # was meant to keep.
@@ -287,7 +287,7 @@ variable "cache_thumbnail_max_size_mb" {
   default     = null
 }
 
-# ACE-Step 1.5 music, API mode (config_models_soundtrack.py ACEStepConfig).
+# ACE-Step 1.5 music, API mode (config/models/soundtrack.py ACEStepConfig).
 # Points at an ACE-Step API server (acestep-api: /release_task,
 # /query_result), in-cluster or on a LAN machine (MLX/MPS on a Mac).
 variable "ace_step_enabled" {
@@ -309,7 +309,7 @@ variable "ace_step_api_key" {
   sensitive   = true
 }
 
-# OIDC behind a TLS-terminating reverse proxy (config_models_auth.py AuthConfig).
+# OIDC behind a TLS-terminating reverse proxy (config/models/auth.py AuthConfig).
 # Both oidc_public_url and oidc_trusted_proxies are required once oidc_enabled
 # is true: without public_url the redirect_uri sent to the IdP is built from
 # the in-cluster request and comes out http://, which every IdP refuses;
@@ -393,7 +393,7 @@ variable "render_worker_token" {
   }
 }
 
-# A declarative config.yaml (config_loader.py). A ConfigMap volume mounts
+# A declarative config.yaml (config/loader.py). A ConfigMap volume mounts
 # files owned by root, readable by the app's uid only through group or world
 # bits, which is exactly what the app warns on ("Config file ... is readable by other users"); when this is
 # set, an init container copies it onto the writable cache PVC as the app's

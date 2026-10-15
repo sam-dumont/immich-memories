@@ -5,15 +5,15 @@ from types import SimpleNamespace
 
 import pytest
 
-from immich_memories.analysis.editorial_home_radius import HOME_RADIUS_KM, home_of, near_home_of
-from immich_memories.analysis.editorial_rule_reader import RuleStructureReader
-from immich_memories.analysis.editorial_story_shortlist import (
+from immich_memories.analysis.places.home_radius import HOME_RADIUS_KM, home_of, near_home_of
+from immich_memories.analysis.stories.rule_reader import RuleStructureReader
+from immich_memories.analysis.stories.shortlist import (
     DepictedChoice,
     shortlist_story_moments,
 )
-from immich_memories.analysis.editorial_story_weighing import consecutive_runs
+from immich_memories.analysis.stories.weighing import consecutive_runs
 from immich_memories.api.models import ExifInfo
-from immich_memories.config_models_automation import TripsConfig
+from immich_memories.config.models.automation import TripsConfig
 from tests.picture_fake import PictureFake
 
 HOME = (50.8468, 4.3525)

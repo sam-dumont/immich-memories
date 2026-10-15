@@ -13,8 +13,8 @@ from typing import Any
 
 import yaml
 
-from immich_memories.config_loader import _TIER2_SECTIONS, Config
-from immich_memories.config_presets import PRESETS
+from immich_memories.config.loader import TIER2_SECTIONS, Config
+from immich_memories.config.presets import PRESETS
 
 
 class _Drop:
@@ -26,7 +26,7 @@ class _Drop:
 
 # Both preset mechanisms in the app fill a field only where it is still at the
 # model's default (`apply_preset`, and `_PROVIDER_PRESETS` in
-# `analysis/llm_query.py`), so a value the copied config happens to carry
+# `analysis/llm/query.py`), so a value the copied config happens to carry
 # silently outranks them. Removing the key is the only way to let one apply.
 DROP = _Drop()
 
@@ -43,7 +43,7 @@ def _section(data: dict, name: str) -> dict:
         return data[name]
     if name in data.get("advanced", {}):
         return data["advanced"][name]
-    if name in _TIER2_SECTIONS:
+    if name in TIER2_SECTIONS:
         return data.setdefault("advanced", {}).setdefault(name, {})
     return data.setdefault(name, {})
 

@@ -80,7 +80,7 @@ def test_key_missing_read_permissions_is_refused_with_exact_names():
 
 
 def test_preflight_names_missing_read_permissions_instead_of_reporting_connected():
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.preflight import CheckStatus
     from immich_memories.preflight_immich import check_immich
 
@@ -92,7 +92,7 @@ def test_preflight_names_missing_read_permissions_instead_of_reporting_connected
 
 
 def test_preflight_names_missing_user_read_before_calling_the_denied_user_route():
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.preflight import CheckStatus
     from immich_memories.preflight_immich import check_immich
 
@@ -106,7 +106,7 @@ def test_preflight_names_missing_user_read_before_calling_the_denied_user_route(
 def test_cut_client_refuses_incomplete_read_scope_before_discovering_assets():
     from immich_memories.api.permissions import MissingReadPermissions
     from immich_memories.cli.run_people import run_client
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
 
     with permission_server(["user.read"]) as (url, requests):
         config = Config(tier="basic", immich={"url": url, "api_key": "synthetic-key"})
@@ -165,7 +165,7 @@ def test_config_test_warns_about_rights_without_refusing_a_readable_key(permissi
 
 
 def test_partner_account_missing_read_scope_is_named_in_preflight():
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.preflight import CheckStatus
     from immich_memories.preflight_accounts import check_extra_accounts
 

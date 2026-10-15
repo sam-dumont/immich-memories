@@ -7,9 +7,9 @@ from unittest.mock import ANY, MagicMock
 
 import pytest
 
-from immich_memories.analysis.editorial_planner import EditorialSelection
+from immich_memories.analysis.runtime.plan import EditorialSelection
 from immich_memories.api.models import AssetType
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.generate import GenerationParams
 from immich_memories.processing.assembly_config import AssemblyClip
 from immich_memories.processing.download_coordinator import DownloadResult

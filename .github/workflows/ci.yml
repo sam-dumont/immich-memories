@@ -151,6 +151,9 @@ jobs:
       - name: Architecture (import-linter)
         if: '!cancelled()'
         run: make arch-check
+      - name: Private imports
+        if: '!cancelled()'
+        run: make private-imports
       - name: Code Duplication (≤5%)
         if: '!cancelled()'
         run: make duplication

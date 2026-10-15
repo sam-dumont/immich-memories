@@ -17,7 +17,7 @@ import pytest
 
 from immich_memories.api.album_service import AlbumService, FilmScope
 from immich_memories.api.models import Asset, AssetType, ExifInfo, VideoClipInfo
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.i18n import SUPPORTED_LOCALES
 from immich_memories.timeperiod import DateRange
 from immich_memories.titles.film_title import resolve_film_title

@@ -84,7 +84,7 @@ class TestPerStepTiming:
 
     def test_assembly_only_step(self, test_clip_720p, test_clip_720p_b, tmp_path):
         """Time assembly-only (no titles, no music). Verify 720p output and content."""
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
         from immich_memories.generate import GenerationParams, generate_memory
 
         clip_a = _make_test_clip(test_clip_720p, "step-a")
@@ -130,7 +130,7 @@ class TestPerStepTiming:
 
     def test_title_rendering_step(self, test_clip_720p, test_clip_720p_b, tmp_path):
         """Time assembly with title screens. Verify title frame has visible content."""
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
         from immich_memories.generate import GenerationParams, generate_memory
 
         clip_a = _make_test_clip(test_clip_720p, "title-a")
@@ -186,7 +186,7 @@ class TestPerStepTiming:
 
     def test_music_mixing_step(self, test_clip_720p, test_clip_720p_b, test_music_short, tmp_path):
         """Time assembly with music mixing. Verify audio stream present and reasonable."""
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
         from immich_memories.generate import GenerationParams, generate_memory
 
         clip_a = _make_test_clip(test_clip_720p, "music-a")
@@ -233,7 +233,7 @@ class TestPerStepTiming:
 
     def test_full_pipeline_step(self, test_clip_720p, test_clip_720p_b, test_music_short, tmp_path):
         """Time full pipeline: titles + music + assembly. Verify all output properties."""
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
         from immich_memories.generate import GenerationParams, generate_memory
 
         clip_a = _make_test_clip(test_clip_720p, "full-a")

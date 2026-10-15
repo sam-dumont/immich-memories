@@ -2,7 +2,7 @@
 
 import pytest
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.preflight import (
     CheckStatus,
     check_caption_endpoint,

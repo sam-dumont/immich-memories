@@ -16,7 +16,7 @@ from immich_memories.automation.notification_state import (
     NotificationStateStore,
 )
 from immich_memories.automation.state_store import AutomationStateStore
-from immich_memories.config_loader import Config, set_config
+from immich_memories.config.loader import Config, set_config
 from immich_memories.db.tables import asset_scores
 from immich_memories.operations.run_index import attempt_dir_for_run
 from immich_memories.operations.store_import import import_legacy

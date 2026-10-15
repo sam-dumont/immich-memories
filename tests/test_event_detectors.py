@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import UTC, date, datetime
 from unittest.mock import MagicMock, patch
 
-from immich_memories.analysis.trip_detection import DetectedTrip
+from immich_memories.analysis.places.trip_detection import DetectedTrip
 from immich_memories.api.models import Asset, AssetType, ExifInfo
 from immich_memories.automation.candidates import CandidateCategory, make_memory_key
 from immich_memories.automation.event_detectors import (
@@ -13,7 +13,7 @@ from immich_memories.automation.event_detectors import (
     MultiPersonDetector,
     TripDetector,
 )
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 
 
 def _make_gps_asset(
@@ -54,7 +54,7 @@ class TestTripDetector:
 
         # WHY: mock detect_trips to avoid needing real GPS clustering
         with patch(
-            "immich_memories.analysis.trip_detection.detect_trips",
+            "immich_memories.analysis.places.trip_detection.detect_trips",
             return_value=[trip],
         ):
             candidates = detector.detect(
@@ -92,7 +92,7 @@ class TestTripDetector:
         )
 
         with patch(
-            "immich_memories.analysis.trip_detection.detect_trips",
+            "immich_memories.analysis.places.trip_detection.detect_trips",
             return_value=[trip],
         ):
             candidates = detector.detect(
@@ -123,7 +123,7 @@ class TestTripDetector:
         already = {"trip:2026-01-05:2026-01-15:"}
 
         with patch(
-            "immich_memories.analysis.trip_detection.detect_trips",
+            "immich_memories.analysis.places.trip_detection.detect_trips",
             return_value=[trip],
         ):
             candidates = detector.detect(
@@ -184,7 +184,7 @@ class TestTripDetector:
         )
 
         with patch(
-            "immich_memories.analysis.trip_detection.detect_trips",
+            "immich_memories.analysis.places.trip_detection.detect_trips",
             return_value=[trip],
         ):
             candidates = detector.detect(

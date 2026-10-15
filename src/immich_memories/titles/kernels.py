@@ -21,11 +21,11 @@ from .fonts import FontWeight, bundled_font_path
 from .gpu_kernel_backend import KERNEL_LIBRARY, KERNELS_AVAILABLE, ti
 from .kernel_backend_probe import (
     CPU_PROBE_NAME,
-    _backend_dispatches,
-    _candidate_backends,
-    _silent_init,
+    backend_dispatches,
+    candidate_backends,
     probe_backend_dispatch,
     probe_failure_wording,
+    silent_init,
 )
 
 try:
@@ -68,18 +68,18 @@ def init_kernels() -> str | None:
 
     last_error = None
     _gpu_failures.clear()
-    backends = _candidate_backends(
+    backends = candidate_backends(
         force_cpu=force_cpu,
         operating_system=platform.system(),
     )
     for backend, name, probe_name in backends:
-        if not _backend_dispatches(name, probe_name):
+        if not backend_dispatches(name, probe_name):
             _note_gpu_failure(
                 name, probe_name, probe_failure_wording(probe_backend_dispatch(probe_name))
             )
             continue
         try:
-            _silent_init(arch=backend, offline_cache=True)
+            silent_init(arch=backend, offline_cache=True)
             # The one line that says what this run's titles are rendered by.
             # init_kernels() is idempotent, so it is printed once per process.
             logger.info(
@@ -146,25 +146,25 @@ def kernels_available() -> bool:
 
 
 # Compiled kernel references (populated by _compile_kernels)
-_generate_linear_gradient = None
-_generate_radial_gradient = None
-_gaussian_blur_h = None
+compiled_generate_linear_gradient = None
+compiled_generate_radial_gradient = None
+compiled_gaussian_blur_h = None
 _catmull_rom_blend = None
 _upload_source = None
-_gaussian_blur_v = None
+compiled_gaussian_blur_v = None
 _apply_vignette = None
-_render_bokeh_particles = None
+compiled_render_bokeh_particles = None
 _apply_noise_grain = None
-_generate_aurora_gradient = None
-_composite_rgba_over = None
-_composite_text_with_offset = None
-_apply_color_pulse = None
-_render_sdf_text = None
+compiled_generate_aurora_gradient = None
+compiled_composite_rgba_over = None
+compiled_composite_text_with_offset = None
+compiled_apply_color_pulse = None
+compiled_render_sdf_text = None
 # GPU-resident buffer kernels (issue #164)
-_copy_field_3 = None
-_blend_fields = None
+compiled_copy_field_3 = None
+compiled_blend_fields = None
 _finalize_output = None
-_apply_vignette_and_noise = None
+compiled_apply_vignette_and_noise = None
 
 
 def _compile_catmull_rom():
@@ -231,7 +231,7 @@ def _compile_source_upload():
 
 def _compile_kernels():
     """Compile every title kernel. Must be called AFTER ti.init()."""
-    global _kernels_compiled, _upload_source, _catmull_rom_blend, _generate_linear_gradient, _generate_radial_gradient, _gaussian_blur_h, _gaussian_blur_v, _apply_vignette, _render_bokeh_particles, _apply_noise_grain, _generate_aurora_gradient, _composite_rgba_over, _composite_text_with_offset, _apply_color_pulse, _render_sdf_text, _copy_field_3, _blend_fields, _finalize_output, _apply_vignette_and_noise  # noqa: PLW0603, E501
+    global _kernels_compiled, _upload_source, _catmull_rom_blend, compiled_generate_linear_gradient, compiled_generate_radial_gradient, compiled_gaussian_blur_h, compiled_gaussian_blur_v, _apply_vignette, compiled_render_bokeh_particles, _apply_noise_grain, compiled_generate_aurora_gradient, compiled_composite_rgba_over, compiled_composite_text_with_offset, compiled_apply_color_pulse, compiled_render_sdf_text, compiled_copy_field_3, compiled_blend_fields, _finalize_output, compiled_apply_vignette_and_noise  # noqa: PLW0603, E501
 
     if _kernels_compiled or not KERNELS_AVAILABLE:
         return
@@ -633,30 +633,30 @@ def _compile_kernels():
                 val = val + noise
                 output[y, x, c] = ti.max(0.0, ti.min(1.0, val))
 
-    _generate_linear_gradient = generate_linear_gradient
-    _generate_radial_gradient = generate_radial_gradient
+    compiled_generate_linear_gradient = generate_linear_gradient
+    compiled_generate_radial_gradient = generate_radial_gradient
     _catmull_rom_blend = _compile_catmull_rom()
     _upload_source = _compile_source_upload()
-    _gaussian_blur_h = gaussian_blur_h
-    _gaussian_blur_v = gaussian_blur_v
+    compiled_gaussian_blur_h = gaussian_blur_h
+    compiled_gaussian_blur_v = gaussian_blur_v
     _apply_vignette = apply_vignette
-    _render_bokeh_particles = render_bokeh_particles
+    compiled_render_bokeh_particles = render_bokeh_particles
     _apply_noise_grain = apply_noise_grain
-    _generate_aurora_gradient = generate_aurora_gradient
-    _composite_rgba_over = composite_rgba_over
-    _composite_text_with_offset = composite_text_with_offset
-    _apply_color_pulse = apply_color_pulse
-    _render_sdf_text = render_sdf_text
-    _copy_field_3 = copy_field_3
-    _blend_fields = blend_fields
+    compiled_generate_aurora_gradient = generate_aurora_gradient
+    compiled_composite_rgba_over = composite_rgba_over
+    compiled_composite_text_with_offset = composite_text_with_offset
+    compiled_apply_color_pulse = apply_color_pulse
+    compiled_render_sdf_text = render_sdf_text
+    compiled_copy_field_3 = copy_field_3
+    compiled_blend_fields = blend_fields
     _finalize_output = finalize_output
-    _apply_vignette_and_noise = apply_vignette_and_noise
+    compiled_apply_vignette_and_noise = apply_vignette_and_noise
 
     _kernels_compiled = True
     logger.debug("Title kernels compiled")
 
 
-def _create_gaussian_kernel(radius: int, sigma: float | None = None) -> np.ndarray:
+def create_gaussian_kernel(radius: int, sigma: float | None = None) -> np.ndarray:
     """Create 1D Gaussian kernel for separable blur."""
     if radius == 0:
         return np.array([1.0], dtype=np.float32)
@@ -668,13 +668,13 @@ def _create_gaussian_kernel(radius: int, sigma: float | None = None) -> np.ndarr
     return kernel.astype(np.float32)
 
 
-def _hex_to_rgb(hex_color: str) -> tuple[float, float, float]:
+def hex_to_rgb(hex_color: str) -> tuple[float, float, float]:
     """Convert hex color to normalized RGB floats."""
     h = hex_color.lstrip("#")
     return (int(h[0:2], 16) / 255.0, int(h[2:4], 16) / 255.0, int(h[4:6], 16) / 255.0)
 
 
-def _finalize_to_output(
+def finalize_to_output(
     frame,
     output,
     max_val: float,
@@ -779,7 +779,7 @@ _SYSTEM_FONTS = [
 ]
 
 
-def _get_system_font(font_family: str = "Helvetica") -> str:
+def get_system_font(font_family: str = "Helvetica") -> str:
     """A title font path: the family bundled in the wheel, then the user's own
     font directory, then whatever this host ships. Nothing here is downloaded."""
     family_clean = font_family.replace(" ", "")

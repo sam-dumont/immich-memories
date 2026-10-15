@@ -1,11 +1,11 @@
 """Reuse complete caption pairs and attribute them to the producer actually read."""
 
-from immich_memories.analysis.editorial_description_contract import (
+from immich_memories.analysis.captions.contract import (
     DESCRIPTION_MODEL,
     DESCRIPTION_SOURCE,
 )
-from immich_memories.analysis.prepared_captions import prepared_captions
-from immich_memories.config_loader import Config
+from immich_memories.analysis.preparation.prepared_captions import prepared_captions
+from immich_memories.config.loader import Config
 from immich_memories.store.asset_annotations import AssetAnnotationFactRepository
 from immich_memories.store.caption_provenance import CaptionOrigin, origins_for, remember_origins
 from immich_memories.store.editorial_preparation import missing_facts

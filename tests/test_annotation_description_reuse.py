@@ -1,6 +1,6 @@
 """Repeated editorial reads reuse prose without hiding refreshed annotations."""
 
-from immich_memories.analysis.editorial_structure_lines import UnitLines
+from immich_memories.analysis.film.lines import UnitLines
 
 
 class CountedLine(str):
@@ -50,7 +50,7 @@ def test_separate_readers_keep_their_own_evidence_and_unknown_tags():
 
 
 def test_reuse_preserves_complete_planner_decisions_and_prompts(tmp_path, monkeypatch):
-    from immich_memories.analysis.annotation_line_fields import content_of
+    from immich_memories.analysis.facts.line_fields import content_of
     from tests.editorial_story_fixtures import ControlledStoryJudge
     from tests.test_editorial_duration_planner_integration import run, semantic_plan
     from tests.test_editorial_story_nearby_choices import nearby_source

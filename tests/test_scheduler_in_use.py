@@ -13,7 +13,7 @@ from immich_memories.automation.last_trigger import read_last_trigger, record_tr
 from immich_memories.automation.scheduler_in_use import describe_scheduler
 from immich_memories.automation.system_scheduler import SchedulerStatus
 from immich_memories.cli import main
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 
 UNKNOWN_CRON = SchedulerStatus(platform="crontab", installed=None, active=None)
 NO_CRON = SchedulerStatus(platform="crontab", installed=False, active=None)

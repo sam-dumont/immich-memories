@@ -11,13 +11,13 @@ from types import SimpleNamespace
 import pytest
 import sqlalchemy as sa
 
-from immich_memories.analysis import editorial_motion_facts as motion
-from immich_memories.analysis.editorial_case import Case
-from immich_memories.analysis.editorial_motion_outcomes import (
+from immich_memories.analysis.clips import motion_facts as motion
+from immich_memories.analysis.clips.motion_outcomes import (
     REFERENCE_NAME,
     SCHEMA,
     MotionOutcomeReplay,
 )
+from immich_memories.analysis.reading.case import Case
 from immich_memories.db.tables import motion_residuals
 from tests.annotation_rows import annotation_store, count_rows
 from tests.test_editorial_demanded_motion import _assets, _carrier

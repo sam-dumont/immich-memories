@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
-from immich_memories.config_loader import set_config
+from immich_memories.config.loader import set_config
 from immich_memories.web.job_routes import cli_executable
 from immich_memories.web.server import create_app
 from tests.web_api_fixtures import config_in, save_run

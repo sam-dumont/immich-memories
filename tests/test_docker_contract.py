@@ -407,7 +407,7 @@ def test_quickstart_compose_publishes_the_ui_on_loopback_only() -> None:
 
 
 def test_quickstart_compose_resolves_to_basic_without_a_second_service() -> None:
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
 
     compose = yaml.safe_load((REPO_ROOT / "docker-compose.yml").read_text())
     environment = compose["services"]["immich-memories"]["environment"]

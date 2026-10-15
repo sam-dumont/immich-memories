@@ -3,14 +3,14 @@
 import pytest
 
 from immich_memories.audio.generators.ace_step_backend import ACEStepBackend
-from immich_memories.audio.generators.factory import _app_config_to_ace_step
-from immich_memories.config_models_soundtrack import ACEStepConfig
+from immich_memories.audio.generators.factory import app_config_to_ace_step
+from immich_memories.config.models.soundtrack import ACEStepConfig
 
 
 def test_config_default_reaches_backend_runtime_and_keeps_api_key(monkeypatch):
     settings = ACEStepConfig(mode="lib", api_key="test-only-key")
     assert settings.cpu_offload is True
-    backend = ACEStepBackend(_app_config_to_ace_step(settings))
+    backend = ACEStepBackend(app_config_to_ace_step(settings))
     captured = []
     # WHY: record the real config→factory→backend crossing without allocating native weights.
     monkeypatch.setattr(
@@ -23,7 +23,7 @@ def test_config_default_reaches_backend_runtime_and_keeps_api_key(monkeypatch):
 
 
 def test_explicit_false_reaches_backend(monkeypatch):
-    backend = ACEStepBackend(_app_config_to_ace_step(ACEStepConfig(mode="lib", cpu_offload=False)))
+    backend = ACEStepBackend(app_config_to_ace_step(ACEStepConfig(mode="lib", cpu_offload=False)))
     captured = []
     # WHY: keep the runtime allocation boundary observable without allocating model tensors.
     monkeypatch.setattr(
@@ -107,9 +107,7 @@ async def test_api_payload_and_auth_are_unchanged_by_local_offload(monkeypatch, 
             )
 
     backend = ACEStepBackend(
-        _app_config_to_ace_step(
-            ACEStepConfig(mode="api", api_key="test-only-key", cpu_offload=True)
-        )
+        app_config_to_ace_step(ACEStepConfig(mode="api", api_key="test-only-key", cpu_offload=True))
     )
     # WHY: observe the real HTTP request construction without contacting a provider or downloading audio.
     monkeypatch.setattr("httpx.AsyncClient", Client)
@@ -129,4 +127,4 @@ def test_cpu_offload_environment_override_is_read_by_regular_config(monkeypatch)
     monkeypatch.setenv("IMMICH_MEMORIES_ACE_STEP__CPU_OFFLOAD", "false")
     config = Config()
     assert config.ace_step.cpu_offload is False
-    assert _app_config_to_ace_step(config.ace_step).extra_args["cpu_offload"] is False
+    assert app_config_to_ace_step(config.ace_step).extra_args["cpu_offload"] is False

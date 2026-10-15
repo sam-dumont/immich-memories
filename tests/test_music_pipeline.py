@@ -396,7 +396,7 @@ class TestSeparationIsOptional:
             MusicStems,
             VideoTimeline,
         )
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
         from immich_memories.generate_music import auto_generate_music
 
         config = Config()
@@ -432,7 +432,7 @@ class TestSeparationIsOptional:
 
     def test_resolving_generated_music_keeps_stems_available_to_the_mixer(self, tmp_path):
         from immich_memories.audio.music_generator_models import GeneratedMusic, MusicStems
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
         from immich_memories.generate_music import resolve_music
 
         config = Config()
@@ -481,7 +481,7 @@ class TestCreatePipelineAutoDemucs:
         config.musicgen.enabled = False
 
         with patch(
-            "immich_memories.audio.generators.demucs_local._is_demucs_importable",
+            "immich_memories.audio.generators.demucs_local.is_demucs_importable",
             return_value=True,
         ):
             pipeline = create_pipeline(config)
@@ -499,7 +499,7 @@ class TestCreatePipelineAutoDemucs:
         config.musicgen.enabled = False
 
         with patch(
-            "immich_memories.audio.generators.demucs_local._is_demucs_importable",
+            "immich_memories.audio.generators.demucs_local.is_demucs_importable",
             return_value=False,
         ):
             pipeline = create_pipeline(config)
@@ -525,7 +525,7 @@ class TestCreatePipelineAPIMode:
         config.musicgen.num_versions = 1
 
         with patch(
-            "immich_memories.audio.generators.demucs_local._is_demucs_importable",
+            "immich_memories.audio.generators.demucs_local.is_demucs_importable",
             return_value=False,
         ):
             pipeline = create_pipeline(config)
@@ -588,7 +588,7 @@ class TestCreatePipelineAPIMode:
         config.musicgen.num_versions = 1
 
         with patch(
-            "immich_memories.audio.generators.demucs_local._is_demucs_importable",
+            "immich_memories.audio.generators.demucs_local.is_demucs_importable",
             return_value=False,
         ):
             pipeline = create_pipeline(config)
@@ -776,7 +776,7 @@ class TestAutoRegenerationBudget:
             MusicGenerationResult,
             VideoTimeline,
         )
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
         from immich_memories.generate_music import auto_generate_music
 
         config = Config()

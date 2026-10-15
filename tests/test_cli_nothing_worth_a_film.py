@@ -7,8 +7,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from immich_memories.analysis.smart_pipeline import PipelineResult
-from immich_memories.config_loader import Config
+from immich_memories.analysis.runtime.smart_pipeline import PipelineResult
+from immich_memories.config.loader import Config
 from immich_memories.timeperiod import DateRange
 from tests.conftest import make_clip
 
@@ -26,7 +26,7 @@ def _run_with_nothing_kept(
         # WHY: stands in for clip conversion, so the pool is exactly `candidates`.
         patch("immich_memories.generate_clips.assets_to_clips", return_value=candidates),
         # WHY: the selection pipeline; it reads the pool and keeps nothing.
-        patch("immich_memories.analysis.editorial_runtime.build_smart_pipeline") as pipeline_type,
+        patch("immich_memories.analysis.runtime.composition.build_smart_pipeline") as pipeline_type,
         # WHY: the FFmpeg render, which must never be reached here.
         patch("immich_memories.generate.generate_memory") as generate,
     ):

@@ -17,8 +17,8 @@ from pydantic import ValidationError
 
 from immich_memories.api.accounts import AccountUnavailable, open_accounts
 from immich_memories.cli import main
-from immich_memories.config_loader import Config, set_config
-from immich_memories.config_models import ImmichConfig
+from immich_memories.config.loader import Config, set_config
+from immich_memories.config.models.resources import ImmichConfig
 from immich_memories.logging_config import SecretRedactionFilter
 from immich_memories.preflight import CheckStatus, run_preflight_checks
 

@@ -17,7 +17,7 @@ from pathlib import Path
 
 import pytest
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.processing.clips import extract_clip
 from tests.integration.conftest import requires_ffmpeg
 

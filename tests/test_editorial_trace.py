@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from immich_memories.analysis.editorial_contracts import (
+from immich_memories.analysis.corpus.records import (
     DecisionProvenance,
     PassTrace,
     TraceDecision,
 )
-from immich_memories.analysis.selection_trace import Trace, record, tracing
+from immich_memories.analysis.corpus.trace import Trace, record, tracing
 
 
 def _provenance(input_ids: tuple[str, ...]) -> DecisionProvenance:

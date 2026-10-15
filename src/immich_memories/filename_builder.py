@@ -15,7 +15,7 @@ from immich_memories.api.person_expression import PersonExpression
 from immich_memories.i18n_places import cast_list
 
 if TYPE_CHECKING:
-    from immich_memories.analysis.editorial_planner import EditorialSelection
+    from immich_memories.analysis.runtime.plan import EditorialSelection
     from immich_memories.timeperiod import DateRange
 
 # 8 hex characters: short enough to read in a filename, and with a few hundred

@@ -13,7 +13,7 @@ from typing import Literal
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from immich_memories.config_models_editorial_preparation import EditorialPreparationConfig
+from immich_memories.config.models.editorial_preparation import EditorialPreparationConfig
 
 ENV_PREFIX = "IMMICH_MEMORIES_INFERENCE_"
 

@@ -7,11 +7,11 @@ facts alone, position says little: an eight-picture moment whose third-ranked fr
 the standing gate was shipping two frames and leaving five usable ones behind.
 """
 
-from immich_memories.analysis.editorial_story_carriers import CarrierAdmission
-from immich_memories.analysis.editorial_story_lookalike import LookAlikeCheck
-from immich_memories.analysis.editorial_story_shortlist import DepictedChoice
-from immich_memories.analysis.editorial_story_slots import PartitionedSlots
-from immich_memories.analysis.editorial_story_standing import StandingGate
+from immich_memories.analysis.selection.carriers import CarrierAdmission
+from immich_memories.analysis.selection.lookalike import LookAlikeCheck
+from immich_memories.analysis.selection.standing import StandingGate
+from immich_memories.analysis.stories.shortlist import DepictedChoice
+from immich_memories.analysis.stories.slots import PartitionedSlots
 
 MEMBERS = ("first", "refused", "third", "fourth")
 STANDING = {"first": 2, "refused": 0, "third": 2, "fourth": 2}

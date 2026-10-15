@@ -2,7 +2,7 @@
 # Uses uv for fast Python package management
 export PYTHONUNBUFFERED=1
 
-.PHONY: workflow-guard docs-voice notices notices-check help install dev dev-ci dev-test run preflight parity docs-cli-check docs-config-check test test-extras test-cov test-cov-xml test-integration test-integration-auth test-integration-photos test-integration-audio test-integration-audio-mixing test-integration-titles test-fast benchmark benchmark-perf benchmark-steps benchmark-assembly benchmark-titles benchmark-titles-json benchmark-pipeline benchmark-json benchmark-submit lint format typecheck check launch-check launch-check-ci launch-check-ci-postgres clean clean-all build build-check docker docker-run docker-shell compose-check file-length complexity cognitive-complexity security-lint bandit-ci semgrep dead-code duplication refurb dep-check arch-check diff-cover diff-cover-ci integration-coverage-for-diff ci-scope ci critique ensure-dev commitlint privacy-gate pip-audit docs-install docs-dev docs-build docs-check docs-cli demo-video playwright-install e2e e2e-full screenshots demo-output demo-output-trip capability-matrix
+.PHONY: workflow-guard docs-voice notices notices-check help install dev dev-ci dev-test run preflight parity docs-cli-check docs-config-check test test-extras test-cov test-cov-xml test-integration test-integration-auth test-integration-photos test-integration-audio test-integration-audio-mixing test-integration-titles test-fast benchmark benchmark-perf benchmark-steps benchmark-assembly benchmark-titles benchmark-titles-json benchmark-pipeline benchmark-json benchmark-submit lint format typecheck check launch-check launch-check-ci launch-check-ci-postgres clean clean-all build build-check docker docker-run docker-shell compose-check file-length complexity cognitive-complexity security-lint bandit-ci semgrep dead-code duplication refurb dep-check arch-check private-imports diff-cover diff-cover-ci integration-coverage-for-diff ci-scope ci critique ensure-dev commitlint privacy-gate pip-audit docs-install docs-dev docs-build docs-check docs-cli demo-video playwright-install e2e e2e-full screenshots demo-output demo-output-trip capability-matrix
 
 # Default target
 help:
@@ -812,6 +812,12 @@ dep-check:
 arch-check:
 	PYTHONPATH=$(SERVICE_TREES) uv run lint-imports
 
+# No module imports another module's _private names, and nothing outside an analysis stage
+# imports a module that stage keeps out of its __all__. Tests are out of scope: a test may read
+# the private names of the module it tests (scripts/check_private_imports.py says why).
+private-imports:
+	uv run python scripts/check_private_imports.py
+
 # Diff coverage (for PRs: new code must be ≥95% covered)
 diff-cover:
 	uv run pytest $(PYTEST_WORKERS) $(COVERAGE_FLAGS) --cov-report=xml -q
@@ -1016,7 +1022,7 @@ launch-check-ci-postgres: ensure-dev
 	@echo "Hermetic launch check (PostgreSQL) passed!"
 
 # Full CI-equivalent pipeline (locally)
-ci: ensure-dev research-data-check lint format-check typecheck file-length complexity cognitive-complexity dead-code security-lint semgrep refurb dep-check arch-check duplication critique docs-cli-check docs-config-check feature-check docs-brand docs-commands docs-voice notices-check compose-check web-check test
+ci: ensure-dev research-data-check lint format-check typecheck file-length complexity cognitive-complexity dead-code security-lint semgrep refurb dep-check arch-check private-imports duplication critique docs-cli-check docs-config-check feature-check docs-brand docs-commands docs-voice notices-check compose-check web-check test
 	@echo "Full CI pipeline passed!"
 
 # Self-critique for AI code smells

@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from immich_memories.automation.models import AutomationAttempt, AutoRunResult
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +52,7 @@ def _local_now() -> datetime:
     return datetime.now().astimezone()
 
 
-def _slot_today(now: datetime, daily_at: str) -> datetime:
+def slot_today(now: datetime, daily_at: str) -> datetime:
     at = time.fromisoformat(daily_at)
     return now.replace(hour=at.hour, minute=at.minute, second=0, microsecond=0)
 
@@ -118,7 +118,7 @@ class InProcessScheduler:
             return False
 
         now = self._clock()
-        slot = _slot_today(now, automation.daily_at)
+        slot = slot_today(now, automation.daily_at)
         if self._not_before is not None and self._not_before > slot:
             # Today's run was put off by a skip that decided nothing about it.
             slot = self._not_before
@@ -137,7 +137,7 @@ class InProcessScheduler:
 
         self._last_fired_date = now.date()
         self._last_fired_at = now
-        self._next_run = _slot_today(now, automation.daily_at) + timedelta(days=1)
+        self._next_run = slot_today(now, automation.daily_at) + timedelta(days=1)
         self._not_before = None
         await self._fire(config)
         return True
@@ -260,7 +260,7 @@ def _last_finished_attempt(config: Config) -> AutomationAttempt | None:
 
 def _run_auto_once(config: Config) -> AutoRunResult:
     from immich_memories.automation.runner import AutoRunner
-    from immich_memories.config_loader import loaded_config_file
+    from immich_memories.config.loader import loaded_config_file
 
     return AutoRunner(config, config_path=loaded_config_file()).run_one()
 

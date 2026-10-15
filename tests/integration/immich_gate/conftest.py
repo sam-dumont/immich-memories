@@ -21,7 +21,7 @@ from datetime import datetime
 import pytest
 
 from immich_memories.api.sync_client import SyncImmichClient
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.db import Store, StoreLocation, close_stores, open_store
 from immich_memories.timeperiod import DateRange
 from tests.integration.immich_fixtures import has_immich, immich_unavailable

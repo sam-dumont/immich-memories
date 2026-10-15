@@ -123,7 +123,7 @@ def test_video_assembler_convenience_crf_builds_the_real_plan() -> None:
 
 def test_preview_builds_an_explicit_crf_28_plan(tmp_path: Path) -> None:
     """Preview quality must be carried by its actual encoder plan."""
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.processing.video_assembler import create_preview
 
     clip = _make_assembly_clip(tmp_path, duration=2.0)
@@ -318,7 +318,7 @@ def test_final_assembly_command_uses_the_resolved_software_h264_plan(tmp_path: P
         fade_duration=0.5,
     )
 
-    with patch("immich_memories.processing.clip_encoder._run_ffmpeg_with_progress") as run:
+    with patch("immich_memories.processing.clip_encoder.run_ffmpeg_with_progress") as run:
         encoder.run_ffmpeg_assembly(
             ["-i", str(clip.path)],
             "[0:v]null[vout];[0:a]anull[aout]",
@@ -350,7 +350,7 @@ def test_single_clip_reencode_uses_the_same_software_h264_plan(tmp_path: Path) -
     clip = _make_assembly_clip(tmp_path)
 
     with (
-        patch("immich_memories.processing.clip_encoder._detect_hdr_type", return_value=None),
+        patch("immich_memories.processing.clip_encoder.detect_hdr_type", return_value=None),
         patch("immich_memories.processing.clip_encoder.subprocess.run") as run,
     ):
         run.return_value = MagicMock(returncode=0, stderr="")
@@ -375,7 +375,7 @@ def test_single_clip_hardware_encoder_failure_retries_same_codec_in_software(
     clip = _make_assembly_clip(tmp_path)
 
     with (
-        patch("immich_memories.processing.clip_encoder._detect_hdr_type", return_value=None),
+        patch("immich_memories.processing.clip_encoder.detect_hdr_type", return_value=None),
         patch("immich_memories.processing.clip_encoder.subprocess.run") as run,
     ):
         run.side_effect = [
@@ -411,7 +411,7 @@ def test_single_clip_hardware_process_exception_retries_same_codec_in_software(
     clip = _make_assembly_clip(tmp_path)
 
     with (
-        patch("immich_memories.processing.clip_encoder._detect_hdr_type", return_value=None),
+        patch("immich_memories.processing.clip_encoder.detect_hdr_type", return_value=None),
         patch("immich_memories.processing.clip_encoder.subprocess.run") as run,
     ):
         run.side_effect = [hardware_failure, MagicMock(returncode=0, stderr="")]
@@ -435,7 +435,7 @@ def test_single_clip_software_process_exception_propagates_after_one_retry(tmp_p
     clip = _make_assembly_clip(tmp_path)
 
     with (
-        patch("immich_memories.processing.clip_encoder._detect_hdr_type", return_value=None),
+        patch("immich_memories.processing.clip_encoder.detect_hdr_type", return_value=None),
         patch("immich_memories.processing.clip_encoder.subprocess.run") as run,
     ):
         run.side_effect = [
@@ -528,7 +528,7 @@ def test_explicit_hdr_plan_converts_all_sdr_streaming_input(tmp_path: Path) -> N
 
     with (
         patch(
-            "immich_memories.processing.assembly_engine._get_clip_hdr_types",
+            "immich_memories.processing.assembly_engine.get_clip_hdr_types",
             return_value=[None, None],
         ),
         patch("immich_memories.processing.assembly_engine.streaming_assemble_full") as assemble,
@@ -550,7 +550,7 @@ def test_single_hlg_clip_is_tone_mapped_for_h264_output(tmp_path: Path) -> None:
     clip = _make_assembly_clip(tmp_path)
 
     with (
-        patch("immich_memories.processing.clip_encoder._detect_hdr_type", return_value="hlg"),
+        patch("immich_memories.processing.clip_encoder.detect_hdr_type", return_value="hlg"),
         patch(
             "immich_memories.processing.hdr_utilities.check_zscale_available",
             return_value=True,
@@ -588,7 +588,7 @@ def test_single_hdr_clip_fails_when_required_tone_map_is_unavailable(
     clip = _make_assembly_clip(tmp_path)
 
     with (
-        patch("immich_memories.processing.clip_encoder._detect_hdr_type", return_value="hlg"),
+        patch("immich_memories.processing.clip_encoder.detect_hdr_type", return_value="hlg"),
         patch(
             "immich_memories.processing.hdr_utilities.check_zscale_available",
             return_value=False,
@@ -602,7 +602,7 @@ def test_single_hdr_clip_fails_when_required_tone_map_is_unavailable(
 
 def test_generation_settings_resolve_one_software_h265_plan(tmp_path: Path) -> None:
     """Generation must resolve the requested codec once before assembly starts."""
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.generate import GenerationParams
     from immich_memories.generate_settings import build_assembly_settings
     from immich_memories.processing.encoding_plan import HdrMode
@@ -622,7 +622,7 @@ def test_generation_settings_resolve_one_software_h265_plan(tmp_path: Path) -> N
 
 def test_generation_settings_preserve_exact_pq_transfer(tmp_path: Path) -> None:
     """The source transfer is resolved once instead of collapsing PQ to a bool."""
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.generate import GenerationParams
     from immich_memories.generate_settings import build_assembly_settings
     from immich_memories.processing.encoding_plan import HdrMode
@@ -635,7 +635,7 @@ def test_generation_settings_preserve_exact_pq_transfer(tmp_path: Path) -> None:
     params = GenerationParams(clips=[], output_path=tmp_path / "memory.mp4", config=config)
 
     with patch(
-        "immich_memories.processing.hdr_utilities._detect_hdr_type",
+        "immich_memories.processing.hdr_utilities.detect_hdr_type",
         return_value="pq",
     ):
         settings = build_assembly_settings(params, [clip])
@@ -650,7 +650,7 @@ def test_generation_settings_warn_when_auto_hdr_is_tone_mapped_by_h264(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     """Auto must explain why detected HDR cannot survive an H.264 request."""
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.generate import GenerationParams
     from immich_memories.generate_settings import build_assembly_settings
     from immich_memories.processing.encoding_plan import HdrMode
@@ -664,7 +664,7 @@ def test_generation_settings_warn_when_auto_hdr_is_tone_mapped_by_h264(
 
     with (
         patch(
-            "immich_memories.processing.hdr_utilities._detect_hdr_type",
+            "immich_memories.processing.hdr_utilities.detect_hdr_type",
             return_value="hlg",
         ),
         caplog.at_level("WARNING"),

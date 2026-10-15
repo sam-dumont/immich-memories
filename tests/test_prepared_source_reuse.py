@@ -11,12 +11,12 @@ from typing import Any
 import pytest
 
 from immich_memories import generate_prepared_sources
-from immich_memories.analysis.editorial_planner import EditorialSelection
+from immich_memories.analysis.runtime.plan import EditorialSelection
 from immich_memories.api.access_clients import AccessBoundClient, AccountReadFailed
 from immich_memories.api.immich import ImmichNotFoundError
 from immich_memories.api.models import AssetType, ExifInfo
 from immich_memories.cache.prepared_source_bank import PreparedSourceBank
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.generate import GenerationParams
 from immich_memories.generate_prepared_sources import (
     PreparationRequest,

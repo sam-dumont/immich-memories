@@ -72,7 +72,7 @@ def test_an_explicit_setting_always_wins(tmp_path):
 
 
 def test_the_config_defaults_to_auto_and_still_takes_a_number():
-    from immich_memories.config_models_analysis import AnalysisConfig
+    from immich_memories.config.models.analysis import AnalysisConfig
 
     assert AnalysisConfig().source_prepare_workers == "auto"
     assert AnalysisConfig(source_prepare_workers=3).source_prepare_workers == 3

@@ -10,15 +10,15 @@ from unittest.mock import patch
 import pytest
 from click.testing import CliRunner
 
-from immich_memories.analysis.editorial_contracts import (
+from immich_memories.analysis.corpus.records import (
     DecisionProvenance,
     PassTrace,
     TraceDecision,
 )
-from immich_memories.analysis.selection_trace import Trace
+from immich_memories.analysis.corpus.trace import Trace
 from immich_memories.cli import main
 from immich_memories.cli._run_summary import render_run_summary
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.operations.run_index import (
     attempt_dir_for_run,
     record_run_attempt,

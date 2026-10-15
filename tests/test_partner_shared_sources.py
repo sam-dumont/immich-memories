@@ -21,7 +21,7 @@ import httpx
 import pytest
 
 from immich_memories.api.sync_client import SyncImmichClient
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.timeperiod import DateRange
 
 URL = "https://immich.example.test"
@@ -143,7 +143,7 @@ def _mixed_august(library: SharedLibrary) -> None:
 
 @pytest.mark.feature("sources.partner-shared-excluded")
 def test_prepare_counts_only_the_accounts_own_pictures(tmp_path, library):
-    from immich_memories.analysis.prepare_scope import eligible_source
+    from immich_memories.analysis.preparation.scope import eligible_source
 
     _mixed_august(library)
     window = DateRange(datetime(2025, 8, 1), datetime(2025, 8, 31, 23, 59, 59))
@@ -179,7 +179,7 @@ def test_household_automation_counts_each_picture_once_for_its_owner(tmp_path, l
         ExtraReads,
         read_account_extras,
     )
-    from immich_memories.config_models_automation import AutomationConfig
+    from immich_memories.config.models.automation import AutomationConfig
 
     _mixed_august(library)
     plan = ExtraPlan(
@@ -218,7 +218,7 @@ def _partners_trip(library: SharedLibrary) -> None:
 
 @pytest.mark.feature("sources.partner-shared-excluded")
 def test_trip_discovery_finds_no_trip_in_the_partners_gps(tmp_path, library):
-    from immich_memories.analysis.trip_discovery import discover_year_trips
+    from immich_memories.analysis.sources.trip_discovery import discover_year_trips
 
     _partners_trip(library)
 

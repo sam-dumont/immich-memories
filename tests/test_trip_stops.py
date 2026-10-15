@@ -167,7 +167,7 @@ def test_a_trip_film_opens_on_the_grouped_stops(tmp_path) -> None:
     from datetime import date
     from pathlib import Path
 
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.generate import GenerationParams
     from immich_memories.generate_settings import build_title_settings
     from immich_memories.processing.assembly_config import AssemblyClip

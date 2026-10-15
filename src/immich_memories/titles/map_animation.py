@@ -26,10 +26,10 @@ from immich_memories.titles.ffmpeg_pipe import StderrDrain
 from .colors import ceil_rgb_for_hdr
 from .encoding import standalone_title_encoding_plan, title_color_filter, title_encoder_args
 from .map_renderer import (
-    _draw_gradient_band,
-    _fit_pin_label_font,
-    _fit_title_lines,
-    _overlay_composite,
+    draw_gradient_band,
+    fit_pin_label_font,
+    fit_title_lines,
+    overlay_composite,
 )
 from .map_tiles import CachedStaticMap, tile_cache
 
@@ -240,9 +240,9 @@ def _resize_satellite_frame(image: Image.Image, width: int, height: int) -> Imag
 def _cached_pin_label_font(
     name: str, base_size: int, max_width: int, min_size: int
 ) -> tuple[ImageFont.FreeTypeFont | ImageFont.ImageFont, int]:
-    """Memoised `_fit_pin_label_font`: the same pin name recurs on every frame of a fly-over."""
+    """Memoised `fit_pin_label_font`: the same pin name recurs on every frame of a fly-over."""
     probe = ImageDraw.Draw(Image.new("RGBA", (1, 1)))
-    return _fit_pin_label_font(name, probe, base_size, max_width, min_size=min_size)
+    return fit_pin_label_font(name, probe, base_size, max_width, min_size=min_size)
 
 
 def _draw_pins(
@@ -576,7 +576,7 @@ def _pipe_frames(
                 rendered += 1
             _, frame, z = last
             if cfg.title_overlay is not None and alpha > 0.01:
-                frame = _overlay_composite(frame, cfg.title_overlay, alpha)
+                frame = overlay_composite(frame, cfg.title_overlay, alpha)
             proc.stdin.write(np.array(frame).tobytes())
             if i % 30 == 0:
                 logger.info("Map fly %d/%d (z=%.1f, %d tiles)", i, total, z, len(tile_cache))
@@ -609,7 +609,7 @@ def _render_title_overlay(
     # instead of overflowing the frame edge (#1954).
     safe_width = int(w * 0.88)
     min_size = max(10, int(w * _MIN_CARD_FONT_RATIO))
-    lines, font = _fit_title_lines(
+    lines, font = fit_title_lines(
         text, draw, base_size=fs, bold=True, max_width=safe_width, min_size=min_size
     )
 
@@ -620,7 +620,7 @@ def _render_title_overlay(
         anchor = 0.5 if is_portrait else 0.75
     block_y = int(h * anchor) - total_h // 2
     band_pad = int(getattr(font, "size", fs) * 0.8)
-    _draw_gradient_band(draw, block_y - band_pad, total_h + 2 * band_pad, w, h)
+    draw_gradient_band(draw, block_y - band_pad, total_h + 2 * band_pad, w, h)
     for i, line in enumerate(lines):
         bbox = draw.textbbox((0, 0), line, font=font)
         tw = bbox[2] - bbox[0]
@@ -642,7 +642,7 @@ def _map_plate(progress: float, cfg: _FlyConfig, show_title: bool) -> Image.Imag
     # The route overview still needs its destination marker, even at its wider zoom.
     frame = _draw_pins(frame, lat, lon, zoom, replace(cfg, dest_zoom=zoom))
     if show_title and cfg.title_overlay is not None:
-        frame = _overlay_composite(frame, cfg.title_overlay, 1.0)
+        frame = overlay_composite(frame, cfg.title_overlay, 1.0)
     return frame
 
 

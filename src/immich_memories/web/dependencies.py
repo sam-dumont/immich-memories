@@ -12,7 +12,7 @@ from fastapi import Depends
 
 from immich_memories.cache.thumbnail_cache import ThumbnailCache
 from immich_memories.config import get_config
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.web.answer_cache import AnswerCache, answer_cache
 
 # (asset_id or person_id, owning account) -> bytes; the account comes from an `AssetScope`

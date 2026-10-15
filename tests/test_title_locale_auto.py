@@ -16,7 +16,7 @@ from unittest.mock import patch
 
 import pytest
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.generate import GenerationParams
 from immich_memories.generate_settings import build_title_settings
 from immich_memories.i18n import SUPPORTED_LOCALES, get_month_name

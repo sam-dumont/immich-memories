@@ -7,14 +7,14 @@ from typing import TYPE_CHECKING
 
 from rich.table import Table
 
-from immich_memories.analysis.trip_detection import DetectedTrip
-from immich_memories.analysis.trip_discovery import discover_year_trips
+from immich_memories.analysis.places.trip_detection import DetectedTrip
+from immich_memories.analysis.sources.trip_discovery import discover_year_trips
 from immich_memories.tracking.timed import timed
 
 if TYPE_CHECKING:
     from immich_memories.api.immich import SyncImmichClient
     from immich_memories.cli._live_display import ProgressDisplay
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
 
 
 def format_trips_table(trips: list[DetectedTrip], locale: str = "en") -> Table | None:
@@ -119,7 +119,7 @@ def run_trip_detection(
     person_names: list[str] | None = None,
 ) -> list[DetectedTrip]:
     """Discover the same photo and video trips offered by the Memory page."""
-    from immich_memories.analysis.trip_detection import geocoder_for
+    from immich_memories.analysis.places.trip_detection import geocoder_for
     from immich_memories.cli._helpers import print_success
 
     task = progress.add_task(f"Finding trips from photos and videos for {year}...", total=None)

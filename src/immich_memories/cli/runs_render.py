@@ -19,7 +19,7 @@ from immich_memories.cli._runs_reading import RunNotFound, resolve_attempt
 from immich_memories.cli.progress_file import write_progress
 from immich_memories.cli.render_progress import render_progress
 from immich_memories.cli.termination import stop_on_sigterm
-from immich_memories.config_models_render import TitleStyleMode
+from immich_memories.config.models.render import TitleStyleMode
 from immich_memories.generate_saved_cut import CutRenderRequest, render_saved_cut
 from immich_memories.operations.cut_revisions import read_revisions
 from immich_memories.operations.revision_render import RenderUnavailable

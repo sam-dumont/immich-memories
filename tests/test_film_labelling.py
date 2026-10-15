@@ -7,7 +7,7 @@ from datetime import UTC, date, datetime
 
 import pytest
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.db import open_store
 from immich_memories.operations.film_labelling import (
     label_for_cut,

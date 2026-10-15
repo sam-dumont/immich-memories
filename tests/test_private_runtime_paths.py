@@ -6,7 +6,7 @@ import pytest
 from click.testing import CliRunner
 
 from immich_memories.cli import main
-from immich_memories.config_loader import get_config, set_config
+from immich_memories.config.loader import get_config, set_config
 
 
 @pytest.mark.parametrize("kind", ["thumbnail", "video"])
@@ -49,7 +49,7 @@ def test_explicit_config_web_startup_leaves_unused_default_home_alone(
 ):
     from fastapi.testclient import TestClient
 
-    from immich_memories.config_loader import load_config
+    from immich_memories.config.loader import load_config
     from immich_memories.web.server import create_app
 
     home = tmp_path / "home"

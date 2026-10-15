@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from immich_memories.analysis.selection_trace import ClipStory
+from immich_memories.analysis.corpus.trace import ClipStory
 from immich_memories.cli._runs_reading import why_text
 from immich_memories.operations.reader_words import stage_words
 

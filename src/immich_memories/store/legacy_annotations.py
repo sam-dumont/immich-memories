@@ -19,7 +19,7 @@ from typing import Any
 import sqlalchemy as sa
 from sqlalchemy import Boolean, DateTime, Float, Integer, Table
 
-from immich_memories.analysis.editorial_shareability import OWNER_SOURCE
+from immich_memories.analysis.audience.shareability import OWNER_SOURCE
 from immich_memories.db import Store, now_db, to_db
 from immich_memories.db.legacy_import import ImportOutcome
 from immich_memories.db.tables import (

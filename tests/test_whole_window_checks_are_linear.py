@@ -10,17 +10,17 @@ The ids here count their own hashes, so the test counts the work instead of timi
 
 from __future__ import annotations
 
-from immich_memories.analysis.annotation_lines import (
-    AnnotationContract,
-    AnnotationLineBatch,
-    AssetAnnotationLine,
-)
-from immich_memories.analysis.editorial_contracts import (
+from immich_memories.analysis.corpus.records import (
     DecisionProvenance,
     PassTrace,
     TraceDecision,
 )
-from immich_memories.analysis.selection_trace import Trace
+from immich_memories.analysis.corpus.trace import Trace
+from immich_memories.analysis.reading.annotation_lines import (
+    AnnotationContract,
+    AnnotationLineBatch,
+    AssetAnnotationLine,
+)
 
 WINDOW = 2_000
 

@@ -12,11 +12,11 @@ from pathlib import Path
 
 import pytest
 
-from immich_memories.analysis.framing_target import (
+from immich_memories.analysis.facts.framing_target import (
     framing_centre,
     picture_faces,
 )
-from immich_memories.analysis.subject_framing import FaceBox
+from immich_memories.analysis.facts.subject_framing import FaceBox
 from immich_memories.api.models import Asset, AssetFace, AssetType, Person
 
 # A 1000x500 thumbnail: x and y normalise by different sizes.
@@ -185,7 +185,7 @@ class TestPictureFaces:
 def _people_film(tmp_path: Path, clip) -> object:
     from unittest.mock import MagicMock
 
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.generate import GenerationParams
 
     return GenerationParams(

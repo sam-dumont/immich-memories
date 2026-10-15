@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
-from immich_memories.analysis.duplicate_hashing import hamming_distance
+from immich_memories.analysis.corpus.duplicate_hashing import hamming_distance
 from tests.conftest import make_clip
 
 

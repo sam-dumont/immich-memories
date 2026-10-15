@@ -17,7 +17,7 @@ from immich_memories.automation.notifications import send_configured_notificatio
 
 if TYPE_CHECKING:
     from immich_memories.automation.state_store import AutomationStateStore
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
 
 logger = logging.getLogger(__name__)
 

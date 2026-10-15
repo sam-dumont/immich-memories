@@ -2,7 +2,7 @@
 
 from datetime import UTC, datetime, timedelta
 
-from immich_memories.analysis.editorial_exposure_chains import held_chains, runs_holding
+from immich_memories.analysis.audience.exposure_chains import held_chains, runs_holding
 
 
 def _rows(*offsets_and_flags):
@@ -102,7 +102,7 @@ def _captures(count, *, clip_flagged):
 
 def test_a_live_photo_is_one_capture_and_its_flagged_clip_flags_it():
     """A clip is the same capture as its still: it neither dilutes the run nor goes unseen."""
-    from immich_memories.analysis.editorial_exposure_chains import chain_holds_for
+    from immich_memories.analysis.audience.exposure_chains import chain_holds_for
 
     stills, lines, heads = _captures(4, clip_flagged=3)
 
@@ -114,7 +114,7 @@ def test_a_live_photo_is_one_capture_and_its_flagged_clip_flags_it():
 
 
 def test_clean_clips_leave_a_run_of_clean_stills_alone():
-    from immich_memories.analysis.editorial_exposure_chains import chain_holds_for
+    from immich_memories.analysis.audience.exposure_chains import chain_holds_for
 
     stills, lines, heads = _captures(4, clip_flagged=0)
 

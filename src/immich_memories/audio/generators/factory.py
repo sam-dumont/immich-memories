@@ -57,7 +57,7 @@ def create_generator(
             config = ACEStepConfig()
         elif not isinstance(config, ACEStepConfig):
             # Convert from app config (pydantic model) to ACEStepConfig
-            config = _app_config_to_ace_step(config)
+            config = app_config_to_ace_step(config)
 
         return ACEStepBackend(config)
 
@@ -68,7 +68,7 @@ def create_generator(
         )
 
 
-def _app_config_to_ace_step(app_config) -> Any:
+def app_config_to_ace_step(app_config) -> Any:
     """Convert an app-level ACEStepConfig (pydantic) to the dataclass config."""
     from immich_memories.audio.generators.ace_step_backend import ACEStepConfig
 

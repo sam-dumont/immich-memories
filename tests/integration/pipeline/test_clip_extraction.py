@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.processing.clips import extract_clip
 from tests.integration.conftest import ffprobe_json, get_duration, requires_ffmpeg
 

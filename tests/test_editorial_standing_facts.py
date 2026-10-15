@@ -6,13 +6,13 @@ from types import SimpleNamespace
 
 import pytest
 
-from immich_memories.analysis.editorial_rule_reader import RuleStructureReader
-from immich_memories.analysis.editorial_standing_facts import (
+from immich_memories.analysis.facts.standing_facts import (
     carries_nothing,
     disqualifies_as_lone_carrier,
     names_a_person,
     names_someone_alive,
 )
+from immich_memories.analysis.stories.rule_reader import RuleStructureReader
 
 LONE_OBJECT = {"frame_kind": "lone_everyday_object", "people": "one"}
 

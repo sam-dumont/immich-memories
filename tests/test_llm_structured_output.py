@@ -10,9 +10,9 @@ from unittest.mock import patch
 
 import pytest
 
-from immich_memories.analysis.llm_text_identity import text_model_identity
-from immich_memories.analysis.prose_shapes import episode_reading_shape
-from immich_memories.config_models_llm import LLMConfig
+from immich_memories.analysis.llm.text_identity import text_model_identity
+from immich_memories.analysis.reading.prose_shapes import episode_reading_shape
+from immich_memories.config.models.llm import LLMConfig
 from tests.test_llm_query import _openai_400, _openai_response
 
 SHAPE = {
@@ -45,7 +45,7 @@ def _hosted(**overrides) -> LLMConfig:
 
 
 async def _sent(config, **options):
-    from immich_memories.analysis.llm_query import query_llm
+    from immich_memories.analysis.llm.query import query_llm
 
     # WHY: the LLM server is the external boundary this request reaches.
     with patch("httpx.AsyncClient.post", return_value=_openai_response()) as post:
@@ -104,7 +104,7 @@ async def test_a_hosted_openai_endpoint_gets_no_repetition_penalty():
 
 @pytest.mark.asyncio
 async def test_a_server_that_refuses_the_shape_is_asked_again_without_it_and_remembers():
-    from immich_memories.analysis.llm_query import query_llm
+    from immich_memories.analysis.llm.query import query_llm
 
     answers = iter(
         [
@@ -134,7 +134,7 @@ async def test_a_server_that_refuses_the_shape_is_asked_again_without_it_and_rem
 
 @pytest.mark.asyncio
 async def test_a_server_that_refuses_the_penalty_is_asked_again_without_it():
-    from immich_memories.analysis.llm_query import query_llm
+    from immich_memories.analysis.llm.query import query_llm
 
     refused = _openai_400("Unrecognized request argument supplied: repetition_penalty")
     # WHY: the LLM server is the external boundary this request reaches.
@@ -148,7 +148,7 @@ async def test_a_server_that_refuses_the_penalty_is_asked_again_without_it():
 async def test_ollama_gets_the_shape_as_its_format_and_the_penalty_as_an_option():
     from unittest.mock import AsyncMock, MagicMock
 
-    from immich_memories.analysis.llm_query import query_llm
+    from immich_memories.analysis.llm.query import query_llm
 
     config = LLMConfig(
         enabled=True,
@@ -172,7 +172,7 @@ async def test_ollama_gets_the_shape_as_its_format_and_the_penalty_as_an_option(
 async def test_ollama_local_episode_defaults_to_no_shape():
     from unittest.mock import AsyncMock, MagicMock
 
-    from immich_memories.analysis.llm_query import query_llm
+    from immich_memories.analysis.llm.query import query_llm
 
     config = LLMConfig(
         enabled=True, provider="ollama", base_url="http://localhost:11434", model="small"
@@ -212,7 +212,7 @@ async def test_schema_capability_refusal_retries_as_json_object_and_remembers(ca
     import copy
     import logging
 
-    from immich_memories.analysis.llm_query import query_llm
+    from immich_memories.analysis.llm.query import query_llm
 
     answers = iter(
         [
@@ -251,7 +251,7 @@ async def test_schema_capability_refusal_retries_as_json_object_and_remembers(ca
 async def test_invalid_schema_is_not_retried_as_a_capability_problem():
     import httpx
 
-    from immich_memories.analysis.llm_query import query_llm
+    from immich_memories.analysis.llm.query import query_llm
 
     refused = _openai_400("Invalid json_schema: required must include every property")
     # WHY: malformed input is a provider error, not a missing capability.
@@ -268,7 +268,7 @@ async def test_concurrent_schema_refusals_announce_the_learned_capability_once(c
     import asyncio
     import logging
 
-    from immich_memories.analysis.llm_query import query_llm
+    from immich_memories.analysis.llm.query import query_llm
 
     ready = asyncio.Event()
     initial = 0

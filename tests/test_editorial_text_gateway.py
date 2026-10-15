@@ -9,10 +9,10 @@ from typing import Any
 
 import pytest
 
-from immich_memories.analysis import editorial_text_gateway as gateway
-from immich_memories.analysis.editorial_case import TextRequest
+from immich_memories.analysis.judgments import text_gateway as gateway
+from immich_memories.analysis.judgments.text_request import TextRequest
 from immich_memories.cache.judgment_cache import JudgmentCache
-from immich_memories.config_models_llm import LLMConfig
+from immich_memories.config.models.llm import LLMConfig
 from tests.annotation_rows import annotation_store
 
 
@@ -331,7 +331,7 @@ def test_a_bounded_failure_row_names_the_reasoning_that_took_the_budget(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Two empty answers read the same on disk unless the token split is on the row."""
-    from immich_memories.analysis.llm_wire import LLMTransportAttempt
+    from immich_memories.analysis.llm.wire import LLMTransportAttempt
 
     async def starved(_prompt: str, _config: Any, **kwargs: Any) -> str:
         kwargs["transport_observer"](
@@ -380,7 +380,7 @@ def test_refresh_replaces_the_answer_without_changing_its_identity(tmp_path, mon
 
 
 def test_refresh_retries_a_banked_completion_failure(tmp_path, monkeypatch):
-    from immich_memories.analysis.editorial_text_failures import TextCompletionFailure
+    from immich_memories.analysis.judgments.text_failures import TextCompletionFailure
 
     request = _request(tmp_path)
     failure = TextCompletionFailure(

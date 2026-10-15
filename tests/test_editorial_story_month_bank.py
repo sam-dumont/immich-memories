@@ -12,7 +12,7 @@ import json
 import re
 from datetime import date, timedelta
 
-from immich_memories.analysis.editorial_story_reading import read_period_story
+from immich_memories.analysis.stories.period_account import read_period_story
 from tests.test_editorial_duration_planner_integration import EditorialJudge
 from tests.test_editorial_story_reading import episode_row, opened, page_answer, weighing
 

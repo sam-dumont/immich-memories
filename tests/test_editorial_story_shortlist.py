@@ -4,7 +4,7 @@ from dataclasses import asdict
 
 import pytest
 
-from immich_memories.analysis.editorial_story_shortlist import (
+from immich_memories.analysis.stories.shortlist import (
     DepictedChoice,
     shortlist_story_moments,
 )
@@ -229,8 +229,8 @@ def test_without_moving_moments_the_sample_is_unchanged():
 
 def test_a_video_behind_a_still_keeps_its_capture_group_in_the_sample():
     """The inventory can only find the video moment inside a group the shortlist kept."""
-    from immich_memories.analysis.editorial_story_carriers import shortlist_by_partition
-    from immich_memories.analysis.editorial_story_slots import PartitionedSlots
+    from immich_memories.analysis.selection.carriers import shortlist_by_partition
+    from immich_memories.analysis.stories.slots import PartitionedSlots
 
     pool = choices(12)
     pool[1].alternatives = ["clip-2"]  # the second group's still leads, its video follows
@@ -298,10 +298,10 @@ def _group(**kinds):
 
 def test_a_capture_group_that_holds_a_video_is_led_by_the_video():
     """A sharper still used to take the frame; a group that plays now leads with its motion."""
-    from immich_memories.analysis.editorial_story_pick_contract import carries_motion
-    from immich_memories.analysis.editorial_story_shortlist import _capture_group_moments
+    from immich_memories.analysis.clips.unit_motion import carries_motion
+    from immich_memories.analysis.stories.shortlist import capture_group_moments
 
-    [choice] = _capture_group_moments(
+    [choice] = capture_group_moments(
         _group(sharp="still", clip="video"),
         quality=lambda asset: 1.0 if asset == "sharp" else 0.0,
         plays=carries_motion,
@@ -312,10 +312,10 @@ def test_a_capture_group_that_holds_a_video_is_led_by_the_video():
 
 
 def test_a_favourite_keeps_the_frame_of_its_own_moment_against_a_video():
-    from immich_memories.analysis.editorial_story_pick_contract import carries_motion
-    from immich_memories.analysis.editorial_story_shortlist import _capture_group_moments
+    from immich_memories.analysis.clips.unit_motion import carries_motion
+    from immich_memories.analysis.stories.shortlist import capture_group_moments
 
-    [choice] = _capture_group_moments(
+    [choice] = capture_group_moments(
         _group(starred="still", clip="video"),
         quality=lambda _asset: 0.0,
         plays=carries_motion,
@@ -326,16 +326,16 @@ def test_a_favourite_keeps_the_frame_of_its_own_moment_against_a_video():
 
 def _seen(**rungs):
     """A visibility per asset, as the annotation line would have carried it."""
-    from immich_memories.analysis.subject_framing import SubjectVisibility
+    from immich_memories.analysis.facts.subject_framing import SubjectVisibility
 
     return lambda asset: SubjectVisibility(*rungs.get(asset, (0, 0.0)))
 
 
 def test_the_frame_that_shows_the_named_subject_carries_its_moment():
     """A speck at the frame's edge lost the film its subject; the sharper frame used to win."""
-    from immich_memories.analysis.editorial_story_shortlist import _capture_group_moments
+    from immich_memories.analysis.stories.shortlist import capture_group_moments
 
-    [choice] = _capture_group_moments(
+    [choice] = capture_group_moments(
         _group(speck="still", shown="still"),
         quality=lambda asset: 1.0 if asset == "speck" else 0.0,
         subject=_seen(speck=(1, 0.002), shown=(3, 0.06)),
@@ -346,9 +346,9 @@ def test_the_frame_that_shows_the_named_subject_carries_its_moment():
 
 
 def test_two_frames_that_both_show_the_subject_prefer_the_one_showing_more_of_him():
-    from immich_memories.analysis.editorial_story_shortlist import _capture_group_moments
+    from immich_memories.analysis.stories.shortlist import capture_group_moments
 
-    [choice] = _capture_group_moments(
+    [choice] = capture_group_moments(
         _group(distant="still", near="still"),
         quality=lambda asset: 1.0 if asset == "distant" else 0.0,
         subject=_seen(distant=(3, 0.01), near=(3, 0.08)),
@@ -358,9 +358,9 @@ def test_two_frames_that_both_show_the_subject_prefer_the_one_showing_more_of_hi
 
 
 def test_a_favourite_keeps_its_moment_even_where_it_shows_the_subject_worst():
-    from immich_memories.analysis.editorial_story_shortlist import _capture_group_moments
+    from immich_memories.analysis.stories.shortlist import capture_group_moments
 
-    [choice] = _capture_group_moments(
+    [choice] = capture_group_moments(
         _group(starred="still", shown="still"),
         quality=lambda _asset: 0.0,
         subject=_seen(starred=(1, 0.001), shown=(3, 0.09)),
@@ -370,9 +370,9 @@ def test_a_favourite_keeps_its_moment_even_where_it_shows_the_subject_worst():
 
 
 def test_a_group_no_picture_names_anybody_in_keeps_the_frame_it_had():
-    from immich_memories.analysis.editorial_story_shortlist import _capture_group_moments
+    from immich_memories.analysis.stories.shortlist import capture_group_moments
 
-    [choice] = _capture_group_moments(
+    [choice] = capture_group_moments(
         _group(sharp="still", soft="still"),
         quality=lambda asset: 1.0 if asset == "sharp" else 0.0,
     )
@@ -382,9 +382,9 @@ def test_a_group_no_picture_names_anybody_in_keeps_the_frame_it_had():
 
 def test_a_moment_whose_only_candidate_is_pixel_disqualified_ships_nothing():
     """A lone DARK or SOFT (blurry) picture has no sharper sibling to fall back on (#2049)."""
-    from immich_memories.analysis.editorial_story_shortlist import _capture_group_moments
+    from immich_memories.analysis.stories.shortlist import capture_group_moments
 
-    choices = _capture_group_moments(
+    choices = capture_group_moments(
         _group(dark="still"),
         quality=lambda _asset: 0.0,
         pixel_disqualified=lambda asset: asset == "dark",
@@ -394,9 +394,9 @@ def test_a_moment_whose_only_candidate_is_pixel_disqualified_ships_nothing():
 
 
 def test_a_pixel_disqualified_candidate_with_a_clean_sibling_still_ships_the_clean_one():
-    from immich_memories.analysis.editorial_story_shortlist import _capture_group_moments
+    from immich_memories.analysis.stories.shortlist import capture_group_moments
 
-    [choice] = _capture_group_moments(
+    [choice] = capture_group_moments(
         _group(clean="still", dark="still"),
         quality=lambda asset: 1.0 if asset == "clean" else 0.0,
         pixel_disqualified=lambda asset: asset == "dark",
@@ -408,9 +408,9 @@ def test_a_pixel_disqualified_candidate_with_a_clean_sibling_still_ships_the_cle
 
 def test_a_starred_pixel_disqualified_candidate_still_ships():
     """The favourite rule is unchanged: the owner's starred shot is never refused this way."""
-    from immich_memories.analysis.editorial_story_shortlist import _capture_group_moments
+    from immich_memories.analysis.stories.shortlist import capture_group_moments
 
-    [choice] = _capture_group_moments(
+    [choice] = capture_group_moments(
         _group(starred="still"),
         quality=lambda _asset: 0.0,
         pixel_disqualified=lambda _asset: True,

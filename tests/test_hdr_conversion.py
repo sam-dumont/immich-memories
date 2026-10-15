@@ -39,63 +39,63 @@ class TestDetectHdrType:
 
     def test_hlg_with_bt2020_primaries_is_hdr(self, tmp_path):
         """Real iPhone HDR: HLG transfer + bt2020 primaries = HDR."""
-        from immich_memories.processing.hdr_utilities import _detect_hdr_type
+        from immich_memories.processing.hdr_utilities import detect_hdr_type
 
         video = self._make_fake_video(tmp_path)
         # WHY: mock subprocess.run — ffprobe is an external binary
         with patch("immich_memories.processing.hdr_utilities.subprocess.run") as mock_run:
             mock_run.return_value = self._mock_ffprobe("arib-std-b67", "bt2020")
-            result = _detect_hdr_type(video)
+            result = detect_hdr_type(video)
 
         assert result == "hlg"
 
     def test_pq_with_bt2020_primaries_is_hdr(self, tmp_path):
         """Android HDR10: PQ transfer + bt2020 primaries = HDR."""
-        from immich_memories.processing.hdr_utilities import _detect_hdr_type
+        from immich_memories.processing.hdr_utilities import detect_hdr_type
 
         video = self._make_fake_video(tmp_path)
         with patch("immich_memories.processing.hdr_utilities.subprocess.run") as mock_run:
             mock_run.return_value = self._mock_ffprobe("smpte2084", "bt2020")
-            result = _detect_hdr_type(video)
+            result = detect_hdr_type(video)
 
         assert result == "pq"
 
     def test_hlg_transfer_with_bt709_primaries_is_sdr(self, tmp_path):
         """Apple Shared Album: HLG tag but bt709 primaries → actually SDR."""
-        from immich_memories.processing.hdr_utilities import _detect_hdr_type
+        from immich_memories.processing.hdr_utilities import detect_hdr_type
 
         video = self._make_fake_video(tmp_path)
         with patch("immich_memories.processing.hdr_utilities.subprocess.run") as mock_run:
             mock_run.return_value = self._mock_ffprobe("arib-std-b67", "bt709")
-            result = _detect_hdr_type(video)
+            result = detect_hdr_type(video)
 
         assert result is None  # Should be treated as SDR
 
     def test_bt2020_transfer_with_bt709_primaries_is_sdr(self, tmp_path):
         """bt2020-10 transfer but bt709 primaries → mislabeled, treat as SDR."""
-        from immich_memories.processing.hdr_utilities import _detect_hdr_type
+        from immich_memories.processing.hdr_utilities import detect_hdr_type
 
         video = self._make_fake_video(tmp_path)
         with patch("immich_memories.processing.hdr_utilities.subprocess.run") as mock_run:
             mock_run.return_value = self._mock_ffprobe("bt2020-10", "bt709")
-            result = _detect_hdr_type(video)
+            result = detect_hdr_type(video)
 
         assert result is None
 
     def test_bt709_transfer_is_always_sdr(self, tmp_path):
         """Standard bt709 transfer = always SDR regardless of primaries."""
-        from immich_memories.processing.hdr_utilities import _detect_hdr_type
+        from immich_memories.processing.hdr_utilities import detect_hdr_type
 
         video = self._make_fake_video(tmp_path)
         with patch("immich_memories.processing.hdr_utilities.subprocess.run") as mock_run:
             mock_run.return_value = self._mock_ffprobe("bt709", "bt2020")
-            result = _detect_hdr_type(video)
+            result = detect_hdr_type(video)
 
         assert result is None
 
     def test_missing_primaries_falls_back_to_sdr(self, tmp_path):
         """If primaries field is missing, don't assume HDR."""
-        from immich_memories.processing.hdr_utilities import _detect_hdr_type
+        from immich_memories.processing.hdr_utilities import detect_hdr_type
 
         video = self._make_fake_video(tmp_path)
         with patch("immich_memories.processing.hdr_utilities.subprocess.run") as mock_run:
@@ -103,12 +103,12 @@ class TestDetectHdrType:
             mock.returncode = 0
             mock.stdout = json.dumps({"streams": [{"color_transfer": "arib-std-b67"}]})
             mock_run.return_value = mock
-            result = _detect_hdr_type(video)
+            result = detect_hdr_type(video)
 
         assert result is None
 
     def test_ffprobe_failure_returns_none(self, tmp_path):
-        from immich_memories.processing.hdr_utilities import _detect_hdr_type
+        from immich_memories.processing.hdr_utilities import detect_hdr_type
 
         video = self._make_fake_video(tmp_path)
         # WHY: mock subprocess.run raising — verify graceful fallback when ffprobe is missing
@@ -116,7 +116,7 @@ class TestDetectHdrType:
             "immich_memories.processing.hdr_utilities.subprocess.run",
             side_effect=FileNotFoundError("ffprobe not found"),
         ):
-            result = _detect_hdr_type(video)
+            result = detect_hdr_type(video)
 
         assert result is None
 
@@ -125,45 +125,45 @@ class TestDetectColorPrimaries:
     """Test detection of source color primaries."""
 
     def test_detects_bt709(self):
-        from immich_memories.processing.hdr_utilities import _detect_color_primaries
+        from immich_memories.processing.hdr_utilities import detect_color_primaries
 
         # WHY: mock subprocess.run — ffprobe is an external binary; tests verify JSON parsing logic
         with patch("immich_memories.processing.hdr_utilities.subprocess.run") as mock_run:
             mock_run.return_value.returncode = 0
             mock_run.return_value.stdout = '{"streams": [{"color_primaries": "bt709"}]}'
-            result = _detect_color_primaries("/fake/path.mp4")
+            result = detect_color_primaries("/fake/path.mp4")
 
         assert result == "bt709"
 
     def test_detects_display_p3(self):
-        from immich_memories.processing.hdr_utilities import _detect_color_primaries
+        from immich_memories.processing.hdr_utilities import detect_color_primaries
 
         with patch("immich_memories.processing.hdr_utilities.subprocess.run") as mock_run:
             mock_run.return_value.returncode = 0
             mock_run.return_value.stdout = '{"streams": [{"color_primaries": "smpte432"}]}'
-            result = _detect_color_primaries("/fake/path.mp4")
+            result = detect_color_primaries("/fake/path.mp4")
 
         assert result == "smpte432"
 
     def test_returns_none_on_failure(self):
-        from immich_memories.processing.hdr_utilities import _detect_color_primaries
+        from immich_memories.processing.hdr_utilities import detect_color_primaries
 
         # WHY: mock subprocess.run raising — verify graceful fallback when ffprobe is missing
         with patch(
             "immich_memories.processing.hdr_utilities.subprocess.run",
             side_effect=FileNotFoundError("ffprobe not found"),
         ):
-            result = _detect_color_primaries("/fake/path.mp4")
+            result = detect_color_primaries("/fake/path.mp4")
 
         assert result is None
 
     def test_returns_none_for_unknown(self):
-        from immich_memories.processing.hdr_utilities import _detect_color_primaries
+        from immich_memories.processing.hdr_utilities import detect_color_primaries
 
         with patch("immich_memories.processing.hdr_utilities.subprocess.run") as mock_run:
             mock_run.return_value.returncode = 0
             mock_run.return_value.stdout = '{"streams": [{"color_primaries": "unknown"}]}'
-            result = _detect_color_primaries("/fake/path.mp4")
+            result = detect_color_primaries("/fake/path.mp4")
 
         assert result == "unknown"
 
@@ -278,7 +278,7 @@ class TestHdrConversionFilter:
     def test_h264_plan_tone_maps_hlg_input_to_sdr(self):
         """Explicit H.264/SDR output must tone-map an HDR source before encoding."""
         from immich_memories.processing.assembly_engine import create_assembly_context
-        from immich_memories.processing.hdr_utilities import _resolve_clip_hdr
+        from immich_memories.processing.hdr_utilities import resolve_clip_hdr
 
         plan = EncodingPlan(
             codec=OutputCodec.H264,
@@ -296,11 +296,11 @@ class TestHdrConversionFilter:
 
         with (
             patch(
-                "immich_memories.processing.assembly_engine._get_clip_hdr_types",
+                "immich_memories.processing.assembly_engine.get_clip_hdr_types",
                 return_value=["hlg"],
             ),
             patch(
-                "immich_memories.processing.assembly_engine._detect_color_primaries",
+                "immich_memories.processing.assembly_engine.detect_color_primaries",
                 return_value="bt2020",
             ),
             patch(
@@ -309,7 +309,7 @@ class TestHdrConversionFilter:
             ),
         ):
             context = create_assembly_context(settings, prober, [clip], 1920, 1080)
-            conversion, *_ = _resolve_clip_hdr(0, context, context.hdr_type)
+            conversion, *_ = resolve_clip_hdr(0, context, context.hdr_type)
 
         assert context.hdr_type == "sdr"
         assert context.pix_fmt == "yuv420p"
@@ -323,7 +323,7 @@ class TestHdrConversionFilter:
     def test_standalone_sdr_context_probes_actual_hdr_before_multi_clip_assembly(self):
         """A plan without provenance must still discover HDR before building the graph."""
         from immich_memories.processing.assembly_engine import create_assembly_context
-        from immich_memories.processing.hdr_utilities import _resolve_clip_hdr
+        from immich_memories.processing.hdr_utilities import resolve_clip_hdr
 
         plan = EncodingPlan(
             codec=OutputCodec.H264,
@@ -344,7 +344,7 @@ class TestHdrConversionFilter:
 
         with (
             patch(
-                "immich_memories.processing.assembly_engine._get_clip_hdr_types",
+                "immich_memories.processing.assembly_engine.get_clip_hdr_types",
                 return_value=["hlg", None],
             ) as detect_transfers,
             patch(
@@ -353,7 +353,7 @@ class TestHdrConversionFilter:
             ),
         ):
             context = create_assembly_context(settings, prober, clips, 1920, 1080)
-            conversion, *_ = _resolve_clip_hdr(0, context, context.hdr_type)
+            conversion, *_ = resolve_clip_hdr(0, context, context.hdr_type)
 
         detect_transfers.assert_called_once_with(clips)
         assert context.clip_hdr_types == ["hlg", None]
@@ -365,7 +365,7 @@ class TestHdrConversionFilter:
         from immich_memories.processing.assembly_engine import create_assembly_context
         from immich_memories.processing.hdr_utilities import (
             RequiredColorConversionUnavailable,
-            _resolve_clip_hdr,
+            resolve_clip_hdr,
         )
 
         plan = EncodingPlan(
@@ -384,11 +384,11 @@ class TestHdrConversionFilter:
 
         with (
             patch(
-                "immich_memories.processing.assembly_engine._get_clip_hdr_types",
+                "immich_memories.processing.assembly_engine.get_clip_hdr_types",
                 return_value=["hlg"],
             ),
             patch(
-                "immich_memories.processing.assembly_engine._detect_color_primaries",
+                "immich_memories.processing.assembly_engine.detect_color_primaries",
                 return_value="bt2020",
             ),
         ):
@@ -401,13 +401,13 @@ class TestHdrConversionFilter:
             ),
             pytest.raises(RequiredColorConversionUnavailable),
         ):
-            _resolve_clip_hdr(0, context, context.hdr_type)
+            resolve_clip_hdr(0, context, context.hdr_type)
 
     def test_clip_hdr_resolution_fails_closed_for_unexpected_hdr_source(self):
         """Actual HDR input cannot bypass conversion through stale plan provenance."""
         from immich_memories.processing.hdr_utilities import (
             RequiredColorConversionUnavailable,
-            _resolve_clip_hdr,
+            resolve_clip_hdr,
         )
 
         context = MagicMock(
@@ -423,7 +423,7 @@ class TestHdrConversionFilter:
             ),
             pytest.raises(RequiredColorConversionUnavailable),
         ):
-            _resolve_clip_hdr(0, context, context.hdr_type)
+            resolve_clip_hdr(0, context, context.hdr_type)
 
 
 def test_hlg_to_pq_accelerates_only_the_linear_to_pq_transfer(

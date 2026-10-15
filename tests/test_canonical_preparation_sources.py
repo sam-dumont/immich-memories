@@ -5,21 +5,21 @@ from functools import partial
 
 import pytest
 
-from immich_memories.analysis.editorial_bound_sample import source_metadata_digest
-from immich_memories.analysis.editorial_clip_frames import CLIP_FRAMES_HEAD, CLIP_FRAMES_VERSION
-from immich_memories.analysis.editorial_preparation import prepare_editorial_annotations
-from immich_memories.analysis.editorial_runtime_evidence import (
-    AnnotationReadings,
-    EvidencePreparation,
-)
-from immich_memories.analysis.editorial_runtime_ports import EditorialRuntimePorts
-from immich_memories.analysis.editorial_video_motion import VIDEO_RESIDUAL_PRODUCER
-from immich_memories.analysis.selection_source import (
+from immich_memories.analysis.clips.bound_sample import source_metadata_digest
+from immich_memories.analysis.clips.video_motion import VIDEO_RESIDUAL_PRODUCER
+from immich_memories.analysis.corpus.admission import (
     EditorialDependencies,
     EditorialSelectionRequest,
     SourceScope,
     prepare_editorial_source,
 )
+from immich_memories.analysis.facts.clip_frames import CLIP_FRAMES_HEAD, CLIP_FRAMES_VERSION
+from immich_memories.analysis.preparation.acquire import prepare_editorial_annotations
+from immich_memories.analysis.runtime.evidence import (
+    AnnotationReadings,
+    EvidencePreparation,
+)
+from immich_memories.analysis.runtime.ports import EditorialRuntimePorts
 from immich_memories.api.models import AssetType
 from immich_memories.config import Config
 from immich_memories.store.cut_measurements import PendingMeasurements

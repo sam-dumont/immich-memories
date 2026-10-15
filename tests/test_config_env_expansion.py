@@ -12,7 +12,7 @@ every documented example uses, and a `$` inside a secret cannot collide with it.
 
 from __future__ import annotations
 
-from immich_memories.config_models import expand_env_vars
+from immich_memories.config.models.resources import expand_env_vars
 
 
 def test_a_password_containing_a_dollar_is_left_alone(monkeypatch):

@@ -5,14 +5,14 @@ from datetime import UTC, datetime
 
 import pytest
 
-from immich_memories.analysis.selection_source import (
+from immich_memories.analysis.corpus.admission import (
     EditorialDependencies,
     EditorialSelectionRequest,
     SourceScope,
     prepare_editorial_source,
 )
-from immich_memories.analysis.selection_source_groups import project_episode_groups
-from immich_memories.analysis.text_episode_reader import CachedTextEpisodeReader
+from immich_memories.analysis.corpus.groups import project_episode_groups
+from immich_memories.analysis.reading.episode_reader import CachedTextEpisodeReader
 from immich_memories.store.episode_readings import (
     EpisodeReadingProducer,
     EpisodeReadingStore,

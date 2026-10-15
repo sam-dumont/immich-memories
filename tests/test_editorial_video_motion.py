@@ -12,8 +12,8 @@ from pathlib import Path
 
 import pytest
 
-from immich_memories.analysis.editorial_structure_budget import RESIDUAL_MIN
-from immich_memories.analysis.editorial_video_motion import (
+from immich_memories.analysis.clips.budget import RESIDUAL_MIN
+from immich_memories.analysis.clips.video_motion import (
     STAGE,
     VIDEO_RESIDUAL_PRODUCER,
     measure_frame_motion,
@@ -90,12 +90,12 @@ def prepare_videos(tmp_path, clips: dict[str, bytes], videos=None, **seams):
     """One pass over these videos on a tier that reads frames; the samplers past Immich are real."""
     from dataclasses import replace
 
-    from immich_memories.analysis.editorial_clip_frames import (
+    from immich_memories.analysis.facts.clip_frames import (
         CLIP_FRAMES_HEAD,
         CLIP_FRAMES_VERSION,
     )
-    from immich_memories.analysis.editorial_clip_frames import SHOWS_ITS_MOMENT as SHOWS
-    from immich_memories.config_models_editorial_preparation import EditorialPreparationConfig
+    from immich_memories.analysis.facts.clip_frames import SHOWS_ITS_MOMENT as SHOWS
+    from immich_memories.config.models.editorial_preparation import EditorialPreparationConfig
     from immich_memories.store.editorial_preparation import remember_head_rows
     from tests.test_editorial_preparation import preview, run, successful_ports
 
@@ -133,7 +133,7 @@ def prepare_videos(tmp_path, clips: dict[str, bytes], videos=None, **seams):
 
 @requires_ffmpeg
 def test_a_prepared_video_banks_the_motion_its_sampled_frames_measure(tmp_path):
-    from immich_memories.analysis.editorial_preparation_motion import read_motion_residuals
+    from immich_memories.analysis.preparation.motion_lines import read_motion_residuals
     from tests.test_playback_keyframes import encode
 
     clips = {
@@ -159,8 +159,8 @@ def video_unit(video, residuals):
     """One video through the unit builder both tiers plan on."""
     from types import SimpleNamespace
 
-    from immich_memories.analysis.editorial_structure_material import UnitBuilder
-    from immich_memories.config_loader import Config
+    from immich_memories.analysis.film.material import UnitBuilder
+    from immich_memories.config.loader import Config
 
     source = SimpleNamespace(
         assets={video.id: video},
@@ -182,8 +182,8 @@ def video_unit(video, residuals):
 
 
 def banked_sentence(store, video, sentence: str) -> None:
-    from immich_memories.analysis.editorial_bound_sample import source_metadata_digest
-    from immich_memories.analysis.editorial_preparation_motion import MOTION_PRODUCER
+    from immich_memories.analysis.clips.bound_sample import source_metadata_digest
+    from immich_memories.analysis.preparation.motion_lines import MOTION_PRODUCER
     from immich_memories.store.motion_lines import (
         DESCRIBED,
         MotionLine,
@@ -208,7 +208,7 @@ def banked_sentence(store, video, sentence: str) -> None:
 @requires_ffmpeg
 @pytest.mark.parametrize("favourite", [False, True])
 def test_a_still_clip_captioned_with_an_action_is_judged_by_its_frames(tmp_path, favourite):
-    from immich_memories.analysis.editorial_preparation_motion import (
+    from immich_memories.analysis.preparation.motion_lines import (
         BankedMotionLines,
         read_motion_residuals,
     )
@@ -229,7 +229,7 @@ def test_a_still_clip_captioned_with_an_action_is_judged_by_its_frames(tmp_path,
 
 @requires_ffmpeg
 def test_a_clip_whose_frames_measure_motion_keeps_its_sentence(tmp_path):
-    from immich_memories.analysis.editorial_preparation_motion import (
+    from immich_memories.analysis.preparation.motion_lines import (
         BankedMotionLines,
         read_motion_residuals,
     )
@@ -247,7 +247,7 @@ def test_a_clip_whose_frames_measure_motion_keeps_its_sentence(tmp_path):
 
 
 def test_a_video_nobody_measured_keeps_its_sentence(tmp_path):
-    from immich_memories.analysis.editorial_preparation_motion import BankedMotionLines
+    from immich_memories.analysis.preparation.motion_lines import BankedMotionLines
 
     store = annotation_store()
     clip = clip_video("clip")
@@ -261,7 +261,7 @@ def test_a_video_nobody_measured_keeps_its_sentence(tmp_path):
 
 @requires_ffmpeg
 def test_a_measurement_that_fails_never_blocks_the_cut_and_is_owed_next_pass(tmp_path):
-    from immich_memories.analysis.editorial_preparation_motion import read_motion_residuals
+    from immich_memories.analysis.preparation.motion_lines import read_motion_residuals
 
     clips = {"room": static_room_clip(tmp_path / "room.mp4")}
 
@@ -285,8 +285,8 @@ def test_a_measurement_that_fails_never_blocks_the_cut_and_is_owed_next_pass(tmp
 
 
 def test_a_clip_whose_frames_cannot_be_decoded_stays_unmeasured(tmp_path):
-    from immich_memories.analysis.editorial_preparation_motion import read_motion_residuals
-    from immich_memories.analysis.editorial_video_motion import bank_video_motion
+    from immich_memories.analysis.clips.video_motion import bank_video_motion
+    from immich_memories.analysis.preparation.motion_lines import read_motion_residuals
 
     store = annotation_store()
     broken = tmp_path / "broken.jpg"

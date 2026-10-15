@@ -9,7 +9,7 @@ import pytest
 from click.testing import CliRunner
 from fastapi.testclient import TestClient
 
-from immich_memories.config_loader import get_config, load_config, set_config
+from immich_memories.config.loader import get_config, load_config, set_config
 from immich_memories.settings_edit import SettingRefused, save_settings
 
 MOVED = "The server URL changed: enter the credential for the new server."

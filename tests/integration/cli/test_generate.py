@@ -66,7 +66,7 @@ def fixture_mp4(tmp_path_factory: pytest.TempPathFactory) -> Path:
 def _has_immich() -> bool:
     """Check if Immich is reachable using the real config."""
     try:
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
 
         config = Config.from_yaml(Config.get_default_path())
         if not config.immich.url or not config.immich.api_key:
@@ -134,7 +134,7 @@ class TestGenerateMemoryPipeline:
         return _assemble
 
     def test_automation_memory_key_override_is_authoritative(self, tmp_path) -> None:
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
         from immich_memories.generate import GenerationParams, build_memory_key
 
         params = GenerationParams(
@@ -148,7 +148,7 @@ class TestGenerateMemoryPipeline:
 
     def test_two_clips_crossfade(self, tmp_path, fixture_mp4):
         """2 clips → generate_memory completes with valid output."""
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
         from immich_memories.generate import GenerationParams, generate_memory
 
         config = Config()
@@ -189,7 +189,7 @@ class TestGenerateMemoryPipeline:
 
     def test_single_clip_cut(self, tmp_path, fixture_mp4):
         """1 clip → cut transition → completes."""
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
         from immich_memories.generate import GenerationParams, generate_memory
 
         config = Config()
@@ -217,7 +217,7 @@ class TestGenerateMemoryPipeline:
 
     def test_upload_back_mocked_write(self, tmp_path, fixture_mp4):
         """Upload-back: mock both assembly AND upload."""
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
         from immich_memories.generate import GenerationParams, generate_memory
 
         config = Config()
@@ -251,7 +251,7 @@ class TestGenerateMemoryPipeline:
 
     def test_empty_clips_raises_error(self, tmp_path):
         """generate_memory with empty clips should raise GenerationError."""
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
         from immich_memories.generate import GenerationError, GenerationParams, generate_memory
 
         config = Config()
@@ -286,7 +286,7 @@ class TestCLIGenerate:
         from click.testing import CliRunner
 
         from immich_memories.cli import main
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
 
         config = Config(immich={"url": "http://immich.test", "api_key": "test-key"})
         config.output.codec = "h265"
@@ -323,7 +323,7 @@ class TestCLIGenerate:
         from click.testing import CliRunner
 
         from immich_memories.cli import main
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
 
         config = Config(immich={"url": "http://immich.test", "api_key": "test-key"})
         requested = tmp_path / "custom-name.mp4"
@@ -367,7 +367,7 @@ class TestCLIGenerate:
         from click.testing import CliRunner
 
         from immich_memories.cli import main
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
 
         config = Config(immich={"url": "http://immich.test", "api_key": "test-key"})
         output = tmp_path / "memory.mp4"
@@ -466,7 +466,7 @@ class TestCLIGenerate:
         from click.testing import CliRunner
 
         from immich_memories.cli import main
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
 
         config = Config(immich={"url": "http://immich.test", "api_key": "test-key"})
         output = tmp_path / "auto.mp4"
@@ -515,7 +515,7 @@ class TestCLIGenerate:
         from click.testing import CliRunner
 
         from immich_memories.cli import main
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
 
         config = Config(immich={"url": "http://immich.test", "api_key": "test-key"})
         output = tmp_path / "on-this-day.mp4"
@@ -561,7 +561,7 @@ class TestCLIGenerate:
         from click.testing import CliRunner
 
         from immich_memories.cli import main
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
 
         config = Config(immich={"url": "http://immich.test", "api_key": "test-key"})
         with patch("immich_memories.cli.get_config", return_value=config):
@@ -711,7 +711,7 @@ class TestCLIGenerate:
         from click.testing import CliRunner
 
         from immich_memories.cli import main
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
 
         config = Config(immich={"url": "http://immich.test", "api_key": "test-key"})
         client = MagicMock()
@@ -951,7 +951,7 @@ class TestPipelineRunner:
     def test_run_pipeline_wires_config_and_calls_generate(self, tmp_path, fixture_mp4):
         """run_pipeline_and_generate builds correct GenerationParams and calls generate_memory."""
         from immich_memories.cli._pipeline_runner import run_pipeline_and_generate
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
         from immich_memories.timeperiod import DateRange
 
         config = Config()
@@ -964,7 +964,7 @@ class TestPipelineRunner:
         assets = [c.asset for c in clips]
         dr = DateRange(start=datetime(2025, 1, 1), end=datetime(2025, 12, 31, 23, 59, 59))
 
-        from immich_memories.analysis.smart_pipeline import PipelineResult
+        from immich_memories.analysis.runtime.smart_pipeline import PipelineResult
 
         pipeline_result = PipelineResult(
             selected_clips=clips,
@@ -977,7 +977,7 @@ class TestPipelineRunner:
             patch("immich_memories.generate_clips.assets_to_clips", return_value=clips),
             # WHY: replaces the editorial planner, which reads the owner's annotation store
             patch(
-                "immich_memories.analysis.editorial_runtime.build_smart_pipeline"
+                "immich_memories.analysis.runtime.composition.build_smart_pipeline"
             ) as build_pipeline,
             # WHY: mock generate_memory — real one acquires lock + runs FFmpeg
             patch("immich_memories.generate.generate_memory", return_value=output) as mock_gen,
@@ -1030,7 +1030,7 @@ class TestPipelineRunner:
     ):
         """A dry run reports what it found; selection is --no-render's job, not this one's."""
         from immich_memories.cli._pipeline_runner import run_pipeline_and_generate
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
         from immich_memories.timeperiod import DateRange
 
         config = Config(
@@ -1044,7 +1044,7 @@ class TestPipelineRunner:
             patch("immich_memories.generate_clips.assets_to_clips", return_value=clips),
             # WHY: a dry run must never reach the planner; failing loudly proves it
             patch(
-                "immich_memories.analysis.editorial_runtime.build_smart_pipeline",
+                "immich_memories.analysis.runtime.composition.build_smart_pipeline",
                 side_effect=AssertionError("dry run built a pipeline"),
             ),
             # WHY: mock generate_memory — real one acquires lock + runs FFmpeg
@@ -1150,7 +1150,7 @@ class TestTripGenerationFlow:
 
     def test_handle_trip_generation_discovery_mode(self, tmp_path):
         """Discovery mode (no selection flags) returns without generating."""
-        from immich_memories.analysis.trip_detection import DetectedTrip
+        from immich_memories.analysis.places.trip_detection import DetectedTrip
         from immich_memories.cli._trip_generation import handle_trip_generation
 
         mock_client = MagicMock()
@@ -1208,7 +1208,7 @@ class TestTripGenerationFlow:
 
     def test_handle_trip_generation_selects_and_generates(self, tmp_path, fixture_mp4):
         """Trip selected → fetches videos → runs pipeline → generates."""
-        from immich_memories.analysis.trip_detection import DetectedTrip
+        from immich_memories.analysis.places.trip_detection import DetectedTrip
         from immich_memories.cli._trip_generation import handle_trip_generation
 
         mock_client = MagicMock()
@@ -1289,7 +1289,7 @@ class TestTripGenerationFlow:
 
     def test_exact_trip_range_selects_only_matching_trip(self, tmp_path):
         """Automation dates select the detected trip, not the nearest or first trip."""
-        from immich_memories.analysis.trip_detection import DetectedTrip
+        from immich_memories.analysis.places.trip_detection import DetectedTrip
         from immich_memories.cli._trip_generation import handle_trip_generation
 
         mock_client = MagicMock()
@@ -1376,7 +1376,7 @@ class TestTripGenerationFlow:
 
     def test_exact_trip_range_without_match_fails(self, tmp_path):
         """A stale automation candidate cannot silently generate another trip."""
-        from immich_memories.analysis.trip_detection import DetectedTrip
+        from immich_memories.analysis.places.trip_detection import DetectedTrip
         from immich_memories.cli._trip_generation import handle_trip_generation
 
         trip = DetectedTrip(
@@ -1448,9 +1448,9 @@ class TestTripGenerationFlow:
         """Manual custom dates must not replace the established trip selectors."""
         from click.testing import CliRunner
 
-        from immich_memories.analysis.trip_detection import DetectedTrip
+        from immich_memories.analysis.places.trip_detection import DetectedTrip
         from immich_memories.cli import main
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
 
         trips = [
             DetectedTrip(
@@ -1516,7 +1516,7 @@ class TestTripGenerationFlow:
 
     def test_exact_trip_range_with_duplicate_matches_fails(self, tmp_path) -> None:
         """Ambiguous detector output cannot pick an arbitrary trip."""
-        from immich_memories.analysis.trip_detection import DetectedTrip
+        from immich_memories.analysis.places.trip_detection import DetectedTrip
         from immich_memories.cli._trip_generation import handle_trip_generation
 
         duplicates = [

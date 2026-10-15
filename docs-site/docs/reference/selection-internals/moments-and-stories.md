@@ -21,19 +21,19 @@ or trip legs, recognise distinct events, weigh the stories.
 
 | Unit | Rule | Where |
 |---|---|---|
-| Moment | a picture joins the open moment when it is within 10 minutes and 2 km of that moment's last picture; with no GPS, time alone decides | `moment_grouping.py`: `MOMENT_WINDOW_MINUTES`, `MOMENT_RADIUS_METRES` |
+| Moment | a picture joins the open moment when it is within 10 minutes and 2 km of that moment's last picture; with no GPS, time alone decides | `corpus/moment_grouping.py`: `MOMENT_WINDOW_MINUTES`, `MOMENT_RADIUS_METRES` |
 | Episode | the same test at 90 minutes and 2 km; every moment sits in exactly one episode | `EPISODE_WINDOW_MINUTES`, `build_episode_groups` |
 | Capture run | captures each within five minutes of the one before; it spaces shots and is the unit of the exposure rule | `MIN_GAP_IN_CAPTURE_GROUP_SECONDS` |
 | Day chunk | same calendar day, or starting within 6 hours of the last moment's start (a late night stays one night); split only when more than 90 minutes pass **and** the city changes | `RuleStructureReader._day_chunks` |
 | Story | a run of consecutive photographed days: at home, cut on the ISO week; away, kept whole unless it changes where it stays (below); a day back home ends it | `RuleStructureReader._runs` |
-| Trip leg | days stay in one area while each day's median position is within 25 km of the area's; an area of 3 days or more is a leg, a shorter one joins a neighbour; a trip splits only when every adjacent pair of legs is more than 50 km apart | `trip_legs.legs_of_days` |
+| Trip leg | days stay in one area while each day's median position is within 25 km of the area's; an area of 3 days or more is a leg, a shorter one joins a neighbour; a trip splits only when every adjacent pair of legs is more than 50 km apart | `places.trip_legs.legs_of_days` |
 
 Every day here is the picture's own day: its local time, the clock Immich's timeline shows, not
 UTC. A New Year's Eve party in Los Angeles stays in its year. A picture with no local time falls
 back to UTC.
 
 "Away" is more than 10 km from `trips.homebase_latitude` / `homebase_longitude`
-(`editorial_home_radius.py`). Without a home base nothing is away, so a three-week holiday arrives
+(`places/home_radius.py`). Without a home base nothing is away, so a three-week holiday arrives
 as three weekly stories. Setting it is step one of [Home and people](../../get-started/who-is-who.md).
 
 **A trip that changes where it stays is two stories.** A week hiking village to village and then four
@@ -51,7 +51,7 @@ nothing vouches for keeps its slot.
 **A one-off inside an ordinary day is its own story.** A week at home is one story, so an evening
 across town photographed in two dense bursts deserves different coverage from the
 morning's errands. An episode of a home story becomes its own **event** story when all of this
-holds (`editorial_event_story.py`):
+holds (`stories/event_story.py`):
 
 - it's dense on its own: its pictures reach the same day threshold the gate uses for a whole day
   (4x the median photographed day, or the 75th percentile if that's higher),
@@ -76,8 +76,8 @@ Known limit: a dinner out photographed like an occasion (40 pictures in 3 bursts
 an event too. From counts, places and labels alone it looks exactly like one.
 
 **A birthday or a visit is its own story.** Two facts your household recorded take a day at home
-out of its week (`editorial_occasions.py`, `take_out_occasions` in
-`editorial_rule_story_names.py`):
+out of its week (`stories/occasions.py`, `take_out_occasions` in
+`stories/rule_names.py`):
 
 - **a birthday**: someone of the household or close family is on any picture that day, and their
   Immich birth date comes round on it. One picture is enough, since the birth date is the evidence.
@@ -94,7 +94,7 @@ home are read: a trip names itself.
 ## What a story is called
 
 Every story is named from its facts, in the film's language, never from an activity label
-(`editorial_rule_story_names.py`, `editorial_story_names.py`):
+(`stories/rule_names.py`, `stories/names.py`):
 
 | Story | Name |
 |---|---|
@@ -128,7 +128,7 @@ Each happening is first read for whether it is worth remembering, from facts alo
 Four steps turn a reading into shot slots: read worthiness, apply the family and favourite
 floors, apply the story ceilings, allocate shot slots.
 
-The mapping from the reading to a weight is `GATE_WEIGHT` in `editorial_story_replies.py`:
+The mapping from the reading to a weight is `GATE_WEIGHT` in `stories/replies.py`:
 remarkable seeds `minor`, maybe seeds `glimpse`, background gets `none`. Then the floor and ceiling:
 
 - **Three favourites** in a story raise it to `major`.
@@ -186,7 +186,7 @@ place in one month (three concerts at the same hall, three matches at the same c
 Every story of the kind keeps its own shot. Only the heaviest one (most favourites, then most
 moments) goes deeper, as deep as any other `major` story. A trip and a big family story never fold:
 they carry their own weight, so a birth-sized day next to smaller days of the same label keeps
-everything it had. The kinds found (`editorial_same_kind.py`) are kept with the run record.
+everything it had. The kinds found (`stories/same_kind.py`) are kept with the run record.
 
 **Every year gets a shot.** A person film with one date window longer than 548 days, a custom film over several date ranges, and an album with a written subject are split into calendar years. A person film with several windows has window partitions but no one-shot-per-window guarantee. Before any story takes a second shot, each year that holds a funded story gets one, from its first story in funding order. When no picture that story offered stands
 on its own, the year's next story gets the shot, and so on down the year. A year where none stands
@@ -210,7 +210,7 @@ short when they run out.
 A holiday film is built the same way, one partition per year, across every year the library has
 around the day unless `--years-back` narrows it. Both films are about the date, so every year takes
 its turn one picture at a time and none gets more than an even share: one year's starred afternoon
-can't take half the film (`even_eras` in `editorial_story_slots.py`). In a holiday film the day
+can't take half the film (`even_eras` in `stories/slots.py`). In a holiday film the day
 itself leads each year, on the picture's local clock, and the days around it only fill in when the
 day is thin ([Film types](../film-types.mdx)).
 
@@ -221,9 +221,9 @@ is `false` (Route C in [What a model adds](./what-a-model-adds.md)). Every other
 several separate windows included (on this day across years, the birthdays film), starts
 from the no-model draft on this page and gets the polish. Only Route C adds these:
 
-- **Trip legs get a reserve** (`editorial_story_trips`) beyond the leg splitting already used by the rules draft:
+- **Trip legs get a reserve** (`stories.trips`) beyond the leg splitting already used by the rules draft:
   `round(slots / 2 * sqrt(leg days / film days))` shots, at least one.
-- **Recurring activities become one thread** (`editorial_story_threads`): four Saturdays at the same
+- **Recurring activities become one thread** (`stories.threads`): four Saturdays at the same
   climbing gym are one story, one per calendar year in a film longer than 18 months, so a year of
   progress still shows. The no-model draft has its own, narrower version: the recurring kind above.
 - **`dominant`** is set by the model naming at most two central stories. The no-model draft never

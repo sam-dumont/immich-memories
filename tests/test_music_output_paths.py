@@ -11,7 +11,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from immich_memories import generate_render as generate_render_module
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.generate import GenerationParams
 from tests.conftest import make_clip
 from tests.output_tools_fake import output_tools

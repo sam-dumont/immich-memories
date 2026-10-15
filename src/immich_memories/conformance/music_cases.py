@@ -5,8 +5,8 @@ import json
 from functools import partial
 
 from immich_memories.audio.text_mood import mood_for_cut
-from immich_memories.config_loader import Config
-from immich_memories.config_models_llm import LLMConfig
+from immich_memories.config.loader import Config
+from immich_memories.config.models.llm import LLMConfig
 from immich_memories.conformance.fixtures import scratch_store
 from immich_memories.conformance.runtime import Case
 

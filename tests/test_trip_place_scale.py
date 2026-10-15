@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
-from immich_memories.analysis.trip_detection import detect_trips
+from immich_memories.analysis.places.trip_detection import detect_trips
 from immich_memories.api.models import Asset, AssetType, ExifInfo
 from immich_memories.i18n_places import localise_place
 
@@ -274,8 +274,8 @@ def test_a_local_stay_with_excursions_uses_its_majority_town():
 
 
 def test_discovery_resolves_the_same_local_stay_as_the_film(monkeypatch):
-    from immich_memories.analysis.place_geocoder import PlaceGeocoder
-    from immich_memories.analysis.trip_detection import geocoder_for
+    from immich_memories.analysis.places.geocoder import PlaceGeocoder
+    from immich_memories.analysis.places.trip_detection import geocoder_for
     from immich_memories.config import Config
     from immich_memories.db import open_store
 
@@ -290,7 +290,7 @@ def test_discovery_resolves_the_same_local_stay_as_the_film(monkeypatch):
         },
     )
     monkeypatch.setattr(
-        "immich_memories.analysis.place_geocoder.place_geocoder_for", lambda _: places
+        "immich_memories.analysis.places.geocoder.place_geocoder_for", lambda _: places
     )
     config = Config()
     config.trips.homebase_latitude, config.trips.homebase_longitude = _HOME

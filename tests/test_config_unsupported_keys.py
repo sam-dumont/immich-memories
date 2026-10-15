@@ -7,14 +7,14 @@ from pathlib import Path
 
 import pytest
 
-from immich_memories.config_loader import Config
-from immich_memories.config_sources import describe_settings
+from immich_memories.config.loader import Config
+from immich_memories.config.sources import describe_settings
 
 
 @pytest.fixture(autouse=True)
 def fresh_warnings(monkeypatch: pytest.MonkeyPatch) -> None:
     # WHY: each warning is said once per process; every test here is its own process.
-    monkeypatch.setattr("immich_memories.config_unsupported._said", set())
+    monkeypatch.setattr("immich_memories.config.unsupported._said", set())
 
 
 def _load(tmp_path: Path, text: str) -> Config:

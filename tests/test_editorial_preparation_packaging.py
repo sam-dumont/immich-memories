@@ -53,10 +53,7 @@ def test_worker_is_self_contained_for_detector_only_python_environments():
     """
     import ast
 
-    path = (
-        Path(__file__).parents[1]
-        / "src/immich_memories/analysis/editorial_preparation_detectors.py"
-    )
+    path = Path(__file__).parents[1] / "src/immich_memories/analysis/preparation/detectors.py"
     tree = ast.parse(path.read_text())
     unconditional = [
         node

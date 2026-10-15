@@ -15,7 +15,7 @@ import pytest
 from PIL import Image, ImageDraw
 
 from immich_memories.titles.map_animation import _render_title_overlay
-from immich_memories.titles.map_renderer import _fit_title_lines, _get_font
+from immich_memories.titles.map_renderer import _get_font, fit_title_lines
 
 pytestmark = [pytest.mark.integration]
 
@@ -71,7 +71,7 @@ class TestShortNameIsUnchanged:
 
         # Direct check: the fit helper with the exact production parameters
         # must hand back the base font, unshrunk.
-        _, chosen_font = _fit_title_lines(
+        _, chosen_font = fit_title_lines(
             "Nice", probe, base_size=base_fs, bold=True, max_width=int(width * 0.88)
         )
         assert chosen_font.size == base_fs

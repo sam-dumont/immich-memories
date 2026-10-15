@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import date, timedelta
 from pathlib import Path
 
-from immich_memories.analysis.trip_detection import DetectedTrip
+from immich_memories.analysis.places.trip_detection import DetectedTrip
 from immich_memories.web.answer_cache import AnswerCache
 from immich_memories.web.dependencies import answers
 from immich_memories.web.library import trip_finder

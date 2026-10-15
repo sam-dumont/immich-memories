@@ -3,10 +3,10 @@
 from dataclasses import replace
 from functools import partial
 
-from immich_memories.analysis.editorial_rule_reader import NoModelJudge, RuleStructureReader
-from immich_memories.analysis.editorial_speech import resolve_speech_cuts
-from immich_memories.analysis.editorial_structure_contract import StructurePlannerPorts
-from immich_memories.analysis.editorial_structure_planner import plan_structure
+from immich_memories.analysis.clips.speech import resolve_speech_cuts
+from immich_memories.analysis.film.contract import StructurePlannerPorts
+from immich_memories.analysis.stories.rule_reader import NoModelJudge, RuleStructureReader
+from immich_memories.analysis.structure.planner import plan_structure
 from tests.conftest import make_asset
 from tests.test_editorial_duration_planner_integration import source
 
