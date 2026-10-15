@@ -34,42 +34,42 @@ def has_unresolved_env_reference(value: str) -> bool:
     return _ENV_REFERENCE.search(value) is not None
 
 
-def expand_env_vars(value: str) -> str:
+def expand_env_vars(value: str, *, where: str = "A config value") -> str:
     """Expand `${VAR}` references in a config value.
 
     Only the delimited form expands. A bare `$NAME` is left exactly as written,
     because these fields hold passwords and API keys, and a `$` in a secret is
     ordinary: silently turning part of a credential into the value of an
     environment variable is worse than not expanding it, since the failure
-    surfaces as a rejected login rather than as a config error.
+    surfaces as a rejected login rather than as a config error. `where` names the
+    field in the warning a bare reference gets; the value itself is never echoed.
     """
 
     def replacer(match: re.Match[str]) -> str:
         return os.environ.get(match.group(1), match.group(0))
 
     expanded = _ENV_REFERENCE.sub(replacer, value)
-    _warn_about_bare_references(expanded)
+    _warn_about_bare_references(expanded, where)
     return expanded
 
 
-def _warn_about_bare_references(value: str) -> None:
+def _warn_about_bare_references(value: str, where: str) -> None:
     """Tell anyone relying on the old bare `$NAME` form why it stopped working.
 
     Dropping a documented form silently would trade one quiet surprise for
     another, so a bare reference that names a variable which actually exists is
-    reported. A `$` that matches nothing stays silent -- that is just a password.
+    reported. A `$` that matches nothing stays silent -- that is just a password. The
+    warning names the field, never the reference: it sits inside what may be a secret.
     """
-    for match in _BARE_ENV_REFERENCE.finditer(value):
-        if match.group(1) in os.environ:
-            logger.warning(
-                "Config value contains %s, which is no longer expanded; "
-                "write ${%s} if you meant the environment variable.",
-                match.group(0),
-                match.group(1),
-            )
+    if any(match.group(1) in os.environ for match in _BARE_ENV_REFERENCE.finditer(value)):
+        logger.warning(
+            "%s contains a bare $NAME reference to an environment variable, which is not "
+            "expanded; write ${NAME} if you meant the variable.",
+            where,
+        )
 
 
-def expand_file_references(model: type[BaseModel], data: dict) -> dict:
+def expand_file_references(model: type[BaseModel], data: dict, prefix: str = "") -> dict:
     """Expand `${VAR}` in a config.yaml mapping, in the fields `model` marks for it.
 
     Only config.yaml goes through this. A value saved from Settings or set in the
@@ -85,21 +85,23 @@ def expand_file_references(model: type[BaseModel], data: dict) -> dict:
             continue
         value = data[key]
         if name in marked and isinstance(value, str):
-            expanded[key] = expand_env_vars(value)
+            expanded[key] = expand_env_vars(value, where=f"{prefix}{key}")
         elif isinstance(value, dict):
-            expanded[key] = _expand_section(field.annotation, value)
+            expanded[key] = _expand_section(field.annotation, value, f"{prefix}{key}.")
     return expanded
 
 
-def _expand_section(annotation: Any, value: dict) -> dict:
+def _expand_section(annotation: Any, value: dict, prefix: str) -> dict:
     for candidate in (annotation, *get_args(annotation)):
         if isinstance(candidate, type) and issubclass(candidate, BaseModel):
-            return expand_file_references(candidate, value)
+            return expand_file_references(candidate, value, prefix)
         if get_origin(candidate) is dict:
             item = get_args(candidate)[1]
             if isinstance(item, type) and issubclass(item, BaseModel):
                 return {
-                    name: expand_file_references(item, entry) if isinstance(entry, dict) else entry
+                    name: expand_file_references(item, entry, f"{prefix}{name}.")
+                    if isinstance(entry, dict)
+                    else entry
                     for name, entry in value.items()
                 }
     return value

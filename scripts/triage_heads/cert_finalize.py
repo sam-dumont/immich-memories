@@ -19,7 +19,7 @@ from .cohorts import (
     cohort_selection_sha256,
     load_inventory_snapshot,
 )
-from .memory import acquire_recovery_pipeline_lock
+from .memory import acquire_recovery_pipeline_lock, fsync_directory
 from .semantic_refinement import (
     AuthenticatedSemanticRefinement,
     SemanticRefinementConfig,
@@ -97,14 +97,6 @@ def _mapping(value: object, *, field: str) -> Mapping[str, object]:
     return value
 
 
-def _fsync_directory(path: Path) -> None:
-    descriptor = os.open(path, os.O_RDONLY)
-    try:
-        os.fsync(descriptor)
-    finally:
-        os.close(descriptor)
-
-
 def _write_create_only_idempotent(path: Path, payload: bytes) -> None:
     path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     if path.exists():
@@ -130,7 +122,7 @@ def _write_create_only_idempotent(path: Path, payload: bytes) -> None:
             if path.read_bytes() != payload:
                 raise RuntimeError(f"{path.name} already has different immutable content")
         os.chmod(path, 0o600)
-        _fsync_directory(path.parent)
+        fsync_directory(path.parent)
     finally:
         temporary.unlink(missing_ok=True)
 
@@ -607,7 +599,7 @@ def finalize_authenticated_fresh_certification(
 
     _write_create_only_idempotent(approval_root / "approval-private.json", private_bytes)
     _write_create_only_idempotent(approval_root / "approval-public.json", public_bytes)
-    _fsync_directory(approval_root)
+    fsync_directory(approval_root)
     return public_manifest
 
 

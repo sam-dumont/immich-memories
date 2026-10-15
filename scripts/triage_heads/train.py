@@ -41,6 +41,7 @@ if __package__:
         acquire_pipeline_lock,
         ensure_offline_process_memory,
         ensure_private_directory,
+        fsync_directory,
         validate_offline_working_set_gib,
     )
     from .preview_store import verify_committed_preview_store
@@ -77,6 +78,7 @@ else:  # pragma: no cover - direct script invocation
         acquire_pipeline_lock,
         ensure_offline_process_memory,
         ensure_private_directory,
+        fsync_directory,
         validate_offline_working_set_gib,
     )
     from scripts.triage_heads.preview_store import verify_committed_preview_store
@@ -412,14 +414,6 @@ class MLPArtifact:
         return np.asarray(self.classes)[indices]
 
 
-def _fsync_directory(path: Path) -> None:
-    descriptor = os.open(path, os.O_RDONLY)
-    try:
-        os.fsync(descriptor)
-    finally:
-        os.close(descriptor)
-
-
 def _temporary_path(path: Path) -> Path:
     descriptor, name = tempfile.mkstemp(
         prefix=path.name + ".",
@@ -452,7 +446,7 @@ def _atomic_savez(path: Path, **arrays: Any) -> None:
             handle.flush()
             os.fsync(handle.fileno())
         temporary.replace(path)
-        _fsync_directory(path.parent)
+        fsync_directory(path.parent)
     finally:
         temporary.unlink(missing_ok=True)
 
@@ -738,11 +732,11 @@ def _publish_training_directory(
             finally:
                 os.close(descriptor)
         staging.root.chmod(0o500)
-        _fsync_directory(staging.root)
+        fsync_directory(staging.root)
         staging.root.replace(destination)
-        _fsync_directory(runs_directory)
+        fsync_directory(runs_directory)
     _validate_committed_bundle_layout(destination, head=staging.head)
-    _fsync_directory(runs_directory)
+    fsync_directory(runs_directory)
     return destination
 
 
@@ -2806,7 +2800,7 @@ def _write_json(path: Path, payload: dict) -> None:
             handle.flush()
             os.fsync(handle.fileno())
         temporary.replace(path)
-        _fsync_directory(path.parent)
+        fsync_directory(path.parent)
     finally:
         temporary.unlink(missing_ok=True)
 
@@ -2840,7 +2834,7 @@ def _write_manifest(
             handle.flush()
             os.fsync(handle.fileno())
         temporary.replace(path)
-        _fsync_directory(path.parent)
+        fsync_directory(path.parent)
     finally:
         temporary.unlink(missing_ok=True)
 

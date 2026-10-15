@@ -37,9 +37,6 @@ _SDR_COLOUR = "white"
 _HDR_RGB = (0xBF, 0xBF, 0xBF)
 _SDR_RGB = (0xFF, 0xFF, 0xFF)
 
-# Middle dot rather than a comma: place names already contain commas.
-_SEPARATOR = " \u00b7 "
-
 
 @dataclass(frozen=True)
 class ClipCaption:

@@ -5511,7 +5511,7 @@
     },
     "/api/v1/preflight": {
       "get": {
-        "description": "The checks `immich-memories preflight` runs, one row each; this can take a few seconds.",
+        "description": "The checks `immich-memories preflight` runs, one row each; this can take a few seconds.\n\nEvery check calls out (Immich, the reader, the render worker), so a request another\nsite sent is refused rather than letting a visited page keep this server busy.",
         "operationId": "read_preflight_api_v1_preflight_get",
         "responses": {
           "200": {

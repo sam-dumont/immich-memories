@@ -750,10 +750,8 @@ src/immich_memories/
 │   ├── exact_copies.py         # Same SHA-1 + kind under distinct UUIDs: one item (a Live copy with its motion, favourite, primary owner, ids); a video equal to a Live Photo's motion folds into the Live Photo; any member's star stars the kept item
 │   ├── picture_copies.py       # One picture stored as several files: fold, keep the most pixels
 │   ├── llm_failures.py         # Separate "the model could not answer" from a bug in the calling code
-│   ├── request_heartbeat.py    # RequestHeartbeat: periodic log line for long-outstanding HTTP calls
 │   ├── duplicate_hashing.py    # Perceptual hashing for duplicates
 │   ├── thumbnail_prefetch.py   # cached_preview_bytes(): the one preview reader the editorial modules share
-│   ├── apple_vision.py         # Whether the macOS Vision framework loads (hardware report only)
 │   ├── llm_query.py            # The live transport: one prompt, one connection, one answer
 │   ├── llm_adaptations.py      # Capability refusals: remembered request changes, schema/object fallback
 │   ├── llm_wire.py             # The two request dialects, what a reply says, and the reasoning budget
@@ -860,7 +858,6 @@ src/immich_memories/
 │   ├── convenience.py          # Convenience/factory functions
 │   ├── cpu_video.py            # CPU/NAS still backgrounds, FFmpeg text movement/fades and plan-owned encoding
 │   ├── encoding.py             # Title video encoding
-│   ├── video_encoding.py       # Video encoding helpers
 │   ├── text_builder.py         # Text layout & positioning
 │   ├── content_background.py   # Content-aware background generation
 │   ├── motion_interpolation.py # Optical-flow in-between frames for the opening's slow-motion deblur
@@ -889,11 +886,10 @@ src/immich_memories/
 │   ├── fonts.py                # Bundled title families (nothing downloaded at run time)
 │   ├── font_chain.py           # ChainFont: per-letter Noto fallback, bidi run order
 │   ├── script_fonts.py         # Pinned Noto script fonts, `titles fonts --install`
-│   ├── llm_titles.py           # LLM-generated titles: prompt building, parsing, the LLM call
+│   ├── llm_titles.py           # LLM titles for trips, albums and special days: prompt, parsing, the call
 │   ├── title_guards.py         # Guards refusing an invented name, a missing year, a missing place
 │   ├── common_nouns.py         # German capitalises every noun: the nouns whose capital names nobody
 │   ├── title_slots.py          # Closes a model title's empty slots: a dangling preposition, an orphan separator
-│   ├── period_title.py         # A season/month/year film is titled by its period; the story moves to the subtitle
 │   ├── film_stories.py         # The cut's stories (heaviest first) and summary, read from its plan for the title
 │   ├── relationship_guard.py   # Guard refusing a relationship word the people record doesn't back
 │   ├── relationship_words.py   # Per-locale relationship vocabulary (perspective/record-backed/alias)

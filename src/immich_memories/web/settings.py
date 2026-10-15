@@ -7,7 +7,7 @@ from itertools import groupby
 from pathlib import Path
 from typing import TYPE_CHECKING, Annotated, Any, Literal
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 
 from immich_memories.config import get_config
@@ -155,9 +155,19 @@ def read_config_warnings(path: Annotated[Path, Depends(config_file)]) -> ConfigW
 
 
 @router.get("/preflight", response_model=list[PreflightCheck])
-def read_preflight(config: Annotated[Config, Depends(current_config)]) -> list[PreflightCheck]:
-    """The checks `immich-memories preflight` runs, one row each; this can take a few seconds."""
+def read_preflight(
+    request: Request, config: Annotated[Config, Depends(current_config)]
+) -> list[PreflightCheck]:
+    """The checks `immich-memories preflight` runs, one row each; this can take a few seconds.
+
+    Every check calls out (Immich, the reader, the render worker), so a request another
+    site sent is refused rather than letting a visited page keep this server busy.
+    """
     from immich_memories.preflight import run_preflight_checks
+    from immich_memories.web.request_origin import cross_site_request
+
+    if cross_site_request(dict(request.headers), config):
+        raise HTTPException(status_code=403, detail="Preflight runs only from this app's own pages")
 
     return [
         PreflightCheck(

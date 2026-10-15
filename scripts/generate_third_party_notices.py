@@ -40,10 +40,7 @@ KNOWN = {
     "onnxruntime-gpu": ("MIT", "https://onnxruntime.ai"),
     "pyobjc-core": ("MIT", "https://github.com/ronaldoussoren/pyobjc"),
     "pyobjc-framework-cocoa": ("MIT", "https://github.com/ronaldoussoren/pyobjc"),
-    "pyobjc-framework-vision": ("MIT", "https://github.com/ronaldoussoren/pyobjc"),
-    "pyobjc-framework-quartz": ("MIT", "https://github.com/ronaldoussoren/pyobjc"),
     "pyobjc-framework-metal": ("MIT", "https://github.com/ronaldoussoren/pyobjc"),
-    "pyobjc-framework-coreml": ("MIT", "https://github.com/ronaldoussoren/pyobjc"),
     "quadrants": ("Apache-2.0", "https://github.com/Genesis-Embodied-AI/quadrants"),
     "staticmap": ("Apache-2.0", "https://github.com/komoot/staticmap"),
     "immich-memories-music": (

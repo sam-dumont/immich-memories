@@ -235,7 +235,7 @@ listen on an address reachable from the bridge, such as `0.0.0.0`:
 
 The base requests Basic through `TIER=basic`. The GPU and Full tier files request their respective
 tiers. Preflight checks whether the selected hardware and services can satisfy that request.
-Saved Settings can override these deployment defaults. See [tier requirements](./requirements.md#the-preparation-tier).
+`TIER` outranks a tier saved in Settings or written in config.yaml; change the tier in `.env`. See [tier requirements](./requirements.md#the-preparation-tier).
 Keep `IMMICH_MEMORIES_EDITORIAL__PREPARATION__DETECTOR_CACHE_DIR` on the persistent volume when
 writing your own service block, so detector downloads survive a recreate.
 

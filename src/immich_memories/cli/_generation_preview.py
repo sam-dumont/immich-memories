@@ -73,9 +73,13 @@ def music_policy(*, config, music: str | None, no_music: bool) -> str:
         return "disabled"
     if music:
         return "provided file"
-    from immich_memories.generate_music import music_config_available
+    from immich_memories.generate_music import music_config_available, own_music_available
 
-    return "automatic" if music_config_available(config) else "bundled track"
+    if music_config_available(config):
+        return "automatic"
+    if own_music_available(config):
+        return "your music folder (bundled tracks for moods it lacks)"
+    return "bundled track"
 
 
 def planned_output_line(path: Path) -> str:

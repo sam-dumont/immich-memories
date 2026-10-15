@@ -3,8 +3,9 @@
 Status: shipped 2026-09-10 as the only selection route. `immich-memories generate`, the web
 UI's Memory page and scheduled runs all go `generate` → `build_smart_pipeline(editorial_context)`
 → `run_editorial_source` → structure planner → story planner. The legacy scorer
-(`SmartPipeline.run_selection`, `ClipRefiner`, the review loop) stays in the tree, unreached,
-until the removal phase deletes it with its config keys. This note is the map of what shipped;
+(`SmartPipeline.run_selection`, `ClipRefiner`, the review loop) is gone from the tree; its config
+keys are retired, and a config that still names one gets a warning saying so
+(`config_loader.py`). This note is the map of what shipped;
 the reasoning that got here is in the notes cited at the end.
 
 ## What it replaced, and why

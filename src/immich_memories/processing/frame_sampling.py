@@ -20,6 +20,8 @@ import logging
 import subprocess
 from pathlib import Path
 
+from immich_memories.processing.clip_probing import probe_format_duration
+
 logger = logging.getLogger(__name__)
 
 _FALLBACK_DURATION_SECONDS = 60.0
@@ -34,31 +36,6 @@ def even_timestamps(duration: float, count: int) -> list[float]:
     """
     usable = duration if duration > 0 else _FALLBACK_DURATION_SECONDS
     return [usable * i / (count + 1) for i in range(1, count + 1)]
-
-
-def probe_duration(video: Path) -> float:
-    """Length in seconds, or 0.0 when the container will not say."""
-    try:
-        result = subprocess.run(  # noqa: S603 - fixed argv, path is not shell-interpreted
-            [
-                "ffprobe",
-                "-v",
-                "error",
-                "-show_entries",
-                "format=duration",
-                "-of",
-                "default=noprint_wrappers=1:nokey=1",
-                str(video),
-            ],
-            capture_output=True,
-            text=True,
-            check=True,
-            timeout=30,
-        )
-        return float(result.stdout.strip())
-    except (subprocess.SubprocessError, OSError, ValueError) as exc:
-        logger.debug("Could not read duration of %s (%s)", video.name, type(exc).__name__)
-        return 0.0
 
 
 def _extract_one(video: Path, timestamp: float, width: int, out_path: Path) -> bool:
@@ -117,7 +94,7 @@ def sample_frames(
     nothing returns an empty list rather than raising: a caller that cannot see
     the pictures should degrade, not fail.
     """
-    duration = probe_duration(video)
+    duration = probe_format_duration(video)
     return list(
         sample_segment_frames(
             video,

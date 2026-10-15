@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import contextlib
-import json
 import logging
 import subprocess
 import time
@@ -530,39 +529,10 @@ class RunTracker:
         logger.info(f"Run {self.run_id} cancelled")
 
     def _get_video_duration(self, path: Path) -> float:
-        """Get video duration using ffprobe.
+        """The rendered film's duration in seconds, or 0.0 when ffprobe will not say."""
+        from immich_memories.processing.clip_probing import probe_format_duration
 
-        Args:
-            path: Path to video file.
-
-        Returns:
-            Duration in seconds.
-        """
-        try:
-            import subprocess
-
-            result = subprocess.run(
-                [
-                    "ffprobe",
-                    "-v",
-                    "quiet",
-                    "-show_entries",
-                    "format=duration",
-                    "-of",
-                    "json",
-                    str(path),
-                ],
-                capture_output=True,
-                text=True,
-                timeout=10,
-            )
-            if result.returncode == 0:
-                data = json.loads(result.stdout)
-                return float(data.get("format", {}).get("duration", 0))
-        except (OSError, subprocess.SubprocessError, ValueError) as e:
-            logger.debug(f"Failed to get video duration: {e}")
-
-        return 0.0
+        return probe_format_duration(path)
 
     def _save_metadata_json(self, output_dir: Path, run: RunMetadata) -> None:
         """Save run_metadata.json alongside output video.

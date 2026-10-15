@@ -211,6 +211,11 @@ def _mood_folder_tracks(family: str, root: Path) -> list[Path]:
     return []
 
 
+def library_has_tracks(root: Path | None) -> bool:
+    """Whether a music library holds at least one track in a mood folder."""
+    return root is not None and bool(_all_tracks(root))
+
+
 def _all_tracks(root: Path) -> list[Path]:
     """Every track in the library's mood folders."""
     if not root.is_dir():

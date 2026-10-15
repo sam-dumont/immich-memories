@@ -117,3 +117,18 @@ def test_ui_command_exits_with_the_refusal_instead_of_serving(monkeypatch, capsy
 
     assert exited.value.code == 1
     assert "openssl rand -hex 32" in capsys.readouterr().err
+
+
+def test_a_password_naming_an_unset_variable_stops_the_server(monkeypatch, tmp_path):
+    """`${UI_PASSWORD}` with the variable unset would otherwise sign in with that literal text."""
+    from immich_memories.config_loader import load_config
+
+    monkeypatch.delenv("IMM_TEST_UNSET_UI_PASSWORD", raising=False)
+    path = tmp_path / "config.yaml"
+    path.write_text(
+        "auth:\n  enabled: true\n  provider: basic\n  password: ${IMM_TEST_UNSET_UI_PASSWORD}\n"
+    )
+
+    with pytest.raises(StartupRefused, match="auth.password") as refused:
+        _app(monkeypatch, load_config(path))
+    assert "IMM_TEST_UNSET_UI_PASSWORD" not in str(refused.value)

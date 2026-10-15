@@ -159,31 +159,16 @@ def _detect_apple() -> HWAccelCapabilities | None:
     if not _check_ffmpeg_hwaccel("videotoolbox"):
         return None
 
-    caps = HWAccelCapabilities(
-        backend=HWAccelBackend.APPLE,
-        metal_available=True,
-    )
+    caps = HWAccelCapabilities(backend=HWAccelBackend.APPLE)
 
     # Check for VideoToolbox encoders
     caps.supports_h264_encode = _check_ffmpeg_encoder("h264_videotoolbox")
     caps.supports_h265_encode = _check_ffmpeg_encoder("hevc_videotoolbox")
 
-    # Check for ProRes support (common on Macs)
-    caps.prores_encode = _check_ffmpeg_encoder("prores_videotoolbox")
-    caps.prores_decode = _check_ffmpeg_decoder("prores")
-
     # VideoToolbox supports hardware decode for most formats
     caps.supports_h264_decode = True
     caps.supports_h265_decode = True
     caps.supports_scaling = True
-
-    # Check for Apple Vision framework (GPU-accelerated face detection)
-    try:
-        from immich_memories.analysis.apple_vision import is_vision_available
-
-        caps.vision_available = is_vision_available()
-    except ImportError:
-        caps.vision_available = False
 
     # Get Mac model/chip info
     try:
@@ -205,7 +190,6 @@ def _detect_apple() -> HWAccelCapabilities | None:
         )
         if result.returncode == 0 and result.stdout.strip() == "1":
             caps.extra_info["apple_silicon"] = True
-            caps.neural_engine = True  # All Apple Silicon has Neural Engine
             _detect_apple_chip_info(caps)
             _detect_apple_vram(caps)
         else:

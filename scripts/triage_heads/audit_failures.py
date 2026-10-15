@@ -32,6 +32,7 @@ from .calibrate_certify import (
     softmax_temperature,
 )
 from .embed import EmbeddingCache
+from .memory import fsync_directory
 from .train import (
     load_linear_artifact,
     load_mlp_artifact,
@@ -75,14 +76,6 @@ def _file_sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def _fsync_directory(path: Path) -> None:
-    descriptor = os.open(path, os.O_RDONLY)
-    try:
-        os.fsync(descriptor)
-    finally:
-        os.close(descriptor)
-
-
 def _write_create_only(path: Path, payload: bytes) -> None:
     descriptor, temporary_name = tempfile.mkstemp(
         prefix=path.name + ".",
@@ -96,7 +89,7 @@ def _write_create_only(path: Path, payload: bytes) -> None:
             handle.flush()
             os.fsync(handle.fileno())
         os.link(temporary, path)
-        _fsync_directory(path.parent)
+        fsync_directory(path.parent)
     finally:
         temporary.unlink(missing_ok=True)
 
@@ -261,7 +254,7 @@ def pin_failure_evidence(
     images_dir = destination / "images"
     images_dir.mkdir(mode=0o700)
     images_dir.chmod(0o700)
-    _fsync_directory(destination.parent)
+    fsync_directory(destination.parent)
     try:
         source_by_audit_id = {row["audit_id"]: Path(row["source_image_path"]) for row in rows}
         for row in manifest_rows:
@@ -274,7 +267,7 @@ def pin_failure_evidence(
             _write_create_only(target, payload)
         _write_create_only(private_index_path, private_index_bytes)
         _write_create_only(manifest_path, manifest_bytes)
-        _fsync_directory(destination)
+        fsync_directory(destination)
     except Exception:
         # No manifest means the directory is visibly uncommitted. Preserve its
         # bytes for forensic recovery rather than deleting private evidence.

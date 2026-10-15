@@ -213,3 +213,18 @@ def test_preflight_runs_every_check_and_answers_one_row_each(tmp_path, monkeypat
         },
         {"name": "LLM", "status": "skipped", "message": "Not configured", "details": None},
     ]
+
+
+def test_preflight_refuses_a_request_another_site_sent(tmp_path, monkeypatch):
+    """A visited page must not make this server call Immich and the reader on a loop."""
+    ran = []
+    # WHY: the real checks call Immich and the reader over the network.
+    monkeypatch.setattr(
+        "immich_memories.preflight.run_preflight_checks", lambda _config: ran.append(1) or []
+    )
+    client = api_client(config_in(tmp_path))
+
+    answer = client.get("/api/v1/preflight", headers={"Sec-Fetch-Site": "cross-site"})
+
+    assert answer.status_code == 403
+    assert ran == []

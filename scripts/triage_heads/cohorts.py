@@ -29,6 +29,8 @@ from immich_memories.analysis.moment_grouping import (
 )
 from immich_memories.api.models import AssetType
 
+from .memory import fsync_directory
+
 if TYPE_CHECKING:
     from immich_memories.api.sync_client import SyncImmichClient
 
@@ -547,14 +549,6 @@ def _inventory_row_from_payload(payload: Mapping[str, object]) -> InventoryAsset
     )
 
 
-def _fsync_directory(path: Path) -> None:
-    descriptor = os.open(path, os.O_RDONLY)
-    try:
-        os.fsync(descriptor)
-    finally:
-        os.close(descriptor)
-
-
 def _private_directory(path: Path) -> None:
     path.mkdir(parents=True, exist_ok=True, mode=0o700)
     os.chmod(path, 0o700)
@@ -584,7 +578,7 @@ def _write_create_only_idempotent(path: Path, payload: bytes) -> None:
             if path.read_bytes() != payload:
                 raise RuntimeError(f"existing {path.name} has different immutable content")
         os.chmod(path, 0o600)
-        _fsync_directory(path.parent)
+        fsync_directory(path.parent)
     finally:
         temporary.unlink(missing_ok=True)
 
@@ -1134,7 +1128,7 @@ class TruthReservationLedger:
                 pass
             else:
                 os.close(descriptor)
-                _fsync_directory(self.path.parent)
+                fsync_directory(self.path.parent)
         os.chmod(self.path, 0o600)
         self._initialize()
         os.chmod(self.path, 0o600)

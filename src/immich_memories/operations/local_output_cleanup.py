@@ -28,12 +28,14 @@ def local_output_directory(run: RunMetadata) -> Path | None:
     directory per run, and leftover intermediates (kept only with
     `--keep-intermediates`) live beside the film in that same directory --
     removing the directory removes both. A run whose output path predates
-    that layout (no run id in the parent path) has only the file itself.
+    that layout (its folder is not named `<slug>_<run_id>`) has only the file itself.
     """
     if not run.output_path:
         return None
     parent = Path(run.output_path).parent
-    return parent if run.run_id in str(parent) else None
+    # The folder's own name, never the whole path: a folder further up that happens to
+    # mention the run id is not this run's to delete.
+    return parent if parent.name.endswith(f"_{run.run_id}") else None
 
 
 def delete_local_output(run: RunMetadata) -> bool:

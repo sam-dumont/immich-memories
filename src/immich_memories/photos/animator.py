@@ -28,11 +28,6 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-# HDR transfer characteristic mapping
-_HDR_COLOR_TRC = {
-    "hlg": "arib-std-b67",
-    "pq": "smpte2084",
-}
 
 # Pillow format names that FFmpeg can read directly as images.
 _FFMPEG_NATIVE_FORMATS = {"JPEG", "PNG", "BMP", "TIFF", "WEBP"}

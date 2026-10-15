@@ -47,7 +47,6 @@ class VideoProbe:
 
     duration_seconds: float
     video_duration_seconds: float
-    audio_duration_seconds: float
     width: int
     height: int
     fps: float
@@ -147,7 +146,6 @@ def _parse_video_probe(data: dict[str, Any]) -> VideoProbe:
     return VideoProbe(
         duration_seconds=_number(format_data.get("duration")),
         video_duration_seconds=_number(video.get("duration")),
-        audio_duration_seconds=_number(audio.get("duration")),
         width=_integer(video.get("width")),
         height=_integer(video.get("height")),
         fps=_frame_rate(video),

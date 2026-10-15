@@ -370,7 +370,7 @@ def resolve_inclusion(flag: bool | None, *, config_enabled: bool) -> bool:
 
 
 def _arm_selection_trace(path: Path | None) -> None:
-    """Tell run_selection where to write its stage-by-stage report."""
+    """Tell the selection run where to write its stage-by-stage report (`selection_trace`)."""
     if path:
         os.environ["IMMICH_MEMORIES_SELECTION_TRACE"] = str(path)
 

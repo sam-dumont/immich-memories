@@ -614,6 +614,9 @@ export interface paths {
         /**
          * Read Preflight
          * @description The checks `immich-memories preflight` runs, one row each; this can take a few seconds.
+         *
+         *     Every check calls out (Immich, the reader, the render worker), so a request another
+         *     site sent is refused rather than letting a visited page keep this server busy.
          */
         get: operations["read_preflight_api_v1_preflight_get"];
         put?: never;

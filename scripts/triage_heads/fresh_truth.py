@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from scripts.triage_heads.generate_labels import TEACHER_MODEL
+from scripts.triage_heads.memory import fsync_directory
 
 FRESH_TRUTH_COUNT = 400
 AUDIT_COUNT = 12
@@ -159,7 +160,7 @@ def _write_create_only_private(path: Path, payload: bytes) -> None:
         except FileExistsError:
             if _load_private_bytes(path, label=f"existing {path.name}") != payload:
                 raise RuntimeError(f"existing {path.name} differs from immutable content")
-        _fsync_directory(path.parent)
+        fsync_directory(path.parent)
     finally:
         temporary.unlink(missing_ok=True)
     metadata = path.stat()
@@ -244,19 +245,11 @@ def _require_private_directory(path: Path, *, label: str) -> Path:
     return candidate
 
 
-def _fsync_directory(path: Path) -> None:
-    descriptor = os.open(path, os.O_RDONLY)
-    try:
-        os.fsync(descriptor)
-    finally:
-        os.close(descriptor)
-
-
 def _publish_staged_directory(staging: Path, destination: Path) -> None:
     if destination.exists() or destination.is_symlink():
         raise RuntimeError(f"{destination.name} already exists; immutable output is create-only")
     os.rename(staging, destination)
-    _fsync_directory(destination.parent)
+    fsync_directory(destination.parent)
 
 
 @dataclass(frozen=True, slots=True)
@@ -898,10 +891,10 @@ def prepare_fresh_truth_tasks(
         }
         manifest = _self_seal(manifest, "prepare_sha256")
         _write_new_private(private_dir / "prepare-manifest.json", _canonical_bytes(manifest))
-        _fsync_directory(images_dir)
-        _fsync_directory(judge_dir)
-        _fsync_directory(private_dir)
-        _fsync_directory(staging)
+        fsync_directory(images_dir)
+        fsync_directory(judge_dir)
+        fsync_directory(private_dir)
+        fsync_directory(staging)
         _load_prepared_truth(staging)
         _publish_staged_directory(staging, destination)
     return dict(_load_prepared_truth(destination).manifest)
@@ -1056,11 +1049,11 @@ def prepare_blinded_conclusion_tasks(
         }
         manifest = _self_seal(manifest, "conclusion_work_sha256")
         _write_new_private(private_dir / "conclusion-manifest.json", _canonical_bytes(manifest))
-        _fsync_directory(conclusion_dir)
-        _fsync_directory(audit_images)
-        _fsync_directory(audit_dir)
-        _fsync_directory(private_dir)
-        _fsync_directory(staging)
+        fsync_directory(conclusion_dir)
+        fsync_directory(audit_images)
+        fsync_directory(audit_dir)
+        fsync_directory(private_dir)
+        fsync_directory(staging)
         _load_conclusion_work(
             staging, expected_prepare_sha256=str(prepared.manifest["prepare_sha256"])
         )
@@ -1312,9 +1305,9 @@ def finalize_fresh_truth_package(
         for relative, payload in package_payloads.items():
             _write_new_private(staging / relative, payload)
         _write_new_private(staging / "truth-manifest.json", _canonical_bytes(manifest))
-        _fsync_directory(staging / "battery_shards")
-        _fsync_directory(staging / "evidence")
-        _fsync_directory(staging)
+        fsync_directory(staging / "battery_shards")
+        fsync_directory(staging / "evidence")
+        fsync_directory(staging)
         load_fresh_truth_package(staging)
         _publish_staged_directory(staging, destination)
     return dict(load_fresh_truth_package(destination).manifest)
@@ -2036,7 +2029,7 @@ def _ensure_attempt_ledger_directory(path: Path) -> Path:
     _require_private_directory(parent, label="certification recovery directory")
     try:
         _private_mkdir(ledger)
-        _fsync_directory(parent)
+        fsync_directory(parent)
     except FileExistsError:
         pass
     return _require_private_directory(ledger, label="canonical certification attempt ledger")
@@ -2203,7 +2196,7 @@ def commit_certification_truth_reveal(
         _write_new_private(root / "reveal.json", _canonical_bytes(reveal))
     except FileExistsError as error:
         raise RuntimeError("one-shot certification attempt is already revealed") from error
-    _fsync_directory(root)
+    fsync_directory(root)
     return reveal
 
 
@@ -2230,7 +2223,7 @@ def open_certification_attempt(
         attempts = _require_private_directory(attempts, label="certification attempts")
     else:
         _private_mkdir(attempts)
-        _fsync_directory(artifacts)
+        fsync_directory(artifacts)
     binding_manifest = proposed["binding"]
     if not isinstance(binding_manifest, Mapping):  # pragma: no cover - constructed above
         raise AssertionError("certification attempt binding is malformed")
@@ -2250,7 +2243,7 @@ def open_certification_attempt(
             staging = Path(temporary_name)
             staging.chmod(0o700)
             _write_new_private(staging / "attempt.json", proposed_bytes)
-            _fsync_directory(staging)
+            fsync_directory(staging)
             _publish_staged_directory(staging, root)
     else:
         resumed = True
@@ -2599,7 +2592,7 @@ def seal_certification_decision(
     _write_create_only_private(root / "certification-metrics.json", report_bytes)
     _write_create_only_private(root / "cascade-curves.json", curves_bytes)
     _write_create_only_private(root / "decision.json", _canonical_bytes(decision))
-    _fsync_directory(root)
+    fsync_directory(root)
     return _load_certification_decision(attempt)
 
 
@@ -2632,7 +2625,7 @@ def finalize_certification_attempt(
     }
     result = _self_seal(result, "result_sha256")
     _write_create_only_private(result_path, _canonical_bytes(result))
-    _fsync_directory(root)
+    fsync_directory(root)
     sealed, _ = _load_certification_result(attempt)
     return sealed
 

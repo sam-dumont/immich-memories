@@ -8,8 +8,7 @@ library with nothing due pays for none of them.
 from __future__ import annotations
 
 from collections import Counter
-from collections.abc import Iterable, Mapping
-from dataclasses import dataclass, field
+from collections.abc import Iterable
 from datetime import date, datetime, time
 from typing import Any
 
@@ -17,15 +16,6 @@ from immich_memories.analysis.source_filter import owned_by
 from immich_memories.timeperiod import DateRange
 
 Window = tuple[date, date]
-
-
-@dataclass(frozen=True)
-class WindowFacts:
-    """Pictures per whole-day window, as counted by the reads a detector asked for."""
-
-    pictures: Mapping[Window, int] = field(default_factory=dict)
-    # Pictures per day inside the window, for the detectors that need distinct days.
-    days: Mapping[Window, Mapping[date, int]] = field(default_factory=dict)
 
 
 def _range(window: Window) -> DateRange:

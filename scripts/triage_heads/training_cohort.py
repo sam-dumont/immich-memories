@@ -44,6 +44,7 @@ from .image_diversity import (
     describe_preview_bytes,
     descriptor_cosine,
 )
+from .memory import fsync_directory
 from .preview_store import (
     MAX_PREVIEW_BYTES,
     pin_available_preview_store,
@@ -439,14 +440,6 @@ def _require_private_evidence_file(path: Path, *, what: str) -> None:
         raise RuntimeError(f"{what} must be mode 0600")
 
 
-def _fsync_directory(path: Path) -> None:
-    descriptor = os.open(path, os.O_RDONLY)
-    try:
-        os.fsync(descriptor)
-    finally:
-        os.close(descriptor)
-
-
 def _private_directory(path: Path) -> None:
     path.mkdir(parents=True, exist_ok=True, mode=0o700)
     os.chmod(path, 0o700)
@@ -476,7 +469,7 @@ def _write_create_only_idempotent(path: Path, payload: bytes) -> None:
             if path.read_bytes() != payload:
                 raise RuntimeError(f"existing {path.name} has different immutable content")
         os.chmod(path, 0o600)
-        _fsync_directory(path.parent)
+        fsync_directory(path.parent)
     finally:
         temporary.unlink(missing_ok=True)
 
@@ -2401,7 +2394,7 @@ def build_training_cohort(
             output_dir / "training-cohort-public.json",
             public_bytes,
         )
-        _fsync_directory(output_dir)
+        fsync_directory(output_dir)
 
     ledger.commit_if_unchanged(
         expected_ledger_sha256=ledger_sha256,

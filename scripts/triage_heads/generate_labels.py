@@ -39,7 +39,7 @@ from scripts.triage_heads.head_specs import (
     labels_schema,
     parse_labels,
 )
-from scripts.triage_heads.memory import hold_label_run_locks
+from scripts.triage_heads.memory import fsync_directory, hold_label_run_locks
 
 # Teacher v2 since 2026-09-01 (owner ruling "30B ftw"): succession probe measured
 # 30B 252/259 (97.3%) vs 27B 205/211 (97.2%) against verified truth, 99.5% cross-
@@ -405,7 +405,7 @@ def prepare_label_wal(path: Path) -> None:
         _repair_wal_tail(path)
     else:
         os.close(descriptor)
-        _fsync_directory(path.parent)
+        fsync_directory(path.parent)
     path.chmod(0o600)
 
 
@@ -419,7 +419,7 @@ def append_label_record(path: Path, record: dict[str, Any]) -> None:
         os.fsync(handle.fileno())
     path.chmod(0o600)
     if created:
-        _fsync_directory(path.parent)
+        fsync_directory(path.parent)
 
 
 def _repair_wal_tail(path: Path) -> None:
@@ -458,14 +458,6 @@ def _verified_preview_snapshot(asset: LabelAsset) -> tuple[bytes, str]:
 
 def _verified_preview_sha256(asset: LabelAsset) -> str:
     return _verified_preview_snapshot(asset)[1]
-
-
-def _fsync_directory(path: Path) -> None:
-    descriptor = os.open(path, os.O_RDONLY)
-    try:
-        os.fsync(descriptor)
-    finally:
-        os.close(descriptor)
 
 
 def _wal_rows(path: Path) -> list[dict[str, Any]]:
@@ -1301,7 +1293,7 @@ def _write_json(path: Path, payload: dict[str, Any]) -> None:
             os.fsync(handle.fileno())
         temporary.replace(path)
         path.chmod(0o600)
-        _fsync_directory(path.parent)
+        fsync_directory(path.parent)
     finally:
         temporary.unlink(missing_ok=True)
 

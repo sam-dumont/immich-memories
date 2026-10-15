@@ -108,20 +108,6 @@ def film_hemisphere(
     return config.trips.hemisphere
 
 
-def _period_title(
-    config: Config, memory_type: str | None, date_range: DateRange, preset_params: dict | None
-) -> str | None:
-    """A period film's title as the rules write it, which its model title must lead with."""
-    from immich_memories.titles.title_routing import PERIOD_MEMORY_TYPES
-
-    if (memory_type or "year") not in PERIOD_MEMORY_TYPES:
-        return None
-    return template_title(
-        config, memory_type=memory_type, date_range=date_range, person_name=None,
-        preset_params=preset_params,
-    )[0]  # fmt: skip
-
-
 def _place_and_kind_from_clips(clips: list[Any]) -> tuple[str, str] | None:
     """The place the film's own selected pictures name most often, and its kind.
 
@@ -261,11 +247,7 @@ def _model_suggested_title(
         person_names = [name for name in display.values() if name]
     if not person_names and memory_type == "special_day":
         person_names = _people_in_pictures(clips)
-    facts = replace(
-        memory_title_facts(memory_preset_params),
-        stories=stories,
-        period_title=_period_title(config, memory_type, date_range, memory_preset_params),
-    )
+    facts = replace(memory_title_facts(memory_preset_params), stories=stories)
     if facts.album_name is None and memory_type != "album":
         facts = replace(facts, album_name=_album_of_the_cut(album_lookup))
 

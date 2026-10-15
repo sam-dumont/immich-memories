@@ -161,7 +161,7 @@ def save_graph(document: dict[str, Any], graph: PeopleGraph) -> None:
         | {
             "version": SCHEMA_VERSION,
             "generated": (graph.built_at or datetime.now()).isoformat(timespec="seconds"),
-            "owner": _owner_block(graph) if answer is None else owner_block(answer),
+            "owner": graph.owner_record() if answer is None else owner_block(answer),
             "people": entries,
         }
     )
@@ -463,16 +463,6 @@ def _fill_owner_role(
 ) -> None:
     if target_id in owner_ids(document):
         derive_owner_role(entry, kind)
-
-
-def _owner_block(graph: PeopleGraph) -> dict[str, Any] | None:
-    if graph.owner is None:
-        return None
-    return {
-        "person_id": graph.owner.person_id,
-        "name": graph.owner.name,
-        "identified": graph.owner.identified,
-    }
 
 
 def _bound_aliases(document: dict[str, Any], scanned: set[str]) -> dict[str, dict[str, Any]]:

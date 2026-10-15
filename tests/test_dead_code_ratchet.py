@@ -102,7 +102,9 @@ WHITELIST = Path(__file__).resolve().parent.parent / "vulture-whitelist.py"
 # 56: StaticMap.render calls CachedStaticMap._draw_base_layer in its external
 # package. The real map renderer tests exercise the override on cold and warm
 # frames; vulture scans our source, not that library callback.
-MAX_WHITELISTED_SYMBOLS = 56
+# 42: the 1.0.0 cleanup pass dropped entries vulture no longer reports (fields now read by
+# name, repeated names, a reset production calls) and the frozen-dataclass __eq__ case.
+MAX_WHITELISTED_SYMBOLS = 42
 
 
 def test_the_dead_code_whitelist_never_grows() -> None:

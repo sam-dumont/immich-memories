@@ -303,7 +303,7 @@ through production features and can incur provider charges. Free-text cases also
 public WordNet corpus installed by `immich-memories models fetch`. Each banked feature gets a
 fresh temporary SQLite store. The suite opens no personal library or people file.
 
-The 36 probes cover occasion, trip and people titles; free-text reading, linking and pool
+The 35 probes cover occasion and trip titles; free-text reading, linking and pool
 selection; occasion discovery; music mood, quiet and lively; image captions and motion; full and
 lean episode readings; month and year accounts; the film summary; editorial grouping, weighting,
 picking and recurring activities; and both audience text readers still present in the code.

@@ -7,28 +7,24 @@ _.samp_freq
 _.num_bins
 
 # Read by Asset.model_dump in source_metadata_digest (analysis/
-# editorial_bound_sample.py:15), which hashes the whole model to bind the source
+# editorial_bound_sample.py), which hashes the whole model to bind the source
 # metadata Immich reported. Every field on Asset and on the models it nests is
 # read there, and a field removed is a difference the evidence stops noticing.
 # Nothing names them on the reading side, so vulture cannot see any of it.
-f_number  # unused variable (src/immich_memories/api/models.py:60)
-iso  # unused variable (src/immich_memories/api/models.py:61)
-focal_length  # unused variable (src/immich_memories/api/models.py:62)
-lens_model  # unused variable (src/immich_memories/api/models.py:69)
-is_hidden  # unused variable (src/immich_memories/api/models.py:82)
-updated_at  # unused variable (src/immich_memories/api/models.py:83)
-objects  # unused variable (src/immich_memories/api/models.py:130)
-device_id  # unused variable (src/immich_memories/api/models.py:139)
-thumbhash  # unused variable (src/immich_memories/api/models.py:144)
-file_modified_at  # unused variable (src/immich_memories/api/models.py:146)
-updated_at  # unused variable (src/immich_memories/api/models.py:148)
-is_trashed  # unused variable (src/immich_memories/api/models.py:157)
-smart_info  # unused variable (src/immich_memories/api/models.py:168)
+f_number  # unused variable (src/immich_memories/api/models.py)
+iso  # unused variable (src/immich_memories/api/models.py)
+focal_length  # unused variable (src/immich_memories/api/models.py)
+lens_model  # unused variable (src/immich_memories/api/models.py)
+objects  # unused variable (src/immich_memories/api/models.py)
+device_id  # unused variable (src/immich_memories/api/models.py)
+thumbhash  # unused variable (src/immich_memories/api/models.py)
+is_trashed  # unused variable (src/immich_memories/api/models.py)
+smart_info  # unused variable (src/immich_memories/api/models.py)
 
 # An enum member resolved from the wire value rather than by name: parse_type
 # does AssetType(v.upper()), so an Immich asset typed AUDIO round-trips as
 # itself instead of collapsing into OTHER.
-AUDIO  # unused variable (src/immich_memories/api/models.py:50)
+AUDIO  # unused variable (src/immich_memories/api/models.py)
 
 # Rendered into the prompt the editorial model reads.
 # render_person_period_facts does json.dumps(asdict(fact)) and that string is
@@ -39,54 +35,42 @@ AUDIO  # unused variable (src/immich_memories/api/models.py:50)
 # reuses PersonPeriodProjection for successive subsets of one sealed wall.
 person_period_facts  # unused function (src/immich_memories/analysis/editorial_person_period_facts.py)
 person_token  # unused variable (src/immich_memories/analysis/editorial_person_period_facts.py:18)
-current_relationship  # unused variable (src/immich_memories/analysis/editorial_person_period_facts.py:20)
-first_library_month  # unused variable (src/immich_memories/analysis/editorial_person_period_facts.py:23)
-sustained_onset_month  # unused variable (src/immich_memories/analysis/editorial_person_period_facts.py:24)
 grounding_moment_ids  # unused variable (src/immich_memories/analysis/editorial_person_period_facts.py:25)
 
 # onnxruntime SessionOptions attributes: set on the options object, then read
-# by the C++ runtime when InferenceSession is constructed a line or two later.
-_.intra_op_num_threads  # unused attribute (src/immich_memories/analysis/editorial_preparation_detectors.py:123)
-_.intra_op_num_threads  # unused attribute (src/immich_memories/triage/encoder.py:125)
-_.inter_op_num_threads  # unused attribute (src/immich_memories/triage/encoder.py:126)
-_.graph_optimization_level  # unused attribute (src/immich_memories/triage/encoder.py:127)
+# by the C++ runtime when InferenceSession is constructed a line or two later
+# (triage/encoder.py, analysis/editorial_preparation_detectors.py).
+_.intra_op_num_threads  # unused attribute (src/immich_memories/triage/encoder.py)
+_.inter_op_num_threads  # unused attribute (src/immich_memories/triage/encoder.py)
+_.graph_optimization_level  # unused attribute (src/immich_memories/triage/encoder.py)
 
 # Protocol method parameter names on a stub whose body is `...`. A Protocol
 # never references its own parameters, which is what trips vulture's
 # unused-variable check. The shape mirrors onnxruntime's
 # InferenceSession.run(output_names, input_feed), called positionally at :88.
-input_feed  # unused variable (src/immich_memories/triage/encoder.py:33)
-output_names  # unused variable (src/immich_memories/triage/encoder.py:33)
+input_feed  # unused variable (src/immich_memories/triage/encoder.py)
+output_names  # unused variable (src/immich_memories/triage/encoder.py)
 
 # conn.row_factory = sqlite3.Row -- an sqlite3.Connection attribute the stdlib
 # C module reads when it materialises rows.
-_.row_factory  # unused attribute (src/immich_memories/automation/notification_state.py:103)
-_.row_factory  # unused attribute (src/immich_memories/automation/state_store.py:64)
-_.row_factory  # unused attribute (src/immich_memories/operations/storage_report.py:36)
-_.row_factory  # unused attribute (src/immich_memories/tracking/run_database.py:72)
+_.row_factory  # unused attribute (src/immich_memories/operations/store_import.py)
 
 # logging.lastResort, the stdlib module attribute callHandlers falls back to.
 # Disabled while LiveDisplayLogHandler owns the terminal, restored afterwards.
-_.lastResort  # unused attribute (src/immich_memories/logging_config.py:203)
-_.lastResort  # unused attribute (src/immich_memories/logging_config.py:215)
-
-# A field of a frozen dataclass, read through the generated __eq__ rather than
-# by name: probe_cache.py:182 and :199 compare a freshly built ProbeKey against
-# the cached one, which is what makes a changed mtime invalidate the entry.
-mtime_ns  # unused variable (src/immich_memories/processing/probe_cache.py:27)
+_.lastResort  # unused attribute (src/immich_memories/logging_config.py)
 
 # pydantic-settings contract methods, called by the library and never by us.
 # get_field_value is abstract on PydanticBaseSettingsSource, so without it the
 # source cannot even be instantiated; settings_customise_sources is the hook
 # BaseSettings.__init__ calls on every Config() to splice the YAML source in.
-_.get_field_value  # unused method (src/immich_memories/config_loader.py:197)
-_.settings_customise_sources  # unused method (src/immich_memories/config_loader.py:341)
+_.get_field_value  # unused method (src/immich_memories/config_loader.py)
+_.settings_customise_sources  # unused method (src/immich_memories/config_loader.py)
 
 # Reached only from checked-in developer scripts, which vulture does not scan:
 # scripts/validate_local_audio.py for the stem check, and
 # scripts/verify_hardware_encode.py for the assembly runner.
-_.has_full_stems  # unused property (src/immich_memories/audio/music_generator_models.py:269)
-_.run_ffmpeg_assembly  # unused method (src/immich_memories/processing/clip_encoder.py:314)
+_.has_full_stems  # unused property (src/immich_memories/audio/music_generator_models.py)
+_.run_ffmpeg_assembly  # unused method (src/immich_memories/processing/clip_encoder.py)
 
 # Reported to the owner rather than deleted. Each is either a seam only the
 # tests use, or a wiring gap where the missing caller is the defect and removing
@@ -103,18 +87,18 @@ _.run_ffmpeg_assembly  # unused method (src/immich_memories/processing/clip_enco
 #   get_active_display, render_final
 #                    the public reads of state production reaches directly; the
 #                    tests use them as the window onto it
-#   reset_rate_limiter, reset_oidc_client
-#                    clear module-global state so tests do not leak into each
-#                    other; production never resets either
-#   PACK_DIM         one consumer, tests/test_triage_engine.py:15
-response_sha256  # unused variable (src/immich_memories/analysis/text_episode_answers.py:48)
-unreadable_or_omitted_pages  # unused variable (src/immich_memories/analysis/text_episode_answers.py:49)
-get_active_display  # unused function (src/immich_memories/cli/_helpers.py:38)
-_.render_final  # unused method (src/immich_memories/cli/_live_display.py:343)
-validate_image_path  # unused function (src/immich_memories/security.py:178)
-PACK_DIM  # unused variable (src/immich_memories/triage/encoder.py:23)
-reset_rate_limiter  # unused function (src/immich_memories/ui/auth.py:63)
-reset_oidc_client  # unused function (src/immich_memories/ui/auth_oidc.py:144)
+#   reset_rate_limiter
+#                    clears module-global state so tests do not leak into each
+#                    other; production never resets it
+#   PACK_DIM         read by scripts/triage_heads/semantic_refinement.py, which
+#                    vulture does not scan
+response_sha256  # unused variable (src/immich_memories/analysis/text_episode_answers.py)
+unreadable_or_omitted_pages  # unused variable (src/immich_memories/analysis/text_episode_answers.py)
+get_active_display  # unused function (src/immich_memories/cli/_helpers.py)
+_.render_final  # unused method (src/immich_memories/cli/_live_display.py)
+validate_image_path  # unused function (src/immich_memories/security.py)
+PACK_DIM  # unused variable (src/immich_memories/triage/encoder.py)
+reset_rate_limiter  # unused function (src/immich_memories/web/auth.py)
 
 # Serialized by FastAPI; the Svelte report preview uses this to offer caption opt-in.
 has_flagged_photos

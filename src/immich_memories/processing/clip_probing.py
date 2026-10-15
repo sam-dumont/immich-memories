@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import contextlib
 import logging
+import subprocess
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -17,6 +18,35 @@ def _source_probe(video_path: Path, probe_cache: ProbeCache | None) -> VideoProb
     from immich_memories.processing.probe_cache import ProbeCache
 
     return (probe_cache or ProbeCache()).get(video_path)
+
+
+def probe_format_duration(path: Path) -> float:
+    """The container's duration in seconds, or 0.0 when ffprobe will not say.
+
+    A bare ffprobe call with no path validation and no cache, for files the app wrote
+    itself (a mixed track, a rendered film) or that a caller has already checked.
+    """
+    try:
+        result = subprocess.run(  # noqa: S603 - fixed argv, path is not shell-interpreted
+            [
+                "ffprobe",
+                "-v",
+                "error",
+                "-show_entries",
+                "format=duration",
+                "-of",
+                "default=noprint_wrappers=1:nokey=1",
+                str(path),
+            ],
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=30,
+        )
+        return float(result.stdout.strip())
+    except (subprocess.SubprocessError, OSError, ValueError) as exc:
+        logger.debug("Could not read duration of %s (%s)", path.name, type(exc).__name__)
+        return 0.0
 
 
 def get_video_duration(video_path: Path, *, probe_cache: ProbeCache | None = None) -> float:

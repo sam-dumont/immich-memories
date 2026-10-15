@@ -142,10 +142,6 @@ def detect_trips(
     return trips
 
 
-_HomeBase = tuple[float, float, str, set[date]]
-_DailyStop = tuple[date, float, float, str, list[str]]
-
-
 def geocoder_for(config: Config) -> Geocoder | None:
     """The trip namer this configuration allows, or None for names from the pictures' EXIF.
 

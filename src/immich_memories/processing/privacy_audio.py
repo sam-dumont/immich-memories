@@ -69,35 +69,41 @@ def reverse_speech_segments(
 
 
 def apply_privacy_audio(input_path: Path, output_path: Path, sample_rate: int = 48000) -> None:
-    """Extract audio from a video, apply segment-wise reversal, save as WAV."""
+    """Extract audio from a video, apply segment-wise reversal, save as 16-bit WAV.
+
+    FFmpeg decodes straight to float PCM on a pipe and the standard library writes the
+    WAV, so privacy mode needs no optional audio package.
+    """
     import subprocess
+    import wave
 
-    import soundfile as sf
-
-    # Extract audio to temp WAV
-    raw_wav = output_path.with_suffix(".raw.wav")
-    subprocess.run(
+    decoded = subprocess.run(
         [
             "ffmpeg",
             "-y",
             "-i",
             str(input_path),
             "-vn",
+            "-f",
+            "f32le",
             "-acodec",
             "pcm_f32le",
             "-ar",
             str(sample_rate),
             "-ac",
             "2",
-            str(raw_wav),
+            "pipe:1",
         ],
         capture_output=True,
         check=True,
     )
+    audio = np.frombuffer(decoded.stdout, dtype="<f4").reshape(-1, 2).astype(np.float64)
+    reversed_audio = reverse_speech_segments(audio, sample_rate)
+    pcm = (np.clip(reversed_audio, -1.0, 1.0) * 32767).astype("<i2")
+    with wave.open(str(output_path), "wb") as written:
+        written.setnchannels(2)
+        written.setsampwidth(2)
+        written.setframerate(sample_rate)
+        written.writeframes(pcm.tobytes())
 
-    audio, sr = sf.read(str(raw_wav))
-    reversed_audio = reverse_speech_segments(audio, sr)
-    sf.write(str(output_path), reversed_audio, sr)
-
-    raw_wav.unlink(missing_ok=True)
-    logger.info(f"Privacy audio: reversed {len(audio) / sr:.1f}s of speech segments")
+    logger.info(f"Privacy audio: reversed {len(audio) / sample_rate:.1f}s of speech segments")

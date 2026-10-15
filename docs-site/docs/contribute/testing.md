@@ -49,7 +49,7 @@ Immich library and uses your real app home, so it needs the same setup as the ot
 ## Feature tests
 
 Unit tests check functions against fakes. Feature tests check what a user gets: the real CLI runs in
-a throwaway home against the fake Immich serving the CC0 fixture library, renders with real FFmpeg,
+a throwaway home against the fake Immich serving the fixture library (CC0 and CC BY, credited), renders with real FFmpeg,
 and the test reads the film (size, length, a pixel band), the printed text and the files on disk.
 Only selection is scripted, by the launch check's fixture editor.
 
@@ -186,7 +186,7 @@ XMLs that `make test-integration` writes locally (`tests/*-coverage.xml`, `tests
 gitignored.
 
 A PR needs 80% coverage on the lines it changes. The gate skips itself with a warning when the diff
-is under 10 source lines or over 1000, and `analysis/apple_vision*.py` is excluded outright.
+is under 10 source lines or over 1000.
 
 Before checking, CI runs the FFmpeg-only integration suites covering the paths your diff touches,
 and only those, then merges their coverage into the diff-cover run. So code reachable only through
@@ -274,7 +274,7 @@ make test-native-sharing NATIVE_GATE_VERSION=v32-sharing
 make test-native-sharing NATIVE_GATE_VERSION=v33-sharing
 ```
 
-Each starts an isolated Immich, seeds the CC0 household library, runs the checks and removes
+Each starts an isolated Immich, seeds the fixture household library, runs the checks and removes
 its containers. CI runs the 3.3 one inside the real-Immich gate's 3.3 job. `NATIVE_GATE_PORT` defaults to `2304`. Disposable keys stay under the ignored
 `.immich-gate` directory. Never publish its state file.
 

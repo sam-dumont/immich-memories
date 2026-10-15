@@ -42,6 +42,7 @@ from .calibrate_certify import (
 from .embed import DEFAULT_ARTIFACT_DIR, PACK_DIM, TOKEN_DIM, EmbeddingCache
 from .memory import (
     acquire_pipeline_lock,
+    fsync_directory,
     validate_offline_working_set_gib,
 )
 from .train import (
@@ -711,14 +712,6 @@ def _validate_sha256(value: object, *, field: str) -> str:
     return text
 
 
-def _fsync_directory(path: Path) -> None:
-    descriptor = os.open(path, os.O_RDONLY)
-    try:
-        os.fsync(descriptor)
-    finally:
-        os.close(descriptor)
-
-
 def _write_private_bytes(path: Path, payload: bytes) -> None:
     with path.open("xb") as handle:
         handle.write(payload)
@@ -753,7 +746,7 @@ def _publish_private_json_create_only(path: Path, payload: Mapping[str, Any]) ->
                     f"refusing to replace different immutable sweep evidence: {destination}"
                 )
         destination.chmod(0o600)
-        _fsync_directory(destination.parent)
+        fsync_directory(destination.parent)
         return destination
     finally:
         if descriptor >= 0:
@@ -1006,9 +999,9 @@ def freeze_candidate_bundle(
             staging / "candidate.json",
             _canonical_json_bytes(manifest, pretty=True),
         )
-        _fsync_directory(staging)
+        fsync_directory(staging)
         os.rename(staging, destination)
-        _fsync_directory(destination.parent)
+        fsync_directory(destination.parent)
         return manifest
     except Exception:
         shutil.rmtree(staging, ignore_errors=True)

@@ -84,19 +84,6 @@ class TestCleanupTempFiles:
         assert not f1.exists()
         assert not f2.exists()
 
-    def test_removes_raw_intermediates(self, tmp_path):
-        from immich_memories.processing.streaming_audio import _cleanup_temp_files
-
-        wav = tmp_path / "audio_0.wav"
-        raw = tmp_path / "audio_0.raw.wav"
-        wav.write_text("data")
-        raw.write_text("intermediate")
-
-        _cleanup_temp_files([wav])
-
-        assert not wav.exists()
-        assert not raw.exists()
-
     def test_handles_missing_files(self, tmp_path):
         from immich_memories.processing.streaming_audio import _cleanup_temp_files
 

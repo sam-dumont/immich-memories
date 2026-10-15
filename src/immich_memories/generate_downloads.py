@@ -15,7 +15,7 @@ from immich_memories.api.immich import ImmichAPIError
 from immich_memories.api.models import AssetType
 from immich_memories.processing.live_material import MIN_LIVE_MOTION_SECONDS
 from immich_memories.processing.preparation_fallbacks import note_fallback
-from immich_memories.security import sanitize_error_message
+from immich_memories.security import sanitize_client_error, sanitize_error_message
 
 if TYPE_CHECKING:
     from immich_memories.analysis.editorial_planner import EditorialSelection
@@ -311,7 +311,9 @@ def _download_temporary_asset(
         path.unlink(missing_ok=True)
     except (ImmichAPIError, httpx.HTTPError, OSError, RuntimeError) as exc:
         logger.warning(
-            "Failed to download temporary video %s: %s", asset_id, _safe_download_error(exc, client)
+            "Failed to download temporary video %s: %s",
+            asset_id,
+            sanitize_client_error(exc, client),
         )
         path.unlink(missing_ok=True)
     return None
@@ -353,19 +355,10 @@ def _burst_clip_path(client: SyncImmichClient, cache_dir: Path, vid: str) -> Pat
             return destination
     except (ImmichAPIError, httpx.HTTPError, OSError, RuntimeError) as exc:
         logger.warning(
-            "Failed to download burst video %s: %s", vid, _safe_download_error(exc, client)
+            "Failed to download burst video %s: %s", vid, sanitize_client_error(exc, client)
         )
         destination.unlink(missing_ok=True)
     return None
-
-
-def _safe_download_error(exc: Exception, client: SyncImmichClient) -> str:
-    """Keep credentials out of direct-download diagnostics."""
-    message = sanitize_error_message(str(exc))
-    api_key = getattr(client, "api_key", None)
-    if isinstance(api_key, str) and api_key:
-        message = message.replace(api_key, "***")
-    return message
 
 
 def _align_burst_subset(

@@ -55,18 +55,6 @@ def hex_to_rgb(hex_color: str) -> tuple[int, int, int]:
     return tuple(int(hex_color[i : i + 2], 16) for i in (0, 2, 4))  # type: ignore
 
 
-def rgb_to_hex(rgb: tuple[int, int, int]) -> str:
-    """Convert RGB tuple to hex color.
-
-    Args:
-        rgb: RGB tuple (r, g, b) with values 0-255.
-
-    Returns:
-        Hex color string (e.g., "#FFF5E6").
-    """
-    return f"#{rgb[0]:02X}{rgb[1]:02X}{rgb[2]:02X}"
-
-
 def create_gradient_background(
     width: int,
     height: int,

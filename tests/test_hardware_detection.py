@@ -512,10 +512,7 @@ class TestGetFfmpegEncoder:
         assert encoder == "libx265"
 
     def test_prores_uses_software_prores_encoder(self):
-        caps = HWAccelCapabilities(
-            backend=HWAccelBackend.APPLE,
-            prores_encode=True,
-        )
+        caps = HWAccelCapabilities(backend=HWAccelBackend.APPLE)
         encoder, args = get_ffmpeg_encoder(caps, codec="prores")
         assert encoder == "prores_ks"
         assert args == []

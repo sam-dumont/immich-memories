@@ -17,14 +17,6 @@ from immich_memories.analysis.selection_source import PreparedEditorialSource
 from immich_memories.cache.editorial_verdicts import KEPT_VERDICT, EditorialVerdicts
 from immich_memories.store.episode_readings import EpisodeReadingProducer
 
-_REVIEW_STATE_COLOURS = {
-    "KEEP": (45, 65, 75),
-    "RECORD": (0, 115, 150),
-    "CULL": (170, 20, 20),
-}
-_REVIEW_FAVOURITE_COLOUR = (180, 130, 0)
-
-
 # Scopes a remembered verdict to what the buckets MEANT. Re-rendering a picture
 # must not clear a judgement about what it is; redefining `notes` must.
 # v2: the foreign bucket joined the question; v3: watch faces named as screens

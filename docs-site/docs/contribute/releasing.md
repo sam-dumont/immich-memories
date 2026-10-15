@@ -146,7 +146,7 @@ that range. Install Gitleaks 8.24.3 to run the same scan locally; pre-commit use
 
 Before the first RC, validate the exact candidate revision against the private test households. Check people/groups, selection, titles, wording and relevant celebrations, including expected no-film outcomes. Report the tiers actually checked; an older report does not validate the candidate.
 
-Private validation media and detailed reports stay private. Publish only anonymous aggregate results. Public screenshots and demos use the separate [CC0 demo fixture](./demo-assets.md#fixture-and-asset-contracts).
+Private validation media and detailed reports stay private. Publish only anonymous aggregate results. Public screenshots and demos use the separate [demo fixture library](./demo-assets.md#fixture-and-asset-contracts).
 
 The private households do not cover every family or culture. Contributor examples help extend that coverage; see [Households and cultures](./development-setup.md#households-and-cultures).
 

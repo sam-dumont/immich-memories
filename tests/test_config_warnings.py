@@ -85,3 +85,18 @@ def test_config_loads_on_several_threads_each_read_their_own_file(tmp_path: Path
         urls = list(pool.map(load, range(200)))
 
     assert urls == [f"https://photos-{index % 4}.example.com" for index in range(200)]
+
+
+def test_a_bare_dollar_in_a_key_is_named_by_its_field_never_echoed(tmp_path: Path, monkeypatch):
+    """The old bare `$NAME` form still gets its warning, without a piece of the secret."""
+    monkeypatch.setenv("IMM_TEST_BARE_NAME", "set")
+    path = tmp_path / "config.yaml"
+    path.write_text(
+        "immich:\n  url: https://photos.example.com\n  api_key: k3y$IMM_TEST_BARE_NAME\n"
+    )
+
+    text = "\n".join(config_warnings(path))
+
+    assert "immich.api_key" in text
+    assert "IMM_TEST_BARE_NAME" not in text
+    assert "k3y" not in text

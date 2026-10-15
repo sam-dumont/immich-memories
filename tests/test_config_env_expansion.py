@@ -55,11 +55,13 @@ def test_a_bare_reference_is_reported_rather_than_silently_ignored(monkeypatch, 
     monkeypatch.setenv("MY_TOKEN", "value")
 
     with caplog.at_level("WARNING"):
-        result = expand_env_vars("$MY_TOKEN")
+        result = expand_env_vars("$MY_TOKEN", where="immich.api_key")
 
     assert result == "$MY_TOKEN"
-    assert "MY_TOKEN" in caplog.text
+    assert "immich.api_key" in caplog.text
     assert "${" in caplog.text
+    # The reference sits inside what may be a secret, so it is never echoed.
+    assert "MY_TOKEN" not in caplog.text
 
 
 def test_a_dollar_that_matches_nothing_is_silent(monkeypatch, caplog):

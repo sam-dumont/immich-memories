@@ -210,38 +210,6 @@ def test_trip_title_probe_requires_route_classification(monkeypatch):
     assert result.calls == 1
 
 
-def test_people_title_probe_uses_only_its_synthetic_people_store(monkeypatch):
-    import httpx
-
-    from immich_memories.config_models_llm import LLMConfig
-    from immich_memories.conformance.cases import cases
-    from immich_memories.conformance.runtime import run_case
-
-    # WHY: provider response only; the people prompt reads a real temporary store.
-    monkeypatch.setattr(
-        httpx.AsyncClient,
-        "_transport_for_url",
-        lambda *_: httpx.MockTransport(
-            lambda _: httpx.Response(
-                200,
-                json={
-                    "choices": [
-                        {
-                            "finish_reason": "stop",
-                            "message": {"content": '{"title":"Avery in 2030"}'},
-                        }
-                    ],
-                    "usage": {"prompt_tokens": 10, "completion_tokens": 5},
-                },
-            )
-        ),
-    )
-    checks = cases(LLMConfig(enabled=True, model="fixture", base_url="http://localhost:43210/v1"))
-    result = run_case(next(case for case in checks if case.name == "people title"))
-    assert result.valid, result.quality
-    assert result.calls == 1
-
-
 def test_failed_http_attempt_does_not_claim_zero_billed_tokens(monkeypatch):
     import asyncio
 

@@ -9,7 +9,6 @@
     "register_runs_commands": [26]
   },
   "src/immich_memories/cli/titles.py": {
-    "_print_title_test_params": [18],
     "register_titles_commands": [18]
   },
   "src/immich_memories/processing/clip_encoder.py": {
@@ -23,9 +22,6 @@
   },
   "src/immich_memories/titles/kernels.py": {
     "_compile_kernels": [120]
-  },
-  "src/immich_memories/titles/sdf_font.py": {
-    "_search_font_paths": [20]
   },
   "src/immich_memories/titles/sdf_font_rendering.py": {
     "_compile_sdf_kernels": [24]

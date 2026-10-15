@@ -16,6 +16,7 @@ from pathlib import Path
 
 from immich_memories import config_unsupported
 from immich_memories.config_loader import Config
+from immich_memories.logging_config import redact_secrets
 
 _CONFIG_LOGGERS = "immich_memories.config"
 # Some modules name their logger only when they first warn, so it may not exist yet.
@@ -30,7 +31,8 @@ def _collected(into: list[str]) -> Iterator[None]:
     def keep(record: logging.LogRecord) -> bool:
         if record.thread != thread or record.levelno < logging.WARNING:
             return True
-        into.append(record.getMessage())
+        # WHY: the handler-level redaction never sees a record this filter keeps off the log.
+        into.append(redact_secrets(record.getMessage()))
         return False
 
     existing = [

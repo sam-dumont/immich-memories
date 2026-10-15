@@ -17,7 +17,6 @@ from .animations import (
     AnimationPreset,
     EasingFunction,
     apply_easing,
-    reverse_preset,
 )
 from .backgrounds import (
     BackgroundType,
@@ -92,7 +91,6 @@ __all__ = [
     "TEXT_ANIMATIONS",
     "EASING_FUNCTIONS",
     "apply_easing",
-    "reverse_preset",
     # Text building
     "TitleInfo",
     "SelectionType",
