@@ -32,6 +32,12 @@ The first start prints the username and password once in the server log:
 `immich-memories ui`. No web page shows it. The sign-in page only tells you where to look.
 
 Later starts never print it again. Write it down, or sign in and move to a password of your own.
+When several workers start at once, one of them makes the password and prints it; the others use
+that one and print nothing.
+
+If `generated-login.json` can't be read (a truncated or hand-edited file), the old password is
+gone. The next start keeps the broken file as `generated-login.json.corrupt-<time>`, makes a new
+password and prints it, after a warning that says so.
 
 Lost it? Make a new one. The command writes a new hash, prints the new password once in the
 terminal and signs every browser out.

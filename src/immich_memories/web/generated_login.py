@@ -3,6 +3,9 @@
 Authentication is on unless the operator turns it off. With basic sign-in and no password
 configured, the first start generates a password, stores only its scrypt hash beside the
 config file, and prints it once, in the log of that start. No HTTP route ever returns it.
+When several workers start together, exactly one creates the file and prints its password; the
+others read that file and print nothing. A login file nobody can read is kept aside, and the
+warning before the new password says so.
 Later starts read the hash and never print it again. `immich-memories auth reset-password`
 writes a new one and prints it once to the terminal; the hash is part of every session's
 fingerprint, so the sessions signed in with the old one end.
@@ -15,11 +18,13 @@ import hmac
 import json
 import logging
 import secrets
+from datetime import UTC, datetime
 from pathlib import Path
 
 from immich_memories.config.models.auth import AuthConfig
+from immich_memories.locked_file import file_lock
 from immich_memories.logging_config import install_secret_redaction
-from immich_memories.security import write_secret_file
+from immich_memories.security import create_secret_file, write_secret_file
 
 logger = logging.getLogger(__name__)
 
@@ -46,8 +51,8 @@ def _stored(path: Path) -> tuple[bytes, bytes] | None:
         return None
 
 
-def reset_generated_login(path: Path) -> str:
-    """Generate a new password, store only its hash, and return it for the caller to show once."""
+def _new_record() -> tuple[str, str]:
+    """A fresh password and the JSON record of its hash."""
     password = secrets.token_urlsafe(18)
     salt = secrets.token_bytes(16)
     record = {
@@ -56,15 +61,45 @@ def reset_generated_login(path: Path) -> str:
         "salt": salt.hex(),
         "hash": _digest(password, salt).hex(),
     }
-    write_secret_file(path, json.dumps(record))
+    return password, json.dumps(record)
+
+
+def reset_generated_login(path: Path) -> str:
+    """Generate a new password, store only its hash, and return it for the caller to show once."""
+    password, record = _new_record()
+    with file_lock(path):
+        write_secret_file(path, record)
     return password
 
 
+def _keep_unreadable_aside(path: Path) -> None:
+    """Move a login file nobody can read out of the way, and say so before the new password."""
+    stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
+    kept = path.with_name(f"{path.name}.corrupt-{stamp}")
+    path.replace(kept)
+    logger.warning(
+        "The stored sign-in file %s could not be read, so the password generated for it no "
+        "longer works. The file is kept aside as %s, and a new password is in this log, just "
+        "below. `immich-memories auth reset-password` makes another one.",
+        path,
+        kept,
+    )
+
+
 def ensure_generated_login(path: Path) -> str | None:
-    """Generate and store a password when none is stored; return it only when it is new."""
-    if _stored(path) is not None:
-        return None
-    return reset_generated_login(path)
+    """Generate and store a password when none is stored; return it only when this call made it.
+
+    Several workers can start at once. The lock lets one of them check and create the file;
+    the others then find it and return None, so only the creator ever logs a password.
+    """
+    with file_lock(path):
+        if _stored(path) is not None:
+            return None
+        if path.is_symlink() or path.exists():
+            _keep_unreadable_aside(path)
+        password, record = _new_record()
+        # Exclusive even under the lock: a password nobody stored must never be returned.
+        return password if create_secret_file(path, record) else None
 
 
 def announce_generated_login(auth: AuthConfig, state_dir: Path) -> None:
