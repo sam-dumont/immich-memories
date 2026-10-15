@@ -3481,6 +3481,11 @@
             "title": "Generated Login",
             "type": "boolean"
           },
+          "music_off": {
+            "default": false,
+            "title": "Music Off",
+            "type": "boolean"
+          },
           "music_preview_offered": {
             "default": false,
             "title": "Music Preview Offered",

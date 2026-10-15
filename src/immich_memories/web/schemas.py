@@ -303,6 +303,8 @@ class SessionView(BaseModel):
     demo_mode_offered: bool = False
     # A music generator (MusicGen or ACE-Step) is configured, so a track can be previewed.
     music_preview_offered: bool = False
+    # `audio.no_music`: the render panel starts on No music, as generate and automation do.
+    music_off: bool = False
     captions: CaptionDefaults = CaptionDefaults()
 
 

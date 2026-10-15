@@ -253,6 +253,10 @@ def register_generate_commands(main: click.Group) -> None:
         add_date, add_place = resolve_caption_overlays(
             config, add_date=add_date, add_place=add_place
         )
+        from immich_memories.generate_music import music_turned_off
+
+        # The same rule for music: a flag decides for this film, else audio.no_music.
+        no_music = music_turned_off(config, music=music, no_music=no_music)
         output_selection = resolve_output_selection(
             config_codec=config.output.codec,
             config_container=config.output.format,

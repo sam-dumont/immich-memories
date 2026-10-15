@@ -408,7 +408,8 @@ and `--no-music` skips music. Music volume is per run too (`--music-volume`); th
 
 ```yaml
 audio:
-  local_music_dir: "~/Music/Memories"   # Library scanned by `immich-memories music search`
+  no_music: false                       # true: films render without music unless a run asks
+  local_music_dir: "~/Music/Memories"   # Your own music, one folder per mood; films pick from it
   max_regenerations: 2                  # Extra auto-mode takes when the first is flagged (0-3)
 advanced:
   musicgen:
@@ -436,8 +437,14 @@ available. The existing Apple Silicon runtime ignores this option, and API reque
 unchanged. Host and container memory guards still apply. The environment override is
 `IMMICH_MEMORIES_ACE_STEP__CPU_OFFLOAD=false`.
 
-`audio.local_music_dir` only feeds the `immich-memories music` helper commands; generation never
-picks music from it on its own: pass the file with `--music`.
+`audio.local_music_dir` is your own music, one subfolder per mood like the bundled library. Films
+pick from it by mood in place of the bundled tracks; a mood it lacks plays the bundled ones, and a
+configured generator still comes first. The `immich-memories music` commands read it too.
+[Your own music folder](../make/titles-maps-music.md#your-own-music-folder) has the layout.
+
+`audio.no_music: true` renders every film without music: `generate`, `runs render`, automation and
+the web render panel (which opens on **No music**). `--music FILE`, `--music auto` or a track picked
+in the panel still gets music for that film; `--no-music` turns it off for one film.
 
 `audio.max_regenerations` bounds auto mode's reaction to a generated track the cheap quality gate
 flags as a repetitive "tic-tac". The first take is scored; if it is flagged, auto mode generates
